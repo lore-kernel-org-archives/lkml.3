@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503AbaG1Lc0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 07:32:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3715 "EHLO mx1.redhat.com"
+	id S1752612AbaG1Lca (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 07:32:30 -0400
+Received: from mga01.intel.com ([192.55.52.88]:57230 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751701AbaG1LcX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 07:32:23 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <53D31D16.1030806@oracle.com>
-References: <53D31D16.1030806@oracle.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: dhowells@redhat.com, James Morris <james.l.morris@oracle.com>,
-        serge@hallyn.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: security: oops on boot in __key_link_begin
+	id S1751982AbaG1Lc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 07:32:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,748,1400050800"; 
+   d="scan'208";a="576523360"
+Message-ID: <53D634BB.3060306@intel.com>
+Date: Mon, 28 Jul 2014 19:32:11 +0800
+From: "xinhui.pan" <xinhuix.pan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <26465.1406547132.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 28 Jul 2014 12:32:12 +0100
-Message-ID: <26466.1406547132@warthog.procyon.org.uk>
+To: Jiri Slaby <jslaby@suse.cz>, Greg KH <gregkh@linuxfoundation.org>
+CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>, mnipxh <mnipxh@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty/n_gsm.c: fix a memory leak in gsmld_open
+References: <53D6067C.4000702@intel.com> <53D60E8F.6080208@suse.cz> <53D611EC.2000907@intel.com>
+In-Reply-To: <53D611EC.2000907@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin <sasha.levin@oracle.com> wrote:
+于 2014年07月28日 17:03, xinhui.pan 写道:
+> Hi, Jiri
+> 
+> 于 2014年07月28日 16:49, Jiri Slaby 写道:
+>> On 07/28/2014 10:14 AM, xinhui.pan wrote:
+>>> If gsmld_attach_gsm fails, the gsm is not used anymore.
+>>> tty core will not call gsmld_close to do the cleanup work.
+>>> tty core just restore to the tty old ldisc.
+>>> That always causes memory leak.
+>>
+>> Nice catch!
+>>
+>>> --- a/drivers/tty/n_gsm.c
+>>> +++ b/drivers/tty/n_gsm.c
+>>> @@ -2382,7 +2383,13 @@ static int gsmld_open(struct tty_struct *tty)
+>>>  
+>>>  	/* Attach the initial passive connection */
+>>>  	gsm->encoding = 1;
+>>> -	return gsmld_attach_gsm(tty, gsm);
+>>> +
+>>> +	ret = gsmld_attach_gsm(tty, gsm);
+>>> +	if (ret != 0) {
+>>> +		gsm_cleanup_mux(gsm);
+>>> +		mux_put(gsm);
+>>
+>> It is quite illogical to put the mux here. It should be in gsmld_open.
+>> I.e. gsm_cleanup_mux here, mux_put there.
+>>
+> 
+> Thanks for your reply :)
+> But I am a little confused with your comments, could you explain it when you are free?
+> Sorry for my poor English.
+> 
 
->   23:	49 89 9f f0 00 00 00 	mov    %rbx,0xf0(%r15)
->   2a:	55                   	push   %rbp
->   2b:*	c1 b8 42 ff 49 8b 5f 	sarl   $0x5f,-0x74b600be(%rax)		<-- trapping instruction
->   32:	10 49 8d             	adc    %cl,-0x73(%rcx)
+hi, Jiri
+	I guess you want gsm_cleanup_mux() called in gsmld_attach_gsm(), just after gsm_activate_mux() fails?
+Yes, that seems really make sence. :)
+Thanks for pointing out it.
 
-I can't make any sense of this.  It doesn't look anything like what I
-get when I disassemble assoc_array_insert().  There are no SARL or ADC
-instructions.
+Let me explain my opinion. :)
+Actually gsmld_attach_gsm results in two different effects when it fails. 
+(a)gsmld_attach_gsm -> gsm_activate_mux(gsm_mux[] is full,-EBUSY), then gsm_mux[] did not change, and gsm->num is invaild;
+(b)gsmld_attach_gsm -> gsm_activate_mux(return -ENOMEM), then gsm_mux[] changes, and gsm->num is vaild.
 
-Can you load your vmlinux into gdb and disassemble the function that holds the
-faulting instruction:
+To be honest, I am not very clear about this. I even suspect this is done in such way on purpose.
+So I just keep the code what it is now. Let's handle the error in gsmld_open(). 
+We can make sure that gsm is not used here and it's safe to cleanup and put it.
 
-	gdb vmlinux
-	(gdb) disassemble <RIP-value>
+thanks,
 
-Unfortunately, I'm not sure what the RIP value actually is because it's been
-replaced in the dump by source file + line number.  It's not this:
+xinhui
 
-	[   31.330473] CR2: ffffffff8b49ff42
-
-though.  That's RAX (ie. 0) plus the offset in the following instruction:
-
-	sarl   $0x5f,-0x74b600be(%rax)		<-- trapping instruction
-
-David
+> thanks,
+> 
+> xinhui
+> 
+>> thanks,
+>>
