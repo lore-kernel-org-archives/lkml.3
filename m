@@ -1,121 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702AbaG1Ibv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 04:31:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42431 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaG1IXz (ORCPT
+	id S1751478AbaG1Ihh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 04:37:37 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:56978 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981AbaG1Ihd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 04:23:55 -0400
-Date: Mon, 28 Jul 2014 01:23:00 -0700
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-288be943b5024729cd6809b61b62f727960178f3@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de
-In-Reply-To: <1406035081-14301-11-git-send-email-adrian.hunter@intel.com>
-References: <1406035081-14301-11-git-send-email-adrian.hunter@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add dso__data_status_seen()
-Git-Commit-ID: 288be943b5024729cd6809b61b62f727960178f3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 28 Jul 2014 04:37:33 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPM=9tyKWbffCrUP+3VETEcqAvMG-5+wkW7Rg09BGDnbO=jsBw@mail.gmail.com>
+References: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
+	<CAF6AEGsLbmos9nz-AYv2v0g33BYdAgKYTe8_ihDWEF3GK_=gjQ@mail.gmail.com>
+	<20140703215200.GG32514@n2100.arm.linux.org.uk>
+	<CAF6AEGsAtqCjrvrgcXmOY0nie89ppFHBcRPtt36ESHWBNqobTg@mail.gmail.com>
+	<CA+M3ks4BU3MTaeCeMPbu8LqW=H27ZAdF-qZLUiG3UXJzbA89Fw@mail.gmail.com>
+	<CA+M3ks5osUkkEY64t=M1zEp7DA5rn+MxxqiJhQm5QiEFUPBL+A@mail.gmail.com>
+	<CA+M3ks7-ZHghELcRHDiFNbubDZ2DRQPDh2bKKzhsu4EcA0Tzcg@mail.gmail.com>
+	<CAF6AEGupwP4aq7EG2SdRUAwy-dzab7fVd2SSoHfGpX8o6yR+WQ@mail.gmail.com>
+	<CAPM=9tyKWbffCrUP+3VETEcqAvMG-5+wkW7Rg09BGDnbO=jsBw@mail.gmail.com>
+Date: Mon, 28 Jul 2014 10:37:33 +0200
+Message-ID: <CA+M3ks7dfE9nfH6J++fB897PJ407amuxU_g6As-xzPzddTgArw@mail.gmail.com>
+Subject: Re: [PATCH v5 00/11] Add DRM for stih4xx platforms
+From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Rob Clark <robdclark@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  288be943b5024729cd6809b61b62f727960178f3
-Gitweb:     http://git.kernel.org/tip/288be943b5024729cd6809b61b62f727960178f3
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Tue, 22 Jul 2014 16:17:19 +0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 23 Jul 2014 11:23:44 -0300
+Hello Dave,
 
-perf tools: Add dso__data_status_seen()
+You can found the patcheset with Rob's reviewed-by tag here:
+git://git.linaro.org/people/benjamin.gaignard/kernel.git
+on drm_kms_for_next-v7 branch
 
-Add a function to track whether a caller has seen the data status of a
-dso.  This is needed to enable callers to report the error exactly once
-only per dso.
+It is the same code (drm_kms_for_next-v6) than what Rob has reviewed,
+rebased (and tested) on top of drm-next.
+The only changes are clocks typo (upper to lower case) in binding documentation.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406035081-14301-11-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/dso.c | 12 ++++++++++++
- tools/perf/util/dso.h |  6 ++++++
- 2 files changed, 18 insertions(+)
+Regards,
+Benjamin
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 8827db3..84e4a05 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -359,6 +359,18 @@ out:
- 	return dso->data.fd;
- }
- 
-+bool dso__data_status_seen(struct dso *dso, enum dso_data_status_seen by)
-+{
-+	u32 flag = 1 << by;
-+
-+	if (dso->data.status_seen & flag)
-+		return true;
-+
-+	dso->data.status_seen |= flag;
-+
-+	return false;
-+}
-+
- static void
- dso_cache__free(struct rb_root *root)
- {
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index aeb7bcb..c805f60 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -46,6 +46,10 @@ enum dso_data_status {
- 	DSO_DATA_STATUS_OK	= 1,
- };
- 
-+enum dso_data_status_seen {
-+	DSO_DATA_STATUS_SEEN_ITRACE,
-+};
-+
- #define DSO__SWAP(dso, type, val)			\
- ({							\
- 	type ____r = val;				\
-@@ -111,6 +115,7 @@ struct dso {
- 		struct rb_root	 cache;
- 		int		 fd;
- 		int		 status;
-+		u32		 status_seen;
- 		size_t		 file_size;
- 		struct list_head open_entry;
- 	} data;
-@@ -203,6 +208,7 @@ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
- ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
- 			    struct machine *machine, u64 addr,
- 			    u8 *data, ssize_t size);
-+bool dso__data_status_seen(struct dso *dso, enum dso_data_status_seen by);
- 
- struct map *dso__new_map(const char *name);
- struct dso *dso__kernel_findnew(struct machine *machine, const char *name,
+
+2014-07-28 1:23 GMT+02:00 Dave Airlie <airlied@gmail.com>:
+> On 16 July 2014 04:33, Rob Clark <robdclark@gmail.com> wrote:
+>> On Tue, Jul 15, 2014 at 5:41 AM, Benjamin Gaignard
+>> <benjamin.gaignard@linaro.org> wrote:
+>>> Hi all,
+>>>
+>>> Does version 6 fit to all your expectations ?
+>>> If yes will you consider to merge it into drm-next ?
+>>> If no, please tell me what need to be fixed.
+>>
+>>
+>> I had another pass over the driver, and didn't find anything to
+>> complain about, so for the series:
+>>
+>> Reviewed-by: Rob Clark <robdclark@gmail.com>
+>
+> Can I see a git tree of this with Rob's R-B on it?
+>
+> based off drm-next if possible,
+>
+> I'd like to do a quick pre-merge review of it, but I usually don't
+> find anything too major.
+>
+> Dave.
+
+
+
+-- 
+Benjamin Gaignard
+
+Graphic Working Group
+
+Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro: Facebook | Twitter | Blog
