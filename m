@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454AbaG1Hmx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 03:42:53 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47645 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185AbaG1Hmu (ORCPT
+	id S1751466AbaG1HnI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 03:43:08 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:59923 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461AbaG1HnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 03:42:50 -0400
-From: Ethan Zhao <ethan.zhao@oracle.com>
-To: jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
-        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
-        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
-        alexander.h.duyck@intel.com, john.ronciak@intel.com,
-        mitch.a.williams@intel.com
-Cc: linux.nics@intel.com, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ethan.kernel@gmail.com, Ethan Zhao <ethan.zhao@oracle.com>
-Subject: [PATCH] ixgbevf: remove useless bd_number from struct ixgbevf_adapter
-Date: Mon, 28 Jul 2014 15:42:01 +0800
-Message-Id: <1406533321-28011-1-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: git-send-email 1.7.1
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 28 Jul 2014 03:43:04 -0400
+Message-ID: <53D5FF06.6080904@linaro.org>
+Date: Mon, 28 Jul 2014 09:43:02 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+CC: Tomasz Figa <t.figa@samsung.com>, Sachin Kamat <sachin.kamat@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v3 0/4] ARM: EXYNOS: cpuidle: fix AFTR mode on boards
+ with secure firmware enabled
+References: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
+In-Reply-To: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is useless and buggy, just remove it.
+On 07/09/2014 07:17 PM, Bartlomiej Zolnierkiewicz wrote:
+> Hi,
+>
+> This patch series adds support for AFTR idle mode on boards with
+> secure firmware enabled and allows EXYNOS cpuidle driver usage on
+> Exynos4x12 SoCs.
+>
+> It has been tested on Trats2 board (using Exynos4412 SoC with secure
+> firmware enabled) on which AFTR mode reduces power consumption by ~12%
+> when EXYNOS cpuidle driver is enabled (in both cases the default
+> exynos_defconfig config is used and CPU1-3 are offlined).
 
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
----
- drivers/net/ethernet/intel/ixgbevf/ixgbevf.h      |    1 -
- drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    4 ----
- 2 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf.h b/drivers/net/ethernet/intel/ixgbevf/ixgbevf.h
-index a0a1de9..ba96cb5 100644
---- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf.h
-+++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf.h
-@@ -385,7 +385,6 @@ struct ixgbevf_adapter {
- 	/* structs defined in ixgbe_vf.h */
- 	struct ixgbe_hw hw;
- 	u16 msg_enable;
--	u16 bd_number;
- 	/* Interrupt Throttle Rate */
- 	u32 eitr_param;
- 
-diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-index d0799e8..091b106 100644
---- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-+++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-@@ -3464,7 +3464,6 @@ static int ixgbevf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	struct ixgbevf_adapter *adapter = NULL;
- 	struct ixgbe_hw *hw = NULL;
- 	const struct ixgbevf_info *ii = ixgbevf_info_tbl[ent->driver_data];
--	static int cards_found;
- 	int err, pci_using_dac;
- 
- 	err = pci_enable_device(pdev);
-@@ -3525,8 +3524,6 @@ static int ixgbevf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 
- 	ixgbevf_assign_netdev_ops(netdev);
- 
--	adapter->bd_number = cards_found;
--
- 	/* Setup hw api */
- 	memcpy(&hw->mac.ops, ii->mac_ops, sizeof(hw->mac.ops));
- 	hw->mac.type  = ii->mac;
-@@ -3601,7 +3598,6 @@ static int ixgbevf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	hw_dbg(hw, "MAC: %d\n", hw->mac.type);
- 
- 	hw_dbg(hw, "Intel(R) 82599 Virtual Function\n");
--	cards_found++;
- 	return 0;
- 
- err_register:
+Hi Bartlomiej,
+
+what is the status of this patchset ? Is it supposed to land for 3.17 ?
+
+Thanks
+
+   -- Daniel
+
+> v3:
+> - rebased on top of next-20140708 +
+>    http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32809.html
+>    (with rejects fixed)
+>    http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32808.html
+>    http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32991.html
+>    (with rejects fixed in patch #2)
+> - addressed review comments from Tomasz Figa and Daniel Lezcano
+>
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+>
+>
+> Bartlomiej Zolnierkiewicz (4):
+>    ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_* macros by static inlines
+>    ARM: EXYNOS: add AFTR mode support to firmware do_idle method
+>    ARM: EXYNOS: cpuidle: add secure firmware support to AFTR mode code
+>    ARM: EXYNOS: cpuidle: allow driver usage on Exynos4x12 SoCs
+>
+>   arch/arm/include/asm/firmware.h  |  2 +-
+>   arch/arm/mach-exynos/common.h    |  7 ++++++-
+>   arch/arm/mach-exynos/exynos.c    |  3 ++-
+>   arch/arm/mach-exynos/firmware.c  | 36 ++++++++++++++++++++++++++----------
+>   arch/arm/mach-exynos/pm.c        | 39 +++++++++++++++++++++++++++++----------
+>   drivers/cpuidle/cpuidle-exynos.c |  6 +++---
+>   6 files changed, 67 insertions(+), 26 deletions(-)
+>
+
+
 -- 
-1.7.1
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
