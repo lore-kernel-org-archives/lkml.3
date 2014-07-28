@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797AbaG1NtQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 09:49:16 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59596 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747AbaG1NtM (ORCPT
+	id S1752729AbaG1NuS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 09:50:18 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:48097 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175AbaG1NuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 09:49:12 -0400
-Date: Mon, 28 Jul 2014 14:49:04 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Message-ID: <20140728134904.GX17528@sirena.org.uk>
-References: <20140728203233.26341abf@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fgTtmruieKHQo6By"
-Content-Disposition: inline
-In-Reply-To: <20140728203233.26341abf@canb.auug.org.au>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: build warnings after merge of the regulator tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 28 Jul 2014 09:50:16 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCHv9 4/4] dt: mailbox: add generic bindings
+To: Jassi Brar <jaswinder.singh@linaro.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: ks.giri@samsung.com, arnd@arndb.de, ijc@hellion.org.uk,
+        mark.rutland@arm.com, robh@kernel.org, pawel.moll@arm.com,
+        courtney.cavin@sonymobile.com, mporter@linaro.org,
+        slapdau@yahoo.com.au, lftan.linux@gmail.com, loic.pallardy@st.com,
+        s-anna@ti.com, ashwin.chaugule@linaro.org, bjorn@kryo.se,
+        patches@linaro.org, t.takinishi@jp.fujitsu.com, broonie@linaro.org,
+        khilman@linaro.org, mollie.wu@linaro.org, andy.green@linaro.org,
+        lee.jones@linaro.org, Jassi Brar <jaswinder.singh@linaro.org>
+In-Reply-To: <1406055456-29384-1-git-send-email-jaswinder.singh@linaro.org>
+References: <1406055250-29159-1-git-send-email-jaswinder.singh@linaro.org>
+	<1406055456-29384-1-git-send-email-jaswinder.singh@linaro.org>
+Date: Mon, 28 Jul 2014 07:50:08 -0600
+Message-Id: <20140728135008.1E8C4C408A9@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 23 Jul 2014 00:27:36 +0530, Jassi Brar <jaswinder.singh@linaro.org> wrote:
+> Define generic bindings for the framework clients to
+> request mailbox channels.
+> 
+> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
 
---fgTtmruieKHQo6By
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Looks okay to me.
 
-On Mon, Jul 28, 2014 at 08:32:33PM +1000, Stephen Rothwell wrote:
+g.
 
-> In file included from include/linux/regulator/machine.h:18:0,
->                  from drivers/acpi/bus.c:36:
-> include/linux/regulator/consumer.h:468:23: warning: 'regulator_get_regmap' defined but not used [-Wunused-function]
->  static struct regmap *regulator_get_regmap(struct regulator *regulator)
->                        ^
+> ---
+>  .../devicetree/bindings/mailbox/mailbox.txt        | 36 ++++++++++++++++++++++
+>  1 file changed, 36 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mailbox/mailbox.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/mailbox/mailbox.txt b/Documentation/devicetree/bindings/mailbox/mailbox.txt
+> new file mode 100644
+> index 0000000..bb79678
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mailbox/mailbox.txt
+> @@ -0,0 +1,36 @@
+> +* Generic Mailbox Controller and client driver bindings
+> +
+> +Generic binding to provide a way for Mailbox controller drivers to
+> +assign appropriate mailbox channel to client drivers.
+> +
+> +* Mailbox Controller
+> +
+> +Required property:
+> +- #mbox-cells: Must be at least 1. Number of cells in a mailbox
+> +		specifier.
+> +
+> +Example:
+> +	mailbox: mailbox {
+> +		...
+> +		#mbox-cells = <1>;
+> +	};
+> +
+> +
+> +* Mailbox Client
+> +
+> +Required property:
+> +- mboxes: List of phandle and mailbox channel specifiers.
+> +
+> +Optional property:
+> +- mbox-names: List of identifier strings for each mailbox channel
+> +		required by the client. The use of this property
+> +		is discouraged in favor of using index in list of
+> +		'mboxes' while requesting a mailbox.
+> +
+> +Example:
+> +	pwr_cntrl: power {
+> +		...
+> +		mbox-names = "pwr-ctrl", "rpc";
+> +		mboxes = <&mailbox 0
+> +			&mailbox 1>;
+> +	};
+> -- 
+> 1.8.1.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Ugh, that should actually be fixed but apparently I forgot to rebuild my
--next branch before you picked it up.  Should be fine tomorrow anyway,
-sorry.
-
---fgTtmruieKHQo6By
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT1lTMAAoJELSic+t+oim9dRUP/iruPhZQdlzGsqTT3tF3bL38
-BN3v5kpk0ncTvunQ1Ls/aeFeLCyvWos1ZpT5DLoYopI4Xb16EqJiAjgvV0QDrO94
-sMw4tuDWBWsA9GIEl4pnwqyMnmNTs4dc4duKpLM0JCmJHqvIuamuhYXuQ9fz+wyr
-/j5s4qEQt8i3DG8hIEXVaOUXZqYO1A5EAZos/0vZFMQI3gXrRlSjz/6n97fgFlpH
-z5vMnOo3fEqNd9GDpd0TT0P1kRJEq2BQnTJAj1OZhUDWFuMrdMYW9jIOLbUGY8FQ
-FyNXN1etGTzk4CQ4FEYAT6/lAXCnuvFhf3IZYrx4SmcZxTc4M39bGSVp423lqe+2
-Z3Ng3k1lxYOX9q9pbOuGpUdW7Y4iHYCQF3WHXb2dvbpoDwJ/HYT9B8Rq7W7Y8Ydm
-F1syZQX4VKGfLuPCUnXiuDh1+hg1H3RbMloUBqzYnGNQQX6nqFCwQ9OwKBYc/f0r
-1c/+F6vU04JUOnm1fpEDlxFs1iJl+q/a8pgHcGp1xRknQ5vV0uHlSVRUSsdv51GU
-keuNL4VBmG7uVV4iR4LYxnwyX96xdRsTVMcTDDn9TMeoIkbd2O8li0/ZgnJcauBt
-ZPB27tl1bamDFgj0KmpQAMKcD7Wi6mA+y/nhu5Slf2gVI8mWCFqr4Q8c7cCNlWiN
-Fk8Txq3E0aikJAf/VSCm
-=QFjd
------END PGP SIGNATURE-----
-
---fgTtmruieKHQo6By--
