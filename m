@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709AbaG1NnO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 09:43:14 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:57732 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751674AbaG1NnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 09:43:13 -0400
-X-IronPort-AV: E=Sophos;i="5.01,749,1400025600"; 
-   d="scan'208";a="156369741"
-Message-ID: <53D6536E.70104@citrix.com>
-Date: Mon, 28 Jul 2014 14:43:10 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1752760AbaG1NoK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 09:44:10 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:11702 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754AbaG1NoH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 09:44:07 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19zxd60y8ar40gHsQ27YF+GCONym8HoalM=
+X-DKIM: OpenDKIM Filter v2.0.1 titan A6C0C5B84A5
+Date: Mon, 28 Jul 2014 09:43:47 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Benoit Masson <yahoo@perenite.com>
+Cc: benoitm@perenite.com, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        andrew@lunn.ch, gregory.clement@free-electrons.com,
+        sebastian.hesselbarth@googlemail.com
+Subject: Re: [PATCH 1/2] Adding Lenovo - Lenovo Group Ltd. to the
+ vendor-prefixes list.
+Message-ID: <20140728134347.GP23220@titan.lakedaemon.net>
+References: <1406154923-13612-1-git-send-email-yahoo@perenite.com>
 MIME-Version: 1.0
-To: Vitaly Kuznetsov <vkuznets@redhat.com>, <xen-devel@lists.xenproject.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Andrew Jones <drjones@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 3/4] xen/pvhvm: Unmap all PIRQs on startup and shutdown
-References: <1405431640-649-1-git-send-email-vkuznets@redhat.com> <1405431640-649-4-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1405431640-649-4-git-send-email-vkuznets@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406154923-13612-1-git-send-email-yahoo@perenite.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/07/14 14:40, Vitaly Kuznetsov wrote:
-> When kexec is being run PIRQs from Qemu-emulated devices are still
-> mapped to old event channels and new kernel has no information about
-> that. Trying to map them twice results in the following in Xen's dmesg:
+Benoit,
+
+On Wed, Jul 23, 2014 at 03:35:22PM -0700, Benoit Masson wrote:
+> Lenovo Group Ltd. (stylized as lenovo) is a Chinese multinational
+> computer technology company with headquarters in Beijing, China, and
+> Morrisville, North Carolina, United States.
 > 
->  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 8 already mapped
->  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 12 already mapped
->  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 1 already mapped
->  ...
-> 
->  and the following in new kernel's dmesg:
-> 
->  [   92.286796] xen:events: Failed to obtain physical IRQ 4
-> 
-> The result is that the new kernel doesn't recieve IRQs for Qemu-emulated
-> devices. Address the issue by unmapping all mapped PIRQs on kernel shutdown
-> when kexec was requested and on every kernel startup. We need to do this
-> twice to deal with the following issues:
-> - startup-time unmapping is required to make kdump work;
-> - shutdown-time unmapping is required to support kexec-ing non-fixed kernels;
-> - shutdown-time unmapping is required to make Qemu-emulated NICs work after
->   kexec (event channel is being closed on shutdown but no PHYSDEVOP_unmap_pirq
->   is being performed).
+> http://www.lenovo.com/
+> Signed-off-by: Benoit Masson <yahoo@perenite.com>
+> ---
+>  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+>  1 file changed, 1 insertion(+)
 
-I think this should be done only in one place -- just prior to exec'ing
-the new kernel (including kdump kernels).
+Applied to mvebu/dt with a few minor style changes to the commit log.
 
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -768,6 +768,7 @@ void xen_kexec_shutdown(void)
->  #ifdef CONFIG_KEXEC
->  	if (!kexec_in_progress)
->  		return;
-> +	xen_unmap_all_pirqs();
->  #endif
->  }
->  
-> diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
-> index c919d3d..7701c7f 100644
-> --- a/drivers/xen/events/events_base.c
-> +++ b/drivers/xen/events/events_base.c
-> @@ -1643,6 +1643,80 @@ void xen_callback_vector(void) {}
->  static bool fifo_events = true;
->  module_param(fifo_events, bool, 0);
->  
-> +void xen_unmap_all_pirqs(void)
-> +{
-> +	int pirq, rc, gsi, irq, evtchn;
-> +	struct physdev_unmap_pirq unmap_irq;
-> +	struct irq_info *info;
-> +	struct evtchn_close close;
-> +
-> +	mutex_lock(&irq_mapping_update_lock);
-> +
-> +	list_for_each_entry(info, &xen_irq_list_head, list) {
-> +		if (info->type != IRQT_PIRQ)
-> +			continue;
+  - Added a blank line between the URL and the S-o-B.
+  - Reflowed the paragraph to wrap at >80 chars
+  - Changed subject to match other changes to vendor-prefixes.txt
 
-I think you need to do this by querying Xen state rather than relying on
-potentially bad guest state.  Particularly since you may crash while
-holding irq_mapping_update_lock.
+The Subject line now reads:
 
-EVTCHNOP_status gets you the info you need I think.
+  of: Add Lenovo Group Ltd. to the vendor-prefixes list.
 
-David
+You can view the patch here:
+
+  http://git.infradead.org/linux-mvebu.git/commitdiff/74e025501bb834000b3c7eceab69383806520a36
+
+Next, it'll go to arm-soc.  Then, Linus' tree.
+
+thx,
+
+Jason.
