@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724AbaG1GMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 02:12:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42863 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaG1GM2 (ORCPT
+	id S1751802AbaG1GNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 02:13:16 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57032 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748AbaG1GNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 02:12:28 -0400
-Date: Sun, 27 Jul 2014 23:12:01 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        =?utf-8?B?7J6E6re87Iud?= <geunsik.lim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [GIT PULL] extcon next for v3.17
-Message-ID: <20140728061201.GB753@kroah.com>
-References: <53D1A796.8030607@samsung.com>
+	Mon, 28 Jul 2014 02:13:13 -0400
+Message-ID: <53D5E9CF.10706@ti.com>
+Date: Mon, 28 Jul 2014 09:12:31 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D1A796.8030607@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: <nsekhar@ti.com>, <joelf@ti.com>, <vinod.koul@intel.com>
+CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <dmaengine@vger.kernel.org>
+Subject: Re: [PATCH 0/3] ARM/dma: edma: Serve cyclic clients via high priority
+ queue
+References: <1404816398-12338-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1404816398-12338-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 09:40:54AM +0900, Chanwoo Choi wrote:
-> Dear Greg,
+On 07/08/2014 01:46 PM, Peter Ujfalusi wrote:
+> Hi,
 > 
-> This is extcon-next full request for v3.17. I add detailed description of this
-> pull request on below. Please pull extcon with following updates.
+> It is preferred that audio is served with the highest priority queue in order to
+> avoid delays in data transfer between memory and audio IP.
 > 
-> I report you about merge of MAX77693 patchset from MFD git repo(Lee Jones).
-> The MAX77693 patchset in this pull request has the dependency on various
-> subsystem(MFD/Regulator/Extcon). To protect merge conflit, firstly MFD Maintainer
-> created Immutable branch(branch: ib-mfd-extcon-regulator) and then I merged it on
-> extcon-next branch.
-> 
-> The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
-> 
->   Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-next-for-3.17
+> The following series will add an API to arch code to assign a channel to a given
+> queue.
+> The default queue is changed from 0 (highest priority) to lowest priority.
+> In the dmaengine driver we move the cyclic channel to queue0 (highest priority)
+> and move it back to default queue when the channel is terminated.
 
-Pulled and pushed out, thanks.
+ping?
 
-greg k-h
+> 
+> Regards,
+> Peter
+> ---
+> Peter Ujfalusi (3):
+>   ARM: edma: Set default queue to lowest priority
+>   ARM: edma: Add edma_assign_channel_eventq() to move channel to a give
+>     queue
+>   dma: edma: Serve cyclic (audio) channels with high priority queue
+> 
+>  arch/arm/common/edma.c             | 31 ++++++++++++++++++++++++++++++-
+>  drivers/dma/edma.c                 |  8 ++++++++
+>  include/linux/platform_data/edma.h |  2 ++
+>  3 files changed, 40 insertions(+), 1 deletion(-)
+> 
+
+
+-- 
+Péter
