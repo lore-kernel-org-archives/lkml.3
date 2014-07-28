@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968AbaG1XYY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 19:24:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:32943 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751213AbaG1XYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 19:24:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,752,1400050800"; 
-   d="scan'208";a="550397168"
-Message-ID: <53D6DB9C.7030109@intel.com>
-Date: Mon, 28 Jul 2014 16:24:12 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752061AbaG1X3g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 19:29:36 -0400
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:43112 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213AbaG1X3c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 19:29:32 -0400
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Zhang Zhen <zhenzhang.zhang@huawei.com>, shaohui.zheng@intel.com,
-        mgorman@suse.de, mingo@redhat.com, Linux MM <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org, wangnan0@huawei.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] memory hotplug: update the variables after memory removed
-References: <1406550617-19556-1-git-send-email-zhenzhang.zhang@huawei.com> <53D642E5.2010305@huawei.com> <53D6685C.1060509@intel.com> <alpine.DEB.2.02.1407281610340.8998@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1407281610340.8998@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53D68F91.4000106@zytor.com>
+References: <cover.1405992946.git.luto@amacapital.net>
+	<CAGXu5jJ93-vto9voMENc4jX5itcd_Rm5AZjeChF57fpMYnWocA@mail.gmail.com>
+	<CALCETrVwqDeRbFOw=k_OhQZ4V6Pn5v3t8ODw75UuE7HKPFz=Sw@mail.gmail.com>
+	<53D68F91.4000106@zytor.com>
+Date: Mon, 28 Jul 2014 16:29:31 -0700
+X-Google-Sender-Auth: XiJtTw83h0hS56GiBImAI2p2mao
+Message-ID: <CAGXu5jKJOrtjY9JsCBUvUbj_y4Hv+AeMEmGwWZZ18FmiZmAbbQ@mail.gmail.com>
+Subject: Re: [PATCH v3 0/8] Two-phase seccomp and x86 tracing changes
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        Will Drewry <wad@chromium.org>, "x86@kernel.org" <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexei Starovoitov <ast@plumgrid.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2014 04:12 PM, David Rientjes wrote:
-> I agree, but I'm not sure the suggestion is any better than the patch.  I 
-> think it would be better to just figure out whether anything needs to be 
-> updated in the caller and then call a generic function.
-> 
-> So in arch_add_memory(), do
-> 
-> 	end_pfn = PFN_UP(start + size);
-> 	if (end_pfn > max_pfn)
-> 		update_end_of_memory_vars(end_pfn);
-> 
-> and in arch_remove_memory(),
-> 
-> 	end_pfn = PFN_UP(start);
-> 	if (end_pfn < max_pfn)
-> 		update_end_of_memory_vars(end_pfn);
-> 
-> and then update_end_of_memory_vars() becomes a three-liner.
+On Mon, Jul 28, 2014 at 10:59 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/23/2014 12:20 PM, Andy Lutomirski wrote:
+>>
+>> It looks like patches 1-4 have landed here:
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=seccomp/fastpath
+>>
+>> hpa, what's the route forward for the x86 part?
+>>
+>
+> I guess I should discuss this with Kees to figure out what makes most
+> sense.  In the meantime, could you address Oleg's question?
 
-That does look better than my suggestion, generally.
+Since the x86 parts depend on the seccomp parts, I'm happy if you
+carry them instead of having them land from my tree. Otherwise I'm
+open to how to coordinate timing.
 
-It is broken in the remove case, though.  In your example, the memory
-being removed is assumed to be coming from the end of memory, and that
-isn't always the case.  I think you need something like:
+-Kees
 
-	if ((max_pfn >= start_pfn) && (max_pfn < end_pfn)
-		update_end_of_memory_vars(start);
+>
+>         -hpa
+>
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-But, yeah, that's a lot better than new functions.
+
+
+-- 
+Kees Cook
+Chrome OS Security
