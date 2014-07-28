@@ -1,170 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084AbaG1WeY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 18:34:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50088 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaG1WeV (ORCPT
+	id S1752159AbaG1WjH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 18:39:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43155 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751425AbaG1WjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 18:34:21 -0400
-Date: Mon, 28 Jul 2014 15:33:54 -0700
-From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
-Message-ID: <tip-7209a75d2009dbf7745e2fd354abf25c3deb3ca3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
-        mingo@kernel.org, stable@vger.kernel.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        stable@vger.kernel.org, hpa@linux.intel.com
-In-Reply-To: <7b8f1d8ef6597cb16ae004a43c56980a7de3cf94.1406129132.git.luto@amacapital.net>
-References: <7b8f1d8ef6597cb16ae004a43c56980a7de3cf94.1406129132.git.luto@amacapital.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86_64/entry/xen: Do not invoke espfix64 on Xen
-Git-Commit-ID: 7209a75d2009dbf7745e2fd354abf25c3deb3ca3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 28 Jul 2014 18:39:03 -0400
+Date: Tue, 29 Jul 2014 00:38:59 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: =?utf-8?B?SmnFmcOt?= Prchal <jiri.prchal@aksignal.cz>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
+        voice.shen@atmel.com, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH] ARM: at91: spi: request all csgpio in spi probe
+Message-ID: <20140728223859.GA3214@piout.net>
+References: <b033d16ec31d26a895726ee72ec89b43943dfbae.1406547656.git.jiri.prchal@aksignal.cz>
+ <20140728122103.GR9532@piout.net>
+ <53D64ADA.1000102@aksignal.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53D64ADA.1000102@aksignal.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7209a75d2009dbf7745e2fd354abf25c3deb3ca3
-Gitweb:     http://git.kernel.org/tip/7209a75d2009dbf7745e2fd354abf25c3deb3ca3
-Author:     Andy Lutomirski <luto@amacapital.net>
-AuthorDate: Wed, 23 Jul 2014 08:34:11 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 28 Jul 2014 15:25:40 -0700
+(Adding Mark in Cc:)
 
-x86_64/entry/xen: Do not invoke espfix64 on Xen
+On 28/07/2014 at 15:06:34 +0200, Jiří Prchal wrote :
+> >>+#define DRIVER_NAME "atmel-spi"
+> >>+
+> >
+> >This is not really related to the issue solved by that patch, maybe it
+> >could go in another patch ?
+> Probably yes, but is used for this patch, I based it upon spi-efm32.
+> >
 
-This moves the espfix64 logic into native_iret.  To make this work,
-it gets rid of the native patch for INTERRUPT_RETURN:
-INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
+Yeah, I wouldn't use it anyway, see my comment below.
 
-This changes the 16-bit SS behavior on Xen from OOPSing to leaking
-some bits of the Xen hypervisor's RSP (I think).
+> >>  	asd->csr = csr;
+> >>@@ -1290,6 +1276,15 @@ static int atmel_spi_probe(struct platform_device *pdev)
+> >>  	int			ret;
+> >>  	struct spi_master	*master;
+> >>  	struct atmel_spi	*as;
+> >>+	struct device_node *np = pdev->dev.of_node;
+> >>+	int num_cs, i;
+> >>+
+> >>+	if (!np)
+> >>+		return -EINVAL;
+> >>+
+> >>+	num_cs = of_gpio_named_count(np, "cs-gpios");
+> >>+	if (num_cs < 0)
+> >>+		return num_cs;
+> >>
+> >
+> >This driver can still be probed without DT, this will break here, please
+> >don't assume that DT is present.
+> Yes, but I copied it from spi-efm32 and looked at others, is almost the same.
 
-[ hpa: this is a nonzero cost on native, but probably not enough to
-  measure. Xen needs to fix this in their own code, probably doing
-  something equivalent to espfix64. ]
+Maybe it is similar in other drivers but at91 platforms can still be
+booted without DT, This will fail with:
+atmel_spi: probe of atmel_spi.0 failed with error -22
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/7b8f1d8ef6597cb16ae004a43c56980a7de3cf94.1406129132.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org>
----
- arch/x86/include/asm/irqflags.h     |  2 +-
- arch/x86/kernel/entry_64.S          | 28 ++++++++++------------------
- arch/x86/kernel/paravirt_patch_64.c |  2 --
- 3 files changed, 11 insertions(+), 21 deletions(-)
+The efm32 only supports DT, it doesn't have board files/platform data.
 
-diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
-index bba3cf8..0a8b519 100644
---- a/arch/x86/include/asm/irqflags.h
-+++ b/arch/x86/include/asm/irqflags.h
-@@ -129,7 +129,7 @@ static inline notrace unsigned long arch_local_irq_save(void)
- 
- #define PARAVIRT_ADJUST_EXCEPTION_FRAME	/*  */
- 
--#define INTERRUPT_RETURN	iretq
-+#define INTERRUPT_RETURN	jmp native_iret
- #define USERGS_SYSRET64				\
- 	swapgs;					\
- 	sysretq;
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b25ca96..c844f08 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -830,27 +830,24 @@ restore_args:
- 	RESTORE_ARGS 1,8,1
- 
- irq_return:
-+	INTERRUPT_RETURN
-+
-+ENTRY(native_iret)
- 	/*
- 	 * Are we returning to a stack segment from the LDT?  Note: in
- 	 * 64-bit mode SS:RSP on the exception stack is always valid.
- 	 */
- #ifdef CONFIG_X86_ESPFIX64
- 	testb $4,(SS-RIP)(%rsp)
--	jnz irq_return_ldt
-+	jnz native_irq_return_ldt
- #endif
- 
--irq_return_iret:
--	INTERRUPT_RETURN
--	_ASM_EXTABLE(irq_return_iret, bad_iret)
--
--#ifdef CONFIG_PARAVIRT
--ENTRY(native_iret)
-+native_irq_return_iret:
- 	iretq
--	_ASM_EXTABLE(native_iret, bad_iret)
--#endif
-+	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
- 
- #ifdef CONFIG_X86_ESPFIX64
--irq_return_ldt:
-+native_irq_return_ldt:
- 	pushq_cfi %rax
- 	pushq_cfi %rdi
- 	SWAPGS
-@@ -872,7 +869,7 @@ irq_return_ldt:
- 	SWAPGS
- 	movq %rax,%rsp
- 	popq_cfi %rax
--	jmp irq_return_iret
-+	jmp native_irq_return_iret
- #endif
- 
- 	.section .fixup,"ax"
-@@ -956,13 +953,8 @@ __do_double_fault:
- 	cmpl $__KERNEL_CS,CS(%rdi)
- 	jne do_double_fault
- 	movq RIP(%rdi),%rax
--	cmpq $irq_return_iret,%rax
--#ifdef CONFIG_PARAVIRT
--	je 1f
--	cmpq $native_iret,%rax
--#endif
-+	cmpq $native_irq_return_iret,%rax
- 	jne do_double_fault		/* This shouldn't happen... */
--1:
- 	movq PER_CPU_VAR(kernel_stack),%rax
- 	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
- 	movq %rax,RSP(%rdi)
-@@ -1428,7 +1420,7 @@ error_sti:
-  */
- error_kernelspace:
- 	incl %ebx
--	leaq irq_return_iret(%rip),%rcx
-+	leaq native_irq_return_iret(%rip),%rcx
- 	cmpq %rcx,RIP+8(%rsp)
- 	je error_swapgs
- 	movl %ecx,%eax	/* zero extend */
-diff --git a/arch/x86/kernel/paravirt_patch_64.c b/arch/x86/kernel/paravirt_patch_64.c
-index 3f08f34..a1da673 100644
---- a/arch/x86/kernel/paravirt_patch_64.c
-+++ b/arch/x86/kernel/paravirt_patch_64.c
-@@ -6,7 +6,6 @@ DEF_NATIVE(pv_irq_ops, irq_disable, "cli");
- DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
- DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
- DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
--DEF_NATIVE(pv_cpu_ops, iret, "iretq");
- DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
- DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
- DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
-@@ -50,7 +49,6 @@ unsigned native_patch(u8 type, u16 clobbers, void *ibuf,
- 		PATCH_SITE(pv_irq_ops, save_fl);
- 		PATCH_SITE(pv_irq_ops, irq_enable);
- 		PATCH_SITE(pv_irq_ops, irq_disable);
--		PATCH_SITE(pv_cpu_ops, iret);
- 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret32);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret64);
+> >
+> >
+> >>  	/* Select default pin state */
+> >>  	pinctrl_pm_select_default_state(&pdev->dev);
+> >>@@ -1308,7 +1303,7 @@ static int atmel_spi_probe(struct platform_device *pdev)
+> >>
+> >>  	/* setup spi core then atmel-specific driver state */
+> >>  	ret = -ENOMEM;
+> >>-	master = spi_alloc_master(&pdev->dev, sizeof(*as));
+> >>+	master = spi_alloc_master(&pdev->dev, sizeof(*as) + num_cs * sizeof(unsigned));
+> >>  	if (!master)
+> >>  		goto out_free;
+> >>
+> >>@@ -1317,7 +1312,7 @@ static int atmel_spi_probe(struct platform_device *pdev)
+> >>  	master->bits_per_word_mask = SPI_BPW_RANGE_MASK(8, 16);
+> >>  	master->dev.of_node = pdev->dev.of_node;
+> >>  	master->bus_num = pdev->id;
+> >>-	master->num_chipselect = master->dev.of_node ? 0 : 4;
+> >>+	master->num_chipselect = num_cs;
+> >
+> >My guess is that you don't need to change that part.
+> I think I need it. What about 3 cs?
+
+This will be taken care of by the spi core, in of_spi_register_master():
+
+	nb = of_gpio_named_count(np, "cs-gpios");
+	master->num_chipselect = max_t(int, nb, master->num_chipselect);
+
+
+> >
+> >>  	master->setup = atmel_spi_setup;
+> >>  	master->transfer_one_message = atmel_spi_transfer_one_message;
+> >>  	master->cleanup = atmel_spi_cleanup;
+> >>@@ -1325,6 +1320,25 @@ static int atmel_spi_probe(struct platform_device *pdev)
+> >>
+> >>  	as = spi_master_get_devdata(master);
+> >>
+> >>+	for (i = 0; i < master->num_chipselect; ++i) {
+> >>+		ret = of_get_named_gpio(np, "cs-gpios", i);
+> >
+> >Again, DT maybe not be compiled in or that driver may be probed from
+> >platform data.
+> Is another way how to do it? I see cs-gpios in master struct, but where it gets filled.
+> >
+
+It is filled when registering the master, here when calling
+devm_spi_register_master(). It may be too late at that point.
+
+> >>+		if (ret < 0) {
+> >>+			dev_err(&pdev->dev, "failed to get csgpio#%u (%d)\n",
+> >>+				i, ret);
+> >>+			goto out_free;
+> >>+		}
+> >>+		as->csgpio[i] = ret;
+> >>+		dev_dbg(&pdev->dev, "csgpio#%u = %u\n", i, as->csgpio[i]);
+> >>+		ret = devm_gpio_request_one(&pdev->dev, as->csgpio[i],
+> >>+					    GPIOF_OUT_INIT_HIGH, DRIVER_NAME);
+
+Maybe you could use the CS number ifor the label here instead of
+DRIVER_NAME, at least, use pdev->dev->name and completely drop
+DRIVER_NAME.
+
+> >>+		if (ret < 0) {
+> >>+			dev_err(&pdev->dev,
+> >>+				"failed to configure csgpio#%u (%d)\n",
+> >>+				i, ret);
+> >>+			goto out_free;
+> >>+		}
+> >>+	}
+> >>+
+
+Mark: maybe it would make sense to do devm_gpio_request_one() in
+of_spi_register_master(), after of_get_named_gpio.
+
+While this solves the particular issue Jiří is seeing, this will not
+solve the case where PA14 (CS0) is not used by the spi driver at all. It
+will remained muxed as CS0 and toggle when the spi master needs to
+access CS0 until another driver muxes it to something else. I still
+believe we should explicitly ask pinctrl to mux them as gpios.
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
