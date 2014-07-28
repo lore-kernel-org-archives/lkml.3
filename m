@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659AbaG1Sl4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:41:56 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:36426 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213AbaG1Slz (ORCPT
+	id S1751066AbaG1SsO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:48:14 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46445 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750708AbaG1SsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:41:55 -0400
-Date: Mon, 28 Jul 2014 20:41:53 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alexei Starovoitov <ast@kernel.org>, "Frank Ch. Eigler" <fche@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-Message-ID: <20140728184153.GB22904@x4>
-References: <CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>
- <20140726193557.GA21842@x4>
- <CA+55aFyo=HVZGEYNmz9GHqLatFHiJYTviKz_dXjqCv8b_gGxBA@mail.gmail.com>
- <20140726201914.GB21842@x4>
- <CA+55aFyCh8B4kuc66_+wr8eM+kP7-hJ9utdtpLih661Xf8YGgQ@mail.gmail.com>
- <y0m7g2xk6ss.fsf@fche.csb>
- <CA+55aFwz+stjg5L7aKuPjLym3u4FPS_ugSZiCcJwOYCGMSFGVQ@mail.gmail.com>
- <20140728172737.GA17598@pg-vmw-gw1>
- <20140728180902.GA22904@x4>
- <CA+55aFw3eJDJmRJb9pZiLk4wTN1GCRN+BsxOXV+SwqcV1SfQmQ@mail.gmail.com>
+	Mon, 28 Jul 2014 14:48:13 -0400
+Date: Mon, 28 Jul 2014 19:47:41 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Vitaly Andrianov <vitalya@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Cyril Chemparathy <cyril@ti.com>
+Subject: Re: [PATCH 1/2] ARM: LPAE: load upper bits of early TTBR0/TTBR1
+Message-ID: <20140728184741.GT15536@arm.com>
+References: <20140722153623.25088.37742.stgit@buzz>
+ <20140728181224.GN15536@arm.com>
+ <CALYGNiNrK1d32ecz4rw0sgn0GyN-M6hTBuTLGQV53Z4Br-bpYQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFw3eJDJmRJb9pZiLk4wTN1GCRN+BsxOXV+SwqcV1SfQmQ@mail.gmail.com>
+In-Reply-To: <CALYGNiNrK1d32ecz4rw0sgn0GyN-M6hTBuTLGQV53Z4Br-bpYQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014.07.28 at 11:28 -0700, Linus Torvalds wrote:
-> On Mon, Jul 28, 2014 at 11:09 AM, Markus Trippelsdorf
-> <markus@trippelsdorf.de> wrote:
+On Mon, Jul 28, 2014 at 07:40:58PM +0100, Konstantin Khlebnikov wrote:
+> On Mon, Jul 28, 2014 at 10:12 PM, Will Deacon <will.deacon@arm.com> wrote:
+> > On Tue, Jul 22, 2014 at 04:36:23PM +0100, Konstantin Khlebnikov wrote:
+> >> This patch fixes booting when idmap pgd lays above 4gb. Commit
+> >> 4756dcbfd37 mostly had fixed this, but it'd failed to load upper bits.
+> >>
+> >> Also this fixes adding TTBR1_OFFSET to TTRR1: if lower part overflows
+> >> carry flag must be added to the upper part.
+> >>
+> >> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+> >> Cc: Cyril Chemparathy <cyril@ti.com>
+> >> Cc: Vitaly Andrianov <vitalya@ti.com>
+> >> ---
+> >>  arch/arm/mm/proc-v7-3level.S |    7 +++----
+> >>  1 file changed, 3 insertions(+), 4 deletions(-)
+> >>
+> >> diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
+> >> index 22e3ad6..f0481dd 100644
+> >> --- a/arch/arm/mm/proc-v7-3level.S
+> >> +++ b/arch/arm/mm/proc-v7-3level.S
+> >> @@ -140,12 +140,11 @@ ENDPROC(cpu_v7_set_pte_ext)
+> >>       mov     \tmp, \ttbr1, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
+> >>       mov     \ttbr1, \ttbr1, lsl #ARCH_PGD_SHIFT             @ lower bits
+> >>       addls   \ttbr1, \ttbr1, #TTBR1_OFFSET
+> >> -     mcrr    p15, 1, \ttbr1, \zero, c2                       @ load TTBR1
+> >> +     adcls   \tmp, \tmp, #0
+> >> +     mcrr    p15, 1, \ttbr1, \tmp, c2                        @ load TTBR1
+> >>       mov     \tmp, \ttbr0, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
+> >>       mov     \ttbr0, \ttbr0, lsl #ARCH_PGD_SHIFT             @ lower bits
+> >> -     mcrr    p15, 0, \ttbr0, \zero, c2                       @ load TTBR0
+> >> -     mcrr    p15, 1, \ttbr1, \zero, c2                       @ load TTBR1
+> >> -     mcrr    p15, 0, \ttbr0, \zero, c2                       @ load TTBR0
+> >> +     mcrr    p15, 0, \ttbr0, \tmp, c2                        @ load TTBR0
 > >
-> > It shouldn't be too hard to implement a simple check for the bug in the
-> > next release. Just compile the gcc/testsuite/gcc.target/i386/pr61801.c
-> > testcase with -fcompare-debug. If gcc returns 0 then
-> > -fvar-tracking-assignments could safely be enabled again.
+> > I must admit, the code you are removing here looks really strange. Was there
+> > a badly resolved conflict somewhere along the way? It would be nice to see
+> > if your fix (which seems ok to me) was actually present in the mailing list
+> > posting of the patch that ended in the above mess.
 > 
-> We don't really have any good infrastructure for things like this,
-> though. We probably *should* have a way to generate config options by
-> compiler version, but right now we don't. We do random ugly things
-> from within Makefile shell escapes (see all the helpers for this we do
-> in scripts/Kbuild.include, for example), and we could add yet another
-> one. But this is a whole new level of "ugly hack". It would be better
-> if we could do things like this at config time, not at build-time with
-> Makefile hacks.
+> Nope, no merge conflicts, source in original patch
+> https://lkml.org/lkml/2012/9/11/346
 > 
-> Also, the test-case seems to be very sensitive to compiler options: it
-> passes with "-O", but fails with "-O2" or "-Os" for me. So I wonder
-> how reliable it is in the face of compiler version differences (ie is
-> it really robust wrt the bug actually being *fixed*, or is it a bit of
-> a happenstance)
+> That mess completely harmless, this code is used only once on boot.
+> I don't have that email, so replying isn't trivial for me.
 
-It is robust with -O2 and -Os for all supported series that I've
-checked: 4.8, 4.9 and 5.0. I haven't checked older releases.
+How bizarre. Also, Cyril doesn't work for TI anymore (his email is
+bouncing), so it's tricky to know what he meant here.
 
--- 
-Markus
+Your patch looks better than what we currently have though. Have you managed
+to test it on a keystone platform (I don't have one)?
+
+Will
