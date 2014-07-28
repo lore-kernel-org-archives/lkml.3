@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaG1SbR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:31:17 -0400
-Received: from mx0a-0016ce01.pphosted.com ([67.231.148.157]:63722 "EHLO
-	mx0a-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752147AbaG1SbM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:31:12 -0400
-From: Yuval Mintz <Yuval.Mintz@qlogic.com>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        "One Thousand Gnomes" <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        "MPT-FusionLinux.pdl@avagotech.com" 
-	<MPT-FusionLinux.pdl@avagotech.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: RE: [PATCH 1/3] driver core: enable drivers to use deferred probe
-	from init
-Thread-Topic: [PATCH 1/3] driver core: enable drivers to use deferred probe
-	from init
-Thread-Index: AQHPqnnzAnxQWE7GzUSaZGTElDLpfpu1n4JQgACJmwCAAAHTAP//o1FT
-Date: Mon, 28 Jul 2014 18:30:29 +0000
-Message-ID: <B5657A6538887040AD3A81F1008BEC63B07066@avmb3.qlogic.org>
-References: <1406558067-25308-1-git-send-email-mcgrof@do-not-panic.com>
- <B5657A6538887040AD3A81F1008BEC63B06F9A@avmb3.qlogic.org>
- <20140728153811.GD21930@wotan.suse.de>
- <B5657A6538887040AD3A81F1008BEC63B06FCF@avmb3.qlogic.org>
- <20140728165248.GE21930@wotan.suse.de>,<20140728165920.GF21930@wotan.suse.de>
-In-Reply-To: <20140728165920.GF21930@wotan.suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.4.10]
-disclaimer: bypass
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751454AbaG1SfX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:35:23 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:35322 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaG1SfS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 14:35:18 -0400
+Message-ID: <53D69801.9090901@arm.com>
+Date: Mon, 28 Jul 2014 19:35:45 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7512 signatures=670489
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1402240000 definitions=main-1407280213
+To: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Stone <al.stone@linaro.org>
+Subject: Re: [PATCH 02/19] ARM64 / ACPI: Introduce early_param for "acpi"
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <1406206825-15590-3-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1406206825-15590-3-git-send-email-hanjun.guo@linaro.org>
+X-OriginalArrivalTime: 28 Jul 2014 18:35:14.0891 (UTC) FILETIME=[AC40D1B0:01CFAA92]
+X-MC-Unique: 114072819351600301
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Jul 28, 2014 at 06:52:48PM +0200, Luis R. Rodriguez wrote:
-> > On Mon, Jul 28, 2014 at 03:46:32PM +0000, Yuval Mintz wrote:
-> > > Sorry for not being clear, but I didn't meant 'what guarantees that the device
-> > > will be added to the deferred probe', but rather what guarantees that the
-> > > deferred workqueue will be scheduled.
-> > >
-> > > To the best of my knowledge the deferring mechanism works only if one device
-> > > is dependent upon another, e.g., for Multi-function devices where one device
-> > > probe is dependent upon the others - which are soon-to-be probed.
-> >
-> > The workqueue will be kicked when driver_deferred_probe_trigger() gets
-> > poked, we do that in the late_initcall(deferred_probe_initcall), it
-> > also gets flushed there with a flush_workqueue(deferred_wq).
 
-> But come to think of it that will work well for devices already plugged in
-> so indeed I think that driver_deferred_probe_add() needs a check added
-> for for if (!driver_deferred_probe_enable) then we have to
-> driver_deferred_probe_trigger(). The driver_deferred_probe_enable is set
-> to false upon init, but later on late init it gets set to true so with
-> that check we'd  only generate the trigger after late init call.
 
-> I can fold that in the v2.
+On 24/07/14 14:00, Hanjun Guo wrote:
+> From: Al Stone <al.stone@linaro.org>
+>
+> Introduce two early parameters for "acpi", one is the parameter
+> to disable ACPI on ARM64 and another one is acpi=strict to disable
+> out-of-spec workarounds.
+>
+> Reviewed-by: Grant Likely <grant.likely@linaro.org>
+> Signed-off-by: Al Stone <al.stone@linaro.org>
+> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>   Documentation/kernel-parameters.txt |    3 ++-
+>   arch/arm64/kernel/acpi.c            |   21 +++++++++++++++++++++
+>   2 files changed, 23 insertions(+), 1 deletion(-)
+>
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index b7fa2f5..d130bd5 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -165,7 +165,7 @@ multipliers 'Kilo', 'Mega', and 'Giga', equalling 2^10, 2^20, and 2^30
+>   bytes respectively. Such letter suffixes can also be entirely omitted.
+>
+>
+> -	acpi=		[HW,ACPI,X86]
+> +	acpi=		[HW,ACPI,X86,ARM]
+>   			Advanced Configuration and Power Interface
+>   			Format: { force | off | strict | noirq | rsdt }
+>   			force -- enable ACPI if default was off
+> @@ -175,6 +175,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>   				strictly ACPI specification compliant.
+>   			rsdt -- prefer RSDT over (default) XSDT
+>   			copy_dsdt -- copy DSDT to memory
+> +			For ARM64, ONLY "off" and "strict" are available.
+>
+>   			See also Documentation/power/runtime_pm.txt, pci=noacpi
+>
+> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+> index c62fce6..ac78e4e 100644
+> --- a/arch/arm64/kernel/acpi.c
+> +++ b/arch/arm64/kernel/acpi.c
+> @@ -74,3 +74,24 @@ void __init acpi_boot_table_init(void)
+>   		return;
+>   	}
+>   }
+> +
+> +static int __init parse_acpi(char *arg)
+> +{
+> +	if (!arg)
+> +		return -EINVAL;
+> +
+> +	/* "acpi=off" disables both ACPI table parsing and interpreter */
+> +	if (strcmp(arg, "off") == 0) {
+> +		disable_acpi();
+> +	}
+> +	/* acpi=strict disables out-of-spec workarounds */
+> +	else if (strcmp(arg, "strict") == 0) {
+> +		acpi_strict = 1;
 
->   Luis
+This should be default set as I mentioned in patch#1. We can introduce
+this option if required in future.
 
-But what about modules being added after the init-calls? If they try try to use this
-mechanism, what guarantees they'll eventually get probed?
+Regards,
+Sudeep
+
