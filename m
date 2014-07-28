@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364AbaG1PqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 11:46:19 -0400
-Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:22322
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750999AbaG1PqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 11:46:14 -0400
-From: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
-To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <michal.simek@xilinx.com>,
-        <grant.likely@linaro.org>, <gregkh@linuxfoundation.org>,
-        <jason@lakedaemon.net>, <ezequiel.garcia@free-electrons.com>,
-        <arnd@arndb.de>, <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
-        <artem.bityutskiy@linux.intel.com>, <pekon@ti.com>,
-        <jussi.kivilinna@iki.fi>, <acourbot@nvidia.com>,
-        <ivan.khoronzhuk@ti.com>, <joern@logfs.org>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
-        <kpc528@gmail.com>, <kalluripunnaiahchoudary@gmail.com>,
-        <anirudh@xilinx.com>, <svemula@xilinx.com>,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-Subject: [PATCH RFC v4 0/4] Add arm pl353 smc nand driver for xilinx zynq soc
-Date: Mon, 28 Jul 2014 21:01:36 +0530
-X-Mailer: git-send-email 1.7.4
-X-RCIS-Action: ALLOW
-Message-ID: <5d452894-346b-45e7-afe4-28c67c59e563@BY2FFO11FD019.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(243025005)(199002)(189002)(81542001)(2201001)(64706001)(47776003)(15975445006)(92726001)(50986999)(21056001)(70736001)(89996001)(85306003)(77982001)(77096002)(44976005)(76482001)(74662001)(107046002)(99396002)(81342001)(93916002)(19580395003)(106466001)(92566001)(79102001)(83322001)(31966008)(50226001)(62966002)(74316001)(87286001)(104166001)(95666004)(20776003)(87936001)(229853001)(88136002)(1496007)(77156001)(50466002)(85852003)(4396001)(46102001)(104016003)(74502001)(53416004)(80022001)(6806004)(48376002)(31696002)(102836001)(86362001)(15202345003)(83072002)(107986001)(921003)(1121002)(83996005)(2101003)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB051;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+	id S1752664AbaG1PrH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 11:47:07 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:32987 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750999AbaG1PrF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 11:47:05 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19b6tUycDCmCTh+t9awLJlpLuee28a22/I=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 328395B87EA
+Date: Mon, 28 Jul 2014 11:46:55 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Liviu I." <liviu.i.2222@gmail.com>, gregkh@linuxfoundation.org,
+        amk@cray.com, liang.zhen@intel.com, uja.ornl@gmail.com,
+        emoly.liu@intel.com, rashika.kheria@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: Eudyptula Challenge (Task 10)
+Message-ID: <20140728154655.GV23220@titan.lakedaemon.net>
+References: <20140728071332.GA3822@gmail.com>
+ <20140728125319.GA537@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0286D7B531
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=punnaiah.choudary.kalluri@xilinx.com; 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140728125319.GA537@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patches add arm pl353 static memory controller driver for
-xilinx zynq soc. The arm pl353 smc supports two interfaces i.e nand and
-nor/sram memory interfaces. The current implementation supports only a
-single SMC instance and nand specific configuration.
+On Mon, Jul 28, 2014 at 05:53:19AM -0700, Christoph Hellwig wrote:
+> Can you folks please stop this challenge Bullshit?  More checkpatch
+> fixes is not something we'll need at all.
 
-xilinx zynq TRM link:
-http://www.xilinx.com/support/documentation/user_guides/ug585-Zynq-7000-TRM.pdf
+Greg and Dan have previously said that the staging tree is a good place
+for newcomers to submit checkpatch cleanup patches.  However, I think
+there are a few tweaks that could be made to the Eudyptula Challenge to
+avoid this noise/frustration:
 
-ARM pl353 smc TRM link:
-http://infocenter.arm.com/help/topic/com.arm.doc.ddi0380g/
-DDI0380G_smc_pl350_series_r2p1_trm.pdf
+  - No need to send to lkml, the staging tree ML is probably fine.
 
-Punnaiah Choudary Kalluri (4):
-  nand: pl353: Add basic driver for arm pl353 smc nand interface
-  nand: pl353: Add software ecc support
-  nand: pl353: Add ONDIE ECC support
-  Documentation: nand: pl353: Add documentation for controller and
-    driver
+  - Don't mention Eudyptula Challenge, it's not relevant to the patch.
+     * It looks like you want a cookie.  We have none.
 
- Documentation/mtd/nand/pl353-nand.txt |   92 +++
- drivers/mtd/nand/Kconfig              |    7 +
- drivers/mtd/nand/Makefile             |    1 +
- drivers/mtd/nand/pl353_nand.c         | 1147 +++++++++++++++++++++++++++++++++
- 4 files changed, 1247 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/mtd/nand/pl353-nand.txt
- create mode 100644 drivers/mtd/nand/pl353_nand.c
+  - Submit the patch to the Challenge admins first for review.  This
+    patch submission should have never made the cut.
+     - No S-o-B
+     - MIME attachment
+     - Subject line is just wrong
+     - Full name missing in From:
 
--- 
-1.7.4
+I've worked with several participants of the challenge and never saw
+this many things wrong with a patch submission.  Either the admins are
+dropping the ball, or this participant got loose somehow. :)
 
+It makes me wonder if they should start with a git workflow from day
+one?  It would prevent a lot of these avoidable mistakes.
 
+thx,
+
+Jason.
