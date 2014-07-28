@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307AbaG1Rma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 13:42:30 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:48188 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753AbaG1RmW (ORCPT
+	id S1752330AbaG1Rmi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 13:42:38 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:49146 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312AbaG1Rmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 13:42:22 -0400
+	Mon, 28 Jul 2014 13:42:32 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 4/9] staging: rtl8188eu: Remove wrapper function _dynamic_check_timer_handlder()
-Date: Mon, 28 Jul 2014 23:11:25 +0530
-Message-Id: <1406569290-19943-4-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 5/9] staging: rtl8188eu: Remove wrapper function _survey_timer_hdl()
+Date: Mon, 28 Jul 2014 23:11:26 +0530
+Message-Id: <1406569290-19943-5-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1406569290-19943-1-git-send-email-navin.patidar@gmail.com>
 References: <1406569290-19943-1-git-send-email-navin.patidar@gmail.com>
@@ -24,90 +24,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_mlme.c     |   13 ++++++++-----
- drivers/staging/rtl8188eu/include/rtw_mlme.h  |    2 +-
- drivers/staging/rtl8188eu/os_dep/mlme_linux.c |   12 +-----------
- 3 files changed, 10 insertions(+), 17 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_mlme_ext.c    |    3 ++-
+ drivers/staging/rtl8188eu/include/rtw_mlme_ext.h |    2 +-
+ drivers/staging/rtl8188eu/os_dep/mlme_linux.c    |    9 +--------
+ 3 files changed, 4 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c b/drivers/staging/rtl8188eu/core/rtw_mlme.c
-index d5b2f51..149c271 100644
---- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
-@@ -1431,24 +1431,27 @@ static void rtw_auto_scan_handler(struct adapter *padapter)
+diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c b/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
+index 41cfd30..b113f0b 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
++++ b/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
+@@ -4833,8 +4833,9 @@ void linked_status_chk(struct adapter *padapter)
  	}
  }
  
--void rtw_dynamic_check_timer_handlder(struct adapter *adapter)
-+void rtw_dynamic_check_timer_handlder(void *function_context)
+-void survey_timer_hdl(struct adapter *padapter)
++void survey_timer_hdl(void *function_context)
  {
-+	struct adapter *adapter = (struct adapter *)function_context;
- 	struct registry_priv *pregistrypriv = &adapter->registrypriv;
++	struct adapter *padapter = (struct adapter *)function_context;
+ 	struct cmd_obj	*ph2c;
+ 	struct sitesurvey_parm	*psurveyPara;
+ 	struct cmd_priv					*pcmdpriv = &padapter->cmdpriv;
+diff --git a/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h b/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h
+index 654bd36..a948d45 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h
++++ b/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h
+@@ -646,7 +646,7 @@ void mlmeext_sta_add_event_callback(struct adapter *padapter,
  
- 	if (!adapter)
--		return;
-+		goto exit;
- 	if (!adapter->hw_init_completed)
--		return;
-+		goto exit;
- 	if ((adapter->bDriverStopped) || (adapter->bSurpriseRemoved))
--		return;
-+		goto exit;
- 	if (adapter->net_closed)
--		return;
-+		goto exit;
- 	rtw_dynamic_chk_wk_cmd(adapter);
+ void linked_status_chk(struct adapter *padapter);
  
- 	if (pregistrypriv->wifi_spec == 1) {
- 		/* auto site survey */
- 		rtw_auto_scan_handler(adapter);
- 	}
-+exit:
-+	_set_timer(&adapter->mlmepriv.dynamic_chk_timer, 2000);
- }
+-void survey_timer_hdl (struct adapter *padapter);
++void survey_timer_hdl (void *function_context);
+ void link_timer_hdl (struct adapter *padapter);
+ void addba_timer_hdl(struct sta_info *psta);
  
- #define RTW_SCAN_RESULT_EXPIRE 2000
-diff --git a/drivers/staging/rtl8188eu/include/rtw_mlme.h b/drivers/staging/rtl8188eu/include/rtw_mlme.h
-index 8f5457b..8d83f7c 100644
---- a/drivers/staging/rtl8188eu/include/rtw_mlme.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_mlme.h
-@@ -554,7 +554,7 @@ void rtw_get_encrypt_decrypt_from_registrypriv(struct adapter *adapter);
- void _rtw_join_timeout_handler(void *function_context);
- void rtw_scan_timeout_handler(void *function_context);
- 
--void rtw_dynamic_check_timer_handlder(struct adapter *adapter);
-+void rtw_dynamic_check_timer_handlder(void *function_context);
- #define rtw_is_scan_deny(adapter) false
- #define rtw_clear_scan_deny(adapter) do {} while (0)
- #define rtw_set_scan_deny_timer_hdl(adapter) do {} while (0)
 diff --git a/drivers/staging/rtl8188eu/os_dep/mlme_linux.c b/drivers/staging/rtl8188eu/os_dep/mlme_linux.c
-index 0bfaa78..82b71fa 100644
+index 82b71fa..f59e130 100644
 --- a/drivers/staging/rtl8188eu/os_dep/mlme_linux.c
 +++ b/drivers/staging/rtl8188eu/os_dep/mlme_linux.c
-@@ -25,23 +25,13 @@
- #include <drv_types.h>
- #include <mlme_osdep.h>
- 
--static void _dynamic_check_timer_handlder(void *FunctionContext)
--{
--	struct adapter *adapter = (struct adapter *)FunctionContext;
--
--	if (adapter->registrypriv.mp_mode == 1)
--		return;
--	rtw_dynamic_check_timer_handlder(adapter);
--	_set_timer(&adapter->mlmepriv.dynamic_chk_timer, 2000);
--}
--
- void rtw_init_mlme_timer(struct adapter *padapter)
- {
- 	struct	mlme_priv *pmlmepriv = &padapter->mlmepriv;
- 
- 	_init_timer(&(pmlmepriv->assoc_timer), padapter->pnetdev, _rtw_join_timeout_handler, padapter);
- 	_init_timer(&(pmlmepriv->scan_to_timer), padapter->pnetdev, rtw_scan_timeout_handler, padapter);
--	_init_timer(&(pmlmepriv->dynamic_chk_timer), padapter->pnetdev, _dynamic_check_timer_handlder, padapter);
-+	_init_timer(&(pmlmepriv->dynamic_chk_timer), padapter->pnetdev, rtw_dynamic_check_timer_handlder, padapter);
+@@ -129,13 +129,6 @@ void rtw_report_sec_ie(struct adapter *adapter, u8 authmode, u8 *sec_ie)
+ 	}
  }
  
- void rtw_os_indicate_connect(struct adapter *adapter)
+-static void _survey_timer_hdl(void *FunctionContext)
+-{
+-	struct adapter *padapter = (struct adapter *)FunctionContext;
+-
+-	survey_timer_hdl(padapter);
+-}
+-
+ static void _link_timer_hdl(void *FunctionContext)
+ {
+ 	struct adapter *padapter = (struct adapter *)FunctionContext;
+@@ -157,7 +150,7 @@ void init_mlme_ext_timer(struct adapter *padapter)
+ {
+ 	struct	mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
+ 
+-	_init_timer(&pmlmeext->survey_timer, padapter->pnetdev, _survey_timer_hdl, padapter);
++	_init_timer(&pmlmeext->survey_timer, padapter->pnetdev, survey_timer_hdl, padapter);
+ 	_init_timer(&pmlmeext->link_timer, padapter->pnetdev, _link_timer_hdl, padapter);
+ }
+ 
 -- 
 1.7.10.4
 
