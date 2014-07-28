@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaG1Lc7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 07:32:59 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:48086 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292AbaG1Lc6 (ORCPT
+	id S1752670AbaG1Ldt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 07:33:49 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59186 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985AbaG1Ldr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 07:32:58 -0400
-Date: Mon, 28 Jul 2014 20:31:08 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Randy Dunlap <rdunlap@infradead.org>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -next] dma/sh: fix rcar-dma.c printk format warnings
-Message-ID: <20140728113107.GA7254@verge.net.au>
-References: <53D28DAF.9090506@infradead.org>
- <20140726154930.GX8181@intel.com>
- <127874008.l4YYrnQ0HU@avalon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <127874008.l4YYrnQ0HU@avalon>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 28 Jul 2014 07:33:47 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Mark Brown <broonie@linaro.org>
+Date: Mon, 28 Jul 2014 12:33:40 +0100
+Message-Id: <1406547220-2750-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 2.0.1
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] regulator: lp872x: Don't set constraints within the regulator driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Replying again using an HTML-free mail client]
+From: Mark Brown <broonie@linaro.org>
 
-On Mon, Jul 28, 2014 at 01:20:59PM +0200, Laurent Pinchart wrote:
-> On Saturday 26 July 2014 21:19:30 Vinod Koul wrote:
-> > On Fri, Jul 25, 2014 at 10:02:39AM -0700, Randy Dunlap wrote:
-> > > From: Randy Dunlap <rdunlap@infradead.org>
-> > > 
-> > > Fix printk format warnings by using size_t modifiers ('z'):
-> > > 
-> > > ../drivers/dma/sh/rcar-dmac.c:759:4: warning: format '%u' expects argument
-> > > of type 'unsigned int', but argument 9 has type 'size_t' [-Wformat=]
-> > > ../drivers/dma/sh/rcar-dmac.c:759:4: warning: format '%u' expects
-> > > argument of type 'unsigned int', but argument 10 has type 'size_t'
-> > > [-Wformat=]
-> >
-> > This is not present in dmaengine trees. Simon is this in your tree?
-> 
-> The patch applies to a new driver under development that Simon took in his 
-> tree. From what he told me he plans to send a pull request soon.
->  
-> > > Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> > > Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> > > Cc: Dan Williams <dan.j.williams@intel.com>
-> > > Cc: dmaengine@vger.kernel.org
-> 
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> 
-> Simon, should I submit a new version that incorporates this change, or do you 
-> want to include it in your pull request directly (possibly squashing it in the 
-> original commit) ?
+Regulator drivers should not be specifying constraints since the valid
+configurations depend on how the device is used in a given system, there
+is no way to know if a configuration is safe for a given board.
 
-Hi Laurent,
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/regulator/lp872x.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
-sorry for any confusion that I may have caused.
-I will see about squashing this change into the original commit.
+diff --git a/drivers/regulator/lp872x.c b/drivers/regulator/lp872x.c
+index 2e022aabd951..954616f16c81 100644
+--- a/drivers/regulator/lp872x.c
++++ b/drivers/regulator/lp872x.c
+@@ -892,14 +892,6 @@ static struct lp872x_platform_data
+ 		pdata->regulator_data[i].id =
+ 				(enum lp872x_regulator_id)match[i].driver_data;
+ 		pdata->regulator_data[i].init_data = match[i].init_data;
+-
+-		/* Operation mode configuration for buck/buck1/buck2 */
+-		if (strncmp(match[i].name, "buck", 4))
+-			continue;
+-
+-		d = pdata->regulator_data[i].init_data;
+-		d->constraints.valid_modes_mask |= LP872X_VALID_OPMODE;
+-		d->constraints.valid_ops_mask |= REGULATOR_CHANGE_MODE;
+ 	}
+ out:
+ 	return pdata;
+-- 
+2.0.1
 
-> > > ---
-> > > 
-> > >  drivers/dma/sh/rcar-dmac.c |    2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > Index: linux-next-20140725/drivers/dma/sh/rcar-dmac.c
-> > > ===================================================================
-> > > --- linux-next-20140725.orig/drivers/dma/sh/rcar-dmac.c
-> > > +++ linux-next-20140725/drivers/dma/sh/rcar-dmac.c
-> > > @@ -757,7 +757,7 @@ rcar_dmac_chan_prep_sg(struct rcar_dmac_
-> > >  			hwdesc->size = size;
-> > >  			
-> > >  			dev_dbg(chan->chan.device->dev,
-> > > -				"chan%u: hwdesc %p/%p sgl %u@%p, %u/%u %pad -> %pad\n",
-> > > +				"chan%u: hwdesc %p/%p sgl %u@%p, %zu/%zu %pad -> %pad\n",
-> > >  				chan->index, hwdesc, desc, i, sg, size, len,
-> > >  				&hwdesc->src_addr, &hwdesc->dst_addr);
-> 
-> -- 
-> Regards,
-> 
-> Laurent Pinchart
-> 
