@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897AbaG1POF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 11:14:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46421 "EHLO
+	id S1752937AbaG1POV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 11:14:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46427 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715AbaG1PN7 (ORCPT
+	with ESMTP id S1752868AbaG1POC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 11:13:59 -0400
-Date: Mon, 28 Jul 2014 07:56:36 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com
-Subject: Re: [PATCH v5 1/6] xen-pciback: Document the various parameters and
- attributes in SysFS
-Message-ID: <20140728145636.GC8027@kroah.com>
-References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com>
- <1405354736-7358-2-git-send-email-konrad.wilk@oracle.com>
- <53D64A52.7030705@citrix.com>
+	Mon, 28 Jul 2014 11:14:02 -0400
+Date: Mon, 28 Jul 2014 08:13:24 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "xinhui.pan" <xinhuix.pan@intel.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+        mnipxh <mnipxh@gmail.com>, Peter Hurley <peter@hurleysoftware.com>,
+        gnomes@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH] tty/n_gsm.c: do not clear gsm_mux entry when the gsm is
+ not closed
+Message-ID: <20140728151324.GA12973@kroah.com>
+References: <53D0CF0D.9060103@intel.com>
+ <20140727180953.GA7232@kroah.com>
+ <53D5F8C9.4070008@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53D64A52.7030705@citrix.com>
+In-Reply-To: <53D5F8C9.4070008@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 02:04:18PM +0100, David Vrabel wrote:
-> On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
-> > Which hadn't been done with the initial commit.
+On Mon, Jul 28, 2014 at 03:16:25PM +0800, xinhui.pan wrote:
+> > Why can't you do dynamic reference counting of your structure, that
+> > would allow you to get rid of your global array, right?
 > > 
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> > v2: Dropped the parameters and one that is unlikeable.
-> > ---
-> >  Documentation/ABI/testing/sysfs-driver-pciback | 25 +++++++++++++++++++++++++
-> >  1 file changed, 25 insertions(+)
-> >  create mode 100644 Documentation/ABI/testing/sysfs-driver-pciback
-> > 
-> > diff --git a/Documentation/ABI/testing/sysfs-driver-pciback b/Documentation/ABI/testing/sysfs-driver-pciback
-> > new file mode 100644
-> > index 0000000..cdc8340
-> > --- /dev/null
-> > +++ b/Documentation/ABI/testing/sysfs-driver-pciback
-> > @@ -0,0 +1,25 @@
-> > +What:           /sys/bus/pci/drivers/pciback/quirks
-> > +Date:           Oct 2011
-> > +KernelVersion:  3.1
-> > +Contact:        xen-devel@lists.xenproject.org
-> > +Description:
-> > +                If the permissive attribute is set, then writing a string in
-> > +                the format of DDDD:BB:DD.F-REG:SIZE:MASK will allow the guest
-> > +                to write and read from the PCI device. That is Domain:Bus:
 > 
-> "...write and read the PCI device's configuration space."
+> Thanks for your nice comments.
+> Struct gsm has a ref-count already. :)
 
-How is this different from the normal pci device config file?
+Then you should be fine, no need to keep it in an array.
 
-> 
-> > +                Device.Function-Register:Size:Mask (Domain is optional).
-> > +                For example:
-> > +                #echo 00:19.0-E0:2:FF > /sys/bus/pci/drivers/pciback/quirks
-> > +                will allow the guest to read and write to the configuration
-> > +                register 0x0E.
-> > +
-> > +What:           /sys/bus/pci/drivers/pciback/irq_handlers
-> > +Date:           Oct 2011
-> > +KernelVersion:  3.1
-> > +Contact:        xen-devel@lists.xenproject.org
-> > +Description:
-> > +                A list of all of the PCI devices owned by Xen PCI back and
-> > +                whether Xen PCI backend will acknowledge the interrupts received
-> > +                and the amount of interrupts received. Xen PCI back acknowledges
-> > +                said interrupts only when they are level, shared with another
-> > +                guest, and enabled by the guest.
-> 
-> That's not very nice sysfs file.  This sort of thing ought to be in
-> debugfs.  Perhaps we shouldn't document it for now and try to move it to
-> debugfs later?
+> And also adding a ref-count is a little hard to me. :(
+> This global array is used to keep tracking the gsms that stands for the gsmttyXX.
 
-Move it to debugfs now would be better, that's not an acceptable sysfs
-file at all, thanks for pointing it out.
+You shouldn't need that at all, just use a list, you don't care what the
+XX number is within the driver, just allocate a new one with the next
+available number and you should be fine.
+
+> and it can tell us if we can create a new gsm. :)
+
+You should always be able to create a new gsm if you need to :)
+
+> In gsm_init we set *gsm_tty_driver = alloc_tty_driver(256);*
+
+Why limit to 256?  Just use a list, and a idr structure to allocate the
+minor number, and all should be good.
 
 thanks,
 
