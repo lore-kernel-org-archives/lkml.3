@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370AbaG1TnF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 15:43:05 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55271 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750708AbaG1TnA (ORCPT
+	id S1751536AbaG1Ts4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 15:48:56 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:43580 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825AbaG1Tsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 15:43:00 -0400
-Date: Mon, 28 Jul 2014 20:42:51 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Vitaly Andrianov <vitalya@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Cyril Chemparathy <cyril@ti.com>
-Subject: Re: [PATCH 2/2] ARM: LPAE: reduce damage caused by idmap to
-	virtual memory layout
-Message-ID: <20140728194251.GB30282@n2100.arm.linux.org.uk>
-References: <20140722153623.25088.37742.stgit@buzz> <20140722153635.25088.14197.stgit@buzz> <20140728181456.GO15536@arm.com> <CALYGNiNJDHfQm2yk067hh-Wywsb_Ki5AEE_sTMkYegJi9spSzw@mail.gmail.com> <20140728184107.GR15536@arm.com> <CALYGNiNaMMv9itJ_+cvPDn1_Yo4GTPQJ-Cy9zBzJzfaDLfkvmg@mail.gmail.com> <20140728191305.GA30282@n2100.arm.linux.org.uk> <CALYGNiNVduTK8MXt8VJyiqdsB0mA_OnC0hLOB-WzgAEMZyu9sg@mail.gmail.com>
+	Mon, 28 Jul 2014 15:48:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALYGNiNVduTK8MXt8VJyiqdsB0mA_OnC0hLOB-WzgAEMZyu9sg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAB=NE6VebcR7=UA1n0wNVLr5FFukzq6aW5CkeB3nf5FixV=3cA@mail.gmail.com>
+References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com>
+ <1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com>
+ <20140728185538.GB17609@kroah.com> <CAB=NE6VebcR7=UA1n0wNVLr5FFukzq6aW5CkeB3nf5FixV=3cA@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Mon, 28 Jul 2014 12:48:32 -0700
+X-Google-Sender-Auth: o6_bfzid8MPP0bjQsAymyl_Q14Q
+Message-ID: <CAB=NE6Xmi2zUCis22q+X8_AKRcwMrAtmx-aqSSvTB70Xjet6VQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred probe
+ from init
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 11:29:39PM +0400, Konstantin Khlebnikov wrote:
-> Ok, before switching from identity mapping to normal mapping kernel must
-> switch instruction pointer from physical address to virtual.
+On Mon, Jul 28, 2014 at 12:04 PM, Luis R. Rodriguez
+<mcgrof@do-not-panic.com> wrote:
+> On Mon, Jul 28, 2014 at 11:55 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> So, what drivers are having problems in their init sequence, and why
+>> aren't they using async firmware loading?
+>
+> Fixing drivers is one thing, fixing drivers *now* because *now*
+> drivers are failing due to a regression is another thing and that's
+> what we have now so lets just be clear on that. The 30 second rule is
+> a major driver requirement change and it should not be taken slightly,
+> all of a sudden this is a new requirement but you won't know that
+> unless you're reading these threads or hit an issue. That's an issue
+> in itself.
+>
+> The cxgb4: driver is an example where although I did propose patches
+> to use asynch firmware loading the entire registration of the
+> netdevice would need to be changed as well in order to get this right.
+> In short we have to scramble now to first identify drivers that have
+> long init sequences and then fix. There's an assumption that we can
+> easily fix drivers, this can take time. This series, although does
+> take advantage of a kernel interface for other uses, lets us identify
+> these drivers on the kernel ring buffer, so we can go and address
+> fixing them with time.
 
-"switch instruction pointer from physical address to virtual."
+Another thing that came up during asynch firmware review / integration
+on cxgb4 was that it would not be the only thing that would need to be
+fixed, the driver also has a ton of ports and at least as per my
+review the proper fix would be to use platform regiister stuff. It is
+a major rewrite of the driver but an example of a driver that needs
+quite a bit of work to meet this new 30 second driver requirement.
 
-There's no such distinction for the instruction pointer.
-
-There is the mode where the MMU is disabled.  The CPU fetches from the
-address in the program counter.  The instructions it fetches will
-instruct it to perform operations to enable the MMU.
-
-The CPU itself continues fetching instructions (with an unpredictable
-number of instructions in the CPU's pipeline) across this boundary.
-
-Hence, it is _impossible_ to know which exact instructions are fetched
-with the MMU off, and which are fetched with the MMU on.
-
-This is why we need the identity mapping: so that the CPU's instruction
-fetches can continue unaffected by turning the MMU on.
-
-Before the MMU is on, the CPU is fetching from an untranslated (== physical)
-view of the address space, which is limited to 4GB in size.
-
-After the MMU is on, the CPU is fetching from a translated (== virtual)
-view of the address space, which and the translated version is also
-limited to 4GB in size.
-
-> It's a long jump
-> out idmap code section to some normal kernel function.
-> __secondary_switched in my case. And both physical source and virtual
-> destination addresses must present in one same mapping (idmap).
-
-... one which the code already caters for.
-
-> idmap pgd starts as copy of pgd from init_mm, it points to the same pmd pages.
-> When it populates identical mapping for that special code section it allocates
-> new pages from pmd entries (which covers 1Gb of vm layout) but only few of
-> them are filled. In case 3/1GB split If idmap touches somehing above 3Gb it
-> kills whole kernel vm layout and as result kernel cannot jump to any
-> virtual address.
-
-It doesn't matter, provided the kernel text and data in the virtual
-address space are not overwritten by the identity mapping.  If it
-ends up in the vmalloc or IO space, that should not be a problem.
-
-It also should not be a problem if the physical memory starts at
-PAGE_OFFSET (iow, PHYS_OFFSET == PAGE_OFFSET).  Indeed, we have
-some platforms where that is true.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+ Luis
