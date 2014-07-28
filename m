@@ -1,107 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaG1VoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 17:44:12 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:55655 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750956AbaG1VoH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 17:44:07 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Borislav Petkov <bp@alien8.de>, x86-ml <x86@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Subject: Re: rc7 + tip/master suspend fun
-Date: Tue, 29 Jul 2014 00:02:38 +0200
-Message-ID: <1462858.1GVpopl4dE@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.10.1407282255120.23352@nanos>
-References: <20140728175326.GA7100@pd.tnic> <3594983.eCXLqCqQ8T@vostro.rjw.lan> <alpine.DEB.2.10.1407282255120.23352@nanos>
+	id S1752061AbaG1Vps (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 17:45:48 -0400
+Received: from mail.us.es ([193.147.175.20]:46559 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751509AbaG1Vpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 17:45:44 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.4/19236. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-100.2/7.5):. 
+ Processed in 2.037333 secs); 28 Jul 2014 21:45:39 -0000
+X-Spam-ASN: AS42863 89.214.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Mon, 28 Jul 2014 23:45:52 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Willem de Bruijn <willemb@google.com>,
+        netfilter-devel <netfilter-devel@vger.kernel.org>
+Subject: Re: [PATCH net-next] net: filter: rename 'struct sk_filter' to
+ 'struct bpf_prog'
+Message-ID: <20140728214552.GA4049@salvia>
+References: <1406275499-7822-1-git-send-email-ast@plumgrid.com>
+ <53D23EAF.4000001@redhat.com>
+ <20140725115414.GA4770@salvia>
+ <53D254D9.9030905@redhat.com>
+ <CAMEtUux+dw_GoafXE3ukvmOK2JmZWWf-y0VMobe60TSTfZeNmw@mail.gmail.com>
+ <20140725221512.GA3729@salvia>
+ <CAMEtUux8F4xZ77_HQADfoeV-9sibaEWm=XJcAaY+cQyDWb2caA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMEtUux8F4xZ77_HQADfoeV-9sibaEWm=XJcAaY+cQyDWb2caA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 28, 2014 11:02:09 PM Thomas Gleixner wrote:
-> On Mon, 28 Jul 2014, Rafael J. Wysocki wrote:
-> > On Monday, July 28, 2014 07:53:26 PM Borislav Petkov wrote:
-> > > 
-> > > --Nq2Wo0NMKNjxTN9z
-> > > Content-Type: text/plain; charset=utf-8
-> > > Content-Disposition: inline
-> > > 
-> > > Hi guys,
-> > > 
-> > > so during my rc7 + tip/master testing today, I've hit the second WARN
-> > > in remove_proc_entry, see attached pic. This happens right before I
-> > > suspend to disk and I can't successfully suspend because sda gets choked
-> > > afterwards and floods dmesg with something-has-timeout messages which I
-> > > can't read - whizzing by too fast.
-> > > 
-> > > And this seems consistent with the warning because sda1 is behind AHCI
-> > > for which the warning is for.
-> > > 
-> > > Oh, and I'm saying it is tip/master-related because plain rc7 is fine.
-> > > 
-> > > Other strange things I was able to observe in dmesg between plain rc7
-> > > and rc7+tip/master are that something in the interrupts allocation is
-> > > different now (plenty of movement in that area recently) leading to the
-> > > following diffs between dmesg:
-> > > 
-> > > --- 16-rc7	2014-07-28 19:43:13.000000000 +0200
-> > > +++ 16-rc7+	2014-07-28 11:11:24.000000000 +0200
-> > > 
-> > > @@ -137,11 +138,9 @@ IOAPIC[1]: apic_id 10, version 33, addre
-> > >  ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
-> > >  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 low level)
-> > >  ACPI: IRQ0 used by override.
-> > > -ACPI: IRQ2 used by override.
-> > >  ACPI: IRQ9 used by override.
-> > >  Using ACPI (MADT) for SMP configuration information
-> > >  smpboot: Allowing 8 CPUs, 0 hotplug CPUs
-> > > -nr_irqs_gsi: 72
-> > >  PM: Registered nosave memory: [mem 0x0009e000-0x0009efff]
-> > >  PM: Registered nosave memory: [mem 0x0009f000-0x0009ffff]
-> > >  PM: Registered nosave memory: [mem 0x000a0000-0x000dffff]
-> > > 
-> > > that gsi thing went away, apparently.
-> > > 
-> > > -NR_IRQS:4352 nr_irqs:1288 16
-> > > +NR_IRQS:4352 nr_irqs:1032 0
-> > > 
-> > > fun.
-> 
-> Right, that's from Jiangs ioapic rework.
->  
-> > > And then something lead to different interrupts being assigned:
-> > > 
-> > > -pci 0000:00:00.2: irq 72 for MSI/MSI-X
-> > > +pci 0000:00:00.2: irq 27 for MSI/MSI-X
-> > > 
-> > > -ahci 0000:04:00.0: irq 73 for MSI/MSI-X
-> > > +ahci 0000:04:00.0: irq 29 for MSI/MSI-X
-> 
-> Borislav, can you please upload a full bootlog with "apic=verbose" on
-> the commandline?
-> 
-> Jiang, can you please have a look?
->  
-> > > and lookie lookie, it is ahci which changes IRQ lines.
-> > > 
-> > > Suggestions and ideas how to narrow down are appreciated.
-> > 
-> > Please try to revert this patch from Peter:
-> > 
-> > http://marc.info/?l=linux-kernel&m=140620918218199
-> 
-> How is that related to a leaked interrupt handler? That patch gives a
-> splat at request_irq() time. Completely unrelated to this problem.
+On Sat, Jul 26, 2014 at 10:41:04PM -0700, Alexei Starovoitov wrote:
+> On Fri, Jul 25, 2014 at 3:17 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> > The struct sk_filter is almost providing the generic framework, it
+> > just needs to be generalized, a quick layout for it:
+> >
+> > struct sk_filter {
+> >         struct sk_filter_cb     *cb;
+> >         atomic_t                refcnt;
+> >         struct rcu_head         head;
+> >         char                    data[0]; /* here, you specific struct bpf_prog */
+> > };
+> >
+> > The refcnt is required sk_filter_{charge,uncharge,release}. The struct
+> > rcu_head is also need from sk_filter_release().
+> >
+> > struct sk_filter_cb {
+> >         int type;
+> >         struct module *me;
+> >         void (*charge)(struct sock *sk, struct sk_filter *fp);
+> >         void (*uncharge)(struct sock *sk, struct sk_filter *fp);
+> >         unsigned int (*run_filter)(struct sk_filter *fp, struct sk_buff *skb);
+> > };
+>
+> Pablo,
+>
+> I don't think you understand the scope of BPF.
+> 'struct module *'? to attach nft to sockets? ouch.
 
-Right, sorry for the noise.
+The idea is that there will be one sk_filter_cb per socket filtering
+approach. The structure module is just there in case one of the
+approach is loadable as kernel module, it's the typical code pattern
+in the kernel. You can git grep for similar code.
 
-Rafael
+> if you need to do it, go ahead, but please don't present such mess
+> as a 'generic' infra.
 
+This is extracted from one of your recent patches:
+
+ void sk_filter_uncharge(struct sock *sk, struct sk_filter *fp)
+ {
+-       atomic_sub(sk_filter_size(fp->len), &sk->sk_omem_alloc);
++       if (!fp->ebpf)
++               atomic_sub(sk_filter_size(fp->len), &sk->sk_omem_alloc);
+        sk_filter_release(fp);
+ }
+
+ void sk_filter_charge(struct sock *sk, struct sk_filter *fp)
+ {
+        atomic_inc(&fp->refcnt);
+-       atomic_add(sk_filter_size(fp->len), &sk->sk_omem_alloc);
++       if (!fp->ebpf)
++               atomic_add(sk_filter_size(fp->len), &sk->sk_omem_alloc);
+ }
+
+Basically, that looks to me like two different socket filtering
+approach. You only have to define the struct sock_filter_cb, set the
+fields to point to the functions and register the approach in the
+socket filtering engine. That will allow a simple way to look up the
+filtering approach when loading the filter from userspace.
+
+[...]
+> What you're proposing won't work even for classic bpf.
+> 'struct sock *' and 'struct module *' are totally redundant and won't
+> work for seccomp, tracing and pretty much everything, but pure
+> socket filtering.
+> Somehow you think that 'struct sk_filter' is only used in sockets.
+[...]
+> > If you straight forward rename the entire structure, you'll take
+> > things that are not specific from bpf such as refcnt and rcu_head.
+>
+> sorry Pablo, I don't think you understand what you're talking about.
+> refcnt and rcu_head are key parts of bpf/ebpf infra.
+> Programs are refcnt'ed not only by charging sockets. BPF is relying
+> on rcu for safe execution as well.
+> For example see my tracing filter patch that does:
+> void trace_filter_call_bpf(struct event_filter *filter, void *ctx)
+> {
+>         rcu_read_lock();
+>         SK_RUN_FILTER(filter->prog, ctx);
+>         rcu_read_unlock();
+> }
+> One eBPF program can be attached to multiple 'events' where event
+> is kprobe, tracepoint, syscall, etc The act of attaching increments
+> 'struct sk_filter/bpf_prog -> refcnt'.
+
+By quick git grepping you already can find clients of this that do not
+need rcu / refcount: cls_bpf.c, net_cls.c, xt_bpf.c and
+ptp_classifier.  Moreover, I only see the refcnt bumped from
+sk_filter_charge(), I didn't find it neither in git nor in your
+patches. I don't think rcu_head and refcnt are really part of the
+filter *in any case*, they just provide the way to link/unlink objects
+in a safe way in some situations.
+
+By renaming this, you're not fixing up things the semantics. It seems
+to me you just want to find a quick path to solve inconsistencies in
+your code.
