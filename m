@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbaG1PMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 11:12:52 -0400
-Received: from mx0a-0016ce01.pphosted.com ([67.231.148.157]:12656 "EHLO
-	mx0a-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752277AbaG1PMv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 11:12:51 -0400
-From: Yuval Mintz <Yuval.Mintz@qlogic.com>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "Tim Gardner" <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Oleg Nesterov" <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
-        "Nagalakshmi Nandigama" <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        "MPT-FusionLinux.pdl@avagotech.com" 
-	<MPT-FusionLinux.pdl@avagotech.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: RE: [PATCH 1/3] driver core: enable drivers to use deferred probe
- from init
-Thread-Topic: [PATCH 1/3] driver core: enable drivers to use deferred probe
- from init
-Thread-Index: AQHPqnEWy20DxK5pzkqD80N0dwzvZJu1lkPA
-Date: Mon, 28 Jul 2014 15:12:11 +0000
-Message-ID: <B5657A6538887040AD3A81F1008BEC63B06F9A@avmb3.qlogic.org>
-References: <1406558067-25308-1-git-send-email-mcgrof@do-not-panic.com>
-In-Reply-To: <1406558067-25308-1-git-send-email-mcgrof@do-not-panic.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.4.10]
-disclaimer: bypass
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752839AbaG1PNc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 11:13:32 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:43675 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300AbaG1PNa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 11:13:30 -0400
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7512 signatures=670489
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1402240000 definitions=main-1407280175
+In-Reply-To: <53D6218A.5080401@gmail.com>
+References: <CAPDOMViXEgN1U8Og52Fd7EaM86Ad2Dfex9TVQ-+tRZ9SL9Kcig@mail.gmail.com>
+	<53D5BBCA.3020109@gmail.com>
+	<CAPDOMVjB9ErEwA7mf91X7pff5LAkeT=BT4pR7TuoEp3LL333Lg@mail.gmail.com>
+	<53D6218A.5080401@gmail.com>
+Date: Mon, 28 Jul 2014 11:13:29 -0400
+Message-ID: <CAPDOMVg869TJJPgrW86XaMT2WyisbT9fg0jLETCAvg59xpvs4Q@mail.gmail.com>
+Subject: Re: Multi Core Support for compression in compression.c
+From: Nick Krause <xerofoify@gmail.com>
+To: Austin S Hemmelgarn <ahferroin7@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
+	<linux-btrfs@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static int __driver_probe_device(struct device_driver *drv, struct
-> +device *dev) {
-> +	if (drv->delay_probe && !dev->init_delayed_probe) {
-> +		dev_info(dev, "Driver %s requests probe deferral on init\n",
-> +			 drv->name);
-> +		dev->init_delayed_probe = true;
-> +		driver_deferred_probe_add(dev);
-> +		return -EPROBE_DEFER;
-> +	}
-> +
-> +	return really_probe(dev, drv);
-> +}
+On Mon, Jul 28, 2014 at 6:10 AM, Austin S Hemmelgarn
+<ahferroin7@gmail.com> wrote:
+> On 07/27/2014 11:21 PM, Nick Krause wrote:
+>> On Sun, Jul 27, 2014 at 10:56 PM, Austin S Hemmelgarn
+>> <ahferroin7@gmail.com> wrote:
+>>> On 07/27/2014 04:47 PM, Nick Krause wrote:
+>>>> This may be a bad idea , but compression in brtfs seems to be only
+>>>> using one core to compress.
+>>>> Depending on the CPU used and the amount of cores in the CPU we can
+>>>> make this much faster
+>>>> with multiple cores. This seems bad by my reading at least I would
+>>>> recommend for writing compression
+>>>> we write a function to use a certain amount of cores based on the load
+>>>> of the system's CPU not using
+>>>> more then 75% of the system's CPU resources as my system when idle has
+>>>> never needed more
+>>>> then one core of my i5 2500k to run when with interrupts for opening
+>>>> eclipse are running. For reading
+>>>> compression on good core seems fine to me as testing other compression
+>>>> software for reads , it's
+>>>> way less CPU intensive.
+>>>> Cheers Nick
+>>> We would probably get a bigger benefit from taking an approach like
+>>> SquashFS has recently added, that is, allowing multi-threaded
+>>> decompression fro reads, and decompressing directly into the pagecache.
+>>>  Such an approach would likely make zlib compression much more scalable
+>>> on large systems.
+>>>
+>>>
+>>
+>> Austin,
+>> That seems better then my idea as you seem to be more up to date on
+>> brtfs devolopment.
+>> If you and the other developers of brtfs are interested in adding this
+>> as a feature please let
+>> me known as I would like to help improve brtfs as the file system as
+>> an idea is great just
+>> seems like it needs a lot of work :).
+>> Nick
+> I wouldn't say that I am a BTRFS developer (power user maybe?), but I
+> would definitely say that parallelizing compression on writes would be a
+> good idea too (especially for things like lz4, which IIRC is either in
+> 3.16 or in the queue for 3.17).  Both options would be a lot of work,
+> but almost any performance optimization would.  I would almost say that
+> it would provide a bigger performance improvement to get BTRFS to
+> intelligently stripe reads and writes (at the moment, any given worker
+> thread only dispatches one write or read to a single device at a time,
+> and any given write() or read() syscall gets handled by only one worker).
+>
 
-Perhaps this is a silly question, but what guarantees that the deferred probe
-list will actually be triggered, e.g., in case the delayed device is the last device
-in the system?
-
-[From drivers/base/dd.c  - "A successful driver probe will trigger moving all
-devices from the pending to the active list so that the workqueue will
-eventually retry them]
-
+I will look into this idea and see if I can do this for writes.
+Regards Nick
