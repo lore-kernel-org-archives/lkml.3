@@ -1,66 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaG1Jyr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 05:54:47 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:62883 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586AbaG1Jyq (ORCPT
+	id S1752022AbaG1KCS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 06:02:18 -0400
+Received: from frost.carfax.org.uk ([85.119.82.111]:48950 "EHLO
+	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaG1KCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 05:54:46 -0400
-Date: Mon, 28 Jul 2014 11:54:42 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Bug on Kernel 3.16 r6: Sound and Buffering in Clementine with
- Files are Transferring to Music Directory
-Message-ID: <20140728095442.GA4875@fancy-poultry.org>
-References: <CAPDOMViYi_rg_cGp_SgZVqX6pw+SB=CVbr1kFn5WG481s4tz5A@mail.gmail.com>
- <20140727083758.GA4834@fancy-poultry.org>
- <CAPDOMVgjLU+r82eKFA=4-v_oS+4c4fCtovcZMer5x5GAW56DSw@mail.gmail.com>
+	Mon, 28 Jul 2014 06:02:16 -0400
+Date: Mon, 28 Jul 2014 11:02:03 +0100
+From: Hugo Mills <hugo@carfax.org.uk>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Austin S Hemmelgarn <ahferroin7@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
+	<linux-btrfs@vger.kernel.org>
+Subject: Re: Multi Core Support for compression in compression.c
+Message-ID: <20140728100203.GG31950@carfax.org.uk>
+Mail-Followup-To: Hugo Mills <hugo@carfax.org.uk>,
+	Nick Krause <xerofoify@gmail.com>,
+	Austin S Hemmelgarn <ahferroin7@gmail.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" <linux-btrfs@vger.kernel.org>
+References: <CAPDOMViXEgN1U8Og52Fd7EaM86Ad2Dfex9TVQ-+tRZ9SL9Kcig@mail.gmail.com>
+ <53D5BBCA.3020109@gmail.com>
+ <CAPDOMVjB9ErEwA7mf91X7pff5LAkeT=BT4pR7TuoEp3LL333Lg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PyMzGVE0NRonI6bs"
 Content-Disposition: inline
-In-Reply-To: <CAPDOMVgjLU+r82eKFA=4-v_oS+4c4fCtovcZMer5x5GAW56DSw@mail.gmail.com>
-Organization: private site
-OpenPGP: id=60F4A92C; url=http://www.fritha.org/htd.asc;
- preference=signencrypt
-X-Mailer: Mew version 6.6 on Emacs 24.3.1 / Mule 6.0 (HANACHIRUSATO)
-X-Provags-ID: V02:K0:Op0FrJb59FjWm5pQhutc/n3rm3wLSkJExlcICQhO7Fs
- 9PoI797BsDQmYp71rDYQpFIX27/SJR6lfcQ94bN4t+zf529geP
- KJsuGDhonk6svg0yLwNhRBUxMTkzBnH46kQ0vnHLISjgTqpUxR
- Sisc7J2w73kms6Jgxpt5TNybSQc66sPuHc4HAuQu0EM2q17UYz
- 0FR+9kSOaoMHhoqvKlXrHKWDoHVl1BL7qYy9azintGIOn1EFH/
- SshgX82WBpNFWPC1gCVCXNM1NsvKunP7wmKA2ArkfmEy9KLgII
- F3/duMpmVFUGf/PmwYQIa8garKLv0vv8mkGg8Z5DtqfPYbanuk
- bkT9DUCFf2gzRhluwv0x8KA3ap0bNF9ZXP+tm0q0j
+In-Reply-To: <CAPDOMVjB9ErEwA7mf91X7pff5LAkeT=BT4pR7TuoEp3LL333Lg@mail.gmail.com>
+X-GPG-Fingerprint: B25A 5A66 69D3 1E15 2DD8  0998 BF73 F4E5 65E7 4AC0
+X-GPG-Key: 65E74AC0
+X-Parrot: It is no more. It has joined the choir invisible.
+X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-frost.carfax.org.uk-Spam-Score: 0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First: my email you are quoting here was sent to you directly, off-list,
-because it only contains common stuff and has nothing to do with
-kernel development. In other words to avoid annoying lkml people. 
-In addition, I placed an "Reply-to" header pointing back to me. 
-Despite, you *manually* redirected your answer to my private mail 
-back to the list, thus annoying people and breaking the informational
-flow of this thread.
 
+--PyMzGVE0NRonI6bs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On 27.07.2014, Nick Krause wrote: 
+On Sun, Jul 27, 2014 at 11:21:53PM -0400, Nick Krause wrote:
+> On Sun, Jul 27, 2014 at 10:56 PM, Austin S Hemmelgarn
+> <ahferroin7@gmail.com> wrote:
+> > On 07/27/2014 04:47 PM, Nick Krause wrote:
+> >> This may be a bad idea , but compression in brtfs seems to be only
+> >> using one core to compress.
+> >> Depending on the CPU used and the amount of cores in the CPU we can
+> >> make this much faster
+> >> with multiple cores. This seems bad by my reading at least I would
+> >> recommend for writing compression
+> >> we write a function to use a certain amount of cores based on the load
+> >> of the system's CPU not using
+> >> more then 75% of the system's CPU resources as my system when idle has
+> >> never needed more
+> >> then one core of my i5 2500k to run when with interrupts for opening
+> >> eclipse are running. For reading
+> >> compression on good core seems fine to me as testing other compression
+> >> software for reads , it's
+> >> way less CPU intensive.
+> >> Cheers Nick
+> > We would probably get a bigger benefit from taking an approach like
+> > SquashFS has recently added, that is, allowing multi-threaded
+> > decompression fro reads, and decompressing directly into the pagecache.
+> >  Such an approach would likely make zlib compression much more scalable
+> > on large systems.
+> >
+> >
+> 
+> Austin,
+> That seems better then my idea as you seem to be more up to date on
+> brtfs devolopment.
+> If you and the other developers of brtfs are interested in adding this
+> as a feature please let
+> me known as I would like to help improve brtfs as the file system as
+> an idea is great just
+> seems like it needs a lot of work :).
 
-> I am transferring into the same directory for the music 
-> I am listening to.
+   Yes, it probably does need a lot of work. This is (at least one
+reason) why it's not been done yet. If you want to work on doing this,
+then please do. However, don't expect anyone else to give you a
+detailed plan of what code to write. Don't expect anyone else to write
+the code for you. You will have to come up with your own ideas as to
+how to implement it, and actually do it yourself, including building
+it, and testing it.
 
-So you produce a lot of disk I/O by writing/reading from the same disk
-at the same time, and as you encounter stalls, you take this for a
-kernel bug (which clearly is not). These stalls are most probably
-caused by fsync() flushing your data/buffers, which is blocking.
+   That's not to say that you are on your own, though. People will
+help -- provided that you aren't asking them to do all the work. You
+are not an empty vessel to be filled with the wisdom of the ancients.
+This means that *you* have to take action. You have to take yourself
+as far as you can in learning how things work. When you get stuck,
+work out what it is that you don't know, and then ask about that one
+thing. This makes it easier to answer, it shows that you're putting in
+effort on your side, and it means that you *actually learn things*.
+Questions like "what function should I be modifying?", or "how do you
+want me to do this?" show that you haven't put in even the smallest
+piece of effort, and will be ignored (f you're lucky). Questions like
+"I'm trying to implement a crumble filter, but in the mix_breadcrumbs
+function, how does it take account of the prestressed_yoghurt field?"
+show that you've read and understood at least some of the code, and
+have thought about what it's doing.
 
-So moving the music data you are listening to to another disk would
-make things a lot easier.
+   Hugo.
 
-> In addition , my cpu usage when doing this is half of my older
+-- 
+=== Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
+  PGP key: 65E74AC0 from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
+    --- Alert status mauve ocelot: Slight chance of brimstone. Be ---    
+                   prepared to make a nice cup of tea.                   
 
-DMA transfer is mostly done be the controller itself, and not the CPU.
+--PyMzGVE0NRonI6bs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Btw, EOT for me.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIVAwUBU9Yfm1heFHXiqx3kAQJOAg//bKSpuGOK2gUzwcjtVisbymvtbVZ3uuuh
+yVu7aV+KUeY4ZGnKq7N2vpLBJoc/XLaCS5hFXLkJyzDe7Hvc+yYCrzJNhwQC4u3S
+JQwtBhLYi4p4fV1R3mRX9o+TfuIMuJuwgPJO6xhlUYgxaJcXsQ4aUkqqW3QHqmWR
+gOcu0eLenWq/ZCcse8dEiq/qXaPwwS05XNUEmso9hcWRE4o7CdaXqeKqs1BHOjvP
+1ubIuGxusPKTXpko+G9MmZQM3pwrCWuvV1a2oUkI5uALHSW3PLB0Iud040UUefVg
+JcracmawTn9EVoMndR2FEOqfP5lydKuMb2SkrBPrp1qzBbn/1XXTln2KHyKxYXd2
+WfROmmr5RDxoa+5+zq7uboknO1Pay4kYq1K9XNqfPDojpUsU/YI/EDIECmZcI+a9
+A/CwYcq2eW0E2YliN+ZDgYXF9lg5Qk74Mi3j4/gTRJKt0Wpfiv7ffYiim2WoNkcV
+vxIrtM0xFaDehE9/gS/9cvKBCVYThytwA2LItNkw9TwZe1f5BAyAXnk0PXz+gEEM
+lxOGHRhHW5TH8Oaa5kvveFd9qV8zNYTopTi8dF7NoUaZR0uHnLOIM4xJO9tdlxJz
+OciAeRZdBmKPUBPq0YHskZxpG/dGawS4nV625zq24fcsFR6pnxDQpINDrAy/1fSL
+LUEwXU8Cc9w=
+=eIGo
+-----END PGP SIGNATURE-----
+
+--PyMzGVE0NRonI6bs--
