@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793AbaG1V20 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 17:28:26 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37261 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991AbaG1VRc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 17:17:32 -0400
+	id S1753226AbaG1V3G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 17:29:06 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33654 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751971AbaG1VRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 17:17:31 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: Tony Lindgren <tony@atomide.com>
 CC: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
@@ -17,9 +16,9 @@ CC: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
         <jason@lakedaemon.net>, <devicetree@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 06/35] arm: omap: irq: remove unused macro
-Date: Mon, 28 Jul 2014 16:15:54 -0500
-Message-ID: <1406582183-696-7-git-send-email-balbi@ti.com>
+Subject: [PATCH 04/35] arm: omap: irq: add a global omap_nr_irqs variable
+Date: Mon, 28 Jul 2014 16:15:52 -0500
+Message-ID: <1406582183-696-5-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 2.0.1.563.g66f467c
 In-Reply-To: <1406582183-696-1-git-send-email-balbi@ti.com>
 References: <1406582183-696-1-git-send-email-balbi@ti.com>
@@ -29,26 +28,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-no functional changes.
+this will cache number of irqs. Also in preparation
+for removal of irq_banks array.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- arch/arm/mach-omap2/irq.c | 2 --
- 1 file changed, 2 deletions(-)
+ arch/arm/mach-omap2/irq.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
-index 8c85c39..8905ebb 100644
+index 83163d0..3870853 100644
 --- a/arch/arm/mach-omap2/irq.c
 +++ b/arch/arm/mach-omap2/irq.c
-@@ -42,8 +42,6 @@
- #define INTC_MIR_SET0		0x008c
- #define INTC_PENDING_IRQ0	0x0098
- #define INTC_ILR0		0x0100
--/* Number of IRQ state bits in each MIR register */
--#define IRQ_BITS_PER_REG	32
+@@ -70,6 +70,7 @@ static struct omap_irq_bank {
  
- #define OMAP2_IRQ_BASE		OMAP2_L4_IO_ADDRESS(OMAP24XX_IC_BASE)
- #define OMAP3_IRQ_BASE		OMAP2_L4_IO_ADDRESS(OMAP34XX_IC_BASE)
+ static struct irq_domain *domain;
+ static void __iomem *omap_irq_base;
++static int omap_nr_irqs = 96;
+ 
+ /* Structure to save interrupt controller context */
+ struct omap3_intc_regs {
+@@ -170,6 +171,8 @@ static void __init omap_init_irq(u32 base, int nr_irqs,
+ 	if (WARN_ON(!omap_irq_base))
+ 		return;
+ 
++	omap_nr_irqs = nr_irqs;
++
+ 	irq_base = irq_alloc_descs(-1, 0, nr_irqs, 0);
+ 	if (irq_base < 0) {
+ 		pr_warn("Couldn't allocate IRQ numbers\n");
 -- 
 2.0.1.563.g66f467c
 
