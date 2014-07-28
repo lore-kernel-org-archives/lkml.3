@@ -1,60 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032AbaG1Nb2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 09:31:28 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:63558 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251AbaG1N3W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 09:29:22 -0400
-From: Alex Elder <elder@linaro.org>
-To: akpm@linux-foundation.org
-Cc: kay@vrfy.org, pmladek@suse.cz, john.stultz@linaro.org, jack@suse.cz,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v7 2/7] printk: insert newline for truncated records
-Date: Mon, 28 Jul 2014 08:29:15 -0500
-Message-Id: <1406554160-9562-3-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406554160-9562-1-git-send-email-elder@linaro.org>
-References: <1406554160-9562-1-git-send-email-elder@linaro.org>
+	id S1752650AbaG1NdN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 09:33:13 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:41018 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751365AbaG1NdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 09:33:09 -0400
+X-IronPort-AV: E=Sophos;i="5.01,749,1400025600"; 
+   d="scan'208";a="156367057"
+Message-ID: <53D65112.7080801@citrix.com>
+Date: Mon, 28 Jul 2014 14:33:06 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Vitaly Kuznetsov <vkuznets@redhat.com>, <xen-devel@lists.xenproject.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Andrew Jones <drjones@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 1/4] xen PVonHVM: use E820_Reserved area for shared_info
+References: <1405431640-649-1-git-send-email-vkuznets@redhat.com> <1405431640-649-2-git-send-email-vkuznets@redhat.com>
+In-Reply-To: <1405431640-649-2-git-send-email-vkuznets@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a log record has LOG_PREFIX set, its predecessor record should be
-terminated if it was marked LOG_CONT.
+On 15/07/14 14:40, Vitaly Kuznetsov wrote:
+> From: Olaf Hering <olaf@aepfle.de>
+> 
+> This is a respin of 00e37bdb0113a98408de42db85be002f21dbffd3
+> ("xen PVonHVM: move shared_info to MMIO before kexec").
+> 
+> Currently kexec in a PVonHVM guest fails with a triple fault because the
+> new kernel overwrites the shared info page. The exact failure depends on
+> the size of the kernel image. This patch moves the pfn from RAM into an
+> E820 reserved memory area.
+> 
+> The pfn containing the shared_info is located somewhere in RAM. This will
+> cause trouble if the current kernel is doing a kexec boot into a new
+> kernel. The new kernel (and its startup code) can not know where the pfn
+> is, so it can not reserve the page. The hypervisor will continue to update
+> the pfn, and as a result memory corruption occours in the new kernel.
+> 
+> The toolstack marks the memory area FC000000-FFFFFFFF as reserved in the
+> E820 map. Within that range newer toolstacks (4.3+) will keep 1MB
+> starting from FE700000 as reserved for guest use. Older Xen4 toolstacks
+> will usually not allocate areas up to FE700000, so FE700000 is expected
+> to work also with older toolstacks.
+> 
+> In Xen3 there is no reserved area at a fixed location. If the guest is
+> started on such old hosts the shared_info page will be placed in RAM. As
+> a result kexec can not be used.
+> 
+> Signed-off-by: Olaf Hering <olaf@aepfle.de>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> (cherry picked from commit 9d02b43dee0d7fb18dfb13a00915550b1a3daa9f)
 
-In msg_print_text(), this condition was being ignored, which would
-lead to such records showing up combined when reading /dev/kmsg.
-Fix this oversight.
+Is this a useful commit to give?  Isn't it one of Konrad's random trees?
 
-Suggested-by: Petr Mládek <pmladek@suse.cz>
-Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Petr Mládek <pmladek@suse.cz>
----
- kernel/printk/printk.c | 6 ++++++
- 1 file changed, 6 insertions(+)
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index ffc9928..7dfa658 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1013,6 +1013,12 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
- 			newline = false;
- 	}
- 
-+	if ((prev & LOG_CONT) && (msg->flags & LOG_PREFIX) && len < size) {
-+		if (buf)
-+			buf[len++] = '\n';
-+		else
-+			len++;
-+	}
- 	do {
- 		const char *next = memchr(text, '\n', text_size);
- 		size_t text_len;
--- 
-1.9.1
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1726,23 +1726,29 @@ asmlinkage __visible void __init xen_start_kernel(void)
+>  #endif
+>  }
+>  
+> -void __ref xen_hvm_init_shared_info(void)
+> +#ifdef CONFIG_XEN_PVHVM
+> +#define HVM_SHARED_INFO_ADDR 0xFE700000UL
 
+I would like clearer documentation for this magic address.  Perhaps
+referring to some toolstack documentation?
+
+> @@ -1828,10 +1853,23 @@ static void __init xen_hvm_guest_init(void)
+>  
+>  static uint32_t __init xen_hvm_platform(void)
+>  {
+> +	uint32_t eax, ebx, ecx, edx, base;
+> +
+>  	if (xen_pv_domain())
+>  		return 0;
+>  
+> -	return xen_cpuid_base();
+> +	base = xen_cpuid_base();
+> +	if (!base)
+> +		return 0;
+> +
+> +	cpuid(base + 1, &eax, &ebx, &ecx, &edx);
+> +
+> +	xen_major = eax >> 16;
+> +	xen_minor = eax & 0xffff;
+> +
+> +	printk(KERN_INFO "Xen version %d.%d.\n", xen_major, xen_minor);
+> +
+> +	return 1;
+
+You appear to have changed to return value here?  Did you mean to return
+base here?
+
+David
