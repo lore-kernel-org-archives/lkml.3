@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaG1KFn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 06:05:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51093 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbaG1KFk (ORCPT
+	id S1752244AbaG1KJT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 06:09:19 -0400
+Received: from frost.carfax.org.uk ([85.119.82.111]:48994 "EHLO
+	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586AbaG1KJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 06:05:40 -0400
-Date: Mon, 28 Jul 2014 11:05:30 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Jan Kardell <jan.kardell@telliq.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Jonathan Cameron <jic23@kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] iio: ti_am335x_adc: Fix prerequisite for stepid patch
-Message-ID: <20140728100530.GB5068@hercules>
-References: <1406195177-8656-113-git-send-email-luis.henriques@canonical.com>
- <1406286826-30834-1-git-send-email-jan.kardell@telliq.com>
+	Mon, 28 Jul 2014 06:09:17 -0400
+Date: Mon, 28 Jul 2014 11:09:14 +0100
+From: Hugo Mills <hugo@carfax.org.uk>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: josef@toxicpanda.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
+	<linux-btrfs@vger.kernel.org>
+Subject: Re: Help with Brtfs Bugs
+Message-ID: <20140728100914.GH31950@carfax.org.uk>
+Mail-Followup-To: Hugo Mills <hugo@carfax.org.uk>,
+	Nick Krause <xerofoify@gmail.com>, josef@toxicpanda.com,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" <linux-btrfs@vger.kernel.org>
+References: <CAPDOMVhP=peGRPb37Mu_BEy4KJ4CJ9ka2rST_o==W_n7cdwqQg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xQmOcGOVkeO43v2v"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1406286826-30834-1-git-send-email-jan.kardell@telliq.com>
+In-Reply-To: <CAPDOMVhP=peGRPb37Mu_BEy4KJ4CJ9ka2rST_o==W_n7cdwqQg@mail.gmail.com>
+X-GPG-Fingerprint: B25A 5A66 69D3 1E15 2DD8  0998 BF73 F4E5 65E7 4AC0
+X-GPG-Key: 65E74AC0
+X-Parrot: It is no more. It has joined the choir invisible.
+X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-frost.carfax.org.uk-Spam-Score: 0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 01:13:46PM +0200, Jan Kardell wrote:
-> Kernel series 3.11 and 3.12 does not initialize scan_index in the
-> iio_chan_spec structure as 3.13 and newer does. This is necessary
-> for the stepid patch to work, otherwise it even breaks the cases
-> that worked before the stepid patch.
-> 
-> Unfortunately the stepid patch seems to already be in 3.12.25,
-> must have missed that inclusion.
-> 
-> Signed-off-by: Jan Kardell <jan.kardell@telliq.com>
-> ---
->  drivers/iio/adc/ti_am335x_adc.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-> index 3ceac3e..6c56418 100644
-> --- a/drivers/iio/adc/ti_am335x_adc.c
-> +++ b/drivers/iio/adc/ti_am335x_adc.c
-> @@ -120,6 +120,7 @@ static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
->  		chan->channel = adc_dev->channel_line[i];
->  		chan->info_mask_separate = BIT(IIO_CHAN_INFO_RAW);
->  		chan->datasheet_name = chan_name_ain[chan->channel];
-> +		chan->scan_index = i;
->  		chan->scan_type.sign = 'u';
->  		chan->scan_type.realbits = 12;
->  		chan->scan_type.storagebits = 32;
-> -- 
-> 1.8.4.5
-> 
 
-Ah, nice catch!
+--xQmOcGOVkeO43v2v
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Ideally, I would pick commit ca9a563805f7ae821e3303b1bdbc65d3a3c783ff
-("iio: ti_am335x_adc: Add continuous sampling support"), which adds
-this scan_index initialisation.  However, this commit doesn't seem be
-suitable for a stable kernel, so I'll add this patch to the 3.11.10.14
-queue branch.  Thanks a lot, Jan.
+On Mon, Jul 28, 2014 at 12:00:03AM -0400, Nick Krause wrote:
+> Hey Josef,
+> Seems there are a lot of brtfs bugs open on the kernel Bugzilla. I am
+> new to the brtfs
+> side of development so please let me known if you want help cleaning
+> up some of the
+> bugs here that are actually valid and still open.
 
-Cheers,
---
-Luís
+   Make up your mind... this is the third unrelated idea you've had
+about working in the area of btrfs. You're bouncing around all over
+the place like a hyperactive puppy. Pick *one* thing, and just do it.
+Put in the effort to learn about the subsystem (read my earlier emails
+for a good approach here). Accept that there are no easy one-liners in
+the kernel. The path to writing your first kernel patch is *hard*.
+Don't give up at the first hint that each thing isn't going to be
+solved in 5 minutes.
+
+   Hugo.
+
+-- 
+=== Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
+  PGP key: 65E74AC0 from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
+          --- What part of "gestalt" don't you understand? ---           
+
+--xQmOcGOVkeO43v2v
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUBU9YhSlheFHXiqx3kAQLx3w/+IsZCIhCiUgQ0ic0sSi4o5T68w+3/4G/K
+LYA5OEvlHysUo94DhtQDxFOx2x5F+djpewyQ0X++aSVzS6h829ylll+CTdlG6Zbt
+2A7FhdX/2YULxmcB6MbFCYr/UlOCSXmS+7FKsYy3vJ2W019HZ/mm1zTVzcIFF16W
+aUNaBk1QqDvXhhsAWBCeIU7Gx0maO04s0t6jhnQ6l6eYZEHciYcH8zdMxCwLCMpC
+L8kF/228Lg8dNXqcpVGoKD1xcIC1DYpQLU1/xI3c9ubDoXss5/rt5QSJ34vybn/+
+dTlXCMB5DwXmMor1rTXI8xkWdv/UEdCgN3mZTqAX6o8YRUXKf6TA8Am8Ll2UbZBk
+J4s8T9CHkaeGtEGgAjMY+BtDdxBRCkzclnm1sgeofWvmWepznoVHkPPP1xfb3c5p
+1ub7+7cJtBb0si8pf4ttLIr1M05JEdvzQAAfjJkF5P0ZgBimEWQSn4f+ZO5/4fsr
+jI1euHbPD+pRGpwkVdBwawQ3ixtn9pfoHnB1MZihKmDwd9SymeGyBFUUUOBPPNLq
+02AJkooqf/1NuJLBgRT6Q655warRgeyzFGwGOZ6NOJPucEI3GVVvOmvuxh+RilGr
+XCyYgN4wCO/dgkwu7jkn8+TAznInvt8pG3WvFw0VcZsVpoVJfwbMgeT0jwpj6m7f
+leeAmMYblTk=
+=WLBI
+-----END PGP SIGNATURE-----
+
+--xQmOcGOVkeO43v2v--
