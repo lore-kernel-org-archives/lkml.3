@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaG2Gut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 02:50:49 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:43301 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061AbaG2Gus (ORCPT
+	id S1752664AbaG2Gwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 02:52:49 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36613 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223AbaG2Gws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 02:50:48 -0400
-Message-ID: <53D7440B.10006@linaro.org>
-Date: Tue, 29 Jul 2014 15:49:47 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 29 Jul 2014 02:52:48 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andres Freund <andres@anarazel.de>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>, Don Zickus <dzickus@redhat.com>
+Subject: Re: [PATCH 22/27] perf tools: Enable --children option by default
+References: <1401335910-16832-1-git-send-email-namhyung@kernel.org>
+	<1401335910-16832-23-git-send-email-namhyung@kernel.org>
+	<20140728192326.GS17793@alap3.anarazel.de>
+Date: Tue, 29 Jul 2014 15:52:46 +0900
+In-Reply-To: <20140728192326.GS17793@alap3.anarazel.de> (Andres Freund's
+	message of "Mon, 28 Jul 2014 21:23:26 +0200")
+Message-ID: <8738dkirlt.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Andy Lutomirski <luto@amacapital.net>, Deepak Saxena <dsaxena@linaro.org>,
-        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 1/3] arm64: ptrace: reload a syscall number after ptrace
- operations
-References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org> <1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org> <53D08358.4020902@amacapital.net> <53D0A037.2060308@linaro.org> <CALCETrU9_sdODRz-xZ4bouq+anHhmfx2tkr7hg00RVf_bBBJwg@mail.gmail.com> <53D23341.4040403@linaro.org> <20140725110342.GD5269@arm.com>
-In-Reply-To: <20140725110342.GD5269@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2014 08:03 PM, Will Deacon wrote:
-> On Fri, Jul 25, 2014 at 11:36:49AM +0100, AKASHI Takahiro wrote:
->> On 07/25/2014 12:01 AM, Andy Lutomirski wrote:
->>>>> If so, then you risk (at least) introducing
->>>>>
->>>>> a nice user-triggerable OOPS if audit is enabled.
->>>>
->>>>
->>>> Can you please elaborate this?
->>>> Since I didn't find any definition of audit's behavior when syscall is
->>>> rewritten to -1, I thought it is reasonable to skip "exit tracing" of
->>>> "skipped" syscall.
->>>> (otherwise, "fake" seems to be more appropriate :)
->>>
->>> The audit entry hook will oops if you call it twice in a row without
->>> calling the exit hook in between.
->>
->> Thank you, I could reproduce this problem which hits BUG(in_syscall) in
->> audit_syscall_entry(). Really bad, and I fixed it in my next version and
->> now a "skipped" system call is also traced by audit.
+Hi Andres,
+
+On Mon, 28 Jul 2014 21:23:26 +0200, Andres Freund wrote:
+> Hi,
 >
-> Can you reproduce this on arch/arm/ too? If so, we should also fix the code
-> there.
+> On 2014-05-29 12:58:25 +0900, Namhyung Kim wrote:
+>> Now perf top and perf report will show children column by default if
+>> it has callchain information.
+>> 
+>> Requested-by: Ingo Molnar <mingo@kernel.org>
+>> Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
+>> Tested-by: Arun Sharma <asharma@fb.com>
+>> Acked-by: Jiri Olsa <jolsa@redhat.com>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>
+> Stupid question: Why? This breaks user's usage pattern in a rather
+> significant way because the new output is pretty much entirely useless
+> in many cases, especially for userland programs. I think the new option
+> is great, but why is it suddenly the default?
 
-As far as I tried on arm with syscall auditing enabled,
+Yes, I knew it'd annoy some existing users like you :)  But I hoped it'd
+be useful for new and (at least, some of) old users to see children/
+cumulative overheads by default.  If it lies under an option, it
+wouldn't have a chance to be used by normal users who simply run perf
+record and report most of time.
 
-1) Changing a syscall number to -1 under seccomp doesn't hit BUG_ON(in_syscall).
-2) But, in fact, audit_syscall_entry() is NOT called in this case because
-    __secure_computing() returns -1 and then it causes the succeeding tracing
-    in syscall_trace_enter(), including audit_syscall_entry(), skipped.
-3) On the other hand, calling syscall(-1) from userspace hits BUG_ON because
-    the return path, ret_slow_syscall, doesn't contain syscall_trace_exit().
-4) When we re-write a syscall number to -1 without seccomp, we will also see
-    BUG_ON hit, although I didn't try yet.
+If you think it's entirely useless for you cases, you can set it to off
+using ~/.perfconfig file:
 
-Fixing case 3 is easy, but should we also fix case 2?
+  [report]
+  children = false
 
-Please note that, even if we call audit_syscall_exit() in case 2 or 3, no log against
-syscall -1 will be recorded because audit_filter_syscall() doesn't allow logging
-for any syscall number which is greater than 2048.
-This behavior was introduced by Andy's patch, a3c54931, in v3.16-rc.
-If the intention of "-1" is to fake a system call, this behavior seems to be a bit odd.
 
 Thanks,
--Takahiro AKASHI
-
-
-> Will
->
+Namhyung
