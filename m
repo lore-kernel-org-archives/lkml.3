@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217AbaG2WnA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 18:43:00 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:36954 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871AbaG2Wm6 (ORCPT
+	id S1754351AbaG2WrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 18:47:10 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:49939 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712AbaG2WrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 18:42:58 -0400
-Date: Tue, 29 Jul 2014 15:42:55 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Borislav Petkov <bp@alien8.de>
-cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-        lszubowi@redhat.com, Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH] x86, efi: print debug values in Kib not MB
-In-Reply-To: <20140729223603.GC17241@pd.tnic>
-Message-ID: <alpine.DEB.2.02.1407291541480.20991@chino.kir.corp.google.com>
-References: <1406653761-3884-1-git-send-email-prarit@redhat.com> <20140729222932.GA17481@pd.tnic> <53D82118.6090202@redhat.com> <20140729223603.GC17241@pd.tnic>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 29 Jul 2014 18:47:08 -0400
+Date: Tue, 29 Jul 2014 15:47:07 -0700 (PDT)
+Message-Id: <20140729.154707.2014852273209594700.davem@davemloft.net>
+To: himangi774@gmail.com
+Cc: samuel@sortiz.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr
+Subject: Re: [PATCH] net: irda: delete double assignment
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140728152812.GA3000@himangi-Dell>
+References: <20140728152812.GA3000@himangi-Dell>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 29 Jul 2014 15:47:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jul 2014, Borislav Petkov wrote:
+From: Himangi Saraogi <himangi774@gmail.com>
+Date: Mon, 28 Jul 2014 20:58:12 +0530
 
-> On Tue, Jul 29, 2014 at 06:32:56PM -0400, Prarit Bhargava wrote:
-> > and it was best to keep the code simple with a KiB.
-> 
-> You're missing the point - the output doesn't get simple with KiB. Read
-> the example I just gave you!
-> 
-> (13893632kiB) is actively *not* helping when one looks at it!
-> 
+> @@ -621,7 +621,6 @@ void irlap_send_rd_frame(struct irlap_cb *self)
+>  
+>  	frame = (struct rd_frame *)skb_put(tx_skb, 2);
+>  
+> -	frame->caddr = self->caddr;
+>  	frame->caddr = RD_RSP | PF_BIT;
+>  
 
-/proc/meminfo must be frustrating then, too.
+This doesn't look correct to me.
 
-If Prarit is going to implement this suggested reverse memparse() then it 
-would be nice to also have it as a generic function that others can use.
+I think both lines should be kept, and the second line should be
+changed to assign those bits to frame->control.
+
+This is consistent with other parts of the file that make use of the PF_BIT.
