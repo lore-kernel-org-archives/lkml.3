@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471AbaG2H7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 03:59:33 -0400
-Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:45364
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751038AbaG2H7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 03:59:32 -0400
-Date: Tue, 29 Jul 2014 15:43:22 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-CC: Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm/mach-imx/iomux: Do not export symbol without public
- declaration
-Message-ID: <20140729074320.GC24750@dragon>
-References: <1406185521-30803-1-git-send-email-alexander.stein@systec-electronic.com>
+	id S1752811AbaG2H7z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 03:59:55 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:37862 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752776AbaG2H7y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 03:59:54 -0400
+Message-ID: <53D7542E.7060103@linaro.org>
+Date: Tue, 29 Jul 2014 15:58:38 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1406185521-30803-1-git-send-email-alexander.stein@systec-electronic.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(51704005)(199002)(189002)(24454002)(74662001)(23726002)(76176999)(50986999)(85306003)(99396002)(83322001)(21056001)(31966008)(74502001)(57986006)(95666004)(84676001)(64706001)(19580405001)(83072002)(20776003)(87936001)(86362001)(46406003)(92566001)(80022001)(4396001)(47776003)(104016003)(85852003)(92726001)(44976005)(97756001)(97736001)(83506001)(106466001)(33716001)(79102001)(46102001)(81342001)(110136001)(26826002)(81542001)(68736004)(6806004)(105606002)(50466002)(77982001)(107046002)(102836001)(33656002)(76482001)(19580395003)(54356999);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB573;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0287BBA78D
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Olof Johansson <olof@lixom.net>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 19/19] Documentation: ACPI for ARM64
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>	<1406206825-15590-20-git-send-email-hanjun.guo@linaro.org> <CAOesGMhKHGkVK3dOLXXx9GQBMxDmjBu1WDBgHmwdGe1UK3jfcg@mail.gmail.com>
+In-Reply-To: <CAOesGMhKHGkVK3dOLXXx9GQBMxDmjBu1WDBgHmwdGe1UK3jfcg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 09:05:21AM +0200, Alexander Stein wrote:
-> The iomux function declarations are in headers only accessible in this
-> directory. Thus those can't be used in any module. None of the
-> objects in this directory is tristate. Neither can the header be included
-> in out-of-tree modules.
+On 2014-7-27 10:34, Olof Johansson wrote:
+> On Thu, Jul 24, 2014 at 6:00 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+>> From: Graeme Gregory <graeme.gregory@linaro.org>
+>>
+>> Add documentation for the guidelines of how to use ACPI
+>> on ARM64.
 > 
-> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+> As the most vocal participant against ACPI being adopted, I would have
+> appreciated a cc on this patch set -- it's not like you were going for
+> a minimal set of cc recipients already. It makes it seem like you're
+> trying to sneak it past me for comments. Not cool. I know that's
+> probably not your intent, but still.
 
-Changed patch prefix to 'ARM: imx: iomux: ...' and applied the patch.
+My bad, I'm sorry for that. Actually it was not my intention, I was not
+playing with a full deck when I sent this patch set out, I missed someone
+else (such as Rob) in the CC list and I even added private mailing list
+in CC.
 
-Shawn
+I'm sure you will in the CC list with next version.
+
+Thanks
+Hanjun
+
