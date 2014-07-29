@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105AbaG2JKI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 05:10:08 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:33481 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002AbaG2JJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 05:09:39 -0400
-Message-ID: <53D76452.10206@huawei.com>
-Date: Tue, 29 Jul 2014 17:07:30 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1753125AbaG2JKM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 05:10:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39677 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753002AbaG2JKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 05:10:09 -0400
+Date: Tue, 29 Jul 2014 11:10:02 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Benjamin_Tissoires_=A0?= 
+	<benjamin.tissoires@redhat.com>
+cc: Andrew Duggan <aduggan@synaptics.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: rmi: change logging level of log messages related
+ to unexpected reports
+In-Reply-To: <20140715190723.GC21045@mail.corp.redhat.com>
+Message-ID: <alpine.LNX.2.00.1407291109380.16390@pobox.suse.cz>
+References: <1405114551-24354-1-git-send-email-aduggan@synaptics.com> <1405114551-24354-2-git-send-email-aduggan@synaptics.com> <20140715190723.GC21045@mail.corp.redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Mike Qiu <qiudayu@linux.vnet.ibm.com>, <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING: at kernel/cpuset.c:1139
-References: <53CF22F5.6000206@linux.vnet.ibm.com> <20140723151220.GD7103@htj.dyndns.org> <53D052FC.3070409@huawei.com> <20140728192026.GI7462@htj.dyndns.org>
-In-Reply-To: <20140728192026.GI7462@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/7/29 3:20, Tejun Heo wrote:
-> On Thu, Jul 24, 2014 at 08:27:40AM +0800, Li Zefan wrote:
->> On 2014/7/23 23:12, Tejun Heo wrote:
->>> On Wed, Jul 23, 2014 at 10:50:29AM +0800, Mike Qiu wrote:
->>>> commit 734d45130cb ("cpuset: update cs->effective_{cpus, mems} when config
->>>> changes") introduce the below warning in my server.
->>>>
->>>> [   35.652137] ------------[ cut here ]------------
->>>> [   35.652141] WARNING: at kernel/cpuset.c:1139
->>>
->>> Hah, can you reproduce it?  If so, can you detail how?
->>>
->>
->> It's a typo.
->>
->> WARN_ON(!cgroup_on_dfl(cp->css.cgroup) &&
->> 	nodes_equal(cp->mems_allowed, cp->effective_mems));
->>
->> should be
->>
->> WARN_ON(!cgroup_on_dfl(cp->css.cgroup) &&
->> 	!nodes_equal(cp->mems_allowed, cp->effective_mems));
-> 
-> Care to post a patch?
-> 
+On Tue, 15 Jul 2014, Benjamin Tissoires   wrote:
 
-Sorry for the delay. I had been off office for the last two weeks.
-I'll do this tomorrow.
+> On Jul 11 2014 or thereabouts, Andrew Duggan wrote:
+> > Userspace tools may use hidraw to perform operations on the device from userspace while
+> > hid-rmi is bound to the device. This can cause hid-rmi to print error messages when its
+> > ->raw_event() callback gets called as the reports pass through the HID stack. In this case
+> > receiving responses which were not initiated by hid-rmi is not actually an error so the resulting
+> > error messages are incorrect and misleading. This patch changes the log messages to debug so
+> > that the messages can be turned on in the event that there is a problem and there is not
+> > a userspace tool running.
+> > 
+> > Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+> > ---
+> 
+> Fair enough
+> 
+> Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
+[ sorry for late response, I am just re-appearing from vacation-land ]
+
+Applied, thanks.
+
+-- 
+Jiri Kosina
+SUSE Labs
