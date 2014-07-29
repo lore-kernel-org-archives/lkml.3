@@ -1,102 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853AbaG2ITB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 04:19:01 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:54276 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038AbaG2IS6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 04:18:58 -0400
+	id S1752868AbaG2IUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 04:20:00 -0400
+Received: from ozlabs.org ([103.22.144.67]:36940 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751038AbaG2IT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 04:19:58 -0400
+Date: Tue, 29 Jul 2014 18:19:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <treding@nvidia.com>
+Subject: linux-next: manual merge of the gpio tree with the arm-soc tree
+Message-ID: <20140729181949.427a7fb5@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1406309888-10749-1-git-send-email-adas@redhat.com>
-References: <1406309888-10749-1-git-send-email-adas@redhat.com>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Tue, 29 Jul 2014 10:18:37 +0200
-X-Google-Sender-Auth: IqPNT0Bbp3GpiaM7VImzihfynjY
-Message-ID: <CAHO5Pa2Fg986M+AZmj87pzywTsXSL+z8gmbrh1yTLHGEDieOxA@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] xgetdents system call
-To: Abhi Das <adas@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        cluster-devel@redhat.com, Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/8jVaTAtv_zGX=9MpMoKYX1v"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 7:38 PM, Abhi Das <adas@redhat.com> wrote:
-> This system call takes 5 arguments:
-> fd    - file descriptor of the directory
-> flags - flags used by xstat
-> mask  - field mask used to request stat/xattr info
-> buf   - user buf to return collected info
-> count - size of user buffer in bytes
->
-> xgetdents() should read the directory entries, collect stat
-> and xattr information for each entry as requested and return
-> all the data back to the user in a container structure
-> (linux_xdirent) as part of the supplied user buffer.
+--Sig_/8jVaTAtv_zGX=9MpMoKYX1v
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hello Abhi,
+Hi Linus,
 
-As per Documentation/SubmitChecklist, please CC linux-api on patches
-that change the kerne-user-space API/ABI. (See
-https://www.kernel.org/doc/man-pages/linux-api-ml.html for more
-details.)
+Today's linux-next merge of the gpio tree got a conflict in
+arch/arm/mach-tegra/board-paz00.c between commit a0524acc94c9 ("ARM:
+tegra: Sort includes alphabetically") from the arm-soc tree and commit
+0a6d315827ee ("gpio: split gpiod board registration into machine
+header") from the gpio tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Michael
+diff --cc arch/arm/mach-tegra/board-paz00.c
+index bb4782a32713,91fd858ced0d..000000000000
+--- a/arch/arm/mach-tegra/board-paz00.c
++++ b/arch/arm/mach-tegra/board-paz00.c
+@@@ -17,10 -17,9 +17,10 @@@
+   *
+   */
+ =20
+- #include <linux/gpio/driver.h>
+ -#include <linux/platform_device.h>
++ #include <linux/gpio/machine.h>
+ +#include <linux/platform_device.h>
+  #include <linux/rfkill-gpio.h>
+ +
+  #include "board.h"
+ =20
+  static struct rfkill_gpio_platform_data wifi_rfkill_platform_data =3D {
 
+--Sig_/8jVaTAtv_zGX=9MpMoKYX1v
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-> Abhi Das (5):
->   fs: xstat system call VFS bits
->   fs: Add xgetdents system call and xreaddir file operation
->   gfs2: Add a dynamic buffer backed by a vector of pages
->   gfs2: Add sort functionality with extra parameter
->   gfs2: Add xreaddir file operation and supporting functions
->
->  arch/x86/syscalls/syscall_32.tbl |    3 +
->  arch/x86/syscalls/syscall_64.tbl |    3 +
->  fs/gfs2/Makefile                 |    3 +-
->  fs/gfs2/dir.c                    |   80 +--
->  fs/gfs2/dir.h                    |   13 +-
->  fs/gfs2/export.c                 |    2 +-
->  fs/gfs2/file.c                   |   17 +-
->  fs/gfs2/incore.h                 |    6 +
->  fs/gfs2/inode.c                  |    3 +-
->  fs/gfs2/inode.h                  |    5 +
->  fs/gfs2/ops_fstype.c             |    4 +
->  fs/gfs2/sys.c                    |   26 +-
->  fs/gfs2/util.c                   |  363 ++++++++++++++
->  fs/gfs2/util.h                   |   47 ++
->  fs/gfs2/xattr.c                  |   27 +-
->  fs/gfs2/xattr.h                  |   23 +
->  fs/gfs2/xreaddir.c               | 1024 ++++++++++++++++++++++++++++++++++++++
->  fs/gfs2/xreaddir.h               |   84 ++++
->  fs/readdir.c                     |   42 ++
->  fs/stat.c                        |  340 ++++++++++++-
->  include/linux/fs.h               |    5 +
->  include/linux/stat.h             |   16 +-
->  include/linux/syscalls.h         |    5 +
->  include/uapi/linux/fcntl.h       |    1 +
->  include/uapi/linux/stat.h        |  143 ++++++
->  25 files changed, 2196 insertions(+), 89 deletions(-)
->  create mode 100644 fs/gfs2/xreaddir.c
->  create mode 100644 fs/gfs2/xreaddir.h
->
-> --
-> 1.8.1.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+iQIcBAEBCAAGBQJT11krAAoJEMDTa8Ir7ZwVKQIP/2pQVsM3P9Y6eCyTaxrc+24H
+KW2AyR30PHSpyCUaolfiQmz3RiqAI6Ceq+2oDHkYxNQXFRQF0QMwTcm5zNRy0g8u
+B4Y+rA257l7intACU7iMQtPdeP5+s4NBn+RIgKQVrZOZ1FfZTqsaBHlymjSfVX3y
+6dXvzk37gJ0KcpzeqE18Ir1Dg3O/269l7GKXGs3b5WUgekpQ8Rs4bnB3EpdYaeYs
+wkg0F10dLIx5oeoUnzeEPXy186rNazDg3wxwh1Dsy2HhosUBfMhUqsL5Pp72e71F
+lf5yt49qFR4/lZ8RlP6Pdp2mhodSbbCcP6xffzRs2NDsS7ffEcAB6/J++fCxKYRG
+7t/RGm+G4f+hFKJzIktaJpvodQWUXthPH+1AwHn3NHfScpk3ZK6dzkgqcAquE+s4
+R9f8RON+o7iyI2ssn3zmWgm72yJwdvOThIBQLkeA0jzcKr6MsOn+M8lmThrIuVIf
+j8ys9uIJ0iXnjU9YU647o6O86Wv0e+PXTOl4I4XChmMbZTbrtgPJ6cctq/x9yamO
+yJS79zeLU9CIFJQvAxVl/WCZh7EvOzsDJRLP4EitbCjwCHVLrT/m5MqPL/LHTMfO
+Q2/+xWIwnvMQk5lovimZlzaL7wodWUmRY1sZ8nvIjZaKz3RtXuvM3wVxVu69HltB
+/FqoyUUu4dOf7B7smmPW
+=R7F3
+-----END PGP SIGNATURE-----
 
-
-
--- 
-Michael Kerrisk Linux man-pages maintainer;
-http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface", http://blog.man7.org/
+--Sig_/8jVaTAtv_zGX=9MpMoKYX1v--
