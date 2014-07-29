@@ -1,210 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaG2Abd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 20:31:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33549 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147AbaG2Ab3 (ORCPT
+	id S1752468AbaG2Afc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 20:35:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50291 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779AbaG2Af2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 20:31:29 -0400
-Message-ID: <53D6EB53.2000209@infradead.org>
-Date: Mon, 28 Jul 2014 17:31:15 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 28 Jul 2014 20:35:28 -0400
+Date: Mon, 28 Jul 2014 17:35:01 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: Santosh Rastapur <santosh@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>, Takashi Iwai <tiwai@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred probe
+ from init
+Message-ID: <20140729003501.GA17020@kroah.com>
+References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com>
+ <1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com>
+ <20140728185538.GB17609@kroah.com>
+ <CAB=NE6VebcR7=UA1n0wNVLr5FFukzq6aW5CkeB3nf5FixV=3cA@mail.gmail.com>
+ <CAB=NE6Xmi2zUCis22q+X8_AKRcwMrAtmx-aqSSvTB70Xjet6VQ@mail.gmail.com>
+ <20140728234644.GA18729@kroah.com>
+ <CAB=NE6UzK1ZEzm+54dwSyPwHGrAWCPtiNtxwhQuJF6tM9NbnYw@mail.gmail.com>
 MIME-Version: 1.0
-To: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        michal.simek@xilinx.com, grant.likely@linaro.org,
-        gregkh@linuxfoundation.org, jason@lakedaemon.net,
-        ezequiel.garcia@free-electrons.com, arnd@arndb.de, dwmw2@infradead.org,
-        computersforpeace@gmail.com, artem.bityutskiy@linux.intel.com,
-        pekon@ti.com, jussi.kivilinna@iki.fi, acourbot@nvidia.com,
-        ivan.khoronzhuk@ti.com, joern@logfs.org
-CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        kpc528@gmail.com, kalluripunnaiahchoudary@gmail.com,
-        anirudh@xilinx.com, svemula@xilinx.com,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-Subject: Re: [PATCH RFC v4 4/4] Documentation: nand: pl353: Add documentation
- for controller and driver
-References: <1406561500-18264-1-git-send-email-punnaia@xilinx.com> <b37e0e96-e91d-496c-a530-df72898798a1@BY2FFO11FD057.protection.gbl>
-In-Reply-To: <b37e0e96-e91d-496c-a530-df72898798a1@BY2FFO11FD057.protection.gbl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB=NE6UzK1ZEzm+54dwSyPwHGrAWCPtiNtxwhQuJF6tM9NbnYw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/14 08:31, Punnaiah Choudary Kalluri wrote:
-> Added notes about the controller and driver
+On Mon, Jul 28, 2014 at 05:26:34PM -0700, Luis R. Rodriguez wrote:
+> On Mon, Jul 28, 2014 at 4:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Jul 28, 2014 at 12:48:32PM -0700, Luis R. Rodriguez wrote:
+> >> On Mon, Jul 28, 2014 at 12:04 PM, Luis R. Rodriguez
+> >> <mcgrof@do-not-panic.com> wrote:
+> >> > On Mon, Jul 28, 2014 at 11:55 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> >> So, what drivers are having problems in their init sequence, and why
+> >> >> aren't they using async firmware loading?
+> >> >
+> >> > Fixing drivers is one thing, fixing drivers *now* because *now*
+> >> > drivers are failing due to a regression is another thing and that's
+> >> > what we have now so lets just be clear on that. The 30 second rule is
+> >> > a major driver requirement change and it should not be taken slightly,
+> >> > all of a sudden this is a new requirement but you won't know that
+> >> > unless you're reading these threads or hit an issue. That's an issue
+> >> > in itself.
+> >
+> > That "regression" is something that userspace has decided to do, not
+> > anything the kernel changed,
 > 
-> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-> ---
-> Changes in v4:
-> - None
-> ---
->  Documentation/mtd/nand/pl353-nand.txt |   92 +++++++++++++++++++++++++++++++++
->  1 files changed, 92 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/mtd/nand/pl353-nand.txt
+> Actually commit 786235ee seems to have been the one that caused this
+> issue, systemd would just send the SIGKILL and that change forced a
+> bail on probe then hence Canonical's work around to modify
+> kthread_create() to not leave upon SIGKILL:
 > 
-> diff --git a/Documentation/mtd/nand/pl353-nand.txt b/Documentation/mtd/nand/pl353-nand.txt
-> new file mode 100644
-> index 0000000..4deac94
-> --- /dev/null
-> +++ b/Documentation/mtd/nand/pl353-nand.txt
-> @@ -0,0 +1,92 @@
-> +This documents provides some notes about the ARM pl353 smc controller used in
-
-                                                    PL353 SMC
-
-> +Zynq SOC and confined to NAND specific details.
-
-            and is confined to
-
-> +
-> +Overview of the controller
-> +==========================
-> +	The SMC (PL353) supports two memory interfaces:
-> +	Interface 0 type SRAM.
-> +	Interface 1 type NAND.
-> +	This configuration supports the following configurable options:
-> +	   . 32-bit or 64-bit AXI data width
-> +	   . 8-bit, 16-bit, or 32-bit memory data width for interface 0
-> +	   . 8-bit, or 16-bit memory data width for interface 1
-> +	   . 1-4 chip selects on each interface
-> +	   . SLC ECC block for interface 1
-> +
-> +For more information, refer the below link for TRM
-
-                         refer to the below link for TRM.
-
-> +http://infocenter.arm.com/help/topic/com.arm.doc.ddi0380g/
-> +DDI0380G_smc_pl350_series_r2p1_trm.pdf
-> +
-> +NAND memory accesses
-> +====================
-> +	. Two phase NAND accesses
-> +	. NAND command phase transfers
-> +	. NAND data phase transfers
-> +
-> +Two phase NAND accesses
-> +	The SMC defines two phases of commands when transferring data to or from
-> +NAND flash.
-> +
-> +Command phase
-> +	Commands and optional address information are written to the NAND flash.
-> +The command and address can be associated with either a data phase operation to
-> +write to or read from the array, or a status/ID register transfer.
-> +
-> +Data phase
-> + Data is either written to or read from the NAND flash. This data can be either
-> +data transferred to or from the array, or status/ID register information.
-> +
-> +NAND AXI address setup
-> +       AXI address      Command phase      Data phase
-> +	[31:24]         Chip address       Chip address
-> +	[23]            NoOfAddCycles_2    Reserved
-> +	[22]            NoOfAddCycles_1    Reserved
-> +	[21]            NoOfAddCycles_0    ClearCS
-> +	[20]            End command valid  End command valid
-> +	[19]            0                  1
-> +	[18:11]         End command        End command
-> +	[10:3]          Start command      [10] ECC Last
-> +					   [9:3] Reserved
-> +	[2:0]           Reserved           Reserved
-> +
-> +ECC
-> +===
-> +    It operates on a number of 512 byte blocks of NAND memory and can be
-
-                                  512-byte blocks
-
-> +programmed to store the ECC codes after the data in memory. For writes,
-> +the ECC is written to the spare area of the page. For reads, the result of
-> +a block ECC check are made available to the device driver.
-> +
-> +------------------------------------------------------------------------
-> +|               n * 512 blocks                  | extra  | ecc    |     |
-
-                                                              ECC
-
-> +|                                               | block  | codes  |     |
-> +------------------------------------------------------------------------
-> +
-> +The ECC calculation uses a simple Hamming code, using 1-bit correction 2-bit
-> +detection. It starts when a valid read or write command with a 512 byte aligned
-
-                                                                  512-byte
-
-> +address is detected on the memory interface.
-> +
-> +Driver details
-> +==============
-> +	The NAND driver has dependancy with the pl353_smc memory controller
-
-	                    dependency          PL353 SMC
- 
-> +driver for intializing the nand timing parameters, bus width, ECC modes,
-
-              initializing the NAND
-
-> +control and status information.
-> +
-> +Since the controller expects that the chipselect bit should be cleared for the
-> +last data transfer i.e last 4 data bytes, the existing nandbase page
-
-             transfer,
-
-> +read/write routines for soft ecc and ecc none modes will not work. So, inorder
-
-                                ECC and ECC                               in order
-
-> +to make this driver work, it always updates the ecc mode as HW ECC and
-
-                                                   ECC
-
-> +implemented the page read/write functions for supporting the SW ECC.
-
-   implements
-
-> +
-> +HW ECC mode:
-> +	Upto 2K page size is supported and beyond that it retuns
-
-	Up to                                             returns
-
-> +-ENOSUPPORT error. If the flsh has ONDIE ecc controller then the
-
-                             flash          ECC
-
-> +priority has given to the ONDIE ecc controller. Also the current
-
-            is given               ECC
-
-> +implementation has support for upto 64 byte oob area
-
-                                  up to 64-byte OOB area.
-
-> +
-> +SW ECC mode:
-> +	It supports all the pgae sizes. But since, zynq soc bootrom uses
-
-	                    page sizes, but since Zynq SOC boot ROM
-
-> +HW ECC for the devices that have pgae size <=2K so, to avoid any ecc related
-
-                                    page size <= 2K, to avoid any ECC-related
-
-> +issues during boot, prefer HW ECC over SW ECC.
-> +
-> +For devicetree binding information please refer the below dt binding file
-
-                                             refer to the below
-
-> +Documentation/devicetree/bindings/memory-controllers/pl353-smc.txt
+> http://thread.gmane.org/gmane.linux.ubuntu.devel.kernel.general/39123
 > 
+> > so perhaps you should just patch your
+> > modprobe and be done with it until you can fix up those drivers?
+> 
+> To ignore SIGKILL ?
 
+Sorry, I thought this was a userspace change that caused this.
 
--- 
-~Randy
+As it's a kernel change, well, maybe that patch should be reverted...
+
+> > And putting a horrid hack in the driver core, just because of some
+> > really bad drivers, is not ok, that's an interface _I_ will have to
+> > support for the next few decades.
+> 
+> I understand, hence review.
+> 
+> > And it's going to take you a while to get something like this ever
+> > merged in anyway, odds are you can fix up the driver faster...
+> 
+> That requires quite a bit of changes and commitment and again, there
+> are quite a bit of drivers that we can run into in the community,
+> we've just spotted 2 so far here for now.
+> 
+> >> > The cxgb4: driver is an example where although I did propose patches
+> >> > to use asynch firmware loading the entire registration of the
+> >> > netdevice would need to be changed as well in order to get this right.
+> >> > In short we have to scramble now to first identify drivers that have
+> >> > long init sequences and then fix. There's an assumption that we can
+> >> > easily fix drivers, this can take time. This series, although does
+> >> > take advantage of a kernel interface for other uses, lets us identify
+> >> > these drivers on the kernel ring buffer, so we can go and address
+> >> > fixing them with time.
+> >>
+> >> Another thing that came up during asynch firmware review / integration
+> >> on cxgb4 was that it would not be the only thing that would need to be
+> >> fixed, the driver also has a ton of ports and at least as per my
+> >> review the proper fix would be to use platform regiister stuff. It is
+> >> a major rewrite of the driver but an example of a driver that needs
+> >> quite a bit of work to meet this new 30 second driver requirement.
+> >
+> > It shouldn't be using any platform driver stuff, it's a pci device, not
+> > a platform device.
+> 
+> The general PCI stuff is already used, the reason for suggesting the
+> platform_device_register_simple() stuff is it has tons of ports and
+> each port will register in turn a new struct netdevice, essentially
+> one device can end up having tons of different network devices, the
+> platform stuff would be to allow handling each netdevice candidate
+> separately as part of the internal driver architecture, right now its
+> some scary loop thing that in my eyes can be very error prone.
+> drivers/net/ethernet/8390/ne.c. This discussion:
+
+No, don't use platform devices as a "catch-all" for when you don't want
+to write your own bus code.  This looks like a device-specific bus,
+great, write the code to do that, it can be done in about 200 lines,
+with comments and whitespace.
+
+Only use platform devices for, wait for it, platform devices.  And even
+then, reconsider and use something else if at all possible.
+
+> > Why not just put the initial "register the device" in a single-shot
+> > workqueue or thread or something like that so that modprobe returns
+> > instantly back with a success and all is fine?
+> 
+> That surely is possible but why not a general solution for such kludges?
+
+Because the driver should be fixed.  How hard would it be to do what I
+just suggested here, 20 lines added at most?
+
+thanks,
+
+greg k-h
