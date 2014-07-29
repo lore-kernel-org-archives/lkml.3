@@ -1,114 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504AbaG2LgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 07:36:23 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:33231 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383AbaG2LgV (ORCPT
+	id S1753442AbaG2LiS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 07:38:18 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:40905 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752876AbaG2LiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 07:36:21 -0400
-Message-ID: <53D7872E.8050506@hitachi.com>
-Date: Tue, 29 Jul 2014 20:36:14 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 29 Jul 2014 07:38:16 -0400
+Date: Tue, 29 Jul 2014 13:38:10 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: caesar <caesar.wang@rock-chips.com>
+Cc: Doug Anderson <dianders@chromium.org>, linux-pwm@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] pwm: add this patch to support the new pwm of
+ Rockchip SoCs
+Message-ID: <20140729113808.GC21732@ulmo.nvidia.com>
+References: <20140721085001.GG8843@ulmo>
+ <53CD0E82.6030901@rock-chips.com>
+ <20140721132723.GH15238@ulmo>
+ <53D23192.4000908@rock-chips.com>
+ <CAD=FV=XLjYQYmHxp3HBdwVmt6Wa7y-LEnsFKobsgVfFCp2-rRg@mail.gmail.com>
+ <53D50601.1020106@rock-chips.com>
+ <CAD=FV=UvF58NiY76FMi-TPVzsaWRJsR-M5HnHc7MRAWjwjY1jw@mail.gmail.com>
+ <53D631B6.1050603@rock-chips.com>
+ <20140729102212.GB21182@ulmo.nvidia.com>
+ <53D780D3.8070603@rock-chips.com>
 MIME-Version: 1.0
-To: Wang Nan <wangnan0@huawei.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <ak@linux.intel.com>, Pei Feiyue <peifeiyue@huawei.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Re: [PATCH] kprobes/x86: opt: free optinsn cache when range
- check fails
-References: <1406550019-70935-1-git-send-email-wangnan0@huawei.com> <53D6FC38.8070801@hitachi.com> <53D6FEFE.8060307@huawei.com>
-In-Reply-To: <53D6FEFE.8060307@huawei.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qtZFehHsKgwS5rPz"
+Content-Disposition: inline
+In-Reply-To: <53D780D3.8070603@rock-chips.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wang,
 
-(2014/07/29 10:55), Wang Nan wrote:
-> On 2014/7/29 9:43, Masami Hiramatsu wrote:
->> (2014/07/28 21:20), Wang Nan wrote:
->>> This patch frees optinsn slot when range check error to prevent memory
->>> leaks. Before this patch, cache entry in kprobe_insn_cache won't be
->>> freed if kprobe optimizing fails due to range check failure.
->>>
->>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
->>
->> Oops, thank you for finding it!
->>
->> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->>
->> BTW, would you really have hit this error?
->> I'd like to know the case if this really happens.
-> 
-> I'm not really hit it on x86_64. I found this problem when trying to implement kprobe opt on arm.
+--qtZFehHsKgwS5rPz
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That's interesting :)
+On Tue, Jul 29, 2014 at 07:09:07PM +0800, caesar wrote:
+> Thierry,
+>=20
+> =E5=9C=A8 2014=E5=B9=B407=E6=9C=8829=E6=97=A5 18:22, Thierry Reding =E5=
+=86=99=E9=81=93:
+> >On Mon, Jul 28, 2014 at 07:19:18PM +0800, caesar wrote:
+> >>Doug,
+> >>=E5=9C=A8 2014=E5=B9=B407=E6=9C=8828=E6=97=A5 12:01, Doug Anderson =E5=
+=86=99=E9=81=93:
+> >>>Caesar,
+> >>>
+> >>>On Sun, Jul 27, 2014 at 7:00 AM, caesar <caesar.wang@rock-chips.com> w=
+rote:
+> >>>>/*I think will be show the faill log:->
+> >>>>
+> >>>>* rockchip-pwm ff9301a0.pwm: can't request region for resource [mem
+> >>>>0xff9301a0-0xff93019f]
+> >>>>*/
+> >>>>
+> >>>>pc->base =3D devm_ioremap_resource(dev, regs);
+> >>>Did you actually code this up and try it and get this error?
+> >>Yeah.
+> >This should work if you properly set up the PWM subregion as a child of
+> >the LCDC region, which is what MFD will do for you.
+> >
+> >Thierry
+> As you say,should this change be occured by lcdc driver and dts?
+>=20
+> The PWM driver don't need do any changes?
 
-> 
-> On arm, relative jump can only branch on/backward 64MB, which makes it a realistic problem.
+No, I don't think the PWM driver needs to be changed for the above to
+work.
 
-Yeah, that is what I expected on RISC processor such as ARM.
+Thierry
 
-Perhaps you'll need to overwrite 2 words, one is for "ldr pc, [pc, #-4]" and one is for
-the address data. In this case, you have no branch range limitation in 32bit mode. This
-requires branch destination checking for safety as x86 optprobe does.
-Plus, you'll have to use same technique of x86 to make a detour code and deferred
-optimization for overwriting multiple instructions. Put a breakpoint at the probe point,
-wait for synchronize_sched(), put the 2nd instruction(.data) and overwrite the breakpoint
-with the "ldr". :)
+--qtZFehHsKgwS5rPz
+Content-Type: application/pgp-signature
 
-However, that is only for arm32.
-For ARM64, I'm not so sure about its ISA. I guess we need a scratchpad area for that..
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Anyway, please CC to me when you've done the prototyping and sending RFC. I'll review
-and test it. :)
+iQIcBAEBAgAGBQJT14egAAoJEN0jrNd/PrOhUbkP/2PtK2L6KfBYh3rSEpyOXFpv
+kJPbSXhoCbMGTWV99kahNC1vnb4g3X8mYBuPmpuN5sRitEbrtFsqoNvVmDWAOaCF
+SdBvssJTNtv7KImJj1ouMYq9QUL212mtS/JkdePiieKtFNNQkgMJW3GRxXp7wcLL
+PmilVAcTpLnikoJZHPaRLaFe7WkxpHrE+kLrkmTVuh9LUhnIOmc4fA++fWTkity/
+T/IUC9LEP7qbL+ENOiPgHkw1tN/6ShXnDaoy449eiODjZ/dRfjIcsshBksNdf7I5
+B5iIY4/Om0P6umYfKmMYgdoyQk7yXEwoY2MlAVhVSzw74IQGVSiGhkpxKmLPCc6e
+y+USPATnSXda5Xp4v7j1b/OaMy8zeqDCjjwlhDgH+2HanW0njj3F+7cu2oUzK4oM
+bdEwsdVyMMCSqgwM7cu1mnWx0pQ1Pq/QhdMhxULD/3cYSewJ2r6Zb4bbhiE09YOf
+U4gv7WZElYCQsNiRIe3dUP2nn2prNVDE9dKAAqEagN2Bj53hwMFmXtScPLUnpLCL
+mGqySnnNlDBOiMtqAg6zJRZY7QkbFxUwSy+QJNW43+ywMOtyQKKE40leBGbRjyQW
+nT3VAiPouj95cnfAjEsOPjUiQIDCJNK8JN6v6SgLR3D3/G8tz91tpRerOhPbM8RE
+ef29Ek7fUAwDMhlu3IEO
+=y27a
+-----END PGP SIGNATURE-----
 
-Thank you,
-
-> 
->>
->>> ---
->>>  arch/x86/kernel/kprobes/opt.c | 4 +++-
->>>  1 file changed, 3 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
->>> index f304773..f1314d0 100644
->>> --- a/arch/x86/kernel/kprobes/opt.c
->>> +++ b/arch/x86/kernel/kprobes/opt.c
->>> @@ -338,8 +338,10 @@ int arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
->>>  	 * a relative jump.
->>>  	 */
->>>  	rel = (long)op->optinsn.insn - (long)op->kp.addr + RELATIVEJUMP_SIZE;
->>> -	if (abs(rel) > 0x7fffffff)
->>> +	if (abs(rel) > 0x7fffffff) {
->>> +		__arch_remove_optimized_kprobe(op, 0);
->>>  		return -ERANGE;
->>> +	}
->>>  
->>>  	buf = (u8 *)op->optinsn.insn;
->>>  
->>>
->>
->>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+--qtZFehHsKgwS5rPz--
