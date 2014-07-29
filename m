@@ -1,89 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaG2GjB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 02:39:01 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51310 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115AbaG2GjA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 02:39:00 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 2/2] perf tools: Default to python version 2
-References: <53D135F9.1070104@tu-dresden.de>
-	<1406258045-25726-1-git-send-email-namhyung@kernel.org>
-	<1406258045-25726-2-git-send-email-namhyung@kernel.org>
-	<53D22357.9010005@tu-dresden.de> <87wqb1ivnb.fsf@sejong.aot.lge.com>
-	<53D242DC.9070503@tu-dresden.de> <87silmibxd.fsf@sejong.aot.lge.com>
-	<53D62FC9.2010404@tu-dresden.de>
-Date: Tue, 29 Jul 2014 15:38:59 +0900
-In-Reply-To: <53D62FC9.2010404@tu-dresden.de> (Thomas Ilsche's message of
-	"Mon, 28 Jul 2014 13:11:05 +0200")
-Message-ID: <877g2wis8s.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752691AbaG2GkL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 02:40:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3496 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751300AbaG2GkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 02:40:09 -0400
+Date: Tue, 29 Jul 2014 02:39:40 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org, peterz@infradead.org,
+        jhladky@redhat.com
+Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1%
+ proc-vmstat.numa_hint_faults_local
+Message-ID: <20140729023940.37b6aebc@annuminas.surriel.com>
+In-Reply-To: <53D72FF5.90908@intel.com>
+References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>
+	<53D72FF5.90908@intel.com>
+Organization: Red Hat, Inc.
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Tue, 29 Jul 2014 13:24:05 +0800
+Aaron Lu <aaron.lu@intel.com> wrote:
 
-On Mon, 28 Jul 2014 13:11:05 +0200, Thomas Ilsche wrote:
-> Hi Namhyung,
->
->>>> I'm thinking about something like below.. but sadly it doesn't work for
->>>> me.. hmm.
->>>
->>> Actually this appears to work for me (with 2.6.9 & 2.7.6) and I  
->>> find this solution more
->>> elegant.
->>
->> Thanks for testing.  It was my fault on setting symlink to a
->> non-existing file for testing.  It now works well for me too.
->>
->> Can I add your Tested-by then?
->
-> Yes
-> Tested-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
->
-> Plase note that your patch requires the previous patch that just set
-> the default to python2.
+> FYI, we noticed the below changes on
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
+> commit a43455a1d572daf7b730fe12eb747d1e17411365 ("sched/numa: Ensure task_numa_migrate() checks the preferred node")
+> 
+> ebe06187bf2aec1  a43455a1d572daf7b730fe12e  
+> ---------------  -------------------------  
+>      94500 ~ 3%    +115.6%     203711 ~ 6%  ivb42/hackbench/50%-threads-pipe
+>      67745 ~ 4%     +64.1%     111174 ~ 5%  lkp-snb01/hackbench/50%-threads-socket
+>     162245 ~ 3%     +94.1%     314885 ~ 6%  TOTAL proc-vmstat.numa_hint_faults_local
 
-Ah, I'll fix it when sending v2.
+Hi Aaron,
 
+Jirka Hladky has reported a regression with that changeset as
+well, and I have already spent some time debugging the issue.
 
->
-> I tested in an Arch Linux VM with:
-> A) no system install of python, source installation 2.6.9 in PATH
-> B) no system install of python, source installation 2.7.6 in PATH
-> C) python3 (as python) and python2 system installation
->
-> In all cases it reports to build with libpython and perf script with a dummy Python script
-> works.
->
-> If no python whatsoever is in PATH it reports:
->
-> config/Makefile:121: The path 'python' is not executable.
-> sh: line 0: command: -c: invalid option
-> command: usage: command [-pVv] command [arg ...]
-> config/Makefile:122: The path '-config' is not executable.
->
-> And the created perf executable does not work with the dummy script.
->
-> If only pthon3 is in PATH I get the expected version error message (build stops.)
->
-> Note that for the manual old installations of python I had an issue with linking order and
-> a -Werror issue that I resolved manually. But this is fixed with the latest system install
-> of python.
+I added tracing code to task_numa_compare() and saw a number
+of thread swaps with tiny improvements.
 
-Thank you a lot for testing and explaining various cases!
+Does preventing those help your workload, or am I barking up
+the wrong tree again?  (I have been looking at this for a while...)
 
-Namhyung
+---8<---
+
+Subject: sched,numa: prevent task moves with marginal benefit
+
+Commit a43455a1d57 makes task_numa_migrate() always check the
+preferred node for task placement. This is causing a performance
+regression with hackbench, as well as SPECjbb2005.
+
+Tracing task_numa_compare() with a single instance of SPECjbb2005
+on a 4 node system, I have seen several thread swaps with tiny
+improvements. 
+
+It appears that the hysteresis code that was added to task_numa_compare
+is not doing what we needed it to do, and a simple threshold could be
+better.
+
+Reported-by: Aaron Lu <aaron.lu@intel.com>
+Reported-by: Jirka Hladky <jhladky@redhat.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ kernel/sched/fair.c | 24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 4f5e3c2..bedbc3e 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -924,10 +924,12 @@ static inline unsigned long group_faults_cpu(struct numa_group *group, int nid)
+ 
+ /*
+  * These return the fraction of accesses done by a particular task, or
+- * task group, on a particular numa node.  The group weight is given a
+- * larger multiplier, in order to group tasks together that are almost
+- * evenly spread out between numa nodes.
++ * task group, on a particular numa node.  The NUMA move threshold
++ * prevents task moves with marginal improvement, and is set to 5%.
+  */
++#define NUMA_SCALE 1000
++#define NUMA_MOVE_THRESH 50
++
+ static inline unsigned long task_weight(struct task_struct *p, int nid)
+ {
+ 	unsigned long total_faults;
+@@ -940,7 +942,7 @@ static inline unsigned long task_weight(struct task_struct *p, int nid)
+ 	if (!total_faults)
+ 		return 0;
+ 
+-	return 1000 * task_faults(p, nid) / total_faults;
++	return NUMA_SCALE * task_faults(p, nid) / total_faults;
+ }
+ 
+ static inline unsigned long group_weight(struct task_struct *p, int nid)
+@@ -948,7 +950,7 @@ static inline unsigned long group_weight(struct task_struct *p, int nid)
+ 	if (!p->numa_group || !p->numa_group->total_faults)
+ 		return 0;
+ 
+-	return 1000 * group_faults(p, nid) / p->numa_group->total_faults;
++	return NUMA_SCALE * group_faults(p, nid) / p->numa_group->total_faults;
+ }
+ 
+ bool should_numa_migrate_memory(struct task_struct *p, struct page * page,
+@@ -1181,11 +1183,11 @@ static void task_numa_compare(struct task_numa_env *env,
+ 			imp = taskimp + task_weight(cur, env->src_nid) -
+ 			      task_weight(cur, env->dst_nid);
+ 			/*
+-			 * Add some hysteresis to prevent swapping the
+-			 * tasks within a group over tiny differences.
++			 * Do not swap tasks within a group around unless
++			 * there is a significant improvement.
+ 			 */
+-			if (cur->numa_group)
+-				imp -= imp/16;
++			if (cur->numa_group && imp < NUMA_MOVE_THRESH)
++				goto unlock;
+ 		} else {
+ 			/*
+ 			 * Compare the group weights. If a task is all by
+@@ -1205,6 +1207,10 @@ static void task_numa_compare(struct task_numa_env *env,
+ 		goto unlock;
+ 
+ 	if (!cur) {
++		/* Only move if there is a significant improvement. */
++		if (imp < NUMA_MOVE_THRESH)
++			goto unlock;
++
+ 		/* Is there capacity at our destination? */
+ 		if (env->src_stats.has_free_capacity &&
+ 		    !env->dst_stats.has_free_capacity)
