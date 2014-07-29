@@ -1,184 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607AbaG2Xzf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 19:55:35 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:50455 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811AbaG2Xze (ORCPT
+	id S1754634AbaG2X4M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 19:56:12 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53518 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754408AbaG2X4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 19:55:34 -0400
-Date: Tue, 29 Jul 2014 16:55:32 -0700 (PDT)
-Message-Id: <20140729.165532.599552078692796545.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 29 Jul 2014 16:55:33 -0700 (PDT)
+	Tue, 29 Jul 2014 19:56:11 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] kprobes: be more permissive when user specifies both symbol name and address
+References: <20140728105156.GB14215@gmail.com>
+	<1406638058-7761-1-git-send-email-nasa4836@gmail.com>
+	<CAHz2CGUEJ9at2dwj-H-phKrkxO_B3Xt-ksBa7ZsWb2bOZ2nY=g@mail.gmail.com>
+Date: Wed, 30 Jul 2014 08:56:09 +0900
+In-Reply-To: <CAHz2CGUEJ9at2dwj-H-phKrkxO_B3Xt-ksBa7ZsWb2bOZ2nY=g@mail.gmail.com>
+	(Jianyu Zhan's message of "Tue, 29 Jul 2014 20:50:08 +0800")
+Message-ID: <87lhrbhg86.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jianyu,
 
-1) Make fragmentation IDs less predictable, from Eric Dumazet.
+On Tue, 29 Jul 2014 20:50:08 +0800, Jianyu Zhan wrote:
+> Sorry for the noise,
+>
+> plz add these Acked-by and Signed-off-by:
 
-2) TSO tunneling can crash in bnx2x driver, fix from Dmitry Kravkov.
+I think you'd better to send it as a formal patch.
 
-3) Don't allow NULL msg->msg_name just because msg->msg_namelen is non-zero,
-   from Andrey Ryabinin.
-
-4) ndm->ndm_type set using wrong macros, from Jun Zhao.
-
-5) cdc-ether devices can come up with entries in their address filter,
-   so explicitly clear the filter after the device initializes.  From
-   Oliver Neukum.
-
-6) Forgotten refcount bump in xfrm_lookup(), from Steffen Klassert.
-
-7) Short packets not padded properly, exposing random data, in bcmgenet
-   driver.  Fix from Florian Fainelli.
-
-8) xgbe_probe() doesn't return an error code, but rather zero, when
-   netif_set_real_num_tx_queues() fails.  Fix from Wei Yongjun.
-
-9) USB speed not probed properly in r8152 driver, from Hayes Wang.
-
-10) Transmit logic choosing the outgoing port in the sunvnet driver needs
-    to consider a) is the port actually up and b) whether it is a switch
-    port.  Fix from David L Stevens.
-
-Please pull, thanks a lot!
-
-The following changes since commit 15ba2236f3556fc01b9ca91394465152b5ea74b6:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-07-21 22:46:01 -0700)
-
-are available in the git repository at:
+Thanks,
+Namhyung
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to d92f5dec6325079c550889883af51db1b77d5623:
-
-  net: phy: re-apply PHY fixups during phy_register_device (2014-07-29 12:25:57 -0700)
-
-----------------------------------------------------------------
-Alexey Khoroshilov (1):
-      isdn/bas_gigaset: fix a leak on failure path in gigaset_probe()
-
-Andrey Ryabinin (1):
-      net: sendmsg: fix NULL pointer dereference
-
-Daniel Borkmann (1):
-      net: sctp: inherit auth_capable on INIT collisions
-
-David L Stevens (1):
-      sunvnet: only use connected ports when sending
-
-David S. Miller (5):
-      Merge branch 'master' of git://git.kernel.org/.../klassert/ipsec
-      Merge git://git.kernel.org/.../pablo/nf
-      Merge branch 'mdio_module_unload'
-      Merge tag 'master-2014-07-23' of git://git.kernel.org/.../linville/wireless
-      Merge tag 'linux-can-fixes-for-3.16-20140725' of git://gitorious.org/linux-can/linux-can
-
-Dmitry Kravkov (1):
-      bnx2x: fix crash during TSO tunneling
-
-Eliad Peller (2):
-      cfg80211: fix mic_failure tracing
-      iwlwifi: mvm: pass beacons from foreign APs
-
-Emmanuel Grumbach (1):
-      iwlwifi: mvm: fix merge damage
-
-Eric Dumazet (1):
-      ip: make IP identifiers less predictable
-
-Ezequiel Garcia (2):
-      net: phy: Set the driver when registering an MDIO bus device
-      net: phy: Ensure the MDIO bus module is held
-
-Felix Fietkau (2):
-      mac80211: fix crash on getting sta info with uninitialized rate control
-      ath9k: fix aggregation session lockup
-
-Florian Fainelli (2):
-      net: bcmgenet: correctly pad short packets
-      net: phy: re-apply PHY fixups during phy_register_device
-
-George Cherian (1):
-      can: c_can_platform: Fix raminit, use devm_ioremap() instead of devm_ioremap_resource()
-
-Johannes Berg (1):
-      Revert "mac80211: move "bufferable MMPDU" check to fix AP mode scan"
-
-John W. Linville (3):
-      Merge git://git.kernel.org/.../jberg/mac80211
-      Merge branch 'master' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
-      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
-
-Julian Anastasov (1):
-      ipvs: avoid netns exit crash on ip_vs_conn_drop_conntrack
-
-Jun Zhao (1):
-      neighbour : fix ndm_type type error issue
-
-Oliver Neukum (2):
-      cdc_subset: deal with a device that needs reset for timeout
-      cdc-ether: clean packet filter upon probe
-
-Steffen Klassert (1):
-      xfrm: Fix refcount imbalance in xfrm_lookup
-
-Tobias Brunner (1):
-      xfrm: Fix installation of AH IPsec SAs
-
-Wei Yongjun (2):
-      amd-xgbe: Fix error return code in xgbe_probe()
-      hyperv: Fix error return code in netvsc_init_buf()
-
-Yaniv Rosner (1):
-      bnx2x: fix set_setting for some PHYs
-
-hayeswang (1):
-      r8152: fix the checking of the usb speed
-
- drivers/isdn/gigaset/bas-gigaset.c                  |  1 +
- drivers/net/can/c_can/c_can_platform.c              |  3 ++-
- drivers/net/ethernet/amd/xgbe/xgbe-main.c           |  3 ++-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x.h         |  1 +
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c     |  9 +++++++++
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_ethtool.c |  1 +
- drivers/net/ethernet/broadcom/genet/bcmgenet.c      |  5 +++++
- drivers/net/ethernet/sun/sunvnet.c                  | 22 +++++++++++++++++-----
- drivers/net/hyperv/netvsc.c                         |  4 +++-
- drivers/net/phy/mdio_bus.c                          |  1 +
- drivers/net/phy/phy_device.c                        | 15 ++++++++++++++-
- drivers/net/usb/cdc_ether.c                         | 16 ++++++++++++++++
- drivers/net/usb/cdc_subset.c                        | 27 +++++++++++++++++++++++++++
- drivers/net/usb/r8152.c                             |  7 +++----
- drivers/net/usb/usbnet.c                            |  8 ++++++--
- drivers/net/vxlan.c                                 |  2 +-
- drivers/net/wireless/ath/ath9k/xmit.c               |  9 +++++++++
- drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c         | 15 +++++++++++++--
- drivers/net/wireless/iwlwifi/mvm/mac80211.c         |  7 -------
- include/linux/usb/usbnet.h                          |  3 +++
- include/net/ip.h                                    | 11 +----------
- net/compat.c                                        |  9 +++++----
- net/core/iovec.c                                    |  6 +++---
- net/core/neighbour.c                                |  2 +-
- net/ipv4/route.c                                    | 32 +++++++++++++++++++++++++++++---
- net/ipv6/ip6_output.c                               |  2 ++
- net/mac80211/cfg.c                                  |  5 ++++-
- net/mac80211/tx.c                                   | 20 ++++++++++----------
- net/netfilter/ipvs/ip_vs_conn.c                     |  1 -
- net/sctp/associola.c                                |  1 +
- net/wireless/trace.h                                |  3 ++-
- net/xfrm/xfrm_policy.c                              |  2 ++
- net/xfrm/xfrm_user.c                                |  7 +++----
- 33 files changed, 197 insertions(+), 63 deletions(-)
+>
+> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+>
+> Thanks,
+> Jianyu Zhan
+>
+>
+> On Tue, Jul 29, 2014 at 8:47 PM, Jianyu Zhan <nasa4836@gmail.com> wrote:
+>> Hi, Ingo,
+>>
+>> Here is the new patch with typo fixed.
+>>
+>> Thanks.
+>>
+>> ---8<---
+>>
+>> Currently, if user specifies both symbol name and address, we just
+>> bail out.
+>>
+>> This might be too rude. This patch makes it give more tolerance.
+>> If both are specified, check address first, if the symbol found
+>> does not match the one user specify, print a waring. If not found,
+>> return -ENOENT, because some symbols might have muplitple instances,
+>> we don't bother to check symbol name.
+>> ---
+>>  Documentation/kprobes.txt |  4 +++-
+>>  kernel/kprobes.c          | 32 +++++++++++++++++++++++++++++---
+>>  2 files changed, 32 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
+>> index 4bbeca8..663b5ad 100644
+>> --- a/Documentation/kprobes.txt
+>> +++ b/Documentation/kprobes.txt
+>> @@ -358,7 +358,9 @@ to install a probepoint is known. This field is used to calculate the
+>>  probepoint.
+>>
+>>  3. Specify either the kprobe "symbol_name" OR the "addr". If both are
+>> -specified, kprobe registration will fail with -EINVAL.
+>> +specified, only check "addr", because some symbols might have multiple
+>> +instances. If neither is specified, kprobe registration will fail
+>> +with -EINVAL.
+>>
+>>  4. With CISC architectures (such as i386 and x86_64), the kprobes code
+>>  does not validate if the kprobe.addr is at an instruction boundary.
+>> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+>> index 734e9a7..9768608 100644
+>> --- a/kernel/kprobes.c
+>> +++ b/kernel/kprobes.c
+>> @@ -1358,15 +1358,41 @@ static bool within_kprobe_blacklist(unsigned long addr)
+>>  static kprobe_opcode_t *kprobe_addr(struct kprobe *p)
+>>  {
+>>         kprobe_opcode_t *addr = p->addr;
+>> +       char namebuf[KSYM_NAME_LEN];
+>> +       const char *sym_name = NULL;
+>> +       unsigned long offset;
+>>
+>> -       if ((p->symbol_name && p->addr) ||
+>> -           (!p->symbol_name && !p->addr))
+>> +       if (!p->symbol_name && !p->addr)
+>>                 goto invalid;
+>>
+>> -       if (p->symbol_name) {
+>> +       /*
+>> +        * Some symbols might have multiple instances,
+>> +        * so if both are specified, only check address.
+>> +        */
+>> +       if (unlikely(p->addr && p->symbol_name)) {
+>> +               sym_name = kallsyms_lookup((unsigned long)(p->addr),
+>> +                               NULL, &offset, NULL, namebuf);
+>> +               if (!sym_name)
+>> +                       return ERR_PTR(-ENOENT);
+>> +
+>> +               if (strncmp(sym_name, p->symbol_name, KSYM_NAME_LEN)
+>> +                               || offset != p->offset) {
+>> +                       pr_err("Incorrect symbol or offset, should be "
+>> +                               "symbol=%s, offset=%ld.\n", sym_name, offset);
+>> +                       goto invalid;
+>> +               }
+>> +       } else if (p->symbol_name) {
+>> +               /* Only symbol case */
+>>                 kprobe_lookup_name(p->symbol_name, addr);
+>>                 if (!addr)
+>>                         return ERR_PTR(-ENOENT);
+>> +       } else {
+>> +               /*
+>> +                * Only address case.
+>> +                * Since we later will do a sanity check of the
+>> +                * address range in check_kprobe_address_safe(),
+>> +                * do nothing here.
+>> +                */
+>>         }
+>>
+>>         addr = (kprobe_opcode_t *)(((char *)addr) + p->offset);
+>> --
+>> 2.0.0
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-doc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
