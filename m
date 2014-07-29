@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044AbaG2JTJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 05:19:09 -0400
-Received: from sym2.noone.org ([178.63.92.236]:36387 "EHLO sym2.noone.org"
+	id S1753247AbaG2JTb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 05:19:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:7812 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750746AbaG2JTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 05:19:07 -0400
-Date: Tue, 29 Jul 2014 11:18:57 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Seunghun Lee <waydi1@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        Lidza Louina <lidza.louina@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: dgnc: remove commented code
-Message-ID: <20140729091857.GB16199@distanz.ch>
-References: <1406306941-3053-1-git-send-email-waydi1@gmail.com>
+	id S1753135AbaG2JT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 05:19:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,755,1400050800"; 
+   d="scan'208";a="580533493"
+Date: Tue, 29 Jul 2014 09:17:13 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>,
+        "arjan.van.de.ven@intel.com" <arjan.van.de.ven@intel.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "alan.cox@intel.com" <alan.cox@intel.com>,
+        "mark.gross@intel.com" <mark.gross@intel.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
+Subject: Re: [PATCH 0/2 v4] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140729011713.GD5203@intel.com>
+References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
+ <20140718153931.GJ8700@e103034-lin>
+ <20140727190237.GB22986@intel.com>
+ <20140728103812.GP6758@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406306941-3053-1-git-send-email-waydi1@gmail.com>
-X-Editor: Vi IMproved 7.3
+In-Reply-To: <20140728103812.GP6758@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-25 at 18:49:01 +0200, Seunghun Lee <waydi1@gmail.com> wrote:
-> This patch removes commented code in dgnc driver.
+On Mon, Jul 28, 2014 at 12:38:12PM +0200, Peter Zijlstra wrote:
+> On Mon, Jul 28, 2014 at 03:02:37AM +0800, Yuyang Du wrote:
+> > > Another thing that might be an issue is that the blocked of a terminated
+> > > task lives on for quite a while until has decayed away.
+> > 
+> > Good point. To do so, if I read correctly, we need to hook do_exit(), but probably
+> > we are gonna encounter rq->lock issue.
+> > 
+> > What is the opinion/guidance from the maintainers/others?
 > 
-> CC: Lidza Louina <lidza.louina@gmail.com>
-> CC: Mark Hounschell <markh@compro.net>
-> Signed-off-by: Seunghun Lee <waydi1@gmail.com>
-> ---
->  drivers/staging/dgnc/dgnc_cls.c   |    5 +-
->  drivers/staging/dgnc/dgnc_trace.c |  123 -------------------------------------
->  drivers/staging/dgnc/dgnc_trace.h |   10 ---
->  drivers/staging/dgnc/dgnc_tty.c   |   18 ------
->  drivers/staging/dgnc/digi.h       |    1 -
->  5 files changed, 1 insertion(+), 156 deletions(-)
+> So the entire point of this per entity tracking was to make sure load
+> numbers reflect reality. We account migrations etc., it would be weird
+> to then throw all that out the window and let task exit accumulate crap.
 > 
-> diff --git a/drivers/staging/dgnc/dgnc_cls.c b/drivers/staging/dgnc/dgnc_cls.c
-> index 8e265c2..4b65306 100644
-> --- a/drivers/staging/dgnc/dgnc_cls.c
-> +++ b/drivers/staging/dgnc/dgnc_cls.c
-> @@ -1046,10 +1046,7 @@ static void cls_flush_uart_read(struct channel_t *ch)
->  	 * I believe this is a BUG in this UART.
->  	 * So for now, we will leave the code #ifdef'ed out...
->  	 */
 
-The comment above relates to the deleted code, so it should be updated
-accordingly.
-
-> -#if 0
-> -	writeb((UART_FCR_ENABLE_FIFO | UART_FCR_CLEAR_RCVR),
-> -					 &ch->ch_cls_uart->isr_fcr);
-> -#endif
-> +
->  	udelay(10);
->  }
+Yes. So I will hook up do_exit. Hope I did it right. Likewise, also do group entity
+in group destroy and group offline? 
