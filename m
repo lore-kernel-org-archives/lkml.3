@@ -1,108 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659AbaG2Fw7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 01:52:59 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:61739 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582AbaG2Fwz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 01:52:55 -0400
+	id S1752700AbaG2FxO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 01:53:14 -0400
+Received: from ozlabs.org ([103.22.144.67]:55896 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751345AbaG2FxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 01:53:12 -0400
+Date: Tue, 29 Jul 2014 15:53:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jason Cooper <jason@lakedaemon.net>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Carino <marc.ceeeee@gmail.com>, Matt Porter <mporter@linaro.org>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: linux-next: manual merge of the irqchip tree with the arm-soc tree
+Message-ID: <20140729155302.3c1d5437@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <53D68CC4.1010704@ti.com>
-References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be>
- <1402592023-13416-1-git-send-email-grygorii.strashko@ti.com>
- <1402592023-13416-3-git-send-email-grygorii.strashko@ti.com>
- <20140728140533.6E916C4116F@trevor.secretlab.ca> <53D68CC4.1010704@ti.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 28 Jul 2014 23:52:34 -0600
-X-Google-Sender-Auth: LIF-0JjScGdbluHlevyNG7XpVGs
-Message-ID: <CACxGe6uMke5vgzcNC9xUqjr2bHJ4QFHD6YjocSZWq8Ccx8Mm6A@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/2] of/clk: use "clkops-clocks" to specify clocks
- handled by clock_ops domain
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        ulf.hansson@linaro.org, Kevin Hilman <khilman@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/cDZdTduRx+6i1wcFhpCSIY4"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 11:47 AM, Grygorii Strashko
-<grygorii.strashko@ti.com> wrote:
-> Hi Grant.
->
-> On 07/28/2014 05:05 PM, Grant Likely wrote:
->> On Thu, 12 Jun 2014 19:53:43 +0300, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
->>> Use "clkops-clocks" property to specify clocks handled by
->>> clock_ops domain PM domain. Only clocks defined in "clkops-clocks"
->>> set of clocks will be handled by Runtime PM through clock_ops
->>> Pm domain.
->>>
->>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->>> ---
->>>   drivers/of/of_clk.c |    7 ++-----
->>>   1 file changed, 2 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/drivers/of/of_clk.c b/drivers/of/of_clk.c
->>> index 35f5e9f..5f9b90e 100644
->>> --- a/drivers/of/of_clk.c
->>> +++ b/drivers/of/of_clk.c
->>> @@ -86,11 +86,8 @@ int of_clk_register_runtime_pm_clocks(struct device_node *np,
->>>      struct clk *clk;
->>>      int error;
->>>
->>> -    for (i = 0; (clk = of_clk_get(np, i)) && !IS_ERR(clk); i++) {
->>> -            if (!clk_may_runtime_pm(clk)) {
->>> -                    clk_put(clk);
->>> -                    continue;
->>> -            }
->>> +    for (i = 0; (clk = of_clk_get_from_set(np, "clkops", i)) &&
->>> +                 !IS_ERR(clk); i++) {
->>
->> This really looks like an ABI break to me. What happens to all the
->> existing platforms who don't have this new clkops-clocks in their device
->> tree?
->
-> Agree. This patch as is will break such platforms.
-> As possible solution for above problem - the NULL can be used as clock's prefix
-> by default and platform code can configure new value of clock's prefix during
-> initialization.
-> In addition, to make this solution full the of_clk_get_by_name() will
-> need to be modified too.
->
-> But note pls, this is pure RFC patches which I did to find out the answer on questions:
-> - What is better: maintain Runtime PM clocks configuration in DT or in code?
+--Sig_/cDZdTduRx+6i1wcFhpCSIY4
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-In code. I don't think it is workable to embed runtime PM behaviour
-into the DT bindings. I think there will be too much variance in what
-hardware requires. We can create helpers to make this simpler, but I
-don't think it is a good idea to set it up automatically without any
-control from the driver itself.
+Hi Jason,
 
->
-> - Where and when to call of_clk_register_runtime_pm_clocks()?
->   Bus notifier/ platform core/ device drivers
+Today's linux-next merge of the irqchip tree got a conflict in
+Documentation/devicetree/bindings/arm/gic.txt between commit
+f80b71397d09 ("ARM: brcmstb: gic: add compatible string for Broadcom
+Brahma15") from the arm-soc tree and commit 3e44358c12cc ("") from the
+irqchip tree.
 
-I would say in device drivers.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> Also, May be platform dependent solution [1] can be acceptable for now?
->
-> [1] https://lkml.org/lkml/2014/7/25/630
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I need to look at the series before I comment. I've flagged it and
-will hopefully look at it tomorrow.
+diff --cc Documentation/devicetree/bindings/arm/gic.txt
+index c7d2fa156678,d2eea0b75580..000000000000
+--- a/Documentation/devicetree/bindings/arm/gic.txt
++++ b/Documentation/devicetree/bindings/arm/gic.txt
+@@@ -16,8 -17,9 +17,10 @@@ Main node required properties
+  	"arm,cortex-a9-gic"
+  	"arm,cortex-a7-gic"
+  	"arm,arm11mp-gic"
+ +	"brcm,brahma-b15-gic"
++=20
+  - interrupt-controller : Identifies the node as an interrupt controller
++=20
+  - #interrupt-cells : Specifies the number of cells needed to encode an
+    interrupt source.  The type shall be a <u32> and the value shall be 3.
+ =20
 
-g.
+--Sig_/cDZdTduRx+6i1wcFhpCSIY4
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT1zbEAAoJEMDTa8Ir7ZwVMGoP/jfHRcNayCMivuExNfloBclK
+f6pgGRBpG1A/RzqReIohGdeidoeb/VxUF88mlqd+g0gKCjRZssUlL65XiVJQWCbB
+vFP4cl1bNYdSQpk0UbYChRb6TYeyPgE1bqeUY9I7MQL+HJcen+MQDNE5SMDigMqI
+7Lew4BX71/5XUErtwrxFsYqLrmw7hW828pl4M1by3b6uW2+v62vBe9fwVIKjgggS
+yQN6HsPTEywplZAWyfWx13rvmfbpzpq9QeOTyj3Dxgf3aMIV0pbf2OA5Wg2ZbVo0
+OAxPStXDUxTCXbN9Apq+cyqbdywNPEUOiFpTIH22IGLjpa6QmpTiCvHkaFzV6c00
+BeCmGNmyyb4KPxd3oBuirMNXx0OduFLUHvB9QaDGQuzCEnRkrkzD+8IgJdjSMFIy
+1/cSDIGny5+U4tXs0NkGdZQkXJveE7cnbZ+EKxxZ8ThMnQpaHgVzFOvUrtLqaqbY
+yjtD0YNlbggOCKZULt6tnwGvU6OMvlAynUQ7pH3niDZ6E6Kc2CHUQjcDPdmhdpVm
+DF73id9+nn+oL+xVIetxEOhhjenJg+cjBhxz09xWN4GZeGQkCNkMuEjwdjQHBlGx
+FFBwZ2AqiosNAUJ3gGrclKSnVnAyDF9/5DbFnRRueAGUaeMPG5wubWTK5Dfqe35T
+ks8xIbzpYMLw/6NXQW/I
+=YJYM
+-----END PGP SIGNATURE-----
+
+--Sig_/cDZdTduRx+6i1wcFhpCSIY4--
