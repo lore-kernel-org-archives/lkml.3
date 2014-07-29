@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005AbaG2PFG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:05:06 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:53727 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387AbaG2PFE (ORCPT
+	id S1754026AbaG2PF1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:05:27 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:33639 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841AbaG2PFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:05:04 -0400
-Date: Tue, 29 Jul 2014 11:04:59 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 2/2 V2] workqueue: use dedicated creater kthread for
- all pools
-Message-ID: <20140729150459.GE4791@htj.dyndns.org>
-References: <20140729021643.GA22241@mtj.dyndns.org>
- <1406625376-19177-1-git-send-email-laijs@cn.fujitsu.com>
+	Tue, 29 Jul 2014 11:05:24 -0400
+X-ASG-Debug-ID: 1406645609-0759e7416bea88b0002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+From: Frans Klaver <frans.klaver@xsens.com>
+To: <linux-serial@vger.kernel.org>
+CC: Frans Klaver <frans.klaver@xsens.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH 0/3] omap-serial high-speed fixes/improvements
+Date: Tue, 29 Jul 2014 16:52:54 +0200
+X-ASG-Orig-Subj: [RFC PATCH 0/3] omap-serial high-speed fixes/improvements
+Message-ID: <1406645577-18620-1-git-send-email-frans.klaver@xsens.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406625376-19177-1-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [172.16.11.49]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1406645609
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=BSF_SC0_MISMATCH_TO
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.7924
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.00 BSF_SC0_MISMATCH_TO    Envelope rcpt doesn't match header
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-On Tue, Jul 29, 2014 at 05:16:07PM +0800, Lai Jiangshan wrote:
+Here's a couple of patches that should improve the behavior of the omap serial
+driver at high data rates and baud rates.
 
-First of all, the patch is too big.  This is a rather pervasive
-change.  Please split it up if at all possible.
+I was actually surprised to see that proper dma support isn't there yet, but
+there you go. Anyone got news on that, by the way?
 
-> +/* Start the mayday timer and the creater when needed */
-> +static inline void start_creater_work(struct worker_pool *pool)
-> +{
-> +	if (pool->nr_idle || pool->creating || list_empty(&pool->worklist))
-> +		return;
+Thanks for reviewing this,
+Frans
 
-pool->creating is an optimization around queue_kthread_work(), right?
-So that you don't have to grab the lock every time a work item is
-queued.  Please explain things like that explicitly.  Also, the
-condition itself needs explanation.  This is what guarantees that the
-queue is not stalled after all.
 
-Hmmm... list_empty() is unnecessary when called from the queueing
-path.  Do we want to move that out of this function?
+Frans Klaver (3):
+  tty: omap-serial: prevent division by zero
+  tty: omap-serial: use threaded interrupt handler
+  tty: omap-serial: support setting of hardware flow control in dts
 
->  	/* we own @work, set data and link */
->  	set_work_pwq(work, pwq, extra_flags);
->  	list_add_tail(&work->entry, head);
-> +	start_creater_work(pool);
-
-creator is spelled with an 'o' not 'e'.  Also, it'd be better if the
-name reflects that this is a kthread_work not a workqueue one.
-
-> +static void create_worker(struct kthread_work *work)
->  {
-...
->  fail:
->  	if (id >= 0)
->  		ida_simple_remove(&pool->worker_ida, id);
->  	kfree(worker);
-> -	return NULL;
-> +
-> +	/* cool down before next create_worker() */
-> +	schedule_timeout_interruptible(CREATE_COOLDOWN);
-> +	del_timer_sync(&pool->mayday_timer);
-> +
-> +	spin_lock_irq(&pool->lock);
-> +	pool->creating = false;
-> +	start_creater_work(pool);
-> +	spin_unlock_irq(&pool->lock);
-
-Why?  Just sleep and retry?  What's the point of requeueing?
-
-> -/**
->   * process_one_work - process single work
->   * @worker: self
->   * @work: work to process
-> @@ -1991,6 +1905,7 @@ __acquires(&pool->lock)
->  	work_color = get_work_color(work);
->  
->  	list_del_init(&work->entry);
-> +	start_creater_work(pool);
-
-Should this be combined with wake_up_worker()?
-
-Thanks.
+ .../devicetree/bindings/serial/omap_serial.txt     |  1 +
+ drivers/tty/serial/omap-serial.c                   | 52 ++++++++++++++++------
+ 2 files changed, 40 insertions(+), 13 deletions(-)
 
 -- 
-tejun
+1.9.3
+
