@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599AbaG2UTq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 16:19:46 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64387 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748AbaG2UTo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 16:19:44 -0400
+	id S1754033AbaG2UUv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 16:20:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8903 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751883AbaG2UUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 16:20:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,759,1400050800"; 
+   d="scan'208";a="580818467"
+From: "Brown, Aaron F" <aaron.f.brown@intel.com>
+To: "rickard_strandqvist@spectrumdigital.se" 
+	<rickard_strandqvist@spectrumdigital.se>
+CC: "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        Linux NICS <Linux-nics@isotope.jf.intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [E1000-devel] [PATCH] net: ethernet: intel: ixgbe:
+ ixgbe_main.c: Cleaning up missing null-terminate in conjunction with strncpy
+Thread-Topic: [E1000-devel] [PATCH] net: ethernet: intel: ixgbe:
+ ixgbe_main.c: Cleaning up missing null-terminate in conjunction with strncpy
+Thread-Index: AQHPq2qT1JRz8LTRikmZ324DUp5bpQ==
+Date: Tue, 29 Jul 2014 20:20:44 +0000
+Message-ID: <309B89C4C689E141A5FF6A0C5FB2118B73369BE0@ORSMSX104.amr.corp.intel.com>
+References: <1406384676-2606-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20140728083935.6f4b77c1@samsung-9>
+ <CAFo99gacYur41ZPng3v4KUq_6C5vY6hTrXz1fsCJnCGHY5_i0A@mail.gmail.com>
+In-Reply-To: <CAFo99gacYur41ZPng3v4KUq_6C5vY6hTrXz1fsCJnCGHY5_i0A@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Mikko Perttunen <mperttunen@nvidia.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Peter De Schrijver" <pdeschrijver@nvidia.com>,
-        "Prashant Gaikwad" <pgaikwad@nvidia.com>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <53D75FA7.1030300@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>
- <1405088313-20048-9-git-send-email-mperttunen@nvidia.com>
- <53CE97F2.80300@wwwdotorg.org> <53D75FA7.1030300@nvidia.com>
-Message-ID: <20140729201939.4627.79710@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH 8/8] clk: tegra: Add EMC clock driver
-Date: Tue, 29 Jul 2014 13:19:39 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6TKKvwe027400
 
-Quoting Mikko Perttunen (2014-07-29 01:47:35)
-> On 22/07/14 19:57, Stephen Warren wrote:
-> > On 07/11/2014 08:18 AM, Mikko Perttunen wrote:
-> >> +static int emc_debug_rate_set(void *data, u64 rate)
-> >> +{
-> >> +    struct tegra_emc *tegra = data;
-> >> +
-> >> +    return clk_set_rate(tegra->hw.clk, rate);
-> >> +}
-> >> +
-> >> +DEFINE_SIMPLE_ATTRIBUTE(emc_debug_rate_fops, emc_debug_rate_get,
-> >> +                    emc_debug_rate_set, "%lld\n");
+On Tue, 2014-07-29 at 14:15 +0200, Rickard Strandqvist wrote:
+> Den 29 jul 2014 04:40 skrev "Stephen Hemminger" <stephen@networkplumber.org
+> >:
 > >
-> > I think the rate can already be obtained through
-> > ...debug/clock/clock_summary. I'm not sure about changing the rate, but
-> > shouldn't that be a feature of the common clock core, not individual
-> > drivers?
+> > On Sat, 26 Jul 2014 16:24:36 +0200
+> > Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
+> >
+> > > Replacing strncpy with strlcpy to avoid strings that lacks null
+> terminate.
+> > >
+> > > Signed-off-by: Rickard Strandqvist <
+> rickard_strandqvist@spectrumdigital.se>
+> > > ---
+> >                            hw->mac.type, hw->phy.type, hw->phy.sfp_type,
+> >
+> > This patch doesn't change anything.
+> > Netdev is already zeroed when allocated therefore doing strncpy()
+> guarantees
+> > it will be null terminated.
 > 
-> The core doesn't allow writing to the rate debugfs files, so this is the 
-> only way to trigger an EMC clock change for now. I agree that the core 
-> might be a better place. I don't know if there are any philosophical 
-> objections to that. I'd like to keep this in until a possible core 
-> feature addition. Mike, any comments?
+> Hi Stephen
+> 
+> It's not clear that alloc_etherdev_mq() will zero the memory area:
+> 
+<snip>
 
-Yes, there is a philosophical rejection to exposing rate-change knobs to
-userspace through debugfs. These can and will ship in real products
-(typically Android) with lots of nasty userspace hacks, and also
-represent pretty dangerous things to expose to userspace. I have always
-maintained that such knobs should remain out of tree or, with the advent
-of the custom debugfs entries, should be burden of the clock drivers.
+Thanks Rickard, given strncpy to strlcpy gets suggested by static code
+generators this will probably come up again even if it results in no
+real change.  I (covering for Jeff Kirsher) went ahead and added it to
+our internal tree.
 
-Regards,
-Mike
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
