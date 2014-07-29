@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320AbaG2Fdb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 01:33:31 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:52392 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaG2Fd3 (ORCPT
+	id S1752486AbaG2Fhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 01:37:31 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:46407 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146AbaG2Fha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 01:33:29 -0400
-Message-ID: <53D73220.8040704@monstr.eu>
-Date: Tue, 29 Jul 2014 07:33:20 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 29 Jul 2014 01:37:30 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [LINUX PATCH] ARM: zynq: DT: Remove DMA from board DTs
-References: <1406564643-10417-1-git-send-email-soren.brinkmann@xilinx.com> <53D67B3C.3050401@suse.de>
-In-Reply-To: <53D67B3C.3050401@suse.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="WcQJ1v8lQmWQwM5dhVx9FOalOMpL3Fgb2"
+In-Reply-To: <CAPDOMVj=XHihdPmyh2=aHTYZFYtM_BXQVLdzrVTThjOVnb-8dQ@mail.gmail.com>
+References: <CAPDOMViYi_rg_cGp_SgZVqX6pw+SB=CVbr1kFn5WG481s4tz5A@mail.gmail.com>
+	<20140727083758.GA4834@fancy-poultry.org>
+	<CAPDOMVgjLU+r82eKFA=4-v_oS+4c4fCtovcZMer5x5GAW56DSw@mail.gmail.com>
+	<20140728095442.GA4875@fancy-poultry.org>
+	<CAPDOMViPdBnkLH2t=1zGAyB98bNGfZrxLvDngDrDQHYP+uCuqg@mail.gmail.com>
+	<20140728201344.GB13832@fancy-poultry.org>
+	<CAPDOMVj=XHihdPmyh2=aHTYZFYtM_BXQVLdzrVTThjOVnb-8dQ@mail.gmail.com>
+Date: Tue, 29 Jul 2014 01:37:28 -0400
+Message-ID: <CAPDOMVhwBK4W3tfaHvZS2VoLr_VWhfHt60b4WdBXMKQ-gJLjsA@mail.gmail.com>
+Subject: Re: Bug on Kernel 3.16 r6: Sound and Buffering in Clementine with
+ Files are Transferring to Music Directory
+From: Nick Krause <xerofoify@gmail.com>
+To: Heinz Diehl <htd@fancy-poultry.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---WcQJ1v8lQmWQwM5dhVx9FOalOMpL3Fgb2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 07/28/2014 06:33 PM, Andreas F=C3=A4rber wrote:
-> Am 28.07.2014 18:24, schrieb Soren Brinkmann:
->> The DMA engine is enabled for all DTs that derive from zynq-7000.dtsi.=
-
->> There is no need to override the 'status' property in board DTs.
+On Mon, Jul 28, 2014 at 6:24 PM, Nick Krause <xerofoify@gmail.com> wrote:
+> On Mon, Jul 28, 2014 at 4:13 PM, Heinz Diehl <htd@fancy-poultry.org> wrote:
+>> On 28.07.2014, Nick Krause wrote:
 >>
->> Cc: Andreas F=C3=A4rber <afaerber@suse.de>
->> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
->> ---
->> When the 'status' property was removed from the DMA node, this had bee=
-n
->> overlooked.
->=20
-> Indeed,
->=20
-> Reviewed-by: Andreas F=C3=A4rber <afaerber@suse.de>
+>>> Then explain to me why this is only happening on recent rc kernels and not
+>>> the Ubuntu distro kernels I was using before. Seems weird that only
+>>> recent rc kernels are triggering this.
+>>
+>> The, if you actually can reproduce it with a vanilla kernel (non-
+>> distro) and you're still convinced it must be a bug, you could
+>> consider bisecting the offending patch. Here is how it works:
+>>
+>> http://tinyurl.com/yo533k
+>>
+>> Good luck!
+>>
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> Thanks Heinz,
+> I will bisect tonight and see if I can find the offending commit.
+> Regards Nick
 
-Applied.
-
-Thanks,
-Michal
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---WcQJ1v8lQmWQwM5dhVx9FOalOMpL3Fgb2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlPXMiQACgkQykllyylKDCE/1QCfRd6Cwp6cuVGqUmaTjoxD/RPj
-PO0AniEik4vAR1ITapBTgVrpeKaqtUNM
-=p78X
------END PGP SIGNATURE-----
-
---WcQJ1v8lQmWQwM5dhVx9FOalOMpL3Fgb2--
+Heinz,
+No luck with git still appears in 3.12 r6 as far as I can tell seems to be
+from an older kernel then I thought. Doesn't show up on a newer 3.13
+Ubuntu kernel through.
+Regards Nick
