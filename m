@@ -1,123 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351AbaG2Lf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 07:35:28 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:11258 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251AbaG2Lf1 (ORCPT
+	id S1753399AbaG2Lfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 07:35:54 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51651 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751234AbaG2Lfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 07:35:27 -0400
-Message-ID: <53D786EE.3070800@huawei.com>
-Date: Tue, 29 Jul 2014 19:35:10 +0800
-From: Zhang Zhen <zhenzhang.zhang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 29 Jul 2014 07:35:53 -0400
+From: Punit Agrawal <punit.agrawal@arm.com>
+To: arm@kernel.org, arnd@arndb.de
+Cc: Himangi Saraogi <himangi774@gmail.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "julia.lawall\@lip6.fr" <julia.lawall@lip6.fr>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH] drivers: CCI: Correct use of ! and &
+References: <20140707140538.GA4204@himangi-Dell> <9hhwqb42k63.fsf@arm.com>
+	<20140723150518.GD27677@arm.com>
+Date: Tue, 29 Jul 2014 12:34:17 +0100
+In-Reply-To: <20140723150518.GD27677@arm.com> (Will Deacon's message of "Wed,
+	23 Jul 2014 16:05:18 +0100")
+Message-ID: <9hhvbqg1jra.fsf@arm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        David Rientjes <rientjes@google.com>
-CC: <wangnan0@huawei.com>, <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>
-Subject: [PATCH v3] memory hotplug: update the variables after memory removed
-References: <1406633598-27910-1-git-send-email-zhenzhang.zhang@huawei.com>
-In-Reply-To: <1406633598-27910-1-git-send-email-zhenzhang.zhang@huawei.com>
-X-Forwarded-Message-Id: <1406633598-27910-1-git-send-email-zhenzhang.zhang@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.77]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A02020A.53D786FB.0169,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 382ee77ee266bfe7541aa9b49610a243
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit ea0854170c95 ("memory hotplug: fix a bug on /dev/mem
-for 64-bit kernels") added a fuction update_end_of_memory_vars()
-to update high_memory, max_pfn and max_low_pfn.
+Hi Arnd,
 
-Here we may access wrong memory via /dev/mem after memory remove
-without this patch.
-I modified the function and call it in arch_remove_memory() to update
-these variables too.
+Will Deacon <will.deacon@arm.com> writes:
 
-Change v1->v2:
-- according to Dave Hansen and David Rientjes's suggestions modified
-  update_end_of_memory_vars().
-change v2->v3:
-- remove the extra space before the function identifier of
-  update_end_of_memory_vars().
-- remove the end_pfn and use start_pfn + nr_pages in the conditional.
+> On Wed, Jul 23, 2014 at 04:01:56PM +0100, Punit Agrawal wrote:
+>> > diff --git a/drivers/bus/arm-cci.c b/drivers/bus/arm-cci.c
+>> > index 5a86da9..7af78df 100644
+>> > --- a/drivers/bus/arm-cci.c
+>> > +++ b/drivers/bus/arm-cci.c
+>> > @@ -397,7 +397,8 @@ static irqreturn_t pmu_handle_irq(int irq_num, void *dev)
+>> >  		hw_counter = &event->hw;
+>> >  
+>> >  		/* Did this counter overflow? */
+>> > -		if (!pmu_read_register(idx, CCI_PMU_OVRFLW) & CCI_PMU_OVRFLW_FLAG)
+>> > +		if (!(pmu_read_register(idx, CCI_PMU_OVRFLW) &
+>> > +		      CCI_PMU_OVRFLW_FLAG))
+>> >  			continue;
+>> 
+>> 
+>> Going back to the manual, this fix looks correct.
+>> 
+>> Acked-by: Punit Agrawal <punit.agrawal@arm.com>
+>> 
+>> Will, would this go via your tree?
+>
+> Given that you're happy with it, I don't mind which tree it goes in.
+> Probably deserves a CC stable on it too.
 
-Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
----
- arch/x86/mm/init_64.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+The CCI PMU patches went via arm-soc. Are you happy to pick this fix with
+the Ack and a Cc to stable.
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index df1a992..d16368e 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -673,15 +673,11 @@ void __init paging_init(void)
-  * After memory hotplug the variables max_pfn, max_low_pfn and high_memory need
-  * updating.
-  */
--static void  update_end_of_memory_vars(u64 start, u64 size)
-+static void update_end_of_memory_vars(u64 end_pfn)
- {
--	unsigned long end_pfn = PFN_UP(start + size);
--
--	if (end_pfn > max_pfn) {
--		max_pfn = end_pfn;
--		max_low_pfn = end_pfn;
--		high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
--	}
-+	max_pfn = end_pfn;
-+	max_low_pfn = end_pfn;
-+	high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
- }
+Cheers,
+Punit
 
- /*
-@@ -694,6 +690,7 @@ int arch_add_memory(int nid, u64 start, u64 size)
- 	struct zone *zone = pgdat->node_zones + ZONE_NORMAL;
- 	unsigned long start_pfn = start >> PAGE_SHIFT;
- 	unsigned long nr_pages = size >> PAGE_SHIFT;
-+	unsigned long end_pfn;
- 	int ret;
-
- 	init_memory_mapping(start, start + size);
-@@ -702,7 +699,9 @@ int arch_add_memory(int nid, u64 start, u64 size)
- 	WARN_ON_ONCE(ret);
-
- 	/* update max_pfn, max_low_pfn and high_memory */
--	update_end_of_memory_vars(start, size);
-+	end_pfn = start_pfn + nr_pages;
-+	if (end_pfn > max_pfn)
-+		update_end_of_memory_vars(end_pfn);
-
- 	return ret;
- }
-@@ -1025,6 +1024,10 @@ int __ref arch_remove_memory(u64 start, u64 size)
- 	ret = __remove_pages(zone, start_pfn, nr_pages);
- 	WARN_ON_ONCE(ret);
-
-+	/* update max_pfn, max_low_pfn and high_memory */
-+	if ((max_pfn >= start_pfn) && (max_pfn < (start_pfn + nr_pages)))
-+		update_end_of_memory_vars(start_pfn);
-+
- 	return ret;
- }
- #endif
--- 
-1.8.1.2
-
-
-.
-
-
-
-
+>
+> If you get stuck, put it in rmk's patch system.
+>
+> Will
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
