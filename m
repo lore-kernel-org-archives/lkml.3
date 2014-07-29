@@ -1,224 +1,412 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaG2CpE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 22:45:04 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:59656 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702AbaG2Co7 (ORCPT
+	id S1752585AbaG2CvM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 22:51:12 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:46418 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702AbaG2CvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 22:44:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <53D6EB53.2000209@infradead.org>
-References: <1406561500-18264-1-git-send-email-punnaia@xilinx.com>
-	<b37e0e96-e91d-496c-a530-df72898798a1@BY2FFO11FD057.protection.gbl>
-	<53D6EB53.2000209@infradead.org>
-Date: Tue, 29 Jul 2014 08:14:59 +0530
-Message-ID: <CAHLkNHLhN1WLU0HH5XKQuGG1O2-TEhTfQgLFMqbGiWQTPmVe1g@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 4/4] Documentation: nand: pl353: Add documentation
- for controller and driver
-From: Punnaiah Choudary <kpc528@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Michal Simek <michal.simek@xilinx.com>, grant.likely@linaro.org,
-        gregkh@linuxfoundation.org, jason@lakedaemon.net,
-        ezequiel.garcia@free-electrons.com, arnd@arndb.de, dwmw2@infradead.org,
-        computersforpeace@gmail.com, artem.bityutskiy@linux.intel.com,
-        pekon@ti.com, jussi.kivilinna@iki.fi, acourbot@nvidia.com,
-        ivan.khoronzhuk@ti.com, joern@logfs.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org,
-        punnaiah choudary kalluri <kalluripunnaiahchoudary@gmail.com>,
-        anirudh@xilinx.com, svemula@xilinx.com,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 28 Jul 2014 22:51:09 -0400
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+To: linux-mmc@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        agross@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v4] mmc: mmci: Add qcom dml support to the driver.
+Date: Tue, 29 Jul 2014 03:50:30 +0100
+Message-Id: <1406602230-18542-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406528572-5749-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1406528572-5749-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+On Qualcomm APQ8064 SOCs, SD card controller has an additional glue
+called DML (Data Mover Local/Lite) to assist dma transfers.
+This hardware needs to be setup before any dma transfer is requested.
+DML itself is not a DMA engine, its just a gule between the SD card
+controller and dma controller.
 
-  Thanks for the review. I will fix the below review comments in my
-next submission.
+Most of this code has been ported from qualcomm's 3.4 kernel.
 
-Regards,
-Punnaiah
+This patch adds the code necessary to intialize the hardware and setup
+before doing any dma transfers.
 
-On Tue, Jul 29, 2014 at 6:01 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 07/28/14 08:31, Punnaiah Choudary Kalluri wrote:
->> Added notes about the controller and driver
->>
->> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
->> ---
->> Changes in v4:
->> - None
->> ---
->>  Documentation/mtd/nand/pl353-nand.txt |   92 +++++++++++++++++++++++++++++++++
->>  1 files changed, 92 insertions(+), 0 deletions(-)
->>  create mode 100644 Documentation/mtd/nand/pl353-nand.txt
->>
->> diff --git a/Documentation/mtd/nand/pl353-nand.txt b/Documentation/mtd/nand/pl353-nand.txt
->> new file mode 100644
->> index 0000000..4deac94
->> --- /dev/null
->> +++ b/Documentation/mtd/nand/pl353-nand.txt
->> @@ -0,0 +1,92 @@
->> +This documents provides some notes about the ARM pl353 smc controller used in
->
->                                                     PL353 SMC
->
->> +Zynq SOC and confined to NAND specific details.
->
->             and is confined to
->
->> +
->> +Overview of the controller
->> +==========================
->> +     The SMC (PL353) supports two memory interfaces:
->> +     Interface 0 type SRAM.
->> +     Interface 1 type NAND.
->> +     This configuration supports the following configurable options:
->> +        . 32-bit or 64-bit AXI data width
->> +        . 8-bit, 16-bit, or 32-bit memory data width for interface 0
->> +        . 8-bit, or 16-bit memory data width for interface 1
->> +        . 1-4 chip selects on each interface
->> +        . SLC ECC block for interface 1
->> +
->> +For more information, refer the below link for TRM
->
->                          refer to the below link for TRM.
->
->> +http://infocenter.arm.com/help/topic/com.arm.doc.ddi0380g/
->> +DDI0380G_smc_pl350_series_r2p1_trm.pdf
->> +
->> +NAND memory accesses
->> +====================
->> +     . Two phase NAND accesses
->> +     . NAND command phase transfers
->> +     . NAND data phase transfers
->> +
->> +Two phase NAND accesses
->> +     The SMC defines two phases of commands when transferring data to or from
->> +NAND flash.
->> +
->> +Command phase
->> +     Commands and optional address information are written to the NAND flash.
->> +The command and address can be associated with either a data phase operation to
->> +write to or read from the array, or a status/ID register transfer.
->> +
->> +Data phase
->> + Data is either written to or read from the NAND flash. This data can be either
->> +data transferred to or from the array, or status/ID register information.
->> +
->> +NAND AXI address setup
->> +       AXI address      Command phase      Data phase
->> +     [31:24]         Chip address       Chip address
->> +     [23]            NoOfAddCycles_2    Reserved
->> +     [22]            NoOfAddCycles_1    Reserved
->> +     [21]            NoOfAddCycles_0    ClearCS
->> +     [20]            End command valid  End command valid
->> +     [19]            0                  1
->> +     [18:11]         End command        End command
->> +     [10:3]          Start command      [10] ECC Last
->> +                                        [9:3] Reserved
->> +     [2:0]           Reserved           Reserved
->> +
->> +ECC
->> +===
->> +    It operates on a number of 512 byte blocks of NAND memory and can be
->
->                                   512-byte blocks
->
->> +programmed to store the ECC codes after the data in memory. For writes,
->> +the ECC is written to the spare area of the page. For reads, the result of
->> +a block ECC check are made available to the device driver.
->> +
->> +------------------------------------------------------------------------
->> +|               n * 512 blocks                  | extra  | ecc    |     |
->
->                                                               ECC
->
->> +|                                               | block  | codes  |     |
->> +------------------------------------------------------------------------
->> +
->> +The ECC calculation uses a simple Hamming code, using 1-bit correction 2-bit
->> +detection. It starts when a valid read or write command with a 512 byte aligned
->
->                                                                   512-byte
->
->> +address is detected on the memory interface.
->> +
->> +Driver details
->> +==============
->> +     The NAND driver has dependancy with the pl353_smc memory controller
->
->                             dependency          PL353 SMC
->
->> +driver for intializing the nand timing parameters, bus width, ECC modes,
->
->               initializing the NAND
->
->> +control and status information.
->> +
->> +Since the controller expects that the chipselect bit should be cleared for the
->> +last data transfer i.e last 4 data bytes, the existing nandbase page
->
->              transfer,
->
->> +read/write routines for soft ecc and ecc none modes will not work. So, inorder
->
->                                 ECC and ECC                               in order
->
->> +to make this driver work, it always updates the ecc mode as HW ECC and
->
->                                                    ECC
->
->> +implemented the page read/write functions for supporting the SW ECC.
->
->    implements
->
->> +
->> +HW ECC mode:
->> +     Upto 2K page size is supported and beyond that it retuns
->
->         Up to                                             returns
->
->> +-ENOSUPPORT error. If the flsh has ONDIE ecc controller then the
->
->                              flash          ECC
->
->> +priority has given to the ONDIE ecc controller. Also the current
->
->             is given               ECC
->
->> +implementation has support for upto 64 byte oob area
->
->                                   up to 64-byte OOB area.
->
->> +
->> +SW ECC mode:
->> +     It supports all the pgae sizes. But since, zynq soc bootrom uses
->
->                             page sizes, but since Zynq SOC boot ROM
->
->> +HW ECC for the devices that have pgae size <=2K so, to avoid any ecc related
->
->                                     page size <= 2K, to avoid any ECC-related
->
->> +issues during boot, prefer HW ECC over SW ECC.
->> +
->> +For devicetree binding information please refer the below dt binding file
->
->                                              refer to the below
->
->> +Documentation/devicetree/bindings/memory-controllers/pl353-smc.txt
->>
->
->
-> --
-> ~Randy
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+---
+Changes since v3:
+  - moved copyright from Code Aurora to Linux Foundation, as
+    suggested by Stephen B.
+
+Changes since v2:
+  - copied missing memory barriers from 3.4 driver, spotted by Stephen B.
+  - removed unecessary braceses spotted by Stephen B.
+  - copied exact copyright year from 3.4 kernel.
+
+Changes since v1:
+   - Added licence text as spotted by Stephen B.
+   - Simplified dma channel lookup as suggested by Stephen B.
+   - Removed unnecessary parens spotted by Stephen B.
+   - in general some cleanup done.
+
+Changes since RFC:
+    - Moved qcom_dml.* to mmci_qcom_dml.* as suggested by Linus W.
+    - added BAM DMA dependency in Kconfig as suggested by Linus W.
+
+ drivers/mmc/host/Kconfig         |  11 +++
+ drivers/mmc/host/Makefile        |   1 +
+ drivers/mmc/host/mmci.c          |  18 +++-
+ drivers/mmc/host/mmci_qcom_dml.c | 177 +++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/host/mmci_qcom_dml.h |  31 +++++++
+ 5 files changed, 237 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/mmc/host/mmci_qcom_dml.c
+ create mode 100644 drivers/mmc/host/mmci_qcom_dml.h
+
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index a565254..3d9b84d 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -14,6 +14,17 @@ config MMC_ARMMMCI
+ 
+ 	  If unsure, say N.
+ 
++config MMC_QCOM_DML
++	tristate "Qualcomm Data Mover for SD Card Controller"
++	depends on MMC_ARMMMCI && QCOM_BAM_DMA
++	default y
++	help
++	  This selects the Qualcomm Data Mover lite/local on SD Card controller.
++	  This option will enable the dma to work correctly, if you are using
++	  Qcom SOCs and MMC, you would probably need this option to get DMA working.
++
++	  if unsure, say N.
++
+ config MMC_PXA
+ 	tristate "Intel PXA25x/26x/27x Multimedia Card Interface support"
+ 	depends on ARCH_PXA
+diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+index 7f81ddf..344c870 100644
+--- a/drivers/mmc/host/Makefile
++++ b/drivers/mmc/host/Makefile
+@@ -3,6 +3,7 @@
+ #
+ 
+ obj-$(CONFIG_MMC_ARMMMCI)	+= mmci.o
++obj-$(CONFIG_MMC_QCOM_DML)	+= mmci_qcom_dml.o
+ obj-$(CONFIG_MMC_PXA)		+= pxamci.o
+ obj-$(CONFIG_MMC_MXC)		+= mxcmmc.o
+ obj-$(CONFIG_MMC_MXS)		+= mxs-mmc.o
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index b66b351..9059570 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -43,6 +43,7 @@
+ #include <asm/sizes.h>
+ 
+ #include "mmci.h"
++#include "mmci_qcom_dml.h"
+ 
+ #define DRIVER_NAME "mmci-pl18x"
+ 
+@@ -74,6 +75,7 @@ static unsigned int fmax = 515633;
+  * @pwrreg_nopower: bits in MMCIPOWER don't controls ext. power supply
+  * @explicit_mclk_control: enable explicit mclk control in driver.
+  * @qcom_fifo: enables qcom specific fifo pio read logic.
++ * @qcom_dml: enables qcom specific dma glue for dma transfers.
+  */
+ struct variant_data {
+ 	unsigned int		clkreg;
+@@ -97,6 +99,7 @@ struct variant_data {
+ 	bool			pwrreg_nopower;
+ 	bool			explicit_mclk_control;
+ 	bool			qcom_fifo;
++	bool			qcom_dml;
+ };
+ 
+ static struct variant_data variant_arm = {
+@@ -205,6 +208,7 @@ static struct variant_data variant_qcom = {
+ 	.f_max			= 208000000,
+ 	.explicit_mclk_control	= true,
+ 	.qcom_fifo		= true,
++	.qcom_dml		= true,
+ };
+ 
+ static int mmci_card_busy(struct mmc_host *mmc)
+@@ -418,6 +422,7 @@ static void mmci_dma_setup(struct mmci_host *host)
+ {
+ 	const char *rxname, *txname;
+ 	dma_cap_mask_t mask;
++	struct variant_data *variant = host->variant;
+ 
+ 	host->dma_rx_channel = dma_request_slave_channel(mmc_dev(host->mmc), "rx");
+ 	host->dma_tx_channel = dma_request_slave_channel(mmc_dev(host->mmc), "tx");
+@@ -468,6 +473,10 @@ static void mmci_dma_setup(struct mmci_host *host)
+ 		if (max_seg_size < host->mmc->max_seg_size)
+ 			host->mmc->max_seg_size = max_seg_size;
+ 	}
++
++	if (variant->qcom_dml && host->dma_rx_channel && host->dma_tx_channel)
++		if (dml_hw_init(host, host->mmc->parent->of_node))
++			variant->qcom_dml = false;
+ }
+ 
+ /*
+@@ -569,6 +578,7 @@ static int __mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
+ 	struct dma_async_tx_descriptor *desc;
+ 	enum dma_data_direction buffer_dirn;
+ 	int nr_sg;
++	unsigned long flags = DMA_CTRL_ACK;
+ 
+ 	if (data->flags & MMC_DATA_READ) {
+ 		conf.direction = DMA_DEV_TO_MEM;
+@@ -593,9 +603,12 @@ static int __mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
+ 	if (nr_sg == 0)
+ 		return -EINVAL;
+ 
++	if (host->variant->qcom_dml)
++		flags |= DMA_PREP_INTERRUPT;
++
+ 	dmaengine_slave_config(chan, &conf);
+ 	desc = dmaengine_prep_slave_sg(chan, data->sg, nr_sg,
+-					    conf.direction, DMA_CTRL_ACK);
++					    conf.direction, flags);
+ 	if (!desc)
+ 		goto unmap_exit;
+ 
+@@ -644,6 +657,9 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
+ 	dmaengine_submit(host->dma_desc_current);
+ 	dma_async_issue_pending(host->dma_current);
+ 
++	if (host->variant->qcom_dml)
++		dml_start_xfer(host, data);
++
+ 	datactrl |= MCI_DPSM_DMAENABLE;
+ 
+ 	/* Trigger the DMA transfer */
+diff --git a/drivers/mmc/host/mmci_qcom_dml.c b/drivers/mmc/host/mmci_qcom_dml.c
+new file mode 100644
+index 0000000..300ef50
+--- /dev/null
++++ b/drivers/mmc/host/mmci_qcom_dml.c
+@@ -0,0 +1,177 @@
++/*
++ *
++ * Copyright (c) 2011, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++#include <linux/of.h>
++#include <linux/of_dma.h>
++#include <linux/bitops.h>
++#include <linux/mmc/host.h>
++#include <linux/mmc/card.h>
++#include "mmci.h"
++
++/* Registers */
++#define DML_CONFIG			0x00
++#define PRODUCER_CRCI_MSK		GENMASK(1, 0)
++#define PRODUCER_CRCI_DISABLE		0
++#define PRODUCER_CRCI_X_SEL		BIT(0)
++#define PRODUCER_CRCI_Y_SEL		BIT(1)
++#define CONSUMER_CRCI_MSK		GENMASK(3, 2)
++#define CONSUMER_CRCI_DISABLE		0
++#define CONSUMER_CRCI_X_SEL		BIT(2)
++#define CONSUMER_CRCI_Y_SEL		BIT(3)
++#define PRODUCER_TRANS_END_EN		BIT(4)
++#define BYPASS				BIT(16)
++#define DIRECT_MODE			BIT(17)
++#define INFINITE_CONS_TRANS		BIT(18)
++
++#define DML_SW_RESET			0x08
++#define DML_PRODUCER_START		0x0c
++#define DML_CONSUMER_START		0x10
++#define DML_PRODUCER_PIPE_LOGICAL_SIZE	0x14
++#define DML_CONSUMER_PIPE_LOGICAL_SIZE	0x18
++#define DML_PIPE_ID			0x1c
++#define PRODUCER_PIPE_ID_SHFT		0
++#define PRODUCER_PIPE_ID_MSK		GENMASK(4, 0)
++#define CONSUMER_PIPE_ID_SHFT		16
++#define CONSUMER_PIPE_ID_MSK		GENMASK(20, 16)
++
++#define DML_PRODUCER_BAM_BLOCK_SIZE	0x24
++#define DML_PRODUCER_BAM_TRANS_SIZE	0x28
++
++/* other definitions */
++#define PRODUCER_PIPE_LOGICAL_SIZE	4096
++#define CONSUMER_PIPE_LOGICAL_SIZE	4096
++
++#define DML_OFFSET			0x800
++
++void dml_start_xfer(struct mmci_host *host, struct mmc_data *data)
++{
++	u32 config;
++	void __iomem *base = host->base + DML_OFFSET;
++
++	if (data->flags & MMC_DATA_READ) {
++		/* Read operation: configure DML for producer operation */
++		/* Set producer CRCI-x and disable consumer CRCI */
++		config = readl_relaxed(base + DML_CONFIG);
++		config = (config & ~PRODUCER_CRCI_MSK) | PRODUCER_CRCI_X_SEL;
++		config = (config & ~CONSUMER_CRCI_MSK) | CONSUMER_CRCI_DISABLE;
++		writel_relaxed(config, base + DML_CONFIG);
++
++		/* Set the Producer BAM block size */
++		writel_relaxed(data->blksz, base + DML_PRODUCER_BAM_BLOCK_SIZE);
++
++		/* Set Producer BAM Transaction size */
++		writel_relaxed(data->blocks * data->blksz,
++			       base + DML_PRODUCER_BAM_TRANS_SIZE);
++		/* Set Producer Transaction End bit */
++		config = readl_relaxed(base + DML_CONFIG);
++		config |= PRODUCER_TRANS_END_EN;
++		writel_relaxed(config, base + DML_CONFIG);
++		/* Trigger producer */
++		writel_relaxed(1, base + DML_PRODUCER_START);
++	} else {
++		/* Write operation: configure DML for consumer operation */
++		/* Set consumer CRCI-x and disable producer CRCI*/
++		config = readl_relaxed(base + DML_CONFIG);
++		config = (config & ~CONSUMER_CRCI_MSK) | CONSUMER_CRCI_X_SEL;
++		config = (config & ~PRODUCER_CRCI_MSK) | PRODUCER_CRCI_DISABLE;
++		writel_relaxed(config, base + DML_CONFIG);
++		/* Clear Producer Transaction End bit */
++		config = readl_relaxed(base + DML_CONFIG);
++		config &= ~PRODUCER_TRANS_END_EN;
++		writel_relaxed(config, base + DML_CONFIG);
++		/* Trigger consumer */
++		writel_relaxed(1, base + DML_CONSUMER_START);
++	}
++
++	/* make sure the dml is configured before dma is triggered */
++	wmb();
++}
++
++static int of_get_dml_pipe_index(struct device_node *np, const char *name)
++{
++	int index;
++	struct of_phandle_args	dma_spec;
++
++	index = of_property_match_string(np, "dma-names", name);
++
++	if (index < 0)
++		return -ENODEV;
++
++	if (of_parse_phandle_with_args(np, "dmas", "#dma-cells", index,
++				       &dma_spec))
++		return -ENODEV;
++
++	if (dma_spec.args_count)
++		return dma_spec.args[0];
++
++	return -ENODEV;
++}
++
++/* Initialize the dml hardware connected to SD Card controller */
++int dml_hw_init(struct mmci_host *host, struct device_node *np)
++{
++	u32 config;
++	void __iomem *base;
++	u32 consumer_id, producer_id;
++
++	consumer_id = of_get_dml_pipe_index(np, "tx");
++	producer_id = of_get_dml_pipe_index(np, "rx");
++
++	if (producer_id < 0 || consumer_id < 0)
++		return -ENODEV;
++
++	base = host->base + DML_OFFSET;
++
++	/* Reset the DML block */
++	writel_relaxed(1, base + DML_SW_RESET);
++
++	/* Disable the producer and consumer CRCI */
++	config = (PRODUCER_CRCI_DISABLE | CONSUMER_CRCI_DISABLE);
++	/*
++	 * Disable the bypass mode. Bypass mode will only be used
++	 * if data transfer is to happen in PIO mode and don't
++	 * want the BAM interface to connect with SDCC-DML.
++	 */
++	config &= ~BYPASS;
++	/*
++	 * Disable direct mode as we don't DML to MASTER the AHB bus.
++	 * BAM connected with DML should MASTER the AHB bus.
++	 */
++	config &= ~DIRECT_MODE;
++	/*
++	 * Disable infinite mode transfer as we won't be doing any
++	 * infinite size data transfers. All data transfer will be
++	 * of finite data size.
++	 */
++	config &= ~INFINITE_CONS_TRANS;
++	writel_relaxed(config, base + DML_CONFIG);
++
++	/*
++	 * Initialize the logical BAM pipe size for producer
++	 * and consumer.
++	 */
++	writel_relaxed(PRODUCER_PIPE_LOGICAL_SIZE,
++		       base + DML_PRODUCER_PIPE_LOGICAL_SIZE);
++	writel_relaxed(CONSUMER_PIPE_LOGICAL_SIZE,
++		       base + DML_CONSUMER_PIPE_LOGICAL_SIZE);
++
++	/* Initialize Producer/consumer pipe id */
++	writel_relaxed(producer_id | (consumer_id << CONSUMER_PIPE_ID_SHFT),
++		       base + DML_PIPE_ID);
++
++	/* Make sure dml intialization is finished */
++	mb();
++
++	return 0;
++}
+diff --git a/drivers/mmc/host/mmci_qcom_dml.h b/drivers/mmc/host/mmci_qcom_dml.h
+new file mode 100644
+index 0000000..6e405d0
+--- /dev/null
++++ b/drivers/mmc/host/mmci_qcom_dml.h
+@@ -0,0 +1,31 @@
++/*
++ *
++ * Copyright (c) 2011, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++#ifndef __MMC_QCOM_DML_H__
++#define __MMC_QCOM_DML_H__
++
++#ifdef CONFIG_MMC_QCOM_DML
++int dml_hw_init(struct mmci_host *host, struct device_node *np);
++void dml_start_xfer(struct mmci_host *host, struct mmc_data *data);
++#else
++static inline int dml_hw_init(struct mmci_host *host, struct device_node *np)
++{
++	return -ENOSYS;
++}
++static inline void dml_start_xfer(struct mmci_host *host, struct mmc_data *data)
++{
++}
++#endif /* CONFIG_MMC_QCOM_DML */
++
++#endif /* __MMC_QCOM_DML_H__ */
+-- 
+1.9.1
+
