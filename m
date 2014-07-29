@@ -1,74 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399AbaG2Lfy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 07:35:54 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51651 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751234AbaG2Lfx (ORCPT
+	id S1753504AbaG2LgX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 07:36:23 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:33231 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383AbaG2LgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 07:35:53 -0400
-From: Punit Agrawal <punit.agrawal@arm.com>
-To: arm@kernel.org, arnd@arndb.de
-Cc: Himangi Saraogi <himangi774@gmail.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "julia.lawall\@lip6.fr" <julia.lawall@lip6.fr>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH] drivers: CCI: Correct use of ! and &
-References: <20140707140538.GA4204@himangi-Dell> <9hhwqb42k63.fsf@arm.com>
-	<20140723150518.GD27677@arm.com>
-Date: Tue, 29 Jul 2014 12:34:17 +0100
-In-Reply-To: <20140723150518.GD27677@arm.com> (Will Deacon's message of "Wed,
-	23 Jul 2014 16:05:18 +0100")
-Message-ID: <9hhvbqg1jra.fsf@arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 29 Jul 2014 07:36:21 -0400
+Message-ID: <53D7872E.8050506@hitachi.com>
+Date: Tue, 29 Jul 2014 20:36:14 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Wang Nan <wangnan0@huawei.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andi Kleen <ak@linux.intel.com>, Pei Feiyue <peifeiyue@huawei.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Re: [PATCH] kprobes/x86: opt: free optinsn cache when range
+ check fails
+References: <1406550019-70935-1-git-send-email-wangnan0@huawei.com> <53D6FC38.8070801@hitachi.com> <53D6FEFE.8060307@huawei.com>
+In-Reply-To: <53D6FEFE.8060307@huawei.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Hi Wang,
 
-Will Deacon <will.deacon@arm.com> writes:
+(2014/07/29 10:55), Wang Nan wrote:
+> On 2014/7/29 9:43, Masami Hiramatsu wrote:
+>> (2014/07/28 21:20), Wang Nan wrote:
+>>> This patch frees optinsn slot when range check error to prevent memory
+>>> leaks. Before this patch, cache entry in kprobe_insn_cache won't be
+>>> freed if kprobe optimizing fails due to range check failure.
+>>>
+>>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>>
+>> Oops, thank you for finding it!
+>>
+>> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>>
+>> BTW, would you really have hit this error?
+>> I'd like to know the case if this really happens.
+> 
+> I'm not really hit it on x86_64. I found this problem when trying to implement kprobe opt on arm.
 
-> On Wed, Jul 23, 2014 at 04:01:56PM +0100, Punit Agrawal wrote:
->> > diff --git a/drivers/bus/arm-cci.c b/drivers/bus/arm-cci.c
->> > index 5a86da9..7af78df 100644
->> > --- a/drivers/bus/arm-cci.c
->> > +++ b/drivers/bus/arm-cci.c
->> > @@ -397,7 +397,8 @@ static irqreturn_t pmu_handle_irq(int irq_num, void *dev)
->> >  		hw_counter = &event->hw;
->> >  
->> >  		/* Did this counter overflow? */
->> > -		if (!pmu_read_register(idx, CCI_PMU_OVRFLW) & CCI_PMU_OVRFLW_FLAG)
->> > +		if (!(pmu_read_register(idx, CCI_PMU_OVRFLW) &
->> > +		      CCI_PMU_OVRFLW_FLAG))
->> >  			continue;
->> 
->> 
->> Going back to the manual, this fix looks correct.
->> 
->> Acked-by: Punit Agrawal <punit.agrawal@arm.com>
->> 
->> Will, would this go via your tree?
->
-> Given that you're happy with it, I don't mind which tree it goes in.
-> Probably deserves a CC stable on it too.
+That's interesting :)
 
-The CCI PMU patches went via arm-soc. Are you happy to pick this fix with
-the Ack and a Cc to stable.
+> 
+> On arm, relative jump can only branch on/backward 64MB, which makes it a realistic problem.
 
-Cheers,
-Punit
+Yeah, that is what I expected on RISC processor such as ARM.
 
->
-> If you get stuck, put it in rmk's patch system.
->
-> Will
+Perhaps you'll need to overwrite 2 words, one is for "ldr pc, [pc, #-4]" and one is for
+the address data. In this case, you have no branch range limitation in 32bit mode. This
+requires branch destination checking for safety as x86 optprobe does.
+Plus, you'll have to use same technique of x86 to make a detour code and deferred
+optimization for overwriting multiple instructions. Put a breakpoint at the probe point,
+wait for synchronize_sched(), put the 2nd instruction(.data) and overwrite the breakpoint
+with the "ldr". :)
+
+However, that is only for arm32.
+For ARM64, I'm not so sure about its ISA. I guess we need a scratchpad area for that..
+
+Anyway, please CC to me when you've done the prototyping and sending RFC. I'll review
+and test it. :)
+
+Thank you,
+
+> 
+>>
+>>> ---
+>>>  arch/x86/kernel/kprobes/opt.c | 4 +++-
+>>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
+>>> index f304773..f1314d0 100644
+>>> --- a/arch/x86/kernel/kprobes/opt.c
+>>> +++ b/arch/x86/kernel/kprobes/opt.c
+>>> @@ -338,8 +338,10 @@ int arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+>>>  	 * a relative jump.
+>>>  	 */
+>>>  	rel = (long)op->optinsn.insn - (long)op->kp.addr + RELATIVEJUMP_SIZE;
+>>> -	if (abs(rel) > 0x7fffffff)
+>>> +	if (abs(rel) > 0x7fffffff) {
+>>> +		__arch_remove_optimized_kprobe(op, 0);
+>>>  		return -ERANGE;
+>>> +	}
+>>>  
+>>>  	buf = (u8 *)op->optinsn.insn;
+>>>  
+>>>
+>>
+>>
+> 
+> 
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
