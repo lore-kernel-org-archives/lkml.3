@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158AbaG2JCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 05:02:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39486 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753116AbaG2JCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 05:02:11 -0400
-Message-ID: <53D76310.6000006@suse.cz>
-Date: Tue, 29 Jul 2014 11:02:08 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753177AbaG2JCV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 05:02:21 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:46663 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105AbaG2JCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 05:02:17 -0400
+Message-ID: <53D762CD.7070006@linaro.org>
+Date: Tue, 29 Jul 2014 17:01:01 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm:;
-Subject: Re: [PATCH v5 02/14] mm, compaction: defer each zone individually
- instead of preferred zone
-References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-3-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1407281649570.8998@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1407281649570.8998@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+CC: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
+        Mark Brown <broonie@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>
+Subject: Re: [PATCH 19/19] Documentation: ACPI for ARM64
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <1406206825-15590-20-git-send-email-hanjun.guo@linaro.org> <CAOesGMhKHGkVK3dOLXXx9GQBMxDmjBu1WDBgHmwdGe1UK3jfcg@mail.gmail.com> <5014834.k6eecMddPC@wuerfel>
+In-Reply-To: <5014834.k6eecMddPC@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2014 01:59 AM, David Rientjes wrote:
->> --- a/mm/compaction.c
->> +++ b/mm/compaction.c
->> @@ -1122,28 +1122,27 @@ int sysctl_extfrag_threshold = 500;
->>    * @nodemask: The allowed nodes to allocate from
->>    * @mode: The migration mode for async, sync light, or sync migration
->>    * @contended: Return value that is true if compaction was aborted due to lock contention
->> - * @page: Optionally capture a free page of the requested order during compaction
->
-> Never noticed this non-existant formal before.
-
-It's a leftover from the first Mel's page capture attempt that was 
-partially reverted.
-
->> + * @candidate_zone: Return the zone where we think allocation should succeed
->>    *
->>    * This is the main entry point for direct page compaction.
->>    */
->>   unsigned long try_to_compact_pages(struct zonelist *zonelist,
->>   			int order, gfp_t gfp_mask, nodemask_t *nodemask,
->> -			enum migrate_mode mode, bool *contended)
->> +			enum migrate_mode mode, bool *contended,
->> +			struct zone **candidate_zone)
->>   {
->>   	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
->>   	int may_enter_fs = gfp_mask & __GFP_FS;
->>   	int may_perform_io = gfp_mask & __GFP_IO;
->>   	struct zoneref *z;
->>   	struct zone *zone;
->> -	int rc = COMPACT_SKIPPED;
->> +	int rc = COMPACT_DEFERRED;
->>   	int alloc_flags = 0;
+On 2014-7-28 17:07, Arnd Bergmann wrote:
+> On Saturday 26 July 2014 19:34:48 Olof Johansson wrote:
+>> On Thu, Jul 24, 2014 at 6:00 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+>>> +Relationship with Device Tree
+>>> +-----------------------------
+>>> +
+>>> +ACPI support in drivers and subsystems for ARMv8 should never be mutually
+>>> +exclusive with DT support at compile time.
+>>> +
+>>> +At boot time the kernel will only use one description method depending on
+>>> +parameters passed from the bootloader.
 >>
->>   	/* Check if the GFP flags allow compaction */
->>   	if (!order || !may_enter_fs || !may_perform_io)
->>   		return rc;
+>> Possibly overriden by kernel bootargs. And as debated for quite a
+>> while earlier this year, acpi should still default to off -- if a DT
+>> and ACPI are both passed in, DT should at this time be given priority.
+> 
+> I think this would be harder to do with the way that ACPI is passed in
+> to the kernel. IIRC, you always have a minimal DT information based on
+> the ARM64 boot protocol, but in the case of ACPI, this contains pointers
+> to the ACPI tables, which are then used for populating the Linux platform
+> devices (unless acpi=disabled is set), while the other contents of the
+> DTB may be present but we skip the of_platform_populate state.
+> 
+> If this is correct, then replacing the firmware-generated dtb with a
+> user-provided on would implicitly remove the ACPI tables from visibility,
+> which is exactly what we want.
+> 
+> It's possible that I'm misremembering it though, and it should be
+> documented better.
+> 
+>>> +Regardless of whether DT or ACPI is used, the kernel must always be capable
+>>> +of booting with either scheme.
 >>
->
-> It doesn't seem right that if we called try_to_compact_pages() in a
-> context where it is useless (order-0 or non-GFP_KERNEL allocation) that we
-> would return COMPACT_DEFERRED.  I think the existing semantics before the
-> patch, that is
->
->   - deferred: compaction was tried but failed, so avoid subsequent calls in
->     the near future that may be potentially expensive, and
->
->   - skipped: compaction wasn't tried because it will be useless
->
-> is correct and deferred shouldn't take on another meaning, which now will
-> set deferred_compaction == true in the page allocator.  It probably
-> doesn't matter right now because the only check of deferred_compaction is
-> effective for __GFP_NO_KSWAPD, i.e. it is both high-order and GFP_KERNEL,
-> but it seems returning COMPACT_SKIPPED here would also work fine and be
-> more appropriate.
+>> It should always be possible to compile out ACPI. There will be plenty
+>> of platforms that will not implement it, so disabling CONFIG_ACPI
+>> needs to be possible.
+> 
+> Right.
 
-You're right. That was an oversight, not intention. Thanks for catching 
-that.
+Actually, if platforms don't implement ACPI, acpi_disabled will always be set to
+1 at early boot stage which before the device tree is unflattened, so device
+tree will work as expected even if CONFIG_ACPI=y on such platforms.
 
+Thanks
+Hanjun
