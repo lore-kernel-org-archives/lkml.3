@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549AbaG2TJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 15:09:24 -0400
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:46452 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607AbaG2TJW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 15:09:22 -0400
+	id S1752051AbaG2TPf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 15:15:35 -0400
+Received: from tex.lwn.net ([70.33.254.29]:38735 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751165AbaG2TPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 15:15:33 -0400
+X-Greylist: delayed 1042 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jul 2014 15:15:33 EDT
+Date: Tue, 29 Jul 2014 14:58:08 -0400
+From: Jonathan Corbet <corbet@lwn.net>
+To: Abhi Das <adas@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        cluster-devel@redhat.com
+Subject: Re: [RFC PATCH 5/5] gfs2: Add xreaddir file operation and
+ supporting functions
+Message-ID: <20140729145808.79bec165@lwn.net>
+In-Reply-To: <1406309888-10749-6-git-send-email-adas@redhat.com>
+References: <1406309888-10749-1-git-send-email-adas@redhat.com>
+	<1406309888-10749-6-git-send-email-adas@redhat.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <x49sillpnbm.fsf@segfault.boston.devel.redhat.com>
-References: <1406383665-1670-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <x49sillpnbm.fsf@segfault.boston.devel.redhat.com>
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Tue, 29 Jul 2014 21:09:01 +0200
-Message-ID: <CAFo99gY_eKF3Pbqte+WXSWXDg3d=NkFEswWMivgCjYT5-0m_vw@mail.gmail.com>
-Subject: Re: [PATCH] block: bsg.c: Cleaning up missing null-terminate in
- conjunction with strncpy
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-28 16:31 GMT+02:00 Jeff Moyer <jmoyer@redhat.com>:
-> Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> writes:
->
->> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  block/bsg.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/block/bsg.c b/block/bsg.c
->> index ff46add..b2688c5 100644
->> --- a/block/bsg.c
->> +++ b/block/bsg.c
->> @@ -790,7 +790,7 @@ static struct bsg_device *bsg_add_device(struct inode *inode,
->>       mutex_lock(&bsg_mutex);
->>       hlist_add_head(&bd->dev_list, bsg_dev_idx_hash(iminor(inode)));
->>
->> -     strncpy(bd->name, dev_name(rq->bsg_dev.class_dev), sizeof(bd->name) - 1);
->> +     strlcpy(bd->name, dev_name(rq->bsg_dev.class_dev), sizeof(bd->name));
->>       dprintk("bound to <%s>, max queue %d\n",
->>               format_dev_t(buf, inode->i_rdev), bd->max_queue);
->
-> NACK
->
-> The bsg data structure is allocated using kzalloc, so that last byte
-> will be zero.
+On Fri, 25 Jul 2014 12:38:08 -0500
+Abhi Das <adas@redhat.com> wrote:
 
-Hi
+> This patch adds support in GFS2 for the xgetdents syscall by
+> implementing the xreaddir file operation.
 
-Sorry.. I did not know bsg_alloc_device used kzalloc, right then
-everything should be ok.
+So I was trying to make sense of this, and ran into one little thing that
+jumped out at me:
 
-Kind regards
-Rickard Strandqvist
+> +static int gfs2_xrdir_to_user_vars(struct gfs2_xrdir_ctx *xc,
+> +				   struct gfs2_xdirent *x,
+> +				   struct gfs2_xdirent *x_vb_p,
+> +				   struct linux_xdirent __user *lxd,
+> +				   size_t count, size_t *bytes)
+
+Now, I'll readily admit that I could be overly confused by this function.
+When the variables are named "x", "xx", "xc", "x_vb_p", "xblob", and "lxd",
+it all starts to run together.  But still...
+
+> +	if ((xc->xc_xattr_mask & XSTAT_XATTR_ALL) &&
+> +		lxd->xd_blob.xb_xattr_count) {
+
+How can that be right?  lxd is __user, it doesn't seem right to be
+dereferencing it directly...?
+
+Thanks,
+
+jon
