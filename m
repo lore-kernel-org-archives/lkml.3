@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547AbaG2EHd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 00:07:33 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22964 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719AbaG2EH1 (ORCPT
+	id S1751146AbaG2Ebz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 00:31:55 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:49233 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782AbaG2Eby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 00:07:27 -0400
-From: Ethan Zhao <ethan.zhao@oracle.com>
-To: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gleb@kernel.org, pbonzini@redhat.com,
-        kvm@vger.kernel.org, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        xen-devel@lists.xenproject.org
-Cc: alex.williamson@redhat.com, alexander.h.duyck@intel.com,
-        ethan.kernel@gmail.com
-Subject: [PATCH 1/4 v3] PCI: introduce helper functions for device flag operation
-Date: Tue, 29 Jul 2014 12:06:28 +0800
-Message-Id: <1406606791-8834-2-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1406606791-8834-1-git-send-email-ethan.zhao@oracle.com>
-References: <1406606791-8834-1-git-send-email-ethan.zhao@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 29 Jul 2014 00:31:54 -0400
+Message-ID: <1406608312.31161.6.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH -tip/master v2] locking/mutex: Refactor optimistic
+ spinning code
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: peterz@infradead.org, mingo@kernel.org, aswin@hp.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 28 Jul 2014 21:31:52 -0700
+In-Reply-To: <1406605299.2411.59.camel@j-VirtualBox>
+References: <1406524724-17946-1-git-send-email-davidlohr@hp.com>
+	 <1406524724-17946-4-git-send-email-davidlohr@hp.com>
+	 <1406602517.31161.2.camel@buesod1.americas.hpqcorp.net>
+	 <1406605299.2411.59.camel@j-VirtualBox>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduced three helper functions to hide direct
-device flag operation.
+On Mon, 2014-07-28 at 20:41 -0700, Jason Low wrote:
+> On Mon, 2014-07-28 at 19:55 -0700, Davidlohr Bueso wrote:
+> > +static bool mutex_optimistic_spin(struct mutex *lock,
+> > +				  struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
+> > +{
+> > +	struct task_struct *task = current;
+> > +
+> > +	if (!mutex_can_spin_on_owner(lock))
+> > +		return false;
+> > +
+> > +	if (!osq_lock(&lock->osq))
+> > +		return false;
+> 
+> In the !osq_lock() case, we could exit the cancellable MCS spinlock due
+> to need_resched(). However, this would return from the function rather
+> than doing the need_resched() check below. Perhaps we can add something
+> like "goto out" which goes to the below check?
 
-void pci_set_dev_assigned(struct pci_dev *pdev);
-void pci_clear_dev_assigned(struct pci_dev *pdev);
-bool pci_is_dev_assigned(struct pci_dev *pdev);
-
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
----
- v2: simplify unnecessory ternary operation in function pci_is_dev_assigned();
- v3: amend helper functions naming.
- include/linux/pci.h |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index aab57b4..5f6f8fa 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1129,6 +1129,19 @@ resource_size_t pcibios_window_alignment(struct pci_bus *bus,
- 
- int pci_set_vga_state(struct pci_dev *pdev, bool decode,
- 		      unsigned int command_bits, u32 flags);
-+/* helper functions for operation of device flag */
-+static inline void pci_set_dev_assigned(struct pci_dev *pdev)
-+{
-+	pdev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
-+}
-+static inline void pci_clear_dev_assigned(struct pci_dev *pdev)
-+{
-+	pdev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
-+}
-+static inline bool pci_is_dev_assigned(struct pci_dev *pdev)
-+{
-+	return pdev->dev_flags & PCI_DEV_FLAGS_ASSIGNED;
-+}
- /* kmem_cache style wrapper around pci_alloc_consistent() */
- 
- #include <linux/pci-dma.h>
--- 
-1.7.1
+Ah, yes. This used to be a goto slowpath. It would have served the other
+way around, if having the need_resched() check outside of
+mutex_optimistic_spin().
 
