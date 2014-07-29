@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315AbaG2K5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 06:57:33 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55821 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753240AbaG2K52 (ORCPT
+	id S1753345AbaG2K5f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 06:57:35 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:57459 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753263AbaG2K5c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 06:57:28 -0400
-Date: Tue, 29 Jul 2014 11:57:17 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Vitaly Andrianov <vitalya@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Cyril Chemparathy <cyril@ti.com>
-Subject: Re: [PATCH 2/2] ARM: LPAE: reduce damage caused by idmap to
-	virtual memory layout
-Message-ID: <20140729105717.GC30282@n2100.arm.linux.org.uk>
-References: <20140722153623.25088.37742.stgit@buzz> <20140722153635.25088.14197.stgit@buzz> <20140728181456.GO15536@arm.com> <CALYGNiNJDHfQm2yk067hh-Wywsb_Ki5AEE_sTMkYegJi9spSzw@mail.gmail.com> <20140728184107.GR15536@arm.com> <CALYGNiNaMMv9itJ_+cvPDn1_Yo4GTPQJ-Cy9zBzJzfaDLfkvmg@mail.gmail.com> <20140728191305.GA30282@n2100.arm.linux.org.uk> <CALYGNiNVduTK8MXt8VJyiqdsB0mA_OnC0hLOB-WzgAEMZyu9sg@mail.gmail.com> <20140728194251.GB30282@n2100.arm.linux.org.uk> <CALYGNiO6PEPoHDrcLRZxQVT2=-1upyh6E-TWBCMB0MR8u5Sx6w@mail.gmail.com>
+	Tue, 29 Jul 2014 06:57:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALYGNiO6PEPoHDrcLRZxQVT2=-1upyh6E-TWBCMB0MR8u5Sx6w@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Originating-IP: [93.172.8.40]
+In-Reply-To: <1404836521-59637-2-git-send-email-s-anna@ti.com>
+References: <1404836521-59637-1-git-send-email-s-anna@ti.com> <1404836521-59637-2-git-send-email-s-anna@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 29 Jul 2014 13:57:10 +0300
+Message-ID: <CAK=Wgbawdik3ZB0Zbeaa7eXd7M+9ev9u713GcfOc4Gy0+O80Dg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] remoteproc: use a flag to detect the presence of IOMMU
+To: Suman Anna <s-anna@ti.com>
+Cc: Dave Gerlach <d-gerlach@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Robert Tivy <rtivy@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 11:57:16PM +0400, Konstantin Khlebnikov wrote:
-> On Mon, Jul 28, 2014 at 11:42 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Mon, Jul 28, 2014 at 11:29:39PM +0400, Konstantin Khlebnikov wrote:
-> >> Ok, before switching from identity mapping to normal mapping kernel must
-> >> switch instruction pointer from physical address to virtual.
-> >
-> > "switch instruction pointer from physical address to virtual."
-> >
-> > There's no such distinction for the instruction pointer.
-> 
-> I know. I mean "logically".
-> 
-...
-> 
-> Sorry but I'm really look so dumb? Maybe it's true, it's almost
-> midnight at my side.
+Hi Suman,
 
-When you use language which suggests a lack of understanding, then
-I will explain things.
+On Tue, Jul 8, 2014 at 7:22 PM, Suman Anna <s-anna@ti.com> wrote:
+> The remoteproc driver core currently relies on iommu_present() on
+> the bus the device is on, to perform MMU management. However, this
+> logic doesn't scale for multi-arch, especially for processors that
+> do not have an IOMMU.
 
-> > It doesn't matter, provided the kernel text and data in the virtual
-> > address space are not overwritten by the identity mapping.  If it
-> > ends up in the vmalloc or IO space, that should not be a problem.
-> 
-> In my case it's been overwritten.
-> And it always happens when PHYS_OFFSET >= PAGE_OFFSET
-> because in case of LPAE idmap always overwrites 1Gb at once.
+Is there a specific hw/scenario where you need this? Can you please
+provide more details about it?
 
-Right, I now see what you're getting at.  Here's a better description
-which I've used when committing your patch.  I've only taken patch 2
-at the present time.
+Ideally we should add them to the commit log as well.
 
+> The individual platform implementations are required to set this
+> flag appropriately. The default setting is to not have an MMU.
 
+Let's explicitly set the default please so this would be clear for
+users reading the code.
 
-On LPAE, each level 1 (pgd) page table entry maps 1GiB, and the level 2
-(pmd) entries map 2MiB.
+> Cc: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-When the identity mapping is created on LPAE, the pgd pointers are copied
-from the swapper_pg_dir.  If we find that we need to modify the contents
-of a pmd, we allocate a new empty pmd table and insert it into the
-appropriate 1GB slot, before then filling it with the identity mapping.
+Sjur is no longer with STE, so no point in cc'ing his old email address.
 
-However, if the 1GB slot covers the kernel lowmem mappings, we obliterate
-those mappings.
+> +       /*
+> +        * All existing OMAP IPU and DSP processors do have an MMU, and
+> +        * are expected to use MMU, so this statement suffices.
+> +        * XXX: Replace this logic if and when a need arises.
 
-When replacing a PMD, first copy the old PMD contents to the new PMD, so
-that we preserve the existing mappings in the 1GiB region, particularly
-the mappings of the kernel itself.
+The last XXX comment is always true for any kernel code, so I'd drop it.
 
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Thanks,
+Ohad.
