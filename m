@@ -1,129 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972AbaG2IVa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 04:21:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47224 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752935AbaG2IVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 04:21:25 -0400
-Message-ID: <53D759E6.3060607@ti.com>
-Date: Tue, 29 Jul 2014 11:23:02 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752644AbaG2I0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 04:26:53 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:10815 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430AbaG2I0v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 04:26:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 29 Jul 2014 01:18:36 -0700
+Date: Tue, 29 Jul 2014 10:26:46 +0200
+From: Thierry Reding <treding@nvidia.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Linus Walleij <linus.walleij@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the gpio tree with the arm-soc tree
+Message-ID: <20140729082645.GC31360@ulmo.nvidia.com>
+References: <20140729181949.427a7fb5@canb.auug.org.au>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: ti: clk-7xx: Correct ABE DPLL configuration
-References: <1396446525-20302-1-git-send-email-peter.ujfalusi@ti.com> <533C1AC2.1000307@ti.com> <533CFFB3.9070201@ti.com> <5358D534.2070205@ti.com> <535927DF.90404@ti.com> <5368E604.4040107@ti.com> <53C3AC94.5050904@ti.com> <20140729062748.4906.1529@quantum>
-In-Reply-To: <20140729062748.4906.1529@quantum>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140729181949.427a7fb5@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZwgA9U+XZDXt4+m+"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2014 09:27 AM, Mike Turquette wrote:
-> Quoting Peter Ujfalusi (2014-07-14 03:10:28)
->> On 05/06/2014 04:39 PM, Peter Ujfalusi wrote:
->>>>> Tero: can I have your ack for this patch or do you have further concerns?
->>>>
->>>> Yea looks good to me, except for the fact that there is some work on getting
->>>> default rate/parent support through DT. I would like a comment from Mike about
->>>> the estimate when this can get in, and whether we should merge intermediate
->>>> solutions still like this.
->
-> Tero,
->
-> On May 19 you said, "Thanks, queued for 3.16/ti-clk-drv." but I never
-> received that as part of the TI clock fixes. :-(
->
-> I've taken Sylwester's patch in for the DT-based assigned clock rates
-> and parents. You can find it in clk-next. (maybe you are still on
-> vacation? I don't know...)
->
->>>>
->>>> Anyway, you can consider this patch acked by me, I'll let Mike to decide what
->>>> to do with it though.
->>>
->>> Do you have anything against this patch? Since right now there is no other
->>> ways to fix the ABE DPLL for dra7 it would be great if we could have this in
->>> till we have the final solution. Also I'd like to point out that the original
->>> frequency the ABE DPLL was not correct and renders the audio to be not usable
->>> on the platform.
->>
->> Mike: can we have this patch still pushed for 3.16? I can resend it right away
->> if you  lost the original patch.
->
-> Peter,
->
-> I have your original patch. No need to resend. Let's see if Tero
-> comments this week, otherwise I can take it with his previously supplied
-> Ack and send it off. Probably needs to be sent by Thursday at the
-> latest.
+--ZwgA9U+XZDXt4+m+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Oh yea, seems this got lost into the myriad of branches I have. I can 
-push this on top of my for-v3.17/ti-clk-drv if you like.
+On Tue, Jul 29, 2014 at 10:19:49AM +0200, Stephen Rothwell wrote:
+> * PGP Signed by an unknown key
+>=20
+> Hi Linus,
+>=20
+> Today's linux-next merge of the gpio tree got a conflict in
+> arch/arm/mach-tegra/board-paz00.c between commit a0524acc94c9 ("ARM:
+> tegra: Sort includes alphabetically") from the arm-soc tree and commit
+> 0a6d315827ee ("gpio: split gpiod board registration into machine
+> header") from the gpio tree.
+>=20
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+>=20
+> --=20
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>=20
+> diff --cc arch/arm/mach-tegra/board-paz00.c
+> index bb4782a32713,91fd858ced0d..000000000000
+> --- a/arch/arm/mach-tegra/board-paz00.c
+> +++ b/arch/arm/mach-tegra/board-paz00.c
+> @@@ -17,10 -17,9 +17,10 @@@
+>    *
+>    */
+>  =20
+> - #include <linux/gpio/driver.h>
+>  -#include <linux/platform_device.h>
+> + #include <linux/gpio/machine.h>
+>  +#include <linux/platform_device.h>
+>   #include <linux/rfkill-gpio.h>
+>  +
+>   #include "board.h"
+>  =20
+>   static struct rfkill_gpio_platform_data wifi_rfkill_platform_data =3D {
 
--Tero
+Looks good to me.
 
->
-> Regards,
-> Mike
->
->>
->> Thanks,
->> Péter
->>
->>
->>>
->>>>>>
->>>>>>>
->>>>>>> -Tero
->>>>>>>
->>>>>>>>
->>>>>>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->>>>>>>> ---
->>>>>>>>     drivers/clk/ti/clk-7xx.c | 7 ++++++-
->>>>>>>>     1 file changed, 6 insertions(+), 1 deletion(-)
->>>>>>>>
->>>>>>>> diff --git a/drivers/clk/ti/clk-7xx.c b/drivers/clk/ti/clk-7xx.c
->>>>>>>> index f7e40734c819..19a55bf407dd 100644
->>>>>>>> --- a/drivers/clk/ti/clk-7xx.c
->>>>>>>> +++ b/drivers/clk/ti/clk-7xx.c
->>>>>>>> @@ -16,7 +16,7 @@
->>>>>>>>     #include <linux/clkdev.h>
->>>>>>>>     #include <linux/clk/ti.h>
->>>>>>>>
->>>>>>>> -#define DRA7_DPLL_ABE_DEFFREQ                361267200
->>>>>>>> +#define DRA7_DPLL_ABE_DEFFREQ                180633600
->>>>>>>>     #define DRA7_DPLL_GMAC_DEFFREQ                1000000000
->>>>>>>>
->>>>>>>>
->>>>>>>> @@ -322,6 +322,11 @@ int __init dra7xx_dt_clk_init(void)
->>>>>>>>         if (rc)
->>>>>>>>             pr_err("%s: failed to configure ABE DPLL!\n", __func__);
->>>>>>>>
->>>>>>>> +    dpll_ck = clk_get_sys(NULL, "dpll_abe_m2x2_ck");
->>>>>>>> +    rc = clk_set_rate(dpll_ck, DRA7_DPLL_ABE_DEFFREQ * 2);
->>>>>>>> +    if (rc)
->>>>>>>> +        pr_err("%s: failed to configure ABE DPLL m2x2!\n", __func__);
->>>>>>>> +
->>>>>>>>         dpll_ck = clk_get_sys(NULL, "dpll_gmac_ck");
->>>>>>>>         rc = clk_set_rate(dpll_ck, DRA7_DPLL_GMAC_DEFFREQ);
->>>>>>>>         if (rc)
->>>>>>>>
->>>>>>>
->>>>>>
->>>>>>
->>>>>
->>>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->>
+Thanks,
+Thierry
 
+--ZwgA9U+XZDXt4+m+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT11rFAAoJEN0jrNd/PrOhTLsP/Rkd6Y8QxgP9lOnnoUOjiSG4
+bdSDR4OV99v2901RRf2lPqf1DjXOiFubFssqlUp31rt5gyHq+hG5URkwahFbS3Fp
+DNJAvBD1CWg9PJfdRyxkLFAlLvat02BJCcNA3EZtyh85j4rezy1bWLUOWgCPBo7D
+IlnVdP3p4a/XpGbNVNmJz+zPtVmgnumpyeODuGjbf67qKH1upsGqX4Xmr5miRajt
+TEKHuZF158Q5k2J8UklUnf9Kk0AsjdLAoWJGv4bQ1GFADoDL751Mmwn/WP3F5bKq
+sexogIA+LmBcoOtBhLb0VkZriOxZkZ5/3zZv42Kjti76vzrluZZUEQrrvDMUldh2
+v9hVE1Uqmsqr4Yyo2OF7leFUxiSXnXuVoSjBfIgC1mSZDjfCHwSdz8tLwpMWq8+K
+D9HNQ6fXkyA+dsWmRNpLm3aUH25/A7gUsuRJvLNM/Png4dSQ2HbL/e8m05WFGGxn
+jZd3OXURY5Pge7aO9fPGHChkpCwZ/ewI4B+4Pt+yGZwyWMYIjKJ/tRRS0JkxPj2o
+pMygh2hES1xAlIN7jabdnFFzxoDJtRMlhsUQ/ERukOWemFvwrKanxg85J8+xsd7K
+cbLh6ERq6SHOxqBsAqaAcXY5IRbYBHdwS+e5KB6+2xhZigi8QA2gT/bRQeV5yNNf
+fj0hbdKJcnTV1q6Xj6I7
+=KCGD
+-----END PGP SIGNATURE-----
+
+--ZwgA9U+XZDXt4+m+--
