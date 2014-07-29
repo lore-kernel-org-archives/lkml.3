@@ -1,226 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaG2IVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 04:21:23 -0400
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:56978 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbaG2IVU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 04:21:20 -0400
+	id S1752972AbaG2IVa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 04:21:30 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47224 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752935AbaG2IVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 04:21:25 -0400
+Message-ID: <53D759E6.3060607@ti.com>
+Date: Tue, 29 Jul 2014 11:23:02 +0300
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1406309888-10749-3-git-send-email-adas@redhat.com>
-References: <1406309888-10749-1-git-send-email-adas@redhat.com> <1406309888-10749-3-git-send-email-adas@redhat.com>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Tue, 29 Jul 2014 10:20:59 +0200
-X-Google-Sender-Auth: 9Dj-rRr5V30aD6aC_TdTcxRfOt4
-Message-ID: <CAHO5Pa3iZ0ZvNN5ovXmFK4E7PvT-RF64tCBaEPH87zzqNoU4qQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/5] fs: Add xgetdents system call and xreaddir file operation
-To: Abhi Das <adas@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        cluster-devel@redhat.com, Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mike Turquette <mturquette@linaro.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: ti: clk-7xx: Correct ABE DPLL configuration
+References: <1396446525-20302-1-git-send-email-peter.ujfalusi@ti.com> <533C1AC2.1000307@ti.com> <533CFFB3.9070201@ti.com> <5358D534.2070205@ti.com> <535927DF.90404@ti.com> <5368E604.4040107@ti.com> <53C3AC94.5050904@ti.com> <20140729062748.4906.1529@quantum>
+In-Reply-To: <20140729062748.4906.1529@quantum>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CC += linux-api]
+On 07/29/2014 09:27 AM, Mike Turquette wrote:
+> Quoting Peter Ujfalusi (2014-07-14 03:10:28)
+>> On 05/06/2014 04:39 PM, Peter Ujfalusi wrote:
+>>>>> Tero: can I have your ack for this patch or do you have further concerns?
+>>>>
+>>>> Yea looks good to me, except for the fact that there is some work on getting
+>>>> default rate/parent support through DT. I would like a comment from Mike about
+>>>> the estimate when this can get in, and whether we should merge intermediate
+>>>> solutions still like this.
+>
+> Tero,
+>
+> On May 19 you said, "Thanks, queued for 3.16/ti-clk-drv." but I never
+> received that as part of the TI clock fixes. :-(
+>
+> I've taken Sylwester's patch in for the DT-based assigned clock rates
+> and parents. You can find it in clk-next. (maybe you are still on
+> vacation? I don't know...)
+>
+>>>>
+>>>> Anyway, you can consider this patch acked by me, I'll let Mike to decide what
+>>>> to do with it though.
+>>>
+>>> Do you have anything against this patch? Since right now there is no other
+>>> ways to fix the ABE DPLL for dra7 it would be great if we could have this in
+>>> till we have the final solution. Also I'd like to point out that the original
+>>> frequency the ABE DPLL was not correct and renders the audio to be not usable
+>>> on the platform.
+>>
+>> Mike: can we have this patch still pushed for 3.16? I can resend it right away
+>> if you  lost the original patch.
+>
+> Peter,
+>
+> I have your original patch. No need to resend. Let's see if Tero
+> comments this week, otherwise I can take it with his previously supplied
+> Ack and send it off. Probably needs to be sent by Thursday at the
+> latest.
 
-On Fri, Jul 25, 2014 at 7:38 PM, Abhi Das <adas@redhat.com> wrote:
-> Also add linux_xdirent structure that will be the container for
-> dirent, stat and xattr info.
->
-> Signed-off-by: Abhi Das <adas@redhat.com>
-> ---
->  arch/x86/syscalls/syscall_32.tbl |  1 +
->  arch/x86/syscalls/syscall_64.tbl |  1 +
->  fs/readdir.c                     | 42 ++++++++++++++++++++++++++++++++++++++++
->  fs/stat.c                        |  4 +++-
->  include/linux/fs.h               |  1 +
->  include/linux/stat.h             |  2 ++
->  include/uapi/linux/stat.h        | 33 +++++++++++++++++++++++++++++++
->  7 files changed, 83 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-> index 6d6ca37..35723e3 100644
-> --- a/arch/x86/syscalls/syscall_32.tbl
-> +++ b/arch/x86/syscalls/syscall_32.tbl
-> @@ -362,3 +362,4 @@
->  353    i386    renameat2               sys_renameat2
->  354    i386    xstat                   sys_xstat
->  355    i386    fxstat                  sys_fxstat
-> +356    i386    xgetdents               sys_xgetdents
-> diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-> index 1308ee3..566aab1 100644
-> --- a/arch/x86/syscalls/syscall_64.tbl
-> +++ b/arch/x86/syscalls/syscall_64.tbl
-> @@ -325,6 +325,7 @@
->  316    common  renameat2               sys_renameat2
->  317    common  xstat                   sys_xstat
->  318    common  fxstat                  sys_fxstat
-> +319    common  xgetdents               sys_xgetdents
->
->  #
->  # x32-specific system call numbers start at 512 to avoid cache impact
-> diff --git a/fs/readdir.c b/fs/readdir.c
-> index 33fd922..d676088 100644
-> --- a/fs/readdir.c
-> +++ b/fs/readdir.c
-> @@ -224,6 +224,48 @@ SYSCALL_DEFINE3(getdents, unsigned int, fd,
->         return error;
->  }
->
-> +SYSCALL_DEFINE5(xgetdents, unsigned int, fd, unsigned, flags, unsigned int, mask,
-> +               void __user *, buf, unsigned int, count)
-> +{
-> +       struct fd f;
-> +       struct inode *inode;
-> +       int error = -ENOTDIR;
-> +
-> +       if (!count)
-> +               return -EINVAL;
-> +
-> +       if (!access_ok(VERIFY_WRITE, buf, count))
-> +               return -EFAULT;
-> +
-> +       f = fdget(fd);
-> +       if (!f.file)
-> +               return -EBADF;
-> +
-> +       inode = f.file->f_path.dentry->d_inode;
-> +
-> +       error = -ENOTSUPP;
-> +       if (!f.file->f_op || !f.file->f_op->xreaddir)
-> +               goto out;
-> +
-> +       error = security_file_permission(f.file, MAY_READ);
-> +       if (error)
-> +               goto out;
-> +
-> +       error = mutex_lock_killable(&inode->i_mutex);
-> +       if (error)
-> +               goto out;
-> +
-> +       error = -ENOENT;
-> +       if (!IS_DEADDIR(inode)) {
-> +               error = f.file->f_op->xreaddir(f.file, flags, mask, buf, count);
-> +               file_accessed(f.file);
-> +       }
-> +       mutex_unlock(&inode->i_mutex);
-> +out:
-> +       fdput(f);
-> +       return error;
-> +}
-> +
->  struct getdents_callback64 {
->         struct dir_context ctx;
->         struct linux_dirent64 __user * current_dir;
-> diff --git a/fs/stat.c b/fs/stat.c
-> index 1fd0b3e..db45f8b 100644
-> --- a/fs/stat.c
-> +++ b/fs/stat.c
-> @@ -651,7 +651,7 @@ static int xstat_get_params(unsigned int mask, struct xstat __user *buffer,
->   * Otherwise we copy the extended stats to userspace and return the amount of
->   * data written into the buffer (or -EFAULT).
->   */
-> -static long xstat_set_result(struct kstat *stat, struct xstat __user *buffer)
-> +long xstat_set_result(struct kstat *stat, struct xstat __user *buffer)
->  {
->         u32 mask = stat->result_mask, gran = stat->tv_granularity;
->
-> @@ -701,6 +701,8 @@ static long xstat_set_result(struct kstat *stat, struct xstat __user *buffer)
->         return 0;
->  }
->
-> +EXPORT_SYMBOL(xstat_set_result);
-> +
->  /*
->   * System call to get extended stats by path
->   */
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index b91f235..79c7d39 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1464,6 +1464,7 @@ struct file_operations {
->         ssize_t (*read_iter) (struct kiocb *, struct iov_iter *);
->         ssize_t (*write_iter) (struct kiocb *, struct iov_iter *);
->         int (*iterate) (struct file *, struct dir_context *);
-> +       size_t (*xreaddir) (struct file *, unsigned int, unsigned int, void __user *, size_t);
->         unsigned int (*poll) (struct file *, struct poll_table_struct *);
->         long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
->         long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
-> diff --git a/include/linux/stat.h b/include/linux/stat.h
-> index 552e047..75be415 100644
-> --- a/include/linux/stat.h
-> +++ b/include/linux/stat.h
-> @@ -46,4 +46,6 @@ struct kstat {
->         unsigned char   volume_id[16];              /* volume identifier */
->  };
->
-> +long xstat_set_result(struct kstat *stat, struct xstat __user *buffer);
-> +
->  #endif
-> diff --git a/include/uapi/linux/stat.h b/include/uapi/linux/stat.h
-> index 2907352..d7ea6c5 100644
-> --- a/include/uapi/linux/stat.h
-> +++ b/include/uapi/linux/stat.h
-> @@ -90,6 +90,14 @@
->  #define XSTAT_VOLUME_ID        0x00008000U     /* want/got st_volume_id */
->  #define XSTAT_ALL_STATS        0x0000ffffU     /* all supported stats */
->
-> +/* xattr request flags */
-> +#define XSTAT_XATTR_USER       0x00010000U     /* user.* xattrs */
-> +#define XSTAT_XATTR_SYSTEM     0x00020000U     /* system.* xattrs */
-> +#define XSTAT_XATTR_SECURITY   0x00040000U     /* security.* xattrs */
-> +#define XSTAT_XATTR_POSIX_ACL  0x00080000U     /* posix acl xattrs */
-> +#define XSTAT_XATTR_ALL        0x00ff0000U     /* all xattrs */
-> +#define XSTAT_XATTR_VALUES     0x01000000U     /* retrieve values along with keys */
-> +
->  /*
->   * Extended stat structures
->   */
-> @@ -152,4 +160,29 @@ struct xstat {
->  #define XSTAT_INFO_SYSTEM              0x00001000U /* File is marked system (DOS+) */
->  #define XSTAT_INFO_ARCHIVE             0x00002000U /* File is marked archive (DOS+) */
->
-> +struct xdirent_xattr {
-> +       size_t       xa_value_len;   /* length of value field */
-> +       char         xa_name_val[1]; /* name/value pair, name is NULL terminated and
-> +                                     * value is xa_value_len in length */
-> +};
-> +
-> +/*
-> + * xb_blob: first contains NULL terminated name, followed by struct xdirent_xattr
-> + * objects packed together.
-> + */
-> +struct xdirent_blob {
-> +       unsigned int    xb_xattr_count;
-> +       char            xb_blob[1]; /* contains variable length data like
-> +                                    * NULL-terminated name, xattrs etc */
-> +};
-> +
-> +struct linux_xdirent {
-> +       unsigned long        xd_ino;
-> +       char                 xd_type;
-> +       unsigned long        xd_off;
-> +       struct xstat         xd_stat;
-> +       unsigned long        xd_reclen;
-> +       struct xdirent_blob  xd_blob;
-> +};
-> +
->  #endif /* _UAPI_LINUX_STAT_H */
-> --
-> 1.8.1.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Oh yea, seems this got lost into the myriad of branches I have. I can 
+push this on top of my for-v3.17/ti-clk-drv if you like.
 
+-Tero
 
+>
+> Regards,
+> Mike
+>
+>>
+>> Thanks,
+>> Péter
+>>
+>>
+>>>
+>>>>>>
+>>>>>>>
+>>>>>>> -Tero
+>>>>>>>
+>>>>>>>>
+>>>>>>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>>>>>>>> ---
+>>>>>>>>     drivers/clk/ti/clk-7xx.c | 7 ++++++-
+>>>>>>>>     1 file changed, 6 insertions(+), 1 deletion(-)
+>>>>>>>>
+>>>>>>>> diff --git a/drivers/clk/ti/clk-7xx.c b/drivers/clk/ti/clk-7xx.c
+>>>>>>>> index f7e40734c819..19a55bf407dd 100644
+>>>>>>>> --- a/drivers/clk/ti/clk-7xx.c
+>>>>>>>> +++ b/drivers/clk/ti/clk-7xx.c
+>>>>>>>> @@ -16,7 +16,7 @@
+>>>>>>>>     #include <linux/clkdev.h>
+>>>>>>>>     #include <linux/clk/ti.h>
+>>>>>>>>
+>>>>>>>> -#define DRA7_DPLL_ABE_DEFFREQ                361267200
+>>>>>>>> +#define DRA7_DPLL_ABE_DEFFREQ                180633600
+>>>>>>>>     #define DRA7_DPLL_GMAC_DEFFREQ                1000000000
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> @@ -322,6 +322,11 @@ int __init dra7xx_dt_clk_init(void)
+>>>>>>>>         if (rc)
+>>>>>>>>             pr_err("%s: failed to configure ABE DPLL!\n", __func__);
+>>>>>>>>
+>>>>>>>> +    dpll_ck = clk_get_sys(NULL, "dpll_abe_m2x2_ck");
+>>>>>>>> +    rc = clk_set_rate(dpll_ck, DRA7_DPLL_ABE_DEFFREQ * 2);
+>>>>>>>> +    if (rc)
+>>>>>>>> +        pr_err("%s: failed to configure ABE DPLL m2x2!\n", __func__);
+>>>>>>>> +
+>>>>>>>>         dpll_ck = clk_get_sys(NULL, "dpll_gmac_ck");
+>>>>>>>>         rc = clk_set_rate(dpll_ck, DRA7_DPLL_GMAC_DEFFREQ);
+>>>>>>>>         if (rc)
+>>>>>>>>
+>>>>>>>
+>>>>>>
+>>>>>>
+>>>>>
+>>>>
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
 
--- 
-Michael Kerrisk Linux man-pages maintainer;
-http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface", http://blog.man7.org/
