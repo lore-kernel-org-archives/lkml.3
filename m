@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667AbaG2QWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 12:22:49 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:49837 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaG2QWs (ORCPT
+	id S1752349AbaG2Q07 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 12:26:59 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:20544 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750852AbaG2Q05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 12:22:48 -0400
-Date: Tue, 29 Jul 2014 09:22:36 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 2/9] rcu: Provide cond_resched_rcu_qs()
- to force quiescent states in long loops
-Message-ID: <20140729162236.GP11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140728225556.GA19493@linux.vnet.ibm.com>
- <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1406588180-21933-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140729075536.GZ19379@twins.programming.kicks-ass.net>
+	Tue, 29 Jul 2014 12:26:57 -0400
+Message-ID: <53D7CB4A.5020709@itdev.co.uk>
+Date: Tue, 29 Jul 2014 17:26:50 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140729075536.GZ19379@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072916-7164-0000-0000-000003752E90
+To: Stephen Warren <swarren@wwwdotorg.org>, Yufeng Shen <miletus@chromium.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        benson Leung <bleung@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH 00/15] atmel_mxt_ts - device tree, bootloader, etc
+References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk>	<53CECAEC.8080905@wwwdotorg.org>	<53CFD50C.4040509@itdev.co.uk>	<53CFEF6E.2060905@wwwdotorg.org>	<53D10E78.4010908@itdev.co.uk>	<53D17845.4020507@wwwdotorg.org>	<53D26572.3030404@itdev.co.uk>	<53D2B8D0.5090000@wwwdotorg.org> <CAPDwgkNrBRJRR6WtoPSfs8Yq=ui-Ptjju4mJ=9h=95YVFuxw7g@mail.gmail.com> <53D6BF50.3070306@wwwdotorg.org> <53D6DFE7.3040901@wwwdotorg.org>
+In-Reply-To: <53D6DFE7.3040901@wwwdotorg.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 09:55:36AM +0200, Peter Zijlstra wrote:
-> On Mon, Jul 28, 2014 at 03:56:13PM -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > RCU-tasks requires the occasional voluntary context switch
-> > from CPU-bound in-kernel tasks.  In some cases, this requires
-> > instrumenting cond_resched().  However, there is some reluctance
-> > to countenance unconditionally instrumenting cond_resched() (see
-> > http://lwn.net/Articles/603252/),
+On 29/07/14 00:42, Stephen Warren wrote:
+> Anyway, here's the diff between the two config files:
 > 
-> No, if its a good reason mention it, if not ignore it.
-
-Fair enough.  ;-)
-
-> > so this commit creates a separate
-> > cond_resched_rcu_qs() that may be used in place of cond_resched() in
-> > locations prone to long-duration in-kernel looping.
+>> # diff -u mxt-save-after-t9-83-write.xml 224sl.raw
+>> --- mxt-save-after-t9-83-write.xml    2014-07-25 19:41:45.000000000 +0000
+>> +++ 224sl.raw    2014-07-28 23:25:49.000000000 +0000
+>> @@ -1,8 +1,7 @@
+>>  OBP_RAW V1
+>>  82 01 10 AA 12 0C 16
+>>  F5AF33
+>> -000000
+>> -0025 0000 0082 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>> +E21E65
+>>  0026 0000 0008 00 00 00 00 00 00 00 00
+>>  0007 0000 0004 20 10 32 00
+>>  0008 0000 000A 1E 00 28 28 00 00 00 00 00 00
 > 
-> Sounds like a pain and a recipe for mistakes. How is joe kernel hacker
-> supposed to 1) know about this new api, and 2) decide which to use?
+> It seems that the T25(?) entry is missing in the new/expected configuration
+> file. I figured I'd try out the new/expected configuration file, so did:
+
+0x25 = 37. T37 is the diagnostic debug object. A change was made fairly
+recently to the tools to save this object into the config files, which is
+the reason why it is missing in one of your files. But the difference is
+essentially meaningless for your purposes, and writing those zeros to the
+chip won't affect anything.
+
+> # ./obp-utils/mxt-app -d i2c-dev:1-004b --load 224sl.raw
+> # ./obp-utils/mxt-app -d i2c-dev:1-004b --save
+> mxt-save-after-loading-224sl.raw.xml
 > 
-> Heck, even I wouldn't know, and I just read the damn patch.
+> At this point, mxt-save-after-loading-224sl.raw.xml contains identical
+> content to mxt-save-after-t9-83-write.xml (my previous backup). It looks
+> like the new configuration isn't being loaded correctly, or perhaps
+> configuration loading doesn't delete entries that are simply not in the new
+> configuration file?
+> 
+> I subsequently did the following in case --save is reading from the NVRAM
+> rather than RAM:
 
-When Joe Hacker gets stall warning messages due to loops in the kernel
-that contain cond_resched(), that is a hint that cond_resched_rcu_qs()
-is required.  These stall warnings can occur when using RCU-tasks and when
-using normal RCU in NO_HZ_FULL kernels in cases where the scheduling-clock
-interrupt is left off while executing a long code path in the kernel.
-(Of course, in both cases, another eminently reasonable fix is to shorten
-the offending code path in the kernel.)
-
-I should add words to that effect to Documentation/RCU/stallwarn.txt,
-shouldn't I?  Done.
-
-							Thanx, Paul
-
+The --save command reads from RAM. There's no way of reading from NVRAM.
