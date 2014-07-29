@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870AbaG2PuE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:50:04 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:52641 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575AbaG2PuD (ORCPT
+	id S1751822AbaG2PzM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:55:12 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:56840 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282AbaG2PzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:50:03 -0400
-Date: Tue, 29 Jul 2014 17:49:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
-        jhladky@redhat.com, ktkhai@parallels.com, tim.c.chen@linux.intel.com,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: [PATCH 1/2] sched: fix and clean up calculate_imbalance
-Message-ID: <20140729154956.GJ3935@laptop>
-References: <1406571388-3227-1-git-send-email-riel@redhat.com>
- <1406571388-3227-2-git-send-email-riel@redhat.com>
- <CAKfTPtDuFLOf3Kzt4PSdox3HpBoz9aWXb-QzkibAL-Z4xBm=tw@mail.gmail.com>
- <20140729145910.GH3935@laptop>
- <53D7BAA5.8080404@redhat.com>
+	Tue, 29 Jul 2014 11:55:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D7BAA5.8080404@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140729153124.GA3231@salvia>
+References: <1406615380-3488-1-git-send-email-ast@plumgrid.com>
+	<20140729153124.GA3231@salvia>
+Date: Tue, 29 Jul 2014 08:55:04 -0700
+Message-ID: <CAMEtUuwO0nGox4Mfj8Gs2fVudBpYtZ_NSwyFQCFz5NeYKgAdpA@mail.gmail.com>
+Subject: Re: [PATCH v3 net-next] net: filter: cleanup sk_* and bpf_* names
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Kees Cook <keescook@chromium.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        netfilter-devel <netfilter-devel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 11:15:49AM -0400, Rik van Riel wrote:
+On Tue, Jul 29, 2014 at 8:31 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> On Mon, Jul 28, 2014 at 11:29:40PM -0700, Alexei Starovoitov wrote:
+>> Socket charging logic was complicated, since we had to charge/uncharge a socket
+>> multiple times while preparing a filter. Simplify it by fully preparing bpf
+>> program (through classic->ebpf conversion and JITing) and then charge
+>> the socket memory once.
+>
+> This includes many changes in one single shot. This needs to be
+> splitted in smaller patches that can be reviewed separately, that
+> makes it easier to others to follow track and spot things.  On top of
 
-> > Right, so we want that code for overloaded -> overloaded migrations
-> > such as not to cause idle cpus in an attempt to balance things.
-> > Idle cpus are worse than imbalance.
-> > 
-> > But in case of overloaded/imb -> !overloaded migrations we can
-> > allow it, and in fact want to allow it in order to balance idle
-> > cpus.
-> 
-> In case the destination is over the average load, or the source is under
-> the average load, fix_small_imbalance() determines env->imbalance.
-> 
-> The "load_above_capacity" calculation is only reached when busiest is
-> busier than average, and the destination is under the average load.
-> In that case, env->imbalance ends up as the minimum of busiest - avg
-> and avg - target.
-> 
-> Is there any case where limiting it further to "load - capacity" from
-> the busiest domain makes a difference?
+That was the goal of v1 patch.. to deal with 'struct sk_filter' only...
+Sure. I'll split it into multiple.
 
-sadly yes; suppose 8 cpus in 2 groups and 9 tasks, 8 tasks of weight 10,
-1 of 1024. The local group will have 5 tasks of 10, the busiest will
-have the remaining 4.
+> that, we should also take the time to make sure what is already in
+> place is correct, this is a good chance to go over the existing code,
+> review it and make small changes to accomodate the generic
+> infrastructure that should follow up.
 
-The sd avg is 138, local avg is 12, busiest avg is 263.
+I've simplified charging as commit log says. That part always felt
+unclean. I'll split charging cleanup as separate patch.
+Nothing else comes to mind. Pls suggest.
 
-This gives: busiest-avg = 122, avg - local = 110
+>> -struct sk_filter {
+>> -     atomic_t                refcnt;
+>> +struct bpf_prog {
+>>       u32                     jited:1,        /* Is our filter JIT'ed? */
+>>                               len:31;         /* Number of filter blocks */
+>>       struct sock_fprog_kern  *orig_prog;     /* Original BPF program */
+>> -     struct rcu_head         rcu;
+>> +     struct rcu_head         rcu;            /* used by 'unattached' progs */
+>
+> This rcu_head for unattached filters can be avoided, I'll send a
+> follow up patch for this. After that patch, refcnt and rcu_head can go
+> out from bpf_prog.
 
-So an imbalance of 110.
+See the hunk you quoted above. refcnt is already removed.
+I see your prep patch for rcu_head removal...
+I can rebase on top of it and drop rcu_head out of bpf_prog.
 
-Without limiting it further, we would migrate all 3 10 tasks over to
-local and run 3 cpus idle.
+>> -#define sk_filter_proglen(fprog)                     \
+>> -             (fprog->len * sizeof(fprog->filter[0]))
+>> +struct sk_filter {
+>> +     atomic_t refcnt;
+>> +     struct rcu_head rcu;
+>> +     u32 filter_size;
+>> +     union {
+>> +             struct bpf_prog *prog;
+>> +     };
+>> +     void (*release)(struct sk_filter *fp);
+>> +     int (*get_filter)(struct sk_filter *fp, void **prog, unsigned int *len);
+>> +     unsigned int (*run)(const struct sk_buff *skb, struct sk_filter *fp);
+>
+> I don't think this is the right moment to add this, but we have to
+> keep in mind that something similar to this will need to be
+> accomodated in struct sk_filter at some point to avoid sloppy changes
+> that may result in reintroducing code later on.
 
-Now running all 8 10 tasks on a single cpu and the 1 1024 task on
-another and keeping 6 cpus idle is the 'fairest' solution, but that's
-not the only goal, we also try and be work-conserving, iow. keep as many
-cpus busy as possible.
+I thought in v1 series you were arguing exactly about introducing them now...
+ok, I will drop callbacks and keep refcnt,rcu,filter_size and bpf_prog pointer
+in there. Sounds good?
+
+> Next step should be to wrap the specific bpf fields in struct
+> bpf_prog in some clean way IMO, which was partially the aim of this
+> patch.
+
+it seems your only objection is 'rcu_head' still being there and rebasing
+on top of yours will fix it...
