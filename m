@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915AbaG2RUY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 13:20:24 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33243 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261AbaG2RUV (ORCPT
+	id S1753463AbaG2RVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 13:21:49 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:62319 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708AbaG2RVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 13:20:21 -0400
-Date: Tue, 29 Jul 2014 18:20:05 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140729172005.GW17528@sirena.org.uk>
-References: <1406651339-28901-1-git-send-email-javier.martinez@collabora.co.uk>
- <1406651339-28901-6-git-send-email-javier.martinez@collabora.co.uk>
+	Tue, 29 Jul 2014 13:21:48 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>, Michal Simek <michal.simek@xilinx.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH] ARM: smp_scu: Enable standby mode
+Date: Tue, 29 Jul 2014 10:21:03 -0700
+Message-Id: <1406654463-15475-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 2.0.1.1.gfbfc394
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iV2d/vj8ESJZTLS0"
-Content-Disposition: inline
-In-Reply-To: <1406651339-28901-6-git-send-email-javier.martinez@collabora.co.uk>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC 5/5] ARM: dts: Improve Peach Pit and Pi power scheme model
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Enable the SCU standby mode.
+>From documentation:
+  When set, SCU CLK is turned off when all processors are in WFI mode,
+  there is no pending request on the ACP (if implemented), and there is
+  no remaining activity in the SCU.
 
---iV2d/vj8ESJZTLS0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+  When SCU CLK is off, ARREADYS, AWREADYS and WREADYS on the ACP are forced
+  LOW. The clock is turned on when any processor leaves WFI mode, or if
+  there is a new request on the ACP.
 
-On Tue, Jul 29, 2014 at 06:28:59PM +0200, Javier Martinez Canillas wrote:
-> The DeviceTree files for the Peach Pit and Pi machines have
-> a simplistic model of the connections between the different
-> regulators since not all the tps65090 regulators get their
-> input supply voltage from the VDC. DCDC1-3, LD0-1 and fet7
-> parent supply is indded VDC but the fet1-6 get their input
-> supply from the DCDC1 and DCDC2 output voltage rails.
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+Hi,
 
-Acked-by: Mark Brown <broonie@linaro.org>
+I am working on some PM related patches for Zynq. One of them is
+enabling the SCU standby mode. I was wondering whether this is probably
+something that I should not do in platform specific code, but rather in
+the common code for everybody?
 
-This *should* be independent of the rest of this series.
+	Thanks,
+	Sören
+---
+ arch/arm/kernel/smp_scu.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---iV2d/vj8ESJZTLS0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/arch/arm/kernel/smp_scu.c b/arch/arm/kernel/smp_scu.c
+index 1aafa0d785eb..82548a76740d 100644
+--- a/arch/arm/kernel/smp_scu.c
++++ b/arch/arm/kernel/smp_scu.c
+@@ -22,6 +22,9 @@
+ #define SCU_INVALIDATE		0x0c
+ #define SCU_FPGA_REVISION	0x10
+ 
++#define SCU_CTRL_ENABLE		BIT(0)
++#define SCU_CTRL_STANDBY_ENABLE	BIT(5)
++
+ #ifdef CONFIG_SMP
+ /*
+  * Get the number of CPU cores from the SCU configuration
+@@ -53,7 +56,7 @@ void scu_enable(void __iomem *scu_base)
+ 	if (scu_ctrl & 1)
+ 		return;
+ 
+-	scu_ctrl |= 1;
++	scu_ctrl |= SCU_CTRL_ENABLE | SCU_CTRL_STANDBY_ENABLE;
+ 	writel_relaxed(scu_ctrl, scu_base + SCU_CTRL);
+ 
+ 	/*
+-- 
+2.0.1.1.gfbfc394
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT19fCAAoJELSic+t+oim9GJUP/2pHMO6SaojAsT12eeQ/Ox+8
-w0cxU1Vv6y+bJbsivw7rZ8LBUWWS16kltny2Dp7qRtENnRP67+ws5/q75wr+i7B+
-SkoVR9vpCFupRt9/1ddvUPUG6BD6k96YxvHMlPnUi+JjpEWzGaXjR2hJjNEad8hT
-m99QCw72prWA+csr1y8dnWjE4CqxELGXjoeoB7sIRyAAC1DY8s0x28DFyLmulQUt
-cjppWNiIu5r1+2cBbOeS+/rYyYP/ZLZ7efzUg+qoOHqU7ToNt46ByZi8YAv2XwsJ
-fp2HfRauGQjsQjsujB54GzMlMDK1oXl62ugZTw0Ia5yhBc8X4v6BmM5b3M+oE/PM
-Nc/L1fZBpCQXwYsPYZdrUizdS1TVbeDXdTo4sjByluvybEEoAOQjROqCdwQkfRtX
-PrVq8BCd3ZUvO6HfRvxgocrbCF3oFDqR8fhCkCKwiUIgXS4/UrMgkef1SflPzMDy
-poglt9mWKHFfehWF037HpRT7wSU1HqxoEA4Hh2yKx9qOf8rcCoPLzxSVPrcw2VKT
-noainkzL7zNF518uj8O1tq21twDiCczMi5aVjp2XkkNGozaxoIRBovyMRxBe1bml
-WG/b38W2lhTSvz5UKEXYxhMV7YHBrrMISOVKoMwHoqYps6ntKTdWEtYihFE/7yYO
-Q90vYzBL9TL/sju+cntj
-=RgOI
------END PGP SIGNATURE-----
-
---iV2d/vj8ESJZTLS0--
