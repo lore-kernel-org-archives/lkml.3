@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139AbaG2UkR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 16:40:17 -0400
-Received: from merkurneu.hrz.uni-giessen.de ([134.176.2.3]:52892 "EHLO
-	merkurneu.hrz.uni-giessen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751607AbaG2UkP (ORCPT
+	id S1754219AbaG2UlI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 16:41:08 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:40476 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693AbaG2UlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 16:40:15 -0400
-From: Marc Dietrich <Marc.Dietrich@ap.physik.uni-giessen.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Julian Andres Klode <jak@jak-linux.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ac100@lists.launchpad.net, linux-tegra@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging/nvec: Use platform_get_irq()
-Date: Tue, 29 Jul 2014 22:24:03 +0200
-Message-Id: <4292851.WR4mddmlu0@ax5200p>
-User-Agent: KMail/4.13.2 (Linux/3.13.0-32-generic; KDE/4.13.2; x86_64; ; )
-In-Reply-To: <1406632575-26075-2-git-send-email-thierry.reding@gmail.com>
-References: <1406632575-26075-1-git-send-email-thierry.reding@gmail.com> <1406632575-26075-2-git-send-email-thierry.reding@gmail.com>
+	Tue, 29 Jul 2014 16:41:05 -0400
+Date: Tue, 29 Jul 2014 13:41:00 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Dmitry Torokhov <dtor@google.com>
+Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
+Message-ID: <20140729204100.GI3711@ld-irv-0074>
+References: <20140724212620.GO3935@laptop>
+ <13290270.IfKaUSRMLR@vostro.rjw.lan>
+ <20140725055847.GQ3935@laptop>
+ <20140729192008.GH3711@ld-irv-0074>
+ <20140729192843.GP3935@laptop>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-HRZ-JLUG-MailScanner-Information: Passed JLUG virus check
-X-HRZ-JLUG-MailScanner: No virus found
-X-Envelope-From: marc.dietrich@ap.physik.uni-giessen.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140729192843.GP3935@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag 29 Juli 2014, 13:16:15 schrieb Thierry Reding:
-> From: Thierry Reding <treding@nvidia.com>
+On Tue, Jul 29, 2014 at 09:28:43PM +0200, Peter Zijlstra wrote:
+> On Tue, Jul 29, 2014 at 12:20:08PM -0700, Brian Norris wrote:
 > 
-> As opposed to platform_get_resource(), the platform_get_irq() function
-> has special code to handle driver probe deferral when booting using DT
-> and where an interrupt provider hasn't been registered yet. While this
-> is unlikely to become an issue for nvec, platform_get_irq() is the
-> recommended way to get at interrupts.
+> > I'm curious what you mean. Are you referring to the fact that its input
+> > is simply an IRQ number (regardless of whether the IRQ is shared), not
+> > something that identifies the particular handler (e.g., struct
+> > irqaction)?
 > 
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> Yes. I know that shared stuff is a massive head-ache, but I feel we
+> should not introduce primitives that do not work with it.
 
-Thanks again, Thierry!
+Thanks for the reply. I could also have just read the rest of the thread
+[1], in which this very question was addressed already. Shame on me.
 
-Acked-by: Marc Dietrich <marvin24@gmx.de>
+Brian
 
-
-
-> ---
->  drivers/staging/nvec/nvec.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
-> index 815065837ce7..a93208adbfcf 100644
-> --- a/drivers/staging/nvec/nvec.c
-> +++ b/drivers/staging/nvec/nvec.c
-> @@ -821,8 +821,8 @@ static int tegra_nvec_probe(struct platform_device
-> *pdev) if (IS_ERR(base))
->  		return PTR_ERR(base);
-> 
-> -	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-> -	if (!res) {
-> +	nvec->irq = platform_get_irq(pdev, 0);
-> +	if (nvec->irq < 0) {
->  		dev_err(&pdev->dev, "no irq resource?\n");
->  		return -ENODEV;
->  	}
-> @@ -840,7 +840,6 @@ static int tegra_nvec_probe(struct platform_device
-> *pdev) }
-> 
->  	nvec->base = base;
-> -	nvec->irq = res->start;
->  	nvec->i2c_clk = i2c_clk;
->  	nvec->rx = &nvec->msg_pool[0];
-
+[1] https://lkml.org/lkml/2014/7/28/60
