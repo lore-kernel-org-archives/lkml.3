@@ -1,291 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665AbaG2Gby (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 02:31:54 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:33623 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388AbaG2Gbx (ORCPT
+	id S1752600AbaG2GiN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 02:38:13 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:53796 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751223AbaG2GiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 02:31:53 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 29 Jul 2014 15:38:40 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v5 02/14] mm, compaction: defer each zone individually
- instead of preferred zone
-Message-ID: <20140729063840.GA1610@js1304-P5Q-DELUXE>
-References: <1406553101-29326-1-git-send-email-vbabka@suse.cz>
- <1406553101-29326-3-git-send-email-vbabka@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406553101-29326-3-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 29 Jul 2014 02:38:11 -0400
+X-Sasl-enc: QceTNqkqI5fku4buJI9xLC8IhXMJbjP57kjCdLGbkmFp 1406615888
+Message-ID: <1406615879.2776.19.camel@perseus.fritz.box>
+Subject: Re: [PATCH 3/6] autofs4: allow RCU-walk to walk through autofs4.
+From: Ian Kent <raven@themaw.net>
+To: NeilBrown <neilb@suse.de>
+Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 29 Jul 2014 14:37:59 +0800
+In-Reply-To: <20140729115101.0805ecd8@notabene.brown>
+References: <20140709233541.4525.25151.stgit@notabene.brown>
+	 <20140709234114.4525.46882.stgit@notabene.brown>
+	 <1405485857.2527.38.camel@perseus.fritz.box>
+	 <20140716155150.044c2ea3@notabene.brown>
+	 <1405493777.2527.72.camel@perseus.fritz.box>
+	 <1405573256.3002.25.camel@perseus.fritz.box>
+	 <20140717180414.2e2596d1@notabene.brown>
+	 <1405592252.20621.63.camel@perseus.fritz.box>
+	 <20140729115101.0805ecd8@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 03:11:29PM +0200, Vlastimil Babka wrote:
-> When direct sync compaction is often unsuccessful, it may become deferred for
-> some time to avoid further useless attempts, both sync and async. Successful
-> high-order allocations un-defer compaction, while further unsuccessful
-> compaction attempts prolong the copmaction deferred period.
+On Tue, 2014-07-29 at 11:51 +1000, NeilBrown wrote:
+> On Thu, 17 Jul 2014 18:17:32 +0800 Ian Kent <raven@themaw.net> wrote:
 > 
-> Currently the checking and setting deferred status is performed only on the
-> preferred zone of the allocation that invoked direct compaction. But compaction
-> itself is attempted on all eligible zones in the zonelist, so the behavior is
-> suboptimal and may lead both to scenarios where 1) compaction is attempted
-> uselessly, or 2) where it's not attempted despite good chances of succeeding,
-> as shown on the examples below:
+> > 
+> > On Thu, 2014-07-17 at 18:04 +1000, NeilBrown wrote:
+> > > If there some documentation about the interactions between the automountd and
+> > > the kernel?
+> > 
+> > Not really, only the ioctl interaction described in
+> > Documentation/filesystems/autofs4-mount-control.txt
+> > 
+> > > It looks like:
+> > >  With V5, every name in the root directory gets something mounted on it,
+> > >       either another autofs or the target filesystem.
+> > >  With V4, you don't mount an autofs onto an autofs, but when a name in the
+> > >       root is automounted, all the names beneath there are created and the
+> > >       target filesystems are mounted before the top level automount is
+> > >       acknowledged.
+> > > 
+> > > Does that sound at all right (I suspect I haven't explained it very clearly).
+> > 
+> > Mostly, but let me try and simplify it (or perhaps confuse you even more
+> > and bore you as a bonus, ;)) and offer a broader picture.
 > 
-> 1) A direct compaction with Normal preferred zone failed and set deferred
->    compaction for the Normal zone. Another unrelated direct compaction with
->    DMA32 as preferred zone will attempt to compact DMA32 zone even though
->    the first compaction attempt also included DMA32 zone.
-> 
->    In another scenario, compaction with Normal preferred zone failed to compact
->    Normal zone, but succeeded in the DMA32 zone, so it will not defer
->    compaction. In the next attempt, it will try Normal zone which will fail
->    again, instead of skipping Normal zone and trying DMA32 directly.
-> 
-> 2) Kswapd will balance DMA32 zone and reset defer status based on watermarks
->    looking good. A direct compaction with preferred Normal zone will skip
->    compaction of all zones including DMA32 because Normal was still deferred.
->    The allocation might have succeeded in DMA32, but won't.
-> 
-> This patch makes compaction deferring work on individual zone basis instead of
-> preferred zone. For each zone, it checks compaction_deferred() to decide if the
-> zone should be skipped. If watermarks fail after compacting the zone,
-> defer_compaction() is called. The zone where watermarks passed can still be
-> deferred when the allocation attempt is unsuccessful. When allocation is
-> successful, compaction_defer_reset() is called for the zone containing the
-> allocated page. This approach should approximate calling defer_compaction()
-> only on zones where compaction was attempted and did not yield allocated page.
-> There might be corner cases but that is inevitable as long as the decision
-> to stop compacting dues not guarantee that a page will be allocated.
-> 
-> During testing on a two-node machine with a single very small Normal zone on
-> node 1, this patch has improved success rates in stress-highalloc mmtests
-> benchmark. The success here were previously made worse by commit 3a025760fc15
-> ("mm: page_alloc: spill to remote nodes before waking kswapd") as kswapd was
-> no longer resetting often enough the deferred compaction for the Normal zone,
-> and DMA32 zones on both nodes were thus not considered for compaction.
-> On different machine, success rates were improved with __GFP_NO_KSWAPD
-> allocations.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Acked-by: Minchan Kim <minchan@kernel.org>
-> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> Acked-by: Mel Gorman <mgorman@suse.de>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: David Rientjes <rientjes@google.com>
-> ---
->  include/linux/compaction.h | 16 ++++++++++------
->  mm/compaction.c            | 30 ++++++++++++++++++++++++------
->  mm/page_alloc.c            | 39 +++++++++++++++++++++++----------------
->  3 files changed, 57 insertions(+), 28 deletions(-)
-> 
-> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-> index 01e3132..b2e4c92 100644
-> --- a/include/linux/compaction.h
-> +++ b/include/linux/compaction.h
-> @@ -2,14 +2,16 @@
->  #define _LINUX_COMPACTION_H
->  
->  /* Return values for compact_zone() and try_to_compact_pages() */
-> +/* compaction didn't start as it was deferred due to past failures */
-> +#define COMPACT_DEFERRED	0
->  /* compaction didn't start as it was not possible or direct reclaim was more suitable */
-> -#define COMPACT_SKIPPED		0
-> +#define COMPACT_SKIPPED		1
+> Thanks for going into all that detail!  Having read that, and read the code
+> (a few times) and having tried to document it myself I think I really
+> understand it all now.
 
-Hello,
+Glad you appreciated the effort.
 
-This change makes some users of compaction_suitable() failed
-unintentionally, because they assume that COMPACT_SKIPPED is 0.
-Please fix them according to this change.
+> 
+> I wanted to be sure I understood from the perspective of what the module
+> actually supports rather than just how the automount daemon uses it, so I put
+> together a document describing the module.  At 3000 words, I'm not sure
+> whether to call it "verbose" or "thorough".  I'll post it separately.
 
->  /* compaction should continue to another pageblock */
-> -#define COMPACT_CONTINUE	1
-> +#define COMPACT_CONTINUE	2
->  /* direct compaction partially compacted a zone and there are suitable pages */
-> -#define COMPACT_PARTIAL		2
-> +#define COMPACT_PARTIAL		3
->  /* The full zone was compacted */
-> -#define COMPACT_COMPLETE	3
-> +#define COMPACT_COMPLETE	4
->  
->  #ifdef CONFIG_COMPACTION
->  extern int sysctl_compact_memory;
-> @@ -22,7 +24,8 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
->  extern int fragmentation_index(struct zone *zone, unsigned int order);
->  extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  			int order, gfp_t gfp_mask, nodemask_t *mask,
-> -			enum migrate_mode mode, bool *contended);
-> +			enum migrate_mode mode, bool *contended,
-> +			struct zone **candidate_zone);
->  extern void compact_pgdat(pg_data_t *pgdat, int order);
->  extern void reset_isolation_suitable(pg_data_t *pgdat);
->  extern unsigned long compaction_suitable(struct zone *zone, int order);
-> @@ -91,7 +94,8 @@ static inline bool compaction_restarting(struct zone *zone, int order)
->  #else
->  static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  			int order, gfp_t gfp_mask, nodemask_t *nodemask,
-> -			enum migrate_mode mode, bool *contended)
-> +			enum migrate_mode mode, bool *contended,
-> +			struct zone **candidate_zone)
->  {
->  	return COMPACT_CONTINUE;
->  }
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 5175019..f3ae2ec 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -1122,28 +1122,27 @@ int sysctl_extfrag_threshold = 500;
->   * @nodemask: The allowed nodes to allocate from
->   * @mode: The migration mode for async, sync light, or sync migration
->   * @contended: Return value that is true if compaction was aborted due to lock contention
-> - * @page: Optionally capture a free page of the requested order during compaction
-> + * @candidate_zone: Return the zone where we think allocation should succeed
->   *
->   * This is the main entry point for direct page compaction.
->   */
->  unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  			int order, gfp_t gfp_mask, nodemask_t *nodemask,
-> -			enum migrate_mode mode, bool *contended)
-> +			enum migrate_mode mode, bool *contended,
-> +			struct zone **candidate_zone)
->  {
->  	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
->  	int may_enter_fs = gfp_mask & __GFP_FS;
->  	int may_perform_io = gfp_mask & __GFP_IO;
->  	struct zoneref *z;
->  	struct zone *zone;
-> -	int rc = COMPACT_SKIPPED;
-> +	int rc = COMPACT_DEFERRED;
->  	int alloc_flags = 0;
->  
->  	/* Check if the GFP flags allow compaction */
->  	if (!order || !may_enter_fs || !may_perform_io)
->  		return rc;
->  
-> -	count_compact_event(COMPACTSTALL);
-> -
->  #ifdef CONFIG_CMA
->  	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
->  		alloc_flags |= ALLOC_CMA;
-> @@ -1153,14 +1152,33 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  								nodemask) {
->  		int status;
->  
-> +		if (compaction_deferred(zone, order))
-> +			continue;
-> +
->  		status = compact_zone_order(zone, order, gfp_mask, mode,
->  						contended);
->  		rc = max(status, rc);
->  
->  		/* If a normal allocation would succeed, stop compacting */
->  		if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0,
-> -				      alloc_flags))
-> +				      alloc_flags)) {
-> +			*candidate_zone = zone;
-> +			/*
-> +			 * We think the allocation will succeed in this zone,
-> +			 * but it is not certain, hence the false. The caller
-> +			 * will repeat this with true if allocation indeed
-> +			 * succeeds in this zone.
-> +			 */
-> +			compaction_defer_reset(zone, order, false);
->  			break;
-> +		} else if (mode != MIGRATE_ASYNC) {
-> +			/*
-> +			 * We think that allocation won't succeed in this zone
-> +			 * so we defer compaction there. If it ends up
-> +			 * succeeding after all, it will be reset.
-> +			 */
-> +			defer_compaction(zone, order);
-> +		}
->  	}
->  
->  	return rc;
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index b99643d4..a14efeb 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2299,21 +2299,24 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->  	bool *contended_compaction, bool *deferred_compaction,
->  	unsigned long *did_some_progress)
->  {
-> -	if (!order)
-> -		return NULL;
-> +	struct zone *last_compact_zone = NULL;
->  
-> -	if (compaction_deferred(preferred_zone, order)) {
-> -		*deferred_compaction = true;
-> +	if (!order)
->  		return NULL;
-> -	}
->  
->  	current->flags |= PF_MEMALLOC;
->  	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
->  						nodemask, mode,
-> -						contended_compaction);
-> +						contended_compaction,
-> +						&last_compact_zone);
->  	current->flags &= ~PF_MEMALLOC;
->  
-> -	if (*did_some_progress != COMPACT_SKIPPED) {
-> +	if (*did_some_progress > COMPACT_DEFERRED)
-> +		count_vm_event(COMPACTSTALL);
-> +	else
-> +		*deferred_compaction = true;
-> +
-> +	if (*did_some_progress > COMPACT_SKIPPED) {
->  		struct page *page;
->  
->  		/* Page migration frees to the PCP lists but we want merging */
-> @@ -2324,27 +2327,31 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->  				order, zonelist, high_zoneidx,
->  				alloc_flags & ~ALLOC_NO_WATERMARKS,
->  				preferred_zone, classzone_idx, migratetype);
-> +
->  		if (page) {
-> -			preferred_zone->compact_blockskip_flush = false;
-> -			compaction_defer_reset(preferred_zone, order, true);
-> +			struct zone *zone = page_zone(page);
-> +
-> +			zone->compact_blockskip_flush = false;
-> +			compaction_defer_reset(zone, order, true);
->  			count_vm_event(COMPACTSUCCESS);
->  			return page;
->  		}
->  
->  		/*
-> +		 * last_compact_zone is where try_to_compact_pages thought
-> +		 * allocation should succeed, so it did not defer compaction.
-> +		 * But now we know that it didn't succeed, so we do the defer.
-> +		 */
-> +		if (last_compact_zone && mode != MIGRATE_ASYNC)
-> +			defer_compaction(last_compact_zone, order);
+Indeed, that's very sensible since it can easily be used by others.
 
-I still don't understand why defer_compaction() is needed here.
-defer_compaction() is intended for not struggling doing compaction on
-the zone where we already have tried compaction and found that it
-isn't suitable for compaction. Allocation failure doesn't tell us
-that we have tried compaction for all the zone range so we shouldn't
-make a decision here to defer compaction on this zone carelessly.
+I still way behind and I'm ill, in fact the whole family is ill (winter
+here as you know), so I'll have a look at what you've put together soon
+as I can.
 
-Thanks.
+FWICS you've put a lot of effort into writing it and I appreciate it
+very much.
+
+Once we're both happy with it do you think it should go somewhere in
+Documents in the kernel tree or did you have somewhere else in mind?
+
+> 
+> I did discover one thing that is important for the RCU-walk work.
+> If you have a "root-less multimount" then the top-level directory will have
+> DCACHE_NEED_AUTOMOUNT set even though it is not a mount-trap.
+> As it contains a sub-directory (or more), d_manage will return -EISDIR so
+> normal REF-walking will side-step d_automount and it will be treated as a
+> normal directory.
+> However in RCU-walk mode, d_manage cannot usefully return -EISDIR so the VFS
+> will always drop into REF-walk mode, which negates some of the value of my
+> RCU-walk patches.
+
+Yes, think we discussed that before.
+
+> 
+> I see two ways to fix this:
+>  1- clear DCACHE_NEED_AUTOMOUNT when creating a subdir or symlink, just like
+>     we do with protocol-version 4
+>  2- teach the VFS to accept -EISDIR from d_manage and to ignore
+>     DCACHE_NEED_AUTOMOUNT in that case.  I have a patch to do this and it is
+>     fairly straight forward.
+> 
+> I think I prefer 2 (it seems easier to document:-) but thought I'd ask if you
+> have an opinion before I post it (I haven't even tested it properly yet).
+
+I definitely prefer option 2 also.
+
+Trying to juggle the flag adds at least one seriously ugly test in the
+expire code and the path walk code and likely eliminates the ability to
+use the optimization of not calling ->d_automount() for these.
+
+Keep in mind that there's also the multiple namespace problem I
+mentioned before.
+
+d_mountpoint() says, "is this dentry mounted (in any namespace)" which
+is clearly unreliable.
+
+Since autofs path walks were always done in ref-walk mode I haven't
+looked at how this would be done in rcu-walk mode but in ref-walk mode I
+believe the only solution is to use lookup_mnt() and that won't work in
+rcu-walk and would require kicking the process back to ref-walk mode.
+
+Ian
+
