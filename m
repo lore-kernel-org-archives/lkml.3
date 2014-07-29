@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534AbaG2OUf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 10:20:35 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:48955 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbaG2OUe (ORCPT
+	id S1753676AbaG2OYJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 10:24:09 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44550 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaG2OYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 10:20:34 -0400
-From: Stefan Agner <stefan@agner.ch>
-To: shawn.guo@freescale.com, kernel@pengutronix.de, peter.chen@freescale.com
-Cc: jingchang.lu@freescale.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, stefan@agner.ch
-Subject: [PATCH] ARM: imx: clk-vf610: introduce clks_init_on
-Date: Tue, 29 Jul 2014 16:20:28 +0200
-Message-Id: <1406643628-4061-1-git-send-email-stefan@agner.ch>
-X-Mailer: git-send-email 2.0.2
+	Tue, 29 Jul 2014 10:24:07 -0400
+Date: Tue, 29 Jul 2014 07:24:03 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Tomas Henzl <thenzl@redhat.com>,
+        linux-kernel@vger.kernel.org, xjtuwjp@gmail.com, lindar_liu@usish.com,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
+        Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>
+Subject: Re: [PATCH v2 RESEND 17/23] pm8001: Fix invalid return when
+ request_irq() failed
+Message-ID: <20140729142403.GA13589@infradead.org>
+References: <cover.1405533479.git.agordeev@redhat.com>
+ <5ecd9b80f705545c3dc85b2a4ae63a8ac3df8105.1405533479.git.agordeev@redhat.com>
+ <53D79DE2.9000702@redhat.com>
+ <20140729132020.GA7714@infradead.org>
+ <53D7A62D.2090709@redhat.com>
+ <20140729135641.GA14378@infradead.org>
+ <20140729141544.GA18029@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140729141544.GA18029@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the end of the boot process, the clock framework might disable
-required main PLL's. So far, this was no issue since drivers
-requested clocks, which are descended of the main PLL's (e.g.
-pll1_pfd1, which provides the system clock).
+On Tue, Jul 29, 2014 at 04:15:45PM +0200, Alexander Gordeev wrote:
+> Hmm.. 18/23 applies with a minor fuzz against
+> git://git.infradead.org/users/hch/scsi-queue.git drivers-for-3.17
 
-To archive the full 500MHz system clock, DDR clock need to be a
-descendant of PLL2 rather than PLL1 (DDRC_CLK_SEL set to 0). The
-bootloader sets up the clocks accordingly before making use of
-DDR at all. However, in Linux, there is no driver using PLL2,
-which lead to PLL2 being disabled by the clock framework.
-
-With this patch, we make sure that the main system clock and the
-DDR clock are initially enabled and are kept enabled.
-
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- arch/arm/mach-imx/clk-vf610.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/arch/arm/mach-imx/clk-vf610.c b/arch/arm/mach-imx/clk-vf610.c
-index f60d6d5..a41ed73 100644
---- a/arch/arm/mach-imx/clk-vf610.c
-+++ b/arch/arm/mach-imx/clk-vf610.c
-@@ -98,9 +98,15 @@ static struct clk_div_table pll4_main_div_table[] = {
- static struct clk *clk[VF610_CLK_END];
- static struct clk_onecell_data clk_data;
- 
-+static unsigned int const clks_init_on[] __initconst = {
-+	VF610_CLK_SYS_BUS,
-+	VF610_CLK_DDR_SEL,
-+};
-+
- static void __init vf610_clocks_init(struct device_node *ccm_node)
- {
- 	struct device_node *np;
-+	int i;
- 
- 	clk[VF610_CLK_DUMMY] = imx_clk_fixed("dummy", 0);
- 	clk[VF610_CLK_SIRC_128K] = imx_clk_fixed("sirc_128k", 128000);
-@@ -322,6 +328,9 @@ static void __init vf610_clocks_init(struct device_node *ccm_node)
- 	clk_set_parent(clk[VF610_CLK_SAI2_SEL], clk[VF610_CLK_AUDIO_EXT]);
- 	clk_set_parent(clk[VF610_CLK_SAI3_SEL], clk[VF610_CLK_AUDIO_EXT]);
- 
-+	for (i = 0; i < ARRAY_SIZE(clks_init_on); i++)
-+		clk_prepare_enable(clk[clks_init_on[i]]);
-+
- 	/* Add the clocks to provider list */
- 	clk_data.clks = clk;
- 	clk_data.clk_num = ARRAY_SIZE(clk);
--- 
-2.0.2
+Okay, it was just git-am being goofy then.  I'll take care of it.
 
