@@ -1,86 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670AbaG2X4v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 19:56:51 -0400
-Received: from ozlabs.org ([103.22.144.67]:43357 "EHLO ozlabs.org"
+	id S1754682AbaG2X5S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 19:57:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18518 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754020AbaG2X4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 19:56:50 -0400
-Date: Wed, 30 Jul 2014 09:56:42 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-ID: <20140730095642.5f68e01d@canb.auug.org.au>
-In-Reply-To: <20140725144522.32c1f6b5@canb.auug.org.au>
-References: <20140725144522.32c1f6b5@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/jUG3yYENU/XGCvEVAizmTNB"; protocol="application/pgp-signature"
+	id S1750702AbaG2X5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 19:57:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,760,1400050800"; 
+   d="scan'208";a="550974743"
+Subject: Re: [Regression 3.16-rc kernel] -55% reduction in throughput for
+ OLTP benchmark
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, suruchi <suruchi.a.kadu@intel.com>,
+        ak <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "hubert.nueckel" <hubert.nueckel@intel.com>,
+        beth.marsh-prime@intel.com, "doug.nelson" <doug.nelson@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20140729164951.GA23863@infradead.org>
+References: <1406584299.2970.924.camel@schen9-DESK>
+	 <20140729141908.GA4464@infradead.org>
+	 <1406651702.2970.927.camel@schen9-DESK>
+	 <20140729164951.GA23863@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Jul 2014 16:57:12 -0700
+Message-ID: <1406678232.2970.943.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/jUG3yYENU/XGCvEVAizmTNB
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2014-07-29 at 09:49 -0700, Christoph Hellwig wrote:
+> On Tue, Jul 29, 2014 at 09:35:02AM -0700, Tim Chen wrote:
+> > On Tue, 2014-07-29 at 07:19 -0700, Christoph Hellwig wrote:
+> > > Hi Tim,
+> > > 
+> > > I think the problem is that sdio.size doesn't get set set with
+> > > the new dio code.  Please try the patch below to fix this by not
+> > > relying on that field:
+> > 
+> > Thanks for your quick response.  We'll test this patch and let you
+> > know the results.
+> 
+> There actually was a little bug in it, please try the version below
+> instead:
+> 
 
-Hi all,
+Christoph, we're glad to report that this patch does fix the problem.
+Wonder if Al or someone can pick it up.  It is a large regression
+that should not be left unfixed for 3.16.
 
-On Fri, 25 Jul 2014 14:45:22 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Hi all,
->=20
-> After merging the tip tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->=20
-> arch/powerpc/kernel/time.c:743:6: error: conflicting types for 'update_vs=
-yscall_old'
->  void update_vsyscall_old(struct timespec *wall_time, struct timespec *wt=
-m,
->       ^
-> In file included from arch/powerpc/kernel/time.c:77:0:
-> include/linux/timekeeper_internal.h:114:13: note: previous declaration of=
- 'update_vsyscall_old' was here
->  extern void update_vsyscall_old(struct timespec *ts, struct timespec *wt=
-m,
->              ^
->=20
-> Caused by commit 4a0e637738f0 ("clocksource: Get rid of cycle_last").
->=20
-> I have used the tip tree from next-20140724 for today.
+Tim
 
-Ping?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --git a/fs/direct-io.c b/fs/direct-io.c
+> index 194d0d1..17e39b0 100644
+> --- a/fs/direct-io.c
+> +++ b/fs/direct-io.c
+> @@ -71,7 +71,6 @@ struct dio_submit {
+>  					   been performed at the start of a
+>  					   write */
+>  	int pages_in_io;		/* approximate total IO pages */
+> -	size_t	size;			/* total request size (doesn't change)*/
+>  	sector_t block_in_file;		/* Current offset into the underlying
+>  					   file in dio_block units. */
+>  	unsigned blocks_available;	/* At block_in_file.  changes */
+> @@ -1104,7 +1103,8 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+>  	unsigned blkbits = i_blkbits;
+>  	unsigned blocksize_mask = (1 << blkbits) - 1;
+>  	ssize_t retval = -EINVAL;
+> -	loff_t end = offset + iov_iter_count(iter);
+> +	size_t count = iov_iter_count(iter);
+> +	loff_t end = offset + count;
+>  	struct dio *dio;
+>  	struct dio_submit sdio = { 0, };
+>  	struct buffer_head map_bh = { 0, };
+> @@ -1287,10 +1287,9 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+>  	 */
+>  	BUG_ON(retval == -EIOCBQUEUED);
+>  	if (dio->is_async && retval == 0 && dio->result &&
+> -	    ((rw == READ) || (dio->result == sdio.size)))
+> +	    (rw == READ || dio->result == count))
+>  		retval = -EIOCBQUEUED;
+> -
+> -	if (retval != -EIOCBQUEUED)
+> +	else
+>  		dio_await_completion(dio);
+>  
+>  	if (drop_refcount(dio) == 0) {
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
---Sig_/jUG3yYENU/XGCvEVAizmTNB
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT2DTAAAoJEMDTa8Ir7ZwVHRQP/jFuWakuVUabUPR2MF8WTTq5
-1SaRylZ2PRW4Qzt28oJvaZbFLuqBcrgs8+LI6FsdKTKF3GUV91OSFAeHuk7W0bms
-/KzCKdwg/JzO8O6jsnAR+c26xl2HvfE2/DaVHRDJ4xD8gcKY++O+Qq1IHLZe8P9N
-WSIp4EgFIvbDWe4ATlJLp2NVAIXTwPKWk8QBl63aECqu7kMD9vs2FmqPZZ7E0sr+
-X4GMsX7sxFDUZ6SXA1KX5rkAElc4QPQTh0VuVJaRktEi9UCuLPev0PdybMb/svQr
-0Bi1OzLUZKW7SOIQtXUKyznRSMZCYoe2kTTelFINIHYbcS8nc4Dx9SdDb9mfMT8m
-ta3gezfai1JilYlhXuJUoWtO0Fnu4kALq47cCo1tZL6+xHC32XfMSB1wH2KbqIl/
-vUQthnI/wV4fz8TXtHHCuAvA5zQOizK7jDDVd/7YVu3jFVDQQbPHpSLQdMZYEXAv
-IBisql5IK4Ur4kAn8a/PwmjOtac/g18uAMQaMS6zrMEKQq6P7xq+3saKQmXQ6y6S
-TN51tI98Gkg1D1pC2NPOMpsVnbZ0jh0JKNV6O6B98XDETAknLM5JpahAuQ63aqdT
-AEzV/ES8zHbP+vGx9qpEmMa3WF+R17jIJ6UxK1Ex6rvxyZKwJzA3hGO7FTADiVWE
-N5RNUeEhzCVTVczZAscP
-=Ppve
------END PGP SIGNATURE-----
-
---Sig_/jUG3yYENU/XGCvEVAizmTNB--
