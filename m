@@ -1,131 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbaG2M7F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 08:59:05 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:36912 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907AbaG2M7D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 08:59:03 -0400
-Date: Tue, 29 Jul 2014 08:58:48 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: amit daniel kachhap <amit.daniel@samsung.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>, Tomasz Figa <t.figa@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/9] thermal: exynos: various cleanups
-Message-ID: <20140729125848.GA18746@developer>
-References: <1403026045-16024-1-git-send-email-b.zolnierkie@samsung.com>
- <20140728143759.GA17837@developer>
- <CADGdYn6EN-evo2KCjFfQ2h8gLoop=xTJZO3fnNxBxM9067tjxg@mail.gmail.com>
+	id S1753419AbaG2NAH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 09:00:07 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48815 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751143AbaG2NAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 09:00:04 -0400
+Date: Tue, 29 Jul 2014 06:00:25 -0700
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [f2fs-dev] [PATCH 10/11] f2fs: avoid checkpoint when error was
+ occurred
+Message-ID: <20140729130025.GA86905@jaegeuk-mac02>
+References: <1406328445-63707-1-git-send-email-jaegeuk@kernel.org>
+ <1406328445-63707-10-git-send-email-jaegeuk@kernel.org>
+ <008301cfab22$27e34fc0$77a9ef40$@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CADGdYn6EN-evo2KCjFfQ2h8gLoop=xTJZO3fnNxBxM9067tjxg@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <008301cfab22$27e34fc0$77a9ef40$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 08:30:53PM +0530, amit daniel kachhap wrote:
-> Hi Eduardo,
+Hi Chao,
 
-Hello Amit,
+On Tue, Jul 29, 2014 at 07:41:35PM +0800, Chao Yu wrote:
+> Hi Jaegeuk,
+> 
+> > -----Original Message-----
+> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> > Sent: Saturday, July 26, 2014 6:47 AM
+> > To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
+> > linux-f2fs-devel@lists.sourceforge.net
+> > Cc: Jaegeuk Kim
+> > Subject: [f2fs-dev] [PATCH 10/11] f2fs: avoid checkpoint when error was occurred
+> > 
+> > No need to do checkpoint, whenever any errors were detected.
+> > 
+> 
+> The code here is modified once at below commit for avoid unneeded cp.
+> You can see the reason through the description of the commit.
+> 
+> Commit 691c6fd2a2d6 ("remove unneeded write checkpoint in recover_fsync_data")
+> 
+> "Previously, recover_fsync_data still to write checkpoint when there is
+> nothing to recover with normal umount image.
+> It may reduce mount performance and flash memory lifetime, so let's remove
+> it."
+> 
+> Why we should revert the commit?
+
+Agreed.
+Let's ignore this patch. :)
+Thanks,
 
 > 
-> Please reject this entire series as this is not re-based recently.
-> Actually two point trimming which this series seeks to remove is used
-> by exynos3250 and is in Rui's tree
-> (https://git.kernel.org/cgit/linux/kernel/git/rzhang/linux.git/commit/?h=next&id=1fe56dc16a3dab400206443f70ae158c8f595c42).
-> 
-
-Yeah, that was my original concern when I first looked this series.
-However, as I saw a couple of your acks I thought you would be in sync
-with Bartlomiej. 
-
-I agree with Bartlomiej that we need to keep the kernel code in very
-good shape, but if we are removing features for the sake of reducing
-LOCs and we end up dropping support to known chips, I definitely won't
-agree. 
-
-Can you guys please reach a common agreement on these cleanups?
-
-Bartlomiej, best thing to do is to sync your work on top of Rui's tree.
-
-For now I am dropping this series from my -next branch. :-(
-
-> Thanks,
-> Amit D
-> 
-> 
-> On Mon, Jul 28, 2014 at 8:07 PM, Eduardo Valentin <edubezval@gmail.com> wrote:
-> > On Tue, Jun 17, 2014 at 07:27:16PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> >> Hi,
-> >>
-> >> This patch series contains various cleanups for EXYNOS thermal
-> >> driver.  Overall it decreases driver's LOC by 12%.  It is based
-> >> on next-20140617 kernel.  It should not cause any functionality
-> >> changes.
-> >>
-> >> Changes since v1:
-> >> - synced patches against next-20140617
-> >> - merged patch "thermal: exynos: remove unused defines" into
-> >>   "thermal: exynos: remove unused struct exynos_tmu_registers
-> >>   entries" one (per request from Eduardo)
-> >> - improved patch descriptions for patches #1-5
-> >> - fixed documentation for pdata->gain and pdata->reference_voltage
-> >> - added Reviewed-by from Amit to patches #6, #7 and #10
-> >> - added missing Acked-by from Kyungmin Park
-> >
-> > Pulled the series.
-> >
-> > Thanks.
-> >
-> >>
-> >> Best regards,
-> >> --
-> >> Bartlomiej Zolnierkiewicz
-> >> Samsung R&D Institute Poland
-> >> Samsung Electronics
-> >>
-> >>
-> >> Bartlomiej Zolnierkiewicz (9):
-> >>   thermal: exynos: remove unused struct exynos_tmu_registers entries
-> >>   thermal: exynos: remove dead code for HW_MODE calibration
-> >>   thermal: exynos: remove dead code for TYPE_TWO_POINT_TRIMMING
-> >>     calibration
-> >>   thermal: exynos: remove redundant pdata checks from
-> >>     exynos_tmu_initialize()
-> >>   thermal: exynos: remove redundant threshold_code checks from
-> >>     exynos_tmu_initialize()
-> >>   thermal: exynos: simplify temp_to_code() and code_to_temp()
-> >>   thermal: exynos: cache non_hw_trigger_levels in pdata
-> >>   thermal: exynos: remove redundant pdata checks from
-> >>     exynos_tmu_control()
-> >>   thermal: exynos: remove identical values from exynos*_tmu_registers
-> >>     structures
-> >>
-> >>  drivers/thermal/samsung/exynos_thermal_common.h |   1 -
-> >>  drivers/thermal/samsung/exynos_tmu.c            | 181 ++++--------------------
-> >>  drivers/thermal/samsung/exynos_tmu.h            |  90 +-----------
-> >>  drivers/thermal/samsung/exynos_tmu_data.c       |  64 +--------
-> >>  drivers/thermal/samsung/exynos_tmu_data.h       |  33 +----
-> >>  5 files changed, 41 insertions(+), 328 deletions(-)
-> >>
-> >> --
-> >> 1.8.2.3
-> >>
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> > ---
+> >  fs/f2fs/recovery.c | 5 +----
+> >  1 file changed, 1 insertion(+), 4 deletions(-)
+> > 
+> > diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+> > index a112368..90d7e80 100644
+> > --- a/fs/f2fs/recovery.c
+> > +++ b/fs/f2fs/recovery.c
+> > @@ -436,7 +436,6 @@ int recover_fsync_data(struct f2fs_sb_info *sbi)
+> >  {
+> >  	struct list_head inode_list;
+> >  	int err;
+> > -	bool need_writecp = false;
+> > 
+> >  	fsync_entry_slab = f2fs_kmem_cache_create("f2fs_fsync_inode_entry",
+> >  			sizeof(struct fsync_inode_entry));
+> > @@ -454,8 +453,6 @@ int recover_fsync_data(struct f2fs_sb_info *sbi)
+> >  	if (list_empty(&inode_list))
+> >  		goto out;
+> > 
+> > -	need_writecp = true;
+> > -
+> >  	/* step #2: recover data */
+> >  	err = recover_data(sbi, &inode_list, CURSEG_WARM_NODE);
+> >  	f2fs_bug_on(!list_empty(&inode_list));
+> > @@ -463,7 +460,7 @@ out:
+> >  	destroy_fsync_dnodes(&inode_list);
+> >  	kmem_cache_destroy(fsync_entry_slab);
+> >  	sbi->por_doing = false;
+> > -	if (!err && need_writecp)
+> > +	if (!err)
+> >  		write_checkpoint(sbi, false);
+> >  	return err;
+> >  }
 > > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 1.8.5.2 (Apple Git-48)
+> > 
+> > 
+> > ------------------------------------------------------------------------------
+> > Want fast and easy access to all the code in your enterprise? Index and
+> > search up to 200,000 lines of code with a free copy of Black Duck
+> > Code Sight - the same software that powers the world's largest code
+> > search on Ohloh, the Black Duck Open Hub! Try it now.
+> > http://p.sf.net/sfu/bds
+> > _______________________________________________
+> > Linux-f2fs-devel mailing list
+> > Linux-f2fs-devel@lists.sourceforge.net
+> > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
