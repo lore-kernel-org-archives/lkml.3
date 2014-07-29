@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585AbaG2RzU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 13:55:20 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45423 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205AbaG2RzR (ORCPT
+	id S1751800AbaG2Rz7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 13:55:59 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:41786 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562AbaG2Rz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 13:55:17 -0400
-Message-ID: <53D7E004.7080401@codeaurora.org>
-Date: Tue, 29 Jul 2014 10:55:16 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 29 Jul 2014 13:55:58 -0400
+Date: Tue, 29 Jul 2014 10:55:52 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 2/9] rcu: Provide cond_resched_rcu_qs()
+ to force quiescent states in long loops
+Message-ID: <20140729175552.GX11241@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140728225556.GA19493@linux.vnet.ibm.com>
+ <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1406588180-21933-2-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140729075536.GZ19379@twins.programming.kicks-ass.net>
+ <20140729162236.GP11241@linux.vnet.ibm.com>
+ <20140729172542.GK3935@laptop>
+ <20140729173318.GW11241@linux.vnet.ibm.com>
+ <20140729173600.GN3935@laptop>
+ <20140729173733.GZ12054@laptop.lan>
 MIME-Version: 1.0
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-CC: linux-mmc@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        agross@codeaurora.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v4] mmc: mmci: Add qcom dml support to the driver.
-References: <1406528572-5749-1-git-send-email-srinivas.kandagatla@linaro.org> <1406602230-18542-1-git-send-email-srinivas.kandagatla@linaro.org>
-In-Reply-To: <1406602230-18542-1-git-send-email-srinivas.kandagatla@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140729173733.GZ12054@laptop.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072917-8236-0000-0000-0000043731C4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/14 19:50, Srinivas Kandagatla wrote:
-> On Qualcomm APQ8064 SOCs, SD card controller has an additional glue
-> called DML (Data Mover Local/Lite) to assist dma transfers.
-> This hardware needs to be setup before any dma transfer is requested.
-> DML itself is not a DMA engine, its just a gule between the SD card
-> controller and dma controller.
->
-> Most of this code has been ported from qualcomm's 3.4 kernel.
->
-> This patch adds the code necessary to intialize the hardware and setup
-> before doing any dma transfers.
->
-> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
+On Tue, Jul 29, 2014 at 07:37:33PM +0200, Peter Zijlstra wrote:
+> On Tue, Jul 29, 2014 at 07:36:00PM +0200, Peter Zijlstra wrote:
+> > On Tue, Jul 29, 2014 at 10:33:18AM -0700, Paul E. McKenney wrote:
+> > > > No, but why can't we make the regular cond_resched() do this?
+> > > 
+> > > Well, I got a lot of grief when I tried it a few weeks ago.
+> > > 
+> > > But from what I can see, you are the maintainer or cond_resched(), so
+> > > if you are good with making the normal cond_resched() do this, I am
+> > > more than happy to make it so!  ;-)
+> > 
+> > Well, its the 'obvious' thing to do. But clearly I haven't tried so I'm
+> > blissfully unaware of any problems. And the Changelog didn't inform me
+> > either (you had a link in there, which I didn't read :-)
+> 
+> Then again, last time we touched cond_resched() we had a scalability
+> issue or somesuch, or am I misremembering things?
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+More overhead than scalability, but yes.  That said, that was a much
+heavier weight touch.  A later version with only an access to per-CPU
+variable turned out to have overhead below what could be measured.
+But I am comfortable with the current approach that does not touch
+cond_resched() as well.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+							Thanx, Paul
 
