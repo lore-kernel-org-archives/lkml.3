@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400AbaG2R2q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 13:28:46 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:53458 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaG2R2p (ORCPT
+	id S1751383AbaG2Rbg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 13:31:36 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44857 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986AbaG2Rbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 13:28:45 -0400
-Message-ID: <1406654295.2053.0.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v4] x86, hotplug: fix llc shared map unreleased during
- cpu hotplug
-From: Toshi Kani <toshi.kani@hp.com>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-Cc: hpa@zytor.com, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
-        Borislav Petkov <bp@alien8.de>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, linux-kernel@vger.kernel.org,
-        Zhang Yang <yang.z.zhang@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Tue, 29 Jul 2014 11:18:15 -0600
-In-Reply-To: <1406625883-4972-1-git-send-email-wanpeng.li@linux.intel.com>
-References: <1406625883-4972-1-git-send-email-wanpeng.li@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Jul 2014 13:31:35 -0400
+Date: Tue, 29 Jul 2014 19:31:21 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140729173121.GL3935@laptop>
+References: <20140728225556.GA19493@linux.vnet.ibm.com>
+ <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140729075055.GY19379@twins.programming.kicks-ass.net>
+ <20140729155747.GO11241@linux.vnet.ibm.com>
+ <20140729160754.GW20603@laptop.programming.kicks-ass.net>
+ <20140729163312.GR11241@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140729163312.GR11241@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-29 at 17:24 +0800, Wanpeng Li wrote:
-> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
-> IP: [..] find_busiest_group
-> PGD 5a9d5067 PUD 13067 PMD 0
-> Oops: 0000 [#3] SMP
-> [...]
-> Call Trace:
-> load_balance
-> ? _raw_spin_unlock_irqrestore
-> idle_balance
-> __schedule
-> schedule
-> schedule_timeout
-> ? lock_timer_base
-> schedule_timeout_uninterruptible
-> msleep
-> lock_device_hotplug_sysfs
-> online_store
-> dev_attr_store
-> sysfs_write_file
-> vfs_write
-> SyS_write
-> system_call_fastpath
+On Tue, Jul 29, 2014 at 09:33:12AM -0700, Paul E. McKenney wrote:
+> > > o	There are no memory barriers, but a synchronize_sched()
+> > > 	should take care of that, given that this counter is
+> > > 	incremented with interrupts disabled.
+> > 
+> > Well, there's obviously the actual context switch, which should imply an
+> > actual MB such that tasks are self ordered even when execution continues
+> > on another cpu etc..
 > 
-> Last level cache shared map is built during cpu up and build sched domain 
-> routine takes advantage of it to setup sched domain cpu topology, however, 
-> llc shared map is unreleased during cpu disable which lead to invalid sched 
-> domain cpu topology. This patch fix it by release llc shared map correctly
-> during cpu disable.
+> True enough, except that it appears that the context switch happens
+> after the ->nvcsw increment, which means that it doesn't help RCU-tasks
+> guarantee that if it has seen the increment, then all prior processing
+> has completed.  There might be enough stuff prior the increment, but I
+> don't see anything that I feel comfortable relying on.  Am I missing
+> some ordering?
+
+There's the smp_mb__before_spinlock() + raw_spin_lock_irq(), but that's
+about it I suppose.
+
+> > > So I should be able to snapshot the task_struct structure's ->nvcsw
+> > > field and avoid the added code in the fastpaths.
+> > > 
+> > > Seem plausible, or am I confused about the role of ->nvcsw?
+> > 
+> > Nope, that's the 'I scheduled to go to sleep' counter.
 > 
-> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> I am assuming that the "Nope" goes with "am I confused" rather than
+> "Seem plausible" -- if not, please let me know.  ;-)
 
-The change looks good to me.
+Yah :-)
 
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+> > There is of course the 'polling' issue I raised in a further email...
+> 
+> Yep, and other flavors of RCU go to lengths to avoid scanning the
+> task_struct lists.  Steven said that updates will be rare and that it
+> is OK for them to have high latency and overhead.  Thus far, I am taking
+> him at his word.  ;-)
+> 
+> I considered interrupting the task_struct polling loop periodically,
+> and would add that if needed.  That said, this requires nailing down the
+> task_struct at which the vacation is taken.  Here "nailing down" does not
+> simply mean "prevent from being freed", but rather "prevent from being
+> removed from the lists traversed by do_each_thread/while_each_thread."
+> 
+> Of course, if there is some easy way of doing this, please let me know!
 
-Thanks,
--Toshi
+Well, one reason I'm not liking this is because its in an anonymous
+context (kthread) which makes accounting for it hard.
 
+I feel we're doing far too much async stuff already and it keeps getting
+worse and worse. Ideally we'd be able to account every cycle of kernel
+'overhead' to a specific user action.
+
+Another reason is that I fundamentally dislike polling stuff.. but yes,
+I'm not really seeing how to do this differently, partly because I'm not
+entirely sure why we need this to begin with. I'm not sure what problem
+we're solving.
