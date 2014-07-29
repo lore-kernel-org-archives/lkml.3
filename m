@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899AbaG2Qjs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 12:39:48 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:40778 "EHLO
+	id S1754036AbaG2Qj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 12:39:57 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:41119 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbaG2Qjp convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753944AbaG2Qjy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 12:39:45 -0400
-Message-ID: <53D7CE6F.1050407@arm.com>
-Date: Tue, 29 Jul 2014 17:40:15 +0100
+	Tue, 29 Jul 2014 12:39:54 -0400
+Message-ID: <53D7CE79.1080809@arm.com>
+Date: Tue, 29 Jul 2014 17:40:25 +0100
 From: Sudeep Holla <sudeep.holla@arm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
@@ -34,12 +34,11 @@ CC: Sudeep Holla <sudeep.holla@arm.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/19] ARM64 / ACPI: Parse FADT table to get PSCI flags
- for PSCI init
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <1406206825-15590-7-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1406206825-15590-7-git-send-email-hanjun.guo@linaro.org>
-X-OriginalArrivalTime: 29 Jul 2014 16:39:41.0300 (UTC) FILETIME=[B1EC8B40:01CFAB4B]
-X-MC-Unique: 114072917394205801
+Subject: Re: [PATCH 05/19] ARM64 / ACPI: Make PCI optional for ACPI on ARM64
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <1406206825-15590-6-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1406206825-15590-6-git-send-email-hanjun.guo@linaro.org>
+X-OriginalArrivalTime: 29 Jul 2014 16:39:51.0284 (UTC) FILETIME=[B7DFFB40:01CFAB4B]
+X-MC-Unique: 114072917395207301
 Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
@@ -49,108 +48,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 On 24/07/14 14:00, Hanjun Guo wrote:
-> There are two flags: PSCI_COMPLIANT and PSCI_USE_HVC. When set,
-> the former signals to the OS that the hardware is PSCI compliant.
-> The latter selects the appropriate conduit for PSCI calls by
-> toggling between Hypervisor Calls (HVC) and Secure Monitor Calls
-> (SMC).
+> As PCI for ARM64 is not ready, so introduce some stub functions
+> to make PCI optional for ACPI, and make ACPI core run without
+> CONFIG_PCI on ARM64.
 >
-> FADT table contains such information, parse FADT to get the flags
-> for PSCI init. Since ACPI 5.1 doesn't support self defined PSCI
-> function IDs, which means that only PSCI 0.2+ is supported in ACPI.
->
-> At the same time, only ACPI 5.1 or higher verison supports PSCI,
-> and FADT Major.Minor version was introduced in ACPI 5.1, so we
-> will check the version and only parse FADT table with version >= 5.1.
->
-> If firmware provides ACPI tables with ACPI version less than 5.1,
-> OS will be messed up with those information and have no way to
-> bring up secondery CPUs, so disable ACPI if we get an FADT table
-> with version less that 5.1.
+> Since ACPI on X86 and IA64 depends on PCI and this patch only makes
+> PCI optinal for ARM64, it will not break anything on X86 and IA64.
 >
 > Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
 > ---
->   arch/arm64/include/asm/acpi.h |    2 +
->   arch/arm64/kernel/acpi.c      |   50 ++++++++++++++++++++++
->   arch/arm64/kernel/psci.c      |   95 +++++++++++++++++++++++++++++------------
->   arch/arm64/kernel/setup.c     |    2 +
->   4 files changed, 121 insertions(+), 28 deletions(-)
+>   arch/arm64/include/asm/pci.h |   11 +++++++++++
+>   drivers/acpi/Makefile        |    2 +-
+>   drivers/acpi/internal.h      |    5 +++++
+>   include/linux/pci.h          |   37 +++++++++++++++++++++++++++----------
+>   4 files changed, 44 insertions(+), 11 deletions(-)
+>   create mode 100644 arch/arm64/include/asm/pci.h
 >
-> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-> index 44b617f..67dac90 100644
-> --- a/arch/arm64/include/asm/acpi.h
-> +++ b/arch/arm64/include/asm/acpi.h
-> @@ -18,6 +18,8 @@ extern int acpi_disabled;
->   extern int acpi_noirq;
->   extern int acpi_pci_disabled;
->   extern int acpi_strict;
-> +extern int acpi_psci_present;
-> +extern int acpi_psci_use_hvc;
->
->   static inline void disable_acpi(void)
->   {
-> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
-> index f5a10b5..374926f 100644
-> --- a/arch/arm64/kernel/acpi.c
-> +++ b/arch/arm64/kernel/acpi.c
-> @@ -11,6 +11,8 @@
->    *  published by the Free Software Foundation.
->    */
->
-> +#define pr_fmt(fmt) "ACPI: " fmt
+> diff --git a/arch/arm64/include/asm/pci.h b/arch/arm64/include/asm/pci.h
+> new file mode 100644
+> index 0000000..250cd24
+> --- /dev/null
+> +++ b/arch/arm64/include/asm/pci.h
+> @@ -0,0 +1,11 @@
+> +#ifndef __ASM_PCI_H
+> +#define __ASM_PCI_H
+> +#ifdef __KERNEL__
 > +
->   #include <linux/init.h>
->   #include <linux/acpi.h>
->   #include <linux/cpumask.h>
-> @@ -34,6 +36,12 @@ EXPORT_SYMBOL(acpi_disabled);
->   int acpi_pci_disabled;		/* skip ACPI PCI scan and IRQ initialization */
->   EXPORT_SYMBOL(acpi_pci_disabled);
->
-> +/* 1 to indicate PSCI is implemented */
-> +int acpi_psci_present;
+> +/*
+> + * PCI address space differs from physical memory address space
+> + */
+> +#define PCI_DMA_BUS_IS_PHYS	(0)
 > +
-> +/* 1 to indicate HVC must be used instead of SMC as the PSCI conduit */
-> +int acpi_psci_use_hvc;
-> +
+> +#endif  /* __KERNEL__ */
+> +#endif  /* __ASM_PCI_H */
+> diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+> index 505d4d7..8e9bbe6 100644
+> --- a/drivers/acpi/Makefile
+> +++ b/drivers/acpi/Makefile
+> @@ -39,7 +39,7 @@ acpi-y				+= processor_core.o
+>   acpi-$(CONFIG_ARCH_MIGHT_HAVE_ACPI_PDC) += processor_pdc.o
+>   acpi-y				+= ec.o
+>   acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
+> -acpi-y				+= pci_root.o pci_link.o pci_irq.o
+> +acpi-$(CONFIG_PCI)		+= pci_root.o pci_link.o pci_irq.o
+>   acpi-y				+= acpi_lpss.o
+>   acpi-y				+= acpi_platform.o
+>   acpi-y				+= acpi_pnp.o
+> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+> index 4c5cf77..e1e6487 100644
+> --- a/drivers/acpi/internal.h
+> +++ b/drivers/acpi/internal.h
+> @@ -26,8 +26,13 @@
+>   acpi_status acpi_os_initialize1(void);
+>   int init_acpi_device_notify(void);
+>   int acpi_scan_init(void);
+> +#ifdef CONFIG_PCI
+>   void acpi_pci_root_init(void);
+>   void acpi_pci_link_init(void);
+> +#else
+> +static inline void acpi_pci_root_init(void) {}
+> +static inline void acpi_pci_link_init(void) {}
+> +#endif
+>   void acpi_processor_init(void);
+>   void acpi_platform_init(void);
+>   void acpi_pnp_init(void);
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 466bcd1..27d7354 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
 
-These can be boolean but can be removed IMO, see below.
+[...]
 
->   /*
->    * __acpi_map_table() will be called before page_init(), so early_ioremap()
->    * or early_memremap() should be called here to for ACPI table mapping.
-> @@ -54,6 +62,33 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
->   	early_iounmap(map, size);
->   }
+> @@ -1394,6 +1395,23 @@ static inline struct pci_dev *pci_get_bus_and_slot(unsigned int bus,
+>   						unsigned int devfn)
+>   { return NULL; }
 >
-> +static int __init acpi_parse_fadt(struct acpi_table_header *table)
-> +{
-> +	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
+> +static inline struct pci_bus *pci_find_bus(int domain, int busnr)
+> +{ return NULL; }
 > +
-> +	/*
-> +	 * Revision in table header is the FADT Major version,
-> +	 * and there is a minor version of FADT which was introduced
-> +	 * by ACPI 5.1, we only deal with ACPI 5.1 or higher version
-> +	 * to get arm boot flags, or we will disable ACPI.
-> +	 */
-> +	if (table->revision < 5 || fadt->minor_version < 1) {
-> +		pr_info("FADT version is %d.%d, no PSCI support, should be 5.1 or higher\n",
-> +			table->revision, fadt->minor_version);
-> +		acpi_psci_present = 0;
-> +		disable_acpi();
-> +		return -EINVAL;
-> +	}
+> +static inline int pci_bus_write_config_byte(struct pci_bus *bus,
+> +				unsigned int devfn, int where, u8 val)
+> +{ return -ENODEV; }
 > +
-> +	if (acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_COMPLIANT)
-> +		acpi_psci_present = 1;
+> +static inline int raw_pci_read(unsigned int domain, unsigned int bus,
+> +			unsigned int devfn, int reg, int len, u32 *val)
+> +{ return -EINVAL; }
 > +
-> +	if (acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_USE_HVC)
-> +		acpi_psci_use_hvc = 1;
-> +
+> +static inline int raw_pci_write(unsigned int domain, unsigned int bus,
+> +			unsigned int devfn, int reg, int len, u32 val)
+> +{ return -EINVAL; }
 
-Why not make this macros instead of global variables as I suggested in
-previous version. acpi_gbl_FADT is already global and you can avoid
-creating new one especially they are just used on boot/init.
+IMO -ENOSYS is more suitable as these functions are not implemented
+for !CONFIG_PCI
 
 Regards,
 Sudeep
