@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964AbaG2PRZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:17:25 -0400
-Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:56763
-	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753431AbaG2PRY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:17:24 -0400
-Date: Tue, 29 Jul 2014 10:17:13 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Sasha Levin <sasha.levin@oracle.com>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org
-Subject: Re: vmstat: On demand vmstat workers V8
-In-Reply-To: <20140728145443.dce6fe72aed1bbdcf95b21f6@linux-foundation.org>
-Message-ID: <alpine.DEB.2.11.1407291011230.21102@gentwo.org>
-References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <53D31101.8000107@oracle.com> <alpine.DEB.2.11.1407281353450.15405@gentwo.org> <20140728145443.dce6fe72aed1bbdcf95b21f6@linux-foundation.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754059AbaG2PSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:18:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49812 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751321AbaG2PSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 11:18:09 -0400
+Message-ID: <53D7BAA5.8080404@redhat.com>
+Date: Tue, 29 Jul 2014 11:15:49 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
+        jhladky@redhat.com, ktkhai@parallels.com, tim.c.chen@linux.intel.com,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: [PATCH 1/2] sched: fix and clean up calculate_imbalance
+References: <1406571388-3227-1-git-send-email-riel@redhat.com> <1406571388-3227-2-git-send-email-riel@redhat.com> <CAKfTPtDuFLOf3Kzt4PSdox3HpBoz9aWXb-QzkibAL-Z4xBm=tw@mail.gmail.com> <20140729145910.GH3935@laptop>
+In-Reply-To: <20140729145910.GH3935@laptop>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jul 2014, Andrew Morton wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> Also, Sasha's report showed this:
->
-> [  490.464613] kernel BUG at mm/vmstat.c:1278!
->
-> That's your VM_BUG_ON() in vmstat_update().  That ain't no false
-> positive!
+On 07/29/2014 10:59 AM, Peter Zijlstra wrote:
+> On Tue, Jul 29, 2014 at 11:04:50AM +0200, Vincent Guittot wrote:
+>>> In situations where all the domains are overloaded, or where
+>>> only the busiest domain is overloaded, that code is also
+>>> superfluous, since the normal env->imbalance calculation will
+>>> figure out how much to move. Remove the load_above_capacity
+>>> calculation.
+>> 
+>> IMHO, we should not remove that part which is used by
+>> prefer_sibling
+>> 
+>> Originally, we had 2 type of busiest group: overloaded or
+>> imbalanced. You add a new one which has only a avg_load higher
+>> than other so you should handle this new case and keep the other
+>> ones unchanged
+> 
+> Right, so we want that code for overloaded -> overloaded migrations
+> such as not to cause idle cpus in an attempt to balance things.
+> Idle cpus are worse than imbalance.
+> 
+> But in case of overloaded/imb -> !overloaded migrations we can
+> allow it, and in fact want to allow it in order to balance idle
+> cpus.
 
-AFAICT this is because of the earlier BUG().
+In case the destination is over the average load, or the source is under
+the average load, fix_small_imbalance() determines env->imbalance.
 
+The "load_above_capacity" calculation is only reached when busiest is
+busier than average, and the destination is under the average load.
+In that case, env->imbalance ends up as the minimum of busiest - avg
+and avg - target.
 
+Is there any case where limiting it further to "load - capacity" from
+the busiest domain makes a difference?
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJT17qlAAoJEM553pKExN6D/DgH/RbAK0Sr2Doa+zXVavx9VtU4
+39pX1vh/0Rgcy1L1zCuPtKrKaV5sEGr50qH9Wui5rIXdPzykVZROYqp13d178SCY
+N3wfbWsP1hAhOS5e2c4sR8WqxsTp/1Ofjyx4PoXwRautwVeWbjPE0I4Hbs2MPjwm
+8idkTPpl+qBpe1NvppBm6NmZxtZEJUv5X/hoGcLxEwyAHhJaKfw22Tm1oib2/7Dj
+TQy5XjqY1oiOz3/sf9AsRaZMYCmemtUPXCtCncP9rCJLxd04i/Gc0ggrU0qWHCDq
+cZcrm9bCP/aYxV9QNyD8QhHuS/6C17zYCG4E2R7BpKXfJYDT8FRbb/FgSoLUVhE=
+=iR13
+-----END PGP SIGNATURE-----
