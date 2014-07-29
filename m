@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079AbaG2Sqa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 14:46:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57467 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165AbaG2Sq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 14:46:28 -0400
-Date: Tue, 29 Jul 2014 20:44:11 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v3 6/8] x86: Split syscall_trace_enter into two phases
-Message-ID: <20140729184411.GA6035@redhat.com>
-References: <cover.1405992946.git.luto@amacapital.net> <3f649f5658a163645e3ce15156176c325283762e.1405992946.git.luto@amacapital.net> <20140728173723.GA20993@redhat.com> <CALCETrWUFo_zXcAZja-vdL4_MgJDd=1ed5Vt54eyUuim930xAw@mail.gmail.com> <20140729165416.GA967@redhat.com> <CALCETrWBU-=zqLTCP7B1feZ9J-e4u-Boic+e1EEn1rL-ijeEKg@mail.gmail.com> <20140729173136.GA2808@redhat.com> <CALCETrVP-P+EJ6YJ=CZL_gyA1r8O9eogUNTik7_31_SA+Pj3pg@mail.gmail.com> <20140729181615.GA4950@redhat.com> <CALCETrVWOOs3HCnQNaqmnn480oQYn3scrWUfR4JJX9+zTxUDRw@mail.gmail.com>
+	id S1754102AbaG2SrL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 14:47:11 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:50844 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862AbaG2SrK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 14:47:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stefan Agner <stefan@agner.ch>
+Cc: linux-arm-kernel@lists.infradead.org, shawn.guo@freescale.com,
+        kernel@pengutronix.de, peter.chen@freescale.com,
+        linux-kernel@vger.kernel.org, jingchang.lu@freescale.com
+Subject: Re: [PATCH] ARM: imx: clk-vf610: introduce clks_init_on
+Date: Tue, 29 Jul 2014 20:47:06 +0200
+Message-ID: <4686885.gCEsaTZ3ps@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-23-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <2a672a5d28af5425e1c406b0607befd5@agner.ch>
+References: <1406643628-4061-1-git-send-email-stefan@agner.ch> <2815679.ZycfkLhBgI@wuerfel> <2a672a5d28af5425e1c406b0607befd5@agner.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVWOOs3HCnQNaqmnn480oQYn3scrWUfR4JJX9+zTxUDRw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:uz6hc2hE9OEji6SmXV1vF7JJxdQEPpInHfeG9nbQnO6
+ omPHjFn495aWpSGM+4uG14sYhlo9LQGjlI/WpZNnNXTVcrgUTq
+ 9Pis6K6cDGKQzHSyrGcfxReDhTCrPgce9NVrFjXUGg5wDIL93c
+ xnyA3+/IXn2z639lGG8QXFfBiDYvk4ch8bC0C2s47x6iFiekn5
+ d5RX9fFJwsAOY9kY1DtT9u1j6zp9ryLzZoz4PmBrDRQMJdiirE
+ ZW/dD1ipYJWxNLsxnmS/8UyRzoL0xgZlnscGK/t5Dq0coJ7txF
+ mSeEJqKICsPa9Jpt0BEzgSYf32NN5BE6gDn6+s6zvBRKuoi6A/
+ gl+bIYQP7gkNUVYRyKFs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29, Andy Lutomirski wrote:
->
-> On Tue, Jul 29, 2014 at 11:16 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 07/29, Andy Lutomirski wrote:
+On Tuesday 29 July 2014 20:39:20 Stefan Agner wrote:
+> Am 2014-07-29 16:44, schrieb Arnd Bergmann:
+> > On Tuesday 29 July 2014 16:20:28 Stefan Agner wrote:
+> >> At the end of the boot process, the clock framework might disable
+> >> required main PLL's. So far, this was no issue since drivers
+> >> requested clocks, which are descended of the main PLL's (e.g.
+> >> pll1_pfd1, which provides the system clock).
 > >>
-> >> On Tue, Jul 29, 2014 at 10:31 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >> >
-> >> > TIF_NOHZ is set if and only if context_tracking_is_enabled() is true.
-> >> > So I think that
-> >> >
-> >> >         work = current_thread_info()->flags & (_TIF_WORK_SYSCALL_ENTRY & ~TIF_NOHZ);
-> >> >
-> >> >         user_exit();
-> >> >
-> >> > looks a bit better. But I won't argue.
+> >> To archive the full 500MHz system clock, DDR clock need to be a
+> >> descendant of PLL2 rather than PLL1 (DDRC_CLK_SEL set to 0). The
+> >> bootloader sets up the clocks accordingly before making use of
+> >> DDR at all. However, in Linux, there is no driver using PLL2,
+> >> which lead to PLL2 being disabled by the clock framework.
 > >>
-> >> I don't get it.
-> >
-> > Don't worry, you are not alone.
-> >
-> >> context_tracking_is_enabled is global, and TIF_NOHZ
-> >> is per-task.  Isn't this stuff determined per-task or per-cpu or
-> >> something?
+> >> With this patch, we make sure that the main system clock and the
+> >> DDR clock are initially enabled and are kept enabled.
 > >>
-> >> IOW, if one CPU is running something that's very heavily
-> >> userspace-oriented and another CPU is doing something syscall- or
-> >> sleep-heavy, then shouldn't only the first CPU end up paying the price
-> >> of context tracking?
-> >
-> > Please see another email I sent to Frederic.
-> >
-> I'll add at least this argument in favor of my approach: if context
-> tracking works at all, then it had better not demand that syscall
-> entry call user_exit if TIF_NOHZ is *not* set.
+> >> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> >>
+> > 
+> > Wouldn't it be better to list this in the DT as a default for
+> > the respective clocks?
+> > 
+> 
+> What do you mean by that exactly? Creating a driver for the main PLL's
+> and add device tree entries to instantiate them, along with a property
+> like "boot-enabled" or similar?
 
-I disagree. At least I disagree with that you should enforce this in
-syscall_trace_enter() paths, and in any case this has nothing to do with
-these changes.
+I was under the assumption that you already have a driver for the main PLL,
+I think most other SoCs have that.
 
-But again, I won't insist, so please forget.
+We talked about the general problem at some point during a conference
+and the conclusion was that it makes most sense to have defaults encoded
+as properties in the device node of the clock controller. If you don't
+have a device node for that, it won't work.
 
-> So adding the
-> condition ought to be safe, barring dumb bugs in my code.
+> The approach chosen in this patch is aligned the way it's done for i.MX6
+> (see arch/arm/mach-imx/clk-imx6q.c). The whole clock module(s) in Vybrid
+> are slightly striped variants found in i.MX6. For now, I would prefer to
+> leave it that way. 
 
-Yes, I think it is technically correct.
+Ok, makes sense. Just leave it like this then. I believe i.MX is a bit
+different from other SoCs, because it adopted some concepts like common
+clk earlier than the rest, but consistency within the family is more
+important than consistency across SoC families.
 
-Oleg.
-
+	Arnd
