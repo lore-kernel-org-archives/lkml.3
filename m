@@ -1,142 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290AbaG2KH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 06:07:56 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:36843 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557AbaG2KHw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 06:07:52 -0400
-Date: Tue, 29 Jul 2014 12:07:47 +0200
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Naresh Bhat <naresh.bhat@linaro.org>, Hanjun Guo <hanjun.guo@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>, Mark Brown <broonie@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <marc.zyngier@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, linaro-acpi-private@linaro.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Subject: Re: [PATCH 19/19] Documentation: ACPI for ARM64
-Message-ID: <20140729100747.GA18250@cbox>
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
- <1406206825-15590-20-git-send-email-hanjun.guo@linaro.org>
- <CAFoFrHaWWxRPRYM5+bWj0tGnz05SokqwVGejUCUi+U-KChFBdQ@mail.gmail.com>
- <53D17852.3050606@infradead.org>
+	id S1753299AbaG2KJf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 06:09:35 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:58521 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750746AbaG2KJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 06:09:33 -0400
+X-IronPort-AV: E=Sophos;i="5.01,756,1400025600"; 
+   d="asc'?scan'208";a="156690602"
+Message-ID: <1406628570.4038.37.camel@Solace>
+Subject: Re: [Xen-devel] [Intel-gfx] [Announcement] Updates to XenGT - a
+ Mediated Graphics Passthrough Solution from Intel
+From: Dario Faggioli <dario.faggioli@citrix.com>
+To: Jike Song <jike.song@intel.com>
+CC: <xen-devel@lists.xen.org>, <intel-gfx@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>,
+        "White, Michael L" <michael.l.white@intel.com>,
+        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
+        "Haron, Sandra" <sandra.haron@intel.com>,
+        "Li, Susie" <susie.li@intel.com>, "Dong, Eddie" <eddie.dong@intel.com>
+Date: Tue, 29 Jul 2014 12:09:30 +0200
+In-Reply-To: <53D215D3.50608@intel.com>
+References: <53D215D3.50608@intel.com>
+Organization: Citrix
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="=-yLqYh/MQe8YQKkt6iWAh"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D17852.3050606@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 02:19:14PM -0700, Randy Dunlap wrote:
-> On 07/24/2014 02:16 PM, Naresh Bhat wrote:
-> > 
-> > On 24 July 2014 18:30, Hanjun Guo <hanjun.guo@linaro.org <mailto:hanjun.guo@linaro.org>> wrote:
-> > 
-> >     From: Graeme Gregory <graeme.gregory@linaro.org <mailto:graeme.gregory@linaro.org>>
-> > 
-> >     Add documentation for the guidelines of how to use ACPI
-> >     on ARM64.
-> > 
-> >     Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org <mailto:graeme.gregory@linaro.org>>
-> >     Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org <mailto:hanjun.guo@linaro.org>>
-> >     ---
-> >      Documentation/arm64/arm-acpi.txt |  240 ++++++++++++++++++++++++++++++++++++++
-> >      1 file changed, 240 insertions(+)
-> >      create mode 100644 Documentation/arm64/arm-acpi.txt
-> > 
-> >     diff --git a/Documentation/arm64/arm-acpi.txt b/Documentation/arm64/arm-acpi.txt
-> >     new file mode 100644
-> >     index 0000000..12cd550
-> >     --- /dev/null
-> >     +++ b/Documentation/arm64/arm-acpi.txt
-> >     @@ -0,0 +1,240 @@
-> >     +ACPI on ARMv8 Servers
-> >     +---------------------
-> >     +
-> >     +ACPI will be used for ARMv8 general purpose servers designed to follow
-> >     +the SBSA specification (currently available to people with an ARM login at
-> >     +http://silver.arm.com)
-> >     +
-> >     +The implemented ACPI version is 5.1 + errata as released by the UEFI Forum,
-> >     +which is available at <http://www.uefi.org/acpi/specs>.
-> >     +
-> >     +If the machine does not meet these requirements then it is likely that Device
-> >     +Tree (DT) is more suitable for the hardware.
-> >     +
-> >     +Relationship with Device Tree
-> >     +-----------------------------
-> >     +
-> >     +ACPI support in drivers and subsystems for ARMv8 should never be mutually
-> >     +exclusive with DT support at compile time.
-> >     +
-> >     +At boot time the kernel will only use one description method depending on
-> >     +parameters passed from the bootloader.
-> >     +
-> >     +Regardless of whether DT or ACPI is used, the kernel must always be capable
-> >     +of booting with either scheme.
-> >     +
-> >     +When booting using ACPI tables the /chosen node in DT will still be parsed
-> >     +to extract the kernel command line and initrd path. No other section of
-> >     +the DT will be used.
-> >     +
-> >     +Booting using ACPI tables
-> >     +-------------------------
-> >     +
-> >     +Currently, the only defined method to pass ACPI tables to the kernel on ARMv8
-> >     +is via the UEFI system configuration table.
-> >     +
-> >     +The UEFI implementation MUST set the ACPI_20_TABLE_GUID to point to the
-> >     +RSDP table (the table with the ACPI signature "RSD PTR ").
-> >     +
-> >     +The pointer to the RSDP table will be retrieved from EFI by the ACPI core.
-> >     +
-> >     +Processing of ACPI tables may be disabled by passing acpi=off on the kernel
-> >     +command line.
-> >     +
-> >     +DO use an XSDT, RSDTs are deprecated and should not be used on arm64. They
-> >     +only allow for 32bit addresses.
-> >     +
-> >     +DO NOT use the 32-bit address fields in the FADT, they are deprecated, the
-> >     +64-bit alternatives MUST be used.
-> >     +
-> >     +The minimum set of tables MUST include RSDP, XSDT, FACS, FADT, DSDT, MADT
-> >     +and GTDT. If PCI is used the MCFG table MUST also be present.
-> >     +
-> >     +ACPI Detection
-> >     +--------------
-> >     +
-> >     +Drivers should determine their probe() type by checking for ACPI_HANDLE,
-> >     +or .of_node, or other information in the device structure. This is
-> >     +detailed further in the "Driver Recomendations" section.
-> >     +
-> >     +If the presence of ACPI needs to be detected at runtime, then check the value
-> >     +of acpi_disabled. If CONFIG_ACPI not being set acpi_disabled will always be 1.
-> >     +
-> >     +Device Enumeration
-> >     +------------------
-> >     +
-> >     +Device descriptions in ACPI should use standard recognised ACPI interfaces.
-> > 
-> > 
-> > recognized
-> 
-> Yeah, I saw all of these also, but we accept British or American spelling of these words.
-> 
-Would be good to check for a consistent spelling in this doc though.
+--=-yLqYh/MQe8YQKkt6iWAh
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
--Christoffer
+On ven, 2014-07-25 at 16:31 +0800, Jike Song wrote:
+
+> The new source codes are available at the updated github repos:
+>=20
+> 	Linux: https://github.com/01org/XenGT-Preview-kernel.git
+> 	Xen: https://github.com/01org/XenGT-Preview-xen.git
+> 	Qemu: https://github.com/01org/XenGT-Preview-qemu.git
+>=20
+Perhaps the info is available somewhere already (in which case, sorry),
+but what's the (if any) upstreaming plan/status/ETA?
+
+I think this info could well be part of these updates. :-)
+
+Thanks and Regards,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+-----------------------------------------------------------------
+Dario Faggioli, Ph.D, http://about.me/dario.faggioli
+Senior Software Engineer, Citrix Systems R&D Ltd., Cambridge (UK)
+
+
+--=-yLqYh/MQe8YQKkt6iWAh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iEYEABECAAYFAlPXctoACgkQk4XaBE3IOsT0aQCdHEqjCL4x1EV46aC/tJMsgwe3
+hUEAnjY22vfDjV9VVFaASJIgJjm89VBD
+=nRmj
+-----END PGP SIGNATURE-----
+
+--=-yLqYh/MQe8YQKkt6iWAh--
