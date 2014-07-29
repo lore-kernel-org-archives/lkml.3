@@ -1,150 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbaG2RkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 13:40:07 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:58932 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994AbaG2RkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 13:40:05 -0400
-From: Rob Jones <rob.jones@codethink.co.uk>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kernel@lists.codethink.co.uk, viro@ZenIV.linux.org.uk,
-        ebiederm@xmission.com, ian.molton@codethink.co.uk,
-        rob.jones@codethink.co.uk
-Subject: [PATCH] seq_file: Allow private data to be supplied on seq_open
-Date: Tue, 29 Jul 2014 18:39:53 +0100
-Message-Id: <1406655593-12626-1-git-send-email-rob.jones@codethink.co.uk>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751768AbaG2RlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 13:41:12 -0400
+Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:15052
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750862AbaG2RlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 13:41:08 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: James Bottomley <jbottomley@parallels.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "sitsofe@gmail.com" <sitsofe@gmail.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
+Thread-Topic: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
+Thread-Index: AQHPqpaEfmLHK0GnrkSEOCNbbvYH8Zu12EaQgACFs4CAAPUWYA==
+Date: Tue, 29 Jul 2014 17:41:04 +0000
+Message-ID: <a445e81eb25f46918e85f51c631f6094@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <20140724122223.GA31798@sucs.org>
+	 <yq1iommkgkv.fsf@sermon.lab.mkp.net> <20140724153612.GA23648@sucs.org>
+	 <yq1egxakb0z.fsf@sermon.lab.mkp.net>
+	 <16fea5bb87ba47019527cee788e07a72@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	 <yq1wqb1gyw1.fsf@sermon.lab.mkp.net>
+	 <e931486ef33b4e45bfebf2ab1b1b3037@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	 <yq17g30dprc.fsf@sermon.lab.mkp.net>
+	 <cc4a3fd5451242739929d266b88fa8fa@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	 <yq138dnexcn.fsf@sermon.lab.mkp.net>
+	 <43306901b1dc4e5dbe014a431e0935ea@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	 <yq11tt5cnmx.fsf@sermon.lab.mkp.net>
+	 <548c8b1bae75483aa47c9493b62dc04d@BY2PR0301MB0711.namprd03.prod.outlook.com>
+ <1406577767.19418.11.camel@jarvis>
+In-Reply-To: <1406577767.19418.11.camel@jarvis>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.159.173]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-forefront-prvs: 0287BBA78D
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377424004)(13464003)(377454003)(199002)(189002)(24454002)(51704005)(164054003)(93886003)(80022001)(66066001)(86612001)(20776003)(54356999)(86362001)(76176999)(106116001)(4396001)(81342001)(105586002)(95666004)(99286002)(74316001)(99396002)(101416001)(64706001)(81542001)(50986999)(77982001)(76482001)(83322001)(46102001)(87936001)(74662001)(19580405001)(74502001)(19580395003)(2656002)(85306003)(92566001)(31966008)(107046002)(77096002)(85852003)(76576001)(33646002)(83072002)(106356001)(110136001)(21056001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0710;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6THfGUZ026635
 
-Create a function seq_open_priv() that is identical to seq_open() except
-that it accepts a void * parameter that it stores in the private field
-of the struct seq_file.
 
-Document seq_open_priv().
 
-Some consumers of the seq_file interface need to pass data to their
-iterators that is best obtained at the time the seq_file is opened.
+> -----Original Message-----
+> From: James Bottomley [mailto:jbottomley@parallels.com]
+> Sent: Monday, July 28, 2014 1:03 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; hch@infradead.org; sitsofe@gmail.com;
+> devel@linuxdriverproject.org; apw@canonical.com;
+> martin.petersen@oracle.com; linux-scsi@vger.kernel.org;
+> ohering@suse.com; gregkh@linuxfoundation.org; jasowang@redhat.com
+> Subject: Re: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
+> 
+> On Mon, 2014-07-28 at 19:05 +0000, KY Srinivasan wrote:
+> >
+> > > -----Original Message-----
+> > > From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
+> > > Sent: Monday, July 28, 2014 12:03 PM
+> > > To: KY Srinivasan
+> > > Cc: Martin K. Petersen; Sitsofe Wheeler; Christoph Hellwig;
+> > > gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; ohering@suse.com; apw@canonical.com;
+> > > jasowang@redhat.com; jbottomley@parallels.com; linux-
+> > > scsi@vger.kernel.org
+> > > Subject: Re: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks
+> > > tests
+> > >
+> > > >>>>> "KY" == KY Srinivasan <kys@microsoft.com> writes:
+> > >
+> > > KY,
+> > >
+> > > KY> "At the time thin-provisioning was defined, the discovery
+> > > KY> information was first proposed in READ CAPACITY 16 command. And
+> > > then
+> > > KY> moved into the new dedicated VPD page - B2h. You can see the
+> > > KY> information reported in this VPD page is richer than READ
+> > > KY> CAPACITY
+> > > KY> 16 command. As this transition happened during we added the
+> > > KY> feature, Windows uses the newer method that based on VPD page
+> > > KY> B2h. It looks Linux tries to use both new and old method which is
+> weird to me."
+> > >
+> > > The READ CAPACITY(16) response is not optional.
+> >
+> > Ok; that settles the issue then. I will attempt to get it fixed on Windows.
+> 
+> Like Martin says, this isn't optional either/or; it's mandatory to support the RC
+> 16 bits.  If you don't want to get into playing the messenger between us and
+> the windows guys on SCSI standards, we'd be happy to communicate
+> directly, either by email or a phone meeting.
 
-At the moment these consumers have to obtain the struct seq_file pointer
-(stored by seq_open() in file->private_data) and then store a pointer to
-their own data in the private field of the struct seq_file so that it
-can be accessed by the iterator functions.
+We will fix this bug in the next release of Windows; we are also looking at backporting the fix to prior versions of Windows.
 
-Although this is not a long piece of code it is unneccessary boilerplate.
+Thanks,
 
-seq_open() remains in place and its behaviour remains unchanged so no
-existing code should be broken by this patch.
+K. Y
 
-Signed-off-by: Ian Molton <ian.molton@codethink.co.uk>
-Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
----
- Documentation/filesystems/seq_file.txt |    9 +++++++++
- fs/seq_file.c                          |   30 ++++++++++++++++++++++++++++--
- include/linux/seq_file.h               |    1 +
- 3 files changed, 38 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/filesystems/seq_file.txt b/Documentation/filesystems/seq_file.txt
-index a1e2e0d..128ffee 100644
---- a/Documentation/filesystems/seq_file.txt
-+++ b/Documentation/filesystems/seq_file.txt
-@@ -226,6 +226,15 @@ be used for more than one file, you can store an arbitrary pointer in the
- private field of the seq_file structure; that value can then be retrieved
- by the iterator functions.
- 
-+There is also a function seq_open_priv() which behaves identically to
-+seq_open() except that it takes an additional void * parameter that it
-+stores in the private field of the seq_file structure, thereby making it
-+available to the start function and thus all subsequent iterator functions
-+Note that a corresponding wrapper function for seq_release() may need to
-+be created to free any resources allocated by an open function that uses
-+this capability (although, for simple cases, seq_release_private() may
-+suffice).
-+
- The other operations of interest - read(), llseek(), and release() - are
- all implemented by the seq_file code itself. So a virtual file's
- file_operations structure will look like:
-diff --git a/fs/seq_file.c b/fs/seq_file.c
-index 1d641bb..9a0db94 100644
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -31,9 +31,10 @@ static void seq_set_overflow(struct seq_file *m)
- }
- 
- /**
-- *	seq_open -	initialize sequential file
-+ *	seq_open_priv -	initialize sequential file with private data
-  *	@file: file we initialize
-  *	@op: method table describing the sequence
-+ *	@d: private data to be made available to the iterator functions
-  *
-  *	seq_open() sets @file, associating it with a sequence described
-  *	by @op.  @op->start() sets the iterator up and returns the first
-@@ -43,8 +44,12 @@ static void seq_set_overflow(struct seq_file *m)
-  *	ERR_PTR(error).  In the end of sequence they return %NULL. ->show()
-  *	returns 0 in case of success and negative number in case of error.
-  *	Returning SEQ_SKIP means "discard this element and move on".
-+ *
-+ *	Supplying @d allows data that is only available at the time the file
-+ *	is opened to be supplied to @op->start() (and thereby to @op->next()
-+ *	as well).
-  */
--int seq_open(struct file *file, const struct seq_operations *op)
-+int seq_open_priv(struct file *file, const struct seq_operations *op, void *d)
- {
- 	struct seq_file *p = file->private_data;
- 
-@@ -57,6 +62,7 @@ int seq_open(struct file *file, const struct seq_operations *op)
- 	memset(p, 0, sizeof(*p));
- 	mutex_init(&p->lock);
- 	p->op = op;
-+	p->private = d;
- #ifdef CONFIG_USER_NS
- 	p->user_ns = file->f_cred->user_ns;
- #endif
-@@ -80,6 +86,26 @@ int seq_open(struct file *file, const struct seq_operations *op)
- 	file->f_mode &= ~FMODE_PWRITE;
- 	return 0;
- }
-+EXPORT_SYMBOL(seq_open_priv);
-+
-+/**
-+ *	seq_open -	initialize sequential file
-+ *	@file: file we initialize
-+ *	@op: method table describing the sequence
-+ *
-+ *	seq_open() sets @file, associating it with a sequence described
-+ *	by @op.  @op->start() sets the iterator up and returns the first
-+ *	element of sequence. @op->stop() shuts it down.  @op->next()
-+ *	returns the next element of sequence.  @op->show() prints element
-+ *	into the buffer.  In case of error ->start() and ->next() return
-+ *	ERR_PTR(error).  In the end of sequence they return %NULL. ->show()
-+ *	returns 0 in case of success and negative number in case of error.
-+ *	Returning SEQ_SKIP means "discard this element and move on".
-+ */
-+int seq_open(struct file *file, const struct seq_operations *op)
-+{
-+	return seq_open_priv(file, op, NULL);
-+}
- EXPORT_SYMBOL(seq_open);
- 
- static int traverse(struct seq_file *m, loff_t offset)
-diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
-index 52e0097..fce87af 100644
---- a/include/linux/seq_file.h
-+++ b/include/linux/seq_file.h
-@@ -95,6 +95,7 @@ static inline void seq_setwidth(struct seq_file *m, size_t size)
- void seq_pad(struct seq_file *m, char c);
- 
- char *mangle_path(char *s, const char *p, const char *esc);
-+int seq_open_priv(struct file *, const struct seq_operations *, void *);
- int seq_open(struct file *, const struct seq_operations *);
- ssize_t seq_read(struct file *, char __user *, size_t, loff_t *);
- loff_t seq_lseek(struct file *, loff_t, int);
--- 
-1.7.10.4
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
