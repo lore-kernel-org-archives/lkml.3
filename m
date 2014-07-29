@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798AbaG2I7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 04:59:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:30556 "EHLO mga11.intel.com"
+	id S1752906AbaG2I7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 04:59:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40959 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751587AbaG2I7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 04:59:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,755,1400050800"; 
-   d="scan'208";a="568814738"
-Date: Tue, 29 Jul 2014 08:56:41 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, pjt@google.com,
-        bsegall@google.com, arjan.van.de.ven@intel.com, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        fengguang.wu@intel.com
-Subject: Re: [PATCH 2/2 v4] sched: Rewrite per entity runnable load average
- tracking
-Message-ID: <20140729005640.GA5203@intel.com>
-References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
- <1405639567-21445-3-git-send-email-yuyang.du@intel.com>
- <20140728104837.GQ6758@twins.programming.kicks-ass.net>
+	id S1752808AbaG2I7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 04:59:34 -0400
+Date: Tue, 29 Jul 2014 10:58:59 +0200
+From: Jakub Jelinek <jakub@redhat.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Alexei Starovoitov <ast@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+Message-ID: <20140729085859.GS2397@laptop.redhat.com>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <CA+55aFyHU4Gwk6ASTuOgh3eFPshkgy1s5zc4p7f01DwrYddFOw@mail.gmail.com>
+ <CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>
+ <20140726193557.GA21842@x4>
+ <CA+55aFyo=HVZGEYNmz9GHqLatFHiJYTviKz_dXjqCv8b_gGxBA@mail.gmail.com>
+ <20140726201914.GB21842@x4>
+ <CA+55aFyCh8B4kuc66_+wr8eM+kP7-hJ9utdtpLih661Xf8YGgQ@mail.gmail.com>
+ <y0m7g2xk6ss.fsf@fche.csb>
+ <CA+55aFwz+stjg5L7aKuPjLym3u4FPS_ugSZiCcJwOYCGMSFGVQ@mail.gmail.com>
+ <20140728172737.GA17598@pg-vmw-gw1>
+ <20140728180902.GA22904@x4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140728104837.GQ6758@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140728180902.GA22904@x4>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 12:48:37PM +0200, Peter Zijlstra wrote:
-> > +static __always_inline u64 decay_load(u64 val, u64 n)
-> > +{
-> > +	if (likely(val <= UINT_MAX))
-> > +		val = decay_load32(val, n);
-> > +	else {
-> > +		val *= (u32)decay_load32(1 << 15, n);
-> > +		val >>= 15;
-> > +	}
-> > +
-> > +	return val;
-> > +}
+On Mon, Jul 28, 2014 at 08:09:02PM +0200, Markus Trippelsdorf wrote:
+> Here's the testcase:
 > 
-> Please just use mul_u64_u32_shr().
-> 
-> /me continues reading the rest of it..
+> int a, b, c;
+> void fn1 ()
+> {
+>   int d;
+>   if (fn2 () && !0)
+>     {
+>       b = (
+>            {
+>            int e;
+>            fn3 ();
+>            switch (0)
+>            default:
+>            asm volatile("" : "=a"(e) : "0"(a), "i"(0));
+>            e;
+>            });
+>       d = b;
+>     }
+>   c = d;
+> }
 
-Good. Since 128bit is considered in mul_u64_u32_shr, load_sum can
-afford more tasks :)
+int a, c;
+int bar (void);
+void baz (void);
+
+void
+foo (void)
+{
+  int d;
+  if (bar ())
+    {
+      int e;
+      baz ();
+      asm volatile ("" : "=a" (e) : "0" (a), "i" (0));
+      d = e;
+    }
+  c = d;
+}
+
+fails the same way and has more creduce cruft removed.
+Fails also with 4.7 at -O2 -fcompare-debug.
+
+	Jakub
