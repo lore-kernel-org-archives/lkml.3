@@ -1,120 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaG2BvO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 21:51:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34711 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751213AbaG2BvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 21:51:12 -0400
-Date: Tue, 29 Jul 2014 11:51:01 +1000
-From: NeilBrown <neilb@suse.de>
-To: Ian Kent <raven@themaw.net>
-Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] autofs4: allow RCU-walk to walk through autofs4.
-Message-ID: <20140729115101.0805ecd8@notabene.brown>
-In-Reply-To: <1405592252.20621.63.camel@perseus.fritz.box>
-References: <20140709233541.4525.25151.stgit@notabene.brown>
-	<20140709234114.4525.46882.stgit@notabene.brown>
-	<1405485857.2527.38.camel@perseus.fritz.box>
-	<20140716155150.044c2ea3@notabene.brown>
-	<1405493777.2527.72.camel@perseus.fritz.box>
-	<1405573256.3002.25.camel@perseus.fritz.box>
-	<20140717180414.2e2596d1@notabene.brown>
-	<1405592252.20621.63.camel@perseus.fritz.box>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1752538AbaG2Bxv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 21:53:51 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28278 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794AbaG2Bxs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 21:53:48 -0400
+Message-ID: <53D6FE95.6040605@oracle.com>
+Date: Tue, 29 Jul 2014 09:53:25 +0800
+From: ethan zhao <ethan.zhao@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/NxZx/LjE5hvAELhTxv_3=SQ"; protocol="application/pgp-signature"
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gleb@kernel.org, pbonzini@redhat.com,
+        kvm@vger.kernel.org, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        xen-devel@lists.xenproject.org, alexander.h.duyck@intel.com,
+        ethan.kernel@gmail.com
+Subject: Re: [PATCH 1/4] PCI: introduce helper functions for device flag operation
+References: <1406045944-1587-1-git-send-email-ethan.zhao@oracle.com>  <1406045944-1587-2-git-send-email-ethan.zhao@oracle.com> <1406581206.1011.133.camel@ul30vt.home>
+In-Reply-To: <1406581206.1011.133.camel@ul30vt.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/NxZx/LjE5hvAELhTxv_3=SQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, 17 Jul 2014 18:17:32 +0800 Ian Kent <raven@themaw.net> wrote:
+On 2014/7/29 5:00, Alex Williamson wrote:
+> On Wed, 2014-07-23 at 00:19 +0800, Ethan Zhao wrote:
+>> This patch introduced three helper functions to hide direct
+>> device flag operation.
+>>
+>> void pci_set_dev_assigned(struct pci_dev *pdev);
+>> void pci_set_dev_deassigned(struct pci_dev *pdev);
+>> bool pci_is_dev_assigned(struct pci_dev *pdev);
+>>
+>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+>> ---
+>>   include/linux/pci.h |   13 +++++++++++++
+>>   1 files changed, 13 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/pci.h b/include/linux/pci.h
+>> index aab57b4..5f6f8fa 100644
+>> --- a/include/linux/pci.h
+>> +++ b/include/linux/pci.h
+>> @@ -1129,6 +1129,19 @@ resource_size_t pcibios_window_alignment(struct pci_bus *bus,
+>>   
+>>   int pci_set_vga_state(struct pci_dev *pdev, bool decode,
+>>   		      unsigned int command_bits, u32 flags);
+>> +/* helper functions for operation of device flag */
+>> +static inline void pci_set_dev_assigned(struct pci_dev *pdev)
+>> +{
+>> +	pdev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
+>> +}
+>> +static inline void pci_set_dev_deassigned(struct pci_dev *pdev)
+>> +{
+>> +	pdev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
+>> +}
+> I think pci_clear_dev_assigned() would make more sense, we're not
+> setting a flag named DEASSIGNED.
+   Though it is a flag operation now, may not later, we define it 
+because we want to hide the internal operation.
+   'set' to 'deassigned'  status is enough. So I would like keep it.
+>
+>> +static inline bool pci_is_dev_assigned(struct pci_dev *pdev)
+>> +{
+>> +	return pdev->dev_flags & PCI_DEV_FLAGS_ASSIGNED ? true : false;
+>> +}
+> The ternary operation isn't necessary.  Thanks,
+   Yep,
 
->=20
-> On Thu, 2014-07-17 at 18:04 +1000, NeilBrown wrote:
-> > If there some documentation about the interactions between the automoun=
-td and
-> > the kernel?
->=20
-> Not really, only the ioctl interaction described in
-> Documentation/filesystems/autofs4-mount-control.txt
->=20
-> > It looks like:
-> >  With V5, every name in the root directory gets something mounted on it,
-> >       either another autofs or the target filesystem.
-> >  With V4, you don't mount an autofs onto an autofs, but when a name in =
-the
-> >       root is automounted, all the names beneath there are created and =
-the
-> >       target filesystems are mounted before the top level automount is
-> >       acknowledged.
-> >=20
-> > Does that sound at all right (I suspect I haven't explained it very cle=
-arly).
->=20
-> Mostly, but let me try and simplify it (or perhaps confuse you even more
-> and bore you as a bonus, ;)) and offer a broader picture.
+   return pdev->dev_flags & PCI_DEV_FLAGS_ASSIGNED
 
-Thanks for going into all that detail!  Having read that, and read the code
-(a few times) and having tried to document it myself I think I really
-understand it all now.
+   is enough.
 
-I wanted to be sure I understood from the perspective of what the module
-actually supports rather than just how the automount daemon uses it, so I p=
-ut
-together a document describing the module.  At 3000 words, I'm not sure
-whether to call it "verbose" or "thorough".  I'll post it separately.
+   Thanks,
+   Ethan
+>
+> Alex
+>
+>>   /* kmem_cache style wrapper around pci_alloc_consistent() */
+>>   
+>>   #include <linux/pci-dma.h>
+>
+>
 
-I did discover one thing that is important for the RCU-walk work.
-If you have a "root-less multimount" then the top-level directory will have
-DCACHE_NEED_AUTOMOUNT set even though it is not a mount-trap.
-As it contains a sub-directory (or more), d_manage will return -EISDIR so
-normal REF-walking will side-step d_automount and it will be treated as a
-normal directory.
-However in RCU-walk mode, d_manage cannot usefully return -EISDIR so the VFS
-will always drop into REF-walk mode, which negates some of the value of my
-RCU-walk patches.
-
-I see two ways to fix this:
- 1- clear DCACHE_NEED_AUTOMOUNT when creating a subdir or symlink, just like
-    we do with protocol-version 4
- 2- teach the VFS to accept -EISDIR from d_manage and to ignore
-    DCACHE_NEED_AUTOMOUNT in that case.  I have a patch to do this and it is
-    fairly straight forward.
-
-I think I prefer 2 (it seems easier to document:-) but thought I'd ask if y=
-ou
-have an opinion before I post it (I haven't even tested it properly yet).
-
-Thanks,
-NeilBrown
-
-
---Sig_/NxZx/LjE5hvAELhTxv_3=SQ
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU9b+Bjnsnt1WYoG5AQL+Yw//ZB28KfdeHNgTBkMd/Tr1YfrgNRy8fYF1
-ZaWZZpCVH2s1qUGvRwlyy2aeahU+snqU2pLw2GgTadULldSSsywQ8wTI2Kax6M8R
-CHljMc/a/TMok5eH2kZUDRNxdiXw+JpEjitAo9HhEJhTvvUsi1DsDPeispe5Z67P
-/AOZgynkDcOzDoy4BB0c5tc0v4cXsnI4ZHZ7ikvus8a+GgIZPKowyfRb7UpPX0xy
-s4YKWWdhahIhwz/xNtKfy50rg/H+JkLtB0TNuogvPbgQMmuf+97IskqSnuKUEqaC
-lDq7898iXQaXNOfrrHC3NBqs+/0PJtenS5JGPJLw1Cogyzk1gjF7aNhCRTYhuDDp
-bEeuj/6utLl1xuw28RBr3t7JfOxR1L8fjRmF0ZmYsNfdRg6LL+NC1rn/M2O8lFpT
-V3P5NkTe+yISSCNvvIKpJrEsKSB1CIfGCloRsNnD7d55d5Hl4+qv9eaW45Pcm4s5
-hR/kk4t+wofFrY13329U2Tx4iuRCrW9xZ9unRMweb2GsX3CuCdw+OeB3glr6eRa+
-MOkmmp5jE5zpoSDX2ixK8b1tvCCm6UromjepMnwE8ArgvkOnx3LU2n2TWfjAW4tq
-EqbFtSw+DqBFZafQ3fei34TTkvcD5QZMHxeW5bVSuRaRb69eKvq+yQT9IclwFuYc
-8gf8jpzwS94=
-=VMWS
------END PGP SIGNATURE-----
-
---Sig_/NxZx/LjE5hvAELhTxv_3=SQ--
