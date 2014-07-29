@@ -1,105 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731AbaG2PiI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:38:08 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43836 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820AbaG2PiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:38:06 -0400
-Date: Tue, 29 Jul 2014 10:36:49 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Reichel <sre@kernel.org>
-CC: Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        <devicetree@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <jason@lakedaemon.net>, <khilman@deeprootsystems.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <bcousson@baylibre.com>, <tglx@linutronix.de>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 13/35] arm: omap: irq: call set_handle_irq() from
- intc_of_init
-Message-ID: <20140729153649.GD17808@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1406582183-696-1-git-send-email-balbi@ti.com>
- <1406582183-696-14-git-send-email-balbi@ti.com>
- <20140729022019.GB4421@earth.universe>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cHMo6Wbp1wrKhbfi"
-Content-Disposition: inline
-In-Reply-To: <20140729022019.GB4421@earth.universe>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753394AbaG2Pj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:39:28 -0400
+Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:58128 "EHLO
+	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751282AbaG2Pj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 11:39:26 -0400
+Date: Tue, 29 Jul 2014 10:39:03 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Tejun Heo <tj@kernel.org>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>, akpm@linux-foundation.org,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: vmstat: On demand vmstat workers V8
+In-Reply-To: <20140729151415.GF4791@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.11.1407291038160.21390@gentwo.org>
+References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <53D31101.8000107@oracle.com> <alpine.DEB.2.11.1407281353450.15405@gentwo.org> <20140729075637.GA19379@twins.programming.kicks-ass.net> <20140729120525.GA28366@mtj.dyndns.org> <20140729122303.GA3935@laptop>
+ <20140729131226.GS7462@htj.dyndns.org> <alpine.DEB.2.11.1407291009320.21102@gentwo.org> <20140729151415.GF4791@htj.dyndns.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---cHMo6Wbp1wrKhbfi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 29 Jul 2014, Tejun Heo wrote:
 
-On Tue, Jul 29, 2014 at 04:20:20AM +0200, Sebastian Reichel wrote:
-> Hi,
->=20
-> On Mon, Jul 28, 2014 at 04:16:01PM -0500, Felipe Balbi wrote:
-> > this will let us drop .handle_irq and .init_irq fields
-> > from our generic machine_descs.
-> >=20
-> > Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > ---
-> >  arch/arm/mach-omap2/irq.c | 2 ++
-> >  1 file changed, 2 insertions(+)
-> >=20
-> > diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
-> > index e6997c5..e452411 100644
-> > --- a/arch/arm/mach-omap2/irq.c
-> > +++ b/arch/arm/mach-omap2/irq.c
-> > @@ -314,6 +314,8 @@ static int __init intc_of_init(struct device_node *=
-node,
-> > =20
-> >  	omap_init_irq(res.start, nr_irq, of_node_get(node));
-> > =20
-> > +	set_handle_irq(omap2_intc_handle_irq);
-> > +
-> >  	return 0;
-> >  }
-> >
->=20
-> if you respin the patchset you may want to call omap_intc_handle_irq
-> directly. It makes the review of the patchset less confusing.
->=20
-> (I was wondering why omap3 can call omap2_intc_handle_irq until I
-> noticed, that your previous changes made both functions simple
-> wrapper functions for omap_intc_handle_irq)
+> Hmmm, well, then it's something else.  Either a bug in workqueue or in
+> the caller.  Given the track record, the latter is more likely.
+> e.g. it looks kinda suspicious that the work func is cleared after
+> cancel_delayed_work_sync() is called.  What happens if somebody tries
+> to schedule it inbetween?
 
-this is done later for a reason. At this point, omap_intc_handle_irq()
-still misses proper annotations for asmlinkage and
-__exception_irq_entry.
+Here is yet another patch to also address this idea:
 
---=20
-balbi
+Subject: vmstat: Clear the work.func before cancelling delayed work
 
---cHMo6Wbp1wrKhbfi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Looks strange to me but Tejun thinks this could do some good.
+If this really is the right thing to do then cancel_delayed_work should
+zap the work func itselt I think.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-iQIcBAEBAgAGBQJT17+RAAoJEIaOsuA1yqREfS8QAI8g/VP1R6GdfUQrv8DYsWOs
-oynMlnTbeAOAgPtph4SxhYtS/Egyqqr6CeXZ9aOUNHtuDxdit9VuVoatxK/zAOW2
-RFwmBYlreZ0V0vtLSNly+yKSWl8JAem/+s519PFqDaZ3y0f1SxB/0e7Pfu0TCmE6
-K37ywb/RTRoOKVp9uKip68VSy52DXYCvLQrjhP+BL7q5+IJJRkQwS6eI4bXREFcY
-OZ8BrMB+F5MgLdJRTDGvLY1BSuLJ6pf1jdvmB0nk/NTDPb0Aey9B4gH7+G20Al9j
-XyZFzT7yoxku1DAN6P2/LnmS/Qvd8SoC+yXDJIjl8vfDEgU1eonyIfDuDnmMr+LE
-P+7aZdJHHvJDzEmXlgfl9VjLIt3bXXB8KYeNXvwUZeCEf/VqlOd4dIFOItAWGSLx
-C11OV1l87EPsrsc8EoOP6o5jNYsS79WxhJwCyxqgNrAru2/Aym5X/ajswXhOkYj9
-SpQw13SwvTqyE5GLDGfPv2F5t+8MiJ1F7CeBab6s17TZhSCn+60duPiVP0gsC0qq
-LhQcsfljVzcX19MntGa2E7qly98lkNKy7Z/1yQd4JEQRLyUIxGeKkrTVCjoxHYeK
-6cGbAlsCX6iswnlsozrtMU0wC6NoKHFVB5zdIqdr+rtZpkZs9QZ848TpvwYruAaQ
-DgemOK1rZQw+op0o22aD
-=F/4v
------END PGP SIGNATURE-----
 
---cHMo6Wbp1wrKhbfi--
+Index: linux/mm/vmstat.c
+===================================================================
+--- linux.orig/mm/vmstat.c	2014-07-29 10:22:45.073884943 -0500
++++ linux/mm/vmstat.c	2014-07-29 10:34:45.083369228 -0500
+@@ -1277,8 +1277,8 @@ static int vmstat_cpuup_callback(struct
+ 		break;
+ 	case CPU_DOWN_PREPARE:
+ 	case CPU_DOWN_PREPARE_FROZEN:
+-		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+ 		per_cpu(vmstat_work, cpu).work.func = NULL;
++		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+ 		break;
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_DOWN_FAILED_FROZEN:
