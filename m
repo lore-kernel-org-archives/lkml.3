@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458AbaG2MXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 08:23:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36195 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753377AbaG2MXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 08:23:08 -0400
-Date: Tue, 29 Jul 2014 14:23:03 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@gentwo.org>, Sasha Levin <sasha.levin@oracle.com>,
-        akpm@linux-foundation.org, Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org
-Subject: Re: vmstat: On demand vmstat workers V8
-Message-ID: <20140729122303.GA3935@laptop>
-References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org>
- <53D31101.8000107@oracle.com>
- <alpine.DEB.2.11.1407281353450.15405@gentwo.org>
- <20140729075637.GA19379@twins.programming.kicks-ass.net>
- <20140729120525.GA28366@mtj.dyndns.org>
+	id S1753512AbaG2MX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 08:23:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43618 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753377AbaG2MX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 08:23:56 -0400
+Message-ID: <53D7925A.8080200@suse.cz>
+Date: Tue, 29 Jul 2014 14:23:54 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140729120525.GA28366@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Richard Weinberger <richard@nod.at>, mike.marciniszyn@intel.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>
+Subject: Re: Kernel binrpm produces brokes grub2 config
+References: <53D774F9.3090305@nod.at>
+In-Reply-To: <53D774F9.3090305@nod.at>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 08:05:25AM -0400, Tejun Heo wrote:
-> On Tue, Jul 29, 2014 at 09:56:37AM +0200, Peter Zijlstra wrote:
-> > On Mon, Jul 28, 2014 at 01:55:17PM -0500, Christoph Lameter wrote:
-> > > On Fri, 25 Jul 2014, Sasha Levin wrote:
-> > > 
-> > > > This patch doesn't interact well with my fuzzing setup. I'm seeing
-> > > > the following:
-> > > >
-> > > > [  490.446927] BUG: using __this_cpu_read() in preemptible [00000000] code: kworker/16:1/7368
-> > > > [  490.447909] caller is __this_cpu_preempt_check+0x13/0x20
-> > > 
-> > > __this_cpu_read() from vmstat_update is only called from a kworker that
-> > > is bound to a single cpu. A false positive?
-> > 
-> > kworkers are never guaranteed to be so, its a 'feature' :/
+On 2014-07-29 12:18, Richard Weinberger wrote:
+> Hi!
 > 
-> It's because we don't distinguish work items which are per-cpu for
-> optimization and per-cpu for correctness and can't automatically flush
-> / cancel / block per-cpu work items when a cpu goes down.  I like the
-> idea of distingushing them but it's gonna take a lot of auditing.
+> I'm not sure who to blame, but the below commit breaks the kernel binrpm target for me.
+> It produces a faulty grub2 config.
+> After installing such a kernel grub2 looks for vmlinuz-XY-rpm and initrd-XY-rpm.
+> These files are not existing and the machine does no longer boot.
+> Luckily an addition boot entry without the -rpm suffix exists, if remote access works
+> one can recover the machine.
+> 
+> My question is, why do we need these copy of vmlinuz anyway?
+> After calling installkernel on the -rpm variants you delete them again...
 
-Just force flush on unplug and fix those that complain. No auditing
-needed for that.
+The typical /sbin/installkernel script does a cp "$2" "/boot/...", so
+you can't use the already installed files as its arguments.
 
-> Any work item usage which requires per-cpu for correctness should
-> implement cpu down hook to flush in-flight work items and block
-> further issuance.  This hasn't changed from the beginning and was
-> necessary even before cmwq.
 
-I think before cmwq we'd run into the broken affinity warning in the
-scheduler.
+> This <insert swear word here> happens on openSUSE 13.1, maybe their installkernel script needs fixing.
+
+I guess that the problem is that grub2-mkconfig sees the temporary
+/boot/vmlinuz-*-rpm file and creates a menu entry for it. I guess we
+should create the temporary kernel and initrd files somewhere else than
+in /boot.
+
+Michal
+
