@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaG2XcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 19:32:24 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:57233 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131AbaG2XcX (ORCPT
+	id S1754390AbaG2XiR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 19:38:17 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:49834 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389AbaG2XiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 19:32:23 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Heiko Stuebner <heiko@sntech.de>, Kever Yang <kever.yang@rock-chips.com>
-Cc: Sonny Rao <sonnyrao@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] ARM: dts: add rk3288 ehci usb devices
-Date: Tue, 29 Jul 2014 16:24:32 -0700
-Message-Id: <1406676273-20701-3-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1406676273-20701-1-git-send-email-dianders@chromium.org>
-References: <1406676273-20701-1-git-send-email-dianders@chromium.org>
+	Tue, 29 Jul 2014 19:38:16 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [RFC/PATCH] perf tools: Check recorded kernel version when finding vmlinux
+References: <1406621715-27819-1-git-send-email-namhyung@kernel.org>
+	<53D7BA6E.9040002@gmail.com>
+Date: Wed, 30 Jul 2014 08:38:14 +0900
+In-Reply-To: <53D7BA6E.9040002@gmail.com> (David Ahern's message of "Tue, 29
+	Jul 2014 09:14:54 -0600")
+Message-ID: <87tx5zhh21.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rk3288 has two kind of usb controller; this adds the ehci variant for
-host0 and hsic.
+Hi David,
 
-At the moment we don't add any phys for these controllers, but the
-default settings seem to work OK.
+On Tue, 29 Jul 2014 09:14:54 -0600, David Ahern wrote:
+> On 7/29/14, 2:15 AM, Namhyung Kim wrote:
+>> This requires to change signature of symbol__init() to receive struct
+>> perf_session_env *.  This patch only does some trivial changes - some
+>
+> Why only pass the env for perf-report? Why not for any command
+> analyzing a file? So for live commands env is NULL meaning use host
+> paths; for recorded files pass env from session header and use it
+> (plus symbol settings like symfs).
 
-There is a hardware problem in ohci controller which make it
-unavailable and host0 controller can only support high-speed devices.
+Yes, it needs other changes like you said.  But I'd like to hear from
+your opinions on the problem and proposed fix before going further.
 
-Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- arch/arm/boot/dts/rk3288.dtsi | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+My other concern is that why it isn't covered by a build-id cache.
 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 3ef8951..0bb4480 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -251,6 +251,26 @@
- 		status = "disabled";
- 	};
- 
-+	usb_host0_ehci: ehci@ff500000 {
-+		compatible = "generic-ehci";
-+		reg = <0xff500000 0x100>;
-+		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru HCLK_USBHOST0>;
-+		clock-names = "usbhost";
-+		status = "disabled";
-+	};
-+
-+	/* NOTE: ohci@ff520000 doesn't actually work on hardware */
-+
-+	usb_hsic: ehci@ff5c0000 {
-+		compatible = "generic-ehci";
-+		reg = <0xff5c0000 0x100>;
-+		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru HCLK_HSIC>;
-+		clock-names = "usbhost";
-+		status = "disabled";
-+	};
-+
- 	gic: interrupt-controller@ffc01000 {
- 		compatible = "arm,gic-400";
- 		interrupt-controller;
--- 
-2.0.0.526.g5318336
-
+Thanks,
+Namhyung
