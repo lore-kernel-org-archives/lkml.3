@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbaG2U3O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 16:29:14 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:55601 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468AbaG2U3N (ORCPT
+	id S1754113AbaG2Ucx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 16:32:53 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:65423 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910AbaG2Ucw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 16:29:13 -0400
-Date: Tue, 29 Jul 2014 13:29:10 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Prarit Bhargava <prarit@redhat.com>
-cc: linux-kernel@vger.kernel.org, lszubowi@redhat.com,
-        Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH] x86, efi: print debug values in Kib not MB
-In-Reply-To: <1406653761-3884-1-git-send-email-prarit@redhat.com>
-Message-ID: <alpine.DEB.2.02.1407291327450.13073@chino.kir.corp.google.com>
-References: <1406653761-3884-1-git-send-email-prarit@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 29 Jul 2014 16:32:52 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Tue, 29 Jul 2014 22:31:45 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Wang YanQing <udknight@gmail.com>
+Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, jhovold@gmail.com,
+        andi@lisas.de, dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6] usb:serial:pl2303: add GPIOs interface on PL2303
+Message-ID: <20140729203145.GM12963@localhost>
+References: <20140729165709.GA3380@udknight>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140729165709.GA3380@udknight>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jul 2014, Prarit Bhargava wrote:
+On Wed, Jul 30, 2014 at 12:57:09AM +0800, Wang YanQing wrote:
+> PL2303HX has two GPIOs, this patch add interface for it.
+> 
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> ---
+>  Changes v5-v6:
+>  1: fix typo error in Kconfig reported by Andreas Mohr
+>  2: add const qulification to gpio_dir_mask and gpio_value_mask suggested by Andreas Mohr
+> 
+>  Hi, Linus Walleij, I see you give your review-by to v4, but v4
+>  has a obvious bug (template_chip overwrite label's value), so
+>  could you review this version? Thanks!
+> 
+>  Greg KH, although I really hope this is the last version, 
+>  but what is your suggestion?
+>  
+>  Thanks again for all guys' review and correction.
 
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> index 87fc96b..3875090 100644
-> --- a/arch/x86/platform/efi/efi.c
-> +++ b/arch/x86/platform/efi/efi.c
-> @@ -384,10 +384,10 @@ static void __init print_efi_memmap(void)
->  	     p < memmap.map_end;
->  	     p += memmap.desc_size, i++) {
->  		md = p;
-> -		pr_info("mem%02u: type=%u, attr=0x%llx, range=[0x%016llx-0x%016llx) (%lluMB)\n",
-> +		pr_info("mem%02u: type=%u, attr=0x%llx, range=[0x%016llx-0x%016llx) (%lluKiB)\n",
->  			i, md->type, md->attribute, md->phys_addr,
->  			md->phys_addr + (md->num_pages << EFI_PAGE_SHIFT),
-> -			(md->num_pages >> (20 - EFI_PAGE_SHIFT)));
-> +			(md->num_pages << 2));
->  	}
->  #endif  /*  EFI_DEBUG  */
->  }
+I haven't had a chance to look at this patch yet due to travels.
+Hopefully I should be able to provide some feedback within the next few
+days.
 
-If EFI_PAGE_SHIFT were to ever change from its hard-coded 12, then this 
-would be wrong.  Any reason to not simply print EFI_PAGE_SIZE and 
-md->num_pages?
+Johan
