@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314AbaG2WgL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 18:36:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58214 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998AbaG2WgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 18:36:09 -0400
-Date: Wed, 30 Jul 2014 00:36:03 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, lszubowi@redhat.com,
-        Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH] x86, efi: print debug values in Kib not MB
-Message-ID: <20140729223603.GC17241@pd.tnic>
-References: <1406653761-3884-1-git-send-email-prarit@redhat.com>
- <20140729222932.GA17481@pd.tnic>
- <53D82118.6090202@redhat.com>
+	id S1754394AbaG2WhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 18:37:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39632 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712AbaG2WhD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 18:37:03 -0400
+Message-ID: <53D8220A.7000909@infradead.org>
+Date: Tue, 29 Jul 2014 15:36:58 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53D82118.6090202@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Wim Van Sebroeck <wim@iguana.be>
+CC: Sangjung Woo <sangjung.woo@samsung.com>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, again4you@gmail.com,
+        Jiri Kosina <trivial@kernel.org>
+Subject: Re: [PATCH] Documentation: fix a typo in watchdog-api.txt
+References: <1406621064-5466-1-git-send-email-sangjung.woo@samsung.com> <53D7D02D.6010508@infradead.org> <20140729205405.GA30849@spo001.leaseweb.com>
+In-Reply-To: <20140729205405.GA30849@spo001.leaseweb.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 06:32:56PM -0400, Prarit Bhargava wrote:
-> and it was best to keep the code simple with a KiB.
+On 07/29/14 13:54, Wim Van Sebroeck wrote:
+> Hi Randy,
+> 
+>> On 07/29/14 01:04, Sangjung Woo wrote:
+>>> Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
+>>> ---
+>>>  Documentation/watchdog/watchdog-api.txt |    2 +-
+>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/Documentation/watchdog/watchdog-api.txt b/Documentation/watchdog/watchdog-api.txt
+>>> index eb7132e..53c49a4 100644
+>>> --- a/Documentation/watchdog/watchdog-api.txt
+>>> +++ b/Documentation/watchdog/watchdog-api.txt
+>>> @@ -118,7 +118,7 @@ resets.
+>>>  Note that the pretimeout is the number of seconds before the time
+>>>  when the timeout will go off.  It is not the number of seconds until
+>>>  the pretimeout.  So, for instance, if you set the timeout to 60 seconds
+>>> -and the pretimeout to 10 seconds, the pretimout will go of in 50
+>>> +and the pretimeout to 10 seconds, the pretimout will go off in 50
+>>
+>>                                          pretimeout
+>>
+>> Please correct that word also and then resend.  Also resend to:
+>> trivial@kernel.org
+>>
+> 
+> Can take this one through the linux-watchdog tree also.
 
-You're missing the point - the output doesn't get simple with KiB. Read
-the example I just gave you!
+OK, you can do that then.
 
-(13893632kiB) is actively *not* helping when one looks at it!
+Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+~Randy
