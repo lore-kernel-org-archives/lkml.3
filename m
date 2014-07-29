@@ -1,204 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656AbaG2B4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 21:56:07 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:60949 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425AbaG2B4C (ORCPT
+	id S1752685AbaG2B4S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 21:56:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43456 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751425AbaG2B4M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 21:56:02 -0400
-Date: Mon, 28 Jul 2014 18:55:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>, tglx@linutronix.de,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
-        Oleg Nesterov <oleg@redhat.com>, Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH RFC tip/core/rcu] Fix attempt to avoid offloading
- callbacks unless requested
-Message-ID: <20140729015549.GI11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140725233623.GA18537@linux.vnet.ibm.com>
- <53D2F211.4090509@gmail.com>
- <20140726023013.GG16182@localhost.localdomain>
- <CAJhHMCCkS9_bO3PHc+cWSMw-eEZfnYVKdXyk6E5P5p7RbU7oLQ@mail.gmail.com>
- <20140728210303.GB26017@localhost.localdomain>
- <20140728231725.GH11241@linux.vnet.ibm.com>
- <CAJhHMCArFpDOLOU3+8Ty_MVcBMiFsBv4GNnHLQvX75eMU-HkRQ@mail.gmail.com>
+	Mon, 28 Jul 2014 21:56:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,753,1400050800"; 
+   d="scan'208";a="576879339"
+From: "Zhang, Tianfei" <tianfei.zhang@intel.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Matthew Wilcox <willy@linux.intel.com>
+CC: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v8 05/22] Add vm_replace_mixed()
+Thread-Topic: [PATCH v8 05/22] Add vm_replace_mixed()
+Thread-Index: AQHPqmfU//4Qq8M5pEOi/SgrMTNcHpu2QtUA
+Date: Tue, 29 Jul 2014 01:55:17 +0000
+Message-ID: <BA6F50564D52C24884F9840E07E32DEC17D74A50@CDSMSX102.ccr.corp.intel.com>
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+ <b1052af08b49965fd0e6b87b6733b89294c8cc1e.1406058387.git.matthew.r.wilcox@intel.com>
+ <20140723114540.GD10317@node.dhcp.inet.fi>
+ <20140723135221.GA6754@linux.intel.com>
+ <20140723142048.GA11963@node.dhcp.inet.fi>
+ <20140723142745.GD6754@linux.intel.com>
+ <20140723155500.GA12790@node.dhcp.inet.fi>
+ <20140725194450.GJ6754@linux.intel.com>
+ <20140728132558.GA967@node.dhcp.inet.fi>
+In-Reply-To: <20140728132558.GA967@node.dhcp.inet.fi>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.17.6.105]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJhHMCArFpDOLOU3+8Ty_MVcBMiFsBv4GNnHLQvX75eMU-HkRQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072901-1542-0000-0000-0000039BA411
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 07:35:55PM -0400, Pranith Kumar wrote:
-> On Mon, Jul 28, 2014 at 7:17 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Mon, Jul 28, 2014 at 11:03:06PM +0200, Frederic Weisbecker wrote:
-> >>
-> >> Paul what do you think? If we keep that behaviour, Maybe you could blindly do
-> >> rcu_nocb_mask |= tick_nohz_full and remove the CONFIG_NO_HZ_FULL_ALL dependency
-> >> on RCU_NOCB_ALL?
+
+
+> -----Original Message-----
+> From: owner-linux-mm@kvack.org [mailto:owner-linux-mm@kvack.org] On
+> Behalf Of Kirill A. Shutemov
+> Sent: Monday, July 28, 2014 9:26 PM
+> To: Matthew Wilcox
+> Cc: Wilcox, Matthew R; linux-fsdevel@vger.kernel.org; linux-mm@kvack.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v8 05/22] Add vm_replace_mixed()
+> 
+> On Fri, Jul 25, 2014 at 03:44:50PM -0400, Matthew Wilcox wrote:
+> > On Wed, Jul 23, 2014 at 06:55:00PM +0300, Kirill A. Shutemov wrote:
+> > > >         update_hiwater_rss(mm);
+> > >
+> > > No: you cannot end up with lower rss after replace, iiuc.
 > >
-> > You mean something like the following updated patch?
+> > Actually, you can ... when we replace a real page with a PFN, our rss
+> > decreases.
+> 
+> Okay.
+> 
+> > > Do you mean you pointed to new file all the time? O_CREAT doesn't
+> > > truncate file if it exists, iirc.
 > >
-> >                                                         Thanx, Paul
+> > It was pointing to a new file.  Still not sure why that one failed to
+> > trigger the problem.  The slightly modified version attached triggered
+> > the problem *just fine* :-)
 > >
-> > ------------------------------------------------------------------------
+> > I've attached all the patches in my tree so far.  For the v9 patch
+> > kit, I'll keep patch 3 as a separate patch, but roll patches 1, 2 and
+> > 4 into other patches.
 > >
-> > rcu: Fix attempt to avoid unsolicited offloading of callbacks
+> > I am seeing something odd though.  When I run double-map with
+> > debugging printks inserted in strategic spots in the kernel, I see
+> > four calls to do_dax_fault().  The first two, as expected, are the
+> > loads from the two mapped addresses.  The third is via mkwrite, but
+> > then the fourth time I get a regular page fault for write, and I don't
+> understand why I get it.
 > >
-> > Commit b58cc46c5f6b (rcu: Don't offload callbacks unless specifically
-> > requested) failed to adjust the callback lists of the CPUs that are
-> > known to be no-CBs CPUs only because they are also nohz_full= CPUs.
-> > This failure can result in callbacks that are posted during early boot
-> > getting stranded on nxtlist for CPUs whose no-CBs property becomes
-> > apparent late, and there can also be spurious warnings about offline
-> > CPUs posting callbacks.
-> >
-> > This commit fixes these problems by adding an early-boot rcu_init_nohz()
-> > that properly initializes the no-CBs CPUs.
-> >
-> > Note that kernels built with CONFIG_RCU_NOCB_CPU_ALL=y or with
-> > CONFIG_RCU_NOCB_CPU=n do not exhibit this bug.  Neither do kernels
-> > booted without the nohz_full= boot parameter.
-> >
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Reviewed-by: Pranith Kumar <bobby.prani@gmail.com>
-> >
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index d231aa17b1d7..cc7bed1c90dc 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -269,6 +269,14 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
-> >                                          struct task_struct *next) { }
-> >  #endif /* CONFIG_RCU_USER_QS */
-> >
-> > +#ifdef CONFIG_RCU_NOCB_CPU
-> > +void rcu_init_nohz(void);
-> > +#else /* #ifdef CONFIG_RCU_NOCB_CPU */
-> > +static inline void rcu_init_nohz(void)
+> > Any ideas?
+> 
+> unmap_mapping_range() clears pte you've just set by vm_replace_mixed() on
+> third fault.
+> 
+> And locking looks wrong: it seems you need to hold i_mmap_mutex while
+> replacing hole page with pfn. Your VM_BUG_ON() in zap_pte_single() triggers
+> on my setup.
+> 
+> > +static void zap_pte_single(struct vm_area_struct *vma, pte_t *pte,
+> > +				unsigned long addr)
 > > +{
+> > +	struct mm_struct *mm = vma->vm_mm;
+> > +	int force_flush = 0;
+> > +	int rss[NR_MM_COUNTERS];
+> > +
+> > +
+> 	VM_BUG_ON(!mutex_is_locked(&vma->vm_file->f_mapping->i_mmap_m
+> utex));
+> 
+> It's wrong place for VM_BUG_ON(): zap_pte_single() on anon mapping should
+> work fine)
+
+Hi Shutemov:
+1. I am confuse that why insert_page() drop the PageAnon, insert_pfn() donot drop PageAnon?
+
+2. 
+remap_vmalloc_range() -> vm_insert_page()->insert_page() -> inc_mm_counter_fast(mm, MM_FILEPAGES);
+
+so, in this scenario, this vmalloc page maybe not sure be a page cache, why increase the MM_FILEPAGES ?
+
+
+> 
+> > +
+> > +	init_rss_vec(rss);
+> 
+> Vector to commit single update to mm counters? What about inline counters
+> update for rss == NULL case?
+> 
+> > +	update_hiwater_rss(mm);
+> > +	flush_cache_page(vma, addr, pte_pfn(*pte));
+> > +	zap_pte(NULL, vma, pte, addr, NULL, rss, &force_flush);
+> > +	flush_tlb_page(vma, addr);
+> > +	add_mm_rss_vec(mm, rss);
 > > +}
-> > +#endif /* #else #ifdef CONFIG_RCU_NOCB_CPU */
 > > +
-> >  /**
-> >   * RCU_NONIDLE - Indicate idle-loop code that needs RCU readers
-> >   * @a: Code that RCU needs to pay attention to.
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index 41066e49e880..6944acd00dff 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -737,7 +737,7 @@ choice
-> >
-> >  config RCU_NOCB_CPU_NONE
-> >         bool "No build_forced no-CBs CPUs"
-> > -       depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
-> > +       depends on RCU_NOCB_CPU
-> >         help
-> >           This option does not force any of the CPUs to be no-CBs CPUs.
-> >           Only CPUs designated by the rcu_nocbs= boot parameter will be
-> > @@ -751,7 +751,7 @@ config RCU_NOCB_CPU_NONE
-> >
-> >  config RCU_NOCB_CPU_ZERO
-> >         bool "CPU 0 is a build_forced no-CBs CPU"
-> > -       depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
-> > +       depends on RCU_NOCB_CPU
-> >         help
-> >           This option forces CPU 0 to be a no-CBs CPU, so that its RCU
-> >           callbacks are invoked by a per-CPU kthread whose name begins
-> > diff --git a/init/main.c b/init/main.c
-> > index e8ae1fef0908..5d8c83ae6c55 100644
-> > --- a/init/main.c
-> > +++ b/init/main.c
-> > @@ -577,6 +577,7 @@ asmlinkage __visible void __init start_kernel(void)
-> >         idr_init_cache();
-> >         rcu_init();
-> >         tick_nohz_init();
-> > +       rcu_init_nohz();
-> >         context_tracking_init();
-> >         radix_tree_init();
-> >         /* init some links before init_ISA_irqs() */
-> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> > index 00dc411e9676..91208497e407 100644
-> > --- a/kernel/rcu/tree_plugin.h
-> > +++ b/kernel/rcu/tree_plugin.h
-> > @@ -85,33 +85,6 @@ static void __init rcu_bootup_announce_oddness(void)
-> >                 pr_info("\tBoot-time adjustment of leaf fanout to %d.\n", rcu_fanout_leaf);
-> >         if (nr_cpu_ids != NR_CPUS)
-> >                 pr_info("\tRCU restricting CPUs from NR_CPUS=%d to nr_cpu_ids=%d.\n", NR_CPUS, nr_cpu_ids);
-> > -#ifdef CONFIG_RCU_NOCB_CPU
-> > -#ifndef CONFIG_RCU_NOCB_CPU_NONE
-> > -       if (!have_rcu_nocb_mask) {
-> > -               zalloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
-> > -               have_rcu_nocb_mask = true;
-> > -       }
-> > -#ifdef CONFIG_RCU_NOCB_CPU_ZERO
-> > -       pr_info("\tOffload RCU callbacks from CPU 0\n");
-> > -       cpumask_set_cpu(0, rcu_nocb_mask);
-> > -#endif /* #ifdef CONFIG_RCU_NOCB_CPU_ZERO */
-> > -#ifdef CONFIG_RCU_NOCB_CPU_ALL
-> > -       pr_info("\tOffload RCU callbacks from all CPUs\n");
-> > -       cpumask_copy(rcu_nocb_mask, cpu_possible_mask);
-> > -#endif /* #ifdef CONFIG_RCU_NOCB_CPU_ALL */
-> > -#endif /* #ifndef CONFIG_RCU_NOCB_CPU_NONE */
-> > -       if (have_rcu_nocb_mask) {
-> > -               if (!cpumask_subset(rcu_nocb_mask, cpu_possible_mask)) {
-> > -                       pr_info("\tNote: kernel parameter 'rcu_nocbs=' contains nonexistent CPUs.\n");
-> > -                       cpumask_and(rcu_nocb_mask, cpu_possible_mask,
-> > -                                   rcu_nocb_mask);
-> > -               }
-> > -               cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
-> > -               pr_info("\tOffload RCU callbacks from CPUs: %s.\n", nocb_buf);
-> > -               if (rcu_nocb_poll)
-> > -                       pr_info("\tPoll for callbacks from no-CBs CPUs.\n");
-> > -       }
-> > -#endif /* #ifdef CONFIG_RCU_NOCB_CPU */
-> >  }
-> >
-> >  #ifdef CONFIG_TREE_PREEMPT_RCU
-> > @@ -2451,6 +2424,67 @@ static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
-> >         trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("DeferredWakeEmpty"));
-> >  }
-> >
-> > +void __init rcu_init_nohz(void)
-> > +{
-> > +       int cpu;
-> > +       bool need_rcu_nocb_mask = true;
-> > +       struct rcu_state *rsp;
-> > +
-> > +#ifdef CONFIG_RCU_NOCB_CPU_NONE
-> > +       need_rcu_nocb_mask = false;
-> > +#endif /* #ifndef CONFIG_RCU_NOCB_CPU_NONE */
-> > +
-> > +#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
-> > +       if (tick_nohz_full_running && cpumask_weight(tick_nohz_full_mask))
-> > +               need_rcu_nocb_mask = true;
-> > +#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
 > 
-> If you are removing the dependency on NO_HZ_FULL_ALL, I think this can just be
+> --
+>  Kirill A. Shutemov
 > 
-> #ifdef CONFIG_NO_HZ_FULL
-> 
-> Otherwise, a kernel config with CONFIG_RCU_NOCB_NONE=y,
-> CONFIG_NO_HZ_FULL_ALL=y with nohz_full= boot parameter will not have a
-> rcu_nocb_mask.
-
-Good point, fixed.
-
-							Thanx, Paul
-
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in the body to
+> majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
