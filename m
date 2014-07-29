@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652AbaG2RsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 13:48:23 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:58890 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaG2RsV (ORCPT
+	id S1751874AbaG2Rsk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 13:48:40 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:59717 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734AbaG2Rsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 13:48:21 -0400
+	Tue, 29 Jul 2014 13:48:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <1406656015-20105-1-git-send-email-geert@linux-m68k.org>
-References: <1406656015-20105-1-git-send-email-geert@linux-m68k.org>
-Date: Tue, 29 Jul 2014 19:48:20 +0200
-X-Google-Sender-Auth: SoIrarNgmJazB6opi0Zhv-mQ-eA
-Message-ID: <CAMuHMdU4RS8C+xHQ6_GWh7nZxmoP7fxu+Ps94U4jQMm+fMxd_A@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.16-rc7
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <53D7697C.6020103@gmail.com>
+References: <53D7697C.6020103@gmail.com>
+Date: Tue, 29 Jul 2014 10:48:37 -0700
+Message-ID: <CAHA+R7MC2gKeSWqR8pDDX26D-Th4BG1AveM+HseMMPjLBJuWDw@mail.gmail.com>
+Subject: Re: ipv4: net namespace does not inherit network configurations
+From: Cong Wang <cwang@twopensource.com>
+To: zhuyj <zyjzyj2000@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Hong Zhiguo <honkiko@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        "Tao, Yue" <Yue.Tao@windriver.com>,
+        Alexandre Dietsch <alexandre.dietsch@windriver.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 7:46 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.16-rc7[1]  to v3.16-rc6[3], the summaries are:
->   - build errors: +3/-5
+On Tue, Jul 29, 2014 at 2:29 AM, zhuyj <zyjzyj2000@gmail.com> wrote:
+> Hi,all
+>
+> I did a test on kernel3.16 rc6:
+>
+> root@qemu1:~# echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
+> root@qemu1:~# echo 1 > /proc/sys/net/ipv4/conf/all/forwarding
+> root@qemu1:~# ip netns list
+> root@qemu1:~# ip netns add fib1
+> root@qemu1:~# ip netns exec fib1 bash
+> root@qemu1:~# cat /proc/sys/net/ipv6/conf/all/forwarding
+> 0
+> root@qemu1:~# cat /proc/sys/net/ipv4/conf/all/forwarding
+> 1
+>
+> The behavior of ipv4 and ipv6 is very inconsistent. I checked
+> the kernel source code. I found that from this patch
+> [ipv6: fix bad free of addrconf_init_net], the above difference
+> appeared.
+>
+> Since a net namespace is independent to another. That is, there
+> is no any relationship between the net namespaces. So the behavior
+> of ipv4 is not correct.
+>
 
-One known randconfig issue and two more R_PPC64_REL24 relocation
-truncations.
+Well, they are already independent, not shared, just that the initial
+value is duplicated from init_net for IPv4.
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/7708/ (all 119 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/7690/ (all 119 configs)
+This change might break existing applications which rely on this
+behavior, but given IPv6 change is almost the same, I think it's ok.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+BTW, you need to submit a patch as normal, instead of as an attachment.
