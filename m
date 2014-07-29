@@ -1,161 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802AbaG2P6I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:58:08 -0400
-Received: from sym2.noone.org ([178.63.92.236]:39575 "EHLO sym2.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753672AbaG2P6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:58:06 -0400
-Date: Tue, 29 Jul 2014 17:58:01 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Thomas Graf <tgraf@suug.ch>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kaber@trash.net, paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
-        challa@noironetworks.com, walpole@cs.pdx.edu, dev@openvswitch.org
-Subject: Re: [PATCH 2/2] netlink: Convert netlink_lookup() to use RCU
- protected hash table
-Message-ID: <20140729155801.GB10301@distanz.ch>
-References: <cover.1406633945.git.tgraf@suug.ch>
- <b73872eab661f28345085dbd4bd477a50d7042f6.1406633945.git.tgraf@suug.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <b73872eab661f28345085dbd4bd477a50d7042f6.1406633945.git.tgraf@suug.ch>
-X-Editor: Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752050AbaG2P77 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:59:59 -0400
+Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:46650
+	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751367AbaG2P76 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 11:59:58 -0400
+Date: Tue, 29 Jul 2014 10:59:46 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        akpm@linux-foundation.org, Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: vmstat: On demand vmstat workers V8
+In-Reply-To: <53D7C1F8.5040800@oracle.com>
+Message-ID: <alpine.DEB.2.11.1407291057410.21390@gentwo.org>
+References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <53D31101.8000107@oracle.com> <alpine.DEB.2.11.1407281353450.15405@gentwo.org> <20140729075637.GA19379@twins.programming.kicks-ass.net> <20140729120525.GA28366@mtj.dyndns.org> <20140729122303.GA3935@laptop>
+ <20140729131226.GS7462@htj.dyndns.org> <alpine.DEB.2.11.1407291009320.21102@gentwo.org> <20140729151415.GF4791@htj.dyndns.org> <alpine.DEB.2.11.1407291038160.21390@gentwo.org> <53D7C1F8.5040800@oracle.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-29 at 13:41:33 +0200, Thomas Graf <tgraf@suug.ch> wrote:
-> Heavy Netlink users such as Open vSwitch spend a considerable amount of
-> time in netlink_lookup() due to the read-lock on nl_table_lock. Use of
-> RCU relieves the lock contention.
-> 
-> Makes use of the new resizable hash table to avoid locking on the
-> lookup.
-> 
-> The hash table will grow if entries exceeds 75% of table size up to a
-> total table size of 64K. It will automatically shrink if usage falls
-> below 50%.
-> 
-> Also splits nl_table_lock into a separate spinlock to protect hash table
-> mutations. This avoids a possible deadlock when the hash table growing
-> waits on RCU readers to complete via synchronize_rcu() while readers
-> holding RCU read lock are waiting on the nl_table_lock() to be released
-> to lock the table for broadcasting.
-> 
-> Before:
->    9.16%  kpktgend_0  [openvswitch]      [k] masked_flow_lookup
->    6.42%  kpktgend_0  [pktgen]           [k] mod_cur_headers
->    6.26%  kpktgend_0  [pktgen]           [k] pktgen_thread_worker
->    6.23%  kpktgend_0  [kernel.kallsyms]  [k] memset
->    4.79%  kpktgend_0  [kernel.kallsyms]  [k] netlink_lookup
->    4.37%  kpktgend_0  [kernel.kallsyms]  [k] memcpy
->    3.60%  kpktgend_0  [openvswitch]      [k] ovs_flow_extract
->    2.69%  kpktgend_0  [kernel.kallsyms]  [k] jhash2
-> 
-> After:
->   15.26%  kpktgend_0  [openvswitch]      [k] masked_flow_lookup
->    8.12%  kpktgend_0  [pktgen]           [k] pktgen_thread_worker
->    7.92%  kpktgend_0  [pktgen]           [k] mod_cur_headers
->    5.11%  kpktgend_0  [kernel.kallsyms]  [k] memset
->    4.11%  kpktgend_0  [openvswitch]      [k] ovs_flow_extract
->    4.06%  kpktgend_0  [kernel.kallsyms]  [k] _raw_spin_lock
->    3.90%  kpktgend_0  [kernel.kallsyms]  [k] jhash2
->    [...]
->    0.67%  kpktgend_0  [kernel.kallsyms]  [k] netlink_lookup
-> 
-> Signed-off-by: Thomas Graf <tgraf@suug.ch>
-> ---
->  net/netlink/af_netlink.c | 285 ++++++++++++++++++-----------------------------
->  net/netlink/af_netlink.h |  18 +--
->  net/netlink/diag.c       |  11 +-
->  3 files changed, 119 insertions(+), 195 deletions(-)
-> 
-> diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-> index 1b38f7f..7f44468 100644
-> --- a/net/netlink/af_netlink.c
-> +++ b/net/netlink/af_netlink.c
-[...]
-> @@ -2996,28 +2939,26 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
->  
->  	net = seq_file_net(seq);
->  	iter = seq->private;
-> -	s = v;
-> -	do {
-> -		s = sk_next(s);
-> -	} while (s && !nl_table[s->sk_protocol].compare(net, s));
-> -	if (s)
-> -		return s;
-> +	nlk = v;
-> +
-> +	rht_for_each_entry_rcu(nlk, nlk->node.next, node)
-> +		if (net_eq(sock_net((struct sock *)nlk), net))
-> +			return nlk;
->  
->  	i = iter->link;
->  	j = iter->hash_idx + 1;
->  
->  	do {
-> -		struct nl_portid_hash *hash = &nl_table[i].hash;
-> -
-> -		for (; j <= hash->mask; j++) {
-> -			s = sk_head(&hash->table[j]);
-> +		struct rhashtable *ht = &nl_table[i].hash;
-> +		const struct bucket_table *tbl = rht_dereference(ht->tbl, ht);
->  
-> -			while (s && !nl_table[s->sk_protocol].compare(net, s))
-> -				s = sk_next(s);
-> -			if (s) {
-> -				iter->link = i;
-> -				iter->hash_idx = j;
-> -				return s;
-> +		for (; j <= tbl->size; j++) {
+On Tue, 29 Jul 2014, Sasha Levin wrote:
 
-Should the condition j < tbl->size here, since the bucket table only
-contains `size' buckets?
+> > Index: linux/mm/vmstat.c
+> > ===================================================================
+> > --- linux.orig/mm/vmstat.c	2014-07-29 10:22:45.073884943 -0500
+> > +++ linux/mm/vmstat.c	2014-07-29 10:34:45.083369228 -0500
+> > @@ -1277,8 +1277,8 @@ static int vmstat_cpuup_callback(struct
+> >  		break;
+> >  	case CPU_DOWN_PREPARE:
+> >  	case CPU_DOWN_PREPARE_FROZEN:
+> > -		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+> >  		per_cpu(vmstat_work, cpu).work.func = NULL;
+> > +		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+> >  		break;
+> >  	case CPU_DOWN_FAILED:
+> >  	case CPU_DOWN_FAILED_FROZEN:
+> >
+>
+> I'm slightly confused here. The on demand vmstat workers patch did this:
+>
+>         case CPU_DOWN_PREPARE_FROZEN:
+> -               cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+> -               per_cpu(vmstat_work, cpu).work.func = NULL;
+> +               if (!cpumask_test_and_set_cpu(cpu, cpu_stat_off))
+> +                       cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+>
+> So your new patch doesn't apply on top of it, and doesn't make sense before it.
 
-> +			rht_for_each_entry_rcu(nlk, tbl->buckets[j], node) {
-> +				if (net_eq(sock_net((struct sock *)nlk), net)) {
-> +					iter->link = i;
-> +					iter->hash_idx = j;
-> +					return nlk;
-> +				}
->  			}
->  		}
-[...]
-> diff --git a/net/netlink/diag.c b/net/netlink/diag.c
-> index 1af29624..7588f34 100644
-> --- a/net/netlink/diag.c
-> +++ b/net/netlink/diag.c
-[...]
-> @@ -101,16 +102,20 @@ static int __netlink_diag_dump(struct sk_buff *skb, struct netlink_callback *cb,
->  				int protocol, int s_num)
->  {
->  	struct netlink_table *tbl = &nl_table[protocol];
-> -	struct nl_portid_hash *hash = &tbl->hash;
-> +	struct rhashtable *ht = &tbl->hash;
-> +	const struct bucket_table *htbl = rht_dereference(ht->tbl, ht);
->  	struct net *net = sock_net(skb->sk);
->  	struct netlink_diag_req *req;
-> +	struct netlink_sock *nlsk;
->  	struct sock *sk;
->  	int ret = 0, num = 0, i;
->  
->  	req = nlmsg_data(cb->nlh);
->  
-> -	for (i = 0; i <= hash->mask; i++) {
-> -		sk_for_each(sk, &hash->table[i]) {
-> +	for (i = 0; i <= htbl->size; i++) {
+Tejun was looking at upsteram and so I fixed upstream ;-)
 
-Same here, condition should be i < htbl->size
+Is it really necessary to set the work.func to NULL? If so then the
+work.func will have to be initialized when a processor is brought online.
 
-> +		rht_for_each_entry(nlsk, htbl->buckets[i], ht, node) {
-> +			sk = (struct sock *)nlsk;
-> +
->  			if (!net_eq(sock_net(sk), net))
->  				continue;
->  			if (num < s_num) {
-> -- 
-> 1.9.3
+Canceling the work should be enough to disable the execution of the
+function.
+
