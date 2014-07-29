@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbaG2NEb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 09:04:31 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.162]:64504 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaG2NE3 (ORCPT
+	id S1753388AbaG2NGU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 09:06:20 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:36192 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaG2NGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 09:04:29 -0400
-X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat9htPoyY0=
-X-RZG-CLASS-ID: mo00
-Subject: Re: [PATCH 3/3] arm: dts: Add gta04a5 model
-Mime-Version: 1.0 (Apple Message framework v1085)
+	Tue, 29 Jul 2014 09:06:19 -0400
+Date: Tue, 29 Jul 2014 15:06:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>,
+        "arjan.van.de.ven@intel.com" <arjan.van.de.ven@intel.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "alan.cox@intel.com" <alan.cox@intel.com>,
+        "mark.gross@intel.com" <mark.gross@intel.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
+Subject: Re: [PATCH 0/2 v4] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140729130614.GC3935@laptop>
+References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
+ <20140718153931.GJ8700@e103034-lin>
+ <20140727190237.GB22986@intel.com>
+ <20140728103812.GP6758@twins.programming.kicks-ass.net>
+ <20140729011713.GD5203@intel.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-In-Reply-To: <20140729124120.GS29045@atomide.com>
-Date: Tue, 29 Jul 2014 15:03:42 +0200
-Cc: Michael Trimarchi <michael@amarulasolutions.com>,
-        Marek Belisko <marek.belisko@gmail.com>, pawel.moll@arm.com,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <589F7CA3-F245-4299-8E39-36A7FA9F3CBD@goldelico.com>
-References: <1406577213-9642-1-git-send-email-marek@goldelico.com> <1406577213-9642-4-git-send-email-marek@goldelico.com> <CAOf5uwk=ctww=pP4Ae+1C6i-oOtiYTv2NJbj1GpuPwVSKXB4Hw@mail.gmail.com> <CAAfyv35jvhzvjCKMwrpa=RQ1JkfcmthCsGDzwLW9Y6bq3Ww_fg@mail.gmail.com> <CAOf5uw=Fm9FXEH5ESqDC8pGjMbn5VQ1+MyPJVXSqGh_9+JRLHw@mail.gmail.com> <1FA8171E-1B7A-4684-887E-11593BB9C29E@goldelico.com> <20140729124120.GS29045@atomide.com>
-To: Tony Lindgren <tony@atomide.com>
-X-Mailer: Apple Mail (2.1085)
+Content-Disposition: inline
+In-Reply-To: <20140729011713.GD5203@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Am 29.07.2014 um 14:41 schrieb Tony Lindgren:
-
-> * Dr. H. Nikolaus Schaller <hns@goldelico.com> [140728 13:45]:
->> 
->> Yes,
->> the boot loader either loads gta04a3.dtb gta04.dtb or gta05.dtb
->> depending on board revision.
->> 
->> Therefore we have multiple device tree files to represent such hardware
->> differences. Like Gumstix Overo variants (using a  omap3-overo-base.dtsi)
->> 
->> And, this difference is not the only one. Other are to come later.
->> 
->> Unfortunately we were recommend to submit only DT nodes that already
->> have drivers. Therefore, the "big picture" of the device variants support
->> may not yet be visible from this patch.
->> 
->> I hope this gives a little background.
+On Tue, Jul 29, 2014 at 09:17:13AM +0800, Yuyang Du wrote:
+> On Mon, Jul 28, 2014 at 12:38:12PM +0200, Peter Zijlstra wrote:
+> > On Mon, Jul 28, 2014 at 03:02:37AM +0800, Yuyang Du wrote:
+> > > > Another thing that might be an issue is that the blocked of a terminated
+> > > > task lives on for quite a while until has decayed away.
+> > > 
+> > > Good point. To do so, if I read correctly, we need to hook do_exit(), but probably
+> > > we are gonna encounter rq->lock issue.
+> > > 
+> > > What is the opinion/guidance from the maintainers/others?
+> > 
+> > So the entire point of this per entity tracking was to make sure load
+> > numbers reflect reality. We account migrations etc., it would be weird
+> > to then throw all that out the window and let task exit accumulate crap.
+> > 
 > 
-> So what's the conclusion? Are changes needed to this patch
-> series or not?
+> Yes. So I will hook up do_exit. 
 
-I advocate that no changes are needed.
+There is sched_class::task_dead(), pjt wanted to use that for this.
 
-BR,
-Nikolaus
+> Hope I did it right. Likewise, also do group entity
+> in group destroy and group offline? 
 
+group destroy, yes. Offline should mostly fix itself already due to it
+actively migrating the actual load around I think.
