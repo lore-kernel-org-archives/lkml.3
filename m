@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317AbaG2PWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:22:22 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:53570 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754298AbaG2PWS (ORCPT
+	id S1754336AbaG2PW2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:22:28 -0400
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:60628 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754319AbaG2PWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:22:18 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/temVxWcRZUOsLWGNUU4eU
-Date: Tue, 29 Jul 2014 08:20:52 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        bcousson@baylibre.com, linux@arm.linux.org.uk,
-        khilman@deeprootsystems.com, tglx@linutronix.de, jason@lakedaemon.net,
-        devicetree@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 29/35] arm: omap: intc: switch over to linear irq domain
-Message-ID: <20140729152052.GV29045@atomide.com>
-References: <1406582183-696-1-git-send-email-balbi@ti.com>
- <1406582183-696-30-git-send-email-balbi@ti.com>
- <20140729121425.GR29045@atomide.com>
- <20140729141522.GB17808@saruman.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140729141522.GB17808@saruman.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 29 Jul 2014 11:22:24 -0400
+Date: Tue, 29 Jul 2014 10:22:06 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Tejun Heo <tj@kernel.org>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>, akpm@linux-foundation.org,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: vmstat: On demand vmstat workers V8
+In-Reply-To: <20140729131226.GS7462@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.11.1407291020470.21102@gentwo.org>
+References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <53D31101.8000107@oracle.com> <alpine.DEB.2.11.1407281353450.15405@gentwo.org> <20140729075637.GA19379@twins.programming.kicks-ass.net> <20140729120525.GA28366@mtj.dyndns.org> <20140729122303.GA3935@laptop>
+ <20140729131226.GS7462@htj.dyndns.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [140729 07:18]:
-> Hi,
-> 
-> On Tue, Jul 29, 2014 at 05:14:25AM -0700, Tony Lindgren wrote:
-> > * Felipe Balbi <balbi@ti.com> [140728 14:19]:
-> > > now that we don't need to support legacy board-files,
-> > > we can completely switch over to a linear irq domain
-> > > and make use of irq_alloc_domain_generic_chips() to
-> > > allocate all generic irq chips for us.
-> > 
-> > This patch seems to somehow break off-idle for omap3 
-> > where it no longer wakes up.
-> 
-> Sure your bisection is correct ? This patch just switches from legacy
-> irq domain to linear irq domain.
+On Tue, 29 Jul 2014, Tejun Heo wrote:
 
-Yes, I tried it a few times. Just enabling
-retention idle hangs too with this patch.
+> I'm not sure that's a viable way forward.  It's not like we can
+> readily trigger the problematic cases which can lead to long pauses
+> during cpu down.  Besides, we need the distinction at the API level,
+> which is the whole point of this.  The best way probably is converting
+> all the correctness ones (these are the minorities) over to
+> queue_work_on() so that the per-cpu requirement is explicit.
 
-Maybe it's omap3_prcm_irq_setup that relies on
-11 + OMAP_INTC_START? There may be other such issues
-remaining too but most should be already fixed up.
+Ok so we would need this fix to avoid the message:
 
-Regards,
 
-Tony
+Subject: vmstat: use schedule_delayed_work_on to avoid false positives
+
+It seems that schedule_delayed_work_on will check for preemption even
+though none can occur. schedule_delayed_work_on will not do that. So
+use that function to suppress false positives.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/mm/vmstat.c
+===================================================================
+--- linux.orig/mm/vmstat.c	2014-07-29 10:14:42.356988271 -0500
++++ linux/mm/vmstat.c	2014-07-29 10:18:28.205920997 -0500
+@@ -1255,7 +1255,8 @@ static void vmstat_update(struct work_st
+ 		 * to occur in the future. Keep on running the
+ 		 * update worker thread.
+ 		 */
+-		schedule_delayed_work(this_cpu_ptr(&vmstat_work),
++		schedule_delayed_work_on(smp_processor_id(),
++			this_cpu_ptr(&vmstat_work),
+ 			round_jiffies_relative(sysctl_stat_interval));
+ 	else {
+ 		/*
