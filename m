@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800AbaG2Rz7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 13:55:59 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:41786 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562AbaG2Rz6 (ORCPT
+	id S1751964AbaG2R4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 13:56:14 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:45943 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810AbaG2R4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 13:55:58 -0400
-Date: Tue, 29 Jul 2014 10:55:52 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 2/9] rcu: Provide cond_resched_rcu_qs()
- to force quiescent states in long loops
-Message-ID: <20140729175552.GX11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140728225556.GA19493@linux.vnet.ibm.com>
- <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1406588180-21933-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140729075536.GZ19379@twins.programming.kicks-ass.net>
- <20140729162236.GP11241@linux.vnet.ibm.com>
- <20140729172542.GK3935@laptop>
- <20140729173318.GW11241@linux.vnet.ibm.com>
- <20140729173600.GN3935@laptop>
- <20140729173733.GZ12054@laptop.lan>
+	Tue, 29 Jul 2014 13:56:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140729173733.GZ12054@laptop.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072917-8236-0000-0000-0000043731C4
+In-Reply-To: <20140729173136.GA2808@redhat.com>
+References: <cover.1405992946.git.luto@amacapital.net> <3f649f5658a163645e3ce15156176c325283762e.1405992946.git.luto@amacapital.net>
+ <20140728173723.GA20993@redhat.com> <CALCETrWUFo_zXcAZja-vdL4_MgJDd=1ed5Vt54eyUuim930xAw@mail.gmail.com>
+ <20140729165416.GA967@redhat.com> <CALCETrWBU-=zqLTCP7B1feZ9J-e4u-Boic+e1EEn1rL-ijeEKg@mail.gmail.com>
+ <20140729173136.GA2808@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 29 Jul 2014 10:55:46 -0700
+Message-ID: <CALCETrVP-P+EJ6YJ=CZL_gyA1r8O9eogUNTik7_31_SA+Pj3pg@mail.gmail.com>
+Subject: Re: [PATCH v3 6/8] x86: Split syscall_trace_enter into two phases
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 07:37:33PM +0200, Peter Zijlstra wrote:
-> On Tue, Jul 29, 2014 at 07:36:00PM +0200, Peter Zijlstra wrote:
-> > On Tue, Jul 29, 2014 at 10:33:18AM -0700, Paul E. McKenney wrote:
-> > > > No, but why can't we make the regular cond_resched() do this?
-> > > 
-> > > Well, I got a lot of grief when I tried it a few weeks ago.
-> > > 
-> > > But from what I can see, you are the maintainer or cond_resched(), so
-> > > if you are good with making the normal cond_resched() do this, I am
-> > > more than happy to make it so!  ;-)
-> > 
-> > Well, its the 'obvious' thing to do. But clearly I haven't tried so I'm
-> > blissfully unaware of any problems. And the Changelog didn't inform me
-> > either (you had a link in there, which I didn't read :-)
-> 
-> Then again, last time we touched cond_resched() we had a scalability
-> issue or somesuch, or am I misremembering things?
+On Tue, Jul 29, 2014 at 10:31 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 07/29, Andy Lutomirski wrote:
+>>
+>> On Tue, Jul 29, 2014 at 9:54 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> >
+>> > Yes, just to trigger the slow path, I guess.
+>> >
+>> >> I'll update the code to call user_exit iff TIF_NOHZ is
+>> >> set.
+>> >
+>> > Or perhaps it would be better to not add another user of this (strange) flag
+>> > and just call user_exit() unconditionally(). But, yes, you need to use
+>> > from "work = flags & (_TIF_WORK_SYSCALL_ENTRY & ~TIF_NOHZ)" then.\
+>>
+>> user_exit looks slow enough to me that a branch to try to avoid it may
+>> be worthwhile.  I bet that explicitly checking the flag is
+>> actually both faster and clearer.
+>
+> I don't think so (unless I am confused again), note that user_exit() uses
+> jump label. But this doesn't matter. I meant that we should avoid TIF_NOHZ
+> if possible because I think it should die somehow (currently I do not know
+> how ;). And because it is ugly to check the same condition twice:
+>
+>         if (work & TIF_NOHZ) {
+>                 // user_exit()
+>                 if (context_tracking_is_enabled())
+>                         context_tracking_user_exit();
+>         }
+>
+> TIF_NOHZ is set if and only if context_tracking_is_enabled() is true.
+> So I think that
+>
+>         work = current_thread_info()->flags & (_TIF_WORK_SYSCALL_ENTRY & ~TIF_NOHZ);
+>
+>         user_exit();
+>
+> looks a bit better. But I won't argue.
 
-More overhead than scalability, but yes.  That said, that was a much
-heavier weight touch.  A later version with only an access to per-CPU
-variable turned out to have overhead below what could be measured.
-But I am comfortable with the current approach that does not touch
-cond_resched() as well.
+I don't get it.  context_tracking_is_enabled is global, and TIF_NOHZ
+is per-task.  Isn't this stuff determined per-task or per-cpu or
+something?
 
-							Thanx, Paul
+IOW, if one CPU is running something that's very heavily
+userspace-oriented and another CPU is doing something syscall- or
+sleep-heavy, then shouldn't only the first CPU end up paying the price
+of context tracking?
 
+>
+>> That's what I did for v4.
+>
+> I am going to read it today. Not that I think I can help or find something
+> wrong.
+>
+> Oleg.
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
