@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818AbaG2G5Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 02:57:25 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:34352 "EHLO
+	id S1752672AbaG2G5Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 02:57:24 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:34350 "EHLO
 	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaG2G5W (ORCPT
+	with ESMTP id S1751223AbaG2G5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Jul 2014 02:57:22 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -16,50 +16,118 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Thomas Ilsche <thomas.ilsche@tu-dresden.de>
-Subject: [PATCH v2 2/2] perf tools: Default to python version 2
-Date: Tue, 29 Jul 2014 15:57:20 +0900
-Message-Id: <1406617040-26909-2-git-send-email-namhyung@kernel.org>
+Subject: [PATCH v2 1/2] perf tools: Fix make PYTHON override
+Date: Tue, 29 Jul 2014 15:57:19 +0900
+Message-Id: <1406617040-26909-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1406617040-26909-1-git-send-email-namhyung@kernel.org>
-References: <1406617040-26909-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to PEP 394 recommendation [1], it's more portable to use
-python2 rather than plain python to refer python binary version 2.
+Thomas reported that make PYTHON=python2 is not work on some systems.
+I can reproduce it on my ArchLinux box too.
 
-Since there're distros using python3 by default like Arch, and we
-don't support python3 (yet), it'd be better using python2 explicitly.
+This is because it's overridden by config/feature-checks/Makefile
+regardless of PYTHON setting.  I guess it's a bug slipped into during
+the feature checking change.
 
-But older versions (prior to 2.7) seem not to provide python2 but just
-python.  Given that it's only old version, try python2 first and then
-fallback to python.  It'll ensure that it always points to python 2.x.
+Actually, we don't need to check python-config in the feature-checks.
+We can just pass appropriate FEATURE_CHECK_*FLAGS.
 
-[1] https://www.python.org/dev/peps/pep-0394
-
-Suggested-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
-Tested-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
+Reported-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/config/Makefile | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/config/Makefile                | 34 ++++++++++++++++++++-----------
+ tools/perf/config/feature-checks/Makefile | 18 ++--------------
+ 2 files changed, 24 insertions(+), 28 deletions(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index e05d8f99424d..60177278a357 100644
+index 1f67aa02d240..e05d8f99424d 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -121,8 +121,8 @@ ifdef PARSER_DEBUG
+@@ -120,6 +120,23 @@ ifdef PARSER_DEBUG
+   CFLAGS             += -DPARSER_DEBUG
  endif
  
- ifndef NO_LIBPYTHON
--  override PYTHON := \
--    $(call get-executable-or-default,PYTHON,python)
-+  PYTHON2 := $(if $(call get-executable,python2),python2,python)
-+  override PYTHON := $(call get-executable-or-default,PYTHON,$(PYTHON2))
-   override PYTHON_CONFIG := \
-     $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
++ifndef NO_LIBPYTHON
++  override PYTHON := \
++    $(call get-executable-or-default,PYTHON,python)
++  override PYTHON_CONFIG := \
++    $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
++
++  PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
++
++  PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
++  PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
++
++  FEATURE_CHECK_CFLAGS-libpython := $(PYTHON_EMBED_CCOPTS)
++  FEATURE_CHECK_LDFLAGS-libpython := $(PYTHON_EMBED_LDOPTS)
++  FEATURE_CHECK_CFLAGS-libpython-version := $(PYTHON_EMBED_CCOPTS)
++  FEATURE_CHECK_LDFLAGS-libpython-version := $(PYTHON_EMBED_LDOPTS)
++endif
++
+ CFLAGS += -fno-omit-frame-pointer
+ CFLAGS += -ggdb3
+ CFLAGS += -funwind-tables
+@@ -482,21 +499,14 @@ define disable-python_code
+   NO_LIBPYTHON := 1
+ endef
  
+-override PYTHON := \
+-  $(call get-executable-or-default,PYTHON,python)
+-
+-ifndef PYTHON
+-  $(call disable-python,python interpreter)
++ifdef NO_LIBPYTHON
++  $(call disable-python)
+ else
+ 
+-  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
+-
+-  ifdef NO_LIBPYTHON
+-    $(call disable-python)
++  ifndef PYTHON
++    $(call disable-python,python interpreter)
+   else
+-
+-    override PYTHON_CONFIG := \
+-      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
++    PYTHON_WORD := $(call shell-wordify,$(PYTHON))
+ 
+     ifndef PYTHON_CONFIG
+       $(call disable-python,python-config tool)
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 6088f8d8a434..72ab2984718e 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -101,25 +101,11 @@ FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
+ test-libperl.bin:
+ 	$(BUILD) $(FLAGS_PERL_EMBED)
+ 
+-override PYTHON := python
+-override PYTHON_CONFIG := python-config
+-
+-escape-for-shell-sq =  $(subst ','\'',$(1))
+-shell-sq = '$(escape-for-shell-sq)'
+-
+-PYTHON_CONFIG_SQ = $(call shell-sq,$(PYTHON_CONFIG))
+-
+-PYTHON_EMBED_LDOPTS = $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
+-PYTHON_EMBED_LDFLAGS = $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
+-PYTHON_EMBED_LIBADD = $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
+-PYTHON_EMBED_CCOPTS = $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
+-FLAGS_PYTHON_EMBED = $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
+-
+ test-libpython.bin:
+-	$(BUILD) $(FLAGS_PYTHON_EMBED)
++	$(BUILD)
+ 
+ test-libpython-version.bin:
+-	$(BUILD) $(FLAGS_PYTHON_EMBED)
++	$(BUILD)
+ 
+ test-libbfd.bin:
+ 	$(BUILD) -DPACKAGE='"perf"' -lbfd -lz -liberty -ldl
 -- 
 2.0.0
 
