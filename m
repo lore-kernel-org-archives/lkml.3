@@ -1,88 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036AbaG2RGP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 13:06:15 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:21145 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750708AbaG2RGN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 13:06:13 -0400
-Message-ID: <53D7D47E.5060906@itdev.co.uk>
-Date: Tue, 29 Jul 2014 18:06:06 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752354AbaG2RGt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 13:06:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7603 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751282AbaG2RGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 13:06:48 -0400
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Andrew Jones <drjones@redhat.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: Re: [Xen-devel] [PATCH RFC 3/4] xen/pvhvm: Unmap all PIRQs on startup and shutdown
+References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
+	<1405431640-649-4-git-send-email-vkuznets@redhat.com>
+	<53D6536E.70104@citrix.com> <87d2coe0kk.fsf@vitty.brq.redhat.com>
+	<53D7BD04.4040102@citrix.com>
+Date: Tue, 29 Jul 2014 19:06:34 +0200
+In-Reply-To: <53D7BD04.4040102@citrix.com> (David Vrabel's message of "Tue, 29
+	Jul 2014 16:25:56 +0100")
+Message-ID: <878uncdrhh.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>, Yufeng Shen <miletus@chromium.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        benson Leung <bleung@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH 00/15] atmel_mxt_ts - device tree, bootloader, etc
-References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk>	<53CECAEC.8080905@wwwdotorg.org>	<53CFD50C.4040509@itdev.co.uk>	<53CFEF6E.2060905@wwwdotorg.org>	<53D10E78.4010908@itdev.co.uk>	<53D17845.4020507@wwwdotorg.org>	<53D26572.3030404@itdev.co.uk>	<53D2B8D0.5090000@wwwdotorg.org>	<CAPDwgkNrBRJRR6WtoPSfs8Yq=ui-Ptjju4mJ=9h=95YVFuxw7g@mail.gmail.com>	<53D6BF50.3070306@wwwdotorg.org>	<53D6DFE7.3040901@wwwdotorg.org> <CAPDwgkPL1utj3DFoFbOCcJsASpf+12nvKg1KcseV_MhEz66eiw@mail.gmail.com> <53D7C8CC.1050201@wwwdotorg.org>
-In-Reply-To: <53D7C8CC.1050201@wwwdotorg.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/07/14 17:16, Stephen Warren wrote:
-> I then tried updating the firmware. This didn't work at all.
-> 
-> First I tried via mxt-app:
-> 
->> root@localhost:~# ./obp-utils/mxt-app -d i2c-dev:1-004b --flash
->> 130.1_1.0.170.bin
->> Version:1.16-65-g0a4c
->> Opening firmware file 130.1_1.0.170.bin
->> Registered i2c-dev adapter:1 address:0x4b
->> Chip detected
->> Current firmware version: 1.0.AA
->> Skipping version check
->> Resetting in bootloader mode
->> Registered i2c-dev adapter:1 address:0x25
->> Error Remote I/O error (121) reading from i2c
->> Bootloader read failure
->> Bootloader not found
-> 
-> Then I power-cycled and tried via the atmel_mxt_ts modules' sysfs files:
-> 
->> root@localhost:~# echo 1 >
->> /sys/devices/soc0/7000c400.i2c/i2c-1/1-004b/update_fw
->> [   38.495420] atmel_mxt_ts 1-004b: mxt_bootloader_read: i2c recv failed
->> (-121)
->> [   38.506208] atmel_mxt_ts 1-004b: mxt_bootloader_read: i2c recv failed
->> (-121)
->> [   38.513836] atmel_mxt_ts 1-004b: The firmware update failed(-121)
->> -bash: echo: write error: Remote I/O error
+David Vrabel <david.vrabel@citrix.com> writes:
 
-OK - that's the same error in both cases, it has tried to switch the device
-into bootloader mode, however it is not responding on the bootloader I2C
-address.
+> On 29/07/14 14:50, Vitaly Kuznetsov wrote:
+>> David Vrabel <david.vrabel@citrix.com> writes:
+>> 
+>>> On 15/07/14 14:40, Vitaly Kuznetsov wrote:
+>>>> When kexec is being run PIRQs from Qemu-emulated devices are still
+>>>> mapped to old event channels and new kernel has no information about
+>>>> that. Trying to map them twice results in the following in Xen's dmesg:
+>>>>
+>>>>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 8 already mapped
+>>>>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 12 already mapped
+>>>>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 1 already mapped
+>>>>  ...
+>>>>
+>>>>  and the following in new kernel's dmesg:
+>>>>
+>>>>  [   92.286796] xen:events: Failed to obtain physical IRQ 4
+>>>>
+>>>> The result is that the new kernel doesn't recieve IRQs for Qemu-emulated
+>>>> devices. Address the issue by unmapping all mapped PIRQs on kernel shutdown
+>>>> when kexec was requested and on every kernel startup. We need to do this
+>>>> twice to deal with the following issues:
+>>>> - startup-time unmapping is required to make kdump work;
+>>>> - shutdown-time unmapping is required to support kexec-ing non-fixed kernels;
+>>>> - shutdown-time unmapping is required to make Qemu-emulated NICs work after
+>>>>   kexec (event channel is being closed on shutdown but no PHYSDEVOP_unmap_pirq
+>>>>   is being performed).
+>>>
+>>> I think this should be done only in one place -- just prior to exec'ing
+>>> the new kernel (including kdump kernels).
+>>>
+>> 
+>> Thank you for your comments!
+>> 
+>> The problem I'm fighting wiht atm is: with FIFO-based event channels we
+>> need to call evtchn_fifo_destroy() so next EVTCHNOP_init_control won't
+>> fail. I was intended to put evtchn_fifo_destroy() in
+>> EVTCHNOP_reset. That introduces a problem: we need to deal with
+>> store/console channels. It is possible to remap those from guest with
+>> EVTCHNOP_bind_interdomain (if we remember where they were mapped before)
+>> but we can't do it after we did evtchn_fifo_destroy() and we can't
+>> rebind them after kexec and performing EVTCHNOP_init_control as
+>> we can't remember where these channels were mapped to after kexec/kdump.
+>> 
+>> I see the following possible solutions:
+>> 1) We put evtchn_fifo_destroy() in EVTCHNOP_init_control so
+>> EVTCHNOP_init_control can be called twice. No EVTCHNOP_reset is required
+>> in that case.
+>
+> EVTCHNOP_init_control is called for each VCPU so I can't see how this
+> would work.
 
-Couple of things to check:
-- is the device in deep sleep mode when you run the mxt-app command? can
-you try doing "mxt-app [device] -W -T7 FFFF" which will make sure it is
-definitely not sleeping first.
-- if you do "mxt-app [device] -i" straight after the --flash failure, does
-it respond (which would mean it hasn't actioned the reset-into-bootloader
-command)
+Right, forgot about that...
 
-> I also found that removing the module (even without attempting a FW update)
-> yields:
-> 
-> After attempted FW update via sysfs:
-> 
->> root@localhost:~# rmmod ./atmel_mxt_ts.ko
->> [   81.995672] Unable to handle kernel NULL pointer dereference at virtual address 00000364
+>
+>> 2) Introduce special (e.g. 'EVTCHNOP_fifo_destroy') hypercall to do
+>> evtchn_fifo_destroy() without closing all channels. Alternatively we can
+>> avoid closing all channels in EVTCHNOP_reset when called with DOMID_SELF
+>> (as this mode is not being used atm) -- but that would look unobvious.
+>
+> I would try this.  The guest prior to kexec would then:
+>
+> 1. Use EVTCHNOP_status to query remote end of console and xenstore event
+> channels.
+>
+> 2. Loop for all event channels:
+>
+> a. unmap pirq (if required)
+> b. EVTCHNOP_close
+>
+> 3. EVTCHNOP_fifo_destroy (the implementation of which must verify that
+> no channels are bound).
+>
+> 4. EVTCHNOP_bind_interdomain to rebind the console and xenstore channels.
+>
 
-Not good. It's trying to free an input device which isn't registered at
-that point. In a later patch in my series I add a guard around that
-(mxt_free_input_device):
-https://github.com/ndyer/linux/commit/bb4800ff8c185
+Yea, that's what I have now when I put evtchn_fifo_destroy() in
+EVTCHNOP_reset. The problem here is: we can't do
+EVTCHNOP_bind_interdomain after we did evtchn_fifo_destroy(), we need to
+call EVTCHNOP_init_control first. And we'll do that only after kexec so
+we won't remember what we need to remap.. The second issue is the fact
+that EVTCHNOP_bind_interdomain will remap store/storage channels to
+*some* local ports, not necessary matching hvm info
+(HVM_PARAM_CONSOLE_EVTCHN/HVM_PARAM_STORE_EVTCHN)..
+
+Would it be safe is instead of closing interdomain channels on
+EVTCHNOP_fifo_destroy we switch evtchn_port_ops to evtchn_port_ops_2l
+(so on EVTCHNOP_init_control after kexec we switch back)? I'll try
+prototyping this.
+
+Thank you for your comments,
+
+> David
+
+-- 
+  Vitaly
