@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002AbaG2Qnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 12:43:45 -0400
-Received: from mail.us.es ([193.147.175.20]:60905 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282AbaG2Qnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 12:43:43 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.4/19237. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-100.2/7.5):. 
- Processed in 1.896611 secs); 29 Jul 2014 16:43:42 -0000
-X-Spam-ASN: AS42863 89.214.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Tue, 29 Jul 2014 18:42:26 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        netfilter-devel <netfilter-devel@vger.kernel.org>
-Subject: Re: [PATCH v3 net-next] net: filter: cleanup sk_* and bpf_* names
-Message-ID: <20140729164226.GA6069@salvia>
-References: <1406615380-3488-1-git-send-email-ast@plumgrid.com>
- <20140729153124.GA3231@salvia>
- <CAMEtUuwO0nGox4Mfj8Gs2fVudBpYtZ_NSwyFQCFz5NeYKgAdpA@mail.gmail.com>
+	id S1752519AbaG2Qrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 12:47:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38546 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282AbaG2Qrr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 12:47:47 -0400
+Message-ID: <53D7D02D.6010508@infradead.org>
+Date: Tue, 29 Jul 2014 09:47:41 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMEtUuwO0nGox4Mfj8Gs2fVudBpYtZ_NSwyFQCFz5NeYKgAdpA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sangjung Woo <sangjung.woo@samsung.com>, Wim Van Sebroeck <wim@iguana.be>
+CC: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        again4you@gmail.com, Jiri Kosina <trivial@kernel.org>
+Subject: Re: [PATCH] Documentation: fix a typo in watchdog-api.txt
+References: <1406621064-5466-1-git-send-email-sangjung.woo@samsung.com>
+In-Reply-To: <1406621064-5466-1-git-send-email-sangjung.woo@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 08:55:04AM -0700, Alexei Starovoitov wrote:
-> > I don't think this is the right moment to add this, but we have to
-> > keep in mind that something similar to this will need to be
-> > accomodated in struct sk_filter at some point to avoid sloppy changes
-> > that may result in reintroducing code later on.
+On 07/29/14 01:04, Sangjung Woo wrote:
+> Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
+> ---
+>  Documentation/watchdog/watchdog-api.txt |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> I thought in v1 series you were arguing exactly about introducing them now...
-> ok, I will drop callbacks and keep refcnt,rcu,filter_size and bpf_prog pointer
-> in there. Sounds good?
+> diff --git a/Documentation/watchdog/watchdog-api.txt b/Documentation/watchdog/watchdog-api.txt
+> index eb7132e..53c49a4 100644
+> --- a/Documentation/watchdog/watchdog-api.txt
+> +++ b/Documentation/watchdog/watchdog-api.txt
+> @@ -118,7 +118,7 @@ resets.
+>  Note that the pretimeout is the number of seconds before the time
+>  when the timeout will go off.  It is not the number of seconds until
+>  the pretimeout.  So, for instance, if you set the timeout to 60 seconds
+> -and the pretimeout to 10 seconds, the pretimout will go of in 50
+> +and the pretimeout to 10 seconds, the pretimout will go off in 50
 
-Agreed.
+                                         pretimeout
 
-> > Next step should be to wrap the specific bpf fields in struct
-> > bpf_prog in some clean way IMO, which was partially the aim of this
-> > patch.
+Please correct that word also and then resend.  Also resend to:
+trivial@kernel.org
+
+Thanks.
+
+>  seconds.  Setting a pretimeout to zero disables it.
+>  
+>  There is also a get function for getting the pretimeout:
 > 
-> it seems your only objection is 'rcu_head' still being there and rebasing
-> on top of yours will fix it...
 
-Almost. I just wanted to leave in place struct sk_filter for the
-coming up generalization, that structure should contain the refcnt,
-rcu_head and the struct bpf_prog after some of your follow up patches.
-Please, also leave sk_filter_charge/uncharge/get_filter whatever will
-provide the room the generalization under net/core/filter.c, not need
-to move these to kernel/bpf/
 
-After my patch (and your follow up), we don't have sloppy usage of
-rcu_head for unattached filter anymore and I guess Willem is going to
-same save bytes in his iptables/bpf rules given that he can directly
-use bpf_prog instead of sk_filter.
+-- 
+~Randy
