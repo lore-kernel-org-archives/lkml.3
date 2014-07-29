@@ -1,44 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863AbaG2Ofl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 10:35:41 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:45528 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741AbaG2Ofj (ORCPT
+	id S1753684AbaG2OjY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 10:39:24 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:37170 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719AbaG2OjW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 10:35:39 -0400
-Date: Tue, 29 Jul 2014 16:35:32 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Ursula Braun <ubraun@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>,
-        linux-s390@vger.kernel.org, linux390@de.ibm.com,
-        Ursula Braun <ursula.braun@de.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] s390: net: ctcm_main.c: Cleaning up missing
- null-terminate in conjunction with strncpy
-Message-ID: <20140729143532.GB4202@osiris>
-References: <1406385234-3123-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <1406639463.13705.9.camel@BR9GV9YG.de.ibm.com>
- <CAFo99gb2sSHVhDG0x6FzYi+YcKT7hQnu7qmUG=kaXyNaq4vKzw@mail.gmail.com>
+	Tue, 29 Jul 2014 10:39:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFo99gb2sSHVhDG0x6FzYi+YcKT7hQnu7qmUG=kaXyNaq4vKzw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072914-0342-0000-0000-00000096B19F
+X-Originating-IP: [95.21.62.104]
+In-Reply-To: <53D79AD3.8020700@suse.de>
+References: <1405704009-8430-1-git-send-email-afaerber@suse.de>
+	<1405704009-8430-4-git-send-email-afaerber@suse.de>
+	<CABxcv=kP2PCcNCtM1WUXx5wGG4m-jdw-P1dw0boaSwdJpoX=jQ@mail.gmail.com>
+	<CAD=FV=V-7+Jj7b8-fQL1PiQhNmhiGOPJzitGd__OUQLDteO_8g@mail.gmail.com>
+	<CABxcv=nDsKSdDtVZKpcTP+=3pbeTswJRCUvvXVx98p+1Zzz0Bg@mail.gmail.com>
+	<53D79AD3.8020700@suse.de>
+Date: Tue, 29 Jul 2014 16:39:19 +0200
+Message-ID: <CABxcv=mALxA=dK0Ue_LC1Qz1HUsvf3C4h13q7FgDv+PEoKvRNw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4] ARM: dts: exynos5250: Fold common ChromeOS parts
+ into Snow
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
+Cc: Doug Anderson <dianders@chromium.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "moderated list:ARM/SAMSUNG ARM A..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 03:19:47PM +0200, Rickard Strandqvist wrote:
-> > It is guaranteed that the string ch->id always fits into CTCM_ID_SIZE.
-> > What's in this case the benefit of replacing strncpy() by strlcpy()
-> > here?
-> 
-> If it is really so! It can just as well replacing it with strcpy...
+Hello Andreas,
 
-Or.. just leave the code alone.
+On Tue, Jul 29, 2014 at 3:00 PM, Andreas Färber <afaerber@suse.de> wrote:
+> Hi Javier and Doug,
+>
+>
+> Hm, in different context it was stated that device trees shouldn't rely
+> on bootloader behavior (for a /memory node on Zynq we ended up
+> specifying the size cell with the real value despite U-Boot overriding
+> it to a lesser value).
+>
 
+Well is not strictly the same, the memory node is a hardware
+description while the chosen node is one of those exceptional nodes
+that don't represent a real device. Also the usage for the memory node
+is marked as required in ePAR while the later is marked as optional.
+
+> Can we instead settle on filling this node with defaults? :)
+> bootargs = "console=tty1"; would be my choice for Spring. Would that be
+> applicable for Snow as well?
+> Not sure how to specify that via linux,stdout-path property.
+>
+> I believe this would be a follow-up patch either way.
+>
+> Since there's at least two series out there trying to fiddle with
+> -cros-common.dtsi, including one that drops the slot sub-node of the MMC
+> and one that adds CPU power supply, it would be nice if we can get the
+> -cros-common parts sorted out and applied. Can you ack/review 1-2?
+> Should I squash them in a v3?
+>
+
+A sensible default makes sense to me and yes it should be a follow-up
+patch anyways.
+
+> Thanks,
+> Andreas
+>
+> --
+
+Best regards,
+Javier
