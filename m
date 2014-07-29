@@ -1,105 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738AbaG2QHA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 12:07:00 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:45874
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291AbaG2QG7 (ORCPT
+	id S1753787AbaG2QIB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 12:08:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38342 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724AbaG2QIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 12:06:59 -0400
-Date: Tue, 29 Jul 2014 18:06:56 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Aditya Kali <adityakali@google.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 0/5] RFC: CGroup Namespaces
-Message-ID: <20140729160656.GA6980@mail.hallyn.com>
-References: <1405626731-12220-1-git-send-email-adityakali@google.com>
- <20140724163628.GN26600@ubuntumail>
- <CAGr1F2GcAema-E2q6PFj=R0Z505iD7JshrMuMdfPTJ95wMiQMA@mail.gmail.com>
- <20140729045159.GB31047@mail.hallyn.com>
- <CALCETrW5yQLo-SvDgqjt881OD1GnuxMmGKjoohYT4nwtYw=9+w@mail.gmail.com>
+	Tue, 29 Jul 2014 12:08:00 -0400
+Date: Tue, 29 Jul 2014 18:07:54 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140729160754.GW20603@laptop.programming.kicks-ass.net>
+References: <20140728225556.GA19493@linux.vnet.ibm.com>
+ <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140729075055.GY19379@twins.programming.kicks-ass.net>
+ <20140729155747.GO11241@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALCETrW5yQLo-SvDgqjt881OD1GnuxMmGKjoohYT4nwtYw=9+w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140729155747.GO11241@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andy Lutomirski (luto@amacapital.net):
-> On Mon, Jul 28, 2014 at 9:51 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> > Quoting Aditya Kali (adityakali@google.com):
-> >> Thank you for your review. I have tried to respond to both your emails here.
-> >>
-> >> On Thu, Jul 24, 2014 at 9:36 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
-> >> > Quoting Aditya Kali (adityakali@google.com):
-> >> >> Background
-> >> >>   Cgroups and Namespaces are used together to create “virtual”
-> >> >>   containers that isolates the host environment from the processes
-> >> >>   running in container. But since cgroups themselves are not
-> >> >>   “virtualized”, the task is always able to see global cgroups view
-> >> >>   through cgroupfs mount and via /proc/self/cgroup file.
-> >> >>
-> >> > Hi,
-> >> >
-> >> > A few questions/comments:
-> >> >
-> >> > 1. Based on this description, am I to understand that after doing a
-> >> >    cgroupns unshare, 'mount -t cgroup cgroup /mnt' by default will
-> >> >    still mount the global root cgroup?  Any plans on "changing" that?
-> >>
-> >> This is suggested in the "Possible Extensions of CGROUPNS" section.
-> >> More details below.
-> >>
-> >> >    Will attempts to change settings of a cgroup which is not under
-> >> >    our current ns be rejected?  (That should be easy to do given your
-> >> >    patch 1/5).  Sorry if it's done in the set, I'm jumping around...
-> >> >
-> >>
-> >> Currently, only 'cgroup_attach_task', 'cgroup_mkdir' and
-> >> 'cgroup_rmdir' of cgroups outside of cgroupns-root are prevented. The
-> >> read/write of actual cgroup properties are not prevented. Usual
-> >> permission checks continue to apply for those. I was hoping that
-> >> should be enough, but see more comments towards the end.
-> >>
-> >> > 2. What would be the reprecussions of allowing cgroupns unshare so
-> >> >    long as you have ns_capable(CAP_SYS_ADMIN) to the user_ns which
-> >> >    created your current ns cgroup?  It'd be a shame if that wasn't
-> >> >    on the roadmap.
-> >> >
-> >>
-> >> Its certainly on the roadmap, just that some logistics were not clear
-> >> at this time. As pointed out by Andy Lutomirski on [PATCH 5/5] of this
-> >> series, if we allow cgroupns creation to ns_capable(CAP_SYS_ADMIN)
-> >> processes, we may need some kind of explicit permission from the
-> >> cgroup subsystem to allow this. One approach could be an explicit
-> >
-> > So long as you do ns_capable(cgroup_ns->user_ns, CAP_SYS_ADMIN) I think
-> > you're fine.
-> >
-> > The only real problem I can think of with unsharing a cgroup_ns is that
-> > you could lock a setuid-root application someplace it wasn't expecting.
-> > The above check guarantees that you were privileged enough that you'd
-> > better be trusted in this user namespace.
-> >
-> > (Unless there is some possible interaction I'm overlooking)
+On Tue, Jul 29, 2014 at 08:57:47AM -0700, Paul E. McKenney wrote:
+> On Tue, Jul 29, 2014 at 09:50:55AM +0200, Peter Zijlstra wrote:
+> > On Mon, Jul 28, 2014 at 03:56:12PM -0700, Paul E. McKenney wrote:
+> > > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > > index bc1638b33449..a0d2f3a03566 100644
+> > > --- a/kernel/sched/core.c
+> > > +++ b/kernel/sched/core.c
+> > > @@ -2762,6 +2762,7 @@ need_resched:
+> > >  		} else {
+> > >  			deactivate_task(rq, prev, DEQUEUE_SLEEP);
+> > >  			prev->on_rq = 0;
+> > > +			rcu_note_voluntary_context_switch(prev);
+> > >  
+> > >  			/*
+> > >  			 * If a worker went to sleep, notify and ask workqueue
+> > > @@ -2828,6 +2829,7 @@ asmlinkage __visible void __sched schedule(void)
+> > >  	struct task_struct *tsk = current;
+> > >  
+> > >  	sched_submit_work(tsk);
+> > > +	rcu_note_voluntary_context_switch(tsk);
+> > >  	__schedule();
+> > >  }
+> > 
+> > Yeah, not entirely happy with that, you add two calls into one of the
+> > hotest paths of the kernel.
 > 
-> I think that, if it's done this way, you'd have to unshare cgroupns
-> before unsharing userns, since you forfeit that capability when you
-> unshare your userns.  That means that the new cgroupns ends up being
-> associated w/ the root userns, which may not be what you want.
+> I did look into leveraging counters, but cannot remember why I decided
+> that this was a bad idea.  I guess it is time to recheck...
 > 
-> You could unshare both namespaces in one syscall and give that some
-> magic semantics, but that's kind of weird.  It would be nice if you
-> could unshare your userns and temporarily retains caps in the parent,
-> but there is no such mechanism right now.
+> The ->nvcsw field in the task_struct structure looks promising:
+> 
+> o	Looks like it does in fact get incremented in __schedule() via
+> 	the switch_count pointer.
+> 
+> o	Looks like it is unconditionally compiled in.
+> 
+> o	There are no memory barriers, but a synchronize_sched()
+> 	should take care of that, given that this counter is
+> 	incremented with interrupts disabled.
 
-Hm, good point.
+Well, there's obviously the actual context switch, which should imply an
+actual MB such that tasks are self ordered even when execution continues
+on another cpu etc..
+
+> So I should be able to snapshot the task_struct structure's ->nvcsw
+> field and avoid the added code in the fastpaths.
+> 
+> Seem plausible, or am I confused about the role of ->nvcsw?
+
+Nope, that's the 'I scheduled to go to sleep' counter.
+
+There is of course the 'polling' issue I raised in a further email...
+
+> > And I'm still not entirely sure why, your 0/x babbled something about
+> > trampolines, but I'm not sure I understand how those lead to this.
+> 
+> Steven Rostedt sent an email recently giving more detail.  And of course
+> now I am having trouble finding it.  Maybe he will take pity on us and
+> send along a pointer to it.  ;-)
+
+Yah, would make good Changelog material that ;-)
