@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133AbaG2JBj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 05:01:39 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47043 "EHLO mga01.intel.com"
+	id S1753158AbaG2JCM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 05:02:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39486 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753109AbaG2JBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 05:01:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="365413791"
-Date: Tue, 29 Jul 2014 17:02:42 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>, hpa@zytor.com,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        x86@kernel.org, David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        Yong Wang <yong.y.wang@linux.intel.com>
-Subject: Re: [PATCH v2] x86, hotplug: fix llc shared map unreleased during
- cpu hotplug
-Message-ID: <20140729090242.GA9959@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1406016292-55968-1-git-send-email-wanpeng.li@linux.intel.com>
- <53CF78A7.5070302@jp.fujitsu.com>
- <20140729070626.GA9635@kernel>
- <53D74DD2.6040306@jp.fujitsu.com>
- <20140729083359.GA11179@pd.tnic>
+	id S1753116AbaG2JCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 05:02:11 -0400
+Message-ID: <53D76310.6000006@suse.cz>
+Date: Tue, 29 Jul 2014 11:02:08 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140729083359.GA11179@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm:;
+Subject: Re: [PATCH v5 02/14] mm, compaction: defer each zone individually
+ instead of preferred zone
+References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-3-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1407281649570.8998@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1407281649570.8998@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 10:33:59AM +0200, Borislav Petkov wrote:
->On Tue, Jul 29, 2014 at 04:31:30PM +0900, Yasuaki Ishimatsu wrote:
->> >>I posted a latest patch as follows:
->> >>https://lkml.org/lkml/2014/7/22/1018
->> >>
->> >>Could you confirm the patch fixes your issue?
->> >
->> >Sorry for the late, there is still call trace w/ your patch applied. The
->> >call trace is in attachment.
->> 
->> Thank you for reporting the result. As Borislav said, your v2 patch
->> is necessary for fixing your issue.
+On 07/29/2014 01:59 AM, David Rientjes wrote:
+>> --- a/mm/compaction.c
+>> +++ b/mm/compaction.c
+>> @@ -1122,28 +1122,27 @@ int sysctl_extfrag_threshold = 500;
+>>    * @nodemask: The allowed nodes to allocate from
+>>    * @mode: The migration mode for async, sync light, or sync migration
+>>    * @contended: Return value that is true if compaction was aborted due to lock contention
+>> - * @page: Optionally capture a free page of the requested order during compaction
 >
->..
->
->> >>>Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> 
->> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->
->Ok, Wanpeng, please send a cleaner version of your patch with a
->simplified backtrace in it - the addresses will make no sense anyway so
->you can do this:
->
->Call Trace:
->load_balance
->? _raw_spin_unlock_irqrestore
->idle_balance
->...
->
+> Never noticed this non-existant formal before.
 
-Just send out the new version.
+It's a leftover from the first Mel's page capture attempt that was 
+partially reverted.
 
-Regards,
-Wanpeng Li 
+>> + * @candidate_zone: Return the zone where we think allocation should succeed
+>>    *
+>>    * This is the main entry point for direct page compaction.
+>>    */
+>>   unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>>   			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+>> -			enum migrate_mode mode, bool *contended)
+>> +			enum migrate_mode mode, bool *contended,
+>> +			struct zone **candidate_zone)
+>>   {
+>>   	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+>>   	int may_enter_fs = gfp_mask & __GFP_FS;
+>>   	int may_perform_io = gfp_mask & __GFP_IO;
+>>   	struct zoneref *z;
+>>   	struct zone *zone;
+>> -	int rc = COMPACT_SKIPPED;
+>> +	int rc = COMPACT_DEFERRED;
+>>   	int alloc_flags = 0;
+>>
+>>   	/* Check if the GFP flags allow compaction */
+>>   	if (!order || !may_enter_fs || !may_perform_io)
+>>   		return rc;
+>>
+>
+> It doesn't seem right that if we called try_to_compact_pages() in a
+> context where it is useless (order-0 or non-GFP_KERNEL allocation) that we
+> would return COMPACT_DEFERRED.  I think the existing semantics before the
+> patch, that is
+>
+>   - deferred: compaction was tried but failed, so avoid subsequent calls in
+>     the near future that may be potentially expensive, and
+>
+>   - skipped: compaction wasn't tried because it will be useless
+>
+> is correct and deferred shouldn't take on another meaning, which now will
+> set deferred_compaction == true in the page allocator.  It probably
+> doesn't matter right now because the only check of deferred_compaction is
+> effective for __GFP_NO_KSWAPD, i.e. it is both high-order and GFP_KERNEL,
+> but it seems returning COMPACT_SKIPPED here would also work fine and be
+> more appropriate.
 
->so that we can still see how it happens.
->
->Thanks.
->
->-- 
->Regards/Gruss,
->    Boris.
->
->Sent from a fat crate under my desk. Formatting is fine.
->--
+You're right. That was an oversight, not intention. Thanks for catching 
+that.
+
