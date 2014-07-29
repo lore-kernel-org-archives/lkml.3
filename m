@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871AbaG2MFc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 08:05:32 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:51653 "EHLO mail.mev.co.uk"
+	id S1753637AbaG2MF7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 08:05:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43251 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751358AbaG2L6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 07:58:43 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 04/19] staging: comedi: amplc_pci230: blank lines aren't necessary before a close brace '}'
-Date: Tue, 29 Jul 2014 12:58:12 +0100
-Message-Id: <1406635107-27950-5-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1406635107-27950-1-git-send-email-abbotti@mev.co.uk>
-References: <1406635107-27950-1-git-send-email-abbotti@mev.co.uk>
+	id S1753148AbaG2MF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 08:05:57 -0400
+Date: Tue, 29 Jul 2014 14:05:55 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
+        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org, jack@suse.cz
+Subject: Re: Is warn_on() right reply for i/o error?
+Message-ID: <20140729120555.GB5944@quack.suse.cz>
+References: <20140724152721.GA4771@amd.pavel.ucw.cz>
+ <20140724192938.GM6673@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140724192938.GM6673@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch issues: "CHECK: Blank lines aren't necessary before a
-close brace '}'".
+On Thu 24-07-14 15:29:38, Ted Tso wrote:
+> On Thu, Jul 24, 2014 at 05:27:22PM +0200, Pavel Machek wrote:
+> > Hi!
+> > 
+> > Just... I know, I should not be unscrewing hard drive cover while
+> > operating.
+> > 
+> > But on the other hand... WARN_ON() does not sound like right reply for
+> > a disk failure... right?
+> 
+> Actually, it can be worse than that.  If a hard drive disappears out
+> from under you while writeback is happening, it's possible to get
+> crashes in bdi_writeack_workfn() because you can have races between
+> bdi_unregister() and bdi_writeback_workfn(), since the latter requeues
+> itself and flush_delayed_work() can return while
+> bdi_writeback_workfn() is still executing.
+  This should be fixed by 5acda9d12dcf1ad0d9a5a2a7c646de3472fa7555 I wrote
+in April. But there are certainly other races in that code...
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/amplc_pci230.c | 4 ----
- 1 file changed, 4 deletions(-)
+> This looks like it's a related problem, where the block device gets
+> unregistered (and this happens in the block device layer without it
+> telling the file system that the disk drive is about to disappear out
+> from under it), and occasionally, Bad Stuff Happens.  :-(
+  Yeah.
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
-index 0609e51..51f28b6 100644
---- a/drivers/staging/comedi/drivers/amplc_pci230.c
-+++ b/drivers/staging/comedi/drivers/amplc_pci230.c
-@@ -739,7 +739,6 @@ static void put_resources(struct comedi_device *dev, unsigned int res_mask,
- 			res_mask &= ~b;
- 			if (devpriv->res_owner[i] == owner)
- 				devpriv->res_owner[i] = OWNER_NONE;
--
- 		}
- 	}
- 	spin_unlock_irqrestore(&devpriv->res_spinlock, irqflags);
-@@ -792,7 +791,6 @@ static unsigned int pci230_choose_clk_count(uint64_t ns, unsigned int *count,
- 		cnt = divide_ns(ns, pci230_timebase[clk_src], flags);
- 		if ((cnt <= 65536) || (clk_src == CLK_1KHZ))
- 			break;
--
- 	}
- 	*count = cnt;
- 	return clk_src;
-@@ -1448,7 +1446,6 @@ static void pci230_ao_start(struct comedi_device *dev,
- 					   & ~PCI230P2_DAC_TRIG_MASK) |
- 			    scantrig;
- 			outw(devpriv->daccon, dev->iobase + PCI230_DACCON);
--
- 		}
- 		switch (cmd->scan_begin_src) {
- 		case TRIG_TIMER:
-@@ -1512,7 +1509,6 @@ static int pci230_ao_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		/* Claim Z2-CT1. */
- 		if (!get_one_resource(dev, RES_Z2CT1, OWNER_AOCMD))
- 			return -EBUSY;
--
- 	}
- 
- 	/* Get number of scans required. */
+								Honza
 -- 
-2.0.0
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
