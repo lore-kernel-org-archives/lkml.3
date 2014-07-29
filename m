@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850AbaG2Mpn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 08:45:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44083 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828AbaG2Mpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 08:45:41 -0400
-Message-ID: <53D79771.1020406@suse.de>
-Date: Tue, 29 Jul 2014 14:45:37 +0200
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753079AbaG2MrB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 08:47:01 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48025 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907AbaG2Mq7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 08:46:59 -0400
+Date: Tue, 29 Jul 2014 14:46:41 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
+In-Reply-To: <1629826.p5Zlf8Riij@vostro.rjw.lan>
+Message-ID: <alpine.DEB.2.10.1407291445570.4129@nanos>
+References: <20140724212620.GO3935@laptop> <alpine.DEB.2.10.1407281412060.23352@nanos> <2706544.qjOZ3fREQ9@vostro.rjw.lan> <1629826.p5Zlf8Riij@vostro.rjw.lan>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "moderated list:ARM/SAMSUNG ARM A..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/4] ARM: dts: exynos5250: Fold common ChromeOS parts
- into Snow
-References: <1405704009-8430-1-git-send-email-afaerber@suse.de>	<1405704009-8430-4-git-send-email-afaerber@suse.de> <CAD=FV=VK0KJknJ2099S7fEDzBnpPCrpSZ36WPkJB156GpcyEfg@mail.gmail.com>
-In-Reply-To: <CAD=FV=VK0KJknJ2099S7fEDzBnpPCrpSZ36WPkJB156GpcyEfg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug,
+On Tue, 29 Jul 2014, Rafael J. Wysocki wrote:
 
-Am 25.07.2014 18:02, schrieb Doug Anderson:
-> On Fri, Jul 18, 2014 at 10:20 AM, Andreas Färber <afaerber@suse.de> wrote:
->> +/*
->> + * On Snow we've got SIP WiFi and so can keep drive strengths low to
->> + * reduce EMI.
->> + */
->> +&mmc_3 {
->> +       status = "okay";
->> +       num-slots = <1>;
->> +       supports-highspeed;
->> +       broken-cd;
->> +       card-detect-delay = <200>;
->> +       samsung,dw-mshc-ciu-div = <3>;
->> +       samsung,dw-mshc-sdr-timing = <2 3>;
->> +       samsung,dw-mshc-ddr-timing = <1 2>;
->> +
->> +       slot@0 {
->> +               reg = <0>;
->> +               bus-width = <4>;
->> +               pinctrl-names = "default";
->> +               pinctrl-0 = <&sd3_clk &sd3_cmd &sd3_bus4>;
+> On Monday, July 28, 2014 11:53:15 PM Rafael J. Wysocki wrote:
+> > On Monday, July 28, 2014 02:33:41 PM Thomas Gleixner wrote:
+> > > On Mon, 28 Jul 2014, Peter Zijlstra wrote:
+> > > > On Sat, Jul 26, 2014 at 01:49:17PM +0200, Rafael J. Wysocki wrote:
 > 
-> This actually looks like a bug on snow.  I don't think these pinctrl
-> statements are taking effect and I think they belong at the mmc level,
-> not the slot level.  That's not a new bug introduced by you, though.
-> Mind fixing it?  You've already got it right for Spring mmc_1.
+> [cut]
+> 
+> > > So we are not going to make everything a single stupid flag and limit
+> > > the usability of existing code. We rather go and try to remove the
+> > > stupid flag before it becomes more wide spread.
+> > > 
+> > > And we cannot treat the wakeup thing the same way as the
+> > > IRQF_NO_SUSPEND flag, because there is hardware where the irq line
+> > > must be disabled at the normal (non suspend) interrupt controller, and
+> > > the wake mechanism tells the PM microcontroller to monitor the
+> > > interrupt line and kick the machine back to life.
+> > > 
+> > > So we need to very carefully look at all the existing cases instead of
+> > > yelling crap and inflicting x86 specific horror on everyone. I said on
+> > > friday, that I need to look at ALL use cases first and I meant it.
+> > 
+> > Regardless of the use case, I don't think it is necessary to manipulate
+> > the interrupt controller settings before the syscore_suspend stage, because
+> > if an interrupt happens earlier, we need to handle it pretty much in a normal
+> > way, unless it has been suspended.
+> > 
+> > So I'd argue for not using anything like enable_irq_wake() that goes all
+> > the way to the hardware in drivers.  Instead, we could allow drivers to
+> > mark interrupts as "set this up for system wakeup" and really do the setup
+> > right before putting the platform into the final "suspended" state.  And that
+> > is totally independend of the IRQF_NO_SUSPEND thing.
+> 
+> In addition to that we need the interrupt handler of the driver that requested
+> the irq to be set up for system wakeup to be invoked after suspend_device_irqs()
+> in case there are interrupts that should abort the suspend transition or we
+> can lose a wakeup event.  So whatever interface we decide to use it has to
+> affect suspend/resume_device_irqs() pretty much in the same way as the
+> IRQF_NO_SUSPEND flag.
 
-I was taught never to mix code movements with functional changes, as it
-hides them even if mentioned in the commit message. Would you like me to
-fix it pre- or post-move? Post-move would be easiest for me. ;)
+Right, that's a different issue. We probably want that even for the
+existing irq_wake() users.
 
-Regards,
-Andreas
+Thanks,
 
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+	tglx
