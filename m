@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990AbaG2T2P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 15:28:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693AbaG2T2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 15:28:14 -0400
-Date: Tue, 29 Jul 2014 21:25:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Will Drewry <wad@chromium.org>, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Alexei Starovoitov <ast@plumgrid.com>, hpa@zytor.com,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 3/5] x86: Split syscall_trace_enter into two phases
-Message-ID: <20140729192555.GB6308@redhat.com>
-References: <cover.1406604806.git.luto@amacapital.net> <714cf438762d342673b3b131d5c90bc69ca921a9.1406604806.git.luto@amacapital.net>
+	id S1754050AbaG2T2v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 15:28:51 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33396 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaG2T2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 15:28:49 -0400
+Date: Tue, 29 Jul 2014 21:28:43 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Dmitry Torokhov <dtor@google.com>
+Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
+Message-ID: <20140729192843.GP3935@laptop>
+References: <20140724212620.GO3935@laptop>
+ <13290270.IfKaUSRMLR@vostro.rjw.lan>
+ <20140725055847.GQ3935@laptop>
+ <20140729192008.GH3711@ld-irv-0074>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <714cf438762d342673b3b131d5c90bc69ca921a9.1406604806.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140729192008.GH3711@ld-irv-0074>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28, Andy Lutomirski wrote:
->
-> +long syscall_trace_enter_phase2(struct pt_regs *regs, u32 arch,
-> +				unsigned long phase1_result)
-> +{
-> +	long ret = 0;
-> +	u32 work = ACCESS_ONCE(current_thread_info()->flags) &
-> +		_TIF_WORK_SYSCALL_ENTRY;
-> +
-> +	BUG_ON(regs != task_pt_regs(current));
->  
->  	/*
->  	 * If we stepped into a sysenter/syscall insn, it trapped in
-> @@ -1463,17 +1569,20 @@ long syscall_trace_enter(struct pt_regs *regs)
->  	 * do_debug() and we need to set it again to restore the user
->  	 * state.  If we entered on the slow path, TF was already set.
->  	 */
-> -	if (test_thread_flag(TIF_SINGLESTEP))
-> +	if (work & _TIF_SINGLESTEP)
->  		regs->flags |= X86_EFLAGS_TF;
+On Tue, Jul 29, 2014 at 12:20:08PM -0700, Brian Norris wrote:
 
-This is minor, I won't argue, but this can be moved into phase1(), afaics.
+> I'm curious what you mean. Are you referring to the fact that its input
+> is simply an IRQ number (regardless of whether the IRQ is shared), not
+> something that identifies the particular handler (e.g., struct
+> irqaction)?
 
-Oleg.
-
+Yes. I know that shared stuff is a massive head-ache, but I feel we
+should not introduce primitives that do not work with it.
