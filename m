@@ -1,105 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628AbaG2Xp3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 19:45:29 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:36627 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754189AbaG2XpZ (ORCPT
+	id S1754644AbaG2Xqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 19:46:48 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:59587 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030AbaG2Xqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 19:45:25 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: use IORESOURCE_REG resource type for non-translatable addresses
- in DT
-To: Stanimir Varbanov <svarbanov@mm-sol.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Herring <rob.herring@linaro.org>, Rob Herring <robherring2@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+	Tue, 29 Jul 2014 19:46:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <fe3cfe03047cc170bcde652175a00146d290bb20.1406177531.git.luto@amacapital.net>
+References: <cover.1406177531.git.luto@amacapital.net> <fe3cfe03047cc170bcde652175a00146d290bb20.1406177531.git.luto@amacapital.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 29 Jul 2014 16:46:25 -0700
+Message-ID: <CALCETrUQtBeu+4f0r=re0uu_5922X0eTNKLB3M4=bRXv3tHxaQ@mail.gmail.com>
+Subject: Re: [PATCH v5 2/5] random: Add and use arch_get_rng_seed
+To: kvm list <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Boyd <sboyd@codeaurora.org>, Mark Brown <broonie@linaro.org>
-In-Reply-To: <53D7AA72.6010309@mm-sol.com>
-References: <53D788A7.4020303@mm-sol.com> <3794875.CZFbAag5Sv@wuerfel>
-	<53D7AA72.6010309@mm-sol.com>
-Date: Tue, 29 Jul 2014 17:45:22 -0600
-Message-Id: <20140729234522.E9FF1C40738@trevor.secretlab.ca>
+        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jul 2014 17:06:42 +0300, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
-> Arnd, thanks for the comments.
-> 
-> On 07/29/2014 03:00 PM, Arnd Bergmann wrote:
-> > On Tuesday 29 July 2014 14:42:31 Stanimir Varbanov wrote:
-> >>         taddr = of_translate_address(dev, addrp);
-> >> -       if (taddr == OF_BAD_ADDR)
-> >> -               return -EINVAL;
-> >> +       /*
-> >> +        * if the address is non-translatable to cpu physical address
-> >> +        * fallback to a IORESOURCE_REG resource.
-> >> +        */
-> >> +       if (taddr == OF_BAD_ADDR) {
-> >> +               memset(r, 0, sizeof(*r));
-> >> +               taddr = of_read_number(addrp, 1);
-> >> +               if (taddr == OF_BAD_ADDR)
-> >> +                       return -EINVAL;
-> >> +               r->start = taddr;
-> >> +               r->end = taddr + size - 1;
-> >> +               r->flags = IORESOURCE_REG;
-> >> +               r->name = name ? name : dev->full_name;
-> >> +               return 0;
-> >> +       }
-> >> +
-> > 
-> > I don't think that everything returning OF_BAD_ADDR makes sense
-> > to turn into IORESOURCE_REG. It could be an e.g. invalid DT
-> > representation, a node with #size-cells=<0>, or it could be
-> > something that gets translated one or more nodes up in the
-> > tree before it reaches a bus without a ranges property.
-> > 
-> > Also, you should not rely on #address-cells being hardcoded
-> > to <1> above.
-> > 
-> 
-> This was just an example. Of course it has many issues and probaly it is
-> wrong:) The main goal was to understand does IORESOURCE_REG resource
-> type and parsing the *reg* properties for non-translatable addresses are
-> feasible. And also does it acceptable by community and OF platform
-> maintainers.
+On Wed, Jul 23, 2014 at 9:57 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> Currently, init_std_data contains its own logic for using arch
+> random sources.  This replaces that logic with a generic function
+> arch_get_rng_seed that allows arch code to supply its own logic.
+> The default implementation tries arch_get_random_seed_long and
+> arch_get_random_long individually.
+>
+> The only functional change here is that random_get_entropy() is used
+> unconditionally instead of being used only when the arch sources
+> fail.  This may add a tiny amount of security.
 
-The use case is actually very different from of_address_to_resource or
-of_get_address() because those APIs explicitly return physical memory
-addresses from the CPU perspective. It makes more sense to create a new
-API that doesn't attempt to translate the reg address. Alternately, a
-new API that only translates upto a given parent node.
+tytso, are you okay with this approach?  I'd be happy to rework this
+if you prefer some other way of doing it.
 
-You don't want to automagically translate as far up the tree as
-possible because the code won't know what node the address is associated
-with. Translated addresses only make sense if the node it was translated
-to as also known.
+--Andy
 
-g.
+>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>  drivers/char/random.c  | 14 +++++++++++---
+>  include/linux/random.h | 40 ++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 51 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/char/random.c b/drivers/char/random.c
+> index 0a7ac0a..be7a94e 100644
+> --- a/drivers/char/random.c
+> +++ b/drivers/char/random.c
+> @@ -1236,6 +1236,10 @@ void get_random_bytes_arch(void *buf, int nbytes)
+>  }
+>  EXPORT_SYMBOL(get_random_bytes_arch);
+>
+> +static void seed_entropy_store(void *ctx, u32 data)
+> +{
+> +       mix_pool_bytes((struct entropy_store *)ctx, &data, sizeof(data), NULL);
+> +}
+>
+>  /*
+>   * init_std_data - initialize pool with system data
+> @@ -1251,15 +1255,19 @@ static void init_std_data(struct entropy_store *r)
+>         int i;
+>         ktime_t now = ktime_get_real();
+>         unsigned long rv;
+> +       char log_prefix[128];
+>
+>         r->last_pulled = jiffies;
+>         mix_pool_bytes(r, &now, sizeof(now), NULL);
+>         for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
+> -               if (!arch_get_random_seed_long(&rv) &&
+> -                   !arch_get_random_long(&rv))
+> -                       rv = random_get_entropy();
+> +               rv = random_get_entropy();
+>                 mix_pool_bytes(r, &rv, sizeof(rv), NULL);
+>         }
+> +
+> +       sprintf(log_prefix, "random: seeded %s pool", r->name);
+> +       arch_get_rng_seed(r, seed_entropy_store, 8 * r->poolinfo->poolbytes,
+> +                         log_prefix);
+> +
+>         mix_pool_bytes(r, utsname(), sizeof(*(utsname())), NULL);
+>  }
+>
+> diff --git a/include/linux/random.h b/include/linux/random.h
+> index 57fbbff..81a6145 100644
+> --- a/include/linux/random.h
+> +++ b/include/linux/random.h
+> @@ -106,6 +106,46 @@ static inline int arch_has_random_seed(void)
+>  }
+>  #endif
+>
+> +#ifndef __HAVE_ARCH_GET_RNG_SEED
+> +
+> +/**
+> + * arch_get_rng_seed() - get architectural rng seed data
+> + * @ctx: context for the seed function
+> + * @seed: function to call for each u32 obtained
+> + * @bits_per_source: number of bits from each source to try to use
+> + * @log_prefix: beginning of log output (may be NULL)
+> + *
+> + * Synchronously load some architectural entropy or other best-effort
+> + * random seed data.  An arch-specific implementation should be no worse
+> + * than this generic implementation.  If the arch code does something
+> + * interesting, it may log something of the form "log_prefix with
+> + * 8 bits of stuff".
+> + *
+> + * No arch-specific implementation should be any worse than the generic
+> + * implementation.
+> + */
+> +static inline void arch_get_rng_seed(void *ctx,
+> +                                    void (*seed)(void *ctx, u32 data),
+> +                                    int bits_per_source,
+> +                                    const char *log_prefix)
+> +{
+> +       int i;
+> +
+> +       for (i = 0; i < bits_per_source; i += 8 * sizeof(long)) {
+> +               unsigned long rv;
+> +
+> +               if (arch_get_random_seed_long(&rv) ||
+> +                   arch_get_random_long(&rv)) {
+> +                       seed(ctx, (u32)rv);
+> +#if BITS_PER_LONG > 32
+> +                       seed(ctx, (u32)(rv >> 32));
+> +#endif
+> +               }
+> +       }
+> +}
+> +
+> +#endif /* __HAVE_ARCH_GET_RNG_SEED */
+> +
+>  /* Pseudo random number generator from numerical recipes. */
+>  static inline u32 next_pseudo_random32(u32 seed)
+>  {
+> --
+> 1.9.3
+>
 
-> 
-> > How about modifying of_get_address() rather than
-> > __of_address_to_resource() instead? You could introduce
-> > a new of_bus entry for each bus you expect to return
-> > an IORESOURCE_REG, or you could change of_bus_default_get_flags
-> > to return IORESOURCE_REG if the parent node has no ranges property
-> > and is not the root node.
-> 
-> IMO the clearer solution is to introduce a new of_bus bus. In that case
-> one possible problem will be how to distinguish the non-translatable and
-> the other buses. Also the *device_type* property is deprecated for non
-> PCI devices.
-> 
-> The second option will need to change the prototype of .get_flags method
-> to receive device_node structure.
-> 
-> Thoughts?
-> 
-> -- 
-> regards,
-> Stan
 
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
