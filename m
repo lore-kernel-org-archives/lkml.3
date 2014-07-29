@@ -1,139 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706AbaG2Nuc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 09:50:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35319 "EHLO mx1.redhat.com"
+	id S1753758AbaG2Nu7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 09:50:59 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36721 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753673AbaG2Nub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 09:50:31 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: <xen-devel@lists.xenproject.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Andrew Jones <drjones@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 3/4] xen/pvhvm: Unmap all PIRQs on startup and shutdown
-References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
-	<1405431640-649-4-git-send-email-vkuznets@redhat.com>
-	<53D6536E.70104@citrix.com>
-Date: Tue, 29 Jul 2014 15:50:19 +0200
-In-Reply-To: <53D6536E.70104@citrix.com> (David Vrabel's message of "Mon, 28
-	Jul 2014 14:43:10 +0100")
-Message-ID: <87d2coe0kk.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1750933AbaG2Nu5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 09:50:57 -0400
+From: "Murphy, Dan" <dmurphy@ti.com>
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
+Subject: Re: [v2] input: drv260x: Add TI drv260x haptics driver
+Thread-Topic: [v2] input: drv260x: Add TI drv260x haptics driver
+Thread-Index: AQHPqoRzccs1z7hlMk6AmjOpJP7QQQ==
+Date: Tue, 29 Jul 2014 13:50:48 +0000
+Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49DB2AAD@DFLE09.ent.ti.com>
+References: <1406566403-1436-1-git-send-email-dmurphy@ti.com>
+ <20140729093701.GJ2576@leverpostej>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Vrabel <david.vrabel@citrix.com> writes:
+Mark
 
-> On 15/07/14 14:40, Vitaly Kuznetsov wrote:
->> When kexec is being run PIRQs from Qemu-emulated devices are still
->> mapped to old event channels and new kernel has no information about
->> that. Trying to map them twice results in the following in Xen's dmesg:
->> 
->>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 8 already mapped
->>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 12 already mapped
->>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 1 already mapped
->>  ...
->> 
->>  and the following in new kernel's dmesg:
->> 
->>  [   92.286796] xen:events: Failed to obtain physical IRQ 4
->> 
->> The result is that the new kernel doesn't recieve IRQs for Qemu-emulated
->> devices. Address the issue by unmapping all mapped PIRQs on kernel shutdown
->> when kexec was requested and on every kernel startup. We need to do this
->> twice to deal with the following issues:
->> - startup-time unmapping is required to make kdump work;
->> - shutdown-time unmapping is required to support kexec-ing non-fixed kernels;
->> - shutdown-time unmapping is required to make Qemu-emulated NICs work after
->>   kexec (event channel is being closed on shutdown but no PHYSDEVOP_unmap_pirq
->>   is being performed).
->
-> I think this should be done only in one place -- just prior to exec'ing
-> the new kernel (including kdump kernels).
->
+Thanks for the feedback
 
-Thank you for your comments!
+On 07/29/2014 04:37 AM, Mark Rutland wrote:
+> On Mon, Jul 28, 2014 at 05:53:23PM +0100, Dan Murphy wrote:
+>> Add the TI drv260x haptics/vibrator driver.
+>> This device uses the input force feedback
+>> to produce a wave form to driver an
+>> ERM or LRA actuator device.
+>>
+>> The initial driver supports the devices
+>> real time playback mode.  But the device
+>> has additional wave patterns in ROM.
+>>
+>> This functionality will be added in
+>> future patchsets.
+>>
+>> Product data sheet is located here:
+>> http://www.ti.com/product/drv2605
+>>
+>> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+>> ---
+>>
+>> v2 - Fixed binding doc and patch headline - https://patchwork.kernel.org/patch/4619641/
+>>
+>>  .../devicetree/bindings/input/ti,drv260x.txt       |   44 ++
+>>  drivers/input/misc/Kconfig                         |    9 +
+>>  drivers/input/misc/Makefile                        |    1 +
+>>  drivers/input/misc/drv260x.c                       |  537 ++++++++++++++++++++
+>>  include/dt-bindings/input/ti-drv260x.h             |   30 ++
+>>  include/linux/input/drv260x.h                      |  181 +++++++
+>>  6 files changed, 802 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/input/ti,drv260x.txt
+>>  create mode 100644 drivers/input/misc/drv260x.c
+>>  create mode 100644 include/dt-bindings/input/ti-drv260x.h
+>>  create mode 100644 include/linux/input/drv260x.h
+>>
+>> diff --git a/Documentation/devicetree/bindings/input/ti,drv260x.txt b/Documentation/devicetree/bindings/input/ti,drv260x.txt
+>> new file mode 100644
+>> index 0000000..930429b
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/input/ti,drv260x.txt
+>> @@ -0,0 +1,44 @@
+>> +Texas Instruments - drv260x Haptics driver family
+>> +
+>> +The drv260x family serial control bus communicates through I2C protocols
+>> +
+>> +Required properties:
+>> +       - compatible - One of:
+>> +               "ti,drv2604" - DRV2604
+>> +               "ti,drv2605" - DRV2605
+>> +               "ti,drv2605l" - DRV2605L
+>> +       - reg -  I2C slave address
+>> +       - mode - Power up mode of the chip (defined in include/dt-bindings/input/ti-drv260x.h)
+>> +               DRV260X_RTP_MODE - Real time playback mode
+>> +               DRV260X_LRA_MODE - Linear Resonance Actuator mode (Piezoelectric)
+>> +               DRV260X_ERM_MODE - Eccentric Rotating Mass mode (Rotary vibrator)
+> 
+> What exactly are these, and why does the kernel not decide?
 
-The problem I'm fighting wiht atm is: with FIFO-based event channels we
-need to call evtchn_fifo_destroy() so next EVTCHNOP_init_control won't
-fail. I was intended to put evtchn_fifo_destroy() in
-EVTCHNOP_reset. That introduces a problem: we need to deal with
-store/console channels. It is possible to remap those from guest with
-EVTCHNOP_bind_interdomain (if we remember where they were mapped before)
-but we can't do it after we did evtchn_fifo_destroy() and we can't
-rebind them after kexec and performing EVTCHNOP_init_control as
-we can't remember where these channels were mapped to after kexec/kdump.
+The LRA and ERM are vibrator types.  These are specific to the product and the kernel cannot decide.
+The kernel driver needs to be told what type of vibrator is connected.  The driver then
+sets the voltages and other settings to drive the vibrator type safely. All vibrators are dumb and do not
+have IDs identifying themselves so there is no self discovery here.
 
-I see the following possible solutions:
-1) We put evtchn_fifo_destroy() in EVTCHNOP_init_control so
-EVTCHNOP_init_control can be called twice. No EVTCHNOP_reset is required
-in that case.
+RTP is not a vibrator type but just a mode you can place the device into.  I can probably remove that
+and have the user space or driver take care of that setting.
 
-2) Introduce special (e.g. 'EVTCHNOP_fifo_destroy') hypercall to do
-evtchn_fifo_destroy() without closing all channels. Alternatively we can
-avoid closing all channels in EVTCHNOP_reset when called with DOMID_SELF
-(as this mode is not being used atm) -- but that would look unobvious.
+> 
+>> +       - library_sel - Library to use at power up (defined in include/dt-bindings/input/ti-drv260x.h)
+> 
+> Please s/_/-/ in all property names.
+> 
+>> +               DRV260X_LIB_A - Pre-programmed Library
+>> +               DRV260X_LIB_B - Pre-programmed Library
+>> +               DRV260X_LIB_C - Pre-programmed Library
+>> +               DRV260X_LIB_D - Pre-programmed Library
+>> +               DRV260X_LIB_E - Pre-programmed Library
+>> +               DRV260X_LIB_F - Pre-programmed Library
+> 
+> What exactly are these, and why does the kernel not decide?
+> 
+>> +
+>> +Optional properties:
+>> +       - enable-gpio - gpio pin to enable/disable the device.
+>> +       - vib_rated_voltage - The rated voltage of the actuator.  If this is not
+>> +                                                 set then the value will be defaulted to 0x90 in the
+>> +                                                 driver.
+> 
+> What units is this in?
 
-3) Keep evtchn_fifo_destroy() in EVTCHNOP_reset but keep console/store
-channels -- I saw your concerns it is not safe, some sort of additional
-blocking will be required.
+Good catch I was thinking this when I was writing the documentation but forgot to add
+it.  I will fix the formatting here and below as well.
 
-4) Do the remapping boot time (query for store/console channels ->
-perform EVTCHNOP_reset -> rebind with EVTCHNOP_bind_interdomain).
+> 
+> Don't mention the driver, just say "if not 0x90" (but with a better
+> description of what 0x90 actually means).
+> 
 
-There is an additional problem: EVTCHNOP_bind_interdomain operation has
-local port as OUT parameter so we can't guarantee that remapping
-store/console channels will remap them to the same local channel they
-were mapped before EVTCHNOP_reset (and we have this information in hvm
-info: HVM_PARAM_CONSOLE_EVTCHN/HVM_PARAM_STORE_EVTCHN, ...). Not sure
-how to deal with that in case we go with remapping.
+OK
 
-Your thoughts would be very appreciated. Thank you again,
+>> +       - vib_overdrive_voltage - The overdrive voltage of the actuator.
+>> +                                                       If this is not set then the value
+>> +                                                       will be defaulted to 0x90 in the driver.
+> 
+> Similarly on both points.
+> 
+> [...]
+> 
 
->> --- a/arch/x86/xen/smp.c
->> +++ b/arch/x86/xen/smp.c
->> @@ -768,6 +768,7 @@ void xen_kexec_shutdown(void)
->>  #ifdef CONFIG_KEXEC
->>  	if (!kexec_in_progress)
->>  		return;
->> +	xen_unmap_all_pirqs();
->>  #endif
->>  }
->>  
->> diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
->> index c919d3d..7701c7f 100644
->> --- a/drivers/xen/events/events_base.c
->> +++ b/drivers/xen/events/events_base.c
->> @@ -1643,6 +1643,80 @@ void xen_callback_vector(void) {}
->>  static bool fifo_events = true;
->>  module_param(fifo_events, bool, 0);
->>  
->> +void xen_unmap_all_pirqs(void)
+Same as above as well
+
+>> +static int drv260x_probe(struct i2c_client *client,
+>> +                          const struct i2c_device_id *id)
 >> +{
->> +	int pirq, rc, gsi, irq, evtchn;
->> +	struct physdev_unmap_pirq unmap_irq;
->> +	struct irq_info *info;
->> +	struct evtchn_close close;
+>> +       struct drv260x_data *haptics;
+>> +       struct device_node *np = client->dev.of_node;
+>> +       struct drv260x_platform_data *pdata = client->dev.platform_data;
+>> +       struct ff_device *ff;
+>> +       int ret;
+>> +       int voltage;
 >> +
->> +	mutex_lock(&irq_mapping_update_lock);
+>> +       haptics = devm_kzalloc(&client->dev, sizeof(*haptics), GFP_KERNEL);
+>> +       if (!haptics)
+>> +               return -ENOMEM;
 >> +
->> +	list_for_each_entry(info, &xen_irq_list_head, list) {
->> +		if (info->type != IRQT_PIRQ)
->> +			continue;
->
-> I think you need to do this by querying Xen state rather than relying on
-> potentially bad guest state.  Particularly since you may crash while
-> holding irq_mapping_update_lock.
->
-> EVTCHNOP_status gets you the info you need I think.
->
-> David
+>> +       haptics->rated_voltage = DRV260X_DEF_OD_CLAMP_VOLT;
+>> +       haptics->rated_voltage = DRV260X_DEF_RATED_VOLT;
+>> +
+>> +       if (np) {
+>> +               ret = of_property_read_u32(np, "mode", &haptics->mode);
+>> +               if (ret < 0) {
+>> +                       dev_err(&client->dev,
+>> +                               "%s: No entry for mode\n", __func__);
+>> +
+>> +                       return ret;
+>> +               }
+> 
+> No sanity checking on the actual value?
+> 
+> As far as I can see, haptics->mode is an int, not a u32.
+> 
+
+Will fix this and all points below.
+
+>> +               ret = of_property_read_u32(np, "library_sel",
+>> +                                       &haptics->library);
+>> +               if (ret < 0) {
+>> +                       dev_err(&client->dev,
+>> +                               "%s: No entry for library selection\n", __func__);
+>> +
+>> +                       return ret;
+>> +               }
+> 
+> Sanity checking?
+> 
+> haptics->library is not a u32.
+> 
+>> +               ret = of_property_read_u32(np, "vib_rated_voltage",
+>> +                                       &voltage);
+>> +               if (!ret)
+>> +                       haptics->rated_voltage = drv260x_calculate_voltage(voltage);
+>> +
+>> +
+>> +               ret = of_property_read_u32(np, "vib_overdrive_voltage",
+>> +                                       &voltage);
+>> +               if (!ret)
+>> +                       haptics->overdrive_voltage = drv260x_calculate_voltage(voltage);
+>> +
+> 
+> And again, on both points.
+> 
+>> +       } else if (pdata) {
+>> +               haptics->mode = pdata->mode;
+>> +               haptics->library = pdata->library_selection;
+>> +               if (pdata->vib_overdrive_voltage)
+>> +                       haptics->overdrive_voltage = drv260x_calculate_voltage(pdata->vib_overdrive_voltage);
+>> +               if (pdata->vib_rated_voltage)
+>> +                       haptics->rated_voltage = drv260x_calculate_voltage(pdata->vib_rated_voltage);
+>> +       } else {
+>> +               dev_err(&client->dev, "Platform data not set\n");
+>> +               return -ENODEV;
+>> +       }
+>> +
+>> +       haptics->regulator = regulator_get(&client->dev, "vbat");
+> 
+> This wasn't in the binding.
+
+Yep will add it.
+
+
+Dan
+
+> 
+> Thanks,
+> Mark.
+> 
+
 
 -- 
-  Vitaly
+------------------
+Dan Murphy
