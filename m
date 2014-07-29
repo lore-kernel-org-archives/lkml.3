@@ -1,95 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434AbaG2Lb6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 07:31:58 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36485 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752947AbaG2Lby (ORCPT
+	id S1753242AbaG2Lc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 07:32:57 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:36472 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752947AbaG2Lc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 07:31:54 -0400
-Message-ID: <53D785F0.1000309@ti.com>
-Date: Tue, 29 Jul 2014 14:30:56 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>,
-        abdoulaye berthe <berthe.ab@gmail.com>,
-        "arm@kernel.org" <arm@kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Michael Buesch <m@bues.ch>, Greg KH <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <linux-mips@linux-mips.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH 3/3] driver:gpio remove all usage of gpio_remove retval
- in driver
-References: <CACRpkda6mzVdaN0cvOxpbsxWyCv2nGyDXOjZg_5aT8u7SSQeUw@mail.gmail.com>	<1405197014-25225-1-git-send-email-berthe.ab@gmail.com>	<1405197014-25225-4-git-send-email-berthe.ab@gmail.com> <CACRpkdasp9bLULT7NJM9nYX58rRSsQKXFddOLz9Ah6kp-j-3=Q@mail.gmail.com>
-In-Reply-To: <CACRpkdasp9bLULT7NJM9nYX58rRSsQKXFddOLz9Ah6kp-j-3=Q@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="nDvig6w1IaO5idwNJGff6KXjnBUdsJGt1"
+	Tue, 29 Jul 2014 07:32:56 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-37-53d78666e553
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <1406328445-63707-1-git-send-email-jaegeuk@kernel.org>
+ <1406328445-63707-4-git-send-email-jaegeuk@kernel.org>
+In-reply-to: <1406328445-63707-4-git-send-email-jaegeuk@kernel.org>
+Subject: RE: [f2fs-dev] [PATCH 04/11] f2fs: use radix_tree for ino management
+Date: Tue, 29 Jul 2014 19:32:08 +0800
+Message-id: <008001cfab20$d5e6ce50$81b46af0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Content-language: zh-cn
+Thread-index: AQH0/sFA7oYZ7Fd/hcfctysO+ZeFcgLB2M6cm1YjIUA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jQd20tuvBBrMfKlo8WT+L2eLSIneL
+	PXtPslhc3jWHzYHFY9OqTjaP3Qs+M3l83iQXwBzFZZOSmpNZllqkb5fAlTGzL7ngrXLFpL0/
+	mRsYm2W7GDk5JARMJB40X2aCsMUkLtxbz9bFyMUhJDCdUWLS7eNMEM4PRolraxsYQarYBFQk
+	lnf8B+sQEVCT6N03BcxmFsiUmND/gh3EFhKoltg5+y0ziM0p4CxxfuJXsLiwgK/Eh1/HweIs
+	AqoSR24/ApvJK2Ap8f/3PjYIW1Dix+R7LBAztSTW7zwONV9eYvMaiJkSAgoSO86+ZoSIi0ts
+	PHKLBeIeK4n2z7dZJjAKzUIyahaSUbOQjJqFpH0BI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k
+	/NxNjODAfya1g3Flg8UhRgEORiUe3g1zrwULsSaWFVfmHmKU4GBWEuF9UX49WIg3JbGyKrUo
+	P76oNCe1+BCjNAeLkjjvgVbrQCGB9MSS1OzU1ILUIpgsEwenVAPjdqWslls6kgdig++qc37y
+	TktvPJR9t/Rpwc0K3lOmi5j6j/7+wrRvKnOGxZYvfeq7s/47i/n/23CO8XtwQXf0xpBZzdvu
+	PwjzerPd1tyhhP0cl0hDHdO3Hc0Cv2dIC2Vf2LGnRvlKi8Fk/+1X0s6p90/Vjwyav/rz89dX
+	Im+z2h9YVT/5zf92JZbijERDLeai4kQA101aRXgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nDvig6w1IaO5idwNJGff6KXjnBUdsJGt1
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On 22/07/14 18:08, Linus Walleij wrote:
-> On Sat, Jul 12, 2014 at 10:30 PM, abdoulaye berthe <berthe.ab@gmail.com=
-> wrote:
->=20
-> Heads up. Requesting ACKs for this patch or I'm atleast warning that it=
- will be
-> applied. We're getting rid of the return value from gpiochip_remove().
+One comment as following.
 
->>  drivers/video/fbdev/via/via-gpio.c             | 10 +++-------
->=20
-> Tomi can you ACK this?
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> Sent: Saturday, July 26, 2014 6:47 AM
+> To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Cc: Jaegeuk Kim
+> Subject: [f2fs-dev] [PATCH 04/11] f2fs: use radix_tree for ino management
+> 
+> For better ino management, this patch replaces the data structure from list
+> to radix tree.
+> 
+> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
 
-Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Reviewed-by: Chao Yu <chao2.yu@samsung.com>
 
- Tomi
+> ---
+>  fs/f2fs/checkpoint.c | 48 ++++++++++++++++++++++++++----------------------
+>  fs/f2fs/f2fs.h       |  1 +
+>  2 files changed, 27 insertions(+), 22 deletions(-)
+> 
+> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+> index f93d154..d35094a 100644
+> --- a/fs/f2fs/checkpoint.c
+> +++ b/fs/f2fs/checkpoint.c
+> @@ -284,24 +284,26 @@ const struct address_space_operations f2fs_meta_aops = {
+> 
+>  static void __add_ino_entry(struct f2fs_sb_info *sbi, nid_t ino, int type)
+>  {
+> -	struct ino_entry *new, *e;
+> -
+> -	new = f2fs_kmem_cache_alloc(ino_entry_slab, GFP_ATOMIC);
+> -	new->ino = ino;
+> -
+> +	struct ino_entry *e;
+> +retry:
+>  	spin_lock(&sbi->ino_lock[type]);
+> -	list_for_each_entry(e, &sbi->ino_list[type], list) {
+> -		if (e->ino == ino) {
+> +
+> +	e = radix_tree_lookup(&sbi->ino_root[type], ino);
+> +	if (!e) {
+> +		e = kmem_cache_alloc(ino_entry_slab, GFP_ATOMIC);
+> +		if (!e) {
+>  			spin_unlock(&sbi->ino_lock[type]);
+> -			kmem_cache_free(ino_entry_slab, new);
+> -			return;
+> +			goto retry;
+>  		}
+> -		if (e->ino > ino)
+> -			break;
+> -	}
+> +		if (radix_tree_insert(&sbi->ino_root[type], ino, e)) {
+> +			spin_unlock(&sbi->ino_lock[type]);
 
+we should add kmem_cache_free(ino_entry_slab, e) here to avoid memory leak.
 
+> +			goto retry;
+> +		}
+> +		memset(e, 0, sizeof(struct ino_entry));
+> +		e->ino = ino;
+> 
+> -	/* add new entry into list which is sorted by inode number */
+> -	list_add_tail(&new->list, &e->list);
+> +		list_add_tail(&e->list, &sbi->ino_list[type]);
+> +	}
+>  	spin_unlock(&sbi->ino_lock[type]);
+>  }
+> 
+> @@ -310,14 +312,15 @@ static void __remove_ino_entry(struct f2fs_sb_info *sbi, nid_t ino, int
+> type)
+>  	struct ino_entry *e;
+> 
+>  	spin_lock(&sbi->ino_lock[type]);
+> -	list_for_each_entry(e, &sbi->ino_list[type], list) {
+> -		if (e->ino == ino) {
+> -			list_del(&e->list);
+> +	e = radix_tree_lookup(&sbi->ino_root[type], ino);
+> +	if (e) {
+> +		list_del(&e->list);
+> +		radix_tree_delete(&sbi->ino_root[type], ino);
+> +		if (type == ORPHAN_INO)
+>  			sbi->n_orphans--;
+> -			spin_unlock(&sbi->ino_lock[type]);
+> -			kmem_cache_free(ino_entry_slab, e);
+> -			return;
+> -		}
+> +		spin_unlock(&sbi->ino_lock[type]);
+> +		kmem_cache_free(ino_entry_slab, e);
+> +		return;
+>  	}
+>  	spin_unlock(&sbi->ino_lock[type]);
+>  }
+> @@ -346,7 +349,7 @@ void release_orphan_inode(struct f2fs_sb_info *sbi)
+> 
+>  void add_orphan_inode(struct f2fs_sb_info *sbi, nid_t ino)
+>  {
+> -	/* add new orphan entry into list which is sorted by inode number */
+> +	/* add new orphan ino entry into list */
+>  	__add_ino_entry(sbi, ino, ORPHAN_INO);
+>  }
+> 
+> @@ -943,6 +946,7 @@ void init_ino_entry_info(struct f2fs_sb_info *sbi)
+>  	int i;
+> 
+>  	for (i = 0; i < MAX_INO_ENTRY; i++) {
+> +		INIT_RADIX_TREE(&sbi->ino_root[i], GFP_ATOMIC);
+>  		spin_lock_init(&sbi->ino_lock[i]);
+>  		INIT_LIST_HEAD(&sbi->ino_list[i]);
+>  	}
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> index b6fa6ec..4454caa 100644
+> --- a/fs/f2fs/f2fs.h
+> +++ b/fs/f2fs/f2fs.h
+> @@ -456,6 +456,7 @@ struct f2fs_sb_info {
+>  	wait_queue_head_t cp_wait;
+> 
+>  	/* for inode management */
+> +	struct radix_tree_root ino_root[MAX_INO_ENTRY];	/* ino entry array */
+>  	spinlock_t ino_lock[MAX_INO_ENTRY];		/* for ino entry lock */
+>  	struct list_head ino_list[MAX_INO_ENTRY];	/* inode list head */
+> 
+> --
+> 1.8.5.2 (Apple Git-48)
+> 
+> 
+> ------------------------------------------------------------------------------
+> Want fast and easy access to all the code in your enterprise? Index and
+> search up to 200,000 lines of code with a free copy of Black Duck
+> Code Sight - the same software that powers the world's largest code
+> search on Ohloh, the Black Duck Open Hub! Try it now.
+> http://p.sf.net/sfu/bds
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 
---nDvig6w1IaO5idwNJGff6KXjnBUdsJGt1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT14X1AAoJEPo9qoy8lh71gvsP/iJDf8dcnv2JZFloH/noIb3s
-DCXfxyTW2zDeWEEH7rLW+fP5JKu5TutqOCF2Y85HaPa/DV1iMI4S+IUeEwNiw0wd
-JTwMqUbS2ua22J87F1Oc5kXshDk+uqLRfpxO7xs0Pd/JcsrOgA7zqJN67jeDwQo/
-XsiRTBmJ3CNR/qur7AKN8toHdZp+KaHZ/4cazUxxp/cu71eFuRfFJMjE/cGk8cva
-fsIrugCAFjYIy3z88VtW4VPj1rcNDYUlxcklbpNtosOKUuPfNoDwToLUCdjE22G9
-v93XHZKlv0iWso5fo9HA2BTDK7N37WMsyktqF1ULEUiKIyoWs6a0WG9eREVLKlpi
-ugiCLH6c4jQYycmSTmFGZnzuhz5hN5oirXpKtba6hVHh6ZNkIkGtFElGTZYjVhKn
-k06HXBVTTYwf4pg2PGSGPsl2dIx0Zyl8pG+iFn10LSxELxbNU6N/wYzf6LquPLok
-cnnfX2riaFV6DgQHhHlTqr0tN6NFb8smYeH9rq37+4GyVYnokXuBMJ+qQ5In8BDZ
-9ZgW2N1PH2aRO2RZERVwll4otqtZgJcmWdAgeZzjkl0nBpWH8X78c41O3T3LUscq
-3cDDyXHCLDGabHGuab5JPofNnN1GW8xM/wN8jLmH/abZICdjfGqRVzaQh7FJjc97
-PbSJaJG3ZaHHHc6LWcil
-=W85Y
------END PGP SIGNATURE-----
-
---nDvig6w1IaO5idwNJGff6KXjnBUdsJGt1--
