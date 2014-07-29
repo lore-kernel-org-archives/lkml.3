@@ -1,158 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaG2IlO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 04:41:14 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:64229 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbaG2IlK (ORCPT
+	id S1752840AbaG2Imr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 04:42:47 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:11388 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702AbaG2Imo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 04:41:10 -0400
-Message-ID: <53D75E13.8000702@huawei.com>
-Date: Tue, 29 Jul 2014 16:40:51 +0800
-From: Zhang Zhen <zhenzhang.zhang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 29 Jul 2014 04:42:44 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 29 Jul 2014 01:30:31 -0700
+Date: Tue, 29 Jul 2014 10:42:38 +0200
+From: Thierry Reding <treding@nvidia.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Linus Walleij <linus.walleij@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the gpio tree
+Message-ID: <20140729084237.GE31360@ulmo.nvidia.com>
+References: <20140729183153.0e77a6f6@canb.auug.org.au>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Dave Hansen <dave.hansen@intel.com>, <mgorman@suse.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, <wangnan0@huawei.com>,
-        Linux MM <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] memory hotplug: update the variables after memory
- removed
-References: <1406619310-20555-1-git-send-email-zhenzhang.zhang@huawei.com> <53D74EE5.1070308@huawei.com> <alpine.DEB.2.02.1407290046470.7998@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1407290046470.7998@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.77]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020205.53D75E20.0022,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 20d01a034e1369a02210e2d476771ae7
+In-Reply-To: <20140729183153.0e77a6f6@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n+lFg1Zro7sl44OB"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/7/29 15:53, David Rientjes wrote:
-> On Tue, 29 Jul 2014, Zhang Zhen wrote:
-> 
->> Commit ea0854170c95245a258b386c7a9314399c949fe0 added a fuction
-> 
-> This would normally be written as
-> 
-> Commit ea0854170c95 ("memory hotplug: fix a bug on /dev/mem for 64-bit 
-> kernels") ...
-> 
-ok.
->> update_end_of_memory_vars() to update high_memory, max_pfn and
->> max_low_pfn.
->>
->> I modified the function according to Dave Hansen and David Rientjes's
->> suggestions.
->> And call it in arch_remove_memory() to update these variables too.
->>
-> 
-> When the x86 maintainers merge this patch, they'll need to make a judgment 
-> call on how urgent the fix is and that will guide them in whether they 
-> want it backported to stable kernels as well.  It would be useful to 
-> provide the rationale for the change; in other words, why is the change 
-> needed and what breaks if we don't have it?
-Got it, here we may access wrong memory via /dev/mem without this patch.
-I will provide the rationale for the change.
-> 
->> Change v1->v2:
->> - according to Dave Hansen and David Rientjes's suggestions modified
->>   update_end_of_memory_vars().
->> Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
-> 
-> Acked-by: David Rientjes <rientjes@google.com>
-> 
-> You'll want to email all the x86 maintainers who would handle this patch, 
-> check the output of scripts/get_maintainer.pl when run on this diff.
-Ok, Thanks!
-> 
->> ---
->>  arch/x86/mm/init_64.c | 23 ++++++++++++++---------
->>  1 file changed, 14 insertions(+), 9 deletions(-)
->>
->> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
->> index df1a992..fd7bd6b 100644
->> --- a/arch/x86/mm/init_64.c
->> +++ b/arch/x86/mm/init_64.c
->> @@ -673,15 +673,11 @@ void __init paging_init(void)
->>   * After memory hotplug the variables max_pfn, max_low_pfn and high_memory need
->>   * updating.
->>   */
->> -static void  update_end_of_memory_vars(u64 start, u64 size)
->> +static void  update_end_of_memory_vars(u64 end_pfn)
-> 
-> Extra space that can be removed here at the same time as a cleanup.
-> 
-Sorry, where is the extra space here?
+--n+lFg1Zro7sl44OB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->>  {
->> -	unsigned long end_pfn = PFN_UP(start + size);
->> -
->> -	if (end_pfn > max_pfn) {
->> -		max_pfn = end_pfn;
->> -		max_low_pfn = end_pfn;
->> -		high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
->> -	}
->> +	max_pfn = end_pfn;
->> +	max_low_pfn = end_pfn;
->> +	high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
->>  }
->>
->>  /*
->> @@ -694,6 +690,7 @@ int arch_add_memory(int nid, u64 start, u64 size)
->>  	struct zone *zone = pgdat->node_zones + ZONE_NORMAL;
->>  	unsigned long start_pfn = start >> PAGE_SHIFT;
->>  	unsigned long nr_pages = size >> PAGE_SHIFT;
->> +	unsigned long end_pfn;
->>  	int ret;
->>
->>  	init_memory_mapping(start, start + size);
->> @@ -702,7 +699,9 @@ int arch_add_memory(int nid, u64 start, u64 size)
->>  	WARN_ON_ONCE(ret);
->>
->>  	/* update max_pfn, max_low_pfn and high_memory */
->> -	update_end_of_memory_vars(start, size);
->> +	end_pfn = start_pfn + nr_pages;
->> +	if (end_pfn > max_pfn)
->> +		update_end_of_memory_vars(end_pfn);
->>
->>  	return ret;
->>  }
->> @@ -1018,6 +1017,7 @@ int __ref arch_remove_memory(u64 start, u64 size)
->>  	unsigned long start_pfn = start >> PAGE_SHIFT;
->>  	unsigned long nr_pages = size >> PAGE_SHIFT;
->>  	struct zone *zone;
->> +	unsigned long end_pfn;
->>  	int ret;
->>
->>  	zone = page_zone(pfn_to_page(start_pfn));
->> @@ -1025,6 +1025,11 @@ int __ref arch_remove_memory(u64 start, u64 size)
->>  	ret = __remove_pages(zone, start_pfn, nr_pages);
->>  	WARN_ON_ONCE(ret);
->>
->> +	/* update max_pfn, max_low_pfn and high_memory */
->> +	end_pfn = start_pfn + nr_pages;
->> +	if ((max_pfn >= start_pfn) && (max_pfn < end_pfn))
->> +		update_end_of_memory_vars(start_pfn);
-> 
-> Not sure if we really need the new variable here; if you choose to 
-> repropose this patch then you may want to consider just using 
-> start_pfn + nr_pages in the conditional.
-yeah, i will remove it in v3.
-> 
->> +
->>  	return ret;
->>  }
->>  #endif
-> 
-> .
-> 
+On Tue, Jul 29, 2014 at 10:31:53AM +0200, Stephen Rothwell wrote:
+> * PGP Signed by an unknown key
+>=20
+> Hi Linus,
+>=20
+> After merging the gpio tree, today's linux-next build (arm
+> multi_v7_defconfig) failed like this:
+>=20
+> In file included from arch/arm/mach-tegra/board-paz00.c:20:0:
+> include/linux/gpio/machine.h:24:2: error: unknown type name 'u16'
+>   u16 chip_hwnum;
+>   ^
+> include/linux/gpio/machine.h:31:19: error: field 'list' has incomplete ty=
+pe
+>   struct list_head list;
+>                    ^
+>=20
+> Caused by commit 0a6d315827ee ("gpio: split gpiod board registration
+> into machine header") or an interaction of that with commit
+> a0524acc94c9 ("ARM: tegra: Sort includes alphabetically") from the
+> arm-soc tree.
+>=20
+> linux/gpio/machine.h needs to include some of the same files that
+> linux/gpio/driver.h does.  See Rule 1 in Documentation/SubmitChecklist.
+>=20
+> I have used the version of the gpio tree from next-20140728 for today.
 
+I think linux/gpio/machine.h needs at least linux/types.h (for u16,
+though I guess that "dependency" could be removed by simply making
+gpiod_lookup.chip_hwnum an unsigned int) and linux/list.h for struct
+list_head.
 
+Thierry
+
+--n+lFg1Zro7sl44OB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT1159AAoJEN0jrNd/PrOhHF0P+gI/MTgH6lzX29qNWk7yzafh
+kfFPWcAhvywOdscbt1/DoRaMGXKFJcgtfCZkLvMeVWv+EYmzj8Bq4cWWQjJ4Za/P
+c4JqFzqwHOK0LUHPD0Vr/3ySRj9iyOXuxOXEfmqbT+tT02bMQ+8njt5pKE2kShyq
+gkdvKROv7B8eKXqHF/LM6bJindDuf2BgvAhr/45QbkTOQCtnLzP7HbMNxerCgiru
+bkQZR5kFrFHe9toZ3byDJQ3yzSUmAs0gfXPOHHJyZlQXn0JoVKVkt8oXAvpHy8fv
+lVKWn7j1htGcX+aQPPyZ2gLV2q6W16Hcuct/qr5fRcXuzCMs1G+wPsVBuukSNMAB
+PT9k7qW/f9wyR+Knn4u60Lp/zqA/5qtCaVIn+vZdikM8s3rJzannzwzeoz9u81ah
+yE6fRovEpKhNBBlz4DVPeumly5VQysEzIUaIG4Ul43b4vwY1o8B32UkQxCvO+6et
+XcJivNJMKzmpZ4LZUaTP7CmFux4XwymnHvldNkgiF5scv/OjLnRi3/XTATM8SOWQ
+hGXgo3vJV0j4VcsKTKfuybgpPwKiVEc1C5STNmHjoVPbqi1Kgs/TvajUGYwyPkSd
+MBe1FV56iag/eewgj+gJfJA9up77vRgR+2vmnvDLuwRX1ZoquNjR6QXmj7vbQil1
+pUDRpV4NA4GqhhnyGlAy
+=qL11
+-----END PGP SIGNATURE-----
+
+--n+lFg1Zro7sl44OB--
