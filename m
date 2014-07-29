@@ -1,144 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609AbaG2Xwm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 19:52:42 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:37568 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136AbaG2Xwl (ORCPT
+	id S1754607AbaG2Xzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 19:55:35 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:50455 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811AbaG2Xze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 19:52:41 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Minchan Kim <minchan@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/2] perf tools: Ensure --symfs ends with '/'
-References: <1406251908-8195-1-git-send-email-namhyung@kernel.org>
-	<20140729050246.GC22707@bbox> <20140729123305.GO7831@kernel.org>
-Date: Wed, 30 Jul 2014 08:52:36 +0900
-In-Reply-To: <20140729123305.GO7831@kernel.org> (Arnaldo Carvalho de Melo's
-	message of "Tue, 29 Jul 2014 09:33:05 -0300")
-Message-ID: <87ppgnhge3.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 29 Jul 2014 19:55:34 -0400
+Date: Tue, 29 Jul 2014 16:55:32 -0700 (PDT)
+Message-Id: <20140729.165532.599552078692796545.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 29 Jul 2014 16:55:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
 
-On Tue, 29 Jul 2014 09:33:05 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Jul 29, 2014 at 02:02:46PM +0900, Minchan Kim escreveu:
->> On Fri, Jul 25, 2014 at 10:31:47AM +0900, Namhyung Kim wrote:
->> > Minchan reported that perf failed to load vmlinux if --symfs argument
->> > doesn't end with '/' character.  So make sure that the symfs always
->> > ends with the '/'.
->> > 
->> > Reported-by: Minchan Kim <minchan@kernel.org>
->> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> 
->> Both patches work and are handy to me.
->> Thanks Namhyung.
->
-> I haven't said it is not :-) Just that it should be fixed in a different
-> way.
+1) Make fragmentation IDs less predictable, from Eric Dumazet.
 
-I also thought about that way first but changed my mind to the current
-approach because I don't want to change current behavior.
+2) TSO tunneling can crash in bnx2x driver, fix from Dmitry Kravkov.
 
-I worried about the common case which has empty symfs.  By your patch,
-it makes a pathname absolute even with an empty symfs - I can see most
-filenames are already absolute paths but I'm not 100% sure it's always
-the case.
+3) Don't allow NULL msg->msg_name just because msg->msg_namelen is non-zero,
+   from Andrey Ryabinin.
 
-Thanks,
-Namhyung
+4) ndm->ndm_type set using wrong macros, from Jun Zhao.
+
+5) cdc-ether devices can come up with entries in their address filter,
+   so explicitly clear the filter after the device initializes.  From
+   Oliver Neukum.
+
+6) Forgotten refcount bump in xfrm_lookup(), from Steffen Klassert.
+
+7) Short packets not padded properly, exposing random data, in bcmgenet
+   driver.  Fix from Florian Fainelli.
+
+8) xgbe_probe() doesn't return an error code, but rather zero, when
+   netif_set_real_num_tx_queues() fails.  Fix from Wei Yongjun.
+
+9) USB speed not probed properly in r8152 driver, from Hayes Wang.
+
+10) Transmit logic choosing the outgoing port in the sunvnet driver needs
+    to consider a) is the port actually up and b) whether it is a switch
+    port.  Fix from David L Stevens.
+
+Please pull, thanks a lot!
+
+The following changes since commit 15ba2236f3556fc01b9ca91394465152b5ea74b6:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-07-21 22:46:01 -0700)
+
+are available in the git repository at:
 
 
->
-> Can you please try the patch below instead?
->
-> David, was there any reason not to do it like done in this patch?
->
-> - Arnaldo
->
-> ---
->  annotate.c |    4 ++--
->  dso.c      |    8 ++++----
->  symbol.c   |    2 +-
->  3 files changed, 7 insertions(+), 7 deletions(-)
->
-> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-> index 809b4c50beae..e67ef4a2b356 100644
-> --- a/tools/perf/util/annotate.c
-> +++ b/tools/perf/util/annotate.c
-> @@ -900,7 +900,7 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
->  	bool delete_extract = false;
->  
->  	if (filename) {
-> -		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
-> +		snprintf(symfs_filename, sizeof(symfs_filename), "%s/%s",
->  			 symbol_conf.symfs, filename);
->  	}
->  
-> @@ -922,7 +922,7 @@ fallback:
->  		 * DSO is the same as when 'perf record' ran.
->  		 */
->  		filename = (char *)dso->long_name;
-> -		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
-> +		snprintf(symfs_filename, sizeof(symfs_filename), "%s/%s",
->  			 symbol_conf.symfs, filename);
->  		free_filename = false;
->  	}
-> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-> index 90d02c661dd4..f81550583429 100644
-> --- a/tools/perf/util/dso.c
-> +++ b/tools/perf/util/dso.c
-> @@ -79,7 +79,7 @@ int dso__read_binary_type_filename(const struct dso *dso,
->  		while (last_slash != dso->long_name && *last_slash != '/')
->  			last_slash--;
->  
-> -		len = scnprintf(filename, size, "%s", symbol_conf.symfs);
-> +		len = scnprintf(filename, size, "%s/", symbol_conf.symfs);
->  		dir_size = last_slash - dso->long_name + 2;
->  		if (dir_size > (size - len)) {
->  			ret = -1;
-> @@ -108,17 +108,17 @@ int dso__read_binary_type_filename(const struct dso *dso,
->  	case DSO_BINARY_TYPE__VMLINUX:
->  	case DSO_BINARY_TYPE__GUEST_VMLINUX:
->  	case DSO_BINARY_TYPE__SYSTEM_PATH_DSO:
-> -		snprintf(filename, size, "%s%s",
-> +		snprintf(filename, size, "%s/%s",
->  			 symbol_conf.symfs, dso->long_name);
->  		break;
->  
->  	case DSO_BINARY_TYPE__GUEST_KMODULE:
-> -		snprintf(filename, size, "%s%s%s", symbol_conf.symfs,
-> +		snprintf(filename, size, "%s/%s/%s", symbol_conf.symfs,
->  			 root_dir, dso->long_name);
->  		break;
->  
->  	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
-> -		snprintf(filename, size, "%s%s", symbol_conf.symfs,
-> +		snprintf(filename, size, "%s/%s", symbol_conf.symfs,
->  			 dso->long_name);
->  		break;
->  
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index eb06746b06b2..c3549d5955ea 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -1468,7 +1468,7 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
->  	if (vmlinux[0] == '/')
->  		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s", vmlinux);
->  	else
-> -		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s%s",
-> +		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s/%s",
->  			 symbol_conf.symfs, vmlinux);
->  
->  	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to d92f5dec6325079c550889883af51db1b77d5623:
+
+  net: phy: re-apply PHY fixups during phy_register_device (2014-07-29 12:25:57 -0700)
+
+----------------------------------------------------------------
+Alexey Khoroshilov (1):
+      isdn/bas_gigaset: fix a leak on failure path in gigaset_probe()
+
+Andrey Ryabinin (1):
+      net: sendmsg: fix NULL pointer dereference
+
+Daniel Borkmann (1):
+      net: sctp: inherit auth_capable on INIT collisions
+
+David L Stevens (1):
+      sunvnet: only use connected ports when sending
+
+David S. Miller (5):
+      Merge branch 'master' of git://git.kernel.org/.../klassert/ipsec
+      Merge git://git.kernel.org/.../pablo/nf
+      Merge branch 'mdio_module_unload'
+      Merge tag 'master-2014-07-23' of git://git.kernel.org/.../linville/wireless
+      Merge tag 'linux-can-fixes-for-3.16-20140725' of git://gitorious.org/linux-can/linux-can
+
+Dmitry Kravkov (1):
+      bnx2x: fix crash during TSO tunneling
+
+Eliad Peller (2):
+      cfg80211: fix mic_failure tracing
+      iwlwifi: mvm: pass beacons from foreign APs
+
+Emmanuel Grumbach (1):
+      iwlwifi: mvm: fix merge damage
+
+Eric Dumazet (1):
+      ip: make IP identifiers less predictable
+
+Ezequiel Garcia (2):
+      net: phy: Set the driver when registering an MDIO bus device
+      net: phy: Ensure the MDIO bus module is held
+
+Felix Fietkau (2):
+      mac80211: fix crash on getting sta info with uninitialized rate control
+      ath9k: fix aggregation session lockup
+
+Florian Fainelli (2):
+      net: bcmgenet: correctly pad short packets
+      net: phy: re-apply PHY fixups during phy_register_device
+
+George Cherian (1):
+      can: c_can_platform: Fix raminit, use devm_ioremap() instead of devm_ioremap_resource()
+
+Johannes Berg (1):
+      Revert "mac80211: move "bufferable MMPDU" check to fix AP mode scan"
+
+John W. Linville (3):
+      Merge git://git.kernel.org/.../jberg/mac80211
+      Merge branch 'master' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
+      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
+
+Julian Anastasov (1):
+      ipvs: avoid netns exit crash on ip_vs_conn_drop_conntrack
+
+Jun Zhao (1):
+      neighbour : fix ndm_type type error issue
+
+Oliver Neukum (2):
+      cdc_subset: deal with a device that needs reset for timeout
+      cdc-ether: clean packet filter upon probe
+
+Steffen Klassert (1):
+      xfrm: Fix refcount imbalance in xfrm_lookup
+
+Tobias Brunner (1):
+      xfrm: Fix installation of AH IPsec SAs
+
+Wei Yongjun (2):
+      amd-xgbe: Fix error return code in xgbe_probe()
+      hyperv: Fix error return code in netvsc_init_buf()
+
+Yaniv Rosner (1):
+      bnx2x: fix set_setting for some PHYs
+
+hayeswang (1):
+      r8152: fix the checking of the usb speed
+
+ drivers/isdn/gigaset/bas-gigaset.c                  |  1 +
+ drivers/net/can/c_can/c_can_platform.c              |  3 ++-
+ drivers/net/ethernet/amd/xgbe/xgbe-main.c           |  3 ++-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x.h         |  1 +
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c     |  9 +++++++++
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_ethtool.c |  1 +
+ drivers/net/ethernet/broadcom/genet/bcmgenet.c      |  5 +++++
+ drivers/net/ethernet/sun/sunvnet.c                  | 22 +++++++++++++++++-----
+ drivers/net/hyperv/netvsc.c                         |  4 +++-
+ drivers/net/phy/mdio_bus.c                          |  1 +
+ drivers/net/phy/phy_device.c                        | 15 ++++++++++++++-
+ drivers/net/usb/cdc_ether.c                         | 16 ++++++++++++++++
+ drivers/net/usb/cdc_subset.c                        | 27 +++++++++++++++++++++++++++
+ drivers/net/usb/r8152.c                             |  7 +++----
+ drivers/net/usb/usbnet.c                            |  8 ++++++--
+ drivers/net/vxlan.c                                 |  2 +-
+ drivers/net/wireless/ath/ath9k/xmit.c               |  9 +++++++++
+ drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c         | 15 +++++++++++++--
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c         |  7 -------
+ include/linux/usb/usbnet.h                          |  3 +++
+ include/net/ip.h                                    | 11 +----------
+ net/compat.c                                        |  9 +++++----
+ net/core/iovec.c                                    |  6 +++---
+ net/core/neighbour.c                                |  2 +-
+ net/ipv4/route.c                                    | 32 +++++++++++++++++++++++++++++---
+ net/ipv6/ip6_output.c                               |  2 ++
+ net/mac80211/cfg.c                                  |  5 ++++-
+ net/mac80211/tx.c                                   | 20 ++++++++++----------
+ net/netfilter/ipvs/ip_vs_conn.c                     |  1 -
+ net/sctp/associola.c                                |  1 +
+ net/wireless/trace.h                                |  3 ++-
+ net/xfrm/xfrm_policy.c                              |  2 ++
+ net/xfrm/xfrm_user.c                                |  7 +++----
+ 33 files changed, 197 insertions(+), 63 deletions(-)
