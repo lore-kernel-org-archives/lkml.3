@@ -1,110 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048AbaG2SpU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 14:45:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53007 "EHLO mx1.redhat.com"
+	id S1754079AbaG2Sqa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 14:46:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57467 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751466AbaG2Sn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 14:43:29 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
-        Przemo Firszt <przemo@firszt.eu>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH v3 4/7] Input - wacom: Check for bluetooth protocol while setting OLEDs
-Date: Tue, 29 Jul 2014 14:43:02 -0400
-Message-Id: <1406659385-3256-5-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1406659385-3256-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1406659385-3256-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1751165AbaG2Sq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 14:46:28 -0400
+Date: Tue, 29 Jul 2014 20:44:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v3 6/8] x86: Split syscall_trace_enter into two phases
+Message-ID: <20140729184411.GA6035@redhat.com>
+References: <cover.1405992946.git.luto@amacapital.net> <3f649f5658a163645e3ce15156176c325283762e.1405992946.git.luto@amacapital.net> <20140728173723.GA20993@redhat.com> <CALCETrWUFo_zXcAZja-vdL4_MgJDd=1ed5Vt54eyUuim930xAw@mail.gmail.com> <20140729165416.GA967@redhat.com> <CALCETrWBU-=zqLTCP7B1feZ9J-e4u-Boic+e1EEn1rL-ijeEKg@mail.gmail.com> <20140729173136.GA2808@redhat.com> <CALCETrVP-P+EJ6YJ=CZL_gyA1r8O9eogUNTik7_31_SA+Pj3pg@mail.gmail.com> <20140729181615.GA4950@redhat.com> <CALCETrVWOOs3HCnQNaqmnn480oQYn3scrWUfR4JJX9+zTxUDRw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVWOOs3HCnQNaqmnn480oQYn3scrWUfR4JJX9+zTxUDRw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bluetooth Intuos 4 use 1-bit definition while the USB ones use a 4-bits
-definition. This changes the size of the raw image we receive, and thus
-the kernel will only accept 1-bit images for Bluetooth and 4-bits for
-USB.
+On 07/29, Andy Lutomirski wrote:
+>
+> On Tue, Jul 29, 2014 at 11:16 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 07/29, Andy Lutomirski wrote:
+> >>
+> >> On Tue, Jul 29, 2014 at 10:31 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >> >
+> >> > TIF_NOHZ is set if and only if context_tracking_is_enabled() is true.
+> >> > So I think that
+> >> >
+> >> >         work = current_thread_info()->flags & (_TIF_WORK_SYSCALL_ENTRY & ~TIF_NOHZ);
+> >> >
+> >> >         user_exit();
+> >> >
+> >> > looks a bit better. But I won't argue.
+> >>
+> >> I don't get it.
+> >
+> > Don't worry, you are not alone.
+> >
+> >> context_tracking_is_enabled is global, and TIF_NOHZ
+> >> is per-task.  Isn't this stuff determined per-task or per-cpu or
+> >> something?
+> >>
+> >> IOW, if one CPU is running something that's very heavily
+> >> userspace-oriented and another CPU is doing something syscall- or
+> >> sleep-heavy, then shouldn't only the first CPU end up paying the price
+> >> of context tracking?
+> >
+> > Please see another email I sent to Frederic.
+> >
+> I'll add at least this argument in favor of my approach: if context
+> tracking works at all, then it had better not demand that syscall
+> entry call user_exit if TIF_NOHZ is *not* set.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/wacom_sys.c | 29 +++++++++++++++++++++--------
- 1 file changed, 21 insertions(+), 8 deletions(-)
+I disagree. At least I disagree with that you should enforce this in
+syscall_trace_enter() paths, and in any case this has nothing to do with
+these changes.
 
-diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
-index f5c9c56..a12cd9c 100644
---- a/drivers/hid/wacom_sys.c
-+++ b/drivers/hid/wacom_sys.c
-@@ -20,6 +20,7 @@
- #define WAC_CMD_LED_CONTROL	0x20
- #define WAC_CMD_ICON_START	0x21
- #define WAC_CMD_ICON_XFER	0x23
-+#define WAC_CMD_ICON_BT_XFER	0x26
- #define WAC_CMD_RETRIES		10
- 
- static int wacom_get_report(struct hid_device *hdev, u8 type, u8 id,
-@@ -526,12 +527,14 @@ static int wacom_led_control(struct wacom *wacom)
- 	return retval;
- }
- 
--static int wacom_led_putimage(struct wacom *wacom, int button_id, const void *img)
-+static int wacom_led_putimage(struct wacom *wacom, int button_id, u8 xfer_id,
-+		const unsigned len, const void *img)
- {
- 	unsigned char *buf;
- 	int i, retval;
-+	const unsigned chunk_len = len / 4; /* 4 chunks are needed to be sent */
- 
--	buf = kzalloc(259, GFP_KERNEL);
-+	buf = kzalloc(chunk_len + 3 , GFP_KERNEL);
- 	if (!buf)
- 		return -ENOMEM;
- 
-@@ -543,15 +546,15 @@ static int wacom_led_putimage(struct wacom *wacom, int button_id, const void *im
- 	if (retval < 0)
- 		goto out;
- 
--	buf[0] = WAC_CMD_ICON_XFER;
-+	buf[0] = xfer_id;
- 	buf[1] = button_id & 0x07;
- 	for (i = 0; i < 4; i++) {
- 		buf[2] = i;
--		memcpy(buf + 3, img + i * 256, 256);
-+		memcpy(buf + 3, img + i * chunk_len, chunk_len);
- 
- 		retval = wacom_set_report(wacom->hdev, HID_FEATURE_REPORT,
--					  WAC_CMD_ICON_XFER,
--					  buf, 259, WAC_CMD_RETRIES);
-+					  xfer_id, buf, chunk_len + 3,
-+					  WAC_CMD_RETRIES);
- 		if (retval < 0)
- 			break;
- 	}
-@@ -652,13 +655,23 @@ static ssize_t wacom_button_image_store(struct device *dev, int button_id,
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
- 	struct wacom *wacom = hid_get_drvdata(hdev);
- 	int err;
-+	unsigned len;
-+	u8 xfer_id;
- 
--	if (count != 1024)
-+	if (hdev->bus == BUS_BLUETOOTH) {
-+		len = 256;
-+		xfer_id = WAC_CMD_ICON_BT_XFER;
-+	} else {
-+		len = 1024;
-+		xfer_id = WAC_CMD_ICON_XFER;
-+	}
-+
-+	if (count != len)
- 		return -EINVAL;
- 
- 	mutex_lock(&wacom->lock);
- 
--	err = wacom_led_putimage(wacom, button_id, buf);
-+	err = wacom_led_putimage(wacom, button_id, xfer_id, len, buf);
- 
- 	mutex_unlock(&wacom->lock);
- 
--- 
-2.0.3
+But again, I won't insist, so please forget.
+
+> So adding the
+> condition ought to be safe, barring dumb bugs in my code.
+
+Yes, I think it is technically correct.
+
+Oleg.
 
