@@ -1,140 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596AbaG2MIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 08:08:32 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:13406 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216AbaG2MI3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 08:08:29 -0400
-To: hare@suse.de, mcgrof@suse.com, gregkh@linuxfoundation.org
-Cc: santosh@chelsio.com, hariprasad@chelsio.com, tiwai@suse.de,
-        linux-kernel@vger.kernel.org, joseph.salisbury@canonical.com,
-        kay@vrfy.org, gnomes@lxorguk.ukuu.org.uk, tim.gardner@canonical.com,
-        pierre-fersing@pierref.org, akpm@linux-foundation.org, oleg@redhat.com,
-        bpoirier@suse.de, nagalakshmi.nandigama@avagotech.com,
-        praveen.krishnamoorthy@avagotech.com, sreekanth.reddy@avagotech.com,
-        abhijit.mahajan@avagotech.com, MPT-FusionLinux.pdl@avagotech.com,
-        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred probefrom init
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20140728234644.GA18729@kroah.com>
-	<CAB=NE6UzK1ZEzm+54dwSyPwHGrAWCPtiNtxwhQuJF6tM9NbnYw@mail.gmail.com>
-	<20140729003501.GA17020@kroah.com>
-	<CAB=NE6XMzU+zJ0RMDKaPuSxfXBvN2vZ1DnbgxCjWHJquTD1iqg@mail.gmail.com>
-	<53D744E3.10500@suse.de>
-In-Reply-To: <53D744E3.10500@suse.de>
-Message-Id: <201407292107.EGB64066.OOQMFSHLJVtFFO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Tue, 29 Jul 2014 21:07:24 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753552AbaG2MJr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 08:09:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:65023 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750960AbaG2MJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 08:09:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,756,1400050800"; 
+   d="scan'208";a="550643917"
+Message-ID: <53D78EF7.8070203@linux.intel.com>
+Date: Tue, 29 Jul 2014 20:09:27 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Joerg Roedel <joro@8bytes.org>
+CC: David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Ashok Raj <ashok.raj@intel.com>, Yijing Wang <wangyijing@huawei.com>,
+        Tony Luck <tony.luck@intel.com>, iommu@lists.linux-foundation.org,
+        linux-pci@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: Re: [Patch Part3 V4 00/21] Enable support of Intel DMAR device hotplug
+References: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com> <20140729104932.GC9809@8bytes.org>
+In-Reply-To: <20140729104932.GC9809@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Luis R. Rodriguez wrote:
-> On Mon, Jul 28, 2014 at 5:35 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Jul 28, 2014 at 05:26:34PM -0700, Luis R. Rodriguez wrote:
-> >> To ignore SIGKILL ?
-> >
-> > Sorry, I thought this was a userspace change that caused this.
-> >
-> > As it's a kernel change, well, maybe that patch should be reverted...
+Thanks Joerg, will resend remaining patches after 3.17 merging window.
+
+On 2014/7/29 18:49, Joerg Roedel wrote:
+> On Fri, Jul 11, 2014 at 02:19:24PM +0800, Jiang Liu wrote:
+>> Patch 1-13 are bugfixes and code improvement for current drivers.
 > 
-> That's certainly viable. Oleg?
-
-I don't want to revert that patch.
-
-I'm trying to reduce use of blocking operations that wait in unkillable state,
-for the OOM killer is optimistic enough to wait forever even if the OOM-killed
-process cannot be terminated due to having dependency on other threads that are
-waiting the OOM-killed process to terminate and release memory. Linux kernel is
-too optimistic about memory reclaim; memory allocation/reclaim deadlock is not
-detectable.
-
+> Okay, I applied these for now (1-13 only) so that you don't have to
+> rebase everything next time.
 > 
-> If its reverted we won't know which drivers are hitting over the new
-> 30 second limit requirement imposed by userspace, which the culprit
-> commit forces failure on probe now. This series at least would allow
-> us to annotate which drivers are brake the 30 second init limit, and
-> enable a work around alternative if we wish to not revert the commit.
-> This  series essentially should be considered an alternative solution
-> to what was proposed initially by Joseph Salisbury, it may not be
-> perfect but its a proposal. I welcome others.
-(...snipped...)
-> This also just addresses this *one* Ethernet driver, there was that
-> SCSI driver that created the original report -- Canonical merged
-> Joseph's fix as a work around, there is no general solution for this
-> yet, and again with that work around you won't find which drivers run
-> into this issue. There may be others found later so this is why I
-> resorted to the deferred workqueue as a solution for now and to enable
-> us to annotate which drivers need fixing as I expect getting the fix
-> done / everyone happy can take time.
-
-If you want to know which drivers are hitting over the new 30 second
-limit requirement but don't want to break the boot, I think we can do
-"what Ubuntu chose as a work around" + "a warning message" like below.
-
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index c2390f4..43da2b1 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -292,6 +292,26 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- 	 * new kernel thread.
- 	 */
- 	if (unlikely(wait_for_completion_killable(&done))) {
-+		int i = 0;
-+
-+		/*
-+		 * I got SIGKILL, but wait for 10 more seconds for completion
-+		 * unless chosen by the OOM killer. This delay is there as a
-+		 * workaround for boot failure caused by SIGKILL upon device
-+		 * driver initialization timeout.
-+		 */
-+		if (!test_tsk_thread_flag(current, TIF_MEMDIE)) {
-+			pr_warn("I already got SIGKILL but ignoring it up to "
-+				"10 seconds, in case the caller can't survive "
-+				"fail-immediately-upon-SIGKILL event. "
-+				"Please make sure that the caller can survive "
-+				"this event, for this delay will be removed "
-+				"in the future.\n");
-+			dump_stack();
-+		}
-+		while (i++ < 10 && !test_tsk_thread_flag(current, TIF_MEMDIE))
-+			if (wait_for_completion_timeout(&done, HZ))
-+				goto ready;
- 		/*
- 		 * If I was SIGKILLed before kthreadd (or new kernel thread)
- 		 * calls complete(), leave the cleanup of this structure to
-@@ -305,6 +325,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- 		 */
- 		wait_for_completion(&done);
- 	}
-+ready:
- 	task = create->result;
- 	if (!IS_ERR(task)) {
- 		static const struct sched_param param = { .sched_priority = 0 };
-
-Hannes Reinecke wrote:
-> Well ... from my POV there are two issues here:
+>> Patch 14-17 enhances DMAR framework to support hotplug
+>> Patch 18 enhances Intel interrupt remapping driver to support hotplug
+>> Patch 19 enhances error handling in Intel IR driver
+>> Patch 20 enhance Intel IOMMU to support hotplug
+>> Patch 21 enhance ACPI pci_root driver to handle DMAR units
 > 
-> The one is that systemd essentially nailed its internal worker 
-> timeout to 30 seconds. And there is no way of modifying that short 
-> of recompiling. Which should be fixed, so that at least one can
-> modify this timeout.
+> For these I'd like to see some reviews/acked-bys/tested-bys so that we
+> gain more confidence on them.
 > 
-> The other one is that systemd killing a worker by sending SIGKILL, 
-> which will kill modprobe terminally.
-> Which definitely needs to be fixed.
 > 
-> But if we have both issues resolved (eg by allowing udevd to use a 
-> longer timeout and revert the latter patch) we can identify the 
-> offending drivers _and_ get the system to boot by simply adding a 
-> kernel commandline parameter.
-> Which is _far_ preferrable from a maintenance perspective.
-> Users tend to become annoyed if their system doesn't boot ...
-
-The proposal which allows longer timeout was expired.
-https://bugs.launchpad.net/bugs/1297248
+> 	Joerg
+> 
