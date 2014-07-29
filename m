@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053AbaG2Q3a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 12:29:30 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:58444 "EHLO
+	id S1754077AbaG2Q3y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 12:29:54 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:58437 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006AbaG2Q31 (ORCPT
+	with ESMTP id S1753974AbaG2Q3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 12:29:27 -0400
+	Tue, 29 Jul 2014 12:29:25 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Mark Brown <broonie@kernel.org>
 Cc: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
@@ -16,9 +16,9 @@ Cc: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [RFC 5/5] ARM: dts: Improve Peach Pit and Pi power scheme model
-Date: Tue, 29 Jul 2014 18:28:59 +0200
-Message-Id: <1406651339-28901-6-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [RFC 4/5] regulator: tps65090: Set voltage for fixed regulators
+Date: Tue, 29 Jul 2014 18:28:58 +0200
+Message-Id: <1406651339-28901-5-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1406651339-28901-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1406651339-28901-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -26,68 +26,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DeviceTree files for the Peach Pit and Pi machines have
-a simplistic model of the connections between the different
-regulators since not all the tps65090 regulators get their
-input supply voltage from the VDC. DCDC1-3, LD0-1 and fet7
-parent supply is indded VDC but the fet1-6 get their input
-supply from the DCDC1 and DCDC2 output voltage rails.
+According to the tps65090 data manual [0], the DCDC1 and DCDC2
+step-down converters and the LDO's have a fixed output voltage.
 
-This information has to be present in the DTS since fets
-are switches that don't provide an output voltage so when
-this is needed, the parent input supply voltage is queried.
+Add this information to the driver since these fixed regulators
+be used as input supply for load switches which don't provide
+an output voltage and their parent supply voltage is used.
+
+[0]: http://www.ti.com/lit/gpn/tps65090
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
- arch/arm/boot/dts/exynos5420-peach-pit.dts | 12 ++++++------
- arch/arm/boot/dts/exynos5800-peach-pi.dts  | 12 ++++++------
- 2 files changed, 12 insertions(+), 12 deletions(-)
+ drivers/regulator/tps65090-regulator.c | 34 +++++++++++++++++++++-------------
+ 1 file changed, 21 insertions(+), 13 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-index 7656a42..acc2936 100644
---- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
-+++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-@@ -367,12 +367,12 @@
- 				vsys2-supply = <&vbat>;
- 				vsys3-supply = <&vbat>;
- 				infet1-supply = <&vbat>;
--				infet2-supply = <&vbat>;
--				infet3-supply = <&vbat>;
--				infet4-supply = <&vbat>;
--				infet5-supply = <&vbat>;
--				infet6-supply = <&vbat>;
--				infet7-supply = <&vbat>;
-+				infet2-supply = <&tps65090_dcdc1>;
-+				infet3-supply = <&tps65090_dcdc2>;
-+				infet4-supply = <&tps65090_dcdc2>;
-+				infet5-supply = <&tps65090_dcdc2>;
-+				infet6-supply = <&tps65090_dcdc2>;
-+				infet7-supply = <&tps65090_dcdc1>;
- 				vsys-l1-supply = <&vbat>;
- 				vsys-l2-supply = <&vbat>;
+diff --git a/drivers/regulator/tps65090-regulator.c b/drivers/regulator/tps65090-regulator.c
+index 2064b3f..919f5ce 100644
+--- a/drivers/regulator/tps65090-regulator.c
++++ b/drivers/regulator/tps65090-regulator.c
+@@ -192,12 +192,14 @@ static struct regulator_ops tps65090_fet_control_ops = {
+ static struct regulator_ops tps65090_ldo_ops = {
+ };
  
-diff --git a/arch/arm/boot/dts/exynos5800-peach-pi.dts b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-index 5f3e54f..6b83b98 100644
---- a/arch/arm/boot/dts/exynos5800-peach-pi.dts
-+++ b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-@@ -365,12 +365,12 @@
- 				vsys2-supply = <&vbat>;
- 				vsys3-supply = <&vbat>;
- 				infet1-supply = <&vbat>;
--				infet2-supply = <&vbat>;
--				infet3-supply = <&vbat>;
--				infet4-supply = <&vbat>;
--				infet5-supply = <&vbat>;
--				infet6-supply = <&vbat>;
--				infet7-supply = <&vbat>;
-+				infet2-supply = <&tps65090_dcdc1>;
-+				infet3-supply = <&tps65090_dcdc2>;
-+				infet4-supply = <&tps65090_dcdc2>;
-+				infet5-supply = <&tps65090_dcdc2>;
-+				infet6-supply = <&tps65090_dcdc2>;
-+				infet7-supply = <&tps65090_dcdc1>;
- 				vsys-l1-supply = <&vbat>;
- 				vsys-l2-supply = <&vbat>;
+-#define tps65090_REG_DESC(_id, _sname, _en_reg, _en_bits, _ops)	\
++#define tps65090_REG_DESC(_id, _sname, _en_reg, _en_bits, _nvolt, _volt, _ops) \
+ {							\
+ 	.name = "TPS65090_RAILS"#_id,			\
+ 	.supply_name = _sname,				\
+ 	.id = TPS65090_REGULATOR_##_id,			\
++	.n_voltages = _nvolt,				\
+ 	.ops = &_ops,					\
++	.fixed_uV = _volt,				\
+ 	.enable_reg = _en_reg,				\
+ 	.enable_val = _en_bits,				\
+ 	.enable_mask = _en_bits,			\
+@@ -205,39 +207,45 @@ static struct regulator_ops tps65090_ldo_ops = {
+ 	.owner = THIS_MODULE,				\
+ }
+ 
++#define tps65090_REG_FIX(_id, _sname, en_reg, _en_bits, _volt, _ops) \
++	tps65090_REG_DESC(_id, _sname, en_reg, _en_bits, 1, _volt, _ops)
++
++#define tps65090_REG_VAR(_id, _sname, en_reg, _en_bits, _ops) \
++	tps65090_REG_DESC(_id, _sname, en_reg, _en_bits, 0, 0, _ops)
++
+ static struct regulator_desc tps65090_regulator_desc[] = {
+-	tps65090_REG_DESC(DCDC1, "vsys1",   0x0C, BIT(CTRL_EN_BIT),
++	tps65090_REG_FIX(DCDC1, "vsys1",   0x0C, BIT(CTRL_EN_BIT), 5000000,
+ 			  tps65090_reg_control_ops),
+-	tps65090_REG_DESC(DCDC2, "vsys2",   0x0D, BIT(CTRL_EN_BIT),
++	tps65090_REG_FIX(DCDC2, "vsys2",   0x0D, BIT(CTRL_EN_BIT), 3300000,
+ 			  tps65090_reg_control_ops),
+-	tps65090_REG_DESC(DCDC3, "vsys3",   0x0E, BIT(CTRL_EN_BIT),
++	tps65090_REG_VAR(DCDC3, "vsys3",   0x0E, BIT(CTRL_EN_BIT),
+ 			  tps65090_reg_control_ops),
+ 
+-	tps65090_REG_DESC(FET1,  "infet1",  0x0F,
++	tps65090_REG_VAR(FET1,  "infet1",  0x0F,
+ 			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
+ 			  tps65090_fet_control_ops),
+-	tps65090_REG_DESC(FET2,  "infet2",  0x10,
++	tps65090_REG_VAR(FET2,  "infet2",  0x10,
+ 			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
+ 			  tps65090_fet_control_ops),
+-	tps65090_REG_DESC(FET3,  "infet3",  0x11,
++	tps65090_REG_VAR(FET3,  "infet3",  0x11,
+ 			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
+ 			  tps65090_fet_control_ops),
+-	tps65090_REG_DESC(FET4,  "infet4",  0x12,
++	tps65090_REG_VAR(FET4,  "infet4",  0x12,
+ 			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
+ 			  tps65090_fet_control_ops),
+-	tps65090_REG_DESC(FET5,  "infet5",  0x13,
++	tps65090_REG_VAR(FET5,  "infet5",  0x13,
+ 			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
+ 			  tps65090_fet_control_ops),
+-	tps65090_REG_DESC(FET6,  "infet6",  0x14,
++	tps65090_REG_VAR(FET6,  "infet6",  0x14,
+ 			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
+ 			  tps65090_fet_control_ops),
+-	tps65090_REG_DESC(FET7,  "infet7",  0x15,
++	tps65090_REG_VAR(FET7,  "infet7",  0x15,
+ 			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
+ 			  tps65090_fet_control_ops),
+ 
+-	tps65090_REG_DESC(LDO1,  "vsys-l1", 0, 0,
++	tps65090_REG_FIX(LDO1,  "vsys-l1", 0, 0, 5000000,
+ 			  tps65090_ldo_ops),
+-	tps65090_REG_DESC(LDO2,  "vsys-l2", 0, 0,
++	tps65090_REG_FIX(LDO2,  "vsys-l2", 0, 0, 3300000,
+ 			  tps65090_ldo_ops),
+ };
  
 -- 
 2.0.0.rc2
