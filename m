@@ -1,119 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380AbaG2NmI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 09:42:08 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38114 "EHLO bear.ext.ti.com"
+	id S1753583AbaG2NnO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 09:43:14 -0400
+Received: from mail.kernel.org ([198.145.19.201]:50952 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750960AbaG2NmG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 09:42:06 -0400
-From: "Murphy, Dan" <dmurphy@ti.com>
-To: =?iso-8859-1?Q?Michal_Mal=FD?= <madcatxster@devoid-pointer.net>
-CC: "simon@mungewell.org" <simon@mungewell.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Elias Vanderstuyft <elias.vds@gmail.com>
-Subject: Re: [v2] input: drv260x: Add TI drv260x haptics driver
-Thread-Topic: [v2] input: drv260x: Add TI drv260x haptics driver
-Thread-Index: AQHPqoRzccs1z7hlMk6AmjOpJP7QQQ==
-Date: Tue, 29 Jul 2014 13:41:57 +0000
-Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49DB2A71@DFLE09.ent.ti.com>
-References: <1406566403-1436-1-git-send-email-dmurphy@ti.com>
- <5adf0339146a7b655a77053195aa892c.squirrel@mungewell.org>
- <00FC9A978A94B7418C33AFAE8A35ED49DB1A79@DFLE09.ent.ti.com>
- <2696156.zc98nP9bBH@sigyn>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1750918AbaG2NnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 09:43:13 -0400
+Date: Tue, 29 Jul 2014 10:43:08 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/2] perf tools: Ensure --symfs ends with '/'
+Message-ID: <20140729134308.GQ7831@kernel.org>
+References: <1406251908-8195-1-git-send-email-namhyung@kernel.org>
+ <20140729050246.GC22707@bbox>
+ <20140729123305.GO7831@kernel.org>
+ <20140729132657.GA5022@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140729132657.GA5022@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal
-
-Thanks for the feedback
-
-On 07/29/2014 07:09 AM, Michal Malý wrote:
-> On Monday 28 of July 2014 21:21:26 Murphy, Dan wrote:
->> Dmitry
->>
->> On 07/28/2014 12:59 PM, simon@mungewell.org wrote:
->>>>> The initial driver supports the devices
->>>>> real time playback mode.  But the device
->>>>> has additional wave patterns in ROM.
->>>>
->>>> As it presented the device appears to be a memoryless device, however
->>>> you present it to the rest of the system as if it can support playback
->>>> of multiple effects simultaneously, which is incorrect.
->>>>
->>>> My guess that you need to engage the memoryless input library to schedule
->>>> handling multiple effects for your device, including ramping up, ramping
->>>> down, stopping playback when effects runs out, etc.
->>>
->>> Hi Dan,
->>> Elias and Michal (cc'ed) are working on a kernel/userland library to
->>> handle sending multiple force feedback signals to 'simple' devices,
->>> perhaps you should engage with them.
->>>
->>> Simon
+Em Tue, Jul 29, 2014 at 10:26:57PM +0900, Minchan Kim escreveu:
+> Hello,
 > 
-> Hi Dan,
+> On Tue, Jul 29, 2014 at 09:33:05AM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Tue, Jul 29, 2014 at 02:02:46PM +0900, Minchan Kim escreveu:
+> > > On Fri, Jul 25, 2014 at 10:31:47AM +0900, Namhyung Kim wrote:
+> > > > Minchan reported that perf failed to load vmlinux if --symfs argument
+> > > > doesn't end with '/' character.  So make sure that the symfs always
+> > > > ends with the '/'.
+> > > > 
+> > > > Reported-by: Minchan Kim <minchan@kernel.org>
+> > > > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> > > 
+> > > Both patches work and are handy to me.
+> > > Thanks Namhyung.
+> > 
+> > I haven't said it is not :-) Just that it should be fixed in a different
+> > way.
 > 
-> since I spent some time trying to improve the memoryless library I can 
-> hopefully provide you with some hints.
+> I just wanted to confirm Namhyung's patches work as reporter. :)
 > 
-> If I'm reading this right, your device cannot play more than one effect at once 
-> but it can operate eihter in RTP mode where the user controls the operation of 
-> the motors directly on in an automated mode where the device follows some pre-
-> programmed waveform. These two modes are mutually exclusive.
-
-Actually there is one other mode here, that is the ability to program in a
-waveform to be played.  So that makes 3 modes I have to think about supporting.
-
-I know there are products out there that would like to and do customize their feedback
-based on certain user actions.
-
-For the custom mode I could use the FF_CUSTOM id but not sure
-how that fits into the Periodic structure.  If I can get two out of 3 that would be
-great.
-
+> > 
+> > Can you please try the patch below instead?
 > 
-> If my understanding of the problem is correct, you will struggle both with 
-> memoryless library and your own imlementation. The memoryless library is quite 
-> simplistic and it doesn't have any sort of "passthrough" mode so you would not 
-> be able to do anything besides RTP that way.
-> 
-> On the other hand if you decide to write your own implementation of effect 
-> handling you will end up duplicating a lot of code that already exists in the 
-> memoryless library and has been proven to work.
-> 
-> A possible solution for the problem would be to separate the functions that 
-> control effect timing from the memoryless library and make them globally 
-> accessible. I believe that this would simplify any customized haptic 
-> implementation considerably and it might be a decent interim solution before 
-> the project Simon mentioned is ready.
+> Tested. It works.
 
-How far are you on finishing the project?
-If it is only a little bit out I can just keep with the memless RTP mode
-as a start and then implement the other functions once the solution is accepted.
+Thanks, Adding a Tested-by: you, in addition to the Reported-by: you
+already there.
 
-Dan
+> And I'd like to say that [2/2] in patchset is handy to me.
 
+I'll check it.
+ 
+> Thanks.
 > 
-> If there is anybody interested in such a solution I can probably whip up a 
-> patch for it quite quickly.
+> > 
+> > David, was there any reason not to do it like done in this patch?
+> > 
+> > - Arnaldo
+> > 
+> > ---
+> >  annotate.c |    4 ++--
+> >  dso.c      |    8 ++++----
+> >  symbol.c   |    2 +-
+> >  3 files changed, 7 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+> > index 809b4c50beae..e67ef4a2b356 100644
+> > --- a/tools/perf/util/annotate.c
+> > +++ b/tools/perf/util/annotate.c
+> > @@ -900,7 +900,7 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
+> >  	bool delete_extract = false;
+> >  
+> >  	if (filename) {
+> > -		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
+> > +		snprintf(symfs_filename, sizeof(symfs_filename), "%s/%s",
+> >  			 symbol_conf.symfs, filename);
+> >  	}
+> >  
+> > @@ -922,7 +922,7 @@ fallback:
+> >  		 * DSO is the same as when 'perf record' ran.
+> >  		 */
+> >  		filename = (char *)dso->long_name;
+> > -		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
+> > +		snprintf(symfs_filename, sizeof(symfs_filename), "%s/%s",
+> >  			 symbol_conf.symfs, filename);
+> >  		free_filename = false;
+> >  	}
+> > diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+> > index 90d02c661dd4..f81550583429 100644
+> > --- a/tools/perf/util/dso.c
+> > +++ b/tools/perf/util/dso.c
+> > @@ -79,7 +79,7 @@ int dso__read_binary_type_filename(const struct dso *dso,
+> >  		while (last_slash != dso->long_name && *last_slash != '/')
+> >  			last_slash--;
+> >  
+> > -		len = scnprintf(filename, size, "%s", symbol_conf.symfs);
+> > +		len = scnprintf(filename, size, "%s/", symbol_conf.symfs);
+> >  		dir_size = last_slash - dso->long_name + 2;
+> >  		if (dir_size > (size - len)) {
+> >  			ret = -1;
+> > @@ -108,17 +108,17 @@ int dso__read_binary_type_filename(const struct dso *dso,
+> >  	case DSO_BINARY_TYPE__VMLINUX:
+> >  	case DSO_BINARY_TYPE__GUEST_VMLINUX:
+> >  	case DSO_BINARY_TYPE__SYSTEM_PATH_DSO:
+> > -		snprintf(filename, size, "%s%s",
+> > +		snprintf(filename, size, "%s/%s",
+> >  			 symbol_conf.symfs, dso->long_name);
+> >  		break;
+> >  
+> >  	case DSO_BINARY_TYPE__GUEST_KMODULE:
+> > -		snprintf(filename, size, "%s%s%s", symbol_conf.symfs,
+> > +		snprintf(filename, size, "%s/%s/%s", symbol_conf.symfs,
+> >  			 root_dir, dso->long_name);
+> >  		break;
+> >  
+> >  	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
+> > -		snprintf(filename, size, "%s%s", symbol_conf.symfs,
+> > +		snprintf(filename, size, "%s/%s", symbol_conf.symfs,
+> >  			 dso->long_name);
+> >  		break;
+> >  
+> > diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+> > index eb06746b06b2..c3549d5955ea 100644
+> > --- a/tools/perf/util/symbol.c
+> > +++ b/tools/perf/util/symbol.c
+> > @@ -1468,7 +1468,7 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
+> >  	if (vmlinux[0] == '/')
+> >  		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s", vmlinux);
+> >  	else
+> > -		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s%s",
+> > +		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s/%s",
+> >  			 symbol_conf.symfs, vmlinux);
+> >  
+> >  	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
 > 
-> Regards,
-> Michal
-> 
-
-
--- 
-------------------
-Dan Murphy
+> -- 
+> Kind regards,
+> Minchan Kim
