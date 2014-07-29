@@ -1,53 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643AbaG2XZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 19:25:55 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38848 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbaG2XZx (ORCPT
+	id S1754648AbaG2X0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 19:26:41 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:50236 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754415AbaG2X0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 19:25:53 -0400
-Message-ID: <53D82D7D.4030903@gmail.com>
-Date: Wed, 30 Jul 2014 01:25:49 +0200
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Vladimir Davydov <vdavydov@parallels.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, linux-scsi@vger.kernel.org
-Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69 kmem_cache_create+0x1a9/0x330()
-References: <53C8DF7F.5060707@gmail.com> <53C8FD95.5020302@gmail.com> <20140718132104.GK27940@esperanza> <20140718141747.GA23272@lst.de> <53C97D34.5040707@gmail.com> <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com> <20140719164454.GA24530@lst.de> <53CCDFC3.5010802@gmail.com> <20140726162102.GA7126@lst.de> <1406533762.2003.13.camel@jarvis> <20140729122611.GA25980@lst.de>
-In-Reply-To: <20140729122611.GA25980@lst.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 29 Jul 2014 19:26:39 -0400
+Date: Tue, 29 Jul 2014 16:26:35 -0700 (PDT)
+Message-Id: <20140729.162635.638786990787878495.davem@davemloft.net>
+To: mroos@linux.ee
+Cc: aaro.koskinen@iki.fi, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hughd@google.com,
+        cat.schulze@alice-dsl.net
+Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.SOC.1.00.1404170119550.20193@math.ut.ee>
+References: <20140414184353.GA5630@drone.musicnaut.iki.fi>
+	<20140416.145822.1317931249717152474.davem@davemloft.net>
+	<alpine.SOC.1.00.1404170119550.20193@math.ut.ee>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 29 Jul 2014 16:26:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.07.2014 14:26, Christoph Hellwig wrote:
-> On Mon, Jul 28, 2014 at 11:49:22AM +0400, James Bottomley wrote:
->> That needs to be
->>
->> From: James Bottomley <JBottomley@Parallels.com>
->>
->> As well.  I do list handling on hansenpartnership.com to minimise
->> exchange wreckage on mailinglists, but I should acknowledge Parallels as
->> supporting the work I do.
+From: mroos@linux.ee
+Date: Thu, 17 Apr 2014 01:22:17 +0300 (EEST)
+
+>> > Just for the archives, I got one of these again with 3.14:
+>> 
+>> Meelis and Aaro, thanks again for all of your reports.
+>> 
+>> After pouring over a lot of the data and auditing some code I'm
+>> suspecting it's a problem with transparent huge pages.
+>> 
+>> One thing you two can do to help me further confirm this is to run
+>> with THP disabled for a while and see if you still get the log
+>> messages.
 > 
-> Thanks, I've update the author, added a Cc to ћtable and pushed it out to
-> the core-for-3.17 branch.
+> I have snice turned off CONFIG_TRANSPARENT_HUGEPAGE on 3 of 4 servers 
+> that had this problem (actually most of my sparc64 machines) and the 4th 
+> has
 > 
+> CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
+> CONFIG_TRANSPARENT_HUGEPAGE=y
+> # CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS is not set
+> CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y
+> # CONFIG_HUGETLBFS is not set
+> # CONFIG_HUGETLB_PAGE is not se
+> 
+> and also has not had this problem since then. All 4 machines have been 
+> running through most -rc's of every kernel.
 
-Thanks guys!
+Here is something I'd like you guys to test.
 
-Ref.
-http://git.infradead.org/users/hch/scsi-queue.git/patch/884ffee?hp=16acf5d
+Yesterday, Christopher (CC:'d), posted some fixes yesterday and one of
+them is very interesting.
 
+Basically the update_mmu_cache() methods on sparc64 can insert an
+invalid PTE into the TSB hash tables, causing livelocks and other
+annoying issues.
 
-poma
+The path where this can happen is via remove_migration_pte().
 
+I had a discussion with Johannes Weiner about this and we determined
+that it would make sense to mis-diagnose THP as being the root cause
+in the RSS counter et al. problems if this bug here is the real
+reason those things are happening.
 
+That's because if you're not using THP there is less compaction going
+on.  Less compaction means less migration, and therefore a lower
+likelyhood of this code path triggering like this.
+
+Could you guys please try this patch below?  Thanks.
+
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index 16b58ff..8e894e0 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -351,6 +351,10 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *
+ 
+ 	mm = vma->vm_mm;
+ 
++	/* Don't insert a non-valid PTE into the TSB, we'll deadlock.  */
++	if (!pte_accessible(mm, pte))
++		return;
++
+ 	spin_lock_irqsave(&mm->context.lock, flags);
+ 
+ #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
+@@ -2617,6 +2621,10 @@ void update_mmu_cache_pmd(struct vm_area_struct *vma, unsigned long addr,
+ 	if (!pmd_large(entry) || !pmd_young(entry))
+ 		return;
+ 
++	/* Don't insert a non-valid PMD into the TSB, we'll deadlock.  */
++	if (!(pte & _PAGE_VALID))
++		return;
++
+ 	pte = pmd_val(entry);
+ 
+ 	/* We are fabricating 8MB pages using 4MB real hw pages.  */
