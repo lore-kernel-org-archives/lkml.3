@@ -1,107 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaG2AJz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 20:09:55 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:52720 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726AbaG2AJy (ORCPT
+	id S1752375AbaG2AKY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 20:10:24 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:57463 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730AbaG2AKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 20:09:54 -0400
-From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
-To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, klmckinney1@gmail.com, mail@beyermatthias.de,
-        Murilo Opsfelder Araujo <mopsfelder@gmail.com>
-Subject: [PATCH] Staging: bcm: Bcmchar.c: remove else statement after return
-Date: Mon, 28 Jul 2014 21:09:14 -0300
-Message-Id: <1406592554-9519-1-git-send-email-mopsfelder@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 28 Jul 2014 20:10:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <53D6DFE7.3040901@wwwdotorg.org>
+References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk>
+	<53CECAEC.8080905@wwwdotorg.org>
+	<53CFD50C.4040509@itdev.co.uk>
+	<53CFEF6E.2060905@wwwdotorg.org>
+	<53D10E78.4010908@itdev.co.uk>
+	<53D17845.4020507@wwwdotorg.org>
+	<53D26572.3030404@itdev.co.uk>
+	<53D2B8D0.5090000@wwwdotorg.org>
+	<CAPDwgkNrBRJRR6WtoPSfs8Yq=ui-Ptjju4mJ=9h=95YVFuxw7g@mail.gmail.com>
+	<53D6BF50.3070306@wwwdotorg.org>
+	<53D6DFE7.3040901@wwwdotorg.org>
+Date: Mon, 28 Jul 2014 20:10:19 -0400
+X-Google-Sender-Auth: oZkf4Qqf-pVL7UZML6jzd-6JmSg
+Message-ID: <CAPDwgkPL1utj3DFoFbOCcJsASpf+12nvKg1KcseV_MhEz66eiw@mail.gmail.com>
+Subject: Re: [PATCH 00/15] atmel_mxt_ts - device tree, bootloader, etc
+From: Yufeng Shen <miletus@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Nick Dyer <nick.dyer@itdev.co.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        benson Leung <bleung@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes checkpatch.pl script happier by fixing all warnings
-related to else statement after break or return.
+On Mon, Jul 28, 2014 at 7:42 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 07/28/2014 03:23 PM, Stephen Warren wrote:
+>>
+>> On 07/28/2014 02:20 PM, Yufeng Shen wrote:
+>
+> ...
+>
+>>> Where did you get the configuration file ? It is possible that we rely
+>>> too much on mxt_start to turn on the T9.CTRL bit and have neglected
+>>> its setting in the config file.
+>>> If you can tell me where you get the config file I can do a check.
+>>
+>>
+>> It was already flashed into the touchpad when I received the board. I
+>> did try to track down the firmware/config files a few months ago, but
+>> didn't manage to; I was told since they were already flashed so I didn't
+>> need them. The board is Venice2.
+>
+>
+> OK, I received the configuration and firmware file that's supposed to be in
+> the touchpad.
+>
+> I can see that the config file I was given has the "83" byte in the T9
+> configuration, and in fact /almost/ exactly matches the configuration I
+> have. I don't know why my T9 configuration was wrong before, but I suspect
+> it's not worth trying to track that down.
+>
+> Anyway, here's the diff between the two config files:
+>
+>> # diff -u mxt-save-after-t9-83-write.xml 224sl.raw
+>> --- mxt-save-after-t9-83-write.xml      2014-07-25 19:41:45.000000000
+>> +0000
+>> +++ 224sl.raw   2014-07-28 23:25:49.000000000 +0000
+>> @@ -1,8 +1,7 @@
+>>  OBP_RAW V1
+>>  82 01 10 AA 12 0C 16
+>>  F5AF33
+>> -000000
+>> -0025 0000 0082 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>> 00 00 00 00 00 00 00 00 00 00 00
+>> +E21E65
+>>  0026 0000 0008 00 00 00 00 00 00 00 00
+>>  0007 0000 0004 20 10 32 00
+>>  0008 0000 000A 1E 00 28 28 00 00 00 00 00 00
+>
+>
+> It seems that the T25(?) entry is missing in the new/expected configuration
+> file. I figured I'd try out the new/expected configuration file, so did:
+>
 
-Signed-off-by: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
----
- drivers/staging/bcm/Bcmchar.c |   21 ++++++++++-----------
- 1 file changed, 10 insertions(+), 11 deletions(-)
+T37 (0x25) is DEBUG_DIAGNOSTIC object which the host can read debugging info
+from. It is not useful to have a initial config for it so usually CrOS
+system would just
+don't include configuration for this object.
 
-diff --git a/drivers/staging/bcm/Bcmchar.c b/drivers/staging/bcm/Bcmchar.c
-index c1e01f7..5790627 100644
---- a/drivers/staging/bcm/Bcmchar.c
-+++ b/drivers/staging/bcm/Bcmchar.c
-@@ -561,10 +561,10 @@ static int bcm_char_ioctl_gpio_set_request(void __user *argp,
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL,
- 				"GPIO_MODE_REGISTER read failed");
- 		return Status;
--	} else {
--		Status = STATUS_SUCCESS;
- 	}
- 
-+	Status = STATUS_SUCCESS;
-+
- 	/* Set the gpio mode register to output */
- 	*(UINT *)ucResetValue |= (1<<uiBit);
- 	Status = wrmaltWithLock(Adapter, GPIO_MODE_REGISTER,
-@@ -669,10 +669,10 @@ static int bcm_char_ioctl_gpio_status_request(void __user *argp,
- 		Status = bytes;
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
- 				"RDM Failed\n");
--		return Status;
- 	} else {
- 		Status = STATUS_SUCCESS;
- 	}
-+
- 	return Status;
- }
- 
-@@ -763,10 +763,10 @@ static int bcm_char_ioctl_gpio_multi_request(void __user *argp,
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
- 					"RDM to GPIO_PIN_STATE_REGISTER Failed.");
- 			return Status;
--		} else {
--			Status = STATUS_SUCCESS;
- 		}
- 
-+		Status = STATUS_SUCCESS;
-+
- 		pgpio_multi_info[WIMAX_IDX].uiGPIOValue =
- 			(*(UINT *)ucResetValue &
- 			pgpio_multi_info[WIMAX_IDX].uiGPIOMask);
-@@ -819,10 +819,10 @@ static int bcm_char_ioctl_gpio_mode_request(void __user *argp,
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
- 			"Read of GPIO_MODE_REGISTER failed");
- 		return Status;
--	} else {
--		Status = STATUS_SUCCESS;
- 	}
- 
-+	Status = STATUS_SUCCESS;
-+
- 	/* Validating the request */
- 	if (IsReqGpioIsLedInNVM(Adapter, pgpio_multi_mode[WIMAX_IDX].uiGPIOMask)
- 			== false) {
-@@ -1076,11 +1076,11 @@ static int bcm_char_ioctl_buffer_download_stop(void __user *argp,
- 		up(&Adapter->fw_download_sema);
- 		up(&Adapter->NVMRdmWrmLock);
- 		return Status;
--	} else {
--		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG,
--				DBG_LVL_ALL, "Firm Download Over...\n");
- 	}
- 
-+	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG,
-+			DBG_LVL_ALL, "Firm Download Over...\n");
-+
- 	mdelay(10);
- 
- 	/* Wait for MailBox Interrupt */
-@@ -2649,4 +2649,3 @@ void unregister_control_device_interface(struct bcm_mini_adapter *Adapter)
- 		unregister_chrdev(Adapter->major, DEV_NAME);
- 	}
- }
--
--- 
-1.7.10.4
+Nick, I want to confirm with you that does T37 contribute to config
+checksum computation ?
 
+> # ./obp-utils/mxt-app -d i2c-dev:1-004b --load 224sl.raw
+> # ./obp-utils/mxt-app -d i2c-dev:1-004b --save
+> mxt-save-after-loading-224sl.raw.xml
+>
+> At this point, mxt-save-after-loading-224sl.raw.xml contains identical
+> content to mxt-save-after-t9-83-write.xml (my previous backup). It looks
+> like the new configuration isn't being loaded correctly, or perhaps
+> configuration loading doesn't delete entries that are simply not in the new
+> configuration file?
+>
+
+Yeah, I would guess since T37 is not in the config, so whatever in the NVRAM
+stays the same and when you --save its original value gets dumped.
+
+> I subsequently did the following in case --save is reading from the NVRAM
+> rather than RAM:
+>
+> # ./obp-utils/mxt-app -d i2c-dev:1-004b --backup
+> # ./obp-utils/mxt-app -d i2c-dev:1-004b --save
+> mxt-save-after-loading-224sl.raw.xml
+>
+> ... but that made no difference.
+>
+> I haven't yet tried upgrading or otherwise using the new firmware image. I'd
+> like to make sure config load/save is fully working first, in case there's
+> any common problem between the two.
