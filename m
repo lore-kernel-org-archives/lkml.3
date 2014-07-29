@@ -1,94 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121AbaG2PaT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:30:19 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:42134 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643AbaG2PaM (ORCPT
+	id S1754176AbaG2Paa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:30:30 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:49297 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753643AbaG2Pa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:30:12 -0400
+	Tue, 29 Jul 2014 11:30:27 -0400
+X-Originating-IP: 50.43.15.134
+Date: Tue, 29 Jul 2014 08:30:16 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Thomas Graf <tgraf@suug.ch>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kaber@trash.net, paulmck@linux.vnet.ibm.com, challa@noironetworks.com,
+        walpole@cs.pdx.edu, dev@openvswitch.org
+Subject: Re: [PATCH 1/2] lib: Resizable, Scalable, Concurrent Hash Table
+Message-ID: <20140729153016.GC1437@jtriplet-mobl1>
+References: <cover.1406633945.git.tgraf@suug.ch>
+ <1cd2f98b8362052eff24d481b7c9622eb770d091.1406633945.git.tgraf@suug.ch>
 MIME-Version: 1.0
-In-Reply-To: <53D7AA72.6010309@mm-sol.com>
-References: <53D788A7.4020303@mm-sol.com> <3794875.CZFbAag5Sv@wuerfel> <53D7AA72.6010309@mm-sol.com>
-From: Rob Herring <rob.herring@linaro.org>
-Date: Tue, 29 Jul 2014 10:29:50 -0500
-Message-ID: <CABGGisy6_TOkT7fHp049rwH_FhQxCRGQqGBCsODUFTTchhsLvg@mail.gmail.com>
-Subject: Re: use IORESOURCE_REG resource type for non-translatable addresses
- in DT
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robherring2@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Mark Brown <broonie@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1cd2f98b8362052eff24d481b7c9622eb770d091.1406633945.git.tgraf@suug.ch>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 9:06 AM, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
-> Arnd, thanks for the comments.
->
-> On 07/29/2014 03:00 PM, Arnd Bergmann wrote:
->> On Tuesday 29 July 2014 14:42:31 Stanimir Varbanov wrote:
->>>         taddr = of_translate_address(dev, addrp);
->>> -       if (taddr == OF_BAD_ADDR)
->>> -               return -EINVAL;
->>> +       /*
->>> +        * if the address is non-translatable to cpu physical address
->>> +        * fallback to a IORESOURCE_REG resource.
->>> +        */
->>> +       if (taddr == OF_BAD_ADDR) {
->>> +               memset(r, 0, sizeof(*r));
->>> +               taddr = of_read_number(addrp, 1);
->>> +               if (taddr == OF_BAD_ADDR)
->>> +                       return -EINVAL;
->>> +               r->start = taddr;
->>> +               r->end = taddr + size - 1;
->>> +               r->flags = IORESOURCE_REG;
->>> +               r->name = name ? name : dev->full_name;
->>> +               return 0;
->>> +       }
->>> +
->>
->> I don't think that everything returning OF_BAD_ADDR makes sense
->> to turn into IORESOURCE_REG. It could be an e.g. invalid DT
->> representation, a node with #size-cells=<0>, or it could be
->> something that gets translated one or more nodes up in the
->> tree before it reaches a bus without a ranges property.
->>
->> Also, you should not rely on #address-cells being hardcoded
->> to <1> above.
->>
->
-> This was just an example. Of course it has many issues and probaly it is
-> wrong:) The main goal was to understand does IORESOURCE_REG resource
-> type and parsing the *reg* properties for non-translatable addresses are
-> feasible. And also does it acceptable by community and OF platform
-> maintainers.
+On Tue, Jul 29, 2014 at 01:41:32PM +0200, Thomas Graf wrote:
+> Generic implementation of a resizable, scalable, concurrent hash table
+> based on [0]. The implementation supports both, fixed size keys specified
+> via an offset and length, or arbitrary keys via own hash and compare
+> functions.
+> 
+> Lookups are lockless and protected as RCU read side critical sections.
+> Automatic growing/shrinking based on user configurable watermarks is
+> available while allowing concurrent lookups to take place.
+> 
+> Objects to be hashed must include a struct rhash_head. The reason for not
+> using the existing struct hlist_head is that the expansion and shrinking
+> will have two buckets point to a single entry which would lead in obscure
+> reverse chaining behaviour.
+> 
+> Code includes a boot selftest if CONFIG_TEST_RHASHTABLE is defined.
+> 
+> [0] https://www.usenix.org/legacy/event/atc11/tech/final_files/Triplett.pdf
+> 
+> Signed-off-by: Thomas Graf <tgraf@suug.ch>
 
-I guess the question I have is what is the advantage of making this a
-resource? You can't really pass it to other functions.
+Thanks for working on this!
 
-We're moving in the opposite direction for IRQs as now
-platform_get_irq translates the IRQ directly rather than using the
-resource (but the resource is still there just to avoid potentially
-breaking things for now).
+Currently reading the algorithm implementation in more detail.  A couple
+of minor issues below.
 
->> How about modifying of_get_address() rather than
->> __of_address_to_resource() instead? You could introduce
->> a new of_bus entry for each bus you expect to return
->> an IORESOURCE_REG, or you could change of_bus_default_get_flags
->> to return IORESOURCE_REG if the parent node has no ranges property
->> and is not the root node.
->
-> IMO the clearer solution is to introduce a new of_bus bus. In that case
-> one possible problem will be how to distinguish the non-translatable and
-> the other buses. Also the *device_type* property is deprecated for non
-> PCI devices.
+> --- /dev/null
+> +++ b/include/linux/rhashtable.h
+[...]
+> +struct rhash_head {
+> +	struct rhash_head		*next;
+> +};
 
-You would have to look for the presence or absence of ranges property.
+Arguably this could become a new singly-linked list type in list.h;
+we don't currently have one.
 
-Rob
+> +/**
+> + * rht_for_each_entry_safe - safely iterate over hash chain of given type
+> + * @pos:	type * to use as a loop cursor.
+> + * @n:		type * to use for temporary next object storage
+> + * @head:	head of the hash chain (struct rhash_head *)
+> + * @ht:		pointer to your struct rhashtable
+> + * @member:	name of the rhash_head within the hashable struct.
+> + *
+> + * This hash chain list-traversal primitive allows for the looped code to
+> + * remove the loop cursor from the list.
+> + */
+> +#define rht_for_each_entry_safe(pos, n, head, ht, member)		\
+> +	for (pos = rht_entry_safe(rht_dereference(head, ht), \
+> +				   typeof(*(pos)), member), \
+> +	     n = rht_entry_safe(rht_dereference((pos)->member.next, ht), \
+> +				 typeof(*(pos)), member); \
+> +	     pos; \
+> +	     pos = n, \
+> +	     n = rht_entry_safe(rht_dereference((pos)->member.next, ht), \
+> +				 typeof(*(pos)), member))
+
+Given that removal requires special care, is this something actually
+needed in the public interface, or only internally?  You don't
+necessarily need to define a full set of list primitives.  (Unless of
+course you make this a new list type in list.h.)
+
+> --- /dev/null
+> +++ b/lib/rhashtable.c
+[...]
+> +#define ASSERT_RHT_MUTEX(HT) BUG_ON(unlikely(!lockdep_rht_mutex_is_held(HT)))
+
+BUG_ON and WARN_ON already include unlikely(); you don't need to add it
+yourself.
+
+> +/**
+> + * rht_obj - cast hash head to outer object
+> + * @ht:		hash table
+> + * @he:		hashed node
+> + */
+> +void *rht_obj(const struct rhashtable *ht, const struct rhash_head *he)
+> +{
+> +	return (void *) he - ht->p.head_offset;
+> +}
+> +EXPORT_SYMBOL_GPL(rht_obj);
+
+Should this be a static inline?  And, will the runtime indirection
+involved in head_offset add unnecessary overhead for tables of a known
+type?  (I'd expect a head_offset of 0 in common cases.)
+
+- Josh Triplett
