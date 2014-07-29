@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168AbaG2VEJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 17:04:09 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60380 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752030AbaG2VEH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 17:04:07 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Joerg Roedel <joro@8bytes.org>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
+	id S1754207AbaG2VFD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 17:05:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53209 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751466AbaG2VFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 17:05:01 -0400
+Date: Tue, 29 Jul 2014 23:04:57 +0200
+From: Jan Kara <jack@suse.cz>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Jan Kara <jack@suse.cz>, Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6 v2] PM / Hibernate: Memory bitmap scalability improvements
-Date: Tue, 29 Jul 2014 23:22:39 +0200
-Message-ID: <3290133.D59AnCbavX@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140728135933.GA5918@pd.tnic>
-References: <1405938422-21900-1-git-send-email-joro@8bytes.org> <20140722103443.GV30979@8bytes.org> <20140728135933.GA5918@pd.tnic>
+Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the DAX
+ page fault handler
+Message-ID: <20140729210457.GA17807@quack.suse.cz>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <c2e602f401a580c4fac54b9b8f4a6f8dd0ac1071.1395591795.git.matthew.r.wilcox@intel.com>
+ <20140409102758.GM32103@quack.suse.cz>
+ <20140409205111.GG5727@linux.intel.com>
+ <20140409214331.GQ32103@quack.suse.cz>
+ <20140729121259.GL6754@linux.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140729121259.GL6754@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 28, 2014 03:59:33 PM Borislav Petkov wrote:
-> On Tue, Jul 22, 2014 at 12:34:44PM +0200, Joerg Roedel wrote:
-> > So my test was to resume from a swap partition that contained no image.
-> > Here is the result from the 16GB machine. First with a v3.16-rc6 kernel
-> > without my changes:
+On Tue 29-07-14 08:12:59, Matthew Wilcox wrote:
+> On Wed, Apr 09, 2014 at 11:43:31PM +0200, Jan Kara wrote:
+> > So there are three places that can fail after we allocate the block:
+> > 1) We race with truncate reducing i_size
+> > 2) dax_get_pfn() fails
+> > 3) vm_insert_mixed() fails
 > > 
-> > kv:~/base # time perf record /usr/sbin/resume /dev/sda1
-> > resume: libgcrypt version: 1.5.3
-> > [ perf record: Woken up 1 times to write data ]
-> > [ perf record: Captured and wrote 0.019 MB perf.data (~823 samples) ]
-> > 
-> > real    0m0.084s
-> > user    0m0.012s
-> > sys     0m0.064s
-> > 
-> > Here is the result with my patches on top:
-> > 
-> > kv:~/hibernate # time perf record /usr/sbin/resume /dev/sda1
-> > resume: libgcrypt version: 1.5.3
-> > [ perf record: Woken up 1 times to write data ]
-> > [ perf record: Captured and wrote 0.014 MB perf.data (~602 samples) ]
-> > 
-> > real    0m0.032s
-> > user    0m0.003s
-> > sys     0m0.027s
-> > 
-> > So we save around 50ms (or 62% of time) already on this 16GB machine.
+> > I would guess that 2) can fail only if the HW has problems and leaking
+> > block in that case could be acceptable (please correct me if I'm wrong).
+> > 3) shouldn't fail because of ENOMEM because fault has already allocated all
+> > the page tables and EBUSY should be handled as well. So the only failure we
+> > have to care about is 1). And we could move ->get_block() call under
+> > i_mmap_mutex after the i_size check.  Lock ordering should be fine because
+> > i_mmap_mutex ranks above page lock under which we do block mapping in
+> > standard ->page_mkwrite callbacks. The only (big) drawback is that
+> > i_mmap_mutex will now be held for much longer time and thus the contention
+> > would be much higher. But hopefully once we resolve our problems with
+> > mmap_sem and introduce mapping range lock we could scale reasonably.
 > 
-> So, let's see, with Joerg's patches we
+> Lockdep barfs on holding i_mmap_mutex while calling ext4's ->get_block.
 > 
-> - solve the issue on huge boxes. And yes, we most definitely want to be
-> able to suspend them too. RAS is one very prominent use case here.
+> Path 1:
 > 
-> *and*
-> 
-> - we see improvement on smaller boxes, above numbers look good to me.
-> 
-> and all that for an additional 8K for a S/R cycle?! And for some
-> additional complexity of a radix tree which is self-contained, well
-> tested and understood?
-> 
-> This looks like certainly like net win to me.
+> ext4_fallocate ->
+>  ext4_punch_hole ->
+>   ext4_inode_attach_jinode() -> ... ->
+>     lock_map_acquire(&handle->h_lockdep_map);
+>   truncate_pagecache_range() ->
+>    unmap_mapping_range() ->
+>     mutex_lock(&mapping->i_mmap_mutex);
+  This is strange. I don't see how ext4_inode_attach_jinode() can ever lead
+to lock_map_acquire(&handle->h_lockdep_map). Can you post a full trace for
+this?
 
-Yes, it does.
+> Path 2:
+> do_dax_fault() ->
+>  mutex_lock(&mapping->i_mmap_mutex);
+>  ext4_get_block() -> ... ->
+>   lock_map_acquire(&handle->h_lockdep_map);
+  This is obviously correct.
 
-I've queued up the Joergs patches for 3.17, thanks!
-
-Rafael
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
