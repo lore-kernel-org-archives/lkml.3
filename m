@@ -1,105 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaG2Dhq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 23:37:46 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:36755 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779AbaG2Dhp (ORCPT
+	id S1752672AbaG2Diq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 23:38:46 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:45807 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968AbaG2Dil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 23:37:45 -0400
-Message-ID: <53D71707.6000200@gmail.com>
-Date: Mon, 28 Jul 2014 20:37:43 -0700
-From: Alexander Duyck <alexander.duyck@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: ethan zhao <ethan.zhao@oracle.com>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gleb@kernel.org, pbonzini@redhat.com,
-        kvm@vger.kernel.org, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        xen-devel@lists.xenproject.org, alexander.h.duyck@intel.com,
-        ethan.kernel@gmail.com
-Subject: Re: [PATCH 1/4] PCI: introduce helper functions for device flag operation
-References: <1406045944-1587-1-git-send-email-ethan.zhao@oracle.com>   <1406045944-1587-2-git-send-email-ethan.zhao@oracle.com>  <1406581206.1011.133.camel@ul30vt.home> <53D6FE95.6040605@oracle.com> <1406601073.1011.157.camel@ul30vt.home> <53D70A55.20805@oracle.com>
-In-Reply-To: <53D70A55.20805@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Jul 2014 23:38:41 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Will Drewry <wad@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Alexei Starovoitov <ast@plumgrid.com>, hpa@zytor.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v4 0/5] x86: two-phase syscall tracing and seccomp fastpath
+Date: Mon, 28 Jul 2014 20:38:27 -0700
+Message-Id: <cover.1406604806.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2014 07:43 PM, ethan zhao wrote:
-> 
-> On 2014/7/29 10:31, Alex Williamson wrote:
->> On Tue, 2014-07-29 at 09:53 +0800, ethan zhao wrote:
->>> On 2014/7/29 5:00, Alex Williamson wrote:
->>>> On Wed, 2014-07-23 at 00:19 +0800, Ethan Zhao wrote:
->>>>> This patch introduced three helper functions to hide direct
->>>>> device flag operation.
->>>>>
->>>>> void pci_set_dev_assigned(struct pci_dev *pdev);
->>>>> void pci_set_dev_deassigned(struct pci_dev *pdev);
->>>>> bool pci_is_dev_assigned(struct pci_dev *pdev);
->>>>>
->>>>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
->>>>> ---
->>>>>    include/linux/pci.h |   13 +++++++++++++
->>>>>    1 files changed, 13 insertions(+), 0 deletions(-)
->>>>>
->>>>> diff --git a/include/linux/pci.h b/include/linux/pci.h
->>>>> index aab57b4..5f6f8fa 100644
->>>>> --- a/include/linux/pci.h
->>>>> +++ b/include/linux/pci.h
->>>>> @@ -1129,6 +1129,19 @@ resource_size_t
->>>>> pcibios_window_alignment(struct pci_bus *bus,
->>>>>       int pci_set_vga_state(struct pci_dev *pdev, bool decode,
->>>>>                  unsigned int command_bits, u32 flags);
->>>>> +/* helper functions for operation of device flag */
->>>>> +static inline void pci_set_dev_assigned(struct pci_dev *pdev)
->>>>> +{
->>>>> +    pdev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
->>>>> +}
->>>>> +static inline void pci_set_dev_deassigned(struct pci_dev *pdev)
->>>>> +{
->>>>> +    pdev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
->>>>> +}
->>>> I think pci_clear_dev_assigned() would make more sense, we're not
->>>> setting a flag named DEASSIGNED.
->>>     Though it is a flag operation now, may not later, we define it
->>> because we want to hide the internal operation.
->>>     'set' to 'deassigned'  status is enough. So I would like keep it.
->> I disagree, the opposite of a 'set' is a 'clear', or at least an
->> 'unset'.  Using bit-ops-like terminology doesn't lock us into an
->> implementation.  As written, this could just as easily be setting two
->> different variables.
->  So there are two pairs of opposite:
-> 
->  set assigned ---> unset assigned
->  set assigned ---> set deassigned
-> 
->  Here you prefer the 'verb' set /unset, and I prefer the 'adj.' assigned
-> / deassigned.
-> 
->  Do they really have different meaning or make confusion ? I don't think
-> so.
-> 
->  Thanks,
->  Ethan
-> 
+This applies to:
+git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git seccomp-fastpath
 
-I agree with Alex W.  If you are going to use the "set" name you should
-probably use "clear" for the operation that undoes it.  Using the term
-set implies that it is setting a bit and we currently don't have a
-deassigned/unassigned bit.
+Gitweb:
+https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=seccomp/fastpath
 
-If that doesn't work perhaps you could use something like
-get/put_assigned_device or acquire/release_assigned_device.  You just
-need to describe what it is you are doing.  You could even consider
-adding some tests to return an error if you attempt to assign a device
-that is already assigned.
+This is both a cleanup and a speedup.  It reduces overhead due to
+installing a trivial seccomp filter by 87%.  The speedup comes from
+avoiding the full syscall tracing mechanism for filters that don't
+return SECCOMP_RET_TRACE.
 
-Thanks,
+This series depends on splitting the seccomp hooks into two phases.
+The first phase evaluates the filter; it can skip syscalls, allow
+them, kill the calling task, or pass a u32 to the second phase.  The
+second phase requires a full tracing context, and it sends ptrace
+events if necessary.  The seccomp core part is in Kees' seccomp/fastpath
+tree.
 
-Alex D
+These patches implement a similar split for the x86 syscall
+entry work.  The C callback is invoked in two phases: the first has
+only a partial frame, and it can request phase 2 processing with a
+full frame.
+
+Finally, I switch the 64-bit system_call code to use the new split
+entry work.  This is a net deletion of assembly code: it replaces
+all of the audit entry muck.
+
+In the process, I fixed some bugs.
+
+If this is acceptable, someone can do the same tweak for the
+ia32entry and entry_32 code.
+
+This passes all seccomp tests that I know of.
+
+Changes from v3:
+ - Dropped the core seccomp changes from the email -- Kees has applied them.
+ - Add patch 2 (the TIF_NOHZ change).
+ - Fix TIF_NOHZ in the two-phase entry code (thanks, Oleg).
+
+Changes from v2:
+ - Fixed 32-bit x86 build (and the tests pass).
+ - Put the doc patch where it belongs.
+
+Changes from v1:
+ - Rebased on top of Kees' shiny new seccomp tree (no effect on the x86
+   part).
+ - Improved patch 6 vs patch 7 split (thanks Alexei!)
+ - Fixed bogus -ENOSYS in patch 5 (thanks Kees!)
+ - Improved changelog message in patch 6.
+
+Changes from RFC version:
+ - The first three patches are more or less the same
+ - The rest is more or less a rewrite
+
+
+Andy Lutomirski (5):
+  x86,x32,audit: Fix x32's AUDIT_ARCH wrt audit
+  x86,entry: Only call user_exit if TIF_NOHZ
+  x86: Split syscall_trace_enter into two phases
+  x86_64,entry: Treat regs->ax the same in fastpath and slowpath
+    syscalls
+  x86_64,entry: Use split-phase syscall_trace_enter for 64-bit syscalls
+
+ arch/x86/include/asm/calling.h |   6 +-
+ arch/x86/include/asm/ptrace.h  |   5 ++
+ arch/x86/kernel/entry_64.S     |  51 +++++--------
+ arch/x86/kernel/ptrace.c       | 159 ++++++++++++++++++++++++++++++++++-------
+ 4 files changed, 161 insertions(+), 60 deletions(-)
+
+-- 
+1.9.3
 
