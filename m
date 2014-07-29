@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833AbaG2ME3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 08:04:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43211 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753219AbaG2ME0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 08:04:26 -0400
-Date: Tue, 29 Jul 2014 14:04:22 +0200
-From: Jan Kara <jack@suse.cz>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: tytso@mit.edu, linux-kernel@vger.kernel.org, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org, jack@suse.cz
-Subject: Re: Is warn_on() right reply for i/o error?
-Message-ID: <20140729120422.GA5944@quack.suse.cz>
-References: <20140724152721.GA4771@amd.pavel.ucw.cz>
+	id S1753869AbaG2MEq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 08:04:46 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60983 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753219AbaG2MEa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 08:04:30 -0400
+Date: Tue, 29 Jul 2014 13:04:06 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Shengjiu Wang <shengjiu.wang@freescale.com>
+Cc: alsa-devel@alsa-project.org, brian.austin@cirrus.com,
+        Paul.Handrigan@cirrus.com, lgirdwood@gmail.com, perex@perex.cz,
+        tiwai@suse.de, linux-kernel@vger.kernel.org
+Message-ID: <20140729120406.GQ17528@sirena.org.uk>
+References: <d30e88a9fa8c0e52acb48755a1b6dbd2b9e4bacf.1406629932.git.shengjiu.wang@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uJIW2pRtnvuncvpR"
 Content-Disposition: inline
-In-Reply-To: <20140724152721.GA4771@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <d30e88a9fa8c0e52acb48755a1b6dbd2b9e4bacf.1406629932.git.shengjiu.wang@freescale.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V2] ASoC: cs42xx8: Add SND_SOC_DAIFMT_DSP_A support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi!
 
-On Thu 24-07-14 17:27:22, Pavel Machek wrote:
-> Just... I know, I should not be unscrewing hard drive cover while
-> operating.
-> 
-> But on the other hand... WARN_ON() does not sound like right reply for
-> a disk failure... right?
-  No, it's not. Looks like a race between someone shutting down BDI and
-mark_inode_dirty() running on it. Frankly we play a whack-a-mole with these
-races between device removal while fs is operating on it for several years
-already. I think we should decouple struct backing_dev_info from struct
-request_queue, properly refcount it so that backing_dev_info can die only
-after all users of it (fs et al) are done with it. There are too many
-references to backing_dev_info from filesystems to remove it in race-free
-way while fs still uses it. Now only to find time to do this... ;)
+--uJIW2pRtnvuncvpR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-								Honza
+On Tue, Jul 29, 2014 at 06:39:37PM +0800, Shengjiu Wang wrote:
+> According to the spec, the definition of TDM and ONELINE_24 for
+> CS42XX8_INTF_DAC and CS42XX8_INTF_ADC is wrong. correct them and enable
+> SND_SOC_DAIFMT_DSP_A support.
 
-> sd 6:0:0:0: [sdf] Unhandled error code
-> sd 6:0:0:0: [sdf]  
-> Result: hostbyte=0x01 driverbyte=0x00
-> sd 6:0:0:0: [sdf] CDB: 
-> cdb[0]=0x28: 28 00 00 05 4a 00 00 00 40 00
-> end_request: I/O error, dev sdf, sector 346624
-> Buffer I/O error on device sdf, logical block 43328
-> Buffer I/O error on device sdf, logical block 43329
-> ------------[ cut here ]------------
-> WARNING: CPU: 0 PID: 4710 at fs/fs-writeback.c:1199
-> __mark_inode_dirty+0x1be/0x1d0()
-> bdi-block not registered
-> Modules linked in:
-> CPU: 0 PID: 4710 Comm: umount Not tainted 3.16.0-rc5+ #381
-> Hardware name:                  /DG41MJ, BIOS
-> MJG4110H.86A.0006.2009.1223.1155 12/23/2009
->  000004af df661e18 c480956d c4a2bae0 df661e48 c403914a c4a2baf7
->  df661e74
->  00001266 c4a2bae0 000004af c41154fe c41154fe d21ffa74 c6263dec
->  d21ffc60
->  df661e60 c40391ee 00000009 df661e58 c4a2baf7 df661e74 df661e88
->  c41154fe
-> Call Trace:
->  [<c480956d>] dump_stack+0x41/0x52
->  [<c403914a>] warn_slowpath_common+0x7a/0xa0
->  [<c41154fe>] ? __mark_inode_dirty+0x1be/0x1d0
->  [<c41154fe>] ? __mark_inode_dirty+0x1be/0x1d0
->  [<c40391ee>] warn_slowpath_fmt+0x2e/0x30
->  [<c41154fe>] __mark_inode_dirty+0x1be/0x1d0
->  [<c411b806>] __set_page_dirty+0x66/0xb0
->  [<c411b8a6>] mark_buffer_dirty+0x56/0x80
->  [<c415bc1d>] ext3_put_super+0x20d/0x250
->  [<c410a042>] ? evict_inodes+0xb2/0x110
->  [<c40f4888>] generic_shutdown_super+0x68/0xe0
->  [<c40f4925>] kill_block_super+0x25/0x70
->  [<c40f4b88>] deactivate_locked_super+0x48/0x70
->  [<c40f5161>] deactivate_super+0x51/0x70
->  [<c410da6f>] mntput_no_expire+0x12f/0x1f0
->  [<c410f1e7>] ? SyS_umount+0xa7/0x430
->  [<c410f1e7>] SyS_umount+0xa7/0x430
->  [<c480e41e>] ? syscall_call+0x7/0xb
->  [<c40df3e1>] ? vm_munmap+0x41/0x50
->  [<c480e41e>] syscall_call+0x7/0xb
-> ---[ end trace 6642457659b6f1ae ]---
-> EXT3-fs (sdf1): I/O error while writing superblock
-> usb 1-1: new high-speed USB device number 8 using ehci-pci
-> 
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Applied, thanks.
+
+--uJIW2pRtnvuncvpR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT142zAAoJELSic+t+oim97/IQAIodZt4qnzpEYc7VoBD9do/y
+pEYNWMMEPxfRriQ/VkdYC8O+DerHoH+VDxQe29v+ZEHS63RiIDoxzFMStEXn0q+p
+aq6uDXkxJLe2Oa/GxCJc7HMBDoy3duhsSZ5XzsWk97cCp/BOCU57hk64vvm0urp0
+PqGFy4cZZmZdhpvLafd3FsHZRJ6nNfdfm/Ia6LUTv0FcMGMTuBxGy4RlbWNAaHXw
+RS/X5j9oxLvFAk0SL3kJr4RmSWc4QfP1pHwv4CHX8Ik1WXQsBNNw9s2uA+8aYxdG
+f5oQB0Ep+2TdwS5ZP5t58XgCgQzgcOShwNFN3vdgLj8yqANmp33SfksI44DHuDG1
+ogP/LWpcoDC48KOFanSqOLh5SXu6ci7sLqHkx6cHh+CBeo2xZeElJXwjhHoofsAB
+tHBL8DaqoLabC7tRvWa3kH1CrpeOXNwvIt8fzR6gBIL5AID7budb34VF0zUq0HZ8
+MRmUbpErjvPE7IdcbVLS54XOK2DuNevyblm+qp+hh2yathqz98Ymk2Lq0jyqrxng
+FTKjEeIK86TtHijwpY2DtYgBBs0OYafgss05keDI70FCmVcrQSEpkhxyX6CP08BI
+zenIn3+pwF3ANyVy1eq6O2Sy1d4gv02z9c3Hy1gFFsyu+5GUTrit2AvyCcUSSaVX
+J3V+HwFH96d11vkZ3s24
+=2IYL
+-----END PGP SIGNATURE-----
+
+--uJIW2pRtnvuncvpR--
