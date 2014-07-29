@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaG2Hig (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 03:38:36 -0400
-Received: from ozlabs.org ([103.22.144.67]:58553 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281AbaG2Hif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 03:38:35 -0400
-Date: Tue, 29 Jul 2014 17:38:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
-        Vinod Koul <vinod.koul@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>
-Subject: linux-next: manual merge of the char-misc tree with the slave-dma
- tree
-Message-ID: <20140729173824.51e94ce2@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1752228AbaG2HlN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 03:41:13 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:57202 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044AbaG2HlM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 03:41:12 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/EhXV6tAerJvRiv_e7EAuYv3"; protocol="application/pgp-signature"
+In-Reply-To: <53D699BE.90208@redhat.com>
+References: <1406569906-9763-1-git-send-email-vincent.guittot@linaro.org>
+ <1406569906-9763-9-git-send-email-vincent.guittot@linaro.org> <53D699BE.90208@redhat.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 29 Jul 2014 09:40:51 +0200
+Message-ID: <CAKfTPtBCE57m8MsKVr=ww18g44ive3NVWRHVczfKgkxN6zao4A@mail.gmail.com>
+Subject: Re: [PATCH v4 08/12] sched: move cfs task on a CPU with higher capacity
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/EhXV6tAerJvRiv_e7EAuYv3
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 28 July 2014 20:43, Rik van Riel <riel@redhat.com> wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+>
+> On 07/28/2014 01:51 PM, Vincent Guittot wrote:
+>> If the CPU is used for handling lot of IRQs, trig a load balance to
+>> check if it's worth moving its tasks on another CPU that has more
+>> capacity.
+>>
+>> As a sidenote, this will note generate more spurious ilb because we
+>> already trig an ilb if there is more than 1 busy cpu. If this cpu
+>> is the only one that has a task, we will trig the ilb once for
+>> migrating the task.
+>>
+>> The nohz_kick_needed function has been cleaned up a bit while
+>> adding the new test
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org> ---
+>> kernel/sched/fair.c | 69
+>> +++++++++++++++++++++++++++++++++++++---------------- 1 file
+>> changed, 49 insertions(+), 20 deletions(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c index
+>> 6843016..1cde8dd 100644 --- a/kernel/sched/fair.c +++
+>> b/kernel/sched/fair.c @@ -5969,6 +5969,14 @@ static bool
+>> update_sd_pick_busiest(struct lb_env *env, return true; }
+>>
+>> +     /* +     * The group capacity is reduced probably because of
+>> activity from other +  * sched class or interrupts which use part
+>> of the available capacity +    */ +   if ((sg->sgc->capacity_orig *
+>> 100) > (sgs->group_capacity * +                               env->sd->imbalance_pct)) +
+>> return true; + return false; }
+>
+> Isn't this already reflected in avg_load, by having avg_load increase
+> due to the capacity decreasing when a cpu is busy with non-CFS loads?
 
-Hi all,
+Yes, the avg_load should probably increase but it doesn't mean that it
+will be selected for a load balancing.
 
-Today's linux-next merge of the char-misc tree got a conflict in
-drivers/dma/Makefile between commit 555859308723 ("dmaengine: sun6i:
-Add driver for the Allwinner A31 DMA controller") from the slave-dma tree a=
-nd
-commit 95b4ecbf759a ("dma: MIC X100 DMA Driver") from the char-misc
-tree.
+>
+> Also, this part of update_sd_pick_busiest will not be reached in the
+> !SD_ASYM_PACKING case once my patch is applied, so this is a small
+> conflict between our series :)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+yes, this will conflict with your change but the conflict should be
+obvious to solve as it only adds a new condition for picking the group
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/dma/Makefile
-index d08bd966da13,bd9e7fa928bd..000000000000
---- a/drivers/dma/Makefile
-+++ b/drivers/dma/Makefile
-@@@ -47,4 -47,4 +47,5 @@@ obj-$(CONFIG_MOXART_DMA) +=3D moxart-dma.
-  obj-$(CONFIG_FSL_EDMA) +=3D fsl-edma.o
-  obj-$(CONFIG_QCOM_BAM_DMA) +=3D qcom_bam_dma.o
-  obj-y +=3D xilinx/
- +obj-$(CONFIG_DMA_SUN6I) +=3D sun6i-dma.o
-+ obj-$(CONFIG_INTEL_MIC_X100_DMA) +=3D mic_x100_dma.o
-
---Sig_/EhXV6tAerJvRiv_e7EAuYv3
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT1091AAoJEMDTa8Ir7ZwVQ9EP/28vlwJTtNIDVjug8/YPgl1I
-NVm5Pgrgy1TgbwqHa2LWHumhDcDWP4TW5THchZbmqiKt9DTkJxZ1KvduP2XT9kyn
-fXzGiH8piUG6AGC87cPvzfk05Toh028b1SigPFhbSsq1H3se67jnSvVeEAtXLP6O
-hgGecrqMfm9wPNDeu1zXmeTJ2PMdl/oqkRDyuiVoZ8Uo0ScFsMYLWb7ca24hIqFY
-ZmTo52RAEWGKiT+tIr/uivJKuSY9TosmENTOsFqULG765iJTXqZy8nPWKty4XGE4
-VZKoS72rVxPvwkXQoHIt3e1e2yzZMD7Y22fUrmOuSj2gLXONXXPhNCZ1cRtA/9YY
-r9KwzpgFqWHWSThsxcg528LrepnYBatac1bVvuwAwxxGqfj3MS8LjKbv9RUdyNvg
-dWTLw+osGA6NKSXtcx3QkzxwS18t9N4vI/Jwc9OGb20aif4qNRnG/rNj13ER6/HY
-7Ayk+XQFly8DAmyAnZuYYGl4Dxij9VyrUTBFjBxY6q/1rBcprK8KmBPVEUPvcHQu
-hazclYNMo8S3rrs3Nq93Cz0k4g6ItVIJYg7mVvMIO6i93gKPVI1SA0/BAiGItmXF
-u5DFUqrjvZyKezgT+B9YCoEfqYL1AUxDDtKE1behWdij+nwg9LBzOCLnHp2ELjIQ
-4KIOZp0lt8f7f8NM5kkx
-=2LIc
------END PGP SIGNATURE-----
-
---Sig_/EhXV6tAerJvRiv_e7EAuYv3--
+>
+> - --
+> All rights reversed
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1
+> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+>
+> iQEcBAEBAgAGBQJT1pm+AAoJEM553pKExN6DysEH/1/s2dY0EWM4mVctRAcyASc+
+> qD5yQgDZEbnIzuUldtTRNwlAxHSaexLI7oF418RAaUV3oue+OQIesJPhKDVrR2+J
+> fLo4fhtutuF1SHJ5Zo2fiGBIUI+GuLspT2fXiG2UxXQXtYioVdDeB+cjo6H3xQ3D
+> R2hR+WeSsLznwFhRnufI1neleIRpqk/Nw1wfdXCyE03kM478rCQjlygMUx6eqURn
+> jblr7GY7jmtzhYFPY9qnE0za/WHWUVAf4RXSjCcuYwZqdhbzmHPKpJyiC3cl9XGz
+> kNzAjqVzvSyCBblaOnJfrRyCWmBdatp5eZQCzZK9/l+YpbkkzQJNlUMAAVV1eNw=
+> =qD2A
+> -----END PGP SIGNATURE-----
