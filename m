@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360AbaG2Wys (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 18:54:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751300AbaG2Wyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 18:54:47 -0400
-Message-ID: <53D82623.4080903@redhat.com>
-Date: Tue, 29 Jul 2014 18:54:27 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1754376AbaG2W5p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 18:57:45 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:38049 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811AbaG2W5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 18:57:44 -0400
+Date: Tue, 29 Jul 2014 15:57:41 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 07/14] mm, compaction: khugepaged should not give up
+ due to need_resched()
+In-Reply-To: <53D76D30.3000106@suse.cz>
+Message-ID: <alpine.DEB.2.02.1407291554550.20991@chino.kir.corp.google.com>
+References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-8-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1407281748110.8998@chino.kir.corp.google.com> <53D76D30.3000106@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: linux-kernel@vger.kernel.org, lszubowi@redhat.com,
-        Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH] x86, efi: print debug values in Kib not MB
-References: <1406653761-3884-1-git-send-email-prarit@redhat.com> <20140729222932.GA17481@pd.tnic> <53D82118.6090202@redhat.com> <20140729223603.GC17241@pd.tnic>
-In-Reply-To: <20140729223603.GC17241@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 29 Jul 2014, Vlastimil Babka wrote:
 
-
-On 07/29/2014 06:36 PM, Borislav Petkov wrote:
-> On Tue, Jul 29, 2014 at 06:32:56PM -0400, Prarit Bhargava wrote:
->> and it was best to keep the code simple with a KiB.
+> > > diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+> > > index b2e4c92..60bdf8d 100644
+> > > --- a/include/linux/compaction.h
+> > > +++ b/include/linux/compaction.h
+> > > @@ -13,6 +13,14 @@
+> > >   /* The full zone was compacted */
+> > >   #define COMPACT_COMPLETE	4
+> > > 
+> > > +/* Used to signal whether compaction detected need_sched() or lock
+> > > contention */
+> > > +/* No contention detected */
+> > > +#define COMPACT_CONTENDED_NONE	0
+> > > +/* Either need_sched() was true or fatal signal pending */
+> > > +#define COMPACT_CONTENDED_SCHED	1
+> > > +/* Zone lock or lru_lock was contended in async compaction */
+> > > +#define COMPACT_CONTENDED_LOCK	2
+> > > +
+> > 
+> > Make this an enum?
 > 
-> You're missing the point - the output doesn't get simple with KiB. Read
-> the example I just gave you!
+> I tried originally, but then I would have to define it elsewhere
+> (mm/internal.h I think) together with compact_control. I didn't think it was
+> worth the extra pollution of shared header, when the return codes are also
+> #define and we might still get rid of need_resched() one day.
 > 
-> (13893632kiB) is actively *not* helping when one looks at it!
 
-I did get your point and I'm (politely) disagreeing with it.  Your case ONLY
-works if the number is _exactly_ 13GB.  What if it is 13.5?  Then we're still
-rounding off and reporting 14GB.  Which, if this code is meant for debug, makes
-no sense to me.  Why round it off?
+Ok.
 
-P.
+[...]
 
+> > > @@ -2660,15 +2660,36 @@ rebalance:
+> > >   	if (!(gfp_mask & __GFP_NO_KSWAPD) || (current->flags & PF_KTHREAD))
+> > >   		migration_mode = MIGRATE_SYNC_LIGHT;
+> > > 
+> > > -	/*
+> > > -	 * If compaction is deferred for high-order allocations, it is because
+> > > -	 * sync compaction recently failed. In this is the case and the caller
+> > > -	 * requested a movable allocation that does not heavily disrupt the
+> > > -	 * system then fail the allocation instead of entering direct reclaim.
+> > > -	 */
+> > > -	if ((deferred_compaction || contended_compaction) &&
+> > > -						(gfp_mask & __GFP_NO_KSWAPD))
+> > > -		goto nopage;
+> > 
+> > Hmm, this check will have unfortunately changed in the latest mmotm due to
+> > mm-thp-restructure-thp-avoidance-of-light-synchronous-migration.patch.
 > 
+> I think you were changing (and moving around) a different check so there would
+> be merge conflicts but no semantic problem.
+> 
+
+The idea is the same, though, I think the check should not rely on 
+__GFP_NO_KSWAPD and rather rely on 
+(gfp_mask & GFP_TRANSHUGE) == GFP_TRANSHUGE.  In other words, all the 
+possibilities under your new test for gfp_mask & __GFP_NO_KSWAPD are thp 
+specific and not for the other allocators who pass __GFP_NO_KSWAPD.  This 
+patch would be a significant change in logic for those users that doesn't 
+seem helpful.
