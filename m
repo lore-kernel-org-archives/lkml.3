@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860AbaG2TuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 15:50:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397AbaG2TuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 15:50:09 -0400
-From: Jarod Wilson <jarod@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jarod Wilson <jarod@redhat.com>, Stephan Mueller <smueller@chronox.de>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org
-Subject: [PATCH] crypto/testmgr: add missing spaces to drbg error strings
-Date: Tue, 29 Jul 2014 15:47:56 -0400
-Message-Id: <1406663276-25549-1-git-send-email-jarod@redhat.com>
+	id S1752546AbaG2T57 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 15:57:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39134 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808AbaG2T55 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 15:57:57 -0400
+Date: Tue, 29 Jul 2014 21:57:54 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Bruce Fields <bfields@fieldses.org>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 1/3] SUNRPC: Reduce contention in svc_xprt_enqueue()
+Message-ID: <20140729195754.GQ3935@laptop>
+References: <1406260773-16231-1-git-send-email-trond.myklebust@primarydata.com>
+ <20140729193108.GC21091@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140729193108.GC21091@fieldses.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a few missing spaces in the error text strings for
-drbg_cavs_test, trivial fix.
+On Tue, Jul 29, 2014 at 03:31:08PM -0400, Bruce Fields wrote:
+> All three patches look good to me, thanks.
+> 
+> From private email, this:
+> 
+> On Thu, Jul 24, 2014 at 11:59:31PM -0400, Trond Myklebust wrote:
+> > @@ -222,11 +223,12 @@ static void svc_xprt_received(struct svc_xprt *xprt)
+> >  	if (!test_bit(XPT_BUSY, &xprt->xpt_flags))
+> >  		return;
+> >  	/* As soon as we clear busy, the xprt could be closed and
+> > -	 * 'put', so we need a reference to call svc_xprt_enqueue with:
+> > +	 * 'put', so we need a reference to call svc_xprt_do_enqueue with:
+> >  	 */
+> >  	svc_xprt_get(xprt);
+> > +	smp_mb__before_clear_bit();
+> 
+> triggered a warning about smp_mb__before_clear_bit noticed by the kbuild
+> robot.  Looks like that was due to
+> febdbfe8a91ce0d11939d4940b592eb0dba8d663 "arch: Prepare for
+> smp_mb__{before,after}_atomic()".
+> 
+> You questioned whether deprecating smp_mb__{before,after}_clear_bit was
+> an unnecessary burden on people maintaining stable kernels or doing
+> backports more generally.  Cc'ing some addresses from that commit.
 
-CC: Stephan Mueller <smueller@chronox.de>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: linux-crypto@vger.kernel.org
-Signed-off-by: Jarod Wilson <jarod@redhat.com>
----
- crypto/testmgr.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+I absolutely do not care one whit for that. The kernel lives, deal with
+it.
 
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index 81818b9..ac2b631 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -1778,7 +1778,7 @@ static int drbg_cavs_test(struct drbg_testvec *test, int pr,
- 
- 	drng = crypto_alloc_rng(driver, type, mask);
- 	if (IS_ERR(drng)) {
--		printk(KERN_ERR "alg: drbg: could not allocate DRNG handle for"
-+		printk(KERN_ERR "alg: drbg: could not allocate DRNG handle for "
- 		       "%s\n", driver);
- 		kzfree(buf);
- 		return -ENOMEM;
-@@ -1803,7 +1803,7 @@ static int drbg_cavs_test(struct drbg_testvec *test, int pr,
- 			buf, test->expectedlen, &addtl);
- 	}
- 	if (ret <= 0) {
--		printk(KERN_ERR "alg: drbg: could not obtain random data for"
-+		printk(KERN_ERR "alg: drbg: could not obtain random data for "
- 		       "driver %s\n", driver);
- 		goto outbuf;
- 	}
-@@ -1818,7 +1818,7 @@ static int drbg_cavs_test(struct drbg_testvec *test, int pr,
- 			buf, test->expectedlen, &addtl);
- 	}
- 	if (ret <= 0) {
--		printk(KERN_ERR "alg: drbg: could not obtain random data for"
-+		printk(KERN_ERR "alg: drbg: could not obtain random data for "
- 		       "driver %s\n", driver);
- 		goto outbuf;
- 	}
--- 
-1.8.3.1
+Memory barriers are hard enough, we do not need multiple versions of the
+same thing just to confuse people.
 
+> Whatever--I'll probably just replace do the clear_bit->before_atomic
+> replacement and apply unless there's some objection.
+
+The old API was preserved to allow for non-flag-day migration to the new
+API. I should do a final sweep and then kill the old API.
+
+The conversion shrank the memory barrier API by 4 variants while
+covering more cases, which is an absolute win in my book.
