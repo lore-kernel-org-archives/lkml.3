@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904AbaG2SWz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 14:22:55 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:50668 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986AbaG2SWx (ORCPT
+	id S1752150AbaG2SXz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 14:23:55 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33326 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310AbaG2SXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 14:22:53 -0400
+	Tue, 29 Jul 2014 14:23:53 -0400
+Date: Tue, 29 Jul 2014 19:23:10 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Nicolin Chen <nicoleotsuka@gmail.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, lgirdwood@gmail.com, perex@perex.cz,
+        tiwai@suse.de, timur@tabi.org, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
+        shawn.guo@linaro.org, b02247@freescale.com, b42378@freescale.com,
+        tklauser@distanz.ch, varkabhadram@gmail.com
+Message-ID: <20140729182310.GY17528@sirena.org.uk>
+References: <cover.1406628283.git.nicoleotsuka@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140729181615.GA4950@redhat.com>
-References: <cover.1405992946.git.luto@amacapital.net> <3f649f5658a163645e3ce15156176c325283762e.1405992946.git.luto@amacapital.net>
- <20140728173723.GA20993@redhat.com> <CALCETrWUFo_zXcAZja-vdL4_MgJDd=1ed5Vt54eyUuim930xAw@mail.gmail.com>
- <20140729165416.GA967@redhat.com> <CALCETrWBU-=zqLTCP7B1feZ9J-e4u-Boic+e1EEn1rL-ijeEKg@mail.gmail.com>
- <20140729173136.GA2808@redhat.com> <CALCETrVP-P+EJ6YJ=CZL_gyA1r8O9eogUNTik7_31_SA+Pj3pg@mail.gmail.com>
- <20140729181615.GA4950@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 29 Jul 2014 11:22:31 -0700
-Message-ID: <CALCETrVWOOs3HCnQNaqmnn480oQYn3scrWUfR4JJX9+zTxUDRw@mail.gmail.com>
-Subject: Re: [PATCH v3 6/8] x86: Split syscall_trace_enter into two phases
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pIgUhm2PSpi2KHBa"
+Content-Disposition: inline
+In-Reply-To: <cover.1406628283.git.nicoleotsuka@gmail.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v6 0/2] Add Freescale ASRC driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 11:16 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 07/29, Andy Lutomirski wrote:
->>
->> On Tue, Jul 29, 2014 at 10:31 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> >
->> > I don't think so (unless I am confused again), note that user_exit() uses
->> > jump label. But this doesn't matter. I meant that we should avoid TIF_NOHZ
->> > if possible because I think it should die somehow (currently I do not know
->> > how ;). And because it is ugly to check the same condition twice:
->> >
->> >         if (work & TIF_NOHZ) {
->> >                 // user_exit()
->> >                 if (context_tracking_is_enabled())
->> >                         context_tracking_user_exit();
->> >         }
->> >
->> > TIF_NOHZ is set if and only if context_tracking_is_enabled() is true.
->> > So I think that
->> >
->> >         work = current_thread_info()->flags & (_TIF_WORK_SYSCALL_ENTRY & ~TIF_NOHZ);
->> >
->> >         user_exit();
->> >
->> > looks a bit better. But I won't argue.
->>
->> I don't get it.
->
-> Don't worry, you are not alone.
->
->> context_tracking_is_enabled is global, and TIF_NOHZ
->> is per-task.  Isn't this stuff determined per-task or per-cpu or
->> something?
->>
->> IOW, if one CPU is running something that's very heavily
->> userspace-oriented and another CPU is doing something syscall- or
->> sleep-heavy, then shouldn't only the first CPU end up paying the price
->> of context tracking?
->
-> Please see another email I sent to Frederic.
->
 
-I'll add at least this argument in favor of my approach: if context
-tracking works at all, then it had better not demand that syscall
-entry call user_exit if TIF_NOHZ is *not* set.  So adding the
-condition ought to be safe, barring dumb bugs in my code.
+--pIgUhm2PSpi2KHBa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
---Andy
+On Tue, Jul 29, 2014 at 06:08:51PM +0800, Nicolin Chen wrote:
+> This series of patches add Freescale ASRC module driver support along
+> with the extra request in imx-sdma structure required by SDMA Device
+> to Device script.
 
-> Oleg.
->
+Applied both, thanks.
 
+--pIgUhm2PSpi2KHBa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+iQIcBAEBAgAGBQJT1+aKAAoJELSic+t+oim9SaoP/1FVsjb2QpLsKVSx6LP5AVJY
+DKmL2lH6q3YqSurOEBtoKAPw8738LJdWxGtRGqPEA+AMgP2QwXE35PIEyo3NFE0K
+ifGX0KKRfmvvGqWGajnYThJ71Z/0AWdlHj13ZTBuyschGBNi02JmeAwbPFH9y/Ux
+Wab6Ygul8yGR3pcYO86vSAvPB9vXubHbZJIeyHV68saOjqTcR6BAK1ZgC6tFzvz6
+QRtjosyqFDK00gWnXxPr3iyP+nq31cZPX3+LABwm3UDo8palIeKy+fz0AKpVr5IK
+iE85eb/YQFJG+a0UU6JY0sxaQ7BYtnGIFRcgaohlUDyWvgTSnFIdDWpobaFCO1KF
+M6pxRAtS3FPFY/oGvK+rzt7+fRkyj0AKd1mJLryYa6tG5OlBqESCuqy4mUa9xTmp
+fewpqjuZPGURNX95bBl6aYtwqwC++fZKV+iM5jl3y2Hu60pGtXWanO6N5VxQPEXa
+Ayd2VTrCQc6hgc3vmLTeXH7xFFX25HlFcYADI9ZCvH70JpeNmcKJzJyezF+lC6Ew
+Rwx4pIRFVhi/NKUnWc8MWriKDhz27k9urM8VCesnTjZ2AwQUmX//rXQlJBRTWqWn
+easFnaFB+wXzI3p/X7V3sTXYFkyOyWaludbgIyvU18hIwC2boLA2KDBkxfFwizFT
+RnngHEH/Pf2zFzmlRuJ0
+=ExYX
+-----END PGP SIGNATURE-----
+
+--pIgUhm2PSpi2KHBa--
