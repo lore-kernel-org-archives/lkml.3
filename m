@@ -1,236 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045AbaG2JpZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 05:45:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40920 "EHLO mx2.suse.de"
+	id S1753116AbaG2Jp7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 05:45:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:55241 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752960AbaG2JpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 05:45:22 -0400
-Message-ID: <53D76D30.3000106@suse.cz>
-Date: Tue, 29 Jul 2014 11:45:20 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752685AbaG2Jp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 05:45:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,756,1400050800"; 
+   d="scan'208";a="577019466"
+Date: Tue, 29 Jul 2014 09:43:43 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
+        arjan.van.de.ven@intel.com, Len Brown <len.brown@intel.com>,
+        rafael.j.wysocki@intel.com, alan.cox@intel.com,
+        "Gross, Mark" <mark.gross@intel.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
+Subject: Re: [PATCH 2/2 v4] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140729014343.GE5203@intel.com>
+References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
+ <1405639567-21445-3-git-send-email-yuyang.du@intel.com>
+ <CAKfTPtAoer-c7Hynr-VhvF112MaoUybM8zhaQKrc+n0CJ3Z47g@mail.gmail.com>
+ <20140727173616.GA22986@intel.com>
+ <CAKfTPtBR1dK-8nFGAMvEa2AC6ByZgOskkZpWEOXwzDrUD6xBDg@mail.gmail.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm:;
-Subject: Re: [PATCH v5 07/14] mm, compaction: khugepaged should not give up
- due to need_resched()
-References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-8-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1407281748110.8998@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1407281748110.8998@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKfTPtBR1dK-8nFGAMvEa2AC6ByZgOskkZpWEOXwzDrUD6xBDg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2014 02:59 AM, David Rientjes wrote:
-> On Mon, 28 Jul 2014, Vlastimil Babka wrote:
->
->> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
->> index b2e4c92..60bdf8d 100644
->> --- a/include/linux/compaction.h
->> +++ b/include/linux/compaction.h
->> @@ -13,6 +13,14 @@
->>   /* The full zone was compacted */
->>   #define COMPACT_COMPLETE	4
->>
->> +/* Used to signal whether compaction detected need_sched() or lock contention */
->> +/* No contention detected */
->> +#define COMPACT_CONTENDED_NONE	0
->> +/* Either need_sched() was true or fatal signal pending */
->> +#define COMPACT_CONTENDED_SCHED	1
->> +/* Zone lock or lru_lock was contended in async compaction */
->> +#define COMPACT_CONTENDED_LOCK	2
->> +
->
-> Make this an enum?
+On Tue, Jul 29, 2014 at 11:12:37AM +0200, Vincent Guittot wrote:
+> >>
+> >> Do you really need to have *w for computing the load_sum ? can't you
+> >> only use it when computing the load_avg ?
+> >>
+> >> sa->load_avg = div_u64(sa->load_sum * w , LOAD_AVG_MAX)
+> >>
+> >
+> > For task, assuming its load.weight does not change much, yes, we can. But in theory, task's
+> 
+> I would even say that the load_avg of a task should not be impacted by
+> an old priority value. Once, the priority of a task is changed, we
+> should only take into account this new priority to weight the load_avg
+> of the task
+> 
+> > load.weight can change, and *w in load_sum can take into that change. For group entity
+> > and cfs_rq, its load.weight changes all the time, I don't know how to do it without *w
+> > for load_sum.
+> 
+> IMHO, we should apply the same policy than the one i mentioned for
+> task. So the load_avg of an entity or a cfs_rq will not be disturbed
+> by an old but no more valid weight
+> 
 
-I tried originally, but then I would have to define it elsewhere 
-(mm/internal.h I think) together with compact_control. I didn't think it 
-was worth the extra pollution of shared header, when the return codes 
-are also #define and we might still get rid of need_resched() one day.
+Well, I see your point. But the problem is what matters is load_avg vs. load_avg, not a
+load_avg itself. So, if load_avg1 discards old weight if weight is changed, but load_avg2
+has no weight changed or has weight changed, the comparison load_avg1 vs. load_avg2 is not
+fair, but too impacted by the new weight. The point is, we count in history, so connt in the
+real history, which is the whole point of why we count the history. Make sense?
 
->> @@ -223,9 +223,21 @@ static void update_pageblock_skip(struct compact_control *cc,
->>   }
->>   #endif /* CONFIG_COMPACTION */
->>
->> -static inline bool should_release_lock(spinlock_t *lock)
->> +static int should_release_lock(spinlock_t *lock)
->>   {
->> -	return need_resched() || spin_is_contended(lock);
->> +	/*
->> +	 * Sched contention has higher priority here as we may potentially
->> +	 * have to abort whole compaction ASAP. Returning with lock contention
->> +	 * means we will try another zone, and further decisions are
->> +	 * influenced only when all zones are lock contended. That means
->> +	 * potentially missing a lock contention is less critical.
->> +	 */
->> +	if (need_resched())
->> +		return COMPACT_CONTENDED_SCHED;
->> +	else if (spin_is_contended(lock))
->> +		return COMPACT_CONTENDED_LOCK;
->> +	else
->> +		return COMPACT_CONTENDED_NONE;
->
-> I would avoid the last else statement and just return
-> COMPACT_CONTENDED_NONE.
-
-OK, checkpatch agrees.
-
->> @@ -1154,11 +1168,11 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
->>   	INIT_LIST_HEAD(&cc.migratepages);
->>
->>   	ret = compact_zone(zone, &cc);
->> +	*contended = cc.contended;
->>
->>   	VM_BUG_ON(!list_empty(&cc.freepages));
->>   	VM_BUG_ON(!list_empty(&cc.migratepages));
->>
->> -	*contended = cc.contended;
->
-> Not sure why, but ok :)
-
-Oversight due to how this patch evolved :)
-
->>   	return ret;
->>   }
->>
->> @@ -1171,14 +1185,15 @@ int sysctl_extfrag_threshold = 500;
->>    * @gfp_mask: The GFP mask of the current allocation
->>    * @nodemask: The allowed nodes to allocate from
->>    * @mode: The migration mode for async, sync light, or sync migration
->> - * @contended: Return value that is true if compaction was aborted due to lock contention
->> + * @contended: Return value that determines if compaction was aborted due to
->> + *	       need_resched() or lock contention
->>    * @candidate_zone: Return the zone where we think allocation should succeed
->>    *
->>    * This is the main entry point for direct page compaction.
->>    */
->>   unsigned long try_to_compact_pages(struct zonelist *zonelist,
->>   			int order, gfp_t gfp_mask, nodemask_t *nodemask,
->> -			enum migrate_mode mode, bool *contended,
->> +			enum migrate_mode mode, int *contended,
->>   			struct zone **candidate_zone)
->>   {
->>   	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
->> @@ -1188,6 +1203,9 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
->>   	struct zone *zone;
->>   	int rc = COMPACT_DEFERRED;
->>   	int alloc_flags = 0;
->> +	bool all_zones_lock_contended = true; /* init true for &= operation */
->> +
->> +	*contended = COMPACT_CONTENDED_NONE;
->>
->>   	/* Check if the GFP flags allow compaction */
->>   	if (!order || !may_enter_fs || !may_perform_io)
->> @@ -1201,13 +1219,20 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
->>   	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
->>   								nodemask) {
->>   		int status;
->> +		int zone_contended;
->>
->>   		if (compaction_deferred(zone, order))
->>   			continue;
->>
->>   		status = compact_zone_order(zone, order, gfp_mask, mode,
->> -						contended);
->> +							&zone_contended);
->>   		rc = max(status, rc);
->> +		/*
->> +		 * It takes at least one zone that wasn't lock contended
->> +		 * to turn all_zones_lock_contended to false.
->> +		 */
->> +		all_zones_lock_contended &=
->> +			(zone_contended == COMPACT_CONTENDED_LOCK);
->
-> Eek, does this always work?  COMPACT_CONTENDED_LOCK is 0x2 and
-
-(zone_contended == COMPACT_CONTENDED_LOCK) is a bool so it should work?
-
-> all_zones_lock_contended is a bool initialized to true.  I'm fairly
-> certain you'd get better code generation if you defined
-> all_zones_lock_contended as
->
-> 	int all_zones_lock_contended = COMPACT_CONTENDED_LOCK
->
-> from the start and the source code would be more clear.
-
-Yeah that would look nicer, thanks for the suggestion.
-
->>
->>   		/* If a normal allocation would succeed, stop compacting */
->>   		if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0,
->> @@ -1220,8 +1245,20 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
->>   			 * succeeds in this zone.
->>   			 */
->>   			compaction_defer_reset(zone, order, false);
->> -			break;
->> -		} else if (mode != MIGRATE_ASYNC) {
->> +			/*
->> +			 * It is possible that async compaction aborted due to
->> +			 * need_resched() and the watermarks were ok thanks to
->> +			 * somebody else freeing memory. The allocation can
->> +			 * however still fail so we better signal the
->> +			 * need_resched() contention anyway.
->> +			 */
->
-> Makes sense because the page allocator still tries to allocate the page
-> even if this is returned, but it's not very clear in the comment.
-
-OK
-
->> @@ -2660,15 +2660,36 @@ rebalance:
->>   	if (!(gfp_mask & __GFP_NO_KSWAPD) || (current->flags & PF_KTHREAD))
->>   		migration_mode = MIGRATE_SYNC_LIGHT;
->>
->> -	/*
->> -	 * If compaction is deferred for high-order allocations, it is because
->> -	 * sync compaction recently failed. In this is the case and the caller
->> -	 * requested a movable allocation that does not heavily disrupt the
->> -	 * system then fail the allocation instead of entering direct reclaim.
->> -	 */
->> -	if ((deferred_compaction || contended_compaction) &&
->> -						(gfp_mask & __GFP_NO_KSWAPD))
->> -		goto nopage;
->
-> Hmm, this check will have unfortunately changed in the latest mmotm due to
-> mm-thp-restructure-thp-avoidance-of-light-synchronous-migration.patch.
-
-I think you were changing (and moving around) a different check so there 
-would be merge conflicts but no semantic problem.
-
->> +	/* Checks for THP-specific high-order allocations */
->> +	if (gfp_mask & __GFP_NO_KSWAPD) {
->> +		/*
->> +		 * If compaction is deferred for high-order allocations, it is
->> +		 * because sync compaction recently failed. If this is the case
->> +		 * and the caller requested a THP allocation, we do not want
->> +		 * to heavily disrupt the system, so we fail the allocation
->> +		 * instead of entering direct reclaim.
->> +		 */
->> +		if (deferred_compaction)
->> +			goto nopage;
->> +
->> +		/*
->> +		 * In all zones where compaction was attempted (and not
->> +		 * deferred or skipped), lock contention has been detected.
->> +		 * For THP allocation we do not want to disrupt the others
->> +		 * so we fallback to base pages instead.
->> +		 */
->> +		if (contended_compaction == COMPACT_CONTENDED_LOCK)
->> +			goto nopage;
->> +
->> +		/*
->> +		 * If compaction was aborted due to need_resched(), we do not
->> +		 * want to further increase allocation latency, unless it is
->> +		 * khugepaged trying to collapse.
->> +		 */
->> +		if (contended_compaction == COMPACT_CONTENDED_SCHED
->> +			&& !(current->flags & PF_KTHREAD))
->> +			goto nopage;
->> +	}
->>
->>   	/* Try direct reclaim and then allocating */
->>   	page = __alloc_pages_direct_reclaim(gfp_mask, order,
-
+Thanks,
+Yuyang
