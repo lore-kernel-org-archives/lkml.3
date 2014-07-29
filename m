@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848AbaG2OZl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 10:25:41 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:61222 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753798AbaG2OZj (ORCPT
+	id S1753682AbaG2O2g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 10:28:36 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13938 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751143AbaG2O2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 10:25:39 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: tegra: Move AHB Kconfig to drivers/amba
-Date: Tue, 29 Jul 2014 16:25:34 +0200
-Message-Id: <1406643934-16301-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.2
+	Tue, 29 Jul 2014 10:28:35 -0400
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Barry Song <baohua@kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Larry Bassel <larry.bassel@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH 00/15] arm/arm64: fix use of irq_find_mapping outside of legal RCU context
+In-Reply-To: <53C04B3E.20908@codeaurora.org> (Christopher Covington's message
+	of "Fri, 11 Jul 2014 21:38:22 +0100")
+Organization: ARM Ltd
+References: <1404825038-547-1-git-send-email-marc.zyngier@arm.com>
+	<53C04B3E.20908@codeaurora.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Date: Tue, 29 Jul 2014 15:28:25 +0100
+Message-ID: <87mwbskzna.fsf@approximate.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On Fri, Jul 11 2014 at  9:38:22 pm BST, Christopher Covington <cov@codeaurora.org> wrote:
+> Hi Mark,
+>
+> On 07/08/2014 09:10 AM, Marc Zyngier wrote:
+>> A number of irqchip drivers are directly calling irq_find_mapping,
+>> which may use a rcu_read_lock call when walking the radix tree.
+>
+> If this happens to be easy for you to determine: do direct callers of
+> irq_find_host such as irq_create_of_mapping have a similar problem with
+> irq_domain_mutex?
 
-This will allow the Kconfig option to be shared among 32-bit and 64-bit
-ARM.
+Definitely not from this problem. irq_find_host doesn't use RCU at all,
+so it shouldn't be an issue.
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- arch/arm/mach-tegra/Kconfig |  8 --------
- drivers/amba/Kconfig        | 11 +++++++++++
- 2 files changed, 11 insertions(+), 8 deletions(-)
- create mode 100644 drivers/amba/Kconfig
+Thanks,
 
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index 052fba07a3cb..fae2eb2f52ea 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -64,12 +64,4 @@ config ARCH_TEGRA_124_SOC
- 	  Support for NVIDIA Tegra T124 processor family, based on the
- 	  ARM CortexA15MP CPU
- 
--config TEGRA_AHB
--	bool "Enable AHB driver for NVIDIA Tegra SoCs"
--	default y
--	help
--	  Adds AHB configuration functionality for NVIDIA Tegra SoCs,
--	  which controls AHB bus master arbitration and some
--	  performance parameters(priority, prefech size).
--
- endif
-diff --git a/drivers/amba/Kconfig b/drivers/amba/Kconfig
-new file mode 100644
-index 000000000000..3f7350a03708
---- /dev/null
-+++ b/drivers/amba/Kconfig
-@@ -0,0 +1,11 @@
-+if ARM_AMBA
-+
-+config TEGRA_AHB
-+	bool "Enable AHB driver for NVIDIA Tegra SoCs"
-+	default y if ARCH_TEGRA
-+	help
-+	  Adds AHB configuration functionality for NVIDIA Tegra SoCs,
-+	  which controls AHB bus master arbitration and some performance
-+	  parameters (priority, prefetch size).
-+
-+endif
+	M.
 -- 
-2.0.2
-
+Jazz is not dead. It just smells funny.
