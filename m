@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676AbaG2OYJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 10:24:09 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44550 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321AbaG2OYH (ORCPT
+	id S1753735AbaG2OZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 10:25:28 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:4545 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979AbaG2OZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 10:24:07 -0400
-Date: Tue, 29 Jul 2014 07:24:03 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Tomas Henzl <thenzl@redhat.com>,
-        linux-kernel@vger.kernel.org, xjtuwjp@gmail.com, lindar_liu@usish.com,
-        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
-        Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>
-Subject: Re: [PATCH v2 RESEND 17/23] pm8001: Fix invalid return when
- request_irq() failed
-Message-ID: <20140729142403.GA13589@infradead.org>
-References: <cover.1405533479.git.agordeev@redhat.com>
- <5ecd9b80f705545c3dc85b2a4ae63a8ac3df8105.1405533479.git.agordeev@redhat.com>
- <53D79DE2.9000702@redhat.com>
- <20140729132020.GA7714@infradead.org>
- <53D7A62D.2090709@redhat.com>
- <20140729135641.GA14378@infradead.org>
- <20140729141544.GA18029@dhcp-26-207.brq.redhat.com>
+	Tue, 29 Jul 2014 10:25:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 29 Jul 2014 07:17:10 -0700
+Message-ID: <53D7AE7E.8070104@nvidia.com>
+Date: Tue, 29 Jul 2014 19:53:58 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140729141544.GA18029@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Eduardo Valentin <edubezval@gmail.com>
+CC: "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "eduardo.valentin@gmail.com" <eduardo.valentin@gmail.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "javi.merino@arm.com" <javi.merino@arm.com>
+Subject: Re: [PATCH-REPOST] thermal: of: look for sensor driver parent node
+ if device node missing
+References: <1406279971-14957-1-git-send-email-ldewangan@nvidia.com> <20140729141234.GA26807@developer>
+In-Reply-To: <20140729141234.GA26807@developer>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 04:15:45PM +0200, Alexander Gordeev wrote:
-> Hmm.. 18/23 applies with a minor fuzz against
-> git://git.infradead.org/users/hch/scsi-queue.git drivers-for-3.17
+On Tuesday 29 July 2014 07:42 PM, Eduardo Valentin wrote:
+> Hello Laxman,
+>
+> On Fri, Jul 25, 2014 at 02:49:31PM +0530, Laxman Dewangan wrote:
+>> There are some mfd devices which supports junction thermal interrupt
+>> like ams,AS3722. The DT binding of these devices are defined as the
+>> flat and drivers for sub module of such devices are registered as
+>> the mfd_add_devices. In this method, the sub devices registered as
+>> platform driver and these do not have the of_node pointer on their
+>> device structure. In this case, use the parent of_node pointer to
+>> get the required of_node pointer.
+>>
+> Can you please elaborate a bit more on your proposal? So, you would
+> append the thermal zones on the DT node of the MFD device?
 
-Okay, it was just git-am being goofy then.  I'll take care of it.
+Yes, mfd node for ams,as3722 is flat node, almost all sub-module driver 
+have their property on this node only. Regulator have their own sub node 
+under this node.
 
+as3722 {
+         compatible = "ams,as3722";
+         #gpio-contorller;
+         #gpio-cells = <2>;
+     ::::::::::
+         regulator {
+                 ::::
+         };
+};
+
+
+So in this, the thermal sensor driver's property is on the as3722 node 
+only and thermal zone need to refer this node for sensor.
+
+However, as3722 thermal sensor driver is register as sub mfd devices 
+through mfd_add_devices() and thermal sensor drivers pdev->dev.of_node 
+does not have any valid pointer.
