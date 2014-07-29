@@ -1,184 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547AbaG2MdA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 08:33:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43836 "EHLO mx2.suse.de"
+	id S1753575AbaG2MdQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 08:33:16 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47409 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751244AbaG2Mc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 08:32:59 -0400
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH v4 3/3] trace: Allow to call update_max_tr_single() from another CPU
-Date: Tue, 29 Jul 2014 14:31:43 +0200
-Message-Id: <1406637103-15435-4-git-send-email-pmladek@suse.cz>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1406637103-15435-1-git-send-email-pmladek@suse.cz>
-References: <1406637103-15435-1-git-send-email-pmladek@suse.cz>
+	id S1751143AbaG2MdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 08:33:11 -0400
+Date: Tue, 29 Jul 2014 09:33:05 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/2] perf tools: Ensure --symfs ends with '/'
+Message-ID: <20140729123305.GO7831@kernel.org>
+References: <1406251908-8195-1-git-send-email-namhyung@kernel.org>
+ <20140729050246.GC22707@bbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140729050246.GC22707@bbox>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any CPU specific tracing buffer could get switched by
+Em Tue, Jul 29, 2014 at 02:02:46PM +0900, Minchan Kim escreveu:
+> On Fri, Jul 25, 2014 at 10:31:47AM +0900, Namhyung Kim wrote:
+> > Minchan reported that perf failed to load vmlinux if --symfs argument
+> > doesn't end with '/' character.  So make sure that the symfs always
+> > ends with the '/'.
+> > 
+> > Reported-by: Minchan Kim <minchan@kernel.org>
+> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> 
+> Both patches work and are handy to me.
+> Thanks Namhyung.
 
-    echo 1 >/sys/kernel/debug/tracing/per_cpu/cpuN/snapshot
+I haven't said it is not :-) Just that it should be fixed in a different
+way.
 
-It triggers the following sequence of calls:
+Can you please try the patch below instead?
 
-   + tracing_snapshot_write()
-     + update_max_tr_single()
-       + ring_buffer_swap_cpu()
+David, was there any reason not to do it like done in this patch?
 
-We need to call ring_buffer_swap_cpu() with disabled interrupts because
-it is done under "tr->max_lock" and it would cause races otherwise.
-It also means that we need to call it from the right CPU but it is
-not guaranteed by tracing_snapshot_write().
+- Arnaldo
 
-This patch solves the problem by renaming update_max_tr_single()
-to update_max_tr_this_cpu(). It works with the current CPU instead
-of the passed one. It can be called from check_critical_timing()
-directly.
-
-Also it introduces function with the original name update_max_tr_single()
-that calls the CPU-specific one via smp_call_function_single().
-It can be called from tracing_snapshot_write() but with enabled interrupts.
-Otherwise, smp_call_function_single() would not work.
-
-Signed-off-by: Petr Mladek <pmladek@suse.cz>
 ---
- kernel/trace/trace.c         | 60 ++++++++++++++++++++++++++++++++++++++------
- kernel/trace/trace.h         |  1 +
- kernel/trace/trace_irqsoff.c |  2 +-
- 3 files changed, 54 insertions(+), 9 deletions(-)
+ annotate.c |    4 ++--
+ dso.c      |    8 ++++----
+ symbol.c   |    2 +-
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 4caa814d41c3..a2dc83b98cc0 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1017,22 +1017,29 @@ update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
- }
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 809b4c50beae..e67ef4a2b356 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -900,7 +900,7 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
+ 	bool delete_extract = false;
  
- /**
-- * update_max_tr_single - only copy one trace over, and reset the rest
-+ * update_max_tr_this_cpu_single - copy trace for this CPU, and reset the rest
-  * @tr - tracer
-  * @tsk - task with the latency
-- * @cpu - the cpu of the buffer to copy.
-  *
-- * Flip the trace of a single CPU buffer between the @tr and the max_tr.
-+ * Flip the trace of this CPU buffer between the @tr and the max_tr.
-+ *
-+ * It is called on this CPU. Otherwise, ring_buffer_swap_cpu() would not work
-+ * with disabled interrupts. They must be disabled to avoid a race under
-+ * tr->max_lock and because this is used in irqsoff tracer that is sensitive
-+ * about it.
-  */
- void
--update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
-+update_max_tr_this_cpu(struct trace_array *tr, struct task_struct *tsk)
- {
-+	int cpu;
- 	int ret;
- 
- 	if (tr->stop_count)
- 		return;
- 
- 	WARN_ON_ONCE(!irqs_disabled());
-+	cpu = smp_processor_id();
-+
- 	if (!tr->allocated_snapshot) {
- 		/* Only the nop tracer should hit this when disabling */
- 		WARN_ON_ONCE(tr->current_trace != &nop_trace);
-@@ -1059,6 +1066,42 @@ update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
- 	__update_max_tr(tr, tsk, cpu);
- 	arch_spin_unlock(&tr->max_lock);
- }
-+
-+struct update_max_tr_info {
-+	struct trace_array *tr;
-+	struct task_struct *tsk;
-+};
-+
-+static void update_max_tr_function_single(void *arg)
-+{
-+	struct update_max_tr_info *tr_info = arg;
-+	struct trace_array *tr = tr_info->tr;
-+	struct task_struct *tsk = tr_info->tsk;
-+
-+	update_max_tr_this_cpu(tr, tsk);
-+}
-+
-+/**
-+ * update_max_tr_this_cpu_single - only copy one trace over, and reset the rest
-+ * @tr - tracer
-+ * @tsk - task with the latency
-+ * @cpu - the cpu of the buffer to copy.
-+ *
-+ * Flip the trace of a single CPU buffer between the @tr and the max_tr.
-+ */
-+void
-+update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
-+{
-+	struct update_max_tr_info tr_info = {tr, tsk};
-+
-+
-+	/*
-+	 * The flip has to be done on the same CPU, see
-+	 * update_max_tr_this_cpu() for more details.
-+	 */
-+	smp_call_function_single(cpu, update_max_tr_function_single,
-+				 (void *)&tr_info, 1);
-+}
- #endif /* CONFIG_TRACER_MAX_TRACE */
- 
- static int wait_on_pipe(struct trace_iterator *iter)
-@@ -5057,13 +5100,14 @@ tracing_snapshot_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 			if (ret < 0)
- 				break;
- 		}
--		local_irq_disable();
- 		/* Now, we're going to swap */
--		if (iter->cpu_file == RING_BUFFER_ALL_CPUS)
-+		if (iter->cpu_file == RING_BUFFER_ALL_CPUS) {
-+			local_irq_disable();
- 			update_max_tr(tr, current, smp_processor_id());
--		else
-+			local_irq_enable();
-+		} else {
- 			update_max_tr_single(tr, current, iter->cpu_file);
--		local_irq_enable();
-+		}
- 		break;
- 	default:
- 		if (tr->allocated_snapshot) {
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 9258f5a815db..5aa876b9190e 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -616,6 +616,7 @@ extern unsigned long tracing_thresh;
- void update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu);
- void update_max_tr_single(struct trace_array *tr,
- 			  struct task_struct *tsk, int cpu);
-+void update_max_tr_this_cpu(struct trace_array *tr, struct task_struct *tsk);
- #endif /* CONFIG_TRACER_MAX_TRACE */
- 
- #ifdef CONFIG_STACKTRACE
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 1d4eeb304583..90a28d5105e4 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -347,7 +347,7 @@ check_critical_timing(struct trace_array *tr,
- 
- 	if (likely(!is_tracing_stopped())) {
- 		tr->max_latency = delta;
--		update_max_tr_single(tr, current, cpu);
-+		update_max_tr_this_cpu(tr, current);
+ 	if (filename) {
+-		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
++		snprintf(symfs_filename, sizeof(symfs_filename), "%s/%s",
+ 			 symbol_conf.symfs, filename);
  	}
  
- 	max_sequence++;
--- 
-1.8.4
-
+@@ -922,7 +922,7 @@ fallback:
+ 		 * DSO is the same as when 'perf record' ran.
+ 		 */
+ 		filename = (char *)dso->long_name;
+-		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
++		snprintf(symfs_filename, sizeof(symfs_filename), "%s/%s",
+ 			 symbol_conf.symfs, filename);
+ 		free_filename = false;
+ 	}
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 90d02c661dd4..f81550583429 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -79,7 +79,7 @@ int dso__read_binary_type_filename(const struct dso *dso,
+ 		while (last_slash != dso->long_name && *last_slash != '/')
+ 			last_slash--;
+ 
+-		len = scnprintf(filename, size, "%s", symbol_conf.symfs);
++		len = scnprintf(filename, size, "%s/", symbol_conf.symfs);
+ 		dir_size = last_slash - dso->long_name + 2;
+ 		if (dir_size > (size - len)) {
+ 			ret = -1;
+@@ -108,17 +108,17 @@ int dso__read_binary_type_filename(const struct dso *dso,
+ 	case DSO_BINARY_TYPE__VMLINUX:
+ 	case DSO_BINARY_TYPE__GUEST_VMLINUX:
+ 	case DSO_BINARY_TYPE__SYSTEM_PATH_DSO:
+-		snprintf(filename, size, "%s%s",
++		snprintf(filename, size, "%s/%s",
+ 			 symbol_conf.symfs, dso->long_name);
+ 		break;
+ 
+ 	case DSO_BINARY_TYPE__GUEST_KMODULE:
+-		snprintf(filename, size, "%s%s%s", symbol_conf.symfs,
++		snprintf(filename, size, "%s/%s/%s", symbol_conf.symfs,
+ 			 root_dir, dso->long_name);
+ 		break;
+ 
+ 	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
+-		snprintf(filename, size, "%s%s", symbol_conf.symfs,
++		snprintf(filename, size, "%s/%s", symbol_conf.symfs,
+ 			 dso->long_name);
+ 		break;
+ 
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index eb06746b06b2..c3549d5955ea 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1468,7 +1468,7 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
+ 	if (vmlinux[0] == '/')
+ 		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s", vmlinux);
+ 	else
+-		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s%s",
++		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s/%s",
+ 			 symbol_conf.symfs, vmlinux);
+ 
+ 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
