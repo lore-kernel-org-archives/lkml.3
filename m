@@ -1,181 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242AbaG2Lc5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 07:32:57 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:36472 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752947AbaG2Lc4 (ORCPT
+	id S1753453AbaG2LdI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 07:33:08 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60927 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752876AbaG2LdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 07:32:56 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-37-53d78666e553
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-References: <1406328445-63707-1-git-send-email-jaegeuk@kernel.org>
- <1406328445-63707-4-git-send-email-jaegeuk@kernel.org>
-In-reply-to: <1406328445-63707-4-git-send-email-jaegeuk@kernel.org>
-Subject: RE: [f2fs-dev] [PATCH 04/11] f2fs: use radix_tree for ino management
-Date: Tue, 29 Jul 2014 19:32:08 +0800
-Message-id: <008001cfab20$d5e6ce50$81b46af0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Content-language: zh-cn
-Thread-index: AQH0/sFA7oYZ7Fd/hcfctysO+ZeFcgLB2M6cm1YjIUA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jQd20tuvBBrMfKlo8WT+L2eLSIneL
-	PXtPslhc3jWHzYHFY9OqTjaP3Qs+M3l83iQXwBzFZZOSmpNZllqkb5fAlTGzL7ngrXLFpL0/
-	mRsYm2W7GDk5JARMJB40X2aCsMUkLtxbz9bFyMUhJDCdUWLS7eNMEM4PRolraxsYQarYBFQk
-	lnf8B+sQEVCT6N03BcxmFsiUmND/gh3EFhKoltg5+y0ziM0p4CxxfuJXsLiwgK/Eh1/HweIs
-	AqoSR24/ApvJK2Ap8f/3PjYIW1Dix+R7LBAztSTW7zwONV9eYvMaiJkSAgoSO86+ZoSIi0ts
-	PHKLBeIeK4n2z7dZJjAKzUIyahaSUbOQjJqFpH0BI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k
-	/NxNjODAfya1g3Flg8UhRgEORiUe3g1zrwULsSaWFVfmHmKU4GBWEuF9UX49WIg3JbGyKrUo
-	P76oNCe1+BCjNAeLkjjvgVbrQCGB9MSS1OzU1ILUIpgsEwenVAPjdqWslls6kgdig++qc37y
-	TktvPJR9t/Rpwc0K3lOmi5j6j/7+wrRvKnOGxZYvfeq7s/47i/n/23CO8XtwQXf0xpBZzdvu
-	PwjzerPd1tyhhP0cl0hDHdO3Hc0Cv2dIC2Vf2LGnRvlKi8Fk/+1X0s6p90/Vjwyav/rz89dX
-	Im+z2h9YVT/5zf92JZbijERDLeai4kQA101aRXgCAAA=
+	Tue, 29 Jul 2014 07:33:03 -0400
+Date: Tue, 29 Jul 2014 12:32:36 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: =?utf-8?B?SmnFmcOt?= Prchal <jiri.prchal@aksignal.cz>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
+        voice.shen@atmel.com
+Message-ID: <20140729113236.GM17528@sirena.org.uk>
+References: <b033d16ec31d26a895726ee72ec89b43943dfbae.1406547656.git.jiri.prchal@aksignal.cz>
+ <20140728122103.GR9532@piout.net>
+ <53D64ADA.1000102@aksignal.cz>
+ <20140728223859.GA3214@piout.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nOkP3B9e3ta8qQbV"
+Content-Disposition: inline
+In-Reply-To: <20140728223859.GA3214@piout.net>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ARM: at91: spi: request all csgpio in spi probe
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-One comment as following.
+--nOkP3B9e3ta8qQbV
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> Sent: Saturday, July 26, 2014 6:47 AM
-> To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net
-> Cc: Jaegeuk Kim
-> Subject: [f2fs-dev] [PATCH 04/11] f2fs: use radix_tree for ino management
-> 
-> For better ino management, this patch replaces the data structure from list
-> to radix tree.
-> 
-> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+On Tue, Jul 29, 2014 at 12:38:59AM +0200, Alexandre Belloni wrote:
 
-Reviewed-by: Chao Yu <chao2.yu@samsung.com>
+> Mark: maybe it would make sense to do devm_gpio_request_one() in
+> of_spi_register_master(), after of_get_named_gpio.
 
-> ---
->  fs/f2fs/checkpoint.c | 48 ++++++++++++++++++++++++++----------------------
->  fs/f2fs/f2fs.h       |  1 +
->  2 files changed, 27 insertions(+), 22 deletions(-)
-> 
-> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-> index f93d154..d35094a 100644
-> --- a/fs/f2fs/checkpoint.c
-> +++ b/fs/f2fs/checkpoint.c
-> @@ -284,24 +284,26 @@ const struct address_space_operations f2fs_meta_aops = {
-> 
->  static void __add_ino_entry(struct f2fs_sb_info *sbi, nid_t ino, int type)
->  {
-> -	struct ino_entry *new, *e;
-> -
-> -	new = f2fs_kmem_cache_alloc(ino_entry_slab, GFP_ATOMIC);
-> -	new->ino = ino;
-> -
-> +	struct ino_entry *e;
-> +retry:
->  	spin_lock(&sbi->ino_lock[type]);
-> -	list_for_each_entry(e, &sbi->ino_list[type], list) {
-> -		if (e->ino == ino) {
-> +
-> +	e = radix_tree_lookup(&sbi->ino_root[type], ino);
-> +	if (!e) {
-> +		e = kmem_cache_alloc(ino_entry_slab, GFP_ATOMIC);
-> +		if (!e) {
->  			spin_unlock(&sbi->ino_lock[type]);
-> -			kmem_cache_free(ino_entry_slab, new);
-> -			return;
-> +			goto retry;
->  		}
-> -		if (e->ino > ino)
-> -			break;
-> -	}
-> +		if (radix_tree_insert(&sbi->ino_root[type], ino, e)) {
-> +			spin_unlock(&sbi->ino_lock[type]);
+You need to transition all the drivers doing things manually but yes.
+As I keep saying all the GPIO handling needs to be completely
+refactored.
 
-we should add kmem_cache_free(ino_entry_slab, e) here to avoid memory leak.
+> While this solves the particular issue Ji=C5=99=C3=AD is seeing, this wil=
+l not
+> solve the case where PA14 (CS0) is not used by the spi driver at all. It
+> will remained muxed as CS0 and toggle when the spi master needs to
+> access CS0 until another driver muxes it to something else. I still
+> believe we should explicitly ask pinctrl to mux them as gpios.
 
-> +			goto retry;
-> +		}
-> +		memset(e, 0, sizeof(struct ino_entry));
-> +		e->ino = ino;
-> 
-> -	/* add new entry into list which is sorted by inode number */
-> -	list_add_tail(&new->list, &e->list);
-> +		list_add_tail(&e->list, &sbi->ino_list[type]);
-> +	}
->  	spin_unlock(&sbi->ino_lock[type]);
->  }
-> 
-> @@ -310,14 +312,15 @@ static void __remove_ino_entry(struct f2fs_sb_info *sbi, nid_t ino, int
-> type)
->  	struct ino_entry *e;
-> 
->  	spin_lock(&sbi->ino_lock[type]);
-> -	list_for_each_entry(e, &sbi->ino_list[type], list) {
-> -		if (e->ino == ino) {
-> -			list_del(&e->list);
-> +	e = radix_tree_lookup(&sbi->ino_root[type], ino);
-> +	if (e) {
-> +		list_del(&e->list);
-> +		radix_tree_delete(&sbi->ino_root[type], ino);
-> +		if (type == ORPHAN_INO)
->  			sbi->n_orphans--;
-> -			spin_unlock(&sbi->ino_lock[type]);
-> -			kmem_cache_free(ino_entry_slab, e);
-> -			return;
-> -		}
-> +		spin_unlock(&sbi->ino_lock[type]);
-> +		kmem_cache_free(ino_entry_slab, e);
-> +		return;
->  	}
->  	spin_unlock(&sbi->ino_lock[type]);
->  }
-> @@ -346,7 +349,7 @@ void release_orphan_inode(struct f2fs_sb_info *sbi)
-> 
->  void add_orphan_inode(struct f2fs_sb_info *sbi, nid_t ino)
->  {
-> -	/* add new orphan entry into list which is sorted by inode number */
-> +	/* add new orphan ino entry into list */
->  	__add_ino_entry(sbi, ino, ORPHAN_INO);
->  }
-> 
-> @@ -943,6 +946,7 @@ void init_ino_entry_info(struct f2fs_sb_info *sbi)
->  	int i;
-> 
->  	for (i = 0; i < MAX_INO_ENTRY; i++) {
-> +		INIT_RADIX_TREE(&sbi->ino_root[i], GFP_ATOMIC);
->  		spin_lock_init(&sbi->ino_lock[i]);
->  		INIT_LIST_HEAD(&sbi->ino_list[i]);
->  	}
-> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> index b6fa6ec..4454caa 100644
-> --- a/fs/f2fs/f2fs.h
-> +++ b/fs/f2fs/f2fs.h
-> @@ -456,6 +456,7 @@ struct f2fs_sb_info {
->  	wait_queue_head_t cp_wait;
-> 
->  	/* for inode management */
-> +	struct radix_tree_root ino_root[MAX_INO_ENTRY];	/* ino entry array */
->  	spinlock_t ino_lock[MAX_INO_ENTRY];		/* for ino entry lock */
->  	struct list_head ino_list[MAX_INO_ENTRY];	/* inode list head */
-> 
-> --
-> 1.8.5.2 (Apple Git-48)
-> 
-> 
-> ------------------------------------------------------------------------------
-> Want fast and easy access to all the code in your enterprise? Index and
-> search up to 200,000 lines of code with a free copy of Black Duck
-> Code Sight - the same software that powers the world's largest code
-> search on Ohloh, the Black Duck Open Hub! Try it now.
-> http://p.sf.net/sfu/bds
-> _______________________________________________
-> Linux-f2fs-devel mailing list
-> Linux-f2fs-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+I'm just guessing as to what the issue that he's seeing is but isn't
+this just saying that the board pinmuxing is wrong?  If the board
+doesn't want the pin to be used by the SPI controller it shouldn't be=20
+configuring it that way.
 
+--nOkP3B9e3ta8qQbV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT14ZRAAoJELSic+t+oim9sM0P/jmBwEu0CH2FaGSh+517g5R4
+KbrixTeEPmC1TlcJ6AKCtCzEW7v6amUpiBOm/8h2w7vcQEVNt4kVAzPwvQDXqmdr
+IJ36hXXB9VGt1k51u0fW8wBvkl8xu/VzuS3pyuNZTvzjHr6BqJlAve8en4FH4Dk9
+qJubrRG/C9HZLUbrD7TvIVtQ8Am01Ip+1LnLVtVGKLdh8Dqy/q3vBR5zbTcJYxMj
+FBa4mugfAgkUg4SAf9DsxsG0Aj9SO3DZRBSArp2t9uXT6TxKhSbG6jmdZpXHZtF2
+bZ7o70qIsuuJ6O5Rn22WoA7WgHmNxN/7uO3hRZg5Xj7zSTlc45ezvaq1tRq72+Xl
+61xmHFZxkooB/d4wnlWM0/ukhx9yCCVnKFpG3031rbQ6b1kqVIHUAiEL/sIOd1/b
+pHA+UXkn0CcpuE0xA2dNH10l3MbH92YU1ow9QgicIai795IZh8bPQGHAp/v3w/4n
+0i0dd4LsKNu5G1inBqm5UIr1/KrBDeE0+78u0lHeRNkSRc+LhYZBoxNE4gm6CBMR
+dQTkqbgLg6yo8SdQywA98uI+gM0NnXTj2rgMnJUbGaw/vKWK1nVef00XDQSsySmN
+zKISdo2bbGMuLbKY9AOw4Q6DA0HmT1u9o9VzPVAFLaMD50jzEwDctJf+eP793wJ2
+EL3kXOpSdZCzCWzES7k1
+=lTuD
+-----END PGP SIGNATURE-----
+
+--nOkP3B9e3ta8qQbV--
