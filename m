@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733AbaG2MNF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 08:13:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33990 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753317AbaG2MNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 08:13:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,756,1400050800"; 
-   d="scan'208";a="462656253"
-Date: Tue, 29 Jul 2014 08:12:59 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the DAX
- page fault handler
-Message-ID: <20140729121259.GL6754@linux.intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
- <c2e602f401a580c4fac54b9b8f4a6f8dd0ac1071.1395591795.git.matthew.r.wilcox@intel.com>
- <20140409102758.GM32103@quack.suse.cz>
- <20140409205111.GG5727@linux.intel.com>
- <20140409214331.GQ32103@quack.suse.cz>
+	id S1753138AbaG2MPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 08:15:42 -0400
+Received: from smtp.devoid-pointer.net ([31.31.77.140]:49980 "EHLO
+	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaG2MPl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 08:15:41 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jul 2014 08:15:40 EDT
+From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
+To: "Murphy, Dan" <dmurphy@ti.com>
+Cc: "simon@mungewell.org" <simon@mungewell.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Elias Vanderstuyft <elias.vds@gmail.com>
+Subject: Re: [v2] input: drv260x: Add TI drv260x haptics driver
+Date: Tue, 29 Jul 2014 14:08:59 +0200
+Message-ID: <2696156.zc98nP9bBH@sigyn>
+User-Agent: KMail/4.13.3 (Linux/3.15.0-1-my-rd; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <00FC9A978A94B7418C33AFAE8A35ED49DB1A79@DFLE09.ent.ti.com>
+References: <1406566403-1436-1-git-send-email-dmurphy@ti.com> <5adf0339146a7b655a77053195aa892c.squirrel@mungewell.org> <00FC9A978A94B7418C33AFAE8A35ED49DB1A79@DFLE09.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140409214331.GQ32103@quack.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 11:43:31PM +0200, Jan Kara wrote:
-> So there are three places that can fail after we allocate the block:
-> 1) We race with truncate reducing i_size
-> 2) dax_get_pfn() fails
-> 3) vm_insert_mixed() fails
+On Monday 28 of July 2014 21:21:26 Murphy, Dan wrote:
+> Dmitry
 > 
-> I would guess that 2) can fail only if the HW has problems and leaking
-> block in that case could be acceptable (please correct me if I'm wrong).
-> 3) shouldn't fail because of ENOMEM because fault has already allocated all
-> the page tables and EBUSY should be handled as well. So the only failure we
-> have to care about is 1). And we could move ->get_block() call under
-> i_mmap_mutex after the i_size check.  Lock ordering should be fine because
-> i_mmap_mutex ranks above page lock under which we do block mapping in
-> standard ->page_mkwrite callbacks. The only (big) drawback is that
-> i_mmap_mutex will now be held for much longer time and thus the contention
-> would be much higher. But hopefully once we resolve our problems with
-> mmap_sem and introduce mapping range lock we could scale reasonably.
+> On 07/28/2014 12:59 PM, simon@mungewell.org wrote:
+> >>> The initial driver supports the devices
+> >>> real time playback mode.  But the device
+> >>> has additional wave patterns in ROM.
+> >> 
+> >> As it presented the device appears to be a memoryless device, however
+> >> you present it to the rest of the system as if it can support playback
+> >> of multiple effects simultaneously, which is incorrect.
+> >> 
+> >> My guess that you need to engage the memoryless input library to schedule
+> >> handling multiple effects for your device, including ramping up, ramping
+> >> down, stopping playback when effects runs out, etc.
+> > 
+> > Hi Dan,
+> > Elias and Michal (cc'ed) are working on a kernel/userland library to
+> > handle sending multiple force feedback signals to 'simple' devices,
+> > perhaps you should engage with them.
+> > 
+> > Simon
 
-Lockdep barfs on holding i_mmap_mutex while calling ext4's ->get_block.
+Hi Dan,
 
-Path 1:
+since I spent some time trying to improve the memoryless library I can 
+hopefully provide you with some hints.
 
-ext4_fallocate ->
- ext4_punch_hole ->
-  ext4_inode_attach_jinode() -> ... ->
-    lock_map_acquire(&handle->h_lockdep_map);
-  truncate_pagecache_range() ->
-   unmap_mapping_range() ->
-    mutex_lock(&mapping->i_mmap_mutex);
+If I'm reading this right, your device cannot play more than one effect at once 
+but it can operate eihter in RTP mode where the user controls the operation of 
+the motors directly on in an automated mode where the device follows some pre-
+programmed waveform. These two modes are mutually exclusive.
 
-Path 2:
-do_dax_fault() ->
- mutex_lock(&mapping->i_mmap_mutex);
- ext4_get_block() -> ... ->
-  lock_map_acquire(&handle->h_lockdep_map);
+If my understanding of the problem is correct, you will struggle both with 
+memoryless library and your own imlementation. The memoryless library is quite 
+simplistic and it doesn't have any sort of "passthrough" mode so you would not 
+be able to do anything besides RTP that way.
 
-So that idea doesn't work.
+On the other hand if you decide to write your own implementation of effect 
+handling you will end up duplicating a lot of code that already exists in the 
+memoryless library and has been proven to work.
 
-We can't exclude truncates by incrementing i_dio_count, because we can't
-take i_mutex in the fault path.
+A possible solution for the problem would be to separate the functions that 
+control effect timing from the memoryless library and make them globally 
+accessible. I believe that this would simplify any customized haptic 
+implementation considerably and it might be a decent interim solution before 
+the project Simon mentioned is ready.
 
-I'm stumped.
+If there is anybody interested in such a solution I can probably whip up a 
+patch for it quite quickly.
+
+Regards,
+Michal
