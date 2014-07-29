@@ -1,353 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105AbaG2HoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 03:44:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27520 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751038AbaG2HoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 03:44:22 -0400
-Message-ID: <53D750B1.8090205@redhat.com>
-Date: Tue, 29 Jul 2014 09:43:45 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751781AbaG2HvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 03:51:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34882 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaG2HvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 03:51:10 -0400
+Date: Tue, 29 Jul 2014 09:50:55 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140729075055.GY19379@twins.programming.kicks-ass.net>
+References: <20140728225556.GA19493@linux.vnet.ibm.com>
+ <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, tj@kernel.org
-CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, jszhang@marvell.com,
-        linux-arm-kernel@lists.infradead.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v12 4/8] ata: libahci: allow to use multiple PHYs
-References: <1406618447-25499-1-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1406618447-25499-1-git-send-email-antoine.tenart@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pUwoXgeCGnTlVt9x"
+Content-Disposition: inline
+In-Reply-To: <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 07/29/2014 09:20 AM, Antoine Ténart wrote:
-> The current implementation of the libahci does not allow to use multiple
-> PHYs. This patch adds the support of multiple PHYs by the libahci while
-> keeping the old bindings valid for device tree compatibility.
-> 
-> This introduce a new way of defining SATA ports in the device tree, with
-> one port per sub-node. This as the advantage of allowing a per port
-> configuration. Because some ports may be accessible but disabled in the
-> device tree, the port_map mask is computed automatically when using
-> this.
-> 
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> Acked-by: Hans de Goede <hdegoede@redhat.com>
-> ---
-> 
-> Updated with the latest comment from Hans.
+--pUwoXgeCGnTlVt9x
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Looks 100% good now.
+On Mon, Jul 28, 2014 at 03:56:12PM -0700, Paul E. McKenney wrote:
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index bc1638b33449..a0d2f3a03566 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2762,6 +2762,7 @@ need_resched:
+>  		} else {
+>  			deactivate_task(rq, prev, DEQUEUE_SLEEP);
+>  			prev->on_rq =3D 0;
+> +			rcu_note_voluntary_context_switch(prev);
+> =20
+>  			/*
+>  			 * If a worker went to sleep, notify and ask workqueue
+> @@ -2828,6 +2829,7 @@ asmlinkage __visible void __sched schedule(void)
+>  	struct task_struct *tsk =3D current;
+> =20
+>  	sched_submit_work(tsk);
+> +	rcu_note_voluntary_context_switch(tsk);
+>  	__schedule();
+>  }
 
-Regards,
+Yeah, not entirely happy with that, you add two calls into one of the
+hotest paths of the kernel.
 
-Hans
+And I'm still not entirely sure why, your 0/x babbled something about
+trampolines, but I'm not sure I understand how those lead to this.
 
-> 
->  drivers/ata/ahci.h             |   7 +-
->  drivers/ata/libahci_platform.c | 189 ++++++++++++++++++++++++++++++++---------
->  2 files changed, 157 insertions(+), 39 deletions(-)
-> 
-> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-> index cb8d58926851..47de53284ad7 100644
-> --- a/drivers/ata/ahci.h
-> +++ b/drivers/ata/ahci.h
-> @@ -332,7 +332,12 @@ struct ahci_host_priv {
->  	bool			got_runtime_pm; /* Did we do pm_runtime_get? */
->  	struct clk		*clks[AHCI_MAX_CLKS]; /* Optional */
->  	struct regulator	*target_pwr;	/* Optional */
-> -	struct phy		*phy;		/* If platform uses phy */
-> +	/*
-> +	 * If platform uses PHYs. There is a 1:1 relation between the port number and
-> +	 * the PHY position in this array.
-> +	 */
-> +	struct phy		**phys;
-> +	unsigned		nports;		/* Number of ports */
->  	void			*plat_data;	/* Other platform data */
->  	/*
->  	 * Optional ahci_start_engine override, if not set this gets set to the
-> diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
-> index db9b90d876dd..98e4f953bc8c 100644
-> --- a/drivers/ata/libahci_platform.c
-> +++ b/drivers/ata/libahci_platform.c
-> @@ -39,6 +39,67 @@ static struct scsi_host_template ahci_platform_sht = {
->  };
->  
->  /**
-> + * ahci_platform_enable_phys - Enable PHYs
-> + * @hpriv: host private area to store config values
-> + *
-> + * This function enables all the PHYs found in hpriv->phys, if any.
-> + * If a PHY fails to be enabled, it disables all the PHYs already
-> + * enabled in reverse order and returns an error.
-> + *
-> + * RETURNS:
-> + * 0 on success otherwise a negative error code
-> + */
-> +int ahci_platform_enable_phys(struct ahci_host_priv *hpriv)
-> +{
-> +	int rc, i;
-> +
-> +	for (i = 0; i < hpriv->nports; i++) {
-> +		if (!hpriv->phys[i])
-> +			continue;
-> +
-> +		rc = phy_init(hpriv->phys[i]);
-> +		if (rc)
-> +			goto disable_phys;
-> +
-> +		rc = phy_power_on(hpriv->phys[i]);
-> +		if (rc) {
-> +			phy_exit(hpriv->phys[i]);
-> +			goto disable_phys;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +
-> +disable_phys:
-> +	while (--i >= 0) {
-> +		phy_power_off(hpriv->phys[i]);
-> +		phy_exit(hpriv->phys[i]);
-> +	}
-> +	return rc;
-> +}
-> +EXPORT_SYMBOL_GPL(ahci_platform_enable_phys);
-> +
-> +/**
-> + * ahci_platform_disable_phys - Enable PHYs
-> + * @hpriv: host private area to store config values
-> + *
-> + * This function disables all PHYs found in hpriv->phys.
-> + */
-> +void ahci_platform_disable_phys(struct ahci_host_priv *hpriv)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < hpriv->nports; i++) {
-> +		if (!hpriv->phys[i])
-> +			continue;
-> +
-> +		phy_power_off(hpriv->phys[i]);
-> +		phy_exit(hpriv->phys[i]);
-> +	}
-> +}
-> +EXPORT_SYMBOL_GPL(ahci_platform_disable_phys);
-> +
-> +/**
->   * ahci_platform_enable_clks - Enable platform clocks
->   * @hpriv: host private area to store config values
->   *
-> @@ -92,7 +153,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_disable_clks);
->   * following order:
->   * 1) Regulator
->   * 2) Clocks (through ahci_platform_enable_clks)
-> - * 3) Phy
-> + * 3) Phys
->   *
->   * If resource enabling fails at any point the previous enabled resources
->   * are disabled in reverse order.
-> @@ -114,17 +175,9 @@ int ahci_platform_enable_resources(struct ahci_host_priv *hpriv)
->  	if (rc)
->  		goto disable_regulator;
->  
-> -	if (hpriv->phy) {
-> -		rc = phy_init(hpriv->phy);
-> -		if (rc)
-> -			goto disable_clks;
-> -
-> -		rc = phy_power_on(hpriv->phy);
-> -		if (rc) {
-> -			phy_exit(hpriv->phy);
-> -			goto disable_clks;
-> -		}
-> -	}
-> +	rc = ahci_platform_enable_phys(hpriv);
-> +	if (rc)
-> +		goto disable_clks;
->  
->  	return 0;
->  
-> @@ -144,16 +197,13 @@ EXPORT_SYMBOL_GPL(ahci_platform_enable_resources);
->   *
->   * This function disables all ahci_platform managed resources in the
->   * following order:
-> - * 1) Phy
-> + * 1) Phys
->   * 2) Clocks (through ahci_platform_disable_clks)
->   * 3) Regulator
->   */
->  void ahci_platform_disable_resources(struct ahci_host_priv *hpriv)
->  {
-> -	if (hpriv->phy) {
-> -		phy_power_off(hpriv->phy);
-> -		phy_exit(hpriv->phy);
-> -	}
-> +	ahci_platform_disable_phys(hpriv);
->  
->  	ahci_platform_disable_clks(hpriv);
->  
-> @@ -187,7 +237,7 @@ static void ahci_platform_put_resources(struct device *dev, void *res)
->   * 2) regulator for controlling the targets power (optional)
->   * 3) 0 - AHCI_MAX_CLKS clocks, as specified in the devs devicetree node,
->   *    or for non devicetree enabled platforms a single clock
-> - *	4) phy (optional)
-> + *	4) phys (optional)
->   *
->   * RETURNS:
->   * The allocated ahci_host_priv on success, otherwise an ERR_PTR value
-> @@ -197,7 +247,9 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
->  	struct device *dev = &pdev->dev;
->  	struct ahci_host_priv *hpriv;
->  	struct clk *clk;
-> -	int i, rc = -ENOMEM;
-> +	struct device_node *child;
-> +	int i, enabled_ports = 0, rc = -ENOMEM;
-> +	u32 mask_port_map = 0;
->  
->  	if (!devres_open_group(dev, NULL, GFP_KERNEL))
->  		return ERR_PTR(-ENOMEM);
-> @@ -246,28 +298,89 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
->  		hpriv->clks[i] = clk;
->  	}
->  
-> -	hpriv->phy = devm_phy_get(dev, "sata-phy");
-> -	if (IS_ERR(hpriv->phy)) {
-> -		rc = PTR_ERR(hpriv->phy);
-> -		switch (rc) {
-> -		case -ENOSYS:
-> -			/* No PHY support. Check if PHY is required. */
-> -			if (of_find_property(dev->of_node, "phys", NULL)) {
-> -				dev_err(dev, "couldn't get sata-phy: ENOSYS\n");
-> +	hpriv->nports = of_get_child_count(dev->of_node);
-> +
-> +	if (hpriv->nports) {
-> +		hpriv->phys = devm_kzalloc(dev,
-> +					   hpriv->nports * sizeof(*hpriv->phys),
-> +					   GFP_KERNEL);
-> +		if (!hpriv->phys) {
-> +			rc = -ENOMEM;
-> +			goto err_out;
-> +		}
-> +
-> +		for_each_child_of_node(dev->of_node, child) {
-> +			u32 port;
-> +
-> +			if (!of_device_is_available(child))
-> +				continue;
-> +
-> +			if (of_property_read_u32(child, "reg", &port)) {
-> +				rc = -EINVAL;
->  				goto err_out;
->  			}
-> -		case -ENODEV:
-> -			/* continue normally */
-> -			hpriv->phy = NULL;
-> -			break;
->  
-> -		case -EPROBE_DEFER:
-> -			goto err_out;
-> +			if (port >= hpriv->nports) {
-> +				dev_warn(dev, "invalid port number %d\n", port);
-> +				continue;
-> +			}
-> +
-> +			mask_port_map |= BIT(port);
-> +
-> +			hpriv->phys[port] = devm_of_phy_get(dev, child, NULL);
-> +			if (IS_ERR(hpriv->phys[port])) {
-> +				rc = PTR_ERR(hpriv->phys[port]);
-> +				dev_err(dev,
-> +					"couldn't get PHY in node %s: %d\n",
-> +					child->name, rc);
-> +				goto err_out;
-> +			}
->  
-> -		default:
-> -			dev_err(dev, "couldn't get sata-phy\n");
-> +			enabled_ports++;
-> +		}
-> +		if (!enabled_ports) {
-> +			dev_warn(dev, "No port enabled\n");
-> +			rc = -ENODEV;
->  			goto err_out;
->  		}
-> +
-> +		if (!hpriv->mask_port_map)
-> +			hpriv->mask_port_map = mask_port_map;
-> +	} else {
-> +		/*
-> +		 * If no sub-node was found, keep this for device tree
-> +		 * compatibility
-> +		 */
-> +		struct phy *phy = devm_phy_get(dev, "sata-phy");
-> +		if (!IS_ERR(phy)) {
-> +			hpriv->phys = devm_kzalloc(dev, sizeof(*hpriv->phys),
-> +						   GFP_KERNEL);
-> +			if (!hpriv->phys) {
-> +				rc = -ENOMEM;
-> +				goto err_out;
-> +			}
-> +
-> +			hpriv->phys[0] = phy;
-> +			hpriv->nports = 1;
-> +		} else {
-> +			rc = PTR_ERR(phy);
-> +			switch (rc) {
-> +				case -ENOSYS:
-> +					/* No PHY support. Check if PHY is required. */
-> +					if (of_find_property(dev->of_node, "phys", NULL)) {
-> +						dev_err(dev, "couldn't get sata-phy: ENOSYS\n");
-> +						goto err_out;
-> +					}
-> +				case -ENODEV:
-> +					/* continue normally */
-> +					hpriv->phys = NULL;
-> +					break;
-> +
-> +				default:
-> +					goto err_out;
-> +
-> +			}
-> +		}
->  	}
->  
->  	pm_runtime_enable(dev);
-> @@ -291,7 +404,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_get_resources);
->   * @host_flags: ahci host flags used in ahci_host_priv
->   *
->   * This function does all the usual steps needed to bring up an
-> - * ahci-platform host, note any necessary resources (ie clks, phy, etc.)
-> + * ahci-platform host, note any necessary resources (ie clks, phys, etc.)
->   * must be initialized / enabled before calling this.
->   *
->   * RETURNS:
-> @@ -395,7 +508,7 @@ static void ahci_host_stop(struct ata_host *host)
->   * @dev: device pointer for the host
->   *
->   * This function does all the usual steps needed to suspend an
-> - * ahci-platform host, note any necessary resources (ie clks, phy, etc.)
-> + * ahci-platform host, note any necessary resources (ie clks, phys, etc.)
->   * must be disabled after calling this.
->   *
->   * RETURNS:
-> @@ -432,7 +545,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_suspend_host);
->   * @dev: device pointer for the host
->   *
->   * This function does all the usual steps needed to resume an ahci-platform
-> - * host, note any necessary resources (ie clks, phy, etc.)  must be
-> + * host, note any necessary resources (ie clks, phys, etc.)  must be
->   * initialized / enabled before calling this.
->   *
->   * RETURNS:
-> 
+--pUwoXgeCGnTlVt9x
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT11JaAAoJEHZH4aRLwOS6eegP/i9+m/Z6v6AjqABf6hRG511U
+avXZBfWx7bmcKKa5OcVV9EdKfNeWty2XrEO8u+QJhDidIAOUZ7S0xDJIrCMw7+DL
+oS8tWKxdDAKhMxDZkBmtV/Of8grHAcBm8j1+yVwq53vhS5nmOdtr7c0AE3keF2r5
+b9w6HqC0mmeg/C3Cpk+FhkIhCmAX561ffAKARdn6hcLmgU8C8/uEu0XaHZJZ+o++
+lXCZsGhvVr2bp+a6y7ERS62R7L445WzJ/g39oEyu/IgJ9az/GHDsbLudyWnxRYoV
+1NDIh9deCzXAE4ranQcTxPb4H5Ajs4lSe1U5GODqBnKp7hXWioaeTSxRc7oYQL0M
+gOWa4SaADrFhgnp6YvTOULj9f32Zqdj81QnW6vrAa24hREx1/NaTS0zEwJmMBqXZ
+TQGmrGjp0Q6dHzBUIEAIUlo3oTfkfGTWF/GyzlKjDjPpIEbj8jLUgAqenb+056GH
+0lU+RGKEAGdKZUirrUZMIGZhMB55j9J7+o0J30xCkGxLVlUD9G3/xE8rgstUXxLF
+ge+MhXKXIiyObsJFThRSSNmck1SrOoutZJleThktfKxOPZf1PWpqOr1Hy28SDcFH
+PgA4Evd6fTEYkINyRddDNhuZxmydRhQV5q9V6ZJ15JlI9kFwpl30blvUunJu7KXX
+7M4uazN+0RmQ1uqO0/Ii
+=xcO9
+-----END PGP SIGNATURE-----
+
+--pUwoXgeCGnTlVt9x--
