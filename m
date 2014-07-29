@@ -1,216 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985AbaG2QiR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 12:38:17 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:41291 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528AbaG2QiO (ORCPT
+	id S1753899AbaG2Qjs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 12:39:48 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:40778 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139AbaG2Qjp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 12:38:14 -0400
+	Tue, 29 Jul 2014 12:39:45 -0400
+Message-ID: <53D7CE6F.1050407@arm.com>
+Date: Tue, 29 Jul 2014 17:40:15 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=X87BViAZ9LsDWcx=AGsSmR9VtqbbVaZSZ_1-P-tgV_ig@mail.gmail.com>
-References: <1404565174-2923-1-git-send-email-addy.ke@rock-chips.com>
-	<1404963109-3906-1-git-send-email-addy.ke@rock-chips.com>
-	<CAD=FV=X87BViAZ9LsDWcx=AGsSmR9VtqbbVaZSZ_1-P-tgV_ig@mail.gmail.com>
-Date: Tue, 29 Jul 2014 09:38:13 -0700
-X-Google-Sender-Auth: m-iYEroDkn1w9zxLUjyuHlHdCzs
-Message-ID: <CAD=FV=VtmKCGU1GKd4yQfY=fcggN8xq4p2AEMSoEtz8XydtPDg@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: dw_mmc: add support for RK3288
-From: Doug Anderson <dianders@chromium.org>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
         Randy Dunlap <rdunlap@infradead.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        zyf <zyf@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/19] ARM64 / ACPI: Parse FADT table to get PSCI flags
+ for PSCI init
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <1406206825-15590-7-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1406206825-15590-7-git-send-email-hanjun.guo@linaro.org>
+X-OriginalArrivalTime: 29 Jul 2014 16:39:41.0300 (UTC) FILETIME=[B1EC8B40:01CFAB4B]
+X-MC-Unique: 114072917394205801
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addy,
 
-On Mon, Jul 28, 2014 at 9:52 PM, Doug Anderson <dianders@chromium.org> wrote:
-> Addy,
+
+On 24/07/14 14:00, Hanjun Guo wrote:
+> There are two flags: PSCI_COMPLIANT and PSCI_USE_HVC. When set,
+> the former signals to the OS that the hardware is PSCI compliant.
+> The latter selects the appropriate conduit for PSCI calls by
+> toggling between Hypervisor Calls (HVC) and Secure Monitor Calls
+> (SMC).
 >
-> On Wed, Jul 9, 2014 at 8:31 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
->> This patch focuses on clock setting for RK3288 mmc controller.
->>
->> In RK3288 mmc controller, CLKDIV register can only be set 0 or 1,
->> and if DDR 8bit mode, CLKDIV register must be set 1.
->>
->> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
->> ---
->> changes since v1:
->> - dw_mci_rk3288_setup_clock: do not call clk_get_rate(), just use the
->>   host->bus_hz which is already called by dw_mmc.c, suggested by Jaehoon Chung
->>
->>  .../devicetree/bindings/mmc/rockchip-dw-mshc.txt   |  4 +-
->>  drivers/mmc/host/dw_mmc-pltfm.c                    | 50 +++++++++++++++++++++-
->>  2 files changed, 51 insertions(+), 3 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
->> index c559f3f..e3f95cd 100644
->> --- a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
->> +++ b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
->> @@ -10,7 +10,9 @@ extensions to the Synopsys Designware Mobile Storage Host Controller.
->>  Required Properties:
->>
->>  * compatible: should be
->> -       - "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following
->> +       - "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following,
->> +                                                       before RK3288
->> +       - "rockchip,rk3288-dw-mshc": for Rockchip RK3288
->>
->>  Example:
->>
->> diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
->> index d4a47a9..809c28b 100644
->> --- a/drivers/mmc/host/dw_mmc-pltfm.c
->> +++ b/drivers/mmc/host/dw_mmc-pltfm.c
->> @@ -21,17 +21,61 @@
->>  #include <linux/mmc/mmc.h>
->>  #include <linux/mmc/dw_mmc.h>
->>  #include <linux/of.h>
->> +#include <linux/clk.h>
->>
->>  #include "dw_mmc.h"
->>  #include "dw_mmc-pltfm.h"
->>
->> +#define RK3288_CLKGEN_DIV      2
+> FADT table contains such information, parse FADT to get the flags
+> for PSCI init. Since ACPI 5.1 doesn't support self defined PSCI
+> function IDs, which means that only PSCI 0.2+ is supported in ACPI.
 >
-> Yup, this matches what I see in the TRM.  It will always divide by 2
-> to allow for 4 phases (picking the phases not supported yet).  Default
-> phase looks to be 180 degrees which is why we've (currently) got
-> USE_HOLD_REG hardcoded.  :)
+> At the same time, only ACPI 5.1 or higher verison supports PSCI,
+> and FADT Major.Minor version was introduced in ACPI 5.1, so we
+> will check the version and only parse FADT table with version >= 5.1.
 >
->> +
->>  static void dw_mci_pltfm_prepare_command(struct dw_mci *host, u32 *cmdr)
->>  {
->>         *cmdr |= SDMMC_CMD_USE_HOLD_REG;
->>  }
->>
->> -static const struct dw_mci_drv_data rockchip_drv_data = {
->> +static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
->> +{
->> +       host->bus_hz /= RK3288_CLKGEN_DIV;
->> +
->> +       return 0;
->> +}
->> +
->> +static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
->> +{
->> +       int ret;
->> +       unsigned int cclkin;
->> +
->> +       /*
->> +        * cclkin: source clock of mmc controller.
->> +        * bus_hz: card interface clock generated by CLKGEN.
->> +        * bus_hz = cclkin / RK3288_CLKGEN_DIV;
->> +        * ios->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
->> +        *
->> +        * Note: div can only be 0 or 1
->> +        *       if DDR50 8bit mode, div must be set 1
+> If firmware provides ACPI tables with ACPI version less than 5.1,
+> OS will be messed up with those information and have no way to
+> bring up secondery CPUs, so disable ACPI if we get an FADT table
+> with version less that 5.1.
 >
-> Makes sense.  So this function is essentially reversing the logic in
-> dw_mmc and making sure that we'll get the right DIV (0 or 1) in
-> dw_mci_setup_bus().
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+> ---
+>   arch/arm64/include/asm/acpi.h |    2 +
+>   arch/arm64/kernel/acpi.c      |   50 ++++++++++++++++++++++
+>   arch/arm64/kernel/psci.c      |   95 +++++++++++++++++++++++++++++------------
+>   arch/arm64/kernel/setup.c     |    2 +
+>   4 files changed, 121 insertions(+), 28 deletions(-)
 >
+> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
+> index 44b617f..67dac90 100644
+> --- a/arch/arm64/include/asm/acpi.h
+> +++ b/arch/arm64/include/asm/acpi.h
+> @@ -18,6 +18,8 @@ extern int acpi_disabled;
+>   extern int acpi_noirq;
+>   extern int acpi_pci_disabled;
+>   extern int acpi_strict;
+> +extern int acpi_psci_present;
+> +extern int acpi_psci_use_hvc;
 >
->> +        */
->> +       if ((ios->bus_width == MMC_BUS_WIDTH_8) &&
->> +           (ios->timing == MMC_TIMING_UHS_DDR50 ||
+>   static inline void disable_acpi(void)
+>   {
+> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+> index f5a10b5..374926f 100644
+> --- a/arch/arm64/kernel/acpi.c
+> +++ b/arch/arm64/kernel/acpi.c
+> @@ -11,6 +11,8 @@
+>    *  published by the Free Software Foundation.
+>    */
 >
-> Probably don't need UHS_DDR50 since (I think) you can't have an 8-bit
-> SD card--only MMC, right?  ...but it doesn't hurt.
+> +#define pr_fmt(fmt) "ACPI: " fmt
+> +
+>   #include <linux/init.h>
+>   #include <linux/acpi.h>
+>   #include <linux/cpumask.h>
+> @@ -34,6 +36,12 @@ EXPORT_SYMBOL(acpi_disabled);
+>   int acpi_pci_disabled;		/* skip ACPI PCI scan and IRQ initialization */
+>   EXPORT_SYMBOL(acpi_pci_disabled);
 >
+> +/* 1 to indicate PSCI is implemented */
+> +int acpi_psci_present;
+> +
+> +/* 1 to indicate HVC must be used instead of SMC as the PSCI conduit */
+> +int acpi_psci_use_hvc;
+> +
+
+These can be boolean but can be removed IMO, see below.
+
+>   /*
+>    * __acpi_map_table() will be called before page_init(), so early_ioremap()
+>    * or early_memremap() should be called here to for ACPI table mapping.
+> @@ -54,6 +62,33 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
+>   	early_iounmap(map, size);
+>   }
 >
->> +            ios->timing == MMC_TIMING_MMC_DDR52))
->> +               cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
->> +       else
->> +               cclkin = ios->clock * RK3288_CLKGEN_DIV;
->> +
->> +       ret = clk_set_rate(host->ciu_clk, cclkin);
->> +       if (ret)
->> +               dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
->> +
->> +       host->bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
->> +}
->> +
->> +static const struct dw_mci_drv_data rk2928_drv_data = {
->> +       .prepare_command        = dw_mci_pltfm_prepare_command,
->> +};
->> +
->> +static const struct dw_mci_drv_data rk3288_drv_data = {
->>         .prepare_command        = dw_mci_pltfm_prepare_command,
->> +       .set_ios        = dw_mci_rk3288_set_ios,
->> +       .setup_clock    = dw_mci_rk3288_setup_clock,
->>  };
->>
->>  static const struct dw_mci_drv_data socfpga_drv_data = {
->> @@ -95,7 +139,9 @@ EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
->>  static const struct of_device_id dw_mci_pltfm_match[] = {
->>         { .compatible = "snps,dw-mshc", },
->>         { .compatible = "rockchip,rk2928-dw-mshc",
->> -               .data = &rockchip_drv_data },
->> +               .data = &rk2928_drv_data },
->> +       { .compatible = "rockchip,rk3288-dw-mshc",
->> +               .data = &rk3288_drv_data },
->>         { .compatible = "altr,socfpga-dw-mshc",
->>                 .data = &socfpga_drv_data },
->>         {},
->
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
-> Tested-by: Doug Anderson <dianders@chromium.org>
+> +static int __init acpi_parse_fadt(struct acpi_table_header *table)
+> +{
+> +	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
+> +
+> +	/*
+> +	 * Revision in table header is the FADT Major version,
+> +	 * and there is a minor version of FADT which was introduced
+> +	 * by ACPI 5.1, we only deal with ACPI 5.1 or higher version
+> +	 * to get arm boot flags, or we will disable ACPI.
+> +	 */
+> +	if (table->revision < 5 || fadt->minor_version < 1) {
+> +		pr_info("FADT version is %d.%d, no PSCI support, should be 5.1 or higher\n",
+> +			table->revision, fadt->minor_version);
+> +		acpi_psci_present = 0;
+> +		disable_acpi();
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_COMPLIANT)
+> +		acpi_psci_present = 1;
+> +
+> +	if (acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_USE_HVC)
+> +		acpi_psci_use_hvc = 1;
+> +
 
-It turns out that I spoke too soon.  I realized that in my testing I
-didn't have "DDR" mode enabled for my eMMC card.  When I did that then
-your patch didn't work.
+Why not make this macros instead of global variables as I suggested in
+previous version. acpi_gbl_FADT is already global and you can avoid
+creating new one especially they are just used on boot/init.
 
-The problem is that dw_mci_setup_bus() doesn't realize that you've
-changed "bus_hz" so it needs to re-run.  You can fix it like this:
+Regards,
+Sudeep
 
-
-diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
-index 809c28b..bcc96d0 100644
---- a/drivers/mmc/host/dw_mmc-pltfm.c
-+++ b/drivers/mmc/host/dw_mmc-pltfm.c
-@@ -44,6 +44,7 @@ static void dw_mci_rk3288_set_ios(struct dw_mci
-*host, struct mmc_ios *ios)
- {
-        int ret;
-        unsigned int cclkin;
-+       u32 bus_hz;
-
-        /*
-         * cclkin: source clock of mmc controller.
-@@ -65,7 +66,11 @@ static void dw_mci_rk3288_set_ios(struct dw_mci
-*host, struct mmc_ios *ios)
-        if (ret)
-                dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
-
--       host->bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
-+       bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
-+       if (bus_hz != host->bus_hz) {
-+               host->bus_hz = bus_hz;
-+               host->current_speed = 0;        /* force dw_mci_setup_bus() */
-+       }
- }
-
- static const struct dw_mci_drv_data rk2928_drv_data = {
-
-
-Do you want to spin the patch for this?
-
--Doug
