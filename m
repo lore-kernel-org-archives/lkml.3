@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502AbaG2OQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 10:16:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30882 "EHLO mx1.redhat.com"
+	id S1753696AbaG2ORA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 10:17:00 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59717 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151AbaG2OQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 10:16:03 -0400
-Date: Tue, 29 Jul 2014 16:15:45 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Tomas Henzl <thenzl@redhat.com>, linux-kernel@vger.kernel.org,
-        xjtuwjp@gmail.com, lindar_liu@usish.com, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org,
-        Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>
-Subject: Re: [PATCH v2 RESEND 17/23] pm8001: Fix invalid return when
- request_irq() failed
-Message-ID: <20140729141544.GA18029@dhcp-26-207.brq.redhat.com>
-References: <cover.1405533479.git.agordeev@redhat.com>
- <5ecd9b80f705545c3dc85b2a4ae63a8ac3df8105.1405533479.git.agordeev@redhat.com>
- <53D79DE2.9000702@redhat.com>
- <20140729132020.GA7714@infradead.org>
- <53D7A62D.2090709@redhat.com>
- <20140729135641.GA14378@infradead.org>
+	id S1753347AbaG2OQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 10:16:59 -0400
+Date: Tue, 29 Jul 2014 09:15:22 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        <bcousson@baylibre.com>, <linux@arm.linux.org.uk>,
+        <khilman@deeprootsystems.com>, <tglx@linutronix.de>,
+        <jason@lakedaemon.net>, <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 29/35] arm: omap: intc: switch over to linear irq domain
+Message-ID: <20140729141522.GB17808@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1406582183-696-1-git-send-email-balbi@ti.com>
+ <1406582183-696-30-git-send-email-balbi@ti.com>
+ <20140729121425.GR29045@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FkmkrVfFsRoUs1wW"
 Content-Disposition: inline
-In-Reply-To: <20140729135641.GA14378@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140729121425.GR29045@atomide.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 06:56:41AM -0700, Christoph Hellwig wrote:
-> On Tue, Jul 29, 2014 at 03:48:29PM +0200, Tomas Henzl wrote:
-> > I'm a bit confused - you were not commenting my text above I think?
-> > 
-> > I see in drivers-for-3.17 this patch already applied 5607de7
-> > but not yet the next one (18/23) which also has a review, is there another ack needed?
-> 
-> Looks like I got a bit confused due to a non-applying patch, but it
-> seems like the one that failed was the second one.  I'll look at it time
-> permitting, but if someone familar with pm8001 can fix the reject for me
-> that would help me greatly!
+--FkmkrVfFsRoUs1wW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmm.. 18/23 applies with a minor fuzz against
-git://git.infradead.org/users/hch/scsi-queue.git drivers-for-3.17
+Hi,
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+On Tue, Jul 29, 2014 at 05:14:25AM -0700, Tony Lindgren wrote:
+> * Felipe Balbi <balbi@ti.com> [140728 14:19]:
+> > now that we don't need to support legacy board-files,
+> > we can completely switch over to a linear irq domain
+> > and make use of irq_alloc_domain_generic_chips() to
+> > allocate all generic irq chips for us.
+>=20
+> This patch seems to somehow break off-idle for omap3=20
+> where it no longer wakes up.
+
+Sure your bisection is correct ? This patch just switches from legacy
+irq domain to linear irq domain.
+
+> Other than that, this whole series boots fine for me.
+
+good
+
+--=20
+balbi
+
+--FkmkrVfFsRoUs1wW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT16x6AAoJEIaOsuA1yqRE3B0P/jxVV9udi5sGpFs3nrqKzwGO
+SlfI6OO+xFzerEXXlf0NmPNIVpdtw5TfjYcx12cBMAGG9w8OZovJ0QOo0AT+LNwU
+8dzI2PErV3XVfmOOaz/51peLQ3bYN3n9n9215eBp0ABHtHVUd7/R6yG2KtRFqTWR
+PYoSebRnJflkwHDn5Fay3X8/rW8ZUF4LupLnjygPuQTIO3xT70a2rBBYABTG+DUy
+0xzk+IJ8HT6qLdezHJjkiXikbFkJoO/mpVg+YhXvW5vHy7pJGASkPmhUyY2LPEva
+UJniXfp3f4E6jRfizz2g7Lws8Xu2xMvqix4+uVeGFZQ7o7ZbUBEgBWcdxtJ9TK6O
+CVQPmYEiywlCCq/Wo1kTxt7JgyuZj2vWL9wggZ62Zn6wnhIfFss2iJlmOVOhlP7m
+WHQl+90oibOXee9r7eWxynz08Gd5gScH2YvJvMQmc7TobUZutXcOQZQwNnEsSdvs
+CoKODxB8gjtOpc8+uF3EV921+EVeCwyuwjvZ/PHzAGGvY0i+bsdRx23Xki7GdPAA
+VW0yVztHbeuDDcs7ca8aZorcazooknLf2SfIUNe2u/dJjhWIT+cGD0rK5kkWDxSr
+ieqofqYRF6Kb9ah0z3xCNKTqqXqjyk0vIrIB8O+gRECTowYtYnWJPuG2Q3vBZOOT
+G/1qSy9SPH0k5TD6vjJU
+=sLSv
+-----END PGP SIGNATURE-----
+
+--FkmkrVfFsRoUs1wW--
