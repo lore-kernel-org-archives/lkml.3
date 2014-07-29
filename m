@@ -1,152 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644AbaG2Xqs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 19:46:48 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:59587 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030AbaG2Xqr (ORCPT
+	id S1754439AbaG2Xvm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 19:51:42 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:39137 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811AbaG2Xvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 19:46:47 -0400
+	Tue, 29 Jul 2014 19:51:41 -0400
+Date: Tue, 29 Jul 2014 16:51:38 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+cc: Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v5 05/14] mm, compaction: move pageblock checks up from
+ isolate_migratepages_range()
+In-Reply-To: <20140729232142.GB17685@node.dhcp.inet.fi>
+Message-ID: <alpine.DEB.2.02.1407291646590.961@chino.kir.corp.google.com>
+References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-6-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1407281709050.8998@chino.kir.corp.google.com> <53D7690D.5070307@suse.cz> <alpine.DEB.2.02.1407291559130.20991@chino.kir.corp.google.com>
+ <20140729232142.GB17685@node.dhcp.inet.fi>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <fe3cfe03047cc170bcde652175a00146d290bb20.1406177531.git.luto@amacapital.net>
-References: <cover.1406177531.git.luto@amacapital.net> <fe3cfe03047cc170bcde652175a00146d290bb20.1406177531.git.luto@amacapital.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 29 Jul 2014 16:46:25 -0700
-Message-ID: <CALCETrUQtBeu+4f0r=re0uu_5922X0eTNKLB3M4=bRXv3tHxaQ@mail.gmail.com>
-Subject: Re: [PATCH v5 2/5] random: Add and use arch_get_rng_seed
-To: kvm list <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 9:57 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> Currently, init_std_data contains its own logic for using arch
-> random sources.  This replaces that logic with a generic function
-> arch_get_rng_seed that allows arch code to supply its own logic.
-> The default implementation tries arch_get_random_seed_long and
-> arch_get_random_long individually.
->
-> The only functional change here is that random_get_entropy() is used
-> unconditionally instead of being used only when the arch sources
-> fail.  This may add a tiny amount of security.
+On Wed, 30 Jul 2014, Kirill A. Shutemov wrote:
 
-tytso, are you okay with this approach?  I'd be happy to rework this
-if you prefer some other way of doing it.
+> > Hmm, I'm confused at how that could be true, could you explain what 
+> > memory other than thp can return true for PageTransHuge()?
+> 
+> PageTransHuge() will be true for any head of compound page if THP is
+> enabled compile time: hugetlbfs, slab, whatever.
+> 
 
---Andy
-
->
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  drivers/char/random.c  | 14 +++++++++++---
->  include/linux/random.h | 40 ++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 51 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/char/random.c b/drivers/char/random.c
-> index 0a7ac0a..be7a94e 100644
-> --- a/drivers/char/random.c
-> +++ b/drivers/char/random.c
-> @@ -1236,6 +1236,10 @@ void get_random_bytes_arch(void *buf, int nbytes)
->  }
->  EXPORT_SYMBOL(get_random_bytes_arch);
->
-> +static void seed_entropy_store(void *ctx, u32 data)
-> +{
-> +       mix_pool_bytes((struct entropy_store *)ctx, &data, sizeof(data), NULL);
-> +}
->
->  /*
->   * init_std_data - initialize pool with system data
-> @@ -1251,15 +1255,19 @@ static void init_std_data(struct entropy_store *r)
->         int i;
->         ktime_t now = ktime_get_real();
->         unsigned long rv;
-> +       char log_prefix[128];
->
->         r->last_pulled = jiffies;
->         mix_pool_bytes(r, &now, sizeof(now), NULL);
->         for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
-> -               if (!arch_get_random_seed_long(&rv) &&
-> -                   !arch_get_random_long(&rv))
-> -                       rv = random_get_entropy();
-> +               rv = random_get_entropy();
->                 mix_pool_bytes(r, &rv, sizeof(rv), NULL);
->         }
-> +
-> +       sprintf(log_prefix, "random: seeded %s pool", r->name);
-> +       arch_get_rng_seed(r, seed_entropy_store, 8 * r->poolinfo->poolbytes,
-> +                         log_prefix);
-> +
->         mix_pool_bytes(r, utsname(), sizeof(*(utsname())), NULL);
->  }
->
-> diff --git a/include/linux/random.h b/include/linux/random.h
-> index 57fbbff..81a6145 100644
-> --- a/include/linux/random.h
-> +++ b/include/linux/random.h
-> @@ -106,6 +106,46 @@ static inline int arch_has_random_seed(void)
->  }
->  #endif
->
-> +#ifndef __HAVE_ARCH_GET_RNG_SEED
-> +
-> +/**
-> + * arch_get_rng_seed() - get architectural rng seed data
-> + * @ctx: context for the seed function
-> + * @seed: function to call for each u32 obtained
-> + * @bits_per_source: number of bits from each source to try to use
-> + * @log_prefix: beginning of log output (may be NULL)
-> + *
-> + * Synchronously load some architectural entropy or other best-effort
-> + * random seed data.  An arch-specific implementation should be no worse
-> + * than this generic implementation.  If the arch code does something
-> + * interesting, it may log something of the form "log_prefix with
-> + * 8 bits of stuff".
-> + *
-> + * No arch-specific implementation should be any worse than the generic
-> + * implementation.
-> + */
-> +static inline void arch_get_rng_seed(void *ctx,
-> +                                    void (*seed)(void *ctx, u32 data),
-> +                                    int bits_per_source,
-> +                                    const char *log_prefix)
-> +{
-> +       int i;
-> +
-> +       for (i = 0; i < bits_per_source; i += 8 * sizeof(long)) {
-> +               unsigned long rv;
-> +
-> +               if (arch_get_random_seed_long(&rv) ||
-> +                   arch_get_random_long(&rv)) {
-> +                       seed(ctx, (u32)rv);
-> +#if BITS_PER_LONG > 32
-> +                       seed(ctx, (u32)(rv >> 32));
-> +#endif
-> +               }
-> +       }
-> +}
-> +
-> +#endif /* __HAVE_ARCH_GET_RNG_SEED */
-> +
->  /* Pseudo random number generator from numerical recipes. */
->  static inline u32 next_pseudo_random32(u32 seed)
->  {
-> --
-> 1.9.3
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+I was meaning in the context of the patch :)  Since PageLRU is set, that 
+discounts slab so we're left with thp or hugetlbfs.  Logically, both 
+should have sizes that are >= the size of the pageblock itself so I'm not 
+sure why we don't unconditionally align up to pageblock_nr_pages here.  Is 
+there a legitimiate configuration where a pageblock will span multiple 
+pages of HPAGE_PMD_ORDER?
