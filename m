@@ -1,49 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823AbaG2MD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 08:03:59 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:51661 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750982AbaG2L6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 07:58:44 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
+	id S1753855AbaG2MEb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 08:04:31 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:49151 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753449AbaG2ME0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 08:04:26 -0400
+Message-ID: <1406635412.25105.20.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 2/2] PKCS#7: Use x509_request_asymmetric_key()
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: d.kasatkin@samsung.com, keyrings@linux-nfs.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 06/19] staging: comedi: amplc_pci230: usleep_range is preferred over udelay
-Date: Tue, 29 Jul 2014 12:58:14 +0100
-Message-Id: <1406635107-27950-7-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1406635107-27950-1-git-send-email-abbotti@mev.co.uk>
-References: <1406635107-27950-1-git-send-email-abbotti@mev.co.uk>
+Date: Tue, 29 Jul 2014 08:03:32 -0400
+In-Reply-To: <20140728135459.18307.27419.stgit@warthog.procyon.org.uk>
+References: <20140728135449.18307.38548.stgit@warthog.procyon.org.uk>
+	 <20140728135459.18307.27419.stgit@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072912-0928-0000-0000-000003B3A1E2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch issue: "CHECK: usleep_range is preferred over udelay; see
-Documentation/timers/timers-howto.txt".  I picked 100 us as a reasonable
-upper bound, but it's not that critical.
+On Mon, 2014-07-28 at 14:54 +0100, David Howells wrote: 
+> pkcs7_request_asymmetric_key() and x509_request_asymmetric_key() do the same
+> thing, the latter being a copy of the former created by the IMA folks, so drop
+> the PKCS#7 version as the X.509 location is more general.
+> 
+> Whilst we're at it, rename the arguments of x509_request_asymmetric_key() to
+> better reflect what the values being passed in are intended to match on an
+> X.509 cert.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/amplc_pci230.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
-index 76c4625..00d7a22 100644
---- a/drivers/staging/comedi/drivers/amplc_pci230.c
-+++ b/drivers/staging/comedi/drivers/amplc_pci230.c
-@@ -2480,7 +2480,7 @@ static int pci230_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	 * channel gains and scan list _before_ the first FIFO reset also
- 	 * helps, though only slightly.
- 	 */
--	udelay(25);
-+	usleep_range(25, 100);
- 
- 	/* Reset FIFO again. */
- 	outw(adccon | PCI230_ADC_FIFO_RESET, dev->iobase + PCI230_ADCCON);
--- 
-2.0.0
+> ---
+>  crypto/asymmetric_keys/pkcs7_trust.c     |   61 ++----------------------------
+>  crypto/asymmetric_keys/x509_public_key.c |   36 ++++++++++--------
+>  include/crypto/public_key.h              |    4 ++
+>  3 files changed, 29 insertions(+), 72 deletions(-)
+> 
+> diff --git a/crypto/asymmetric_keys/pkcs7_trust.c b/crypto/asymmetric_keys/pkcs7_trust.c
+> index b6b045131403..e666eb011a85 100644
+> --- a/crypto/asymmetric_keys/pkcs7_trust.c
+> +++ b/crypto/asymmetric_keys/pkcs7_trust.c
+> @@ -20,55 +20,6 @@
+>  #include "public_key.h"
+>  #include "pkcs7_parser.h"
+> 
+> -/*
+> - * Request an asymmetric key.
+> - */
+> -static struct key *pkcs7_request_asymmetric_key(
+> -	struct key *keyring,
+> -	const char *signer, size_t signer_len,
+> -	const char *authority, size_t auth_len)
+> -{
+> -	key_ref_t key;
+> -	char *id;
+> -
+> -	kenter(",%zu,,%zu", signer_len, auth_len);
+> -
+> -	/* Construct an identifier. */
+> -	id = kmalloc(signer_len + 2 + auth_len + 1, GFP_KERNEL);
+> -	if (!id)
+> -		return ERR_PTR(-ENOMEM);
+> -
+> -	memcpy(id, signer, signer_len);
+> -	id[signer_len + 0] = ':';
+> -	id[signer_len + 1] = ' ';
+> -	memcpy(id + signer_len + 2, authority, auth_len);
+> -	id[signer_len + 2 + auth_len] = 0;
+> -
+> -	pr_debug("Look up: \"%s\"\n", id);
+> -
+> -	key = keyring_search(make_key_ref(keyring, 1),
+> -			     &key_type_asymmetric, id);
+> -	if (IS_ERR(key))
+> -		pr_debug("Request for module key '%s' err %ld\n",
+> -			 id, PTR_ERR(key));
+> -	kfree(id);
+> -
+> -	if (IS_ERR(key)) {
+> -		switch (PTR_ERR(key)) {
+> -			/* Hide some search errors */
+> -		case -EACCES:
+> -		case -ENOTDIR:
+> -		case -EAGAIN:
+> -			return ERR_PTR(-ENOKEY);
+> -		default:
+> -			return ERR_CAST(key);
+> -		}
+> -	}
+> -
+> -	pr_devel("<==%s() = 0 [%x]\n", __func__, key_serial(key_ref_to_ptr(key)));
+> -	return key_ref_to_ptr(key);
+> -}
+> -
+>  /**
+>   * Check the trust on one PKCS#7 SignedInfo block.
+>   */
+> @@ -98,10 +49,8 @@ int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
+>  		/* Look to see if this certificate is present in the trusted
+>  		 * keys.
+>  		 */
+> -		key = pkcs7_request_asymmetric_key(
+> -			trust_keyring,
+> -			x509->subject, strlen(x509->subject),
+> -			x509->fingerprint, strlen(x509->fingerprint));
+> +		key = x509_request_asymmetric_key(trust_keyring, x509->subject,
+> +						  x509->fingerprint);
+>  		if (!IS_ERR(key))
+>  			/* One of the X.509 certificates in the PKCS#7 message
+>  			 * is apparently the same as one we already trust.
+> @@ -133,10 +82,8 @@ int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
+>  		return -ENOKEY;
+>  	}
+> 
+> -	key = pkcs7_request_asymmetric_key(
+> -		trust_keyring,
+> -		last->issuer, strlen(last->issuer),
+> -		last->authority, strlen(last->authority));
+> +	key = x509_request_asymmetric_key(trust_keyring, last->issuer,
+> +					  last->authority);
+>  	if (IS_ERR(key))
+>  		return PTR_ERR(key) == -ENOMEM ? -ENOMEM : -ENOKEY;
+>  	x509 = last;
+> diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+> index 4ae982234d78..da1e5fc85346 100644
+> --- a/crypto/asymmetric_keys/x509_public_key.c
+> +++ b/crypto/asymmetric_keys/x509_public_key.c
+> @@ -43,35 +43,41 @@ static int __init ca_keys_setup(char *str)
+>  __setup("ca_keys=", ca_keys_setup);
+>  #endif
+> 
+> -/*
+> - * Find a key in the given keyring by issuer and authority.
+> +/**
+> + * x509_request_asymmetric_key - Request a key by X.509 certificate params.
+> + * @keyring: The keys to search.
+> + * @subject: The name of the subject to whom the key belongs.
+> + * @key_id: The subject key ID as a hex string.
+> + *
+> + * Find a key in the given keyring by subject name and key ID.  These might,
+> + * for instance, be the issuer name and the authority key ID of an X.509
+> + * certificate that needs to be verified.
+>   */
+> -static struct key *x509_request_asymmetric_key(struct key *keyring,
+> -					       const char *signer,
+> -					       const char *authority)
+> +struct key *x509_request_asymmetric_key(struct key *keyring,
+> +					const char *subject,
+> +					const char *key_id)
+>  {
+>  	key_ref_t key;
+> -	size_t signer_len = strlen(signer), auth_len = strlen(authority);
+> +	size_t subject_len = strlen(subject), key_id_len = strlen(key_id);
+>  	char *id;
+> 
+> -	/* Construct an identifier. */
+> -	id = kmalloc(signer_len + 2 + auth_len + 1, GFP_KERNEL);
+> +	/* Construct an identifier "<subjname>:<keyid>". */
+> +	id = kmalloc(subject_len + 2 + key_id_len + 1, GFP_KERNEL);
+>  	if (!id)
+>  		return ERR_PTR(-ENOMEM);
+> 
+> -	memcpy(id, signer, signer_len);
+> -	id[signer_len + 0] = ':';
+> -	id[signer_len + 1] = ' ';
+> -	memcpy(id + signer_len + 2, authority, auth_len);
+> -	id[signer_len + 2 + auth_len] = 0;
+> +	memcpy(id, subject, subject_len);
+> +	id[subject_len + 0] = ':';
+> +	id[subject_len + 1] = ' ';
+> +	memcpy(id + subject_len + 2, key_id, key_id_len);
+> +	id[subject_len + 2 + key_id_len] = 0;
+> 
+>  	pr_debug("Look up: \"%s\"\n", id);
+> 
+>  	key = keyring_search(make_key_ref(keyring, 1),
+>  			     &key_type_asymmetric, id);
+>  	if (IS_ERR(key))
+> -		pr_debug("Request for module key '%s' err %ld\n",
+> -			 id, PTR_ERR(key));
+> +		pr_debug("Request for key '%s' err %ld\n", id, PTR_ERR(key));
+>  	kfree(id);
+> 
+>  	if (IS_ERR(key)) {
+> diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
+> index fc09732613ad..0d164c6af539 100644
+> --- a/include/crypto/public_key.h
+> +++ b/include/crypto/public_key.h
+> @@ -98,4 +98,8 @@ struct key;
+>  extern int verify_signature(const struct key *key,
+>  			    const struct public_key_signature *sig);
+> 
+> +extern struct key *x509_request_asymmetric_key(struct key *keyring,
+> +					       const char *issuer,
+> +					       const char *key_id);
+> +
+>  #endif /* _LINUX_PUBLIC_KEY_H */
+> 
+
 
