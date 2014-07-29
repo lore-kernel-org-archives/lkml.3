@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995AbaG2RFH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 13:05:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40402 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321AbaG2RFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 13:05:05 -0400
-Message-ID: <53D7D412.4040203@redhat.com>
-Date: Tue, 29 Jul 2014 13:04:18 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752036AbaG2RGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 13:06:15 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:21145 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750708AbaG2RGN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 13:06:13 -0400
+Message-ID: <53D7D47E.5060906@itdev.co.uk>
+Date: Tue, 29 Jul 2014 18:06:06 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
-        jhladky@redhat.com, ktkhai@parallels.com, tim.c.chen@linux.intel.com,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: [PATCH 1/2] sched: fix and clean up calculate_imbalance
-References: <1406571388-3227-1-git-send-email-riel@redhat.com> <1406571388-3227-2-git-send-email-riel@redhat.com> <CAKfTPtDuFLOf3Kzt4PSdox3HpBoz9aWXb-QzkibAL-Z4xBm=tw@mail.gmail.com> <20140729145910.GH3935@laptop> <53D7BAA5.8080404@redhat.com> <20140729154956.GJ3935@laptop>
-In-Reply-To: <20140729154956.GJ3935@laptop>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Warren <swarren@wwwdotorg.org>, Yufeng Shen <miletus@chromium.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        benson Leung <bleung@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH 00/15] atmel_mxt_ts - device tree, bootloader, etc
+References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk>	<53CECAEC.8080905@wwwdotorg.org>	<53CFD50C.4040509@itdev.co.uk>	<53CFEF6E.2060905@wwwdotorg.org>	<53D10E78.4010908@itdev.co.uk>	<53D17845.4020507@wwwdotorg.org>	<53D26572.3030404@itdev.co.uk>	<53D2B8D0.5090000@wwwdotorg.org>	<CAPDwgkNrBRJRR6WtoPSfs8Yq=ui-Ptjju4mJ=9h=95YVFuxw7g@mail.gmail.com>	<53D6BF50.3070306@wwwdotorg.org>	<53D6DFE7.3040901@wwwdotorg.org> <CAPDwgkPL1utj3DFoFbOCcJsASpf+12nvKg1KcseV_MhEz66eiw@mail.gmail.com> <53D7C8CC.1050201@wwwdotorg.org>
+In-Reply-To: <53D7C8CC.1050201@wwwdotorg.org>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 07/29/2014 11:49 AM, Peter Zijlstra wrote:
-> On Tue, Jul 29, 2014 at 11:15:49AM -0400, Rik van Riel wrote:
+On 29/07/14 17:16, Stephen Warren wrote:
+> I then tried updating the firmware. This didn't work at all.
 > 
->>> Right, so we want that code for overloaded -> overloaded
->>> migrations such as not to cause idle cpus in an attempt to
->>> balance things. Idle cpus are worse than imbalance.
->>> 
->>> But in case of overloaded/imb -> !overloaded migrations we can 
->>> allow it, and in fact want to allow it in order to balance
->>> idle cpus.
->> 
->> In case the destination is over the average load, or the source
->> is under the average load, fix_small_imbalance() determines
->> env->imbalance.
->> 
->> The "load_above_capacity" calculation is only reached when
->> busiest is busier than average, and the destination is under the
->> average load. In that case, env->imbalance ends up as the minimum
->> of busiest - avg and avg - target.
->> 
->> Is there any case where limiting it further to "load - capacity"
->> from the busiest domain makes a difference?
+> First I tried via mxt-app:
 > 
-> sadly yes; suppose 8 cpus in 2 groups and 9 tasks, 8 tasks of
-> weight 10, 1 of 1024. The local group will have 5 tasks of 10, the
-> busiest will have the remaining 4.
+>> root@localhost:~# ./obp-utils/mxt-app -d i2c-dev:1-004b --flash
+>> 130.1_1.0.170.bin
+>> Version:1.16-65-g0a4c
+>> Opening firmware file 130.1_1.0.170.bin
+>> Registered i2c-dev adapter:1 address:0x4b
+>> Chip detected
+>> Current firmware version: 1.0.AA
+>> Skipping version check
+>> Resetting in bootloader mode
+>> Registered i2c-dev adapter:1 address:0x25
+>> Error Remote I/O error (121) reading from i2c
+>> Bootloader read failure
+>> Bootloader not found
+> 
+> Then I power-cycled and tried via the atmel_mxt_ts modules' sysfs files:
+> 
+>> root@localhost:~# echo 1 >
+>> /sys/devices/soc0/7000c400.i2c/i2c-1/1-004b/update_fw
+>> [   38.495420] atmel_mxt_ts 1-004b: mxt_bootloader_read: i2c recv failed
+>> (-121)
+>> [   38.506208] atmel_mxt_ts 1-004b: mxt_bootloader_read: i2c recv failed
+>> (-121)
+>> [   38.513836] atmel_mxt_ts 1-004b: The firmware update failed(-121)
+>> -bash: echo: write error: Remote I/O error
 
-Good point!
+OK - that's the same error in both cases, it has tried to switch the device
+into bootloader mode, however it is not responding on the bootloader I2C
+address.
 
-Looks like your patches address all issues raised, and the code
-looks nicer than before.
+Couple of things to check:
+- is the device in deep sleep mode when you run the mxt-app command? can
+you try doing "mxt-app [device] -W -T7 FFFF" which will make sure it is
+definitely not sleeping first.
+- if you do "mxt-app [device] -i" straight after the --flash failure, does
+it respond (which would mean it hasn't actioned the reset-into-bootloader
+command)
 
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+> I also found that removing the module (even without attempting a FW update)
+> yields:
+> 
+> After attempted FW update via sysfs:
+> 
+>> root@localhost:~# rmmod ./atmel_mxt_ts.ko
+>> [   81.995672] Unable to handle kernel NULL pointer dereference at virtual address 00000364
 
-iQEcBAEBAgAGBQJT19QSAAoJEM553pKExN6DM+EH/A0VSAcLB5TIDOC9axBwxdtY
-RxDkYvGZJ9OvbsU83alpjm+ee5l1x+A1tKQofqd1QVDSfpq9QPrUniueeqnNyJhM
-/alIRP/09bmH8vdn0uTqVrrx/lESeNPop5KmWimAdm1s452Lz8iuU3KmZryGssyJ
-MolSWGKwNbWIncBLRtkNB7szlkLyvO0JZQN5FnA1xrzDZeaCA9j072t/49fiscbs
-t6O8LxxsyooM+Wj3KyNt5dSKb9kHKf9gg0Z1dwcEqpcBjTB1jZNwOLQfhhaXX4gX
-Gu55x8bJzFRMLey1EVtzlM7gnjpgiELbyfB7JibN0I8pYJKS9EcybCjQuq7BuvA=
-=dt7v
------END PGP SIGNATURE-----
+Not good. It's trying to free an input device which isn't registered at
+that point. In a later patch in my series I add a guard around that
+(mxt_free_input_device):
+https://github.com/ndyer/linux/commit/bb4800ff8c185
