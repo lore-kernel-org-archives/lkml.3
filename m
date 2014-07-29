@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614AbaG2NMc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 09:12:32 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:39890 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587AbaG2NMa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 09:12:30 -0400
-Date: Tue, 29 Jul 2014 09:12:26 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christoph Lameter <cl@gentwo.org>, Sasha Levin <sasha.levin@oracle.com>,
-        akpm@linux-foundation.org, Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: vmstat: On demand vmstat workers V8
-Message-ID: <20140729131226.GS7462@htj.dyndns.org>
-References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org>
- <53D31101.8000107@oracle.com>
- <alpine.DEB.2.11.1407281353450.15405@gentwo.org>
- <20140729075637.GA19379@twins.programming.kicks-ass.net>
- <20140729120525.GA28366@mtj.dyndns.org>
- <20140729122303.GA3935@laptop>
+	id S1753652AbaG2NN0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 09:13:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29323 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752468AbaG2NNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 09:13:25 -0400
+Message-ID: <53D79DE2.9000702@redhat.com>
+Date: Tue, 29 Jul 2014 15:13:06 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140729122303.GA3935@laptop>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
+CC: xjtuwjp@gmail.com, lindar_liu@usish.com, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org,
+        Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>
+Subject: Re: [PATCH v2 RESEND 17/23] pm8001: Fix invalid return when request_irq()
+ failed
+References: <cover.1405533479.git.agordeev@redhat.com> <5ecd9b80f705545c3dc85b2a4ae63a8ac3df8105.1405533479.git.agordeev@redhat.com>
+In-Reply-To: <5ecd9b80f705545c3dc85b2a4ae63a8ac3df8105.1405533479.git.agordeev@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Lai)
+Hi, 
+patch looks good.
 
-Hello,
+A correction in pm8001_request_irq might be added too to allow 
+the INT-X path when pm8001_setup_msix fails, but that is not part 
+of this fix.
 
-On Tue, Jul 29, 2014 at 02:23:03PM +0200, Peter Zijlstra wrote:
-> > It's because we don't distinguish work items which are per-cpu for
-> > optimization and per-cpu for correctness and can't automatically flush
-> > / cancel / block per-cpu work items when a cpu goes down.  I like the
-> > idea of distingushing them but it's gonna take a lot of auditing.
-> 
-> Just force flush on unplug and fix those that complain. No auditing
-> needed for that.
+Tomas
 
-I'm not sure that's a viable way forward.  It's not like we can
-readily trigger the problematic cases which can lead to long pauses
-during cpu down.  Besides, we need the distinction at the API level,
-which is the whole point of this.  The best way probably is converting
-all the correctness ones (these are the minorities) over to
-queue_work_on() so that the per-cpu requirement is explicit.
+Reviewed-by: Tomas Henzl <thenzl@redhat.com>
 
-> > Any work item usage which requires per-cpu for correctness should
-> > implement cpu down hook to flush in-flight work items and block
-> > further issuance.  This hasn't changed from the beginning and was
-> > necessary even before cmwq.
-> 
-> I think before cmwq we'd run into the broken affinity warning in the
-> scheduler.
+On 07/16/2014 08:05 PM, Alexander Gordeev wrote:
+> When a call to request_irq() failed pm8001_setup_msix()
+> still returns the success. This udate fixes the described
+> misbehaviour.
+>
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: xjtuwjp@gmail.com
+> Cc: lindar_liu@usish.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> Acked-by: Jack Wang <xjtuwjp@gmail.com>
+> ---
+>  drivers/scsi/pm8001/pm8001_init.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
+> index e90c89f..e837ece 100644
+> --- a/drivers/scsi/pm8001/pm8001_init.c
+> +++ b/drivers/scsi/pm8001/pm8001_init.c
+> @@ -744,9 +744,10 @@ static u32 pm8001_setup_msix(struct pm8001_hba_info *pm8001_ha)
+>  			pm8001_ha->irq_vector[i].irq_id = i;
+>  			pm8001_ha->irq_vector[i].drv_inst = pm8001_ha;
+>  
+> -			if (request_irq(pm8001_ha->msix_entries[i].vector,
+> +			rc = request_irq(pm8001_ha->msix_entries[i].vector,
+>  				pm8001_interrupt_handler_msix, flag,
+> -				intr_drvname[i], &(pm8001_ha->irq_vector[i]))) {
+> +				intr_drvname[i], &(pm8001_ha->irq_vector[i]));
+> +			if (rc) {
+>  				for (j = 0; j < i; j++)
+>  					free_irq(
+>  					pm8001_ha->msix_entries[j].vector,
 
-That and work items silently not executed if queued on a downed cpu.
-IIRC, we also had quite a few broken ones which were per-cpu but w/o
-cpu down handling which just happened to work most of the time because
-queueing itself was per-cpu in most cases and we didn't do cpu
-on/offlining as often back then.  During cmwq conversion, I just
-allowed them as I didn't want to add cpu down hooks for all of the
-many per-cpu workqueue usages.  The lack of the distinction between
-the two sets has always been there.
-
-I agree this can be improved, but at least for now, please add cpu
-down hooks.  We need them right now and they'll be helpful when later
-separating out the correctness ones.
-
-Thanks.
-
--- 
-tejun
