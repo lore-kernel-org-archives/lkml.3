@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595AbaG2NZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 09:25:27 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30419 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447AbaG2NZX (ORCPT
+	id S1753620AbaG2N0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 09:26:51 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:60005 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143AbaG2N0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 09:25:23 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: john@johnmccutchan.com, rlove@rlove.org, eparis@parisplace.org
-Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] fsnotify: don't put user context if it was never assigned
-Date: Tue, 29 Jul 2014 09:25:14 -0400
-Message-Id: <1406640314-25201-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.9.1
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 29 Jul 2014 09:26:50 -0400
+From: Raphael Poggi <poggi.raph@gmail.com>
+To: dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Raphael Poggi <poggi.raph@gmail.com>
+Subject: [PATCH] mtd: atmel_nand: increase chip_delay
+Date: Tue, 29 Jul 2014 15:27:27 +0200
+Message-Id: <1406640447-9080-1-git-send-email-poggi.raph@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some failure paths we may attempt to free user context even
-if it wasn't assigned yet. This will cause a NULL ptr deref
-and a kernel BUG.
+Some nand with 8k page size like Micron MT29F32G08ABAAAWP need more than 20us.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Raphaël Poggi <poggi.raph@gmail.com>
 ---
- fs/notify/inotify/inotify_fsnotify.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/mtd/nand/atmel_nand.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/notify/inotify/inotify_fsnotify.c b/fs/notify/inotify/inotify_fsnotify.c
-index 43ab1e1..9c8187e 100644
---- a/fs/notify/inotify/inotify_fsnotify.c
-+++ b/fs/notify/inotify/inotify_fsnotify.c
-@@ -165,8 +165,10 @@ static void inotify_free_group_priv(struct fsnotify_group *group)
- 	/* ideally the idr is empty and we won't hit the BUG in the callback */
- 	idr_for_each(&group->inotify_data.idr, idr_callback, group);
- 	idr_destroy(&group->inotify_data.idr);
--	atomic_dec(&group->inotify_data.user->inotify_devs);
--	free_uid(group->inotify_data.user);
-+	if (group->inotify_data.user) {
-+		atomic_dec(&group->inotify_data.user->inotify_devs);
-+		free_uid(group->inotify_data.user);
-+	}
- }
+diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+index e321c56..77bd877 100644
+--- a/drivers/mtd/nand/atmel_nand.c
++++ b/drivers/mtd/nand/atmel_nand.c
+@@ -2099,7 +2099,7 @@ static int atmel_nand_probe(struct platform_device *pdev)
+ 	}
  
- static void inotify_free_event(struct fsnotify_event *fsn_event)
+ 	nand_chip->ecc.mode = host->board.ecc_mode;
+-	nand_chip->chip_delay = 20;		/* 20us command delay time */
++	nand_chip->chip_delay = 40;		/* 40us command delay time */
+ 
+ 	if (host->board.bus_width_16)	/* 16-bit bus width */
+ 		nand_chip->options |= NAND_BUSWIDTH_16;
 -- 
-1.7.10.4
+1.7.9.5
 
