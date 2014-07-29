@@ -1,87 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008AbaG2PsU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:48:20 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:40017 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959AbaG2PsT (ORCPT
+	id S1752541AbaG2PtO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:49:14 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59158 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006AbaG2PtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:48:19 -0400
-Message-ID: <53D7C1F8.5040800@oracle.com>
-Date: Tue, 29 Jul 2014 11:47:04 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 29 Jul 2014 11:49:12 -0400
+Message-ID: <53D7C276.2080204@wwwdotorg.org>
+Date: Tue, 29 Jul 2014 09:49:10 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Christoph Lameter <cl@gentwo.org>, Tejun Heo <tj@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: vmstat: On demand vmstat workers V8
-References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <53D31101.8000107@oracle.com> <alpine.DEB.2.11.1407281353450.15405@gentwo.org> <20140729075637.GA19379@twins.programming.kicks-ass.net> <20140729120525.GA28366@mtj.dyndns.org> <20140729122303.GA3935@laptop> <20140729131226.GS7462@htj.dyndns.org> <alpine.DEB.2.11.1407291009320.21102@gentwo.org> <20140729151415.GF4791@htj.dyndns.org> <alpine.DEB.2.11.1407291038160.21390@gentwo.org>
-In-Reply-To: <alpine.DEB.2.11.1407291038160.21390@gentwo.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mikko Perttunen <mperttunen@nvidia.com>
+CC: Andrew Bresticker <abrestic@chromium.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 5/8] of: Add Tegra124 EMC bindings
+References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>	<1405088313-20048-6-git-send-email-mperttunen@nvidia.com>	<CAL1qeaGHfjQhLHvgzt85hmbuY4FOG5-k=f80=CNvzPDEgi9_6w@mail.gmail.com>	<53CD860B.7030800@wwwdotorg.org>	<CAL1qeaHtGQxCO3cGdeCRUYuk6mxei6z1B63-iZdBECEbFqGhHw@mail.gmail.com>	<53CE9514.1050903@wwwdotorg.org> <CAL1qeaEkL+mxb0S4JhQbXBjyNyKJndffTSjMaAFQD6ooDJPd+Q@mail.gmail.com> <53CEA093.6060106@wwwdotorg.org> <53D75B90.7050501@nvidia.com>
+In-Reply-To: <53D75B90.7050501@nvidia.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2014 11:39 AM, Christoph Lameter wrote:
-> On Tue, 29 Jul 2014, Tejun Heo wrote:
-> 
->> Hmmm, well, then it's something else.  Either a bug in workqueue or in
->> the caller.  Given the track record, the latter is more likely.
->> e.g. it looks kinda suspicious that the work func is cleared after
->> cancel_delayed_work_sync() is called.  What happens if somebody tries
->> to schedule it inbetween?
-> 
-> Here is yet another patch to also address this idea:
-> 
-> Subject: vmstat: Clear the work.func before cancelling delayed work
-> 
-> Looks strange to me but Tejun thinks this could do some good.
-> If this really is the right thing to do then cancel_delayed_work should
-> zap the work func itselt I think.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> 
-> Index: linux/mm/vmstat.c
-> ===================================================================
-> --- linux.orig/mm/vmstat.c	2014-07-29 10:22:45.073884943 -0500
-> +++ linux/mm/vmstat.c	2014-07-29 10:34:45.083369228 -0500
-> @@ -1277,8 +1277,8 @@ static int vmstat_cpuup_callback(struct
->  		break;
->  	case CPU_DOWN_PREPARE:
->  	case CPU_DOWN_PREPARE_FROZEN:
-> -		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
->  		per_cpu(vmstat_work, cpu).work.func = NULL;
-> +		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
->  		break;
->  	case CPU_DOWN_FAILED:
->  	case CPU_DOWN_FAILED_FROZEN:
-> 
+On 07/29/2014 02:30 AM, Mikko Perttunen wrote:
+> Looks like the TRM doesn't document this either. I'll add an option
+> ("nvidia,short-ram-code" ?) for the next version.
 
-I'm slightly confused here. The on demand vmstat workers patch did this:
+Using the 2-bit RAM code field as the RAM code is normal operation, so I 
+wouldn't call this "short".
 
-        case CPU_DOWN_PREPARE_FROZEN:
--               cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
--               per_cpu(vmstat_work, cpu).work.func = NULL;
-+               if (!cpumask_test_and_set_cpu(cpu, cpu_stat_off))
-+                       cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+Using the 2-bit boot device code field as extra RAM code bits is 
+non-standard.
 
-So your new patch doesn't apply on top of it, and doesn't make sense before it.
+I would suggest nvidia,use-4-bit-ram-code or 
+nvidia,use-boot-device-code-as-ram-code-msbs(!) as the property.
 
+I see that the TRM implies the whole 4-bit field is RAM code, rather 
+than there being 2 separate 2-bit fields for RAM code and boot device 
+code. Can you please file a bug against the TRM to document this 
+correctly? (The details of which bits are which are visible on the 
+Jetson TK1 schematics for example).
 
-Thanks,
-Sasha
+> On 22/07/14 20:34, Stephen Warren wrote:
+>> On 07/22/2014 11:22 AM, Andrew Bresticker wrote:
+>>> On Tue, Jul 22, 2014 at 9:45 AM, Stephen Warren
+>>> <swarren@wwwdotorg.org> wrote:
+>>>>
+>>>> Does the bootloader adjust the DT that's passed to the kernel so that
+>>>> only the relevant single set of EMC timings is contained in the DT?
+>>>
+>>> No, the DT contains all possible EMC timings for that board.
+>>>
+>>>> On a system where the boot ROM initializes RAM, and where the HW design
+>>>> might have multiple SDRAM configuration, here's what usually happens:
+>>>>
+>>>> a) The BCT contains N sets of SDRAM configurations.
+>>>>
+>>>> b) The boot ROM reads the SDRAM strapping bits, and uses them to pick
+>>>> the correct SDRAM configuration from the N sets in the BCT.
+>>>>
+>>>> c) The kernel DT has N sets of SDRAM configurations.
+>>>>
+>>>> d) The kernel reads the SDRAM strapping bits, and uses them to pick the
+>>>> correct SDRAM configuration from the N sets in the DT.
+>>>>
+>>>> On the ChromeOS boards (so (a) and (b) above are irrelevant) where N is
+>>>> too large to fit into APBDEV_PMC_STRAPPING_OPT_A_0[7:4], (c) and (d)
+>>>> won't work. I assume the kernel DT therefore must be adjusted to only
+>>>> contain the single SDRAM configuration that is relevant for the
+>>>> current HW?
+>>>>
+>>>> (isn't STRAPPING_OPT_A split into 2 2-bit fields; 2 bits for SDRAM
+>>>> index
+>>>> and 2 bits for boot flash index, so max N is quite small?)
+>>>
+>>> Right, there are normally only 2 SDRAM strapping bits available.
+>>> ChromeOS gets around this by having 4 identical boot device entries in
+>>> the BCT, so all possible values of STRAPPING_OPT_A[7:6] map to the
+>>> same boot device.  This allows us to use all 4 strapping bits in
+>>> coreboot to pick the SDRAM configuration.
+>>
+>> OK, that explains how it works.
+>>
+>> But that means that when the kernel reads the strapping options, it will
+>> have to know if it uses just 2 bits (standard) or all 4 bits
+>> (non-standard) to index into the DT's array of SDRAM configurations.
+>> We'll need a DT property to represent that.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
