@@ -1,133 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959AbaG2JFO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 05:05:14 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:38532 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146AbaG2JFL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 05:05:11 -0400
+	id S1753036AbaG2JGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 05:06:05 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52173 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752780AbaG2JGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 05:06:02 -0400
+Date: Tue, 29 Jul 2014 11:05:56 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+Cc: hpa@zytor.com, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
+        linux-kernel@vger.kernel.org, Zhang Yang <yang.z.zhang@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v3] x86, hotplug: fix llc shared map unreleased during
+ cpu hotplug
+Message-ID: <20140729090556.GE11179@pd.tnic>
+References: <1406624353-4782-1-git-send-email-wanpeng.li@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1406571388-3227-2-git-send-email-riel@redhat.com>
-References: <1406571388-3227-1-git-send-email-riel@redhat.com> <1406571388-3227-2-git-send-email-riel@redhat.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Tue, 29 Jul 2014 11:04:50 +0200
-Message-ID: <CAKfTPtDuFLOf3Kzt4PSdox3HpBoz9aWXb-QzkibAL-Z4xBm=tw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] sched: fix and clean up calculate_imbalance
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
-        jhladky@redhat.com, ktkhai@parallels.com, tim.c.chen@linux.intel.com,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1406624353-4782-1-git-send-email-wanpeng.li@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 July 2014 20:16,  <riel@redhat.com> wrote:
-> From: Rik van Riel <riel@redhat.com>
->
-> There are several ways in which update_sd_pick_busiest can end up
-> picking an sd as "busiest" that has a below-average per-cpu load.
->
-> All of those could use the same correction that was previously only
-> applied when the selected group has a group imbalance.
->
-> Additionally, the load balancing code will balance out the load between
-> domains that are below their maximum capacity. This results in the
-> load_above_capacity calculation underflowing, creating a giant unsigned
-> number, which is then removed by the min() check below.
+On Tue, Jul 29, 2014 at 04:59:13PM +0800, Wanpeng Li wrote:
+> [  220.262245] Call Trace:
+> [  220.262252]  [<ffffffff810e8396>] load_balance+0x156/0x980
+> [  220.262259]  [<ffffffff816eeffe>] ? _raw_spin_unlock_irqrestore+0x2e/0xa0
+> [  220.262266]  [<ffffffff810e9aa3>] idle_balance+0xe3/0x150
+> [  220.262270]  [<ffffffff816ec4e7>] __schedule+0x797/0x8d0
+> [  220.262277]  [<ffffffff816ec934>] schedule+0x24/0x70
+> [  220.262283]  [<ffffffff816e9cd9>] schedule_timeout+0x119/0x1f0
+> [  220.262294]  [<ffffffff810bb6e0>] ? lock_timer_base+0x70/0x70
+> [  220.262301]  [<ffffffff816e9dc9>] schedule_timeout_uninterruptible+0x19/0x20
+> [  220.262308]  [<ffffffff810bd3e8>] msleep+0x18/0x20
+> [  220.262317]  [<ffffffff813aa11a>] lock_device_hotplug_sysfs+0x2a/0x50
+> [  220.262323]  [<ffffffff813aa16e>] online_store+0x2e/0x80
+> [  220.262358]  [<ffffffff813a873b>] dev_attr_store+0x1b/0x20
 
-The load_above capacity can't underflow with current version. The
-underflow that you mention above, could occur with the change you are
-doing in patch 2 which can select a group which not overloaded nor
-imbalanced.
+No, this is not what I meant. See, those numbers above only make the
+commit message unreadable and don't say a lot after time has passed or
+on another user's machine. What we rather want is this below, which
+shows how we ended up here but doesn't contain unnecessary and useless
+information.
 
->
-> In situations where all the domains are overloaded, or where only the
-> busiest domain is overloaded, that code is also superfluous, since
-> the normal env->imbalance calculation will figure out how much to move.
-> Remove the load_above_capacity calculation.
+Ok?
 
-IMHO, we should not remove that part which is used by prefer_sibling
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+IP: [..] find_busiest_group
+PGD 5a9d5067 PUD 13067 PMD 0
+Oops: 0000 [#3] SMP
+[...]
+Call Trace:
+load_balance
+? _raw_spin_unlock_irqrestore
+idle_balance
+__schedule
+schedule
+schedule_timeout
+? lock_timer_base
+schedule_timeout_uninterruptible
+msleep
+lock_device_hotplug_sysfs
+online_store
+dev_attr_store
+sysfs_write_file
+vfs_write
+SyS_write
+system_call_fastpath
 
-Originally, we had 2 type of busiest group: overloaded or imbalanced.
-You add a new one which has only a avg_load higher than other so you
-should handle this new case and keep the other ones unchanged
+Thanks.
 
->
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  kernel/sched/fair.c | 33 ++++++++-------------------------
->  1 file changed, 8 insertions(+), 25 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 45943b2..a28bb3b 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -6221,16 +6221,16 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
->   */
->  static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
->  {
-> -       unsigned long max_pull, load_above_capacity = ~0UL;
->         struct sg_lb_stats *local, *busiest;
->
->         local = &sds->local_stat;
->         busiest = &sds->busiest_stat;
->
-> -       if (busiest->group_imb) {
-> +       if (busiest->avg_load <= sds->avg_load) {
+-- 
+Regards/Gruss,
+    Boris.
 
-busiest->avg_load <= sds->avg_load is already handled in the
-fix_small_imbalance function, you should probably handle that here
-
->                 /*
-> -                * In the group_imb case we cannot rely on group-wide averages
-> -                * to ensure cpu-load equilibrium, look at wider averages. XXX
-> +                * Busiest got picked because it is overloaded or imbalanced,
-> +                * but does not have an above-average load. Look at wider
-> +                * averages.
->                  */
->                 busiest->load_per_task =
->                         min(busiest->load_per_task, sds->avg_load);
-> @@ -6247,32 +6247,15 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
->                 return fix_small_imbalance(env, sds);
->         }
->
-> -       if (!busiest->group_imb) {
-> -               /*
-> -                * Don't want to pull so many tasks that a group would go idle.
-> -                * Except of course for the group_imb case, since then we might
-> -                * have to drop below capacity to reach cpu-load equilibrium.
-> -                */
-> -               load_above_capacity =
-> -                       (busiest->sum_nr_running - busiest->group_capacity_factor);
-> -
-> -               load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_CAPACITY_SCALE);
-> -               load_above_capacity /= busiest->group_capacity;
-> -       }
-> -
->         /*
->          * We're trying to get all the cpus to the average_load, so we don't
->          * want to push ourselves above the average load, nor do we wish to
-> -        * reduce the max loaded cpu below the average load. At the same time,
-> -        * we also don't want to reduce the group load below the group capacity
-> -        * (so that we can implement power-savings policies etc). Thus we look
-> -        * for the minimum possible imbalance.
-> +        * reduce the max loaded cpu below the average load.
-> +        * The per-cpu avg_load values and the group capacity determine
-> +        * how much load to move to equalise the imbalance.
->          */
-> -       max_pull = min(busiest->avg_load - sds->avg_load, load_above_capacity);
-> -
-> -       /* How much load to actually move to equalise the imbalance */
->         env->imbalance = min(
-> -               max_pull * busiest->group_capacity,
-> +               (busiest->avg_load - sds->avg_load) * busiest->group_capacity,
->                 (sds->avg_load - local->avg_load) * local->group_capacity
->         ) / SCHED_CAPACITY_SCALE;
->
-> --
-> 1.9.3
->
+Sent from a fat crate under my desk. Formatting is fine.
+--
