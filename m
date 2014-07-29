@@ -1,82 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061AbaG2Jwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 05:52:31 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60831 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619AbaG2Jw3 (ORCPT
+	id S1753147AbaG2JxS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 05:53:18 -0400
+Received: from relay.parallels.com ([195.214.232.42]:52923 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752849AbaG2JxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 05:52:29 -0400
-Date: Tue, 29 Jul 2014 10:52:03 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: Fabio Estevam <festevam@gmail.com>, Nicolin Chen <nicoleotsuka@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        patches@opensource.wolfsonmicro.com, b02247@freescale.com,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Nicolin Chen <b42378@freescale.com>
-Message-ID: <20140729095203.GK17528@sirena.org.uk>
-References: <1406547718-21498-1-git-send-email-nicoleotsuka@gmail.com>
- <20140728122211.GS17528@sirena.org.uk>
- <CAOMZO5DgE9RjC9MG7FbGPKwsgxunntw70W6Sj8WQKFYG+j8BsA@mail.gmail.com>
- <20140729025518.GB3350@MrMyself>
+	Tue, 29 Jul 2014 05:53:16 -0400
+Message-ID: <1406627582.3600.9.camel@tkhai>
+Subject: Re: [PATCH v2 2/5] sched: Teach scheduler to understand
+ ONRQ_MIGRATING state
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <tkhai@yandex.ru>, <linux-kernel@vger.kernel.org>,
+        <nicolas.pitre@linaro.org>, <pjt@google.com>, <oleg@redhat.com>,
+        <rostedt@goodmis.org>, <umgwanakikbuti@gmail.com>,
+        <tim.c.chen@linux.intel.com>, <mingo@kernel.org>
+Date: Tue, 29 Jul 2014 13:53:02 +0400
+In-Reply-To: <1406538338.23175.12.camel@tkhai>
+References: <20140726145508.6308.69121.stgit@localhost>
+	 <20140726145912.6308.32554.stgit@localhost>
+	 <20140728080122.GL6758@twins.programming.kicks-ass.net>
+	 <1406538338.23175.12.camel@tkhai>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EcvL2e2K6sUZje1U"
-Content-Disposition: inline
-In-Reply-To: <20140729025518.GB3350@MrMyself>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH v2] ASoC: wm8962: Let CODEC driver enable
- and disable its own MCLK
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+В Пн, 28/07/2014 в 13:05 +0400, Kirill Tkhai пишет:
+> В Пн, 28/07/2014 в 10:01 +0200, Peter Zijlstra пишет:
+> > On Sat, Jul 26, 2014 at 06:59:21PM +0400, Kirill Tkhai wrote:
+> > 
+> > > The profit is that double_rq_lock() is not needed now,
+> > > and this may reduce the latencies in some situations.
+> > 
+> > > We add a loop in the beginning of set_cpus_allowed_ptr.
+> > > It's like a handmade spinlock, which is similar
+> > > to situation we had before. We used to spin on rq->lock,
+> > > now we spin on "again:" label. Of course, it's worse
+> > > than arch-dependent spinlock, but we have to have it
+> > > here. 
+> > 
+> > > @@ -4623,8 +4639,16 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
+> > >  	struct rq *rq;
+> > >  	unsigned int dest_cpu;
+> > >  	int ret = 0;
+> > > +again:
+> > > +	while (unlikely(task_migrating(p)))
+> > > +		cpu_relax();
+> > >  
+> > >  	rq = task_rq_lock(p, &flags);
+> > > +	/* Check again with rq locked */
+> > > +	if (unlikely(task_migrating(p))) {
+> > > +		task_rq_unlock(rq, p, &flags);
+> > > +		goto again;
+> > > +	}
+> > >  
+> > >  	if (cpumask_equal(&p->cpus_allowed, new_mask))
+> > >  		goto out;
+> > 
+> > So I really dislike that, esp since you're now talking of adding more of
+> > this goo all over the place.
+> > 
+> > I'll ask again, why isn't this in task_rq_lock() and co?
+> 
+> I thought, this may give a little profit in cases of priority inheritance etc.
+> But since this is spreading throughout the scheduler, I'm agree with you.
+> It's better to place this in task_rq_lock() etc. This will decide all
+> the problems that we have discussed with Oleg.
+> 
+> > Also, you really need to talk the spin bounded, otherwise your two
+> > quoted paragraphs above are in contradiction. Now I think you can
+> > actually make an argument that way, so that's good.
 
---EcvL2e2K6sUZje1U
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+How about this? Everything is inside task_rq_lock() now. The patch
+became much less.
 
-On Tue, Jul 29, 2014 at 10:55:19AM +0800, Nicolin Chen wrote:
-> On Mon, Jul 28, 2014 at 03:19:43PM -0300, Fabio Estevam wrote:
+From: Kirill Tkhai <ktkhai@parallels.com>
 
-> > >> +     pdata->mclk =3D devm_clk_get(&i2c->dev, NULL);
+    sched: Teach scheduler to understand ONRQ_MIGRATING state
+    
+    This is new on_rq state for the cases when task is migrating
+    from one src_rq to another dst_rq, and there is no necessity
+    to have both RQs locked at the same time.
+    
+    We will use the state this way:
+    
+    	raw_spin_lock(&src_rq->lock);
+    	dequeue_task(src_rq, p, 0);
+    	p->on_rq = ONRQ_MIGRATING;
+    	set_task_cpu(p, dst_cpu);
+    	raw_spin_unlock(&src_rq->lock);
+    
+    	raw_spin_lock(&dst_rq->lock);
+    	p->on_rq = ONRQ_QUEUED;
+    	enqueue_task(dst_rq, p, 0);
+    	raw_spin_unlock(&dst_rq->lock);
+    
+    The profit is that double_rq_lock() is not needed now,
+    and this may reduce the latencies in some situations.
+    
+    v2.1: Place task_migrating() into task_rq_lock() and
+    __task_rq_lock().
+    
+    Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 
-> > > This is broken for deferred probe.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 26aa7bc..00d7bcc 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -333,7 +333,8 @@ static inline struct rq *__task_rq_lock(struct task_struct *p)
+ 	for (;;) {
+ 		rq = task_rq(p);
+ 		raw_spin_lock(&rq->lock);
+-		if (likely(rq == task_rq(p)))
++		if (likely(rq == task_rq(p) &&
++			   !task_migrating(p)))
+ 			return rq;
+ 		raw_spin_unlock(&rq->lock);
+ 	}
+@@ -352,7 +353,8 @@ static struct rq *task_rq_lock(struct task_struct *p, unsigned long *flags)
+ 		raw_spin_lock_irqsave(&p->pi_lock, *flags);
+ 		rq = task_rq(p);
+ 		raw_spin_lock(&rq->lock);
+-		if (likely(rq == task_rq(p)))
++		if (likely(rq == task_rq(p) &&
++			   !task_migrating(p)))
+ 			return rq;
+ 		raw_spin_unlock(&rq->lock);
+ 		raw_spin_unlock_irqrestore(&p->pi_lock, *flags);
+@@ -1678,7 +1680,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 	success = 1; /* we're going to change ->state */
+ 	cpu = task_cpu(p);
+ 
+-	if (task_queued(p) && ttwu_remote(p, wake_flags))
++	if (p->on_rq && ttwu_remote(p, wake_flags))
+ 		goto stat;
+ 
+ #ifdef CONFIG_SMP
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index e5a9b6d..f6773d7 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -17,6 +17,7 @@ struct rq;
+ 
+ /* .on_rq states of struct task_struct: */
+ #define ONRQ_QUEUED	1
++#define ONRQ_MIGRATING	2
+ 
+ extern __read_mostly int scheduler_running;
+ 
+@@ -950,6 +951,11 @@ static inline int task_queued(struct task_struct *p)
+ 	return p->on_rq == ONRQ_QUEUED;
+ }
+ 
++static inline int task_migrating(struct task_struct *p)
++{
++	return p->on_rq == ONRQ_MIGRATING;
++}
++
+ #ifndef prepare_arch_switch
+ # define prepare_arch_switch(next)	do { } while (0)
+ #endif
 
-> Sorry. I don't get why deferred probe would be broken by this.
-> And I just took a test by adding this:
 
-I don't see the code that actually pays attention to the return value
-=66rom devm_clk_get() - in the main probe function the code just treats
-all errors as a missing MCLK.
-
---EcvL2e2K6sUZje1U
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT127AAAoJELSic+t+oim9/lwP/21qj6AX7PQWwHuaoJomeq1h
-ldrF+SHto0h+X8/JPh7MFmhStISiX7bNI/jue5nNbkJZtyruGm9RxO2G19qBtcJC
-yN9jCIC/ftBtdQBWYjIRhhQbQmrlLmQhivQuFujgo/c/QMbcOnM/oPj1ABv1Y1dc
-9bwJOADRIw0pGBdsi2FiLcU847QEmm4WaXXAojbHssVXpPDo7QLz5Kq9vqDSJeT/
-h127fZvGZ9Dl6EPXbbCpbBacPNhpXmGTRiwvmzVfmiQmT7IdRAAPZSuW/vrdKjaz
-RH8FNzXOHORjxm/MtFY7LNVaYxJyswmGFg6u9Y6dA6g4IYyM59iaDstpX+cjwRHu
-lQNlPCl8axIFasggCvC6iUjHTolhOSx2QkJ3xHOCGU7cvTF9wlMAOZRLabTIkKTe
-nivpW3/w6we2Nm/TY5Dx4+/AIG4WzWXVmjRTDfLGSSDtOxJ2cmfSVSr/6YvKn9X8
-aqQJx4i77UdAnUTVPtYgS6JzYGIdbbSIOpHTzpv7o7LdlXIe+PzVZuO6UMIu+kQu
-9+dtmcBJNgb7laDNCdVcEFa6RVEa/CMxuL94FU2aenU+UIkCUFKpLcemX9Y1w3hM
-I8SQ6IrbHtd0NeC/PM/x4t17tGPcag3qR1YclMP8Ch9NE1U+3/lpnd5MDX6AVOrL
-AJs+bUpoQx6IjhcnTpXN
-=cXEu
------END PGP SIGNATURE-----
-
---EcvL2e2K6sUZje1U--
