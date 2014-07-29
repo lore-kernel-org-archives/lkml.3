@@ -1,77 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbaG2AEl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 20:04:41 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:33883 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbaG2AEj (ORCPT
+	id S1752188AbaG2AJz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 20:09:55 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:52720 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726AbaG2AJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 20:04:39 -0400
-Date: Mon, 28 Jul 2014 17:04:36 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm:;
-Subject: Re: [PATCH v5 03/14] mm, compaction: do not count compact_stall if
- all zones skipped compaction
-In-Reply-To: <1406553101-29326-4-git-send-email-vbabka@suse.cz>
-Message-ID: <alpine.DEB.2.02.1407281703210.8998@chino.kir.corp.google.com>
-References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-4-git-send-email-vbabka@suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 28 Jul 2014 20:09:54 -0400
+From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, klmckinney1@gmail.com, mail@beyermatthias.de,
+        Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+Subject: [PATCH] Staging: bcm: Bcmchar.c: remove else statement after return
+Date: Mon, 28 Jul 2014 21:09:14 -0300
+Message-Id: <1406592554-9519-1-git-send-email-mopsfelder@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jul 2014, Vlastimil Babka wrote:
+This patch makes checkpatch.pl script happier by fixing all warnings
+related to else statement after break or return.
 
-> The compact_stall vmstat counter counts the number of allocations stalled by
-> direct compaction. It does not count when all attempted zones had deferred
-> compaction, but it does count when all zones skipped compaction. The skipping
-> is decided based on very early check of compaction_suitable(), based on
-> watermarks and memory fragmentation. Therefore it makes sense not to count
-> skipped compactions as stalls. Moreover, compact_success or compact_fail is
-> also already not being counted when compaction was skipped, so this patch
-> changes the compact_stall counting to match the other two.
-> 
-> Additionally, restructure __alloc_pages_direct_compact() code for better
-> readability.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Acked-by: Mel Gorman <mgorman@suse.de>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: David Rientjes <rientjes@google.com>
-
-Acked-by: David Rientjes <rientjes@google.com>
-
-This makes the second patch in the series more understandable but I still 
-renew my suggestion that you should be doing the following as part of the 
-second patch.
+Signed-off-by: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
 ---
-diff --git a/mm/compaction.c b/mm/compaction.c
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -1136,7 +1136,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 	int may_perform_io = gfp_mask & __GFP_IO;
- 	struct zoneref *z;
- 	struct zone *zone;
--	int rc = COMPACT_DEFERRED;
-+	int rc = COMPACT_SKIPPED;
- 	int alloc_flags = 0;
+ drivers/staging/bcm/Bcmchar.c |   21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/staging/bcm/Bcmchar.c b/drivers/staging/bcm/Bcmchar.c
+index c1e01f7..5790627 100644
+--- a/drivers/staging/bcm/Bcmchar.c
++++ b/drivers/staging/bcm/Bcmchar.c
+@@ -561,10 +561,10 @@ static int bcm_char_ioctl_gpio_set_request(void __user *argp,
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL,
+ 				"GPIO_MODE_REGISTER read failed");
+ 		return Status;
+-	} else {
+-		Status = STATUS_SUCCESS;
+ 	}
  
- 	/* Check if the GFP flags allow compaction */
-@@ -1147,6 +1147,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- #endif
-+	rc = COMPACT_DEFERRED;
- 	/* Compact each zone in the list */
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
- 								nodemask) {
++	Status = STATUS_SUCCESS;
++
+ 	/* Set the gpio mode register to output */
+ 	*(UINT *)ucResetValue |= (1<<uiBit);
+ 	Status = wrmaltWithLock(Adapter, GPIO_MODE_REGISTER,
+@@ -669,10 +669,10 @@ static int bcm_char_ioctl_gpio_status_request(void __user *argp,
+ 		Status = bytes;
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
+ 				"RDM Failed\n");
+-		return Status;
+ 	} else {
+ 		Status = STATUS_SUCCESS;
+ 	}
++
+ 	return Status;
+ }
+ 
+@@ -763,10 +763,10 @@ static int bcm_char_ioctl_gpio_multi_request(void __user *argp,
+ 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
+ 					"RDM to GPIO_PIN_STATE_REGISTER Failed.");
+ 			return Status;
+-		} else {
+-			Status = STATUS_SUCCESS;
+ 		}
+ 
++		Status = STATUS_SUCCESS;
++
+ 		pgpio_multi_info[WIMAX_IDX].uiGPIOValue =
+ 			(*(UINT *)ucResetValue &
+ 			pgpio_multi_info[WIMAX_IDX].uiGPIOMask);
+@@ -819,10 +819,10 @@ static int bcm_char_ioctl_gpio_mode_request(void __user *argp,
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
+ 			"Read of GPIO_MODE_REGISTER failed");
+ 		return Status;
+-	} else {
+-		Status = STATUS_SUCCESS;
+ 	}
+ 
++	Status = STATUS_SUCCESS;
++
+ 	/* Validating the request */
+ 	if (IsReqGpioIsLedInNVM(Adapter, pgpio_multi_mode[WIMAX_IDX].uiGPIOMask)
+ 			== false) {
+@@ -1076,11 +1076,11 @@ static int bcm_char_ioctl_buffer_download_stop(void __user *argp,
+ 		up(&Adapter->fw_download_sema);
+ 		up(&Adapter->NVMRdmWrmLock);
+ 		return Status;
+-	} else {
+-		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG,
+-				DBG_LVL_ALL, "Firm Download Over...\n");
+ 	}
+ 
++	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG,
++			DBG_LVL_ALL, "Firm Download Over...\n");
++
+ 	mdelay(10);
+ 
+ 	/* Wait for MailBox Interrupt */
+@@ -2649,4 +2649,3 @@ void unregister_control_device_interface(struct bcm_mini_adapter *Adapter)
+ 		unregister_chrdev(Adapter->major, DEV_NAME);
+ 	}
+ }
+-
+-- 
+1.7.10.4
+
