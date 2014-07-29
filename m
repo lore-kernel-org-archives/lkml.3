@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171AbaG2KPu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 06:15:50 -0400
-Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:18246
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752841AbaG2KPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 06:15:48 -0400
-Date: Tue, 29 Jul 2014 18:13:24 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Nicolin Chen <nicoleotsuka@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "timur@tabi.org" <timur@tabi.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "b02247@freescale.com" <b02247@freescale.com>,
-        "b42378@freescale.com" <b42378@freescale.com>,
-        "tklauser@distanz.ch" <tklauser@distanz.ch>
-Subject: Re: [PATCH v3 2/2] ASoC: fsl_asrc: Add ASRC ASoC CPU DAI and
- platform drivers
-Message-ID: <20140729101322.GA5495@MrMyself>
-References: <cover.1406259578.git.nicoleotsuka@gmail.com>
- <f4ff79269a1680f9ce128e0e98fea926d3a41834.1406259578.git.nicoleotsuka@gmail.com>
- <20140729094613.GK2576@leverpostej>
+	id S1753179AbaG2KSk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 06:18:40 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752880AbaG2KSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 06:18:38 -0400
+Message-ID: <53D774F9.3090305@nod.at>
+Date: Tue, 29 Jul 2014 12:18:33 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140729094613.GK2576@leverpostej>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(51704005)(43784003)(24454002)(189002)(199002)(85306003)(74662001)(46102001)(74502001)(31966008)(79102001)(83322001)(68736004)(23726002)(33656002)(44976005)(102836001)(26826002)(83072002)(85852003)(86362001)(81542001)(54356999)(33716001)(92726001)(95666004)(104016003)(50466002)(83506001)(97756001)(77982001)(20776003)(106466001)(47776003)(107046002)(80022001)(97736001)(6806004)(50986999)(21056001)(84676001)(105606002)(92566001)(81342001)(110136001)(99396002)(87936001)(4396001)(46406003)(64706001)(76176999)(76482001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB443;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0287BBA78D
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=guangyu.chen@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: mike.marciniszyn@intel.com, Michal Marek <mmarek@suse.cz>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>
+Subject: Kernel binrpm produces brokes grub2 config
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 10:46:13AM +0100, Mark Rutland wrote:
-> > +   - big-endian : If this property is absent, the native endian mode will
-> > +                 be in use as default, or the big endian mode will be in use
-> > +                 for all the device registers.
-> 
-> Native endian is meaningless. If a CPU supports both BE and LE, there is
-> no native endianness. The endianness of the kernel is dynamic while the
-> endianness of registers in HW is fixed. 
-> 
-> Just choose an endianness to assume by default (presumably little). That
-> way this describes the HW and always works with a kernel of arbitrary
-> endianness.
+Hi!
 
-Thank you for the comments.
+I'm not sure who to blame, but the below commit breaks the kernel binrpm target for me.
+It produces a faulty grub2 config.
+After installing such a kernel grub2 looks for vmlinuz-XY-rpm and initrd-XY-rpm.
+These files are not existing and the machine does no longer boot.
+Luckily an addition boot entry without the -rpm suffix exists, if remote access works
+one can recover the machine.
 
-I just revised it by using 'little endian as default' and sent the patch v6.
+My question is, why do we need these copy of vmlinuz anyway?
+After calling installkernel on the -rpm variants you delete them again...
 
-Please take a look at the new version.
+This <insert swear word here> happens on openSUSE 13.1, maybe their installkernel script needs fixing.
 
-Thanks again,
-Nicolin
+commit 3c9c7a14b6274074cc3af2b83d56a92547188f27
+Author: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Date:   Mon Jun 24 10:38:22 2013 -0400
 
+    rpm-pkg: add %post section to create initramfs and grub hooks
+
+    /sbin/installkernel is used to insure grub hooks are
+    inserted and the initramfs is created on the
+    target system.
+
+    The invokation installkernel will work with any
+    kernel as long as:
+    - /sbin/installkernel exists
+    - the kernel and sysem map files are readable
+
+    Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+    Signed-off-by: Michal Marek <mmarek@suse.cz>
+
+diff --git a/scripts/package/mkspec b/scripts/package/mkspec
+index fdd3fbf..0aa6a24 100755
+--- a/scripts/package/mkspec
++++ b/scripts/package/mkspec
+@@ -112,6 +112,15 @@ echo ""
+ echo "%clean"
+ echo 'rm -rf $RPM_BUILD_ROOT'
+ echo ""
++echo "%post"
++echo "if [ -x /sbin/installkernel -a -r /boot/vmlinuz-$KERNELRELEASE -a -r /boot/System.map-$KERNELRELEASE ]; then"
++echo "cp /boot/vmlinuz-$KERNELRELEASE /boot/vmlinuz-$KERNELRELEASE-rpm"
++echo "cp /boot/System.map-$KERNELRELEASE /boot/System.map-$KERNELRELEASE-rpm"
++echo "rm -f /boot/vmlinuz-$KERNELRELEASE /boot/System.map-$KERNELRELEASE"
++echo "/sbin/installkernel $KERNELRELEASE /boot/vmlinuz-$KERNELRELEASE-rpm /boot/System.map-$KERNELRELEASE-rpm"
++echo "rm -f /boot/vmlinuz-$KERNELRELEASE-rpm /boot/System.map-$KERNELRELEASE-rpm"
++echo "fi"
++echo ""
+ echo "%files"
+ echo '%defattr (-, root, root)'
+ echo "%dir /lib/modules"
+
+Thanks,
+//richard
