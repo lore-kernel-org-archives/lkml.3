@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172AbaG2PME (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:12:04 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:48632 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406AbaG2PMA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:12:00 -0400
+	id S1753898AbaG2PNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:13:00 -0400
+Received: from mail.kernel.org ([198.145.19.201]:56182 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753347AbaG2PM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 11:12:59 -0400
+Date: Tue, 29 Jul 2014 12:12:53 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/2] perf tools: Ensure --symfs ends with '/'
+Message-ID: <20140729151253.GR7831@kernel.org>
+References: <1406251908-8195-1-git-send-email-namhyung@kernel.org>
+ <20140729050246.GC22707@bbox>
+ <20140729123305.GO7831@kernel.org>
+ <20140729132657.GA5022@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <53D79771.1020406@suse.de>
-References: <1405704009-8430-1-git-send-email-afaerber@suse.de>
-	<1405704009-8430-4-git-send-email-afaerber@suse.de>
-	<CAD=FV=VK0KJknJ2099S7fEDzBnpPCrpSZ36WPkJB156GpcyEfg@mail.gmail.com>
-	<53D79771.1020406@suse.de>
-Date: Tue, 29 Jul 2014 08:11:59 -0700
-X-Google-Sender-Auth: 7k3fpjWOapJkyCcAAxG87Fzca8A
-Message-ID: <CAD=FV=UR5NWXCpK3zB-NSnkMUgKaYAHV1YLdPAvP83JMqekk0Q@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] ARM: dts: exynos5250: Fold common ChromeOS parts
- into Snow
-From: Doug Anderson <dianders@chromium.org>
-To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "moderated list:ARM/SAMSUNG ARM A..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140729132657.GA5022@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas,
+Em Tue, Jul 29, 2014 at 10:26:57PM +0900, Minchan Kim escreveu:
+> On Tue, Jul 29, 2014 at 09:33:05AM -0300, Arnaldo Carvalho de Melo wrote:
+> > Can you please try the patch below instead?
+> 
+> Tested. It works.
+> And I'd like to say that [2/2] in patchset is handy to me.
 
-On Tue, Jul 29, 2014 at 5:45 AM, Andreas Färber <afaerber@suse.de> wrote:
-> Doug,
->
-> Am 25.07.2014 18:02, schrieb Doug Anderson:
->> On Fri, Jul 18, 2014 at 10:20 AM, Andreas Färber <afaerber@suse.de> wrote:
->>> +/*
->>> + * On Snow we've got SIP WiFi and so can keep drive strengths low to
->>> + * reduce EMI.
->>> + */
->>> +&mmc_3 {
->>> +       status = "okay";
->>> +       num-slots = <1>;
->>> +       supports-highspeed;
->>> +       broken-cd;
->>> +       card-detect-delay = <200>;
->>> +       samsung,dw-mshc-ciu-div = <3>;
->>> +       samsung,dw-mshc-sdr-timing = <2 3>;
->>> +       samsung,dw-mshc-ddr-timing = <1 2>;
->>> +
->>> +       slot@0 {
->>> +               reg = <0>;
->>> +               bus-width = <4>;
->>> +               pinctrl-names = "default";
->>> +               pinctrl-0 = <&sd3_clk &sd3_cmd &sd3_bus4>;
->>
->> This actually looks like a bug on snow.  I don't think these pinctrl
->> statements are taking effect and I think they belong at the mmc level,
->> not the slot level.  That's not a new bug introduced by you, though.
->> Mind fixing it?  You've already got it right for Spring mmc_1.
->
-> I was taught never to mix code movements with functional changes, as it
-> hides them even if mentioned in the commit message. Would you like me to
-> fix it pre- or post-move? Post-move would be easiest for me. ;)
+Ok, here it is, refreshed, will apply with Namhyung as author as the
+change should be functionally equivalent to what he did.
 
-Agreed.  Sorry for implying that it belonged as part of this patch.
-I'd be happy if it was somewhere in the series, ideally before you
-introduce the Spring device tree so diffs are cleaner for it.  I don't
-care if it's pre-move or post-move.
+Please check that it works as expected,
 
--Doug
+Thanks,
+
+- Arnaldo
+
+---
+
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index c3549d5955ea..223a7ffe0d93 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1862,13 +1862,21 @@ int symbol__init(void)
+ 		       symbol_conf.sym_list_str, "symbol") < 0)
+ 		goto out_free_comm_list;
+ 
++	if (symbol_conf.symfs[0] != '\0') {
++		symfs = realpath(symbol_conf.symfs, NULL);
++		if (symfs == NULL) {
++			pr_debug("Cannot apply symfs: %s: %s\n",
++				symbol_conf.symfs, strerror(errno));
++			return -1;
++		}
++	} else {
++		symfs = symbol_conf.symfs;
++	}
++
+ 	/*
+ 	 * A path to symbols of "/" is identical to ""
+ 	 * reset here for simplicity.
+ 	 */
+-	symfs = realpath(symbol_conf.symfs, NULL);
+-	if (symfs == NULL)
+-		symfs = symbol_conf.symfs;
+ 	if (strcmp(symfs, "/") == 0)
+ 		symbol_conf.symfs = "";
+ 	if (symfs != symbol_conf.symfs)
