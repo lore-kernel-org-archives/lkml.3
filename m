@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaG2TGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 15:06:23 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50463 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165AbaG2TGV (ORCPT
+	id S1752549AbaG2TJY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 15:09:24 -0400
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:46452 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607AbaG2TJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 15:06:21 -0400
-Message-ID: <53D7F0A4.2050301@linutronix.de>
-Date: Tue, 29 Jul 2014 21:06:12 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Tue, 29 Jul 2014 15:09:22 -0400
 MIME-Version: 1.0
-To: linux-serial@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org
-Subject: Re: [PATCH 2/7] dmaengine: omap-dma: complete the transfer on terminate_all
-References: <1406660344-25307-1-git-send-email-bigeasy@linutronix.de> <1406660344-25307-3-git-send-email-bigeasy@linutronix.de>
-In-Reply-To: <1406660344-25307-3-git-send-email-bigeasy@linutronix.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <x49sillpnbm.fsf@segfault.boston.devel.redhat.com>
+References: <1406383665-1670-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <x49sillpnbm.fsf@segfault.boston.devel.redhat.com>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Tue, 29 Jul 2014 21:09:01 +0200
+Message-ID: <CAFo99gY_eKF3Pbqte+WXSWXDg3d=NkFEswWMivgCjYT5-0m_vw@mail.gmail.com>
+Subject: Re: [PATCH] block: bsg.c: Cleaning up missing null-terminate in
+ conjunction with strncpy
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2014 08:58 PM, Sebastian Andrzej Siewior wrote:
-> diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
-> index b19f04f..81ede01 100644
-> --- a/drivers/dma/omap-dma.c
-> +++ b/drivers/dma/omap-dma.c
-> @@ -970,6 +970,12 @@ static int omap_dma_terminate_all(struct omap_chan *c)
->  
->  	/* Prevent this channel being scheduled */
->  	spin_lock(&d->lock);
-> +	if (!c->desc && !list_empty(&c->node)) {
-> +		struct virt_dma_desc *vd = vchan_next_desc(&c->vc);
-> +
-> +		if (vd)
-> +			dma_cookie_complete(&vd->tx);
-> +	}
+2014-07-28 16:31 GMT+02:00 Jeff Moyer <jmoyer@redhat.com>:
+> Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> writes:
+>
+>> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  block/bsg.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/block/bsg.c b/block/bsg.c
+>> index ff46add..b2688c5 100644
+>> --- a/block/bsg.c
+>> +++ b/block/bsg.c
+>> @@ -790,7 +790,7 @@ static struct bsg_device *bsg_add_device(struct inode *inode,
+>>       mutex_lock(&bsg_mutex);
+>>       hlist_add_head(&bd->dev_list, bsg_dev_idx_hash(iminor(inode)));
+>>
+>> -     strncpy(bd->name, dev_name(rq->bsg_dev.class_dev), sizeof(bd->name) - 1);
+>> +     strlcpy(bd->name, dev_name(rq->bsg_dev.class_dev), sizeof(bd->name));
+>>       dprintk("bound to <%s>, max queue %d\n",
+>>               format_dev_t(buf, inode->i_rdev), bd->max_queue);
+>
+> NACK
+>
+> The bsg data structure is allocated using kzalloc, so that last byte
+> will be zero.
 
-Why is start of the transfer deferred to the tasklet unless it is a
-periodic transfer? Couldn't it be started right away?
+Hi
 
->  	list_del_init(&c->node);
->  	spin_unlock(&d->lock);
->  
+Sorry.. I did not know bsg_alloc_device used kzalloc, right then
+everything should be ok.
 
-Sebastian
+Kind regards
+Rickard Strandqvist
