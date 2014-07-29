@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682AbaG2O2g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 10:28:36 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13938 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751143AbaG2O2f (ORCPT
+	id S1753875AbaG2OaO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 10:30:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48448 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752999AbaG2OaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 10:28:35 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Christopher Covington <cov@codeaurora.org>
-Cc: "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>, Barry Song <baohua@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Larry Bassel <larry.bassel@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH 00/15] arm/arm64: fix use of irq_find_mapping outside of legal RCU context
-In-Reply-To: <53C04B3E.20908@codeaurora.org> (Christopher Covington's message
-	of "Fri, 11 Jul 2014 21:38:22 +0100")
-Organization: ARM Ltd
-References: <1404825038-547-1-git-send-email-marc.zyngier@arm.com>
-	<53C04B3E.20908@codeaurora.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Tue, 29 Jul 2014 15:28:25 +0100
-Message-ID: <87mwbskzna.fsf@approximate.cambridge.arm.com>
+	Tue, 29 Jul 2014 10:30:11 -0400
+Date: Tue, 29 Jul 2014 10:26:04 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gustavo@padovan.org
+Subject: Re: pull request: bluetooth-next 2014-07-28
+Message-ID: <20140729142604.GD13090@tuxdriver.com>
+References: <20140728201610.GA29494@t440s.P-661HNU-F1>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140728201610.GA29494@t440s.P-661HNU-F1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11 2014 at  9:38:22 pm BST, Christopher Covington <cov@codeaurora.org> wrote:
-> Hi Mark,
->
-> On 07/08/2014 09:10 AM, Marc Zyngier wrote:
->> A number of irqchip drivers are directly calling irq_find_mapping,
->> which may use a rcu_read_lock call when walking the radix tree.
->
-> If this happens to be easy for you to determine: do direct callers of
-> irq_find_host such as irq_create_of_mapping have a similar problem with
-> irq_domain_mutex?
+On Mon, Jul 28, 2014 at 11:16:10PM +0300, Johan Hedberg wrote:
+> Hi John,
+> 
+> This pull request should replace the previous one that Gustavo made
+> (bluetooth-next 2014-07-23).
+> 
+> To quote Gustavo from his previous request:
+> 
+> "Some last minute fixes for -next. We have a fix for a use after free in
+> RFCOMM, another fix to an issue with ADV_DIRECT_IND and one for ADV_IND with
+> auto-connection handling.  Last, we added support for reading the codec and
+> MWS setting for controllers that support these features."
+> 
+> Additionally there are fixes to LE scanning, an update to conform to the 4.1
+> core specification as well as fixes for tracking the page scan state. All
+> of these fixes are important for 3.17.
+> 
+> Let me know if there are any issues. Thanks.
+> 
+> Johan
+> 
+> ---
+> The following changes since commit c2aef6e8cbebd60f79555baeb9266e220f135a44:
+> 
+>   Bluetooth: Add support for Broadcom device of Asus Z97-DELUXE motherboard (2014-07-21 15:07:08 +0300)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+> 
+> for you to fetch changes up to 3bd2724010a51d5d15afa8065ac3c5fab3725499:
+> 
+>   Bluetooth: Fix incorrectly disabling page scan when toggling connectable (2014-07-28 20:13:32 +0200)
 
-Definitely not from this problem. irq_find_host doesn't use RCU at all,
-so it shouldn't be an issue.
+Pulling now...
 
-Thanks,
-
-	M.
 -- 
-Jazz is not dead. It just smells funny.
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
