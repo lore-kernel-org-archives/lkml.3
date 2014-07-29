@@ -1,63 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaG2Fhb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 01:37:31 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:46407 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaG2Fha (ORCPT
+	id S1751702AbaG2Fon (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 01:44:43 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:44775 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaG2Fok convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 01:37:30 -0400
+	Tue, 29 Jul 2014 01:44:40 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAPDOMVj=XHihdPmyh2=aHTYZFYtM_BXQVLdzrVTThjOVnb-8dQ@mail.gmail.com>
-References: <CAPDOMViYi_rg_cGp_SgZVqX6pw+SB=CVbr1kFn5WG481s4tz5A@mail.gmail.com>
-	<20140727083758.GA4834@fancy-poultry.org>
-	<CAPDOMVgjLU+r82eKFA=4-v_oS+4c4fCtovcZMer5x5GAW56DSw@mail.gmail.com>
-	<20140728095442.GA4875@fancy-poultry.org>
-	<CAPDOMViPdBnkLH2t=1zGAyB98bNGfZrxLvDngDrDQHYP+uCuqg@mail.gmail.com>
-	<20140728201344.GB13832@fancy-poultry.org>
-	<CAPDOMVj=XHihdPmyh2=aHTYZFYtM_BXQVLdzrVTThjOVnb-8dQ@mail.gmail.com>
-Date: Tue, 29 Jul 2014 01:37:28 -0400
-Message-ID: <CAPDOMVhwBK4W3tfaHvZS2VoLr_VWhfHt60b4WdBXMKQ-gJLjsA@mail.gmail.com>
-Subject: Re: Bug on Kernel 3.16 r6: Sound and Buffering in Clementine with
- Files are Transferring to Music Directory
-From: Nick Krause <xerofoify@gmail.com>
-To: Heinz Diehl <htd@fancy-poultry.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1405437631-23623-1-git-send-email-gabriel.fernandez@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com, "Lee Jones" <lee.jones@linaro.org>,
+        "Gabriel Fernandez" <gabriel.fernandez@linaro.org>
+References: <1405437631-23623-1-git-send-email-gabriel.fernandez@linaro.org>
+Message-ID: <20140729054436.4906.44690@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v3 00/15] Add Flexgen Clock support
+Date: Mon, 28 Jul 2014 22:44:36 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 6:24 PM, Nick Krause <xerofoify@gmail.com> wrote:
-> On Mon, Jul 28, 2014 at 4:13 PM, Heinz Diehl <htd@fancy-poultry.org> wrote:
->> On 28.07.2014, Nick Krause wrote:
->>
->>> Then explain to me why this is only happening on recent rc kernels and not
->>> the Ubuntu distro kernels I was using before. Seems weird that only
->>> recent rc kernels are triggering this.
->>
->> The, if you actually can reproduce it with a vanilla kernel (non-
->> distro) and you're still convinced it must be a bug, you could
->> consider bisecting the offending patch. Here is how it works:
->>
->> http://tinyurl.com/yo533k
->>
->> Good luck!
->>
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-> Thanks Heinz,
-> I will bisect tonight and see if I can find the offending commit.
-> Regards Nick
+Quoting Gabriel FERNANDEZ (2014-07-15 08:20:16)
+> Changes in v3:
+>  - Change commit message
+>  - Remove uncessary (void *) cast
+>  - add a block diagram for flexgen clock binding documentation
+> 
+> Changes in v2:
+>  - use static const for clkgen_pll_data and stm_fs tables (from
+>    Peter Griffin review)
+>  - add 326 and 333 Mhz frequencies
+>  - cosmetic correction in st,clkgen-vcc.txt
+>  - use of kcalloc instead of kzalloc in drivers/clk/st/clk-flexgen.c
+> 
+> The goal of this series is to add Flexgen clock support to ST SoCs.
+> 
+> A Flexgen clock is composed by:
+>   - a clock cross bar (represented by a mux element)
+>   - a pre and final dividers (represented by a divider and gate elements)
 
-Heinz,
-No luck with git still appears in 3.12 r6 as far as I can tell seems to be
-from an older kernel then I thought. Doesn't show up on a newer 3.13
-Ubuntu kernel through.
-Regards Nick
+Applied to clk-next! I performed 's/drivers: //' on the $SUBJECT for
+most of the patches.
+
+Regards,
+Mike
+
+> 
+> Tested on B2120 board.
+> 
+> Gabriel Fernandez (15):
+>   clk: st: Update ST clock binding documentation
+>   drivers: clk: st: use static const for stm_fs tables
+>   drivers: clk: st: use static const for clkgen_pll_data tables
+>   drivers: clk: st: Remove uncessary (void *) cast
+>   clk: st: Adds Flexgen clock binding
+>   drivers: clk: st: STiH407: Support for Flexgen Clocks
+>   drivers: clk: st: STiH407: Support for A9 MUX Clocks
+>   drivers: clk: st: STiH407: Support for clockgenA0
+>   drivers: clk: st: Add polarity bit indication
+>   drivers: clk: st: Add quadfs reset handling
+>   drivers: clk: st: STiH407: Support for clockgenC0
+>   drivers: clk: st: STiH407: Support for clockgenD0/D2/D3
+>   drivers: clk: st: STiH407: Support for clockgenA9
+>   drivers: clk: st: Update frequency tables for fs660c32 and fs432c65
+>   drivers: clk: st: Use round to closest divider flag
+> 
+>  .../bindings/clock/st/st,clkgen-divmux.txt         |  28 +-
+>  .../devicetree/bindings/clock/st/st,clkgen-mux.txt |   6 +-
+>  .../devicetree/bindings/clock/st/st,clkgen-pll.txt |  17 +-
+>  .../bindings/clock/st/st,clkgen-prediv.txt         |   8 +-
+>  .../devicetree/bindings/clock/st/st,clkgen-vcc.txt |  34 ++-
+>  .../devicetree/bindings/clock/st/st,clkgen.txt     |  59 ++--
+>  .../devicetree/bindings/clock/st/st,flexgen.txt    | 119 ++++++++
+>  .../devicetree/bindings/clock/st/st,quadfs.txt     |  15 +-
+>  drivers/clk/st/Makefile                            |   2 +-
+>  drivers/clk/st/clk-flexgen.c                       | 331 +++++++++++++++++++++
+>  drivers/clk/st/clkgen-fsyn.c                       | 223 +++++++++++---
+>  drivers/clk/st/clkgen-mux.c                        |  12 +-
+>  drivers/clk/st/clkgen-pll.c                        |  94 +++++-
+>  13 files changed, 828 insertions(+), 120 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/clock/st/st,flexgen.txt
+>  create mode 100644 drivers/clk/st/clk-flexgen.c
+> 
+> -- 
+> 1.9.1
+> 
