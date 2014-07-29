@@ -1,121 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108AbaG2PbW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:31:22 -0400
-Received: from mail.us.es ([193.147.175.20]:51562 "EHLO mail.us.es"
+	id S1754037AbaG2PcP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:32:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64383 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753914AbaG2PbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:31:20 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.4/19237. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-102.4/7.5):. 
- Processed in 5.375077 secs); 29 Jul 2014 15:31:17 -0000
-X-Spam-ASN: AS42863 89.214.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Tue, 29 Jul 2014 17:31:24 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Kees Cook <keescook@chromium.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH v3 net-next] net: filter: cleanup sk_* and bpf_* names
-Message-ID: <20140729153124.GA3231@salvia>
-References: <1406615380-3488-1-git-send-email-ast@plumgrid.com>
+	id S1753327AbaG2PcO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 11:32:14 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <53CE885C.4070302@adfin.com>
+References: <53CE885C.4070302@adfin.com> <cover.1406043029.git.milosz@adfin.com>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: dhowells@redhat.com, linux-cachefs@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "NeilBrown" <neilb@suse.de>, "Shantanu Goel" <sgoel01@yahoo.com>
+Subject: Re: [PATCH 1/3] FS-Cache: Timeout for releasepage()
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406615380-3488-1-git-send-email-ast@plumgrid.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <28562.1406647922.1@warthog.procyon.org.uk>
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 29 Jul 2014 16:32:02 +0100
+Message-ID: <28563.1406647922@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 11:29:40PM -0700, Alexei Starovoitov wrote:
-> clean up names related to socket filtering and bpf in the following way:
-> - everything that deals with sockets keeps 'sk_*' prefix
-> - everything that is pure BPF is changed to 'bpf_*' prefix
-> 
-> API for attaching classic BPF to a socket stays the same:
-> sk_attach_filter()/sk_detach_filter()
-> and SK_RUN_FILTER() to execute a program
-> 
-> API for 'unattached' BPF programs becomes:
-> bpf_prog_create()/bpf_prog_destroy()
-> and BPF_PROG_RUN() to execute a program
-> 
-> Introduce callback mechanism for 'struct sk_filter', so that different
-> filtering engines can be used in the future (as requested by Pablo)
-> 
-> Socket charging logic was complicated, since we had to charge/uncharge a socket
-> multiple times while preparing a filter. Simplify it by fully preparing bpf
-> program (through classic->ebpf conversion and JITing) and then charge
-> the socket memory once.
+Milosz Tanski <milosz@adfin.com> wrote:
 
-This includes many changes in one single shot. This needs to be
-splitted in smaller patches that can be reviewed separately, that
-makes it easier to others to follow track and spot things.  On top of
-that, we should also take the time to make sure what is already in
-place is correct, this is a good chance to go over the existing code,
-review it and make small changes to accomodate the generic
-infrastructure that should follow up.
+> +bool relase_page_wait_timeout(struct fscache_cookie *cookie, struct page *page
 
-Now below the more specific comments.
+I presume you mean "release_page_wait_timeout".
 
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-> ---
-[...]
-> diff --git a/include/linux/filter.h b/include/linux/filter.h
-> index 20dd50ef7271..448fdd193cdf 100644
-> --- a/include/linux/filter.h
-> +++ b/include/linux/filter.h
-> @@ -296,7 +296,7 @@ enum {
->  })
->  
->  /* Macro to invoke filter function. */
-> -#define SK_RUN_FILTER(filter, ctx)  (*filter->bpf_func)(ctx, filter->insnsi)
-> +#define SK_RUN_FILTER(filter, ctx)  (*filter->run)(ctx, filter)
->  
->  struct bpf_insn {
->  	__u8	code;		/* opcode */
-> @@ -323,12 +323,11 @@ struct sk_buff;
->  struct sock;
->  struct seccomp_data;
->  
-> -struct sk_filter {
-> -	atomic_t		refcnt;
-> +struct bpf_prog {
->  	u32			jited:1,	/* Is our filter JIT'ed? */
->  				len:31;		/* Number of filter blocks */
->  	struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
-> -	struct rcu_head		rcu;
-> +	struct rcu_head		rcu;		/* used by 'unattached' progs */
+Also, the new function returns a value which you then ignore.  Should you do
+something with it?
 
-This rcu_head for unattached filters can be avoided, I'll send a
-follow up patch for this. After that patch, refcnt and rcu_head can go
-out from bpf_prog.
-
-> -#define sk_filter_proglen(fprog)			\
-> -		(fprog->len * sizeof(fprog->filter[0]))
-> +struct sk_filter {
-> +	atomic_t refcnt;
-> +	struct rcu_head rcu;
-> +	u32 filter_size;
-> +	union {
-> +		struct bpf_prog *prog;
-> +	};
-> +	void (*release)(struct sk_filter *fp);
-> +	int (*get_filter)(struct sk_filter *fp, void **prog, unsigned int *len);
-> +	unsigned int (*run)(const struct sk_buff *skb, struct sk_filter *fp);
-
-I don't think this is the right moment to add this, but we have to
-keep in mind that something similar to this will need to be
-accomodated in struct sk_filter at some point to avoid sloppy changes
-that may result in reintroducing code later on.
-
-Next step should be to wrap the specific bpf fields in struct
-bpf_prog in some clean way IMO, which was partially the aim of this
-patch.
-
-Thanks.
+David
