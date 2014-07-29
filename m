@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652AbaG2NN0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 09:13:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29323 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752468AbaG2NNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 09:13:25 -0400
-Message-ID: <53D79DE2.9000702@redhat.com>
-Date: Tue, 29 Jul 2014 15:13:06 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-CC: xjtuwjp@gmail.com, lindar_liu@usish.com, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org,
-        Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>
-Subject: Re: [PATCH v2 RESEND 17/23] pm8001: Fix invalid return when request_irq()
- failed
-References: <cover.1405533479.git.agordeev@redhat.com> <5ecd9b80f705545c3dc85b2a4ae63a8ac3df8105.1405533479.git.agordeev@redhat.com>
-In-Reply-To: <5ecd9b80f705545c3dc85b2a4ae63a8ac3df8105.1405533479.git.agordeev@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753688AbaG2NNy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 09:13:54 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:50542 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaG2NNx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 09:13:53 -0400
+Message-ID: <1406639627.13705.11.camel@BR9GV9YG.de.ibm.com>
+Subject: Re: [PATCH] s390: net: qeth_core_main.c:  Cleaning up missing
+ null-terminate in conjunction with strncpy
+From: Ursula Braun <ubraun@linux.vnet.ibm.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Ursula Braun <ursula.braun@de.ibm.com>,
+        Frank Blaschka <blaschka@linux.vnet.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 29 Jul 2014 15:13:47 +0200
+In-Reply-To: <1406385326-3289-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1406385326-3289-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072913-0342-0000-0000-000000966951
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
-patch looks good.
-
-A correction in pm8001_request_irq might be added too to allow 
-the INT-X path when pm8001_setup_msix fails, but that is not part 
-of this fix.
-
-Tomas
-
-Reviewed-by: Tomas Henzl <thenzl@redhat.com>
-
-On 07/16/2014 08:05 PM, Alexander Gordeev wrote:
-> When a call to request_irq() failed pm8001_setup_msix()
-> still returns the success. This udate fixes the described
-> misbehaviour.
->
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: xjtuwjp@gmail.com
-> Cc: lindar_liu@usish.com
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> Acked-by: Jack Wang <xjtuwjp@gmail.com>
+On Sat, 2014-07-26 at 16:35 +0200, Rickard Strandqvist wrote:
+> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 > ---
->  drivers/scsi/pm8001/pm8001_init.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
-> index e90c89f..e837ece 100644
-> --- a/drivers/scsi/pm8001/pm8001_init.c
-> +++ b/drivers/scsi/pm8001/pm8001_init.c
-> @@ -744,9 +744,10 @@ static u32 pm8001_setup_msix(struct pm8001_hba_info *pm8001_ha)
->  			pm8001_ha->irq_vector[i].irq_id = i;
->  			pm8001_ha->irq_vector[i].drv_inst = pm8001_ha;
->  
-> -			if (request_irq(pm8001_ha->msix_entries[i].vector,
-> +			rc = request_irq(pm8001_ha->msix_entries[i].vector,
->  				pm8001_interrupt_handler_msix, flag,
-> -				intr_drvname[i], &(pm8001_ha->irq_vector[i]))) {
-> +				intr_drvname[i], &(pm8001_ha->irq_vector[i]));
-> +			if (rc) {
->  				for (j = 0; j < i; j++)
->  					free_irq(
->  					pm8001_ha->msix_entries[j].vector,
+>  drivers/s390/net/qeth_core_main.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/s390/net/qeth_core_main.c b/drivers/s390/net/qeth_core_main.c
+> index f54bec5..ec9b4d7 100644
+> --- a/drivers/s390/net/qeth_core_main.c
+> +++ b/drivers/s390/net/qeth_core_main.c
+> @@ -5275,7 +5275,7 @@ static int qeth_add_dbf_entry(struct qeth_card *card, char *name)
+>  	new_entry = kzalloc(sizeof(struct qeth_dbf_entry), GFP_KERNEL);
+>  	if (!new_entry)
+>  		goto err_dbg;
+> -	strncpy(new_entry->dbf_name, name, DBF_NAME_LEN);
+> +	strlcpy(new_entry->dbf_name, name, DBF_NAME_LEN);
+>  	new_entry->dbf_info = card->debug;
+>  	mutex_lock(&qeth_dbf_list_mutex);
+>  	list_add(&new_entry->dbf_list, &qeth_dbf_list);
+
+It is guaranteed that the string ch->id always fits into DBF_NAME_LEN.
+What's in this case the benefit of replacing strncpy() by strlcpy()
+here?
 
