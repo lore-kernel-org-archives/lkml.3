@@ -1,510 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527AbaG2A3p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 20:29:45 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:56086 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636AbaG2A3n (ORCPT
+	id S1752658AbaG2Abd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 20:31:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33549 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147AbaG2Ab3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 20:29:43 -0400
-Date: Mon, 28 Jul 2014 17:29:40 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v5 05/14] mm, compaction: move pageblock checks up from
- isolate_migratepages_range()
-In-Reply-To: <1406553101-29326-6-git-send-email-vbabka@suse.cz>
-Message-ID: <alpine.DEB.2.02.1407281709050.8998@chino.kir.corp.google.com>
-References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-6-git-send-email-vbabka@suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 28 Jul 2014 20:31:29 -0400
+Message-ID: <53D6EB53.2000209@infradead.org>
+Date: Mon, 28 Jul 2014 17:31:15 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        michal.simek@xilinx.com, grant.likely@linaro.org,
+        gregkh@linuxfoundation.org, jason@lakedaemon.net,
+        ezequiel.garcia@free-electrons.com, arnd@arndb.de, dwmw2@infradead.org,
+        computersforpeace@gmail.com, artem.bityutskiy@linux.intel.com,
+        pekon@ti.com, jussi.kivilinna@iki.fi, acourbot@nvidia.com,
+        ivan.khoronzhuk@ti.com, joern@logfs.org
+CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        kpc528@gmail.com, kalluripunnaiahchoudary@gmail.com,
+        anirudh@xilinx.com, svemula@xilinx.com,
+        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+Subject: Re: [PATCH RFC v4 4/4] Documentation: nand: pl353: Add documentation
+ for controller and driver
+References: <1406561500-18264-1-git-send-email-punnaia@xilinx.com> <b37e0e96-e91d-496c-a530-df72898798a1@BY2FFO11FD057.protection.gbl>
+In-Reply-To: <b37e0e96-e91d-496c-a530-df72898798a1@BY2FFO11FD057.protection.gbl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jul 2014, Vlastimil Babka wrote:
-
-> isolate_migratepages_range() is the main function of the compaction scanner,
-> called either on a single pageblock by isolate_migratepages() during regular
-> compaction, or on an arbitrary range by CMA's __alloc_contig_migrate_range().
-> It currently perfoms two pageblock-wide compaction suitability checks, and
-> because of the CMA callpath, it tracks if it crossed a pageblock boundary in
-> order to repeat those checks.
+On 07/28/14 08:31, Punnaiah Choudary Kalluri wrote:
+> Added notes about the controller and driver
 > 
-> However, closer inspection shows that those checks are always true for CMA:
-> - isolation_suitable() is true because CMA sets cc->ignore_skip_hint to true
-> - migrate_async_suitable() check is skipped because CMA uses sync compaction
-> 
-> We can therefore move the compaction-specific checks to isolate_migratepages()
-> and simplify isolate_migratepages_range(). Furthermore, we can mimic the
-> freepage scanner family of functions, which has isolate_freepages_block()
-> function called both by compaction from isolate_freepages() and by CMA from
-> isolate_freepages_range(), where each use-case adds own specific glue code.
-> This allows further code simplification.
-> 
-> Therefore, we rename isolate_migratepages_range() to isolate_freepages_block()
-
-s/isolate_freepages_block/isolate_migratepages_block/
-
-I read your commit description before looking at the patch and was very 
-nervous about the direction you were going if that was true :)  I'm 
-relieved to see it was just a typo.
-
-> and limit its functionality to a single pageblock (or its subset). For CMA,
-> a new different isolate_migratepages_range() is created as a CMA-specific
-> wrapper for the _block() function. The checks specific to compaction are moved
-> to isolate_migratepages(). As part of the unification of these two families of
-> functions, we remove the redundant zone parameter where applicable, since zone
-> pointer is already passed in cc->zone.
-> 
-> Furthermore, going back to compact_zone() and compact_finished() when pageblock
-> is found unsuitable (now by isolate_migratepages()) is wasteful - the checks
-> are meant to skip pageblocks quickly. The patch therefore also introduces a
-> simple loop into isolate_migratepages() so that it does not return immediately
-> on failed pageblock checks, but keeps going until isolate_migratepages_range()
-> gets called once. Similarily to isolate_freepages(), the function periodically
-> checks if it needs to reschedule or abort async compaction.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Acked-by: Mel Gorman <mgorman@suse.de>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: David Rientjes <rientjes@google.com>
+> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
 > ---
->  mm/compaction.c | 234 +++++++++++++++++++++++++++++++++-----------------------
->  mm/internal.h   |   4 +-
->  mm/page_alloc.c |   3 +-
->  3 files changed, 140 insertions(+), 101 deletions(-)
+> Changes in v4:
+> - None
+> ---
+>  Documentation/mtd/nand/pl353-nand.txt |   92 +++++++++++++++++++++++++++++++++
+>  1 files changed, 92 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/mtd/nand/pl353-nand.txt
 > 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 0a871e5..bac6e37 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -132,7 +132,7 @@ void reset_isolation_suitable(pg_data_t *pgdat)
->   */
->  static void update_pageblock_skip(struct compact_control *cc,
->  			struct page *page, unsigned long nr_isolated,
-> -			bool set_unsuitable, bool migrate_scanner)
-> +			bool migrate_scanner)
->  {
->  	struct zone *zone = cc->zone;
->  	unsigned long pfn;
-> @@ -146,12 +146,7 @@ static void update_pageblock_skip(struct compact_control *cc,
->  	if (nr_isolated)
->  		return;
->  
-> -	/*
-> -	 * Only skip pageblocks when all forms of compaction will be known to
-> -	 * fail in the near future.
-> -	 */
-> -	if (set_unsuitable)
-> -		set_pageblock_skip(page);
-> +	set_pageblock_skip(page);
->  
->  	pfn = page_to_pfn(page);
->  
-> @@ -180,7 +175,7 @@ static inline bool isolation_suitable(struct compact_control *cc,
->  
->  static void update_pageblock_skip(struct compact_control *cc,
->  			struct page *page, unsigned long nr_isolated,
-> -			bool set_unsuitable, bool migrate_scanner)
-> +			bool migrate_scanner)
->  {
->  }
->  #endif /* CONFIG_COMPACTION */
-> @@ -345,8 +340,7 @@ isolate_fail:
->  
->  	/* Update the pageblock-skip if the whole pageblock was scanned */
->  	if (blockpfn == end_pfn)
-> -		update_pageblock_skip(cc, valid_page, total_isolated, true,
-> -				      false);
-> +		update_pageblock_skip(cc, valid_page, total_isolated, false);
->  
->  	count_compact_events(COMPACTFREE_SCANNED, nr_scanned);
->  	if (total_isolated)
-> @@ -451,40 +445,34 @@ static bool too_many_isolated(struct zone *zone)
->  }
->  
->  /**
-> - * isolate_migratepages_range() - isolate all migrate-able pages in range.
-> - * @zone:	Zone pages are in.
-> + * isolate_migratepages_block() - isolate all migrate-able pages within
-> + *				  a single pageblock
->   * @cc:		Compaction control structure.
-> - * @low_pfn:	The first PFN of the range.
-> - * @end_pfn:	The one-past-the-last PFN of the range.
-> - * @unevictable: true if it allows to isolate unevictable pages
-> + * @low_pfn:	The first PFN to isolate
-> + * @end_pfn:	The one-past-the-last PFN to isolate, within same pageblock
-> + * @isolate_mode: Isolation mode to be used.
->   *
->   * Isolate all pages that can be migrated from the range specified by
-> - * [low_pfn, end_pfn).  Returns zero if there is a fatal signal
-> - * pending), otherwise PFN of the first page that was not scanned
-> - * (which may be both less, equal to or more then end_pfn).
-> - *
-> - * Assumes that cc->migratepages is empty and cc->nr_migratepages is
-> - * zero.
-> + * [low_pfn, end_pfn). The range is expected to be within same pageblock.
-> + * Returns zero if there is a fatal signal pending, otherwise PFN of the
-> + * first page that was not scanned (which may be both less, equal to or more
-> + * than end_pfn).
->   *
-> - * Apart from cc->migratepages and cc->nr_migratetypes this function
-> - * does not modify any cc's fields, in particular it does not modify
-> - * (or read for that matter) cc->migrate_pfn.
-> + * The pages are isolated on cc->migratepages list (not required to be empty),
-> + * and cc->nr_migratepages is updated accordingly. The cc->migrate_pfn field
-> + * is neither read nor updated.
->   */
-> -unsigned long
-> -isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> -		unsigned long low_pfn, unsigned long end_pfn, bool unevictable)
-> +static unsigned long
-> +isolate_migratepages_block(struct compact_control *cc, unsigned long low_pfn,
-> +			unsigned long end_pfn, isolate_mode_t isolate_mode)
->  {
-> -	unsigned long last_pageblock_nr = 0, pageblock_nr;
-> +	struct zone *zone = cc->zone;
->  	unsigned long nr_scanned = 0, nr_isolated = 0;
->  	struct list_head *migratelist = &cc->migratepages;
->  	struct lruvec *lruvec;
->  	unsigned long flags;
->  	bool locked = false;
->  	struct page *page = NULL, *valid_page = NULL;
-> -	bool set_unsuitable = true;
-> -	const isolate_mode_t mode = (cc->mode == MIGRATE_ASYNC ?
-> -					ISOLATE_ASYNC_MIGRATE : 0) |
-> -				    (unevictable ? ISOLATE_UNEVICTABLE : 0);
->  
->  	/*
->  	 * Ensure that there are not too many pages isolated from the LRU
-> @@ -515,19 +503,6 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  			}
->  		}
->  
-> -		/*
-> -		 * migrate_pfn does not necessarily start aligned to a
-> -		 * pageblock. Ensure that pfn_valid is called when moving
-> -		 * into a new MAX_ORDER_NR_PAGES range in case of large
-> -		 * memory holes within the zone
-> -		 */
-> -		if ((low_pfn & (MAX_ORDER_NR_PAGES - 1)) == 0) {
-> -			if (!pfn_valid(low_pfn)) {
-> -				low_pfn += MAX_ORDER_NR_PAGES - 1;
-> -				continue;
-> -			}
-> -		}
-> -
->  		if (!pfn_valid_within(low_pfn))
->  			continue;
->  		nr_scanned++;
-> @@ -545,28 +520,6 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  		if (!valid_page)
->  			valid_page = page;
->  
-> -		/* If isolation recently failed, do not retry */
-> -		pageblock_nr = low_pfn >> pageblock_order;
-> -		if (last_pageblock_nr != pageblock_nr) {
-> -			int mt;
-> -
-> -			last_pageblock_nr = pageblock_nr;
-> -			if (!isolation_suitable(cc, page))
-> -				goto next_pageblock;
-> -
-> -			/*
-> -			 * For async migration, also only scan in MOVABLE
-> -			 * blocks. Async migration is optimistic to see if
-> -			 * the minimum amount of work satisfies the allocation
-> -			 */
-> -			mt = get_pageblock_migratetype(page);
-> -			if (cc->mode == MIGRATE_ASYNC &&
-> -			    !migrate_async_suitable(mt)) {
-> -				set_unsuitable = false;
-> -				goto next_pageblock;
-> -			}
-> -		}
-> -
->  		/*
->  		 * Skip if free. page_order cannot be used without zone->lock
->  		 * as nothing prevents parallel allocations or buddy merging.
-> @@ -601,8 +554,11 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  		 */
->  		if (PageTransHuge(page)) {
->  			if (!locked)
-> -				goto next_pageblock;
-> -			low_pfn += (1 << compound_order(page)) - 1;
-> +				low_pfn = ALIGN(low_pfn + 1,
-> +						pageblock_nr_pages) - 1;
-> +			else
-> +				low_pfn += (1 << compound_order(page)) - 1;
-> +
+> diff --git a/Documentation/mtd/nand/pl353-nand.txt b/Documentation/mtd/nand/pl353-nand.txt
+> new file mode 100644
+> index 0000000..4deac94
+> --- /dev/null
+> +++ b/Documentation/mtd/nand/pl353-nand.txt
+> @@ -0,0 +1,92 @@
+> +This documents provides some notes about the ARM pl353 smc controller used in
 
-Hmm, any reason not to always advance and align low_pfn to 
-pageblock_nr_pages?  I don't see how pageblock_order > HPAGE_PMD_ORDER 
-would make sense if encountering thp.
+                                                    PL353 SMC
 
->  			continue;
->  		}
->  
-> @@ -632,7 +588,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  		lruvec = mem_cgroup_page_lruvec(page, zone);
->  
->  		/* Try isolate the page */
-> -		if (__isolate_lru_page(page, mode) != 0)
-> +		if (__isolate_lru_page(page, isolate_mode) != 0)
->  			continue;
->  
->  		VM_BUG_ON_PAGE(PageTransCompound(page), page);
-> @@ -651,11 +607,6 @@ isolate_success:
->  			++low_pfn;
->  			break;
->  		}
-> -
-> -		continue;
-> -
-> -next_pageblock:
-> -		low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
->  	}
->  
->  	acct_isolated(zone, locked, cc);
-> @@ -668,8 +619,7 @@ next_pageblock:
->  	 * if the whole pageblock was scanned without isolating any page.
->  	 */
->  	if (low_pfn == end_pfn)
-> -		update_pageblock_skip(cc, valid_page, nr_isolated,
-> -				      set_unsuitable, true);
-> +		update_pageblock_skip(cc, valid_page, nr_isolated, true);
->  
->  	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
->  
-> @@ -680,15 +630,61 @@ next_pageblock:
->  	return low_pfn;
->  }
->  
-> +/**
-> + * isolate_migratepages_range() - isolate migrate-able pages in a PFN range
-> + * @start_pfn: The first PFN to start isolating.
-> + * @end_pfn:   The one-past-last PFN.
+> +Zynq SOC and confined to NAND specific details.
 
-Need to specify @cc?
-
-> + *
-> + * Returns zero if isolation fails fatally due to e.g. pending signal.
-> + * Otherwise, function returns one-past-the-last PFN of isolated page
-> + * (which may be greater than end_pfn if end fell in a middle of a THP page).
-> + */
-> +unsigned long
-> +isolate_migratepages_range(struct compact_control *cc, unsigned long start_pfn,
-> +							unsigned long end_pfn)
-> +{
-> +	unsigned long pfn, block_end_pfn;
-> +
-> +	/* Scan block by block. First and last block may be incomplete */
-> +	pfn = start_pfn;
-> +	block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
-> +
-> +	for (; pfn < end_pfn; pfn = block_end_pfn,
-> +				block_end_pfn += pageblock_nr_pages) {
-> +
-> +		block_end_pfn = min(block_end_pfn, end_pfn);
-> +
-> +		/* Skip whole pageblock in case of a memory hole */
-> +		if (!pfn_valid(pfn))
-> +			continue;
-> +
-> +		pfn = isolate_migratepages_block(cc, pfn, block_end_pfn,
-> +							ISOLATE_UNEVICTABLE);
-> +
-> +		/*
-> +		 * In case of fatal failure, release everything that might
-> +		 * have been isolated in the previous iteration, and signal
-> +		 * the failure back to caller.
-> +		 */
-> +		if (!pfn) {
-> +			putback_movable_pages(&cc->migratepages);
-> +			cc->nr_migratepages = 0;
-> +			break;
-> +		}
-> +	}
-> +
-> +	return pfn;
-> +}
-> +
->  #endif /* CONFIG_COMPACTION || CONFIG_CMA */
->  #ifdef CONFIG_COMPACTION
->  /*
->   * Based on information in the current compact_control, find blocks
->   * suitable for isolating free pages from and then isolate them.
->   */
-> -static void isolate_freepages(struct zone *zone,
-> -				struct compact_control *cc)
-> +static void isolate_freepages(struct compact_control *cc)
->  {
-> +	struct zone *zone = cc->zone;
->  	struct page *page;
->  	unsigned long block_start_pfn;	/* start of current pageblock */
->  	unsigned long block_end_pfn;	/* end of current pageblock */
-> @@ -806,7 +802,7 @@ static struct page *compaction_alloc(struct page *migratepage,
->  	 */
->  	if (list_empty(&cc->freepages)) {
->  		if (!cc->contended)
-> -			isolate_freepages(cc->zone, cc);
-> +			isolate_freepages(cc);
->  
->  		if (list_empty(&cc->freepages))
->  			return NULL;
-> @@ -840,34 +836,81 @@ typedef enum {
->  } isolate_migrate_t;
->  
->  /*
-> - * Isolate all pages that can be migrated from the block pointed to by
-> - * the migrate scanner within compact_control.
-> + * Isolate all pages that can be migrated from the first suitable block,
-> + * starting at the block pointed to by the migrate scanner pfn within
-> + * compact_control.
->   */
->  static isolate_migrate_t isolate_migratepages(struct zone *zone,
->  					struct compact_control *cc)
->  {
->  	unsigned long low_pfn, end_pfn;
-> +	struct page *page;
-> +	const isolate_mode_t isolate_mode =
-> +		(cc->mode == MIGRATE_ASYNC ? ISOLATE_ASYNC_MIGRATE : 0);
->  
-> -	/* Do not scan outside zone boundaries */
-> -	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
-> +	/*
-> +	 * Start at where we last stopped, or beginning of the zone as
-> +	 * initialized by compact_zone()
-> +	 */
-> +	low_pfn = cc->migrate_pfn;
->  
->  	/* Only scan within a pageblock boundary */
->  	end_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages);
->  
-> -	/* Do not cross the free scanner or scan within a memory hole */
-> -	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
-> -		cc->migrate_pfn = end_pfn;
-> -		return ISOLATE_NONE;
-> -	}
-> +	/*
-> +	 * Iterate over whole pageblocks until we find the first suitable.
-> +	 * Do not cross the free scanner.
-> +	 */
-> +	for (; end_pfn <= cc->free_pfn;
-> +			low_pfn = end_pfn, end_pfn += pageblock_nr_pages) {
-> +
-> +		/*
-> +		 * This can potentially iterate a massively long zone with
-> +		 * many pageblocks unsuitable, so periodically check if we
-> +		 * need to schedule, or even abort async compaction.
-> +		 */
-> +		if (!(low_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))
-> +						&& compact_should_abort(cc))
-> +			break;
-> +
-> +		/* Skip whole pageblock in case of a memory hole */
-> +		if (!pfn_valid(low_pfn))
-> +			continue;
-> +
-> +		page = pfn_to_page(low_pfn);
-> +
-> +		/* If isolation recently failed, do not retry */
-> +		if (!isolation_suitable(cc, page))
-> +			continue;
-> +
-> +		/*
-> +		 * For async compaction, also only scan in MOVABLE blocks.
-> +		 * Async compaction is optimistic to see if the minimum amount
-> +		 * of work satisfies the allocation.
-> +		 */
-> +		if (cc->mode == MIGRATE_ASYNC &&
-> +		    !migrate_async_suitable(get_pageblock_migratetype(page)))
-> +			continue;
-> +
-> +		/* Perform the isolation */
-> +		low_pfn = isolate_migratepages_block(cc, low_pfn, end_pfn,
-> +								isolate_mode);
-
-Hmm, why would we want to unconditionally set pageblock_skip if no pages 
-could be isolated from a pageblock when 
-isolate_mode == ISOLATE_ASYNC_MIGRATE?  It seems like it erroneously skip 
-pageblocks for cases when isolate_mode == 0.
+            and is confined to
 
 > +
-> +		if (!low_pfn || cc->contended)
-> +			return ISOLATE_ABORT;
->  
-> -	/* Perform the isolation */
-> -	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn, false);
-> -	if (!low_pfn || cc->contended)
-> -		return ISOLATE_ABORT;
-> +		/*
-> +		 * Either we isolated something and proceed with migration. Or
-> +		 * we failed and compact_zone should decide if we should
-> +		 * continue or not.
-> +		 */
-> +		break;
-> +	}
->  
-> +	/* Record where migration scanner will be restarted */
->  	cc->migrate_pfn = low_pfn;
->  
-> -	return ISOLATE_SUCCESS;
-> +	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
->  }
->  
->  static int compact_finished(struct zone *zone,
-> @@ -1040,9 +1083,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
->  			;
->  		}
->  
-> -		if (!cc->nr_migratepages)
-> -			continue;
-> -
->  		err = migrate_pages(&cc->migratepages, compaction_alloc,
->  				compaction_free, (unsigned long)cc, cc->mode,
->  				MR_COMPACTION);
-> diff --git a/mm/internal.h b/mm/internal.h
-> index a1b651b..5a0738f 100644
-> --- a/mm/internal.h
-> +++ b/mm/internal.h
-> @@ -154,8 +154,8 @@ unsigned long
->  isolate_freepages_range(struct compact_control *cc,
->  			unsigned long start_pfn, unsigned long end_pfn);
->  unsigned long
-> -isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> -	unsigned long low_pfn, unsigned long end_pfn, bool unevictable);
-> +isolate_migratepages_range(struct compact_control *cc,
-> +			   unsigned long low_pfn, unsigned long end_pfn);
->  
->  #endif
->  
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 91191fb..f424752 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -6292,8 +6292,7 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
->  
->  		if (list_empty(&cc->migratepages)) {
->  			cc->nr_migratepages = 0;
-> -			pfn = isolate_migratepages_range(cc->zone, cc,
-> -							 pfn, end, true);
-> +			pfn = isolate_migratepages_range(cc, pfn, end);
->  			if (!pfn) {
->  				ret = -EINTR;
->  				break;
+> +Overview of the controller
+> +==========================
+> +	The SMC (PL353) supports two memory interfaces:
+> +	Interface 0 type SRAM.
+> +	Interface 1 type NAND.
+> +	This configuration supports the following configurable options:
+> +	   . 32-bit or 64-bit AXI data width
+> +	   . 8-bit, 16-bit, or 32-bit memory data width for interface 0
+> +	   . 8-bit, or 16-bit memory data width for interface 1
+> +	   . 1-4 chip selects on each interface
+> +	   . SLC ECC block for interface 1
+> +
+> +For more information, refer the below link for TRM
+
+                         refer to the below link for TRM.
+
+> +http://infocenter.arm.com/help/topic/com.arm.doc.ddi0380g/
+> +DDI0380G_smc_pl350_series_r2p1_trm.pdf
+> +
+> +NAND memory accesses
+> +====================
+> +	. Two phase NAND accesses
+> +	. NAND command phase transfers
+> +	. NAND data phase transfers
+> +
+> +Two phase NAND accesses
+> +	The SMC defines two phases of commands when transferring data to or from
+> +NAND flash.
+> +
+> +Command phase
+> +	Commands and optional address information are written to the NAND flash.
+> +The command and address can be associated with either a data phase operation to
+> +write to or read from the array, or a status/ID register transfer.
+> +
+> +Data phase
+> + Data is either written to or read from the NAND flash. This data can be either
+> +data transferred to or from the array, or status/ID register information.
+> +
+> +NAND AXI address setup
+> +       AXI address      Command phase      Data phase
+> +	[31:24]         Chip address       Chip address
+> +	[23]            NoOfAddCycles_2    Reserved
+> +	[22]            NoOfAddCycles_1    Reserved
+> +	[21]            NoOfAddCycles_0    ClearCS
+> +	[20]            End command valid  End command valid
+> +	[19]            0                  1
+> +	[18:11]         End command        End command
+> +	[10:3]          Start command      [10] ECC Last
+> +					   [9:3] Reserved
+> +	[2:0]           Reserved           Reserved
+> +
+> +ECC
+> +===
+> +    It operates on a number of 512 byte blocks of NAND memory and can be
+
+                                  512-byte blocks
+
+> +programmed to store the ECC codes after the data in memory. For writes,
+> +the ECC is written to the spare area of the page. For reads, the result of
+> +a block ECC check are made available to the device driver.
+> +
+> +------------------------------------------------------------------------
+> +|               n * 512 blocks                  | extra  | ecc    |     |
+
+                                                              ECC
+
+> +|                                               | block  | codes  |     |
+> +------------------------------------------------------------------------
+> +
+> +The ECC calculation uses a simple Hamming code, using 1-bit correction 2-bit
+> +detection. It starts when a valid read or write command with a 512 byte aligned
+
+                                                                  512-byte
+
+> +address is detected on the memory interface.
+> +
+> +Driver details
+> +==============
+> +	The NAND driver has dependancy with the pl353_smc memory controller
+
+	                    dependency          PL353 SMC
+ 
+> +driver for intializing the nand timing parameters, bus width, ECC modes,
+
+              initializing the NAND
+
+> +control and status information.
+> +
+> +Since the controller expects that the chipselect bit should be cleared for the
+> +last data transfer i.e last 4 data bytes, the existing nandbase page
+
+             transfer,
+
+> +read/write routines for soft ecc and ecc none modes will not work. So, inorder
+
+                                ECC and ECC                               in order
+
+> +to make this driver work, it always updates the ecc mode as HW ECC and
+
+                                                   ECC
+
+> +implemented the page read/write functions for supporting the SW ECC.
+
+   implements
+
+> +
+> +HW ECC mode:
+> +	Upto 2K page size is supported and beyond that it retuns
+
+	Up to                                             returns
+
+> +-ENOSUPPORT error. If the flsh has ONDIE ecc controller then the
+
+                             flash          ECC
+
+> +priority has given to the ONDIE ecc controller. Also the current
+
+            is given               ECC
+
+> +implementation has support for upto 64 byte oob area
+
+                                  up to 64-byte OOB area.
+
+> +
+> +SW ECC mode:
+> +	It supports all the pgae sizes. But since, zynq soc bootrom uses
+
+	                    page sizes, but since Zynq SOC boot ROM
+
+> +HW ECC for the devices that have pgae size <=2K so, to avoid any ecc related
+
+                                    page size <= 2K, to avoid any ECC-related
+
+> +issues during boot, prefer HW ECC over SW ECC.
+> +
+> +For devicetree binding information please refer the below dt binding file
+
+                                             refer to the below
+
+> +Documentation/devicetree/bindings/memory-controllers/pl353-smc.txt
+> 
+
+
+-- 
+~Randy
