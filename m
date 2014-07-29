@@ -1,127 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaG2RGt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 13:06:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7603 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282AbaG2RGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 13:06:48 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Andrew Jones <drjones@redhat.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: [Xen-devel] [PATCH RFC 3/4] xen/pvhvm: Unmap all PIRQs on startup and shutdown
-References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
-	<1405431640-649-4-git-send-email-vkuznets@redhat.com>
-	<53D6536E.70104@citrix.com> <87d2coe0kk.fsf@vitty.brq.redhat.com>
-	<53D7BD04.4040102@citrix.com>
-Date: Tue, 29 Jul 2014 19:06:34 +0200
-In-Reply-To: <53D7BD04.4040102@citrix.com> (David Vrabel's message of "Tue, 29
-	Jul 2014 16:25:56 +0100")
-Message-ID: <878uncdrhh.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753605AbaG2RIZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 13:08:25 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:39507 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaG2RIX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 13:08:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAPDOMVhNAqF_KSeT9MamLgk8Mwe1Qb3uZRK9oipE_49ScO8UHQ@mail.gmail.com>
+References: <CAPDOMViXEgN1U8Og52Fd7EaM86Ad2Dfex9TVQ-+tRZ9SL9Kcig@mail.gmail.com>
+	<53D5BBCA.3020109@gmail.com>
+	<CAPDOMVjB9ErEwA7mf91X7pff5LAkeT=BT4pR7TuoEp3LL333Lg@mail.gmail.com>
+	<53D6218A.5080401@gmail.com>
+	<CAPDOMVg869TJJPgrW86XaMT2WyisbT9fg0jLETCAvg59xpvs4Q@mail.gmail.com>
+	<CAPDOMVh5kFE2kZtnpjQdAv1n+7FN=X_oc3YRyWOxpPmo=qW_cQ@mail.gmail.com>
+	<53D67828.3040802@gmail.com>
+	<CAPDOMVhNAqF_KSeT9MamLgk8Mwe1Qb3uZRK9oipE_49ScO8UHQ@mail.gmail.com>
+Date: Tue, 29 Jul 2014 13:08:22 -0400
+Message-ID: <CAPDOMViwEA1HXXCukUfJ0fJgnCKT1cWxyCkcD9v5+2yYu=r6Hw@mail.gmail.com>
+Subject: Re: Multi Core Support for compression in compression.c
+From: Nick Krause <xerofoify@gmail.com>
+To: Austin S Hemmelgarn <ahferroin7@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
+	<linux-btrfs@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Vrabel <david.vrabel@citrix.com> writes:
-
-> On 29/07/14 14:50, Vitaly Kuznetsov wrote:
->> David Vrabel <david.vrabel@citrix.com> writes:
->> 
->>> On 15/07/14 14:40, Vitaly Kuznetsov wrote:
->>>> When kexec is being run PIRQs from Qemu-emulated devices are still
->>>> mapped to old event channels and new kernel has no information about
->>>> that. Trying to map them twice results in the following in Xen's dmesg:
+On Mon, Jul 28, 2014 at 2:36 PM, Nick Krause <xerofoify@gmail.com> wrote:
+> On Mon, Jul 28, 2014 at 12:19 PM, Austin S Hemmelgarn
+> <ahferroin7@gmail.com> wrote:
+>> On 2014-07-28 11:57, Nick Krause wrote:
+>>> On Mon, Jul 28, 2014 at 11:13 AM, Nick Krause <xerofoify@gmail.com>
+>>> wrote:
+>>>> On Mon, Jul 28, 2014 at 6:10 AM, Austin S Hemmelgarn
+>>>> <ahferroin7@gmail.com> wrote:
+>>>>> On 07/27/2014 11:21 PM, Nick Krause wrote:
+>>>>>> On Sun, Jul 27, 2014 at 10:56 PM, Austin S Hemmelgarn
+>>>>>> <ahferroin7@gmail.com> wrote:
+>>>>>>> On 07/27/2014 04:47 PM, Nick Krause wrote:
+>>>>>>>> This may be a bad idea , but compression in brtfs seems
+>>>>>>>> to be only using one core to compress. Depending on the
+>>>>>>>> CPU used and the amount of cores in the CPU we can make
+>>>>>>>> this much faster with multiple cores. This seems bad by
+>>>>>>>> my reading at least I would recommend for writing
+>>>>>>>> compression we write a function to use a certain amount
+>>>>>>>> of cores based on the load of the system's CPU not using
+>>>>>>>> more then 75% of the system's CPU resources as my system
+>>>>>>>> when idle has never needed more then one core of my i5
+>>>>>>>> 2500k to run when with interrupts for opening eclipse are
+>>>>>>>> running. For reading compression on good core seems fine
+>>>>>>>> to me as testing other compression software for reads ,
+>>>>>>>> it's way less CPU intensive. Cheers Nick
+>>>>>>> We would probably get a bigger benefit from taking an
+>>>>>>> approach like SquashFS has recently added, that is,
+>>>>>>> allowing multi-threaded decompression fro reads, and
+>>>>>>> decompressing directly into the pagecache. Such an approach
+>>>>>>> would likely make zlib compression much more scalable on
+>>>>>>> large systems.
+>>>>>>>
+>>>>>>>
+>>>>>>
+>>>>>> Austin, That seems better then my idea as you seem to be more
+>>>>>> up to date on brtfs devolopment. If you and the other
+>>>>>> developers of brtfs are interested in adding this as a
+>>>>>> feature please let me known as I would like to help improve
+>>>>>> brtfs as the file system as an idea is great just seems like
+>>>>>> it needs a lot of work :). Nick
+>>>>> I wouldn't say that I am a BTRFS developer (power user maybe?),
+>>>>> but I would definitely say that parallelizing compression on
+>>>>> writes would be a good idea too (especially for things like
+>>>>> lz4, which IIRC is either in 3.16 or in the queue for 3.17).
+>>>>> Both options would be a lot of work, but almost any performance
+>>>>> optimization would.  I would almost say that it would provide a
+>>>>> bigger performance improvement to get BTRFS to intelligently
+>>>>> stripe reads and writes (at the moment, any given worker thread
+>>>>> only dispatches one write or read to a single device at a
+>>>>> time, and any given write() or read() syscall gets handled by
+>>>>> only one worker).
+>>>>>
 >>>>
->>>>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 8 already mapped
->>>>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 12 already mapped
->>>>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 1 already mapped
->>>>  ...
->>>>
->>>>  and the following in new kernel's dmesg:
->>>>
->>>>  [   92.286796] xen:events: Failed to obtain physical IRQ 4
->>>>
->>>> The result is that the new kernel doesn't recieve IRQs for Qemu-emulated
->>>> devices. Address the issue by unmapping all mapped PIRQs on kernel shutdown
->>>> when kexec was requested and on every kernel startup. We need to do this
->>>> twice to deal with the following issues:
->>>> - startup-time unmapping is required to make kdump work;
->>>> - shutdown-time unmapping is required to support kexec-ing non-fixed kernels;
->>>> - shutdown-time unmapping is required to make Qemu-emulated NICs work after
->>>>   kexec (event channel is being closed on shutdown but no PHYSDEVOP_unmap_pirq
->>>>   is being performed).
+>>>> I will look into this idea and see if I can do this for writes.
+>>>> Regards Nick
 >>>
->>> I think this should be done only in one place -- just prior to exec'ing
->>> the new kernel (including kdump kernels).
+>>> Austin, Seems since we don't want to release the cache for inodes
+>>> in order to improve writes if are going to use the page cache. We
+>>> seem to be doing this for writes in end_compressed_bio_write for
+>>> standard pages and in end_compressed_bio_write. If we want to cache
+>>> write pages why are we removing then ? Seems like this needs to be
+>>> removed in order to start off. Regards Nick
 >>>
->> 
->> Thank you for your comments!
->> 
->> The problem I'm fighting wiht atm is: with FIFO-based event channels we
->> need to call evtchn_fifo_destroy() so next EVTCHNOP_init_control won't
->> fail. I was intended to put evtchn_fifo_destroy() in
->> EVTCHNOP_reset. That introduces a problem: we need to deal with
->> store/console channels. It is possible to remap those from guest with
->> EVTCHNOP_bind_interdomain (if we remember where they were mapped before)
->> but we can't do it after we did evtchn_fifo_destroy() and we can't
->> rebind them after kexec and performing EVTCHNOP_init_control as
->> we can't remember where these channels were mapped to after kexec/kdump.
->> 
->> I see the following possible solutions:
->> 1) We put evtchn_fifo_destroy() in EVTCHNOP_init_control so
->> EVTCHNOP_init_control can be called twice. No EVTCHNOP_reset is required
->> in that case.
->
-> EVTCHNOP_init_control is called for each VCPU so I can't see how this
-> would work.
+>> I'm not entirely sure, it's been a while since I went exploring in the
+>> page-cache code.  My guess is that there is some reason that you and I
+>> aren't seeing that we are trying for write-around semantics, maybe one
+>> of the people who originally wrote this code could weigh in?  Part of
+>> this might be to do with the fact that normal page-cache semantics
+>> don't always work as expected with COW filesystems (cause a write goes
+>> to a different block on the device than a read before the write would
+>> have gone to).  It might be easier to parallelize reads first, and
+>> then work from that (and most workloads would probably benefit more
+>> from the parallelized reads).
+>>
+> I will look into this later today and work on it then.
+> Regards Nick
 
-Right, forgot about that...
-
->
->> 2) Introduce special (e.g. 'EVTCHNOP_fifo_destroy') hypercall to do
->> evtchn_fifo_destroy() without closing all channels. Alternatively we can
->> avoid closing all channels in EVTCHNOP_reset when called with DOMID_SELF
->> (as this mode is not being used atm) -- but that would look unobvious.
->
-> I would try this.  The guest prior to kexec would then:
->
-> 1. Use EVTCHNOP_status to query remote end of console and xenstore event
-> channels.
->
-> 2. Loop for all event channels:
->
-> a. unmap pirq (if required)
-> b. EVTCHNOP_close
->
-> 3. EVTCHNOP_fifo_destroy (the implementation of which must verify that
-> no channels are bound).
->
-> 4. EVTCHNOP_bind_interdomain to rebind the console and xenstore channels.
->
-
-Yea, that's what I have now when I put evtchn_fifo_destroy() in
-EVTCHNOP_reset. The problem here is: we can't do
-EVTCHNOP_bind_interdomain after we did evtchn_fifo_destroy(), we need to
-call EVTCHNOP_init_control first. And we'll do that only after kexec so
-we won't remember what we need to remap.. The second issue is the fact
-that EVTCHNOP_bind_interdomain will remap store/storage channels to
-*some* local ports, not necessary matching hvm info
-(HVM_PARAM_CONSOLE_EVTCHN/HVM_PARAM_STORE_EVTCHN)..
-
-Would it be safe is instead of closing interdomain channels on
-EVTCHNOP_fifo_destroy we switch evtchn_port_ops to evtchn_port_ops_2l
-(so on EVTCHNOP_init_control after kexec we switch back)? I'll try
-prototyping this.
-
-Thank you for your comments,
-
-> David
-
--- 
-  Vitaly
+Seems the best way to do is to create a kernel thread per core like in NFS and
+depending on the load of the system use these threads.
+Regards Nick
