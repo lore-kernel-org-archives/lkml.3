@@ -1,127 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127AbaG2RiL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 13:38:11 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:41032 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085AbaG2RiJ (ORCPT
+	id S1751612AbaG2RkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 13:40:07 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:58932 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbaG2RkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 13:38:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <53D7D680.9080803@gmail.com>
-References: <CAPDOMViXEgN1U8Og52Fd7EaM86Ad2Dfex9TVQ-+tRZ9SL9Kcig@mail.gmail.com>
-	<53D5BBCA.3020109@gmail.com>
-	<CAPDOMVjB9ErEwA7mf91X7pff5LAkeT=BT4pR7TuoEp3LL333Lg@mail.gmail.com>
-	<53D6218A.5080401@gmail.com>
-	<CAPDOMVg869TJJPgrW86XaMT2WyisbT9fg0jLETCAvg59xpvs4Q@mail.gmail.com>
-	<CAPDOMVh5kFE2kZtnpjQdAv1n+7FN=X_oc3YRyWOxpPmo=qW_cQ@mail.gmail.com>
-	<53D67828.3040802@gmail.com>
-	<CAPDOMVhNAqF_KSeT9MamLgk8Mwe1Qb3uZRK9oipE_49ScO8UHQ@mail.gmail.com>
-	<CAPDOMViwEA1HXXCukUfJ0fJgnCKT1cWxyCkcD9v5+2yYu=r6Hw@mail.gmail.com>
-	<53D7D680.9080803@gmail.com>
-Date: Tue, 29 Jul 2014 13:38:08 -0400
-Message-ID: <CAPDOMVis02Hj6FLLB5wMzB1dnqubB1Fzp+MxtrfsRiu-mYOU7w@mail.gmail.com>
-Subject: Re: Multi Core Support for compression in compression.c
-From: Nick Krause <xerofoify@gmail.com>
-To: Austin S Hemmelgarn <ahferroin7@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
-	<linux-btrfs@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 29 Jul 2014 13:40:05 -0400
+From: Rob Jones <rob.jones@codethink.co.uk>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kernel@lists.codethink.co.uk, viro@ZenIV.linux.org.uk,
+        ebiederm@xmission.com, ian.molton@codethink.co.uk,
+        rob.jones@codethink.co.uk
+Subject: [PATCH] seq_file: Allow private data to be supplied on seq_open
+Date: Tue, 29 Jul 2014 18:39:53 +0100
+Message-Id: <1406655593-12626-1-git-send-email-rob.jones@codethink.co.uk>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 1:14 PM, Austin S Hemmelgarn
-<ahferroin7@gmail.com> wrote:
-> On 2014-07-29 13:08, Nick Krause wrote:
->> On Mon, Jul 28, 2014 at 2:36 PM, Nick Krause <xerofoify@gmail.com> wrote:
->>> On Mon, Jul 28, 2014 at 12:19 PM, Austin S Hemmelgarn
->>> <ahferroin7@gmail.com> wrote:
->>>> On 2014-07-28 11:57, Nick Krause wrote:
->>>>> On Mon, Jul 28, 2014 at 11:13 AM, Nick Krause <xerofoify@gmail.com>
->>>>> wrote:
->>>>>> On Mon, Jul 28, 2014 at 6:10 AM, Austin S Hemmelgarn
->>>>>> <ahferroin7@gmail.com> wrote:
->>>>>>> On 07/27/2014 11:21 PM, Nick Krause wrote:
->>>>>>>> On Sun, Jul 27, 2014 at 10:56 PM, Austin S Hemmelgarn
->>>>>>>> <ahferroin7@gmail.com> wrote:
->>>>>>>>> On 07/27/2014 04:47 PM, Nick Krause wrote:
->>>>>>>>>> This may be a bad idea , but compression in brtfs seems
->>>>>>>>>> to be only using one core to compress. Depending on the
->>>>>>>>>> CPU used and the amount of cores in the CPU we can make
->>>>>>>>>> this much faster with multiple cores. This seems bad by
->>>>>>>>>> my reading at least I would recommend for writing
->>>>>>>>>> compression we write a function to use a certain amount
->>>>>>>>>> of cores based on the load of the system's CPU not using
->>>>>>>>>> more then 75% of the system's CPU resources as my system
->>>>>>>>>> when idle has never needed more then one core of my i5
->>>>>>>>>> 2500k to run when with interrupts for opening eclipse are
->>>>>>>>>> running. For reading compression on good core seems fine
->>>>>>>>>> to me as testing other compression software for reads ,
->>>>>>>>>> it's way less CPU intensive. Cheers Nick
->>>>>>>>> We would probably get a bigger benefit from taking an
->>>>>>>>> approach like SquashFS has recently added, that is,
->>>>>>>>> allowing multi-threaded decompression fro reads, and
->>>>>>>>> decompressing directly into the pagecache. Such an approach
->>>>>>>>> would likely make zlib compression much more scalable on
->>>>>>>>> large systems.
->>>>>>>>>
->>>>>>>>>
->>>>>>>>
->>>>>>>> Austin, That seems better then my idea as you seem to be more
->>>>>>>> up to date on brtfs devolopment. If you and the other
->>>>>>>> developers of brtfs are interested in adding this as a
->>>>>>>> feature please let me known as I would like to help improve
->>>>>>>> brtfs as the file system as an idea is great just seems like
->>>>>>>> it needs a lot of work :). Nick
->>>>>>> I wouldn't say that I am a BTRFS developer (power user maybe?),
->>>>>>> but I would definitely say that parallelizing compression on
->>>>>>> writes would be a good idea too (especially for things like
->>>>>>> lz4, which IIRC is either in 3.16 or in the queue for 3.17).
->>>>>>> Both options would be a lot of work, but almost any performance
->>>>>>> optimization would.  I would almost say that it would provide a
->>>>>>> bigger performance improvement to get BTRFS to intelligently
->>>>>>> stripe reads and writes (at the moment, any given worker thread
->>>>>>> only dispatches one write or read to a single device at a
->>>>>>> time, and any given write() or read() syscall gets handled by
->>>>>>> only one worker).
->>>>>>>
->>>>>>
->>>>>> I will look into this idea and see if I can do this for writes.
->>>>>> Regards Nick
->>>>>
->>>>> Austin, Seems since we don't want to release the cache for inodes
->>>>> in order to improve writes if are going to use the page cache. We
->>>>> seem to be doing this for writes in end_compressed_bio_write for
->>>>> standard pages and in end_compressed_bio_write. If we want to cache
->>>>> write pages why are we removing then ? Seems like this needs to be
->>>>> removed in order to start off. Regards Nick
->>>>>
->>>> I'm not entirely sure, it's been a while since I went exploring in the
->>>> page-cache code.  My guess is that there is some reason that you and I
->>>> aren't seeing that we are trying for write-around semantics, maybe one
->>>> of the people who originally wrote this code could weigh in?  Part of
->>>> this might be to do with the fact that normal page-cache semantics
->>>> don't always work as expected with COW filesystems (cause a write goes
->>>> to a different block on the device than a read before the write would
->>>> have gone to).  It might be easier to parallelize reads first, and
->>>> then work from that (and most workloads would probably benefit more
->>>> from the parallelized reads).
->>>>
->>> I will look into this later today and work on it then.
->>> Regards Nick
->>
->> Seems the best way to do is to create a kernel thread per core like in NFS and
->> depending on the load of the system use these threads.
->> Regards Nick
->>
-> It might be more work now, but it would probably be better in the long
-> run to do it using kernel workqueues, as they would provide better
-> support for suspend/hibernate/resume, and then you wouldn't need to
-> worry about scheduling or how many CPU cores are in the system.
->
+Create a function seq_open_priv() that is identical to seq_open() except
+that it accepts a void * parameter that it stores in the private field
+of the struct seq_file.
 
-Seems better then my ideas , I will need to work on this later as for now I have
-some reading on the Linux networking stack.
-Regards Nick
+Document seq_open_priv().
+
+Some consumers of the seq_file interface need to pass data to their
+iterators that is best obtained at the time the seq_file is opened.
+
+At the moment these consumers have to obtain the struct seq_file pointer
+(stored by seq_open() in file->private_data) and then store a pointer to
+their own data in the private field of the struct seq_file so that it
+can be accessed by the iterator functions.
+
+Although this is not a long piece of code it is unneccessary boilerplate.
+
+seq_open() remains in place and its behaviour remains unchanged so no
+existing code should be broken by this patch.
+
+Signed-off-by: Ian Molton <ian.molton@codethink.co.uk>
+Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
+---
+ Documentation/filesystems/seq_file.txt |    9 +++++++++
+ fs/seq_file.c                          |   30 ++++++++++++++++++++++++++++--
+ include/linux/seq_file.h               |    1 +
+ 3 files changed, 38 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/filesystems/seq_file.txt b/Documentation/filesystems/seq_file.txt
+index a1e2e0d..128ffee 100644
+--- a/Documentation/filesystems/seq_file.txt
++++ b/Documentation/filesystems/seq_file.txt
+@@ -226,6 +226,15 @@ be used for more than one file, you can store an arbitrary pointer in the
+ private field of the seq_file structure; that value can then be retrieved
+ by the iterator functions.
+ 
++There is also a function seq_open_priv() which behaves identically to
++seq_open() except that it takes an additional void * parameter that it
++stores in the private field of the seq_file structure, thereby making it
++available to the start function and thus all subsequent iterator functions
++Note that a corresponding wrapper function for seq_release() may need to
++be created to free any resources allocated by an open function that uses
++this capability (although, for simple cases, seq_release_private() may
++suffice).
++
+ The other operations of interest - read(), llseek(), and release() - are
+ all implemented by the seq_file code itself. So a virtual file's
+ file_operations structure will look like:
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index 1d641bb..9a0db94 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -31,9 +31,10 @@ static void seq_set_overflow(struct seq_file *m)
+ }
+ 
+ /**
+- *	seq_open -	initialize sequential file
++ *	seq_open_priv -	initialize sequential file with private data
+  *	@file: file we initialize
+  *	@op: method table describing the sequence
++ *	@d: private data to be made available to the iterator functions
+  *
+  *	seq_open() sets @file, associating it with a sequence described
+  *	by @op.  @op->start() sets the iterator up and returns the first
+@@ -43,8 +44,12 @@ static void seq_set_overflow(struct seq_file *m)
+  *	ERR_PTR(error).  In the end of sequence they return %NULL. ->show()
+  *	returns 0 in case of success and negative number in case of error.
+  *	Returning SEQ_SKIP means "discard this element and move on".
++ *
++ *	Supplying @d allows data that is only available at the time the file
++ *	is opened to be supplied to @op->start() (and thereby to @op->next()
++ *	as well).
+  */
+-int seq_open(struct file *file, const struct seq_operations *op)
++int seq_open_priv(struct file *file, const struct seq_operations *op, void *d)
+ {
+ 	struct seq_file *p = file->private_data;
+ 
+@@ -57,6 +62,7 @@ int seq_open(struct file *file, const struct seq_operations *op)
+ 	memset(p, 0, sizeof(*p));
+ 	mutex_init(&p->lock);
+ 	p->op = op;
++	p->private = d;
+ #ifdef CONFIG_USER_NS
+ 	p->user_ns = file->f_cred->user_ns;
+ #endif
+@@ -80,6 +86,26 @@ int seq_open(struct file *file, const struct seq_operations *op)
+ 	file->f_mode &= ~FMODE_PWRITE;
+ 	return 0;
+ }
++EXPORT_SYMBOL(seq_open_priv);
++
++/**
++ *	seq_open -	initialize sequential file
++ *	@file: file we initialize
++ *	@op: method table describing the sequence
++ *
++ *	seq_open() sets @file, associating it with a sequence described
++ *	by @op.  @op->start() sets the iterator up and returns the first
++ *	element of sequence. @op->stop() shuts it down.  @op->next()
++ *	returns the next element of sequence.  @op->show() prints element
++ *	into the buffer.  In case of error ->start() and ->next() return
++ *	ERR_PTR(error).  In the end of sequence they return %NULL. ->show()
++ *	returns 0 in case of success and negative number in case of error.
++ *	Returning SEQ_SKIP means "discard this element and move on".
++ */
++int seq_open(struct file *file, const struct seq_operations *op)
++{
++	return seq_open_priv(file, op, NULL);
++}
+ EXPORT_SYMBOL(seq_open);
+ 
+ static int traverse(struct seq_file *m, loff_t offset)
+diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
+index 52e0097..fce87af 100644
+--- a/include/linux/seq_file.h
++++ b/include/linux/seq_file.h
+@@ -95,6 +95,7 @@ static inline void seq_setwidth(struct seq_file *m, size_t size)
+ void seq_pad(struct seq_file *m, char c);
+ 
+ char *mangle_path(char *s, const char *p, const char *esc);
++int seq_open_priv(struct file *, const struct seq_operations *, void *);
+ int seq_open(struct file *, const struct seq_operations *);
+ ssize_t seq_read(struct file *, char __user *, size_t, loff_t *);
+ loff_t seq_lseek(struct file *, loff_t, int);
+-- 
+1.7.10.4
+
