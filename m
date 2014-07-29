@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809AbaG2MDl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 08:03:41 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:47156 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327AbaG2MDj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 08:03:39 -0400
-Message-ID: <1406635365.25105.18.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 1/2] X.509: x509_request_asymmetric_keys() doesn't need
- string length arguments
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: d.kasatkin@samsung.com, keyrings@linux-nfs.org,
+	id S1752763AbaG2L6o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 07:58:44 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:51634 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750825AbaG2L6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 07:58:41 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: driverdev-devel@linuxdriverproject.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Date: Tue, 29 Jul 2014 08:02:45 -0400
-In-Reply-To: <20140728135449.18307.38548.stgit@warthog.procyon.org.uk>
-References: <20140728135449.18307.38548.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072912-1542-0000-0000-0000039DA22A
+Subject: [PATCH 02/19] staging: comedi: amplc_pci230: fix checkpatch line over 80 characters
+Date: Tue, 29 Jul 2014 12:58:10 +0100
+Message-Id: <1406635107-27950-3-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1406635107-27950-1-git-send-email-abbotti@mev.co.uk>
+References: <1406635107-27950-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-28 at 14:54 +0100, David Howells wrote: 
-> x509_request_asymmetric_keys() doesn't need the lengths of the NUL-terminated
-> strings passing in as it can work that out for itself.
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+ drivers/staging/comedi/drivers/amplc_pci230.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-
-> ---
->  crypto/asymmetric_keys/x509_public_key.c |    9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
-> 
-> diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-> index a0f7cd196c9b..4ae982234d78 100644
-> --- a/crypto/asymmetric_keys/x509_public_key.c
-> +++ b/crypto/asymmetric_keys/x509_public_key.c
-> @@ -48,11 +48,10 @@ __setup("ca_keys=", ca_keys_setup);
->   */
->  static struct key *x509_request_asymmetric_key(struct key *keyring,
->  					       const char *signer,
-> -					       size_t signer_len,
-> -					       const char *authority,
-> -					       size_t auth_len)
-> +					       const char *authority)
->  {
->  	key_ref_t key;
-> +	size_t signer_len = strlen(signer), auth_len = strlen(authority);
->  	char *id;
-> 
->  	/* Construct an identifier. */
-> @@ -193,9 +192,7 @@ static int x509_validate_trust(struct x509_certificate *cert,
->  		return -EPERM;
-> 
->  	key = x509_request_asymmetric_key(trust_keyring,
-> -					  cert->issuer, strlen(cert->issuer),
-> -					  cert->authority,
-> -					  strlen(cert->authority));
-> +					  cert->issuer, cert->authority);
->  	if (!IS_ERR(key))  {
->  		if (!use_builtin_keys
->  		    || test_bit(KEY_FLAG_BUILTIN, &key->flags))
-> 
-
+diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
+index cb86d04..c6c3c4a 100644
+--- a/drivers/staging/comedi/drivers/amplc_pci230.c
++++ b/drivers/staging/comedi/drivers/amplc_pci230.c
+@@ -664,10 +664,8 @@ static inline void pci230_ao_write_nofifo(struct comedi_device *dev,
+ 	devpriv->ao_readback[chan] = datum;
+ 
+ 	/* Write mangled datum to appropriate DACOUT register. */
+-	outw(pci230_ao_mangle_datum(dev, datum), dev->iobase + (((chan) == 0)
+-								? PCI230_DACOUT1
+-								:
+-								PCI230_DACOUT2));
++	outw(pci230_ao_mangle_datum(dev, datum),
++	     dev->iobase + (((chan) == 0) ? PCI230_DACOUT1 : PCI230_DACOUT2));
+ }
+ 
+ static inline void pci230_ao_write_fifo(struct comedi_device *dev,
+-- 
+2.0.0
 
