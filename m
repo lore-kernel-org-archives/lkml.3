@@ -1,82 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102AbaG2SrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 14:47:11 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:50844 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaG2SrK (ORCPT
+	id S1751678AbaG2SwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 14:52:10 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33395 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261AbaG2SwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 14:47:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stefan Agner <stefan@agner.ch>
-Cc: linux-arm-kernel@lists.infradead.org, shawn.guo@freescale.com,
-        kernel@pengutronix.de, peter.chen@freescale.com,
-        linux-kernel@vger.kernel.org, jingchang.lu@freescale.com
-Subject: Re: [PATCH] ARM: imx: clk-vf610: introduce clks_init_on
-Date: Tue, 29 Jul 2014 20:47:06 +0200
-Message-ID: <4686885.gCEsaTZ3ps@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-23-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <2a672a5d28af5425e1c406b0607befd5@agner.ch>
-References: <1406643628-4061-1-git-send-email-stefan@agner.ch> <2815679.ZycfkLhBgI@wuerfel> <2a672a5d28af5425e1c406b0607befd5@agner.ch>
+	Tue, 29 Jul 2014 14:52:06 -0400
+Date: Tue, 29 Jul 2014 19:51:46 +0100
+From: Mark Brown <broonie@kernel.org>
+To: "Murphy, Dan" <dmurphy@ti.com>
+Cc: "linux-sound@vger.kernel.org" <linux-sound@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Message-ID: <20140729185146.GF17528@sirena.org.uk>
+References: <1405704668-8038-1-git-send-email-dmurphy@ti.com>
+ <1405704668-8038-2-git-send-email-dmurphy@ti.com>
+ <20140721115353.GV17528@sirena.org.uk>
+ <00FC9A978A94B7418C33AFAE8A35ED49DA8D1E@DFLE09.ent.ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:uz6hc2hE9OEji6SmXV1vF7JJxdQEPpInHfeG9nbQnO6
- omPHjFn495aWpSGM+4uG14sYhlo9LQGjlI/WpZNnNXTVcrgUTq
- 9Pis6K6cDGKQzHSyrGcfxReDhTCrPgce9NVrFjXUGg5wDIL93c
- xnyA3+/IXn2z639lGG8QXFfBiDYvk4ch8bC0C2s47x6iFiekn5
- d5RX9fFJwsAOY9kY1DtT9u1j6zp9ryLzZoz4PmBrDRQMJdiirE
- ZW/dD1ipYJWxNLsxnmS/8UyRzoL0xgZlnscGK/t5Dq0coJ7txF
- mSeEJqKICsPa9Jpt0BEzgSYf32NN5BE6gDn6+s6zvBRKuoi6A/
- gl+bIYQP7gkNUVYRyKFs=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oKuqsEW27CKFx7x1"
+Content-Disposition: inline
+In-Reply-To: <00FC9A978A94B7418C33AFAE8A35ED49DA8D1E@DFLE09.ent.ti.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] ASoC: tas2552: Add DAPM calls for amp and PLL
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 29 July 2014 20:39:20 Stefan Agner wrote:
-> Am 2014-07-29 16:44, schrieb Arnd Bergmann:
-> > On Tuesday 29 July 2014 16:20:28 Stefan Agner wrote:
-> >> At the end of the boot process, the clock framework might disable
-> >> required main PLL's. So far, this was no issue since drivers
-> >> requested clocks, which are descended of the main PLL's (e.g.
-> >> pll1_pfd1, which provides the system clock).
-> >>
-> >> To archive the full 500MHz system clock, DDR clock need to be a
-> >> descendant of PLL2 rather than PLL1 (DDRC_CLK_SEL set to 0). The
-> >> bootloader sets up the clocks accordingly before making use of
-> >> DDR at all. However, in Linux, there is no driver using PLL2,
-> >> which lead to PLL2 being disabled by the clock framework.
-> >>
-> >> With this patch, we make sure that the main system clock and the
-> >> DDR clock are initially enabled and are kept enabled.
-> >>
-> >> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> >>
-> > 
-> > Wouldn't it be better to list this in the DT as a default for
-> > the respective clocks?
-> > 
-> 
-> What do you mean by that exactly? Creating a driver for the main PLL's
-> and add device tree entries to instantiate them, along with a property
-> like "boot-enabled" or similar?
 
-I was under the assumption that you already have a driver for the main PLL,
-I think most other SoCs have that.
+--oKuqsEW27CKFx7x1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-We talked about the general problem at some point during a conference
-and the conclusion was that it makes most sense to have defaults encoded
-as properties in the device node of the clock controller. If you don't
-have a device node for that, it won't work.
+On Fri, Jul 25, 2014 at 06:54:19PM +0000, Murphy, Dan wrote:
+> On 07/21/2014 06:54 AM, Mark Brown wrote:
+> > On Fri, Jul 18, 2014 at 12:31:08PM -0500, Dan Murphy wrote:
 
-> The approach chosen in this patch is aligned the way it's done for i.MX6
-> (see arch/arm/mach-imx/clk-imx6q.c). The whole clock module(s) in Vybrid
-> are slightly striped variants found in i.MX6. For now, I would prefer to
-> leave it that way. 
+> >> +static const struct snd_soc_dapm_widget tas2552_dapm_widgets[] =
+> >> +{
+> >> +SND_SOC_DAPM_PRE("Class D Enable", tas2552_class_d_en),
+> >> +SND_SOC_DAPM_POST("Class D Disable", tas2552_class_d_en),
+> >> +SND_SOC_DAPM_POST("PLL Disable", tas2552_pll_disable),
+> >> +};
 
-Ok, makes sense. Just leave it like this then. I believe i.MX is a bit
-different from other SoCs, because it adopted some concepts like common
-clk earlier than the rest, but consistency within the family is more
-important than consistency across SoC families.
+> > This seems broken, having to use _PRE or _POST widgets for simple
+> > register writes (or almost anything really) should never be required and
+> > error prone - what is this actually trying to do?  I'd expect the class
+> > D to be a PGA or OUTPUT widget and the PLL to be a SUPPLY widget.
 
-	Arnd
+> I need a little help here.
+> I am not seeing the PLL being disabled or Class D being disabled when
+> I am using the DAPM calls
+
+> My implementation is like this.  And I use set these widgets and audio
+> map in the call back functions in the struct snd_soc_codec_driver.
+
+> When I look at the registers after stream playback I see that
+> the TAS2552_CFG_2 register is untouched
+
+> static const struct snd_soc_dapm_widget tas2552_dapm_widgets[] =
+> {
+> SND_SOC_DAPM_AIF_IN("DAC IN", NULL, 0, SND_SOC_NOPM, 0, 0),
+> SND_SOC_DAPM_DAC("DAC", NULL, SND_SOC_NOPM, 0, 0),
+> SND_SOC_DAPM_OUT_DRV("ClassD Enable", TAS2552_CFG_2, 7, 0, NULL, 0),
+> SND_SOC_DAPM_OUT_DRV("ClassD Disable", TAS2552_CFG_2, 7, 1, NULL, 0),
+> SND_SOC_DAPM_SUPPLY("PLL Disable", TAS2552_CFG_2, 3, 1, NULL, 0),
+> SND_SOC_DAPM_OUTPUT("OUT")
+> };
+
+> static const struct snd_soc_dapm_route tas2552_audio_map[] = {
+>     {"DAC", NULL, "DAC IN"},
+>     {"ClassD Enable", NULL, "DAC"},
+>     {"OUT", NULL, "ClassD Enable"},
+>     {"ClassD Disable", NULL, "OUT"},
+>     {"PLL Disable", NULL, "ClassD Disable"}
+> };
+
+This looks very confused, why do you have separate enable and disable
+things - what do you think the effect of the above should be?  That's
+probably what's going wrong.  I'd expect to see one DAPM widget for the
+class D and one for the PLL.
+
+--oKuqsEW27CKFx7x1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT1+0/AAoJELSic+t+oim9VawP/jRdz6vZL+DGv+WlPT/siM2q
+QDvUQPa9Zqp3heZRC2aMQ/6TfM2cNJQPjYcS28yKRatwDs4tqxiMDDpiqxxR9E4h
+2YaLhaLmPHzR8jafYDpvbnTnWwIW5tGfen8bSsvCGa8u5bYKU/omMH9RJKvhli3d
+xfOPdKsKz2dCKhE8124qY6OfIDlARXATB2/X6TQfuGq0BUNpfIugB2pqnSlVKn4J
+DrHNxBRx2/LF1rCuehI7fUk8iHejVmJgYYmKSGE02Rwt47jYrrj6fzQrDhFiYXW+
+sCAkGJh9O3e0LFrQ6aJ0aPi7P+Ijptp3HepZoVQOmdWVJUBPTNeCrLe+FejjZ1aS
+xDZJvz5Gp4curq5M+286DcLUbNrOvdS4Y40vFItvunrG3px0wS3MSaummnHmSEoD
+/IaU1rTenmPdBKpHKGi/6CQRjqU3RN9lvLUjJE+tGyLX53VzDouCattX0GCcB1RO
+mkJtPbWMkZIh18fLEfikDxnx9uzjZmZ/qCrT3oYksDg891L3qc9Y/eHMKPGhhtKe
+QXLjeptXdGESjlffVZltaRlmbAkdN1hHiEBxMOAkZvhCBfs9xGdptzECavN9bxlc
+6CFVXQxE7QNVwb78jA8C9y7kvjjRrOrItcnWiX1DC4a4Wfr2g/E2jpD6MuvwKCG/
+4ujYVPng14ymBjcrJQsN
+=j1jy
+-----END PGP SIGNATURE-----
+
+--oKuqsEW27CKFx7x1--
