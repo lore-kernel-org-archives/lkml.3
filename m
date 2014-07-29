@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597AbaG2XjZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 19:39:25 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:59615 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754433AbaG2XjX (ORCPT
+	id S1754617AbaG2Xjy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 19:39:54 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:54661 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754460AbaG2XjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 19:39:23 -0400
-Date: Tue, 29 Jul 2014 16:39:20 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [patch] mm, oom: remove unnecessary exit_state check
-Message-ID: <alpine.DEB.2.02.1407291638310.858@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 29 Jul 2014 19:39:14 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v2 RESEND 2/4] drivers: of: initialize and assign
+ reserved memory to newly created devices
+To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Nishanth Peethambaran <nishanth.p@gmail.com>,
+        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>,
+        Jon Medhurst <tixy@linaro.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "Aneesh Kumar K.V." <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <53D7B3E8.6070906@samsung.com>
+References: <1405326487-15346-1-git-send-email-m.szyprowski@samsung.com>
+	<1405326487-15346-3-git-send-email-m.szyprowski@samsung.com>
+	<20140728141700.55FC4C408EA@trevor.secretlab.ca>
+	<53D7B3E8.6070906@samsung.com>
+Date: Tue, 29 Jul 2014 13:46:46 -0600
+Message-Id: <20140729194646.D9764C40685@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The oom killer scans each process and determines whether it is eligible for oom 
-kill or whether the oom killer should abort because of concurrent memory 
-freeing.  It will abort when an eligible process is found to have TIF_MEMDIE 
-set, meaning it has already been oom killed and we're waiting for it to exit.
+On Tue, 29 Jul 2014 16:47:04 +0200, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+> Hello,
+> 
+> On 2014-07-28 16:17, Grant Likely wrote:
+> > On Mon, 14 Jul 2014 10:28:05 +0200, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+> >> Use recently introduced of_reserved_mem_device_init() function to
+> >> automatically assign respective reserved memory region to the newly created
+> >> platform and amba device.
+> >>
+> >> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> > I'm still not okay with this patch. I don't think it is appropriate to
+> > add the hook into the generic path that gets used for every platform
+> > device. The devices that need reserved memory should explicitly request
+> > it, and any setup be done at that time.
+> 
+> Okay... I thought that it will be easier to have it done in generic 
+> code, if You don't
+> think so, then I give up and we will add it in all drivers requiring 
+> such memory regions.
 
-Processes with task->mm == NULL should not be considered because they are either 
-kthreads or have already detached their memory and killing them would not lead 
-to memory freeing.  That memory is only freed after exit_mm() has returned, 
-however, and not when task->mm is first set to NULL.
+The problem is that it makes the big assumption that every device is
+going to conform to the pattern without any recourse if something
+special needs to be done (such as to handle quirks). It also puts this
+code into the probe path of every device, when the vast majority of
+device drivers just don't care. When code like this is run
+unconditionally from generic code, it becomes really difficult to
+override when needed.
 
-Clear TIF_MEMDIE after exit_mm()'s mmput() so that an oom killed process is no 
-longer considered for oom kill, but only until exit_mm() has returned.  This was 
-fragile in the past because it relied on exit_notify() to be reached before no 
-longer considering TIF_MEMDIE processes.
+I've made the same comment on the PM clock domain patches.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- kernel/exit.c | 1 +
- mm/oom_kill.c | 2 --
- 2 files changed, 1 insertion(+), 2 deletions(-)
+> What about patch 3/4 and 4/4? Would it be possible to have your ack to 
+> get them merged?
+> Right now patch 4/4 depends on changes from akpm tree, so it will be 
+> best to merge them
+> to akpm tree.
 
-diff --git a/kernel/exit.c b/kernel/exit.c
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -455,6 +455,7 @@ static void exit_mm(struct task_struct * tsk)
- 	task_unlock(tsk);
- 	mm_update_next_owner(mm);
- 	mmput(mm);
-+	clear_thread_flag(TIF_MEMDIE);
- }
- 
- /*
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -258,8 +258,6 @@ enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
- 		unsigned long totalpages, const nodemask_t *nodemask,
- 		bool force_kill)
- {
--	if (task->exit_state)
--		return OOM_SCAN_CONTINUE;
- 	if (oom_unkillable_task(task, NULL, nodemask))
- 		return OOM_SCAN_CONTINUE;
- 
+I'll take a look.
+
+g.
+
