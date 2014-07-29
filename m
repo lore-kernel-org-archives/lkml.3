@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715AbaG2NOy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 09:14:54 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50521 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752101AbaG2NOw (ORCPT
+	id S1753749AbaG2NQC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 09:16:02 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47714 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753347AbaG2NQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 09:14:52 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
-Date: Tue, 29 Jul 2014 15:33:23 +0200
-Message-ID: <3042738.6Ohp3GcNCj@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.10.1407291445570.4129@nanos>
-References: <20140724212620.GO3935@laptop> <1629826.p5Zlf8Riij@vostro.rjw.lan> <alpine.DEB.2.10.1407291445570.4129@nanos>
+	Tue, 29 Jul 2014 09:16:00 -0400
+Date: Tue, 29 Jul 2014 15:15:56 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, pjt@google.com,
+        bsegall@google.com, arjan.van.de.ven@intel.com, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
+        fengguang.wu@intel.com
+Subject: Re: [PATCH 2/2 v4] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140729131556.GD3935@laptop>
+References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
+ <1405639567-21445-3-git-send-email-yuyang.du@intel.com>
+ <20140728104837.GQ6758@twins.programming.kicks-ass.net>
+ <20140729005640.GA5203@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140729005640.GA5203@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 29, 2014 02:46:41 PM Thomas Gleixner wrote:
-> On Tue, 29 Jul 2014, Rafael J. Wysocki wrote:
+On Tue, Jul 29, 2014 at 08:56:41AM +0800, Yuyang Du wrote:
+> On Mon, Jul 28, 2014 at 12:48:37PM +0200, Peter Zijlstra wrote:
+> > > +static __always_inline u64 decay_load(u64 val, u64 n)
+> > > +{
+> > > +	if (likely(val <= UINT_MAX))
+> > > +		val = decay_load32(val, n);
+> > > +	else {
+> > > +		val *= (u32)decay_load32(1 << 15, n);
+> > > +		val >>= 15;
+> > > +	}
+> > > +
+> > > +	return val;
+> > > +}
+> > 
+> > Please just use mul_u64_u32_shr().
+> > 
+> > /me continues reading the rest of it..
 > 
-> > On Monday, July 28, 2014 11:53:15 PM Rafael J. Wysocki wrote:
-> > > On Monday, July 28, 2014 02:33:41 PM Thomas Gleixner wrote:
-> > > > On Mon, 28 Jul 2014, Peter Zijlstra wrote:
-> > > > > On Sat, Jul 26, 2014 at 01:49:17PM +0200, Rafael J. Wysocki wrote:
-> > 
-> > [cut]
-> > 
-> > > > So we are not going to make everything a single stupid flag and limit
-> > > > the usability of existing code. We rather go and try to remove the
-> > > > stupid flag before it becomes more wide spread.
-> > > > 
-> > > > And we cannot treat the wakeup thing the same way as the
-> > > > IRQF_NO_SUSPEND flag, because there is hardware where the irq line
-> > > > must be disabled at the normal (non suspend) interrupt controller, and
-> > > > the wake mechanism tells the PM microcontroller to monitor the
-> > > > interrupt line and kick the machine back to life.
-> > > > 
-> > > > So we need to very carefully look at all the existing cases instead of
-> > > > yelling crap and inflicting x86 specific horror on everyone. I said on
-> > > > friday, that I need to look at ALL use cases first and I meant it.
-> > > 
-> > > Regardless of the use case, I don't think it is necessary to manipulate
-> > > the interrupt controller settings before the syscore_suspend stage, because
-> > > if an interrupt happens earlier, we need to handle it pretty much in a normal
-> > > way, unless it has been suspended.
-> > > 
-> > > So I'd argue for not using anything like enable_irq_wake() that goes all
-> > > the way to the hardware in drivers.  Instead, we could allow drivers to
-> > > mark interrupts as "set this up for system wakeup" and really do the setup
-> > > right before putting the platform into the final "suspended" state.  And that
-> > > is totally independend of the IRQF_NO_SUSPEND thing.
-> > 
-> > In addition to that we need the interrupt handler of the driver that requested
-> > the irq to be set up for system wakeup to be invoked after suspend_device_irqs()
-> > in case there are interrupts that should abort the suspend transition or we
-> > can lose a wakeup event.  So whatever interface we decide to use it has to
-> > affect suspend/resume_device_irqs() pretty much in the same way as the
-> > IRQF_NO_SUSPEND flag.
-> 
-> Right, that's a different issue. We probably want that even for the
-> existing irq_wake() users.
+> Good. Since 128bit is considered in mul_u64_u32_shr, load_sum can
+> afford more tasks :)
 
-I agree.
+96bit actually. While for 64bit platforms it uses the 64x64->128 mult it
+only uses 2 32x32->64 mults for 32bit, which isn't sufficient for 128 as
+that would require 4.
 
-There's one more thing to consider here.  Going forward we'll want to avoid
-touching runtime-suspended devices during system suspend.  Then, system wakeup
-devices will need to mark their IRQs for system wakeup at the runtime suspend
-time and I'm not sure if that's the right time for calling enable_irq_wake().
+It also reduces to 1 32x32->64 mult (on 32bit) in case val fits in
+32bit.
 
-Rafael
-
+Therefore its as efficient as your code, but more accurate for not
+loosing bits in the full (val is bigger than 32bit) case.
