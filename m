@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811AbaG2H7z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 03:59:55 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:37862 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776AbaG2H7y (ORCPT
+	id S1752845AbaG2IAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 04:00:22 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:44929 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751044AbaG2IAU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 03:59:54 -0400
-Message-ID: <53D7542E.7060103@linaro.org>
-Date: Tue, 29 Jul 2014 15:58:38 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 19/19] Documentation: ACPI for ARM64
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>	<1406206825-15590-20-git-send-email-hanjun.guo@linaro.org> <CAOesGMhKHGkVK3dOLXXx9GQBMxDmjBu1WDBgHmwdGe1UK3jfcg@mail.gmail.com>
-In-Reply-To: <CAOesGMhKHGkVK3dOLXXx9GQBMxDmjBu1WDBgHmwdGe1UK3jfcg@mail.gmail.com>
+	Tue, 29 Jul 2014 04:00:20 -0400
+Date: Tue, 29 Jul 2014 10:00:17 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: =?UTF-8?B?SmnFmcOt?= Prchal <jiri.prchal@aksignal.cz>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
+        voice.shen@atmel.com, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH] ARM: at91: spi: request all csgpio in spi probe
+Message-ID: <20140729100017.31f0b1be@bbrezillon>
+In-Reply-To: <20140728223859.GA3214@piout.net>
+References: <b033d16ec31d26a895726ee72ec89b43943dfbae.1406547656.git.jiri.prchal@aksignal.cz>
+	<20140728122103.GR9532@piout.net>
+	<53D64ADA.1000102@aksignal.cz>
+	<20140728223859.GA3214@piout.net>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-7-27 10:34, Olof Johansson wrote:
-> On Thu, Jul 24, 2014 at 6:00 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
->> From: Graeme Gregory <graeme.gregory@linaro.org>
->>
->> Add documentation for the guidelines of how to use ACPI
->> on ARM64.
+Hi Alexandre,
+
+On Tue, 29 Jul 2014 00:38:59 +0200
+Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+
 > 
-> As the most vocal participant against ACPI being adopted, I would have
-> appreciated a cc on this patch set -- it's not like you were going for
-> a minimal set of cc recipients already. It makes it seem like you're
-> trying to sneak it past me for comments. Not cool. I know that's
-> probably not your intent, but still.
+> > >>+		if (ret < 0) {
+> > >>+			dev_err(&pdev->dev,
+> > >>+				"failed to configure csgpio#%u (%d)\n",
+> > >>+				i, ret);
+> > >>+			goto out_free;
+> > >>+		}
+> > >>+	}
+> > >>+
+> 
+> Mark: maybe it would make sense to do devm_gpio_request_one() in
+> of_spi_register_master(), after of_get_named_gpio.
 
-My bad, I'm sorry for that. Actually it was not my intention, I was not
-playing with a full deck when I sent this patch set out, I missed someone
-else (such as Rob) in the CC list and I even added private mailing list
-in CC.
+Might be the cleanest way to solve this issue, but you'll have to modify
+all the drivers that request cs_gpio in their setup method/callback.
 
-I'm sure you will in the CC list with next version.
+> 
+> While this solves the particular issue Jiří is seeing, this will not
+> solve the case where PA14 (CS0) is not used by the spi driver at all. It
+> will remained muxed as CS0 and toggle when the spi master needs to
+> access CS0 until another driver muxes it to something else. I still
+> believe we should explicitly ask pinctrl to mux them as gpios.
+> 
 
-Thanks
-Hanjun
+Do we really care about this case ?
+After all, if a given pin needs a specific muxing during kernel boot
+(i.e. a pin connected to a gpio-led that needs to stay in its previous
+state or a pin connected to the reset line of a device that needs to
+stay up and running during kernel boot) the bootloader/bootstrap should
+have muxed this pin appropriately before booting the kernel.
 
+What do you mean by "we should explicitly ask pinctrl to mux them as
+gpios" ?
+Do you mean configuring all the pins as GPIOs when the pin controller is
+probed, or just adding a new pinctrl state configuring the pin as an
+output GPIO and reference it in the pinctrl-0 property of the spi
+controller.
+
+If the former, you'll break devices that needs their pins to stay in
+the state they were during the bootloader/boostrap phase.
+The latter won't work if the pin you request as GPIO is later requested
+by another device (which, if I'm correct, is exactly the case you're
+trying to solve).
+
+Best Regards,
+
+Boris
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
