@@ -1,76 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532AbaG2XMn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 19:12:43 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29589 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751889AbaG2XMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 19:12:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,760,1400050800"; 
-   d="scan'208";a="550957854"
-From: Andi Kleen <andi@firstfloor.org>
-To: mmarek@suse.cz
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/2] Kbuild: Add a option to enable dwarf4
-Date: Wed, 30 Jul 2014 01:11:33 +0200
-Message-Id: <1406675493-2539-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1406675493-2539-1-git-send-email-andi@firstfloor.org>
-References: <1406675493-2539-1-git-send-email-andi@firstfloor.org>
+	id S1754468AbaG2XOw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 19:14:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59523 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929AbaG2XOu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 19:14:50 -0400
+Date: Tue, 29 Jul 2014 16:14:22 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: Santosh Rastapur <santosh@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>, Takashi Iwai <tiwai@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred probe
+ from init
+Message-ID: <20140729231422.GA14494@kroah.com>
+References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com>
+ <1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com>
+ <20140728185538.GB17609@kroah.com>
+ <CAB=NE6VebcR7=UA1n0wNVLr5FFukzq6aW5CkeB3nf5FixV=3cA@mail.gmail.com>
+ <CAB=NE6Xmi2zUCis22q+X8_AKRcwMrAtmx-aqSSvTB70Xjet6VQ@mail.gmail.com>
+ <20140728234644.GA18729@kroah.com>
+ <CAB=NE6UzK1ZEzm+54dwSyPwHGrAWCPtiNtxwhQuJF6tM9NbnYw@mail.gmail.com>
+ <20140729003501.GA17020@kroah.com>
+ <CAB=NE6XMzU+zJ0RMDKaPuSxfXBvN2vZ1DnbgxCjWHJquTD1iqg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB=NE6XMzU+zJ0RMDKaPuSxfXBvN2vZ1DnbgxCjWHJquTD1iqg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Mon, Jul 28, 2014 at 06:13:43PM -0700, Luis R. Rodriguez wrote:
+> >> > Why not just put the initial "register the device" in a single-shot
+> >> > workqueue or thread or something like that so that modprobe returns
+> >> > instantly back with a success and all is fine?
+> >>
+> >> That surely is possible but why not a general solution for such kludges?
+> >
+> > Because the driver should be fixed.  How hard would it be to do what I
+> > just suggested here, 20 lines added at most?
+> 
+> I appreciate the feedback, but don't look at me, I'd happy to go nutty
+> on ripping things apart from hairy drivers, however Chelsie folks
+> expressed concerns over major rework on the driver... so even if we
+> did have something I expect things to take a while to bake / gain
+> confidence from others.
 
-I found that a lot of unresolvable variables when using gdb on the kernel
-become resolvable when dwarf4 is enabled. So add a Kconfig flag to enable it.
+"rework"?  Heh, here's a patch that adds 10 lines to the mptsas driver
+that should also work for any other driver as well.  Why not just do
+this instead?
 
-It definitely increases the debug information size, but on the other
-hand this isn't so bad when debug fusion is used.
+> This also just addresses this *one* Ethernet driver, there was that
+> SCSI driver that created the original report -- Canonical merged
+> Joseph's fix as a work around,
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- Makefile          | 3 +++
- lib/Kconfig.debug | 9 +++++++++
- 2 files changed, 12 insertions(+)
+What fix was that?
 
-diff --git a/Makefile b/Makefile
-index 6a717cd..6cdf3f0 100644
---- a/Makefile
-+++ b/Makefile
-@@ -696,6 +696,9 @@ KBUILD_CFLAGS	+= -g
- endif
- KBUILD_AFLAGS	+= -Wa,-gdwarf-2
- endif
-+ifdef CONFIG_DEBUG_INFO_DWARF4
-+KBUILD_CFLAGS	+= -gdwarf-4
-+endif
+> there is no general solution for this yet, and again with that work
+> around you won't find which drivers run into this issue.
+
+Great, fix them as they are found, that's fine.  Again, don't add stuff
+to the driver core to paper over crappy drivers, I'm not going to take
+that type of change.  I _only_ took the defer binding code as there was
+no other way for an individual driver to deal with things if it's
+resources were not present yet due to binding order in the system.
+
+So, anyone care to test the patch below on a system that has this
+problem to let me know if it would work or not?  Odds are, this should
+be a workqueue, to make it cleaner, but a kthread is just so easy to
+use...
+
+thanks,
+
+greg k-h
+
+diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
+index 711fcb5cec87..4fd4f36a2d9e 100644
+--- a/drivers/message/fusion/mptsas.c
++++ b/drivers/message/fusion/mptsas.c
+@@ -51,6 +51,7 @@
+ #include <linux/jiffies.h>
+ #include <linux/workqueue.h>
+ #include <linux/delay.h>	/* for mdelay */
++#include <linux/kthread.h>
  
- ifdef CONFIG_DEBUG_INFO_REDUCED
- KBUILD_CFLAGS 	+= $(call cc-option, -femit-struct-debug-baseonly) \
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 0360468..a2dcf97 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -158,6 +158,15 @@ config DEBUG_INFO_SPLIT
- 	  to know about the .dwo files and include them.
- 	  Incompatible with older versions of ccache.
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_cmnd.h>
+@@ -5393,8 +5394,7 @@ static struct pci_driver mptsas_driver = {
+ #endif
+ };
  
-+config DEBUG_INFO_DWARF4
-+	bool "Generate dwarf4 debuginfo"
-+	depends on DEBUG_INFO
-+	help
-+	  Generate dwarf4 debug info. This requires recent versions
-+	  of gcc and gdb. It makes the debug information larger.
-+	  But it significantly improves the success of resolving
-+	  variables in gdb on optimized code.
+-static int __init
+-mptsas_init(void)
++static int mptsas_real_init(void *data)
+ {
+ 	int error;
+ 
+@@ -5429,9 +5429,19 @@ mptsas_init(void)
+ 	return error;
+ }
+ 
++static struct task_struct *init_thread;
 +
- config ENABLE_WARN_DEPRECATED
- 	bool "Enable __deprecated logic"
- 	default y
--- 
-1.8.5.2
-
++static int __init
++mptsas_init(void)
++{
++	init_thread = kthread_run(mptsas_real_init, NULL, "mptsas_init");
++	return 0;
++}
++
+ static void __exit
+ mptsas_exit(void)
+ {
++	kthread_stop(init_thread);
+ 	pci_unregister_driver(&mptsas_driver);
+ 	sas_release_transport(mptsas_transport_template);
+ 
