@@ -1,144 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678AbaG2N1L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 09:27:11 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:53709 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644AbaG2N1J (ORCPT
+	id S1753721AbaG2N1c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 09:27:32 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57408 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753697AbaG2N1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 09:27:09 -0400
-Date: Tue, 29 Jul 2014 22:26:57 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/2] perf tools: Ensure --symfs ends with '/'
-Message-ID: <20140729132657.GA5022@gmail.com>
-References: <1406251908-8195-1-git-send-email-namhyung@kernel.org>
- <20140729050246.GC22707@bbox>
- <20140729123305.GO7831@kernel.org>
+	Tue, 29 Jul 2014 09:27:30 -0400
+Date: Tue, 29 Jul 2014 14:26:59 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Deepak Saxena <dsaxena@linaro.org>,
+        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 1/3] arm64: ptrace: reload a syscall number after
+ ptrace operations
+Message-ID: <20140729132659.GR9245@arm.com>
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
+ <1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org>
+ <53D08358.4020902@amacapital.net>
+ <53D0A037.2060308@linaro.org>
+ <CALCETrU9_sdODRz-xZ4bouq+anHhmfx2tkr7hg00RVf_bBBJwg@mail.gmail.com>
+ <53D23341.4040403@linaro.org>
+ <20140725110342.GD5269@arm.com>
+ <53D7440B.10006@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140729123305.GO7831@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53D7440B.10006@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tue, Jul 29, 2014 at 09:33:05AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Jul 29, 2014 at 02:02:46PM +0900, Minchan Kim escreveu:
-> > On Fri, Jul 25, 2014 at 10:31:47AM +0900, Namhyung Kim wrote:
-> > > Minchan reported that perf failed to load vmlinux if --symfs argument
-> > > doesn't end with '/' character.  So make sure that the symfs always
-> > > ends with the '/'.
-> > > 
-> > > Reported-by: Minchan Kim <minchan@kernel.org>
-> > > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> > 
-> > Both patches work and are handy to me.
-> > Thanks Namhyung.
+On Tue, Jul 29, 2014 at 07:49:47AM +0100, AKASHI Takahiro wrote:
+> On 07/25/2014 08:03 PM, Will Deacon wrote:
+> > On Fri, Jul 25, 2014 at 11:36:49AM +0100, AKASHI Takahiro wrote:
+> >> On 07/25/2014 12:01 AM, Andy Lutomirski wrote:
+> >>>>> If so, then you risk (at least) introducing
+> >>>>>
+> >>>>> a nice user-triggerable OOPS if audit is enabled.
+> >>>>
+> >>>>
+> >>>> Can you please elaborate this?
+> >>>> Since I didn't find any definition of audit's behavior when syscall is
+> >>>> rewritten to -1, I thought it is reasonable to skip "exit tracing" of
+> >>>> "skipped" syscall.
+> >>>> (otherwise, "fake" seems to be more appropriate :)
+> >>>
+> >>> The audit entry hook will oops if you call it twice in a row without
+> >>> calling the exit hook in between.
+> >>
+> >> Thank you, I could reproduce this problem which hits BUG(in_syscall) in
+> >> audit_syscall_entry(). Really bad, and I fixed it in my next version and
+> >> now a "skipped" system call is also traced by audit.
+> >
+> > Can you reproduce this on arch/arm/ too? If so, we should also fix the code
+> > there.
 > 
-> I haven't said it is not :-) Just that it should be fixed in a different
-> way.
-
-I just wanted to confirm Namhyung's patches work as reporter. :)
-
+> As far as I tried on arm with syscall auditing enabled,
 > 
-> Can you please try the patch below instead?
+> 1) Changing a syscall number to -1 under seccomp doesn't hit BUG_ON(in_syscall).
+> 2) But, in fact, audit_syscall_entry() is NOT called in this case because
+>     __secure_computing() returns -1 and then it causes the succeeding tracing
+>     in syscall_trace_enter(), including audit_syscall_entry(), skipped.
 
-Tested. It works.
-And I'd like to say that [2/2] in patchset is handy to me.
+What happens if CONFIG_SECCOMP=n?
 
-Thanks.
+> 3) On the other hand, calling syscall(-1) from userspace hits BUG_ON because
+>     the return path, ret_slow_syscall, doesn't contain syscall_trace_exit().
+> 4) When we re-write a syscall number to -1 without seccomp, we will also see
+>     BUG_ON hit, although I didn't try yet.
+> 
+> Fixing case 3 is easy, but should we also fix case 2?
 
-> 
-> David, was there any reason not to do it like done in this patch?
-> 
-> - Arnaldo
-> 
-> ---
->  annotate.c |    4 ++--
->  dso.c      |    8 ++++----
->  symbol.c   |    2 +-
->  3 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-> index 809b4c50beae..e67ef4a2b356 100644
-> --- a/tools/perf/util/annotate.c
-> +++ b/tools/perf/util/annotate.c
-> @@ -900,7 +900,7 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
->  	bool delete_extract = false;
->  
->  	if (filename) {
-> -		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
-> +		snprintf(symfs_filename, sizeof(symfs_filename), "%s/%s",
->  			 symbol_conf.symfs, filename);
->  	}
->  
-> @@ -922,7 +922,7 @@ fallback:
->  		 * DSO is the same as when 'perf record' ran.
->  		 */
->  		filename = (char *)dso->long_name;
-> -		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
-> +		snprintf(symfs_filename, sizeof(symfs_filename), "%s/%s",
->  			 symbol_conf.symfs, filename);
->  		free_filename = false;
->  	}
-> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-> index 90d02c661dd4..f81550583429 100644
-> --- a/tools/perf/util/dso.c
-> +++ b/tools/perf/util/dso.c
-> @@ -79,7 +79,7 @@ int dso__read_binary_type_filename(const struct dso *dso,
->  		while (last_slash != dso->long_name && *last_slash != '/')
->  			last_slash--;
->  
-> -		len = scnprintf(filename, size, "%s", symbol_conf.symfs);
-> +		len = scnprintf(filename, size, "%s/", symbol_conf.symfs);
->  		dir_size = last_slash - dso->long_name + 2;
->  		if (dir_size > (size - len)) {
->  			ret = -1;
-> @@ -108,17 +108,17 @@ int dso__read_binary_type_filename(const struct dso *dso,
->  	case DSO_BINARY_TYPE__VMLINUX:
->  	case DSO_BINARY_TYPE__GUEST_VMLINUX:
->  	case DSO_BINARY_TYPE__SYSTEM_PATH_DSO:
-> -		snprintf(filename, size, "%s%s",
-> +		snprintf(filename, size, "%s/%s",
->  			 symbol_conf.symfs, dso->long_name);
->  		break;
->  
->  	case DSO_BINARY_TYPE__GUEST_KMODULE:
-> -		snprintf(filename, size, "%s%s%s", symbol_conf.symfs,
-> +		snprintf(filename, size, "%s/%s/%s", symbol_conf.symfs,
->  			 root_dir, dso->long_name);
->  		break;
->  
->  	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
-> -		snprintf(filename, size, "%s%s", symbol_conf.symfs,
-> +		snprintf(filename, size, "%s/%s", symbol_conf.symfs,
->  			 dso->long_name);
->  		break;
->  
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index eb06746b06b2..c3549d5955ea 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -1468,7 +1468,7 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
->  	if (vmlinux[0] == '/')
->  		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s", vmlinux);
->  	else
-> -		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s%s",
-> +		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s/%s",
->  			 symbol_conf.symfs, vmlinux);
->  
->  	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
+I think so.
 
--- 
-Kind regards,
-Minchan Kim
+Will
