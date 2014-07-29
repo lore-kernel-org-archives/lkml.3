@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759AbaG2OGO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 10:06:14 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:62361 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536AbaG2OGJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 10:06:09 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, tglx@linutronix.de,
-        jason@lakedaemon.net, devicetree@vger.kernel.org
-Subject: [PATCH 5/6] ARM: STi: STiH416: Enable PMU IRQs
-Date: Tue, 29 Jul 2014 15:05:43 +0100
-Message-Id: <1406642744-22589-6-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406642744-22589-1-git-send-email-lee.jones@linaro.org>
-References: <1406642744-22589-1-git-send-email-lee.jones@linaro.org>
+	id S1753903AbaG2OGs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 10:06:48 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:53197 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753831AbaG2OGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 10:06:46 -0400
+Message-ID: <53D7AA72.6010309@mm-sol.com>
+Date: Tue, 29 Jul 2014 17:06:42 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@linaro.org>,
+        Rob Herring <robherring2@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Boyd <sboyd@codeaurora.org>, Mark Brown <broonie@linaro.org>
+Subject: Re: use IORESOURCE_REG resource type for non-translatable addresses
+ in DT
+References: <53D788A7.4020303@mm-sol.com> <3794875.CZFbAag5Sv@wuerfel>
+In-Reply-To: <3794875.CZFbAag5Sv@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is used to enable System Configuration Register controlled
-External, CTI (Core Sight), PMU (Performance Management), and PL310 L2
-Cache IRQs prior to use.
+Arnd, thanks for the comments.
 
-Here we are enabling PMU IRQs on both channels.
+On 07/29/2014 03:00 PM, Arnd Bergmann wrote:
+> On Tuesday 29 July 2014 14:42:31 Stanimir Varbanov wrote:
+>>         taddr = of_translate_address(dev, addrp);
+>> -       if (taddr == OF_BAD_ADDR)
+>> -               return -EINVAL;
+>> +       /*
+>> +        * if the address is non-translatable to cpu physical address
+>> +        * fallback to a IORESOURCE_REG resource.
+>> +        */
+>> +       if (taddr == OF_BAD_ADDR) {
+>> +               memset(r, 0, sizeof(*r));
+>> +               taddr = of_read_number(addrp, 1);
+>> +               if (taddr == OF_BAD_ADDR)
+>> +                       return -EINVAL;
+>> +               r->start = taddr;
+>> +               r->end = taddr + size - 1;
+>> +               r->flags = IORESOURCE_REG;
+>> +               r->name = name ? name : dev->full_name;
+>> +               return 0;
+>> +       }
+>> +
+> 
+> I don't think that everything returning OF_BAD_ADDR makes sense
+> to turn into IORESOURCE_REG. It could be an e.g. invalid DT
+> representation, a node with #size-cells=<0>, or it could be
+> something that gets translated one or more nodes up in the
+> tree before it reaches a bus without a ranges property.
+> 
+> Also, you should not rely on #address-cells being hardcoded
+> to <1> above.
+> 
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/stih416.dtsi | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+This was just an example. Of course it has many issues and probaly it is
+wrong:) The main goal was to understand does IORESOURCE_REG resource
+type and parsing the *reg* properties for non-translatable addresses are
+feasible. And also does it acceptable by community and OF platform
+maintainers.
 
-diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-index badefd6..7276125 100644
---- a/arch/arm/boot/dts/stih416.dtsi
-+++ b/arch/arm/boot/dts/stih416.dtsi
-@@ -11,6 +11,7 @@
- #include "stih416-pinctrl.dtsi"
- #include <dt-bindings/interrupt-controller/arm-gic.h>
- #include <dt-bindings/reset-controller/stih416-resets.h>
-+#include <dt-bindings/interrupt-controller/irq-st.h>
- / {
- 	L2: cache-controller {
- 		compatible = "arm,pl310-cache";
-@@ -27,6 +28,15 @@
- 		interrupts = <GIC_PPI 15 IRQ_TYPE_LEVEL_HIGH>;
- 	};
- 
-+	irq-syscfg {
-+		compatible    = "st,stih416-irq-syscfg";
-+		st,syscfg     = <&syscfg_cpu>;
-+		st,irq-device = <ST_IRQ_SYSCFG_PMU_0>,
-+				<ST_IRQ_SYSCFG_PMU_1>;
-+		st,fiq-device = <ST_IRQ_SYSCFG_DISABLED>,
-+				<ST_IRQ_SYSCFG_DISABLED>;
-+	};
-+
- 	soc {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
+> How about modifying of_get_address() rather than
+> __of_address_to_resource() instead? You could introduce
+> a new of_bus entry for each bus you expect to return
+> an IORESOURCE_REG, or you could change of_bus_default_get_flags
+> to return IORESOURCE_REG if the parent node has no ranges property
+> and is not the root node.
+
+IMO the clearer solution is to introduce a new of_bus bus. In that case
+one possible problem will be how to distinguish the non-translatable and
+the other buses. Also the *device_type* property is deprecated for non
+PCI devices.
+
+The second option will need to change the prototype of .get_flags method
+to receive device_node structure.
+
+Thoughts?
+
 -- 
-1.9.1
-
+regards,
+Stan
