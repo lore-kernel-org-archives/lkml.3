@@ -1,163 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659AbaG2X42 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 19:56:28 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:37423 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208AbaG2X40 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 19:56:26 -0400
-X-AuditID: cbfee68e-b7fab6d000004d4a-1d-53d834a8d4b9
-Date: Wed, 30 Jul 2014 08:54:55 +0900
-From: Changman Lee <cm224.lee@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH 07/11] f2fs: enable in-place-update for fdatasync
-Message-id: <20140729235455.GB442@lcm>
-References: <1406328445-63707-1-git-send-email-jaegeuk@kernel.org>
- <1406328445-63707-7-git-send-email-jaegeuk@kernel.org>
- <20140729004111.GA442@lcm> <20140729122215.GB84378@jaegeuk-mac02>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-disposition: inline
-In-reply-to: <20140729122215.GB84378@jaegeuk-mac02>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t8zQ90VJjeCDZ5dFrJ4sn4Ws8WlRe4W
-	e/aeZLG4vGsOmwOLx6ZVnWweuxd8ZvL4vEkugDmKyyYlNSezLLVI3y6BK+PAvV1sBccVKhoW
-	TGZsYFwr2cXIySEhYCJxtv8IO4QtJnHh3nq2LkYuDiGBZYwS/Wf/M8EUrWvuZYJITGeUmNLc
-	zQzh/GSUuDDhOmMXIwcHi4CqxL5twiANbAJaEu2n17KA2CICKhKHFl0G28AskCkxof8FmC0s
-	ECDx7/pyMJtXQE1ift9kFoiZ+xkl5p46yQyREJT4MfkeC0SzlsT6nceZIGxpiUd/Z4A1cwoY
-	S9xZswTMFgVaNuXkNrAXJASWsUtMO/EXbBCLgIDEt8mHWEAOlRCQldh0gBniM0mJgytusExg
-	FJuFZN0sJOtmIVm3gJF5FaNoakFyQXFSepGRXnFibnFpXrpecn7uJkZIFPXtYLx5wPoQYzLQ
-	yonMUqLJ+cAozCuJNzQ2M7IwNTE1NjK3NCNNWEmcd9HDpCAhgfTEktTs1NSC1KL4otKc1OJD
-	jEwcnFINjJaG03T+i80SCvz2KGbO92amqO8nF9TPCBeffdholUnxenZbLblbX/yamzNikqsr
-	Fhw1WrPALfN2hOLESwKvfi7bWH10SmC1bm144+SN0j22F9jnMHeWzX4oPJsv++kN8YLsPAHZ
-	ldd4ouafbshiWR/gOnvTy/KfPpt25/wLswhnW3v0gYPhKyWW4oxEQy3mouJEALHjgr+4AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t9jQd0VJjeCDTbd4LN4sn4Ws8WlRe4W
-	e/aeZLG4vGsOmwOLx6ZVnWweuxd8ZvL4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON45
-	3tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2ibkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3f
-	kCC4HiMDNJCwjjHjwL1dbAXHFSoaFkxmbGBcK9nFyMkhIWAisa65lwnCFpO4cG89WxcjF4eQ
-	wHRGiSnN3cwQzk9GiQsTrjN2MXJwsAioSuzbJgzSwCagJdF+ei0LiC0ioCJxaNFldhCbWSBT
-	YkL/CzBbWCBA4t/15WA2r4CaxPy+ySwQM/czSsw9dZIZIiEo8WPyPRaIZi2J9TuPM0HY0hKP
-	/s4Aa+YUMJa4s2YJmC0KtGzKyW1sExgFZiFpn4WkfRaS9gWMzKsYRVMLkguKk9JzjfSKE3OL
-	S/PS9ZLzczcxgmP0mfQOxlUNFocYBTgYlXh4Z/y/HizEmlhWXJl7iFGCg1lJhPer3I1gId6U
-	xMqq1KL8+KLSnNTiQ4ymwNCYyCwlmpwPTB95JfGGxiZmRpZGZhZGJubmSuK8B1utA4UE0hNL
-	UrNTUwtSi2D6mDg4pRoY522e0Zi0J7DE8yarzuKu5FTGw4axs+4ef3JBbMOMJtYv9d2cMpPU
-	7SUUkh+Y+ry+qTjhwsL9WdEeU96J3tQq6bnL+S3L//kFfeeu1gSlZ0f6I66eXHlC9OO/nMty
-	2ssbb//ZVe5oE55t0fpAc5L2JcG18cFqvHNapukaMDdOn5q1dA3/Htd8JZbijERDLeai4kQA
-	KNgXeucCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754670AbaG2X4v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 19:56:51 -0400
+Received: from ozlabs.org ([103.22.144.67]:43357 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754020AbaG2X4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 19:56:50 -0400
+Date: Wed, 30 Jul 2014 09:56:42 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-ID: <20140730095642.5f68e01d@canb.auug.org.au>
+In-Reply-To: <20140725144522.32c1f6b5@canb.auug.org.au>
+References: <20140725144522.32c1f6b5@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/jUG3yYENU/XGCvEVAizmTNB"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 05:22:15AM -0700, Jaegeuk Kim wrote:
-> Hi Changman,
-> 
-> On Tue, Jul 29, 2014 at 09:41:11AM +0900, Changman Lee wrote:
-> > Hi Jaegeuk,
-> > 
-> > On Fri, Jul 25, 2014 at 03:47:21PM -0700, Jaegeuk Kim wrote:
-> > > This patch enforces in-place-updates only when fdatasync is requested.
-> > > If we adopt this in-place-updates for the fdatasync, we can skip to write the
-> > > recovery information.
-> > 
-> > But, as you know, random write occurs when changing into in-place-updates.
-> > It will degrade write performance. Is there any case in-place-updates is
-> > better, except recovery or high utilization?
-> 
-> As I described, you can easily imagine, if users requested small amount of data
-> writes with fdatasync, we should do data writes + node writes.
-> But, if we can do in-place-update, we don't need to write node blocks.
-> Surely it triggers random writes, however, the amount of data is preety small
-> and the device handles them very fast by its inside cache, so that it can
-> enhance the performance.
-> 
-> Thanks,
+--Sig_/jUG3yYENU/XGCvEVAizmTNB
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Partially agree. Sometimes, I see that SSR shows lower performance than
-IPU. One of the reasons might be node writes.
-Anyway, if so, we should know total dirty pages for fdatasync and it's very
-tunable according to a random write performance of device.
+Hi all,
 
-Thanks,
+On Fri, 25 Jul 2014 14:45:22 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Hi all,
+>=20
+> After merging the tip tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>=20
+> arch/powerpc/kernel/time.c:743:6: error: conflicting types for 'update_vs=
+yscall_old'
+>  void update_vsyscall_old(struct timespec *wall_time, struct timespec *wt=
+m,
+>       ^
+> In file included from arch/powerpc/kernel/time.c:77:0:
+> include/linux/timekeeper_internal.h:114:13: note: previous declaration of=
+ 'update_vsyscall_old' was here
+>  extern void update_vsyscall_old(struct timespec *ts, struct timespec *wt=
+m,
+>              ^
+>=20
+> Caused by commit 4a0e637738f0 ("clocksource: Get rid of cycle_last").
+>=20
+> I have used the tip tree from next-20140724 for today.
 
-> 
-> > 
-> > Thanks
-> > 
-> > > 
-> > > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> > > ---
-> > >  fs/f2fs/f2fs.h    | 1 +
-> > >  fs/f2fs/file.c    | 7 +++++++
-> > >  fs/f2fs/segment.h | 4 ++++
-> > >  3 files changed, 12 insertions(+)
-> > > 
-> > > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> > > index ab36025..8f8685e 100644
-> > > --- a/fs/f2fs/f2fs.h
-> > > +++ b/fs/f2fs/f2fs.h
-> > > @@ -998,6 +998,7 @@ enum {
-> > >  	FI_INLINE_DATA,		/* used for inline data*/
-> > >  	FI_APPEND_WRITE,	/* inode has appended data */
-> > >  	FI_UPDATE_WRITE,	/* inode has in-place-update data */
-> > > +	FI_NEED_IPU,		/* used fo ipu for fdatasync */
-> > >  };
-> > >  
-> > >  static inline void set_inode_flag(struct f2fs_inode_info *fi, int flag)
-> > > diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-> > > index 121689a..e339856 100644
-> > > --- a/fs/f2fs/file.c
-> > > +++ b/fs/f2fs/file.c
-> > > @@ -127,11 +127,18 @@ int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
-> > >  		return 0;
-> > >  
-> > >  	trace_f2fs_sync_file_enter(inode);
-> > > +
-> > > +	/* if fdatasync is triggered, let's do in-place-update */
-> > > +	if (datasync)
-> > > +		set_inode_flag(fi, FI_NEED_IPU);
-> > > +
-> > >  	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
-> > >  	if (ret) {
-> > >  		trace_f2fs_sync_file_exit(inode, need_cp, datasync, ret);
-> > >  		return ret;
-> > >  	}
-> > > +	if (datasync)
-> > > +		clear_inode_flag(fi, FI_NEED_IPU);
-> > >  
-> > >  	/*
-> > >  	 * if there is no written data, don't waste time to write recovery info.
-> > > diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
-> > > index ee5c75e..55973f7 100644
-> > > --- a/fs/f2fs/segment.h
-> > > +++ b/fs/f2fs/segment.h
-> > > @@ -486,6 +486,10 @@ static inline bool need_inplace_update(struct inode *inode)
-> > >  	if (S_ISDIR(inode->i_mode))
-> > >  		return false;
-> > >  
-> > > +	/* this is only set during fdatasync */
-> > > +	if (is_inode_flag_set(F2FS_I(inode), FI_NEED_IPU))
-> > > +		return true;
-> > > +
-> > >  	switch (SM_I(sbi)->ipu_policy) {
-> > >  	case F2FS_IPU_FORCE:
-> > >  		return true;
-> > > -- 
-> > > 1.8.5.2 (Apple Git-48)
-> > > 
-> > > 
-> > > ------------------------------------------------------------------------------
-> > > Want fast and easy access to all the code in your enterprise? Index and
-> > > search up to 200,000 lines of code with a free copy of Black Duck
-> > > Code Sight - the same software that powers the world's largest code
-> > > search on Ohloh, the Black Duck Open Hub! Try it now.
-> > > http://p.sf.net/sfu/bds
-> > > _______________________________________________
-> > > Linux-f2fs-devel mailing list
-> > > Linux-f2fs-devel@lists.sourceforge.net
-> > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+Ping?
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/jUG3yYENU/XGCvEVAizmTNB
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT2DTAAAoJEMDTa8Ir7ZwVHRQP/jFuWakuVUabUPR2MF8WTTq5
+1SaRylZ2PRW4Qzt28oJvaZbFLuqBcrgs8+LI6FsdKTKF3GUV91OSFAeHuk7W0bms
+/KzCKdwg/JzO8O6jsnAR+c26xl2HvfE2/DaVHRDJ4xD8gcKY++O+Qq1IHLZe8P9N
+WSIp4EgFIvbDWe4ATlJLp2NVAIXTwPKWk8QBl63aECqu7kMD9vs2FmqPZZ7E0sr+
+X4GMsX7sxFDUZ6SXA1KX5rkAElc4QPQTh0VuVJaRktEi9UCuLPev0PdybMb/svQr
+0Bi1OzLUZKW7SOIQtXUKyznRSMZCYoe2kTTelFINIHYbcS8nc4Dx9SdDb9mfMT8m
+ta3gezfai1JilYlhXuJUoWtO0Fnu4kALq47cCo1tZL6+xHC32XfMSB1wH2KbqIl/
+vUQthnI/wV4fz8TXtHHCuAvA5zQOizK7jDDVd/7YVu3jFVDQQbPHpSLQdMZYEXAv
+IBisql5IK4Ur4kAn8a/PwmjOtac/g18uAMQaMS6zrMEKQq6P7xq+3saKQmXQ6y6S
+TN51tI98Gkg1D1pC2NPOMpsVnbZ0jh0JKNV6O6B98XDETAknLM5JpahAuQ63aqdT
+AEzV/ES8zHbP+vGx9qpEmMa3WF+R17jIJ6UxK1Ex6rvxyZKwJzA3hGO7FTADiVWE
+N5RNUeEhzCVTVczZAscP
+=Ppve
+-----END PGP SIGNATURE-----
+
+--Sig_/jUG3yYENU/XGCvEVAizmTNB--
