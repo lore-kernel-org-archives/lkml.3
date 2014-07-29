@@ -1,132 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751766AbaG2ST6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 14:19:58 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:40206 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625AbaG2ST4 (ORCPT
+	id S1751904AbaG2SWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 14:22:55 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:50668 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986AbaG2SWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 14:19:56 -0400
-Date: Tue, 29 Jul 2014 11:19:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140729181949.GZ11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140728225556.GA19493@linux.vnet.ibm.com>
- <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140729075055.GY19379@twins.programming.kicks-ass.net>
- <20140729155747.GO11241@linux.vnet.ibm.com>
- <20140729160754.GW20603@laptop.programming.kicks-ass.net>
- <20140729163312.GR11241@linux.vnet.ibm.com>
- <20140729173121.GL3935@laptop>
+	Tue, 29 Jul 2014 14:22:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140729173121.GL3935@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072918-6688-0000-0000-000003A2792C
+In-Reply-To: <20140729181615.GA4950@redhat.com>
+References: <cover.1405992946.git.luto@amacapital.net> <3f649f5658a163645e3ce15156176c325283762e.1405992946.git.luto@amacapital.net>
+ <20140728173723.GA20993@redhat.com> <CALCETrWUFo_zXcAZja-vdL4_MgJDd=1ed5Vt54eyUuim930xAw@mail.gmail.com>
+ <20140729165416.GA967@redhat.com> <CALCETrWBU-=zqLTCP7B1feZ9J-e4u-Boic+e1EEn1rL-ijeEKg@mail.gmail.com>
+ <20140729173136.GA2808@redhat.com> <CALCETrVP-P+EJ6YJ=CZL_gyA1r8O9eogUNTik7_31_SA+Pj3pg@mail.gmail.com>
+ <20140729181615.GA4950@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 29 Jul 2014 11:22:31 -0700
+Message-ID: <CALCETrVWOOs3HCnQNaqmnn480oQYn3scrWUfR4JJX9+zTxUDRw@mail.gmail.com>
+Subject: Re: [PATCH v3 6/8] x86: Split syscall_trace_enter into two phases
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 07:31:21PM +0200, Peter Zijlstra wrote:
-> On Tue, Jul 29, 2014 at 09:33:12AM -0700, Paul E. McKenney wrote:
-> > > > o	There are no memory barriers, but a synchronize_sched()
-> > > > 	should take care of that, given that this counter is
-> > > > 	incremented with interrupts disabled.
-> > > 
-> > > Well, there's obviously the actual context switch, which should imply an
-> > > actual MB such that tasks are self ordered even when execution continues
-> > > on another cpu etc..
-> > 
-> > True enough, except that it appears that the context switch happens
-> > after the ->nvcsw increment, which means that it doesn't help RCU-tasks
-> > guarantee that if it has seen the increment, then all prior processing
-> > has completed.  There might be enough stuff prior the increment, but I
-> > don't see anything that I feel comfortable relying on.  Am I missing
-> > some ordering?
-> 
-> There's the smp_mb__before_spinlock() + raw_spin_lock_irq(), but that's
-> about it I suppose.
+On Tue, Jul 29, 2014 at 11:16 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 07/29, Andy Lutomirski wrote:
+>>
+>> On Tue, Jul 29, 2014 at 10:31 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> >
+>> > I don't think so (unless I am confused again), note that user_exit() uses
+>> > jump label. But this doesn't matter. I meant that we should avoid TIF_NOHZ
+>> > if possible because I think it should die somehow (currently I do not know
+>> > how ;). And because it is ugly to check the same condition twice:
+>> >
+>> >         if (work & TIF_NOHZ) {
+>> >                 // user_exit()
+>> >                 if (context_tracking_is_enabled())
+>> >                         context_tracking_user_exit();
+>> >         }
+>> >
+>> > TIF_NOHZ is set if and only if context_tracking_is_enabled() is true.
+>> > So I think that
+>> >
+>> >         work = current_thread_info()->flags & (_TIF_WORK_SYSCALL_ENTRY & ~TIF_NOHZ);
+>> >
+>> >         user_exit();
+>> >
+>> > looks a bit better. But I won't argue.
+>>
+>> I don't get it.
+>
+> Don't worry, you are not alone.
+>
+>> context_tracking_is_enabled is global, and TIF_NOHZ
+>> is per-task.  Isn't this stuff determined per-task or per-cpu or
+>> something?
+>>
+>> IOW, if one CPU is running something that's very heavily
+>> userspace-oriented and another CPU is doing something syscall- or
+>> sleep-heavy, then shouldn't only the first CPU end up paying the price
+>> of context tracking?
+>
+> Please see another email I sent to Frederic.
+>
 
-Which does only smp_wmb(), correct?  :-(
+I'll add at least this argument in favor of my approach: if context
+tracking works at all, then it had better not demand that syscall
+entry call user_exit if TIF_NOHZ is *not* set.  So adding the
+condition ought to be safe, barring dumb bugs in my code.
 
-> > > > So I should be able to snapshot the task_struct structure's ->nvcsw
-> > > > field and avoid the added code in the fastpaths.
-> > > > 
-> > > > Seem plausible, or am I confused about the role of ->nvcsw?
-> > > 
-> > > Nope, that's the 'I scheduled to go to sleep' counter.
-> > 
-> > I am assuming that the "Nope" goes with "am I confused" rather than
-> > "Seem plausible" -- if not, please let me know.  ;-)
-> 
-> Yah :-)
-> 
-> > > There is of course the 'polling' issue I raised in a further email...
-> > 
-> > Yep, and other flavors of RCU go to lengths to avoid scanning the
-> > task_struct lists.  Steven said that updates will be rare and that it
-> > is OK for them to have high latency and overhead.  Thus far, I am taking
-> > him at his word.  ;-)
-> > 
-> > I considered interrupting the task_struct polling loop periodically,
-> > and would add that if needed.  That said, this requires nailing down the
-> > task_struct at which the vacation is taken.  Here "nailing down" does not
-> > simply mean "prevent from being freed", but rather "prevent from being
-> > removed from the lists traversed by do_each_thread/while_each_thread."
-> > 
-> > Of course, if there is some easy way of doing this, please let me know!
-> 
-> Well, one reason I'm not liking this is because its in an anonymous
-> context (kthread) which makes accounting for it hard.
-> 
-> I feel we're doing far too much async stuff already and it keeps getting
-> worse and worse. Ideally we'd be able to account every cycle of kernel
-> 'overhead' to a specific user action.
+--Andy
 
-Hmmm...
+> Oleg.
+>
 
-In theory, we could transfer the overhead of the kthread for a given grace
-period to the task invoking the corresponding synchronize_rcu_tasks().
-In practice, the overhead might need to be parceled out among several
-tasks that concurrently invoked synchronize_rcu_tasks().  Or I suppose
-that the overhead could be assigned to the first such task that woke
-up, on the theory that things would even out over time.
 
-So exactly how annoyed are you about the lack of accounting?  ;-)
 
-> Another reason is that I fundamentally dislike polling stuff.. but yes,
-> I'm not really seeing how to do this differently, partly because I'm not
-> entirely sure why we need this to begin with. I'm not sure what problem
-> we're solving.
-
-As I recall it...
-
-Steven is working on some sort of tracing infrastructure that involves
-dynamically allocated trampolines being inserted into some/all functions.
-The trampoline code can be preempted, but never does voluntary context
-switches, and presumably never calls anything that does voluntary
-context switches.
-
-Easy to insert a trampoline, but the trick is removing them.
-
-The thought is to restore the instructions at the begining of the
-function in question, wait for an RCU-tasks grace period, then dispose
-of the trampoline.
-
-Of course, you could imagine disabling preemption or otherwise entering
-an RCU read-side critical section before transferring to the trampoline,
-but this was apparently a no-go due to the overhead for small functions.
-
-							Thanx, Paul
-
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
