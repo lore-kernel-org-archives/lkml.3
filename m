@@ -1,106 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648AbaG2X0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 19:26:41 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:50236 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415AbaG2X0j (ORCPT
+	id S1754517AbaG2X36 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 19:29:58 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:59463 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300AbaG2X34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 19:26:39 -0400
-Date: Tue, 29 Jul 2014 16:26:35 -0700 (PDT)
-Message-Id: <20140729.162635.638786990787878495.davem@davemloft.net>
-To: mroos@linux.ee
-Cc: aaro.koskinen@iki.fi, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hughd@google.com,
-        cat.schulze@alice-dsl.net
-Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.SOC.1.00.1404170119550.20193@math.ut.ee>
-References: <20140414184353.GA5630@drone.musicnaut.iki.fi>
-	<20140416.145822.1317931249717152474.davem@davemloft.net>
-	<alpine.SOC.1.00.1404170119550.20193@math.ut.ee>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 29 Jul 2014 16:26:37 -0700 (PDT)
+	Tue, 29 Jul 2014 19:29:56 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Andres Freund <andres@anarazel.de>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>, Don Zickus <dzickus@redhat.com>
+Subject: Re: [PATCH 22/27] perf tools: Enable --children option by default
+References: <1401335910-16832-1-git-send-email-namhyung@kernel.org>
+	<1401335910-16832-23-git-send-email-namhyung@kernel.org>
+	<20140728192326.GS17793@alap3.anarazel.de>
+	<8738dkirlt.fsf@sejong.aot.lge.com>
+	<20140729114548.GA27368@alap3.anarazel.de>
+Date: Wed, 30 Jul 2014 08:29:49 +0900
+In-Reply-To: <20140729114548.GA27368@alap3.anarazel.de> (Andres Freund's
+	message of "Tue, 29 Jul 2014 13:45:48 +0200")
+Message-ID: <87y4vbhhg2.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: mroos@linux.ee
-Date: Thu, 17 Apr 2014 01:22:17 +0300 (EEST)
+Hi Andres,
 
->> > Just for the archives, I got one of these again with 3.14:
+On Tue, 29 Jul 2014 13:45:48 +0200, Andres Freund wrote:
+> On 2014-07-29 15:52:46 +0900, Namhyung Kim wrote:
+>> On Mon, 28 Jul 2014 21:23:26 +0200, Andres Freund wrote:
+>> > On 2014-05-29 12:58:25 +0900, Namhyung Kim wrote:
+>> >> Now perf top and perf report will show children column by default if
+>> >> it has callchain information.
+>> >> 
+>> >> Requested-by: Ingo Molnar <mingo@kernel.org>
+>> >> Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
+>> >> Tested-by: Arun Sharma <asharma@fb.com>
+>> >> Acked-by: Jiri Olsa <jolsa@redhat.com>
+>> >> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> >> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>> >
+>> > Stupid question: Why? This breaks user's usage pattern in a rather
+>> > significant way because the new output is pretty much entirely useless
+>> > in many cases, especially for userland programs. I think the new option
+>> > is great, but why is it suddenly the default?
 >> 
->> Meelis and Aaro, thanks again for all of your reports.
+>> Yes, I knew it'd annoy some existing users like you :)  But I hoped it'd
+>> be useful for new and (at least, some of) old users to see children/
+>> cumulative overheads by default.  If it lies under an option, it
+>> wouldn't have a chance to be used by normal users who simply run perf
+>> record and report most of time.
+>
+> By that argument every new feature would need to be enabled by
+> default. Which normally isn't what happens.
+
+Yes, I know and that's what we usually do.  What I wanted to say was
+it's a special case. :)
+
+
+>
+>> If you think it's entirely useless for you cases, you can set it to off
+>> using ~/.perfconfig file:
 >> 
->> After pouring over a lot of the data and auditing some code I'm
->> suspecting it's a problem with transparent huge pages.
->> 
->> One thing you two can do to help me further confirm this is to run
->> with THP disabled for a while and see if you still get the log
->> messages.
-> 
-> I have snice turned off CONFIG_TRANSPARENT_HUGEPAGE on 3 of 4 servers 
-> that had this problem (actually most of my sparc64 machines) and the 4th 
-> has
-> 
-> CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
-> CONFIG_TRANSPARENT_HUGEPAGE=y
-> # CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS is not set
-> CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y
-> # CONFIG_HUGETLBFS is not set
-> # CONFIG_HUGETLB_PAGE is not se
-> 
-> and also has not had this problem since then. All 4 machines have been 
-> running through most -rc's of every kernel.
+>>   [report]
+>>   children = false
+>
+> Already done that ;).
 
-Here is something I'd like you guys to test.
+Good. :)
 
-Yesterday, Christopher (CC:'d), posted some fixes yesterday and one of
-them is very interesting.
 
-Basically the update_mmu_cache() methods on sparc64 can insert an
-invalid PTE into the TSB hash tables, causing livelocks and other
-annoying issues.
+>
+> The problem is still that I can't use --no-children on older systems, so
+> I can't write benchmarking scripts anymore that don't take depend on the
+> perf version...
 
-The path where this can happen is via remove_migration_pte().
+Hmm.. I don't understand what's your problem.  If you set the config
+option you don't need to use --no-children at all and it'd work in a
+same way for old and new versions, no?
 
-I had a discussion with Johannes Weiner about this and we determined
-that it would make sense to mis-diagnose THP as being the root cause
-in the RSS counter et al. problems if this bug here is the real
-reason those things are happening.
 
-That's because if you're not using THP there is less compaction going
-on.  Less compaction means less migration, and therefore a lower
-likelyhood of this code path triggering like this.
+>
+> I guess it's too late to argue effectively though :)
 
-Could you guys please try this patch below?  Thanks.
+Well, I think it can be changed later, if enough number of users yell at
+me - now I have two. :)
 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 16b58ff..8e894e0 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -351,6 +351,10 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *
- 
- 	mm = vma->vm_mm;
- 
-+	/* Don't insert a non-valid PTE into the TSB, we'll deadlock.  */
-+	if (!pte_accessible(mm, pte))
-+		return;
-+
- 	spin_lock_irqsave(&mm->context.lock, flags);
- 
- #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
-@@ -2617,6 +2621,10 @@ void update_mmu_cache_pmd(struct vm_area_struct *vma, unsigned long addr,
- 	if (!pmd_large(entry) || !pmd_young(entry))
- 		return;
- 
-+	/* Don't insert a non-valid PMD into the TSB, we'll deadlock.  */
-+	if (!(pte & _PAGE_VALID))
-+		return;
-+
- 	pte = pmd_val(entry);
- 
- 	/* We are fabricating 8MB pages using 4MB real hw pages.  */
+Thanks,
+Namhyung
