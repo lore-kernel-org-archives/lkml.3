@@ -1,411 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739AbaG2HFN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 03:05:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:61803 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751647AbaG2HFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 03:05:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,755,1400050800"; 
-   d="txt'?scan'208";a="568762775"
-Date: Tue, 29 Jul 2014 15:06:26 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: hpa@zytor.com, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
-        Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        Yong Wang <yong.y.wang@linux.intel.com>
-Subject: Re: [PATCH v2] x86, hotplug: fix llc shared map unreleased during
- cpu hotplug
-Message-ID: <20140729070626.GA9635@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1406016292-55968-1-git-send-email-wanpeng.li@linux.intel.com>
- <53CF78A7.5070302@jp.fujitsu.com>
+	id S1752714AbaG2HJq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 03:09:46 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49350 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751847AbaG2HJo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 03:09:44 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH, v4] irq / PM: Fix IRQF_NO_SUSPEND problem with shared interrupts
+Date: Tue, 29 Jul 2014 09:28:15 +0200
+Message-ID: <1574820.JRmxKN4N9f@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <4823828.8eNZIeQFq1@vostro.rjw.lan>
+References: <20140724212620.GO3935@laptop> <alpine.DEB.2.10.1407281350550.23352@nanos> <4823828.8eNZIeQFq1@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="HlL+5n6rz5pIUxbD"
-Content-Disposition: inline
-In-Reply-To: <53CF78A7.5070302@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
---HlL+5n6rz5pIUxbD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Since __disable_irq() only checks IRQF_NO_SUSPEND for the first
+irqaction in a given irq_desc, that value of that bit for the
+first irqaction affects all of the other irqactions sharing the
+interrupt with it.  This is problematic in two cases.
 
-Hi Yasuaki,
-On Wed, Jul 23, 2014 at 05:56:07PM +0900, Yasuaki Ishimatsu wrote:
->(2014/07/22 17:04), Wanpeng Li wrote:
->> [  220.262093] BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
->> [  220.262104] IP: [<ffffffff810e7ac9>] find_busiest_group+0x2b9/0xa30
->> [  220.262111] PGD 5a9d5067 PUD 13067 PMD 0
->> [  220.262117] Oops: 0000 [#3] SMP
->> [...]
->> [  220.262245] Call Trace:
->> [  220.262252]  [<ffffffff810e8396>] load_balance+0x156/0x980
->> [  220.262259]  [<ffffffff816eeffe>] ? _raw_spin_unlock_irqrestore+0x2e/0xa0
->> [  220.262266]  [<ffffffff810e9aa3>] idle_balance+0xe3/0x150
->> [  220.262270]  [<ffffffff816ec4e7>] __schedule+0x797/0x8d0
->> [  220.262277]  [<ffffffff816ec934>] schedule+0x24/0x70
->> [  220.262283]  [<ffffffff816e9cd9>] schedule_timeout+0x119/0x1f0
->> [  220.262294]  [<ffffffff810bb6e0>] ? lock_timer_base+0x70/0x70
->> [  220.262301]  [<ffffffff816e9dc9>] schedule_timeout_uninterruptible+0x19/0x20
->> [  220.262308]  [<ffffffff810bd3e8>] msleep+0x18/0x20
->> [  220.262317]  [<ffffffff813aa11a>] lock_device_hotplug_sysfs+0x2a/0x50
->> [  220.262323]  [<ffffffff813aa16e>] online_store+0x2e/0x80
->> [  220.262358]  [<ffffffff813a873b>] dev_attr_store+0x1b/0x20
->> [  220.262366]  [<ffffffff812292fd>] sysfs_write_file+0xdd/0x160
->> [  220.262377]  [<ffffffff811b7e78>] vfs_write+0xc8/0x170
->> [  220.262384]  [<ffffffff811b83ca>] SyS_write+0x5a/0xa0
->> [  220.262388]  [<ffffffff816f76b9>] system_call_fastpath+0x16/0x1b
->> 
->> Last level cache shared map is built during cpu up and build sched domain
->> routine takes advantage of it to setup sched domain cpu topology, however,
->> llc shared map is unreleased during cpu disable which lead to invalid sched
->> domain cpu topology. This patch fix it by release llc shared map correctly
->> during cpu disable.
->> 
->
->I posted a latest patch as follows:
->https://lkml.org/lkml/2014/7/22/1018
->
->Could you confirm the patch fixes your issue?
+First, if IRQF_NO_SUSPEND is set in the first irqaction and unset
+in at least one of the other irqactions sharing the same interrupt,
+the interrupt handlers in the other irqactions with IRQF_NO_SUSPEND
+unset will be invoked after suspend_device_irqs() has returned even
+though they are not supposed to.  That shouldn't be a problem if
+those interrupt handlers are implemented correctly and the
+corresponding devices are properly suspended, but it may lead to
+functional issues otherwise.
 
-Sorry for the late, there is still call trace w/ your patch applied. The
-call trace is in attachment.
+Second, if IRQF_NO_SUSPEND is unset in the first irqaction and set
+in at least one of the other irqactions sharing the same interrupt,
+the interrupt handlers in the other irqactions with IRQF_NO_SUSPEND
+set will not be invoked after suspend_device_irqs() has returned, but
+they are supposed to be invoked then.  That may be a problem if the
+corresponding devices are wakeup devices or if their interrupts have
+to be properly handled during system suspend/resume too for other
+reasons, which is the case for timer interrupts or the ACPI SCI for
+example.
 
-Regards,
-Wanpeng Li 
+To address this, modify the handling of IRQF_NO_SUSPEND by
+suspend_device_irqs() and resume_device_irqs() and make
+note_interrupt() handle suspended interrupts.
 
->
->Thanks,
->Yasuaki Ishimatsu
->
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> ---
->> v1 -> v2:
->>   * fix subject line
->> 
->>   arch/x86/kernel/smpboot.c | 3 +++
->>   1 file changed, 3 insertions(+)
->> 
->> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
->> index 5492798..0134ec7 100644
->> --- a/arch/x86/kernel/smpboot.c
->> +++ b/arch/x86/kernel/smpboot.c
->> @@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
->>   
->>   	for_each_cpu(sibling, cpu_sibling_mask(cpu))
->>   		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
->> +	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
->> +		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
->> +	cpumask_clear(cpu_llc_shared_mask(cpu));
->>   	cpumask_clear(cpu_sibling_mask(cpu));
->>   	cpumask_clear(cpu_core_mask(cpu));
->>   	c->phys_proc_id = 0;
->> 
->
+First of all, make suspend_device_irqs() check IRQF_NO_SUSPEND for
+all irqactions sharing the same irq_desc and avoid disabling the IRQ
+if at least one of them has IRQF_NO_SUSPEND set.  If that flag is
+also unset for at least one irqaction in the given irq_desc, however,
+suspend_device_irqs() will move the irqactions with IRQF_NO_SUSPEND
+unset over to a list of "suspended actions" whose interrupt handlers
+won't be invoked going forward.
 
---HlL+5n6rz5pIUxbD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="call trace.txt"
+Second, modify note_interrupt() to disable misbehaving IRQs faster if
+spuroius interrupts occur during system suspend/resume (that is, for
+an irq_desc with IRQS_SUSPENDED set).
 
-when run "xl vcpu-set 0 2", the dom0 only report "broke affinity ..."
-when run "xl vcpu-set 0 26", the call trace happens.
+Finally, make resume_device_irqs() move irqactions from the list of
+"suspended actions" created by suspend_device_irqs() back to the
+regular "action" list.  It also will clear the IRQS_SPURIOUS_DISABLED
+flag for IRQS_SUSPENDED IRQs that were emergency disabled after
+suspend_device_irqs() had returned and will log warning messages for
+them.
 
-the dom0 call trace log as following:
+This should address the problematic case (when IRQF_NO_SUSPEND is set
+for at least one and unset for at least one irqaction sharing one
+irq_desc) and that case only without changing behavior in any other
+cases.
 
-[  295.464489] Broke affinity for irq 298
-[  295.756205] Broke affinity for irq 299
-[  295.767177] Broke affinity for irq 301
-[  295.779177] Broke affinity for irq 303
-[  366.283682] installing Xen timer for CPU 2
-[  366.283749] cpu 2 spinlock event irq 103
-[  366.310290] installing Xen timer for CPU 14
-[  366.310347] cpu 14 spinlock event irq 110
-[  366.312432] divide error: 0000 [#1] SMP
-[  366.312449] Modules linked in: nfsv3 nfs_acl auth_rpcgss oid_registry nfsv4
-d
-[  366.312583] CPU: 14 PID: 63 Comm: ksoftirqd/14 Not tainted 3.15.6 #2
-[  366.312598] Hardware name: Intel Corporation S2600WTT/S2600WTT, BIOS
-GRNDSDP4
-[  366.312623] task: ffff88017c8d2c10 ti: ffff88017c8f0000 task.ti:
-ffff88017c80
-[  366.312647] RIP: e030:[<ffffffff810ea5f9>]  [<ffffffff810ea5f9>]
-find_busies0
-[  366.312681] RSP: e02b:ffff88017c8f3ac8  EFLAGS: 00010046
-[  366.312694] RAX: 0000000000000000 RBX: ffff88017c8f3bc8 RCX:
-0000000000000000
-[  366.312708] RDX: 0000000000000000 RSI: 0000000000000000 RDI:
-0000000000000000
-[  366.312724] RBP: ffff88017c8f3c38 R08: ffff880003fb3d00 R09:
-0000000000000040
-[  366.312742] R10: 0000000000000000 R11: 0000000000000000 R12:
-0000000000013e00
-[  366.312757] R13: ffff88017c8f3cb8 R14: ffff880003fb3ce0 R15:
-0000000000000000
-[  366.312783] FS:  0000000000000000(0000) GS:ffff880181bc0000(0000)
-knlGS:00000
-[  366.312803] CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  366.312817] CR2: 00007fad200d5000 CR3: 0000000001c14000 CR4:
-0000000000042660
-[  366.312836] Stack:
-[  366.312843]  0000000000000000 ffff88017c8f3b18 0000000000002e7b
-0000000000000
-[  366.312868]  ffff880003fb3ce0 0000000000013df8 0000000000000200
-0000000000010
-[  366.312890]  0000000000000000 ffff880003fb3cf8 0000000000000000
-0000000000000
-[  366.312911] Call Trace:
-[  366.312932]  [<ffffffff810eae37>] load_balance+0x177/0x9d0
-[  366.312954]  [<ffffffff810df56b>] ? update_rq_clock+0x2b/0x50
-[  366.312976]  [<ffffffff81058ea0>] ? xen_clocksource_read+0x20/0x30
-[  366.312997]  [<ffffffff810edb8d>] pick_next_task_fair+0x1ed/0x430
-[  366.313019]  [<ffffffff816ff0d3>] __schedule+0x113/0x870
-[  366.313039]  [<ffffffff816ff9b4>] ? schedule+0x24/0x70
-[  366.313059]  [<ffffffff816ff9b4>] schedule+0x24/0x70
-[  366.313095]  [<ffffffff810dcd7c>] smpboot_thread_fn+0xbc/0x190
-[  366.313112]  [<ffffffff810dccc0>] ? smpboot_create_threads+0x80/0x80
-[  366.313135]  [<ffffffff810d565e>] kthread+0xce/0xf0
-[  366.313155]  [<ffffffff810d5590>] ? kthread_freezable_should_stop+0x70/0x70
-[  366.313174]  [<ffffffff8170c54c>] ret_from_fork+0x7c/0xb0
-[  366.313190]  [<ffffffff810d5590>] ? kthread_freezable_should_stop+0x70/0x70
-[  366.313204] Code: 0f 47 d1 eb 95 0f 1f 44 00 00 4d 89 ec 4d 89 f5 4c 8b b5 b
-[  366.313372] RIP  [<ffffffff810ea5f9>] find_busiest_group+0x239/0x900
-[  366.313391]  RSP <ffff88017c8f3ac8>
-[  366.313406] ---[ end trace 42d3248df75182f3 ]---
-[  366.313758] divide error: 0000 [#2] SMP
-[  366.313776] Modules linked in: nfsv3 nfs_acl auth_rpcgss oid_registry nfsv4
-d
-[  366.313883] CPU: 14 PID: 63 Comm: ksoftirqd/14 Tainted: G      D      
-3.15.2
-[  366.313898] Hardware name: Intel Corporation S2600WTT/S2600WTT, BIOS
-GRNDSDP4
-[  366.313922] task: ffff88017c8d2c10 ti: ffff88017c8f0000 task.ti:
-ffff88017c80
-[  366.313940] RIP: e030:[<ffffffff810ea5f9>]  [<ffffffff810ea5f9>]
-find_busies0
-[  366.313966] RSP: e02b:ffff88017c8f3468  EFLAGS: 00010046
-[  366.313979] RAX: 0000000000000000 RBX: ffff88017c8f3568 RCX:
-0000000000000000
-[  366.313993] RDX: 0000000000000000 RSI: 0000000000000000 RDI:
-0000000000000000
-[  366.314008] RBP: ffff88017c8f35d8 R08: ffff880003fb3d00 R09:
-0000000000000040
-[  366.314023] R10: 0000000000000000 R11: ffff880186148410 R12:
-0000000000013e00
-[  366.314042] R13: ffff88017c8f3658 R14: ffff880003fb3ce0 R15:
-0000000000000000
-[  366.314067] FS:  0000000000000000(0000) GS:ffff880181bc0000(0000)
-knlGS:00000
-[  366.314090] CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  366.314103] CR2: 00007fad200d5000 CR3: 0000000001c14000 CR4:
-0000000000042660
-[  366.314119] Stack:
-[  366.314125]  ffff8801fc8f35c9 ffff88017c8f34b8 0000000000002e7b
-00000000812ce
-[  366.314150]  ffff880003fb3ce0 0000000000013df8 0000000000000200
-0000000000010
-[  366.314175]  000000006c106009 ffff880003fb3cf8 0000000000000000
-0000000000000
-[  366.314196] Call Trace:
-[  366.314215]  [<ffffffff810eae37>] load_balance+0x177/0x9d0
-[  366.314232]  [<ffffffff810df56b>] ? update_rq_clock+0x2b/0x50
-[  366.314252]  [<ffffffff81058ea0>] ? xen_clocksource_read+0x20/0x30
-[  366.314269]  [<ffffffff810edb8d>] pick_next_task_fair+0x1ed/0x430
-[  366.314288]  [<ffffffff816ff0d3>] __schedule+0x113/0x870
-[  366.314307]  [<ffffffff810b3a34>] ? release_task+0x304/0x480
-[  366.314324]  [<ffffffff816ff9b4>] schedule+0x24/0x70
-[  366.314340]  [<ffffffff810b42ac>] do_exit+0x6fc/0xac0
-[  366.314356]  [<ffffffff81705008>] oops_end+0xa8/0x170
-[  366.314371]  [<ffffffff810663b6>] die+0x56/0x90
-[  366.314385]  [<ffffffff81704a23>] do_trap+0xc3/0x170
-[  366.314402]  [<ffffffff8170812d>] ? __atomic_notifier_call_chain+0xd/0x10
-[  366.314422]  [<ffffffff8106395b>] do_divide_error+0x9b/0xb0
-[  366.314439]  [<ffffffff810ea5f9>] ? find_busiest_group+0x239/0x900
-[  366.314456]  [<ffffffff8170dc0e>] divide_error+0x1e/0x30
-[  366.314473]  [<ffffffff810ea5f9>] ? find_busiest_group+0x239/0x900
-[  366.314491]  [<ffffffff810ea513>] ? find_busiest_group+0x153/0x900
-[  366.314511]  [<ffffffff810eae37>] load_balance+0x177/0x9d0
-[  366.314526]  [<ffffffff810df56b>] ? update_rq_clock+0x2b/0x50
-[  366.314547]  [<ffffffff81058ea0>] ? xen_clocksource_read+0x20/0x30
-[  366.314563]  [<ffffffff810edb8d>] pick_next_task_fair+0x1ed/0x430
-[  366.314581]  [<ffffffff816ff0d3>] __schedule+0x113/0x870
-[  366.314597]  [<ffffffff816ff9b4>] ? schedule+0x24/0x70
-[  366.314613]  [<ffffffff816ff9b4>] schedule+0x24/0x70
-[  366.314628]  [<ffffffff810dcd7c>] smpboot_thread_fn+0xbc/0x190
-[  366.314650]  [<ffffffff810dccc0>] ? smpboot_create_threads+0x80/0x80
-[  366.314668]  [<ffffffff810d565e>] kthread+0xce/0xf0
-[  366.314684]  [<ffffffff810d5590>] ? kthread_freezable_should_stop+0x70/0x70
-[  366.314701]  [<ffffffff8170c54c>] ret_from_fork+0x7c/0xb0
-[  366.314717]  [<ffffffff810d5590>] ? kthread_freezable_should_stop+0x70/0x70
-[  366.314735] Code: 0f 47 d1 eb 95 0f 1f 44 00 00 4d 89 ec 4d 89 f5 4c 8b b5 b
-[  366.314891] RIP  [<ffffffff810ea5f9>] find_busiest_group+0x239/0x900
-[  366.314909]  RSP <ffff88017c8f3468>
-[  366.314927] ---[ end trace 42d3248df75182f4 ]---
-[  366.314932] BUG: unable to handle kernel NULL pointer dereference at
-0000000c
-[  366.314938] IP: [<ffffffff810e86e7>] select_task_rq_fair+0x337/0x8c0
-[  366.314942] PGD 0
-[  366.314943] Oops: 0000 [#3] SMP
-[  366.314960] Modules linked in: nfsv3 nfs_acl auth_rpcgss oid_registry nfsv4
-d
-[  366.314962] CPU: 1 PID: 8225 Comm: udevd Tainted: G      D       3.15.6 #2
-[  366.314965] Hardware name: Intel Corporation S2600WTT/S2600WTT, BIOS
-GRNDSDP4
-[  366.314966] task: ffff8801771634e0 ti: ffff880002598000 task.ti:
-ffff88000250
-[  366.314972] RIP: e030:[<ffffffff810e86e7>]  [<ffffffff810e86e7>]
-select_task0
-[  366.314973] RSP: e02b:ffff88000259bd48  EFLAGS: 00010046
-[  366.314974] RAX: 0000000000000000 RBX: 0000000000000000 RCX:
-0000000000000019
-[  366.314975] RDX: 0000000000000008 RSI: 0000000000000040 RDI:
-0000000000000040
-[  366.314979] RBP: ffff88000259be28 R08: ffff880003fb33f8 R09:
-0000000000000000
-[  366.314980] R10: 0000000000000000 R11: ffff88017cfe4338 R12:
-0000000000000000
-[  366.314981] R13: ffff880003fb33f8 R14: ffff880003fb33e0 R15:
-0000000000000000
-[  366.314988] FS:  00007fad200bb7a0(0000) GS:ffff880181a20000(0000)
-knlGS:00000
-[  366.314989] CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  366.314990] CR2: 000000000000000c CR3: 00000000030f2000 CR4:
-0000000000042660
-[  366.314991] Stack:
-[  366.314993]  ffff88017c7de000 00000000ffffff9c ffff88000259be38
-ffffffff811d5
-[  366.314995]  0000000000013e00 0000000000013e00 ffff8801771637d8
-000000000000d
-[  366.314997]  ffff880003fb3420 0000000000001ade 0000000000013e00
-0000000000018
-[  366.314998] Call Trace:
-[  366.315003]  [<ffffffff811d6a45>] ? do_filp_open+0x45/0xa0
-[  366.315005]  [<ffffffff810dedd7>] sched_exec+0x47/0xc0
-[  366.315009]  [<ffffffff811ccaca>] ? do_open_exec+0xaa/0xe0
-[  366.315014]  [<ffffffff811cccee>] do_execve_common+0x1be/0x640
-[  366.315019]  [<ffffffff811b5b77>] ? kmem_cache_alloc+0x37/0x120
-[  366.315021]  [<ffffffff811cd202>] do_execve+0x32/0x40
-[  366.315026]  [<ffffffff811cd23a>] SyS_execve+0x2a/0x40
-[  366.315029]  [<ffffffff8170cba9>] stub_execve+0x69/0xa0
-[  366.315055] Code: 48 8b 55 c0 4d 8b 36 4c 3b 72 10 74 43 48 89 45 b0 e9 6e f
-[  366.315058] RIP  [<ffffffff810e86e7>] select_task_rq_fair+0x337/0x8c0
-[  366.315058]  RSP <ffff88000259bd48>
-[  366.315059] CR2: 000000000000000c
-[  366.315060] ---[ end trace 42d3248df75182f5 ]---
-[  366.315418] Fixing recursive fault but reboot is needed!
-[  366.315538] BUG: unable to handle kernel NULL pointer dereference at
-0000000c
-[  366.315580] IP: [<ffffffff810e86e7>] select_task_rq_fair+0x337/0x8c0
-[  366.315609] PGD 0
-[  366.315616] Oops: 0000 [#4] SMP
-[  366.315620] Modules linked in: nfsv3 nfs_acl auth_rpcgss oid_registry nfsv4
-d
-[  366.315660] CPU: 0 PID: 8220 Comm: udevd Tainted: G      D       3.15.6 #2
-[  366.315666] Hardware name: Intel Corporation S2600WTT/S2600WTT, BIOS
-GRNDSDP4
-[  366.315673] task: ffff88017c680000 ti: ffff88007274c000 task.ti:
-ffff88007270
-[  366.315678] RIP: e030:[<ffffffff810e86e7>]  [<ffffffff810e86e7>]
-select_task0
-[  366.315687] RSP: e02b:ffff88007274fd48  EFLAGS: 00010046
-[  366.315693] RAX: 0000000000000000 RBX: 0000000000000000 RCX:
-0000000000000019
-[  366.315699] RDX: 0000000000000008 RSI: 0000000000000040 RDI:
-0000000000000040
-[  366.315704] RBP: ffff88007274fe28 R08: ffff880003fb33f8 R09:
-0000000000000000
-[  366.315710] R10: 0000000000000000 R11: ffff88017cfe4338 R12:
-0000000000000000
-[  366.315715] R13: ffff880003fb33f8 R14: ffff880003fb33e0 R15:
-0000000000000000
-[  366.315724] FS:  00007fad200bb7a0(0000) GS:ffff880181a00000(0000)
-knlGS:00000
-[  366.315730] CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  366.315735] CR2: 000000000000000c CR3: 00000000725d7000 CR4:
-0000000000042660
-[  366.315740] Stack:
-[  366.315743]  ffff88017c6e5000 00000000ffffff9c ffff88007274fe38
-ffffffff811d5
-[  366.315751]  0000000000013e00 0000000000013e00 ffff88017c6802f8
-000000000000d
-[  366.315759]  ffff880003fb3420 000000000000163e 0000000000013e00
-0000000000018
-[  366.315766] Call Trace:
-[  366.315772]  [<ffffffff811d6a45>] ? do_filp_open+0x45/0xa0
-[  366.315779]  [<ffffffff810dedd7>] sched_exec+0x47/0xc0
-[  366.315787]  [<ffffffff811ccaca>] ? do_open_exec+0xaa/0xe0
-[  366.315793]  [<ffffffff811cccee>] do_execve_common+0x1be/0x640
-[  366.315801]  [<ffffffff811b5b77>] ? kmem_cache_alloc+0x37/0x120
-[  366.315808]  [<ffffffff811cd202>] do_execve+0x32/0x40
-[  366.315813]  [<ffffffff811cd23a>] SyS_execve+0x2a/0x40
-[  366.315819]  [<ffffffff8170cba9>] stub_execve+0x69/0xa0
-[  366.315824] Code: 48 8b 55 c0 4d 8b 36 4c 3b 72 10 74 43 48 89 45 b0 e9 6e f
-[  366.315882] RIP  [<ffffffff810e86e7>] select_task_rq_fair+0x337/0x8c0
-[  366.315890]  RSP <ffff88007274fd48>
-[  366.315894] CR2: 000000000000000c
-[  366.315899] ---[ end trace 42d3248df75182f6 ]---
-[  366.317854] divide error: 0000 [#5] SMP
-[  366.317869] Modules linked in: nfsv3 nfs_acl auth_rpcgss oid_registry nfsv4
-d
-[  366.317967] CPU: 14 PID: 6370 Comm: rsyslogd Tainted: G      D       3.15.6
-2
-[  366.317982] Hardware name: Intel Corporation S2600WTT/S2600WTT, BIOS
-GRNDSDP4
-[  366.318002] task: ffff880003098000 ti: ffff88017c04c000 task.ti:
-ffff88017c00
-[  366.318017] RIP: e030:[<ffffffff810ea5f9>]  [<ffffffff810ea5f9>]
-find_busies0
-[  366.318040] RSP: e02b:ffff88017c04fa78  EFLAGS: 00010046
-[  366.318052] RAX: 0000000000000000 RBX: ffff88017c04fb78 RCX:
-0000000000000000
-[  366.318067] RDX: 0000000000000000 RSI: 0000000000000000 RDI:
-0000000000000000
-[  366.318082] RBP: ffff88017c04fbe8 R08: ffff880003fb3d00 R09:
-0000000000000040
-[  366.318096] R10: 0000000000000000 R11: 0000000000000293 R12:
-0000000000013e00
-[  366.318111] R13: ffff88017c04fc68 R14: ffff880003fb3ce0 R15:
-0000000000000000
-[  366.318135] FS:  00007f348d764700(0000) GS:ffff880181bc0000(0000)
-knlGS:00000
-[  366.318151] CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  366.318164] CR2: 00007fad200d5000 CR3: 0000000003271000 CR4:
-0000000000042660
-[  366.318179] Stack:
-[  366.318186]  0000000000000001 ffff88017c04fac8 0000000000002e7b
-00000000ffffc
-[  366.318212]  ffff880003fb3ce0 0000000000013df8 0000000000000200
-0000000000010
-[  366.318236]  0000000085f9a800 ffff880003fb3cf8 0000000000000000
-0000000000000
-[  366.318258] Call Trace:
-[  366.318274]  [<ffffffff810eae37>] load_balance+0x177/0x9d0
-[  366.318290]  [<ffffffff810df56b>] ? update_rq_clock+0x2b/0x50
-[  366.318306]  [<ffffffff81058ea0>] ? xen_clocksource_read+0x20/0x30
-[  366.318323]  [<ffffffff810edb8d>] pick_next_task_fair+0x1ed/0x430
-[  366.318342]  [<ffffffff816ff0d3>] __schedule+0x113/0x870
-[  366.318357]  [<ffffffff81703ace>] ? _raw_spin_unlock_irqrestore+0x2e/0xa0
-[  366.318375]  [<ffffffff816ff9b4>] schedule+0x24/0x70
-[  366.318391]  [<ffffffff810fbb1a>] do_syslog+0x4ba/0x640
-[  366.318406]  [<ffffffff810f2d00>] ? bit_waitqueue+0xe0/0xe0
-[  366.318424]  [<ffffffff81235ea2>] kmsg_read+0x32/0x70
-[  366.318439]  [<ffffffff812294de>] proc_reg_read+0x3e/0x70
-[  366.318454]  [<ffffffff811c7405>] vfs_read+0xa5/0x180
-[  366.318469]  [<ffffffff811c75c1>] SyS_read+0x51/0xc0
-[  366.318484]  [<ffffffff8170c5f9>] system_call_fastpath+0x16/0x1b
-[  366.318496] Code: 0f 47 d1 eb 95 0f 1f 44 00 00 4d 89 ec 4d 89 f5 4c 8b b5 b
-[  366.318699] RIP  [<ffffffff810ea5f9>] find_busiest_group+0x239/0x900
-[  366.318718]  RSP <ffff88017c04fa78>
-[  366.318728] ---[ end trace 42d3248df75182f7 ]---
---HlL+5n6rz5pIUxbD--
+It also effectively reverts a previous change to refuse interrupt
+requests with IRQF_NO_SUSPEND settings that do not match the
+existing ones (as it is not needed any more) and a previous change
+that added a IRQD_WAKEUP_STATE check to __disable_irqs() (as that
+mechanism has the same problem with shared interrupts as described
+above).
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+
+I'm not sure why I make suspend_irq() and resume_irq() return bool
+instead of just calling __disable_irq() and __enable_irq() from them
+directly in the previous version.  Do it better this time.
+
+Rafael
+
+---
+ include/linux/irqdesc.h |    2 +
+ kernel/irq/internals.h  |    4 +-
+ kernel/irq/manage.c     |   31 +++---------------
+ kernel/irq/pm.c         |   80 ++++++++++++++++++++++++++++++++++++++++++++++--
+ kernel/irq/spurious.c   |   14 +++++++-
+ 5 files changed, 100 insertions(+), 31 deletions(-)
+
+Index: linux-pm/kernel/irq/manage.c
+===================================================================
+--- linux-pm.orig/kernel/irq/manage.c
++++ linux-pm/kernel/irq/manage.c
+@@ -382,15 +382,8 @@ setup_affinity(unsigned int irq, struct
+ }
+ #endif
+ 
+-void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
++void __disable_irq(struct irq_desc *desc, unsigned int irq)
+ {
+-	if (suspend) {
+-		if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND)
+-		    || irqd_has_set(&desc->irq_data, IRQD_WAKEUP_STATE))
+-			return;
+-		desc->istate |= IRQS_SUSPENDED;
+-	}
+-
+ 	if (!desc->depth++)
+ 		irq_disable(desc);
+ }
+@@ -402,7 +395,7 @@ static int __disable_irq_nosync(unsigned
+ 
+ 	if (!desc)
+ 		return -EINVAL;
+-	__disable_irq(desc, irq, false);
++	__disable_irq(desc, irq);
+ 	irq_put_desc_busunlock(desc, flags);
+ 	return 0;
+ }
+@@ -443,20 +436,8 @@ void disable_irq(unsigned int irq)
+ }
+ EXPORT_SYMBOL(disable_irq);
+ 
+-void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume)
++void __enable_irq(struct irq_desc *desc, unsigned int irq)
+ {
+-	if (resume) {
+-		if (!(desc->istate & IRQS_SUSPENDED)) {
+-			if (!desc->action)
+-				return;
+-			if (!(desc->action->flags & IRQF_FORCE_RESUME))
+-				return;
+-			/* Pretend that it got disabled ! */
+-			desc->depth++;
+-		}
+-		desc->istate &= ~IRQS_SUSPENDED;
+-	}
+-
+ 	switch (desc->depth) {
+ 	case 0:
+  err_out:
+@@ -498,7 +479,7 @@ void enable_irq(unsigned int irq)
+ 		 KERN_ERR "enable_irq before setup/request_irq: irq %u\n", irq))
+ 		goto out;
+ 
+-	__enable_irq(desc, irq, false);
++	__enable_irq(desc, irq);
+ out:
+ 	irq_put_desc_busunlock(desc, flags);
+ }
+@@ -1079,7 +1060,7 @@ __setup_irq(unsigned int irq, struct irq
+ 		 */
+ 
+ #define IRQF_MISMATCH \
+-	(IRQF_TRIGGER_MASK | IRQF_ONESHOT | IRQF_NO_SUSPEND)
++	(IRQF_TRIGGER_MASK | IRQF_ONESHOT)
+ 
+ 		if (!((old->flags & new->flags) & IRQF_SHARED) ||
+ 		    ((old->flags ^ new->flags) & IRQF_MISMATCH))
+@@ -1232,7 +1213,7 @@ __setup_irq(unsigned int irq, struct irq
+ 	 */
+ 	if (shared && (desc->istate & IRQS_SPURIOUS_DISABLED)) {
+ 		desc->istate &= ~IRQS_SPURIOUS_DISABLED;
+-		__enable_irq(desc, irq, false);
++		__enable_irq(desc, irq);
+ 	}
+ 
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+Index: linux-pm/kernel/irq/spurious.c
+===================================================================
+--- linux-pm.orig/kernel/irq/spurious.c
++++ linux-pm/kernel/irq/spurious.c
+@@ -391,10 +391,20 @@ void note_interrupt(unsigned int irq, st
+ 		 * otherwise the counter becomes a doomsday timer for otherwise
+ 		 * working systems
+ 		 */
+-		if (time_after(jiffies, desc->last_unhandled + HZ/10))
++		if (time_after(jiffies, desc->last_unhandled + HZ/10)) {
+ 			desc->irqs_unhandled = 1;
+-		else
++		} else {
+ 			desc->irqs_unhandled++;
++			if (unlikely(desc->istate & IRQS_SUSPENDED)) {
++				/*
++				 * That shouldn't happen.  It means IRQs from
++				 * a device that is supposed to be suspended at
++				 * this point.  Decay faster.
++				 */
++				desc->irqs_unhandled += 999;
++				desc->irq_count += 999;
++			}
++		}
+ 		desc->last_unhandled = jiffies;
+ 	}
+ 
+Index: linux-pm/include/linux/irqdesc.h
+===================================================================
+--- linux-pm.orig/include/linux/irqdesc.h
++++ linux-pm/include/linux/irqdesc.h
+@@ -20,6 +20,7 @@ struct irq_desc;
+  * @handle_irq:		highlevel irq-events handler
+  * @preflow_handler:	handler called before the flow handler (currently used by sparc)
+  * @action:		the irq action chain
++ * @action_suspended:	suspended irq action chain
+  * @status:		status information
+  * @core_internal_state__do_not_mess_with_it: core internal status information
+  * @depth:		disable-depth, for nested irq_disable() calls
+@@ -47,6 +48,7 @@ struct irq_desc {
+ 	irq_preflow_handler_t	preflow_handler;
+ #endif
+ 	struct irqaction	*action;	/* IRQ action list */
++	struct irqaction	*action_suspended;
+ 	unsigned int		status_use_accessors;
+ 	unsigned int		core_internal_state__do_not_mess_with_it;
+ 	unsigned int		depth;		/* nested irq disables */
+Index: linux-pm/kernel/irq/internals.h
+===================================================================
+--- linux-pm.orig/kernel/irq/internals.h
++++ linux-pm/kernel/irq/internals.h
+@@ -63,8 +63,8 @@ enum {
+ 
+ extern int __irq_set_trigger(struct irq_desc *desc, unsigned int irq,
+ 		unsigned long flags);
+-extern void __disable_irq(struct irq_desc *desc, unsigned int irq, bool susp);
+-extern void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume);
++extern void __disable_irq(struct irq_desc *desc, unsigned int irq);
++extern void __enable_irq(struct irq_desc *desc, unsigned int irq);
+ 
+ extern int irq_startup(struct irq_desc *desc, bool resend);
+ extern void irq_shutdown(struct irq_desc *desc);
+Index: linux-pm/kernel/irq/pm.c
+===================================================================
+--- linux-pm.orig/kernel/irq/pm.c
++++ linux-pm/kernel/irq/pm.c
+@@ -13,6 +13,47 @@
+ 
+ #include "internals.h"
+ 
++static void suspend_irq(struct irq_desc *desc, int irq)
++{
++	struct irqaction *action = desc->action;
++	unsigned int no_suspend, flags;
++
++	if (!action)
++		return;
++
++	no_suspend = IRQF_NO_SUSPEND;
++	flags = 0;
++	do {
++		no_suspend &= action->flags;
++		flags |= action->flags;
++		action = action->next;
++	} while (action);
++	if (no_suspend)
++		return;
++
++	desc->istate |= IRQS_SUSPENDED;
++
++	if ((flags & IRQF_NO_SUSPEND) &&
++	    !(desc->istate & IRQS_SPURIOUS_DISABLED)) {
++		struct irqaction *no_suspend = NULL;
++
++		do {
++			action = desc->action;
++			desc->action = action->next;
++			if (action->flags & IRQF_NO_SUSPEND) {
++				action->next = no_suspend;
++				no_suspend = action;
++			} else {
++				action->next = desc->action_suspended;
++				desc->action_suspended = action;
++			}
++		} while (desc->action);
++		desc->action = no_suspend;
++		return;
++	}
++	__disable_irq(desc, irq);
++}
++
+ /**
+  * suspend_device_irqs - disable all currently enabled interrupt lines
+  *
+@@ -30,7 +71,7 @@ void suspend_device_irqs(void)
+ 		unsigned long flags;
+ 
+ 		raw_spin_lock_irqsave(&desc->lock, flags);
+-		__disable_irq(desc, irq, true);
++		suspend_irq(desc, irq);
+ 		raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	}
+ 
+@@ -40,6 +81,41 @@ void suspend_device_irqs(void)
+ }
+ EXPORT_SYMBOL_GPL(suspend_device_irqs);
+ 
++static void resume_irq(struct irq_desc *desc, int irq)
++{
++	if (desc->istate & IRQS_SUSPENDED) {
++		desc->istate &= ~IRQS_SUSPENDED;
++		if (desc->action_suspended) {
++			struct irqaction *action;
++
++			do {
++				action = desc->action_suspended;
++				desc->action_suspended = action->next;
++				action->next = desc->action;
++				desc->action = action;
++			} while (desc->action_suspended);
++
++			if (desc->istate & IRQS_SPURIOUS_DISABLED) {
++				pr_err("Re-enabling emergency disabled IRQ %d\n",
++				       irq);
++				desc->istate &= ~IRQS_SPURIOUS_DISABLED;
++			} else {
++				return;
++			}
++		}
++	} else {
++		if (!desc->action)
++			return;
++
++		if (!(desc->action->flags & IRQF_FORCE_RESUME))
++			return;
++
++		/* Pretend that it got disabled ! */
++		desc->depth++;
++	}
++	__enable_irq(desc, irq);
++}
++
+ static void resume_irqs(bool want_early)
+ {
+ 	struct irq_desc *desc;
+@@ -54,7 +130,7 @@ static void resume_irqs(bool want_early)
+ 			continue;
+ 
+ 		raw_spin_lock_irqsave(&desc->lock, flags);
+-		__enable_irq(desc, irq, true);
++		resume_irq(desc, irq);
+ 		raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	}
+ }
+
