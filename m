@@ -1,94 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaG2Imr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 04:42:47 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:11388 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702AbaG2Imo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 04:42:44 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 29 Jul 2014 01:30:31 -0700
-Date: Tue, 29 Jul 2014 10:42:38 +0200
-From: Thierry Reding <treding@nvidia.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Linus Walleij <linus.walleij@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the gpio tree
-Message-ID: <20140729084237.GE31360@ulmo.nvidia.com>
-References: <20140729183153.0e77a6f6@canb.auug.org.au>
+	id S1752882AbaG2IoP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 04:44:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17376 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751430AbaG2IoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 04:44:12 -0400
+Message-ID: <53D75EB6.1090301@redhat.com>
+Date: Tue, 29 Jul 2014 10:43:34 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140729183153.0e77a6f6@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n+lFg1Zro7sl44OB"
-Content-Disposition: inline
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Drysdale <drysdale@google.com>
+CC: LSM List <linux-security-module@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Paul Moore <paul@paul-moore.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: [RFC PATCHv2 00/11] Adding FreeBSD's Capsicum security framework
+References: <1406296033-32693-1-git-send-email-drysdale@google.com>	<871tt796i0.fsf@x220.int.ebiederm.org>	<CAHse=S_7Jpb9bTXHgU8q8_UZ=ce2gwdq8C15a+jbfO_pHmV_iA@mail.gmail.com> <87ha21qja0.fsf@x220.int.ebiederm.org>
+In-Reply-To: <87ha21qja0.fsf@x220.int.ebiederm.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---n+lFg1Zro7sl44OB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Il 28/07/2014 23:13, Eric W. Biederman ha scritto:
+> This notion that a shared structure should have different semantics
+> depending on who is looking at it, sounds like a maintenance nightmare
+> to me. 
 
-On Tue, Jul 29, 2014 at 10:31:53AM +0200, Stephen Rothwell wrote:
-> * PGP Signed by an unknown key
->=20
-> Hi Linus,
->=20
-> After merging the gpio tree, today's linux-next build (arm
-> multi_v7_defconfig) failed like this:
->=20
-> In file included from arch/arm/mach-tegra/board-paz00.c:20:0:
-> include/linux/gpio/machine.h:24:2: error: unknown type name 'u16'
->   u16 chip_hwnum;
->   ^
-> include/linux/gpio/machine.h:31:19: error: field 'list' has incomplete ty=
-pe
->   struct list_head list;
->                    ^
->=20
-> Caused by commit 0a6d315827ee ("gpio: split gpiod board registration
-> into machine header") or an interaction of that with commit
-> a0524acc94c9 ("ARM: tegra: Sort includes alphabetically") from the
-> arm-soc tree.
->=20
-> linux/gpio/machine.h needs to include some of the same files that
-> linux/gpio/driver.h does.  See Rule 1 in Documentation/SubmitChecklist.
->=20
-> I have used the version of the gpio tree from next-20140728 for today.
+Isn't that already with seccomp BPF filters?  You can have the parent
+process set a BPF filter that forbids read on that file descriptor or
+write on that file descriptor.
 
-I think linux/gpio/machine.h needs at least linux/types.h (for u16,
-though I guess that "dependency" could be removed by simply making
-gpiod_lookup.chip_hwnum an unsigned int) and linux/list.h for struct
-list_head.
+Effectively, this patchset provides the functionality to "hotplug" BPF
+filters on a running process as more file descriptors are passed via
+SCM_RIGHTS.  Except it doesn't use BPF filters, and instead uses a
+separate set of discrete capabilities.
 
-Thierry
+> I see two sensible implementations:
+> - Add a seccomp bpf filter to struct file.
 
---n+lFg1Zro7sl44OB
-Content-Type: application/pgp-signature
+I proposed something like this, but it has some additional
+implementation complications.  See the v1 thread.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+But it does have to be in a file descriptor rather than a struct file.
+It's part of the model that two processes can have different views of
+the file descriptor (again my toy example is that of an eventfd that an
+unprivileged child process can only write to).
 
-iQIcBAEBAgAGBQJT1159AAoJEN0jrNd/PrOhHF0P+gI/MTgH6lzX29qNWk7yzafh
-kfFPWcAhvywOdscbt1/DoRaMGXKFJcgtfCZkLvMeVWv+EYmzj8Bq4cWWQjJ4Za/P
-c4JqFzqwHOK0LUHPD0Vr/3ySRj9iyOXuxOXEfmqbT+tT02bMQ+8njt5pKE2kShyq
-gkdvKROv7B8eKXqHF/LM6bJindDuf2BgvAhr/45QbkTOQCtnLzP7HbMNxerCgiru
-bkQZR5kFrFHe9toZ3byDJQ3yzSUmAs0gfXPOHHJyZlQXn0JoVKVkt8oXAvpHy8fv
-lVKWn7j1htGcX+aQPPyZ2gLV2q6W16Hcuct/qr5fRcXuzCMs1G+wPsVBuukSNMAB
-PT9k7qW/f9wyR+Knn4u60Lp/zqA/5qtCaVIn+vZdikM8s3rJzannzwzeoz9u81ah
-yE6fRovEpKhNBBlz4DVPeumly5VQysEzIUaIG4Ul43b4vwY1o8B32UkQxCvO+6et
-XcJivNJMKzmpZ4LZUaTP7CmFux4XwymnHvldNkgiF5scv/OjLnRi3/XTATM8SOWQ
-hGXgo3vJV0j4VcsKTKfuybgpPwKiVEc1C5STNmHjoVPbqi1Kgs/TvajUGYwyPkSd
-MBe1FV56iag/eewgj+gJfJA9up77vRgR+2vmnvDLuwRX1ZoquNjR6QXmj7vbQil1
-pUDRpV4NA4GqhhnyGlAy
-=qL11
------END PGP SIGNATURE-----
+> Additionally unless there is a process wide restriction to relative
+> paths I can trivially escape your relative path implementation by simply
+> doing open(.) and getting a struct file without any of those
+> restrictions.
 
---n+lFg1Zro7sl44OB--
+Yes, there is a prctl for that.
+
+Paolo
