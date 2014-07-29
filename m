@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412AbaG2LQr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 07:16:47 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:32983 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753085AbaG2LQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 07:16:44 -0400
-Message-ID: <53D7825C.2020900@ti.com>
-Date: Tue, 29 Jul 2014 14:15:40 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Pawel Moll <pawel.moll@arm.com>
-CC: Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+	id S1753430AbaG2LQy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 07:16:54 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55579 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753085AbaG2LQv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 07:16:51 -0400
+Date: Tue, 29 Jul 2014 12:15:57 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Vitaly Andrianov <vitalya@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v9] video: ARM CLCD: Add DT support
-References: <1403610911-31491-1-git-send-email-pawel.moll@arm.com>	 <1404824767.21897.7.camel@hornet> <1406023366.25343.44.camel@hornet> <1406631987.17155.0.camel@hornet>
-In-Reply-To: <1406631987.17155.0.camel@hornet>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="bVRbbePG6nEdxevRqOVDUhKnmgQaHteVx"
+	<linux-arm-kernel@lists.infradead.org>,
+        Cyril Chemparathy <cyril@ti.com>
+Subject: Re: [PATCH 1/2] ARM: LPAE: load upper bits of early TTBR0/TTBR1
+Message-ID: <20140729111557.GF9245@arm.com>
+References: <20140722153623.25088.37742.stgit@buzz>
+ <20140728181224.GN15536@arm.com>
+ <CALYGNiNrK1d32ecz4rw0sgn0GyN-M6hTBuTLGQV53Z4Br-bpYQ@mail.gmail.com>
+ <20140728184741.GT15536@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140728184741.GT15536@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bVRbbePG6nEdxevRqOVDUhKnmgQaHteVx
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jul 28, 2014 at 07:47:41PM +0100, Will Deacon wrote:
+> On Mon, Jul 28, 2014 at 07:40:58PM +0100, Konstantin Khlebnikov wrote:
+> > On Mon, Jul 28, 2014 at 10:12 PM, Will Deacon <will.deacon@arm.com> wrote:
+> > > On Tue, Jul 22, 2014 at 04:36:23PM +0100, Konstantin Khlebnikov wrote:
+> > >> This patch fixes booting when idmap pgd lays above 4gb. Commit
+> > >> 4756dcbfd37 mostly had fixed this, but it'd failed to load upper bits.
+> > >>
+> > >> Also this fixes adding TTBR1_OFFSET to TTRR1: if lower part overflows
+> > >> carry flag must be added to the upper part.
+> > >>
+> > >> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+> > >> Cc: Cyril Chemparathy <cyril@ti.com>
+> > >> Cc: Vitaly Andrianov <vitalya@ti.com>
+> > >> ---
+> > >>  arch/arm/mm/proc-v7-3level.S |    7 +++----
+> > >>  1 file changed, 3 insertions(+), 4 deletions(-)
+> > >>
+> > >> diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
+> > >> index 22e3ad6..f0481dd 100644
+> > >> --- a/arch/arm/mm/proc-v7-3level.S
+> > >> +++ b/arch/arm/mm/proc-v7-3level.S
+> > >> @@ -140,12 +140,11 @@ ENDPROC(cpu_v7_set_pte_ext)
+> > >>       mov     \tmp, \ttbr1, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
+> > >>       mov     \ttbr1, \ttbr1, lsl #ARCH_PGD_SHIFT             @ lower bits
+> > >>       addls   \ttbr1, \ttbr1, #TTBR1_OFFSET
+> > >> -     mcrr    p15, 1, \ttbr1, \zero, c2                       @ load TTBR1
+> > >> +     adcls   \tmp, \tmp, #0
+> > >> +     mcrr    p15, 1, \ttbr1, \tmp, c2                        @ load TTBR1
+> > >>       mov     \tmp, \ttbr0, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
+> > >>       mov     \ttbr0, \ttbr0, lsl #ARCH_PGD_SHIFT             @ lower bits
+> > >> -     mcrr    p15, 0, \ttbr0, \zero, c2                       @ load TTBR0
+> > >> -     mcrr    p15, 1, \ttbr1, \zero, c2                       @ load TTBR1
+> > >> -     mcrr    p15, 0, \ttbr0, \zero, c2                       @ load TTBR0
+> > >> +     mcrr    p15, 0, \ttbr0, \tmp, c2                        @ load TTBR0
+> > >
+> > > I must admit, the code you are removing here looks really strange. Was there
+> > > a badly resolved conflict somewhere along the way? It would be nice to see
+> > > if your fix (which seems ok to me) was actually present in the mailing list
+> > > posting of the patch that ended in the above mess.
+> > 
+> > Nope, no merge conflicts, source in original patch
+> > https://lkml.org/lkml/2012/9/11/346
+> > 
+> > That mess completely harmless, this code is used only once on boot.
+> > I don't have that email, so replying isn't trivial for me.
+> 
+> How bizarre. Also, Cyril doesn't work for TI anymore (his email is
+> bouncing), so it's tricky to know what he meant here.
+> 
+> Your patch looks better than what we currently have though. Have you managed
+> to test it on a keystone platform (I don't have one)?
 
-Hi,
+Given that:
 
-On 29/07/14 14:06, Pawel Moll wrote:
-> On Tue, 2014-07-22 at 11:02 +0100, Pawel Moll wrote:
->> On Tue, 2014-07-08 at 14:06 +0100, Pawel Moll wrote:
->>> On Tue, 2014-06-24 at 12:55 +0100, Pawel Moll wrote:
->>>> This patch adds basic DT bindings for the PL11x CLCD cells
->>>> and make their fbdev driver use them.
->>>>
->>>> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
->>>
->>> As two weeks passed without any further comment, I'm assuming that th=
-ere
->>> are no more obstacles for this patch to be merged.
->>>
->>> Tomi, will you pick it up for 3.17, as you offered? Russell, if you
->>> prefer to take it via your tree, it's in your system as 8005/4.
->>
->> Ping...
->>
->> Tomi?
+  Acked-by: Will Deacon <will.deacon@arm.com>
 
-Yep, I've queued it now for 3.17.
-
- Tomi
-
-
-
---bVRbbePG6nEdxevRqOVDUhKnmgQaHteVx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT14JhAAoJEPo9qoy8lh71sUQP/jKPnLxnzJq8fzpuEeIGj601
-vr11tla+Ih3Xb9oXBwwhomrsvX1sf1MbwTlQrSggdYj47ZkSXC/cM8SYYJuzTZX9
-v2Tyv3HnQ62CP9JenfUh6p0CTOZlnFp0VaWRCudHPT+4CamtGf1NfV4JV0Aop0kF
-1kHlZt0IDYUJOVQx7oVWvGwJ9sljx1cfePenKw7z6CZbK0UyU5Vu1/eCCQO0s+5K
-kJ7IsXlFCAhWPkiy1sZqfutId5zFeO0IHG3HNllmleh9juE6w9pvhnbdsyaTEIM/
-L5jZzWAWfbHJtQZe07tA73iDlqWueI5PFdeILFBqiU/umMBmMQmmxNby0oLqOd6K
-wZVoGdihQ7yYKEN3ZOEeP58MBkYzXtJJ2Jj/jJ5RV8x/Gj622PHME7x/J6BOnMvK
-8LaTtGnl7jul/qgr5DCcu5fU9xw2148VwuVSMd2YPsp4x0d8TaA3q1X+skYBvisK
-2KDEVEOKIuT4dkazBU1oocy7nALOKATzbHr0hub+f8+ZO1lwBnRDSEStS9LwMqmT
-zS3Y7j5Vz/xgC6kpVB8REG7ZfBL+DnPMePKFFmGE4uH+ryYrPCm21TWgCrxpk5Xp
-o11cB9hBw5cCk901vFRfB/gAO2FoRbp4ufKh0usT27r2FaUM9cgqTvTCEX2UiZPC
-qO/J480Qe+wW1kJTc2FH
-=IPAQ
------END PGP SIGNATURE-----
-
---bVRbbePG6nEdxevRqOVDUhKnmgQaHteVx--
+Will
