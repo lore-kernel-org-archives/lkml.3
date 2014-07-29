@@ -1,117 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560AbaG2Lm0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 07:42:26 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:39516 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047AbaG2LmX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 07:42:23 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-32-53d7889dc9aa
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-References: <1406328445-63707-1-git-send-email-jaegeuk@kernel.org>
- <1406328445-63707-10-git-send-email-jaegeuk@kernel.org>
-In-reply-to: <1406328445-63707-10-git-send-email-jaegeuk@kernel.org>
-Subject: RE: [f2fs-dev] [PATCH 10/11] f2fs: avoid checkpoint when error was
-	occurred
-Date: Tue, 29 Jul 2014 19:41:35 +0800
-Message-id: <008301cfab22$27e34fc0$77a9ef40$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Content-language: zh-cn
-Thread-index: AQH0/sFA7oYZ7Fd/hcfctysO+ZeFcgIvEHQ3m1p0dGA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9jQd25HdeDDT6vULd4sn4Ws8WlRe4W
-	e/aeZLG4vGsOmwOLx6ZVnWweuxd8ZvL4vEkugDmKyyYlNSezLLVI3y6BK2Ne32KmgpUiFf/f
-	nmZtYLwr0MXIySEhYCLRc6eXHcIWk7hwbz0biC0kMJ1RYu77+i5GLiD7B6PEiYVbwBJsAioS
-	yzv+M4HYIgJqEr37poDZzAKZEhP6X7BDNNdI7G25BxbnFHCRmLxmNVivsECYxLe7z1m6GDk4
-	WARUJR52CYGEeQUsJe78e8MGYQtK/Jh8jwVipJbE+p3HocbLS2xe85YZ4k4FiR1nXzNCxMUl
-	Nh65xQJxjpXEpTXT2CYwCs1CMmoWklGzkIyahaR9ASPLKkbR1ILkguKk9FwjveLE3OLSvHS9
-	5PzcTYzgsH8mvYNxVYPFIUYBDkYlHt4Nc68FC7EmlhVX5h5ilOBgVhLhfVF+PViINyWxsiq1
-	KD++qDQntfgQozQHi5I478FW60AhgfTEktTs1NSC1CKYLBMHp1QDIxfntMkNp4q4Cn0+7FML
-	jPY+7OK9++6E6pVP2nVPP2yXW2E+seuozJoO9sWxZeUPD1X26vW6b3sfw+ZRfitK/HhD3vy/
-	PHYpZxjW3WSYebDKNsW5IDItRbLEdG1N2XcFUb0VHwuWpmy4WPj+vdmD/c8c1nlIVii4e23f
-	Mbnu89z2aVdsS4ROKLEUZyQaajEXFScCANAbArp3AgAA
+	id S1753580AbaG2Lmg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 07:42:36 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:43119 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753356AbaG2Lme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 07:42:34 -0400
+Message-ID: <53D788A7.4020303@mm-sol.com>
+Date: Tue, 29 Jul 2014 14:42:31 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@linaro.org>,
+        Rob Herring <robherring2@gmail.com>
+CC: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Boyd <sboyd@codeaurora.org>, Mark Brown <broonie@linaro.org>
+Subject: use IORESOURCE_REG resource type for non-translatable addresses in
+ DT
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jaegeuk,
+Hi,
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> Sent: Saturday, July 26, 2014 6:47 AM
-> To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net
-> Cc: Jaegeuk Kim
-> Subject: [f2fs-dev] [PATCH 10/11] f2fs: avoid checkpoint when error was occurred
-> 
-> No need to do checkpoint, whenever any errors were detected.
-> 
+While looking in MFD drivers I saw that few of them (88pm860x-core,
+max8925-core and wm831x-core) allow use of IORESOURCE_REG as resource
+type when calling  platform_get_resource() by their child drivers. The
+resources for these child devices are filled by core MFD driver manually
+and then passed to mfd_add_devices() as mfd_cells.
 
-The code here is modified once at below commit for avoid unneeded cp.
-You can see the reason through the description of the commit.
+During development and review comments of the MFD core driver for
+Qualcomm SPMI PMICs we came down to a need to describe PMIC peripheral
+addresses (the PMIC sub-functions) through *reg* property in DT. The
+PMIC peripheral drivers will be scattered over the /drivers and they
+will call platform_get_resource() to extract their peripheral base
+addresses from resource->start. The issue we have encountered is that
+these addresses are non-translatable thus of_address_to_resource returns
+OF_BAD_ADDR.
 
-Commit 691c6fd2a2d6 ("remove unneeded write checkpoint in recover_fsync_data")
+Stephen Boyd have made a suggestion to solve the issue here [1].
 
-"Previously, recover_fsync_data still to write checkpoint when there is
-nothing to recover with normal umount image.
-It may reduce mount performance and flash memory lifetime, so let's remove
-it."
+Is that approach acceptable? Or do we have better way? How similar
+issues could be solved.
 
-Why we should revert the commit?
+Our DT node for SPMI PMICs can be seen below [2].
 
-> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> ---
->  fs/f2fs/recovery.c | 5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-> index a112368..90d7e80 100644
-> --- a/fs/f2fs/recovery.c
-> +++ b/fs/f2fs/recovery.c
-> @@ -436,7 +436,6 @@ int recover_fsync_data(struct f2fs_sb_info *sbi)
->  {
->  	struct list_head inode_list;
->  	int err;
-> -	bool need_writecp = false;
-> 
->  	fsync_entry_slab = f2fs_kmem_cache_create("f2fs_fsync_inode_entry",
->  			sizeof(struct fsync_inode_entry));
-> @@ -454,8 +453,6 @@ int recover_fsync_data(struct f2fs_sb_info *sbi)
->  	if (list_empty(&inode_list))
->  		goto out;
-> 
-> -	need_writecp = true;
-> -
->  	/* step #2: recover data */
->  	err = recover_data(sbi, &inode_list, CURSEG_WARM_NODE);
->  	f2fs_bug_on(!list_empty(&inode_list));
-> @@ -463,7 +460,7 @@ out:
->  	destroy_fsync_dnodes(&inode_list);
->  	kmem_cache_destroy(fsync_entry_slab);
->  	sbi->por_doing = false;
-> -	if (!err && need_writecp)
-> +	if (!err)
->  		write_checkpoint(sbi, false);
->  	return err;
->  }
-> --
-> 1.8.5.2 (Apple Git-48)
-> 
-> 
-> ------------------------------------------------------------------------------
-> Want fast and easy access to all the code in your enterprise? Index and
-> search up to 200,000 lines of code with a free copy of Black Duck
-> Code Sight - the same software that powers the world's largest code
-> search on Ohloh, the Black Duck Open Hub! Try it now.
-> http://p.sf.net/sfu/bds
-> _______________________________________________
-> Linux-f2fs-devel mailing list
-> Linux-f2fs-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+Please do comment.
 
+PS: I have made a little change in __of_address_to_resource() to
+illustrate what I meant above.
+
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index 5edfcb0..898741e 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -617,9 +617,24 @@ static int __of_address_to_resource(struct
+device_node *dev,
+
+        if ((flags & (IORESOURCE_IO | IORESOURCE_MEM)) == 0)
+                return -EINVAL;
++
+        taddr = of_translate_address(dev, addrp);
+-       if (taddr == OF_BAD_ADDR)
+-               return -EINVAL;
++       /*
++        * if the address is non-translatable to cpu physical address
++        * fallback to a IORESOURCE_REG resource.
++        */
++       if (taddr == OF_BAD_ADDR) {
++               memset(r, 0, sizeof(*r));
++               taddr = of_read_number(addrp, 1);
++               if (taddr == OF_BAD_ADDR)
++                       return -EINVAL;
++               r->start = taddr;
++               r->end = taddr + size - 1;
++               r->flags = IORESOURCE_REG;
++               r->name = name ? name : dev->full_name;
++               return 0;
++       }
++
+        memset(r, 0, sizeof(struct resource));
+        if (flags & IORESOURCE_IO) {
+                unsigned long port;
+
+[1] https://lkml.org/lkml/2014/7/17/680
+
+[2] Simplistic PMIC DT node.
+
+spmi@fc4cf000 {
+	compatible = "qcom,spmi-pmic-arb";
+	reg = <0xfc4cf000 0x1000>,
+	      <0xfc4cb000 0x1000>,
+	      <0xfc4ca000 0x1000>;
+	reg-names = "core", "intr", "cnfg";
+	#address-cells = <2>;
+	#size-cells = <0>;
+	interrupt-controller;
+	#interrupt-cells = <4>;
+
+	pm8941@0 {
+		compatible = "qcom,pm8941";
+		reg = <0x0 SPMI_USID>;
+		#size-cells = <1>;
+		#address-cells = <1>;
+
+		rtc {
+			compatible = "qcom,pm8941-rtc";
+			reg = <0x6000 0x100>, <0x6100 0x100>;
+			reg-names = "rtc", "alarm";
+			interrupts = <0x0 0x61 0x1 0>;
+			interrupt-names = "alarm";
+		};
+	};
+
+	pm8941@1 {
+		compatible = "qcom,pm8941";
+		reg = <0x1 SPMI_USID>;
+	};
+}
+
+-- 
+regards,
+Stan
