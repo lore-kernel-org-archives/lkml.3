@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716AbaG2N5e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 09:57:34 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:64316 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634AbaG2N53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 09:57:29 -0400
-Message-ID: <53D7A846.3060602@gmail.com>
-Date: Tue, 29 Jul 2014 07:57:26 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Minchan Kim <minchan@kernel.org>
-CC: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 1/2] perf tools: Ensure --symfs ends with '/'
-References: <1406251908-8195-1-git-send-email-namhyung@kernel.org> <20140729050246.GC22707@bbox> <20140729123305.GO7831@kernel.org>
-In-Reply-To: <20140729123305.GO7831@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752995AbaG2OEi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 10:04:38 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51691 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750960AbaG2OEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 10:04:36 -0400
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Cc: Jaegeuk Kim <jaegeuk@kernel.org>
+Subject: [PATCH] f2fs: add tracepoint for f2fs_issue_flush
+Date: Tue, 29 Jul 2014 07:04:52 -0700
+Message-Id: <1406642692-89201-1-git-send-email-jaegeuk@kernel.org>
+X-Mailer: git-send-email 1.8.5.2 (Apple Git-48)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/29/14, 6:33 AM, Arnaldo Carvalho de Melo wrote:
->
-> David, was there any reason not to do it like done in this patch?
+This patch adds a tracepoint for f2fs_issue_flush.
 
-I feel like we did at one point.
-<searching>
-http://www.spinics.net/lists/linux-perf-users/msg00252.html
+Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+---
+ fs/f2fs/segment.c           |  3 +++
+ include/trace/events/f2fs.h | 24 ++++++++++++++++++++++++
+ 2 files changed, 27 insertions(+)
 
-So my original rootfs patch did use '/' after the path.
-
-Incarnation as symfs which got accepted:
-    https://lkml.org/lkml/2010/12/9/391
-has it removed.
-
-I recall you running the patch through a number of scenarios. I do not 
-recall the reason '/' got dropped.
-
-David
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index e016b97..5a53a0a 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -239,6 +239,9 @@ int f2fs_issue_flush(struct f2fs_sb_info *sbi)
+ 	struct flush_cmd_control *fcc = SM_I(sbi)->cmd_control_info;
+ 	struct flush_cmd cmd;
+ 
++	trace_f2fs_issue_flush(sbi->sb, test_opt(sbi, NOBARRIER),
++					test_opt(sbi, FLUSH_MERGE));
++
+ 	if (test_opt(sbi, NOBARRIER))
+ 		return 0;
+ 
+diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
+index b983990..7d2e70e 100644
+--- a/include/trace/events/f2fs.h
++++ b/include/trace/events/f2fs.h
+@@ -926,6 +926,30 @@ TRACE_EVENT(f2fs_issue_discard,
+ 		(unsigned long long)__entry->blkstart,
+ 		(unsigned long long)__entry->blklen)
+ );
++
++TRACE_EVENT(f2fs_issue_flush,
++
++	TP_PROTO(struct super_block *sb, bool nobarrier, bool flush_merge),
++
++	TP_ARGS(sb, nobarrier, flush_merge),
++
++	TP_STRUCT__entry(
++		__field(dev_t,	dev)
++		__field(bool, nobarrier)
++		__field(bool, flush_merge)
++	),
++
++	TP_fast_assign(
++		__entry->dev	= sb->s_dev;
++		__entry->nobarrier = nobarrier;
++		__entry->flush_merge = flush_merge;
++	),
++
++	TP_printk("dev = (%d,%d), %s %s",
++		show_dev(__entry),
++		__entry->nobarrier ? "skip (nobarrier)" : "issue",
++		__entry->flush_merge ? " with flush_merge" : "")
++);
+ #endif /* _TRACE_F2FS_H */
+ 
+  /* This part must be outside protection */
+-- 
+1.8.5.2 (Apple Git-48)
 
