@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371AbaG2PWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:22:43 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:60605 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754349AbaG2PWk (ORCPT
+	id S1754073AbaG2PT6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:19:58 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:57251 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753425AbaG2PTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:22:40 -0400
-Date: Tue, 29 Jul 2014 19:22:36 +0400
-From: Andrey Borzenkov <arvidjaar@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Richard Weinberger <richard@nod.at>, mike.marciniszyn@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>
-Subject: Re: [opensuse-kernel] Re: Kernel binrpm produces brokes grub2
- config
-Message-ID: <20140729192236.2165e5b5@opensuse.site>
-In-Reply-To: <53D7925A.8080200@suse.cz>
-References: <53D774F9.3090305@nod.at>
-	<53D7925A.8080200@suse.cz>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 8bit
+	Tue, 29 Jul 2014 11:19:54 -0400
+X-IronPort-AV: E=Sophos;i="5.01,757,1400018400"; 
+   d="scan'208";a="87459213"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: kernel-janitors@vger.kernel.org, linux-ia64@vger.kernel.org,
+        ceph-devel@vger.kernel.org, toralf.foerster@gmx.de, hmh@hmh.eng.br,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/9] drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c: use correct structure type name in sizeof
+Date: Tue, 29 Jul 2014 17:16:43 +0200
+Message-Id: <1406647011-8543-2-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1406647011-8543-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1406647011-8543-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Tue, 29 Jul 2014 14:23:54 +0200
-Michal Marek <mmarek@suse.cz> пишет:
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> On 2014-07-29 12:18, Richard Weinberger wrote:
-> > Hi!
-> > 
-> > I'm not sure who to blame, but the below commit breaks the kernel binrpm target for me.
-> > It produces a faulty grub2 config.
-> > After installing such a kernel grub2 looks for vmlinuz-XY-rpm and initrd-XY-rpm.
-> > These files are not existing and the machine does no longer boot.
-> > Luckily an addition boot entry without the -rpm suffix exists, if remote access works
-> > one can recover the machine.
-> > 
-> > My question is, why do we need these copy of vmlinuz anyway?
-> > After calling installkernel on the -rpm variants you delete them again...
-> 
-> The typical /sbin/installkernel script does a cp "$2" "/boot/...", so
-> you can't use the already installed files as its arguments.
-> 
-> 
-> > This <insert swear word here> happens on openSUSE 13.1, maybe their installkernel script needs fixing.
-> 
-> I guess that the problem is that grub2-mkconfig sees the temporary
-> /boot/vmlinuz-*-rpm file and creates a menu entry for it. I guess we
-> should create the temporary kernel and initrd files somewhere else than
-> in /boot.
-> 
+Correct typo in the name of the type given to sizeof.  Because it is the
+size of a pointer that is wanted, the typo has no impact on compilation or
+execution.
 
-Or name it differently - e.g. rpm-vmlinuz-XY.
+This problem was found using Coccinelle (http://coccinelle.lip6.fr/).  The
+semantic patch used can be found in message 0 of this patch series.
 
-> Michal
-> 
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c b/drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c
+index cda8388..255590f 100644
+--- a/drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c
++++ b/drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c
+@@ -227,7 +227,7 @@ static int vpfe_enable_clock(struct vpfe_device *vpfe_dev)
+ 		return 0;
+ 
+ 	vpfe_dev->clks = kzalloc(vpfe_cfg->num_clocks *
+-				   sizeof(struct clock *), GFP_KERNEL);
++				   sizeof(struct clk *), GFP_KERNEL);
+ 	if (vpfe_dev->clks == NULL) {
+ 		v4l2_err(vpfe_dev->pdev->driver, "Memory allocation failed\n");
+ 		return -ENOMEM;
 
