@@ -1,137 +1,510 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277AbaG2A1A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 20:27:00 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:63924 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaG2A06 (ORCPT
+	id S1752527AbaG2A3p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 20:29:45 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:56086 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636AbaG2A3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 20:26:58 -0400
+	Mon, 28 Jul 2014 20:29:43 -0400
+Date: Mon, 28 Jul 2014 17:29:40 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v5 05/14] mm, compaction: move pageblock checks up from
+ isolate_migratepages_range()
+In-Reply-To: <1406553101-29326-6-git-send-email-vbabka@suse.cz>
+Message-ID: <alpine.DEB.2.02.1407281709050.8998@chino.kir.corp.google.com>
+References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-6-git-send-email-vbabka@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140728234644.GA18729@kroah.com>
-References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com>
- <1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com>
- <20140728185538.GB17609@kroah.com> <CAB=NE6VebcR7=UA1n0wNVLr5FFukzq6aW5CkeB3nf5FixV=3cA@mail.gmail.com>
- <CAB=NE6Xmi2zUCis22q+X8_AKRcwMrAtmx-aqSSvTB70Xjet6VQ@mail.gmail.com> <20140728234644.GA18729@kroah.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Mon, 28 Jul 2014 17:26:34 -0700
-X-Google-Sender-Auth: JhtL3hLPNhCFM9RzBElezknB7bA
-Message-ID: <CAB=NE6UzK1ZEzm+54dwSyPwHGrAWCPtiNtxwhQuJF6tM9NbnYw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred probe
- from init
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Santosh Rastapur <santosh@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>, Takashi Iwai <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 4:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Jul 28, 2014 at 12:48:32PM -0700, Luis R. Rodriguez wrote:
->> On Mon, Jul 28, 2014 at 12:04 PM, Luis R. Rodriguez
->> <mcgrof@do-not-panic.com> wrote:
->> > On Mon, Jul 28, 2014 at 11:55 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> >> So, what drivers are having problems in their init sequence, and why
->> >> aren't they using async firmware loading?
->> >
->> > Fixing drivers is one thing, fixing drivers *now* because *now*
->> > drivers are failing due to a regression is another thing and that's
->> > what we have now so lets just be clear on that. The 30 second rule is
->> > a major driver requirement change and it should not be taken slightly,
->> > all of a sudden this is a new requirement but you won't know that
->> > unless you're reading these threads or hit an issue. That's an issue
->> > in itself.
->
-> That "regression" is something that userspace has decided to do, not
-> anything the kernel changed,
+On Mon, 28 Jul 2014, Vlastimil Babka wrote:
 
-Actually commit 786235ee seems to have been the one that caused this
-issue, systemd would just send the SIGKILL and that change forced a
-bail on probe then hence Canonical's work around to modify
-kthread_create() to not leave upon SIGKILL:
+> isolate_migratepages_range() is the main function of the compaction scanner,
+> called either on a single pageblock by isolate_migratepages() during regular
+> compaction, or on an arbitrary range by CMA's __alloc_contig_migrate_range().
+> It currently perfoms two pageblock-wide compaction suitability checks, and
+> because of the CMA callpath, it tracks if it crossed a pageblock boundary in
+> order to repeat those checks.
+> 
+> However, closer inspection shows that those checks are always true for CMA:
+> - isolation_suitable() is true because CMA sets cc->ignore_skip_hint to true
+> - migrate_async_suitable() check is skipped because CMA uses sync compaction
+> 
+> We can therefore move the compaction-specific checks to isolate_migratepages()
+> and simplify isolate_migratepages_range(). Furthermore, we can mimic the
+> freepage scanner family of functions, which has isolate_freepages_block()
+> function called both by compaction from isolate_freepages() and by CMA from
+> isolate_freepages_range(), where each use-case adds own specific glue code.
+> This allows further code simplification.
+> 
+> Therefore, we rename isolate_migratepages_range() to isolate_freepages_block()
 
-http://thread.gmane.org/gmane.linux.ubuntu.devel.kernel.general/39123
+s/isolate_freepages_block/isolate_migratepages_block/
 
-> so perhaps you should just patch your
-> modprobe and be done with it until you can fix up those drivers?
+I read your commit description before looking at the patch and was very 
+nervous about the direction you were going if that was true :)  I'm 
+relieved to see it was just a typo.
 
-To ignore SIGKILL ?
+> and limit its functionality to a single pageblock (or its subset). For CMA,
+> a new different isolate_migratepages_range() is created as a CMA-specific
+> wrapper for the _block() function. The checks specific to compaction are moved
+> to isolate_migratepages(). As part of the unification of these two families of
+> functions, we remove the redundant zone parameter where applicable, since zone
+> pointer is already passed in cc->zone.
+> 
+> Furthermore, going back to compact_zone() and compact_finished() when pageblock
+> is found unsuitable (now by isolate_migratepages()) is wasteful - the checks
+> are meant to skip pageblocks quickly. The patch therefore also introduces a
+> simple loop into isolate_migratepages() so that it does not return immediately
+> on failed pageblock checks, but keeps going until isolate_migratepages_range()
+> gets called once. Similarily to isolate_freepages(), the function periodically
+> checks if it needs to reschedule or abort async compaction.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Acked-by: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
+> ---
+>  mm/compaction.c | 234 +++++++++++++++++++++++++++++++++-----------------------
+>  mm/internal.h   |   4 +-
+>  mm/page_alloc.c |   3 +-
+>  3 files changed, 140 insertions(+), 101 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 0a871e5..bac6e37 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -132,7 +132,7 @@ void reset_isolation_suitable(pg_data_t *pgdat)
+>   */
+>  static void update_pageblock_skip(struct compact_control *cc,
+>  			struct page *page, unsigned long nr_isolated,
+> -			bool set_unsuitable, bool migrate_scanner)
+> +			bool migrate_scanner)
+>  {
+>  	struct zone *zone = cc->zone;
+>  	unsigned long pfn;
+> @@ -146,12 +146,7 @@ static void update_pageblock_skip(struct compact_control *cc,
+>  	if (nr_isolated)
+>  		return;
+>  
+> -	/*
+> -	 * Only skip pageblocks when all forms of compaction will be known to
+> -	 * fail in the near future.
+> -	 */
+> -	if (set_unsuitable)
+> -		set_pageblock_skip(page);
+> +	set_pageblock_skip(page);
+>  
+>  	pfn = page_to_pfn(page);
+>  
+> @@ -180,7 +175,7 @@ static inline bool isolation_suitable(struct compact_control *cc,
+>  
+>  static void update_pageblock_skip(struct compact_control *cc,
+>  			struct page *page, unsigned long nr_isolated,
+> -			bool set_unsuitable, bool migrate_scanner)
+> +			bool migrate_scanner)
+>  {
+>  }
+>  #endif /* CONFIG_COMPACTION */
+> @@ -345,8 +340,7 @@ isolate_fail:
+>  
+>  	/* Update the pageblock-skip if the whole pageblock was scanned */
+>  	if (blockpfn == end_pfn)
+> -		update_pageblock_skip(cc, valid_page, total_isolated, true,
+> -				      false);
+> +		update_pageblock_skip(cc, valid_page, total_isolated, false);
+>  
+>  	count_compact_events(COMPACTFREE_SCANNED, nr_scanned);
+>  	if (total_isolated)
+> @@ -451,40 +445,34 @@ static bool too_many_isolated(struct zone *zone)
+>  }
+>  
+>  /**
+> - * isolate_migratepages_range() - isolate all migrate-able pages in range.
+> - * @zone:	Zone pages are in.
+> + * isolate_migratepages_block() - isolate all migrate-able pages within
+> + *				  a single pageblock
+>   * @cc:		Compaction control structure.
+> - * @low_pfn:	The first PFN of the range.
+> - * @end_pfn:	The one-past-the-last PFN of the range.
+> - * @unevictable: true if it allows to isolate unevictable pages
+> + * @low_pfn:	The first PFN to isolate
+> + * @end_pfn:	The one-past-the-last PFN to isolate, within same pageblock
+> + * @isolate_mode: Isolation mode to be used.
+>   *
+>   * Isolate all pages that can be migrated from the range specified by
+> - * [low_pfn, end_pfn).  Returns zero if there is a fatal signal
+> - * pending), otherwise PFN of the first page that was not scanned
+> - * (which may be both less, equal to or more then end_pfn).
+> - *
+> - * Assumes that cc->migratepages is empty and cc->nr_migratepages is
+> - * zero.
+> + * [low_pfn, end_pfn). The range is expected to be within same pageblock.
+> + * Returns zero if there is a fatal signal pending, otherwise PFN of the
+> + * first page that was not scanned (which may be both less, equal to or more
+> + * than end_pfn).
+>   *
+> - * Apart from cc->migratepages and cc->nr_migratetypes this function
+> - * does not modify any cc's fields, in particular it does not modify
+> - * (or read for that matter) cc->migrate_pfn.
+> + * The pages are isolated on cc->migratepages list (not required to be empty),
+> + * and cc->nr_migratepages is updated accordingly. The cc->migrate_pfn field
+> + * is neither read nor updated.
+>   */
+> -unsigned long
+> -isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+> -		unsigned long low_pfn, unsigned long end_pfn, bool unevictable)
+> +static unsigned long
+> +isolate_migratepages_block(struct compact_control *cc, unsigned long low_pfn,
+> +			unsigned long end_pfn, isolate_mode_t isolate_mode)
+>  {
+> -	unsigned long last_pageblock_nr = 0, pageblock_nr;
+> +	struct zone *zone = cc->zone;
+>  	unsigned long nr_scanned = 0, nr_isolated = 0;
+>  	struct list_head *migratelist = &cc->migratepages;
+>  	struct lruvec *lruvec;
+>  	unsigned long flags;
+>  	bool locked = false;
+>  	struct page *page = NULL, *valid_page = NULL;
+> -	bool set_unsuitable = true;
+> -	const isolate_mode_t mode = (cc->mode == MIGRATE_ASYNC ?
+> -					ISOLATE_ASYNC_MIGRATE : 0) |
+> -				    (unevictable ? ISOLATE_UNEVICTABLE : 0);
+>  
+>  	/*
+>  	 * Ensure that there are not too many pages isolated from the LRU
+> @@ -515,19 +503,6 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  			}
+>  		}
+>  
+> -		/*
+> -		 * migrate_pfn does not necessarily start aligned to a
+> -		 * pageblock. Ensure that pfn_valid is called when moving
+> -		 * into a new MAX_ORDER_NR_PAGES range in case of large
+> -		 * memory holes within the zone
+> -		 */
+> -		if ((low_pfn & (MAX_ORDER_NR_PAGES - 1)) == 0) {
+> -			if (!pfn_valid(low_pfn)) {
+> -				low_pfn += MAX_ORDER_NR_PAGES - 1;
+> -				continue;
+> -			}
+> -		}
+> -
+>  		if (!pfn_valid_within(low_pfn))
+>  			continue;
+>  		nr_scanned++;
+> @@ -545,28 +520,6 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  		if (!valid_page)
+>  			valid_page = page;
+>  
+> -		/* If isolation recently failed, do not retry */
+> -		pageblock_nr = low_pfn >> pageblock_order;
+> -		if (last_pageblock_nr != pageblock_nr) {
+> -			int mt;
+> -
+> -			last_pageblock_nr = pageblock_nr;
+> -			if (!isolation_suitable(cc, page))
+> -				goto next_pageblock;
+> -
+> -			/*
+> -			 * For async migration, also only scan in MOVABLE
+> -			 * blocks. Async migration is optimistic to see if
+> -			 * the minimum amount of work satisfies the allocation
+> -			 */
+> -			mt = get_pageblock_migratetype(page);
+> -			if (cc->mode == MIGRATE_ASYNC &&
+> -			    !migrate_async_suitable(mt)) {
+> -				set_unsuitable = false;
+> -				goto next_pageblock;
+> -			}
+> -		}
+> -
+>  		/*
+>  		 * Skip if free. page_order cannot be used without zone->lock
+>  		 * as nothing prevents parallel allocations or buddy merging.
+> @@ -601,8 +554,11 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  		 */
+>  		if (PageTransHuge(page)) {
+>  			if (!locked)
+> -				goto next_pageblock;
+> -			low_pfn += (1 << compound_order(page)) - 1;
+> +				low_pfn = ALIGN(low_pfn + 1,
+> +						pageblock_nr_pages) - 1;
+> +			else
+> +				low_pfn += (1 << compound_order(page)) - 1;
+> +
 
-> And putting a horrid hack in the driver core, just because of some
-> really bad drivers, is not ok, that's an interface _I_ will have to
-> support for the next few decades.
+Hmm, any reason not to always advance and align low_pfn to 
+pageblock_nr_pages?  I don't see how pageblock_order > HPAGE_PMD_ORDER 
+would make sense if encountering thp.
 
-I understand, hence review.
+>  			continue;
+>  		}
+>  
+> @@ -632,7 +588,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  		lruvec = mem_cgroup_page_lruvec(page, zone);
+>  
+>  		/* Try isolate the page */
+> -		if (__isolate_lru_page(page, mode) != 0)
+> +		if (__isolate_lru_page(page, isolate_mode) != 0)
+>  			continue;
+>  
+>  		VM_BUG_ON_PAGE(PageTransCompound(page), page);
+> @@ -651,11 +607,6 @@ isolate_success:
+>  			++low_pfn;
+>  			break;
+>  		}
+> -
+> -		continue;
+> -
+> -next_pageblock:
+> -		low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
+>  	}
+>  
+>  	acct_isolated(zone, locked, cc);
+> @@ -668,8 +619,7 @@ next_pageblock:
+>  	 * if the whole pageblock was scanned without isolating any page.
+>  	 */
+>  	if (low_pfn == end_pfn)
+> -		update_pageblock_skip(cc, valid_page, nr_isolated,
+> -				      set_unsuitable, true);
+> +		update_pageblock_skip(cc, valid_page, nr_isolated, true);
+>  
+>  	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
+>  
+> @@ -680,15 +630,61 @@ next_pageblock:
+>  	return low_pfn;
+>  }
+>  
+> +/**
+> + * isolate_migratepages_range() - isolate migrate-able pages in a PFN range
+> + * @start_pfn: The first PFN to start isolating.
+> + * @end_pfn:   The one-past-last PFN.
 
-> And it's going to take you a while to get something like this ever
-> merged in anyway, odds are you can fix up the driver faster...
+Need to specify @cc?
 
-That requires quite a bit of changes and commitment and again, there
-are quite a bit of drivers that we can run into in the community,
-we've just spotted 2 so far here for now.
+> + *
+> + * Returns zero if isolation fails fatally due to e.g. pending signal.
+> + * Otherwise, function returns one-past-the-last PFN of isolated page
+> + * (which may be greater than end_pfn if end fell in a middle of a THP page).
+> + */
+> +unsigned long
+> +isolate_migratepages_range(struct compact_control *cc, unsigned long start_pfn,
+> +							unsigned long end_pfn)
+> +{
+> +	unsigned long pfn, block_end_pfn;
+> +
+> +	/* Scan block by block. First and last block may be incomplete */
+> +	pfn = start_pfn;
+> +	block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
+> +
+> +	for (; pfn < end_pfn; pfn = block_end_pfn,
+> +				block_end_pfn += pageblock_nr_pages) {
+> +
+> +		block_end_pfn = min(block_end_pfn, end_pfn);
+> +
+> +		/* Skip whole pageblock in case of a memory hole */
+> +		if (!pfn_valid(pfn))
+> +			continue;
+> +
+> +		pfn = isolate_migratepages_block(cc, pfn, block_end_pfn,
+> +							ISOLATE_UNEVICTABLE);
+> +
+> +		/*
+> +		 * In case of fatal failure, release everything that might
+> +		 * have been isolated in the previous iteration, and signal
+> +		 * the failure back to caller.
+> +		 */
+> +		if (!pfn) {
+> +			putback_movable_pages(&cc->migratepages);
+> +			cc->nr_migratepages = 0;
+> +			break;
+> +		}
+> +	}
+> +
+> +	return pfn;
+> +}
+> +
+>  #endif /* CONFIG_COMPACTION || CONFIG_CMA */
+>  #ifdef CONFIG_COMPACTION
+>  /*
+>   * Based on information in the current compact_control, find blocks
+>   * suitable for isolating free pages from and then isolate them.
+>   */
+> -static void isolate_freepages(struct zone *zone,
+> -				struct compact_control *cc)
+> +static void isolate_freepages(struct compact_control *cc)
+>  {
+> +	struct zone *zone = cc->zone;
+>  	struct page *page;
+>  	unsigned long block_start_pfn;	/* start of current pageblock */
+>  	unsigned long block_end_pfn;	/* end of current pageblock */
+> @@ -806,7 +802,7 @@ static struct page *compaction_alloc(struct page *migratepage,
+>  	 */
+>  	if (list_empty(&cc->freepages)) {
+>  		if (!cc->contended)
+> -			isolate_freepages(cc->zone, cc);
+> +			isolate_freepages(cc);
+>  
+>  		if (list_empty(&cc->freepages))
+>  			return NULL;
+> @@ -840,34 +836,81 @@ typedef enum {
+>  } isolate_migrate_t;
+>  
+>  /*
+> - * Isolate all pages that can be migrated from the block pointed to by
+> - * the migrate scanner within compact_control.
+> + * Isolate all pages that can be migrated from the first suitable block,
+> + * starting at the block pointed to by the migrate scanner pfn within
+> + * compact_control.
+>   */
+>  static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>  					struct compact_control *cc)
+>  {
+>  	unsigned long low_pfn, end_pfn;
+> +	struct page *page;
+> +	const isolate_mode_t isolate_mode =
+> +		(cc->mode == MIGRATE_ASYNC ? ISOLATE_ASYNC_MIGRATE : 0);
+>  
+> -	/* Do not scan outside zone boundaries */
+> -	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
+> +	/*
+> +	 * Start at where we last stopped, or beginning of the zone as
+> +	 * initialized by compact_zone()
+> +	 */
+> +	low_pfn = cc->migrate_pfn;
+>  
+>  	/* Only scan within a pageblock boundary */
+>  	end_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages);
+>  
+> -	/* Do not cross the free scanner or scan within a memory hole */
+> -	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
+> -		cc->migrate_pfn = end_pfn;
+> -		return ISOLATE_NONE;
+> -	}
+> +	/*
+> +	 * Iterate over whole pageblocks until we find the first suitable.
+> +	 * Do not cross the free scanner.
+> +	 */
+> +	for (; end_pfn <= cc->free_pfn;
+> +			low_pfn = end_pfn, end_pfn += pageblock_nr_pages) {
+> +
+> +		/*
+> +		 * This can potentially iterate a massively long zone with
+> +		 * many pageblocks unsuitable, so periodically check if we
+> +		 * need to schedule, or even abort async compaction.
+> +		 */
+> +		if (!(low_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))
+> +						&& compact_should_abort(cc))
+> +			break;
+> +
+> +		/* Skip whole pageblock in case of a memory hole */
+> +		if (!pfn_valid(low_pfn))
+> +			continue;
+> +
+> +		page = pfn_to_page(low_pfn);
+> +
+> +		/* If isolation recently failed, do not retry */
+> +		if (!isolation_suitable(cc, page))
+> +			continue;
+> +
+> +		/*
+> +		 * For async compaction, also only scan in MOVABLE blocks.
+> +		 * Async compaction is optimistic to see if the minimum amount
+> +		 * of work satisfies the allocation.
+> +		 */
+> +		if (cc->mode == MIGRATE_ASYNC &&
+> +		    !migrate_async_suitable(get_pageblock_migratetype(page)))
+> +			continue;
+> +
+> +		/* Perform the isolation */
+> +		low_pfn = isolate_migratepages_block(cc, low_pfn, end_pfn,
+> +								isolate_mode);
 
->> > The cxgb4: driver is an example where although I did propose patches
->> > to use asynch firmware loading the entire registration of the
->> > netdevice would need to be changed as well in order to get this right.
->> > In short we have to scramble now to first identify drivers that have
->> > long init sequences and then fix. There's an assumption that we can
->> > easily fix drivers, this can take time. This series, although does
->> > take advantage of a kernel interface for other uses, lets us identify
->> > these drivers on the kernel ring buffer, so we can go and address
->> > fixing them with time.
->>
->> Another thing that came up during asynch firmware review / integration
->> on cxgb4 was that it would not be the only thing that would need to be
->> fixed, the driver also has a ton of ports and at least as per my
->> review the proper fix would be to use platform regiister stuff. It is
->> a major rewrite of the driver but an example of a driver that needs
->> quite a bit of work to meet this new 30 second driver requirement.
->
-> It shouldn't be using any platform driver stuff, it's a pci device, not
-> a platform device.
+Hmm, why would we want to unconditionally set pageblock_skip if no pages 
+could be isolated from a pageblock when 
+isolate_mode == ISOLATE_ASYNC_MIGRATE?  It seems like it erroneously skip 
+pageblocks for cases when isolate_mode == 0.
 
-The general PCI stuff is already used, the reason for suggesting the
-platform_device_register_simple() stuff is it has tons of ports and
-each port will register in turn a new struct netdevice, essentially
-one device can end up having tons of different network devices, the
-platform stuff would be to allow handling each netdevice candidate
-separately as part of the internal driver architecture, right now its
-some scary loop thing that in my eyes can be very error prone.
-drivers/net/ethernet/8390/ne.c. This discussion:
-
-https://lkml.org/lkml/2014/6/25/815
-
-> Why not just put the initial "register the device" in a single-shot
-> workqueue or thread or something like that so that modprobe returns
-> instantly back with a success and all is fine?
-
-That surely is possible but why not a general solution for such kludges?
-
-> Again, trying to hack the "deferred init" logic for PCI drivers isn't
-> ok, I'm not going to take that into the driver core if at all possible,
-> sorry.
-
-No need to apologize I'm looking for the best solution here after all.
-One userspace kludge is surely better than a one per driver while
-drivers are fixed for this new driver requirement. Its just kind of
-odd the circle of events for a kernel issue from kernel --> systemd
---> modprobe as a work around.
-
- Luis
+> +
+> +		if (!low_pfn || cc->contended)
+> +			return ISOLATE_ABORT;
+>  
+> -	/* Perform the isolation */
+> -	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn, false);
+> -	if (!low_pfn || cc->contended)
+> -		return ISOLATE_ABORT;
+> +		/*
+> +		 * Either we isolated something and proceed with migration. Or
+> +		 * we failed and compact_zone should decide if we should
+> +		 * continue or not.
+> +		 */
+> +		break;
+> +	}
+>  
+> +	/* Record where migration scanner will be restarted */
+>  	cc->migrate_pfn = low_pfn;
+>  
+> -	return ISOLATE_SUCCESS;
+> +	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
+>  }
+>  
+>  static int compact_finished(struct zone *zone,
+> @@ -1040,9 +1083,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>  			;
+>  		}
+>  
+> -		if (!cc->nr_migratepages)
+> -			continue;
+> -
+>  		err = migrate_pages(&cc->migratepages, compaction_alloc,
+>  				compaction_free, (unsigned long)cc, cc->mode,
+>  				MR_COMPACTION);
+> diff --git a/mm/internal.h b/mm/internal.h
+> index a1b651b..5a0738f 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -154,8 +154,8 @@ unsigned long
+>  isolate_freepages_range(struct compact_control *cc,
+>  			unsigned long start_pfn, unsigned long end_pfn);
+>  unsigned long
+> -isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+> -	unsigned long low_pfn, unsigned long end_pfn, bool unevictable);
+> +isolate_migratepages_range(struct compact_control *cc,
+> +			   unsigned long low_pfn, unsigned long end_pfn);
+>  
+>  #endif
+>  
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 91191fb..f424752 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -6292,8 +6292,7 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
+>  
+>  		if (list_empty(&cc->migratepages)) {
+>  			cc->nr_migratepages = 0;
+> -			pfn = isolate_migratepages_range(cc->zone, cc,
+> -							 pfn, end, true);
+> +			pfn = isolate_migratepages_range(cc, pfn, end);
+>  			if (!pfn) {
+>  				ret = -EINTR;
+>  				break;
