@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313AbaG2Ktg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 06:49:36 -0400
-Received: from 8bytes.org ([81.169.241.247]:49918 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752892AbaG2Kte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 06:49:34 -0400
-Date: Tue, 29 Jul 2014 12:49:32 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Ashok Raj <ashok.raj@intel.com>, Yijing Wang <wangyijing@huawei.com>,
-        Tony Luck <tony.luck@intel.com>, iommu@lists.linux-foundation.org,
-        linux-pci@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: Re: [Patch Part3 V4 00/21] Enable support of Intel DMAR device
- hotplug
-Message-ID: <20140729104932.GC9809@8bytes.org>
-References: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405059585-10620-1-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753231AbaG2KvT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 06:51:19 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54118 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752849AbaG2KvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 06:51:18 -0400
+From: Punit Agrawal <punit.agrawal@arm.com>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Punit Agrawal <punit.agrawal@arm.com>,
+        javi.merino@arm.com, rui.zhang@intel.com, edubezval@gmail.com,
+        rostedt@goodmis.org
+Subject: [PATCH 0/3] Add trace to thermal framework
+Date: Tue, 29 Jul 2014 11:50:47 +0100
+Message-Id: <1406631050-14975-1-git-send-email-punit.agrawal@arm.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1402486305-4017-1-git-send-email-punit.agrawal@arm.com>
+References: <1402486305-4017-1-git-send-email-punit.agrawal@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 02:19:24PM +0800, Jiang Liu wrote:
-> Patch 1-13 are bugfixes and code improvement for current drivers.
+Hi linux-pm,
 
-Okay, I applied these for now (1-13 only) so that you don't have to
-rebase everything next time.
+This is the second posting of the patches to add trace to the thermal
+framework.
 
-> Patch 14-17 enhances DMAR framework to support hotplug
-> Patch 18 enhances Intel interrupt remapping driver to support hotplug
-> Patch 19 enhances error handling in Intel IR driver
-> Patch 20 enhance Intel IOMMU to support hotplug
-> Patch 21 enhance ACPI pci_root driver to handle DMAR units
+The linux thermal framework doesn't have any support for tracing. This
+makes it hard to run workloads and observe the thermal behaviour of
+the system without actively polling files in sysfs or enabling debug
+builds.
 
-For these I'd like to see some reviews/acked-bys/tested-bys so that we
-gain more confidence on them.
+This patch set introduces trace events in the framework to allow
+observing the behaviour of the different components in the
+framework. The events added trace temperature changes, trip points and
+cooling device state changes.
 
+changes since rfc:
+* Fixed an issue where incorrect trip point was traced when using fair
+share
+* Trace the numeric value of trip_type instead of using __print_symbolic
 
-	Joerg
+Punit Agrawal (3):
+  thermal: trace: Trace temperature changes
+  thermal: trace: Trace when a cooling device's state is updated
+  thermal: trace: Trace when temperature is above a trip point
+
+ drivers/thermal/fair_share.c   |   12 ++++++
+ drivers/thermal/step_wise.c    |    5 ++-
+ drivers/thermal/thermal_core.c |    7 ++++
+ include/trace/events/thermal.h |   87 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 110 insertions(+), 1 deletion(-)
+ create mode 100644 include/trace/events/thermal.h
+
+-- 
+1.7.10.4
 
