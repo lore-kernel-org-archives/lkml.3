@@ -1,152 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295AbaG2JWp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 05:22:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35339 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264AbaG2JWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 05:22:42 -0400
-Date: Tue, 29 Jul 2014 11:22:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: Re: finish_task_switch && prev_state (Was: sched, timers: use after
- free in __lock_task_sighand when exiting a process)
-Message-ID: <20140729092237.GU12054@laptop.lan>
-References: <53C2FF4D.3020606@oracle.com>
- <53C31A34.8030500@oracle.com>
- <20140714090449.GL9918@twins.programming.kicks-ass.net>
- <20140714144953.GA8173@redhat.com>
- <20140714160147.GA11986@redhat.com>
- <20140715131240.GA23014@redhat.com>
- <20140715132353.GF9918@twins.programming.kicks-ass.net>
- <20140715142525.GA26029@redhat.com>
- <20140729091018.GT20603@laptop.programming.kicks-ass.net>
+	id S1753308AbaG2JWx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 05:22:53 -0400
+Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:56247
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753298AbaG2JWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 05:22:50 -0400
+X-Greylist: delayed 5954 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jul 2014 05:22:49 EDT
+Date: Tue, 29 Jul 2014 17:22:37 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Stefan Agner <stefan@agner.ch>
+CC: <peter.chen@freescale.com>, <s.hauer@pengutronix.de>,
+        <b35083@freescale.com>, <jingchang.lu@freescale.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/7] vf610: Add USB support
+Message-ID: <20140729092236.GH24750@dragon>
+References: <cover.1406558450.git.stefan@agner.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140729091018.GT20603@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <cover.1406558450.git.stefan@agner.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(189002)(199002)(74502001)(74662001)(23726002)(21056001)(44976005)(4396001)(81342001)(31966008)(76482001)(83322001)(99396002)(85852003)(95666004)(68736004)(104016003)(83072002)(6806004)(26826002)(92726001)(92566001)(47776003)(46102001)(33716001)(64706001)(20776003)(33656002)(97736001)(97756001)(85306003)(110136001)(80022001)(102836001)(86362001)(107046002)(50466002)(46406003)(79102001)(57986006)(83506001)(106466001)(87936001)(105606002)(81542001)(77982001)(84676001)(54356999)(50986999)(76176999);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR0301MB0769;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0287BBA78D
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 11:10:18AM +0200, Peter Zijlstra wrote:
-> On Tue, Jul 15, 2014 at 04:25:25PM +0200, Oleg Nesterov wrote:
-> 
-> > And probably I missed something again, but it seems that this logic is broken
-> > with __ARCH_WANT_UNLOCKED_CTXSW.
-> > 
-> > Of course, even if I am right this is pure theoretical, but smp_wmb() before
-> > "->on_cpu = 0" is not enough and we need a full barrier ?
-> 
-> (long delay there, forgot about this thread, sorry)
-> 
-> Yes, I think I see that.. but now I think the comment is further wrong.
-> 
-> Its not rq->lock that is important, remember, a concurrent wakeup onto
-> another CPU does not require our rq->lock at all.
-> 
-> It is the ->on_cpu = 0 store that is important (for both the
-> UNLOCKED_CTXSW cases). As soon as that store comes through the task can
-> start running on the remote cpu.
-> 
-> Now the below patch 'fixes' this but at the cost of adding a full
-> barrier which is somewhat unfortunate to say the least.
-> 
-> wmb's are free on x86 and generally cheaper than mbs, so it would to
-> find another solution to this problem...
+On Mon, Jul 28, 2014 at 04:57:26PM +0200, Stefan Agner wrote:
+> Stefan Agner (7):
+>   ARM: dts: vf610: Add USB PHY and controller
+>   ARM: imx: clk-vf610: Add USBPHY clocks
+...
+>   ARM: dts: vf610: Add usbmisc for non-core registers
+...
+>   ARM: dts: vf610-colibri: Add USB support
+>   ARM: dts: vf610-twr: Add USB support
 
-Something like so then?
+These 'ARM: ...' patches look fine to me, and I will apply them on IMX
+tree once the driver changes are accepted.
 
----
- kernel/sched/core.c | 36 ++++++++++++++++++++----------------
- 1 file changed, 20 insertions(+), 16 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 2676866b4394..179390f7380d 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2190,6 +2190,7 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
-  * finish_task_switch - clean up after a task-switch
-  * @rq: runqueue associated with task-switch
-  * @prev: the thread we just switched away from.
-+ * @prev_state: the state of @prev before we switched away from it.
-  *
-  * finish_task_switch must be called after the context switch, paired
-  * with a prepare_task_switch call before the context switch.
-@@ -2201,26 +2202,14 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
-  * with the lock held can cause deadlocks; see schedule() for
-  * details.)
-  */
--static void finish_task_switch(struct rq *rq, struct task_struct *prev)
-+static void 
-+finish_task_switch(struct rq *rq, struct task_struct *prev, long prev_state)
- 	__releases(rq->lock)
- {
- 	struct mm_struct *mm = rq->prev_mm;
--	long prev_state;
- 
- 	rq->prev_mm = NULL;
- 
--	/*
--	 * A task struct has one reference for the use as "current".
--	 * If a task dies, then it sets TASK_DEAD in tsk->state and calls
--	 * schedule one last time. The schedule call will never return, and
--	 * the scheduled task must drop that reference.
--	 * The test for TASK_DEAD must occur while the runqueue locks are
--	 * still held, otherwise prev could be scheduled on another cpu, die
--	 * there before we look at prev->state, and then the reference would
--	 * be dropped twice.
--	 *		Manfred Spraul <manfred@colorfullife.com>
--	 */
--	prev_state = prev->state;
- 	vtime_task_switch(prev);
- 	finish_arch_switch(prev);
- 	perf_event_task_sched_in(prev, current);
-@@ -2279,7 +2268,7 @@ asmlinkage __visible void schedule_tail(struct task_struct *prev)
- {
- 	struct rq *rq = this_rq();
- 
--	finish_task_switch(rq, prev);
-+	finish_task_switch(rq, prev, 0);
- 
- 	/*
- 	 * FIXME: do we need to worry about rq being invalidated by the
-@@ -2304,6 +2293,21 @@ context_switch(struct rq *rq, struct task_struct *prev,
- 	       struct task_struct *next)
- {
- 	struct mm_struct *mm, *oldmm;
-+	/*
-+	 * A task struct has one reference for the use as "current".
-+	 * If a task dies, then it sets TASK_DEAD in tsk->state and calls
-+	 * schedule one last time. The schedule call will never return, and
-+	 * the scheduled task must drop that reference.
-+	 *
-+	 * We must observe prev->state before clearing prev->on_cpu (in
-+	 * finish_lock_switch), otherwise a concurrent wakeup can get prev
-+	 * running on another CPU and we could race with its RUNNING -> DEAD
-+	 * transition, and then the reference would be dropped twice.
-+	 *
-+	 * We avoid the race by observing prev->state while it is still
-+	 * current.
-+	 */
-+	long prev_state = prev->state;
- 
- 	prepare_task_switch(rq, prev, next);
- 
-@@ -2347,7 +2351,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
- 	 * CPUs since it called schedule(), thus the 'rq' on its stack
- 	 * frame will be invalid.
- 	 */
--	finish_task_switch(this_rq(), prev);
-+	finish_task_switch(this_rq(), prev, prev_state);
- }
- 
- /*
+Shawn
