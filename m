@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100AbaG2Tdi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 15:33:38 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53939 "EHLO bear.ext.ti.com"
+	id S1754132AbaG2Tes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 15:34:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60466 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459AbaG2Tdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 15:33:36 -0400
-Message-ID: <53D7F6F3.9020804@ti.com>
-Date: Tue, 29 Jul 2014 14:33:07 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751397AbaG2Teq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 15:34:46 -0400
+Date: Tue, 29 Jul 2014 21:32:32 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Will Drewry <wad@chromium.org>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Alexei Starovoitov <ast@plumgrid.com>, hpa@zytor.com,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 2/5] x86,entry: Only call user_exit if TIF_NOHZ
+Message-ID: <20140729193232.GA8153@redhat.com>
+References: <cover.1406604806.git.luto@amacapital.net> <7123b2489cc5d1d5abb7bcf1364ca729cab3e6ca.1406604806.git.luto@amacapital.net>
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: Dave Gerlach <d-gerlach@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Robert Tivy <rtivy@ti.com>
-Subject: Re: [PATCH 2/2] remoteproc: add support to handle internal memories
-References: <1404836521-59637-1-git-send-email-s-anna@ti.com> <1404836521-59637-3-git-send-email-s-anna@ti.com> <CAK=WgbY-WmcJdnLHDf1CSkJqNBUeUMPTLcEZyLGKnECbxH1OAQ@mail.gmail.com>
-In-Reply-To: <CAK=WgbY-WmcJdnLHDf1CSkJqNBUeUMPTLcEZyLGKnECbxH1OAQ@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7123b2489cc5d1d5abb7bcf1364ca729cab3e6ca.1406604806.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
+On 07/28, Andy Lutomirski wrote:
+>
+> @@ -1449,7 +1449,12 @@ long syscall_trace_enter(struct pt_regs *regs)
+>  {
+>  	long ret = 0;
+>  
+> -	user_exit();
+> +	/*
+> +	 * If TIF_NOHZ is set, we are required to call user_exit() before
+> +	 * doing anything that could touch RCU.
+> +	 */
+> +	if (test_thread_flag(TIF_NOHZ))
+> +		user_exit();
 
-On 07/29/2014 06:00 AM, Ohad Ben-Cohen wrote:
-> Hi Suman,
-> 
-> On Tue, Jul 8, 2014 at 7:22 PM, Suman Anna <s-anna@ti.com> wrote:
->> A remote processor may need to load certain firmware sections into
->> internal memories (eg: RAM at L1 or L2 levels) for performance or
->> other reasons.
-> 
-> Can you please provide as much details as you can about the scenario
-> you need this for? what hardware, what sections, which specific
-> memory, what's the use case, numbers, sizes, everything.
-> 
-> I'd like to better understand the use case please.
+Personally I still think this change just adds more confusion, but I leave
+this to you and Frederic.
 
-We currently have two usecases. The primary usecase is the WkupM3
-processor on TI Sitara AM335x/AM437x SoCs used for suspend/resume
-management. This series is a dependency for the WkupM3 remoteproc driver
-that Dave posted [1]. More details are in section 8.1.4.6 of the AM335x
-TRM [2]. The program/data sections for this processor all _needs_ to be
-in the two internal memory RAMS (16K Unified RAM and 8K Data RAM), and
-there is no MMU for this processor. The current RSC_CARVEOUT and
-RSC_DEVMEM do not fit to describe this type of memory (we neither
-allocate memory through dma api nor do we need to map these into an MMU).
+It is not that "If TIF_NOHZ is set, we are required to call user_exit()", we
+need to call user_exit() just because we enter the kernel. TIF_NOHZ is just
+the implementation detail which triggers this slow path.
 
-The second usecase is for some code to be loaded into the internal
-memories of the DSP in existing OMAPs directly during remoteproc loading
-stage. These memories are accessible to the processor again without
-having to go through the L2MMU through which the external RAM and
-peripherals are accessed through.
+At least it should be correct, unless I am confused even more than I think.
 
-regards
-Suman
+Oleg.
 
-[1] https://patchwork.kernel.org/patch/4529651/
-[2] www.ti.com/lit.ug/spruh73k/spruh73k.pdf
