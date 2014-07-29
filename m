@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004AbaG2TTB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 15:19:01 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:48020 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753AbaG2TS7 (ORCPT
+	id S1753886AbaG2TUO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 15:20:14 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47909 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808AbaG2TUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 15:18:59 -0400
-Date: Tue, 29 Jul 2014 12:18:56 -0700 (PDT)
-Message-Id: <20140729.121856.1236100223837303806.davem@davemloft.net>
-To: khoroshilov@ispras.ru
-Cc: hjlipp@web.de, tilman@imap.cc, isdn@linux-pingi.de,
-        gigaset307x-common@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: Re: [PATCH] isdn/bas_gigaset: fix a leak on failure path in
- gigaset_probe()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1406327671-28271-1-git-send-email-khoroshilov@ispras.ru>
-References: <1406327671-28271-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 29 Jul 2014 12:18:59 -0700 (PDT)
+	Tue, 29 Jul 2014 15:20:12 -0400
+Date: Tue, 29 Jul 2014 12:20:08 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Dmitry Torokhov <dtor@google.com>
+Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
+Message-ID: <20140729192008.GH3711@ld-irv-0074>
+References: <20140724212620.GO3935@laptop>
+ <13290270.IfKaUSRMLR@vostro.rjw.lan>
+ <20140725055847.GQ3935@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140725055847.GQ3935@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Date: Sat, 26 Jul 2014 02:34:31 +0400
+Hi Peter,
 
-> There is a lack of usb_put_dev(udev) on failure path in gigaset_probe().
+On Fri, Jul 25, 2014 at 07:58:47AM +0200, Peter Zijlstra wrote:
+> On Fri, Jul 25, 2014 at 01:10:36AM +0200, Rafael J. Wysocki wrote:
+> > Yes, drivers using enable_irq_wake() will likely want IRQF_NO_SUSPEND to
+> > be set for their irqactions, but that should not imply "no suspend" for
+> > all irqactions sharing the same desc.  So I guess it may be better to go
+> > forth and use a global "interrupts suspended" state variable instead of the
+> > IRQS_SUSPENDED flag for each desc and throw away the IRQD_WAKEUP_STATE
+> > check from suspend_device_irqs() entirely.
+> > 
+> > Peter, it looks like you'd prefer that?
 > 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> My preference would be to shoot enable_irq_wake() in the head, its
+> fundamentally broken.
 
-Applied, thanks.
+I'm curious what you mean. Are you referring to the fact that its input
+is simply an IRQ number (regardless of whether the IRQ is shared), not
+something that identifies the particular handler (e.g., struct
+irqaction)?
+
+Brian
