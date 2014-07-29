@@ -1,96 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054AbaG2Jby (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 05:31:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40168 "EHLO mx2.suse.de"
+	id S1753238AbaG2JcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 05:32:01 -0400
+Received: from mga01.intel.com ([192.55.52.88]:53421 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752722AbaG2Jbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 05:31:52 -0400
-Message-ID: <53D76A07.3000104@suse.cz>
-Date: Tue, 29 Jul 2014 11:31:51 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753134AbaG2Jb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 05:31:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,756,1400050800"; 
+   d="asc'?scan'208";a="577015703"
+Date: Tue, 29 Jul 2014 05:00:16 -0400
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+        paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
+        hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
+        linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
+        davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
+        cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
+        JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
+        rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
+        mhocko@suse.cz, david@fromorbit.com
+Subject: Re: [RFC PATCH v1 13/70] x86, x2apic_cluster: _FROZEN Cleanup
+Message-ID: <20140729090015.GA29266@gchen.bj.intel.com>
+References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
+ <1406080786-3938-14-git-send-email-gong.chen@linux.intel.com>
+ <20140723203628.GJ21707@pd.tnic>
+ <20140728060455.GB23092@gchen.bj.intel.com>
+ <20140729084433.GB11179@pd.tnic>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm:;
-Subject: Re: [PATCH v5 06/14] mm, compaction: reduce zone checking frequency
- in the migration scanner
-References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-7-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1407281742580.8998@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1407281742580.8998@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
+Content-Disposition: inline
+In-Reply-To: <20140729084433.GB11179@pd.tnic>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2014 02:44 AM, David Rientjes wrote:
->> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
->> Cc: Minchan Kim <minchan@kernel.org>
->> Acked-by: Mel Gorman <mgorman@suse.de>
->> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->> Cc: Michal Nazarewicz <mina86@mina86.com>
->> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
->> Cc: Christoph Lameter <cl@linux.com>
->> Cc: Rik van Riel <riel@redhat.com>
->> Cc: David Rientjes <rientjes@google.com>
->
-> Acked-by: David Rientjes <rientjes@google.com>
->
-> Minor comments below.
 
-Thanks,
+--7AUc2qLy4jB3hD7Z
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> +/*
->> + * Check that the whole (or subset of) a pageblock given by the interval of
->> + * [start_pfn, end_pfn) is valid and within the same zone, before scanning it
->> + * with the migration of free compaction scanner. The scanners then need to
->> + * use only pfn_valid_within() check for arches that allow holes within
->> + * pageblocks.
->> + *
->> + * Return struct page pointer of start_pfn, or NULL if checks were not passed.
->> + *
->> + * It's possible on some configurations to have a setup like node0 node1 node0
->> + * i.e. it's possible that all pages within a zones range of pages do not
->> + * belong to a single zone. We assume that a border between node0 and node1
->> + * can occur within a single pageblock, but not a node0 node1 node0
->> + * interleaving within a single pageblock. It is therefore sufficient to check
->> + * the first and last page of a pageblock and avoid checking each individual
->> + * page in a pageblock.
->> + */
->> +static struct page *pageblock_within_zone(unsigned long start_pfn,
->> +				unsigned long end_pfn, struct zone *zone)
->
-> The name of this function is quite strange, it's returning a pointer to
-> the actual start page but the name implies it would be a boolean.
+On Tue, Jul 29, 2014 at 10:44:33AM +0200, Borislav Petkov wrote:
+> >  	switch (action) {
+> >  	case CPU_UP_PREPARE:
+> >  		if (!zalloc_cpumask_var(&per_cpu(cpus_in_cluster, this_cpu),
+> > -					GFP_KERNEL)) {
+> > +					GFP_KERNEL))
+> >  			err =3D -ENOMEM;
+> > -		} else if (!zalloc_cpumask_var(&per_cpu(ipi_mask, this_cpu),
+> > -					       GFP_KERNEL)) {
+> > +		else if (!zalloc_cpumask_var(&per_cpu(ipi_mask, this_cpu),
+> > +					     GFP_KERNEL)) {
+> >  			free_cpumask_var(per_cpu(cpus_in_cluster, this_cpu));
+> >  			err =3D -ENOMEM;
+>=20
+> You need to start restraining yourself and doing clean patches. Those
+> changes here are unrelated, please drop them.
+>=20
+> Go and reread Documentation/SubmittingPatches, section 3 in particular.
+>=20
+Copy that.
 
-Yeah but I couldn't think of a better name that wouldn't be long and ugly :(
+> > +	if (test_and_clear_bit(CPU_TASKS_FROZEN, &action) &&
+>=20
+> What.. why?
+>=20
+Sorry for that.
 
->> +{
->> +	struct page *start_page;
->> +	struct page *end_page;
->> +
->> +	/* end_pfn is one past the range we are checking */
->> +	end_pfn--;
->> +
->
-> With the given implementation, yes, but I'm not sure if that should be
-> assumed for any class of callers.  It seems better to call with
-> end_pfn - 1.
+--7AUc2qLy4jB3hD7Z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Well, I think the rest of compaction functions assume one-past-end 
-parameters so this would make it an exception. Better hide the exception 
-in the implementation and not expose it to callers?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
->> +	if (!pfn_valid(start_pfn) || !pfn_valid(end_pfn))
->> +		return NULL;
->> +
->
-> Ok, so even with this check, we still need to check pfn_valid_within() for
-> all pfns between start_pfn and end_pfn if there are memory holes.  I
-> checked that both the migration and freeing scanners do that before
-> reading your comment above the function, looks good.
+iQIcBAEBAgAGBQJT12KfAAoJEI01n1+kOSLHvqIQAIIsXD2ILXPl2cVNOvVjVSlW
+0BD+ojvuGQNT91gmGENGAkLzf9wXV3Ep+OI/axtH2yid3dWahumDX/jn90s0GYE1
+T6dzS5lWklVmMsBCIpIL2AlbLy5j9rUOxNn3/eB8c74CHIgQopVlWu3teQ0juWT5
+fxMcuTCCvy7Y9hzYYnYikEvZaIkLCi55tjncF98ckakdLEHKVHw08EK0yEmFiKjF
+UgL8p6XhUIK+EuT2lxDIUiV04z4t5MauF9DhO65xG/NQ465G8sS1KN7IUx2HpgJl
+JFXT7xMsxOdLBfkKsRlvs/BjLmwaKdOU0PLcwDVPN3q4epmpEKkmTFh8NBMdDpvb
+rLePx8w7KVN9I/X2scWF3rUwsmMGWx7dahSL3OG8kLaa0nYSAreHgFa/80OoAmWt
+BvWBHRBpZUTtGvIu8WKSwGkIeRg7J/HLsqYHVWJ2w1djrGO+75mnTt7s7QmzP70T
+QUDHYEdTR7wsF+DqaasbPJCIYnQ5ZC7SIH+WuPrPFztqOi9dDWtIR5wL0c6Xlq35
+VwLeuQns7KSVVEtlb23LyLEUPMsagjt2DkIeSS4y+qWnxMYNsMWXhfyQTRk+Hx0M
+50uurv78SgnQHV0MvbAco5THNnLHvqg5/XqV0vXdJh81P6NGVCRpUxvvUsf3r5cb
+EKJjg5wgYdWdhZCdWvxv
+=Cf6n
+-----END PGP SIGNATURE-----
 
-Yeah, and thankfully pfn_valid_within() is a no-op on many archs :)
-
-
+--7AUc2qLy4jB3hD7Z--
