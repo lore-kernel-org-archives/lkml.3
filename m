@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050AbaG2T2v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 15:28:51 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33396 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321AbaG2T2t (ORCPT
+	id S1753401AbaG2TbN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 15:31:13 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:32591 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaG2TbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 15:28:49 -0400
-Date: Tue, 29 Jul 2014 21:28:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
-Message-ID: <20140729192843.GP3935@laptop>
-References: <20140724212620.GO3935@laptop>
- <13290270.IfKaUSRMLR@vostro.rjw.lan>
- <20140725055847.GQ3935@laptop>
- <20140729192008.GH3711@ld-irv-0074>
+	Tue, 29 Jul 2014 15:31:11 -0400
+To: KY Srinivasan <kys@microsoft.com>
+Cc: James Bottomley <jbottomley@parallels.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch\@infradead.org" <hch@infradead.org>,
+        "sitsofe\@gmail.com" <sitsofe@gmail.com>,
+        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw\@canonical.com" <apw@canonical.com>,
+        "martin.petersen\@oracle.com" <martin.petersen@oracle.com>,
+        "linux-scsi\@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering\@suse.com" <ohering@suse.com>,
+        "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang\@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20140724122223.GA31798@sucs.org>
+	<yq1iommkgkv.fsf@sermon.lab.mkp.net> <20140724153612.GA23648@sucs.org>
+	<yq1egxakb0z.fsf@sermon.lab.mkp.net>
+	<16fea5bb87ba47019527cee788e07a72@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	<yq1wqb1gyw1.fsf@sermon.lab.mkp.net>
+	<e931486ef33b4e45bfebf2ab1b1b3037@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	<yq17g30dprc.fsf@sermon.lab.mkp.net>
+	<cc4a3fd5451242739929d266b88fa8fa@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	<yq138dnexcn.fsf@sermon.lab.mkp.net>
+	<43306901b1dc4e5dbe014a431e0935ea@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	<yq11tt5cnmx.fsf@sermon.lab.mkp.net>
+	<548c8b1bae75483aa47c9493b62dc04d@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	<1406577767.19418.11.camel@jarvis>
+	<a445e81eb25f46918e85f51c631f6094@BY2PR0301MB0711.namprd03.prod.outlook.com>
+Date: Tue, 29 Jul 2014 15:30:15 -0400
+In-Reply-To: <a445e81eb25f46918e85f51c631f6094@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	(KY Srinivasan's message of "Tue, 29 Jul 2014 17:41:04 +0000")
+Message-ID: <yq1bns8arp4.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140729192008.GH3711@ld-irv-0074>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 12:20:08PM -0700, Brian Norris wrote:
+>>>>> "KY" == KY Srinivasan <kys@microsoft.com> writes:
 
-> I'm curious what you mean. Are you referring to the fact that its input
-> is simply an IRQ number (regardless of whether the IRQ is shared), not
-> something that identifies the particular handler (e.g., struct
-> irqaction)?
+KY> We will fix this bug in the next release of Windows; we are also
+KY> looking at backporting the fix to prior versions of Windows.
 
-Yes. I know that shared stuff is a massive head-ache, but I feel we
-should not introduce primitives that do not work with it.
+Excellent. Thanks for looking into this!
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
