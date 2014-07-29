@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845AbaG2IAW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 04:00:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:44929 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751044AbaG2IAU convert rfc822-to-8bit (ORCPT
+	id S1752438AbaG2IEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 04:04:36 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:60256 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430AbaG2IEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 04:00:20 -0400
-Date: Tue, 29 Jul 2014 10:00:17 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: =?UTF-8?B?SmnFmcOt?= Prchal <jiri.prchal@aksignal.cz>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
-        voice.shen@atmel.com, Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH] ARM: at91: spi: request all csgpio in spi probe
-Message-ID: <20140729100017.31f0b1be@bbrezillon>
-In-Reply-To: <20140728223859.GA3214@piout.net>
-References: <b033d16ec31d26a895726ee72ec89b43943dfbae.1406547656.git.jiri.prchal@aksignal.cz>
-	<20140728122103.GR9532@piout.net>
-	<53D64ADA.1000102@aksignal.cz>
-	<20140728223859.GA3214@piout.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 29 Jul 2014 04:04:32 -0400
+X-AuditID: cbfee691-b7f306d000003d81-d4-53d7558b39d7
+From: Sangjung Woo <sangjung.woo@samsung.com>
+To: Wim Van Sebroeck <wim@iguana.be>, Randy Dunlap <rdunlap@infradead.org>
+Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sangjung Woo <sangjung.woo@samsung.com>, again4you@gmail.com
+Subject: [PATCH] Documentation: fix a typo in watchdog-api.txt
+Date: Tue, 29 Jul 2014 17:04:24 +0900
+Message-id: <1406621064-5466-1-git-send-email-sangjung.woo@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsWyRsSkULcn9HqwwYJwi5P9/SwWl3fNYbO4
+	sW4fu8XbO9NZLBbsKbG4NeMFqwObx85Zd9k9rm0W89i8Qsujb8sqRo/Pm+QCWKO4bFJSczLL
+	Uov07RK4Mpb9ecpa8Jet4vcH1gbGh6xdjJwcEgImEsfmXIKyxSQu3FvP1sXIxSEksJRR4t6M
+	fwhFD2axQCQWMUqsWXecCSQhJNDGJNG/KxTEZhPQlXhy4DJzFyMHh4iAl8T+qwkg9cwCDYwS
+	Sx/8B6sXFrCTWP/hIQuIzSKgKvFw3gxGEJtXwF3i4tndYL0SAgoScybZgPRKCHxnk+jY+pMR
+	ol5A4tvkQywQNbISmw4wQ9wmKXFwxQ2WCYyCCxgZVjGKphYkFxQnpReZ6hUn5haX5qXrJefn
+	bmIEBujpf88m7mC8f8D6EGMy0LiJzFKiyfnAAM8riTc0NjOyMDUxNTYytzQjTVhJnDf9UVKQ
+	kEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkYREWEtDdOcms+ih2MkWZI5pSUTfyR85d/hGBI0
+	80fdrIOR2QIOCu9yVyr9VC42Dpv3NEzz49abH+eLX3K7mulk0c4zc12C7M8d343X6SzfX3/1
+	fqS90GdTvhd60iyPZ7CstH50If/y0rxZ/16I3jG5I8ZybXZGtd6mEw9ezbm/7xKf+fxHewOV
+	WIozEg21mIuKEwFnWzHaZgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42I5/e+xgG536PVgg1dvzS1O9vezWFzeNYfN
+	4sa6fewWb+9MZ7FYsKfE4taMF6wObB47Z91l97i2Wcxj8wotj74tqxg9Pm+SC2CNamC0yUhN
+	TEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAHar6RQlphTChQK
+	SCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMWPbnKWvBX7aK3x9YGxgfsnYxcnJICJhI
+	HHswiwXCFpO4cG89WxcjF4eQwCJGiTXrjjOBJIQE2pgk+neFgthsAroSTw5cZu5i5OAQEfCS
+	2H81AaSeWaCBUWLpg/9g9cICdhLrPzwEG8oioCrxcN4MRhCbV8Bd4uLZ3WC9EgIKEnMm2Uxg
+	5F7AyLCKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzgCnknvYFzVYHGIUYCDUYmHd8Pca8FC
+	rIllxZW5hxglOJiVRHgFAq8HC/GmJFZWpRblxxeV5qQWH2I0BVo+kVlKNDkfGJ15JfGGxiZm
+	RpZG5oYWRsbmSuK8B1utA4UE0hNLUrNTUwtSi2D6mDg4pRoYF90S3lBVwnB7j/tncdMPl3Ma
+	dzFl73l3M85wpo3UldYnGooLqqX5m77zppSzToj/z+l759vKH0G1P9LLDu7tbnmwTf1eXd/+
+	/21s3QEht44Izv4evqm+K/zNhds2W2Qufwk/cXq/rOzjbctDF794WLpgwea4L27fMqR8MwvX
+	+y1c8+vVmsnyC5RYijMSDbWYi4oTAYKK/BOWAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
+---
+ Documentation/watchdog/watchdog-api.txt |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On Tue, 29 Jul 2014 00:38:59 +0200
-Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
-
-> 
-> > >>+		if (ret < 0) {
-> > >>+			dev_err(&pdev->dev,
-> > >>+				"failed to configure csgpio#%u (%d)\n",
-> > >>+				i, ret);
-> > >>+			goto out_free;
-> > >>+		}
-> > >>+	}
-> > >>+
-> 
-> Mark: maybe it would make sense to do devm_gpio_request_one() in
-> of_spi_register_master(), after of_get_named_gpio.
-
-Might be the cleanest way to solve this issue, but you'll have to modify
-all the drivers that request cs_gpio in their setup method/callback.
-
-> 
-> While this solves the particular issue Jiří is seeing, this will not
-> solve the case where PA14 (CS0) is not used by the spi driver at all. It
-> will remained muxed as CS0 and toggle when the spi master needs to
-> access CS0 until another driver muxes it to something else. I still
-> believe we should explicitly ask pinctrl to mux them as gpios.
-> 
-
-Do we really care about this case ?
-After all, if a given pin needs a specific muxing during kernel boot
-(i.e. a pin connected to a gpio-led that needs to stay in its previous
-state or a pin connected to the reset line of a device that needs to
-stay up and running during kernel boot) the bootloader/bootstrap should
-have muxed this pin appropriately before booting the kernel.
-
-What do you mean by "we should explicitly ask pinctrl to mux them as
-gpios" ?
-Do you mean configuring all the pins as GPIOs when the pin controller is
-probed, or just adding a new pinctrl state configuring the pin as an
-output GPIO and reference it in the pinctrl-0 property of the spi
-controller.
-
-If the former, you'll break devices that needs their pins to stay in
-the state they were during the bootloader/boostrap phase.
-The latter won't work if the pin you request as GPIO is later requested
-by another device (which, if I'm correct, is exactly the case you're
-trying to solve).
-
-Best Regards,
-
-Boris
-
+diff --git a/Documentation/watchdog/watchdog-api.txt b/Documentation/watchdog/watchdog-api.txt
+index eb7132e..53c49a4 100644
+--- a/Documentation/watchdog/watchdog-api.txt
++++ b/Documentation/watchdog/watchdog-api.txt
+@@ -118,7 +118,7 @@ resets.
+ Note that the pretimeout is the number of seconds before the time
+ when the timeout will go off.  It is not the number of seconds until
+ the pretimeout.  So, for instance, if you set the timeout to 60 seconds
+-and the pretimeout to 10 seconds, the pretimout will go of in 50
++and the pretimeout to 10 seconds, the pretimout will go off in 50
+ seconds.  Setting a pretimeout to zero disables it.
+ 
+ There is also a get function for getting the pretimeout:
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.7.9.5
+
