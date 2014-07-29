@@ -1,54 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbaG2Rhp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 13:37:45 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:48159 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaG2Rho (ORCPT
+	id S1752127AbaG2RiL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 13:38:11 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:41032 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085AbaG2RiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 13:37:44 -0400
-Date: Tue, 29 Jul 2014 19:37:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 2/9] rcu: Provide cond_resched_rcu_qs()
- to force quiescent states in long loops
-Message-ID: <20140729173733.GZ12054@laptop.lan>
-References: <20140728225556.GA19493@linux.vnet.ibm.com>
- <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1406588180-21933-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140729075536.GZ19379@twins.programming.kicks-ass.net>
- <20140729162236.GP11241@linux.vnet.ibm.com>
- <20140729172542.GK3935@laptop>
- <20140729173318.GW11241@linux.vnet.ibm.com>
- <20140729173600.GN3935@laptop>
+	Tue, 29 Jul 2014 13:38:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140729173600.GN3935@laptop>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <53D7D680.9080803@gmail.com>
+References: <CAPDOMViXEgN1U8Og52Fd7EaM86Ad2Dfex9TVQ-+tRZ9SL9Kcig@mail.gmail.com>
+	<53D5BBCA.3020109@gmail.com>
+	<CAPDOMVjB9ErEwA7mf91X7pff5LAkeT=BT4pR7TuoEp3LL333Lg@mail.gmail.com>
+	<53D6218A.5080401@gmail.com>
+	<CAPDOMVg869TJJPgrW86XaMT2WyisbT9fg0jLETCAvg59xpvs4Q@mail.gmail.com>
+	<CAPDOMVh5kFE2kZtnpjQdAv1n+7FN=X_oc3YRyWOxpPmo=qW_cQ@mail.gmail.com>
+	<53D67828.3040802@gmail.com>
+	<CAPDOMVhNAqF_KSeT9MamLgk8Mwe1Qb3uZRK9oipE_49ScO8UHQ@mail.gmail.com>
+	<CAPDOMViwEA1HXXCukUfJ0fJgnCKT1cWxyCkcD9v5+2yYu=r6Hw@mail.gmail.com>
+	<53D7D680.9080803@gmail.com>
+Date: Tue, 29 Jul 2014 13:38:08 -0400
+Message-ID: <CAPDOMVis02Hj6FLLB5wMzB1dnqubB1Fzp+MxtrfsRiu-mYOU7w@mail.gmail.com>
+Subject: Re: Multi Core Support for compression in compression.c
+From: Nick Krause <xerofoify@gmail.com>
+To: Austin S Hemmelgarn <ahferroin7@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
+	<linux-btrfs@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 07:36:00PM +0200, Peter Zijlstra wrote:
-> On Tue, Jul 29, 2014 at 10:33:18AM -0700, Paul E. McKenney wrote:
-> > > No, but why can't we make the regular cond_resched() do this?
-> > 
-> > Well, I got a lot of grief when I tried it a few weeks ago.
-> > 
-> > But from what I can see, you are the maintainer or cond_resched(), so
-> > if you are good with making the normal cond_resched() do this, I am
-> > more than happy to make it so!  ;-)
-> 
-> Well, its the 'obvious' thing to do. But clearly I haven't tried so I'm
-> blissfully unaware of any problems. And the Changelog didn't inform me
-> either (you had a link in there, which I didn't read :-)
+On Tue, Jul 29, 2014 at 1:14 PM, Austin S Hemmelgarn
+<ahferroin7@gmail.com> wrote:
+> On 2014-07-29 13:08, Nick Krause wrote:
+>> On Mon, Jul 28, 2014 at 2:36 PM, Nick Krause <xerofoify@gmail.com> wrote:
+>>> On Mon, Jul 28, 2014 at 12:19 PM, Austin S Hemmelgarn
+>>> <ahferroin7@gmail.com> wrote:
+>>>> On 2014-07-28 11:57, Nick Krause wrote:
+>>>>> On Mon, Jul 28, 2014 at 11:13 AM, Nick Krause <xerofoify@gmail.com>
+>>>>> wrote:
+>>>>>> On Mon, Jul 28, 2014 at 6:10 AM, Austin S Hemmelgarn
+>>>>>> <ahferroin7@gmail.com> wrote:
+>>>>>>> On 07/27/2014 11:21 PM, Nick Krause wrote:
+>>>>>>>> On Sun, Jul 27, 2014 at 10:56 PM, Austin S Hemmelgarn
+>>>>>>>> <ahferroin7@gmail.com> wrote:
+>>>>>>>>> On 07/27/2014 04:47 PM, Nick Krause wrote:
+>>>>>>>>>> This may be a bad idea , but compression in brtfs seems
+>>>>>>>>>> to be only using one core to compress. Depending on the
+>>>>>>>>>> CPU used and the amount of cores in the CPU we can make
+>>>>>>>>>> this much faster with multiple cores. This seems bad by
+>>>>>>>>>> my reading at least I would recommend for writing
+>>>>>>>>>> compression we write a function to use a certain amount
+>>>>>>>>>> of cores based on the load of the system's CPU not using
+>>>>>>>>>> more then 75% of the system's CPU resources as my system
+>>>>>>>>>> when idle has never needed more then one core of my i5
+>>>>>>>>>> 2500k to run when with interrupts for opening eclipse are
+>>>>>>>>>> running. For reading compression on good core seems fine
+>>>>>>>>>> to me as testing other compression software for reads ,
+>>>>>>>>>> it's way less CPU intensive. Cheers Nick
+>>>>>>>>> We would probably get a bigger benefit from taking an
+>>>>>>>>> approach like SquashFS has recently added, that is,
+>>>>>>>>> allowing multi-threaded decompression fro reads, and
+>>>>>>>>> decompressing directly into the pagecache. Such an approach
+>>>>>>>>> would likely make zlib compression much more scalable on
+>>>>>>>>> large systems.
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>
+>>>>>>>> Austin, That seems better then my idea as you seem to be more
+>>>>>>>> up to date on brtfs devolopment. If you and the other
+>>>>>>>> developers of brtfs are interested in adding this as a
+>>>>>>>> feature please let me known as I would like to help improve
+>>>>>>>> brtfs as the file system as an idea is great just seems like
+>>>>>>>> it needs a lot of work :). Nick
+>>>>>>> I wouldn't say that I am a BTRFS developer (power user maybe?),
+>>>>>>> but I would definitely say that parallelizing compression on
+>>>>>>> writes would be a good idea too (especially for things like
+>>>>>>> lz4, which IIRC is either in 3.16 or in the queue for 3.17).
+>>>>>>> Both options would be a lot of work, but almost any performance
+>>>>>>> optimization would.  I would almost say that it would provide a
+>>>>>>> bigger performance improvement to get BTRFS to intelligently
+>>>>>>> stripe reads and writes (at the moment, any given worker thread
+>>>>>>> only dispatches one write or read to a single device at a
+>>>>>>> time, and any given write() or read() syscall gets handled by
+>>>>>>> only one worker).
+>>>>>>>
+>>>>>>
+>>>>>> I will look into this idea and see if I can do this for writes.
+>>>>>> Regards Nick
+>>>>>
+>>>>> Austin, Seems since we don't want to release the cache for inodes
+>>>>> in order to improve writes if are going to use the page cache. We
+>>>>> seem to be doing this for writes in end_compressed_bio_write for
+>>>>> standard pages and in end_compressed_bio_write. If we want to cache
+>>>>> write pages why are we removing then ? Seems like this needs to be
+>>>>> removed in order to start off. Regards Nick
+>>>>>
+>>>> I'm not entirely sure, it's been a while since I went exploring in the
+>>>> page-cache code.  My guess is that there is some reason that you and I
+>>>> aren't seeing that we are trying for write-around semantics, maybe one
+>>>> of the people who originally wrote this code could weigh in?  Part of
+>>>> this might be to do with the fact that normal page-cache semantics
+>>>> don't always work as expected with COW filesystems (cause a write goes
+>>>> to a different block on the device than a read before the write would
+>>>> have gone to).  It might be easier to parallelize reads first, and
+>>>> then work from that (and most workloads would probably benefit more
+>>>> from the parallelized reads).
+>>>>
+>>> I will look into this later today and work on it then.
+>>> Regards Nick
+>>
+>> Seems the best way to do is to create a kernel thread per core like in NFS and
+>> depending on the load of the system use these threads.
+>> Regards Nick
+>>
+> It might be more work now, but it would probably be better in the long
+> run to do it using kernel workqueues, as they would provide better
+> support for suspend/hibernate/resume, and then you wouldn't need to
+> worry about scheduling or how many CPU cores are in the system.
+>
 
-Then again, last time we touched cond_resched() we had a scalability
-issue or somesuch, or am I misremembering things?
+Seems better then my ideas , I will need to work on this later as for now I have
+some reading on the Linux networking stack.
+Regards Nick
