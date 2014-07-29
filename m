@@ -1,86 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376AbaG2W5p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 18:57:45 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:38049 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811AbaG2W5o (ORCPT
+	id S1754432AbaG2W64 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 18:58:56 -0400
+Received: from aso-006-i446.relay.mailchannels.net ([23.91.64.127]:51283 "EHLO
+	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751811AbaG2W6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 18:57:44 -0400
-Date: Tue, 29 Jul 2014 15:57:41 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 07/14] mm, compaction: khugepaged should not give up
- due to need_resched()
-In-Reply-To: <53D76D30.3000106@suse.cz>
-Message-ID: <alpine.DEB.2.02.1407291554550.20991@chino.kir.corp.google.com>
-References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-8-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1407281748110.8998@chino.kir.corp.google.com> <53D76D30.3000106@suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 29 Jul 2014 18:58:52 -0400
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-MC-Relay: Good
+X-MailChannels-SenderId: arvixe|x-authuser|przemo@firszt.eu
+X-MailChannels-Auth-Id: arvixe
+Message-ID: <1406674412.24026.1.camel@fedora-lan>
+Subject: Re: [PATCH v3 4/7] Input - wacom: Check for bluetooth protocol
+ while setting OLEDs
+From: Przemo Firszt <przemo@firszt.eu>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Date: Tue, 29 Jul 2014 23:53:32 +0100
+In-Reply-To: <1406659385-3256-5-git-send-email-benjamin.tissoires@redhat.com>
+References: <1406659385-3256-1-git-send-email-benjamin.tissoires@redhat.com>
+	 <1406659385-3256-5-git-send-email-benjamin.tissoires@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-AuthUser: przemo@firszt.eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jul 2014, Vlastimil Babka wrote:
-
-> > > diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-> > > index b2e4c92..60bdf8d 100644
-> > > --- a/include/linux/compaction.h
-> > > +++ b/include/linux/compaction.h
-> > > @@ -13,6 +13,14 @@
-> > >   /* The full zone was compacted */
-> > >   #define COMPACT_COMPLETE	4
-> > > 
-> > > +/* Used to signal whether compaction detected need_sched() or lock
-> > > contention */
-> > > +/* No contention detected */
-> > > +#define COMPACT_CONTENDED_NONE	0
-> > > +/* Either need_sched() was true or fatal signal pending */
-> > > +#define COMPACT_CONTENDED_SCHED	1
-> > > +/* Zone lock or lru_lock was contended in async compaction */
-> > > +#define COMPACT_CONTENDED_LOCK	2
-> > > +
-> > 
-> > Make this an enum?
+Dnia 2014-07-29, wto o godzinie 14:43 -0400, Benjamin Tissoires pisze:
+> Bluetooth Intuos 4 use 1-bit definition while the USB ones use a 4-bits
+> definition. This changes the size of the raw image we receive, and thus
+> the kernel will only accept 1-bit images for Bluetooth and 4-bits for
+> USB.
 > 
-> I tried originally, but then I would have to define it elsewhere
-> (mm/internal.h I think) together with compact_control. I didn't think it was
-> worth the extra pollution of shared header, when the return codes are also
-> #define and we might still get rid of need_resched() one day.
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+>  drivers/hid/wacom_sys.c | 29 +++++++++++++++++++++--------
+>  1 file changed, 21 insertions(+), 8 deletions(-)
 > 
+> diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
+> index f5c9c56..a12cd9c 100644
+> --- a/drivers/hid/wacom_sys.c
+> +++ b/drivers/hid/wacom_sys.c
+> @@ -20,6 +20,7 @@
+>  #define WAC_CMD_LED_CONTROL	0x20
+>  #define WAC_CMD_ICON_START	0x21
+>  #define WAC_CMD_ICON_XFER	0x23
+> +#define WAC_CMD_ICON_BT_XFER	0x26
+>  #define WAC_CMD_RETRIES		10
+>  
+>  static int wacom_get_report(struct hid_device *hdev, u8 type, u8 id,
+> @@ -526,12 +527,14 @@ static int wacom_led_control(struct wacom *wacom)
+>  	return retval;
+>  }
+>  
+> -static int wacom_led_putimage(struct wacom *wacom, int button_id, const void *img)
+> +static int wacom_led_putimage(struct wacom *wacom, int button_id, u8 xfer_id,
+> +		const unsigned len, const void *img)
+>  {
+>  	unsigned char *buf;
+>  	int i, retval;
+> +	const unsigned chunk_len = len / 4; /* 4 chunks are needed to be sent */
+>  
+> -	buf = kzalloc(259, GFP_KERNEL);
+> +	buf = kzalloc(chunk_len + 3 , GFP_KERNEL);
+>  	if (!buf)
+>  		return -ENOMEM;
+>  
+> @@ -543,15 +546,15 @@ static int wacom_led_putimage(struct wacom *wacom, int button_id, const void *im
+>  	if (retval < 0)
+>  		goto out;
+>  
+> -	buf[0] = WAC_CMD_ICON_XFER;
+> +	buf[0] = xfer_id;
+>  	buf[1] = button_id & 0x07;
+>  	for (i = 0; i < 4; i++) {
+>  		buf[2] = i;
+> -		memcpy(buf + 3, img + i * 256, 256);
+> +		memcpy(buf + 3, img + i * chunk_len, chunk_len);
+>  
+>  		retval = wacom_set_report(wacom->hdev, HID_FEATURE_REPORT,
+> -					  WAC_CMD_ICON_XFER,
+> -					  buf, 259, WAC_CMD_RETRIES);
+> +					  xfer_id, buf, chunk_len + 3,
+> +					  WAC_CMD_RETRIES);
+>  		if (retval < 0)
+>  			break;
+>  	}
+> @@ -652,13 +655,23 @@ static ssize_t wacom_button_image_store(struct device *dev, int button_id,
+>  	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
+>  	struct wacom *wacom = hid_get_drvdata(hdev);
+>  	int err;
+> +	unsigned len;
+> +	u8 xfer_id;
+>  
+> -	if (count != 1024)
+> +	if (hdev->bus == BUS_BLUETOOTH) {
+> +		len = 256;
+> +		xfer_id = WAC_CMD_ICON_BT_XFER;
+> +	} else {
+> +		len = 1024;
+> +		xfer_id = WAC_CMD_ICON_XFER;
+> +	}
+> +
+> +	if (count != len)
+>  		return -EINVAL;
+>  
+>  	mutex_lock(&wacom->lock);
+>  
+> -	err = wacom_led_putimage(wacom, button_id, buf);
+> +	err = wacom_led_putimage(wacom, button_id, xfer_id, len, buf);
+>  
+>  	mutex_unlock(&wacom->lock);
 
-Ok.
+Signed-off-by: Przemo Firszt <przemo@firszt.eu>
 
-[...]
+I'll test the whole series tomorrow.
+-- 
+Kind regards,
+Przemo Firszt
 
-> > > @@ -2660,15 +2660,36 @@ rebalance:
-> > >   	if (!(gfp_mask & __GFP_NO_KSWAPD) || (current->flags & PF_KTHREAD))
-> > >   		migration_mode = MIGRATE_SYNC_LIGHT;
-> > > 
-> > > -	/*
-> > > -	 * If compaction is deferred for high-order allocations, it is because
-> > > -	 * sync compaction recently failed. In this is the case and the caller
-> > > -	 * requested a movable allocation that does not heavily disrupt the
-> > > -	 * system then fail the allocation instead of entering direct reclaim.
-> > > -	 */
-> > > -	if ((deferred_compaction || contended_compaction) &&
-> > > -						(gfp_mask & __GFP_NO_KSWAPD))
-> > > -		goto nopage;
-> > 
-> > Hmm, this check will have unfortunately changed in the latest mmotm due to
-> > mm-thp-restructure-thp-avoidance-of-light-synchronous-migration.patch.
-> 
-> I think you were changing (and moving around) a different check so there would
-> be merge conflicts but no semantic problem.
-> 
 
-The idea is the same, though, I think the check should not rely on 
-__GFP_NO_KSWAPD and rather rely on 
-(gfp_mask & GFP_TRANSHUGE) == GFP_TRANSHUGE.  In other words, all the 
-possibilities under your new test for gfp_mask & __GFP_NO_KSWAPD are thp 
-specific and not for the other allocators who pass __GFP_NO_KSWAPD.  This 
-patch would be a significant change in logic for those users that doesn't 
-seem helpful.
