@@ -1,79 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027AbaG2I7x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 04:59:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56875 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753002AbaG2I7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 04:59:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,755,1400050800"; 
-   d="scan'208";a="580527091"
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        x86@kernel.org, Borislav Petkov <bp@alien8.de>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
-        linux-kernel@vger.kernel.org, Zhang Yang <yang.z.zhang@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH v3] x86, hotplug: fix llc shared map unreleased during cpu hotplug
-Date: Tue, 29 Jul 2014 16:59:13 +0800
-Message-Id: <1406624353-4782-1-git-send-email-wanpeng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753070AbaG2JAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 05:00:13 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46345 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004AbaG2I7v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 04:59:51 -0400
+Message-ID: <53D7627D.10005@linutronix.de>
+Date: Tue, 29 Jul 2014 10:59:41 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Corey Minyard <cminyard@mvista.com>, minyard@acm.org, rostedt@goodmis.org
+CC: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        tglx@linutronix.d, C.Emde@osadl.org, jkacur@redhat.com,
+        paul.gortmaker@windriver.com
+Subject: Re: [PATCH] tracing: Always run per-cpu ring buffer resize with schedule_work_on()
+References: <1405537633-31518-1-git-send-email-cminyard@mvista.com> <53D6C601.7090803@mvista.com>
+In-Reply-To: <53D6C601.7090803@mvista.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[  220.262245] Call Trace:
-[  220.262252]  [<ffffffff810e8396>] load_balance+0x156/0x980
-[  220.262259]  [<ffffffff816eeffe>] ? _raw_spin_unlock_irqrestore+0x2e/0xa0
-[  220.262266]  [<ffffffff810e9aa3>] idle_balance+0xe3/0x150
-[  220.262270]  [<ffffffff816ec4e7>] __schedule+0x797/0x8d0
-[  220.262277]  [<ffffffff816ec934>] schedule+0x24/0x70
-[  220.262283]  [<ffffffff816e9cd9>] schedule_timeout+0x119/0x1f0
-[  220.262294]  [<ffffffff810bb6e0>] ? lock_timer_base+0x70/0x70
-[  220.262301]  [<ffffffff816e9dc9>] schedule_timeout_uninterruptible+0x19/0x20
-[  220.262308]  [<ffffffff810bd3e8>] msleep+0x18/0x20
-[  220.262317]  [<ffffffff813aa11a>] lock_device_hotplug_sysfs+0x2a/0x50
-[  220.262323]  [<ffffffff813aa16e>] online_store+0x2e/0x80
-[  220.262358]  [<ffffffff813a873b>] dev_attr_store+0x1b/0x20
+On 07/28/2014 11:52 PM, Corey Minyard wrote:
+> Ping, I haven't heard anything on this.
 
-Last level cache shared map is built during cpu up and build sched domain 
-routine takes advantage of it to setup sched domain cpu topology, however, 
-llc shared map is unreleased during cpu disable which lead to invalid sched 
-domain cpu topology. This patch fix it by release llc shared map correctly
-during cpu disable.
+I looks good from my point of view.
 
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
----
-v1 -> v2:
- * fix subject line
-v2 -> v3:
- * simplify backtrace 
-
- arch/x86/kernel/smpboot.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 5492798..0134ec7 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
- 
- 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
- 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
-+	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
-+		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
-+	cpumask_clear(cpu_llc_shared_mask(cpu));
- 	cpumask_clear(cpu_sibling_mask(cpu));
- 	cpumask_clear(cpu_core_mask(cpu));
- 	c->phys_proc_id = 0;
--- 
-1.9.1
-
+Sebastian
