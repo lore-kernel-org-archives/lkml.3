@@ -1,139 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191AbaG2JaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 05:30:00 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:61428 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138AbaG2J35 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 05:29:57 -0400
-Message-ID: <53D7697C.6020103@gmail.com>
-Date: Tue, 29 Jul 2014 17:29:32 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753054AbaG2Jby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 05:31:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40168 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752722AbaG2Jbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 05:31:52 -0400
+Message-ID: <53D76A07.3000104@suse.cz>
+Date: Tue, 29 Jul 2014 11:31:51 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>, Hong Zhiguo <honkiko@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        zhuyj <zyjzyj2000@gmail.com>, "Tao, Yue" <Yue.Tao@windriver.com>,
-        Alexandre Dietsch <alexandre.dietsch@windriver.com>
-Subject: ipv4: net namespace does not inherit network configurations
-Content-Type: multipart/mixed;
- boundary="------------050905080402070203080408"
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm:;
+Subject: Re: [PATCH v5 06/14] mm, compaction: reduce zone checking frequency
+ in the migration scanner
+References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-7-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1407281742580.8998@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1407281742580.8998@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050905080402070203080408
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On 07/29/2014 02:44 AM, David Rientjes wrote:
+>> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+>> Cc: Minchan Kim <minchan@kernel.org>
+>> Acked-by: Mel Gorman <mgorman@suse.de>
+>> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>> Cc: Michal Nazarewicz <mina86@mina86.com>
+>> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+>> Cc: Christoph Lameter <cl@linux.com>
+>> Cc: Rik van Riel <riel@redhat.com>
+>> Cc: David Rientjes <rientjes@google.com>
+>
+> Acked-by: David Rientjes <rientjes@google.com>
+>
+> Minor comments below.
 
-Hi,all
+Thanks,
 
-I did a test on kernel3.16 rc6:
+>> +/*
+>> + * Check that the whole (or subset of) a pageblock given by the interval of
+>> + * [start_pfn, end_pfn) is valid and within the same zone, before scanning it
+>> + * with the migration of free compaction scanner. The scanners then need to
+>> + * use only pfn_valid_within() check for arches that allow holes within
+>> + * pageblocks.
+>> + *
+>> + * Return struct page pointer of start_pfn, or NULL if checks were not passed.
+>> + *
+>> + * It's possible on some configurations to have a setup like node0 node1 node0
+>> + * i.e. it's possible that all pages within a zones range of pages do not
+>> + * belong to a single zone. We assume that a border between node0 and node1
+>> + * can occur within a single pageblock, but not a node0 node1 node0
+>> + * interleaving within a single pageblock. It is therefore sufficient to check
+>> + * the first and last page of a pageblock and avoid checking each individual
+>> + * page in a pageblock.
+>> + */
+>> +static struct page *pageblock_within_zone(unsigned long start_pfn,
+>> +				unsigned long end_pfn, struct zone *zone)
+>
+> The name of this function is quite strange, it's returning a pointer to
+> the actual start page but the name implies it would be a boolean.
 
-root@qemu1:~# echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
-root@qemu1:~# echo 1 > /proc/sys/net/ipv4/conf/all/forwarding
-root@qemu1:~# ip netns list
-root@qemu1:~# ip netns add fib1
-root@qemu1:~# ip netns exec fib1 bash
-root@qemu1:~# cat /proc/sys/net/ipv6/conf/all/forwarding
-0
-root@qemu1:~# cat /proc/sys/net/ipv4/conf/all/forwarding
-1
+Yeah but I couldn't think of a better name that wouldn't be long and ugly :(
 
-The behavior of ipv4 and ipv6 is very inconsistent. I checked
-the kernel source code. I found that from this patch
-[ipv6: fix bad free of addrconf_init_net], the above difference
-appeared.
+>> +{
+>> +	struct page *start_page;
+>> +	struct page *end_page;
+>> +
+>> +	/* end_pfn is one past the range we are checking */
+>> +	end_pfn--;
+>> +
+>
+> With the given implementation, yes, but I'm not sure if that should be
+> assumed for any class of callers.  It seems better to call with
+> end_pfn - 1.
 
-Since a net namespace is independent to another. That is, there
-is no any relationship between the net namespaces. So the behavior
-of ipv4 is not correct.
+Well, I think the rest of compaction functions assume one-past-end 
+parameters so this would make it an exception. Better hide the exception 
+in the implementation and not expose it to callers?
 
-Based on this patch [ipv6: fix bad free of addrconf_init_net], I made
-a new patch to fix this problem on ipv4.
+>> +	if (!pfn_valid(start_pfn) || !pfn_valid(end_pfn))
+>> +		return NULL;
+>> +
+>
+> Ok, so even with this check, we still need to check pfn_valid_within() for
+> all pfns between start_pfn and end_pfn if there are memory holes.  I
+> checked that both the migration and freeing scanners do that before
+> reading your comment above the function, looks good.
 
-Any reply is appreciated.
-
-Zhu Yanjun
-
---------------050905080402070203080408
-Content-Type: text/x-patch;
- name="0001-ipv4-net-namespace-does-not-inherit-network-configur.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-ipv4-net-namespace-does-not-inherit-network-configur.pa";
- filename*1="tch"
-
->From f3a68831d7c58b185d57f30130217b22a8e2c71f Mon Sep 17 00:00:00 2001
-From: Zhu Yanjun <zyjzyj2000@gmail.com>
-Date: Tue, 29 Jul 2014 17:23:10 +0800
-Subject: [PATCH 1/1] ipv4: net namespace does not inherit network
- configurations
-
-Ipv4 net namespace requires a similar logic change as commit c900a800
-[ipv6: fix bad free of addrconf_init_net] introduces for newer kernels.
-
-Since a net namespace is independent to another. That is, there
-is no any relationship between the net namespaces. So a new net
-namespace should not inherit network configurations from another
-net namespace including the host.
-
-CC: Hong Zhiguo <honkiko@gmail.com>
-CC: David S. Miller <davem@davemloft.net>
-Signed-off-by: Zhu Yanjun <zyjzyj2000@gmail.com>
----
- net/ipv4/devinet.c | 29 ++++++++++++-----------------
- 1 file changed, 12 insertions(+), 17 deletions(-)
-
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index e944937..a16aa39 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -2220,28 +2220,23 @@ static __net_init int devinet_init_net(struct net *net)
- #endif
- 
- 	err = -ENOMEM;
--	all = &ipv4_devconf;
--	dflt = &ipv4_devconf_dflt;
- 
--	if (!net_eq(net, &init_net)) {
--		all = kmemdup(all, sizeof(ipv4_devconf), GFP_KERNEL);
--		if (all == NULL)
--			goto err_alloc_all;
--
--		dflt = kmemdup(dflt, sizeof(ipv4_devconf_dflt), GFP_KERNEL);
--		if (dflt == NULL)
--			goto err_alloc_dflt;
-+	all = kmemdup(&ipv4_devconf, sizeof(ipv4_devconf), GFP_KERNEL);
-+	if (all == NULL)
-+		goto err_alloc_all;
- 
-+	dflt = kmemdup(&ipv4_devconf_dflt, sizeof(ipv4_devconf_dflt), GFP_KERNEL);
-+	if (dflt == NULL)
-+		goto err_alloc_dflt;
- #ifdef CONFIG_SYSCTL
--		tbl = kmemdup(tbl, sizeof(ctl_forward_entry), GFP_KERNEL);
--		if (tbl == NULL)
--			goto err_alloc_ctl;
-+	tbl = kmemdup(tbl, sizeof(ctl_forward_entry), GFP_KERNEL);
-+	if (tbl == NULL)
-+		goto err_alloc_ctl;
- 
--		tbl[0].data = &all->data[IPV4_DEVCONF_FORWARDING - 1];
--		tbl[0].extra1 = all;
--		tbl[0].extra2 = net;
-+	tbl[0].data = &all->data[IPV4_DEVCONF_FORWARDING - 1];
-+	tbl[0].extra1 = all;
-+	tbl[0].extra2 = net;
- #endif
--	}
- 
- #ifdef CONFIG_SYSCTL
- 	err = __devinet_sysctl_register(net, "all", all);
--- 
-1.9.1
+Yeah, and thankfully pfn_valid_within() is a no-op on many archs :)
 
 
---------------050905080402070203080408--
