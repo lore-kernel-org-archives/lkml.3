@@ -1,134 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918AbaG2Iom (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 04:44:42 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59332 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752904AbaG2Ioj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 04:44:39 -0400
-Date: Tue, 29 Jul 2014 10:44:33 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
-        paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
-        hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
-        linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
-        davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
-        cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
-        JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
-        rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
-        mhocko@suse.cz, david@fromorbit.com
-Subject: Re: [RFC PATCH v1 13/70] x86, x2apic_cluster: _FROZEN Cleanup
-Message-ID: <20140729084433.GB11179@pd.tnic>
-References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
- <1406080786-3938-14-git-send-email-gong.chen@linux.intel.com>
- <20140723203628.GJ21707@pd.tnic>
- <20140728060455.GB23092@gchen.bj.intel.com>
+	id S1752984AbaG2Irm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 04:47:42 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:11531 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430AbaG2Iri (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 04:47:38 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 29 Jul 2014 01:39:23 -0700
+Message-ID: <53D75FA7.1030300@nvidia.com>
+Date: Tue, 29 Jul 2014 11:47:35 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140728060455.GB23092@gchen.bj.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 8/8] clk: tegra: Add EMC clock driver
+References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com> <1405088313-20048-9-git-send-email-mperttunen@nvidia.com> <53CE97F2.80300@wwwdotorg.org>
+In-Reply-To: <53CE97F2.80300@wwwdotorg.org>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 02:04:55AM -0400, Chen, Gong wrote:
-> On Wed, Jul 23, 2014 at 10:36:28PM +0200, Borislav Petkov wrote:
-> > Those checks dealing with CPU_TASKS_FROZEN in-between make the whole
-> > switch statement hard to follow.
-> > 
-> > How about we go a step further and deal with CPU_UP_CANCELED_FROZEN
-> > upfront and even simplify the rest:
-> > 
-> 
-> --------8<--------
-> Subject: [RFC PATCH v2 13/70] x86, x2apic_cluster: _FROZEN Cleanup
-> 
-> Remove XXX_FROZEN state from x86/x2apic_cluster.
-> 
-> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-> Suggested-by: Borislav Petkov <bp@alien8.de>
-> ---
->  arch/x86/kernel/apic/x2apic_cluster.c | 37 +++++++++++++++++++++++------------
->  1 file changed, 24 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-> index e66766b..b8a6ea8 100644
-> --- a/arch/x86/kernel/apic/x2apic_cluster.c
-> +++ b/arch/x86/kernel/apic/x2apic_cluster.c
-> @@ -144,6 +144,20 @@ static void init_x2apic_ldr(void)
->  	}
->  }
->  
-> +static void __update_clusterinfo(unsigned int this_cpu)
-> +{
-> +	unsigned int cpu;
-> +
-> +	for_each_online_cpu(cpu) {
-> +		if (x2apic_cluster(this_cpu) != x2apic_cluster(cpu))
-> +			continue;
-> +		__cpu_clear(this_cpu, per_cpu(cpus_in_cluster, cpu));
-> +		__cpu_clear(cpu, per_cpu(cpus_in_cluster, this_cpu));
-> +	}
-> +	free_cpumask_var(per_cpu(cpus_in_cluster, this_cpu));
-> +	free_cpumask_var(per_cpu(ipi_mask, this_cpu));
-> +}
-> +
->   /*
->    * At CPU state changes, update the x2apic cluster sibling info.
->    */
-> @@ -151,34 +165,31 @@ static int
->  update_clusterinfo(struct notifier_block *nfb, unsigned long action, void *hcpu)
->  {
->  	unsigned int this_cpu = (unsigned long)hcpu;
-> -	unsigned int cpu;
->  	int err = 0;
->  
->  	switch (action) {
->  	case CPU_UP_PREPARE:
->  		if (!zalloc_cpumask_var(&per_cpu(cpus_in_cluster, this_cpu),
-> -					GFP_KERNEL)) {
-> +					GFP_KERNEL))
->  			err = -ENOMEM;
-> -		} else if (!zalloc_cpumask_var(&per_cpu(ipi_mask, this_cpu),
-> -					       GFP_KERNEL)) {
-> +		else if (!zalloc_cpumask_var(&per_cpu(ipi_mask, this_cpu),
-> +					     GFP_KERNEL)) {
->  			free_cpumask_var(per_cpu(cpus_in_cluster, this_cpu));
->  			err = -ENOMEM;
+On 22/07/14 19:57, Stephen Warren wrote:
+> On 07/11/2014 08:18 AM, Mikko Perttunen wrote:
+>> The driver is currently only tested on Tegra124 Jetson TK1, but should
+>> work with other Tegra124 boards, provided that correct EMC tables are
+>> provided through the device tree. Older chip models have differing
+>> timing change sequences, so they are not currently supported.
+>
+>> diff --git a/drivers/clk/tegra/clk-emc.c b/drivers/clk/tegra/clk-emc.c
+>
+>> +struct emc_timing {
+>> +	unsigned long rate, parent_rate;
+>> +	u8 parent_index;
+>> +	struct clk *parent;
+>> +
+>> +	/* Store EMC burst data in a union to minimize mistakes. This allows
+>> +	 * us to use the same burst data lists as used by the downstream and
+>> +	 * ChromeOS kernels. */
+>
+> Nit: */ should be on its own line. This applies to many comments in the
+> file.
 
-You need to start restraining yourself and doing clean patches. Those
-changes here are unrelated, please drop them.
+Will fix.
 
-Go and reread Documentation/SubmittingPatches, section 3 in particular.
+>
+>> +/* * * * * * * * * * * * * * * * * * * * * * * * * *
+>> + * Timing change sequence functions                *
+>> + * * * * * * * * * * * * * * * * * * * * * * * * * */
+>
+> Nit: This kind of banner comment is unusual, but I guess it's fine.
+>
+>> +static void emc_seq_update_timing(struct tegra_emc *tegra)
+> ...
+>> +	dev_err(&tegra->pdev->dev, "timing update failed\n");
+>> +	BUG();
+>> +}
+>
+> Is there any way to avoid all these BUGs? Can we just continue on and
+> retry the next time, or disallow any further clock rate changes or
+> something?
 
->  		}
->  		break;
->  	case CPU_UP_CANCELED:
-> -	case CPU_UP_CANCELED_FROZEN:
->  	case CPU_DEAD:
-> -		for_each_online_cpu(cpu) {
-> -			if (x2apic_cluster(this_cpu) != x2apic_cluster(cpu))
-> -				continue;
-> -			__cpu_clear(this_cpu, per_cpu(cpus_in_cluster, cpu));
-> -			__cpu_clear(cpu, per_cpu(cpus_in_cluster, this_cpu));
-> -		}
-> -		free_cpumask_var(per_cpu(cpus_in_cluster, this_cpu));
-> -		free_cpumask_var(per_cpu(ipi_mask, this_cpu));
-> +		__update_clusterinfo(this_cpu);
-> +		break;
-> +	default:
->  		break;
->  	}
->  
-> +	if (test_and_clear_bit(CPU_TASKS_FROZEN, &action) &&
+I guess I can just remove the BUG()s and keep going. The clock might 
+temporarily end up in a strange state but that should be fine since 
+these shouldn't be happening anyway.
 
-What.. why?
+>
+>> +/* * * * * * * * * * * * * * * * * * * * * * * * * *
+>> + * Debugfs entry                                   *
+>> + * * * * * * * * * * * * * * * * * * * * * * * * * */
+>> +
+>> +static int emc_debug_rate_get(void *data, u64 *rate)
+>> +{
+>> +	struct tegra_emc *tegra = data;
+>> +
+>> +	*rate = clk_get_rate(tegra->hw.clk);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int emc_debug_rate_set(void *data, u64 rate)
+>> +{
+>> +	struct tegra_emc *tegra = data;
+>> +
+>> +	return clk_set_rate(tegra->hw.clk, rate);
+>> +}
+>> +
+>> +DEFINE_SIMPLE_ATTRIBUTE(emc_debug_rate_fops, emc_debug_rate_get,
+>> +			emc_debug_rate_set, "%lld\n");
+>
+> I think the rate can already be obtained through
+> ...debug/clock/clock_summary. I'm not sure about changing the rate, but
+> shouldn't that be a feature of the common clock core, not individual
+> drivers?
 
--- 
-Regards/Gruss,
-    Boris.
+The core doesn't allow writing to the rate debugfs files, so this is the 
+only way to trigger an EMC clock change for now. I agree that the core 
+might be a better place. I don't know if there are any philosophical 
+objections to that. I'd like to keep this in until a possible core 
+feature addition. Mike, any comments?
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+>
+>> +static int load_timings_from_dt(struct tegra_emc *tegra,
+>> +				struct device_node *node)
+>> +{
+> ...
+>> +	for_each_child_of_node(node, child) {
+> ...
+>> +		if (timing->rate <= prev_rate) {
+>> +			dev_err(&tegra->pdev->dev,
+>> +				"timing %s: rate not increasing\n",
+>> +				child->name);
+>
+> I don't believe there's any guaranteed node enumeration order. If the
+> driver needs the child nodes sorted, it should sort them itself.
+
+True. I'll fix this.
+
+>
+>> +static const struct of_device_id tegra_car_of_match[] = {
+>> +	{ .compatible = "nvidia,tegra124-car" },
+>> +	{}
+>> +};
+>> +
+>> +static const struct of_device_id tegra_mc_of_match[] = {
+>> +	{ .compatible = "nvidia,tegra124-mc" },
+>> +	{}
+>> +};
+>
+> It would be better if this driver explicitly called into the driver for
+> other modules, rather than directly touching their registers.
+>
+
+My local v2 already has the MC-related code split into Thierry's MC 
+driver. The CAR register writing is still done from the EMC driver. I 
+could add helpers for it to the CAR driver.
+
+Thanks,
+Mikko
