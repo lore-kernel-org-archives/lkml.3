@@ -1,171 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363AbaG2ExE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 00:53:04 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:54707 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006AbaG2ExB (ORCPT
+	id S1751281AbaG2FCc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 01:02:32 -0400
+Received: from smtprelay0219.hostedemail.com ([216.40.44.219]:56474 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750723AbaG2FCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 00:53:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <1404963109-3906-1-git-send-email-addy.ke@rock-chips.com>
-References: <1404565174-2923-1-git-send-email-addy.ke@rock-chips.com>
-	<1404963109-3906-1-git-send-email-addy.ke@rock-chips.com>
-Date: Mon, 28 Jul 2014 21:52:59 -0700
-X-Google-Sender-Auth: 88UyL9XC3H86Z4r_6iL6dgcsjA4
-Message-ID: <CAD=FV=X87BViAZ9LsDWcx=AGsSmR9VtqbbVaZSZ_1-P-tgV_ig@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: dw_mmc: add support for RK3288
-From: Doug Anderson <dianders@chromium.org>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        zyf@rock-chips.com
-Content-Type: text/plain; charset=UTF-8
+	Tue, 29 Jul 2014 01:02:31 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:3871:3872:4321:5007:7514:7652:7903:7904:10004:10400:10848:11026:11232:11658:11914:12043:12296:12438:12517:12519:12555:12740:13019:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: hole53_1527252191e0f
+X-Filterd-Recvd-Size: 2909
+Message-ID: <1406610143.5285.14.camel@joe-AO725>
+Subject: Re: [PATCH] Staging: android: timed_gpio.c: remove else statement
+ after return
+From: Joe Perches <joe@perches.com>
+To: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Date: Mon, 28 Jul 2014 22:02:23 -0700
+In-Reply-To: <1406589075-7483-1-git-send-email-mopsfelder@gmail.com>
+References: <1406589075-7483-1-git-send-email-mopsfelder@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addy,
-
-On Wed, Jul 9, 2014 at 8:31 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
-> This patch focuses on clock setting for RK3288 mmc controller.
->
-> In RK3288 mmc controller, CLKDIV register can only be set 0 or 1,
-> and if DDR 8bit mode, CLKDIV register must be set 1.
->
-> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+On Mon, 2014-07-28 at 20:11 -0300, Murilo Opsfelder Araujo wrote:
+> This patch makes checkpatch.pl script happy by fixing the following
+> warning:
+> 
+> WARNING: else is not generally useful after a break or return
+> 
+> Signed-off-by: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
 > ---
-> changes since v1:
-> - dw_mci_rk3288_setup_clock: do not call clk_get_rate(), just use the
->   host->bus_hz which is already called by dw_mmc.c, suggested by Jaehoon Chung
->
->  .../devicetree/bindings/mmc/rockchip-dw-mshc.txt   |  4 +-
->  drivers/mmc/host/dw_mmc-pltfm.c                    | 50 +++++++++++++++++++++-
->  2 files changed, 51 insertions(+), 3 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
-> index c559f3f..e3f95cd 100644
-> --- a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
-> +++ b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
-> @@ -10,7 +10,9 @@ extensions to the Synopsys Designware Mobile Storage Host Controller.
->  Required Properties:
->
->  * compatible: should be
-> -       - "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following
-> +       - "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following,
-> +                                                       before RK3288
-> +       - "rockchip,rk3288-dw-mshc": for Rockchip RK3288
->
->  Example:
->
-> diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
-> index d4a47a9..809c28b 100644
-> --- a/drivers/mmc/host/dw_mmc-pltfm.c
-> +++ b/drivers/mmc/host/dw_mmc-pltfm.c
-> @@ -21,17 +21,61 @@
->  #include <linux/mmc/mmc.h>
->  #include <linux/mmc/dw_mmc.h>
->  #include <linux/of.h>
-> +#include <linux/clk.h>
->
->  #include "dw_mmc.h"
->  #include "dw_mmc-pltfm.h"
->
-> +#define RK3288_CLKGEN_DIV      2
-
-Yup, this matches what I see in the TRM.  It will always divide by 2
-to allow for 4 phases (picking the phases not supported yet).  Default
-phase looks to be 180 degrees which is why we've (currently) got
-USE_HOLD_REG hardcoded.  :)
-
+>  drivers/staging/android/timed_gpio.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/android/timed_gpio.c b/drivers/staging/android/timed_gpio.c
+> index 180c209..05cb578 100644
+> --- a/drivers/staging/android/timed_gpio.c
+> +++ b/drivers/staging/android/timed_gpio.c
+> @@ -53,8 +53,9 @@ static int gpio_get_time(struct timed_output_dev *dev)
+>  		struct timeval t = ktime_to_timeval(r);
+>  
+>  		return t.tv_sec * 1000 + t.tv_usec / 1000;
+> -	} else
+> -		return 0;
+> +	}
 > +
->  static void dw_mci_pltfm_prepare_command(struct dw_mci *host, u32 *cmdr)
->  {
->         *cmdr |= SDMMC_CMD_USE_HOLD_REG;
+> +	return 0;
 >  }
->
-> -static const struct dw_mci_drv_data rockchip_drv_data = {
-> +static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
-> +{
-> +       host->bus_hz /= RK3288_CLKGEN_DIV;
-> +
-> +       return 0;
-> +}
-> +
-> +static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
-> +{
-> +       int ret;
-> +       unsigned int cclkin;
-> +
-> +       /*
-> +        * cclkin: source clock of mmc controller.
-> +        * bus_hz: card interface clock generated by CLKGEN.
-> +        * bus_hz = cclkin / RK3288_CLKGEN_DIV;
-> +        * ios->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
-> +        *
-> +        * Note: div can only be 0 or 1
-> +        *       if DDR50 8bit mode, div must be set 1
 
-Makes sense.  So this function is essentially reversing the logic in
-dw_mmc and making sure that we'll get the right DIV (0 or 1) in
-dw_mci_setup_bus().
+It may be better to reverse the logic here.
+Something like:
+
+ drivers/staging/android/timed_gpio.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/android/timed_gpio.c b/drivers/staging/android/timed_gpio.c
+index 180c209..8fa4758 100644
+--- a/drivers/staging/android/timed_gpio.c
++++ b/drivers/staging/android/timed_gpio.c
+@@ -45,16 +45,17 @@ static enum hrtimer_restart gpio_timer_func(struct hrtimer *timer)
+ 
+ static int gpio_get_time(struct timed_output_dev *dev)
+ {
+-	struct timed_gpio_data	*data =
+-		container_of(dev, struct timed_gpio_data, dev);
++	struct timed_gpio_data *data;
++	struct timeval t;
+ 
+-	if (hrtimer_active(&data->timer)) {
+-		ktime_t r = hrtimer_get_remaining(&data->timer);
+-		struct timeval t = ktime_to_timeval(r);
++	data = container_of(dev, struct timed_gpio_data, dev);
+ 
+-		return t.tv_sec * 1000 + t.tv_usec / 1000;
+-	} else
++	if (!hrtimer_active(&data->timer))
+ 		return 0;
++
++	t = ktime_to_timeval(hrtimer_get_remaining(&data->timer));
++
++	return t.tv_sec * 1000 + t.tv_usec / 1000;
+ }
+ 
+ static void gpio_enable(struct timed_output_dev *dev, int value)
 
 
-> +        */
-> +       if ((ios->bus_width == MMC_BUS_WIDTH_8) &&
-> +           (ios->timing == MMC_TIMING_UHS_DDR50 ||
 
-Probably don't need UHS_DDR50 since (I think) you can't have an 8-bit
-SD card--only MMC, right?  ...but it doesn't hurt.
-
-
-> +            ios->timing == MMC_TIMING_MMC_DDR52))
-> +               cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
-> +       else
-> +               cclkin = ios->clock * RK3288_CLKGEN_DIV;
-> +
-> +       ret = clk_set_rate(host->ciu_clk, cclkin);
-> +       if (ret)
-> +               dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
-> +
-> +       host->bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
-> +}
-> +
-> +static const struct dw_mci_drv_data rk2928_drv_data = {
-> +       .prepare_command        = dw_mci_pltfm_prepare_command,
-> +};
-> +
-> +static const struct dw_mci_drv_data rk3288_drv_data = {
->         .prepare_command        = dw_mci_pltfm_prepare_command,
-> +       .set_ios        = dw_mci_rk3288_set_ios,
-> +       .setup_clock    = dw_mci_rk3288_setup_clock,
->  };
->
->  static const struct dw_mci_drv_data socfpga_drv_data = {
-> @@ -95,7 +139,9 @@ EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
->  static const struct of_device_id dw_mci_pltfm_match[] = {
->         { .compatible = "snps,dw-mshc", },
->         { .compatible = "rockchip,rk2928-dw-mshc",
-> -               .data = &rockchip_drv_data },
-> +               .data = &rk2928_drv_data },
-> +       { .compatible = "rockchip,rk3288-dw-mshc",
-> +               .data = &rk3288_drv_data },
->         { .compatible = "altr,socfpga-dw-mshc",
->                 .data = &socfpga_drv_data },
->         {},
-
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Doug Anderson <dianders@chromium.org>
