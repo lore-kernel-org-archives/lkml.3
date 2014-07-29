@@ -1,77 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451AbaG2Wxj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 18:53:39 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:57988 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712AbaG2Wxh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 18:53:37 -0400
-Date: Tue, 29 Jul 2014 15:53:35 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v5 07/14] mm, compaction: khugepaged should not give up
- due to need_resched()
-In-Reply-To: <53D76E26.6040706@suse.cz>
-Message-ID: <alpine.DEB.2.02.1407291548430.20991@chino.kir.corp.google.com>
-References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-8-git-send-email-vbabka@suse.cz> <20140729065327.GB1610@js1304-P5Q-DELUXE> <alpine.DEB.2.02.1407290024550.7998@chino.kir.corp.google.com> <53D76E26.6040706@suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754360AbaG2Wys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 18:54:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21471 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751300AbaG2Wyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 18:54:47 -0400
+Message-ID: <53D82623.4080903@redhat.com>
+Date: Tue, 29 Jul 2014 18:54:27 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Borislav Petkov <bp@alien8.de>
+CC: linux-kernel@vger.kernel.org, lszubowi@redhat.com,
+        Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH] x86, efi: print debug values in Kib not MB
+References: <1406653761-3884-1-git-send-email-prarit@redhat.com> <20140729222932.GA17481@pd.tnic> <53D82118.6090202@redhat.com> <20140729223603.GC17241@pd.tnic>
+In-Reply-To: <20140729223603.GC17241@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jul 2014, Vlastimil Babka wrote:
 
-> > I think there's two ways to go about it:
-> > 
-> >   - allow a single thp fault to be expensive and then rely on deferred
-> >     compaction to avoid subsequent calls in the near future, or
-> > 
-> >   - try to make all thp faults be as least expensive as possible so that
-> >     the cumulative effect of faulting large amounts of memory doesn't end
-> >     up with lengthy stalls.
-> > 
-> > Both of these are complex because of the potential for concurrent calls to
-> > memory compaction when faulting thp on several cpus.
-> > 
-> > I also think the second point from that email still applies, that we
-> > should abort isolating pages within a pageblock for migration once it can
-> > no longer allow a cc->order allocation to succeed.
+
+On 07/29/2014 06:36 PM, Borislav Petkov wrote:
+> On Tue, Jul 29, 2014 at 06:32:56PM -0400, Prarit Bhargava wrote:
+>> and it was best to keep the code simple with a KiB.
 > 
-> That was the RFC patch 15, I hope to reintroduce it soon.
-
-Which of the points above are you planning on addressing in another patch?  
-I think the approach would cause the above to be mutually exclusive 
-options.
-
-> You could still test
-> it meanwhile to see if you see the same extfrag regression as me. In my tests,
-> kswapd/khugepaged wasn't doing enough work to defragment the pageblocks that
-> the stress-highalloc benchmark (configured to behave like thp page fault) was
-> skipping.
+> You're missing the point - the output doesn't get simple with KiB. Read
+> the example I just gave you!
 > 
+> (13893632kiB) is actively *not* helping when one looks at it!
 
-The initial regression that I encountered was on a 128GB machine where 
-async compaction would cause faulting 64MB of transparent hugepages to 
-excessively stall and I don't see how kswapd can address this if there's 
-no memory pressure and khugepaged can address it if it has the default 
-settings which is very slow.
+I did get your point and I'm (politely) disagreeing with it.  Your case ONLY
+works if the number is _exactly_ 13GB.  What if it is 13.5?  Then we're still
+rounding off and reporting 14GB.  Which, if this code is meant for debug, makes
+no sense to me.  Why round it off?
 
-Another idea I had is to only do async memory compaction for thp on local 
-zones and avoid defragmenting remotely since, in my experimentation, 
-remote thp memory causes a performance degradation over regular pages.  If 
-that solution were to involve zone_reclaim_mode and a test of 
-node_distance() > RECLAIM_DISTANCE, I think that would be acceptable as 
-well.
+P.
+
+> 
