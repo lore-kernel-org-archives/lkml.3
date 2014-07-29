@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340AbaG2WZp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 18:25:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54154 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751203AbaG2WZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 18:25:43 -0400
-Date: Tue, 29 Jul 2014 15:25:29 -0700
-From: Benjamin Poirier <bpoirier@suse.de>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: hare@suse.de, mcgrof@suse.com, gregkh@linuxfoundation.org,
-        santosh@chelsio.com, hariprasad@chelsio.com, tiwai@suse.de,
-        linux-kernel@vger.kernel.org, joseph.salisbury@canonical.com,
-        kay@vrfy.org, gnomes@lxorguk.ukuu.org.uk, tim.gardner@canonical.com,
-        pierre-fersing@pierref.org, akpm@linux-foundation.org, oleg@redhat.com,
-        nagalakshmi.nandigama@avagotech.com,
-        praveen.krishnamoorthy@avagotech.com, sreekanth.reddy@avagotech.com,
-        abhijit.mahajan@avagotech.com, MPT-FusionLinux.pdl@avagotech.com,
-        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred
- probefrom init
-Message-ID: <20140729222529.GC21140@f1.synalogic.ca>
-References: <20140728234644.GA18729@kroah.com>
- <CAB=NE6UzK1ZEzm+54dwSyPwHGrAWCPtiNtxwhQuJF6tM9NbnYw@mail.gmail.com>
- <20140729003501.GA17020@kroah.com>
- <CAB=NE6XMzU+zJ0RMDKaPuSxfXBvN2vZ1DnbgxCjWHJquTD1iqg@mail.gmail.com>
- <53D744E3.10500@suse.de>
- <201407292107.EGB64066.OOQMFSHLJVtFFO@I-love.SAKURA.ne.jp>
+	id S1754406AbaG2W0B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 18:26:01 -0400
+Received: from mx5-phx2.redhat.com ([209.132.183.37]:50132 "EHLO
+	mx5-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754240AbaG2WZ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 18:25:59 -0400
+Date: Tue, 29 Jul 2014 18:25:57 -0400 (EDT)
+From: Abhijith Das <adas@redhat.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        cluster-devel@redhat.com
+Message-ID: <584806381.15003446.1406672757956.JavaMail.zimbra@redhat.com>
+In-Reply-To: <20140729145808.79bec165@lwn.net>
+References: <1406309888-10749-1-git-send-email-adas@redhat.com> <1406309888-10749-6-git-send-email-adas@redhat.com> <20140729145808.79bec165@lwn.net>
+Subject: Re: [RFC PATCH 5/5] gfs2: Add xreaddir file operation and
+ supporting functions
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201407292107.EGB64066.OOQMFSHLJVtFFO@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.6]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - GC36 (Linux)/8.0.6_GA_5922)
+Thread-Topic: gfs2: Add xreaddir file operation and supporting functions
+Thread-Index: PtVJMDfmQX/ndhLpw1i4Jh40m0Uy1Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/07/29 21:07, Tetsuo Handa wrote:
-> Luis R. Rodriguez wrote:
-> > On Mon, Jul 28, 2014 at 5:35 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > > On Mon, Jul 28, 2014 at 05:26:34PM -0700, Luis R. Rodriguez wrote:
-> > >> To ignore SIGKILL ?
-> > >
-> > > Sorry, I thought this was a userspace change that caused this.
-> > >
-> > > As it's a kernel change, well, maybe that patch should be reverted...
-> > 
-> > That's certainly viable. Oleg?
+
+
+----- Original Message -----
+> From: "Jonathan Corbet" <corbet@lwn.net>
+> To: "Abhi Das" <adas@redhat.com>
+> Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, cluster-devel@redhat.com
+> Sent: Tuesday, July 29, 2014 1:58:08 PM
+> Subject: Re: [RFC PATCH 5/5] gfs2: Add xreaddir file operation and supporting functions
 > 
-> I don't want to revert that patch.
+> On Fri, 25 Jul 2014 12:38:08 -0500
+> Abhi Das <adas@redhat.com> wrote:
+> 
+> > This patch adds support in GFS2 for the xgetdents syscall by
+> > implementing the xreaddir file operation.
+> 
+> So I was trying to make sense of this, and ran into one little thing that
+> jumped out at me:
+> 
+> > +static int gfs2_xrdir_to_user_vars(struct gfs2_xrdir_ctx *xc,
+> > +				   struct gfs2_xdirent *x,
+> > +				   struct gfs2_xdirent *x_vb_p,
+> > +				   struct linux_xdirent __user *lxd,
+> > +				   size_t count, size_t *bytes)
+> 
+> Now, I'll readily admit that I could be overly confused by this function.
+> When the variables are named "x", "xx", "xc", "x_vb_p", "xblob", and "lxd",
+> it all starts to run together.  But still...
+> 
 
-I agree that 786235ee should not be reverted to fix the problem of
-modules that receive sigkill from udev while they are initializing. In
-fact, while it may fix the case that was reported with mptsas, it would
-not fix cxgb4 because there are other code paths that check for pending
-signals and that abort (ex. pci_vpd_pci22_wait()).
+As I went along writing this patch, I ended up needing more structs and names and this is
+the ugly result :(. I guess some of these structs/names can be reviewed and changed as
+needed. This is just a proof of concept patch to illustrate how such a syscall can be
+implemented.
 
-Reverting 786235ee effectively works around the problem by making
-modprobe unkillable. The proper solution would be to make sure that udev
-does not send sigkill to modprobe in the first place, either by making
-the timeout longer or by making the module probe faster.
+> > +	if ((xc->xc_xattr_mask & XSTAT_XATTR_ALL) &&
+> > +		lxd->xd_blob.xb_xattr_count) {
+> 
+> How can that be right?  lxd is __user, it doesn't seem right to be
+> dereferencing it directly...?
 
-If you have other reasons for reverting 786235ee, then it's a different
-story.
+Wouldn't the call to access_ok() at the start of the syscall take care of this? All the
+__user pointers point to areas within the user supplied buffer buf and overflow past the
+end of the buffer for the last lxd is checked for.
+
+The 2/5 patch in this series adds the following in fs/readdir.c:
+
++SYSCALL_DEFINE5(xgetdents, unsigned int, fd, unsigned, flags, unsigned int, mask, 
++               void __user *, buf, unsigned int, count)
+...
+...
+...
++       if (!access_ok(VERIFY_WRITE, buf, count))
++               return -EFAULT;
+
+> 
+> Thanks,
+> 
+> jon
+> 
+
+Cheers!
+--Abhi
