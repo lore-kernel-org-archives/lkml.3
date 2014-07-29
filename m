@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177AbaG2JCV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 05:02:21 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:46663 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105AbaG2JCR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 05:02:17 -0400
-Message-ID: <53D762CD.7070006@linaro.org>
-Date: Tue, 29 Jul 2014 17:01:01 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753187AbaG2JCi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 05:02:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39509 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783AbaG2JCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 05:02:36 -0400
+Date: Tue, 29 Jul 2014 11:02:34 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: =?ISO-8859-15?Q?Petr_Ml=E1dek?= <pmladek@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] ring-buffer: Race when writing and swapping cpu buffer
+ in parallel
+In-Reply-To: <20140721123019.678788f1@gandalf.local.home>
+Message-ID: <alpine.LNX.2.00.1407291057330.16390@pobox.suse.cz>
+References: <1405501084-16135-1-git-send-email-pmladek@suse.cz> <20140716124356.398e21f4@gandalf.local.home> <20140718153443.GC6774@pathway.suse.cz> <20140721144324.GG20751@pathway.suse.cz> <20140721154317.GS8690@linux.vnet.ibm.com> <20140721161828.GH20751@pathway.suse.cz>
+ <20140721123019.678788f1@gandalf.local.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-CC: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
-        Mark Brown <broonie@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Subject: Re: [PATCH 19/19] Documentation: ACPI for ARM64
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <1406206825-15590-20-git-send-email-hanjun.guo@linaro.org> <CAOesGMhKHGkVK3dOLXXx9GQBMxDmjBu1WDBgHmwdGe1UK3jfcg@mail.gmail.com> <5014834.k6eecMddPC@wuerfel>
-In-Reply-To: <5014834.k6eecMddPC@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-7-28 17:07, Arnd Bergmann wrote:
-> On Saturday 26 July 2014 19:34:48 Olof Johansson wrote:
->> On Thu, Jul 24, 2014 at 6:00 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
->>> +Relationship with Device Tree
->>> +-----------------------------
->>> +
->>> +ACPI support in drivers and subsystems for ARMv8 should never be mutually
->>> +exclusive with DT support at compile time.
->>> +
->>> +At boot time the kernel will only use one description method depending on
->>> +parameters passed from the bootloader.
->>
->> Possibly overriden by kernel bootargs. And as debated for quite a
->> while earlier this year, acpi should still default to off -- if a DT
->> and ACPI are both passed in, DT should at this time be given priority.
-> 
-> I think this would be harder to do with the way that ACPI is passed in
-> to the kernel. IIRC, you always have a minimal DT information based on
-> the ARM64 boot protocol, but in the case of ACPI, this contains pointers
-> to the ACPI tables, which are then used for populating the Linux platform
-> devices (unless acpi=disabled is set), while the other contents of the
-> DTB may be present but we skip the of_platform_populate state.
-> 
-> If this is correct, then replacing the firmware-generated dtb with a
-> user-provided on would implicitly remove the ACPI tables from visibility,
-> which is exactly what we want.
-> 
-> It's possible that I'm misremembering it though, and it should be
-> documented better.
-> 
->>> +Regardless of whether DT or ACPI is used, the kernel must always be capable
->>> +of booting with either scheme.
->>
->> It should always be possible to compile out ACPI. There will be plenty
->> of platforms that will not implement it, so disabling CONFIG_ACPI
->> needs to be possible.
-> 
-> Right.
+On Mon, 21 Jul 2014, Steven Rostedt wrote:
 
-Actually, if platforms don't implement ACPI, acpi_disabled will always be set to
-1 at early boot stage which before the device tree is unflattened, so device
-tree will work as expected even if CONFIG_ACPI=y on such platforms.
+> > I thought that IPI used NMI and thus could not be blocked if the
+> > called function was reasonable. Note that ring_buffer_swap_cpu() does not take
+> > any lock and can't block anywhere. I am probably too optimistic here.
+> 
+> Heh, that would be a crazy system. No, IPI is a normal maskable
+> interrupt. It does not use NMIs. In fact, IPI is how irq_work is
+> implemented to do stuff from an NMI outside of NMI context.
 
-Thanks
-Hanjun
+Just for the sake of completness -- on x86, it is possible to send NMI IPI 
+by simply doing
+
+	apic->send_IPI_mask(mask, NMI_VECTOR);
+
+but obviously smp_call_funcion_*() are not using this.
+
+-- 
+Jiri Kosina
+SUSE Labs
