@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbaG2PV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:21:59 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:57251 "EHLO
+	id S1754285AbaG2PWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:22:00 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:15172 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754081AbaG2PUA (ORCPT
+	by vger.kernel.org with ESMTP id S1754079AbaG2PUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Jul 2014 11:20:00 -0400
 X-IronPort-AV: E=Sophos;i="5.01,757,1400018400"; 
-   d="scan'208";a="87459219"
+   d="scan'208";a="87459218"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Dario Ballabio <ballabio_dario@emc.com>
+To: Linus Walleij <linus.walleij@linaro.org>
 Cc: kernel-janitors@vger.kernel.org, linux-ia64@vger.kernel.org,
         ceph-devel@vger.kernel.org, toralf.foerster@gmx.de, hmh@hmh.eng.br,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/9] scsi: use correct structure type name in sizeof
-Date: Tue, 29 Jul 2014 17:16:49 +0200
-Message-Id: <1406647011-8543-8-git-send-email-Julia.Lawall@lip6.fr>
+        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 6/9] gpiolib: devres: use correct structure type name in sizeof
+Date: Tue, 29 Jul 2014 17:16:48 +0200
+Message-Id: <1406647011-8543-7-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406647011-8543-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1406647011-8543-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -37,20 +37,20 @@ semantic patch used can be found in message 0 of this patch series.
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/scsi/u14-34f.c |    2 +-
+ drivers/gpio/devres.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/u14-34f.c b/drivers/scsi/u14-34f.c
-index 4e76fe8..617d72a 100644
---- a/drivers/scsi/u14-34f.c
-+++ b/drivers/scsi/u14-34f.c
-@@ -585,7 +585,7 @@ struct mscp {
-    struct sg_list *sglist; /* pointer to the allocated SG list */
-    };
+diff --git a/drivers/gpio/devres.c b/drivers/gpio/devres.c
+index 65978cf..4a63207 100644
+--- a/drivers/gpio/devres.c
++++ b/drivers/gpio/devres.c
+@@ -84,7 +84,7 @@ struct gpio_desc *__must_check devm_gpiod_get_index(struct device *dev,
+ 	struct gpio_desc **dr;
+ 	struct gpio_desc *desc;
  
--#define CP_TAIL_SIZE (sizeof(struct sglist *) + sizeof(dma_addr_t))
-+#define CP_TAIL_SIZE (sizeof(struct sg_list *) + sizeof(dma_addr_t))
- 
- struct hostdata {
-    struct mscp cp[MAX_MAILBOXES];       /* Mailboxes for this board */
+-	dr = devres_alloc(devm_gpiod_release, sizeof(struct gpiod_desc *),
++	dr = devres_alloc(devm_gpiod_release, sizeof(struct gpio_desc *),
+ 			  GFP_KERNEL);
+ 	if (!dr)
+ 		return ERR_PTR(-ENOMEM);
 
