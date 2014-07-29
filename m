@@ -1,149 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476AbaG2LdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 07:33:15 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:61003 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876AbaG2LdL (ORCPT
+	id S1753351AbaG2Lf2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 07:35:28 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:11258 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251AbaG2Lf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 07:33:11 -0400
-Date: Tue, 29 Jul 2014 13:33:04 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-pci@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] resource: Add device-managed
- request/release_resource()
-Message-ID: <20140729113302.GA21732@ulmo.nvidia.com>
-References: <1405062505-2606-1-git-send-email-thierry.reding@gmail.com>
- <20140722185002.GC19181@google.com>
- <20140722190120.GM13851@htj.dyndns.org>
+	Tue, 29 Jul 2014 07:35:27 -0400
+Message-ID: <53D786EE.3070800@huawei.com>
+Date: Tue, 29 Jul 2014 19:35:10 +0800
+From: Zhang Zhen <zhenzhang.zhang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cNdxnHkX5QqsyA0e"
-Content-Disposition: inline
-In-Reply-To: <20140722190120.GM13851@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>,
+        David Rientjes <rientjes@google.com>
+CC: <wangnan0@huawei.com>, <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Subject: [PATCH v3] memory hotplug: update the variables after memory removed
+References: <1406633598-27910-1-git-send-email-zhenzhang.zhang@huawei.com>
+In-Reply-To: <1406633598-27910-1-git-send-email-zhenzhang.zhang@huawei.com>
+X-Forwarded-Message-Id: <1406633598-27910-1-git-send-email-zhenzhang.zhang@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.77]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A02020A.53D786FB.0169,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: 382ee77ee266bfe7541aa9b49610a243
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit ea0854170c95 ("memory hotplug: fix a bug on /dev/mem
+for 64-bit kernels") added a fuction update_end_of_memory_vars()
+to update high_memory, max_pfn and max_low_pfn.
 
---cNdxnHkX5QqsyA0e
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Here we may access wrong memory via /dev/mem after memory remove
+without this patch.
+I modified the function and call it in arch_remove_memory() to update
+these variables too.
 
-On Tue, Jul 22, 2014 at 03:01:20PM -0400, Tejun Heo wrote:
-> Hello,
->=20
-> On Tue, Jul 22, 2014 at 12:50:02PM -0600, Bjorn Helgaas wrote:
-> > [+cc Tejun, LKML]
-> >=20
-> > On Fri, Jul 11, 2014 at 09:08:24AM +0200, Thierry Reding wrote:
-> > > From: Thierry Reding <treding@nvidia.com>
-> > >=20
-> > > Provide device-managed implementations of the request_resource() and
-> > > release_resource() functions. Upon failure to request a resource, the
-> > > new devm_request_resource() function will output an error message for
-> > > consistent error reporting.
-> > >=20
-> > > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> >=20
-> > This seems OK to me, but I don't consider myself a devres maintainer.  I
-> > added Tejun and LKML for any comment.  Minor nit below.
->=20
-> If there are gonna be users of the interface, sure.
->=20
-> > > +int devm_request_resource(struct device *dev, struct resource *root,
-> > > +			  struct resource *new)
-> > > +{
-> > > +	struct resource *conflict, **ptr;
-> > > +
-> > > +	ptr =3D devres_alloc(devm_resource_release, sizeof(*ptr), GFP_KERNE=
-L);
-> > > +	if (!ptr)
-> > > +		return -ENOMEM;
-> > > +
-> > > +	*ptr =3D new;
-> > > +
-> > > +	conflict =3D request_resource_conflict(root, new);
-> > > +	if (!conflict) {
-> > > +		devres_add(dev, ptr);
-> > > +		return 0;
-> > > +	}
-> > > +
-> > > +	dev_err(dev, "resource collision: %pR conflicts with %s %pR\n", new,
-> > > +		conflict->name, conflict);
-> > > +	devres_free(ptr);
-> > > +	return -EBUSY;
-> >=20
-> > Personally I would write this as:
-> >=20
-> >   conflict =3D request_resource_conflict(...);
-> >   if (conflict) {
-> >     dev_err(...);
-> >     devres_free(...);
-> >     return -EBUSY;
-> >   }
-> >=20
-> >   devres_add(...);
-> >   return 0;
-> >=20
-> > so the straight-line path is the normal, non-error path and errors are
-> > detected and dealt with in the "if" bodies.  Right now the "if" bodies
-> > are a mix of error handling and normal path.  But that's just my person=
-al
-> > preference.
->=20
-> Agreed.
->=20
-> > > +static int devm_resource_match(struct device *dev, void *res, void *=
-data)
-> > > +{
-> > > +	struct resource **ptr =3D res;
-> > > +
-> > > +	if (WARN_ON(!ptr || !*ptr))
-> > > +		return 0;
->=20
-> How would !ptr or !*ptr possibly happen?  Wouldn't that be a bug
-> already?
+Change v1->v2:
+- according to Dave Hansen and David Rientjes's suggestions modified
+  update_end_of_memory_vars().
+change v2->v3:
+- remove the extra space before the function identifier of
+  update_end_of_memory_vars().
+- remove the end_pfn and use start_pfn + nr_pages in the conditional.
 
-Honestly, I copied that from similar implementations. But checking the
-code again, I don't think they can actually happen. The value returned
-by devres_alloc() is a struct devres * with an added offset so that it
-points at the payload immediately following the struct devres. So at
-least !ptr can never happen.
+Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
+---
+ arch/x86/mm/init_64.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
-!*ptr could happen since the devres code calls the match function on
-every resource managed for the device and someone could've inserted a
-NULL (or 0) value. But since we're not dereferencing *ptr this should
-not be an issue. That said, having either res or data above be NULL
-isn't something that devres was meant to deal with anyway, since it
-relies on the pointers being unique for the matching.
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index df1a992..d16368e 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -673,15 +673,11 @@ void __init paging_init(void)
+  * After memory hotplug the variables max_pfn, max_low_pfn and high_memory need
+  * updating.
+  */
+-static void  update_end_of_memory_vars(u64 start, u64 size)
++static void update_end_of_memory_vars(u64 end_pfn)
+ {
+-	unsigned long end_pfn = PFN_UP(start + size);
+-
+-	if (end_pfn > max_pfn) {
+-		max_pfn = end_pfn;
+-		max_low_pfn = end_pfn;
+-		high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
+-	}
++	max_pfn = end_pfn;
++	max_low_pfn = end_pfn;
++	high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
+ }
 
-Thierry
+ /*
+@@ -694,6 +690,7 @@ int arch_add_memory(int nid, u64 start, u64 size)
+ 	struct zone *zone = pgdat->node_zones + ZONE_NORMAL;
+ 	unsigned long start_pfn = start >> PAGE_SHIFT;
+ 	unsigned long nr_pages = size >> PAGE_SHIFT;
++	unsigned long end_pfn;
+ 	int ret;
 
---cNdxnHkX5QqsyA0e
-Content-Type: application/pgp-signature
+ 	init_memory_mapping(start, start + size);
+@@ -702,7 +699,9 @@ int arch_add_memory(int nid, u64 start, u64 size)
+ 	WARN_ON_ONCE(ret);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+ 	/* update max_pfn, max_low_pfn and high_memory */
+-	update_end_of_memory_vars(start, size);
++	end_pfn = start_pfn + nr_pages;
++	if (end_pfn > max_pfn)
++		update_end_of_memory_vars(end_pfn);
 
-iQIcBAEBAgAGBQJT14ZuAAoJEN0jrNd/PrOhRvkP/RdgBG+pCc5uzZnj+9QEFfKS
-0ArAQn5oLCn7VNPbnELU9z53JpDZMvite2H8R6HksifF6ZN56skOypr6gy9T8aOM
-hn206DvUSYB8BWj17fJaDfFe+X1IXT8nLYyHxJoMrGvJubs0aRaST5EPKK6uvtOo
-jFdHuHRFsLeA++qIaH44uoaIDaHGNUms1/kvogT3Afa9QJTUPfr6FGx4ExU9ifcU
-4DmZrepwS1UtYxxuSjFsZDvVAzYu06yBoT5xReEN+un1SiUIKb2uyyvCFDY0dNmv
-V5ugte1gvSrVOkRCrkt8gZn163PdL7s/zAL86yhv9BA0zJ/KlwnvGR7z5kygs1wa
-p+t5/VRN6IEWbsFe1Fsrd7TN+YsShBfMTzaRB7SJ44kS4S/IADQmym/DauytWnxX
-zm0wjjUFHmOG1xTeZjm+tYKckhhFjjiLUiABDnhZfqLxfq8TcLu5MxqxHoZrJQE3
-36WsNvR2HFFtRJWyiIlnH05rtkb+1Wo18ur9rA4Nq20YQuPHP6J15nasj075YlOy
-vLUZvnL9H/cVKJsTSR+LbV9E7oG+KYYibTVChMhcawVmYJbsdgQ9cgixq7EAIMu/
-9iitR/Z/0X/RQ4Ag8cGwo7F6STVuQ3+QdolFrQvcQtxHmPe62rFVVo5QbS375YE2
-yWF0ZIh9tByyPAjxwVJe
-=tNi4
------END PGP SIGNATURE-----
+ 	return ret;
+ }
+@@ -1025,6 +1024,10 @@ int __ref arch_remove_memory(u64 start, u64 size)
+ 	ret = __remove_pages(zone, start_pfn, nr_pages);
+ 	WARN_ON_ONCE(ret);
 
---cNdxnHkX5QqsyA0e--
++	/* update max_pfn, max_low_pfn and high_memory */
++	if ((max_pfn >= start_pfn) && (max_pfn < (start_pfn + nr_pages)))
++		update_end_of_memory_vars(start_pfn);
++
+ 	return ret;
+ }
+ #endif
+-- 
+1.8.1.2
+
+
+.
+
+
+
+
