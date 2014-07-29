@@ -1,128 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618AbaG2QdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 12:33:21 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:55696 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583AbaG2QdT (ORCPT
+	id S1754016AbaG2QeY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 12:34:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38475 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048AbaG2QeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 12:33:19 -0400
-Date: Tue, 29 Jul 2014 09:33:12 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140729163312.GR11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140728225556.GA19493@linux.vnet.ibm.com>
- <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140729075055.GY19379@twins.programming.kicks-ass.net>
- <20140729155747.GO11241@linux.vnet.ibm.com>
- <20140729160754.GW20603@laptop.programming.kicks-ass.net>
+	Tue, 29 Jul 2014 12:34:23 -0400
+Date: Tue, 29 Jul 2014 17:34:20 +0100
+From: Thomas Graf <tgraf@suug.ch>
+To: Tobias Klauser <tklauser@distanz.ch>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kaber@trash.net, paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
+        challa@noironetworks.com, walpole@cs.pdx.edu, dev@openvswitch.org
+Subject: Re: [PATCH 2/2] netlink: Convert netlink_lookup() to use RCU
+ protected hash table
+Message-ID: <20140729163420.GA14314@casper.infradead.org>
+References: <cover.1406633945.git.tgraf@suug.ch>
+ <b73872eab661f28345085dbd4bd477a50d7042f6.1406633945.git.tgraf@suug.ch>
+ <20140729155801.GB10301@distanz.ch>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140729160754.GW20603@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072916-7164-0000-0000-000003753CF7
+In-Reply-To: <20140729155801.GB10301@distanz.ch>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 06:07:54PM +0200, Peter Zijlstra wrote:
-> On Tue, Jul 29, 2014 at 08:57:47AM -0700, Paul E. McKenney wrote:
-> > On Tue, Jul 29, 2014 at 09:50:55AM +0200, Peter Zijlstra wrote:
-> > > On Mon, Jul 28, 2014 at 03:56:12PM -0700, Paul E. McKenney wrote:
-> > > > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > > > index bc1638b33449..a0d2f3a03566 100644
-> > > > --- a/kernel/sched/core.c
-> > > > +++ b/kernel/sched/core.c
-> > > > @@ -2762,6 +2762,7 @@ need_resched:
-> > > >  		} else {
-> > > >  			deactivate_task(rq, prev, DEQUEUE_SLEEP);
-> > > >  			prev->on_rq = 0;
-> > > > +			rcu_note_voluntary_context_switch(prev);
-> > > >  
-> > > >  			/*
-> > > >  			 * If a worker went to sleep, notify and ask workqueue
-> > > > @@ -2828,6 +2829,7 @@ asmlinkage __visible void __sched schedule(void)
-> > > >  	struct task_struct *tsk = current;
-> > > >  
-> > > >  	sched_submit_work(tsk);
-> > > > +	rcu_note_voluntary_context_switch(tsk);
-> > > >  	__schedule();
-> > > >  }
-> > > 
-> > > Yeah, not entirely happy with that, you add two calls into one of the
-> > > hotest paths of the kernel.
+On 07/29/14 at 05:58pm, Tobias Klauser wrote:
+> On 2014-07-29 at 13:41:33 +0200, Thomas Graf <tgraf@suug.ch> wrote:
+> > Heavy Netlink users such as Open vSwitch spend a considerable amount of
+> > time in netlink_lookup() due to the read-lock on nl_table_lock. Use of
+> > RCU relieves the lock contention.
 > > 
-> > I did look into leveraging counters, but cannot remember why I decided
-> > that this was a bad idea.  I guess it is time to recheck...
+> > Makes use of the new resizable hash table to avoid locking on the
+> > lookup.
 > > 
-> > The ->nvcsw field in the task_struct structure looks promising:
+> > The hash table will grow if entries exceeds 75% of table size up to a
+> > total table size of 64K. It will automatically shrink if usage falls
+> > below 50%.
 > > 
-> > o	Looks like it does in fact get incremented in __schedule() via
-> > 	the switch_count pointer.
+> > Also splits nl_table_lock into a separate spinlock to protect hash table
+> > mutations. This avoids a possible deadlock when the hash table growing
+> > waits on RCU readers to complete via synchronize_rcu() while readers
+> > holding RCU read lock are waiting on the nl_table_lock() to be released
+> > to lock the table for broadcasting.
 > > 
-> > o	Looks like it is unconditionally compiled in.
+> > Before:
+> >    9.16%  kpktgend_0  [openvswitch]      [k] masked_flow_lookup
+> >    6.42%  kpktgend_0  [pktgen]           [k] mod_cur_headers
+> >    6.26%  kpktgend_0  [pktgen]           [k] pktgen_thread_worker
+> >    6.23%  kpktgend_0  [kernel.kallsyms]  [k] memset
+> >    4.79%  kpktgend_0  [kernel.kallsyms]  [k] netlink_lookup
+> >    4.37%  kpktgend_0  [kernel.kallsyms]  [k] memcpy
+> >    3.60%  kpktgend_0  [openvswitch]      [k] ovs_flow_extract
+> >    2.69%  kpktgend_0  [kernel.kallsyms]  [k] jhash2
 > > 
-> > o	There are no memory barriers, but a synchronize_sched()
-> > 	should take care of that, given that this counter is
-> > 	incremented with interrupts disabled.
+> > After:
+> >   15.26%  kpktgend_0  [openvswitch]      [k] masked_flow_lookup
+> >    8.12%  kpktgend_0  [pktgen]           [k] pktgen_thread_worker
+> >    7.92%  kpktgend_0  [pktgen]           [k] mod_cur_headers
+> >    5.11%  kpktgend_0  [kernel.kallsyms]  [k] memset
+> >    4.11%  kpktgend_0  [openvswitch]      [k] ovs_flow_extract
+> >    4.06%  kpktgend_0  [kernel.kallsyms]  [k] _raw_spin_lock
+> >    3.90%  kpktgend_0  [kernel.kallsyms]  [k] jhash2
+> >    [...]
+> >    0.67%  kpktgend_0  [kernel.kallsyms]  [k] netlink_lookup
+> > 
+> > Signed-off-by: Thomas Graf <tgraf@suug.ch>
+> > ---
+> >  net/netlink/af_netlink.c | 285 ++++++++++++++++++-----------------------------
+> >  net/netlink/af_netlink.h |  18 +--
+> >  net/netlink/diag.c       |  11 +-
+> >  3 files changed, 119 insertions(+), 195 deletions(-)
+> > 
+> > diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+> > index 1b38f7f..7f44468 100644
+> > --- a/net/netlink/af_netlink.c
+> > +++ b/net/netlink/af_netlink.c
+> [...]
+> > @@ -2996,28 +2939,26 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+> >  
+> >  	net = seq_file_net(seq);
+> >  	iter = seq->private;
+> > -	s = v;
+> > -	do {
+> > -		s = sk_next(s);
+> > -	} while (s && !nl_table[s->sk_protocol].compare(net, s));
+> > -	if (s)
+> > -		return s;
+> > +	nlk = v;
+> > +
+> > +	rht_for_each_entry_rcu(nlk, nlk->node.next, node)
+> > +		if (net_eq(sock_net((struct sock *)nlk), net))
+> > +			return nlk;
+> >  
+> >  	i = iter->link;
+> >  	j = iter->hash_idx + 1;
+> >  
+> >  	do {
+> > -		struct nl_portid_hash *hash = &nl_table[i].hash;
+> > -
+> > -		for (; j <= hash->mask; j++) {
+> > -			s = sk_head(&hash->table[j]);
+> > +		struct rhashtable *ht = &nl_table[i].hash;
+> > +		const struct bucket_table *tbl = rht_dereference(ht->tbl, ht);
+> >  
+> > -			while (s && !nl_table[s->sk_protocol].compare(net, s))
+> > -				s = sk_next(s);
+> > -			if (s) {
+> > -				iter->link = i;
+> > -				iter->hash_idx = j;
+> > -				return s;
+> > +		for (; j <= tbl->size; j++) {
 > 
-> Well, there's obviously the actual context switch, which should imply an
-> actual MB such that tasks are self ordered even when execution continues
-> on another cpu etc..
+> Should the condition j < tbl->size here, since the bucket table only
+> contains `size' buckets?
 
-True enough, except that it appears that the context switch happens
-after the ->nvcsw increment, which means that it doesn't help RCU-tasks
-guarantee that if it has seen the increment, then all prior processing
-has completed.  There might be enough stuff prior the increment, but I
-don't see anything that I feel comfortable relying on.  Am I missing
-some ordering?
+Good catch, thanks
 
-> > So I should be able to snapshot the task_struct structure's ->nvcsw
-> > field and avoid the added code in the fastpaths.
-> > 
-> > Seem plausible, or am I confused about the role of ->nvcsw?
+>
 > 
-> Nope, that's the 'I scheduled to go to sleep' counter.
-
-I am assuming that the "Nope" goes with "am I confused" rather than
-"Seem plausible" -- if not, please let me know.  ;-)
-
-> There is of course the 'polling' issue I raised in a further email...
-
-Yep, and other flavors of RCU go to lengths to avoid scanning the
-task_struct lists.  Steven said that updates will be rare and that it
-is OK for them to have high latency and overhead.  Thus far, I am taking
-him at his word.  ;-)
-
-I considered interrupting the task_struct polling loop periodically,
-and would add that if needed.  That said, this requires nailing down the
-task_struct at which the vacation is taken.  Here "nailing down" does not
-simply mean "prevent from being freed", but rather "prevent from being
-removed from the lists traversed by do_each_thread/while_each_thread."
-
-Of course, if there is some easy way of doing this, please let me know!
-
-> > > And I'm still not entirely sure why, your 0/x babbled something about
-> > > trampolines, but I'm not sure I understand how those lead to this.
-> > 
-> > Steven Rostedt sent an email recently giving more detail.  And of course
-> > now I am having trouble finding it.  Maybe he will take pity on us and
-> > send along a pointer to it.  ;-)
+> > +			rht_for_each_entry_rcu(nlk, tbl->buckets[j], node) {
+> > +				if (net_eq(sock_net((struct sock *)nlk), net)) {
+> > +					iter->link = i;
+> > +					iter->hash_idx = j;
+> > +					return nlk;
+> > +				}
+> >  			}
+> >  		}
+> [...]
+> > diff --git a/net/netlink/diag.c b/net/netlink/diag.c
+> > index 1af29624..7588f34 100644
+> > --- a/net/netlink/diag.c
+> > +++ b/net/netlink/diag.c
+> [...]
+> > @@ -101,16 +102,20 @@ static int __netlink_diag_dump(struct sk_buff *skb, struct netlink_callback *cb,
+> >  				int protocol, int s_num)
+> >  {
+> >  	struct netlink_table *tbl = &nl_table[protocol];
+> > -	struct nl_portid_hash *hash = &tbl->hash;
+> > +	struct rhashtable *ht = &tbl->hash;
+> > +	const struct bucket_table *htbl = rht_dereference(ht->tbl, ht);
+> >  	struct net *net = sock_net(skb->sk);
+> >  	struct netlink_diag_req *req;
+> > +	struct netlink_sock *nlsk;
+> >  	struct sock *sk;
+> >  	int ret = 0, num = 0, i;
+> >  
+> >  	req = nlmsg_data(cb->nlh);
+> >  
+> > -	for (i = 0; i <= hash->mask; i++) {
+> > -		sk_for_each(sk, &hash->table[i]) {
+> > +	for (i = 0; i <= htbl->size; i++) {
 > 
-> Yah, would make good Changelog material that ;-)
-
-;-) ;-) ;-)
-
-							Thanx, Paul
-
+> Same here, condition should be i < htbl->size
+> 
+> > +		rht_for_each_entry(nlsk, htbl->buckets[i], ht, node) {
+> > +			sk = (struct sock *)nlsk;
+> > +
+> >  			if (!net_eq(sock_net(sk), net))
+> >  				continue;
+> >  			if (num < s_num) {
+> > -- 
+> > 1.9.3
+> 
