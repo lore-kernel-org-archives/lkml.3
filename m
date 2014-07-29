@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaG2JCi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 05:02:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39509 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783AbaG2JCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 05:02:36 -0400
-Date: Tue, 29 Jul 2014 11:02:34 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: =?ISO-8859-15?Q?Petr_Ml=E1dek?= <pmladek@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ring-buffer: Race when writing and swapping cpu buffer
- in parallel
-In-Reply-To: <20140721123019.678788f1@gandalf.local.home>
-Message-ID: <alpine.LNX.2.00.1407291057330.16390@pobox.suse.cz>
-References: <1405501084-16135-1-git-send-email-pmladek@suse.cz> <20140716124356.398e21f4@gandalf.local.home> <20140718153443.GC6774@pathway.suse.cz> <20140721144324.GG20751@pathway.suse.cz> <20140721154317.GS8690@linux.vnet.ibm.com> <20140721161828.GH20751@pathway.suse.cz>
- <20140721123019.678788f1@gandalf.local.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753206AbaG2JCr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 05:02:47 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:20658 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbaG2JCo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 05:02:44 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19UTgK8ds0Z7urisl9IAZW2
+Date: Tue, 29 Jul 2014 02:01:21 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: kishon@ti.com, balbi@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: multi_v7_defconfig: Enable TI PIPE3 PHY driver
+Message-ID: <20140729090120.GJ29045@atomide.com>
+References: <1406540737-9493-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406540737-9493-1-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jul 2014, Steven Rostedt wrote:
-
-> > I thought that IPI used NMI and thus could not be blocked if the
-> > called function was reasonable. Note that ring_buffer_swap_cpu() does not take
-> > any lock and can't block anywhere. I am probably too optimistic here.
+* Roger Quadros <rogerq@ti.com> [140728 02:48]:
+> This driver is needed by SATA, PCIe and USB modules on TI SoCs.
 > 
-> Heh, that would be a crazy system. No, IPI is a normal maskable
-> interrupt. It does not use NMIs. In fact, IPI is how irq_work is
-> implemented to do stuff from an NMI outside of NMI context.
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 
-Just for the sake of completness -- on x86, it is possible to send NMI IPI 
-by simply doing
+You need to send this to arm@kernel.org to avoid conflicts.
 
-	apic->send_IPI_mask(mask, NMI_VECTOR);
+Acked-by: Tony Lindgren <tony@atomide.com>
 
-but obviously smp_call_funcion_*() are not using this.
-
--- 
-Jiri Kosina
-SUSE Labs
+> ---
+>  arch/arm/configs/multi_v7_defconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+> index 5348364..e411a37 100644
+> --- a/arch/arm/configs/multi_v7_defconfig
+> +++ b/arch/arm/configs/multi_v7_defconfig
+> @@ -368,6 +368,7 @@ CONFIG_PWM=y
+>  CONFIG_PWM_TEGRA=y
+>  CONFIG_PWM_VT8500=y
+>  CONFIG_OMAP_USB2=y
+> +CONFIG_TI_PIPE3=y
+>  CONFIG_PHY_SUN4I_USB=y
+>  CONFIG_EXT4_FS=y
+>  CONFIG_VFAT_FS=y
+> -- 
+> 1.8.3.2
+> 
