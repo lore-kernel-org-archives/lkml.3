@@ -1,24 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073AbaG2PT6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:19:58 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:57251 "EHLO
+	id S1754437AbaG2PX2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:23:28 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:15172 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753425AbaG2PTy (ORCPT
+	by vger.kernel.org with ESMTP id S1754001AbaG2PT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:19:54 -0400
+	Tue, 29 Jul 2014 11:19:58 -0400
 X-IronPort-AV: E=Sophos;i="5.01,757,1400018400"; 
-   d="scan'208";a="87459213"
+   d="scan'208";a="87459215"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Cc: kernel-janitors@vger.kernel.org, linux-ia64@vger.kernel.org,
         ceph-devel@vger.kernel.org, toralf.foerster@gmx.de, hmh@hmh.eng.br,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/9] drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c: use correct structure type name in sizeof
-Date: Tue, 29 Jul 2014 17:16:43 +0200
-Message-Id: <1406647011-8543-2-git-send-email-Julia.Lawall@lip6.fr>
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Mitch Williams <mitch.a.williams@intel.com>,
+        Linux NICS <linux.nics@intel.com>, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/9] i40e: use correct structure type name in sizeof
+Date: Tue, 29 Jul 2014 17:16:45 +0200
+Message-Id: <1406647011-8543-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406647011-8543-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1406647011-8543-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -38,20 +45,20 @@ semantic patch used can be found in message 0 of this patch series.
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c |    2 +-
+ drivers/net/ethernet/intel/i40e/i40e_main.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c b/drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c
-index cda8388..255590f 100644
---- a/drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c
-+++ b/drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c
-@@ -227,7 +227,7 @@ static int vpfe_enable_clock(struct vpfe_device *vpfe_dev)
- 		return 0;
+diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
+index 821fcc1..b913c27 100644
+--- a/drivers/net/ethernet/intel/i40e/i40e_main.c
++++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+@@ -6137,7 +6137,7 @@ static int i40e_vsi_alloc_arrays(struct i40e_vsi *vsi, bool alloc_qvectors)
  
- 	vpfe_dev->clks = kzalloc(vpfe_cfg->num_clocks *
--				   sizeof(struct clock *), GFP_KERNEL);
-+				   sizeof(struct clk *), GFP_KERNEL);
- 	if (vpfe_dev->clks == NULL) {
- 		v4l2_err(vpfe_dev->pdev->driver, "Memory allocation failed\n");
- 		return -ENOMEM;
+ 	if (alloc_qvectors) {
+ 		/* allocate memory for q_vector pointers */
+-		size = sizeof(struct i40e_q_vectors *) * vsi->num_q_vectors;
++		size = sizeof(struct i40e_q_vector *) * vsi->num_q_vectors;
+ 		vsi->q_vectors = kzalloc(size, GFP_KERNEL);
+ 		if (!vsi->q_vectors) {
+ 			ret = -ENOMEM;
 
