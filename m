@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336AbaG2PW2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:22:28 -0400
-Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:60628 "EHLO
-	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754319AbaG2PWY (ORCPT
+	id S1754371AbaG2PWn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:22:43 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:60605 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754349AbaG2PWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:22:24 -0400
-Date: Tue, 29 Jul 2014 10:22:06 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Tejun Heo <tj@kernel.org>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <sasha.levin@oracle.com>, akpm@linux-foundation.org,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: vmstat: On demand vmstat workers V8
-In-Reply-To: <20140729131226.GS7462@htj.dyndns.org>
-Message-ID: <alpine.DEB.2.11.1407291020470.21102@gentwo.org>
-References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <53D31101.8000107@oracle.com> <alpine.DEB.2.11.1407281353450.15405@gentwo.org> <20140729075637.GA19379@twins.programming.kicks-ass.net> <20140729120525.GA28366@mtj.dyndns.org> <20140729122303.GA3935@laptop>
- <20140729131226.GS7462@htj.dyndns.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 29 Jul 2014 11:22:40 -0400
+Date: Tue, 29 Jul 2014 19:22:36 +0400
+From: Andrey Borzenkov <arvidjaar@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Richard Weinberger <richard@nod.at>, mike.marciniszyn@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>
+Subject: Re: [opensuse-kernel] Re: Kernel binrpm produces brokes grub2
+ config
+Message-ID: <20140729192236.2165e5b5@opensuse.site>
+In-Reply-To: <53D7925A.8080200@suse.cz>
+References: <53D774F9.3090305@nod.at>
+	<53D7925A.8080200@suse.cz>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jul 2014, Tejun Heo wrote:
+В Tue, 29 Jul 2014 14:23:54 +0200
+Michal Marek <mmarek@suse.cz> пишет:
 
-> I'm not sure that's a viable way forward.  It's not like we can
-> readily trigger the problematic cases which can lead to long pauses
-> during cpu down.  Besides, we need the distinction at the API level,
-> which is the whole point of this.  The best way probably is converting
-> all the correctness ones (these are the minorities) over to
-> queue_work_on() so that the per-cpu requirement is explicit.
+> On 2014-07-29 12:18, Richard Weinberger wrote:
+> > Hi!
+> > 
+> > I'm not sure who to blame, but the below commit breaks the kernel binrpm target for me.
+> > It produces a faulty grub2 config.
+> > After installing such a kernel grub2 looks for vmlinuz-XY-rpm and initrd-XY-rpm.
+> > These files are not existing and the machine does no longer boot.
+> > Luckily an addition boot entry without the -rpm suffix exists, if remote access works
+> > one can recover the machine.
+> > 
+> > My question is, why do we need these copy of vmlinuz anyway?
+> > After calling installkernel on the -rpm variants you delete them again...
+> 
+> The typical /sbin/installkernel script does a cp "$2" "/boot/...", so
+> you can't use the already installed files as its arguments.
+> 
+> 
+> > This <insert swear word here> happens on openSUSE 13.1, maybe their installkernel script needs fixing.
+> 
+> I guess that the problem is that grub2-mkconfig sees the temporary
+> /boot/vmlinuz-*-rpm file and creates a menu entry for it. I guess we
+> should create the temporary kernel and initrd files somewhere else than
+> in /boot.
+> 
 
-Ok so we would need this fix to avoid the message:
+Or name it differently - e.g. rpm-vmlinuz-XY.
 
+> Michal
+> 
 
-Subject: vmstat: use schedule_delayed_work_on to avoid false positives
-
-It seems that schedule_delayed_work_on will check for preemption even
-though none can occur. schedule_delayed_work_on will not do that. So
-use that function to suppress false positives.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/mm/vmstat.c
-===================================================================
---- linux.orig/mm/vmstat.c	2014-07-29 10:14:42.356988271 -0500
-+++ linux/mm/vmstat.c	2014-07-29 10:18:28.205920997 -0500
-@@ -1255,7 +1255,8 @@ static void vmstat_update(struct work_st
- 		 * to occur in the future. Keep on running the
- 		 * update worker thread.
- 		 */
--		schedule_delayed_work(this_cpu_ptr(&vmstat_work),
-+		schedule_delayed_work_on(smp_processor_id(),
-+			this_cpu_ptr(&vmstat_work),
- 			round_jiffies_relative(sysctl_stat_interval));
- 	else {
- 		/*
