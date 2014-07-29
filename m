@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925AbaG2Ol1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 10:41:27 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:61440 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406AbaG2OlZ (ORCPT
+	id S1753931AbaG2Op2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 10:45:28 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:64546 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753654AbaG2OpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 10:41:25 -0400
+	Tue, 29 Jul 2014 10:45:21 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Stefan Agner <stefan@agner.ch>, shawn.guo@freescale.com,
+        kernel@pengutronix.de, peter.chen@freescale.com,
+        linux-kernel@vger.kernel.org, jingchang.lu@freescale.com
+Subject: Re: [PATCH] ARM: imx: clk-vf610: introduce clks_init_on
+Date: Tue, 29 Jul 2014 16:44:31 +0200
+Message-ID: <2815679.ZycfkLhBgI@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-23-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1406643628-4061-1-git-send-email-stefan@agner.ch>
+References: <1406643628-4061-1-git-send-email-stefan@agner.ch>
 MIME-Version: 1.0
-In-Reply-To: <20140728085337.GM6758@twins.programming.kicks-ass.net>
-References: <1406277655-21808-1-git-send-email-zheng.z.yan@intel.com>
-	<20140728075623.GP19379@twins.programming.kicks-ass.net>
-	<53D60459.8040702@intel.com>
-	<20140728085337.GM6758@twins.programming.kicks-ass.net>
-Date: Tue, 29 Jul 2014 16:41:25 +0200
-Message-ID: <CABPqkBQqu9bMMknWhCcw9fqT-vht8FwJoXPjHjvzYf7r7Z0_nA@mail.gmail.com>
-Subject: Re: [PATCH] perf/x86/uncore: split Intel uncore driver to smaller files
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:DztwL3Tj4qDOFCpMXbmLPLrndaMDtrvF9LEunnerC4y
+ 9l6SlUCkFmohlU+DDd2ao6xEm+sBjGjNMARUoKfF0OXXBTuHZG
+ 6/8TNql1BnMAN9qMuRLQEzJbRlmI7qfzdp2TWv+Hdpzbk+g0pt
+ m4s3zkJYXu60TBWaDrFsyN6Rh4srDh8e/A3/H4nVm531YgTOYm
+ MAyiG0b7U5PpEO2wAyiGKhxmY8vRwuUfaU2EWQBqJN5yW8OjOD
+ neZ1gl3J0C29XVoXE9KXJrbKyLbucVEs+yjyghE996s81xDdnj
+ AHBcqllEyss/E9agkXV3PZN7RIq9g7keh38xJfd/WZbqoUjgVO
+ 2edRtVGJCKrdJOWCizpE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 10:53 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Jul 28, 2014 at 04:05:45PM +0800, Yan, Zheng wrote:
->> On 07/28/2014 03:56 PM, Peter Zijlstra wrote:
->> > On Fri, Jul 25, 2014 at 04:40:55PM +0800, Yan, Zheng wrote:
->> >> split Intel uncore driver into four files:
->> >>  - perf_event_intel_uncore.c: general functions of Intel uncore driver.
->> >>  - perf_event_intel_uncore_nhmex.c: hardware specific code for
->> >>    Nehalem-EX/Westmere-EX
->> >>  - perf_event_intel_uncore_snb.c: hardware specific code for
->> >>    Nehalem/SandBridge/Haswell
->> >>  - perf_event_intel_uncore_snbep.c: hardware specific code for
->> >>    SandyBridge-EP/IvyTown uncore
->> >
->> > Did not apply properly to tip/master, also can you do that in 3 patches?
->> >
->>
->> the patch is based on tip/perf/core
->
-> Hmm, that should be good enough, didn't want to apply though, gave a
-> massive rej.
->
->> > One breaking out the nhm/wsm-ex part, one breaking out the
->> > nhm/wsm/snb/ivb/hsw bits, and one for the snb/ivb-ep bits?
->> >
-I agree with Peter here.
+On Tuesday 29 July 2014 16:20:28 Stefan Agner wrote:
+> At the end of the boot process, the clock framework might disable
+> required main PLL's. So far, this was no issue since drivers
+> requested clocks, which are descended of the main PLL's (e.g.
+> pll1_pfd1, which provides the system clock).
+> 
+> To archive the full 500MHz system clock, DDR clock need to be a
+> descendant of PLL2 rather than PLL1 (DDRC_CLK_SEL set to 0). The
+> bootloader sets up the clocks accordingly before making use of
+> DDR at all. However, in Linux, there is no driver using PLL2,
+> which lead to PLL2 being disabled by the clock framework.
+> 
+> With this patch, we make sure that the main system clock and the
+> DDR clock are initially enabled and are kept enabled.
+> 
+> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> 
 
->> will do
->
-> Thanks!
+Wouldn't it be better to list this in the DT as a default for
+the respective clocks?
+
+	Arnd
