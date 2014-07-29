@@ -1,211 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaG2P4L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:56:11 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:59534 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737AbaG2P4J (ORCPT
+	id S1753654AbaG2P5y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:57:54 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:57403 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959AbaG2P5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:56:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tony Lindgren <tony@atomide.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: ARM: SoC fixes for 3.16-rc
-Date: Tue, 29 Jul 2014 17:55:41 +0200
-Message-ID: <2925915.GaRAOayjC8@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-23-generic; KDE/4.11.5; x86_64; ; )
+	Tue, 29 Jul 2014 11:57:53 -0400
+Date: Tue, 29 Jul 2014 08:57:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140729155747.GO11241@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140728225556.GA19493@linux.vnet.ibm.com>
+ <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140729075055.GY19379@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:JmOseg0FB8Y/k1IxV0vwGudtlTKTG2K34ddkMqCFAO4
- rLAPwgx1jtjs5C/be4+HXVtTT2F89HqrNDbWTAB5HceM1ut4hQ
- LQMW+TKK1wGWvSJIHUHXmTlJZAYHa6BiQ6X3sxykI7P3CeFbXr
- z0kYnM76pSitN66h0/zSLk7bcweUjTIHN6sq6psyHneEaA2zqZ
- HRivk8JyFApUiDju7HkkLiM+X3L6wBWkG7A0QjSC4tevGF+6U7
- osKWvbiiPbUi3S7vpQZvMi22/0pcUH8FTvTJvjWGcmsNw/XIpg
- uyXi4JpQR0G6NcHp+iuWMBqS+JkpIreivWmP+mju8rmpVu5+JA
- FHbZa0aWTpdjLLtqm2wc=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140729075055.GY19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072915-7164-0000-0000-000003750275
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 9a3c4145af32125c5ee39c0272662b47307a8323:
+On Tue, Jul 29, 2014 at 09:50:55AM +0200, Peter Zijlstra wrote:
+> On Mon, Jul 28, 2014 at 03:56:12PM -0700, Paul E. McKenney wrote:
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index bc1638b33449..a0d2f3a03566 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -2762,6 +2762,7 @@ need_resched:
+> >  		} else {
+> >  			deactivate_task(rq, prev, DEQUEUE_SLEEP);
+> >  			prev->on_rq = 0;
+> > +			rcu_note_voluntary_context_switch(prev);
+> >  
+> >  			/*
+> >  			 * If a worker went to sleep, notify and ask workqueue
+> > @@ -2828,6 +2829,7 @@ asmlinkage __visible void __sched schedule(void)
+> >  	struct task_struct *tsk = current;
+> >  
+> >  	sched_submit_work(tsk);
+> > +	rcu_note_voluntary_context_switch(tsk);
+> >  	__schedule();
+> >  }
+> 
+> Yeah, not entirely happy with that, you add two calls into one of the
+> hotest paths of the kernel.
 
-  Linux 3.16-rc6 (2014-07-20 21:04:16 -0700)
+I did look into leveraging counters, but cannot remember why I decided
+that this was a bad idea.  I guess it is time to recheck...
 
-are available in the git repository at:
+The ->nvcsw field in the task_struct structure looks promising:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+o	Looks like it does in fact get incremented in __schedule() via
+	the switch_count pointer.
 
-for you to fetch changes up to a1ae5b128365f36a3fa2143cfa9de14fc71c51d8:
+o	Looks like it is unconditionally compiled in.
 
-  Merge tag 'omap-for-v3.16/n900-regression' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap into fixes (2014-07-29 13:04:27 +0200)
+o	There are no memory barriers, but a synchronize_sched()
+	should take care of that, given that this counter is
+	incremented with interrupts disabled.
 
-----------------------------------------------------------------
+So I should be able to snapshot the task_struct structure's ->nvcsw
+field and avoid the added code in the fastpaths.
 
-ARM: SoC fixes for 3.16-rc
+Seem plausible, or am I confused about the role of ->nvcsw?
 
-A nice small set of bug fixes for arm-soc:
+> And I'm still not entirely sure why, your 0/x babbled something about
+> trampolines, but I'm not sure I understand how those lead to this.
 
-- two incorrect register addresses in DT files on shmobile and hisilicon
-- one revert for a regression on omap
-- one bug fix for a newly introduced pin controller binding
-- one regression fix for the memory controller on omap
-- one patch to avoid a harmless WARN_ON
+Steven Rostedt sent an email recently giving more detail.  And of course
+now I am having trouble finding it.  Maybe he will take pity on us and
+send along a pointer to it.  ;-)
 
-----------------------------------------------------------------
-Arnd Bergmann (3):
-      Merge tag 'renesas-fixes2-for-v3.16' of git://git.kernel.org/.../horms/renesas into fixes
-      Merge tag 'omap-for-v3.16/fixes-rc6' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-      Merge tag 'omap-for-v3.16/n900-regression' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-
-Christoph Fritz (1):
-      ARM: OMAP2+: gpmc: fix gpmc_hwecc_bch_capable()
-
-Haojian Zhuang (1):
-      ARM: dts: fix L2 address in Hi3620
-
-Nishanth Menon (1):
-      pinctrl: dra: dt-bindings: Fix pull enable/disable
-
-Sekhar Nori (1):
-      ARM: OMAP2+: l2c: squelch warning dump on power control setting
-
-Shinobu Uehara (1):
-      ARM: shmobile: r8a7791: Fix SD2CKCR register address
-
-Tony Lindgren (1):
-      ARM: dts: Revert enabling of twl configuration for n900
-
- arch/arm/boot/dts/hi3620.dtsi      |  2 +-
- arch/arm/boot/dts/omap3-n900.dts   |  2 +-
- arch/arm/boot/dts/r8a7791.dtsi     |  4 ++--
- arch/arm/mach-omap2/gpmc-nand.c    | 18 ++++++++++--------
- arch/arm/mach-omap2/omap4-common.c |  4 ++++
- include/dt-bindings/pinctrl/dra.h  |  7 ++++---
- 6 files changed, 22 insertions(+), 15 deletions(-)
-
-diff --git a/arch/arm/boot/dts/hi3620.dtsi b/arch/arm/boot/dts/hi3620.dtsi
-index ab1116d086be..83a5b8685bd9 100644
---- a/arch/arm/boot/dts/hi3620.dtsi
-+++ b/arch/arm/boot/dts/hi3620.dtsi
-@@ -73,7 +73,7 @@
- 
- 		L2: l2-cache {
- 			compatible = "arm,pl310-cache";
--			reg = <0xfc10000 0x100000>;
-+			reg = <0x100000 0x100000>;
- 			interrupts = <0 15 4>;
- 			cache-unified;
- 			cache-level = <2>;
-diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-index 1fe45d1f75ec..b15f1a77d684 100644
---- a/arch/arm/boot/dts/omap3-n900.dts
-+++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -353,7 +353,7 @@
- 	};
- 
- 	twl_power: power {
--		compatible = "ti,twl4030-power-n900", "ti,twl4030-power-idle-osc-off";
-+		compatible = "ti,twl4030-power-n900";
- 		ti,use_poweroff;
- 	};
- };
-diff --git a/arch/arm/boot/dts/r8a7791.dtsi b/arch/arm/boot/dts/r8a7791.dtsi
-index 8d7ffaeff6e0..79f68acfd5d4 100644
---- a/arch/arm/boot/dts/r8a7791.dtsi
-+++ b/arch/arm/boot/dts/r8a7791.dtsi
-@@ -540,9 +540,9 @@
- 			#clock-cells = <0>;
- 			clock-output-names = "sd1";
- 		};
--		sd2_clk: sd3_clk@e615007c {
-+		sd2_clk: sd3_clk@e615026c {
- 			compatible = "renesas,r8a7791-div6-clock", "renesas,cpg-div6-clock";
--			reg = <0 0xe615007c 0 4>;
-+			reg = <0 0xe615026c 0 4>;
- 			clocks = <&pll1_div2_clk>;
- 			#clock-cells = <0>;
- 			clock-output-names = "sd2";
-diff --git a/arch/arm/mach-omap2/gpmc-nand.c b/arch/arm/mach-omap2/gpmc-nand.c
-index 17cd39360afe..93914d220069 100644
---- a/arch/arm/mach-omap2/gpmc-nand.c
-+++ b/arch/arm/mach-omap2/gpmc-nand.c
-@@ -50,6 +50,16 @@ static bool gpmc_hwecc_bch_capable(enum omap_ecc ecc_opt)
- 		 soc_is_omap54xx() || soc_is_dra7xx())
- 		return 1;
- 
-+	if (ecc_opt == OMAP_ECC_BCH4_CODE_HW_DETECTION_SW ||
-+		 ecc_opt == OMAP_ECC_BCH8_CODE_HW_DETECTION_SW) {
-+		if (cpu_is_omap24xx())
-+			return 0;
-+		else if (cpu_is_omap3630() && (GET_OMAP_REVISION() == 0))
-+			return 0;
-+		else
-+			return 1;
-+	}
-+
- 	/* OMAP3xxx do not have ELM engine, so cannot support ECC schemes
- 	 * which require H/W based ECC error detection */
- 	if ((cpu_is_omap34xx() || cpu_is_omap3630()) &&
-@@ -57,14 +67,6 @@ static bool gpmc_hwecc_bch_capable(enum omap_ecc ecc_opt)
- 		 (ecc_opt == OMAP_ECC_BCH8_CODE_HW)))
- 		return 0;
- 
--	/*
--	 * For now, assume 4-bit mode is only supported on OMAP3630 ES1.x, x>=1
--	 * and AM33xx derivates. Other chips may be added if confirmed to work.
--	 */
--	if ((ecc_opt == OMAP_ECC_BCH4_CODE_HW_DETECTION_SW) &&
--	    (!cpu_is_omap3630() || (GET_OMAP_REVISION() == 0)))
--		return 0;
--
- 	/* legacy platforms support only HAM1 (1-bit Hamming) ECC scheme */
- 	if (ecc_opt == OMAP_ECC_HAM1_CODE_HW)
- 		return 1;
-diff --git a/arch/arm/mach-omap2/omap4-common.c b/arch/arm/mach-omap2/omap4-common.c
-index 539e8106eb96..a0fe747634c1 100644
---- a/arch/arm/mach-omap2/omap4-common.c
-+++ b/arch/arm/mach-omap2/omap4-common.c
-@@ -168,6 +168,10 @@ static void omap4_l2c310_write_sec(unsigned long val, unsigned reg)
- 		smc_op = OMAP4_MON_L2X0_PREFETCH_INDEX;
- 		break;
- 
-+	case L310_POWER_CTRL:
-+		pr_info_once("OMAP L2C310: ROM does not support power control setting\n");
-+		return;
-+
- 	default:
- 		WARN_ONCE(1, "OMAP L2C310: ignoring write to reg 0x%x\n", reg);
- 		return;
-diff --git a/include/dt-bindings/pinctrl/dra.h b/include/dt-bindings/pinctrl/dra.h
-index 002a2855c046..3d33794e4f3e 100644
---- a/include/dt-bindings/pinctrl/dra.h
-+++ b/include/dt-bindings/pinctrl/dra.h
-@@ -30,7 +30,8 @@
- #define MUX_MODE14	0xe
- #define MUX_MODE15	0xf
- 
--#define PULL_ENA		(1 << 16)
-+#define PULL_ENA		(0 << 16)
-+#define PULL_DIS		(1 << 16)
- #define PULL_UP			(1 << 17)
- #define INPUT_EN		(1 << 18)
- #define SLEWCONTROL		(1 << 19)
-@@ -38,10 +39,10 @@
- #define WAKEUP_EVENT		(1 << 25)
- 
- /* Active pin states */
--#define PIN_OUTPUT		0
-+#define PIN_OUTPUT		(0 | PULL_DIS)
- #define PIN_OUTPUT_PULLUP	(PIN_OUTPUT | PULL_ENA | PULL_UP)
- #define PIN_OUTPUT_PULLDOWN	(PIN_OUTPUT | PULL_ENA)
--#define PIN_INPUT		INPUT_EN
-+#define PIN_INPUT		(INPUT_EN | PULL_DIS)
- #define PIN_INPUT_SLEW		(INPUT_EN | SLEWCONTROL)
- #define PIN_INPUT_PULLUP	(PULL_ENA | INPUT_EN | PULL_UP)
- #define PIN_INPUT_PULLDOWN	(PULL_ENA | INPUT_EN)
+							Thanx, Paul
 
