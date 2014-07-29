@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbaG2PUD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:20:03 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:43782 "EHLO
+	id S1754195AbaG2PUu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:20:50 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:15172 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753425AbaG2PT7 (ORCPT
+	by vger.kernel.org with ESMTP id S1754097AbaG2PUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:19:59 -0400
+	Tue, 29 Jul 2014 11:20:01 -0400
 X-IronPort-AV: E=Sophos;i="5.01,757,1400018400"; 
-   d="scan'208";a="87459217"
+   d="scan'208";a="87459221"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Dario Ballabio <ballabio_dario@emc.com>
+To: linux-usb@vger.kernel.org
 Cc: kernel-janitors@vger.kernel.org, linux-ia64@vger.kernel.org,
         ceph-devel@vger.kernel.org, toralf.foerster@gmx.de, hmh@hmh.eng.br,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/9] scsi: use correct structure type name in sizeof
-Date: Tue, 29 Jul 2014 17:16:47 +0200
-Message-Id: <1406647011-8543-6-git-send-email-Julia.Lawall@lip6.fr>
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 9/9] uwb/whci: use correct structure type name in sizeof
+Date: Tue, 29 Jul 2014 17:16:51 +0200
+Message-Id: <1406647011-8543-10-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406647011-8543-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1406647011-8543-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -37,20 +36,20 @@ semantic patch used can be found in message 0 of this patch series.
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/scsi/eata.c |    2 +-
+ drivers/uwb/whci.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/eata.c b/drivers/scsi/eata.c
-index 813dd5c..4caf221 100644
---- a/drivers/scsi/eata.c
-+++ b/drivers/scsi/eata.c
-@@ -811,7 +811,7 @@ struct mscp {
- 	struct sg_list *sglist;	/* pointer to the allocated SG list */
- };
+diff --git a/drivers/uwb/whci.c b/drivers/uwb/whci.c
+index c9df8ba..46b7cfc 100644
+--- a/drivers/uwb/whci.c
++++ b/drivers/uwb/whci.c
+@@ -175,7 +175,7 @@ static int whci_probe(struct pci_dev *pci, const struct pci_device_id *id)
  
--#define CP_TAIL_SIZE (sizeof(struct sglist *) + sizeof(dma_addr_t))
-+#define CP_TAIL_SIZE (sizeof(struct sg_list *) + sizeof(dma_addr_t))
- 
- struct hostdata {
- 	struct mscp cp[MAX_MAILBOXES];	/* Mailboxes for this board */
+ 	err = -ENOMEM;
+ 	card = kzalloc(sizeof(struct whci_card)
+-		       + sizeof(struct whci_dev *) * (n_caps + 1),
++		       + sizeof(struct umc_dev *) * (n_caps + 1),
+ 		       GFP_KERNEL);
+ 	if (card == NULL)
+ 		goto error_kzalloc;
 
