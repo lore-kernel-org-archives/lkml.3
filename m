@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778AbaG2H2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 03:28:45 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:39071 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702AbaG2H2o (ORCPT
+	id S1752785AbaG2HbS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 03:31:18 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:34772 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751647AbaG2HbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 03:28:44 -0400
+	Tue, 29 Jul 2014 03:31:16 -0400
+Date: Tue, 29 Jul 2014 00:31:13 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v5 07/14] mm, compaction: khugepaged should not give up
+ due to need_resched()
+In-Reply-To: <20140729065327.GB1610@js1304-P5Q-DELUXE>
+Message-ID: <alpine.DEB.2.02.1407290024550.7998@chino.kir.corp.google.com>
+References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-8-git-send-email-vbabka@suse.cz> <20140729065327.GB1610@js1304-P5Q-DELUXE>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=
-Content-Transfer-Encoding: 7bit
-Date: Tue, 29 Jul 2014 09:29:13 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: shawn.guo@freescale.com, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 4/4] can: flexcan: add vf610 support for FlexCAN
-In-Reply-To: <53D67A46.3060202@pengutronix.de>
-References: <cover.1405428166.git.stefan@agner.ch>
- <ff2ea1726b13dc2ffa3519ce9244f3633cf1420d.1405428166.git.stefan@agner.ch>
- <53C5398F.2000005@pengutronix.de>
- <1b8a8ca03b4a160027a79b722f697e25@agner.ch>
- <601adb6fe47279c115c1cc607365a00e@agner.ch>
- <53D25C9D.5080803@pengutronix.de>
- <e88108c655e2c16dc9cf6c4194547e73@agner.ch>
- <53D67A46.3060202@pengutronix.de>
-Message-ID: <b815c5c1f7faed334d1ed5370d51c180@agner.ch>
-User-Agent: Roundcube Webmail/1.0.1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-07-28 18:28, schrieb Marc Kleine-Budde:
-> On 07/28/2014 06:20 PM, Stefan Agner wrote:
->> I'm not sure whether you really want to keep the FLEXCAN_CTRL_ERR_STATE
->> commented out...
+On Tue, 29 Jul 2014, Joonsoo Kim wrote:
+
+> I have a silly question here.
+> Why need_resched() is criteria to stop async compaction?
+> need_resched() is flagged up when time slice runs out or other reasons.
+> It means that we should stop async compaction at arbitrary timing
+> because process can be on compaction code at arbitrary moment. I think
+> that it isn't reasonable and it doesn't ensure anything. Instead of
+> this approach, how about doing compaction on certain amounts of pageblock
+> for async compaction?
 > 
-> No, please remove this change and redo the test.
-> 
 
-Ok, removed that change and did the tests again:
+Not a silly question at all, I had the same feeling in 
+https://lkml.org/lkml/2014/5/21/730 and proposed it to be a tunable that 
+indicates how much work we are willing to do for thp in the pagefault 
+path.  It suffers from the fact that past failure to isolate and/or 
+migrate memory to free an entire pageblock doesn't indicate that the next 
+pageblock will fail as well, but there has to be cutoff at some point or 
+async compaction becomes unnecessarily expensive.  We can always rely on 
+khugepaged later to do the collapse, assuming we're not faulting memory 
+and then immediately pinning it.
 
-== Wrong Bitrate test
+I think there's two ways to go about it:
 
-[  146.485022] flexcan 40020000.flexcan can0: bitrate error 0.7%
-[  148.401793] flexcan 40020000.flexcan can0: writing ctrl=0x17092001
-[  148.408263] flexcan 40020000.flexcan can0: flexcan_set_bittiming:
-mcr=0x5980000f ctrl=0x17092001
-[  148.408298] flexcan 40020000.flexcan can0: flexcan_chip_start:
-writing mcr=0x79a20208
-[  148.408328] flexcan 40020000.flexcan can0: flexcan_chip_start:
-writing ctrl=0x1709ac51
-[  148.414373] flexcan 40020000.flexcan can0: flexcan_chip_start:
-reading mcr=0x60a20208 ctrl=0x1709ac51
-^---- Initialization
-[  152.968685] flexcan_irq, esr=00040080
-[  152.972386] flexcan_irq, ctrl=1709ac51
-[  155.488623] flexcan_irq, esr=00040080
-[  155.492326] flexcan_irq, ctrl=1709ac51
-^---- Two messages with right bitrate
-[  171.014124] flexcan_irq, esr=00058d0a
-[  171.017823] flexcan_irq, ctrl=1709ac51
-^---- One message with wrong bitrate
-[  171.021631] flexcan 40020000.flexcan can0: Error Warning IRQ
-[  171.021660] flexcan 40020000.flexcan can0: Error Passive IRQ
+ - allow a single thp fault to be expensive and then rely on deferred
+   compaction to avoid subsequent calls in the near future, or
 
-# ./candump -e any,0:0,#FFFFFFFF
-  can0  1F334455   [8]  11 22 33 44 55 66 77 88
-  can0  1F334455   [8]  11 22 33 44 55 66 77 88
-  can0  20000004   [8]  00 10 00 00 00 00 00 00   ERRORFRAME
-	controller-problem{rx-error-passive}
+ - try to make all thp faults be as least expensive as possible so that
+   the cumulative effect of faulting large amounts of memory doesn't end
+   up with lengthy stalls.
 
-== Loopback test
+Both of these are complex because of the potential for concurrent calls to 
+memory compaction when faulting thp on several cpus.
 
-[  464.003776] flexcan 40020000.flexcan can0: writing ctrl=0x17092051
-[  464.010005] flexcan 40020000.flexcan can0: flexcan_set_bittiming:
-mcr=0x5980000f ctrl=0x17092051
-[  464.010035] flexcan 40020000.flexcan can0: flexcan_chip_start:
-writing mcr=0x79a20208
-[  464.010064] flexcan 40020000.flexcan can0: flexcan_chip_start:
-writing ctrl=0x1709ac51
-[  464.010199] flexcan 40020000.flexcan can0: flexcan_chip_start:
-reading mcr=0x60a20208 ctrl=0x1709ac51
-[  464.011682] IPv6: ADDRCONF(NETDEV_CHANGE): can0: link becomes ready
-[  470.970133] flexcan_irq, esr=00064252
-[  470.974833] flexcan_irq, ctrl=1709ac51
-[  470.980171] flexcan 40020000.flexcan can0: Error Warning IRQ
-[  470.980203] flexcan 40020000.flexcan can0: Error Passive IRQ
-[  470.980328] flexcan_irq, esr=00000034
-[  470.984998] flexcan_irq, ctrl=1709ac51
-
-# ./candump -e any,0:0,#FFFFFFFF
-  can0  20000044   [8]  00 10 00 00 00 00 00 00   ERRORFRAME
-	controller-problem{rx-error-passive}
-	bus-off
-
---
-Stefan
+I also think the second point from that email still applies, that we 
+should abort isolating pages within a pageblock for migration once it can 
+no longer allow a cc->order allocation to succeed.
