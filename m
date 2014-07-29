@@ -1,152 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984AbaG2Irm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 04:47:42 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:11531 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbaG2Iri (ORCPT
+	id S1752975AbaG2Isp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 04:48:45 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:44827 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752797AbaG2Ism convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 04:47:38 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 29 Jul 2014 01:39:23 -0700
-Message-ID: <53D75FA7.1030300@nvidia.com>
-Date: Tue, 29 Jul 2014 11:47:35 +0300
-From: Mikko Perttunen <mperttunen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 29 Jul 2014 04:48:42 -0400
+Message-ID: <53D76006.4040105@arm.com>
+Date: Tue, 29 Jul 2014 09:49:10 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: Graeme Gregory <graeme.gregory@linaro.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>
+CC: Sudeep Holla <sudeep.holla@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 8/8] clk: tegra: Add EMC clock driver
-References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com> <1405088313-20048-9-git-send-email-mperttunen@nvidia.com> <53CE97F2.80300@wwwdotorg.org>
-In-Reply-To: <53CE97F2.80300@wwwdotorg.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Stone <al.stone@linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH 01/19] ARM64 / ACPI: Get RSDP and ACPI boot-time tables
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <1406206825-15590-2-git-send-email-hanjun.guo@linaro.org> <53D69678.20002@arm.com> <53D6D391.8090907@linaro.org>
+In-Reply-To: <53D6D391.8090907@linaro.org>
+X-OriginalArrivalTime: 29 Jul 2014 08:48:37.0726 (UTC) FILETIME=[E38567E0:01CFAB09]
+X-MC-Unique: 114072909484012201
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/07/14 19:57, Stephen Warren wrote:
-> On 07/11/2014 08:18 AM, Mikko Perttunen wrote:
->> The driver is currently only tested on Tegra124 Jetson TK1, but should
->> work with other Tegra124 boards, provided that correct EMC tables are
->> provided through the device tree. Older chip models have differing
->> timing change sequences, so they are not currently supported.
->
->> diff --git a/drivers/clk/tegra/clk-emc.c b/drivers/clk/tegra/clk-emc.c
->
->> +struct emc_timing {
->> +	unsigned long rate, parent_rate;
->> +	u8 parent_index;
->> +	struct clk *parent;
->> +
->> +	/* Store EMC burst data in a union to minimize mistakes. This allows
->> +	 * us to use the same burst data lists as used by the downstream and
->> +	 * ChromeOS kernels. */
->
-> Nit: */ should be on its own line. This applies to many comments in the
-> file.
 
-Will fix.
 
+On 28/07/14 23:49, Graeme Gregory wrote:
 >
->> +/* * * * * * * * * * * * * * * * * * * * * * * * * *
->> + * Timing change sequence functions                *
->> + * * * * * * * * * * * * * * * * * * * * * * * * * */
->
-> Nit: This kind of banner comment is unusual, but I guess it's fine.
->
->> +static void emc_seq_update_timing(struct tegra_emc *tegra)
-> ...
->> +	dev_err(&tegra->pdev->dev, "timing update failed\n");
->> +	BUG();
->> +}
->
-> Is there any way to avoid all these BUGs? Can we just continue on and
-> retry the next time, or disallow any further clock rate changes or
-> something?
+> On 28/07/2014 19:29, Sudeep Holla wrote:
+>>
+>>
+>> On 24/07/14 14:00, Hanjun Guo wrote:
+>>> From: Al Stone <al.stone@linaro.org>
+>>>
+>>> As we want to get ACPI tables to parse and then use the information
+>>> for system initialization, we should get the RSDP (Root System
+>>> Description Pointer) first, it then locates Extended Root Description
+>>> Table (XSDT) which contains all the 64-bit physical address that
+>>> pointer to other boot-time tables.
+>>>
+>>> Introduce acpi.c and its related head file in this patch to provide
+>>> fundamental needs of extern variables and functions for ACPI core,
+>>> and then get boot-time tables as needed.
+>>>     - asm/cpu.h need for ACPI core and will be updated in the future to
+>>>       add definitions for arch_(un)register_cpu which are required for
+>>>       ACPI based physical CPU hotplug;
+>>>     - asm/acenv.h for arch specific ACPICA environments and
+>>>       implementation;
+>>>     - asm/acpi.h for arch specific variables and functions needed by
+>>>       ACPI driver core;
+>>>     - acpi.c for ARM64 related ACPI implementation for ACPI driver
+>>>       core;
+>>>
+>>> acpi_boot_table_init() is introduced to get RSDP and boot-time tables,
+>>> it will be called in setup_arch() before paging_init(), so we should
+>>> use eary_memremap() mechanism here to get the RSDP and all the table
+>>> pointers.
+>>>
+>>> Signed-off-by: Al Stone <al.stone@linaro.org>
+>>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+>>> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>>> ---
+>>>    arch/arm64/include/asm/acenv.h |   18 ++++++++++
+>>>    arch/arm64/include/asm/acpi.h  |   41 ++++++++++++++++++++++
+>>>    arch/arm64/include/asm/cpu.h   |   11 ++++++
+>>>    arch/arm64/kernel/Makefile     |    1 +
+>>>    arch/arm64/kernel/acpi.c       |   76
+>>> ++++++++++++++++++++++++++++++++++++++++
+>>>    arch/arm64/kernel/setup.c      |    4 +++
+>>>    6 files changed, 151 insertions(+)
+>>>    create mode 100644 arch/arm64/include/asm/acenv.h
+>>>    create mode 100644 arch/arm64/include/asm/acpi.h
+>>>    create mode 100644 arch/arm64/include/asm/cpu.h
+>>>    create mode 100644 arch/arm64/kernel/acpi.c
+>>>
 
-I guess I can just remove the BUG()s and keep going. The clock might 
-temporarily end up in a strange state but that should be fine since 
-these shouldn't be happening anyway.
+[...]
 
->
->> +/* * * * * * * * * * * * * * * * * * * * * * * * * *
->> + * Debugfs entry                                   *
->> + * * * * * * * * * * * * * * * * * * * * * * * * * */
->> +
->> +static int emc_debug_rate_get(void *data, u64 *rate)
->> +{
->> +	struct tegra_emc *tegra = data;
->> +
->> +	*rate = clk_get_rate(tegra->hw.clk);
->> +
->> +	return 0;
->> +}
->> +
->> +static int emc_debug_rate_set(void *data, u64 rate)
->> +{
->> +	struct tegra_emc *tegra = data;
->> +
->> +	return clk_set_rate(tegra->hw.clk, rate);
->> +}
->> +
->> +DEFINE_SIMPLE_ATTRIBUTE(emc_debug_rate_fops, emc_debug_rate_get,
->> +			emc_debug_rate_set, "%lld\n");
->
-> I think the rate can already be obtained through
-> ...debug/clock/clock_summary. I'm not sure about changing the rate, but
-> shouldn't that be a feature of the common clock core, not individual
-> drivers?
-
-The core doesn't allow writing to the rate debugfs files, so this is the 
-only way to trigger an EMC clock change for now. I agree that the core 
-might be a better place. I don't know if there are any philosophical 
-objections to that. I'd like to keep this in until a possible core 
-feature addition. Mike, any comments?
-
->
->> +static int load_timings_from_dt(struct tegra_emc *tegra,
->> +				struct device_node *node)
->> +{
-> ...
->> +	for_each_child_of_node(node, child) {
-> ...
->> +		if (timing->rate <= prev_rate) {
->> +			dev_err(&tegra->pdev->dev,
->> +				"timing %s: rate not increasing\n",
->> +				child->name);
->
-> I don't believe there's any guaranteed node enumeration order. If the
-> driver needs the child nodes sorted, it should sort them itself.
-
-True. I'll fix this.
-
->
->> +static const struct of_device_id tegra_car_of_match[] = {
->> +	{ .compatible = "nvidia,tegra124-car" },
->> +	{}
->> +};
->> +
->> +static const struct of_device_id tegra_mc_of_match[] = {
->> +	{ .compatible = "nvidia,tegra124-mc" },
->> +	{}
->> +};
->
-> It would be better if this driver explicitly called into the driver for
-> other modules, rather than directly touching their registers.
+>>> +
+>>> +/*
+>>> + * MADT must provide at least one GICC structure
+>>> + * for GIC initialization, so CPU will be
+>>> + * always available in MADT on ARM64
+>>> + */
+>>> +static inline bool acpi_has_cpu_in_madt(void)
+>>> +{
+>>> +       return 1;
+>>> +}
+>>> +
+>>
+>> I don't see the user of this function in the series, it's better to
+>> remove. Moreover the comment is so misleading. We will have CPU UID
+>> not the CPU itself in MADT.
+>>
+> This is actually required for a patch that is now upstreamed. Comment
+> should actually say that its checking for the posibility that the CPU
+> can be initialised from the MADT. Its used from core in crash kernel
+> case where boot CPU is not necessarily CPU0 like spec demands.
 >
 
-My local v2 already has the MC-related code split into Thierry's MC 
-driver. The CAR register writing is still done from the EMC driver. I 
-could add helpers for it to the CAR driver.
+Ah OK, I now see that in Rafael's linux-pm/linux-next. Sorry I might have
+missed to notice that and I assumed this series is based on mainline.
 
-Thanks,
-Mikko
+Regards,
+Sudeep
+
