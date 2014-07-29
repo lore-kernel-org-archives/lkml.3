@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaG2CZn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 22:25:43 -0400
-Received: from mail.kernel.org ([198.145.19.201]:55505 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751428AbaG2CZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 22:25:42 -0400
-Date: Tue, 29 Jul 2014 04:25:37 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, devicetree@vger.kernel.org,
-        linux@arm.linux.org.uk, jason@lakedaemon.net,
-        khilman@deeprootsystems.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        bcousson@baylibre.com, tglx@linutronix.de,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 00/35] arm: omap: move intc to drivers/irqchip/
-Message-ID: <20140729022536.GC4421@earth.universe>
-References: <1406582183-696-1-git-send-email-balbi@ti.com>
+	id S1752665AbaG2C3S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 22:29:18 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:33481 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751940AbaG2C3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 22:29:14 -0400
+Message-ID: <53D706EF.3010808@daenzer.net>
+Date: Tue, 29 Jul 2014 11:29:03 +0900
+From: =?UTF-8?B?TWljaGVsIETDpG56ZXI=?= <michel@daenzer.net>
+User-Agent: Mozilla/5.0 (X11; Linux ppc; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="t0UkRYy7tHLRMCai"
-Content-Disposition: inline
-In-Reply-To: <1406582183-696-1-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Alexei Starovoitov <ast@kernel.org>, Jakub Jelinek <jakub@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+References: <20140723190230.GH3935@laptop>	<CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>	<53D064C7.5050807@daenzer.net>	<CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>	<53D1B1EF.7030603@daenzer.net>	<20140725035527.GA30108@pg-vmw-gw1>	<20140725140237.GB32669@home.goodmis.org>	<CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>	<CA+55aFyHU4Gwk6ASTuOgh3eFPshkgy1s5zc4p7f01DwrYddFOw@mail.gmail.com>	<CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>	<20140726193557.GA21842@x4>	<CA+55aFyo=HVZGEYNmz9GHqLatFHiJYTviKz_dXjqCv8b_gGxBA@mail.gmail.com>	<53D5C7BB.8050906@daenzer.net> <CA+55aFx2k6kjmP3MzB8MsdBeWdi8G3NX72yjLmeEYGa+hQh7qA@mail.gmail.com>
+In-Reply-To: <CA+55aFx2k6kjmP3MzB8MsdBeWdi8G3NX72yjLmeEYGa+hQh7qA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 29.07.2014 01:48, Linus Torvalds wrote:
+> On Sun, Jul 27, 2014 at 8:47 PM, Michel Dänzer <michel@daenzer.net> wrote:
+>> On 27.07.2014 04:56, Linus Torvalds wrote:
+>>>
+>>> Also, Michel - can you try  this patch if you still have your
+>>> gcc-4.9.0 install, and send me the resulting fair.s file again?
+>>
+>> Attached.
+> 
+> The frame setup looks fine to me now (apart from the spilling of a
+> constant value, but hey, that wasn't _buggy_, that was just stupid).
+> 
+> And I'm assuming everything runs fine too?
 
---t0UkRYy7tHLRMCai
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I've rebased my .config on the one from the current Debian kernel
+packages, which no longer enables CONFIG_CC_OPTIMIZE_FOR_SIZE. So I'm no
+longer affected by this bug anyway. (I used the old .config for
+compiling the fair.s above though)
 
-Hi,
 
-On Mon, Jul 28, 2014 at 04:15:48PM -0500, Felipe Balbi wrote:
-> here's another rebase of the original series moving INTC
-> to drivers.
->=20
-> There aren't many changes, only some fixes here and there
-> because of recent changes to irq_domain and irqchip.
->=20
-> I have also added a patch to enable INTC address space
-> protection so that only privileged modes can access
-> INTC's address space.
->=20
-> Patches tested on top of v3.17-rc7 with a beagle bone black,
-> the only plataform I have which still uses INTC.
->=20
-> Tony, if you can run your PM test cases on your side, I'd
-> be really glad.
-
-Reviewed-By: Sebastian Reichel <sre@kernel.org>
-
-for the whole series except of "drop ti,intc-size support",
-which breaks the DT API.
-
-I will give this a try on my N900 in the next days.
-
--- Sebastian
-
---t0UkRYy7tHLRMCai
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJT1wYgAAoJENju1/PIO/qauI0QAIHmRdHvPeuA50WFg3RcNinL
-WV1xTheSeSb41Y6tUlbfFSvCQLwmzUmYVgjj+eUyPUv+MtZix27O6QLUsPHCqD9G
-ykZZxv1M+4olV8g3bX6IGt48ofKH50RdedcGaqYnNJj635pVHXRUu4X3PO/Q7XPd
-Wl17YxFTlduKEAoByFLGB4QAraPZFc+SCwj3yZdDOQnmqprDrF0Nlg/3xP6FP/bV
-EtCUiYkcfF9GuFFbOeFCHleXliBg0huDPWffzuT4dRBKkwnGHmbJydsMLO9mEos3
-oGVA6F/nqm+whfYrnX9asa7qU+66e2lnUgTdLVCnaWbDZ2QutVVRcQQ5U/vbteVV
-rBrmoEjk0yLAeSXhtUCp9/GOQFixgnYAt21rfcih55J8lQJrq8n/TvzL0xarE0o/
-D2tn3zmZWp0YUFUuQRmwRqLF7vQ0orx19AZJAeW/tpxmatkJzLpO8enT2B8gJvjW
-3m78WVN2DTGsj7YE0TSwifB1CzOJwh7Au4syreBbI8IgYWC4EGsgmMjmN5y/+b2x
-QKQHikNTGEzKsZeAArO6PXdlcguudeALTyLFemw/ppXY9I2+WKsjG4c8Qxq8YhAN
-Yq4LkD5Ef0jVryLYtWxO0r5u3iv40bTmi/1H1geVGY3mK3dS3C4y2SNNnpz5J+T5
-z9gaRyicE6y3kaAvLQFs
-=tS5m
------END PGP SIGNATURE-----
-
---t0UkRYy7tHLRMCai--
+-- 
+Earthling Michel Dänzer            |                  http://www.amd.com
+Libre software enthusiast          |                Mesa and X developer
