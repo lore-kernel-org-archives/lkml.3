@@ -1,200 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156AbaG2P1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:27:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38177 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753789AbaG2P1p (ORCPT
+	id S1754017AbaG2PaI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:30:08 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16387 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753605AbaG2PaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:27:45 -0400
-Date: Tue, 29 Jul 2014 17:27:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, vincent.guittot@linaro.org,
-        mikey@neuling.org, mingo@kernel.org, jhladky@redhat.com,
-        ktkhai@parallels.com, tim.c.chen@linux.intel.com,
-        nicolas.pitre@linaro.org
-Subject: Re: [PATCH 2/2] sched: make update_sd_pick_busiest return true on a
- busier sd
-Message-ID: <20140729152743.GI3935@laptop>
-References: <1406571388-3227-1-git-send-email-riel@redhat.com>
- <1406571388-3227-3-git-send-email-riel@redhat.com>
+	Tue, 29 Jul 2014 11:30:05 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+tIGhmSUIXWQTUj55+MOvA
+Date: Tue, 29 Jul 2014 08:28:38 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        bcousson@baylibre.com, linux@arm.linux.org.uk,
+        khilman@deeprootsystems.com, tglx@linutronix.de, jason@lakedaemon.net,
+        devicetree@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 30/35] irqchip: add irq-omap-intc.h header
+Message-ID: <20140729152838.GW29045@atomide.com>
+References: <1406582183-696-1-git-send-email-balbi@ti.com>
+ <1406582183-696-31-git-send-email-balbi@ti.com>
+ <20140729120133.GQ29045@atomide.com>
+ <20140729141045.GA17808@saruman.home>
+ <20140729150655.GU29045@atomide.com>
+ <20140729151936.GC17808@saruman.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406571388-3227-3-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140729151936.GC17808@saruman.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Felipe Balbi <balbi@ti.com> [140729 08:22]:
+> On Tue, Jul 29, 2014 at 08:06:55AM -0700, Tony Lindgren wrote:
+> > * Felipe Balbi <balbi@ti.com> [140729 07:13]:
+> > > This is the third time I rebase the series after a long hiatus and it
+> > > always comes out to the same result -> "let's wait some more".
+> > 
+> > Nope, it's always been "this series causes PM regressions"
+> 
+> you just said that we haven't been in any position to really test this,
+> so can it be that the status has always been "this series causes PM
+> regressions". We couldn't test that before, right ?
 
+It's been working for legacy booting for years with the mainline
+kernel, but not for device tree based booting until with v3.16-rc4.
+I believe I tested your earlier series with my pending DT patches
+though.
+ 
+> > and few other minor comments. And we have not been in any
+> > position to really test that until with v3.16-rc4. And then
+> > you always run out of time and nobody else does anything :)
+> 
+> sure, I have other stuff to do as well.
 
-Made that:
+Right :) I and others can provide some help here, but it's
+the mr. patch author that needs to follow up on this series
+too :p
 
----
-Subject: sched,fair: Make update_sd_pick_busiest return true on a busier sd
-From: Rik van Riel <riel@redhat.com>
-Date: Mon, 28 Jul 2014 14:16:28 -0400
+Regards,
 
-Currently update_sd_pick_busiest only identifies the busiest sd
-that is either overloaded, or has a group imbalance. When no
-sd is imbalanced or overloaded, the load balancer fails to find
-the busiest domain.
-
-This breaks load balancing between domains that are not overloaded,
-in the !SD_ASYM_PACKING case. This patch makes update_sd_pick_busiest
-return true when the busiest sd yet is encountered.
-
-Groups are ranked in the order overloaded > imbalanced > other,
-with higher ranked groups getting priority even when their load
-is lower. This is necessary due to the possibility of unequal
-capacities and cpumasks between domains within a sched group.
-
-Behaviour for SD_ASYM_PACKING does not seem to match the comment,
-but I have no hardware to test that so I have left the behaviour
-of that code unchanged.
-
-Enum for group classification suggested by Peter Zijlstra.
-
-Cc: ktkhai@parallels.com
-Cc: tim.c.chen@linux.intel.com
-Cc: nicolas.pitre@linaro.org
-Cc: vincent.guittot@linaro.org
-Cc: mingo@kernel.org
-Cc: jhladky@redhat.com
-Acked-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Rik van Riel <riel@redhat.com>
-[peterz: replaced sg_lb_stats::group_imb with the new enum group_type
-         in an attempt to avoid endless recalculation]
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1406571388-3227-3-git-send-email-riel@redhat.com
----
- kernel/sched/fair.c |   49 +++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 37 insertions(+), 12 deletions(-)
-
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5559,6 +5559,13 @@ static unsigned long task_h_load(struct
- #endif
- 
- /********** Helpers for find_busiest_group ************************/
-+
-+enum group_type {
-+	group_other = 0,
-+	group_imbalanced,
-+	group_overloaded,
-+};
-+
- /*
-  * sg_lb_stats - stats of a sched_group required for load_balancing
-  */
-@@ -5572,7 +5579,7 @@ struct sg_lb_stats {
- 	unsigned int group_capacity_factor;
- 	unsigned int idle_cpus;
- 	unsigned int group_weight;
--	int group_imb; /* Is there an imbalance in the group ? */
-+	enum group_type group_type;
- 	int group_has_free_capacity;
- #ifdef CONFIG_NUMA_BALANCING
- 	unsigned int nr_numa_running;
-@@ -5610,6 +5617,8 @@ static inline void init_sd_lb_stats(stru
- 		.total_capacity = 0UL,
- 		.busiest_stat = {
- 			.avg_load = 0UL,
-+			.sum_nr_running = 0,
-+			.group_type = group_other,
- 		},
- 	};
- }
-@@ -5891,6 +5900,18 @@ static inline int sg_capacity_factor(str
- 	return capacity_factor;
- }
- 
-+static enum group_type
-+group_classify(struct sched_group *group, struct sg_lb_stats *sgs)
-+{
-+	if (sgs->sum_nr_running > sgs->group_capacity_factor)
-+		return group_overloaded;
-+
-+	if (sg_imbalanced(group))
-+		return group_imbalanced;
-+
-+	return group_other;
-+}
-+
- /**
-  * update_sg_lb_stats - Update sched_group's statistics for load balancing.
-  * @env: The load balancing environment.
-@@ -5942,9 +5963,8 @@ static inline void update_sg_lb_stats(st
- 		sgs->load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
- 
- 	sgs->group_weight = group->group_weight;
--
--	sgs->group_imb = sg_imbalanced(group);
- 	sgs->group_capacity_factor = sg_capacity_factor(env, group);
-+	sgs->group_type = group_classify(group, sgs);
- 
- 	if (sgs->group_capacity_factor > sgs->sum_nr_running)
- 		sgs->group_has_free_capacity = 1;
-@@ -5968,13 +5988,19 @@ static bool update_sd_pick_busiest(struc
- 				   struct sched_group *sg,
- 				   struct sg_lb_stats *sgs)
- {
--	if (sgs->avg_load <= sds->busiest_stat.avg_load)
--		return false;
-+	struct sg_lb_stats *busiest = &sds->busiest_stat;
- 
--	if (sgs->sum_nr_running > sgs->group_capacity_factor)
-+	if (sgs->group_type > busiest->group_type)
- 		return true;
- 
--	if (sgs->group_imb)
-+	if (sgs->group_type < busiest->group_type)
-+		return false;
-+
-+	if (sgs->avg_load <= busiest->avg_load)
-+		return false;
-+
-+	/* This is the busiest node in its class. */
-+	if (!(env->sd->flags & SD_ASYM_PACKING))
- 		return true;
- 
- 	/*
-@@ -5982,8 +6008,7 @@ static bool update_sd_pick_busiest(struc
- 	 * numbered CPUs in the group, therefore mark all groups
- 	 * higher than ourself as busy.
- 	 */
--	if ((env->sd->flags & SD_ASYM_PACKING) && sgs->sum_nr_running &&
--	    env->dst_cpu < group_first_cpu(sg)) {
-+	if (sgs->sum_nr_running && env->dst_cpu < group_first_cpu(sg)) {
- 		if (!sds->busiest)
- 			return true;
- 
-@@ -6228,7 +6253,7 @@ static inline void calculate_imbalance(s
- 	local = &sds->local_stat;
- 	busiest = &sds->busiest_stat;
- 
--	if (busiest->group_imb) {
-+	if (busiest->group_type == group_imbalanced) {
- 		/*
- 		 * In the group_imb case we cannot rely on group-wide averages
- 		 * to ensure cpu-load equilibrium, look at wider averages. XXX
-@@ -6248,7 +6273,7 @@ static inline void calculate_imbalance(s
- 		return fix_small_imbalance(env, sds);
- 	}
- 
--	if (busiest->sum_nr_running > busiest->group_capacity_factor) {
-+	if (busiest->group_type == group_overloaded) {
- 		/*
- 		 * Don't want to pull so many tasks that a group would go idle.
- 		 * Except of course for the group_imb case, since then we might
-@@ -6337,7 +6362,7 @@ static struct sched_group *find_busiest_
- 	 * work because they assume all things are equal, which typically
- 	 * isn't true due to cpus_allowed constraints and the like.
- 	 */
--	if (busiest->group_imb)
-+	if (busiest->group_type == group_imbalanced)
- 		goto force_balance;
- 
- 	/* SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
+Tony
