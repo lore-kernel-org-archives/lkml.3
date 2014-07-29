@@ -1,86 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684AbaG2OjY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 10:39:24 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:37170 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719AbaG2OjW convert rfc822-to-8bit (ORCPT
+	id S1753870AbaG2OkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 10:40:07 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58105 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753327AbaG2OkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 10:39:22 -0400
+	Tue, 29 Jul 2014 10:40:05 -0400
+Date: Tue, 29 Jul 2014 15:39:36 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: "Murphy, Dan" <dmurphy@ti.com>
+Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
+Subject: Re: [v2] input: drv260x: Add TI drv260x haptics driver
+Message-ID: <20140729143936.GS2576@leverpostej>
+References: <1406566403-1436-1-git-send-email-dmurphy@ti.com>
+ <20140729093701.GJ2576@leverpostej>
+ <00FC9A978A94B7418C33AFAE8A35ED49DB2AAD@DFLE09.ent.ti.com>
 MIME-Version: 1.0
-X-Originating-IP: [95.21.62.104]
-In-Reply-To: <53D79AD3.8020700@suse.de>
-References: <1405704009-8430-1-git-send-email-afaerber@suse.de>
-	<1405704009-8430-4-git-send-email-afaerber@suse.de>
-	<CABxcv=kP2PCcNCtM1WUXx5wGG4m-jdw-P1dw0boaSwdJpoX=jQ@mail.gmail.com>
-	<CAD=FV=V-7+Jj7b8-fQL1PiQhNmhiGOPJzitGd__OUQLDteO_8g@mail.gmail.com>
-	<CABxcv=nDsKSdDtVZKpcTP+=3pbeTswJRCUvvXVx98p+1Zzz0Bg@mail.gmail.com>
-	<53D79AD3.8020700@suse.de>
-Date: Tue, 29 Jul 2014 16:39:19 +0200
-Message-ID: <CABxcv=mALxA=dK0Ue_LC1Qz1HUsvf3C4h13q7FgDv+PEoKvRNw@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] ARM: dts: exynos5250: Fold common ChromeOS parts
- into Snow
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
-Cc: Doug Anderson <dianders@chromium.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "moderated list:ARM/SAMSUNG ARM A..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00FC9A978A94B7418C33AFAE8A35ED49DB2AAD@DFLE09.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andreas,
+On Tue, Jul 29, 2014 at 02:50:48PM +0100, Murphy, Dan wrote:
+> Mark
+> 
+> Thanks for the feedback
+> 
+> On 07/29/2014 04:37 AM, Mark Rutland wrote:
+> > On Mon, Jul 28, 2014 at 05:53:23PM +0100, Dan Murphy wrote:
+> >> Add the TI drv260x haptics/vibrator driver.
+> >> This device uses the input force feedback
+> >> to produce a wave form to driver an
+> >> ERM or LRA actuator device.
+> >>
+> >> The initial driver supports the devices
+> >> real time playback mode.  But the device
+> >> has additional wave patterns in ROM.
+> >>
+> >> This functionality will be added in
+> >> future patchsets.
+> >>
+> >> Product data sheet is located here:
+> >> http://www.ti.com/product/drv2605
+> >>
+> >> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+> >> ---
+> >>
+> >> v2 - Fixed binding doc and patch headline - https://patchwork.kernel.org/patch/4619641/
+> >>
+> >>  .../devicetree/bindings/input/ti,drv260x.txt       |   44 ++
+> >>  drivers/input/misc/Kconfig                         |    9 +
+> >>  drivers/input/misc/Makefile                        |    1 +
+> >>  drivers/input/misc/drv260x.c                       |  537 ++++++++++++++++++++
+> >>  include/dt-bindings/input/ti-drv260x.h             |   30 ++
+> >>  include/linux/input/drv260x.h                      |  181 +++++++
+> >>  6 files changed, 802 insertions(+)
+> >>  create mode 100644 Documentation/devicetree/bindings/input/ti,drv260x.txt
+> >>  create mode 100644 drivers/input/misc/drv260x.c
+> >>  create mode 100644 include/dt-bindings/input/ti-drv260x.h
+> >>  create mode 100644 include/linux/input/drv260x.h
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/input/ti,drv260x.txt b/Documentation/devicetree/bindings/input/ti,drv260x.txt
+> >> new file mode 100644
+> >> index 0000000..930429b
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/input/ti,drv260x.txt
+> >> @@ -0,0 +1,44 @@
+> >> +Texas Instruments - drv260x Haptics driver family
+> >> +
+> >> +The drv260x family serial control bus communicates through I2C protocols
+> >> +
+> >> +Required properties:
+> >> +       - compatible - One of:
+> >> +               "ti,drv2604" - DRV2604
+> >> +               "ti,drv2605" - DRV2605
+> >> +               "ti,drv2605l" - DRV2605L
+> >> +       - reg -  I2C slave address
+> >> +       - mode - Power up mode of the chip (defined in include/dt-bindings/input/ti-drv260x.h)
+> >> +               DRV260X_RTP_MODE - Real time playback mode
+> >> +               DRV260X_LRA_MODE - Linear Resonance Actuator mode (Piezoelectric)
+> >> +               DRV260X_ERM_MODE - Eccentric Rotating Mass mode (Rotary vibrator)
+> > 
+> > What exactly are these, and why does the kernel not decide?
+> 
+> The LRA and ERM are vibrator types.  These are specific to the product and the kernel cannot decide.
+> The kernel driver needs to be told what type of vibrator is connected.  The driver then
+> sets the voltages and other settings to drive the vibrator type safely. All vibrators are dumb and do not
+> have IDs identifying themselves so there is no self discovery here.
 
-On Tue, Jul 29, 2014 at 3:00 PM, Andreas Färber <afaerber@suse.de> wrote:
-> Hi Javier and Doug,
->
->
-> Hm, in different context it was stated that device trees shouldn't rely
-> on bootloader behavior (for a /memory node on Zynq we ended up
-> specifying the size cell with the real value despite U-Boot overriding
-> it to a lesser value).
->
+I see. That makes sense, thanks for the description.
 
-Well is not strictly the same, the memory node is a hardware
-description while the chosen node is one of those exceptional nodes
-that don't represent a real device. Also the usage for the memory node
-is marked as required in ePAR while the later is marked as optional.
+It might make more sense to call this "vibrator-type", rather than
+"mode", but otherwise this should be ok.
 
-> Can we instead settle on filling this node with defaults? :)
-> bootargs = "console=tty1"; would be my choice for Spring. Would that be
-> applicable for Snow as well?
-> Not sure how to specify that via linux,stdout-path property.
->
-> I believe this would be a follow-up patch either way.
->
-> Since there's at least two series out there trying to fiddle with
-> -cros-common.dtsi, including one that drops the slot sub-node of the MMC
-> and one that adds CPU power supply, it would be nice if we can get the
-> -cros-common parts sorted out and applied. Can you ack/review 1-2?
-> Should I squash them in a v3?
->
+In the past I've asked for strings rather than magic numbers, but I'll
+leave that choice to you.
 
-A sensible default makes sense to me and yes it should be a follow-up
-patch anyways.
+> RTP is not a vibrator type but just a mode you can place the device into.  I can probably remove that
+> and have the user space or driver take care of that setting.
 
-> Thanks,
-> Andreas
->
-> --
+Ok, that sounds good to me.
 
-Best regards,
-Javier
+> 
+> > 
+> >> +       - library_sel - Library to use at power up (defined in include/dt-bindings/input/ti-drv260x.h)
+> > 
+> > Please s/_/-/ in all property names.
+> > 
+> >> +               DRV260X_LIB_A - Pre-programmed Library
+> >> +               DRV260X_LIB_B - Pre-programmed Library
+> >> +               DRV260X_LIB_C - Pre-programmed Library
+> >> +               DRV260X_LIB_D - Pre-programmed Library
+> >> +               DRV260X_LIB_E - Pre-programmed Library
+> >> +               DRV260X_LIB_F - Pre-programmed Library
+> > 
+> > What exactly are these, and why does the kernel not decide?
+> > 
+> >> +
+> >> +Optional properties:
+> >> +       - enable-gpio - gpio pin to enable/disable the device.
+> >> +       - vib_rated_voltage - The rated voltage of the actuator.  If this is not
+> >> +                                                 set then the value will be defaulted to 0x90 in the
+> >> +                                                 driver.
+> > 
+> > What units is this in?
+> 
+> Good catch I was thinking this when I was writing the documentation but forgot to add
+> it.  I will fix the formatting here and below as well.
+
+Cheers.
+
+Mark.
