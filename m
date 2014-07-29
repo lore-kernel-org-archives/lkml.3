@@ -1,98 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822AbaG2PzM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 11:55:12 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:56840 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaG2PzI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 11:55:08 -0400
+	id S1752629AbaG2Pzl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 11:55:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55690 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752154AbaG2Pzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 11:55:39 -0400
+Date: Tue, 29 Jul 2014 17:53:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: Re: finish_task_switch && prev_state (Was: sched, timers: use
+	after free in __lock_task_sighand when exiting a process)
+Message-ID: <20140729155309.GA30194@redhat.com>
+References: <53C2FF4D.3020606@oracle.com> <53C31A34.8030500@oracle.com> <20140714090449.GL9918@twins.programming.kicks-ass.net> <20140714144953.GA8173@redhat.com> <20140714160147.GA11986@redhat.com> <20140715131240.GA23014@redhat.com> <20140715132353.GF9918@twins.programming.kicks-ass.net> <20140715142525.GA26029@redhat.com> <20140729091018.GT20603@laptop.programming.kicks-ass.net> <20140729092237.GU12054@laptop.lan>
 MIME-Version: 1.0
-In-Reply-To: <20140729153124.GA3231@salvia>
-References: <1406615380-3488-1-git-send-email-ast@plumgrid.com>
-	<20140729153124.GA3231@salvia>
-Date: Tue, 29 Jul 2014 08:55:04 -0700
-Message-ID: <CAMEtUuwO0nGox4Mfj8Gs2fVudBpYtZ_NSwyFQCFz5NeYKgAdpA@mail.gmail.com>
-Subject: Re: [PATCH v3 net-next] net: filter: cleanup sk_* and bpf_* names
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        netfilter-devel <netfilter-devel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140729092237.GU12054@laptop.lan>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 8:31 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-> On Mon, Jul 28, 2014 at 11:29:40PM -0700, Alexei Starovoitov wrote:
->> Socket charging logic was complicated, since we had to charge/uncharge a socket
->> multiple times while preparing a filter. Simplify it by fully preparing bpf
->> program (through classic->ebpf conversion and JITing) and then charge
->> the socket memory once.
+On 07/29, Peter Zijlstra wrote:
 >
-> This includes many changes in one single shot. This needs to be
-> splitted in smaller patches that can be reviewed separately, that
-> makes it easier to others to follow track and spot things.  On top of
+> On Tue, Jul 29, 2014 at 11:10:18AM +0200, Peter Zijlstra wrote:
+> > On Tue, Jul 15, 2014 at 04:25:25PM +0200, Oleg Nesterov wrote:
+> >
+> > > And probably I missed something again, but it seems that this logic is broken
+> > > with __ARCH_WANT_UNLOCKED_CTXSW.
+> > >
+> > > Of course, even if I am right this is pure theoretical, but smp_wmb() before
+> > > "->on_cpu = 0" is not enough and we need a full barrier ?
+> >
+> > (long delay there, forgot about this thread, sorry)
+> >
+> > Yes, I think I see that.. but now I think the comment is further wrong.
+> >
+> > Its not rq->lock that is important, remember, a concurrent wakeup onto
+> > another CPU does not require our rq->lock at all.
+> >
+> > It is the ->on_cpu = 0 store that is important (for both the
+> > UNLOCKED_CTXSW cases). As soon as that store comes through the task can
+> > start running on the remote cpu.
 
-That was the goal of v1 patch.. to deal with 'struct sk_filter' only...
-Sure. I'll split it into multiple.
+Yes, I came to the same conclusion right after I sent that email.
 
-> that, we should also take the time to make sure what is already in
-> place is correct, this is a good chance to go over the existing code,
-> review it and make small changes to accomodate the generic
-> infrastructure that should follow up.
+> > Now the below patch 'fixes' this but at the cost of adding a full
+> > barrier which is somewhat unfortunate to say the least.
 
-I've simplified charging as commit log says. That part always felt
-unclean. I'll split charging cleanup as separate patch.
-Nothing else comes to mind. Pls suggest.
+And yes, this is obviously the "fix" I had in mind, but:
 
->> -struct sk_filter {
->> -     atomic_t                refcnt;
->> +struct bpf_prog {
->>       u32                     jited:1,        /* Is our filter JIT'ed? */
->>                               len:31;         /* Number of filter blocks */
->>       struct sock_fprog_kern  *orig_prog;     /* Original BPF program */
->> -     struct rcu_head         rcu;
->> +     struct rcu_head         rcu;            /* used by 'unattached' progs */
+> > wmb's are free on x86 and generally cheaper than mbs, so it would to
+> > find another solution to this problem...
 >
-> This rcu_head for unattached filters can be avoided, I'll send a
-> follow up patch for this. After that patch, refcnt and rcu_head can go
-> out from bpf_prog.
+> Something like so then?
 
-See the hunk you quoted above. refcnt is already removed.
-I see your prep patch for rcu_head removal...
-I can rebase on top of it and drop rcu_head out of bpf_prog.
+Hmm, indeed! Unfortunately I didn't find this simple solution. Yes, I think
+we should check current->state == TASK_DEAD,
 
->> -#define sk_filter_proglen(fprog)                     \
->> -             (fprog->len * sizeof(fprog->filter[0]))
->> +struct sk_filter {
->> +     atomic_t refcnt;
->> +     struct rcu_head rcu;
->> +     u32 filter_size;
->> +     union {
->> +             struct bpf_prog *prog;
->> +     };
->> +     void (*release)(struct sk_filter *fp);
->> +     int (*get_filter)(struct sk_filter *fp, void **prog, unsigned int *len);
->> +     unsigned int (*run)(const struct sk_buff *skb, struct sk_filter *fp);
->
-> I don't think this is the right moment to add this, but we have to
-> keep in mind that something similar to this will need to be
-> accomodated in struct sk_filter at some point to avoid sloppy changes
-> that may result in reintroducing code later on.
+> @@ -2304,6 +2293,21 @@ context_switch(struct rq *rq, struct task_struct *prev,
+>  	       struct task_struct *next)
+>  {
+>  	struct mm_struct *mm, *oldmm;
+> +	/*
+> +	 * A task struct has one reference for the use as "current".
+> +	 * If a task dies, then it sets TASK_DEAD in tsk->state and calls
+> +	 * schedule one last time. The schedule call will never return, and
+> +	 * the scheduled task must drop that reference.
+> +	 *
+> +	 * We must observe prev->state before clearing prev->on_cpu (in
+> +	 * finish_lock_switch), otherwise a concurrent wakeup can get prev
+> +	 * running on another CPU and we could race with its RUNNING -> DEAD
+> +	 * transition, and then the reference would be dropped twice.
+> +	 *
+> +	 * We avoid the race by observing prev->state while it is still
+> +	 * current.
+> +	 */
+> +	long prev_state = prev->state;
 
-I thought in v1 series you were arguing exactly about introducing them now...
-ok, I will drop callbacks and keep refcnt,rcu,filter_size and bpf_prog pointer
-in there. Sounds good?
+This doesn't really matter, but probably it would be better to do this right
+before switch_to(), prev == current until this point.
 
-> Next step should be to wrap the specific bpf fields in struct
-> bpf_prog in some clean way IMO, which was partially the aim of this
-> patch.
+Oleg.
 
-it seems your only objection is 'rcu_head' still being there and rebasing
-on top of yours will fix it...
