@@ -1,114 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926AbaG3TXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 15:23:43 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:52561 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693AbaG3TXl (ORCPT
+	id S1755943AbaG3TX7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 15:23:59 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35652 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755499AbaG3TX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 15:23:41 -0400
-X-Originating-IP: 173.246.103.110
-Date: Wed, 30 Jul 2014 12:23:32 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] efi-bgrt: Add error handling; inform the user when ignoring
- the BGRT
-Message-ID: <20140730192331.GA23730@jtriplet-mobl1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 30 Jul 2014 15:23:57 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: Geoff Levand <geoff@infradead.org>, Marc Zyngier <marc.zyngier@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
+Date: Wed, 30 Jul 2014 20:23:14 +0100
+Message-Id: <1406748194-21094-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 2.0.1
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] irq: gic-v3: Tag all low level accessors __maybey_unused
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gracefully handle failures to allocate memory for the image, which might
-be arbitrarily large.
+From: Mark Brown <broonie@linaro.org>
 
-efi_bgrt_init can fail in various ways as well, usually because the
-BIOS-provided BGRT structure does not match expectations.  Add
-appropriate error messages rather than failing silently.
+This is only really needed for gic_write_sgi1r in the !SMP case since it
+is only referenced in the SMP initialisation code but it seems better to
+have these functions all next to each other and declared consistently.
 
-Reported-by: Srihari Vijayaraghavan
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81321
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 ---
- arch/x86/platform/efi/efi-bgrt.c | 36 ++++++++++++++++++++++++++++++------
- 1 file changed, 30 insertions(+), 6 deletions(-)
+ drivers/irqchip/irq-gic-v3.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/platform/efi/efi-bgrt.c b/arch/x86/platform/efi/efi-bgrt.c
-index f15103d..d143d21 100644
---- a/arch/x86/platform/efi/efi-bgrt.c
-+++ b/arch/x86/platform/efi/efi-bgrt.c
-@@ -40,20 +40,40 @@ void __init efi_bgrt_init(void)
- 	if (ACPI_FAILURE(status))
- 		return;
+diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
+index 41b98ba7ffd1..f1ba38f11f7a 100644
+--- a/drivers/irqchip/irq-gic-v3.c
++++ b/drivers/irqchip/irq-gic-v3.c
+@@ -104,7 +104,7 @@ static void gic_redist_wait_for_rwp(void)
+ }
  
--	if (bgrt_tab->header.length < sizeof(*bgrt_tab))
-+	if (bgrt_tab->header.length < sizeof(*bgrt_tab)) {
-+		pr_err("Ignoring BGRT: invalid length %u (expected %zu)\n",
-+		       bgrt_tab->header.length, sizeof(*bgrt_tab));
- 		return;
--	if (bgrt_tab->version != 1 || bgrt_tab->status != 1)
-+	}
-+	if (bgrt_tab->version != 1) {
-+		pr_err("Ignoring BGRT: invalid version %u (expected 1)\n",
-+		       bgrt_tab->version);
-+		return;
-+	}
-+	if (bgrt_tab->status != 1) {
-+		pr_err("Ignoring BGRT: invalid status %u (expected 1)\n",
-+		       bgrt_tab->status);
-+		return;
-+	}
-+	if (bgrt_tab->image_type != 0) {
-+		pr_err("Ignoring BGRT: invalid image type %u (expected 0)\n",
-+		       bgrt_tab->image_type);
- 		return;
--	if (bgrt_tab->image_type != 0 || !bgrt_tab->image_address)
-+	}
-+	if (!bgrt_tab->image_address) {
-+		pr_err("Ignoring BGRT: null image address\n");
- 		return;
-+	}
+ /* Low level accessors */
+-static u64 gic_read_iar(void)
++static u64 __maybe_unused gic_read_iar(void)
+ {
+ 	u64 irqstat;
  
- 	image = efi_lookup_mapped_addr(bgrt_tab->image_address);
- 	if (!image) {
- 		image = early_memremap(bgrt_tab->image_address,
- 				       sizeof(bmp_header));
- 		ioremapped = true;
--		if (!image)
-+		if (!image) {
-+			pr_err("Ignoring BGRT: failed to map image header memory\n");
- 			return;
-+		}
- 	}
+@@ -112,24 +112,24 @@ static u64 gic_read_iar(void)
+ 	return irqstat;
+ }
  
- 	memcpy_fromio(&bmp_header, image, sizeof(bmp_header));
-@@ -61,14 +81,18 @@ void __init efi_bgrt_init(void)
- 		early_iounmap(image, sizeof(bmp_header));
- 	bgrt_image_size = bmp_header.size;
+-static void gic_write_pmr(u64 val)
++static void __maybe_unused gic_write_pmr(u64 val)
+ {
+ 	asm volatile("msr_s " __stringify(ICC_PMR_EL1) ", %0" : : "r" (val));
+ }
  
--	bgrt_image = kmalloc(bgrt_image_size, GFP_KERNEL);
--	if (!bgrt_image)
-+	bgrt_image = kmalloc(bgrt_image_size, GFP_KERNEL | __GFP_NOWARN);
-+	if (!bgrt_image) {
-+		pr_err("Ignoring BGRT: failed to allocate memory for image (wanted %zu bytes)\n",
-+		       bgrt_image_size);
- 		return;
-+	}
+-static void gic_write_ctlr(u64 val)
++static void __maybe_unused gic_write_ctlr(u64 val)
+ {
+ 	asm volatile("msr_s " __stringify(ICC_CTLR_EL1) ", %0" : : "r" (val));
+ 	isb();
+ }
  
- 	if (ioremapped) {
- 		image = early_memremap(bgrt_tab->image_address,
- 				       bmp_header.size);
- 		if (!image) {
-+			pr_err("Ignoring BGRT: failed to map image memory\n");
- 			kfree(bgrt_image);
- 			bgrt_image = NULL;
- 			return;
+-static void gic_write_grpen1(u64 val)
++static void __maybe_unused gic_write_grpen1(u64 val)
+ {
+ 	asm volatile("msr_s " __stringify(ICC_GRPEN1_EL1) ", %0" : : "r" (val));
+ 	isb();
+ }
+ 
+-static void gic_write_sgi1r(u64 val)
++static void __maybe_unused gic_write_sgi1r(u64 val)
+ {
+ 	asm volatile("msr_s " __stringify(ICC_SGI1R_EL1) ", %0" : : "r" (val));
+ }
 -- 
 2.0.1
 
