@@ -1,112 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038AbaG3I5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 04:57:47 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:38025 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577AbaG3I5o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 04:57:44 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Dahlmann <dahlmann.thomas@arcor.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Li Yang <leoli@freescale.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] MAINTAINERS: Update usb/gadget patterns
-Date: Wed, 30 Jul 2014 10:58:02 +0200
-Message-ID: <3040193.IdGZMy9E2c@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <d07bbb44f8c937d7e10a0b7a52689ca59d55b787.1406691397.git.joe@perches.com>
-References: <cover.1406691397.git.joe@perches.com> <d07bbb44f8c937d7e10a0b7a52689ca59d55b787.1406691397.git.joe@perches.com>
+	id S1752082AbaG3I5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 04:57:53 -0400
+Received: from sym2.noone.org ([178.63.92.236]:60555 "EHLO sym2.noone.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751577AbaG3I5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 04:57:48 -0400
+Date: Wed, 30 Jul 2014 10:57:43 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Ley Foon Tan <lftan@altera.com>, Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Subject: Re: [PATCH v2 05/29] nios2: Memory management
+Message-ID: <20140730085743.GC10301@distanz.ch>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+ <1405413956-2772-6-git-send-email-lftan@altera.com>
+ <CAMuHMdUyif5JS9OdiamHhf+r5oeTRdd7Gzd6-rBUyamnNQ6C8A@mail.gmail.com>
+ <CAFiDJ5_9a7pr+16gjV5-cA_Ruoz1LDMKivFemNiOf_Me4bLEUg@mail.gmail.com>
+ <CAMuHMdWw7WGibh38OdAQEmFzV3J9-z3=B74y8i8XxNsdTvOEyw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdWw7WGibh38OdAQEmFzV3J9-z3=B74y8i8XxNsdTvOEyw@mail.gmail.com>
+X-Editor: Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
-
-Thank you for the patch.
-
-On Tuesday 29 July 2014 20:38:40 Joe Perches wrote:
-> Several commits have moved files around, update the section patterns.
+On 2014-07-30 at 10:18:49 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Wed, Jul 30, 2014 at 8:42 AM, Ley Foon Tan <lftan@altera.com> wrote:
+> > On Mon, Jul 28, 2014 at 10:59 PM, Geert Uytterhoeven
+> > <geert@linux-m68k.org> wrote:
+> >> On Tue, Jul 15, 2014 at 10:45 AM, Ley Foon Tan <lftan@altera.com> wrote:
+> >>> --- /dev/null
+> >>> +++ b/arch/nios2/include/asm/mmu.h
+> >>> @@ -0,0 +1,18 @@
+> >>> +/*
+> >>> + * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
+> >>> + * Copyright (C) 2004 Microtronix Datacom Ltd.
+> >>> + *
+> >>> + * Taken from m68knommu.
+> >>> + *
+> >>> + * This file is subject to the terms and conditions of the GNU General Public
+> >>> + * License. See the file "COPYING" in the main directory of this archive
+> >>> + * for more details.
+> >>> + */
+> >>> +
+> >>> +#ifndef _ASM_NIOS2_MMU_H
+> >>> +#define _ASM_NIOS2_MMU_H
+> >>> +
+> >>> +/* Default "unsigned long" context */
+> >>> +typedef unsigned long mm_context_t;
+> >>> +
+> >>> +#endif /* _ASM_NIOS2_MMU_H */
+> >>
+> >> Any chance you can use mmu.h from asm-generic instead?
+> >> It uses a struct with a single "unsigned long end_brk" member (unless
+> >> CONFIG_BINFMT_ELF_FDPIC is defined).
+> > From asm-generic/mmu.h, it is for nommu implementations.
+> > So, I will keep this as it is now.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> cc: Thomas Dahlmann <dahlmann.thomas@arcor.de>
-> cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> cc: Li Yang <leoli@freescale.com>
-> cc: Eric Miao <eric.y.miao@gmail.com>
-> cc: Russell King <linux@arm.linux.org.uk>
-> cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-> cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Right, you have a MMU.
+> I got confused by the "Taken from m68knommu" comment, and you still
+> only need a single "unsigned long".
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+That comment stems from the initial Nios II NOMMU port done by
+Microtronix. Since Nios II NOMMU support was dropped for mainline
+submission anyhow, it might be better to drop that comment to avoid any
+future confusion :)
 
-> cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-> ---
->  MAINTAINERS | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 66d5894..6033aaf 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -596,7 +596,7 @@ AMD GEODE CS5536 USB DEVICE CONTROLLER DRIVER
->  M:	Thomas Dahlmann <dahlmann.thomas@arcor.de>
->  L:	linux-geode@lists.infradead.org (moderated for non-subscribers)
->  S:	Supported
-> -F:	drivers/usb/gadget/amd5536udc.*
-> +F:	drivers/usb/gadget/udc/amd5536udc.*
-> 
->  AMD GEODE PROCESSOR/CHIPSET SUPPORT
->  P:	Andres Salomon <dilinger@queued.net>
-> @@ -1688,7 +1688,7 @@ ATMEL USBA UDC DRIVER
->  M:	Nicolas Ferre <nicolas.ferre@atmel.com>
->  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->  S:	Supported
-> -F:	drivers/usb/gadget/atmel_usba_udc.*
-> +F:	drivers/usb/gadget/udc/atmel_usba_udc.*
-> 
->  ATMEL WIRELESS DRIVER
->  M:	Simon Kelley <simon@thekelleys.org.uk>
-> @@ -3798,7 +3798,7 @@ M:	Li Yang <leoli@freescale.com>
->  L:	linux-usb@vger.kernel.org
->  L:	linuxppc-dev@lists.ozlabs.org
->  S:	Maintained
-> -F:	drivers/usb/gadget/fsl*
-> +F:	drivers/usb/gadget/udc/fsl*
-> 
->  FREESCALE QUICC ENGINE UCC ETHERNET DRIVER
->  M:	Li Yang <leoli@freescale.com>
-> @@ -7232,7 +7232,7 @@ S:	Maintained
->  F:	arch/arm/mach-pxa/
->  F:	drivers/pcmcia/pxa2xx*
->  F:	drivers/spi/spi-pxa2xx*
-> -F:	drivers/usb/gadget/pxa2*
-> +F:	drivers/usb/gadget/udc/pxa2*
->  F:	include/sound/pxa2xx-lib.h
->  F:	sound/arm/pxa*
->  F:	sound/soc/pxa/
-> @@ -9576,8 +9576,8 @@ USB WEBCAM GADGET
->  M:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->  L:	linux-usb@vger.kernel.org
->  S:	Maintained
-> -F:	drivers/usb/gadget/*uvc*.c
-> -F:	drivers/usb/gadget/webcam.c
-> +F:	drivers/usb/gadget/function/*uvc*.c
-> +F:	drivers/usb/gadget/legacy/webcam.c
-> 
->  USB WIRELESS RNDIS DRIVER (rndis_wlan)
->  M:	Jussi Kivilinna <jussi.kivilinna@iki.fi>
-
--- 
-Regards,
-
-Laurent Pinchart
-
+Cheers
+Tobias
