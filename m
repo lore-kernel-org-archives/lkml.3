@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbaG3JBH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 05:01:07 -0400
-Received: from sym2.noone.org ([178.63.92.236]:60920 "EHLO sym2.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692AbaG3JBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 05:01:04 -0400
-Date: Wed, 30 Jul 2014 11:01:02 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
-        cltang@codesourcery.com
-Subject: Re: [PATCH v2 05/29] nios2: Memory management
-Message-ID: <20140730090101.GD10301@distanz.ch>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com>
- <1405413956-2772-6-git-send-email-lftan@altera.com>
+	id S1752114AbaG3JBc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 05:01:32 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:58846 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324AbaG3JBa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 05:01:30 -0400
+Message-ID: <53D8B463.5060405@collabora.co.uk>
+Date: Wed, 30 Jul 2014 11:01:23 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405413956-2772-6-git-send-email-lftan@altera.com>
-X-Editor: Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@kernel.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/5] regulator: core: Get voltage from parent if not available
+References: <1406651339-28901-1-git-send-email-javier.martinez@collabora.co.uk> <1406651339-28901-2-git-send-email-javier.martinez@collabora.co.uk> <20140729182601.GA17528@sirena.org.uk>
+In-Reply-To: <20140729182601.GA17528@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-15 at 10:45:32 +0200, Ley Foon Tan <lftan@altera.com> wrote:
-> This patch contains the initialisation of the memory blocks, MMU
-> attributes and the memory map.
+On 07/29/2014 08:26 PM, Mark Brown wrote:
+> On Tue, Jul 29, 2014 at 06:28:55PM +0200, Javier Martinez Canillas wrote:
+>> Load switches are modeled as regulators but they just provide
+>> the voltage of their parent input supply. So the drivers for
 > 
-> Signed-off-by: Ley Foon Tan <lftan@altera.com>
-> ---
->  arch/nios2/include/asm/mmu.h     |  18 +++
->  arch/nios2/include/asm/page.h    | 113 +++++++++++++++++++
->  arch/nios2/include/asm/uaccess.h | 233 +++++++++++++++++++++++++++++++++++++++
->  arch/nios2/mm/init.c             | 142 ++++++++++++++++++++++++
->  arch/nios2/mm/uaccess.c          | 162 +++++++++++++++++++++++++++
->  5 files changed, 668 insertions(+)
->  create mode 100644 arch/nios2/include/asm/mmu.h
->  create mode 100644 arch/nios2/include/asm/page.h
->  create mode 100644 arch/nios2/include/asm/uaccess.h
->  create mode 100644 arch/nios2/mm/init.c
->  create mode 100644 arch/nios2/mm/uaccess.c
+> Applied, thanks.  The term "load switch" is a bit unusual - they're
+> usually just called switches (or sometimes FETs since that tends to be
+> the implementation).
+> 
 
-[...]
+Thanks, I used the terminology from the tps65090 data manual [0] that refers
+these components as "load switches" all around the document. Although they are
+called FETs indeed in the tables and register names.
 
-> diff --git a/arch/nios2/include/asm/page.h b/arch/nios2/include/asm/page.h
-> new file mode 100644
-> index 0000000..b89c1d6
-> --- /dev/null
-> +++ b/arch/nios2/include/asm/page.h
-> @@ -0,0 +1,113 @@
-> +/*
-> + * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-> + * Copyright (C) 2004 Microtronix Datacom Ltd.
-> + *
-> + * MMU support based on asm/page.h from mips which is:
-> + *
-> + * Copyright (C) 1994 - 1999, 2000, 03 Ralf Baechle
-> + * Copyright (C) 1999, 2000 Silicon Graphics, Inc.
-> + *
-> + * NOMMU support based on asm/page.h from m68knommu.
+Best regards,
+Javier
 
-You might want to remove this line to avoid confusion, since NOMMU is
-not supported anymore in this submission of the NIOS II port.
-
-> + *
-> + * This file is subject to the terms and conditions of the GNU General Public
-> + * License.  See the file "COPYING" in the main directory of this archive
-> + * for more details.
-> + */
+[0]: http://www.ti.com/lit/gpn/tps65090
