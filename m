@@ -1,113 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaG3KmM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 06:42:12 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:46256 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaG3KmL (ORCPT
+	id S1752251AbaG3Kn0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 06:43:26 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34451 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887AbaG3KnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 06:42:11 -0400
-From: Anil Belur <askb23@gmail.com>
-X-Google-Original-From: Anil Belur
-To: tklauser@distanz.ch, dan.carpenter@oracle.com, bjorn@mork.no,
-        silvio.fricke@gmail.com, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Anil Belur <askb23@gmail.com>
-Subject: [PATCH v2 1/1] staging: vt6655: ioctl.c - missing __user annotation
-Date: Wed, 30 Jul 2014 16:11:59 +0530
-Message-Id: <1406716919-13595-1-git-send-email-askb23@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 30 Jul 2014 06:43:24 -0400
+Date: Wed, 30 Jul 2014 11:42:53 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140730104253.GP17528@sirena.org.uk>
+References: <1406651339-28901-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1406651339-28901-4-git-send-email-javier.martinez@collabora.co.uk>
+ <20140729171857.GV17528@sirena.org.uk>
+ <53D8B195.4050003@collabora.co.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="x+ia+h3A4XZzeh4n"
+Content-Disposition: inline
+In-Reply-To: <53D8B195.4050003@collabora.co.uk>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC 3/5] regulator: core: Only apply constraints if available
+ on list voltage
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anil Belur <askb23@gmail.com>
 
-v2:
-- private_ioctl() internally calls copy_{to,from}_user() and does
-  not use '__user' which gives out several sparse warnings
-- this patch adds __user annotation to the data member of struct
-  tagSCmdRequest as suggested by tklauser@distanz.ch
-- sparse warnings fixed:
- drivers/staging/vt6655/ioctl.c:78:51: warning: incorrect type in argument 2 (different address spaces)
- drivers/staging/vt6655/ioctl.c:78:51:    expected void const [noderef] asn:1>*from
- drivers/staging/vt6655/ioctl.c:78:51:    got void *data
- drivers/staging/vt6655/ioctl.c:117:55: warning: incorrect type in argument 2 (different address spaces)
- drivers/staging/vt6655/ioctl.c:117:55:    expected void const [noderef] asn:1>*from
- drivers/staging/vt6655/ioctl.c:117:55:    got void *data
- drivers/staging/vt6655/ioctl.c:149:46: warning: incorrect type in argument 1 (different address spaces)
- drivers/staging/vt6655/ioctl.c:149:46:    expected void [noderef] asn:1>*to
- drivers/staging/vt6655/ioctl.c:149:46:    got void *data
- drivers/staging/vt6655/ioctl.c:166:51: warning: incorrect type in argument 2 (different address spaces)
- drivers/staging/vt6655/ioctl.c:166:51:    expected void const [noderef] asn:1>*from
- drivers/staging/vt6655/ioctl.c:166:51:    got void *data
- drivers/staging/vt6655/ioctl.c:212:50: warning: incorrect type in argument 2 (different address spaces)
- drivers/staging/vt6655/ioctl.c:212:50:    expected void const [noderef] asn:1>*from
- drivers/staging/vt6655/ioctl.c:212:50:    got void *data
- drivers/staging/vt6655/ioctl.c:276:38: warning: incorrect type in argument 1 (different address spaces)
- drivers/staging/vt6655/ioctl.c:276:38:    expected void [noderef] asn:1>*to
- drivers/staging/vt6655/ioctl.c:276:38:    got void *data
- drivers/staging/vt6655/ioctl.c:292:38: warning: incorrect type in argument 1 (different address spaces)
- drivers/staging/vt6655/ioctl.c:292:38:    expected void [noderef] asn:1>*to
- drivers/staging/vt6655/ioctl.c:292:38:    got void *data
- drivers/staging/vt6655/ioctl.c:300:48: warning: incorrect type in argument 2 (different address spaces)
- drivers/staging/vt6655/ioctl.c:300:48:    expected void const [noderef] asn:1>*from
- drivers/staging/vt6655/ioctl.c:300:48:    got void *data
- drivers/staging/vt6655/ioctl.c:344:38: warning: incorrect type in argument 1 (different address spaces)
- drivers/staging/vt6655/ioctl.c:344:38:    expected void [noderef] asn:1>*to
- drivers/staging/vt6655/ioctl.c:344:38:    got void *data
- drivers/staging/vt6655/ioctl.c:353:38: warning: incorrect type in argument 1 (different address spaces)
- drivers/staging/vt6655/ioctl.c:353:38:    expected void [noderef] asn:1>*to
- drivers/staging/vt6655/ioctl.c:353:38:    got void *data
- drivers/staging/vt6655/ioctl.c:360:38: warning: incorrect type in argument 1 (different address spaces)
- drivers/staging/vt6655/ioctl.c:360:38:    expected void [noderef] asn:1>*to
- drivers/staging/vt6655/ioctl.c:360:38:    got void *data
- drivers/staging/vt6655/ioctl.c:401:49: warning: incorrect type in argument 2 (different address spaces)
- drivers/staging/vt6655/ioctl.c:401:49:    expected void const [noderef] asn:1>*from
- drivers/staging/vt6655/ioctl.c:401:49:    got void *data
- drivers/staging/vt6655/ioctl.c:424:49: warning: incorrect type in argument 2 (different address spaces)
- drivers/staging/vt6655/ioctl.c:424:49:    expected void const [noderef] asn:1>*from
- drivers/staging/vt6655/ioctl.c:424:49:    got void *data
- drivers/staging/vt6655/ioctl.c:440:49: warning: incorrect type in argument 2 (different address spaces)
- drivers/staging/vt6655/ioctl.c:440:49:    expected void const [noderef] asn:1>*from
- drivers/staging/vt6655/ioctl.c:440:49:    got void *data
- drivers/staging/vt6655/ioctl.c:457:49: warning: incorrect type in argument 2 (different address spaces)
- drivers/staging/vt6655/ioctl.c:457:49:    expected void const [noderef] asn:1>*from
- drivers/staging/vt6655/ioctl.c:457:49:    got void *data
- drivers/staging/vt6655/ioctl.c:479:54: warning: incorrect type in argument 2 (different address spaces)
- drivers/staging/vt6655/ioctl.c:479:54:    expected void const [noderef] asn:1>*from
- drivers/staging/vt6655/ioctl.c:479:54:    got void *data
- drivers/staging/vt6655/ioctl.c:563:38: warning: incorrect type in argument 1 (different address spaces)
- drivers/staging/vt6655/ioctl.c:563:38:    expected void [noderef] asn:1>*to
- drivers/staging/vt6655/ioctl.c:563:38:    got void *data
- drivers/staging/vt6655/ioctl.c:571:52: warning: incorrect type in argument 2 (different address spaces)
- drivers/staging/vt6655/ioctl.c:571:52:    expected void const [noderef] asn:1>*from
- drivers/staging/vt6655/ioctl.c:571:52:    got void *data
- drivers/staging/vt6655/ioctl.c:615:38: warning: incorrect type in argument 1 (different address spaces)
- drivers/staging/vt6655/ioctl.c:615:38:    expected void [noderef] asn:1>*to
- drivers/staging/vt6655/ioctl.c:615:38:    got void *data
- drivers/staging/vt6655/ioctl.c:631:53: warning: incorrect type in argument 2 (different address spaces)
- drivers/staging/vt6655/ioctl.c:631:53:    expected void const [noderef] asn:1>*from
- drivers/staging/vt6655/ioctl.c:631:53:    got void *data
+--x+ia+h3A4XZzeh4n
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Anil Belur <askb23@gmail.com>
----
- drivers/staging/vt6655/iocmd.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Wed, Jul 30, 2014 at 10:49:25AM +0200, Javier Martinez Canillas wrote:
+> On 07/29/2014 07:18 PM, Mark Brown wrote:
 
-diff --git a/drivers/staging/vt6655/iocmd.h b/drivers/staging/vt6655/iocmd.h
-index e499f1b..dd12498 100644
---- a/drivers/staging/vt6655/iocmd.h
-+++ b/drivers/staging/vt6655/iocmd.h
-@@ -100,7 +100,7 @@ typedef enum tagWZONETYPE {
- #pragma pack(1)
- typedef struct tagSCmdRequest {
- 	u8	    name[16];
--	void	*data;
-+	void __user *data;
- 	u16	    wResult;
- 	u16     wCmdCode;
- } SCmdRequest, *PSCmdRequest;
--- 
-1.9.1
+> > I would also expect any regulator where the supplied devices are able to
+> > vary the voltage to explicitly provide a constraint even if the
+> > implementation is done in a parent regulator.  There may be constraints
+> > on the child supply which aren't directly present on the parent supply
+> > and can be ignored if the child supply is turned off.
 
+> Agreed, if I explicitly set the voltage constraints on the child supply then
+> this patch is indeed not needed.
+
+We will, however, need some code to pass the child supply constraints on
+to the parent.
+
+--x+ia+h3A4XZzeh4n
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT2MwqAAoJELSic+t+oim9aSMP/1mskx3pbsqkgw34u4P/2oU1
+mEi0MeW02i1FYQnwqNFq8JZFzgik444f6vY73w6AOSnTP1Z5Z8x2YdYAbCd8ipmH
+SX/PUgrLUIU0y6bnbicfOkni74C+BfYHpoJxHQDQKAWq4qxUeW9WpNnVplboNZNt
+LJZktdAhs06OGgk/mevhppZ/xIauaJYJoaUbs+EniX5z6dYwTuFYPTQObjBhEt1w
+JHiAlZPuvGi6pFDYXqxL6vBtqskq6/qofqX3ojskIdSFsmag36GQcO5yclK5/kVe
+uiCFdG6ygzFlnytMENMRT6HapBvK9CQkY4qIFQGrt8edmVW2tGpvXm64MiMQ2VmM
+uUawHp4WOQB28oVSByDKK/UyXaACueOYu4EJfPnod4PCTJCDXS/OVpiucCwZCv8m
+JU5DI0fkj76eJqXP2Q0VIElDURwA8Hnq8hGfaMfMt8oPZPmC5QA4AOEoB+3oq0A3
+SpB9jMiUefZ+nOAwI0cPdCHRSpiXm7w2qSYca0E+XxLvVvYffpTz0a9mxlBskgUy
+Yh3CSBiGycX+cQ4sjyje7Y6lpEEwq4Qg4P6wr4zk0ACIoXw0pdIcNNCHdpAJVUcx
+zE0PMpSm7cHEEVOc6ZEmzm5lCMnCWTNAw0G/b7gXDMduVROug5ow3wo5CcFmmOMC
+4tpsCYLxwN5Zx5nzGEl0
+=TkDr
+-----END PGP SIGNATURE-----
+
+--x+ia+h3A4XZzeh4n--
