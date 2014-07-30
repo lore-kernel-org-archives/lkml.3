@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396AbaG3M0a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:26:30 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36754 "EHLO
+	id S1754361AbaG3M02 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:26:28 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36763 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752982AbaG3MPd (ORCPT
+	by vger.kernel.org with ESMTP id S1752980AbaG3MPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:33 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mike Snitzer <snitzer@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 68/94] dm thin metadata: do not allow the data block size to change
-Date: Wed, 30 Jul 2014 14:14:57 +0200
-Message-Id: <c355b2e35e910d4aa740c4009d5cd62b0698c6c2.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Sowmini Varadhan <sowmini.varadhan@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 55/94] sunvnet: clean up objects created in vnet_new() on vnet_exit()
+Date: Wed, 30 Jul 2014 14:14:44 +0200
+Message-Id: <54a445fe7a86aad6d62913ae497eaa392880ed9d.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,60 +24,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9aec8629ec829fc9403788cd959e05dd87988bd1 upstream.
+[ Upstream commit a4b70a07ed12a71131cab7adce2ce91c71b37060 ]
 
-The block size for the thin-pool's data device must remained fixed for
-the life of the thin-pool.  Disallow any attempt to change the
-thin-pool's data block size.
+Nothing cleans up the objects created by
+vnet_new(), they are completely leaked.
 
-It should be noted that attempting to change the data block size via
-thin-pool table reload will be ignored as a side-effect of the thin-pool
-handover that the thin-pool target does during thin-pool table reload.
+vnet_exit(), after doing the vio_unregister_driver() to clean
+up ports, should call a helper function that iterates over vnet_list
+and cleans up those objects. This includes unregister_netdevice()
+as well as free_netdev().
 
-Here is an example outcome of attempting to load a thin-pool table that
-reduced the thin-pool's data block size from 1024K to 512K.
-
-Before:
-kernel: device-mapper: thin: 253:4: growing the data device from 204800 to 409600 blocks
-
-After:
-kernel: device-mapper: thin metadata: changing the data block size (from 2048 to 1024) is not supported
-kernel: device-mapper: table: 253:4: thin-pool: Error creating metadata object
-kernel: device-mapper: ioctl: error adding target to table
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Reviewed-by: Karl Volz <karl.volz@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/md/dm-thin-metadata.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/net/ethernet/sun/sunvnet.c | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/dm-thin-metadata.c b/drivers/md/dm-thin-metadata.c
-index 07a6ea3a9820..b63095c73b5f 100644
---- a/drivers/md/dm-thin-metadata.c
-+++ b/drivers/md/dm-thin-metadata.c
-@@ -613,6 +613,15 @@ static int __open_metadata(struct dm_pool_metadata *pmd)
+diff --git a/drivers/net/ethernet/sun/sunvnet.c b/drivers/net/ethernet/sun/sunvnet.c
+index 3df56840a3b9..398faff8be7a 100644
+--- a/drivers/net/ethernet/sun/sunvnet.c
++++ b/drivers/net/ethernet/sun/sunvnet.c
+@@ -1083,6 +1083,24 @@ static struct vnet *vnet_find_or_create(const u64 *local_mac)
+ 	return vp;
+ }
  
- 	disk_super = dm_block_data(sblock);
- 
-+	/* Verify the data block size hasn't changed */
-+	if (le32_to_cpu(disk_super->data_block_size) != pmd->data_block_size) {
-+		DMERR("changing the data block size (from %u to %llu) is not supported",
-+		      le32_to_cpu(disk_super->data_block_size),
-+		      (unsigned long long)pmd->data_block_size);
-+		r = -EINVAL;
-+		goto bad_unlock_sblock;
-+	}
++static void vnet_cleanup(void)
++{
++	struct vnet *vp;
++	struct net_device *dev;
 +
- 	r = __check_incompat_features(disk_super, pmd);
- 	if (r < 0)
- 		goto bad_unlock_sblock;
++	mutex_lock(&vnet_list_mutex);
++	while (!list_empty(&vnet_list)) {
++		vp = list_first_entry(&vnet_list, struct vnet, list);
++		list_del(&vp->list);
++		dev = vp->dev;
++		/* vio_unregister_driver() should have cleaned up port_list */
++		BUG_ON(!list_empty(&vp->port_list));
++		unregister_netdev(dev);
++		free_netdev(dev);
++	}
++	mutex_unlock(&vnet_list_mutex);
++}
++
+ static const char *local_mac_prop = "local-mac-address";
+ 
+ static struct vnet *vnet_find_parent(struct mdesc_handle *hp,
+@@ -1240,7 +1258,6 @@ static int vnet_port_remove(struct vio_dev *vdev)
+ 
+ 		kfree(port);
+ 
+-		unregister_netdev(vp->dev);
+ 	}
+ 	return 0;
+ }
+@@ -1268,6 +1285,7 @@ static int __init vnet_init(void)
+ static void __exit vnet_exit(void)
+ {
+ 	vio_unregister_driver(&vnet_port_driver);
++	vnet_cleanup();
+ }
+ 
+ module_init(vnet_init);
 -- 
 2.0.1
 
