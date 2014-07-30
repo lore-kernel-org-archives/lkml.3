@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705AbaG3I0Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 04:26:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60813 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750782AbaG3I0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 04:26:23 -0400
-Message-ID: <1406708780.5347.9.camel@linux-fkkt.site>
-Subject: Re: linux-next: build failure after merge of the net tree
-From: Oliver Neukum <oneukum@suse.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 30 Jul 2014 10:26:20 +0200
-In-Reply-To: <20140730103617.1a9690de@canb.auug.org.au>
-References: <20140730103617.1a9690de@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751949AbaG3I2D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 04:28:03 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:62515 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375AbaG3I17 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 04:27:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <1406647011-8543-7-git-send-email-Julia.Lawall@lip6.fr>
+References: <1406647011-8543-1-git-send-email-Julia.Lawall@lip6.fr> <1406647011-8543-7-git-send-email-Julia.Lawall@lip6.fr>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 30 Jul 2014 17:27:38 +0900
+Message-ID: <CAAVeFuLZb3CVV6B771V3-mzYdp0zsxaBfAAdikQDMBxSZTPTjA@mail.gmail.com>
+Subject: Re: [PATCH 6/9] gpiolib: devres: use correct structure type name in sizeof
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Linus Walleij <linus.walleij@linaro.org>, kernel-janitors@vger.kernel.org,
+        linux-ia64@vger.kernel.org, ceph-devel@vger.kernel.org,
+        toralf.foerster@gmx.de, hmh@hmh.eng.br,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-30 at 10:36 +1000, Stephen Rothwell wrote:
+On Wed, Jul 30, 2014 at 12:16 AM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> Correct typo in the name of the type given to sizeof.  Because it is the
+> size of a pointer that is wanted, the typo has no impact on compilation or
+> execution.
+>
+> This problem was found using Coccinelle (http://coccinelle.lip6.fr/).  The
+> semantic patch used can be found in message 0 of this patch series.
 
-> Caused by commit 20fbe3ae990f ("cdc_subset: deal with a device that
-> needs reset for timeout").
-> 
-> I have used the net tree from next-20140729 for today (i.e. up to
-> commit fe26566d8a0515 ("bnx2x: fix crash during TSO tunneling")).
+Acked-by: Alexandre Courbot <acourbot@nvidia.com>
 
-Thank you. Patch is on the way.
+Interestingly the compiler never complains despite gpiod_desc not
+being a declared type...
 
-	Regards
-		Oliver
-
-
+Thanks!
