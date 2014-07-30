@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096AbaG3QGK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 12:06:10 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:34245 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455AbaG3QGH (ORCPT
+	id S1755221AbaG3QHK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 12:07:10 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:44898 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754630AbaG3QHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 12:06:07 -0400
-Date: Wed, 30 Jul 2014 09:06:03 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.4 00/10] 3.4.101-stable review
-Message-ID: <20140730160603.GA26561@roeck-us.net>
-References: <20140730014807.477761030@linuxfoundation.org>
+	Wed, 30 Jul 2014 12:07:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140730014807.477761030@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1406676273-20701-3-git-send-email-dianders@chromium.org>
+References: <1406676273-20701-1-git-send-email-dianders@chromium.org>
+	<1406676273-20701-3-git-send-email-dianders@chromium.org>
+Date: Wed, 30 Jul 2014 09:07:06 -0700
+X-Google-Sender-Auth: QaOg81Sgbm6AtI4XtAXsHXjUkGw
+Message-ID: <CAD=FV=WXmaForADQGCS0zQ--aFguANSfgyg=6tq6_D0mfmKjEA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ARM: dts: add rk3288 ehci usb devices
+From: Doug Anderson <dianders@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>, Kever Yang <kever.yang@rock-chips.com>
+Cc: Sonny Rao <sonnyrao@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 06:48:31PM -0700, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.101 release.
-> There are 10 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Fri Aug  1 01:47:50 UTC 2014.
-> Anything received after that time might be too late.
-> 
-Build results:
-	total: 119 pass: 113 fail: 6
-Failed builds:
-	alpha:allmodconfig
-	arm:spear6xx_defconfig
-	score:defconfig
-	sparc64:allmodconfig
-	unicore32:defconfig
-	xtensa:allmodconfig
+Hi,
 
-Qemu tests all passed.
+On Tue, Jul 29, 2014 at 4:24 PM, Doug Anderson <dianders@chromium.org> wrote:
+> rk3288 has two kind of usb controller; this adds the ehci variant for
+> host0 and hsic.
+>
+> At the moment we don't add any phys for these controllers, but the
+> default settings seem to work OK.
+>
+> There is a hardware problem in ohci controller which make it
+> unavailable and host0 controller can only support high-speed devices.
+>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  arch/arm/boot/dts/rk3288.dtsi | 20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+> index 3ef8951..0bb4480 100644
+> --- a/arch/arm/boot/dts/rk3288.dtsi
+> +++ b/arch/arm/boot/dts/rk3288.dtsi
+> @@ -251,6 +251,26 @@
+>                 status = "disabled";
+>         };
+>
+> +       usb_host0_ehci: ehci@ff500000 {
 
-Results are as expected.
+According to sergei.shtylyov@cogentembedded.com in another thread,
+this should be "usb@ff500000".
 
-Details are available at http://server.roeck-us.net:8010/builders.
+I will fix (and the hsic one) this when I spin the series shortly.
 
-Guenter
+-Doug
