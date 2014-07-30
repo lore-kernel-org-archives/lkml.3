@@ -1,47 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325AbaG3U7F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 16:59:05 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:44833 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772AbaG3U7B (ORCPT
+	id S1751655AbaG3VCi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 17:02:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44431 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbaG3VCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 16:59:01 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Jingoo Han <jg1.han@samsung.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: csiostor: csio_init.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Wed, 30 Jul 2014 23:00:28 +0200
-Message-Id: <1406754028-20210-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 30 Jul 2014 17:02:37 -0400
+Message-ID: <53D95D68.1000402@infradead.org>
+Date: Wed, 30 Jul 2014 14:02:32 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Davidlohr Bueso <davidlohr@hp.com>, peterz@infradead.org, mingo@kernel.org
+CC: jason.low2@hp.com, aswin@hp.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -tip v2 6/7] locking: Move docs into Documentation/locking/
+References: <1406752916-3341-1-git-send-email-davidlohr@hp.com> <1406752916-3341-6-git-send-email-davidlohr@hp.com>
+In-Reply-To: <1406752916-3341-6-git-send-email-davidlohr@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you use kzalloc before strncpy you must copy sizeof -1.
-And removed unnecessary magic numbers.
+On 07/30/14 13:41, Davidlohr Bueso wrote:
+> Specifically:
+>   Documentation/locking/lockdep-design.txt
+>   Documentation/locking/lockstat.txt
+>   Documentation/locking/mutex-design.txt
+>   Documentation/locking/rt-mutex-design.txt
+>   Documentation/locking/rt-mutex.txt
+>   Documentation/locking/spinlocks.txt
+>   Documentation/locking/ww-mutex-design.txt
+> 
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/scsi/csiostor/csio_init.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Did you read and use Documentation/SubmittingPatches?  see:
 
-diff --git a/drivers/scsi/csiostor/csio_init.c b/drivers/scsi/csiostor/csio_init.c
-index 1aafc33..d5ea81c 100644
---- a/drivers/scsi/csiostor/csio_init.c
-+++ b/drivers/scsi/csiostor/csio_init.c
-@@ -532,7 +532,8 @@ static struct csio_hw *csio_hw_alloc(struct pci_dev *pdev)
- 		goto err;
- 
- 	hw->pdev = pdev;
--	strncpy(hw->drv_version, CSIO_DRV_VERSION, 32);
-+	strncpy(hw->drv_version, CSIO_DRV_VERSION,
-+			sizeof(hw->drv_version) - 1);
- 
- 	/* memory pool/DMA pool allocation */
- 	if (csio_resource_alloc(hw))
+Please use "git diff -M --stat --summary" to generate the diffstat:
+the -M enables rename detection, and the summary enables a summary of
+new/deleted or renamed files.
+
+With rename detection, the statistics are rather different [...]
+because git will notice that a fair number of the changes are renames.
+
+
+
+We really want to see the renames when possible.  Otherwise it's good.
+
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
+
+Thanks.
+
+
+> ---
+>  Documentation/00-INDEX                    |   2 +
+>  Documentation/DocBook/kernel-locking.tmpl |   2 +-
+>  Documentation/lockdep-design.txt          | 286 -----------
+>  Documentation/locking/lockdep-design.txt  | 286 +++++++++++
+>  Documentation/locking/lockstat.txt        | 178 +++++++
+>  Documentation/locking/mutex-design.txt    | 157 ++++++
+>  Documentation/locking/rt-mutex-design.txt | 781 ++++++++++++++++++++++++++++++
+>  Documentation/locking/rt-mutex.txt        |  79 +++
+>  Documentation/locking/spinlocks.txt       | 167 +++++++
+>  Documentation/locking/ww-mutex-design.txt | 344 +++++++++++++
+>  Documentation/lockstat.txt                | 178 -------
+>  Documentation/mutex-design.txt            | 157 ------
+>  Documentation/rt-mutex-design.txt         | 781 ------------------------------
+>  Documentation/rt-mutex.txt                |  79 ---
+>  Documentation/spinlocks.txt               | 167 -------
+>  Documentation/ww-mutex-design.txt         | 344 -------------
+>  MAINTAINERS                               |   4 +-
+>  drivers/gpu/drm/drm_modeset_lock.c        |   2 +-
+>  include/linux/lockdep.h                   |   2 +-
+>  include/linux/mutex.h                     |   2 +-
+>  include/linux/rwsem.h                     |   2 +-
+>  kernel/locking/mutex.c                    |   2 +-
+>  kernel/locking/rtmutex.c                  |   2 +-
+>  lib/Kconfig.debug                         |   4 +-
+>  24 files changed, 2005 insertions(+), 2003 deletions(-)
+>  delete mode 100644 Documentation/lockdep-design.txt
+>  create mode 100644 Documentation/locking/lockdep-design.txt
+>  create mode 100644 Documentation/locking/lockstat.txt
+>  create mode 100644 Documentation/locking/mutex-design.txt
+>  create mode 100644 Documentation/locking/rt-mutex-design.txt
+>  create mode 100644 Documentation/locking/rt-mutex.txt
+>  create mode 100644 Documentation/locking/spinlocks.txt
+>  create mode 100644 Documentation/locking/ww-mutex-design.txt
+>  delete mode 100644 Documentation/lockstat.txt
+>  delete mode 100644 Documentation/mutex-design.txt
+>  delete mode 100644 Documentation/rt-mutex-design.txt
+>  delete mode 100644 Documentation/rt-mutex.txt
+>  delete mode 100644 Documentation/spinlocks.txt
+>  delete mode 100644 Documentation/ww-mutex-design.txt
+
+
 -- 
-1.7.10.4
-
+~Randy
