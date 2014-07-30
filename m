@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932AbaG3MyT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:54:19 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54370 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753286AbaG3MyR (ORCPT
+	id S1753941AbaG3MzT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:55:19 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:63557 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683AbaG3MzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 08:54:17 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: rafael.j.wysocki@intel.com, Tejun Heo <tj@kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: ACPI/cpu hotplug: possible lockdep
-Date: Wed, 30 Jul 2014 15:12:49 +0200
-Message-ID: <1956231.f1vFNp0Nyx@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53D88C5B.4060302@cn.fujitsu.com>
-References: <53D88C5B.4060302@cn.fujitsu.com>
+	Wed, 30 Jul 2014 08:55:17 -0400
+Date: Wed, 30 Jul 2014 14:55:23 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Cc: Dave Airlie <airlied@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [PATCH v5 00/11] Add DRM for stih4xx platforms
+Message-ID: <20140730125523.GP4747@phenom.ffwll.local>
+Mail-Followup-To: Benjamin Gaignard <benjamin.gaignard@linaro.org>,
+	Dave Airlie <airlied@gmail.com>,
+	Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	"linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+References: <CAF6AEGsAtqCjrvrgcXmOY0nie89ppFHBcRPtt36ESHWBNqobTg@mail.gmail.com>
+ <CA+M3ks4BU3MTaeCeMPbu8LqW=H27ZAdF-qZLUiG3UXJzbA89Fw@mail.gmail.com>
+ <CA+M3ks5osUkkEY64t=M1zEp7DA5rn+MxxqiJhQm5QiEFUPBL+A@mail.gmail.com>
+ <CA+M3ks7-ZHghELcRHDiFNbubDZ2DRQPDh2bKKzhsu4EcA0Tzcg@mail.gmail.com>
+ <CAF6AEGupwP4aq7EG2SdRUAwy-dzab7fVd2SSoHfGpX8o6yR+WQ@mail.gmail.com>
+ <CAPM=9tyKWbffCrUP+3VETEcqAvMG-5+wkW7Rg09BGDnbO=jsBw@mail.gmail.com>
+ <CA+M3ks7dfE9nfH6J++fB897PJ407amuxU_g6As-xzPzddTgArw@mail.gmail.com>
+ <CAPM=9twxj3KsdqqdeP2S_TyMUDHs5aYHExWC3FyTm=+n153Liw@mail.gmail.com>
+ <CA+M3ks5A_aacyDjcAGRPNw1xw82YQJJGwHkZQeY8zvtd6=t1BQ@mail.gmail.com>
+ <CA+M3ks5=s33dZ_uz4G+sK+Ckv7CxH11fhDpYG8JAAkHb5kh66Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+M3ks5=s33dZ_uz4G+sK+Ckv7CxH11fhDpYG8JAAkHb5kh66Q@mail.gmail.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 30, 2014 02:10:35 PM Gu Zheng wrote:
-> Hi Rafael,
+On Wed, Jul 30, 2014 at 12:43:33PM +0200, Benjamin Gaignard wrote:
+> I have push two additional patches on drm_kms_for_next-v7 branch to
+> make the driver build as a module:
+> - "gpu: drm: export drm_sysfs_connector_{add,remove} function"
 
-Hi,
-
-> A lockdep warning occurs when hot removing a cpu via sysfs:
-> echo 1 > /sys/bus/acpi/devices/LNXCPU\:02/eject
-> The kernel is latest upstream, and the test box is a kvm vm,
-> detail info as following.
-
-Well, I have a theory.
-
-Is the splat still reproducible with the patch below applied?
-
-Rafael
-
----
- kernel/smp.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-Index: linux-pm/kernel/smp.c
-===================================================================
---- linux-pm.orig/kernel/smp.c
-+++ linux-pm/kernel/smp.c
-@@ -542,6 +542,7 @@ void __init smp_init(void)
- 
- 	idle_threads_init();
- 
-+	lock_device_hotplug();
- 	/* FIXME: This should be done in userspace --RR */
- 	for_each_present_cpu(cpu) {
- 		if (num_online_cpus() >= setup_max_cpus)
-@@ -549,6 +550,7 @@ void __init smp_init(void)
- 		if (!cpu_online(cpu))
- 			cpu_up(cpu);
- 	}
-+	unlock_device_hotplug();
- 
- 	/* Any cleanup work */
- 	smp_announce();
-
+Nope, you're using the wrong functions. Instead you should use
+drm_connector_register/unregister. Please don't just export randome
+functions without digging into the history a bit.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
