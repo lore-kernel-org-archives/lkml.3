@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261AbaG3M0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:26:24 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36773 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752986AbaG3MPd (ORCPT
+	id S1754787AbaG3M2k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:28:40 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42852 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577AbaG3M0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 08:15:33 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-        Jens Axboe <axboe@fb.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 79/94] block: provide compat ioctl for BLKZEROOUT
-Date: Wed, 30 Jul 2014 14:15:08 +0200
-Message-Id: <be8e93639cc104bf9da5eee99f3cbd63ce8c6c7c.1406722270.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
-References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
-In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
-References: <cover.1406722269.git.jslaby@suse.cz>
+	Wed, 30 Jul 2014 08:26:23 -0400
+Date: Wed, 30 Jul 2014 14:26:20 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-crypto@vger.kernel.org, beck@openbsd.org,
+        deraadt@cvs.openbsd.org
+Subject: Re: [PATCH -v4] random: introduce getrandom(2) system call
+Message-ID: <20140730122620.GC13965@amd.pavel.ucw.cz>
+References: <1405718127-30042-1-git-send-email-tytso@mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405718127-30042-1-git-send-email-tytso@mit.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+Hi!
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+> The rationale of this system call is to provide resiliance against
+> file descriptor exhaustion attacks, where the attacker consumes all
+> available file descriptors, forcing the use of the fallback code where
+> /dev/[u]random is not available.  Since the fallback code is often not
+> well-tested, it is better to eliminate this potential failure mode
+> entirely.
 
-===============
+I'm not sure I understand the rationale; if someone can eat all your
+file descriptors, he can make you stop working. So you can just stop
+working when you can't open /dev/urandom, no?
 
-commit 3b3a1814d1703027f9867d0f5cbbfaf6c7482474 upstream.
+Fallback code is probably very bad idea to use...
 
-This patch provides the compat BLKZEROOUT ioctl. The argument is a pointer
-to two uint64_t values, so there is no need to translate it.
+> The other feature provided by this new system call is the ability to
+> request randomness from the /dev/urandom entropy pool, but to block
+> until at least 128 bits of entropy has been accumulated in the
+> /dev/urandom entropy pool.  Historically, the emphasis in the
+> /dev/urandom development has been to ensure that urandom pool is
+> initialized as quickly as possible after system boot, and preferably
+> before the init scripts start execution.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- block/compat_ioctl.c | 1 +
- 1 file changed, 1 insertion(+)
+Sounds like ioctl() for /dev/urandom for this behaviour would be nice?
 
-diff --git a/block/compat_ioctl.c b/block/compat_ioctl.c
-index fbd5a67cb773..a0926a6094b2 100644
---- a/block/compat_ioctl.c
-+++ b/block/compat_ioctl.c
-@@ -690,6 +690,7 @@ long compat_blkdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
- 	case BLKROSET:
- 	case BLKDISCARD:
- 	case BLKSECDISCARD:
-+	case BLKZEROOUT:
- 	/*
- 	 * the ones below are implemented in blkdev_locked_ioctl,
- 	 * but we call blkdev_ioctl, which gets the lock for us
+									Pavel
 -- 
-2.0.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
