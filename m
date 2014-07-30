@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218AbaG3CXG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:23:06 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:12318 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754965AbaG3CXE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 22:23:04 -0400
-Message-Id: <201407300222.s6U2MElj035655@www262.sakura.ne.jp>
-Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred probefrom init
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: mcgrof@suse.com
-Cc: hare@suse.de, gregkh@linuxfoundation.org, santosh@chelsio.com,
-        hariprasad@chelsio.com, tiwai@suse.de, linux-kernel@vger.kernel.org,
-        joseph.salisbury@canonical.com, kay@vrfy.org,
-        gnomes@lxorguk.ukuu.org.uk, tim.gardner@canonical.com,
-        pierre-fersing@pierref.org, akpm@linux-foundation.org, oleg@redhat.com,
-        nagalakshmi.nandigama@avagotech.com,
-        praveen.krishnamoorthy@avagotech.com, sreekanth.reddy@avagotech.com,
-        abhijit.mahajan@avagotech.com, MPT-FusionLinux.pdl@avagotech.com,
-        linux-scsi@vger.kernel.org, netdev@vger.kernel.org, bpoirier@suse.de
+	id S1755292AbaG3CXX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:23:23 -0400
+Received: from ozlabs.org ([103.22.144.67]:57228 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755241AbaG3CXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 22:23:20 -0400
+Date: Wed, 30 Jul 2014 12:23:05 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        Sachin Kamat <sachin.kamat@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: linux-next: manual merge of the pm tree with the arm-soc tree
+Message-ID: <20140730122305.7b1b7838@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Wed, 30 Jul 2014 11:22:14 +0900
-References: <20140728234644.GA18729@kroah.com> <CAB=NE6UzK1ZEzm+54dwSyPwHGrAWCPtiNtxwhQuJF6tM9NbnYw@mail.gmail.com> <20140729003501.GA17020@kroah.com> <CAB=NE6XMzU+zJ0RMDKaPuSxfXBvN2vZ1DnbgxCjWHJquTD1iqg@mail.gmail.com> <53D744E3.10500@suse.de> <201407292107.EGB64066.OOQMFSHLJVtFFO@I-love.SAKURA.ne.jp> <20140729222529.GC21140@f1.synalogic.ca> <20140730001434.GS21930@wotan.suse.de>
-In-Reply-To: <20140730001434.GS21930@wotan.suse.de>
-Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/ACOdpNyKdCGq/4_bRoeLLze"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Luis R. Rodriguez wrote:
-> Tetsuo is it possible / desirable to allow tasks to not kill unless the
-> reason is OOM ? Its unclear if this was discussed before, sorry if it was,
-> have just been a bit busy today to review the archive / discussions on this.
+--Sig_/ACOdpNyKdCGq/4_bRoeLLze
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Are we aware that the 10 seconds timeout after SIGKILL is not the duration
-between the beginning of module loading and the end of kthread_create() but
-the duration to wait for kthreadd to create a new kernel thread?
+Hi Rafael,
 
-If the kthreadd is unable to create a new kernel thread within 10 seconds,
-something very bad is happening. For example, memory allocation deadlock
-sequence shown below might be happening.
+Today's linux-next merge of the pm tree got a conflict in
+drivers/cpuidle/Kconfig.arm between commit 2aaafcdb6883 ("cpuidle:
+big.LITTLE: Add ARCH_EXYNOS entry in config") from the arm-soc tree and
+commit 6ee7f5dd57fc ("cpuidle: big_little: Fix build error") from the
+pm tree.
 
- (1) process1 holds a mutex using mutex_lock().
- (2) process1 calls kthread_create() and enters into killable wait state
-     at wait_for_completion_killable().
- (3) kthreadd calls kernel_thread() and enters into oom-killable busy loop
-     due to out of memory at alloc_pages_nodemask().
- (4) process2 is chosen by the OOM killer, but process2 is unable to
-     terminate because process2 is waiting in unkillable state at
-     mutex_lock() which was held by process1 at (1).
- (5) kthreadd continues busy loop because process2 does not release memory
-     and the OOM killer does not kill more processes.
- (6) process1 continues waiting in oom-killable state because process1 is
-     not chosen by the OOM killer.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-See? The system will remain unresponding unless somebody releases memory
-that is enough for kthreadd to complete. We cannot teach process1 that
-process1 needs to give up waiting for kthreadd and call mutex_unlock()
-in order to allow process2 to terminate. Also, we cannot teach the OOM
-killer that process1 needs to be oom-killed after process2 is oom-killed.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Making the 10 seconds timeout after SIGKILL longer is safe.
-Changing it to no-timeout-unless-oom-killed is unsafe.
+diff --cc drivers/cpuidle/Kconfig.arm
+index 33fc0ff0af1c,a186dec8e5df..000000000000
+--- a/drivers/cpuidle/Kconfig.arm
++++ b/drivers/cpuidle/Kconfig.arm
+@@@ -1,9 -1,16 +1,10 @@@
+  #
+  # ARM CPU Idle drivers
+  #
+ -config ARM_ARMADA_370_XP_CPUIDLE
+ -	bool "CPU Idle Driver for Armada 370/XP family processors"
+ -	depends on ARCH_MVEBU
+ -	help
+ -	  Select this to enable cpuidle on Armada 370/XP processors.
+ -
+  config ARM_BIG_LITTLE_CPUIDLE
+  	bool "Support for ARM big.LITTLE processors"
+ -	depends on ARCH_VEXPRESS_TC2_PM
+ +	depends on ARCH_VEXPRESS_TC2_PM || ARCH_EXYNOS
++ 	depends on MCPM
+  	select ARM_CPU_SUSPEND
+  	select CPU_IDLE_MULTIPLE_DRIVERS
+  	help
+
+--Sig_/ACOdpNyKdCGq/4_bRoeLLze
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT2FcWAAoJEMDTa8Ir7ZwVpXAP/i6U5VfuEjywNOnyq2GF13qx
+gpKWy6BNWg6TACRERzfngwOBID7nUVeQH3ksri2ReiDJkjM655dOnR2T1d4q+Txc
+CYc+TYp1x37ErXOVarlrnoVSqeNKSiARQdKLSE0ztLWfg/s+zmAuCjznbbBkFwyo
+tEbfa7kkMRo6TBopPVHevQ/Pe/s0ZVFXqS8KNyd5XImgeEmUAnvGl0KBSetA+b8u
+1zB/U8V7d4cnWH6jRiijVDOBBs1RlmTJHV12NeKWzukjjEWd8QJ2cQHLRo/aS/js
+AVwCMUE5Q5AFAOj+aLtETpo2wc3VPNkq6QwFk4sJgmizvISQ5l/8nveBJgGU457m
+XQAHlgvhWAArtD2uowLP/aGhUJE3D3MBDs/6r/eMxfYeTBJSgfLllz9jXTayfshM
+7saBQtwh+npKK2M4tDivUGE0zFoRj/qcCdiSB/+r0XYGaFwGIqoqEHnlsS/YElUF
+HJBCQgUPpzv832JXuJUuR5RnCOiGYiWlTGBs+WHoWXgVpVyIpZOfOPGinTbaOgIa
+23OHAdHLTdWTg+adfKmrTGPu++OTxI985oooYhqHsmpp6MPLxC6ABgqlWlUh15zb
+sNs02B6XLBvm6Sa4v3w2anYAZCtwrO3TcihsL5mFhLHxForyq+U45qbktcZ6CBbF
+xI0c32N77d98oZMV81vN
+=U/IC
+-----END PGP SIGNATURE-----
+
+--Sig_/ACOdpNyKdCGq/4_bRoeLLze--
