@@ -1,147 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699AbaG3NQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 09:16:19 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:58501 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600AbaG3NQR (ORCPT
+	id S1752841AbaG3NSL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 09:18:11 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:56509 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaG3NSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 09:16:17 -0400
-Date: Wed, 30 Jul 2014 09:16:00 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Peter Feuerer <peter@piie.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>,
-        Zhang Rui <rui.zhang@intel.com>, Javi Merino <javi.merino@arm.com>
-Subject: Re: [PATCH v3 0/6] acerhdf/thermal: adding new models, appropriate
- governor and minor clean up
-Message-ID: <20140730131600.GA14219@developer>
-References: <1398561815-22033-1-git-send-email-peter@piie.net>
- <1399139966-10625-1-git-send-email-peter@piie.net>
- <20140515160508.GA27909@developer>
- <cone.1400194431.560139.1402.1000@galar>
+	Wed, 30 Jul 2014 09:18:09 -0400
+Message-ID: <53D8F0A1.3000800@windriver.com>
+Date: Wed, 30 Jul 2014 09:18:25 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cone.1400194431.560139.1402.1000@galar>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Pramod Gurav <pramod.gurav@smartplayin.com>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] Input: jornada720_ts: Switch to using Managed resources
+References: <1406722183-22678-1-git-send-email-pramod.gurav@smartplayin.com>
+In-Reply-To: <1406722183-22678-1-git-send-email-pramod.gurav@smartplayin.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.56.57]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Peter,
+On 14-07-30 08:09 AM, Pramod Gurav wrote:
+> This switches the driver to using managed resources to simplify
+> error handling and to do away with remove function.
+> 
+> Also fixes some indentations by replacing spaces with tabs.
+> 
+> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> CC: Paul Gortmaker <paul.gortmaker@windriver.com>
+> 
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> ---
+>  drivers/input/touchscreen/jornada720_ts.c |   62 ++++++++++-------------------
+>  1 file changed, 20 insertions(+), 42 deletions(-)
+> 
+> diff --git a/drivers/input/touchscreen/jornada720_ts.c b/drivers/input/touchscreen/jornada720_ts.c
+> index 7324c5c..0c23bba 100644
+> --- a/drivers/input/touchscreen/jornada720_ts.c
+> +++ b/drivers/input/touchscreen/jornada720_ts.c
+> @@ -37,21 +37,21 @@ struct jornada_ts {
+>  static void jornada720_ts_collect_data(struct jornada_ts *jornada_ts)
+>  {
+>  
+> -    /* 3 low word X samples */
+> -    jornada_ts->x_data[0] = jornada_ssp_byte(TXDUMMY);
+> -    jornada_ts->x_data[1] = jornada_ssp_byte(TXDUMMY);
+> -    jornada_ts->x_data[2] = jornada_ssp_byte(TXDUMMY);
+> +	/* 3 low word X samples */
+> +	jornada_ts->x_data[0] = jornada_ssp_byte(TXDUMMY);
+> +	jornada_ts->x_data[1] = jornada_ssp_byte(TXDUMMY);
+> +	jornada_ts->x_data[2] = jornada_ssp_byte(TXDUMMY);
 
-On Fri, May 16, 2014 at 12:53:51AM +0200, Peter Feuerer wrote:
-> Hi Eduardo,
-> 
-> Eduardo Valentin writes:
-> 
-> > Hello Peter,
-> > 
-> > On Sat, May 03, 2014 at 07:59:20PM +0200, Peter Feuerer wrote:
-> >> 
-> >> Hi,
-> >> 
-> >> This patch series is intended to:
-> >> 
-> >>   * Introduce "manual mode" support (Patch 1 & 2), which is needed to control
-> >>     the fan of a few new models.
-> >> 
-> >>   * Add an appropriate thermal governor (Patch 3 & 4).  Manipulating and
-> >>     fiddling around with the step-wise governor has been a very fragile thing
-> >>     in the past and as it broke again, I used the opportunity to add a two
-> >>     point thermal governor which implements the actual fan handling required by
-> >>     acerhdf and puts from my point of view things straight.
-> >> 
-> > 
-> > Can you please provide more groundings why step_wise is not working?
-> 
-> Step_wise does (or did) not support hysteresis functionality, so what we've
-> done in the past was to manipulate the fan handling within acerhdf (e.g.
-> reporting different trip temperature, based whether the fan is on or not).
-> But this was very fragile and with each change in step_wise we had to find
-> another method to somehow fit acerhdf into it again.  Step_wise is clearly
-> intended for fans which can be regulated in speed and it has some fancy
-> algorithms like trend monitoring which work fine there.
-> 
-> But for the audience of acerhdf it has always been overkill and they've noticed
-> broken fan control, when things changed in step_wise again.
-> 
+Please don't mix pure whitespace changes with technical changes.
+While I can't fault you for wanting to get rid of the 4 space
+tabs, it makes review more complicated when they are mixed in
+a single commit.
 
-Can you please add your arguments in the commit message and in the code
-documentation itself. Explaining the audience why we have an extra
-governor is my intention here. My point is for you to improve your patch
-description and code documentation with your arguments (above)
-explaining the reasons why acerhd needs a special governor.
+P.
+--
 
+>  
+> -    /* 3 low word Y samples */
+> -    jornada_ts->y_data[0] = jornada_ssp_byte(TXDUMMY);
+> -    jornada_ts->y_data[1] = jornada_ssp_byte(TXDUMMY);
+> -    jornada_ts->y_data[2] = jornada_ssp_byte(TXDUMMY);
+> +	/* 3 low word Y samples */
+> +	jornada_ts->y_data[0] = jornada_ssp_byte(TXDUMMY);
+> +	jornada_ts->y_data[1] = jornada_ssp_byte(TXDUMMY);
+> +	jornada_ts->y_data[2] = jornada_ssp_byte(TXDUMMY);
+>  
+> -    /* combined x samples bits */
+> -    jornada_ts->x_data[3] = jornada_ssp_byte(TXDUMMY);
+> +	/* combined x samples bits */
+> +	jornada_ts->x_data[3] = jornada_ssp_byte(TXDUMMY);
+>  
+> -    /* combined y samples bits */
+> -    jornada_ts->y_data[3] = jornada_ssp_byte(TXDUMMY);
+> +	/* combined y samples bits */
+> +	jornada_ts->y_data[3] = jornada_ssp_byte(TXDUMMY);
+>  }
+>  
+>  static int jornada720_ts_average(int coords[4])
+> @@ -104,13 +104,10 @@ static int jornada720_ts_probe(struct platform_device *pdev)
+>  	struct input_dev *input_dev;
+>  	int error;
+>  
+> -	jornada_ts = kzalloc(sizeof(struct jornada_ts), GFP_KERNEL);
+> -	input_dev = input_allocate_device();
+> -
+> -	if (!jornada_ts || !input_dev) {
+> -		error = -ENOMEM;
+> -		goto fail1;
+> -	}
+> +	jornada_ts = devm_kzalloc(&pdev->dev, sizeof(*jornada_ts), GFP_KERNEL);
+> +	input_dev = devm_input_allocate_device(&pdev->dev);
+> +	if (!jornada_ts || !input_dev)
+> +		return -ENOMEM;
+>  
+>  	platform_set_drvdata(pdev, jornada_ts);
+>  
+> @@ -126,36 +123,18 @@ static int jornada720_ts_probe(struct platform_device *pdev)
+>  	input_set_abs_params(input_dev, ABS_X, 270, 3900, 0, 0);
+>  	input_set_abs_params(input_dev, ABS_Y, 180, 3700, 0, 0);
+>  
+> -	error = request_irq(IRQ_GPIO9,
+> +	error = devm_request_irq(&pdev->dev, IRQ_GPIO9,
+>  			jornada720_ts_interrupt,
+>  			IRQF_TRIGGER_RISING,
+>  			"HP7XX Touchscreen driver", pdev);
+>  	if (error) {
+> -		printk(KERN_INFO "HP7XX TS : Unable to acquire irq!\n");
+> -		goto fail1;
+> +		dev_err(&pdev->dev, "HP7XX TS : Unable to acquire irq!\n");
+> +		return error;
+>  	}
+>  
+>  	error = input_register_device(jornada_ts->dev);
+>  	if (error)
+> -		goto fail2;
+> -
+> -	return 0;
+> -
+> - fail2:
+> -	free_irq(IRQ_GPIO9, pdev);
+> - fail1:
+> -	input_free_device(input_dev);
+> -	kfree(jornada_ts);
+> -	return error;
+> -}
+> -
+> -static int jornada720_ts_remove(struct platform_device *pdev)
+> -{
+> -	struct jornada_ts *jornada_ts = platform_get_drvdata(pdev);
+> -
+> -	free_irq(IRQ_GPIO9, pdev);
+> -	input_unregister_device(jornada_ts->dev);
+> -	kfree(jornada_ts);
+> +		return error;
+>  
+>  	return 0;
+>  }
+> @@ -165,7 +144,6 @@ MODULE_ALIAS("platform:jornada_ts");
+>  
+>  static struct platform_driver jornada720_ts_driver = {
+>  	.probe		= jornada720_ts_probe,
+> -	.remove		= jornada720_ts_remove,
+>  	.driver		= {
+>  		.name	= "jornada_ts",
+>  		.owner	= THIS_MODULE,
 > 
-> > I had a look on bang bang proposal patch and to me, at a first glance,
-> > step_wise should cover the target behavior. Of course, that also depend 
-> > on the cooling device you attach to it.
-> 
-> Actually even Rui stated a while ago, creation of a separate governor would be
-> one thinkable solution to get a more robust solution for the two step
-> regulation of acerhdf.
-> 
-> 
-> > Is it possible to report the problems you have with step_wise? This way
-> > we could benefit the other users of it as well.
-> 
-> There is no problem in step_wise in general.  It is just so, that the 
-> governor is overkill for the simple on-off fan of acerhdf.
-> 
-> And what's the deal of having plugable governors, when you try to fit every
-> single feature into one gigantic?
-> Aren't the unix philosophies of modularity, serparation and simplicity valid
-> in the kernel too?
-> 
-> kind regards,
-> --peter;
-> 
-> > 
-> > 
-> > 
-> > 
-> >>   * Do some minor clean up like:
-> >>       - adding second trip point for critical temperature (Patch 5)
-> >>       - removing _t suffix from struct which isn't typedef and replace unsigned
-> >>         char by u8 (Patch 6)
-> >> 
-> >> Thanks and kind regards,
-> >> peter
-> >> 
-> >> 
-> >> Cc: Andrew Morton <akpm@linux-foundation.org>
-> >> Cc: Andreas Mohr <andi@lisas.de>
-> >> Cc: Borislav Petkov <bp@suse.de>
-> >> Cc: Zhang Rui <rui.zhang@intel.com>
-> >> Cc: Javi Merino <javi.merino@arm.com>
-> >> 
-> >> 
-> >> Peter Feuerer (6):
-> >>   acerhdf: Adding support for "manual mode"
-> >>   acerhdf: Adding support for new models
-> >>   thermal: Added Bang-bang thermal governor
-> >>   acerhdf: Use bang-bang thermal governor
-> >>   acerhdf: added critical trip point
-> >>   acerhdf: minor clean up
-> >> 
-> >>  drivers/platform/x86/Kconfig    |   2 +-
-> >>  drivers/platform/x86/acerhdf.c  | 260 +++++++++++++++++++++++++---------------
-> >>  drivers/thermal/Kconfig         |  10 ++
-> >>  drivers/thermal/Makefile        |   1 +
-> >>  drivers/thermal/gov_bang_bang.c | 131 ++++++++++++++++++++
-> >>  drivers/thermal/thermal_core.c  |   5 +
-> >>  drivers/thermal/thermal_core.h  |   8 ++
-> >>  7 files changed, 321 insertions(+), 96 deletions(-)
-> >>  create mode 100644 drivers/thermal/gov_bang_bang.c
-> >> 
-> >> -- 
-> >> 1.9.2
-> >> 
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> Please read the FAQ at  http://www.tux.org/lkml/
