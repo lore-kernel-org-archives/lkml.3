@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165AbaG3COr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:14:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60293 "EHLO
+	id S1756149AbaG3COq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:14:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60318 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188AbaG3BtR (ORCPT
+	with ESMTP id S1754718AbaG3BtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:17 -0400
+	Tue, 29 Jul 2014 21:49:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kevin Hao <haokexin@gmail.com>,
-        Dan Williams <dan.j.williams@intel.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.4 02/10] libata: support the ata host which implements a queue depth less than 32
-Date: Tue, 29 Jul 2014 18:48:33 -0700
-Message-Id: <20140730014807.614544490@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Guillaume Morin <guillaume@morinfr.org>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 06/10] mm: hugetlb: fix copy_hugetlb_page_range()
+Date: Tue, 29 Jul 2014 18:48:37 -0700
+Message-Id: <20140730014807.842548471@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014807.477761030@linuxfoundation.org>
 References: <20140730014807.477761030@linuxfoundation.org>
@@ -29,78 +32,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin Hao <haokexin@gmail.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 1871ee134b73fb4cadab75752a7152ed2813c751 upstream.
+commit 0253d634e0803a8376a0d88efee0bf523d8673f9 upstream.
 
-The sata on fsl mpc8315e is broken after the commit 8a4aeec8d2d6
-("libata/ahci: accommodate tag ordered controllers"). The reason is
-that the ata controller on this SoC only implement a queue depth of
-16. When issuing the commands in tag order, all the commands in tag
-16 ~ 31 are mapped to tag 0 unconditionally and then causes the sata
-malfunction. It makes no senses to use a 32 queue in software while
-the hardware has less queue depth. So consider the queue depth
-implemented by the hardware when requesting a command tag.
+Commit 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
+migration/hwpoisoned entry") changed the order of
+huge_ptep_set_wrprotect() and huge_ptep_get(), which leads to breakage
+in some workloads like hugepage-backed heap allocation via libhugetlbfs.
+This patch fixes it.
 
-Fixes: 8a4aeec8d2d6 ("libata/ahci: accommodate tag ordered controllers")
-Signed-off-by: Kevin Hao <haokexin@gmail.com>
-Acked-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+The test program for the problem is shown below:
+
+  $ cat heap.c
+  #include <unistd.h>
+  #include <stdlib.h>
+  #include <string.h>
+
+  #define HPS 0x200000
+
+  int main() {
+  	int i;
+  	char *p = malloc(HPS);
+  	memset(p, '1', HPS);
+  	for (i = 0; i < 5; i++) {
+  		if (!fork()) {
+  			memset(p, '2', HPS);
+  			p = malloc(HPS);
+  			memset(p, '3', HPS);
+  			free(p);
+  			return 0;
+  		}
+  	}
+  	sleep(1);
+  	free(p);
+  	return 0;
+  }
+
+  $ export HUGETLB_MORECORE=yes ; export HUGETLB_NO_PREFAULT= ; hugectl --heap ./heap
+
+Fixes 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
+migration/hwpoisoned entry"), so is applicable to -stable kernels which
+include it.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reported-by: Guillaume Morin <guillaume@morinfr.org>
+Suggested-by: Guillaume Morin <guillaume@morinfr.org>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |   22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ mm/hugetlb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4693,6 +4693,10 @@ void swap_buf_le16(u16 *buf, unsigned in
-  *	ata_qc_new - Request an available ATA command, for queueing
-  *	@ap: target port
-  *
-+ *	Some ATA host controllers may implement a queue depth which is less
-+ *	than ATA_MAX_QUEUE. So we shouldn't allocate a tag which is beyond
-+ *	the hardware limitation.
-+ *
-  *	LOCKING:
-  *	None.
-  */
-@@ -4700,14 +4704,16 @@ void swap_buf_le16(u16 *buf, unsigned in
- static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
- {
- 	struct ata_queued_cmd *qc = NULL;
--	unsigned int i, tag;
-+	unsigned int i, tag, max_queue;
-+
-+	max_queue = ap->scsi_host->can_queue;
- 
- 	/* no command while frozen */
- 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
- 		return NULL;
- 
--	for (i = 0; i < ATA_MAX_QUEUE; i++) {
--		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
-+	for (i = 0, tag = ap->last_tag + 1; i < max_queue; i++, tag++) {
-+		tag = tag < max_queue ? tag : 0;
- 
- 		/* the last tag is reserved for internal command. */
- 		if (tag == ATA_TAG_INTERNAL)
-@@ -6041,6 +6047,16 @@ int ata_host_register(struct ata_host *h
- {
- 	int i, rc;
- 
-+	/*
-+	 * The max queue supported by hardware must not be greater than
-+	 * ATA_MAX_QUEUE.
-+	 */
-+	if (sht->can_queue > ATA_MAX_QUEUE) {
-+		dev_err(host->dev, "BUG: the hardware max queue is too large\n");
-+		WARN_ON(1);
-+		return -EINVAL;
-+	}
-+
- 	/* host must have been started */
- 	if (!(host->flags & ATA_HOST_STARTED)) {
- 		dev_err(host->dev, "BUG: trying to register unstarted host\n");
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2348,6 +2348,7 @@ int copy_hugetlb_page_range(struct mm_st
+ 		} else {
+ 			if (cow)
+ 				huge_ptep_set_wrprotect(src, addr, src_pte);
++			entry = huge_ptep_get(src_pte);
+ 			ptepage = pte_page(entry);
+ 			get_page(ptepage);
+ 			page_dup_rmap(ptepage);
 
 
