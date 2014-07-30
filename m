@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827AbaG3MUQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:20:16 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36798 "EHLO
+	id S1753788AbaG3MUO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:20:14 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36809 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753040AbaG3MPe (ORCPT
+	by vger.kernel.org with ESMTP id S1753043AbaG3MPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Axel Lin <axel.lin@ingics.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 89/94] hwmon: (smsc47m192) Fix temperature limit and vrm write operations
-Date: Wed, 30 Jul 2014 14:15:18 +0200
-Message-Id: <4ca87389ee7c016ce1339e937b7d0c270426a530.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jakub Jelinek <jakub@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 93/94] Fix gcc-4.9.0 miscompilation of load_balance() in scheduler
+Date: Wed, 30 Jul 2014 14:15:22 +0200
+Message-Id: <36131eb14e40a71fc2e8b9be7b94a8fdd4596ad6.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
 References: <cover.1406722269.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 043572d5444116b9d9ad8ae763cf069e7accbc30 upstream.
+commit 2062afb4f804afef61cbe62a30cac9a46e58e067 upstream.
 
-Temperature limit clamps are applied after converting the temperature
-from milli-degrees C to degrees C, so either the clamp limit needs
-to be specified in degrees C, not milli-degrees C, or clamping must
-happen before converting to degrees C. Use the latter method to avoid
-overflows.
+Michel Dänzer and a couple of other people reported inexplicable random
+oopses in the scheduler, and the cause turns out to be gcc mis-compiling
+the load_balance() function when debugging is enabled.  The gcc bug
+apparently goes back to gcc-4.5, but slight optimization changes means
+that it now showed up as a problem in 4.9.0 and 4.9.1.
 
-vrm is an u8, so the written value needs to be limited to [0, 255].
+The instruction scheduling problem causes gcc to schedule a spill
+operation to before the stack frame has been created, which in turn can
+corrupt the spilled value if an interrupt comes in.  There may be other
+effects of this bug too, but that's the code generation problem seen in
+Michel's case.
 
-Cc: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
+This is fixed in current gcc HEAD, but the workaround as suggested by
+Markus Trippelsdorf is pretty simple: use -fno-var-tracking-assignments
+when compiling the kernel, which disables the gcc code that causes the
+problem.  This can result in slightly worse debug information for
+variable accesses, but that is infinitely preferable to actual code
+generation problems.
+
+Doing this unconditionally (not just for CONFIG_DEBUG_INFO) also allows
+non-debug builds to verify that the debug build would be identical: we
+can do
+
+    export GCC_COMPARE_DEBUG=1
+
+to make gcc internally verify that the result of the build is
+independent of the "-g" flag (it will make the compiler build everything
+twice, toggling the debug flag, and compare the results).
+
+Without the "-fno-var-tracking-assignments" option, the build would fail
+(even with 4.8.3 that didn't show the actual stack frame bug) with a gcc
+compare failure.
+
+See also gcc bugzilla:
+
+  https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61801
+
+Reported-by: Michel Dänzer <michel@daenzer.net>
+Suggested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/hwmon/smsc47m192.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ Makefile | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/hwmon/smsc47m192.c b/drivers/hwmon/smsc47m192.c
-index efee4c59239f..34b9a601ad07 100644
---- a/drivers/hwmon/smsc47m192.c
-+++ b/drivers/hwmon/smsc47m192.c
-@@ -86,7 +86,7 @@ static inline u8 IN_TO_REG(unsigned long val, int n)
-  */
- static inline s8 TEMP_TO_REG(int val)
- {
--	return clamp_val(SCALE(val, 1, 1000), -128000, 127000);
-+	return SCALE(clamp_val(val, -128000, 127000), 1, 1000);
- }
+diff --git a/Makefile b/Makefile
+index 4d25b56bf81c..c1a2ffa1e010 100644
+--- a/Makefile
++++ b/Makefile
+@@ -614,6 +614,8 @@ KBUILD_CFLAGS	+= -fomit-frame-pointer
+ endif
+ endif
  
- static inline int TEMP_FROM_REG(s8 val)
-@@ -384,6 +384,8 @@ static ssize_t set_vrm(struct device *dev, struct device_attribute *attr,
- 	err = kstrtoul(buf, 10, &val);
- 	if (err)
- 		return err;
-+	if (val > 255)
-+		return -EINVAL;
- 
- 	data->vrm = val;
- 	return count;
++KBUILD_CFLAGS   += $(call cc-option, -fno-var-tracking-assignments)
++
+ ifdef CONFIG_DEBUG_INFO
+ KBUILD_CFLAGS	+= -g
+ KBUILD_AFLAGS	+= -gdwarf-2
 -- 
 2.0.1
 
