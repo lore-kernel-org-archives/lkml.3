@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198AbaG3Mbn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:31:43 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36750 "EHLO
+	id S1755380AbaG3Mch (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:32:37 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36727 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752732AbaG3MPc (ORCPT
+	by vger.kernel.org with ESMTP id S1752910AbaG3MPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:32 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Martin Lau <kafai@fb.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 60/94] ring-buffer: Fix polling on trace_pipe
-Date: Wed, 30 Jul 2014 14:14:49 +0200
-Message-Id: <9b1829d6d4a1036a52bcdec52eab9b1d5b330369.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 48/94] appletalk: Fix socket referencing in skb
+Date: Wed, 30 Jul 2014 14:14:37 +0200
+Message-Id: <aabe442e0e2f108c81e413118defbe4e9ea0fa4d.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,65 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Lau <kafai@fb.com>
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 97b8ee845393701edc06e27ccec2876ff9596019 upstream.
+[ Upstream commit 36beddc272c111689f3042bf3d10a64d8a805f93 ]
 
-ring_buffer_poll_wait() should always put the poll_table to its wait_queue
-even there is immediate data available.  Otherwise, the following epoll and
-read sequence will eventually hang forever:
+Setting just skb->sk without taking its reference and setting a
+destructor is invalid. However, in the places where this was done, skb
+is used in a way not requiring skb->sk setting. So dropping the setting
+of skb->sk.
+Thanks to Eric Dumazet <eric.dumazet@gmail.com> for correct solution.
 
-1. Put some data to make the trace_pipe ring_buffer read ready first
-2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
-3. epoll_wait()
-4. read(trace_pipe_fd) till EAGAIN
-5. Add some more data to the trace_pipe ring_buffer
-6. epoll_wait() -> this epoll_wait() will block forever
-
-~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
-  ring_buffer_poll_wait() returns immediately without adding poll_table,
-  which has poll_table->_qproc pointing to ep_poll_callback(), to its
-  wait_queue.
-~ During the epoll_wait() call in step 3 and step 6,
-  ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
-  because the poll_table->_qproc is NULL and it is how epoll works.
-~ When there is new data available in step 6, ring_buffer does not know
-  it has to call ep_poll_callback() because it is not in its wait queue.
-  Hence, block forever.
-
-Other poll implementation seems to call poll_wait() unconditionally as the very
-first thing to do.  For example, tcp_poll() in tcp.c.
-
-Link: http://lkml.kernel.org/p/20140610060637.GA14045@devbig242.prn2.facebook.com
-
-Fixes: 2a2cc8f7c4d0 "ftrace: allow the event pipe to be polled"
-Reviewed-by: Chris Mason <clm@fb.com>
-Signed-off-by: Martin Lau <kafai@fb.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79441
+Reported-by: Ed Martin <edman007@edman007.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/trace/ring_buffer.c | 4 ----
- 1 file changed, 4 deletions(-)
+ net/appletalk/ddp.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 15c4ae203885..a758ec217bc0 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -616,10 +616,6 @@ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	struct rb_irq_work *work;
+diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
+index 7d424ac6e760..43e875c84429 100644
+--- a/net/appletalk/ddp.c
++++ b/net/appletalk/ddp.c
+@@ -1489,8 +1489,6 @@ static int atalk_rcv(struct sk_buff *skb, struct net_device *dev,
+ 		goto drop;
  
--	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
--	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
--		return POLLIN | POLLRDNORM;
+ 	/* Queue packet (standard) */
+-	skb->sk = sock;
 -
- 	if (cpu == RING_BUFFER_ALL_CPUS)
- 		work = &buffer->irq_work;
- 	else {
+ 	if (sock_queue_rcv_skb(sock, skb) < 0)
+ 		goto drop;
+ 
+@@ -1644,7 +1642,6 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
+ 	if (!skb)
+ 		goto out;
+ 
+-	skb->sk = sk;
+ 	skb_reserve(skb, ddp_dl->header_length);
+ 	skb_reserve(skb, dev->hard_header_len);
+ 	skb->dev = dev;
 -- 
 2.0.1
 
