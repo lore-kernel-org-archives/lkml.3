@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011AbaG3VoS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 17:44:18 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:44064 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106AbaG3Vmt (ORCPT
+	id S1756032AbaG3Voh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 17:44:37 -0400
+Received: from forward3l.mail.yandex.net ([84.201.143.136]:40904 "EHLO
+	forward3l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752887AbaG3Vms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 17:42:49 -0400
-From: Richard Henderson <rth@twiddle.net>
+	Wed, 30 Jul 2014 17:42:48 -0400
+X-Yandex-Uniq: 1a3369ed-4a13-4329-8f60-377b7f55cfe5
+Authentication-Results: smtp1o.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Subject: [PATCH v3 0/5] sched: Add on_rq states and remove several double rq
+ locks
+From: Kirill Tkhai <tkhai@yandex.ru>
 To: linux-kernel@vger.kernel.org
-Cc: mcree@orcon.net.nz, linux-alpha@vger.kernel.org
-Subject: [PATCH 2/2] alpha: Add sched_set/getattr and renameat2 syscalls
-Date: Wed, 30 Jul 2014 11:42:32 -1000
-Message-Id: <1406756552-23864-3-git-send-email-rth@twiddle.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1406756552-23864-1-git-send-email-rth@twiddle.net>
-References: <1406756552-23864-1-git-send-email-rth@twiddle.net>
+Cc: nicolas.pitre@linaro.org, peterz@infradead.org, pjt@google.com,
+        oleg@redhat.com, rostedt@goodmis.org, umgwanakikbuti@gmail.com,
+        ktkhai@parallels.com, tim.c.chen@linux.intel.com, mingo@kernel.org
+Date: Thu, 31 Jul 2014 01:42:35 +0400
+Message-ID: <20140730213219.27604.11218.stgit@localhost>
+User-Agent: StGit/0.17.1-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Henderson <rth@twiddle.net>
+This series aims to get rid of some places where locks of two RQs are held
+at the same time.
+
+Patch [1/5] is a preparation/cleanup. It replaces old (task_struct::on_rq == 1)
+with new (task_struct::on_rq == ONRQ_QUEUED) everywhere. No functional changes.
+
+Patch [2/5] is main in the series. It introduces new ONRQ_MIGRATING state and
+teaches scheduler to understand it (we need little changes in try_to_wake_up()
+and task_rq_lock() family). This will be used in the following way:
+
+        (we are changing task's rq)
+
+        raw_spin_lock(&src_rq->lock);
+
+	p = ...; /* Some src_rq task */
+
+        dequeue_task(src_rq, p, 0);
+        p->on_rq = ONRQ_MIGRATING;
+        set_task_cpu(p, dst_cpu);
+        raw_spin_unlock(&src_rq->lock);
+
+	/*
+	 * Now p os dequeued, and both
+         * RQ locks are unlocked, but
+	 * its on_rq is not zero.
+	 * Nobody can manipulate p
+	 * while it's migrating,
+	 * even when spinlocks are
+	 * unlocked.
+	 */
+
+        raw_spin_lock(&dst_rq->lock);
+        p->on_rq = ONRQ_QUEUED;
+        enqueue_task(dst_rq, p, 0);
+        raw_spin_unlock(&dst_rq->lock);
+
+Patches [3,4,5/5] remove double locks and use new ONRQ_MIGRATING state.
+They allow unlocked using of 3-4 function, which looks safe for me.
+
+The profit is double_rq_lock() is not need now, so we reduce the
+total time when RQs are locked.
+
 ---
- arch/alpha/include/asm/unistd.h      | 2 +-
- arch/alpha/include/uapi/asm/unistd.h | 3 +++
- arch/alpha/kernel/systbls.S          | 3 +++
- 3 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/arch/alpha/include/asm/unistd.h b/arch/alpha/include/asm/unistd.h
-index f2c9440..c509d30 100644
---- a/arch/alpha/include/asm/unistd.h
-+++ b/arch/alpha/include/asm/unistd.h
-@@ -3,7 +3,7 @@
- 
- #include <uapi/asm/unistd.h>
- 
--#define NR_SYSCALLS			508
-+#define NR_SYSCALLS			511
- 
- #define __ARCH_WANT_OLD_READDIR
- #define __ARCH_WANT_STAT64
-diff --git a/arch/alpha/include/uapi/asm/unistd.h b/arch/alpha/include/uapi/asm/unistd.h
-index 53ae7bb..d214a035 100644
---- a/arch/alpha/include/uapi/asm/unistd.h
-+++ b/arch/alpha/include/uapi/asm/unistd.h
-@@ -469,5 +469,8 @@
- #define __NR_process_vm_writev		505
- #define __NR_kcmp			506
- #define __NR_finit_module		507
-+#define __NR_sched_setattr		508
-+#define __NR_sched_getattr		509
-+#define __NR_renameat2			510
- 
- #endif /* _UAPI_ALPHA_UNISTD_H */
-diff --git a/arch/alpha/kernel/systbls.S b/arch/alpha/kernel/systbls.S
-index dca9b3f..2478971 100644
---- a/arch/alpha/kernel/systbls.S
-+++ b/arch/alpha/kernel/systbls.S
-@@ -526,6 +526,9 @@ sys_call_table:
- 	.quad sys_process_vm_writev		/* 505 */
- 	.quad sys_kcmp
- 	.quad sys_finit_module
-+	.quad sys_sched_setattr
-+	.quad sys_sched_getattr
-+	.quad sys_renameat2			/* 510 */
- 
- 	.size sys_call_table, . - sys_call_table
- 	.type sys_call_table, @object
--- 
-1.9.3
+Kirill Tkhai (5):
+      sched: Wrapper for checking task_struct::on_rq
+      sched: Teach scheduler to understand ONRQ_MIGRATING state
+      sched: Remove double_rq_lock() from __migrate_task()
+      sched/fair: Remove double_lock_balance() from active_load_balance_cpu_stop()
+      sched/fair: Remove double_lock_balance() from load_balance()
 
+
+ kernel/sched/core.c      |  115 +++++++++++++++++--------------
+ kernel/sched/deadline.c  |   14 ++--
+ kernel/sched/fair.c      |  172 +++++++++++++++++++++++++++++++---------------
+ kernel/sched/rt.c        |   16 ++--
+ kernel/sched/sched.h     |   13 +++
+ kernel/sched/stop_task.c |    2 -
+ 6 files changed, 211 insertions(+), 121 deletions(-)
+
+--
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
