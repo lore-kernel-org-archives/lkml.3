@@ -1,81 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659AbaG3Sx6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 14:53:58 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40728 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755499AbaG3Sx4 (ORCPT
+	id S1755819AbaG3Sy1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 14:54:27 -0400
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:59526 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755728AbaG3SyZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 14:53:56 -0400
+	Wed, 30 Jul 2014 14:54:25 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Kever Yang <kever.yang@rock-chips.com>,
+        "heiko@sntech.de" <heiko@sntech.de>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "mporter@linaro.org" <mporter@linaro.org>,
+        "kishon@ti.com" <kishon@ti.com>, "balbi@ti.com" <balbi@ti.com>
+CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
+        "xjq@rock-chips.com" <xjq@rock-chips.com>,
+        "cf@rock-chips.com" <cf@rock-chips.com>,
+        "lyz@rock-chips.com" <lyz@rock-chips.com>,
+        "wulf@rock-chips.com" <wulf@rock-chips.com>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "sonnyrao@chromium.org" <sonnyrao@chromium.org>
+Subject: RE: [PATCH 1/4] Documentation: dt-bindings: add dt binding info for
+ Rockchip dwc2
+Thread-Topic: [PATCH 1/4] Documentation: dt-bindings: add dt binding info
+ for Rockchip dwc2
+Thread-Index: AQHPq5YSuEfgP7TQWEu9SvGvP0hNhpu49jMg
+Date: Wed, 30 Jul 2014 18:53:38 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844C2F5B@US01WEMBX2.internal.synopsys.com>
+References: <963258>
+ <1406683873-18194-1-git-send-email-kever.yang@rock-chips.com>
+ <1406683873-18194-2-git-send-email-kever.yang@rock-chips.com>
+In-Reply-To: <1406683873-18194-2-git-send-email-kever.yang@rock-chips.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.241]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140730173638.GB8745@redhat.com>
-References: <1406000723-4872-1-git-send-email-ast@plumgrid.com>
-	<1406000723-4872-4-git-send-email-ast@plumgrid.com>
-	<y0m1tt226lj.fsf@fche.csb>
-	<CAMEtUuxNs=HBhtFwhBX3HOU6+QqtYZ+v7sJ74+cg-o+bi5GdoA@mail.gmail.com>
-	<20140730173638.GB8745@redhat.com>
-Date: Wed, 30 Jul 2014 11:53:54 -0700
-Message-ID: <CAMEtUuzmiYDY=mSP2bxv90FA3_LpijBcdSNj6L72z0doxDqKLQ@mail.gmail.com>
-Subject: Re: [PATCH RFC v3 net-next 3/3] samples: bpf: eBPF dropmon example in C
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 10:36 AM, Frank Ch. Eigler <fche@redhat.com> wrote:
->> > What kind of locking/serialization is provided by the ebpf runtime
->> > over shared variables such as my_map?
->>
->> it's traditional rcu scheme.
->
-> OK, that protects the table structure, but:
->
->> [...] In such case concurrent write access to map value can be done
->> with bpf_xadd instruction, though using normal read/write is also
->> allowed. In some cases the speed of racy var++ is preferred over
->> 'lock xadd'.
->
-> ... so concurrency control over shared values is left up to the
-> programmer.
+> From: Kever Yang [mailto:kever.yang@rock-chips.com]
+> Sent: Tuesday, July 29, 2014 6:31 PM
+> 
+> This add necessary dwc2 binding documentation for Rockchip socs:
+> rk3066, rk3188 and rk3288
+> 
+> add dr_mode as optional properties.
+> 
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> ---
+>  Documentation/devicetree/bindings/usb/dwc2.txt |    5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/usb/dwc2.txt
+> b/Documentation/devicetree/bindings/usb/dwc2.txt
+> index aa91034..eb80d7b 100644
+> --- a/Documentation/devicetree/bindings/usb/dwc2.txt
+> +++ b/Documentation/devicetree/bindings/usb/dwc2.txt
+> @@ -4,6 +4,9 @@ Platform DesignWare HS OTG USB 2.0 controller
+>  Required properties:
+>  - compatible : One of:
+>    - brcm,bcm2835-usb: The DWC2 USB controller instance in the BCM2835 SoC.
+> +  - rockchip,rk3066-usb: The DWC2 USB controller instance in the rk3066 Soc;
+> +  - "rockchip,rk3188-usb","rockchip,rk3066-usb": for rk3188 Soc;
+> +  - "rockchip,rk3288-usb","rockchip,rk3066-usb": for rk3288 Soc;
+>    - snps,dwc2: A generic DWC2 USB controller with default parameters.
 
-yes. It has to be flexible and fast.
-One of our main use cases is network analytics where a lot of
-packets are going through ebpf programs, so every cycle counts.
-Mandatory locks in critical path are not acceptable. If we add
-locks they will be optional.
+Do you really need three different bindings here? I believe the 
+recommended approach is to define one binding for the common case, and
+reuse it for similar SOCs. Additional bindings should only be added if
+there is some difference in the SOC that requires it.
 
->> There are no lock/unlock function helpers available to ebpf
->> programs, since program may terminate early with div by zero
->> for example, so in-kernel lock helper implementation would
->> be complicated and slow. It's possible to do, but for the use
->> cases so far there is no need.
->
-> OK, I hope that works out.  I've been told that dtrace does something
-> similiar (!)  by eschewing protection on global variables such as
-> strings.  In their case it's less bad than it sounds because they are
-> used to offloading computation to userspace or to store only
-> thread-local state, and accept the corollary limitations on control.
+>  - reg : Should contain 1 register range (address and length)
+>  - interrupts : Should contain 1 interrupt
+> @@ -15,6 +18,8 @@ Optional properties:
+>  - phys: phy provider specifier
+>  - phy-names: shall be "usb2-phy"
+>  Refer to phy/phy-bindings.txt for generic phy consumer properties
+> +- dr_mode: shall be one of "host", "peripheral" and "otg"
 
-interesting.
-btw, things like global variables, per-cpu storage are potential ebpf
-features. So far they're 'nice to have' instead of 'mandatory'.
-The maps are powerful enough to do the same:
-Global storage is map of one element.
-Per-cpu storage is map of num_cpu elements.
+I don't see where you use 'dr_mode' in any of the DTS files. Are you
+going to add the uses later? And please us a more descriptive name,
+such as 'dual-role-mode'.
+
+-- 
+Paul
+
