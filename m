@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030AbaG3CLe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:11:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60374 "EHLO
+	id S1756042AbaG3CLx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:11:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60361 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831AbaG3Bt2 (ORCPT
+	with ESMTP id S1754823AbaG3Bt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Jul 2014 21:49:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kevin Hao <haokexin@gmail.com>,
-        Dan Williams <dan.j.williams@intel.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.10 05/21] libata: support the ata host which implements a queue depth less than 32
-Date: Tue, 29 Jul 2014 18:48:34 -0700
-Message-Id: <20140730014830.667659585@linuxfoundation.org>
+        Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.10 04/21] block: dont assume last put of shared tags is for the host
+Date: Tue, 29 Jul 2014 18:48:33 -0700
+Message-Id: <20140730014830.618202475@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014830.424826215@linuxfoundation.org>
 References: <20140730014830.424826215@linuxfoundation.org>
@@ -29,78 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin Hao <haokexin@gmail.com>
+From: Christoph Hellwig <hch@lst.de>
 
-commit 1871ee134b73fb4cadab75752a7152ed2813c751 upstream.
+commit d45b3279a5a2252cafcd665bbf2db8c9b31ef783 upstream.
 
-The sata on fsl mpc8315e is broken after the commit 8a4aeec8d2d6
-("libata/ahci: accommodate tag ordered controllers"). The reason is
-that the ata controller on this SoC only implement a queue depth of
-16. When issuing the commands in tag order, all the commands in tag
-16 ~ 31 are mapped to tag 0 unconditionally and then causes the sata
-malfunction. It makes no senses to use a 32 queue in software while
-the hardware has less queue depth. So consider the queue depth
-implemented by the hardware when requesting a command tag.
+There is no inherent reason why the last put of a tag structure must be
+the one for the Scsi_Host, as device model objects can be held for
+arbitrary periods.  Merge blk_free_tags and __blk_free_tags into a single
+funtion that just release a references and get rid of the BUG() when the
+host reference wasn't the last.
 
-Fixes: 8a4aeec8d2d6 ("libata/ahci: accommodate tag ordered controllers")
-Signed-off-by: Kevin Hao <haokexin@gmail.com>
-Acked-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |   22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ block/blk-tag.c |   33 +++++++--------------------------
+ 1 file changed, 7 insertions(+), 26 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4758,6 +4758,10 @@ void swap_buf_le16(u16 *buf, unsigned in
-  *	ata_qc_new - Request an available ATA command, for queueing
-  *	@ap: target port
+--- a/block/blk-tag.c
++++ b/block/blk-tag.c
+@@ -27,18 +27,15 @@ struct request *blk_queue_find_tag(struc
+ EXPORT_SYMBOL(blk_queue_find_tag);
+ 
+ /**
+- * __blk_free_tags - release a given set of tag maintenance info
++ * blk_free_tags - release a given set of tag maintenance info
+  * @bqt:	the tag map to free
   *
-+ *	Some ATA host controllers may implement a queue depth which is less
-+ *	than ATA_MAX_QUEUE. So we shouldn't allocate a tag which is beyond
-+ *	the hardware limitation.
-+ *
-  *	LOCKING:
-  *	None.
+- * Tries to free the specified @bqt.  Returns true if it was
+- * actually freed and false if there are still references using it
++ * Drop the reference count on @bqt and frees it when the last reference
++ * is dropped.
   */
-@@ -4765,14 +4769,16 @@ void swap_buf_le16(u16 *buf, unsigned in
- static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
+-static int __blk_free_tags(struct blk_queue_tag *bqt)
++void blk_free_tags(struct blk_queue_tag *bqt)
  {
- 	struct ata_queued_cmd *qc = NULL;
--	unsigned int i, tag;
-+	unsigned int i, tag, max_queue;
-+
-+	max_queue = ap->scsi_host->can_queue;
+-	int retval;
+-
+-	retval = atomic_dec_and_test(&bqt->refcnt);
+-	if (retval) {
++	if (atomic_dec_and_test(&bqt->refcnt)) {
+ 		BUG_ON(find_first_bit(bqt->tag_map, bqt->max_depth) <
+ 							bqt->max_depth);
  
- 	/* no command while frozen */
- 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
- 		return NULL;
+@@ -50,9 +47,8 @@ static int __blk_free_tags(struct blk_qu
  
--	for (i = 0; i < ATA_MAX_QUEUE; i++) {
--		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
-+	for (i = 0, tag = ap->last_tag + 1; i < max_queue; i++, tag++) {
-+		tag = tag < max_queue ? tag : 0;
+ 		kfree(bqt);
+ 	}
+-
+-	return retval;
+ }
++EXPORT_SYMBOL(blk_free_tags);
  
- 		/* the last tag is reserved for internal command. */
- 		if (tag == ATA_TAG_INTERNAL)
-@@ -6154,6 +6160,16 @@ int ata_host_register(struct ata_host *h
- {
- 	int i, rc;
+ /**
+  * __blk_queue_free_tags - release tag maintenance info
+@@ -69,28 +65,13 @@ void __blk_queue_free_tags(struct reques
+ 	if (!bqt)
+ 		return;
  
-+	/*
-+	 * The max queue supported by hardware must not be greater than
-+	 * ATA_MAX_QUEUE.
-+	 */
-+	if (sht->can_queue > ATA_MAX_QUEUE) {
-+		dev_err(host->dev, "BUG: the hardware max queue is too large\n");
-+		WARN_ON(1);
-+		return -EINVAL;
-+	}
-+
- 	/* host must have been started */
- 	if (!(host->flags & ATA_HOST_STARTED)) {
- 		dev_err(host->dev, "BUG: trying to register unstarted host\n");
+-	__blk_free_tags(bqt);
++	blk_free_tags(bqt);
+ 
+ 	q->queue_tags = NULL;
+ 	queue_flag_clear_unlocked(QUEUE_FLAG_QUEUED, q);
+ }
+ 
+ /**
+- * blk_free_tags - release a given set of tag maintenance info
+- * @bqt:	the tag map to free
+- *
+- * For externally managed @bqt frees the map.  Callers of this
+- * function must guarantee to have released all the queues that
+- * might have been using this tag map.
+- */
+-void blk_free_tags(struct blk_queue_tag *bqt)
+-{
+-	if (unlikely(!__blk_free_tags(bqt)))
+-		BUG();
+-}
+-EXPORT_SYMBOL(blk_free_tags);
+-
+-/**
+  * blk_queue_free_tags - release tag maintenance info
+  * @q:  the request queue for the device
+  *
 
 
