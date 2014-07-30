@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863AbaG3XuP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 19:50:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47385 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752165AbaG3XuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 19:50:13 -0400
-Date: Thu, 31 Jul 2014 09:49:10 +1000
-From: NeilBrown <neilb@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Ian Kent <raven@themaw.net>,
-        autofs@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] VFS: allow ->d_manage() to declare -EISDIR in rcu_walk
- mode.
-Message-ID: <20140731094910.20bd9f9f@notabene.brown>
-In-Reply-To: <20140730201652.GA23156@infradead.org>
-References: <20140730160833.5eac00ec@notabene.brown>
-	<20140730201652.GA23156@infradead.org>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1753182AbaG3Xxa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 19:53:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42718 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592AbaG3Xx3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 19:53:29 -0400
+Date: Wed, 30 Jul 2014 16:53:01 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Hartley Sweeten <HartleyS@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>, Dan Carpenter <dan.carpenter@oracle.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 13/19 v2] staging: comedi: amplc_pci230: remove
+ unnecessary braces
+Message-ID: <20140730235301.GA26175@kroah.com>
+References: <1406635107-27950-14-git-send-email-abbotti@mev.co.uk>
+ <1406721227-8144-1-git-send-email-abbotti@mev.co.uk>
+ <20140730134153.GJ4856@mwanda>
+ <53D8FB53.3050501@mev.co.uk>
+ <20140730140914.GK4856@mwanda>
+ <53D900DD.6060006@mev.co.uk>
+ <DC148C5AA1CEBA4E87973D432B1C2D8825F2A3C2@P3PWEX4MB008.ex4.secureserver.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/l5V6yubzZ0.mI73jlyTdety"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8825F2A3C2@P3PWEX4MB008.ex4.secureserver.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/l5V6yubzZ0.mI73jlyTdety
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 30, 2014 at 04:15:23PM +0000, Hartley Sweeten wrote:
+> On Wednesday, July 30, 2014 7:28 AM, Ian Abbott wrote:
+> > On 2014-07-30 15:09, Dan Carpenter wrote:
+> >> On Wed, Jul 30, 2014 at 03:04:03PM +0100, Ian Abbott wrote:
+> >>> On 2014-07-30 14:41, Dan Carpenter wrote:
+> >>>> On Wed, Jul 30, 2014 at 12:53:47PM +0100, Ian Abbott wrote:
+> >>>>> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+> >>>>> ---
+> >>>>> v2: Be less aggressive in brace removal.  Keep them for outer nested
+> >>>>> 'if's.  Keep them in outer control statements where the inner control
+> >>>>> statement uses braces.
+> >>>>
+> >>>> Really every multi-line indent should have braces for readability.  This
+> >>>> isn't documented anywhere, but it's normal kernel style and Greg prefers
+> >>>> it for staging as well but I can't find the URL on google where he
+> >>>> mentioned that.
+> >>>
+> >>> With this version of the patch, amplc_pci230.c conforms to that --
+> >>> as long as you don't count comments, or splitting a simple statement
+> >>> across multiple lines to fit within 80 columns, e.g.:
+> >>>
+> >>> 			if (foo)
+> >>> 				/* do this */
+> >>> 				bar = baz +
+> >>> 				      qux;
+> >>
+> >> Heh...  I am counting comments and broken lines, though.  It's not a
+> >> totally strict rule and it's especially not strict for broken lines.
+> >> But we would prefer braces in those situations.
+> >
+> > If necessary, patches 13 and 19 can be dropped entirely.
+> 
+> That might be best for now.
+> 
+> The rest of the series applies fine with them dropped.
 
-On Wed, 30 Jul 2014 13:16:52 -0700 Christoph Hellwig <hch@infradead.org>
-wrote:
-
-> This looks good enough that I'll apply it to the interim vfs queue.
-
-Thanks!
-
-NeilBrown
-
---Sig_/l5V6yubzZ0.mI73jlyTdety
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU9mEdjnsnt1WYoG5AQJQvw/+KPhOc7es7mQqknLZod3/oKLDC2dZ+/yL
-R3ZS/I6Ez7h1cSC6wf4NenYs3j1ypzYinLjG2cOzMJeKdwri4mRbpM/7UKoTuTHi
-VBwboxHsomLyKuGAk7FNFQRMP3e4pFun63eMC4ddedMF/p8D1i7QmROulg/WGYfM
-Zip/qa0SG3fjJDARuQK6vyLB1kDT1QQIDX1VR6o7kZMJ6jMzQZ4YMsQEZxkDMNJL
-sLNfNC8w0yRpaM97vxmhkO322tPO44U03jYbDlmaG5w0C7U+F+fL97GPDJuz3Fwf
-bfQDmrZeksH0BawvbP/+j9EV+60oA5omr8gGzKPfBxP3D/VFWYT7YylQrtJ7v9UK
-O5BaOCvtOVlIKQQuKJPQGURkM31gpW/XuyfCYmDo6PAZs1NX6K1XI6X7SGeyMCkk
-vzP/ME76dz1K1Okq3UeltTsnBwnNo1AwC2seENy4P7+EQjWXFDXCgVsG/Fwxn9i+
-iEXi0nodrBAXUDX1TrYQmJp5nFmE5NJ/jnXrowr4jTrA/muAZoEVUB7IYVORPOdM
-c02EDuBlrwf/wut6v7kzrg98wzFB9wgdBeHzJfrHsPpbqrkbdgbQe6lvJTjXTH73
-pozLhhNegsFjhzyCJXTHdZiax73JN+e7ota4efRlg9qFoGDfIaYP1C7X/8V6oLci
-WlHqML2/yvk=
-=nA1A
------END PGP SIGNATURE-----
-
---Sig_/l5V6yubzZ0.mI73jlyTdety--
+Now dropped :)
