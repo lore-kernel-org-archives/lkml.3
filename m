@@ -1,217 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502AbaG3QVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 12:21:14 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:23846 "EHLO SMTP.CITRIX.COM"
+	id S1755536AbaG3QVs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 12:21:48 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44952 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755260AbaG3QVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 12:21:11 -0400
-X-IronPort-AV: E=Sophos;i="5.01,765,1400025600"; 
-   d="scan'208";a="157209185"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Steffen Klassert <steffen.klassert@secunet.com>,
-        Mathias Krause <minipli@googlemail.com>,
-        Daniel Borkmann <dborkman@redhat.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>,
-        Joe Perches <joe@perches.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: [PATCH net-next v3 4/4 RFC] pktgen: Allow sending IPv4 TCP packets
-Date: Wed, 30 Jul 2014 17:20:12 +0100
-Message-ID: <1406737212-23351-5-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406737212-23351-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1406737212-23351-1-git-send-email-zoltan.kiss@citrix.com>
+	id S1754671AbaG3QVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 12:21:46 -0400
+Date: Wed, 30 Jul 2014 11:20:38 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Nishanth Menon <nm@ti.com>
+CC: "Balbi, Felipe" <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        dt list <devicetree@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        <jason@lakedaemon.net>, Kevin Hilman <khilman@deeprootsystems.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tero Kristo <t-kristo@ti.com>, Benoit Cousson <bcousson@baylibre.com>,
+        <tglx@linutronix.de>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 29/35] arm: omap: intc: switch over to linear irq domain
+Message-ID: <20140730162038.GH7272@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1406582183-696-1-git-send-email-balbi@ti.com>
+ <1406582183-696-30-git-send-email-balbi@ti.com>
+ <20140729121425.GR29045@atomide.com>
+ <20140729141522.GB17808@saruman.home>
+ <20140729152052.GV29045@atomide.com>
+ <20140729154057.GE17808@saruman.home>
+ <20140729163345.GF17808@saruman.home>
+ <20140730060420.GY29045@atomide.com>
+ <20140730144059.GA7272@saruman.home>
+ <CAGo_u6ou+MoKOE_tTTmjxyFNW=jTaN9vnTsHrxR6sQHsieJyLA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="e5bfZ/T2xnjpUIbw"
+Content-Disposition: inline
+In-Reply-To: <CAGo_u6ou+MoKOE_tTTmjxyFNW=jTaN9vnTsHrxR6sQHsieJyLA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a prototype patch to enable sending IPv4 TCP packets with pktgen. The
-original motivation is to test TCP GSO with xen-netback/netfront, but I'm not
-sure about how the checksum should be set up, and also someone should verify the
-GSO settings I'm using.
+--e5bfZ/T2xnjpUIbw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Thomas Graf <tgraf@suug.ch>
-Cc: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org
----
-v3:
-- mention explicitly that this for IPv4
-- memset the TCP header and set up doff
-- rework of checksum handling and GSO setting in fill_packet_ipv4
-- bail out in pktgen_xmit if the device won't be able to handle GSO
+Hi,
 
-diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-index 0d0aaac..9d93bda 100644
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -162,6 +162,7 @@
- #include <net/checksum.h>
- #include <net/ipv6.h>
- #include <net/udp.h>
-+#include <net/tcp.h>
- #include <net/ip6_checksum.h>
- #include <net/addrconf.h>
- #ifdef CONFIG_XFRM
-@@ -203,6 +204,7 @@
- #define F_NODE          (1<<15)	/* Node memory alloc*/
- #define F_UDPCSUM       (1<<16)	/* Include UDP checksum */
- #define F_PATTERN       (1<<17)	/* Fill the payload with a pattern */
-+#define F_TCP           (1<<18)	/* Send TCP packet instead of UDP */
- 
- /* Thread control flag bits */
- #define T_STOP        (1<<0)	/* Stop run */
-@@ -664,6 +666,9 @@ static int pktgen_if_show(struct seq_file *seq, void *v)
- 	if (pkt_dev->flags & F_PATTERN)
- 		seq_puts(seq, "PATTERN  ");
- 
-+	if (pkt_dev->flags & F_TCP)
-+		seq_puts(seq, "TCP  ");
-+
- 	if (pkt_dev->flags & F_MPLS_RND)
- 		seq_puts(seq,  "MPLS_RND  ");
- 
-@@ -1342,6 +1347,12 @@ static ssize_t pktgen_if_write(struct file *file,
- 		else if (strcmp(f, "!PATTERN") == 0)
- 			pkt_dev->flags &= ~F_PATTERN;
- 
-+		else if (strcmp(f, "TCP") == 0)
-+			pkt_dev->flags |= F_TCP;
-+
-+		else if (strcmp(f, "!TCP") == 0)
-+			pkt_dev->flags &= ~F_TCP;
-+
- 		else {
- 			sprintf(pg_result,
- 				"Flag -:%s:- unknown\nAvailable flags, (prepend ! to un-set flag):\n%s",
-@@ -2955,7 +2966,8 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
- {
- 	struct sk_buff *skb = NULL;
- 	__u8 *eth;
--	struct udphdr *udph;
-+	struct udphdr *udph = NULL;
-+	struct tcphdr *tcph;
- 	int datalen, iplen;
- 	struct iphdr *iph;
- 	__be16 protocol = htons(ETH_P_IP);
-@@ -3017,29 +3029,40 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
- 	iph = (struct iphdr *) skb_put(skb, sizeof(struct iphdr));
- 
- 	skb_set_transport_header(skb, skb->len);
--	udph = (struct udphdr *) skb_put(skb, sizeof(struct udphdr));
-+
-+	if (pkt_dev->flags & F_TCP) {
-+		datalen = pkt_dev->cur_pkt_size - ETH_HLEN - 20 -
-+			  sizeof(struct tcphdr) - pkt_dev->pkt_overhead;
-+		tcph = (struct tcphdr *)skb_put(skb, sizeof(struct tcphdr));
-+		memset(tcph, 0, sizeof(*tcph));
-+		tcph->source = htons(pkt_dev->cur_udp_src);
-+		tcph->dest = htons(pkt_dev->cur_udp_dst);
-+		tcph->doff = sizeof(struct tcphdr) >> 2;
-+	} else {
-+		datalen = pkt_dev->cur_pkt_size - ETH_HLEN - 20 -
-+			  sizeof(struct udphdr) - pkt_dev->pkt_overhead;
-+		udph = (struct udphdr *)skb_put(skb, sizeof(struct udphdr));
-+		udph->source = htons(pkt_dev->cur_udp_src);
-+		udph->dest = htons(pkt_dev->cur_udp_dst);
-+		udph->len = htons(datalen + sizeof(struct udphdr));
-+		udph->check = 0;
-+	}
-+
- 	skb_set_queue_mapping(skb, queue_map);
- 	skb->priority = pkt_dev->skb_priority;
- 
- 	memcpy(eth, pkt_dev->hh, 12);
- 	*(__be16 *) & eth[12] = protocol;
- 
--	/* Eth + IPh + UDPh + mpls */
--	datalen = pkt_dev->cur_pkt_size - 14 - 20 - 8 -
--		  pkt_dev->pkt_overhead;
- 	if (datalen < 0 || datalen < sizeof(struct pktgen_hdr))
- 		datalen = sizeof(struct pktgen_hdr);
- 
--	udph->source = htons(pkt_dev->cur_udp_src);
--	udph->dest = htons(pkt_dev->cur_udp_dst);
--	udph->len = htons(datalen + 8);	/* DATA + udphdr */
--	udph->check = 0;
- 
- 	iph->ihl = 5;
- 	iph->version = 4;
- 	iph->ttl = 32;
- 	iph->tos = pkt_dev->tos;
--	iph->protocol = IPPROTO_UDP;	/* UDP */
-+	iph->protocol = pkt_dev->flags & F_TCP ? IPPROTO_TCP : IPPROTO_UDP;
- 	iph->saddr = pkt_dev->cur_saddr;
- 	iph->daddr = pkt_dev->cur_daddr;
- 	iph->id = htons(pkt_dev->ip_id);
-@@ -3055,9 +3078,14 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
- 	if (!(pkt_dev->flags & F_UDPCSUM)) {
- 		skb->ip_summed = CHECKSUM_NONE;
- 	} else if (odev->features & NETIF_F_V4_CSUM) {
--		skb->ip_summed = CHECKSUM_PARTIAL;
--		skb->csum = 0;
--		udp4_hwcsum(skb, udph->source, udph->dest);
-+		skb_checksum_setup(skb, true);
-+	} else if (pkt_dev->flags & F_TCP) {
-+		struct inet_sock inet;
-+
-+		inet.inet_saddr = iph->saddr;
-+		inet.inet_daddr = iph->daddr;
-+		skb->ip_summed = CHECKSUM_NONE;
-+		tcp_v4_send_check((struct sock *)&inet, skb);
- 	} else {
- 		__wsum csum = udp_csum(skb);
- 
-@@ -3072,6 +3100,20 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
- 
- 	pktgen_finalize_skb(pkt_dev, skb, datalen);
- 
-+	if (odev->mtu < skb->len) {
-+		int hdrlen = skb_transport_header(skb) - skb_mac_header(skb);
-+
-+		if (pkt_dev->flags & F_TCP) {
-+			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
-+			hdrlen += tcp_hdrlen(skb);
-+		} else {
-+			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
-+			hdrlen += sizeof(struct udphdr);
-+		}
-+		skb_shinfo(skb)->gso_size = odev->mtu - hdrlen;
-+		skb_shinfo(skb)->gso_segs = DIV_ROUND_UP(skb->len - hdrlen, skb_shinfo(skb)->gso_size);
-+	}
-+
- #ifdef CONFIG_XFRM
- 	if (!process_ipsec(pkt_dev, skb, protocol))
- 		return NULL;
-@@ -3559,6 +3601,14 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
- 		pkt_dev->last_pkt_size = pkt_dev->skb->len;
- 		pkt_dev->allocated_skbs++;
- 		pkt_dev->clone_count = 0;	/* reset counter */
-+
-+		if (netif_needs_gso(pkt_dev->skb, netif_skb_features(pkt_dev->skb))) {
-+			pr_err("Device don't have necessary GSO features! netif_skb_features: %llX summed %u\n",
-+				netif_skb_features(pkt_dev->skb),
-+				pkt_dev->skb->ip_summed);
-+			pkt_dev->sofar++;
-+			goto out;
-+		}
- 	}
- 
- 	if (pkt_dev->delay && pkt_dev->last_ok)
-@@ -3608,7 +3658,7 @@ unlock:
- 	HARD_TX_UNLOCK(odev, txq);
- 
- 	local_bh_enable();
--
-+out:
- 	/* If pkt_dev->count is zero, then run forever */
- 	if ((pkt_dev->count != 0) && (pkt_dev->sofar >= pkt_dev->count)) {
- 		pktgen_wait_for_skb(pkt_dev);
+On Wed, Jul 30, 2014 at 10:45:41AM -0500, Nishanth Menon wrote:
+> On Wed, Jul 30, 2014 at 9:40 AM, Felipe Balbi <balbi@ti.com> wrote:
+> > HI,
+> >
+> > On Tue, Jul 29, 2014 at 11:04:21PM -0700, Tony Lindgren wrote:
+> >> * Felipe Balbi <balbi@ti.com> [140729 09:36]:
+> >> > Hi,
+> >> >
+> >> > On Tue, Jul 29, 2014 at 10:40:57AM -0500, Felipe Balbi wrote:
+> >> > > On Tue, Jul 29, 2014 at 08:20:52AM -0700, Tony Lindgren wrote:
+> >> > > > * Felipe Balbi <balbi@ti.com> [140729 07:18]:
+> >> > > > > Hi,
+> >> > > > >
+> >> > > > > On Tue, Jul 29, 2014 at 05:14:25AM -0700, Tony Lindgren wrote:
+> >> > > > > > * Felipe Balbi <balbi@ti.com> [140728 14:19]:
+> >> > > > > > > now that we don't need to support legacy board-files,
+> >> > > > > > > we can completely switch over to a linear irq domain
+> >> > > > > > > and make use of irq_alloc_domain_generic_chips() to
+> >> > > > > > > allocate all generic irq chips for us.
+> >> > > > > >
+> >> > > > > > This patch seems to somehow break off-idle for omap3
+> >> > > > > > where it no longer wakes up.
+> >> > > > >
+> >> > > > > Sure your bisection is correct ? This patch just switches from=
+ legacy
+> >> > > > > irq domain to linear irq domain.
+> >> > > >
+> >> > > > Yes, I tried it a few times. Just enabling
+> >> > > > retention idle hangs too with this patch.
+> >> > > >
+> >> > > > Maybe it's omap3_prcm_irq_setup that relies on
+> >> > > > 11 + OMAP_INTC_START? There may be other such issues
+> >> > >
+> >> > > lol.
+> >> > >
+> >> > > OMAP4 has the same nonsense.
+> >> >
+> >> > made me think why (if) OMAP4 works with that same setup. Does wake f=
+rom
+> >> > OFF work with OMAP4 ?
+> >>
+> >> Not without similar changes, omap4+ has the same issue.. There's a RFC
+> >> series from Nishant to fix some of this, and Tero is moving the PRCM
+> >> into a driver.
+> >>
+> >> > Anyway, here's a quick little hack to check if that's the reason for=
+ the
+> >> > regression:
+> >>
+> >> OK yeah that's along the same lines with Nishant's RFC series in thread
+> >> "[RFC PATCH 0/7] ARM: OMAP4+: PRM: minor cleanups and dt support of
+> >> interrupts"
+> >>
+> >> FYI, it did not compile, needs to include linux/of_irq.h. But yes,
+> >
+> > I might have sent the wrong version as I had that same build error and
+> > fixed it localy.
+> >
+> >> it fixes the regression for me, Also now the whole series works for
+> >> me :)
+> >
+> > good to know.
+> >
+> > What do you want to do now ? Wait for PRCM to become a driver ? Wait for
+> > Nishanth's series to get accepted ? I guess the same thing could be done
+> > for OMAP3 and AM33, then we would have a chance of having working wake
+> > from idle with the new irqchip.
+>=20
+> I can repost the current series as it stands now once 17-rc1 comes out
+> (without the build failure ofcourse).. if that helps to move it out of
+> RFC status.
+
+That'd be great. It would be ever greater if you could add support for
+OMAP3 on that too.
+
+cheers
+
+--=20
+balbi
+
+--e5bfZ/T2xnjpUIbw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT2RtWAAoJEIaOsuA1yqREaPUP/3E6rqd9KoIusXrp9A/la+68
+25ii+wRZQ6BmOorjxx1XKmwhvxuGE9rNv/TUXiBa51FY7WCfCMWmGU+XqfgyoKNC
+imChzFRjWwSCPjESYb4Esm/ShY/g3F5Ss7e7WxLu2KMYXbB0Q1xe8g4ZOHZAly2H
+/VeTzC5XI8OX8VxC0yQa+MAyXeYs1rS1B5dfikNh9PR+kYsyUptZ9gHBadI/Rj9j
+hocAAm63/VludPppdK07tMUnLSoMK2XF3GEy6AUw5YhnwWKa6TQmNUBTo3RXCCdg
+gpU5jKL1L/x6xHYs3Svt5TZkOuvjUwrBRKtBzJm7APgWBy6E3jYlUOJxYxk+u0cG
+6Qh1vE8eDRlsip4ELnEBAXNcylnp2mPIDc0VBvu8kvoN/2WqUyQIttHZcBRihNS9
+B9QPNxjpqkUmvzU91Sein5L7MpLXxhAqZUq524tPQwcLfQqeQHeGN04WsKqWpC1H
+TAMG2JBv0sDEoW2Vw4bkm+5ah4ksCI3sYFZ6A7c0g2Nr5c+4jEnWdgjxf3F8b3it
+Rx//d6uvC6YV08gpWnBoprpzbDgKQ0m4YnAIBnhU+0d8j6J7ug0H5//UR3KWx2lc
+PLBW8i5K0fy/rwjUeJVSB+xPJeTcQbcOjVPNxT1ttjTN6frmC64+bcXjRcnmHl52
+zihC2sA4BGII/MiEAcU6
+=yK6R
+-----END PGP SIGNATURE-----
+
+--e5bfZ/T2xnjpUIbw--
