@@ -1,126 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaG3J2f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 05:28:35 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:57751 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaG3J2d (ORCPT
+	id S1751819AbaG3JdB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 05:33:01 -0400
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:57073 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412AbaG3Jc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 05:28:33 -0400
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        =?UTF-8?q?J=C3=B6rn=20Engel?= <joern@logfs.org>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Alexander Graf <agraf@suse.de>,
-        Michael Ellerman <michael@ellerman.id.au>
-Subject: [RFC PATCH] mm: Add helpers for locked_vm
-Date: Wed, 30 Jul 2014 19:28:13 +1000
-Message-Id: <1406712493-9284-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 2.0.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073009-3568-0000-0000-000005FC6226
+	Wed, 30 Jul 2014 05:32:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140729152705.GX12054@laptop.lan>
+References: <1406571388-3227-1-git-send-email-riel@redhat.com>
+ <1406571388-3227-2-git-send-email-riel@redhat.com> <CAKfTPtDuFLOf3Kzt4PSdox3HpBoz9aWXb-QzkibAL-Z4xBm=tw@mail.gmail.com>
+ <20140729145910.GH3935@laptop> <20140729152705.GX12054@laptop.lan>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Wed, 30 Jul 2014 11:32:36 +0200
+Message-ID: <CAKfTPtC8kJuBRT4HsZnQhzH4k_qDaq4nybYR+UW7rk6_Yx9_NQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] sched: fix and clean up calculate_imbalance
+To: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
+        jhladky@redhat.com, ktkhai@parallels.com, tim.c.chen@linux.intel.com,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds 2 helpers to change the locked_vm counter:
-- try_increase_locked_vm - may fail if new locked_vm value will be greater
-than the RLIMIT_MEMLOCK limit;
-- decrease_locked_vm.
+On 29 July 2014 17:27, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Jul 29, 2014 at 04:59:10PM +0200, Peter Zijlstra wrote:
+>> On Tue, Jul 29, 2014 at 11:04:50AM +0200, Vincent Guittot wrote:
+>> > > In situations where all the domains are overloaded, or where only the
+>> > > busiest domain is overloaded, that code is also superfluous, since
+>> > > the normal env->imbalance calculation will figure out how much to move.
+>> > > Remove the load_above_capacity calculation.
+>> >
+>> > IMHO, we should not remove that part which is used by prefer_sibling
+>> >
+>> > Originally, we had 2 type of busiest group: overloaded or imbalanced.
+>> > You add a new one which has only a avg_load higher than other so you
+>> > should handle this new case and keep the other ones unchanged
+>>
+>> Right, so we want that code for overloaded -> overloaded migrations such
+>> as not to cause idle cpus in an attempt to balance things. Idle cpus are
+>> worse than imbalance.
+>>
+>> But in case of overloaded/imb -> !overloaded migrations we can allow it,
+>> and in fact want to allow it in order to balance idle cpus.
+>
+> Which would be patch 3/2
 
-These will be used by drivers capable of locking memory by userspace
-request. For example, VFIO can use it to check if it can lock DMA memory
-or PPC-KVM can use it to check if it can lock memory for TCE tables.
+FWIW, you can add my ack for the new version of the patchset which
+includes this patch
 
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
----
- include/linux/mm.h |  3 +++
- mm/mlock.c         | 49 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 52 insertions(+)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e03dd29..1cb219d 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -2113,5 +2113,8 @@ void __init setup_nr_node_ids(void);
- static inline void setup_nr_node_ids(void) {}
- #endif
- 
-+extern long try_increment_locked_vm(long npages);
-+extern void decrement_locked_vm(long npages);
-+
- #endif /* __KERNEL__ */
- #endif /* _LINUX_MM_H */
-diff --git a/mm/mlock.c b/mm/mlock.c
-index b1eb536..39e4b55 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -864,3 +864,52 @@ void user_shm_unlock(size_t size, struct user_struct *user)
- 	spin_unlock(&shmlock_user_lock);
- 	free_uid(user);
- }
-+
-+/**
-+ * try_increment_locked_vm() - checks if new locked_vm value is going to
-+ * be less than RLIMIT_MEMLOCK and increments it by npages if it is.
-+ *
-+ * @npages: the number of pages to add to locked_vm.
-+ *
-+ * Returns 0 if succeeded or negative value if failed.
-+ */
-+long try_increment_locked_vm(long npages)
-+{
-+	long ret = 0, locked, lock_limit;
-+
-+	if (!current || !current->mm)
-+		return -ESRCH; /* process exited */
-+
-+	down_write(&current->mm->mmap_sem);
-+	locked = current->mm->locked_vm + npages;
-+	lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
-+	if (locked > lock_limit && !capable(CAP_IPC_LOCK)) {
-+		pr_warn("RLIMIT_MEMLOCK (%ld) exceeded\n",
-+				rlimit(RLIMIT_MEMLOCK));
-+		ret = -ENOMEM;
-+	} else {
-+		current->mm->locked_vm += npages;
-+	}
-+	up_write(&current->mm->mmap_sem);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(try_increment_locked_vm);
-+
-+/**
-+ * decrement_locked_vm() - decrements the current task's locked_vm counter.
-+ *
-+ * @npages: the number to decrement by.
-+ */
-+void decrement_locked_vm(long npages)
-+{
-+	if (!current || !current->mm)
-+		return; /* process exited */
-+
-+	down_write(&current->mm->mmap_sem);
-+	if (npages > current->mm->locked_vm)
-+		npages = current->mm->locked_vm;
-+	current->mm->locked_vm -= npages;
-+	up_write(&current->mm->mmap_sem);
-+}
-+EXPORT_SYMBOL_GPL(decrement_locked_vm);
--- 
-2.0.0
-
+>
+> ---
+> Subject: sched,fair: Allow calculate_imbalance() to move idle cpus
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Tue Jul 29 17:15:11 CEST 2014
+>
+> Allow calculate_imbalance() to 'create' idle cpus in the busiest group
+> if there are idle cpus in the local group.
+>
+> Suggested-by: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Link: http://lkml.kernel.org/n/tip-7k95k4i2tjv78iivstggiude@git.kernel.org
+> ---
+>  kernel/sched/fair.c |   11 +++++------
+>  1 file changed, 5 insertions(+), 6 deletions(-)
+>
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -6273,12 +6273,11 @@ static inline void calculate_imbalance(s
+>                 return fix_small_imbalance(env, sds);
+>         }
+>
+> -       if (busiest->group_type == group_overloaded) {
+> -               /*
+> -                * Don't want to pull so many tasks that a group would go idle.
+> -                * Except of course for the group_imb case, since then we might
+> -                * have to drop below capacity to reach cpu-load equilibrium.
+> -                */
+> +       /*
+> +        * If there aren't any idle cpus, avoid creating some.
+> +        */
+> +       if (busiest->group_type == group_overloaded &&
+> +           local->group_type   == group_overloaded) {
+>                 load_above_capacity =
+>                         (busiest->sum_nr_running - busiest->group_capacity_factor);
+>
