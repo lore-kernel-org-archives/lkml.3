@@ -1,110 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810AbaG3RsK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 13:48:10 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45265 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755670AbaG3RsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 13:48:07 -0400
-Date: Wed, 30 Jul 2014 18:48:03 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Robert Richter <rric@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        Robert Richter <rrichter@cavium.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder
- SoC
-Message-ID: <20140730174803.GF20162@leverpostej>
-References: <1406732794-20920-1-git-send-email-rric@kernel.org>
- <1406732794-20920-3-git-send-email-rric@kernel.org>
- <20140730154626.GD20162@leverpostej>
- <CAL_JsqLJ_W34XTF2aMOW9z+Gq4oxbrX1RztyJN8Mi0OFPeNxfg@mail.gmail.com>
+	id S1755859AbaG3Rsv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 13:48:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7719 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755667AbaG3Rst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 13:48:49 -0400
+Date: Wed, 30 Jul 2014 19:46:30 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Will Drewry <wad@chromium.org>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Alexei Starovoitov <ast@plumgrid.com>, hpa@zytor.com
+Subject: Re: TIF_NOHZ can escape nonhz mask? (Was: [PATCH v3 6/8] x86:
+	Split syscall_trace_enter into two phases)
+Message-ID: <20140730174630.GA30862@redhat.com>
+References: <cover.1405992946.git.luto@amacapital.net> <3f649f5658a163645e3ce15156176c325283762e.1405992946.git.luto@amacapital.net> <20140728173723.GA20993@redhat.com> <20140728185803.GA24663@redhat.com> <20140728192209.GA26017@localhost.localdomain> <20140729175414.GA3289@redhat.com> <20140730163516.GC18158@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAL_JsqLJ_W34XTF2aMOW9z+Gq4oxbrX1RztyJN8Mi0OFPeNxfg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140730163516.GC18158@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-
-> >> +     gic0: interrupt-controller@801000000000 {
+On 07/30, Frederic Weisbecker wrote:
+>
+> On Tue, Jul 29, 2014 at 07:54:14PM +0200, Oleg Nesterov wrote:
+>
 > >
-> > To make this easier to read, please place a comma between 32-bit
-> > portions of the unit address (e.g. here have 8010,00000000).
-> 
-> Mark, perhaps a dtc or checkpatch.pl check for this?
+> > Looks like, we can kill context_tracking_task_switch() and simply change the
+> > "__init" callers of context_tracking_cpu_set() to do set_thread_flag(TIF_NOHZ) ?
+> > Then this flag will be propagated by copy_process().
+>
+> Right, that would be much better. Good catch! context tracking is enabled from
+> tick_nohz_init(). This is the init 0 task so the flag should be propagated from there.
 
-Sure. Dodgy first atttempt at checkpatch below.
+actually init 1 task, but this doesn't matter.
 
----->8----
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 182be0f..8aee3f5 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2136,6 +2136,14 @@ sub process {
-                        }
-                }
- 
-+# check for difficult-to-read unit-addresses
-+               if (defined $root &&
-+                       ($realfile =~ /\.dtsi?$/ && $line =~ /([a-z0-9._\-+]++@([0-9a-f]+))\s*{/gi) &&
-+                       (length($2) > 8)) {
-+                               WARN("LONG_DT_UNIT_ADDRESS",
-+                                    "Consider splitting long unit address \"$2\" with a comma between cells\n" . $herecurr);
-+               }
-+
- # check we are in a valid source file if not then ignore this hunk
-                next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
-----8<----
+> I still think we need a for_each_process_thread() set as well though because some
+> kernel threads may well have been created at this stage already.
 
-It would also be nice to check matching unit-address and reg, but doing
-that correctly requires knowing #address-cells, which sounds a little
-painful.
+Yes... Or we can add set_thread_flag(TIF_NOHZ) into ____call_usermodehelper().
 
-I'm not sure where I picked up the comma convention, as it doesn't seem
-to be in ePAPR.  It does seem common though, and is my personal
-preference:
-
-[mark@leverpostej:~/src/linux]% git grep '@[a-z0-9]\+,[a-b0-9]\+' \                          
-	-- arch/arm/boot/dts | wc -l
-254
-[mark@leverpostej:~/src/linux]% git grep '@[a-z0-9]\+,[a-b0-9]\+' \
-	-- arch/powerpc/boot/dts | wc -l
-370
-[mark@leverpostej:~/src/linux]% git grep '@[a-z0-9]\+,[a-b0-9]\+' \
-        -- arch/*/boot/dts | wc -l
-631
-
-[...]
-
-> >> +             uaa0: serial@87e024000000 {
-> >> +                     compatible = "arm,pl011", "arm,primecell";
-> >> +                     reg = <0x87e0 0x24000000 0x0 0x1000>;
-> >> +                     interrupts = <1 21 4>;
-> >> +                     clocks = <&refclk50mhz>;
-> >> +                     clock-names = "apb_pclk";
+> > Or I am totally confused? (quite possible).
 > >
-> > Is this actually the apb_pclk, or is the the uartclk? I assume it's the
-> > latter.
-> 
-> Shouldn't new bindings have both clocks here? A single clock was a
-> mistake I think (mine in fact).
+> > > So here is a scenario where this is a problem: a task runs on CPU 0, passes the context
+> > > tracking call before returning from a syscall to userspace, and gets an interrupt. The
+> > > interrupt preempts the task and it moves to CPU 1. So it returns from preempt_schedule_irq()
+> > > after which it is going to resume to userspace.
+> > >
+> > > In this scenario, if context tracking is only enabled on CPU 1, we have no way to know that
+> > > the task is resuming to userspace, because we passed through the context tracking probe
+> > > already and it was ignored on CPU 0.
+> >
+> > Thanks. But I still can't understand... So if we only track CPU 1, then in this
+> > case context_tracking.state == IN_USER on CPU 0, but it can be IN_USER or IN_KERNEL
+> > on CPU 1.
+>
+> I'm not sure I understand your question.
 
-I don't think we fixed it up in the end. It made drivers look a bit messy and
-it dropped off my priority queue.
+Probably because it was stupid. Seriously, I still have no idea what this code
+actually does.
 
-Cheers,
-Mark.
+> Context tracking is either enabled everywhere or
+> nowhere.
+>
+> I need to say though that there is a per CPU context tracking state named context_tracking.active.
+> It's confusing because it suggests that context tracking is active per CPU. Actually it's tracked
+> everywhere when globally enabled, but active determines if we call the RCU and vtime callbacks or
+> not.
+>
+> So only nohz full CPUs have context_tracking.active set because only these need to call the RCU
+> and vtime callbacks. Other CPUs still do the context tracking but they won't call rcu and vtime
+> functions.
+
+I meant that in the scenario you described above the "global" TIF_NOHZ doesn't
+really make a difference, afaics.
+
+Lets assume that context tracking is only enabled on CPU 1. To simplify,
+assume that we have a single usermode task T which sleeps in kernel mode.
+
+So context_tracking[0].state == context_tracking[1].state == IN_KERNEL.
+
+T wakes up on CPU_0, returns to user space, calls user_enter(). This sets
+context_tracking[0].state = IN_USER but otherwise does nothing else, this
+CPU is not tracked and .active is false.
+
+Right after local_irq_restore() this task can migrate to CPU_1 and finish
+its ret-to-usermode path. But since it had already passed user_enter() we
+do not change context_tracking[1].state and do not play with rcu/vtime.
+(unless this task hits SCHEDULE_USER in asm).
+
+The same for user_exit() of course.
+
+Oleg.
+
