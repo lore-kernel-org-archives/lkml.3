@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382AbaG3Mdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:33:45 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36732 "EHLO
+	id S1753730AbaG3Mdn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:33:43 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36724 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752904AbaG3MPc (ORCPT
+	by vger.kernel.org with ESMTP id S1752905AbaG3MPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:32 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
-        Jason Cooper <jason@lakedaemon.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 62/94] irqchip: gic: Fix core ID calculation when topology is read from DT
-Date: Wed, 30 Jul 2014 14:14:51 +0200
-Message-Id: <5ef74eaa47bf0fe5e43bbd0d8f0a9d9cb7363a6a.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, dingtianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 46/94] igmp: fix the problem when mc leave group
+Date: Wed, 30 Jul 2014 14:14:35 +0200
+Message-Id: <31ae2665fbbd0aaa3636b9d3e2cf161f95eb67eb.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,64 +23,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomasz Figa <t.figa@samsung.com>
+From: dingtianhong <dingtianhong@huawei.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 29e697b11853d3f83b1864ae385abdad4aa2c361 upstream.
+[ Upstream commit 52ad353a5344f1f700c5b777175bdfa41d3cd65a ]
 
-Certain GIC implementation, namely those found on earlier, single
-cluster, Exynos SoCs, have registers mapped without per-CPU banking,
-which means that the driver needs to use different offset for each CPU.
+The problem was triggered by these steps:
 
-Currently the driver calculates the offset by multiplying value returned
-by cpu_logical_map() by CPU offset parsed from DT. This is correct when
-CPU topology is not specified in DT and aforementioned function returns
-core ID alone. However when DT contains CPU topology, the function
-changes to return cluster ID as well, which is non-zero on mentioned
-SoCs and so breaks the calculation in GIC driver.
+1) create socket, bind and then setsockopt for add mc group.
+   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
+   mreq.imr_interface.s_addr = inet_addr("192.168.1.2");
+   setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
 
-This patch fixes this by masking out cluster ID in CPU offset
-calculation so that only core ID is considered. Multi-cluster Exynos
-SoCs already have banked GIC implementations, so this simple fix should
-be enough.
+2) drop the mc group for this socket.
+   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
+   mreq.imr_interface.s_addr = inet_addr("0.0.0.0");
+   setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq));
 
-Reported-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Fixes: db0d4db22a78d ("ARM: gic: allow GIC to support non-banked setups")
-Link: https://lkml.kernel.org/r/1405610624-18722-1-git-send-email-t.figa@samsung.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+3) and then drop the socket, I found the mc group was still used by the dev:
+
+   netstat -g
+
+   Interface       RefCnt Group
+   --------------- ------ ---------------------
+   eth2		   1	  255.0.0.37
+
+Normally even though the IP_DROP_MEMBERSHIP return error, the mc group still need
+to be released for the netdev when drop the socket, but this process was broken when
+route default is NULL, the reason is that:
+
+The ip_mc_leave_group() will choose the in_dev by the imr_interface.s_addr, if input addr
+is NULL, the default route dev will be chosen, then the ifindex is got from the dev,
+then polling the inet->mc_list and return -ENODEV, but if the default route dev is NULL,
+the in_dev and ifIndex is both NULL, when polling the inet->mc_list, the mc group will be
+released from the mc_list, but the dev didn't dec the refcnt for this mc group, so
+when dropping the socket, the mc_list is NULL and the dev still keep this group.
+
+v1->v2: According Hideaki's suggestion, we should align with IPv6 (RFC3493) and BSDs,
+	so I add the checking for the in_dev before polling the mc_list, make sure when
+	we remove the mc group, dec the refcnt to the real dev which was using the mc address.
+	The problem would never happened again.
+
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/irqchip/irq-gic.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/ipv4/igmp.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 36fcc1b6264e..0fcbf921fff3 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -42,6 +42,7 @@
- #include <linux/irqchip/chained_irq.h>
- #include <linux/irqchip/arm-gic.h>
+diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
+index 7defdc9ba167..9fa5c0908ce3 100644
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -1952,6 +1952,10 @@ int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr)
  
-+#include <asm/cputype.h>
- #include <asm/irq.h>
- #include <asm/exception.h>
- #include <asm/smp_plat.h>
-@@ -760,7 +761,9 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
- 		}
+ 	rtnl_lock();
+ 	in_dev = ip_mc_find_dev(net, imr);
++	if (!in_dev) {
++		ret = -ENODEV;
++		goto out;
++	}
+ 	ifindex = imr->imr_ifindex;
+ 	for (imlp = &inet->mc_list;
+ 	     (iml = rtnl_dereference(*imlp)) != NULL;
+@@ -1969,16 +1973,14 @@ int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr)
  
- 		for_each_possible_cpu(cpu) {
--			unsigned long offset = percpu_offset * cpu_logical_map(cpu);
-+			u32 mpidr = cpu_logical_map(cpu);
-+			u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-+			unsigned long offset = percpu_offset * core_id;
- 			*per_cpu_ptr(gic->dist_base.percpu_base, cpu) = dist_base + offset;
- 			*per_cpu_ptr(gic->cpu_base.percpu_base, cpu) = cpu_base + offset;
- 		}
+ 		*imlp = iml->next_rcu;
+ 
+-		if (in_dev)
+-			ip_mc_dec_group(in_dev, group);
++		ip_mc_dec_group(in_dev, group);
+ 		rtnl_unlock();
+ 		/* decrease mem now to avoid the memleak warning */
+ 		atomic_sub(sizeof(*iml), &sk->sk_omem_alloc);
+ 		kfree_rcu(iml, rcu);
+ 		return 0;
+ 	}
+-	if (!in_dev)
+-		ret = -ENODEV;
++out:
+ 	rtnl_unlock();
+ 	return ret;
+ }
 -- 
 2.0.1
 
