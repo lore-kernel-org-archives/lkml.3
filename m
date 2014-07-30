@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963AbaG3Btm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:49:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60463 "EHLO
+	id S932186AbaG3CGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:06:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60480 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897AbaG3Btk (ORCPT
+	with ESMTP id S1754948AbaG3Btl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:40 -0400
+	Tue, 29 Jul 2014 21:49:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Antti Palosaari <crope@iki.fi>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 01/29] media: staging: tighten omap4iss dependencies
-Date: Tue, 29 Jul 2014 18:48:36 -0700
-Message-Id: <20140730014809.372121459@linuxfoundation.org>
+Subject: [PATCH 3.14 04/29] media: tda10071: force modulation to QPSK on DVB-S
+Date: Tue, 29 Jul 2014 18:48:39 -0700
+Message-Id: <20140730014809.491005030@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014809.316066303@linuxfoundation.org>
 References: <20140730014809.316066303@linuxfoundation.org>
@@ -30,41 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 4856fbd12d69965d3ab680c686222db93872728d upstream.
+commit db4175ae2095634dbecd4c847da439f9c83e1b3b upstream.
 
-The OMAP4 camera support depends on I2C and VIDEO_V4L2, both
-of which can be loadable modules. This causes build failures
-if we want the camera driver to be built-in.
+Only supported modulation for DVB-S is QPSK. Modulation parameter
+contains invalid value for DVB-S on some cases, which leads driver
+refusing tuning attempt. Due to that, hard code modulation to QPSK
+in case of DVB-S.
 
-This can be solved by turning the option into "tristate",
-which unfortunately causes another problem, because the
-driver incorrectly calls a platform-internal interface
-for omap4_ctrl_pad_readl/omap4_ctrl_pad_writel.
-
-Instead, this patch just forbids the invalid configurations
-and ensures that the driver can only be built if all its
-dependencies are built-in.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/media/omap4iss/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/dvb-frontends/tda10071.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/media/omap4iss/Kconfig
-+++ b/drivers/staging/media/omap4iss/Kconfig
-@@ -1,6 +1,6 @@
- config VIDEO_OMAP4
- 	bool "OMAP 4 Camera support"
--	depends on VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API && I2C && ARCH_OMAP4
-+	depends on VIDEO_V4L2=y && VIDEO_V4L2_SUBDEV_API && I2C=y && ARCH_OMAP4
- 	select VIDEOBUF2_DMA_CONTIG
- 	---help---
- 	  Driver for an OMAP 4 ISS controller.
+--- a/drivers/media/dvb-frontends/tda10071.c
++++ b/drivers/media/dvb-frontends/tda10071.c
+@@ -667,6 +667,7 @@ static int tda10071_set_frontend(struct
+ 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+ 	int ret, i;
+ 	u8 mode, rolloff, pilot, inversion, div;
++	fe_modulation_t modulation;
+ 
+ 	dev_dbg(&priv->i2c->dev, "%s: delivery_system=%d modulation=%d " \
+ 		"frequency=%d symbol_rate=%d inversion=%d pilot=%d " \
+@@ -701,10 +702,13 @@ static int tda10071_set_frontend(struct
+ 
+ 	switch (c->delivery_system) {
+ 	case SYS_DVBS:
++		modulation = QPSK;
+ 		rolloff = 0;
+ 		pilot = 2;
+ 		break;
+ 	case SYS_DVBS2:
++		modulation = c->modulation;
++
+ 		switch (c->rolloff) {
+ 		case ROLLOFF_20:
+ 			rolloff = 2;
+@@ -749,7 +753,7 @@ static int tda10071_set_frontend(struct
+ 
+ 	for (i = 0, mode = 0xff; i < ARRAY_SIZE(TDA10071_MODCOD); i++) {
+ 		if (c->delivery_system == TDA10071_MODCOD[i].delivery_system &&
+-			c->modulation == TDA10071_MODCOD[i].modulation &&
++			modulation == TDA10071_MODCOD[i].modulation &&
+ 			c->fec_inner == TDA10071_MODCOD[i].fec) {
+ 			mode = TDA10071_MODCOD[i].val;
+ 			dev_dbg(&priv->i2c->dev, "%s: mode found=%02x\n",
 
 
