@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367AbaG3UAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 16:00:22 -0400
-Received: from mail-pa0-f73.google.com ([209.85.220.73]:49171 "EHLO
-	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751667AbaG3UAQ (ORCPT
+	id S1751522AbaG3UAU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 16:00:20 -0400
+Received: from smtprelay0181.hostedemail.com ([216.40.44.181]:33937 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751325AbaG3UAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 16:00:16 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Heiko Stuebner <heiko@sntech.de>, Kever Yang <kever.yang@rock-chips.com>
-Cc: Sonny Rao <sonnyrao@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        sergei.shtylyov@cogentembedded.com,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3866:3867:3868:3871:4321:5007:7652:7904:10004:10400:10848:11026:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: store17_3c3e081357a39
+X-Filterd-Recvd-Size: 1445
+Message-ID: <1406750412.12100.65.camel@joe-AO725>
+Subject: Re: [PATCH] ACPI: fix test for hex digit.
+From: Joe Perches <joe@perches.com>
+To: Arjun Sreedharan <arjun024@gmail.com>
+Cc: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/3] ARM: dts: Turn on USB host vbus on rk3288-evb
-Date: Wed, 30 Jul 2014 13:00:10 -0700
-Message-Id: <1406750412-15592-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1406750412-15592-1-git-send-email-dianders@chromium.org>
-References: <1406750412-15592-1-git-send-email-dianders@chromium.org>
+Date: Wed, 30 Jul 2014 13:00:12 -0700
+In-Reply-To: <1406749932-1709-1-git-send-email-arjun024@gmail.com>
+References: <1406749932-1709-1-git-send-email-arjun024@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no phy driver that works on the Rockchip board for either USB
-host port yet.  For now just hardcode the vbus signal to be on all the
-time which makes both the dwc2 host and the EHCI port work.
+On Thu, 2014-07-31 at 01:22 +0530, Arjun Sreedharan wrote:
+> decimal 0 is ascii for NULL. Hex digit matching should be from '0'
+> (decimal 30 of ascii) to '9' and 'A' to 'F'.
+> Unfixed version returns true for #,$,%,& etc.
+[]
+> diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
+[]
+> @@ -322,7 +322,7 @@ static const struct acpi_device_id acpi_pnp_device_ids[] = {
+>  
+>  static bool is_hex_digit(char c)
+>  {
+> -	return (c >= 0 && c <= '9') || (c >= 'A' && c <= 'F');
+> +	return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F');
+>  }
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v2:
-- usb_host_vbus => vcc_host to match supply name, not pin name.
-- pin name now matches in name in schematic
+Maybe delete this and do s/is_hex_digit/isxdigit/ ?
 
- arch/arm/boot/dts/rk3288-evb.dtsi | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
-
-diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
-index 749e20d..e6c5b03 100644
---- a/arch/arm/boot/dts/rk3288-evb.dtsi
-+++ b/arch/arm/boot/dts/rk3288-evb.dtsi
-@@ -35,6 +35,18 @@
- 			debounce-interval = <100>;
- 		};
- 	};
-+
-+	/* This turns on USB vbus for both host0 (ehci) and host1 (dwc2) */
-+	vcc_host: vcc-host-regulator {
-+		compatible = "regulator-fixed";
-+		enable-active-high;
-+		gpio = <&gpio0 14 GPIO_ACTIVE_HIGH>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&host_vbus_drv>;
-+		regulator-name = "vcc_host";
-+		regulator-always-on;
-+		regulator-boot-on;
-+	};
- };
- 
- &i2c0 {
-@@ -71,4 +83,10 @@
- 			rockchip,pins = <0 5 RK_FUNC_GPIO &pcfg_pull_up>;
- 		};
- 	};
-+
-+	usb {
-+		host_vbus_drv: host-vbus-drv {
-+			rockchip,pins = <0 14 RK_FUNC_GPIO &pcfg_pull_none>;
-+		};
-+	};
- };
--- 
-2.0.0.526.g5318336
 
