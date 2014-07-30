@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944AbaG3RoZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 13:44:25 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:53280 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755711AbaG3Rml (ORCPT
+	id S932086AbaG3Rop (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 13:44:45 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:51972 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755464AbaG3Rmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 13:42:41 -0400
+	Wed, 30 Jul 2014 13:42:37 -0400
 From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 To: dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
         linux-kernel@vger.kernel.org, airlied@linux.ie
 Cc: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: [PATCH v8 07/11] drm: sti: add GDP layer
-Date: Wed, 30 Jul 2014 19:42:03 +0200
-Message-Id: <1406742127-27654-8-git-send-email-benjamin.gaignard@linaro.org>
+Subject: [PATCH v8 05/11] drm: sti: add HDA driver
+Date: Wed, 30 Jul 2014 19:42:01 +0200
+Message-Id: <1406742127-27654-6-git-send-email-benjamin.gaignard@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406742127-27654-1-git-send-email-benjamin.gaignard@linaro.org>
 References: <1406742127-27654-1-git-send-email-benjamin.gaignard@linaro.org>
@@ -21,716 +21,831 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generic Display Pipeline are one of the compositor input sub-devices.
-GDP are dedicated to graphic input like RGB plans.
-GDP is part of Compositor hardware block which will be introduce later.
+Add driver to support analog TV ouput.
 
-A sti_layer structure is used to abstract GDP calls from Compositor.
+HDA driver is mapped on drm_bridge and drm_connector structures.
 
 Signed-off-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 Reviewed-by: Rob Clark <robdclark@gmail.com>
 ---
- drivers/gpu/drm/sti/Makefile    |   6 +-
- drivers/gpu/drm/sti/sti_gdp.c   | 516 ++++++++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/sti/sti_gdp.h   |  16 ++
- drivers/gpu/drm/sti/sti_layer.h | 123 ++++++++++
- 4 files changed, 660 insertions(+), 1 deletion(-)
- create mode 100644 drivers/gpu/drm/sti/sti_gdp.c
- create mode 100644 drivers/gpu/drm/sti/sti_gdp.h
- create mode 100644 drivers/gpu/drm/sti/sti_layer.h
+ drivers/gpu/drm/sti/Makefile  |   3 +-
+ drivers/gpu/drm/sti/sti_hda.c | 794 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 796 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/gpu/drm/sti/sti_hda.c
 
 diff --git a/drivers/gpu/drm/sti/Makefile b/drivers/gpu/drm/sti/Makefile
-index 5f6d96d..7de757f 100644
+index 12e1a07..4cf0c55 100644
 --- a/drivers/gpu/drm/sti/Makefile
 +++ b/drivers/gpu/drm/sti/Makefile
-@@ -1,3 +1,6 @@
-+sticompositor-y := \
-+	sti_gdp.o
-+
- stihdmi-y := sti_hdmi.o \
- 	sti_hdmi_tx3g0c55phy.o \
- 	sti_hdmi_tx3g4c28phy.o \
-@@ -7,4 +10,5 @@ obj-$(CONFIG_DRM_STI) = \
+@@ -5,4 +5,5 @@ stihdmi-y := sti_hdmi.o \
+ obj-$(CONFIG_DRM_STI) = \
+ 	sti_vtg.o \
  	sti_vtac.o \
- 	stihdmi.o \
- 	sti_hda.o \
--	sti_tvout.o
+-	stihdmi.o
 \ No newline at end of file
-+	sti_tvout.o \
-+	sticompositor.o
-diff --git a/drivers/gpu/drm/sti/sti_gdp.c b/drivers/gpu/drm/sti/sti_gdp.c
++	stihdmi.o \
++	sti_hda.o
+\ No newline at end of file
+diff --git a/drivers/gpu/drm/sti/sti_hda.c b/drivers/gpu/drm/sti/sti_hda.c
 new file mode 100644
-index 0000000..7f55767
+index 0000000..72d957f
 --- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_gdp.c
-@@ -0,0 +1,516 @@
++++ b/drivers/gpu/drm/sti/sti_hda.c
+@@ -0,0 +1,794 @@
 +/*
 + * Copyright (C) STMicroelectronics SA 2014
-+ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
-+ *          Fabien Dessenne <fabien.dessenne@st.com>
-+ *          for STMicroelectronics.
++ * Author: Fabien Dessenne <fabien.dessenne@st.com> for STMicroelectronics.
 + * License terms:  GNU General Public License (GPL), version 2
 + */
 +
 +#include <linux/clk.h>
-+#include <linux/dma-mapping.h>
++#include <linux/component.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
 +
-+#include "sti_gdp.h"
-+#include "sti_layer.h"
-+#include "sti_vtg.h"
++#include <drm/drmP.h>
++#include <drm/drm_crtc_helper.h>
 +
-+#define ENA_COLOR_FILL  BIT(8)
-+#define WAIT_NEXT_VSYNC BIT(31)
++/* HDformatter registers */
++#define HDA_ANA_CFG                     0x0000
++#define HDA_ANA_SCALE_CTRL_Y            0x0004
++#define HDA_ANA_SCALE_CTRL_CB           0x0008
++#define HDA_ANA_SCALE_CTRL_CR           0x000C
++#define HDA_ANA_ANC_CTRL                0x0010
++#define HDA_ANA_SRC_Y_CFG               0x0014
++#define HDA_COEFF_Y_PH1_TAP123          0x0018
++#define HDA_COEFF_Y_PH1_TAP456          0x001C
++#define HDA_COEFF_Y_PH2_TAP123          0x0020
++#define HDA_COEFF_Y_PH2_TAP456          0x0024
++#define HDA_COEFF_Y_PH3_TAP123          0x0028
++#define HDA_COEFF_Y_PH3_TAP456          0x002C
++#define HDA_COEFF_Y_PH4_TAP123          0x0030
++#define HDA_COEFF_Y_PH4_TAP456          0x0034
++#define HDA_ANA_SRC_C_CFG               0x0040
++#define HDA_COEFF_C_PH1_TAP123          0x0044
++#define HDA_COEFF_C_PH1_TAP456          0x0048
++#define HDA_COEFF_C_PH2_TAP123          0x004C
++#define HDA_COEFF_C_PH2_TAP456          0x0050
++#define HDA_COEFF_C_PH3_TAP123          0x0054
++#define HDA_COEFF_C_PH3_TAP456          0x0058
++#define HDA_COEFF_C_PH4_TAP123          0x005C
++#define HDA_COEFF_C_PH4_TAP456          0x0060
++#define HDA_SYNC_AWGI                   0x0300
 +
-+/* GDP color formats */
-+#define GDP_RGB565      0x00
-+#define GDP_RGB888      0x01
-+#define GDP_RGB888_32   0x02
-+#define GDP_ARGB8565    0x04
-+#define GDP_ARGB8888    0x05
-+#define GDP_ARGB1555    0x06
-+#define GDP_ARGB4444    0x07
-+#define GDP_CLUT8       0x0B
-+#define GDP_YCBR888     0x10
-+#define GDP_YCBR422R    0x12
-+#define GDP_AYCBR8888   0x15
++/* HDA_ANA_CFG */
++#define CFG_AWG_ASYNC_EN                BIT(0)
++#define CFG_AWG_ASYNC_HSYNC_MTD         BIT(1)
++#define CFG_AWG_ASYNC_VSYNC_MTD         BIT(2)
++#define CFG_AWG_SYNC_DEL                BIT(3)
++#define CFG_AWG_FLTR_MODE_SHIFT         4
++#define CFG_AWG_FLTR_MODE_MASK          (0xF << CFG_AWG_FLTR_MODE_SHIFT)
++#define CFG_AWG_FLTR_MODE_SD            (0 << CFG_AWG_FLTR_MODE_SHIFT)
++#define CFG_AWG_FLTR_MODE_ED            (1 << CFG_AWG_FLTR_MODE_SHIFT)
++#define CFG_AWG_FLTR_MODE_HD            (2 << CFG_AWG_FLTR_MODE_SHIFT)
++#define CFG_SYNC_ON_PBPR_MASK           BIT(8)
++#define CFG_PREFILTER_EN_MASK           BIT(9)
++#define CFG_PBPR_SYNC_OFF_SHIFT         16
++#define CFG_PBPR_SYNC_OFF_MASK          (0x7FF << CFG_PBPR_SYNC_OFF_SHIFT)
++#define CFG_PBPR_SYNC_OFF_VAL           0x117 /* Voltage dependent. stiH416 */
 +
-+#define GAM_GDP_CTL_OFFSET      0x00
-+#define GAM_GDP_AGC_OFFSET      0x04
-+#define GAM_GDP_VPO_OFFSET      0x0C
-+#define GAM_GDP_VPS_OFFSET      0x10
-+#define GAM_GDP_PML_OFFSET      0x14
-+#define GAM_GDP_PMP_OFFSET      0x18
-+#define GAM_GDP_SIZE_OFFSET     0x1C
-+#define GAM_GDP_NVN_OFFSET      0x24
-+#define GAM_GDP_KEY1_OFFSET     0x28
-+#define GAM_GDP_KEY2_OFFSET     0x2C
-+#define GAM_GDP_PPT_OFFSET      0x34
-+#define GAM_GDP_CML_OFFSET      0x3C
-+#define GAM_GDP_MST_OFFSET      0x68
++/* Default scaling values */
++#define SCALE_CTRL_Y_DFLT               0x00C50256
++#define SCALE_CTRL_CB_DFLT              0x00DB0249
++#define SCALE_CTRL_CR_DFLT              0x00DB0249
 +
-+#define GAM_GDP_ALPHARANGE_255  BIT(5)
-+#define GAM_GDP_AGC_FULL_RANGE  0x00808080
-+#define GAM_GDP_PPT_IGNORE      (BIT(1) | BIT(0))
-+#define GAM_GDP_SIZE_MAX        0x7FF
++/* Video DACs control */
++#define VIDEO_DACS_CONTROL_MASK         0x0FFF
++#define VIDEO_DACS_CONTROL_SYSCFG2535   0x085C /* for stih416 */
++#define DAC_CFG_HD_OFF_SHIFT            5
++#define DAC_CFG_HD_OFF_MASK             (0x7 << DAC_CFG_HD_OFF_SHIFT)
++#define VIDEO_DACS_CONTROL_SYSCFG5072   0x0120 /* for stih407 */
++#define DAC_CFG_HD_HZUVW_OFF_MASK       BIT(1)
 +
-+#define GDP_NODE_NB_BANK	2
-+#define GDP_NODE_PER_FIELD	2
 +
-+struct sti_gdp_node {
-+	u32 gam_gdp_ctl;
-+	u32 gam_gdp_agc;
-+	u32 reserved1;
-+	u32 gam_gdp_vpo;
-+	u32 gam_gdp_vps;
-+	u32 gam_gdp_pml;
-+	u32 gam_gdp_pmp;
-+	u32 gam_gdp_size;
-+	u32 reserved2;
-+	u32 gam_gdp_nvn;
-+	u32 gam_gdp_key1;
-+	u32 gam_gdp_key2;
-+	u32 reserved3;
-+	u32 gam_gdp_ppt;
-+	u32 reserved4;
-+	u32 gam_gdp_cml;
++/* Upsampler values for the alternative 2X Filter */
++#define SAMPLER_COEF_NB                 8
++#define HDA_ANA_SRC_Y_CFG_ALT_2X        0x01130000
++static u32 coef_y_alt_2x[] = {
++	0x00FE83FB, 0x1F900401, 0x00000000, 0x00000000,
++	0x00F408F9, 0x055F7C25, 0x00000000, 0x00000000
 +};
 +
-+struct sti_gdp_node_list {
-+	struct sti_gdp_node *top_field;
-+	struct sti_gdp_node *btm_field;
++#define HDA_ANA_SRC_C_CFG_ALT_2X        0x01750004
++static u32 coef_c_alt_2x[] = {
++	0x001305F7, 0x05274BD0, 0x00000000, 0x00000000,
++	0x0004907C, 0x09C80B9D, 0x00000000, 0x00000000
++};
++
++/* Upsampler values for the 4X Filter */
++#define HDA_ANA_SRC_Y_CFG_4X            0x01ED0005
++#define HDA_ANA_SRC_C_CFG_4X            0x01ED0004
++static u32 coef_yc_4x[] = {
++	0x00FC827F, 0x008FE20B, 0x00F684FC, 0x050F7C24,
++	0x00F4857C, 0x0A1F402E, 0x00FA027F, 0x0E076E1D
++};
++
++/* AWG instructions for some video modes */
++#define AWG_MAX_INST                    64
++
++/* 720p@50 */
++static u32 AWGi_720p_50[] = {
++	0x00000971, 0x00000C26, 0x0000013B, 0x00000CDA,
++	0x00000104, 0x00000E7E, 0x00000E7F, 0x0000013B,
++	0x00000D8E, 0x00000104, 0x00001804, 0x00000971,
++	0x00000C26, 0x0000003B, 0x00000FB4, 0x00000FB5,
++	0x00000104, 0x00001AE8
++};
++
++#define NN_720p_50 ARRAY_SIZE(AWGi_720p_50)
++
++/* 720p@60 */
++static u32 AWGi_720p_60[] = {
++	0x00000971, 0x00000C26, 0x0000013B, 0x00000CDA,
++	0x00000104, 0x00000E7E, 0x00000E7F, 0x0000013B,
++	0x00000C44, 0x00000104, 0x00001804, 0x00000971,
++	0x00000C26, 0x0000003B, 0x00000F0F, 0x00000F10,
++	0x00000104, 0x00001AE8
++};
++
++#define NN_720p_60 ARRAY_SIZE(AWGi_720p_60)
++
++/* 1080p@30 */
++static u32 AWGi_1080p_30[] = {
++	0x00000971, 0x00000C2A, 0x0000013B, 0x00000C56,
++	0x00000104, 0x00000FDC, 0x00000FDD, 0x0000013B,
++	0x00000C2A, 0x00000104, 0x00001804, 0x00000971,
++	0x00000C2A, 0x0000003B, 0x00000EBE, 0x00000EBF,
++	0x00000EBF, 0x00000104, 0x00001A2F, 0x00001C4B,
++	0x00001C52
++};
++
++#define NN_1080p_30 ARRAY_SIZE(AWGi_1080p_30)
++
++/* 1080p@25 */
++static u32 AWGi_1080p_25[] = {
++	0x00000971, 0x00000C2A, 0x0000013B, 0x00000C56,
++	0x00000104, 0x00000FDC, 0x00000FDD, 0x0000013B,
++	0x00000DE2, 0x00000104, 0x00001804, 0x00000971,
++	0x00000C2A, 0x0000003B, 0x00000F51, 0x00000F51,
++	0x00000F52, 0x00000104, 0x00001A2F, 0x00001C4B,
++	0x00001C52
++};
++
++#define NN_1080p_25 ARRAY_SIZE(AWGi_1080p_25)
++
++/* 1080p@24 */
++static u32 AWGi_1080p_24[] = {
++	0x00000971, 0x00000C2A, 0x0000013B, 0x00000C56,
++	0x00000104, 0x00000FDC, 0x00000FDD, 0x0000013B,
++	0x00000E50, 0x00000104, 0x00001804, 0x00000971,
++	0x00000C2A, 0x0000003B, 0x00000F76, 0x00000F76,
++	0x00000F76, 0x00000104, 0x00001A2F, 0x00001C4B,
++	0x00001C52
++};
++
++#define NN_1080p_24 ARRAY_SIZE(AWGi_1080p_24)
++
++/* 720x480p@60 */
++static u32 AWGi_720x480p_60[] = {
++	0x00000904, 0x00000F18, 0x0000013B, 0x00001805,
++	0x00000904, 0x00000C3D, 0x0000003B, 0x00001A06
++};
++
++#define NN_720x480p_60 ARRAY_SIZE(AWGi_720x480p_60)
++
++/* Video mode category */
++enum sti_hda_vid_cat {
++	VID_SD,
++	VID_ED,
++	VID_HD_74M,
++	VID_HD_148M
++};
++
++struct sti_hda_video_config {
++	struct drm_display_mode mode;
++	u32 *awg_instr;
++	int nb_instr;
++	enum sti_hda_vid_cat vid_cat;
++};
++
++/* HD analog supported modes
++ * Interlaced modes may be added when supported by the whole display chain
++ */
++static const struct sti_hda_video_config hda_supported_modes[] = {
++	/* 1080p30 74.250Mhz */
++	{{DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 74250, 1920, 2008,
++		   2052, 2200, 0, 1080, 1084, 1089, 1125, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_1080p_30, NN_1080p_30, VID_HD_74M},
++	/* 1080p30 74.176Mhz */
++	{{DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 74176, 1920, 2008,
++		   2052, 2200, 0, 1080, 1084, 1089, 1125, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_1080p_30, NN_1080p_30, VID_HD_74M},
++	/* 1080p24 74.250Mhz */
++	{{DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 74250, 1920, 2558,
++		   2602, 2750, 0, 1080, 1084, 1089, 1125, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_1080p_24, NN_1080p_24, VID_HD_74M},
++	/* 1080p24 74.176Mhz */
++	{{DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 74176, 1920, 2558,
++		   2602, 2750, 0, 1080, 1084, 1089, 1125, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_1080p_24, NN_1080p_24, VID_HD_74M},
++	/* 1080p25 74.250Mhz */
++	{{DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 74250, 1920, 2448,
++		   2492, 2640, 0, 1080, 1084, 1089, 1125, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_1080p_25, NN_1080p_25, VID_HD_74M},
++	/* 720p60 74.250Mhz */
++	{{DRM_MODE("1280x720", DRM_MODE_TYPE_DRIVER, 74250, 1280, 1390,
++		   1430, 1650, 0, 720, 725, 730, 750, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_720p_60, NN_720p_60, VID_HD_74M},
++	/* 720p60 74.176Mhz */
++	{{DRM_MODE("1280x720", DRM_MODE_TYPE_DRIVER, 74176, 1280, 1390,
++		   1430, 1650, 0, 720, 725, 730, 750, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_720p_60, NN_720p_60, VID_HD_74M},
++	/* 720p50 74.250Mhz */
++	{{DRM_MODE("1280x720", DRM_MODE_TYPE_DRIVER, 74250, 1280, 1720,
++		   1760, 1980, 0, 720, 725, 730, 750, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_720p_50, NN_720p_50, VID_HD_74M},
++	/* 720x480p60 27.027Mhz */
++	{{DRM_MODE("720x480", DRM_MODE_TYPE_DRIVER, 27027, 720, 736,
++		   798, 858, 0, 480, 489, 495, 525, 0,
++		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC)},
++	 AWGi_720x480p_60, NN_720x480p_60, VID_ED},
++	/* 720x480p60 27.000Mhz */
++	{{DRM_MODE("720x480", DRM_MODE_TYPE_DRIVER, 27000, 720, 736,
++		   798, 858, 0, 480, 489, 495, 525, 0,
++		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC)},
++	 AWGi_720x480p_60, NN_720x480p_60, VID_ED}
 +};
 +
 +/**
-+ * STI GDP structure
++ * STI hd analog structure
 + *
-+ * @layer:		layer structure
-+ * @clk_pix:            pixel clock for the current gdp
-+ * @vtg_field_nb:       callback for VTG FIELD (top or bottom) notification
-+ * @is_curr_top:        true if the current node processed is the top field
-+ * @node_list:		array of node list
++ * @dev: driver device
++ * @drm_dev: pointer to drm device
++ * @mode: current display mode selected
++ * @regs: HD analog register
++ * @video_dacs_ctrl: video DACS control register
++ * @enabled: true if HD analog is enabled else false
 + */
-+struct sti_gdp {
-+	struct sti_layer layer;
++struct sti_hda {
++	struct device dev;
++	struct drm_device *drm_dev;
++	struct drm_display_mode mode;
++	void __iomem *regs;
++	void __iomem *video_dacs_ctrl;
 +	struct clk *clk_pix;
-+	struct notifier_block vtg_field_nb;
-+	bool is_curr_top;
-+	struct sti_gdp_node_list node_list[GDP_NODE_NB_BANK];
++	struct clk *clk_hddac;
++	bool enabled;
 +};
 +
-+#define to_sti_gdp(x) container_of(x, struct sti_gdp, layer)
-+
-+static const uint32_t gdp_supported_formats[] = {
-+	DRM_FORMAT_XRGB8888,
-+	DRM_FORMAT_ARGB8888,
-+	DRM_FORMAT_ARGB4444,
-+	DRM_FORMAT_ARGB1555,
-+	DRM_FORMAT_RGB565,
-+	DRM_FORMAT_RGB888,
-+	DRM_FORMAT_AYUV,
-+	DRM_FORMAT_YUV444,
-+	DRM_FORMAT_VYUY,
-+	DRM_FORMAT_C8,
++struct sti_hda_connector {
++	struct drm_connector drm_connector;
++	struct drm_encoder *encoder;
++	struct sti_hda *hda;
 +};
 +
-+static const uint32_t *sti_gdp_get_formats(struct sti_layer *layer)
++#define to_sti_hda_connector(x) \
++	container_of(x, struct sti_hda_connector, drm_connector)
++
++static u32 hda_read(struct sti_hda *hda, int offset)
 +{
-+	return gdp_supported_formats;
++	return readl(hda->regs + offset);
 +}
 +
-+static unsigned int sti_gdp_get_nb_formats(struct sti_layer *layer)
++static void hda_write(struct sti_hda *hda, u32 val, int offset)
 +{
-+	return ARRAY_SIZE(gdp_supported_formats);
-+}
-+
-+static int sti_gdp_fourcc2format(int fourcc)
-+{
-+	switch (fourcc) {
-+	case DRM_FORMAT_XRGB8888:
-+		return GDP_RGB888_32;
-+	case DRM_FORMAT_ARGB8888:
-+		return GDP_ARGB8888;
-+	case DRM_FORMAT_ARGB4444:
-+		return GDP_ARGB4444;
-+	case DRM_FORMAT_ARGB1555:
-+		return GDP_ARGB1555;
-+	case DRM_FORMAT_RGB565:
-+		return GDP_RGB565;
-+	case DRM_FORMAT_RGB888:
-+		return GDP_RGB888;
-+	case DRM_FORMAT_AYUV:
-+		return GDP_AYCBR8888;
-+	case DRM_FORMAT_YUV444:
-+		return GDP_YCBR888;
-+	case DRM_FORMAT_VYUY:
-+		return GDP_YCBR422R;
-+	case DRM_FORMAT_C8:
-+		return GDP_CLUT8;
-+	}
-+	return -1;
-+}
-+
-+static int sti_gdp_get_alpharange(int format)
-+{
-+	switch (format) {
-+	case GDP_ARGB8565:
-+	case GDP_ARGB8888:
-+	case GDP_AYCBR8888:
-+		return GAM_GDP_ALPHARANGE_255;
-+	}
-+	return 0;
++	writel(val, hda->regs + offset);
 +}
 +
 +/**
-+ * sti_gdp_get_free_nodes
-+ * @layer: gdp layer
++ * Search for a video mode in the supported modes table
 + *
-+ * Look for a GDP node list that is not currently read by the HW.
++ * @mode: mode being searched
++ * @idx: index of the found mode
 + *
-+ * RETURNS:
-+ * Pointer to the free GDP node list
++ * Return true if mode is found
 + */
-+static struct sti_gdp_node_list *sti_gdp_get_free_nodes(struct sti_layer *layer)
++static bool hda_get_mode_idx(struct drm_display_mode mode, int *idx)
 +{
-+	int hw_nvn;
-+	void *virt_nvn;
-+	struct sti_gdp *gdp = to_sti_gdp(layer);
 +	unsigned int i;
 +
-+	hw_nvn = readl(layer->regs + GAM_GDP_NVN_OFFSET);
-+	if (!hw_nvn)
-+		goto end;
-+
-+	virt_nvn = dma_to_virt(layer->dev, (dma_addr_t) hw_nvn);
-+
-+	for (i = 0; i < GDP_NODE_NB_BANK; i++)
-+		if ((virt_nvn != gdp->node_list[i].btm_field) &&
-+		    (virt_nvn != gdp->node_list[i].top_field))
-+			return &gdp->node_list[i];
-+
-+end:
-+	return &gdp->node_list[0];
++	for (i = 0; i < ARRAY_SIZE(hda_supported_modes); i++)
++		if (drm_mode_equal(&hda_supported_modes[i].mode, &mode)) {
++			*idx = i;
++			return true;
++		}
++	return false;
 +}
 +
 +/**
-+ * sti_gdp_get_current_nodes
-+ * @layer: GDP layer
++ * Enable the HD DACS
 + *
-+ * Look for GDP nodes that are currently read by the HW.
-+ *
-+ * RETURNS:
-+ * Pointer to the current GDP node list
++ * @hda: pointer to HD analog structure
++ * @enable: true if HD DACS need to be enabled, else false
 + */
-+static
-+struct sti_gdp_node_list *sti_gdp_get_current_nodes(struct sti_layer *layer)
++static void hda_enable_hd_dacs(struct sti_hda *hda, bool enable)
 +{
-+	int hw_nvn;
-+	void *virt_nvn;
-+	struct sti_gdp *gdp = to_sti_gdp(layer);
++	u32 mask;
++
++	if (hda->video_dacs_ctrl) {
++		u32 val;
++
++		switch ((u32)hda->video_dacs_ctrl & VIDEO_DACS_CONTROL_MASK) {
++		case VIDEO_DACS_CONTROL_SYSCFG2535:
++			mask = DAC_CFG_HD_OFF_MASK;
++			break;
++		case VIDEO_DACS_CONTROL_SYSCFG5072:
++			mask = DAC_CFG_HD_HZUVW_OFF_MASK;
++			break;
++		default:
++			DRM_INFO("Video DACS control register not supported!");
++			return;
++		}
++
++		val = readl(hda->video_dacs_ctrl);
++		if (enable)
++			val &= ~mask;
++		else
++			val |= mask;
++
++		writel(val, hda->video_dacs_ctrl);
++	}
++}
++
++/**
++ * Configure AWG, writing instructions
++ *
++ * @hda: pointer to HD analog structure
++ * @awg_instr: pointer to AWG instructions table
++ * @nb: nb of AWG instructions
++ */
++static void sti_hda_configure_awg(struct sti_hda *hda, u32 *awg_instr, int nb)
++{
 +	unsigned int i;
 +
-+	hw_nvn = readl(layer->regs + GAM_GDP_NVN_OFFSET);
-+	if (!hw_nvn)
-+		goto end;
++	DRM_DEBUG_DRIVER("\n");
 +
-+	virt_nvn = dma_to_virt(layer->dev, (dma_addr_t) hw_nvn);
++	for (i = 0; i < nb; i++)
++		hda_write(hda, awg_instr[i], HDA_SYNC_AWGI + i * 4);
++	for (i = nb; i < AWG_MAX_INST; i++)
++		hda_write(hda, 0, HDA_SYNC_AWGI + i * 4);
++}
 +
-+	for (i = 0; i < GDP_NODE_NB_BANK; i++)
-+		if ((virt_nvn == gdp->node_list[i].btm_field) ||
-+				(virt_nvn == gdp->node_list[i].top_field))
-+			return &gdp->node_list[i];
++static void sti_hda_disable(struct drm_bridge *bridge)
++{
++	struct sti_hda *hda = bridge->driver_private;
++	u32 val;
 +
-+end:
++	if (!hda->enabled)
++		return;
++
++	DRM_DEBUG_DRIVER("\n");
++
++	/* Disable HD DAC and AWG */
++	val = hda_read(hda, HDA_ANA_CFG);
++	val &= ~CFG_AWG_ASYNC_EN;
++	hda_write(hda, val, HDA_ANA_CFG);
++	hda_write(hda, 0, HDA_ANA_ANC_CTRL);
++
++	hda_enable_hd_dacs(hda, false);
++
++	/* Disable/unprepare hda clock */
++	clk_disable_unprepare(hda->clk_hddac);
++	clk_disable_unprepare(hda->clk_pix);
++
++	hda->enabled = false;
++}
++
++static void sti_hda_pre_enable(struct drm_bridge *bridge)
++{
++	struct sti_hda *hda = bridge->driver_private;
++	u32 val, i, mode_idx;
++	u32 src_filter_y, src_filter_c;
++	u32 *coef_y, *coef_c;
++	u32 filter_mode;
++
++	DRM_DEBUG_DRIVER("\n");
++
++	if (hda->enabled)
++		return;
++
++	/* Prepare/enable clocks */
++	if (clk_prepare_enable(hda->clk_pix))
++		DRM_ERROR("Failed to prepare/enable hda_pix clk\n");
++	if (clk_prepare_enable(hda->clk_hddac))
++		DRM_ERROR("Failed to prepare/enable hda_hddac clk\n");
++
++	if (!hda_get_mode_idx(hda->mode, &mode_idx)) {
++		DRM_ERROR("Undefined mode\n");
++		return;
++	}
++
++	switch (hda_supported_modes[mode_idx].vid_cat) {
++	case VID_HD_148M:
++		DRM_ERROR("Beyond HD analog capabilities\n");
++		return;
++	case VID_HD_74M:
++		/* HD use alternate 2x filter */
++		filter_mode = CFG_AWG_FLTR_MODE_HD;
++		src_filter_y = HDA_ANA_SRC_Y_CFG_ALT_2X;
++		src_filter_c = HDA_ANA_SRC_C_CFG_ALT_2X;
++		coef_y = coef_y_alt_2x;
++		coef_c = coef_c_alt_2x;
++		break;
++	case VID_ED:
++		/* ED uses 4x filter */
++		filter_mode = CFG_AWG_FLTR_MODE_ED;
++		src_filter_y = HDA_ANA_SRC_Y_CFG_4X;
++		src_filter_c = HDA_ANA_SRC_C_CFG_4X;
++		coef_y = coef_yc_4x;
++		coef_c = coef_yc_4x;
++		break;
++	case VID_SD:
++		DRM_ERROR("Not supported\n");
++		return;
++	default:
++		DRM_ERROR("Undefined resolution\n");
++		return;
++	}
++	DRM_DEBUG_DRIVER("Using HDA mode #%d\n", mode_idx);
++
++	/* Enable HD Video DACs */
++	hda_enable_hd_dacs(hda, true);
++
++	/* Configure scaler */
++	hda_write(hda, SCALE_CTRL_Y_DFLT, HDA_ANA_SCALE_CTRL_Y);
++	hda_write(hda, SCALE_CTRL_CB_DFLT, HDA_ANA_SCALE_CTRL_CB);
++	hda_write(hda, SCALE_CTRL_CR_DFLT, HDA_ANA_SCALE_CTRL_CR);
++
++	/* Configure sampler */
++	hda_write(hda , src_filter_y, HDA_ANA_SRC_Y_CFG);
++	hda_write(hda, src_filter_c,  HDA_ANA_SRC_C_CFG);
++	for (i = 0; i < SAMPLER_COEF_NB; i++) {
++		hda_write(hda, coef_y[i], HDA_COEFF_Y_PH1_TAP123 + i * 4);
++		hda_write(hda, coef_c[i], HDA_COEFF_C_PH1_TAP123 + i * 4);
++	}
++
++	/* Configure main HDFormatter */
++	val = 0;
++	val |= (hda->mode.flags & DRM_MODE_FLAG_INTERLACE) ?
++	    0 : CFG_AWG_ASYNC_VSYNC_MTD;
++	val |= (CFG_PBPR_SYNC_OFF_VAL << CFG_PBPR_SYNC_OFF_SHIFT);
++	val |= filter_mode;
++	hda_write(hda, val, HDA_ANA_CFG);
++
++	/* Configure AWG */
++	sti_hda_configure_awg(hda, hda_supported_modes[mode_idx].awg_instr,
++			      hda_supported_modes[mode_idx].nb_instr);
++
++	/* Enable AWG */
++	val = hda_read(hda, HDA_ANA_CFG);
++	val |= CFG_AWG_ASYNC_EN;
++	hda_write(hda, val, HDA_ANA_CFG);
++
++	hda->enabled = true;
++}
++
++static void sti_hda_set_mode(struct drm_bridge *bridge,
++		struct drm_display_mode *mode,
++		struct drm_display_mode *adjusted_mode)
++{
++	struct sti_hda *hda = bridge->driver_private;
++	u32 mode_idx;
++	int hddac_rate;
++	int ret;
++
++	DRM_DEBUG_DRIVER("\n");
++
++	memcpy(&hda->mode, mode, sizeof(struct drm_display_mode));
++
++	if (!hda_get_mode_idx(hda->mode, &mode_idx)) {
++		DRM_ERROR("Undefined mode\n");
++		return;
++	}
++
++	switch (hda_supported_modes[mode_idx].vid_cat) {
++	case VID_HD_74M:
++		/* HD use alternate 2x filter */
++		hddac_rate = mode->clock * 1000 * 2;
++		break;
++	case VID_ED:
++		/* ED uses 4x filter */
++		hddac_rate = mode->clock * 1000 * 4;
++		break;
++	default:
++		DRM_ERROR("Undefined mode\n");
++		return;
++	}
++
++	/* HD DAC = 148.5Mhz or 108 Mhz */
++	ret = clk_set_rate(hda->clk_hddac, hddac_rate);
++	if (ret < 0)
++		DRM_ERROR("Cannot set rate (%dHz) for hda_hddac clk\n",
++			  hddac_rate);
++
++	/* HDformatter clock = compositor clock */
++	ret = clk_set_rate(hda->clk_pix, mode->clock * 1000);
++	if (ret < 0)
++		DRM_ERROR("Cannot set rate (%dHz) for hda_pix clk\n",
++			  mode->clock * 1000);
++}
++
++static void sti_hda_bridge_nope(struct drm_bridge *bridge)
++{
++	/* do nothing */
++}
++
++static void sti_hda_brigde_destroy(struct drm_bridge *bridge)
++{
++	drm_bridge_cleanup(bridge);
++	kfree(bridge);
++}
++
++static const struct drm_bridge_funcs sti_hda_bridge_funcs = {
++	.pre_enable = sti_hda_pre_enable,
++	.enable = sti_hda_bridge_nope,
++	.disable = sti_hda_disable,
++	.post_disable = sti_hda_bridge_nope,
++	.mode_set = sti_hda_set_mode,
++	.destroy = sti_hda_brigde_destroy,
++};
++
++static int sti_hda_connector_get_modes(struct drm_connector *connector)
++{
++	unsigned int i;
++	int count = 0;
++	struct sti_hda_connector *hda_connector
++		= to_sti_hda_connector(connector);
++	struct sti_hda *hda = hda_connector->hda;
++
++	DRM_DEBUG_DRIVER("\n");
++
++	for (i = 0; i < ARRAY_SIZE(hda_supported_modes); i++) {
++		struct drm_display_mode *mode =
++			drm_mode_duplicate(hda->drm_dev,
++					&hda_supported_modes[i].mode);
++		if (!mode)
++			continue;
++		mode->vrefresh = drm_mode_vrefresh(mode);
++
++		/* the first mode is the preferred mode */
++		if (i == 0)
++			mode->type |= DRM_MODE_TYPE_PREFERRED;
++
++		drm_mode_probed_add(connector, mode);
++		count++;
++	}
++
++	drm_mode_sort(&connector->modes);
++
++	return count;
++}
++
++#define CLK_TOLERANCE_HZ 50
++
++static int sti_hda_connector_mode_valid(struct drm_connector *connector,
++					struct drm_display_mode *mode)
++{
++	int target = mode->clock * 1000;
++	int target_min = target - CLK_TOLERANCE_HZ;
++	int target_max = target + CLK_TOLERANCE_HZ;
++	int result;
++	int idx;
++	struct sti_hda_connector *hda_connector
++		= to_sti_hda_connector(connector);
++	struct sti_hda *hda = hda_connector->hda;
++
++	if (!hda_get_mode_idx(*mode, &idx)) {
++		return MODE_BAD;
++	} else {
++		result = clk_round_rate(hda->clk_pix, target);
++
++		DRM_DEBUG_DRIVER("target rate = %d => available rate = %d\n",
++				 target, result);
++
++		if ((result < target_min) || (result > target_max)) {
++			DRM_DEBUG_DRIVER("hda pixclk=%d not supported\n",
++					 target);
++			return MODE_BAD;
++		}
++	}
++
++	return MODE_OK;
++}
++
++struct drm_encoder *sti_hda_best_encoder(struct drm_connector *connector)
++{
++	struct sti_hda_connector *hda_connector
++		= to_sti_hda_connector(connector);
++
++	/* Best encoder is the one associated during connector creation */
++	return hda_connector->encoder;
++}
++
++static struct drm_connector_helper_funcs sti_hda_connector_helper_funcs = {
++	.get_modes = sti_hda_connector_get_modes,
++	.mode_valid = sti_hda_connector_mode_valid,
++	.best_encoder = sti_hda_best_encoder,
++};
++
++static enum drm_connector_status
++sti_hda_connector_detect(struct drm_connector *connector, bool force)
++{
++	return connector_status_connected;
++}
++
++static void sti_hda_connector_destroy(struct drm_connector *connector)
++{
++	struct sti_hda_connector *hda_connector
++		= to_sti_hda_connector(connector);
++
++	drm_connector_unregister(connector);
++	drm_connector_cleanup(connector);
++	kfree(hda_connector);
++}
++
++static struct drm_connector_funcs sti_hda_connector_funcs = {
++	.dpms = drm_helper_connector_dpms,
++	.fill_modes = drm_helper_probe_single_connector_modes,
++	.detect = sti_hda_connector_detect,
++	.destroy = sti_hda_connector_destroy,
++};
++
++static struct drm_encoder *sti_hda_find_encoder(struct drm_device *dev)
++{
++	struct drm_encoder *encoder;
++
++	list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
++		if (encoder->encoder_type == DRM_MODE_ENCODER_DAC)
++			return encoder;
++	}
++
 +	return NULL;
 +}
 +
-+/**
-+ * sti_gdp_prepare_layer
-+ * @lay: gdp layer
-+ * @first_prepare: true if it is the first time this function is called
-+ *
-+ * Update the free GDP node list according to the layer properties.
-+ *
-+ * RETURNS:
-+ * 0 on success.
-+ */
-+static int sti_gdp_prepare_layer(struct sti_layer *layer, bool first_prepare)
++static int sti_hda_bind(struct device *dev, struct device *master, void *data)
 +{
-+	struct sti_gdp_node_list *list;
-+	struct sti_gdp_node *top_field, *btm_field;
-+	struct drm_display_mode *mode = layer->mode;
-+	struct device *dev = layer->dev;
-+	struct sti_gdp *gdp = to_sti_gdp(layer);
-+	int format;
-+	unsigned int depth, bpp;
-+	int rate = mode->clock * 1000;
-+	int res;
-+	u32 ydo, xdo, yds, xds;
++	struct sti_hda *hda = dev_get_drvdata(dev);
++	struct drm_device *drm_dev = data;
++	struct drm_encoder *encoder;
++	struct sti_hda_connector *connector;
++	struct drm_connector *drm_connector;
++	struct drm_bridge *bridge;
++	int err;
 +
-+	list = sti_gdp_get_free_nodes(layer);
-+	top_field = list->top_field;
-+	btm_field = list->btm_field;
++	/* Set the drm device handle */
++	hda->drm_dev = drm_dev;
 +
-+	/* Build the top field from layer params */
-+	top_field->gam_gdp_agc = GAM_GDP_AGC_FULL_RANGE;
-+	top_field->gam_gdp_ctl = WAIT_NEXT_VSYNC;
-+	format = sti_gdp_fourcc2format(layer->format);
-+	if (format == -1) {
-+		DRM_ERROR("Format not supported by GDP %.4s\n",
-+			  (char *)&layer->format);
-+		return 1;
-+	}
-+	top_field->gam_gdp_ctl |= format;
-+	top_field->gam_gdp_ctl |= sti_gdp_get_alpharange(format);
-+	top_field->gam_gdp_ppt &= ~GAM_GDP_PPT_IGNORE;
++	encoder = sti_hda_find_encoder(drm_dev);
++	if (!encoder)
++		return -ENOMEM;
 +
-+	/* pixel memory location */
-+	drm_fb_get_bpp_depth(layer->format, &depth, &bpp);
-+	top_field->gam_gdp_pml = (u32) layer->paddr + layer->offsets[0];
-+	top_field->gam_gdp_pml += layer->src_x * (bpp >> 3);
-+	top_field->gam_gdp_pml += layer->src_y * layer->pitches[0];
++	connector = devm_kzalloc(dev, sizeof(*connector), GFP_KERNEL);
++	if (!connector)
++		return -ENOMEM;
 +
-+	/* input parameters */
-+	top_field->gam_gdp_pmp = layer->pitches[0];
-+	top_field->gam_gdp_size =
-+	    clamp_val(layer->src_h, 0, GAM_GDP_SIZE_MAX) << 16 |
-+	    clamp_val(layer->src_w, 0, GAM_GDP_SIZE_MAX);
++	connector->hda = hda;
 +
-+	/* output parameters */
-+	ydo = sti_vtg_get_line_number(*mode, layer->dst_y);
-+	yds = sti_vtg_get_line_number(*mode, layer->dst_y + layer->dst_h - 1);
-+	xdo = sti_vtg_get_pixel_number(*mode, layer->dst_x);
-+	xds = sti_vtg_get_pixel_number(*mode, layer->dst_x + layer->dst_w - 1);
-+	top_field->gam_gdp_vpo = (ydo << 16) | xdo;
-+	top_field->gam_gdp_vps = (yds << 16) | xds;
++		bridge = devm_kzalloc(dev, sizeof(*bridge), GFP_KERNEL);
++	if (!bridge)
++		return -ENOMEM;
 +
-+	/* Same content and chained together */
-+	memcpy(btm_field, top_field, sizeof(*btm_field));
-+	top_field->gam_gdp_nvn = virt_to_dma(dev, btm_field);
-+	btm_field->gam_gdp_nvn = virt_to_dma(dev, top_field);
++	bridge->driver_private = hda;
++	drm_bridge_init(drm_dev, bridge, &sti_hda_bridge_funcs);
 +
-+	/* Interlaced mode */
-+	if (layer->mode->flags & DRM_MODE_FLAG_INTERLACE)
-+		btm_field->gam_gdp_pml = top_field->gam_gdp_pml +
-+		    layer->pitches[0];
++	encoder->bridge = bridge;
++	connector->encoder = encoder;
 +
-+	if (first_prepare) {
-+		/* Set and enable gdp clock */
-+		if (gdp->clk_pix) {
-+			res = clk_set_rate(gdp->clk_pix, rate);
-+			if (res < 0) {
-+				DRM_ERROR("Cannot set rate (%dHz) for gdp\n",
-+						rate);
-+				return 1;
-+			}
++	drm_connector = (struct drm_connector *)connector;
 +
-+			if (clk_prepare_enable(gdp->clk_pix)) {
-+				DRM_ERROR("Failed to prepare/enable gdp\n");
-+				return 1;
-+			}
-+		}
++	drm_connector->polled = DRM_CONNECTOR_POLL_HPD;
++
++	drm_connector_init(drm_dev, drm_connector,
++			&sti_hda_connector_funcs, DRM_MODE_CONNECTOR_Component);
++	drm_connector_helper_add(drm_connector,
++			&sti_hda_connector_helper_funcs);
++
++	err = drm_connector_register(drm_connector);
++	if (err)
++		goto err_connector;
++
++	err = drm_mode_connector_attach_encoder(drm_connector, encoder);
++	if (err) {
++		DRM_ERROR("Failed to attach a connector to a encoder\n");
++		goto err_sysfs;
 +	}
 +
 +	return 0;
++
++err_sysfs:
++	drm_connector_unregister(drm_connector);
++err_connector:
++	drm_bridge_cleanup(bridge);
++	drm_connector_cleanup(drm_connector);
++	return -EINVAL;
 +}
 +
-+/**
-+ * sti_gdp_commit_layer
-+ * @lay: gdp layer
-+ *
-+ * Update the NVN field of the 'right' field of the current GDP node (being
-+ * used by the HW) with the address of the updated ('free') top field GDP node.
-+ * - In interlaced mode the 'right' field is the bottom field as we update
-+ *   frames starting from their top field
-+ * - In progressive mode, we update both bottom and top fields which are
-+ *   equal nodes.
-+ * At the next VSYNC, the updated node list will be used by the HW.
-+ *
-+ * RETURNS:
-+ * 0 on success.
-+ */
-+static int sti_gdp_commit_layer(struct sti_layer *layer)
++static void sti_hda_unbind(struct device *dev,
++		struct device *master, void *data)
 +{
-+	struct sti_gdp_node_list *updated_list = sti_gdp_get_free_nodes(layer);
-+	struct sti_gdp_node *updated_top_node = updated_list->top_field;
-+	struct sti_gdp_node *updated_btm_node = updated_list->btm_field;
-+	struct sti_gdp *gdp = to_sti_gdp(layer);
-+	u32 dma_updated_top = virt_to_dma(layer->dev, updated_top_node);
-+	u32 dma_updated_btm = virt_to_dma(layer->dev, updated_btm_node);
-+	struct sti_gdp_node_list *curr_list = sti_gdp_get_current_nodes(layer);
++	/* do nothing */
++}
 +
-+	dev_dbg(layer->dev, "Current NVN:0x%X\n",
-+		readl(layer->regs + GAM_GDP_NVN_OFFSET));
-+	dev_dbg(layer->dev, "Posted buff: %lx current buff: %x\n",
-+		(unsigned long)layer->paddr,
-+		readl(layer->regs + GAM_GDP_PML_OFFSET));
++static const struct component_ops sti_hda_ops = {
++	.bind = sti_hda_bind,
++	.unbind = sti_hda_unbind,
++};
 +
-+	if (curr_list == NULL) {
-+		/* First update or invalid node should directly write in the
-+		 * hw register */
-+		writel(gdp->is_curr_top == true ?
-+				dma_updated_btm : dma_updated_top,
-+				layer->regs + GAM_GDP_NVN_OFFSET);
-+		return 0;
++static int sti_hda_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct sti_hda *hda;
++	struct resource *res;
++
++	DRM_INFO("%s\n", __func__);
++
++	hda = devm_kzalloc(dev, sizeof(*hda), GFP_KERNEL);
++	if (!hda)
++		return -ENOMEM;
++
++	hda->dev = pdev->dev;
++
++	/* Get resources */
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "hda-reg");
++	if (!res) {
++		DRM_ERROR("Invalid hda resource\n");
++		return -ENOMEM;
 +	}
++	hda->regs = devm_ioremap_nocache(dev, res->start, resource_size(res));
++	if (IS_ERR(hda->regs))
++		return PTR_ERR(hda->regs);
 +
-+	if (layer->mode->flags & DRM_MODE_FLAG_INTERLACE) {
-+		if (gdp->is_curr_top == true) {
-+			/* Do not update in the middle of the frame, but
-+			 * postpone the update after the bottom field has
-+			 * been displayed */
-+			curr_list->btm_field->gam_gdp_nvn = dma_updated_top;
-+		} else {
-+			/* Direct update to avoid one frame delay */
-+			writel(dma_updated_top,
-+				layer->regs + GAM_GDP_NVN_OFFSET);
-+		}
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
++			"video-dacs-ctrl");
++	if (res) {
++		hda->video_dacs_ctrl = devm_ioremap_nocache(dev, res->start,
++				resource_size(res));
++		if (IS_ERR(hda->video_dacs_ctrl))
++			return PTR_ERR(hda->video_dacs_ctrl);
 +	} else {
-+		/* Direct update for progressive to avoid one frame delay */
-+		writel(dma_updated_top, layer->regs + GAM_GDP_NVN_OFFSET);
++		/* If no existing video-dacs-ctrl resource continue the probe */
++		DRM_DEBUG_DRIVER("No video-dacs-ctrl resource\n");
++		hda->video_dacs_ctrl = NULL;
 +	}
 +
++	/* Get clock resources */
++	hda->clk_pix = devm_clk_get(dev, "pix");
++	if (IS_ERR(hda->clk_pix)) {
++		DRM_ERROR("Cannot get hda_pix clock\n");
++		return PTR_ERR(hda->clk_pix);
++	}
++
++	hda->clk_hddac = devm_clk_get(dev, "hddac");
++	if (IS_ERR(hda->clk_hddac)) {
++		DRM_ERROR("Cannot get hda_hddac clock\n");
++		return PTR_ERR(hda->clk_hddac);
++	}
++
++	platform_set_drvdata(pdev, hda);
++
++	return component_add(&pdev->dev, &sti_hda_ops);
++}
++
++static int sti_hda_remove(struct platform_device *pdev)
++{
++	component_del(&pdev->dev, &sti_hda_ops);
 +	return 0;
 +}
 +
-+/**
-+ * sti_gdp_disable_layer
-+ * @lay: gdp layer
-+ *
-+ * Disable a GDP.
-+ *
-+ * RETURNS:
-+ * 0 on success.
-+ */
-+static int sti_gdp_disable_layer(struct sti_layer *layer)
-+{
-+	unsigned int i;
-+	struct sti_gdp *gdp = to_sti_gdp(layer);
++static struct of_device_id hda_of_match[] = {
++	{ .compatible = "st,stih416-hda", },
++	{ .compatible = "st,stih407-hda", },
++	{ /* end node */ }
++};
++MODULE_DEVICE_TABLE(of, hda_of_match);
 +
-+	/* Set the nodes as 'to be ignored on mixer' */
-+	for (i = 0; i < GDP_NODE_NB_BANK; i++) {
-+		gdp->node_list[i].top_field->gam_gdp_ppt |= GAM_GDP_PPT_IGNORE;
-+		gdp->node_list[i].btm_field->gam_gdp_ppt |= GAM_GDP_PPT_IGNORE;
-+	}
-+
-+	if (gdp->clk_pix)
-+		clk_disable_unprepare(gdp->clk_pix);
-+
-+	return 0;
-+}
-+
-+/**
-+ * sti_gdp_field_cb
-+ * @nb: notifier block
-+ * @event: event message
-+ * @data: private data
-+ *
-+ * Handle VTG top field and bottom field event.
-+ *
-+ * RETURNS:
-+ * 0 on success.
-+ */
-+int sti_gdp_field_cb(struct notifier_block *nb,
-+		unsigned long event, void *data)
-+{
-+	struct sti_gdp *gdp = container_of(nb, struct sti_gdp, vtg_field_nb);
-+
-+	switch (event) {
-+	case VTG_TOP_FIELD_EVENT:
-+		gdp->is_curr_top = true;
-+		break;
-+	case VTG_BOTTOM_FIELD_EVENT:
-+		gdp->is_curr_top = false;
-+		break;
-+	default:
-+		DRM_ERROR("unsupported event: %lu\n", event);
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static void sti_gdp_init(struct sti_layer *layer)
-+{
-+	struct sti_gdp *gdp = to_sti_gdp(layer);
-+	struct device_node *np = layer->dev->of_node;
-+	dma_addr_t dma;
-+	void *base;
-+	unsigned int i, size;
-+
-+	/* Allocate all the nodes within a single memory page */
-+	size = sizeof(struct sti_gdp_node) *
-+	    GDP_NODE_PER_FIELD * GDP_NODE_NB_BANK;
-+
-+	base = dma_alloc_writecombine(layer->dev,
-+			size, &dma, GFP_KERNEL | GFP_DMA);
-+	if (!base) {
-+		DRM_ERROR("Failed to allocate memory for GDP node\n");
-+		return;
-+	}
-+	memset(base, 0, size);
-+
-+	for (i = 0; i < GDP_NODE_NB_BANK; i++) {
-+		if (virt_to_dma(layer->dev, base) & 0xF) {
-+			DRM_ERROR("Mem alignment failed\n");
-+			return;
-+		}
-+		gdp->node_list[i].top_field = base;
-+		DRM_DEBUG_DRIVER("node[%d].top_field=%p\n", i, base);
-+		base += sizeof(struct sti_gdp_node);
-+
-+		if (virt_to_dma(layer->dev, base) & 0xF) {
-+			DRM_ERROR("Mem alignment failed\n");
-+			return;
-+		}
-+		gdp->node_list[i].btm_field = base;
-+		DRM_DEBUG_DRIVER("node[%d].btm_field=%p\n", i, base);
-+		base += sizeof(struct sti_gdp_node);
-+	}
-+
-+	if (of_device_is_compatible(np, "st,stih407-compositor")) {
-+		/* GDP of STiH407 chip have its own pixel clock */
-+		char *clk_name;
-+
-+		switch (layer->desc) {
-+		case STI_GDP_0:
-+			clk_name = "pix_gdp1";
-+			break;
-+		case STI_GDP_1:
-+			clk_name = "pix_gdp2";
-+			break;
-+		case STI_GDP_2:
-+			clk_name = "pix_gdp3";
-+			break;
-+		case STI_GDP_3:
-+			clk_name = "pix_gdp4";
-+			break;
-+		default:
-+			DRM_ERROR("GDP id not recognized\n");
-+			return;
-+		}
-+
-+		gdp->clk_pix = devm_clk_get(layer->dev, clk_name);
-+		if (IS_ERR(gdp->clk_pix))
-+			DRM_ERROR("Cannot get %s clock\n", clk_name);
-+	}
-+}
-+
-+static const struct sti_layer_funcs gdp_ops = {
-+	.get_formats = sti_gdp_get_formats,
-+	.get_nb_formats = sti_gdp_get_nb_formats,
-+	.init = sti_gdp_init,
-+	.prepare = sti_gdp_prepare_layer,
-+	.commit = sti_gdp_commit_layer,
-+	.disable = sti_gdp_disable_layer,
++struct platform_driver sti_hda_driver = {
++	.driver = {
++		.name = "sti-hda",
++		.owner = THIS_MODULE,
++		.of_match_table = hda_of_match,
++	},
++	.probe = sti_hda_probe,
++	.remove = sti_hda_remove,
 +};
 +
-+struct sti_layer *sti_gdp_create(struct device *dev, int id)
-+{
-+	struct sti_gdp *gdp;
++module_platform_driver(sti_hda_driver);
 +
-+	gdp = devm_kzalloc(dev, sizeof(*gdp), GFP_KERNEL);
-+	if (!gdp) {
-+		DRM_ERROR("Failed to allocate memory for GDP\n");
-+		return NULL;
-+	}
-+
-+	gdp->layer.ops = &gdp_ops;
-+	gdp->vtg_field_nb.notifier_call = sti_gdp_field_cb;
-+
-+	return (struct sti_layer *)gdp;
-+}
-diff --git a/drivers/gpu/drm/sti/sti_gdp.h b/drivers/gpu/drm/sti/sti_gdp.h
-new file mode 100644
-index 0000000..1dab682
---- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_gdp.h
-@@ -0,0 +1,16 @@
-+/*
-+ * Copyright (C) STMicroelectronics SA 2014
-+ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
-+ *          Fabien Dessenne <fabien.dessenne@st.com>
-+ *          for STMicroelectronics.
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
-+
-+#ifndef _STI_GDP_H_
-+#define _STI_GDP_H_
-+
-+#include <linux/types.h>
-+
-+struct sti_layer *sti_gdp_create(struct device *dev, int id);
-+
-+#endif
-diff --git a/drivers/gpu/drm/sti/sti_layer.h b/drivers/gpu/drm/sti/sti_layer.h
-new file mode 100644
-index 0000000..198c377
---- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_layer.h
-@@ -0,0 +1,123 @@
-+/*
-+ * Copyright (C) STMicroelectronics SA 2014
-+ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
-+ *          Fabien Dessenne <fabien.dessenne@st.com>
-+ *          for STMicroelectronics.
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
-+
-+#ifndef _STI_LAYER_H_
-+#define _STI_LAYER_H_
-+
-+#include <drm/drmP.h>
-+
-+#define to_sti_layer(x) container_of(x, struct sti_layer, plane)
-+
-+#define STI_LAYER_TYPE_SHIFT 8
-+#define STI_LAYER_TYPE_MASK (~((1<<STI_LAYER_TYPE_SHIFT)-1))
-+
-+struct sti_layer;
-+
-+enum sti_layer_type {
-+	STI_GDP = 1 << STI_LAYER_TYPE_SHIFT,
-+	STI_VID = 2 << STI_LAYER_TYPE_SHIFT,
-+	STI_CUR = 3 << STI_LAYER_TYPE_SHIFT,
-+	STI_BCK = 4 << STI_LAYER_TYPE_SHIFT
-+};
-+
-+enum sti_layer_id_of_type {
-+	STI_ID_0 = 0,
-+	STI_ID_1 = 1,
-+	STI_ID_2 = 2,
-+	STI_ID_3 = 3
-+};
-+
-+enum sti_layer_desc {
-+	STI_GDP_0       = STI_GDP | STI_ID_0,
-+	STI_GDP_1       = STI_GDP | STI_ID_1,
-+	STI_GDP_2       = STI_GDP | STI_ID_2,
-+	STI_GDP_3       = STI_GDP | STI_ID_3,
-+	STI_VID_0       = STI_VID | STI_ID_0,
-+	STI_VID_1       = STI_VID | STI_ID_1,
-+	STI_CURSOR      = STI_CUR,
-+	STI_BACK        = STI_BCK
-+};
-+
-+/**
-+ * STI layer functions structure
-+ *
-+ * @get_formats:	get layer supported formats
-+ * @get_nb_formats:	get number of format supported
-+ * @init:               initialize the layer
-+ * @prepare:		prepare layer before rendering
-+ * @commit:		set layer for rendering
-+ * @disable:		disable layer
-+ */
-+struct sti_layer_funcs {
-+	const uint32_t* (*get_formats)(struct sti_layer *layer);
-+	unsigned int (*get_nb_formats)(struct sti_layer *layer);
-+	void (*init)(struct sti_layer *layer);
-+	int (*prepare)(struct sti_layer *layer, bool first_prepare);
-+	int (*commit)(struct sti_layer *layer);
-+	int (*disable)(struct sti_layer *layer);
-+};
-+
-+/**
-+ * STI layer structure
-+ *
-+ * @plane:              drm plane it is bound to (if any)
-+ * @fb:                 drm fb it is bound to
-+ * @mode:               display mode
-+ * @desc:               layer type & id
-+ * @device:		driver device
-+ * @regs:		layer registers
-+ * @ops:                layer functions
-+ * @zorder:             layer z-order
-+ * @mixer_id:           id of the mixer used to display the layer
-+ * @enabled:            to know if the layer is active or not
-+ * @src_x src_y:        coordinates of the input (fb) area
-+ * @src_w src_h:        size of the input (fb) area
-+ * @dst_x dst_y:        coordinates of the output (crtc) area
-+ * @dst_w dst_h:        size of the output (crtc) area
-+ * @format:             format
-+ * @pitches:            pitch of 'planes' (eg: Y, U, V)
-+ * @offsets:            offset of 'planes'
-+ * @paddr:              physical address of the input buffer
-+ */
-+struct sti_layer {
-+	struct drm_plane plane;
-+	struct drm_framebuffer *fb;
-+	struct drm_display_mode *mode;
-+	enum sti_layer_desc desc;
-+	struct device *dev;
-+	void __iomem *regs;
-+	const struct sti_layer_funcs *ops;
-+	int zorder;
-+	int mixer_id;
-+	bool enabled;
-+	int src_x, src_y;
-+	int src_w, src_h;
-+	int dst_x, dst_y;
-+	int dst_w, dst_h;
-+	uint32_t format;
-+	unsigned int pitches[4];
-+	unsigned int offsets[4];
-+	dma_addr_t paddr;
-+};
-+
-+struct sti_layer *sti_layer_create(struct device *dev, int desc,
-+			void __iomem *baseaddr);
-+int sti_layer_prepare(struct sti_layer *layer, struct drm_framebuffer *fb,
-+			struct drm_display_mode *mode,
-+			int mixer_id,
-+			int dest_x, int dest_y,
-+			int dest_w, int dest_h,
-+			int src_x, int src_y,
-+			int src_w, int src_h);
-+int sti_layer_commit(struct sti_layer *layer);
-+int sti_layer_disable(struct sti_layer *layer);
-+const uint32_t *sti_layer_get_formats(struct sti_layer *layer);
-+unsigned int sti_layer_get_nb_formats(struct sti_layer *layer);
-+const char *sti_layer_to_str(struct sti_layer *layer);
-+
-+#endif
++MODULE_AUTHOR("Benjamin Gaignard <benjamin.gaignard@st.com>");
++MODULE_DESCRIPTION("STMicroelectronics SoC DRM driver");
++MODULE_LICENSE("GPL");
 -- 
 1.9.1
 
