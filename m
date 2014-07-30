@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730AbaG3Mdn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:33:43 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36724 "EHLO
+	id S1755445AbaG3MeS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:34:18 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36716 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752905AbaG3MPc (ORCPT
+	by vger.kernel.org with ESMTP id S1752884AbaG3MPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:32 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, dingtianhong <dingtianhong@huawei.com>,
+Cc: linux-kernel@vger.kernel.org, Eric Dumazet <edumazet@google.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 46/94] igmp: fix the problem when mc leave group
-Date: Wed, 30 Jul 2014 14:14:35 +0200
-Message-Id: <31ae2665fbbd0aaa3636b9d3e2cf161f95eb67eb.1406722270.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 39/94] ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix
+Date: Wed, 30 Jul 2014 14:14:28 +0200
+Message-Id: <8728b0c1932dada25f2d1ccfa1669b5b41fe7937.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,91 +24,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: dingtianhong <dingtianhong@huawei.com>
+From: Eric Dumazet <edumazet@google.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 52ad353a5344f1f700c5b777175bdfa41d3cd65a ]
+[ Upstream commit 7f502361531e9eecb396cf99bdc9e9a59f7ebd7f ]
 
-The problem was triggered by these steps:
+We have two different ways to handle changes to sk->sk_dst
 
-1) create socket, bind and then setsockopt for add mc group.
-   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
-   mreq.imr_interface.s_addr = inet_addr("192.168.1.2");
-   setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+First way (used by TCP) assumes socket lock is owned by caller, and use
+no extra lock : __sk_dst_set() & __sk_dst_reset()
 
-2) drop the mc group for this socket.
-   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
-   mreq.imr_interface.s_addr = inet_addr("0.0.0.0");
-   setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq));
+Another way (used by UDP) uses sk_dst_lock because socket lock is not
+always taken. Note that sk_dst_lock is not softirq safe.
 
-3) and then drop the socket, I found the mc group was still used by the dev:
+These ways are not inter changeable for a given socket type.
 
-   netstat -g
+ipv4_sk_update_pmtu(), added in linux-3.8, added a race, as it used
+the socket lock as synchronization, but users might be UDP sockets.
 
-   Interface       RefCnt Group
-   --------------- ------ ---------------------
-   eth2		   1	  255.0.0.37
+Instead of converting sk_dst_lock to a softirq safe version, use xchg()
+as we did for sk_rx_dst in commit e47eb5dfb296b ("udp: ipv4: do not use
+sk_dst_lock from softirq context")
 
-Normally even though the IP_DROP_MEMBERSHIP return error, the mc group still need
-to be released for the netdev when drop the socket, but this process was broken when
-route default is NULL, the reason is that:
+In a follow up patch, we probably can remove sk_dst_lock, as it is
+only used in IPv6.
 
-The ip_mc_leave_group() will choose the in_dev by the imr_interface.s_addr, if input addr
-is NULL, the default route dev will be chosen, then the ifindex is got from the dev,
-then polling the inet->mc_list and return -ENODEV, but if the default route dev is NULL,
-the in_dev and ifIndex is both NULL, when polling the inet->mc_list, the mc group will be
-released from the mc_list, but the dev didn't dec the refcnt for this mc group, so
-when dropping the socket, the mc_list is NULL and the dev still keep this group.
-
-v1->v2: According Hideaki's suggestion, we should align with IPv6 (RFC3493) and BSDs,
-	so I add the checking for the in_dev before polling the mc_list, make sure when
-	we remove the mc group, dec the refcnt to the real dev which was using the mc address.
-	The problem would never happened again.
-
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Fixes: 9cb3a50c5f63e ("ipv4: Invalidate the socket cached route on pmtu events if possible")
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ipv4/igmp.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ include/net/sock.h | 12 ++++++------
+ net/ipv4/route.c   | 15 ++++++++-------
+ 2 files changed, 14 insertions(+), 13 deletions(-)
 
-diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
-index 7defdc9ba167..9fa5c0908ce3 100644
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -1952,6 +1952,10 @@ int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr)
- 
- 	rtnl_lock();
- 	in_dev = ip_mc_find_dev(net, imr);
-+	if (!in_dev) {
-+		ret = -ENODEV;
-+		goto out;
-+	}
- 	ifindex = imr->imr_ifindex;
- 	for (imlp = &inet->mc_list;
- 	     (iml = rtnl_dereference(*imlp)) != NULL;
-@@ -1969,16 +1973,14 @@ int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr)
- 
- 		*imlp = iml->next_rcu;
- 
--		if (in_dev)
--			ip_mc_dec_group(in_dev, group);
-+		ip_mc_dec_group(in_dev, group);
- 		rtnl_unlock();
- 		/* decrease mem now to avoid the memleak warning */
- 		atomic_sub(sizeof(*iml), &sk->sk_omem_alloc);
- 		kfree_rcu(iml, rcu);
- 		return 0;
- 	}
--	if (!in_dev)
--		ret = -ENODEV;
-+out:
- 	rtnl_unlock();
- 	return ret;
+diff --git a/include/net/sock.h b/include/net/sock.h
+index dc84ec518ff5..def541a583de 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1789,9 +1789,11 @@ __sk_dst_set(struct sock *sk, struct dst_entry *dst)
+ static inline void
+ sk_dst_set(struct sock *sk, struct dst_entry *dst)
+ {
+-	spin_lock(&sk->sk_dst_lock);
+-	__sk_dst_set(sk, dst);
+-	spin_unlock(&sk->sk_dst_lock);
++	struct dst_entry *old_dst;
++
++	sk_tx_queue_clear(sk);
++	old_dst = xchg(&sk->sk_dst_cache, dst);
++	dst_release(old_dst);
  }
+ 
+ static inline void
+@@ -1803,9 +1805,7 @@ __sk_dst_reset(struct sock *sk)
+ static inline void
+ sk_dst_reset(struct sock *sk)
+ {
+-	spin_lock(&sk->sk_dst_lock);
+-	__sk_dst_reset(sk);
+-	spin_unlock(&sk->sk_dst_lock);
++	sk_dst_set(sk, NULL);
+ }
+ 
+ extern struct dst_entry *__sk_dst_check(struct sock *sk, u32 cookie);
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index 2b681867164d..310963d7c028 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1032,20 +1032,21 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
+ 	const struct iphdr *iph = (const struct iphdr *) skb->data;
+ 	struct flowi4 fl4;
+ 	struct rtable *rt;
+-	struct dst_entry *dst;
++	struct dst_entry *odst = NULL;
+ 	bool new = false;
+ 
+ 	bh_lock_sock(sk);
+-	rt = (struct rtable *) __sk_dst_get(sk);
++	odst = sk_dst_get(sk);
+ 
+-	if (sock_owned_by_user(sk) || !rt) {
++	if (sock_owned_by_user(sk) || !odst) {
+ 		__ipv4_sk_update_pmtu(skb, sk, mtu);
+ 		goto out;
+ 	}
+ 
+ 	__build_flow_key(&fl4, sk, iph, 0, 0, 0, 0, 0);
+ 
+-	if (!__sk_dst_check(sk, 0)) {
++	rt = (struct rtable *)odst;
++	if (odst->obsolete && odst->ops->check(odst, 0) == NULL) {
+ 		rt = ip_route_output_flow(sock_net(sk), &fl4, sk);
+ 		if (IS_ERR(rt))
+ 			goto out;
+@@ -1055,8 +1056,7 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
+ 
+ 	__ip_rt_update_pmtu((struct rtable *) rt->dst.path, &fl4, mtu);
+ 
+-	dst = dst_check(&rt->dst, 0);
+-	if (!dst) {
++	if (!dst_check(&rt->dst, 0)) {
+ 		if (new)
+ 			dst_release(&rt->dst);
+ 
+@@ -1068,10 +1068,11 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
+ 	}
+ 
+ 	if (new)
+-		__sk_dst_set(sk, &rt->dst);
++		sk_dst_set(sk, &rt->dst);
+ 
+ out:
+ 	bh_unlock_sock(sk);
++	dst_release(odst);
+ }
+ EXPORT_SYMBOL_GPL(ipv4_sk_update_pmtu);
+ 
 -- 
 2.0.1
 
