@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937AbaG3Bti (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:49:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60452 "EHLO
+	id S1755077AbaG3Btx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:49:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60564 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898AbaG3Btf (ORCPT
+	with ESMTP id S1754987AbaG3Btu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:35 -0400
+	Tue, 29 Jul 2014 21:49:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zoltan Kiss <zoltan.kiss@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 3.10 21/21] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy and handle errors
-Date: Tue, 29 Jul 2014 18:48:50 -0700
-Message-Id: <20140730014831.371270105@linuxfoundation.org>
+        Tony Luck <tony.luck@intel.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.14 13/29] tracing: Fix wraparound problems in "uptime" trace clock
+Date: Tue, 29 Jul 2014 18:48:48 -0700
+Message-Id: <20140730014809.888412505@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
-In-Reply-To: <20140730014830.424826215@linuxfoundation.org>
-References: <20140730014830.424826215@linuxfoundation.org>
+In-Reply-To: <20140730014809.316066303@linuxfoundation.org>
+References: <20140730014809.316066303@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,119 +24,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 36d5fe6a000790f56039afe26834265db0a3ad4c upstream.
+commit 58d4e21e50ff3cc57910a8abc20d7e14375d2f61 upstream.
 
-skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
-orphan them. Also, it doesn't handle errors, so this patch takes care of that
-as well, and modify the callers accordingly. skb_tx_error() is also added to
-the callers so they will signal the failed delivery towards the creator of the
-skb.
+The "uptime" trace clock added in:
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.13: skb_zerocopy() is new in 3.14, but was moved from a
- static function in nfnetlink_queue.  We need to patch that and its caller, but
- not openvswitch.]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+    commit 8aacf017b065a805d27467843490c976835eb4a5
+    tracing: Add "uptime" trace clock that uses jiffies
+
+has wraparound problems when the system has been up more
+than 1 hour 11 minutes and 34 seconds. It converts jiffies
+to nanoseconds using:
+        (u64)jiffies_to_usecs(jiffy) * 1000ULL
+but since jiffies_to_usecs() only returns a 32-bit value, it
+truncates at 2^32 microseconds.  An additional problem on 32-bit
+systems is that the argument is "unsigned long", so fixing the
+return value only helps until 2^32 jiffies (49.7 days on a HZ=1000
+system).
+
+Avoid these problems by using jiffies_64 as our basis, and
+not converting to nanoseconds (we do convert to clock_t because
+user facing API must not be dependent on internal kernel
+HZ values).
+
+Link: http://lkml.kernel.org/p/99d63c5bfe9b320a3b428d773825a37095bf6a51.1405708254.git.tony.luck@intel.com
+
+Fixes: 8aacf017b065 "tracing: Add "uptime" trace clock that uses jiffies"
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nfnetlink_queue_core.c |   29 +++++++++++++++++++++--------
- 1 file changed, 21 insertions(+), 8 deletions(-)
+ kernel/trace/trace.c       |    2 +-
+ kernel/trace/trace_clock.c |    9 +++++----
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
---- a/net/netfilter/nfnetlink_queue_core.c
-+++ b/net/netfilter/nfnetlink_queue_core.c
-@@ -227,22 +227,23 @@ nfqnl_flush(struct nfqnl_instance *queue
- 	spin_unlock_bh(&queue->lock);
- }
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -811,7 +811,7 @@ static struct {
+ 	{ trace_clock_local,	"local",	1 },
+ 	{ trace_clock_global,	"global",	1 },
+ 	{ trace_clock_counter,	"counter",	0 },
+-	{ trace_clock_jiffies,	"uptime",	1 },
++	{ trace_clock_jiffies,	"uptime",	0 },
+ 	{ trace_clock,		"perf",		1 },
+ 	ARCH_TRACE_CLOCKS
+ };
+--- a/kernel/trace/trace_clock.c
++++ b/kernel/trace/trace_clock.c
+@@ -59,13 +59,14 @@ u64 notrace trace_clock(void)
  
--static void
-+static int
- nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
+ /*
+  * trace_jiffy_clock(): Simply use jiffies as a clock counter.
++ * Note that this use of jiffies_64 is not completely safe on
++ * 32-bit systems. But the window is tiny, and the effect if
++ * we are affected is that we will have an obviously bogus
++ * timestamp on a trace event - i.e. not life threatening.
+  */
+ u64 notrace trace_clock_jiffies(void)
  {
- 	int i, j = 0;
- 	int plen = 0; /* length of skb->head fragment */
-+	int ret;
- 	struct page *page;
- 	unsigned int offset;
- 
- 	/* dont bother with small payloads */
--	if (len <= skb_tailroom(to)) {
--		skb_copy_bits(from, 0, skb_put(to, len), len);
--		return;
--	}
-+	if (len <= skb_tailroom(to))
-+		return skb_copy_bits(from, 0, skb_put(to, len), len);
- 
- 	if (hlen) {
--		skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
-+		ret = skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
-+		if (unlikely(ret))
-+			return ret;
- 		len -= hlen;
- 	} else {
- 		plen = min_t(int, skb_headlen(from), len);
-@@ -260,6 +261,11 @@ nfqnl_zcopy(struct sk_buff *to, const st
- 	to->len += len + plen;
- 	to->data_len += len + plen;
- 
-+	if (unlikely(skb_orphan_frags(from, GFP_ATOMIC))) {
-+		skb_tx_error(from);
-+		return -ENOMEM;
-+	}
-+
- 	for (i = 0; i < skb_shinfo(from)->nr_frags; i++) {
- 		if (!len)
- 			break;
-@@ -270,6 +276,8 @@ nfqnl_zcopy(struct sk_buff *to, const st
- 		j++;
- 	}
- 	skb_shinfo(to)->nr_frags = j;
-+
-+	return 0;
+-	u64 jiffy = jiffies - INITIAL_JIFFIES;
+-
+-	/* Return nsecs */
+-	return (u64)jiffies_to_usecs(jiffy) * 1000ULL;
++	return jiffies_64_to_clock_t(jiffies_64 - INITIAL_JIFFIES);
  }
  
- static int nfqnl_put_packet_info(struct sk_buff *nlskb, struct sk_buff *packet)
-@@ -355,13 +363,16 @@ nfqnl_build_packet_message(struct nfqnl_
- 
- 	skb = nfnetlink_alloc_skb(&init_net, size, queue->peer_portid,
- 				  GFP_ATOMIC);
--	if (!skb)
-+	if (!skb) {
-+		skb_tx_error(entskb);
- 		return NULL;
-+	}
- 
- 	nlh = nlmsg_put(skb, 0, 0,
- 			NFNL_SUBSYS_QUEUE << 8 | NFQNL_MSG_PACKET,
- 			sizeof(struct nfgenmsg), 0);
- 	if (!nlh) {
-+		skb_tx_error(entskb);
- 		kfree_skb(skb);
- 		return NULL;
- 	}
-@@ -481,13 +492,15 @@ nfqnl_build_packet_message(struct nfqnl_
- 		nla->nla_type = NFQA_PAYLOAD;
- 		nla->nla_len = nla_attr_size(data_len);
- 
--		nfqnl_zcopy(skb, entskb, data_len, hlen);
-+		if (nfqnl_zcopy(skb, entskb, data_len, hlen))
-+			goto nla_put_failure;
- 	}
- 
- 	nlh->nlmsg_len = skb->len;
- 	return skb;
- 
- nla_put_failure:
-+	skb_tx_error(entskb);
- 	kfree_skb(skb);
- 	net_err_ratelimited("nf_queue: error creating packet message\n");
- 	return NULL;
+ /*
 
 
