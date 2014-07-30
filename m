@@ -1,156 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681AbaG3MPH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:15:07 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:60872 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752282AbaG3MPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 08:15:03 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 0/7] kernel: Add support for restart handler call chain
-Date: Wed, 30 Jul 2014 14:16:03 +0200
-Message-ID: <1705554.pBhZQ0Icu9@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <53D84F77.2050401@roeck-us.net>
-References: <1405668856-13738-1-git-send-email-linux@roeck-us.net> <53D84F77.2050401@roeck-us.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1753103AbaG3MPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:15:36 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36614 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752711AbaG3MPZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 08:15:25 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 02/94] can: c_can: Remove EOB exit
+Date: Wed, 30 Jul 2014 14:13:51 +0200
+Message-Id: <9b448624dde40554d8ce7f2a53b456160209de8a.1406722270.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
+References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
+In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
+References: <cover.1406722269.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Am Dienstag, 29. Juli 2014, 18:50:47 schrieb Guenter Roeck:
-> On 07/18/2014 12:34 AM, Guenter Roeck wrote:
-> > Various drivers implement architecture and/or device specific means
-> > to restart (reset) the system. Various mechanisms have been implemented
-> > to support those schemes. The best known mechanism is arm_pm_restart,
-> > which is a function pointer to be set either from platform specific code
-> > or from drivers. Another mechanism is to use hardware watchdogs to issue
-> > a reset; this mechanism is used if there is no other method available
-> > to reset a board or system. Two examples are alim7101_wdt, which currently
-> > uses the reboot notifier to trigger a reset, and moxart_wdt, which
-> > registers the arm_pm_restart function. Several other restart drivers for
-> > arm, all directly calling arm_pm_restart, are in the process of being
-> > integrated into the kernel. All those drivers would benefit from the new
-> > API.
-> > 
-> > The existing mechanisms have a number of drawbacks. Typically only one
-> > scheme to restart the system is supported (at least if arm_pm_restart is
-> > used). At least in theory there can be multiple means to restart the
-> > system, some of which may be less desirable (for example one mechanism
-> > may only reset the CPU, while another may reset the entire system). Using
-> > arm_pm_restart can also be racy if the function pointer is set from a
-> > driver, as the driver may be in the process of being unloaded when
-> > arm_pm_restart is called.
-> > Using the reboot notifier is always racy, as it is unknown if and when
-> > other functions using the reboot notifier have completed execution
-> > by the time the watchdog fires.
-> > 
-> > Introduce a system restart handler call chain to solve the described
-> > problems. This call chain is expected to be executed from the
-> > architecture specific machine_restart() function. Drivers providing
-> > system restart functionality (such as the watchdog drivers mentioned
-> > above) are expected to register with this call chain. By using the
-> > priority field in the notifier block, callers can control restart handler
-> > execution sequence and thus ensure that the restart handler with the
-> > optimal restart capabilities for a given system is called first.
-> > 
-> > Since the first revision of this patchset, a number of separate patch
-> > submissions have been made which either depend on it or could make use of
-> > it.
-> > 
-> > http://www.spinics.net/linux/lists/arm-kernel/msg344796.html
-> > 
-> > 	registers three notifiers.
-> > 
-> > https://lkml.org/lkml/2014/7/8/962
-> > 
-> > 	would benefit from it.
-> > 
-> > Patch 1 of this series implements the restart handler function. Patches 2
-> > and 3 implement calling the restart handler chain from arm and arm64
-> > restart code.
-> > 
-> > Patch 4 modifies the restart-poweroff driver to no longer call
-> > arm_pm_restart directly but machine_restart. This is done to avoid
-> > calling arm_pm_restart from more than one place. The change makes the
-> > driver architecture independent, so it would be possible to drop the arm
-> > dependency from its Kconfig entry.
-> > 
-> > Patch 5 and 6 convert existing restart handlers in the watchdog subsystem
-> > to use the restart handler. Patch 7 unexports arm_pm_restart to ensure
-> > that no one gets the idea to implement a restart handler as module.
-> > 
-> > ---
-> > v5: Rebased series to v3.16-rc5
-> > 
-> >      Function renames:
-> >      register_restart_notifier -> register_restart_handler
-> >      unregister_restart_notifier -> unregister_restart_handler
-> >      kernel_restart_notify -> do_kernel_restart
-> > 
-> > v4: Document restart notifier priorities
-> > 
-> >      Select 128 as default priority for newly introduced notifiers
-> >      Fix checkpatch warning (line too long) in moxart patch
-> > 
-> > v3: Drop RFC.
-> > 
-> >      Add kernel_restart_notify wrapper function to execute notifier
-> >      Improve documentation.
-> >      Move restart_notifier_list into kernel/reboot.c and make it static.
-> > 
-> > v2: Add patch 4.
-> > 
-> >      Only call blocking notifier call chain if arm_pm_restart was not set.
-> > 
-> > --
-> 
-> To get more test coverage, this series plus a few add-on patches which
-> depend on it are now available in the restart-staging branch of my
-> repository at kernel.org [1]. The branch is currently based on 3.16-rc7.
-> Extensive build test results are available at [2]; look for the column
-> marked 'restart-staging' on the far right of the tables.
-> 
-> I would encourage everyone interested in this series to send me Reviewed-by:
-> or at least Acked-by: tags. Note that I removed all of the earlier tags
-> since I feel that the changes made subsequently warrant updated tags. An
-> Acked-by: from affected maintainers would also be very helpful.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Thanks for adapting my Samsung restart-patches to the API changes.
+===============
 
-The one thing I found is, in
-	"clk: samsung: register restart handlers for s3c2412 and s3c2443"
-you seem to have forgotten the priority in the clk-s3c2443.c part while in 
-clk-s3c2412.c it is present.
+commit 710c56105dfd10e32a89086cf78cc1c8433f6a7a upstream.
 
-And I'm not sure if there shouldn't be some sort of delay, to give the 
-watchdog some time to work, as Tomasz suggested in my initial submission?
+The rx_poll code has the following gem:
 
+	if (msg_ctrl_save & IF_MCONT_EOB)
+		return num_rx_pkts;
 
-I'll update the Rockchip specific restart-patches after the merge window, when 
-the core clock support has landed.
+The EOB bit is the indicator for the hardware that this is the last
+configured FIFO object. But this object can contain valid data, if we
+manage to free up objects before the overrun case hits.
 
-And I still like the whole concept very much, so
-Acked-by: Heiko Stuebner <heiko@sntech.de>
+Now if the code exits due to the EOB bit set, then this buffer is
+stale and the interrupt bit and NewDat bit of the buffer are still
+set. Results in a nice interrupt storm unless we come into an overrun
+situation where the MSGLST bit gets set.
 
+     ksoftirqd/0-3     [000] ..s.    79.124101: c_can_poll: rx_poll: val: 00008001 pend 00008001
+     ksoftirqd/0-3     [000] ..s.    79.124176: c_can_poll: rx_poll: val: 00008000 pend 00008000
+     ksoftirqd/0-3     [000] ..s.    79.124187: c_can_poll: rx_poll: val: 00008002 pend 00008002
+     ksoftirqd/0-3     [000] ..s.    79.124256: c_can_poll: rx_poll: val: 00008000 pend 00008000
+     ksoftirqd/0-3     [000] ..s.    79.124267: c_can_poll: rx_poll: val: 00008000 pend 00008000
 
-Heiko
+The amazing thing is that the check of the MSGLST (aka overrun bit)
+used to be after the check of the EOB bit. That was "fixed" in commit
+5d0f801a2c(can: c_can: Fix RX message handling, handle lost message
+before EOB). But the author of this "fix" did not even understand that
+the EOB check is broken as well.
+
+Again a simple solution: Remove
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[mkl: adjusted subject and commit message]
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/net/can/c_can/c_can.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
+index e59c42b446a9..ae148055baa2 100644
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -830,9 +830,6 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
+ 				continue;
+ 			}
+ 
+-			if (msg_ctrl_save & IF_MCONT_EOB)
+-				return num_rx_pkts;
+-
+ 			if (!(msg_ctrl_save & IF_MCONT_NEWDAT))
+ 				continue;
+ 
+-- 
+2.0.1
+
