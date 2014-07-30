@@ -1,51 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517AbaG3XDv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 19:03:51 -0400
-Received: from mta-out1.inet.fi ([62.71.2.198]:43293 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750987AbaG3XDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 19:03:50 -0400
-Date: Thu, 31 Jul 2014 02:03:02 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Al Viro <viro@ZenIV.linux.org.uk>, "David S. Miller" <davem@davemloft.net>
-Cc: David Howells <dhowells@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Michael L. Semon" <mlsemon35@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, jason.low2@hp.com,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: cred_guard_mutex vs seq_file::lock [was: Re: 3.14.0+/x86:
- lockdep and mutexes not getting along]
-Message-ID: <20140730230302.GA22779@node.dhcp.inet.fi>
-References: <20140410142918.GU11096@twins.programming.kicks-ass.net>
- <alpine.LNX.2.11.1404060059020.8208@bpserver.ds>
- <20140409121940.GA12890@node.dhcp.inet.fi>
- <26259.1397227827@warthog.procyon.org.uk>
- <20140411150724.GI18016@ZenIV.linux.org.uk>
- <20140730223130.GA22417@node.dhcp.inet.fi>
+	id S1751842AbaG3XGX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 19:06:23 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9351 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaG3XGW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 19:06:22 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 30 Jul 2014 15:58:00 -0700
+Message-ID: <53D97B70.1050305@nvidia.com>
+Date: Wed, 30 Jul 2014 16:10:40 -0700
+From: Matt Longnecker <mlongnecker@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140730223130.GA22417@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Zhang Rui <rui.zhang@intel.com>, Eduardo Valentin <edubezval@gmail.com>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <mlongnecker@nvidia.com>
+Subject: [PATCH] thermal: tell cooling devices when a trip_point changes
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 01:31:30AM +0300, Kirill A. Shutemov wrote:
-> I don't know why we allow "chmod +x" on some proc files, notably net-related.
-> Is it a bug?
+Some hardware can react autonomously at a programmed temperature.
+For example, an SoC might implement a last ditch throttle or a
+hardware thermal shutdown. The driver for such a device can
+register itself as a cooling_device with the thermal framework.
 
-# ls -l /proc/{1,157}/net/packet
--r--r--r-- 1 root 0 0 Jul 30 23:01 /proc/1/net/packet
--r--r--r-- 1 root 0 0 Jul 30 23:01 /proc/157/net/packet
-# chmod +x /proc/157/net/packet
-# ls -l /proc/{1,157}/net/packet
--r-xr-xr-x 1 root 0 0 Jul 30 23:02 /proc/1/net/packet
--r-xr-xr-x 1 root 0 0 Jul 30 23:02 /proc/157/net/packet
+With this change, the thermal framework notifies such a driver
+when userspace alters the relevant trip temperature so that
+the driver can reprogram its hardware
 
-Ouch.. Or is it expected?
+Signed-off-by: Matt Longnecker <mlongnecker@nvidia.com>
+---
+ drivers/thermal/thermal_core.c |   30 ++++++++++++++++++++++++++++++
+ include/linux/thermal.h        |    2 ++
+ 2 files changed, 32 insertions(+)
 
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index 71b0ec0..f25272e 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -597,6 +597,7 @@ trip_point_temp_store(struct device *dev, struct device_attribute *attr,
+ 	struct thermal_zone_device *tz = to_thermal_zone(dev);
+ 	int trip, ret;
+ 	unsigned long temperature;
++	struct thermal_instance *pos = NULL;
+ 
+ 	if (!tz->ops->set_trip_temp)
+ 		return -EPERM;
+@@ -609,6 +610,20 @@ trip_point_temp_store(struct device *dev, struct device_attribute *attr,
+ 
+ 	ret = tz->ops->set_trip_temp(tz, trip, temperature);
+ 
++	/*
++	 * Notify bound cooling devices that this trip point changed.
++	 * This is useful for cooling devices which represent a behavior
++	 * which trips in hardware (e.g. catastrophic shutdown)
++	 */
++	list_for_each_entry(pos, &tz->thermal_instances, tz_node) {
++		if (pos->tz == tz && pos->trip == trip && pos->cdev) {
++			if (pos->cdev->ops->trip_point_changed)
++				pos->cdev->ops->trip_point_changed(pos->cdev,
++								   pos->tz,
++								   trip);
++		}
++	}
++
+ 	return ret ? ret : count;
+ }
+ 
+@@ -641,6 +656,7 @@ trip_point_hyst_store(struct device *dev, struct device_attribute *attr,
+ 	struct thermal_zone_device *tz = to_thermal_zone(dev);
+ 	int trip, ret;
+ 	unsigned long temperature;
++	struct thermal_instance *pos = NULL;
+ 
+ 	if (!tz->ops->set_trip_hyst)
+ 		return -EPERM;
+@@ -658,6 +674,20 @@ trip_point_hyst_store(struct device *dev, struct device_attribute *attr,
+ 	 */
+ 	ret = tz->ops->set_trip_hyst(tz, trip, temperature);
+ 
++	/*
++	 * Notify bound cooling devices that this trip point changed.
++	 * This is useful for cooling devices which represent a behavior
++	 * which trips in hardware (e.g. catastrophic shutdown)
++	 */
++	list_for_each_entry(pos, &tz->thermal_instances, tz_node) {
++		if (pos->tz == tz && pos->trip == trip && pos->cdev) {
++			if (pos->cdev->ops->trip_point_changed)
++				pos->cdev->ops->trip_point_changed(pos->cdev,
++								   pos->tz,
++								   trip);
++		}
++	}
++
+ 	return ret ? ret : count;
+ }
+ 
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index f7e11c7..7da7fc5 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -138,6 +138,8 @@ struct thermal_cooling_device_ops {
+ 	int (*get_max_state) (struct thermal_cooling_device *, unsigned long *);
+ 	int (*get_cur_state) (struct thermal_cooling_device *, unsigned long *);
+ 	int (*set_cur_state) (struct thermal_cooling_device *, unsigned long);
++	void (*trip_point_changed) (struct thermal_cooling_device *,
++				    struct thermal_zone_device *, int);
+ };
+ 
+ struct thermal_cooling_device {
 -- 
- Kirill A. Shutemov
+1.7.9.5
+
