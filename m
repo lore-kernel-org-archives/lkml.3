@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416AbaG3PSb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 11:18:31 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:59023 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754029AbaG3PS3 (ORCPT
+	id S1754701AbaG3PTB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 11:19:01 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:52328 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754560AbaG3PS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 11:18:29 -0400
-Message-ID: <53D90CC4.9070009@cogentembedded.com>
-Date: Wed, 30 Jul 2014 19:18:28 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Kever Yang <kever.yang@rock-chips.com>, heiko@sntech.de,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, linux@arm.linux.org.uk, paulz@synopsys.com,
-        gregkh@linuxfoundation.org, mporter@linaro.org, kishon@ti.com,
-        balbi@ti.com
-CC: swarren@wwwdotorg.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        addy.ke@rock-chips.com, xjq@rock-chips.com, cf@rock-chips.com,
-        lyz@rock-chips.com, wulf@rock-chips.com, dianders@chromium.org,
-        olof@lixom.net, sonnyrao@chromium.org
-Subject: Re: [PATCH 2/4] ARM: dts: add rk3288 dwc2 controller support
-References: <1406683873-18194-1-git-send-email-kever.yang@rock-chips.com> <1406684075-18271-1-git-send-email-kever.yang@rock-chips.com>
-In-Reply-To: <1406684075-18271-1-git-send-email-kever.yang@rock-chips.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 30 Jul 2014 11:18:59 -0400
+Message-ID: <1406733536.3544.7.camel@j-VirtualBox>
+Subject: Re: [PATCH -tip/master 4/7] locking/mutex: Refactor optimistic
+ spinning code
+From: Jason Low <jason.low2@hp.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: peterz@infradead.org, mingo@kernel.org, aswin@hp.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 30 Jul 2014 08:18:56 -0700
+In-Reply-To: <1406524724-17946-4-git-send-email-davidlohr@hp.com>
+References: <1406524724-17946-1-git-send-email-davidlohr@hp.com>
+	 <1406524724-17946-4-git-send-email-davidlohr@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sun, 2014-07-27 at 22:18 -0700, Davidlohr Bueso wrote:
 
-On 07/30/2014 05:34 AM, Kever Yang wrote:
-
-> rk3288 has two kind of usb controller, this add the dwc2 controller
-> for otg and host1.
-
-> Controller can works with usb PHY default setting and Vbus on.
-
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
->   arch/arm/boot/dts/rk3288.dtsi |   20 ++++++++++++++++++++
->   1 file changed, 20 insertions(+)
-
-> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-> index abc51f5..4309c4f 100644
-> --- a/arch/arm/boot/dts/rk3288.dtsi
-> +++ b/arch/arm/boot/dts/rk3288.dtsi
-> @@ -646,5 +646,25 @@
->   			clock-names = "baudclk", "apb_pclk";
->   			status = "disabled";
->   		};
+> +static bool mutex_optimistic_spin(struct mutex *lock,
+> +				  struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
+> +{
+> +	struct task_struct *task = current;
 > +
-> +		usb_otg: dwc2@ff580000 {
-
-    The ePAPR standard [1] says:
-
-The name of a node should be somewhat generic, reflecting the function of the 
-device and not its precise programming model. If appropriate, the name should 
-be one of the following choices:
-
-[...]
-    • usb
-
-> +			compatible = "rockchip,rk3288-usb", "rockchip,rk3066-usb",
-> +					"snps,dwc2";
-> +			reg = <0xff580000 0x40000>;
-> +			interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
-> +			clocks = <&cru HCLK_OTG0>;
-> +			clock-names = "otg";
-> +			status = "disabled";
-> +		};
+> +	if (!mutex_can_spin_on_owner(lock))
+> +		return false;
 > +
-> +		usb_host1: dwc2@ff540000 {
+> +	if (!osq_lock(&lock->osq))
+> +		return false;
+> +
+> +	while (true) {
+> +		struct task_struct *owner;
+> +
+> +		if (use_ww_ctx && ww_ctx->acquired > 0) {
+> +			struct ww_mutex *ww;
+> +
+> +			ww = container_of(lock, struct ww_mutex, base);
+> +			/*
+> +			 * If ww->ctx is set the contents are undefined, only
+> +			 * by acquiring wait_lock there is a guarantee that
+> +			 * they are not invalid when reading.
+> +			 *
+> +			 * As such, when deadlock detection needs to be
+> +			 * performed the optimistic spinning cannot be done.
+> +			 */
+> +			if (ACCESS_ONCE(ww->ctx))
+> +				break;
+> +		}
+> +
+> +		/*
+> +		 * If there's an owner, wait for it to either
+> +		 * release the lock or go to sleep.
+> +		 */
+> +		owner = ACCESS_ONCE(lock->owner);
+> +		if (owner && !mutex_spin_on_owner(lock, owner))
+> +			break;
+> +
+> +		/* Try to acquire the mutex if it is unlocked. */
+> +		if (mutex_try_to_acquire(lock)) {
 
-    Same here.
+Was it intended to remove the call to lock_acquired() which was
+in the original code?
 
-WBR, Sergei
+> +			if (use_ww_ctx) {
+> +				struct ww_mutex *ww;
+> +				ww = container_of(lock, struct ww_mutex, base);
+> +
+> +				ww_mutex_set_context_fastpath(ww, ww_ctx);
+> +			}
+> +
+> +			mutex_set_owner(lock);
+> +			osq_unlock(&lock->osq);
+> +			return true;
+> +		}
+
 
