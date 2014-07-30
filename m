@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981AbaG3X5m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 19:57:42 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:62879 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058AbaG3X5l (ORCPT
+	id S1755959AbaG3X5t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 19:57:49 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:46314 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755091AbaG3X5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 19:57:41 -0400
+	Wed, 30 Jul 2014 19:57:46 -0400
 From: behanw@converseincode.com
 To: ard.biesheuvel@linaro.org, catalin.marinas@arm.com,
         k.khlebnikov@samsung.com, olof@lixom.net, peterz@infradead.org,
@@ -14,10 +14,12 @@ To: ard.biesheuvel@linaro.org, catalin.marinas@arm.com,
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         mingo@kernel.org, dwmw2@infradead.org,
         Behan Webster <behanw@converseincode.com>
-Subject: [PATCH 0/4] LLVMLinux: Patches to enable the kernel to be compiled with clang/LLVM
-Date: Wed, 30 Jul 2014 16:57:25 -0700
-Message-Id: <1406764649-20326-1-git-send-email-behanw@converseincode.com>
+Subject: [PATCH 1/4] arm64: LLVMLinux: Add current_stack_pointer() for arm64
+Date: Wed, 30 Jul 2014 16:57:26 -0700
+Message-Id: <1406764649-20326-2-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406764649-20326-1-git-send-email-behanw@converseincode.com>
+References: <1406764649-20326-1-git-send-email-behanw@converseincode.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -27,25 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Behan Webster <behanw@converseincode.com>
 
-This patch set moves from using locally defined named registers to access the
-stack pointer to using a globally defined named register. This allows the code
-to work both with gcc and clang.
+Define a global named register for current_stack_pointer. The use of this new
+variable guarantees that both gcc and clang can access this register in C code.
 
-The LLVMLinux project aims to fully build the Linux kernel using both gcc and
-clang (the C front end for the LLVM compiler infrastructure project). 
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Reviewed-by: Jan-Simon Möller <dl9pf@gmx.de>
+Reviewed-by: Mark Charlebois <charlebm@gmail.com>
+---
+ arch/arm64/include/asm/thread_info.h | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-Behan Webster (4):
-  arm64: LLVMLinux: Add current_stack_pointer() for arm64
-  arm64: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
-  arm64: LLVMLinux: Calculate current_thread_info from
-    current_stack_pointer
-  arm64: LLVMLinux: Use current_stack_pointer in kernel/traps.c
-
- arch/arm64/include/asm/thread_info.h | 9 +++++++--
- arch/arm64/kernel/stacktrace.c       | 3 +--
- arch/arm64/kernel/traps.c            | 3 +--
- 3 files changed, 9 insertions(+), 6 deletions(-)
-
+diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
+index e40b6d0..e6b6094 100644
+--- a/arch/arm64/include/asm/thread_info.h
++++ b/arch/arm64/include/asm/thread_info.h
+@@ -69,6 +69,11 @@ struct thread_info {
+ #define init_stack		(init_thread_union.stack)
+ 
+ /*
++ * how to get the current stack pointer from C
++ */
++register unsigned long current_stack_pointer asm ("sp");
++
++/*
+  * how to get the thread information struct from C
+  */
+ static inline struct thread_info *current_thread_info(void) __attribute_const__;
 -- 
 1.9.1
 
