@@ -1,38 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660AbaG3LPZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 07:15:25 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56003 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752578AbaG3LPX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 07:15:23 -0400
-Date: Wed, 30 Jul 2014 04:15:21 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [delayed_fput] BUG: unable to handle kernel paging request at
- ffff8800122a0ad0
-Message-ID: <20140730111521.GB759@infradead.org>
-References: <20140730035541.GD16537@localhost>
+	id S1752581AbaG3LXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 07:23:12 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:60299 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751663AbaG3LXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 07:23:10 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Kever Yang <kever.yang@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] ARM: dts: Turn on USB host vbus on rk3288-evb
+Date: Wed, 30 Jul 2014 13:24:17 +0200
+Message-ID: <1836225.xQCoI7eRWl@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1406676273-20701-2-git-send-email-dianders@chromium.org>
+References: <1406676273-20701-1-git-send-email-dianders@chromium.org> <1406676273-20701-2-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140730035541.GD16537@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 11:55:41AM +0800, Fengguang Wu wrote:
-> Greetings,
+Am Dienstag, 29. Juli 2014, 16:24:31 schrieb Doug Anderson:
+> There is no phy driver that works on the Rockchip board for either USB
+> host port yet.  For now just hardcode the vbus signal to be on all the
+> time which makes both the dwc2 host and the EHCI port work.
 > 
-> 0day kernel testing robot got the below dmesg and the first bad commit is
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  arch/arm/boot/dts/rk3288-evb.dtsi | 18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi
+> b/arch/arm/boot/dts/rk3288-evb.dtsi index 749e20d..efd625e 100644
+> --- a/arch/arm/boot/dts/rk3288-evb.dtsi
+> +++ b/arch/arm/boot/dts/rk3288-evb.dtsi
+> @@ -35,6 +35,18 @@
+>  			debounce-interval = <100>;
+>  		};
+>  	};
+> +
+> +	/* This turns on vbus for both host0 (ehci) and host1 (dwc2) */
+> +	usb_host_vbus_regulator: usb-host-vbus-regulator {
+> +		compatible = "regulator-fixed";
+> +		enable-active-high;
+> +		gpio = <&gpio0 14 GPIO_ACTIVE_HIGH>;
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&usb_host_vbus>;
+> +		regulator-name = "usb-host-vbus";
+> +		regulator-always-on;
+> +		regulator-boot-on;
+> +	};
+>  };
 
-How does this manage to trip over a 2 year old commit now?
+It seems I have a slightly outdated schematics pdf for the evb ... and only 
+see the OTG vbus pin, on <&gpio0 12>, but am missing the whole host vbus.
+
+Could you think about finding another name for the handle? For example, in my 
+incomplete evb-schematics the supply coming from the otg regulator is called 
+vcc50_usb and there should be something similar for the host supply, so I'd 
+like something like
+
+	vcc50_usbhost: usb-host-vbus-regulator { /* or whatever it gets called */
+	...
+	};
+
+simply to keep with the supply names defined in the schematics - makes reading 
+easier.
+
+
+Heiko
+
+> 
+>  &i2c0 {
+> @@ -71,4 +83,10 @@
+>  			rockchip,pins = <0 5 RK_FUNC_GPIO &pcfg_pull_up>;
+>  		};
+>  	};
+> +
+> +	usb-host {
+> +		usb_host_vbus: usb-host-vbus {
+> +			rockchip,pins = <0 14 RK_FUNC_GPIO &pcfg_pull_none>;
+> +		};
+> +	};
+>  };
 
