@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812AbaG3PUA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 11:20:00 -0400
-Received: from g6t1525.atlanta.hp.com ([15.193.200.68]:29506 "EHLO
-	g6t1525.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866AbaG3PT7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 11:19:59 -0400
-Message-ID: <1406733596.3544.8.camel@j-VirtualBox>
-Subject: Re: [PATCH -tip/master 5/7] locking/mutex: Use MUTEX_SPIN_ON_OWNER
- when appropriate
-From: Jason Low <jason.low2@hp.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: peterz@infradead.org, mingo@kernel.org, aswin@hp.com,
-        linux-kernel@vger.kernel.org
-Date: Wed, 30 Jul 2014 08:19:56 -0700
-In-Reply-To: <1406524724-17946-5-git-send-email-davidlohr@hp.com>
-References: <1406524724-17946-1-git-send-email-davidlohr@hp.com>
-	 <1406524724-17946-5-git-send-email-davidlohr@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1754836AbaG3PVM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 11:21:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26862 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753866AbaG3PVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 11:21:10 -0400
+Message-ID: <53D90D5A.3060404@redhat.com>
+Date: Wed, 30 Jul 2014 17:20:58 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: nVMX: nested TPR shadow/threshold emulation
+References: <1406721880-5490-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1406721880-5490-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-07-27 at 22:18 -0700, Davidlohr Bueso wrote:
-> 4badad35 (locking/mutex: Disable optimistic spinning on some
-> architectures) added a ARCH_SUPPORTS_ATOMIC_RMW flag to
-> disable the mutex optimistic feature on specific archs.
-> 
-> Because CONFIG_MUTEX_SPIN_ON_OWNER only depended on DEBUG and
-> SMP, it was ok to have the ->owner field conditional a bit
-> flexible. However by adding a new variable to the matter,
-> we can waste space with the unused field, ie: CONFIG_SMP &&
-> (!CONFIG_MUTEX_SPIN_ON_OWNER && !CONFIG_DEBUG_MUTEX).
-> 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Il 30/07/2014 14:04, Wanpeng Li ha scritto:
+> @@ -7962,14 +7965,14 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+>  		if (!vmx->rdtscp_enabled)
+>  			exec_control &= ~SECONDARY_EXEC_RDTSCP;
+>  		/* Take the following fields only from vmcs12 */
+> -		exec_control &= ~(SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
+> -				  SECONDARY_EXEC_VIRTUAL_INTR_DELIVERY |
+> +		exec_control &= ~(SECONDARY_EXEC_VIRTUAL_INTR_DELIVERY |
+>                                    SECONDARY_EXEC_APIC_REGISTER_VIRT);
 
-Acked-by: Jason Low <jason.low2@hp.com>
+This change is wrong.  You don't have to take L0's "virtualize APIC
+accesses" setting into account, because while running L2 you cannot
+modify L1's CR8 (only the virtual nested one).
 
+> +
+> +			virtual_apic_page = nested_get_page(vcpu,
+> +						vmcs12->virtual_apic_page_addr);
+> +			if (vmcs_read64(VIRTUAL_APIC_PAGE_ADDR) !=
+> +					page_to_phys(virtual_apic_page))
+> +				vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
+> +					page_to_phys(virtual_apic_page));
+> +			nested_release_page(virtual_apic_page);
+> +
+
+You cannot release this page here.  You need to the exactly the same
+thing that is done for apic_access_page.
+
+One thing:
+
+> +	if (nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW))
+> +		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
+
+I think you can just do this write unconditionally, since most
+hypervisors will enable this.  Also, you probably can add the tpr
+threshold field to the read-write fields for shadow VMCS.
+
+Paolo
