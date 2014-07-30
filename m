@@ -1,411 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717AbaG3MPY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:15:24 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36600 "EHLO
+	id S1755998AbaG3Mpz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:45:55 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36621 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752441AbaG3MPG (ORCPT
+	by vger.kernel.org with ESMTP id S1752726AbaG3MPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 08:15:06 -0400
+	Wed, 30 Jul 2014 08:15:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 00/94] 3.12.26-stable review
-Date: Wed, 30 Jul 2014 14:15:03 +0200
-Message-Id: <cover.1406722269.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Tyler Hall <tylerwhall@gmail.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Andre Naujoks <nautsch2@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 06/94] slip: Fix deadlock in write_wakeup
+Date: Wed, 30 Jul 2014 14:13:55 +0200
+Message-Id: <7b10a5267a7c5e4522b2ba467fb16bb70ac19741.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
+References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
+In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
+References: <cover.1406722269.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.12.26 release.
-There are 94 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+From: Tyler Hall <tylerwhall@gmail.com>
 
-Responses should be made by Fri Aug  1 14:11:10 CEST 2014.
-Anything received after that time might be too late.
-
-The whole patch series can be found in one patch at:
-	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.26-rc1.xz
-and the diffstat can be found below.
-
-thanks,
-js
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-
-Abbas Raza (1):
-  usb: chipidea: udc: Disable auto ZLP generation on ep0
-
-Alex Deucher (2):
-  drm/radeon: set default bl level to something reasonable
-  drm/radeon: avoid leaking edid data
-
-Amitkumar Karwar (1):
-  mwifiex: fix Tx timeout issue
-
-Anand Avati (1):
-  fuse: ignore entry-timeout on LOOKUP_REVAL
-
-Andrey Utkin (1):
-  appletalk: Fix socket referencing in skb
-
-Andy Whitcroft (1):
-  ACPI / resources: only reject zero length resources based at address
-    zero
-
-Anton Kolesov (1):
-  ARC: Implement ptrace(PTRACE_GET_THREAD_AREA)
-
-Antti Palosaari (1):
-  media: tda10071: force modulation to QPSK on DVB-S
-
-Axel Lin (2):
-  hwmon: (da9055) Don't use dash in the name attribute
-  hwmon: (da9052) Don't use dash in the name attribute
-
-Ben Pfaff (1):
-  netlink: Fix handling of error from netlink_dump().
-
-Benjamin LaHaise (1):
-  aio: protect reqs_available updates from changes in interrupt handlers
-
-Bernd Wachter (1):
-  net: qmi_wwan: Add ID for Telewell TW-LTE 4G v2
-
-Bjørn Mork (1):
-  net: qmi_wwan: add two Sierra Wireless/Netgear devices
-
-Catalin Marinas (1):
-  mm: kmemleak: avoid false negatives on vmalloc'ed objects
-
-Christian König (1):
-  drm/radeon: fix irq ring buffer overflow handling
-
-Christoph Hellwig (1):
-  block: don't assume last put of shared tags is for the host
-
-Christoph Paasch (1):
-  tcp: Fix divide by zero when pushing during tcp-repair
-
-Christoph Schulz (1):
-  net: pppoe: use correct channel MTU when using Multilink PPP
-
-Daniel Borkmann (3):
-  net: sctp: propagate sysctl errors from proc_do* properly
-  net: sctp: check proc_dointvec result in proc_sctp_do_auth
-  net: sctp: fix information leaks in ulpevent layer
-
-Daniel Thompson (1):
-  serial: sirf: Fix compilation failure
-
-David Ertman (1):
-  e1000e: Fix SHRA register access for 82579
-
-Dmitry Popov (1):
-  ip_tunnel: fix ip_tunnel_lookup
-
-Dmitry Torokhov (1):
-  Input: fix defuzzing logic
-
-Edward Allcutt (1):
-  ipv4: icmp: Fix pMTU handling for rare case
-
-Emmanuel Grumbach (1):
-  iwlwifi: dvm: don't enable CTS to self
-
-Eric Dumazet (4):
-  ipv4: fix dst race in sk_dst_get()
-  ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix
-  bnx2x: fix possible panic under memory stress
-  ipv4: fix buffer overflow in ip_options_compile()
-
-Gavin Guo (1):
-  usb: Check if port status is equal to RxDetect
-
-Guenter Roeck (2):
-  hwmon: (adt7470) Fix writes to temperature limit registers
-  hwmon: (smsc47m192) Fix temperature limit and vrm write operations
-
-HATAYAMA Daisuke (1):
-  perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
-
-Hans Verkuil (1):
-  media: hdpvr: fix two audio bugs
-
-Hans de Goede (1):
-  media: gspca_pac7302: Add new usb-id for Genius i-Look 317
-
-Hugh Dickins (3):
-  shmem: fix faulting into a hole while it's punched
-  shmem: fix faulting into a hole, not taking i_mutex
-  shmem: fix splicing from a hole while it's punched
-
-Jason Wang (1):
-  drm/qxl: return IRQ_NONE if it was not our irq
-
-John David Anglin (1):
-  parisc: Remove SA_RESTORER define
-
-John Stultz (1):
-  alarmtimer: Fix bug where relative alarm timers were treated as
-    absolute
-
-Jon Paul Maloy (1):
-  tipc: clear 'next'-pointer of message fragments before reassembly
-
-K. Y. Srinivasan (1):
-  Drivers: hv: util: Fix a bug in the KVP code
-
-Kevin Hao (1):
-  libata: support the ata host which implements a queue depth less than
-    32
-
-Li RongQing (1):
-  8021q: fix a potential memory leak
-
-Linus Torvalds (2):
-  Don't trigger congestion wait on dirty-but-not-writeout pages
-  Fix gcc-4.9.0 miscompilation of load_balance() in scheduler
-
-Loic Poulain (1):
-  Bluetooth: Ignore H5 non-link packets in non-active state
-
-Loic Prylli (1):
-  net: Fix NETDEV_CHANGE notifier usage causing spurious arp flush
-
-Manuel Schölling (1):
-  dns_resolver: assure that dns_query() result is null-terminated
-
-Marek Vasut (1):
-  ARM: dts: imx: Add alias for ethernet controller
-
-Martin Lau (1):
-  ring-buffer: Fix polling on trace_pipe
-
-Mateusz Guzik (1):
-  sched: Fix possible divide by zero in avg_atom() calculation
-
-Matthias Brugger (1):
-  irqchip: gic: Add support for cortex a7 compatible string
-
-Michael Brown (1):
-  x86/efi: Include a .bss section within the PE/COFF headers
-
-Mike Snitzer (2):
-  dm thin metadata: do not allow the data block size to change
-  dm cache metadata: do not allow the data block size to change
-
-Miklos Szeredi (2):
-  fuse: timeout comparison fix
-  fuse: handle large user and group ID
-
-Mikulas Patocka (2):
-  block: provide compat ioctl for BLKZEROOUT
-  slab_common: fix the check for duplicate slab names
-
-Neal Cardwell (1):
-  tcp: fix tcp_match_skb_to_sack() for unaligned SACK at end of an skb
-
-Niu Yawei (1):
-  quota: missing lock in dqcache_shrink_scan()
-
-Peter Zijlstra (1):
-  locking/mutex: Disable optimistic spinning on some architectures
-
-Qipan Li (1):
-  serial: sirf: fix spinlock deadlock issue
-
-Rickard Strandqvist (1):
-  media: media: v4l2-core: v4l2-dv-timings.c: Cleaning up code wrong
-    value used in aspect ratio
-
-Romain Degez (1):
-  ahci: add support for the Promise FastTrak TX8660 SATA HBA (ahci mode)
-
-Silesh C V (1):
-  coredump: fix the setting of PF_DUMPCORE
-
-Sowmini Varadhan (1):
-  sunvnet: clean up objects created in vnet_new() on vnet_exit()
-
-Stefan Assmann (1):
-  igb: do a reset on SR-IOV re-init if device is down
-
-Steven Rostedt (Red Hat) (1):
-  tracing: Fix graph tracer with stack tracer on other archs
-
-Suresh Reddy (1):
-  be2net: set EQ DB clear-intr bit in be_open()
-
-Sven Wegener (1):
-  x86_32, entry: Store badsys error code in %eax
-
-Takashi Iwai (2):
-  ALSA: hda - Fix broken PM due to incomplete i915 initialization
-  PM / sleep: Fix request_firmware() error at resume
-
-Ted Juan (1):
-  mtd: devices: elm: fix elm_context_save() and elm_context_restore()
-    functions
-
-Tejun Heo (1):
-  blkcg: don't call into policy draining if root_blkg is already gone
-
-Thomas Gleixner (1):
-  can: c_can: Remove EOB exit
-
-Thomas Petazzoni (1):
-  net: mvneta: fix operation in 10 Mbit/s mode
-
-Todd Fujinaka (1):
-  igb: Workaround for i210 Errata 25: Slow System Clock
-
-Tomasz Figa (1):
-  irqchip: gic: Fix core ID calculation when topology is read from DT
-
-Tony Luck (1):
-  tracing: Fix wraparound problems in "uptime" trace clock
-
-Tyler Hall (2):
-  slip: Fix deadlock in write_wakeup
-  slcan: Port write_wakeup deadlock fix from slip
-
-Vasily Averin (1):
-  fs: umount on symlink leaks mnt count
-
-Wei-Chun Chao (1):
-  net: fix UDP tunnel GSO of frag_list GRO packets
-
-Yuchung Cheng (1):
-  tcp: fix false undo corner cases
-
-dingtianhong (1):
-  igmp: fix the problem when mc leave group
-
-zhangwei(Jovi) (2):
-  tracing: Add ftrace_trace_stack into __trace_puts/__trace_bputs
-  tracing: Add TRACE_ITER_PRINTK flag check in
-    __trace_puts/__trace_bputs
-
- Makefile                                        |   2 +
- arch/arc/include/uapi/asm/ptrace.h              |   1 +
- arch/arc/kernel/ptrace.c                        |   4 +
- arch/arm/Kconfig                                |   1 +
- arch/arm/boot/dts/imx25.dtsi                    |   1 +
- arch/arm/boot/dts/imx27.dtsi                    |   1 +
- arch/arm/boot/dts/imx51.dtsi                    |   1 +
- arch/arm/boot/dts/imx53.dtsi                    |   1 +
- arch/arm64/Kconfig                              |   1 +
- arch/parisc/include/uapi/asm/signal.h           |   2 -
- arch/powerpc/Kconfig                            |   1 +
- arch/sparc/Kconfig                              |   1 +
- arch/x86/Kconfig                                |   1 +
- arch/x86/boot/header.S                          |  26 ++++-
- arch/x86/boot/tools/build.c                     |  37 +++++--
- arch/x86/kernel/cpu/perf_event_intel.c          |   9 ++
- arch/x86/kernel/entry_32.S                      |   9 +-
- block/blk-cgroup.c                              |   7 ++
- block/blk-tag.c                                 |  33 ++-----
- block/compat_ioctl.c                            |   1 +
- drivers/acpi/resource.c                         |  10 +-
- drivers/ata/ahci.c                              |   1 +
- drivers/ata/libata-core.c                       |  22 ++++-
- drivers/bluetooth/hci_h5.c                      |   1 +
- drivers/gpu/drm/qxl/qxl_irq.c                   |   3 +
- drivers/gpu/drm/radeon/atombios_encoders.c      |  10 +-
- drivers/gpu/drm/radeon/cik.c                    |   1 +
- drivers/gpu/drm/radeon/evergreen.c              |   1 +
- drivers/gpu/drm/radeon/r600.c                   |   1 +
- drivers/gpu/drm/radeon/radeon_display.c         |   5 +
- drivers/gpu/drm/radeon/si.c                     |   1 +
- drivers/hv/hv_kvp.c                             |  14 ++-
- drivers/hv/hv_util.c                            |   2 +-
- drivers/hwmon/adt7470.c                         |   6 +-
- drivers/hwmon/da9052-hwmon.c                    |   2 +-
- drivers/hwmon/da9055-hwmon.c                    |   2 +-
- drivers/hwmon/smsc47m192.c                      |   4 +-
- drivers/input/input.c                           |   6 +-
- drivers/irqchip/irq-gic.c                       |   6 +-
- drivers/md/dm-cache-metadata.c                  |   9 ++
- drivers/md/dm-thin-metadata.c                   |   9 ++
- drivers/media/dvb-frontends/tda10071.c          |   6 +-
- drivers/media/usb/gspca/pac7302.c               |   1 +
- drivers/media/usb/hdpvr/hdpvr-video.c           |   6 +-
- drivers/media/v4l2-core/v4l2-dv-timings.c       |   4 +-
- drivers/mtd/devices/elm.c                       |   2 +
- drivers/net/can/c_can/c_can.c                   |   3 -
- drivers/net/can/slcan.c                         |  41 +++++---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   3 +-
- drivers/net/ethernet/emulex/benet/be_main.c     |   2 +-
- drivers/net/ethernet/intel/e1000e/ich8lan.c     |   2 +-
- drivers/net/ethernet/intel/e1000e/ich8lan.h     |   2 +-
- drivers/net/ethernet/intel/igb/e1000_82575.c    |   7 ++
- drivers/net/ethernet/intel/igb/e1000_defines.h  |  18 ++--
- drivers/net/ethernet/intel/igb/e1000_hw.h       |   3 +
- drivers/net/ethernet/intel/igb/e1000_i210.c     |  66 +++++++++++++
- drivers/net/ethernet/intel/igb/e1000_i210.h     |  12 +++
- drivers/net/ethernet/intel/igb/e1000_regs.h     |   1 +
- drivers/net/ethernet/intel/igb/igb_main.c       |  16 ++++
- drivers/net/ethernet/marvell/mvneta.c           |   2 +-
- drivers/net/ethernet/sun/sunvnet.c              |  20 +++-
- drivers/net/ppp/pppoe.c                         |   2 +-
- drivers/net/slip/slip.c                         |  36 +++++--
- drivers/net/slip/slip.h                         |   1 +
- drivers/net/usb/qmi_wwan.c                      |   3 +
- drivers/net/wireless/iwlwifi/dvm/rxon.c         |  12 ---
- drivers/net/wireless/mwifiex/main.c             |   1 +
- drivers/tty/serial/sirfsoc_uart.c               |  49 ++++------
- drivers/tty/serial/sirfsoc_uart.h               |   2 -
- drivers/usb/chipidea/udc.c                      |   4 +-
- drivers/usb/core/hub.c                          |  19 ++++
- fs/aio.c                                        |   7 ++
- fs/coredump.c                                   |   2 +-
- fs/fuse/dir.c                                   |   7 +-
- fs/fuse/inode.c                                 |  20 +++-
- fs/namei.c                                      |   3 +-
- fs/quota/dquot.c                                |   2 +
- include/net/sock.h                              |  16 ++--
- kernel/Kconfig.locks                            |   5 +-
- kernel/power/process.c                          |   1 +
- kernel/sched/debug.c                            |   2 +-
- kernel/time/alarmtimer.c                        |  20 +++-
- kernel/trace/ftrace.c                           |   4 +-
- kernel/trace/ring_buffer.c                      |   4 -
- kernel/trace/trace.c                            |  20 +++-
- kernel/trace/trace_clock.c                      |   9 +-
- mm/kmemleak.c                                   |   4 +-
- mm/shmem.c                                      | 104 +++++++++++++++++---
- mm/slab_common.c                                |   2 +-
- mm/vmalloc.c                                    |  14 ++-
- mm/vmscan.c                                     |  11 +--
- net/8021q/vlan_core.c                           |   5 +-
- net/appletalk/ddp.c                             |   3 -
- net/core/dev.c                                  |   6 +-
- net/core/dst.c                                  |  16 +++-
- net/core/skbuff.c                               |   3 +-
- net/dns_resolver/dns_query.c                    |   4 +-
- net/ipv4/icmp.c                                 |   2 -
- net/ipv4/igmp.c                                 |  10 +-
- net/ipv4/ip_options.c                           |   4 +
- net/ipv4/ip_tunnel.c                            |  12 ++-
- net/ipv4/route.c                                |  15 +--
- net/ipv4/tcp.c                                  |   3 +-
- net/ipv4/tcp_input.c                            |  10 +-
- net/ipv4/tcp_output.c                           |   6 +-
- net/netlink/af_netlink.c                        |   4 +-
- net/sctp/sysctl.c                               |  22 ++---
- net/sctp/ulpevent.c                             | 122 +++---------------------
- net/tipc/bcast.c                                |   1 +
- sound/pci/hda/hda_intel.c                       |  10 +-
- 110 files changed, 737 insertions(+), 380 deletions(-)
-
+commit 661f7fda21b15ec52f57fcd397c03370acc28688 upstream.
+
+Use schedule_work() to avoid potentially taking the spinlock in
+interrupt context.
+
+Commit cc9fa74e2a ("slip/slcan: added locking in wakeup function") added
+necessary locking to the wakeup function and 367525c8c2/ddcde142be ("can:
+slcan: Fix spinlock variant") converted it to spin_lock_bh() because the lock
+is also taken in timers.
+
+Disabling softirqs is not sufficient, however, as tty drivers may call
+write_wakeup from interrupt context. This driver calls tty->ops->write() with
+its spinlock held, which may immediately cause an interrupt on the same CPU and
+subsequent spin_bug().
+
+Simply converting to spin_lock_irq/irqsave() prevents this deadlock, but
+causes lockdep to point out a possible circular locking dependency
+between these locks:
+
+(&(&sl->lock)->rlock){-.....}, at: slip_write_wakeup
+(&port_lock_key){-.....}, at: serial8250_handle_irq.part.13
+
+The slip transmit is holding the slip spinlock when calling the tty write.
+This grabs the port lock. On an interrupt, the handler grabs the port
+lock and calls write_wakeup which grabs the slip lock. This could be a
+problem if a serial interrupt occurs on another CPU during the slip
+transmit.
+
+To deal with these issues, don't grab the lock in the wakeup function by
+deferring the writeout to a workqueue. Also hold the lock during close
+when de-assigning the tty pointer to safely disarm the worker and
+timers.
+
+This bug is easily reproducible on the first transmit when slip is
+used with the standard 8250 serial driver.
+
+[<c0410b7c>] (spin_bug+0x0/0x38) from [<c006109c>] (do_raw_spin_lock+0x60/0x1d0)
+ r5:eab27000 r4:ec02754c
+[<c006103c>] (do_raw_spin_lock+0x0/0x1d0) from [<c04185c0>] (_raw_spin_lock+0x28/0x2c)
+ r10:0000001f r9:eabb814c r8:eabb8140 r7:40070193 r6:ec02754c r5:eab27000
+ r4:ec02754c r3:00000000
+[<c0418598>] (_raw_spin_lock+0x0/0x2c) from [<bf3a0220>] (slip_write_wakeup+0x50/0xe0 [slip])
+ r4:ec027540 r3:00000003
+[<bf3a01d0>] (slip_write_wakeup+0x0/0xe0 [slip]) from [<c026e420>] (tty_wakeup+0x48/0x68)
+ r6:00000000 r5:ea80c480 r4:eab27000 r3:bf3a01d0
+[<c026e3d8>] (tty_wakeup+0x0/0x68) from [<c028a8ec>] (uart_write_wakeup+0x2c/0x30)
+ r5:ed68ea90 r4:c06790d8
+[<c028a8c0>] (uart_write_wakeup+0x0/0x30) from [<c028dc44>] (serial8250_tx_chars+0x114/0x170)
+[<c028db30>] (serial8250_tx_chars+0x0/0x170) from [<c028dffc>] (serial8250_handle_irq+0xa0/0xbc)
+ r6:000000c2 r5:00000060 r4:c06790d8 r3:00000000
+[<c028df5c>] (serial8250_handle_irq+0x0/0xbc) from [<c02933a4>] (dw8250_handle_irq+0x38/0x64)
+ r7:00000000 r6:edd2f390 r5:000000c2 r4:c06790d8
+[<c029336c>] (dw8250_handle_irq+0x0/0x64) from [<c028d2f4>] (serial8250_interrupt+0x44/0xc4)
+ r6:00000000 r5:00000000 r4:c06791c4 r3:c029336c
+[<c028d2b0>] (serial8250_interrupt+0x0/0xc4) from [<c0067fe4>] (handle_irq_event_percpu+0xb4/0x2b0)
+ r10:c06790d8 r9:eab27000 r8:00000000 r7:00000000 r6:0000001f r5:edd52980
+ r4:ec53b6c0 r3:c028d2b0
+[<c0067f30>] (handle_irq_event_percpu+0x0/0x2b0) from [<c006822c>] (handle_irq_event+0x4c/0x6c)
+ r10:c06790d8 r9:eab27000 r8:c0673ae0 r7:c05c2020 r6:ec53b6c0 r5:edd529d4
+ r4:edd52980
+[<c00681e0>] (handle_irq_event+0x0/0x6c) from [<c006b140>] (handle_level_irq+0xe8/0x100)
+ r6:00000000 r5:edd529d4 r4:edd52980 r3:00022000
+[<c006b058>] (handle_level_irq+0x0/0x100) from [<c00676f8>] (generic_handle_irq+0x30/0x40)
+ r5:0000001f r4:0000001f
+[<c00676c8>] (generic_handle_irq+0x0/0x40) from [<c000f57c>] (handle_IRQ+0xd0/0x13c)
+ r4:ea997b18 r3:000000e0
+[<c000f4ac>] (handle_IRQ+0x0/0x13c) from [<c00086c4>] (armada_370_xp_handle_irq+0x4c/0x118)
+ r8:000003ff r7:ea997b18 r6:ffffffff r5:60070013 r4:c0674dc0
+[<c0008678>] (armada_370_xp_handle_irq+0x0/0x118) from [<c0013840>] (__irq_svc+0x40/0x70)
+Exception stack(0xea997b18 to 0xea997b60)
+7b00:                                                       00000001 20070013
+7b20: 00000000 0000000b 20070013 eab27000 20070013 00000000 ed10103e eab27000
+7b40: c06790d8 ea997b74 ea997b60 ea997b60 c04186c0 c04186c8 60070013 ffffffff
+ r9:eab27000 r8:ed10103e r7:ea997b4c r6:ffffffff r5:60070013 r4:c04186c8
+[<c04186a4>] (_raw_spin_unlock_irqrestore+0x0/0x54) from [<c0288fc0>] (uart_start+0x40/0x44)
+ r4:c06790d8 r3:c028ddd8
+[<c0288f80>] (uart_start+0x0/0x44) from [<c028982c>] (uart_write+0xe4/0xf4)
+ r6:0000003e r5:00000000 r4:ed68ea90 r3:0000003e
+[<c0289748>] (uart_write+0x0/0xf4) from [<bf3a0d20>] (sl_xmit+0x1c4/0x228 [slip])
+ r10:ed388e60 r9:0000003c r8:ffffffdd r7:0000003e r6:ec02754c r5:ea717eb8
+ r4:ec027000
+[<bf3a0b5c>] (sl_xmit+0x0/0x228 [slip]) from [<c0368d74>] (dev_hard_start_xmit+0x39c/0x6d0)
+ r8:eaf163c0 r7:ec027000 r6:ea717eb8 r5:00000000 r4:00000000
+
+Signed-off-by: Tyler Hall <tylerwhall@gmail.com>
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Andre Naujoks <nautsch2@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/net/slip/slip.c | 36 ++++++++++++++++++++++++++----------
+ drivers/net/slip/slip.h |  1 +
+ 2 files changed, 27 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/slip/slip.c b/drivers/net/slip/slip.c
+index ad4a94e9ff57..87526443841f 100644
+--- a/drivers/net/slip/slip.c
++++ b/drivers/net/slip/slip.c
+@@ -83,6 +83,7 @@
+ #include <linux/delay.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
++#include <linux/workqueue.h>
+ #include "slip.h"
+ #ifdef CONFIG_INET
+ #include <linux/ip.h>
+@@ -416,36 +417,46 @@ static void sl_encaps(struct slip *sl, unsigned char *icp, int len)
+ #endif
+ }
+ 
+-/*
+- * Called by the driver when there's room for more data.  If we have
+- * more packets to send, we send them here.
+- */
+-static void slip_write_wakeup(struct tty_struct *tty)
++/* Write out any remaining transmit buffer. Scheduled when tty is writable */
++static void slip_transmit(struct work_struct *work)
+ {
++	struct slip *sl = container_of(work, struct slip, tx_work);
+ 	int actual;
+-	struct slip *sl = tty->disc_data;
+ 
++	spin_lock_bh(&sl->lock);
+ 	/* First make sure we're connected. */
+-	if (!sl || sl->magic != SLIP_MAGIC || !netif_running(sl->dev))
++	if (!sl->tty || sl->magic != SLIP_MAGIC || !netif_running(sl->dev)) {
++		spin_unlock_bh(&sl->lock);
+ 		return;
++	}
+ 
+-	spin_lock_bh(&sl->lock);
+ 	if (sl->xleft <= 0)  {
+ 		/* Now serial buffer is almost free & we can start
+ 		 * transmission of another packet */
+ 		sl->dev->stats.tx_packets++;
+-		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
++		clear_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
+ 		spin_unlock_bh(&sl->lock);
+ 		sl_unlock(sl);
+ 		return;
+ 	}
+ 
+-	actual = tty->ops->write(tty, sl->xhead, sl->xleft);
++	actual = sl->tty->ops->write(sl->tty, sl->xhead, sl->xleft);
+ 	sl->xleft -= actual;
+ 	sl->xhead += actual;
+ 	spin_unlock_bh(&sl->lock);
+ }
+ 
++/*
++ * Called by the driver when there's room for more data.
++ * Schedule the transmit.
++ */
++static void slip_write_wakeup(struct tty_struct *tty)
++{
++	struct slip *sl = tty->disc_data;
++
++	schedule_work(&sl->tx_work);
++}
++
+ static void sl_tx_timeout(struct net_device *dev)
+ {
+ 	struct slip *sl = netdev_priv(dev);
+@@ -749,6 +760,7 @@ static struct slip *sl_alloc(dev_t line)
+ 	sl->magic       = SLIP_MAGIC;
+ 	sl->dev	      	= dev;
+ 	spin_lock_init(&sl->lock);
++	INIT_WORK(&sl->tx_work, slip_transmit);
+ 	sl->mode        = SL_MODE_DEFAULT;
+ #ifdef CONFIG_SLIP_SMART
+ 	/* initialize timer_list struct */
+@@ -872,8 +884,12 @@ static void slip_close(struct tty_struct *tty)
+ 	if (!sl || sl->magic != SLIP_MAGIC || sl->tty != tty)
+ 		return;
+ 
++	spin_lock_bh(&sl->lock);
+ 	tty->disc_data = NULL;
+ 	sl->tty = NULL;
++	spin_unlock_bh(&sl->lock);
++
++	flush_work(&sl->tx_work);
+ 
+ 	/* VSV = very important to remove timers */
+ #ifdef CONFIG_SLIP_SMART
+diff --git a/drivers/net/slip/slip.h b/drivers/net/slip/slip.h
+index 67673cf1266b..cf32aadf508f 100644
+--- a/drivers/net/slip/slip.h
++++ b/drivers/net/slip/slip.h
+@@ -53,6 +53,7 @@ struct slip {
+   struct tty_struct	*tty;		/* ptr to TTY structure		*/
+   struct net_device	*dev;		/* easy for intr handling	*/
+   spinlock_t		lock;
++  struct work_struct	tx_work;	/* Flushes transmit buffer	*/
+ 
+ #ifdef SL_INCLUDE_CSLIP
+   struct slcompress	*slcomp;	/* for header compression 	*/
 -- 
 2.0.1
 
