@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314AbaG3TpI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 15:45:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2739 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750909AbaG3TpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 15:45:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,766,1400050800"; 
-   d="scan'208";a="463299525"
-Date: Wed, 30 Jul 2014 15:45:03 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Boaz Harrosh <openosd@gmail.com>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 04/22] Change direct_access calling convention
-Message-ID: <20140730194503.GQ6754@linux.intel.com>
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
- <b78b33d94b669a5fbd02e06f2493b43dd5d77698.1406058387.git.matthew.r.wilcox@intel.com>
- <53D9174C.7040906@gmail.com>
+	id S1751377AbaG3Ts3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 15:48:29 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:65302 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777AbaG3Ts2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 15:48:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D9174C.7040906@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <1406742127-27654-12-git-send-email-benjamin.gaignard@linaro.org>
+References: <1406742127-27654-1-git-send-email-benjamin.gaignard@linaro.org>
+	<1406742127-27654-12-git-send-email-benjamin.gaignard@linaro.org>
+Date: Wed, 30 Jul 2014 21:48:27 +0200
+X-Google-Sender-Auth: BB90Lu8LNv_h4FDxKaY8YTLY1XE
+Message-ID: <CAKMK7uGcFhfzeNTPNk=X_N=C4pda0LTtsb51JLGNBZAU5kg6tg@mail.gmail.com>
+Subject: Re: [PATCH v8 11/11] drm: sti: Add DRM driver itself
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Cc: dri-devel <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Airlie <airlied@linux.ie>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 07:03:24PM +0300, Boaz Harrosh wrote:
-> > +long bdev_direct_access(struct block_device *bdev, sector_t sector,
-> > +			void **addr, unsigned long *pfn, long size)
-> > +{
-> > +	const struct block_device_operations *ops = bdev->bd_disk->fops;
-> > +	if (!ops->direct_access)
-> > +		return -EOPNOTSUPP;
-> 
-> You need to check alignment on PAGE_SIZE since this API requires it, do
-> to pfn defined to a page_number.
-> 
-> (Unless you want to define another output-param like page_offset.
->  but this exercise can be left to the caller)
-> 
-> You also need to check against the partition boundary. so something like:
-> 
-> + 	if (sector & (PAGE_SECTORS-1))
-> + 		return -EINVAL;
-
-Mmm.  PAGE_SECTORS is private to brd (and also private to bcache!) at
-this point.  We've got a real mess of defines of SECTOR_SIZE, SECTORSIZE,
-SECTOR_SHIFT and so on, dotted throughout various random include files.
-I am not the river to flush those Augean stables today.
-
-I'll go with this, from the dcssblk driver:
-
-        if (sector % (PAGE_SIZE / 512))
-                return -EINVAL;
-
-> +	if (unlikely(sector + size > part_nr_sects_read(bdev->bd_part)))
-> + 		return -ERANGE;
-> 
-> Then perhaps you can remove that check from drivers
-
-As noted in your followup, size is in terms of bytes.  Perhaps it should
-be named 'length' to make it more clear that it's a byte count, not a
-sector count?
-
-In any case, this looks best to me:
-
-        if ((sector + DIV_ROUND_UP(size, 512)) >
-                                        part_nr_sects_read(bdev->bd_part))
-                return -ERANGE;
+On Wed, Jul 30, 2014 at 7:42 PM, Benjamin Gaignard
+<benjamin.gaignard@linaro.org> wrote:
+> @@ -87,11 +90,50 @@ static int sti_compositor_bind(struct device *dev, struct device *master,
+>         struct sti_compositor *compo = dev_get_drvdata(dev);
+>         struct drm_device *drm_dev = data;
+>         unsigned int i, crtc = 0, plane = 0;
+> +       struct sti_drm_private *dev_priv = drm_dev->dev_private;
+> +       struct drm_plane *cursor = NULL;
+> +       struct drm_plane *primary = NULL;
+> +
+> +       dev_priv->compo = compo;
+>
+>         drm_vblank_init(drm_dev, crtc);
 
 
-> Style: Need a space between declaration and code (have you check-patch)
+This looks strange - you should pass this the total number of crtcs
+(the same that eventually ends up in dev->mode_config.num_crtc), not
+0. And the assignement of cursors to crtcs looks a bit strange on
+first read-through, but I have no clue about the sti hw. And in any
+case those pointers really only matter for backwards compat with
+existing pageflip and cursor ioctls, so doesn't really matter too
+much.
 
-That's a bullshit check.  I don't know why it's in checkpatch.
-
-> > +	if (size < 0)
-> 
-> 	if(size < PAGE_SIZE), No?
-
-No, absolutely not.  PAGE_SIZE is unsigned long, which (if I understand
-my C integer promotions correctly) means that 'size' gets promoted to
-an unsigned long, and we compare them unsigned, so errors will never be
-caught by this check.
-
+Anyway didn't spot anything else which would need to be upgrade to
+never kms interfaces, so ack from my side for that. Only looked at
+that since right now I'm refreshing drm docs in those areas ;-)
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
