@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848AbaG3WOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 18:14:43 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:47750 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573AbaG3WOf (ORCPT
+	id S1753665AbaG3WSX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 18:18:23 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58306 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752033AbaG3WSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 18:14:35 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Brian King <brking@linux.vnet.ibm.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH] scsi: ibmvscsi: ibmvfc.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Thu, 31 Jul 2014 00:15:59 +0200
-Message-Id: <1406758559-20836-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1406758559-20836-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1406758559-20836-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Wed, 30 Jul 2014 18:18:22 -0400
+Date: Thu, 31 Jul 2014 00:18:19 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+Cc: Bob Beck <beck@openbsd.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-api@vger.kernel.org,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        Theo de Raadt <deraadt@cvs.openbsd.org>
+Subject: Re: [PATCH -v4] random: introduce getrandom(2) system call
+Message-ID: <20140730221819.GB18189@amd.pavel.ucw.cz>
+References: <1405718127-30042-1-git-send-email-tytso@mit.edu>
+ <20140730122620.GC13965@amd.pavel.ucw.cz>
+ <CAComcpMnAdOk=Hs8Dtc7VZeJDHnpKQtzZ_=_67tqCeYU3pdJ_Q@mail.gmail.com>
+ <1406731254.26034.4.camel@thorin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406731254.26034.4.camel@thorin>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+On Wed 2014-07-30 16:40:52, Bernd Petrovitsch wrote:
+> On Mit, 2014-07-30 at 07:56 -0600, Bob Beck wrote:
+> > Pavel. I have bit 'ol enterprise daemon running with established file
+> > descriptors serving thousands of connections
+> > which periodically require entropy.  Now I run out of descriptors. I
+> > can't establish new connections. but I should
+> > now halt all the other ones that require entropy?  I should raise
+> > SIGKILL on my process serving these thousands
+> > of connetions?  I don't think so.
+> 
+> If that long-running daemon periodically needs something from a device,
+> one would better keep the fd for that open the whole time. Saves some
+> CPU cycles and latency too BTW.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/scsi/ibmvscsi/ibmvfc.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+Agreed.
 
-diff --git a/drivers/scsi/ibmvscsi/ibmvfc.c b/drivers/scsi/ibmvscsi/ibmvfc.c
-index 8dd4768..56c26ef 100644
---- a/drivers/scsi/ibmvscsi/ibmvfc.c
-+++ b/drivers/scsi/ibmvscsi/ibmvfc.c
-@@ -1149,7 +1149,8 @@ static void ibmvfc_gather_partition_info(struct ibmvfc_host *vhost)
- 
- 	name = of_get_property(rootdn, "ibm,partition-name", NULL);
- 	if (name)
--		strncpy(vhost->partition_name, name, sizeof(vhost->partition_name));
-+		strlcpy(vhost->partition_name, name,
-+				sizeof(vhost->partition_name));
- 	num = of_get_property(rootdn, "ibm,partition-no", NULL);
- 	if (num)
- 		vhost->partition_number = *num;
-@@ -1186,13 +1187,14 @@ static void ibmvfc_set_login_info(struct ibmvfc_host *vhost)
- 	login_info->capabilities = IBMVFC_CAN_MIGRATE;
- 	login_info->async.va = vhost->async_crq.msg_token;
- 	login_info->async.len = vhost->async_crq.size * sizeof(*vhost->async_crq.msgs);
--	strncpy(login_info->partition_name, vhost->partition_name, IBMVFC_MAX_NAME);
--	strncpy(login_info->device_name,
-+	strlcpy(login_info->partition_name, vhost->partition_name,
-+			IBMVFC_MAX_NAME);
-+	strlcpy(login_info->device_name,
- 		dev_name(&vhost->host->shost_gendev), IBMVFC_MAX_NAME);
- 
- 	location = of_get_property(of_node, "ibm,loc-code", NULL);
- 	location = location ? location : dev_name(vhost->dev);
--	strncpy(login_info->drc_name, location, IBMVFC_MAX_NAME);
-+	strlcpy(login_info->drc_name, location, IBMVFC_MAX_NAME);
- }
- 
- /**
+On the other hand, keeping a fd open is quite tricky for a
+library. But better solution might be to make that easier.
+
+open( , O_IM_A_LIBRARY_GIVE_ME_ONE_OF_THREE_RESERVED_FDS) might be one
+solution. Actually, one reserved fd should be enough.
+
+									Pavel
 -- 
-1.7.10.4
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
