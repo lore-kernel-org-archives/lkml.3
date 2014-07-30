@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaG3XB0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 19:01:26 -0400
-Received: from ozlabs.org ([103.22.144.67]:46665 "EHLO ozlabs.org"
+	id S1752517AbaG3XDv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 19:03:51 -0400
+Received: from mta-out1.inet.fi ([62.71.2.198]:43293 "EHLO kirsi1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517AbaG3XBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 19:01:24 -0400
-Date: Thu, 31 Jul 2014 09:01:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
+	id S1750987AbaG3XDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 19:03:50 -0400
+Date: Thu, 31 Jul 2014 02:03:02 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Al Viro <viro@ZenIV.linux.org.uk>, "David S. Miller" <davem@davemloft.net>
+Cc: David Howells <dhowells@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Michael L. Semon" <mlsemon35@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, jason.low2@hp.com,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: linux-next: URL change for mfd tree?
-Message-ID: <20140731090116.01e54d15@canb.auug.org.au>
-In-Reply-To: <20140730071254.GC9030@lee--X1>
-References: <20140730092453.089e1094@canb.auug.org.au>
-	<20140730071254.GC9030@lee--X1>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+Subject: Re: cred_guard_mutex vs seq_file::lock [was: Re: 3.14.0+/x86:
+ lockdep and mutexes not getting along]
+Message-ID: <20140730230302.GA22779@node.dhcp.inet.fi>
+References: <20140410142918.GU11096@twins.programming.kicks-ass.net>
+ <alpine.LNX.2.11.1404060059020.8208@bpserver.ds>
+ <20140409121940.GA12890@node.dhcp.inet.fi>
+ <26259.1397227827@warthog.procyon.org.uk>
+ <20140411150724.GI18016@ZenIV.linux.org.uk>
+ <20140730223130.GA22417@node.dhcp.inet.fi>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/bI7sOHZGvFumq.vHe1X0MkU"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140730223130.GA22417@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/bI7sOHZGvFumq.vHe1X0MkU
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jul 31, 2014 at 01:31:30AM +0300, Kirill A. Shutemov wrote:
+> I don't know why we allow "chmod +x" on some proc files, notably net-related.
+> Is it a bug?
 
-Hi Lee,
+# ls -l /proc/{1,157}/net/packet
+-r--r--r-- 1 root 0 0 Jul 30 23:01 /proc/1/net/packet
+-r--r--r-- 1 root 0 0 Jul 30 23:01 /proc/157/net/packet
+# chmod +x /proc/157/net/packet
+# ls -l /proc/{1,157}/net/packet
+-r-xr-xr-x 1 root 0 0 Jul 30 23:02 /proc/1/net/packet
+-r-xr-xr-x 1 root 0 0 Jul 30 23:02 /proc/157/net/packet
 
-On Wed, 30 Jul 2014 08:12:54 +0100 Lee Jones <lee.jones@linaro.org> wrote:
->
-> > I noticed commit 71e297b17bb6 ("MAINTAINERS: Update MFD repo location")
-> > in the mfd-lj tree today.  In linux-next, I have the following mfd
-> > trees:
-> >=20
-> > git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-fixes.git#master
-> > git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-next.git#master
-> > git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git#for-mfd-next
-> >=20
-> > Does your commit mean that I should remove the first two?
->=20
-> Yes please.  They haven't been used for ~6 months and aren't likely to
-> be used again.
+Ouch.. Or is it expected?
 
-I have removed them and renamed mfd-lj to mfd.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/bI7sOHZGvFumq.vHe1X0MkU
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT2XlCAAoJEMDTa8Ir7ZwVbYUP/1l+a/WRzEEx+dMf+QK4T4Qw
-qV+euglEAGXSGB2xfU3YjLg/O3jMxWUwztSjXBuBBYnrJjdsWKLjrOdH87x+0VZc
-PEXkSVv8Vr10qL9VJgKJ/wVGCsX37VHOobfuwtGyw7+nDTTG0qF/DO67Ga5NzoQf
-7UKEukPgRXRZeGsXZZNxvZ5itLUkd96ASAcSnE+5b1rK4R1MNfFyHorNku1oegnW
-6BxrBxEejnjTtgqd3P6Xh9sY21rwoGmytYb+mU8F6FWtNdoV8Fi4YWBBkFqmQKZS
-dp3+vkYIbZpB2fD09rLx9VByJqbUGaTLoLhZuXZ36PHSO6rra+QSYf1bL2vqtnmq
-L6jIdsP9kEgLZaAXjqs3dkh4qczQrFK88QZ8zaZqr0VBStNUHfJKrPo5xGDhhGgF
-THNbSM5cVvnywyJ6+kID+XTgf7/VP1m7JUvub51Nh9Jfb2IavjBgwuW34zsblqXj
-75op+zSt+TexV6b210PFpvV5KLT8oKn/V5bXHI/+hQaKklq3vZKB17ETPdHg3FOp
-kPycE51kIEerVTCGQWchTZbAcnFTuWFYkzeDFiZioqvx2ZUA0IpMLWz3Llow9SF5
-fM59zO3bGz0RW8JK2CrEisCuKjjXav0bgRquZlyPoydKKXyWy66MyWP9MaYIQS6W
-Va8Z7n6AArtvnrZlziTb
-=m5Rv
------END PGP SIGNATURE-----
-
---Sig_/bI7sOHZGvFumq.vHe1X0MkU--
+-- 
+ Kirill A. Shutemov
