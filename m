@@ -1,86 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973AbaG3KMr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 06:12:47 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45648 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036AbaG3KMq (ORCPT
+	id S1752131AbaG3KNj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 06:13:39 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:38561 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393AbaG3KNh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 06:12:46 -0400
-Date: Wed, 30 Jul 2014 12:12:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Alexander Graf <agraf@suse.de>,
-        Michael Ellerman <michael@ellerman.id.au>
-Subject: Re: [RFC PATCH] mm: Add helpers for locked_vm
-Message-ID: <20140730101218.GG19379@twins.programming.kicks-ass.net>
-References: <1406712493-9284-1-git-send-email-aik@ozlabs.ru>
+	Wed, 30 Jul 2014 06:13:37 -0400
+Date: Wed, 30 Jul 2014 11:13:31 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>,
+        "arjan.van.de.ven@intel.com" <arjan.van.de.ven@intel.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "alan.cox@intel.com" <alan.cox@intel.com>,
+        "mark.gross@intel.com" <mark.gross@intel.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
+Subject: Re: [PATCH 0/2 v4] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140730101331.GB15761@e103687>
+References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
+ <20140718153931.GJ8700@e103034-lin>
+ <20140727190237.GB22986@intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YuRE/gUr1KgjPX1R"
+In-Reply-To: <20140727190237.GB22986@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 30 Jul 2014 10:13:32.0735 (UTC) FILETIME=[EACBD4F0:01CFABDE]
+X-MC-Unique: 114073011133500901
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1406712493-9284-1-git-send-email-aik@ozlabs.ru>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jul 27, 2014 at 08:02:37PM +0100, Yuyang Du wrote:
+> Hi Morten,
+> 
+> On Fri, Jul 18, 2014 at 04:39:31PM +0100, Morten Rasmussen wrote:
+> > 1. runnable_avg_period is removed
+> > 
+> > load_avg_contrib used to be runnable_avg_sum/runnable_avg_period scaled
+> > by the task load weight (priority). The runnable_avg_period is replaced
+> > by a constant in this patch set. The effect of that change is that task
+> > load tracking no longer is more sensitive early life of the task until
+> > it has built up some history. Task are now initialized to start out as
+> > if they have been runnable forever (>345ms). If this assumption about
+> > the task behavior is wrong it will take longer to converge to the true
+> > average than it did before. The upside is that is more stable.
+> 
+> I think "Give new task start runnable values to heavy its load in infant time"
+> in general is good, with an emphasis on infant. Or from the opposite, making it
+> zero to let it gain runnable weight looks worse than full weight.
 
---YuRE/gUr1KgjPX1R
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Initializing tasks to have full weight is current behaviour, which I
+agree with. However, with your changes (dropping runnable_avg_period) it
+may take longer for the tracked load of new tasks to converge to the
+true load of the task. I don't think it is a big deal, but it is a
+change compared to the current implementation.
 
-On Wed, Jul 30, 2014 at 07:28:13PM +1000, Alexey Kardashevskiy wrote:
-> This adds 2 helpers to change the locked_vm counter:
-> - try_increase_locked_vm - may fail if new locked_vm value will be greater
-> than the RLIMIT_MEMLOCK limit;
-> - decrease_locked_vm.
->=20
-> These will be used by drivers capable of locking memory by userspace
-> request. For example, VFIO can use it to check if it can lock DMA memory
-> or PPC-KVM can use it to check if it can lock memory for TCE tables.
+> 
+> > 2. runnable_load_avg and blocked_load_avg are combined
+> > 
+> > runnable_load_avg currently represents the sum of load_avg_contrib of
+> > all tasks on the rq, while blocked_load_avg is the sum of those tasks
+> > not on a runqueue. It makes perfect sense to consider the sum of both
+> > when calculating the load of a cpu, but we currently don't include
+> > blocked_load_avg. The reason for that is the priority scaling of the
+> > task load_avg_contrib may lead to under-utilization of cpus that
+> > occasionally have tiny high priority task running. You can easily have a
+> > task that takes 5% of cpu time but has a load_avg_contrib several times
+> > larger than a default priority task runnable 100% of the time.
+> 
+> So this is the effect of historical averaging and weight scaling, both of which
+> are just generally good, but may have bad cases.
 
-Urgh no.. have a look here:
+I don't agree that weight scaling is generally good. There has been
+several threads discussing that topic over the last half year or so. It
+is there to ensure smp niceness, but it makes load-balancing on systems
+which are not fully utilized sub-optimal. You may end up with some cpus
+not being fully utilized while others are over-utilized when you have
+multiple tasks running at different priorities.
 
-lkml.kernel.org/r/20140526145605.016140154@infradead.org
+It is a very real problem when user-space uses priorities extensively
+like Android does. Tasks related to audio run at very high priorities
+but only for a very short amount of time, but due the to priority
+scaling their load ends up being several times higher than tasks running
+all the time at normal priority. Hence task load is a very poor
+indicator of utilization.
 
-Someone needs to go help with the IB stuff, I got properly lost in
-there.
+> > Another thing that might be an issue is that the blocked of a terminated
+> > task lives on for quite a while until has decayed away.
+> 
+> Good point. To do so, if I read correctly, we need to hook do_exit(), but probably
+> we are gonna encounter rq->lock issue.
+> 
+> What is the opinion/guidance from the maintainers/others?
+>  
+> > I'm all for taking the blocked load into consideration, but this issue
+> > has to be resolved first. Which leads me on to the next thing.
+> > 
+> > Most of the work going on around energy awareness is based on the load
+> > tracking to estimate task and cpu utilization. It seems that most of the
+> > involved parties think that we need an unweighted variant of the tracked
+> > load as well as tracking the running time of a task. The latter was part
+> > of the original proposal by pjt and Ben, but wasn't used. It seems that
+> > unweighted runnable tracking should be fairly easy to add to your
+> > proposal, but I don't have an overview of whether it is possible to add
+> > running tracking. Do you think that is possible?
+> > 
+> 
+> Running tracking is absolutely possbile, just the matter of minimizing overhead
+> (how to do it along with runnable for task and maybe for CPU, but not for
+> cfs_rq) from execution and code cleanness ponit of view. We can do it as soon as
+> it is needed.
 
---YuRE/gUr1KgjPX1R
-Content-Type: application/pgp-signature
+>From a coding point of view it is very easy to add to the current
+load-tracking. We have already discussed putting it back in to enable
+better tracking of utilization. It is quite likely needed for the
+energy-awareness improvements and also to fix the priority scaling
+problem described above. 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+IMHO, the above things need to be considered as part of a rewrite of the
+load-tracking implementation otherwise we risk having to change it again
+soon.
 
-iQIcBAEBAgAGBQJT2MUCAAoJEHZH4aRLwOS6tgcP/irknQ9NQqFgjP6iEkuuxHin
-7HpyR+dr0RJnCyp6aqaneqfIX6MtyUnIVUsxPegu6OEGHwbYWE+D2XWZAbXHaMdW
-GC2J6wCMw6YVBuBoXaUIxlmgL/VVcXuDluMkww6b3roBmF4jW+0jjIVG8hkX6DUl
-YaG/cv6Kclu4vS4f+hXOMEd/rd+PJMl9O8Kk8yzcHGXfcBt2IOTqiiHwG/GX2XTw
-1h6QvPid6SWLQ6EbHVZZd95/jgAowkwuVJZddlBxUwd839mg4+i/ypMtu7YXz5dN
-x25Nvo6w+8sCQcq1G1GACaWcJTsKJhAjew90nF33EGU+PjqzgWJdwN07gBQa9zjV
-F5pVrc2aYAGJWsxGTtq4kDD6w3B3oh1AKlv2/SAYA6koX29OGFi9WN5hUWOm3MG8
-LIqwqhfuhL0tWFAbn9dP3IFHzeMjCyeyhpQMxIL2bqMFHicqk/+qz87ol9l69Qg1
-Bwip5wxihkTQ9nfzK7FcUBthI3Hy4a09gXZm3KdpxvPoa9ZdfXfxuNF/gSRcfoHy
-jzazCcWD+rZIMLPy509v49223MD9j4peSNjd3E64GlZFQqHHezDSUiNY6dl/jT39
-XUTpoBdWXvQAb1z3YOYVDRNDIoDQroXQdelggdcACPn2aqj+kyXnB73+K6L+OGAC
-tSxKdbkan5Zdl6BRbSx8
-=zcmc
------END PGP SIGNATURE-----
+Morten
 
---YuRE/gUr1KgjPX1R--
