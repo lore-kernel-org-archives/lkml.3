@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159AbaG3Kdm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 06:33:42 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53250 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752096AbaG3Kdl (ORCPT
+	id S1752200AbaG3KhY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 06:37:24 -0400
+Received: from g2t2353.austin.hp.com ([15.217.128.52]:19195 "EHLO
+	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547AbaG3KhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 06:33:41 -0400
-From: Punit Agrawal <punit.agrawal@arm.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: "arm\@kernel.org" <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Himangi Saraogi <himangi774@gmail.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "julia.lawall\@lip6.fr" <julia.lawall@lip6.fr>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH] drivers: CCI: Correct use of ! and &
-References: <20140707140538.GA4204@himangi-Dell> <9hhwqb42k63.fsf@arm.com>
-	<20140723150518.GD27677@arm.com> <9hhvbqg1jra.fsf@arm.com>
-	<CAOesGMjUZgvpMoKivoZcAsMTZbfBrBToRPZmQyQNLHtxWNa5wA@mail.gmail.com>
-Date: Wed, 30 Jul 2014 11:32:45 +0100
-In-Reply-To: <CAOesGMjUZgvpMoKivoZcAsMTZbfBrBToRPZmQyQNLHtxWNa5wA@mail.gmail.com>
-	(Olof Johansson's message of "Tue, 29 Jul 2014 09:41:36 -0700")
-Message-ID: <9hh61if6ss2.fsf@arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 30 Jul 2014 06:37:23 -0400
+Message-ID: <1406716641.9336.17.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] mm: BUG when __kmap_atomic_idx crosses boundary
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chintan Pandya <cpandya@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Wed, 30 Jul 2014 03:37:21 -0700
+In-Reply-To: <20140730020615.2f943cf7.akpm@linux-foundation.org>
+References: <1406710355-4360-1-git-send-email-cpandya@codeaurora.org>
+	 <20140730020615.2f943cf7.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof Johansson <olof@lixom.net> writes:
 
-> On Tue, Jul 29, 2014 at 4:34 AM, Punit Agrawal <punit.agrawal@arm.com> wrote:
->> Hi Arnd,
->>
->> Will Deacon <will.deacon@arm.com> writes:
->>
->>> On Wed, Jul 23, 2014 at 04:01:56PM +0100, Punit Agrawal wrote:
->>>> > diff --git a/drivers/bus/arm-cci.c b/drivers/bus/arm-cci.c
->>>> > index 5a86da9..7af78df 100644
->>>> > --- a/drivers/bus/arm-cci.c
->>>> > +++ b/drivers/bus/arm-cci.c
->>>> > @@ -397,7 +397,8 @@ static irqreturn_t pmu_handle_irq(int irq_num, void *dev)
->>>> >            hw_counter = &event->hw;
->>>> >
->>>> >            /* Did this counter overflow? */
->>>> > -          if (!pmu_read_register(idx, CCI_PMU_OVRFLW) & CCI_PMU_OVRFLW_FLAG)
->>>> > +          if (!(pmu_read_register(idx, CCI_PMU_OVRFLW) &
->>>> > +                CCI_PMU_OVRFLW_FLAG))
->>>> >                    continue;
->>>>
->>>>
->>>> Going back to the manual, this fix looks correct.
->>>>
->>>> Acked-by: Punit Agrawal <punit.agrawal@arm.com>
->>>>
->>>> Will, would this go via your tree?
->>>
->>> Given that you're happy with it, I don't mind which tree it goes in.
->>> Probably deserves a CC stable on it too.
->>
->> The CCI PMU patches went via arm-soc. Are you happy to pick this fix with
->> the Ack and a Cc to stable.
->
-> Yeah, we've been merging most of the CCI patches.
->
-> Please resend the patch to arm@kernel.org if you want us to apply it.
+On Wed, 2014-07-30 at 02:06 -0700, Andrew Morton wrote:
+> On Wed, 30 Jul 2014 14:22:35 +0530 Chintan Pandya <cpandya@codeaurora.org> wrote:
+> 
+> > __kmap_atomic_idx >= KM_TYPE_NR or < ZERO is a bug.
+> > Report it even if CONFIG_DEBUG_HIGHMEM is not enabled.
+> > That saves much debugging efforts.
+> 
+> Please take considerably more care when preparing patch changelogs.
+> 
+> kmap_atomic() is a very commonly called function so we'll need much
+> more detail than this to justify adding overhead to it.
+> 
+> I don't think CONFIG_DEBUG_HIGHMEM really needs to exist.  We could do
+> s/CONFIG_DEBUG_HIGHMEM/CONFIG_DEBUG_VM/g and perhaps your secret bug
+> whatever it was would have been found more easily.
 
-Ok, thanks! I'll send the patch with the tags applied shortly.
+Agreed, it would be nice to fold DEBUG_HIGHMEM into DEBUG_VM. However
+you'd still need some kind of intermediate option as DEBUG_VM must still
+exist if !HIGHMEM.
 
->
->
-> Thanks,
->
-> -Olof
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks,
+Davidlohr
+
+
