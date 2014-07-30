@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637AbaG3ItY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 04:49:24 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:26628
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750999AbaG3ItH (ORCPT
+	id S1751790AbaG3Itm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 04:49:42 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:58821 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683AbaG3Ith (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 04:49:07 -0400
-X-IronPort-AV: E=Sophos;i="5.01,762,1400018400"; 
-   d="scan'208";a="73318770"
-Date: Wed, 30 Jul 2014 10:48:43 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Alexandre Courbot <gnurou@gmail.com>
-cc: Linus Walleij <linus.walleij@linaro.org>, kernel-janitors@vger.kernel.org,
-        linux-ia64@vger.kernel.org, ceph-devel@vger.kernel.org,
-        toralf.foerster@gmx.de, hmh@hmh.eng.br,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/9] gpiolib: devres: use correct structure type name in
- sizeof
-In-Reply-To: <CAAVeFuLZb3CVV6B771V3-mzYdp0zsxaBfAAdikQDMBxSZTPTjA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1407301048170.2389@hadrien>
-References: <1406647011-8543-1-git-send-email-Julia.Lawall@lip6.fr> <1406647011-8543-7-git-send-email-Julia.Lawall@lip6.fr> <CAAVeFuLZb3CVV6B771V3-mzYdp0zsxaBfAAdikQDMBxSZTPTjA@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 30 Jul 2014 04:49:37 -0400
+Message-ID: <53D8B195.4050003@collabora.co.uk>
+Date: Wed, 30 Jul 2014 10:49:25 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mark Brown <broonie@kernel.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 3/5] regulator: core: Only apply constraints if available
+ on list voltage
+References: <1406651339-28901-1-git-send-email-javier.martinez@collabora.co.uk> <1406651339-28901-4-git-send-email-javier.martinez@collabora.co.uk> <20140729171857.GV17528@sirena.org.uk>
+In-Reply-To: <20140729171857.GV17528@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Mark, thanks a lot for all your feedback.
 
+On 07/29/2014 07:18 PM, Mark Brown wrote:
+> On Tue, Jul 29, 2014 at 06:28:57PM +0200, Javier Martinez Canillas wrote:
+>> 
+>> But for load switches that don't define a voltage output, the parent
+>> supply voltage is used so the constraints should only be applied if
+>> they were defined for the child regulators.
+> 
+> No, think about what you're doing here and why we're filtering out
+> unsettable voltages - this causes problems for consumers on regulators
+> that don't have any ability to vary voltages since they will now be able
+> to list voltages that they can't select.  
+> 
 
-On Wed, 30 Jul 2014, Alexandre Courbot wrote:
+Understood. Thanks for the explanation.
 
-> On Wed, Jul 30, 2014 at 12:16 AM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > Correct typo in the name of the type given to sizeof.  Because it is the
-> > size of a pointer that is wanted, the typo has no impact on compilation or
-> > execution.
-> >
-> > This problem was found using Coccinelle (http://coccinelle.lip6.fr/).  The
-> > semantic patch used can be found in message 0 of this patch series.
->
-> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
->
-> Interestingly the compiler never complains despite gpiod_desc not
-> being a declared type...
+> I would also expect any regulator where the supplied devices are able to
+> vary the voltage to explicitly provide a constraint even if the
+> implementation is done in a parent regulator.  There may be constraints
+> on the child supply which aren't directly present on the parent supply
+> and can be ignored if the child supply is turned off.
+> 
 
-The compiler doesn't care.  A pointer is a pointer, regardless of the
-type.
+Agreed, if I explicitly set the voltage constraints on the child supply then
+this patch is indeed not needed.
 
-julia
+Best regards,
+Javier
