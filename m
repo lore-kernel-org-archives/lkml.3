@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920AbaG3Btg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:49:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60440 "EHLO
+	id S1755935AbaG3CID (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:08:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60459 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754855AbaG3Bte (ORCPT
+	with ESMTP id S1754901AbaG3Btg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:34 -0400
+	Tue, 29 Jul 2014 21:49:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 3.10 19/21] s390/ptrace: fix PSW mask check
-Date: Tue, 29 Jul 2014 18:48:48 -0700
-Message-Id: <20140730014831.284017694@linuxfoundation.org>
+        Andrew de los Reyes <adlr@chromium.org>,
+        Benson Leung <bleung@chromium.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.10 12/21] Input: fix defuzzing logic
+Date: Tue, 29 Jul 2014 18:48:41 -0700
+Message-Id: <20140730014830.981041618@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014830.424826215@linuxfoundation.org>
 References: <20140730014830.424826215@linuxfoundation.org>
@@ -29,50 +32,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Dmitry Torokhov <dtor@chromium.org>
 
-commit dab6cf55f81a6e16b8147aed9a843e1691dcd318 upstream.
+commit 50c5d36dab930b1f1b1e3348b8608aa8b9ee7610 upstream.
 
-The PSW mask check of the PTRACE_POKEUSR_AREA command is incorrect.
-The PSW_MASK_USER define contains the PSW_MASK_ASC bits, the ptrace
-interface accepts all combinations for the address-space-control
-bits. To protect the kernel space the PSW mask check in ptrace needs
-to reject the address-space-control bit combination for home space.
+We attempt to remove noise from coordinates reported by devices in
+input_handle_abs_event(), unfortunately, unless we were dropping the
+event altogether, we were ignoring the adjusted value and were passing
+on the original value instead.
 
-Fixes CVE-2014-3534
-
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Reviewed-by: Andrew de los Reyes <adlr@chromium.org>
+Reviewed-by: Benson Leung <bleung@chromium.org>
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/ptrace.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/input/input.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/arch/s390/kernel/ptrace.c
-+++ b/arch/s390/kernel/ptrace.c
-@@ -314,7 +314,9 @@ static int __poke_user(struct task_struc
- 		 * psw and gprs are stored on the stack
- 		 */
- 		if (addr == (addr_t) &dummy->regs.psw.mask &&
--		    ((data & ~PSW_MASK_USER) != psw_user_bits ||
-+		    (((data^psw_user_bits) & ~PSW_MASK_USER) ||
-+		     (((data^psw_user_bits) & PSW_MASK_ASC) &&
-+		      ((data|psw_user_bits) & PSW_MASK_ASC) == PSW_MASK_ASC) ||
- 		     ((data & PSW_MASK_EA) && !(data & PSW_MASK_BA))))
- 			/* Invalid psw mask. */
- 			return -EINVAL;
-@@ -627,7 +629,10 @@ static int __poke_user_compat(struct tas
- 		 */
- 		if (addr == (addr_t) &dummy32->regs.psw.mask) {
- 			/* Build a 64 bit psw mask from 31 bit mask. */
--			if ((tmp & ~PSW32_MASK_USER) != psw32_user_bits)
-+			if (((tmp^psw32_user_bits) & ~PSW32_MASK_USER) ||
-+			    (((tmp^psw32_user_bits) & PSW32_MASK_ASC) &&
-+			     ((tmp|psw32_user_bits) & PSW32_MASK_ASC)
-+			     == PSW32_MASK_ASC))
- 				/* Invalid psw mask. */
- 				return -EINVAL;
- 			regs->psw.mask = (regs->psw.mask & ~PSW_MASK_USER) |
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -257,9 +257,10 @@ static int input_handle_abs_event(struct
+ }
+ 
+ static int input_get_disposition(struct input_dev *dev,
+-			  unsigned int type, unsigned int code, int value)
++			  unsigned int type, unsigned int code, int *pval)
+ {
+ 	int disposition = INPUT_IGNORE_EVENT;
++	int value = *pval;
+ 
+ 	switch (type) {
+ 
+@@ -357,6 +358,7 @@ static int input_get_disposition(struct
+ 		break;
+ 	}
+ 
++	*pval = value;
+ 	return disposition;
+ }
+ 
+@@ -365,7 +367,7 @@ static void input_handle_event(struct in
+ {
+ 	int disposition;
+ 
+-	disposition = input_get_disposition(dev, type, code, value);
++	disposition = input_get_disposition(dev, type, code, &value);
+ 
+ 	if ((disposition & INPUT_PASS_TO_DEVICE) && dev->event)
+ 		dev->event(dev, type, code, value);
 
 
