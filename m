@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186AbaG3CGm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:06:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60480 "EHLO
+	id S1755904AbaG3CHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:07:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60467 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948AbaG3Btl (ORCPT
+	with ESMTP id S1754941AbaG3Btk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:41 -0400
+	Tue, 29 Jul 2014 21:49:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 04/29] media: tda10071: force modulation to QPSK on DVB-S
-Date: Tue, 29 Jul 2014 18:48:39 -0700
-Message-Id: <20140730014809.491005030@linuxfoundation.org>
+Subject: [PATCH 3.14 02/29] media: media: v4l2-core: v4l2-dv-timings.c: Cleaning up code wrong value used in aspect ratio
+Date: Tue, 29 Jul 2014 18:48:37 -0700
+Message-Id: <20140730014809.411128491@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014809.316066303@linuxfoundation.org>
 References: <20140730014809.316066303@linuxfoundation.org>
@@ -29,55 +31,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-commit db4175ae2095634dbecd4c847da439f9c83e1b3b upstream.
+commit f71920efb1066d71d74811e1dbed658173adf9bf upstream.
 
-Only supported modulation for DVB-S is QPSK. Modulation parameter
-contains invalid value for DVB-S on some cases, which leads driver
-refusing tuning attempt. Due to that, hard code modulation to QPSK
-in case of DVB-S.
+Wrong value used in same cases for the aspect ratio.
 
-Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/tda10071.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/media/v4l2-core/v4l2-dv-timings.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/media/dvb-frontends/tda10071.c
-+++ b/drivers/media/dvb-frontends/tda10071.c
-@@ -667,6 +667,7 @@ static int tda10071_set_frontend(struct
- 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
- 	int ret, i;
- 	u8 mode, rolloff, pilot, inversion, div;
-+	fe_modulation_t modulation;
- 
- 	dev_dbg(&priv->i2c->dev, "%s: delivery_system=%d modulation=%d " \
- 		"frequency=%d symbol_rate=%d inversion=%d pilot=%d " \
-@@ -701,10 +702,13 @@ static int tda10071_set_frontend(struct
- 
- 	switch (c->delivery_system) {
- 	case SYS_DVBS:
-+		modulation = QPSK;
- 		rolloff = 0;
- 		pilot = 2;
- 		break;
- 	case SYS_DVBS2:
-+		modulation = c->modulation;
-+
- 		switch (c->rolloff) {
- 		case ROLLOFF_20:
- 			rolloff = 2;
-@@ -749,7 +753,7 @@ static int tda10071_set_frontend(struct
- 
- 	for (i = 0, mode = 0xff; i < ARRAY_SIZE(TDA10071_MODCOD); i++) {
- 		if (c->delivery_system == TDA10071_MODCOD[i].delivery_system &&
--			c->modulation == TDA10071_MODCOD[i].modulation &&
-+			modulation == TDA10071_MODCOD[i].modulation &&
- 			c->fec_inner == TDA10071_MODCOD[i].fec) {
- 			mode = TDA10071_MODCOD[i].val;
- 			dev_dbg(&priv->i2c->dev, "%s: mode found=%02x\n",
+--- a/drivers/media/v4l2-core/v4l2-dv-timings.c
++++ b/drivers/media/v4l2-core/v4l2-dv-timings.c
+@@ -595,10 +595,10 @@ struct v4l2_fract v4l2_calc_aspect_ratio
+ 		aspect.denominator = 9;
+ 	} else if (ratio == 34) {
+ 		aspect.numerator = 4;
+-		aspect.numerator = 3;
++		aspect.denominator = 3;
+ 	} else if (ratio == 68) {
+ 		aspect.numerator = 15;
+-		aspect.numerator = 9;
++		aspect.denominator = 9;
+ 	} else {
+ 		aspect.numerator = hor_landscape + 99;
+ 		aspect.denominator = 100;
 
 
