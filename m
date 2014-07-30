@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766AbaG3DXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 23:23:39 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:45516 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918AbaG3DXi (ORCPT
+	id S1754826AbaG3DZp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 23:25:45 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:46556 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918AbaG3DZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 23:23:38 -0400
-Date: Tue, 29 Jul 2014 23:23:34 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 2/2 V2] workqueue: use dedicated creater kthread for
- all pools
-Message-ID: <20140730032334.GA15787@htj.dyndns.org>
-References: <20140729021643.GA22241@mtj.dyndns.org>
- <1406625376-19177-1-git-send-email-laijs@cn.fujitsu.com>
- <20140729150459.GE4791@htj.dyndns.org>
- <53D83D33.80101@cn.fujitsu.com>
+	Tue, 29 Jul 2014 23:25:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D83D33.80101@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53D82623.4080903@redhat.com>
+References: <1406653761-3884-1-git-send-email-prarit@redhat.com>
+	<20140729222932.GA17481@pd.tnic>
+	<53D82118.6090202@redhat.com>
+	<20140729223603.GC17241@pd.tnic>
+	<53D82623.4080903@redhat.com>
+Date: Tue, 29 Jul 2014 20:25:41 -0700
+Message-ID: <CAKbGBLi-6koxxQUDsn+KyO47nfCbOwFSnPgbDZGZ1Bnt=c5qKA@mail.gmail.com>
+Subject: Re: [PATCH] x86, efi: print debug values in Kib not MB
+From: Steven Noonan <steven@uplinklabs.net>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
+        lszubowi@redhat.com, Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Linux-X86 <x86@kernel.org>,
+        linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+On Tue, Jul 29, 2014 at 3:54 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+>
+>
+> On 07/29/2014 06:36 PM, Borislav Petkov wrote:
+>> On Tue, Jul 29, 2014 at 06:32:56PM -0400, Prarit Bhargava wrote:
+>>> and it was best to keep the code simple with a KiB.
+>>
+>> You're missing the point - the output doesn't get simple with KiB. Read
+>> the example I just gave you!
+>>
+>> (13893632kiB) is actively *not* helping when one looks at it!
+>
+> I did get your point and I'm (politely) disagreeing with it.  Your case ONLY
+> works if the number is _exactly_ 13GB.  What if it is 13.5?  Then we're still
+> rounding off and reporting 14GB.  Which, if this code is meant for debug, makes
+> no sense to me.  Why round it off?
+>
 
-On Wed, Jul 30, 2014 at 08:32:51AM +0800, Lai Jiangshan wrote:
-> > Why?  Just sleep and retry?  What's the point of requeueing?
-> 
-> Accepted your comments except this one which may need to discuss
-> for an additional round.  Requeueing passes the retry to the
-> kthread_worker and gives a change to the other pools which are also
-> creating worker.
-
-But why is that a good idea?  The fact that creation of a worker for a
-specific pool is completely coincidental.  The failed pool itself
-isn't inherently blameable.  It was just unlucky and moving onto a
-different pool doesn't improve the chance of success in any way.  The
-only thing requeueing achieves is punishing the unlucky one by putting
-it at the back of the queue while adding complexity.
-
-> This patch will be deferred until 3.19 due to some unbound patches
-> are ready soon.
-
-We're too late for this merge window anyway.  This is a pretty
-pervasive change after all.
-
-Thanks.
-
--- 
-tejun
+I think if it was being represented in procfs or sysfs, we'd need to
+be extremely specific to make it machine-readable, but for a
+human-readable printk, it makes sense to me to print it in the smaller
+unit size until the value is in tens of the next higher unit size
+(e.g. print in KiB until 10+MiB, print in MiB until 10+GiB).
