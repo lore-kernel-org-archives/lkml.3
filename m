@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034AbaG3Btu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:49:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60512 "EHLO
+	id S1755618AbaG3CC1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:02:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60549 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754987AbaG3Btp (ORCPT
+	with ESMTP id S1755037AbaG3Btv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:45 -0400
+	Tue, 29 Jul 2014 21:49:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
-        Jean Delvare <jdelvare@suse.de>
-Subject: [PATCH 3.14 19/29] hwmon: (smsc47m192) Fix temperature limit and vrm write operations
-Date: Tue, 29 Jul 2014 18:48:54 -0700
-Message-Id: <20140730014810.142777114@linuxfoundation.org>
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 3.14 14/29] slab_common: fix the check for duplicate slab names
+Date: Tue, 29 Jul 2014 18:48:49 -0700
+Message-Id: <20140730014809.931840695@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014809.316066303@linuxfoundation.org>
 References: <20140730014809.316066303@linuxfoundation.org>
@@ -29,46 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 043572d5444116b9d9ad8ae763cf069e7accbc30 upstream.
+commit 694617474e33b8603fc76e090ed7d09376514b1a upstream.
 
-Temperature limit clamps are applied after converting the temperature
-from milli-degrees C to degrees C, so either the clamp limit needs
-to be specified in degrees C, not milli-degrees C, or clamping must
-happen before converting to degrees C. Use the latter method to avoid
-overflows.
+The patch 3e374919b314f20e2a04f641ebc1093d758f66a4 is supposed to fix the
+problem where kmem_cache_create incorrectly reports duplicate cache name
+and fails. The problem is described in the header of that patch.
 
-vrm is an u8, so the written value needs to be limited to [0, 255].
+However, the patch doesn't really fix the problem because of these
+reasons:
 
-Cc: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
+* the logic to test for debugging is reversed. It was intended to perform
+  the check only if slub debugging is enabled (which implies that caches
+  with the same parameters are not merged). Therefore, there should be
+  #if !defined(CONFIG_SLUB) || defined(CONFIG_SLUB_DEBUG_ON)
+  The current code has the condition reversed and performs the test if
+  debugging is disabled.
+
+* slub debugging may be enabled or disabled based on kernel command line,
+  CONFIG_SLUB_DEBUG_ON is just the default settings. Therefore the test
+  based on definition of CONFIG_SLUB_DEBUG_ON is unreliable.
+
+This patch fixes the problem by removing the test
+"!defined(CONFIG_SLUB_DEBUG_ON)". Therefore, duplicate names are never
+checked if the SLUB allocator is used.
+
+Note to stable kernel maintainers: when backporint this patch, please
+backport also the patch 3e374919b314f20e2a04f641ebc1093d758f66a4.
+
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/smsc47m192.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/slab_common.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/smsc47m192.c
-+++ b/drivers/hwmon/smsc47m192.c
-@@ -86,7 +86,7 @@ static inline u8 IN_TO_REG(unsigned long
-  */
- static inline s8 TEMP_TO_REG(int val)
- {
--	return clamp_val(SCALE(val, 1, 1000), -128000, 127000);
-+	return SCALE(clamp_val(val, -128000, 127000), 1, 1000);
- }
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -56,7 +56,7 @@ static int kmem_cache_sanity_check(struc
+ 			continue;
+ 		}
  
- static inline int TEMP_FROM_REG(s8 val)
-@@ -384,6 +384,8 @@ static ssize_t set_vrm(struct device *de
- 	err = kstrtoul(buf, 10, &val);
- 	if (err)
- 		return err;
-+	if (val > 255)
-+		return -EINVAL;
- 
- 	data->vrm = val;
- 	return count;
+-#if !defined(CONFIG_SLUB) || !defined(CONFIG_SLUB_DEBUG_ON)
++#if !defined(CONFIG_SLUB)
+ 		/*
+ 		 * For simplicity, we won't check this in the list of memcg
+ 		 * caches. We have control over memcg naming, and if there
 
 
