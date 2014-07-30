@@ -1,266 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249AbaG3HQq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 03:16:46 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.112]:31801 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754477AbaG3HQn (ORCPT
+	id S1755202AbaG3HUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 03:20:50 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:57903 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754618AbaG3HUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 03:16:43 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-4.tower-194.messagelabs.com!1406704599!27249005!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Wed, 30 Jul 2014 09:16:40 +0200
-Date: Wed, 30 Jul 2014 10:08:40 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Wim Van Sebroeck <wim@iguana.be>, Andreas Werner <andreas.werner@men.de>,
-        Bryan Wu <cooloney@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        <linux-watchdog@vger.kernel.org>
-Subject: Re: [PATCH v3 3/3] drivers/leds/leds-menf21bmc: introduce MEN
- 14F021P00 BMC LED driver
-Message-ID: <20140730080839.GA455@awelinux>
-References: <cover.1405602280.git.andreas.werner@men.de>
- <fec81db0dd6e08e1e07d3b7c00cb933b2ab63ab3.1405602280.git.andreas.werner@men.de>
- <CAK5ve-KG=dBgrBLQ2ejZ3XZip-gk2_5PfmpdKi6d6=B9hMDH1g@mail.gmail.com>
- <20140725093728.GA1371@awelinux>
- <20140729211256.GB30849@spo001.leaseweb.com>
- <53D8165C.6000302@roeck-us.net>
+	Wed, 30 Jul 2014 03:20:49 -0400
+Message-ID: <53D89CA1.7000501@huawei.com>
+Date: Wed, 30 Jul 2014 15:20:01 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <53D8165C.6000302@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+To: Jiang Liu <jiang.liu@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, <Paul.Mundt@huawei.com>,
+        Marc Zyngier <marc.zyngier@arm.com>, <linux-pci@vger.kernel.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        <virtualization@lists.linux-foundation.org>,
+        "Xinwei Hu" <huxinwei@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Wuyun <wuyun.wu@huawei.com>
+Subject: Re: [RFC PATCH 00/11] Refactor MSI to support Non-PCI device
+References: <1406344128-27055-1-git-send-email-wangyijing@huawei.com> <1748052.OMBQJiOLYT@wuerfel> <53D85C2E.3060205@huawei.com> <53D89502.60506@linux.intel.com>
+In-Reply-To: <53D89502.60506@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 02:47:08PM -0700, Guenter Roeck wrote:
-> On 07/29/2014 02:12 PM, Wim Van Sebroeck wrote:
-> >Hi Andreas,
-> >
-> >>aOn Thu, Jul 24, 2014 at 03:00:09PM -0700, Bryan Wu wrote:
-> >>>On Thu, Jul 17, 2014 at 6:18 AM, Andreas Werner <andreas.werner@men.de> wrote:
-> >>>>Added driver to support the 14F021P00 BMC LEDs.
-> >>>>The BMC is a Board Management Controll include four LEDs which
-> >>>>can be switched on and off.
-> >>>>
-> >>>>This driver use the I2C interface to the BMC using the menf21bmc MFD Core driver.
-> >>>>
-> >>>>Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> >>>>---
-> >>>>  drivers/leds/Kconfig          |   6 ++
-> >>>>  drivers/leds/Makefile         |   1 +
-> >>>>  drivers/leds/leds-menf21bmc.c | 134 ++++++++++++++++++++++++++++++++++++++++++
-> >>>>  3 files changed, 141 insertions(+)
-> >>>>  create mode 100644 drivers/leds/leds-menf21bmc.c
-> >>>>
-> >>>>diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> >>>>index 27cf0cd..d38ff3f 100644
-> >>>>--- a/drivers/leds/Kconfig
-> >>>>+++ b/drivers/leds/Kconfig
-> >>>>@@ -458,6 +458,12 @@ config LEDS_OT200
-> >>>>           This option enables support for the LEDs on the Bachmann OT200.
-> >>>>           Say Y to enable LEDs on the Bachmann OT200.
-> >>>>
-> >>>>+config LEDS_MENF21BMC
-> >>>>+       tristate "LED support for the MEN 14F021P00 BMC"
-> >>>>+       depends on LEDS_CLASS && MFD_MENF21BMC
-> >>>
-> >>>I think it also depends on I2C.
-> >>
-> >>Yes you are right.
-> >>
-> >>>
-> >>>>+       help
-> >>>>+         Say Y here to include support for the MEN 14F021P00 BMC LEDs.
-> >>>>+
-> >>>>  comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
-> >>>>
-> >>>>  config LEDS_BLINKM
-> >>>>diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> >>>>index 3c03666..cadc433 100644
-> >>>>--- a/drivers/leds/Makefile
-> >>>>+++ b/drivers/leds/Makefile
-> >>>>@@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)            += leds-max8997.o
-> >>>>  obj-$(CONFIG_LEDS_LM355x)              += leds-lm355x.o
-> >>>>  obj-$(CONFIG_LEDS_BLINKM)              += leds-blinkm.o
-> >>>>  obj-$(CONFIG_LEDS_VERSATILE)           += leds-versatile.o
-> >>>>+obj-$(CONFIG_LEDS_MENF21BMC)           += leds-menf21bmc.o
-> >>>>
-> >>>>  # LED SPI Drivers
-> >>>>  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
-> >>>>diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
-> >>>>new file mode 100644
-> >>>>index 0000000..5eaa119
-> >>>>--- /dev/null
-> >>>>+++ b/drivers/leds/leds-menf21bmc.c
-> >>>>@@ -0,0 +1,134 @@
-> >>>>+/*
-> >>>>+ *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
-> >>>>+ *
-> >>>>+ *  This is the core LED driver of the MEN 14F021P00 BMC.
-> >>>>+ *  There are four LEDs available which can be switched on and off.
-> >>>>+ *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
-> >>>>+ *
-> >>>>+ *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
-> >>>>+ *  Author: Andreas Werner <andreas.werner@men.de>
-> >>>>+ *  All rights reserved.
-> >>>>+ *
-> >>>>+ *  This program is free software; you can redistribute  it and/or modify it
-> >>>>+ *  under  the terms of  the GNU General  Public License as published by the
-> >>>>+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-> >>>>+ *  option) any later version.
-> >>>>+ *
-> >>>>+ */
-> >>>>+
-> >>>>+#include <linux/module.h>
-> >>>>+#include <linux/kernel.h>
-> >>>>+#include <linux/platform_device.h>
-> >>>>+#include <linux/leds.h>
-> >>>>+#include <linux/i2c.h>
-> >>>>+
-> >>>>+#define BMC_CMD_LED_GET_SET    0xA0
-> >>>>+#define BMC_BIT_LED_STATUS     BIT(0)
-> >>>>+#define BMC_BIT_LED_HOTSWAP    BIT(1)
-> >>>>+#define BMC_BIT_LED_USER1      BIT(2)
-> >>>>+#define BMC_BIT_LED_USER2      BIT(3)
-> >>>>+
-> >>>>+struct menf21bmc_led {
-> >>>>+       struct led_classdev cdev;
-> >>>>+       u8 led_bit;
-> >>>>+       const char *name;
-> >>>>+       struct i2c_client *i2c_client;
-> >>>>+};
-> >>>>+
-> >>>>+static struct menf21bmc_led leds[] = {
-> >>>>+       {
-> >>>>+               .name = "menf21bmc:led_status",
-> >>>>+               .led_bit = BMC_BIT_LED_STATUS,
-> >>>>+       },
-> >>>>+       {
-> >>>>+               .name = "menf21bmc:led_hotswap",
-> >>>>+               .led_bit = BMC_BIT_LED_HOTSWAP,
-> >>>>+       },
-> >>>>+       {
-> >>>>+               .name = "menf21bmc:led_user1",
-> >>>>+               .led_bit = BMC_BIT_LED_USER1,
-> >>>>+       },
-> >>>>+       {
-> >>>>+               .name = "menf21bmc:led_user2",
-> >>>>+               .led_bit = BMC_BIT_LED_USER2,
-> >>>>+       }
-> >>>>+};
-> >>>>+
-> >>>>+static DEFINE_MUTEX(led_lock);
-> >>>>+
-> >>>>+static void
-> >>>>+menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
-> >>>>+{
-> >>>>+       int led_val;
-> >>>>+       struct menf21bmc_led *led = container_of(led_cdev,
-> >>>>+                                       struct menf21bmc_led, cdev);
-> >>>>+
-> >>>>+       mutex_lock(&led_lock);
-> >>>>+       led_val = i2c_smbus_read_byte_data(led->i2c_client,
-> >>>>+                                               BMC_CMD_LED_GET_SET);
-> >>>>+       if (led_val < 0)
-> >>>>+               goto err_out;
-> >>>>+
-> >>>>+       if (value == LED_OFF)
-> >>>>+               led_val &= ~led->led_bit;
-> >>>>+       else
-> >>>>+               led_val |= led->led_bit;
-> >>>>+
-> >>>>+       i2c_smbus_write_byte_data(led->i2c_client,
-> >>>>+                                       BMC_CMD_LED_GET_SET, led_val);
-> >>>>+err_out:
-> >>>>+       mutex_unlock(&led_lock);
-> >>>>+}
-> >>>>+
-> >>>>+static int menf21bmc_led_probe(struct platform_device *pdev)
-> >>>>+{
-> >>>>+       int i;
-> >>>>+       int ret;
-> >>>>+       struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
-> >>>>+
-> >>>>+       for (i = 0; i < ARRAY_SIZE(leds); i++) {
-> >>>>+               leds[i].cdev.name = leds[i].name;
-> >>>>+               leds[i].cdev.brightness_set = menf21bmc_led_set;
-> >>>>+               leds[i].i2c_client = i2c_client;
-> >>>>+               ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
-> >>>>+               if (ret < 0)
-> >>>>+                       goto err_free_leds;
-> >>>>+       }
-> >>>>+       dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
-> >>>>+
-> >>>>+       return 0;
-> >>>>+
-> >>>>+err_free_leds:
-> >>>>+       dev_err(&pdev->dev, "failed to register LED device\n");
-> >>>>+
-> >>>>+       for (i = i - 1; i >= 0; i--)
-> >>>>+               led_classdev_unregister(&leds[i].cdev);
-> >>>>+
-> >>>>+       return ret;
-> >>>>+}
-> >>>>+
-> >>>>+static int menf21bmc_led_remove(struct platform_device *pdev)
-> >>>>+{
-> >>>>+       int i;
-> >>>>+
-> >>>>+       for (i = 0; i < ARRAY_SIZE(leds); i++)
-> >>>>+               led_classdev_unregister(&leds[i].cdev);
-> >>>>+
-> >>>>+       return 0;
-> >>>>+}
-> >>>>+
-> >>>>+static struct platform_driver menf21bmc_led = {
-> >>>>+       .probe          = menf21bmc_led_probe,
-> >>>>+       .remove         = menf21bmc_led_remove,
-> >>>>+       .driver         = {
-> >>>>+               .name           = "menf21bmc_led",
-> >>>>+               .owner          = THIS_MODULE,
-> >>>>+       },
-> >>>>+};
-> >>>>+
-> >>>
-> >>>This is not a normal platform driver, it should be a I2C driver.
-> >>>
-> >>>>+module_platform_driver(menf21bmc_led);
-> >>>
-> >>>So please move to use module_i2c_driver.
-> >>
-> >>Ok, but then I have to change that in the watchdog driver too, which
-> >>is quite the same as here.
-> >>
-> >>Lee, Guenther what do you think regarding the watchdog driver?
-> >
-> >If the watchdog part is indeed also i2c alike device then the watchdog part should also be an i2c driver...
-> >
+On 2014/7/30 14:47, Jiang Liu wrote:
 > 
-> Isn't this all the same chip ? If so, there should be only one i2c driver.
-> Unless the i2c access is too complicated, it might make sense to use regmap
-> to access the chip, and pass the regmap pointer to the mfd slave drivers
-> to handle the actual communication with the chip.
 > 
-> Guenter
+> On 2014/7/30 10:45, Yijing Wang wrote:
+>> On 2014/7/29 22:08, Arnd Bergmann wrote:
+>>> On Saturday 26 July 2014 11:08:37 Yijing Wang wrote:
+>>>>         The series is a draft of generic MSI driver that supports PCI
+>>>> and Non-PCI device which have MSI capability. If you're not interested
+>>>> it, sorry for the noise.
+>>>
+>>> I've finally managed to take some time to look at the series. Overall,
+>>> the concept looks good to me, and the patches look very well implemented.
+>>>
+>>> The part I'm not sure about is the interface we want to end up with
+>>> at the end of the series. More on that below
+>>
+>> Hi Arnd,
+>>    Thanks for your review and comments very much!
+>> Please refer the inline comments.
+>>
+>>>
+>>>> The series is based on Linux-3.16-rc1.
+>>>>
+>>>> MSI was introduced in PCI Spec 2.2. Currently, kernel MSI 
+>>>> driver codes are bonding with PCI device. Because MSI has a lot
+>>>> advantages in design. More and more non-PCI devices want to
+>>>> use MSI as their default interrupt. The existing MSI device
+>>>> include HPET. HPET driver provide its own MSI code to initialize
+>>>> and process MSI interrupts. In the latest GIC v3 spec, legacy device
+>>>> can deliver MSI by the help of a relay device named consolidator.
+>>>> Consolidator can translate the legacy interrupts connected to it
+>>>> to MSI/MSI-X. And new non-PCI device will be designed to 
+>>>> support MSI in future. So make the MSI driver code be generic will 
+>>>> help the non-PCI device use MSI more simply.
+>>>>
+>>>> The new data struct for generic MSI driver.
+>>>> struct msi_irqs {
+>>>>         u8 msi_enabled:1; /* Enable flag */
+>>>>         u8 msix_enabled:1;
+>>>>         struct list_head msi_list; /* MSI desc list */
+>>>>         void *data;     /* help to find the MSI device */
+>>>>         struct msi_ops *ops; /* MSI device specific hook */
+>>>> };
+>>>> struct msi_irqs is used to manage MSI related informations. Every device supports
+>>>> MSI should contain this data struct and allocate it.
+>>>
+>>> I think you should have a stronger association with the 'struct
+>>> device' here. Can you replace the 'void *data' with 'struct device *dev'?
+>>
+>> Actually, I used the struct device *dev in my first draft, finally, I replaced
+>> it with void *data, because some MSI devices don't have a struct device *dev,
+>> like the existing hpet device, dmar msi device, and OF device, like the ARM consolidator.
+>>
+>> Of course, we can make the MSI devices have their own struct device, and register to
+>> device tree, eg, add a class device named MSI_DEV. But I'm not sure whether it is appropriate.
+>>
+>>>
+>>> The other part I'm not completely sure about is how you want to
+>>> have MSIs map into normal IRQ descriptors. At the moment, all
+>>> MSI users are based on IRQ numbers, but this has known scalability problems.
+>>
+>> Hmmm, I still use the IRQ number to map the MSIs to IRQ description.
+>> I'm sorry, I don't understand you meaning.
+>> What are the scalability problems you mentioned ?
+> We have soft limitation of nr_irqs or hard limitation NR_IRQS,
+> we couldn't allocate as much irq number as we need in some cases,
+> such as to support MSI-x.
+
+Oh, yes, this is a potential issue. Gerry, thanks for you explanation. :)
+
+> 
+>> For device drivers, they always process interrupt in two steps.
+>> If irq is the legacy interrupt, drivers will first
+>> use the irq_of_parse_and_map() or pci_enable_device() to parse and get the IRQ number.
+>> Then drivers will call the request_irq() to register the interrupt handler.
+>> If irq is MSIs, first call pci_enable_msi/x() to get the IRQ number and then call
+>> request_irq() to register interrupt handler.
+>>
+>>> I wonder if we can do the interface in a way that
+>>> hides the interrupt number from generic device drivers and just
+>>> passes a 'struct irq_desc'. Note that there are long-term plans to
+>>> get rid of IRQ numbers entirely, but those plans have existed for
+>>> a long time already without anybody seriously addressing the device
+>>> driver interfaces so far, so it might never really happen.
+>>>
+>>
+>> Maybe this is a huge work, now hundreds drivers use the IRQ number, so maybe we can consider
+>> this in a separate title.
+>>
+>>>> struct msi_ops {
+>>>>         struct msi_desc *(*msi_setup_entry)(struct msi_irqs *msi, struct msi_desc *entry);
+>>>>         int msix_setup_entries(struct msi_irqs *msi, struct msix_entry *entries);
+>>>>         u32 (*msi_mask_irq)(struct msi_desc *desc, u32 mask, u32 flag);
+>>>>         u32 (*msix_mask_irq)(struct msi_desc *desc, u32 flag);
+>>>>         void (*msi_read_message)(struct msi_desc *desc, struct msi_msg *msg);
+>>>>         void (*msi_write_message)(struct msi_desc *desc, struct msi_msg *msg);
+>>>>         void (*msi_set_intx)(struct msi_irqs *msi, int enable);
+>>>> };
+>>>> struct msi_ops provides several hook functions, generic MSI driver will call
+>>>> the hook functions to access device specific registers. PCI devices will share
+>>>> the same msi_ops, because they have the same way to access MSI hardware registers.
+>>>>
+>>>> Generic MSI layer export msi_capability_init() and msix_capability_init() functions
+>>>> to drivers. msi/x_capability_init() will initialize MSI capability data struct msi_desc
+>>>> and alloc the irq, then write the msi address/data value to hardware registers.
+>>>>
+>>>> This series only did compile test, we will test it in x86 and arm platform later.
+>>>
+>>> For the generic drivers, I don't see much point in differentiating between
+>>> MSI and MSI-X, as I believe the difference is something internal to the PCI
+>>> implementation.
+>>
+>> Yes, we can integrate them, and use a generic ops, add a type in hook function to
+>> differentiate them.
+>>
+>>>
+>>> With the other operations, I think they should all take a 'struct device *'
+>>> as the first argument for convenience and consistency. I don't think you actually
+>>> need msi_read_message(), and we could avoid msi_write_message() by doing it
+>>> the other way round.
+>>>
+>>
+>> There only two functions use the read_msi_msg(), because every msi_desc has
+>> a struct msi_msg, and it caches the msi address and data. I will consider to
+>> retrieve the msg from cached msi_msg, then we can avoid the msi_read_message().
+>> But msi_write_message() maybe necessary, some xxx_set_affinity() functions and
+>> restore functions need the msi_write_message() to rewrite the address and data.
+>>
+>>> What I'd envision as the API from the device driver perspective is something
+>>> as simple like this:
+>>>
+>>> struct msi_desc *msi_request(struct msi_chip *chip, irq_handler_t handler,
+>>> 			unsigned long flags, const char *name, struct device *dev);
+>>>
+>>> which would get an msi descriptor that is valid for this device (dev)
+>>> connected to a particular msi_chip, and associate a handler function
+>>> with it. The device driver can call that function and retrieve the
+>>> address/message pair from the msi_desc in order to store it in its own
+>>> device specific registers. The request_irq() can be handled internally
+>>> to msi_request().
+>>
+>> This is a huge change for device drivers, and some device drivers don't know which msi_chip
+>> their MSI irq deliver to. I'm reworking the msi_chip, and try to use msi_chip to eliminate
+>> all arch_msi_xxx() under every arch in kernel. And the important point is how to create the
+>> binding for the MSI device to the target msi_chip.
+>>
+>> For PCI device, some arm platform already bound the msi_chip to the pci hostbridge, then all
+>> pci devices under the pci hostbridge deliver their MSI irqs to the target msi_chip.
+>> And other platform create the binding in DTS file, then the MSI device can find their msi_chip
+>> by device_node.
+>> I don't know whether there are other situations, we should provide a generic interface that
+>> every MSI device under every platform can use it to find its msi_chip exactly.
+>>
+>>
+>> Thanks!
+>> Yijing.
+>>
+>>>
+>>> .
+>>>
+>>
+>>
+> 
+> .
 > 
 
-Yes this is all the same chip which has different features like LEDs and Watchdog.
-This is why the mfd is the i2c_driver which instantiates the slave devices which 
-are platform drivers.
 
-Is that not the normal way to handle those device? 
-Is it really necessary to handle this to regmap?
+-- 
+Thanks!
+Yijing
 
-Regards
-Andy
