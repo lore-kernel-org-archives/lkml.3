@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018AbaG3PIi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 11:08:38 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:59421 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461AbaG3PHV (ORCPT
+	id S1754152AbaG3PKf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 11:10:35 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:29546 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042AbaG3PKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 11:07:21 -0400
-From: Robert Richter <rric@kernel.org>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        Robert Richter <rrichter@cavium.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: [PATCH 3/5] arm64, thunder: document devicetree bindings for Cavium Thunder SoC
-Date: Wed, 30 Jul 2014 17:06:32 +0200
-Message-Id: <1406732794-20920-4-git-send-email-rric@kernel.org>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1406732794-20920-1-git-send-email-rric@kernel.org>
-References: <1406732794-20920-1-git-send-email-rric@kernel.org>
+	Wed, 30 Jul 2014 11:10:34 -0400
+Message-ID: <1406733032.3544.2.camel@j-VirtualBox>
+Subject: Re: [PATCH -tip/master 2/7] locking/mutex: Document quick lock
+ release when unlocking
+From: Jason Low <jason.low2@hp.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: peterz@infradead.org, mingo@kernel.org, aswin@hp.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 30 Jul 2014 08:10:32 -0700
+In-Reply-To: <1406524724-17946-2-git-send-email-davidlohr@hp.com>
+References: <1406524724-17946-1-git-send-email-davidlohr@hp.com>
+	 <1406524724-17946-2-git-send-email-davidlohr@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+On Sun, 2014-07-27 at 22:18 -0700, Davidlohr Bueso wrote:
+> When unlocking, we always want to reach the slowpath with the lock's counter
+> indicating it is unlocked. -- as returned by the asm fastpath call or by
+> explicitly setting it. While doing so, at least in theory, we can optimize
+> and allow faster lock stealing.
+> 
+> This is not immediately obvious and deserves to be documented.
+> 
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  kernel/locking/mutex.c | 14 +++++++++++---
+>  1 file changed, 11 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+> index ad0e333..7a9be39 100644
+> --- a/kernel/locking/mutex.c
+> +++ b/kernel/locking/mutex.c
+> @@ -676,7 +676,8 @@ EXPORT_SYMBOL_GPL(__ww_mutex_lock_interruptible);
+>  #endif
+>  
+>  /*
+> - * Release the lock, slowpath:
+> + * Release the lock, slowpath.
+> + *  At this point, the lock counter is 0 or negative.
 
-This patch adds documentation for the devicetree bindings used by the
-DT files of Cavium Thunder SoC platforms.
+Hmm, so in the !__mutex_slowpath_needs_to_unlock() case, we could enter
+this function with the lock count == 1 right?
 
-Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-Signed-off-by: Robert Richter <rrichter@cavium.com>
----
- Documentation/devicetree/bindings/arm/cavium-thunder.txt | 10 ++++++++++
- Documentation/devicetree/bindings/arm/cpus.txt           |  1 +
- 2 files changed, 11 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/cavium-thunder.txt
+>   */
+>  static inline void
+>  __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
+> @@ -684,9 +685,16 @@ __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
+>  	unsigned long flags;
+>  
+>  	/*
+> -	 * some architectures leave the lock unlocked in the fastpath failure
+> +	 * As a performance measurement, release the lock before doing other
+> +	 * wakeup related duties to follow. This allows other tasks to acquire
+> +	 * the lock sooner, while still handling cleanups in past unlock calls.
+> +	 * This can be done as we do not enforce strict equivalence between the
+> +	 * mutex counter and wait_list.
+> +	 *
+> +	 *
+> +	 * Some architectures leave the lock unlocked in the fastpath failure
+>  	 * case, others need to leave it locked. In the later case we have to
+> -	 * unlock it here
+> +	 * unlock it here.
+>  	 */
+>  	if (__mutex_slowpath_needs_to_unlock())
+>  		atomic_set(&lock->count, 1);
 
-diff --git a/Documentation/devicetree/bindings/arm/cavium-thunder.txt b/Documentation/devicetree/bindings/arm/cavium-thunder.txt
-new file mode 100644
-index 000000000000..6f63a5866902
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/cavium-thunder.txt
-@@ -0,0 +1,10 @@
-+Cavium Thunder platform device tree bindings
-+--------------------------------------------
-+
-+Boards with Cavium's Thunder SoC shall have following properties.
-+
-+Root Node
-+---------
-+Required root node properties:
-+
-+  - compatible = "cavium,thunder-88xx";
-diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-index 1fe72a0778cd..922e4970309d 100644
---- a/Documentation/devicetree/bindings/arm/cpus.txt
-+++ b/Documentation/devicetree/bindings/arm/cpus.txt
-@@ -163,6 +163,7 @@ nodes to be present and contain the properties described below.
- 			    "arm,cortex-r4"
- 			    "arm,cortex-r5"
- 			    "arm,cortex-r7"
-+			    "cavium,thunder"
- 			    "faraday,fa526"
- 			    "intel,sa110"
- 			    "intel,sa1100"
--- 
-2.0.1
 
