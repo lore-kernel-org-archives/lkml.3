@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037AbaG3FAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 01:00:47 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:38159 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089AbaG3FAp (ORCPT
+	id S1751519AbaG3FSQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 01:18:16 -0400
+Received: from mail-oi0-f43.google.com ([209.85.218.43]:56940 "EHLO
+	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020AbaG3FSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 01:00:45 -0400
+	Wed, 30 Jul 2014 01:18:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPDOMVhypE3yntKXqhLbrJS44aKbK8zSf=s6J=M2Z8pzUq_kwQ@mail.gmail.com>
-References: <CAPDOMViYi_rg_cGp_SgZVqX6pw+SB=CVbr1kFn5WG481s4tz5A@mail.gmail.com>
-	<20140727083758.GA4834@fancy-poultry.org>
-	<CAPDOMVgjLU+r82eKFA=4-v_oS+4c4fCtovcZMer5x5GAW56DSw@mail.gmail.com>
-	<20140728095442.GA4875@fancy-poultry.org>
-	<CAPDOMViPdBnkLH2t=1zGAyB98bNGfZrxLvDngDrDQHYP+uCuqg@mail.gmail.com>
-	<20140728201344.GB13832@fancy-poultry.org>
-	<CAPDOMVj=XHihdPmyh2=aHTYZFYtM_BXQVLdzrVTThjOVnb-8dQ@mail.gmail.com>
-	<CAPDOMVhwBK4W3tfaHvZS2VoLr_VWhfHt60b4WdBXMKQ-gJLjsA@mail.gmail.com>
-	<CAPDOMVjjTsZ9hNLBd+8XQvyqBJB_mjBE_nrQ02sGTgfCs=ZwVQ@mail.gmail.com>
-	<2b1c82c0922238cbceabae6b6dc056f9@mjoras.com>
-	<CAPDOMVh7DnV4r=aLbReb8KATW_6u_PVKX-CfnSQ3Q2WxpSbzMw@mail.gmail.com>
-	<CAPDOMVhypE3yntKXqhLbrJS44aKbK8zSf=s6J=M2Z8pzUq_kwQ@mail.gmail.com>
-Date: Wed, 30 Jul 2014 01:00:44 -0400
-Message-ID: <CAPDOMVjMNedJ5W+0DAGSU_nRWyfTEHJkpbksC04PA1RP+mpZyA@mail.gmail.com>
-Subject: Re: Bug on Kernel 3.16 r6: Sound and Buffering in Clementine with
- Files are Transferring to Music Directory
-From: Nick Krause <xerofoify@gmail.com>
-To: dev@mjoras.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140729151451.GA9080@kroah.com>
+References: <CAGUYZuQxJtjNKfvpEY_6GR1SxZCcbmwv5p0Lpu5jx7CgC5os9Q@mail.gmail.com>
+	<20140729151451.GA9080@kroah.com>
+Date: Wed, 30 Jul 2014 10:48:14 +0530
+Message-ID: <CAGUYZuRhLXL7fwDhZLtSgxKF0AABnfc6rt-aKEqcZx9Lj3r8Tg@mail.gmail.com>
+Subject: Re: Open-ended task In kernel
+From: sanjeev sharma <sanjeevsharmaengg@gmail.com>
+To: gregkh <gregkh@linuxfoundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 1:34 PM, Nick Krause <xerofoify@gmail.com> wrote:
-> On Tue, Jul 29, 2014 at 1:02 PM, Nick Krause <xerofoify@gmail.com> wrote:
->> On Tue, Jul 29, 2014 at 11:42 AM,  <dev@mjoras.com> wrote:
->>> On 2014-07-28 22:57, Nick Krause wrote:
->>>>r the hang, so doing a bisect might lead us to some innocent commit.
->> I have run the rsync + snapshot job several times here now, and no hang.
->>
->>>>
->>>> Seems after changing my settings in Clementine it works but it
->>>> now seems to need to buffer 10 seconds versus 4 seconds
->>>> from before.
->>>
->>>
->>> Nick,
->>> For the record you can also use something like ionice to avoid these sorts
->>> of annoyances. See: https://bbs.archlinux.org/viewtopic.php?id=176711
->>> Matt Joras
->>
->> Thanks Matt,
->> Seems weird through that sound buffering is needed more, thanks for
->> the advice through.
->> Regards Nick
->
-> Matt,
-> After doing more testing this is definitely a bug as no matter what
-> buffer size this
-> seems to be an issue my music stalls when moving music into the directory
-> of the music I am listening to and this didn't happen when I was running stock
-> Ubuntu kernels.
-> Regards Nick
+Thanks greg
 
-Seems to be an issue with Ubuntu.
-Regards Nick
+so I need to find issue myself and then start from there.Do we have
+some link somewhere open-ended task is captured.
+
+Regards
+Sanjeev Sharma
+
+On Tue, Jul 29, 2014 at 8:44 PM, gregkh <gregkh@linuxfoundation.org> wrote:
+> On Tue, Jul 29, 2014 at 12:46:46PM +0530, sanjeev sharma wrote:
+>> Hello All,
+>>
+>> I have started recently in contributing into Linux kernel and submitted patches
+>> in staging directory and now I want to do outside staging directory specially
+>> in main kernel and driver part.Do we have anything in Linux kernel i.e some
+>> specific areas which I can looked upon.I think we should have some list of
+>> open-point where people can contribute.
+>>
+>> If anyone has some information,please share on mailing list so that I can focus
+>> myself in correct direction.
+>
+> Yes, I know lots of "open ended" tasks in the kernel.
+>
+> But just because I, or someone else, writes them down doesn't mean that
+> you will want to do them, or be sucessful at them.
+>
+> My suggestion always is, "Find something that bothers you, fix it, and
+> go from there."  And if you can't find a problem with the kernel on your
+> machine, then you really aren't looking hard enough.
+>
+> Best of luck,
+>
+> greg k-h
