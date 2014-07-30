@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768AbaG3Vh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 17:37:27 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52874 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751539AbaG3Vgd (ORCPT
+	id S1754997AbaG3Vjv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 17:39:51 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:43691 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752621AbaG3Vjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 17:36:33 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: [PATCH 0/3] irq / PM: wakeup interrupt interface for drivers (was: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED)
-Date: Wed, 30 Jul 2014 23:46:59 +0200
-Message-ID: <8151374.tpuvaHv3nd@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <3042738.6Ohp3GcNCj@vostro.rjw.lan>
-References: <20140724212620.GO3935@laptop> <alpine.DEB.2.10.1407291445570.4129@nanos> <3042738.6Ohp3GcNCj@vostro.rjw.lan>
+	Wed, 30 Jul 2014 17:39:49 -0400
+Message-ID: <53D96620.10700@converseincode.com>
+Date: Wed, 30 Jul 2014 14:39:44 -0700
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Michal Marek <mmarek@suse.cz>, dl9pf@gmx.de
+CC: Borislav Petkov <bp@alien8.de>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pageexec@freemail.hu, mcharleb@gmail.com
+Subject: Re: [PATCH] kbuild, LLVMLinux: only use warnings when using clang
+References: <20140629201308.GC12943@pd.tnic> <1404175346-12330-1-git-send-email-behanw@converseincode.com> <20140701101214.GA14882@pd.tnic> <53D8ED5D.8070604@suse.cz>
+In-Reply-To: <53D8ED5D.8070604@suse.cz>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 29, 2014 03:33:23 PM Rafael J. Wysocki wrote:
-> On Tuesday, July 29, 2014 02:46:41 PM Thomas Gleixner wrote:
-> > On Tue, 29 Jul 2014, Rafael J. Wysocki wrote:
-> > 
-> > > On Monday, July 28, 2014 11:53:15 PM Rafael J. Wysocki wrote:
-> > > > On Monday, July 28, 2014 02:33:41 PM Thomas Gleixner wrote:
-> > > > > On Mon, 28 Jul 2014, Peter Zijlstra wrote:
-> > > > > > On Sat, Jul 26, 2014 at 01:49:17PM +0200, Rafael J. Wysocki wrote:
-> > > 
-> > > [cut]
-> > > 
-> > > > > So we are not going to make everything a single stupid flag and limit
-> > > > > the usability of existing code. We rather go and try to remove the
-> > > > > stupid flag before it becomes more wide spread.
-> > > > > 
-> > > > > And we cannot treat the wakeup thing the same way as the
-> > > > > IRQF_NO_SUSPEND flag, because there is hardware where the irq line
-> > > > > must be disabled at the normal (non suspend) interrupt controller, and
-> > > > > the wake mechanism tells the PM microcontroller to monitor the
-> > > > > interrupt line and kick the machine back to life.
-> > > > > 
-> > > > > So we need to very carefully look at all the existing cases instead of
-> > > > > yelling crap and inflicting x86 specific horror on everyone. I said on
-> > > > > friday, that I need to look at ALL use cases first and I meant it.
-> > > > 
-> > > > Regardless of the use case, I don't think it is necessary to manipulate
-> > > > the interrupt controller settings before the syscore_suspend stage, because
-> > > > if an interrupt happens earlier, we need to handle it pretty much in a normal
-> > > > way, unless it has been suspended.
-> > > > 
-> > > > So I'd argue for not using anything like enable_irq_wake() that goes all
-> > > > the way to the hardware in drivers.  Instead, we could allow drivers to
-> > > > mark interrupts as "set this up for system wakeup" and really do the setup
-> > > > right before putting the platform into the final "suspended" state.  And that
-> > > > is totally independend of the IRQF_NO_SUSPEND thing.
-> > > 
-> > > In addition to that we need the interrupt handler of the driver that requested
-> > > the irq to be set up for system wakeup to be invoked after suspend_device_irqs()
-> > > in case there are interrupts that should abort the suspend transition or we
-> > > can lose a wakeup event.  So whatever interface we decide to use it has to
-> > > affect suspend/resume_device_irqs() pretty much in the same way as the
-> > > IRQF_NO_SUSPEND flag.
-> > 
-> > Right, that's a different issue. We probably want that even for the
-> > existing irq_wake() users.
-> 
-> I agree.
-> 
-> There's one more thing to consider here.  Going forward we'll want to avoid
-> touching runtime-suspended devices during system suspend.  Then, system wakeup
-> devices will need to mark their IRQs for system wakeup at the runtime suspend
-> time and I'm not sure if that's the right time for calling enable_irq_wake().
+On 07/30/14 06:04, Michal Marek wrote:
+> On 2014-07-01 12:12, Borislav Petkov wrote:
+>> On Mon, Jun 30, 2014 at 05:42:26PM -0700, behanw@converseincode.com wrote:
+>>> From: Behan Webster <behanw@converseincode.com>
+>>>
+>>> Only consider clang warnings in Kbuild when using the clang compiler.
+>>>
+>>> Signed-off-by: Behan Webster <behanw@converseincode.com>
+>>> ---
+>>>   scripts/Makefile.extrawarn | 3 ++-
+>>>   1 file changed, 2 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/scripts/Makefile.extrawarn b/scripts/Makefile.extrawarn
+>>> index 6564350..e350127 100644
+>>> --- a/scripts/Makefile.extrawarn
+>>> +++ b/scripts/Makefile.extrawarn
+>>> @@ -26,7 +26,7 @@ warning-1 += $(call cc-option, -Wmissing-include-dirs)
+>>>   warning-1 += $(call cc-option, -Wunused-but-set-variable)
+>>>   warning-1 += $(call cc-disable-warning, missing-field-initializers)
+>>>   
+>>> -# Clang
+>>> +ifeq ($(COMPILER),clang)
+>>>   warning-1 += $(call cc-disable-warning, initializer-overrides)
+>>>   warning-1 += $(call cc-disable-warning, unused-value)
+>>>   warning-1 += $(call cc-disable-warning, format)
+>>> @@ -35,6 +35,7 @@ warning-1 += $(call cc-disable-warning, sign-compare)
+>>>   warning-1 += $(call cc-disable-warning, format-zero-length)
+>>>   warning-1 += $(call cc-disable-warning, uninitialized)
+>>>   warning-1 += $(call cc-option, -fcatch-undefined-behavior)
+>>> +endif
+>> Ok, just to make sure I understand that whole use case correctly:
+>>
+>> The disabling of those warnings is really intended for the case where
+>> people build the kernel with "W=1" on the make cmdline *and* clang?
+> Behan, Jan-Simon,
+>
+> can you explain why are those -Wno-... options needed in the W=1 case?
+> The whole point of the W= option is to enable noisy warnings, so I don't
+> quite get why you want to silence these.
+Sorry for the delay.
 
-Taking all of the above into consideration I prepared a prototype that will
-follow.  Patch [1/3] is the actual prototype of the core changes, patch [2/3]
-uses that to implement suspend-to-idle wakeup for PME and patch [3/3] illustrates
-how an existing user of enable_irq_wake() can be modified to use the new stuff.
+That code is indeed not what was intended. It's more that these warnings 
+should normally be disabled, and when W is set they should not be disabled.
 
-All is on top of https://patchwork.kernel.org/patch/4643871/ which should apply
-on top of -tip (if I'm not mistaken).
+Just putting the final touches on a patch which addresses this situation.
 
-I've tested patches [1-2/3] with PME on my MSI Wind.
+Behan
 
-Comments welcome.
-
-Rafael
+-- 
+Behan Webster
+behanw@converseincode.com
 
