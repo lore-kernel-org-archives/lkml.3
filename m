@@ -1,70 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaG3XqD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 19:46:03 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:39844 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605AbaG3XqA (ORCPT
+	id S1753858AbaG3Xru (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 19:47:50 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:55156 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525AbaG3Xrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 19:46:00 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <53D983B5.3020903@lge.com>
-Date: Thu, 31 Jul 2014 08:45:57 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 30 Jul 2014 19:47:48 -0400
+Date: Thu, 31 Jul 2014 08:47:43 +0900
+From: Simon Horman <horms@verge.net.au>
+To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+Cc: Lee Jones <lee.jones@linaro.org>, DEVICE TREE <devicetree@vger.kernel.org>,
+        Support Opensource <Support.Opensource@diasemi.com>,
+        LINUX SH <linux-sh@vger.kernel.org>,
+        LINUX KERNEL <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        LINUX ARM KERNEL <linux-arm-kernel@lists.infradead.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [RESEND RFC V2] devicetree: Dialog Semiconductor consolidate
+ existing vendor prefixes to standardise on 'dlg'
+Message-ID: <20140730234743.GB24845@verge.net.au>
+References: <201407241554.s6OFsqbW031651@swsrvapps-01.diasemi.com>
+ <20140725070002.GH7063@lee--X1>
+ <6ED8E3B22081A4459DAC7699F3695FB7D0B28E95@SW-EX-MBX02.diasemi.com>
+ <20140730023725.GA23224@verge.net.au>
+ <6ED8E3B22081A4459DAC7699F3695FB7D0B2910C@SW-EX-MBX02.diasemi.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
-        Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH 0/2] new API to allocate buffer-cache for superblock in
- non-movable area
-References: <53CDF437.4090306@lge.com> <20140722073005.GT3935@laptop> <20140722093838.GA22331@quack.suse.cz> <53D8A258.7010904@lge.com> <20140730101143.GB19205@quack.suse.cz> <20140730101920.GI19379@twins.programming.kicks-ass.net>
-In-Reply-To: <20140730101920.GI19379@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6ED8E3B22081A4459DAC7699F3695FB7D0B2910C@SW-EX-MBX02.diasemi.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 30, 2014 at 11:05:01AM +0000, Opensource [Steve Twiss] wrote:
+> 
+> On 30 July 2014 03:37 Simon Horman wrote:
+> >On Mon, Jul 28, 2014 at 09:53:56AM +0000, Opensource [Steve Twiss] wrote:
+> >> On 25 July 2014 08:00, Lee Jones wrote:
+> >>
+> >> >On Thu, 24 Jul 2014, Opensource [Steve Twiss] wrote:
+> >> >> From: Steve Twiss <stwiss.opensource@diasemi.com>
+> >> >>
+> >> >> This patch series updates the device tree vendor prefix for
+> >> >> Dialog Semiconductor.
+> >> >>
+> >> >> Various methods are currently used throughout the kernel: 'diasemi',
+> >> >> 'dialog' and 'dlg'. Others have also been suggested.
+> >> >>
+> >> >> This patch set aims to consolidate the usage of the vendor prefix to
+> >> >> use a common standard. The prefix 'dlg' is used.
+> >> >>
+> >> >>
+> >> >> Signed-off-by: Steve Twiss <stwiss.opensource@diasemi.com>
+> >> >
+> >> >Didn't I Ack the MFD parts already?
+> >> >
+> >>
+> >> Yes -- certainly.
+> >>  (I should have put them in the main body of the e-mail shouldn't I ..?)
+> >>
+> >> I just need the SHMobile responses now.
+> >> I will try to make contact with those guys this week.
+> >
+> >Hi Steve,
+> >
+> >I apologise for not noticing this earlier:
+> >I am entirely unsure how I missed it.
+> 
+> Hi Simon,
+> 
+> Thank you for responding to this. No problem.
+> 
+> >
+> >In principle I am fine with this change so long as it does not
+> >introduce any backwards-compatibility problems. In particular removing
+> >compatibility strings that may already be in use by DTB blobs in the wild.
+> >
+> >For SH Mobile it seems that Lager and Koelsch were using "diasemi,da9210"
+> >which is unsupported by the driver at this time. So it seems there is no
+> >backwards-compatibility problem there. I'm less sure about other aspects of
+> >the patch. And I'm also less concerned about them.
+> >
+> >I do have a slight preference for SH Mobile changes to go through my
+> >renesas tree rather than elsewhere (as part of a more global change)
+> >principally to try to avoid the possibility of conflicts. The SH Mobile dts
+> >files in question are often updated. And for example I notice some fuzz
+> >when applying this patch on top of the next-20140729 tag of linux-next.
+> 
+> I have applied the patch to linux-next/next-20140729 and the patch
+> program does throw some warnings,
+> 
+> patching file arch/arm/boot/dts/r8a7790-lager.dts
+> Hunk #1 succeeded at 378 (offset 4 lines).
+> patching file arch/arm/boot/dts/r8a7791-koelsch.dts
+> Hunk #1 succeeded at 430 (offset 4 lines).
+> 
+> But when I checked the output, the patch was applied correctly.
+> They are one-line changes in both cases:
+> 
+> diff --git a/arch/arm/boot/dts/r8a7790-lager.dts b/arch/arm/boot/dts/r8a7790-lager.dts
+> index 7853c2c..becaaab 100644
+> --- a/arch/arm/boot/dts/r8a7790-lager.dts
+> +++ b/arch/arm/boot/dts/r8a7790-lager.dts
+> @@ -378,7 +378,7 @@
+>         status = "okay";
+>  
+>         vdd_dvfs: regulator@68 {
+> -               compatible = "diasemi,da9210";
+> +               compatible = "dlg,da9210";
+>                 reg = <0x68>;
+>  
+>                 regulator-min-microvolt = <1000000>;
+> diff --git a/arch/arm/boot/dts/r8a7791-koelsch.dts b/arch/arm/boot/dts/r8a7791-koelsch.dts
+> index 8f36d4f..684fc44 100644
+> --- a/arch/arm/boot/dts/r8a7791-koelsch.dts
+> +++ b/arch/arm/boot/dts/r8a7791-koelsch.dts
+> @@ -430,7 +430,7 @@
+>         clock-frequency = <100000>;
+>  
+>         vdd_dvfs: regulator@68 {
+> -               compatible = "diasemi,da9210";
+> +               compatible = "dlg,da9210";
+>                 reg = <0x68>;
+>  
+>                 regulator-min-microvolt = <1000000>;
+> 
+> 
+> >
+> >If you were to break out the SH Mobile portion of this patch I would be
+> >happy to take it once the driver portion is accepted.  That said, I do see
+> >that everyone else has acked the change so clearly this is not an issue
+> >from their point of view. So I will not complain if you decide not to break
+> >the patch up (though please note my warning about possible conflicts).
+> 
+> I have been trying to get Acked-by: tags for a while now, and it has taken a
+> fair amount of time to get everybody's responses. For that reason and
+> because the patch managed to be applied cleanly to next-20140729 (despite
+> 4 line offsets) I would like to resend this patch with your Acked-by: applied
+> instead of splitting up the patch into several sections and then touting
+> for new Acked-by: all over again.
+> 
+> I realise that your DTS files are updated constantly -- I do hope this will
+> not cause any problems with the merge.
 
+Hi Steve,
 
-2014-07-30 오후 7:19, Peter Zijlstra 쓴 글:
-> On Wed, Jul 30, 2014 at 12:11:43PM +0200, Jan Kara wrote:
->>> sb_bread allocates page from movable area but it is not movable until the
->>> reference counter of the buffer-head becomes zero.
->>> There is no lock for the buffer but the reference counter acts like lock.
->>    OK, but why do you care about a single page (of at most handful if you
->> have more filesystems) which isn't movable? That shouldn't make a big
->> difference to compaction...
->
-> The thing is, CMA _must_ be able to clear all the pages in its range,
-> otherwise its broken.
->
-> So placing nonmovable pages in a movable block utterly wrecks that.
+thanks. I'm happy for you to proceed with the plan you outline above.
+I think the risk of a non-trivial conflict is minimal.
 
-YES. Even a single page can make CMA migration fail.
-
->
-> Now, Ted said that there's more effectively pinned stuff from
-> filesystems (and I imagine those would be things like the root inode
-> etc.) and those would equally wreck this..
->
-> But Gioh didn't mention any of that.. he should I suppose.
-
-Thanks to inform me.
-
-I thought there are more pinned stuff but I didn't know what they are.
-I tried CMA migration but it failed even after I moved the sb page-cache to non-movable area.
-So I just guessed there are more pinned stuff.
-I am newbie and not familiar with filesystem code.
-
-Of course all of the pinned stuff should be moved to non-movable area.
-
->
