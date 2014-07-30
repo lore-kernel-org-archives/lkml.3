@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719AbaG3XHS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 19:07:18 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:46526 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973AbaG3XHQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 19:07:16 -0400
-Message-ID: <53D97A9E.3090908@twiddle.net>
-Date: Wed, 30 Jul 2014 13:07:10 -1000
-From: Richard Henderson <rth@twiddle.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751590AbaG3XSQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 19:18:16 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:27152 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750919AbaG3XSP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 19:18:15 -0400
+From: Josef Bacik <jbacik@fb.com>
+To: Nick Krause <xerofoify@gmail.com>
+CC: Zach Brown <zab@zabbo.net>, Chris Mason <clm@fb.com>,
+        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
+	<linux-btrfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Remove certain calls for releasing page cache
+Thread-Topic: [PATCH] Remove certain calls for releasing page cache
+Thread-Index: AQHPrDbPwgKTNlVwkUCJUkQ4h19eTJu5SL0AgABEVwCAABzUgP//lrm6
+Date: Wed, 30 Jul 2014 23:18:10 +0000
+Message-ID: <se1kwwn8cwmosqn1karyfwfv.1406762043976@email.android.com>
+References: <1406752954-26158-1-git-send-email-xerofoify@gmail.com>
+	<53D959D0.1020303@fb.com>
+	<20140730205148.GA25256@lenny.home.zabbo.net>,<CAPDOMVhWmOYNG=WTwXL5V9-t_rAj-eDPB3WQf7Qj4yjcw7v=0Q@mail.gmail.com>
+In-Reply-To: <CAPDOMVhWmOYNG=WTwXL5V9-t_rAj-eDPB3WQf7Qj4yjcw7v=0Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-CC: linux-kernel@vger.kernel.org, mcree@orcon.net.nz,
-        linux-alpha@vger.kernel.org
-Subject: Re: [PATCH 1/2] alpha: Remove "strange" OSF/1 fork semantics
-References: <1406756552-23864-1-git-send-email-rth@twiddle.net>	<1406756552-23864-2-git-send-email-rth@twiddle.net> <yw1xk36u5wrf.fsf@unicorn.mansr.com>
-In-Reply-To: <yw1xk36u5wrf.fsf@unicorn.mansr.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-30_08:2014-07-30,2014-07-30,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.77929337930038e-11 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.324642340081358
+ urlsuspect_oldscore=0.324642340081358 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.324642340081358 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1407300259
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2014 12:04 PM, Måns Rullgård wrote:
-> Richard Henderson <rth@twiddle.net> writes:
-> 
->> The assignment to regs->r20 kills the original tls_val input
->> to the clone syscall, which means that clone can no longer be
->> restarted with the original inputs.
+So I'm going to list all the things that are wrong with this in the off chance that you will actually improve and then go back to ignoring your emails.
+
+1) You test your patches before you send them.  Xfstests is how you test.
+
+2) You seem to think page_cache_release releases the page cache.  It doesn't, it releases a ref on the page, we take a ref while we are doing IO and then drop it when we are done.  It is not evicted from cache until the VM decides to do it at some point in the future, so all your patch does is make us leak page cache.
+
+3) You don't free the compressed pages.  This leaks memory.  These pages are only used for writing out, there is absolutely no reason to keep them around after the IO is complete, we have the actual page with the real data still in cache.
+
+4) You also made it so we don't free the the struct we use to track the compressed IO, which is just as useless as the compressed pages now, causing another memory leak.
+
+Had you tested this patch it would have killed the box pretty quickly and you would have known all of this.  But you didn't, and wasted a lot of much smarter peoples time.  This is not OK, this gets you ignored.  Do not do it again.  Thanks,
+
+Josef
+
+Nick Krause <xerofoify@gmail.com> wrote:
+
+
+On Wed, Jul 30, 2014 at 4:51 PM, Zach Brown <zab@zabbo.net> wrote:
+> On Wed, Jul 30, 2014 at 04:47:12PM -0400, Josef Bacik wrote:
+>> On 07/30/2014 04:42 PM, Nicholas Krause wrote:
+>> >This patch removes the lines for releasing the page cache in certain
+>> >files as this may aid in perfomance with writes in the compression
+>> >rountines of btrfs. Please note that this patch has not been tested
+>> >on my own hardware due to no compression based btrfs volumes of my
+>> >own.
+>> >
 >>
->> We could, perhaps, retain this result for true fork, but OSF/1
->> compatibility is no longer important.  Note that glibc has never
->> used the r20 result value, instead always testing r0 vs 0 to
->> determine the child/parent status.
-> 
-> What effect does this have on OSF/1 compat?
-
-I don't know, as I've never had access to osf/1 myself.  It depends on how that
-$20 value is used -- potentially, fork(3) no longer works.
-
-I can imagine that we could retain these assignments under the condition of
-clone_flags == 0, which both implies a basic fork as well as the fact that the
-tls_val argument is unused.
-
-But I do have to ask first if anyone actually cares.  Surely the amount of
-osf-on-linux emulation is a vanishingly small proportion of the already small
-alpha-linux population.
+>> https://urldefense.proofpoint.com/v1/url?u=http://37.media.tumblr.com/tumblr_m44v95k9Y11qjhgo6o1_250.gif&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=cKCbChRKsMpTX8ybrSkonQ%3D%3D%0A&m=epKcfiwbd4AA3VbfORegZjsqgl8dEZjg%2B3XKikkWVBM%3D%0A&s=5dd9a127c17ca09d584d86694d71f37cd336eab3f17658f8c0dccbfe2a53e2d8
+>
+> https://urldefense.proofpoint.com/v1/url?u=https://www.youtube.com/watch?v%3DjVfkYZmXHAg&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=cKCbChRKsMpTX8ybrSkonQ%3D%3D%0A&m=epKcfiwbd4AA3VbfORegZjsqgl8dEZjg%2B3XKikkWVBM%3D%0A&s=5402110ffa4beccf257af0fc266e8cab20264119fe9bdb2e4734c8ba3e49a211
+>
+> - z
 
 
-r~
+Zach,
+Is there a reason for freeing the page cache as I seem to be missing why?
+Regards Nick
