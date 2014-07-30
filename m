@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403AbaG3QPY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 12:15:24 -0400
-Received: from verein.lst.de ([213.95.11.211]:48038 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755342AbaG3QPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 12:15:23 -0400
-Date: Wed, 30 Jul 2014 18:15:17 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christoph Hellwig <hch@lst.de>, Josh Boyer <jwboyer@fedoraproject.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-scsi@vger.kernel.org,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        poma <pomidorabelisima@gmail.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Christoph Lameter <cl@linux.com>
-Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69
-	kmem_cache_create+0x1a9/0x330()
-Message-ID: <20140730161517.GA22229@lst.de>
-References: <53C97D34.5040707@gmail.com> <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com> <20140719164454.GA24530@lst.de> <53CCDFC3.5010802@gmail.com> <20140726162102.GA7126@lst.de> <1406533762.2003.13.camel@jarvis> <20140729122611.GA25980@lst.de> <20140730122135.GE28613@hansolo.jdub.homelinux.org> <20140730145225.GA15757@lst.de> <1406732699.4865.92.camel@jarvis>
+	id S1755423AbaG3QP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 12:15:28 -0400
+Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:38959
+	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755399AbaG3QPZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 12:15:25 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>, Dan Carpenter <dan.carpenter@oracle.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 13/19 v2] staging: comedi: amplc_pci230: remove
+ unnecessary braces
+Thread-Topic: [PATCH 13/19 v2] staging: comedi: amplc_pci230: remove
+ unnecessary braces
+Thread-Index: AQHPq+0YkfyE5NmIy0KGLGGG8zHHjpu5FYmAgAAGMoCAAAFyAIAABSiA//+oaWA=
+Date: Wed, 30 Jul 2014 16:15:23 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F2A3C2@P3PWEX4MB008.ex4.secureserver.net>
+References: <1406635107-27950-14-git-send-email-abbotti@mev.co.uk>
+ <1406721227-8144-1-git-send-email-abbotti@mev.co.uk>
+ <20140730134153.GJ4856@mwanda> <53D8FB53.3050501@mev.co.uk>
+ <20140730140914.GK4856@mwanda> <53D900DD.6060006@mev.co.uk>
+In-Reply-To: <53D900DD.6060006@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1406732699.4865.92.camel@jarvis>
-User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 07:04:59PM +0400, James Bottomley wrote:
-> It's been remarkably current, I believe ... it's already up to date.
+On Wednesday, July 30, 2014 7:28 AM, Ian Abbott wrote:
+> On 2014-07-30 15:09, Dan Carpenter wrote:
+>> On Wed, Jul 30, 2014 at 03:04:03PM +0100, Ian Abbott wrote:
+>>> On 2014-07-30 14:41, Dan Carpenter wrote:
+>>>> On Wed, Jul 30, 2014 at 12:53:47PM +0100, Ian Abbott wrote:
+>>>>> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+>>>>> ---
+>>>>> v2: Be less aggressive in brace removal.  Keep them for outer nested
+>>>>> 'if's.  Keep them in outer control statements where the inner control
+>>>>> statement uses braces.
+>>>>
+>>>> Really every multi-line indent should have braces for readability.  This
+>>>> isn't documented anywhere, but it's normal kernel style and Greg prefers
+>>>> it for staging as well but I can't find the URL on google where he
+>>>> mentioned that.
+>>>
+>>> With this version of the patch, amplc_pci230.c conforms to that --
+>>> as long as you don't count comments, or splitting a simple statement
+>>> across multiple lines to fit within 80 columns, e.g.:
+>>>
+>>> 			if (foo)
+>>> 				/* do this */
+>>> 				bar = baz +
+>>> 				      qux;
+>>
+>> Heh...  I am counting comments and broken lines, though.  It's not a
+>> totally strict rule and it's especially not strict for broken lines.
+>> But we would prefer braces in those situations.
+>
+> If necessary, patches 13 and 19 can be dropped entirely.
 
-I've updated the drivers tree today and it will get a few more updates
-さoon.
+That might be best for now.
 
-> However, we only have 2 -next builds between now and the anticipated
-> 3.16 release (unless Linus does another -rc) so there's not enough time
-> for a patch that isn't already in (although this one is).
+The rest of the series applies fine with them dropped.
 
-Yes, that's why I'm not eager to complicate things.
+Regards,
+Hartley
 
-> > If James wants to cherry pick it and send it on at this time that might
-> > still work fine, but he seems fairly busy.
-> 
-> I'll pull it out and refactor the tree.
-
-I'd rather stop rebasing this close to the release.  Linus never had
-problems if he got a commit twice due to a cherry pick.
