@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071AbaG3CMf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:12:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60364 "EHLO
+	id S1754780AbaG3BtX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:49:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60310 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754808AbaG3Bt0 (ORCPT
+	with ESMTP id S1754654AbaG3BtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:26 -0400
+	Tue, 29 Jul 2014 21:49:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 02/21] media: tda10071: force modulation to QPSK on DVB-S
-Date: Tue, 29 Jul 2014 18:48:31 -0700
-Message-Id: <20140730014830.526457518@linuxfoundation.org>
+        Romain Degez <romain.degez@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.4 04/10] ahci: add support for the Promise FastTrak TX8660 SATA HBA (ahci mode)
+Date: Tue, 29 Jul 2014 18:48:35 -0700
+Message-Id: <20140730014807.741046520@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
-In-Reply-To: <20140730014830.424826215@linuxfoundation.org>
-References: <20140730014830.424826215@linuxfoundation.org>
+In-Reply-To: <20140730014807.477761030@linuxfoundation.org>
+References: <20140730014807.477761030@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,59 +24,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: Romain Degez <romain.degez@gmail.com>
 
-commit db4175ae2095634dbecd4c847da439f9c83e1b3b upstream.
+commit b32bfc06aefab61acc872dec3222624e6cd867ed upstream.
 
-Only supported modulation for DVB-S is QPSK. Modulation parameter
-contains invalid value for DVB-S on some cases, which leads driver
-refusing tuning attempt. Due to that, hard code modulation to QPSK
-in case of DVB-S.
+Add support of the Promise FastTrak TX8660 SATA HBA in ahci mode by
+registering the board in the ahci_pci_tbl[].
 
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Note: this HBA also provide a hardware RAID mode when activated in
+BIOS but specific drivers from the manufacturer are required in this
+case.
+
+Signed-off-by: Romain Degez <romain.degez@gmail.com>
+Tested-by: Romain Degez <romain.degez@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/tda10071.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/ata/ahci.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/media/dvb-frontends/tda10071.c
-+++ b/drivers/media/dvb-frontends/tda10071.c
-@@ -667,6 +667,7 @@ static int tda10071_set_frontend(struct
- 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
- 	int ret, i;
- 	u8 mode, rolloff, pilot, inversion, div;
-+	fe_modulation_t modulation;
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -446,6 +446,7 @@ static const struct pci_device_id ahci_p
  
- 	dev_dbg(&priv->i2c->dev, "%s: delivery_system=%d modulation=%d " \
- 		"frequency=%d symbol_rate=%d inversion=%d pilot=%d " \
-@@ -701,10 +702,13 @@ static int tda10071_set_frontend(struct
+ 	/* Promise */
+ 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
++	{ PCI_VDEVICE(PROMISE, 0x3781), board_ahci },   /* FastTrak TX8660 ahci-mode */
  
- 	switch (c->delivery_system) {
- 	case SYS_DVBS:
-+		modulation = QPSK;
- 		rolloff = 0;
- 		pilot = 2;
- 		break;
- 	case SYS_DVBS2:
-+		modulation = c->modulation;
-+
- 		switch (c->rolloff) {
- 		case ROLLOFF_20:
- 			rolloff = 2;
-@@ -749,7 +753,7 @@ static int tda10071_set_frontend(struct
- 
- 	for (i = 0, mode = 0xff; i < ARRAY_SIZE(TDA10071_MODCOD); i++) {
- 		if (c->delivery_system == TDA10071_MODCOD[i].delivery_system &&
--			c->modulation == TDA10071_MODCOD[i].modulation &&
-+			modulation == TDA10071_MODCOD[i].modulation &&
- 			c->fec_inner == TDA10071_MODCOD[i].fec) {
- 			mode = TDA10071_MODCOD[i].val;
- 			dev_dbg(&priv->i2c->dev, "%s: mode found=%02x\n",
+ 	/* Asmedia */
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0601), board_ahci },	/* ASM1060 */
 
 
