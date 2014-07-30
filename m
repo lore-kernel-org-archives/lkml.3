@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150AbaG3CCr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:02:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60512 "EHLO
+	id S1755653AbaG3CDD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:03:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60549 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755024AbaG3Btt (ORCPT
+	with ESMTP id S1755019AbaG3Btt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Jul 2014 21:49:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Romain Degez <romain.degez@gmail.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.14 11/29] ahci: add support for the Promise FastTrak TX8660 SATA HBA (ahci mode)
-Date: Tue, 29 Jul 2014 18:48:46 -0700
-Message-Id: <20140730014809.803433001@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.14 10/29] s390/ptrace: fix PSW mask check
+Date: Tue, 29 Jul 2014 18:48:45 -0700
+Message-Id: <20140730014809.756830943@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014809.316066303@linuxfoundation.org>
 References: <20140730014809.316066303@linuxfoundation.org>
@@ -28,35 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Romain Degez <romain.degez@gmail.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit b32bfc06aefab61acc872dec3222624e6cd867ed upstream.
+commit dab6cf55f81a6e16b8147aed9a843e1691dcd318 upstream.
 
-Add support of the Promise FastTrak TX8660 SATA HBA in ahci mode by
-registering the board in the ahci_pci_tbl[].
+The PSW mask check of the PTRACE_POKEUSR_AREA command is incorrect.
+The PSW_MASK_USER define contains the PSW_MASK_ASC bits, the ptrace
+interface accepts all combinations for the address-space-control
+bits. To protect the kernel space the PSW mask check in ptrace needs
+to reject the address-space-control bit combination for home space.
 
-Note: this HBA also provide a hardware RAID mode when activated in
-BIOS but specific drivers from the manufacturer are required in this
-case.
+Fixes CVE-2014-3534
 
-Signed-off-by: Romain Degez <romain.degez@gmail.com>
-Tested-by: Romain Degez <romain.degez@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/s390/kernel/ptrace.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -457,6 +457,7 @@ static const struct pci_device_id ahci_p
+--- a/arch/s390/kernel/ptrace.c
++++ b/arch/s390/kernel/ptrace.c
+@@ -323,9 +323,14 @@ static int __poke_user(struct task_struc
+ 			unsigned long mask = PSW_MASK_USER;
  
- 	/* Promise */
- 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
-+	{ PCI_VDEVICE(PROMISE, 0x3781), board_ahci },   /* FastTrak TX8660 ahci-mode */
+ 			mask |= is_ri_task(child) ? PSW_MASK_RI : 0;
+-			if ((data & ~mask) != PSW_USER_BITS)
++			if ((data ^ PSW_USER_BITS) & ~mask)
++				/* Invalid psw mask. */
++				return -EINVAL;
++			if ((data & PSW_MASK_ASC) == PSW_ASC_HOME)
++				/* Invalid address-space-control bits */
+ 				return -EINVAL;
+ 			if ((data & PSW_MASK_EA) && !(data & PSW_MASK_BA))
++				/* Invalid addressing mode bits */
+ 				return -EINVAL;
+ 		}
+ 		*(addr_t *)((addr_t) &task_pt_regs(child)->psw + addr) = data;
+@@ -661,9 +666,12 @@ static int __poke_user_compat(struct tas
  
- 	/* Asmedia */
- 	{ PCI_VDEVICE(ASMEDIA, 0x0601), board_ahci },	/* ASM1060 */
+ 			mask |= is_ri_task(child) ? PSW32_MASK_RI : 0;
+ 			/* Build a 64 bit psw mask from 31 bit mask. */
+-			if ((tmp & ~mask) != PSW32_USER_BITS)
++			if ((tmp ^ PSW32_USER_BITS) & ~mask)
+ 				/* Invalid psw mask. */
+ 				return -EINVAL;
++			if ((data & PSW32_MASK_ASC) == PSW32_ASC_HOME)
++				/* Invalid address-space-control bits */
++				return -EINVAL;
+ 			regs->psw.mask = (regs->psw.mask & ~PSW_MASK_USER) |
+ 				(regs->psw.mask & PSW_MASK_BA) |
+ 				(__u64)(tmp & mask) << 32;
 
 
