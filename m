@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988AbaG3I4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 04:56:08 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:58837 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167AbaG3I4F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 04:56:05 -0400
-Message-ID: <53D8B31F.6040404@collabora.co.uk>
-Date: Wed, 30 Jul 2014 10:55:59 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1752001AbaG3I5T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 04:57:19 -0400
+Received: from ozlabs.org ([103.22.144.67]:53271 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751386AbaG3I5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 04:57:16 -0400
+Date: Wed, 30 Jul 2014 18:57:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mike Turquette <mturquette@linaro.org>, Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kim Phillips <kim.phillips@freescale.com>
+Subject: linux-next: manual merge of the clk tree with the driver-core tree
+Message-ID: <20140730185708.12a99f00@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 4/5] regulator: tps65090: Set voltage for fixed regulators
-References: <1406651339-28901-1-git-send-email-javier.martinez@collabora.co.uk> <1406651339-28901-5-git-send-email-javier.martinez@collabora.co.uk> <20140729173631.GX17528@sirena.org.uk>
-In-Reply-To: <20140729173631.GX17528@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/MJAAzOcNE.bvnm./NZ5_ffa"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2014 07:36 PM, Mark Brown wrote:
-> On Tue, Jul 29, 2014 at 06:28:58PM +0200, Javier Martinez Canillas wrote:
-> 
->> +#define tps65090_REG_VAR(_id, _sname, en_reg, _en_bits, _ops) \
->> +	tps65090_REG_DESC(_id, _sname, en_reg, _en_bits, 0, 0, _ops)
-> 
-> I'd expect this to describe a variable regulator when in fact it
-> seems it describes a switch with no regulation.  Better name please.
-> 
+--Sig_/MJAAzOcNE.bvnm./NZ5_ffa
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes, when writing the patch I thought of a switch as a non-fixed regulator whose
-output voltage is variable and depend on its input supply voltage. That's why I
-used VAR but I agree that is a bad name and I'll change it.
+Hi Mike,
 
-Thanks a lot and best regards,
-Javier
+Today's linux-next merge of the clk tree got a conflict in
+drivers/base/platform.c between commit 3d713e0e382e ("driver core:
+platform: add device binding path 'driver_override'") from the
+driver-core tree and commit 86be408bfbd8 ("clk: Support for clock
+parents and rates assigned from device tree") from the clk tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/base/platform.c
+index 7cc7440b014d,ac47643b1b69..000000000000
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@@ -23,7 -23,7 +23,8 @@@
+  #include <linux/pm_runtime.h>
+  #include <linux/idr.h>
+  #include <linux/acpi.h>
+ +#include <linux/limits.h>
++ #include <linux/clk/clk-conf.h>
+ =20
+  #include "base.h"
+  #include "power/power.h"
+
+--Sig_/MJAAzOcNE.bvnm./NZ5_ffa
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT2LNpAAoJEMDTa8Ir7ZwVw3kP/0UlwnmAVLXXbFNRqViOGjmm
+WubjNEvHVqtZM76G2/OXI91jfVrugEdkPEG6wPVuNKrTJI4YH8mBFb6o5VCI9hAa
+pUrQN7op2h/5ci7Z4WkyEJC6wET26MTZq9qG2et4cyAXsfvMOSIFdVjPHGOqAnSU
+zl7IFg0RwLJi6ahNcSHnqMt1J3q9pv8XUqYQl11KxbtGu5CGlBbL5vMMOh0/Giw0
+YI1vAlPwQorAJt1OIePQybw+s5SolLtt3Gfeh+R4YCIcsbk8moHQxv26gRNv24kJ
++8w7H1vD7ddMoVTyWYgBelZ5yJM4GB2kC85sfzx0241J/HdT9SLFun9fdCFrStY/
+aTti2KkJgDNWWq3uMowzsgxd5lOJ/gexZ9uWjY+14flC+ObviiKWLwpldMx6LxAL
+p8elqfxs0EPVB3tQ449GiBOcuQBJ1/n0FVrje283pTszGBcfhVQXeuO2hvTb+rkq
+zW11730skj8btkPaoxitwivcNca6OMPAEmYsH2wadpTdBxDW0MWp321PSFqKIfqw
+CuvTdnTUMfWHKyA0d8K4SR1iEyCa7gtc5E4lsKSKEPnYWQXXMaJ04Kxm6N+aQGAD
+viPPt5DWoNBEu0vIO9uTaiuxpTxxRXn2xe7pyjNTQ+HDGq9HA1ZdCGFzHKlqJvd6
+IEDTY23y4TfXViwCWVtj
+=M3Q5
+-----END PGP SIGNATURE-----
+
+--Sig_/MJAAzOcNE.bvnm./NZ5_ffa--
