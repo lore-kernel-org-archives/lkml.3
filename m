@@ -1,101 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755099AbaG3Gzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 02:55:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37706 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752052AbaG3Gzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 02:55:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,762,1400050800"; 
-   d="asc'?scan'208";a="551120159"
-Date: Wed, 30 Jul 2014 02:24:15 -0400
-From: "Chen, Gong" <gong.chen@linux.intel.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
-        paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
-        hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
-        linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
-        davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
-        cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
-        JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
-        rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
-        mhocko@suse.cz, david@fromorbit.com
-Subject: Re: [RFC PATCH v1 13/70] x86, x2apic_cluster: _FROZEN Cleanup
-Message-ID: <20140730062415.GA5100@gchen.bj.intel.com>
-References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
- <1406080786-3938-14-git-send-email-gong.chen@linux.intel.com>
- <20140723203628.GJ21707@pd.tnic>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
-Content-Disposition: inline
-In-Reply-To: <20140723203628.GJ21707@pd.tnic>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755054AbaG3G5n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 02:57:43 -0400
+Received: from mailgw12.technion.ac.il ([132.68.225.12]:26578 "EHLO
+	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339AbaG3G5m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 02:57:42 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ar0BAM+W2FOERCABjGdsb2JhbABahDe0JJdOh1qBFBYQAQEBJz2EMVKBUYhCugmGMhePTB2ENAWKbqkCaQ
+X-IPAS-Result: Ar0BAM+W2FOERCABjGdsb2JhbABahDe0JJdOh1qBFBYQAQEBJz2EMVKBUYhCugmGMhePTB2ENAWKbqkCaQ
+X-IronPort-AV: E=Sophos;i="5.01,762,1400014800"; 
+   d="scan'208";a="117376121"
+From: Nadav Amit <namit@cs.technion.ac.il>
+To: pbonzini@redhat.com
+Cc: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, nadav.amit@gmail.com,
+        Nadav Amit <namit@cs.technion.ac.il>
+Subject: [PATCH] KVM: x86: Remove redundant and incorrect cpl check on task-switch
+Date: Wed, 30 Jul 2014 09:57:16 +0300
+Message-Id: <1406703436-9920-1-git-send-email-namit@cs.technion.ac.il>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Task-switch emulation checks the privilage level prior to performing the
+task-switch.  This check is incorrect in the case of task-gates, in which the
+tss.dpl is ignored, and can cause superfluous exceptions.  Moreover this check
+is unnecassary, since the CPU checks the privilage levels prior to exiting.
+Intel SDM 25.4.2 says "If CALL or JMP accesses a TSS descriptor directly
+outside IA-32e mode, privilege levels are checked on the TSS descriptor" prior
+to exiting.  AMD 15.14.1 says "The intercept is checked before the task switch
+takes place but after the incoming TSS and task gate (if one was involved) have
+been checked for correctness."
 
---vkogqOf2sHV7VnPd
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch removes the CPL checks for CALL and JMP.
 
-On Wed, Jul 23, 2014 at 10:36:28PM +0200, Borislav Petkov wrote:
->   /*
->    * At CPU state changes, update the x2apic cluster sibling info.
->    */
-> @@ -151,9 +166,14 @@ static int
->  update_clusterinfo(struct notifier_block *nfb, unsigned long action, voi=
-d *hcpu)
->  {
->  	unsigned int this_cpu =3D (unsigned long)hcpu;
-> -	unsigned int cpu;
->  	int err =3D 0;
-> =20
-> +	if (action & CPU_TASKS_FROZEN) {
-> +		if ((action & ~CPU_TASKS_FROZEN) =3D=3D CPU_UP_CANCELED)
-> +			__update_clusterinfo(this_cpu);
-> +		return NOTIFY_OK;
-> +	}
-> +
-Hi, Boris
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+---
+ arch/x86/kvm/emulate.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-Here you assume once the action contains FROZEN flag, it will return
-NOTIFY_OK. It looks like not quite comply with original logic. Once
-new FROZEN logic is added, we have to update this code again. How
-about using following code snippet:
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 56657b0..a9b2bd6 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -2698,7 +2698,8 @@ static int emulator_do_task_switch(struct x86_emulate_ctxt *ctxt,
+ 	 *
+ 	 * 1. jmp/call/int to task gate: Check against DPL of the task gate
+ 	 * 2. Exception/IRQ/iret: No check is performed
+-	 * 3. jmp/call to TSS: Check against DPL of the TSS
++	 * 3. jmp/call to TSS/task-gate: No check is performed since the
++	 *    hardware checks it before exiting.
+ 	 */
+ 	if (reason == TASK_SWITCH_GATE) {
+ 		if (idt_index != -1) {
+@@ -2715,13 +2716,8 @@ static int emulator_do_task_switch(struct x86_emulate_ctxt *ctxt,
+ 			if ((tss_selector & 3) > dpl || ops->cpl(ctxt) > dpl)
+ 				return emulate_gp(ctxt, (idt_index << 3) | 0x2);
+ 		}
+-	} else if (reason != TASK_SWITCH_IRET) {
+-		int dpl = next_tss_desc.dpl;
+-		if ((tss_selector & 3) > dpl || ops->cpl(ctxt) > dpl)
+-			return emulate_gp(ctxt, tss_selector);
+ 	}
+ 
+-
+ 	desc_limit = desc_limit_scaled(&next_tss_desc);
+ 	if (!next_tss_desc.p ||
+ 	    ((desc_limit < 0x67 && (next_tss_desc.type & 8)) ||
+-- 
+1.9.1
 
-+       if ((action & CPU_TASKS_FROZEN) &&
-+           ((action & ~CPU_TASKS_FROZEN) =3D=3D CPU_UP_CANCELED)) {
-+               __update_clusterinfo(this_cpu);
-+               return NOTIFY_OK;
-+       }
-+
-
-
---vkogqOf2sHV7VnPd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT2I+PAAoJEI01n1+kOSLHG78QAKsSej9mkdwZPP4yIaGZP1Bt
-/Mqq7P4pWOH8e6jJ/OZNoj21Ni60akFEg1jsLcKgsa3HkGAp+MEcmiWn/wBMKrCc
-UwzKEYBts0Xjg0kfKGXEEWXzHJ1qjPuNLmaPyRiXzMzzrC/Y2oR+zPUoaHfKGUfY
-nLgDza9sb1otC9t5bU28WYIH2GdxzpAgFDAQa2uGT7fbV+iJ2j13Vn5dBolR1q8x
-K/yQXhoAuXTAJBJS7NNlsMdBRJu6D4FhopKmNWPxujASVoUxOtw/6bvskIzm6Q4m
-fLoW7l5Sx9JWd550l9VPj4pHtKhefB8vafM7aCQf6/m/8NYxYCH84vrh7INUFsZh
-2hPQvLrLrKydqIRaQC1QapdY8vF+uSuQeg65BQYaefdBTbzoLAUF78z+PW5tLVFf
-vz4KBu+D7rmXRLfSdCp0axDwEHZYvETUqdYujSX5TplrN1BXrxia2agXWd1H5yDy
-d/2+SllW8efkU1KAWMmbCEVHC3F19T955mml8yCvv5S6lskym7VB3tO9tb/t5oq8
-896nkDkPvt8eJOtXe5wQfVTS/zBjnBQMVr2/0SO3FfYV/rVthJ7TNVEsmhDdLwVh
-wi9iKgbhMy+OLDeRCM5V+weeIUPyKP5Vx09T+x6vYxAzaP0LDEAerhDULFjFFCeA
-A9zFkJS8ovl0wqPNLtHR
-=xcFN
------END PGP SIGNATURE-----
-
---vkogqOf2sHV7VnPd--
