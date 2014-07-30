@@ -1,52 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200AbaG3KhY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 06:37:24 -0400
-Received: from g2t2353.austin.hp.com ([15.217.128.52]:19195 "EHLO
-	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547AbaG3KhX (ORCPT
+	id S1752144AbaG3KmM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 06:42:12 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:46256 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaG3KmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 06:37:23 -0400
-Message-ID: <1406716641.9336.17.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] mm: BUG when __kmap_atomic_idx crosses boundary
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chintan Pandya <cpandya@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Wed, 30 Jul 2014 03:37:21 -0700
-In-Reply-To: <20140730020615.2f943cf7.akpm@linux-foundation.org>
-References: <1406710355-4360-1-git-send-email-cpandya@codeaurora.org>
-	 <20140730020615.2f943cf7.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Jul 2014 06:42:11 -0400
+From: Anil Belur <askb23@gmail.com>
+X-Google-Original-From: Anil Belur
+To: tklauser@distanz.ch, dan.carpenter@oracle.com, bjorn@mork.no,
+        silvio.fricke@gmail.com, gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Anil Belur <askb23@gmail.com>
+Subject: [PATCH v2 1/1] staging: vt6655: ioctl.c - missing __user annotation
+Date: Wed, 30 Jul 2014 16:11:59 +0530
+Message-Id: <1406716919-13595-1-git-send-email-askb23@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Anil Belur <askb23@gmail.com>
 
-On Wed, 2014-07-30 at 02:06 -0700, Andrew Morton wrote:
-> On Wed, 30 Jul 2014 14:22:35 +0530 Chintan Pandya <cpandya@codeaurora.org> wrote:
-> 
-> > __kmap_atomic_idx >= KM_TYPE_NR or < ZERO is a bug.
-> > Report it even if CONFIG_DEBUG_HIGHMEM is not enabled.
-> > That saves much debugging efforts.
-> 
-> Please take considerably more care when preparing patch changelogs.
-> 
-> kmap_atomic() is a very commonly called function so we'll need much
-> more detail than this to justify adding overhead to it.
-> 
-> I don't think CONFIG_DEBUG_HIGHMEM really needs to exist.  We could do
-> s/CONFIG_DEBUG_HIGHMEM/CONFIG_DEBUG_VM/g and perhaps your secret bug
-> whatever it was would have been found more easily.
+v2:
+- private_ioctl() internally calls copy_{to,from}_user() and does
+  not use '__user' which gives out several sparse warnings
+- this patch adds __user annotation to the data member of struct
+  tagSCmdRequest as suggested by tklauser@distanz.ch
+- sparse warnings fixed:
+ drivers/staging/vt6655/ioctl.c:78:51: warning: incorrect type in argument 2 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:78:51:    expected void const [noderef] asn:1>*from
+ drivers/staging/vt6655/ioctl.c:78:51:    got void *data
+ drivers/staging/vt6655/ioctl.c:117:55: warning: incorrect type in argument 2 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:117:55:    expected void const [noderef] asn:1>*from
+ drivers/staging/vt6655/ioctl.c:117:55:    got void *data
+ drivers/staging/vt6655/ioctl.c:149:46: warning: incorrect type in argument 1 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:149:46:    expected void [noderef] asn:1>*to
+ drivers/staging/vt6655/ioctl.c:149:46:    got void *data
+ drivers/staging/vt6655/ioctl.c:166:51: warning: incorrect type in argument 2 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:166:51:    expected void const [noderef] asn:1>*from
+ drivers/staging/vt6655/ioctl.c:166:51:    got void *data
+ drivers/staging/vt6655/ioctl.c:212:50: warning: incorrect type in argument 2 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:212:50:    expected void const [noderef] asn:1>*from
+ drivers/staging/vt6655/ioctl.c:212:50:    got void *data
+ drivers/staging/vt6655/ioctl.c:276:38: warning: incorrect type in argument 1 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:276:38:    expected void [noderef] asn:1>*to
+ drivers/staging/vt6655/ioctl.c:276:38:    got void *data
+ drivers/staging/vt6655/ioctl.c:292:38: warning: incorrect type in argument 1 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:292:38:    expected void [noderef] asn:1>*to
+ drivers/staging/vt6655/ioctl.c:292:38:    got void *data
+ drivers/staging/vt6655/ioctl.c:300:48: warning: incorrect type in argument 2 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:300:48:    expected void const [noderef] asn:1>*from
+ drivers/staging/vt6655/ioctl.c:300:48:    got void *data
+ drivers/staging/vt6655/ioctl.c:344:38: warning: incorrect type in argument 1 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:344:38:    expected void [noderef] asn:1>*to
+ drivers/staging/vt6655/ioctl.c:344:38:    got void *data
+ drivers/staging/vt6655/ioctl.c:353:38: warning: incorrect type in argument 1 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:353:38:    expected void [noderef] asn:1>*to
+ drivers/staging/vt6655/ioctl.c:353:38:    got void *data
+ drivers/staging/vt6655/ioctl.c:360:38: warning: incorrect type in argument 1 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:360:38:    expected void [noderef] asn:1>*to
+ drivers/staging/vt6655/ioctl.c:360:38:    got void *data
+ drivers/staging/vt6655/ioctl.c:401:49: warning: incorrect type in argument 2 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:401:49:    expected void const [noderef] asn:1>*from
+ drivers/staging/vt6655/ioctl.c:401:49:    got void *data
+ drivers/staging/vt6655/ioctl.c:424:49: warning: incorrect type in argument 2 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:424:49:    expected void const [noderef] asn:1>*from
+ drivers/staging/vt6655/ioctl.c:424:49:    got void *data
+ drivers/staging/vt6655/ioctl.c:440:49: warning: incorrect type in argument 2 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:440:49:    expected void const [noderef] asn:1>*from
+ drivers/staging/vt6655/ioctl.c:440:49:    got void *data
+ drivers/staging/vt6655/ioctl.c:457:49: warning: incorrect type in argument 2 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:457:49:    expected void const [noderef] asn:1>*from
+ drivers/staging/vt6655/ioctl.c:457:49:    got void *data
+ drivers/staging/vt6655/ioctl.c:479:54: warning: incorrect type in argument 2 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:479:54:    expected void const [noderef] asn:1>*from
+ drivers/staging/vt6655/ioctl.c:479:54:    got void *data
+ drivers/staging/vt6655/ioctl.c:563:38: warning: incorrect type in argument 1 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:563:38:    expected void [noderef] asn:1>*to
+ drivers/staging/vt6655/ioctl.c:563:38:    got void *data
+ drivers/staging/vt6655/ioctl.c:571:52: warning: incorrect type in argument 2 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:571:52:    expected void const [noderef] asn:1>*from
+ drivers/staging/vt6655/ioctl.c:571:52:    got void *data
+ drivers/staging/vt6655/ioctl.c:615:38: warning: incorrect type in argument 1 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:615:38:    expected void [noderef] asn:1>*to
+ drivers/staging/vt6655/ioctl.c:615:38:    got void *data
+ drivers/staging/vt6655/ioctl.c:631:53: warning: incorrect type in argument 2 (different address spaces)
+ drivers/staging/vt6655/ioctl.c:631:53:    expected void const [noderef] asn:1>*from
+ drivers/staging/vt6655/ioctl.c:631:53:    got void *data
 
-Agreed, it would be nice to fold DEBUG_HIGHMEM into DEBUG_VM. However
-you'd still need some kind of intermediate option as DEBUG_VM must still
-exist if !HIGHMEM.
+Signed-off-by: Anil Belur <askb23@gmail.com>
+---
+ drivers/staging/vt6655/iocmd.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-Davidlohr
-
+diff --git a/drivers/staging/vt6655/iocmd.h b/drivers/staging/vt6655/iocmd.h
+index e499f1b..dd12498 100644
+--- a/drivers/staging/vt6655/iocmd.h
++++ b/drivers/staging/vt6655/iocmd.h
+@@ -100,7 +100,7 @@ typedef enum tagWZONETYPE {
+ #pragma pack(1)
+ typedef struct tagSCmdRequest {
+ 	u8	    name[16];
+-	void	*data;
++	void __user *data;
+ 	u16	    wResult;
+ 	u16     wCmdCode;
+ } SCmdRequest, *PSCmdRequest;
+-- 
+1.9.1
 
