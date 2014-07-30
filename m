@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836AbaG3PVM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 11:21:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26862 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753866AbaG3PVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 11:21:10 -0400
-Message-ID: <53D90D5A.3060404@redhat.com>
-Date: Wed, 30 Jul 2014 17:20:58 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754912AbaG3PWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 11:22:14 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:52023 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753594AbaG3PWL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 11:22:11 -0400
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: nVMX: nested TPR shadow/threshold emulation
-References: <1406721880-5490-1-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1406721880-5490-1-git-send-email-wanpeng.li@linux.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4280303.LVm1cg0Iss@diego>
+References: <1406676273-20701-1-git-send-email-dianders@chromium.org>
+	<1406676273-20701-4-git-send-email-dianders@chromium.org>
+	<4280303.LVm1cg0Iss@diego>
+Date: Wed, 30 Jul 2014 08:22:10 -0700
+X-Google-Sender-Auth: 91FoRYWppEcy5M3E4FabV5GzSQI
+Message-ID: <CAD=FV=W1HGxTDx6k7tizZ_Ez3GsxmwV0t5gJx0fanAQ2t_fnuQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: dts: Enable USB host0 (EHCI) on rk3288-evb
+From: Doug Anderson <dianders@chromium.org>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: Kever Yang <kever.yang@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 30/07/2014 14:04, Wanpeng Li ha scritto:
-> @@ -7962,14 +7965,14 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
->  		if (!vmx->rdtscp_enabled)
->  			exec_control &= ~SECONDARY_EXEC_RDTSCP;
->  		/* Take the following fields only from vmcs12 */
-> -		exec_control &= ~(SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
-> -				  SECONDARY_EXEC_VIRTUAL_INTR_DELIVERY |
-> +		exec_control &= ~(SECONDARY_EXEC_VIRTUAL_INTR_DELIVERY |
->                                    SECONDARY_EXEC_APIC_REGISTER_VIRT);
+Heiko,
 
-This change is wrong.  You don't have to take L0's "virtualize APIC
-accesses" setting into account, because while running L2 you cannot
-modify L1's CR8 (only the virtual nested one).
+On Wed, Jul 30, 2014 at 4:26 AM, Heiko Stübner <heiko@sntech.de> wrote:
+> Am Dienstag, 29. Juli 2014, 16:24:33 schrieb Doug Anderson:
+>> This is the top USB port on the evb (the one closest to the Ethernet
+>> connector).
+>>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+>
+> shouldn't the signed-offs be the other way around, like in patch 2/3?
 
-> +
-> +			virtual_apic_page = nested_get_page(vcpu,
-> +						vmcs12->virtual_apic_page_addr);
-> +			if (vmcs_read64(VIRTUAL_APIC_PAGE_ADDR) !=
-> +					page_to_phys(virtual_apic_page))
-> +				vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
-> +					page_to_phys(virtual_apic_page));
-> +			nested_release_page(virtual_apic_page);
-> +
+I wasn't aware that the order was too relevant, but I'll happily swap
+them.  I generally try to list them based on contribution.  Things get
+complicated when lots of WIP patches are sent around and then someone
+eventually puts things together.  My work enabling the EHCI port was
+based on something Kever sent me in email, so I felt he should have
+SoB.  ...but cleaning it up / organizing was done by me.  Probably
+should be this to get it totally right:
 
-You cannot release this page here.  You need to the exactly the same
-thing that is done for apic_access_page.
+* Patch #1: Author and SoB are me, since Kever just pointed me to the
+GPIO number
+* Patch #2: Probably should be author Kever, first SoB Kever, second SoB me
+* Patch #3: Probably should be author me, first SoB me, second SoB Kever
 
-One thing:
+...in that case I just need to tweak the author of Patch #2 and leave
+everything else the same.  I'll plan to do that when I repost.
 
-> +	if (nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW))
-> +		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
+...but I don't really care a whole lot and I'm OK with any authorship
+of patch set #2/#3 and any SoB order of patch set #2/#3.  Just let me
+know which you prefer!  :)
 
-I think you can just do this write unconditionally, since most
-hypervisors will enable this.  Also, you probably can add the tpr
-threshold field to the read-write fields for shadow VMCS.
-
-Paolo
+-Doug
