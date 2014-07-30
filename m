@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755203AbaG3BuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:50:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60651 "EHLO
+	id S932094AbaG3BzE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:55:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60707 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755132AbaG3BuC (ORCPT
+	with ESMTP id S1755187AbaG3BuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:50:02 -0400
+	Tue, 29 Jul 2014 21:50:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.15 02/37] media: media: v4l2-core: v4l2-dv-timings.c: Cleaning up code wrong value used in aspect ratio
-Date: Tue, 29 Jul 2014 18:48:38 -0700
-Message-Id: <20140730014827.715456865@linuxfoundation.org>
+        Vasily Averin <vvs@openvz.org>, Ian Kent <raven@themaw.net>,
+        Jeff Layton <jlayton@primarydata.com>, Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.15 28/37] fs: umount on symlink leaks mnt count
+Date: Tue, 29 Jul 2014 18:49:04 -0700
+Message-Id: <20140730014829.071658550@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014827.565626091@linuxfoundation.org>
 References: <20140730014827.565626091@linuxfoundation.org>
@@ -31,36 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+From: Vasily Averin <vvs@parallels.com>
 
-commit f71920efb1066d71d74811e1dbed658173adf9bf upstream.
+commit 295dc39d941dc2ae53d5c170365af4c9d5c16212 upstream.
 
-Wrong value used in same cases for the aspect ratio.
+Currently umount on symlink blocks following umount:
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+/vz is separate mount
+
+# ls /vz/ -al | grep test
+drwxr-xr-x.  2 root root       4096 Jul 19 01:14 testdir
+lrwxrwxrwx.  1 root root         11 Jul 19 01:16 testlink -> /vz/testdir
+# umount -l /vz/testlink
+umount: /vz/testlink: not mounted (expected)
+
+# lsof /vz
+# umount /vz
+umount: /vz: device is busy. (unexpected)
+
+In this case mountpoint_last() gets an extra refcount on path->mnt
+
+Signed-off-by: Vasily Averin <vvs@openvz.org>
+Acked-by: Ian Kent <raven@themaw.net>
+Acked-by: Jeff Layton <jlayton@primarydata.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/v4l2-core/v4l2-dv-timings.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/namei.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/media/v4l2-core/v4l2-dv-timings.c
-+++ b/drivers/media/v4l2-core/v4l2-dv-timings.c
-@@ -599,10 +599,10 @@ struct v4l2_fract v4l2_calc_aspect_ratio
- 		aspect.denominator = 9;
- 	} else if (ratio == 34) {
- 		aspect.numerator = 4;
--		aspect.numerator = 3;
-+		aspect.denominator = 3;
- 	} else if (ratio == 68) {
- 		aspect.numerator = 15;
--		aspect.numerator = 9;
-+		aspect.denominator = 9;
- 	} else {
- 		aspect.numerator = hor_landscape + 99;
- 		aspect.denominator = 100;
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2256,9 +2256,10 @@ done:
+ 		goto out;
+ 	}
+ 	path->dentry = dentry;
+-	path->mnt = mntget(nd->path.mnt);
++	path->mnt = nd->path.mnt;
+ 	if (should_follow_link(dentry, nd->flags & LOOKUP_FOLLOW))
+ 		return 1;
++	mntget(path->mnt);
+ 	follow_mount(path);
+ 	error = 0;
+ out:
 
 
