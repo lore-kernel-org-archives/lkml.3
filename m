@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361AbaG3M02 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:26:28 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36763 "EHLO
+	id S1754330AbaG3M01 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:26:27 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36767 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752980AbaG3MPd (ORCPT
+	by vger.kernel.org with ESMTP id S1752979AbaG3MPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:33 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        Sowmini Varadhan <sowmini.varadhan@oracle.com>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 55/94] sunvnet: clean up objects created in vnet_new() on vnet_exit()
-Date: Wed, 30 Jul 2014 14:14:44 +0200
-Message-Id: <54a445fe7a86aad6d62913ae497eaa392880ed9d.1406722270.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 44/94] net: qmi_wwan: add two Sierra Wireless/Netgear devices
+Date: Wed, 30 Jul 2014 14:14:33 +0200
+Message-Id: <196162dec88329f9ea8c7a1cd4d4b709541d645f.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
 References: <cover.1406722269.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+From: Bjørn Mork <bjorn@mork.no>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit a4b70a07ed12a71131cab7adce2ce91c71b37060 ]
+[ Upstream commit 5343330010a892b76a97fd93ad3c455a4a32a7fb ]
 
-Nothing cleans up the objects created by
-vnet_new(), they are completely leaked.
+Add two device IDs found in an out-of-tree driver downloadable
+from Netgear.
 
-vnet_exit(), after doing the vio_unregister_driver() to clean
-up ports, should call a helper function that iterates over vnet_list
-and cleans up those objects. This includes unregister_netdevice()
-as well as free_netdev().
-
-Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
-Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Reviewed-by: Karl Volz <karl.volz@oracle.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/sun/sunvnet.c | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ drivers/net/usb/qmi_wwan.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/ethernet/sun/sunvnet.c b/drivers/net/ethernet/sun/sunvnet.c
-index 3df56840a3b9..398faff8be7a 100644
---- a/drivers/net/ethernet/sun/sunvnet.c
-+++ b/drivers/net/ethernet/sun/sunvnet.c
-@@ -1083,6 +1083,24 @@ static struct vnet *vnet_find_or_create(const u64 *local_mac)
- 	return vp;
- }
- 
-+static void vnet_cleanup(void)
-+{
-+	struct vnet *vp;
-+	struct net_device *dev;
-+
-+	mutex_lock(&vnet_list_mutex);
-+	while (!list_empty(&vnet_list)) {
-+		vp = list_first_entry(&vnet_list, struct vnet, list);
-+		list_del(&vp->list);
-+		dev = vp->dev;
-+		/* vio_unregister_driver() should have cleaned up port_list */
-+		BUG_ON(!list_empty(&vp->port_list));
-+		unregister_netdev(dev);
-+		free_netdev(dev);
-+	}
-+	mutex_unlock(&vnet_list_mutex);
-+}
-+
- static const char *local_mac_prop = "local-mac-address";
- 
- static struct vnet *vnet_find_parent(struct mdesc_handle *hp,
-@@ -1240,7 +1258,6 @@ static int vnet_port_remove(struct vio_dev *vdev)
- 
- 		kfree(port);
- 
--		unregister_netdev(vp->dev);
- 	}
- 	return 0;
- }
-@@ -1268,6 +1285,7 @@ static int __init vnet_init(void)
- static void __exit vnet_exit(void)
- {
- 	vio_unregister_driver(&vnet_port_driver);
-+	vnet_cleanup();
- }
- 
- module_init(vnet_init);
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 7b0bbc395e83..2d8bf4232502 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -647,6 +647,7 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x05c6, 0x9084, 4)},
+ 	{QMI_FIXED_INTF(0x05c6, 0x920d, 0)},
+ 	{QMI_FIXED_INTF(0x05c6, 0x920d, 5)},
++	{QMI_FIXED_INTF(0x0846, 0x68a2, 8)},
+ 	{QMI_FIXED_INTF(0x12d1, 0x140c, 1)},	/* Huawei E173 */
+ 	{QMI_FIXED_INTF(0x12d1, 0x14ac, 1)},	/* Huawei E1820 */
+ 	{QMI_FIXED_INTF(0x16d8, 0x6003, 0)},	/* CMOTech 6003 */
+@@ -734,6 +735,7 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x1199, 0x901f, 8)},    /* Sierra Wireless EM7355 */
+ 	{QMI_FIXED_INTF(0x1199, 0x9041, 8)},	/* Sierra Wireless MC7305/MC7355 */
+ 	{QMI_FIXED_INTF(0x1199, 0x9051, 8)},	/* Netgear AirCard 340U */
++	{QMI_FIXED_INTF(0x1199, 0x9057, 8)},
+ 	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
+ 	{QMI_FIXED_INTF(0x1bbb, 0x0203, 2)},	/* Alcatel L800MA */
+ 	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
 -- 
 2.0.1
 
