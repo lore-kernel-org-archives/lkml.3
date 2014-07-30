@@ -1,32 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252AbaG3UQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 16:16:58 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42918 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923AbaG3UQ4 (ORCPT
+	id S1752281AbaG3UTC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 16:19:02 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:40668 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777AbaG3US7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 16:16:56 -0400
-Date: Wed, 30 Jul 2014 13:16:52 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Ian Kent <raven@themaw.net>,
-        autofs@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] VFS: allow ->d_manage() to declare -EISDIR in rcu_walk
- mode.
-Message-ID: <20140730201652.GA23156@infradead.org>
-References: <20140730160833.5eac00ec@notabene.brown>
+	Wed, 30 Jul 2014 16:18:59 -0400
+Message-ID: <53D95330.1050904@codeaurora.org>
+Date: Wed, 30 Jul 2014 13:18:56 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140730160833.5eac00ec@notabene.brown>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Guenter Roeck <linux@roeck-us.net>
+CC: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Ingo Molnar <mingo@kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Heiko Stuebner <heiko@sntech.de>, Arnd Bergmann <arnd@arndb.de>,
+        linux-doc@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Tomasz Figa <t.figa@samsung.com>, Randy Dunlap <rdunlap@infradead.org>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v5 1/7] kernel: Add support for kernel restart handler
+ call chain
+References: <1405668856-13738-1-git-send-email-linux@roeck-us.net> <1405668856-13738-2-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1405668856-13738-2-git-send-email-linux@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This looks good enough that I'll apply it to the interim vfs queue.
+On 07/18/14 00:34, Guenter Roeck wrote:
+> +/**
+> + *	do_kernel_restart - Execute kernel restart handler call chain
+> + *
+> + *	Calls functions registered with register_restart_handler.
+> + *
+> + *	Expected to be called from machine_restart as last step of the restart
+> + *	sequence.
+> + *
+> + *	Restarts the system immediately if a restart handler function has been
+> + *	registered. Otherwise does nothing.
+> + */
+> +void do_kernel_restart(char *cmd)
+> +{
+> +	blocking_notifier_call_chain(&restart_handler_list, reboot_mode, cmd);
+> +}
+
+Has this been tested with scheduling while atomic checking
+(CONFIG_DEBUG_ATOMIC_SLEEP) or lockdep (CONFIG_PROVE_LOCKING)? ARM would
+call this with irqs disabled and blocking_notifier_call_chain() would
+spit out a warning when it tries to down_read() on it's semaphore. This
+should probably be an atomic notifier chain instead.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
