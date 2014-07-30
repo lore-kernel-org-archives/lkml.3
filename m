@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802AbaG3JFj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 05:05:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41787 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356AbaG3JFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 05:05:37 -0400
-Date: Wed, 30 Jul 2014 11:05:25 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org
-Subject: Re: [PATCH 3/4] perf/x86/uncore: move SNB-EP/IvyTown specific code
- to seperate file
-Message-ID: <20140730090525.GE19379@twins.programming.kicks-ass.net>
-References: <1406704935-27708-1-git-send-email-zheng.z.yan@intel.com>
- <1406704935-27708-3-git-send-email-zheng.z.yan@intel.com>
+	id S1751868AbaG3JIe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 05:08:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33637 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750999AbaG3JIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 05:08:32 -0400
+Message-ID: <53D8B60C.3020807@suse.cz>
+Date: Wed, 30 Jul 2014 11:08:28 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tssNFQF++xpy+Pl9"
-Content-Disposition: inline
-In-Reply-To: <1406704935-27708-3-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: David Rientjes <rientjes@google.com>
+CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v5 07/14] mm, compaction: khugepaged should not give up
+ due to need_resched()
+References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-8-git-send-email-vbabka@suse.cz> <20140729065327.GB1610@js1304-P5Q-DELUXE> <alpine.DEB.2.02.1407290024550.7998@chino.kir.corp.google.com> <53D76E26.6040706@suse.cz> <alpine.DEB.2.02.1407291548430.20991@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1407291548430.20991@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/30/2014 12:53 AM, David Rientjes wrote:
+> On Tue, 29 Jul 2014, Vlastimil Babka wrote:
+>
+>>> I think there's two ways to go about it:
+>>>
+>>>    - allow a single thp fault to be expensive and then rely on deferred
+>>>      compaction to avoid subsequent calls in the near future, or
+>>>
+>>>    - try to make all thp faults be as least expensive as possible so that
+>>>      the cumulative effect of faulting large amounts of memory doesn't end
+>>>      up with lengthy stalls.
+>>>
+>>> Both of these are complex because of the potential for concurrent calls to
+>>> memory compaction when faulting thp on several cpus.
+>>>
+>>> I also think the second point from that email still applies, that we
+>>> should abort isolating pages within a pageblock for migration once it can
+>>> no longer allow a cc->order allocation to succeed.
+>>
+>> That was the RFC patch 15, I hope to reintroduce it soon.
+>
+> Which of the points above are you planning on addressing in another patch?
+> I think the approach would cause the above to be mutually exclusive
+> options.
 
---tssNFQF++xpy+Pl9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Oh I meant the quick abort of a pageblock that's not going to succeed. 
+That was the RFC patch. As for the single expensive fault + defer vs 
+lots of inexpensive faults, I would favor the latter. I'd rather avoid 
+bug reports such as "It works fine for a while and then we get this 
+weird few seconds of stall", which is exactly what you were dealing with 
+IIRC?
 
+>> You could still test
+>> it meanwhile to see if you see the same extfrag regression as me. In my tests,
+>> kswapd/khugepaged wasn't doing enough work to defragment the pageblocks that
+>> the stress-highalloc benchmark (configured to behave like thp page fault) was
+>> skipping.
+>>
+>
+> The initial regression that I encountered was on a 128GB machine where
+> async compaction would cause faulting 64MB of transparent hugepages to
+> excessively stall and I don't see how kswapd can address this if there's
+> no memory pressure and khugepaged can address it if it has the default
+> settings which is very slow.
 
+Hm I see. I have been thinking about somehow connecting compaction with 
+the extfrag (page stealing) events. For example, if it's about to 
+allocate UNMOVABLE/RECLAIMABLE page in a MOVABLE pageblock, then try to 
+compact the pageblock first, which will hopefully free enough of it to 
+have it remarked as UNMOVABLE/RECLAIMABLE and satisfy many such 
+allocations without having to steal from another one.
 
-What's Ivytown? Is that IVB-EP or EX or both? I want to fix the subject
-to not mix and match these terms.
+> Another idea I had is to only do async memory compaction for thp on local
+> zones and avoid defragmenting remotely since, in my experimentation,
+> remote thp memory causes a performance degradation over regular pages.  If
+> that solution were to involve zone_reclaim_mode and a test of
+> node_distance() > RECLAIM_DISTANCE, I think that would be acceptable as
+> well.
 
-A quick search seems to suggest Ivytown is IVB-EX, which leaves me
-wondering what driver does IVB-EP use?
+Yes, not compacting remote zones on page fault definitely makes sense. 
+Maybe even without zone_reclaim_mode...
 
-Patch 2 seems to be about NHM/WSM/SNB/IVB client parts
-Patch 4 is about NHM/WSM EX parts
-
-Which leaves SNB/IBV-EP/EX unhandled, does this patch cover all 4 of
-those?
-
-Which I guess brings me to your total lack of Changelogs, this would've
-made prime changelog material.
-
---tssNFQF++xpy+Pl9
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT2LVUAAoJEHZH4aRLwOS6cRAQAIlmOYqd6bwcjhdF2YmALkR7
-IiESW63+Cec2BROi3q1bzSAe5snd20mHkFOKPu+olQb79yfgbkK5qCMf4+uVUqya
-MPJcopwq7m+1PD9T7pycVSfXXYPI5Bw+ggS4CaZOtB9o56yjwy2vynAwqWgEDRFU
-jjK3yljvGAix+3WNQwWrE32V/c/j+VRcswlzVO4UcSWi755XSpsX7fx2KFMDMV9V
-pkuEhQs2X/wFqkxAuSCrTdMygNexrCq4/HK4ytIrYtPxnrN/4Rx7Hrr/bfV5h5pG
-tpdUdsM8sqV4AnATF3/Dyyq3v65f1FCAPspANGt0/Lwy+uVXnnrv9j0ktFY/QMCg
-TEYcEFdTzbdV+UIgyCHL1Fvezc+rRTYlrblgCXwk198YmChnq9lKiuPnY3dgnHbC
-iBEMGAm2/Qg4gdDVZarFIAOTGlnelc3/A9twbjI0GupxWDhDPHQE/jcOmPyIQYwX
-HENswJoz8KnNTPbWyVT2lP3/+Je9B/pBc1NLxToadQsm8LakABGQkPcPCvacEoye
-WShoXC/nwLlU+hTmsPnxh7BNwLLlBgaxe4Qech8b6GdVzRTBFCAUt6uPm4acsHe9
-Jn+mifK6A0xRobnzUJK7IgM+tW7+QkQ6gZ8J0T5hMWm21vD7xHU7stn31qieGBmS
-LdfYUjys/zDA/1vWYacy
-=vWQw
------END PGP SIGNATURE-----
-
---tssNFQF++xpy+Pl9--
