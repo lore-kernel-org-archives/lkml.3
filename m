@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418AbaG3IS5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 04:18:57 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:65121 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaG3ISx (ORCPT
+	id S1751569AbaG3ITr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 04:19:47 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:56789 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386AbaG3ITo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 04:18:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAFiDJ5_9a7pr+16gjV5-cA_Ruoz1LDMKivFemNiOf_Me4bLEUg@mail.gmail.com>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com>
-	<1405413956-2772-6-git-send-email-lftan@altera.com>
-	<CAMuHMdUyif5JS9OdiamHhf+r5oeTRdd7Gzd6-rBUyamnNQ6C8A@mail.gmail.com>
-	<CAFiDJ5_9a7pr+16gjV5-cA_Ruoz1LDMKivFemNiOf_Me4bLEUg@mail.gmail.com>
-Date: Wed, 30 Jul 2014 10:18:49 +0200
-X-Google-Sender-Auth: 3gVSyljJdEh_HKp_6-roUalEs9A
-Message-ID: <CAMuHMdWw7WGibh38OdAQEmFzV3J9-z3=B74y8i8XxNsdTvOEyw@mail.gmail.com>
-Subject: Re: [PATCH v2 05/29] nios2: Memory management
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 30 Jul 2014 04:19:44 -0400
+Message-ID: <1406708378.22788.5.camel@BR9GV9YG.de.ibm.com>
+Subject: Re: [PATCH] s390: net: qeth_core_main.c: Cleaning up missing
+ null-terminate in conjunction with strncpy
+From: Ursula Braun <ubraun@linux.vnet.ibm.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Frank Blaschka <blaschka@linux.vnet.ibm.com>,
+        linux-s390@vger.kernel.org, linux390@de.ibm.com,
+        Ursula Braun <ursula.braun@de.ibm.com>, linux-kernel@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Date: Wed, 30 Jul 2014 10:19:38 +0200
+In-Reply-To: <CAFo99gbG6an7nWm9xL2A73tRQNOYgKTWdebmT=Etx0LcAWAsRA@mail.gmail.com>
+References: <1406385326-3289-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	 <1406639627.13705.11.camel@BR9GV9YG.de.ibm.com>
+	 <CAFo99gbG6an7nWm9xL2A73tRQNOYgKTWdebmT=Etx0LcAWAsRA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14073008-8372-0000-0000-000000B0A4B3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 8:42 AM, Ley Foon Tan <lftan@altera.com> wrote:
-> On Mon, Jul 28, 2014 at 10:59 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
->> On Tue, Jul 15, 2014 at 10:45 AM, Ley Foon Tan <lftan@altera.com> wrote:
->>> --- /dev/null
->>> +++ b/arch/nios2/include/asm/mmu.h
->>> @@ -0,0 +1,18 @@
->>> +/*
->>> + * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
->>> + * Copyright (C) 2004 Microtronix Datacom Ltd.
->>> + *
->>> + * Taken from m68knommu.
->>> + *
->>> + * This file is subject to the terms and conditions of the GNU General Public
->>> + * License. See the file "COPYING" in the main directory of this archive
->>> + * for more details.
->>> + */
->>> +
->>> +#ifndef _ASM_NIOS2_MMU_H
->>> +#define _ASM_NIOS2_MMU_H
->>> +
->>> +/* Default "unsigned long" context */
->>> +typedef unsigned long mm_context_t;
->>> +
->>> +#endif /* _ASM_NIOS2_MMU_H */
->>
->> Any chance you can use mmu.h from asm-generic instead?
->> It uses a struct with a single "unsigned long end_brk" member (unless
->> CONFIG_BINFMT_ELF_FDPIC is defined).
-> From asm-generic/mmu.h, it is for nommu implementations.
-> So, I will keep this as it is now.
+On Tue, 2014-07-29 at 15:21 +0200, Rickard Strandqvist wrote:
+> 
+> Den 29 jul 2014 15:13 skrev "Ursula Braun"
+> <ubraun@linux.vnet.ibm.com>:
+> >
+> > On Sat, 2014-07-26 at 16:35 +0200, Rickard Strandqvist wrote:
+> > > Replacing strncpy with strlcpy to avoid strings that lacks null
+> terminate.
+> > >
+> > > Signed-off-by: Rickard Strandqvist
+> <rickard_strandqvist@spectrumdigital.se>
+> > > ---
+> > >  drivers/s390/net/qeth_core_main.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > >
+> > > diff --git a/drivers/s390/net/qeth_core_main.c
+> b/drivers/s390/net/qeth_core_main.c
+> > > index f54bec5..ec9b4d7 100644
+> > > --- a/drivers/s390/net/qeth_core_main.c
+> > > +++ b/drivers/s390/net/qeth_core_main.c
+> > > @@ -5275,7 +5275,7 @@ static int qeth_add_dbf_entry(struct
+> qeth_card *card, char *name)
+> > >       new_entry = kzalloc(sizeof(struct qeth_dbf_entry),
+> GFP_KERNEL);
+> > >       if (!new_entry)
+> > >               goto err_dbg;
+> > > -     strncpy(new_entry->dbf_name, name, DBF_NAME_LEN);
+> > > +     strlcpy(new_entry->dbf_name, name, DBF_NAME_LEN);
+> > >       new_entry->dbf_info = card->debug;
+> > >       mutex_lock(&qeth_dbf_list_mutex);
+> > >       list_add(&new_entry->dbf_list, &qeth_dbf_list);
+> >
+> > It is guaranteed that the string ch->id always fits into
+> DBF_NAME_LEN.
+> > What's in this case the benefit of replacing strncpy() by strlcpy()
+> > here?
+> 
+> Hi
+> 
+> If it is really so!
+> It can just as well replacing it with strcpy...
+> 
+> BR
+> Rickard Strandqvist
 
-Right, you have a MMU.
-I got confused by the "Taken from m68knommu" comment, and you still
-only need a single "unsigned long".
+And what would be the benefit of this change? 
 
-Gr{oetje,eeting}s,
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
