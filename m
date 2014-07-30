@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802AbaG3BtY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:49:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60313 "EHLO
+	id S1754895AbaG3Btd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:49:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60412 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655AbaG3BtT (ORCPT
+	with ESMTP id S1754855AbaG3Btb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:19 -0400
+	Tue, 29 Jul 2014 21:49:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sven Wegener <sven.wegener@stealer.net>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.4 05/10] x86_32, entry: Store badsys error code in %eax
-Date: Tue, 29 Jul 2014 18:48:36 -0700
-Message-Id: <20140730014807.793300013@linuxfoundation.org>
+        Silesh C V <svellattu@mvista.com>, Oleg Nesterov <oleg@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 13/21] coredump: fix the setting of PF_DUMPCORE
+Date: Tue, 29 Jul 2014 18:48:42 -0700
+Message-Id: <20140730014831.030390588@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
-In-Reply-To: <20140730014807.477761030@linuxfoundation.org>
-References: <20140730014807.477761030@linuxfoundation.org>
+In-Reply-To: <20140730014830.424826215@linuxfoundation.org>
+References: <20140730014830.424826215@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,93 +27,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sven Wegener <sven.wegener@stealer.net>
+From: Silesh C V <svellattu@mvista.com>
 
-commit 8142b215501f8b291a108a202b3a053a265b03dd upstream.
+commit aed8adb7688d5744cb484226820163af31d2499a upstream.
 
-Commit 554086d ("x86_32, entry: Do syscall exit work on badsys
-(CVE-2014-4508)") introduced a regression in the x86_32 syscall entry
-code, resulting in syscall() not returning proper errors for undefined
-syscalls on CPUs supporting the sysenter feature.
+Commit 079148b919d0 ("coredump: factor out the setting of PF_DUMPCORE")
+cleaned up the setting of PF_DUMPCORE by removing it from all the
+linux_binfmt->core_dump() and moving it to zap_threads().But this ended
+up clearing all the previously set flags.  This causes issues during
+core generation when tsk->flags is checked again (eg.  for PF_USED_MATH
+to dump floating point registers).  Fix this.
 
-The following code:
-
-> int result = syscall(666);
-> printf("result=%d errno=%d error=%s\n", result, errno, strerror(errno));
-
-results in:
-
-> result=666 errno=0 error=Success
-
-Obviously, the syscall return value is the called syscall number, but it
-should have been an ENOSYS error. When run under ptrace it behaves
-correctly, which makes it hard to debug in the wild:
-
-> result=-1 errno=38 error=Function not implemented
-
-The %eax register is the return value register. For debugging via ptrace
-the syscall entry code stores the complete register context on the
-stack. The badsys handlers only store the ENOSYS error code in the
-ptrace register set and do not set %eax like a regular syscall handler
-would. The old resume_userspace call chain contains code that clobbers
-%eax and it restores %eax from the ptrace registers afterwards. The same
-goes for the ptrace-enabled call chain. When ptrace is not used, the
-syscall return value is the passed-in syscall number from the untouched
-%eax register.
-
-Use %eax as the return value register in syscall_badsys and
-sysenter_badsys, like a real syscall handler does, and have the caller
-push the value onto the stack for ptrace access.
-
-Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
-Link: http://lkml.kernel.org/r/alpine.LNX.2.11.1407221022380.31021@titan.int.lan.stealer.net
-Reviewed-and-tested-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Silesh C V <svellattu@mvista.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/entry_32.S |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ fs/coredump.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -428,8 +428,8 @@ sysenter_do_call:
- 	cmpl $(NR_syscalls), %eax
- 	jae sysenter_badsys
- 	call *sys_call_table(,%eax,4)
--	movl %eax,PT_EAX(%esp)
- sysenter_after_call:
-+	movl %eax,PT_EAX(%esp)
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_OFF
-@@ -510,6 +510,7 @@ ENTRY(system_call)
- 	jae syscall_badsys
- syscall_call:
- 	call *sys_call_table(,%eax,4)
-+syscall_after_call:
- 	movl %eax,PT_EAX(%esp)		# store the return value
- syscall_exit:
- 	LOCKDEP_SYS_EXIT
-@@ -678,12 +679,12 @@ syscall_fault:
- END(syscall_fault)
+--- a/fs/coredump.c
++++ b/fs/coredump.c
+@@ -299,7 +299,7 @@ static int zap_threads(struct task_struc
+ 	if (unlikely(nr < 0))
+ 		return nr;
  
- syscall_badsys:
--	movl $-ENOSYS,PT_EAX(%esp)
--	jmp syscall_exit
-+	movl $-ENOSYS,%eax
-+	jmp syscall_after_call
- END(syscall_badsys)
- 
- sysenter_badsys:
--	movl $-ENOSYS,PT_EAX(%esp)
-+	movl $-ENOSYS,%eax
- 	jmp sysenter_after_call
- END(syscall_badsys)
- 	CFI_ENDPROC
+-	tsk->flags = PF_DUMPCORE;
++	tsk->flags |= PF_DUMPCORE;
+ 	if (atomic_read(&mm->mm_users) == nr + 1)
+ 		goto done;
+ 	/*
 
 
