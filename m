@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058AbaG3CMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:12:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60367 "EHLO
+	id S1756071AbaG3CMf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:12:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60364 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754812AbaG3Bt1 (ORCPT
+	with ESMTP id S1754808AbaG3Bt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:27 -0400
+	Tue, 29 Jul 2014 21:49:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.10 03/21] block: provide compat ioctl for BLKZEROOUT
-Date: Tue, 29 Jul 2014 18:48:32 -0700
-Message-Id: <20140730014830.577790962@linuxfoundation.org>
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.10 02/21] media: tda10071: force modulation to QPSK on DVB-S
+Date: Tue, 29 Jul 2014 18:48:31 -0700
+Message-Id: <20140730014830.526457518@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014830.424826215@linuxfoundation.org>
 References: <20140730014830.424826215@linuxfoundation.org>
@@ -30,31 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 3b3a1814d1703027f9867d0f5cbbfaf6c7482474 upstream.
+commit db4175ae2095634dbecd4c847da439f9c83e1b3b upstream.
 
-This patch provides the compat BLKZEROOUT ioctl. The argument is a pointer
-to two uint64_t values, so there is no need to translate it.
+Only supported modulation for DVB-S is QPSK. Modulation parameter
+contains invalid value for DVB-S on some cases, which leads driver
+refusing tuning attempt. Due to that, hard code modulation to QPSK
+in case of DVB-S.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/compat_ioctl.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/dvb-frontends/tda10071.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/block/compat_ioctl.c
-+++ b/block/compat_ioctl.c
-@@ -689,6 +689,7 @@ long compat_blkdev_ioctl(struct file *fi
- 	case BLKROSET:
- 	case BLKDISCARD:
- 	case BLKSECDISCARD:
-+	case BLKZEROOUT:
- 	/*
- 	 * the ones below are implemented in blkdev_locked_ioctl,
- 	 * but we call blkdev_ioctl, which gets the lock for us
+--- a/drivers/media/dvb-frontends/tda10071.c
++++ b/drivers/media/dvb-frontends/tda10071.c
+@@ -667,6 +667,7 @@ static int tda10071_set_frontend(struct
+ 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+ 	int ret, i;
+ 	u8 mode, rolloff, pilot, inversion, div;
++	fe_modulation_t modulation;
+ 
+ 	dev_dbg(&priv->i2c->dev, "%s: delivery_system=%d modulation=%d " \
+ 		"frequency=%d symbol_rate=%d inversion=%d pilot=%d " \
+@@ -701,10 +702,13 @@ static int tda10071_set_frontend(struct
+ 
+ 	switch (c->delivery_system) {
+ 	case SYS_DVBS:
++		modulation = QPSK;
+ 		rolloff = 0;
+ 		pilot = 2;
+ 		break;
+ 	case SYS_DVBS2:
++		modulation = c->modulation;
++
+ 		switch (c->rolloff) {
+ 		case ROLLOFF_20:
+ 			rolloff = 2;
+@@ -749,7 +753,7 @@ static int tda10071_set_frontend(struct
+ 
+ 	for (i = 0, mode = 0xff; i < ARRAY_SIZE(TDA10071_MODCOD); i++) {
+ 		if (c->delivery_system == TDA10071_MODCOD[i].delivery_system &&
+-			c->modulation == TDA10071_MODCOD[i].modulation &&
++			modulation == TDA10071_MODCOD[i].modulation &&
+ 			c->fec_inner == TDA10071_MODCOD[i].fec) {
+ 			mode = TDA10071_MODCOD[i].val;
+ 			dev_dbg(&priv->i2c->dev, "%s: mode found=%02x\n",
 
 
