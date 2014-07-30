@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100AbaG3Mjf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:39:35 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36672 "EHLO
+	id S1755647AbaG3Mkt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:40:49 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36665 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752796AbaG3MP1 (ORCPT
+	by vger.kernel.org with ESMTP id S1752792AbaG3MP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:27 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dmitry Popov <ixaphire@qrator.net>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 31/94] ip_tunnel: fix ip_tunnel_lookup
-Date: Wed, 30 Jul 2014 14:14:20 +0200
-Message-Id: <a1258d5375d479c6391391e0a86a118c1819fe4c.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, David Ertman <davidx.m.ertman@intel.com>,
+        John Greene <jogreene@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "Alexander Y. Fomichev" <aleksandr.fomichev@x5.ru>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 30/94] e1000e: Fix SHRA register access for 82579
+Date: Wed, 30 Jul 2014 14:14:19 +0200
+Message-Id: <b0d711510509931f482d791abb5bb706d7f97a9c.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,102 +26,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Popov <ixaphire@qrator.net>
+From: David Ertman <davidx.m.ertman@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit e0056593b61253f1a8a9941dacda22e73b963cdc ]
+commit 96dee024ca4799d6d21588951240035c21ba1c67 upstream.
 
-This patch fixes 3 similar bugs where incoming packets might be routed into
-wrong non-wildcard tunnels:
+Previous commit c3a0dce35af0 fixed an overrun for the RAR on i218 devices.
+This commit also attempted to homogenize the RAR/SHRA access for all parts
+accessed by the e1000e driver.  This change introduced an error for
+assigning MAC addresses to guest OS's for 82579 devices.
 
-1) Consider the following setup:
-    ip address add 1.1.1.1/24 dev eth0
-    ip address add 1.1.1.2/24 dev eth0
-    ip tunnel add ipip1 remote 2.2.2.2 local 1.1.1.1 mode ipip dev eth0
-    ip link set ipip1 up
+Only RAR[0] is accessible to the driver for 82579 parts, and additional
+addresses must be placed into the SHRA[L|H] registers.  The rar_entry_count
+was changed in the previous commit to an inaccurate value that accounted
+for all RAR and SHRA registers, not just the ones usable by the driver.
 
-Incoming ipip packets from 2.2.2.2 were routed into ipip1 even if it has dst =
-1.1.1.2. Moreover even if there was wildcard tunnel like
-   ip tunnel add ipip0 remote 2.2.2.2 local any mode ipip dev eth0
-but it was created before explicit one (with local 1.1.1.1), incoming ipip
-packets with src = 2.2.2.2 and dst = 1.1.1.2 were still routed into ipip1.
+This patch fixes the count to the correct value and adjusts the
+e1000_rar_set_pch2lan() function to user the correct index.
 
-Same issue existed with all tunnels that use ip_tunnel_lookup (gre, vti)
-
-2)  ip address add 1.1.1.1/24 dev eth0
-    ip tunnel add ipip1 remote 2.2.146.85 local 1.1.1.1 mode ipip dev eth0
-    ip link set ipip1 up
-
-Incoming ipip packets with dst = 1.1.1.1 were routed into ipip1, no matter what
-src address is. Any remote ip address which has ip_tunnel_hash = 0 raised this
-issue, 2.2.146.85 is just an example, there are more than 4 million of them.
-And again, wildcard tunnel like
-   ip tunnel add ipip0 remote any local 1.1.1.1 mode ipip dev eth0
-wouldn't be ever matched if it was created before explicit tunnel like above.
-
-Gre & vti tunnels had the same issue.
-
-3)  ip address add 1.1.1.1/24 dev eth0
-    ip tunnel add gre1 remote 2.2.146.84 local 1.1.1.1 key 1 mode gre dev eth0
-    ip link set gre1 up
-
-Any incoming gre packet with key = 1 were routed into gre1, no matter what
-src/dst addresses are. Any remote ip address which has ip_tunnel_hash = 0 raised
-the issue, 2.2.146.84 is just an example, there are more than 4 million of them.
-Wildcard tunnel like
-   ip tunnel add gre2 remote any local any key 1 mode gre dev eth0
-wouldn't be ever matched if it was created before explicit tunnel like above.
-
-All this stuff happened because while looking for a wildcard tunnel we didn't
-check that matched tunnel is a wildcard one. Fixed.
-
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: John Greene <jogreene@redhat.com>
+Signed-off-by: Dave Ertman <davidx.m.ertman@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: "Alexander Y. Fomichev" <aleksandr.fomichev@x5.ru>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ipv4/ip_tunnel.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/intel/e1000e/ich8lan.c | 2 +-
+ drivers/net/ethernet/intel/e1000e/ich8lan.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
-index d9dbe0f78612..edd5a8171357 100644
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -166,6 +166,7 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+diff --git a/drivers/net/ethernet/intel/e1000e/ich8lan.c b/drivers/net/ethernet/intel/e1000e/ich8lan.c
+index 42f0f6717511..70e16f71f574 100644
+--- a/drivers/net/ethernet/intel/e1000e/ich8lan.c
++++ b/drivers/net/ethernet/intel/e1000e/ich8lan.c
+@@ -1374,7 +1374,7 @@ static void e1000_rar_set_pch2lan(struct e1000_hw *hw, u8 *addr, u32 index)
+ 	/* RAR[1-6] are owned by manageability.  Skip those and program the
+ 	 * next address into the SHRA register array.
+ 	 */
+-	if (index < (u32)(hw->mac.rar_entry_count - 6)) {
++	if (index < (u32)(hw->mac.rar_entry_count)) {
+ 		s32 ret_val;
  
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
- 		if (remote != t->parms.iph.daddr ||
-+		    t->parms.iph.saddr != 0 ||
- 		    !(t->dev->flags & IFF_UP))
- 			continue;
+ 		ret_val = e1000_acquire_swflag_ich8lan(hw);
+diff --git a/drivers/net/ethernet/intel/e1000e/ich8lan.h b/drivers/net/ethernet/intel/e1000e/ich8lan.h
+index 217090df33e7..59865695b282 100644
+--- a/drivers/net/ethernet/intel/e1000e/ich8lan.h
++++ b/drivers/net/ethernet/intel/e1000e/ich8lan.h
+@@ -98,7 +98,7 @@
+ #define PCIE_ICH8_SNOOP_ALL	PCIE_NO_SNOOP_ALL
  
-@@ -182,10 +183,11 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
- 	head = &itn->tunnels[hash];
+ #define E1000_ICH_RAR_ENTRIES	7
+-#define E1000_PCH2_RAR_ENTRIES	11      /* RAR[0-6], SHRA[0-3] */
++#define E1000_PCH2_RAR_ENTRIES	5	/* RAR[0], SHRA[0-3] */
+ #define E1000_PCH_LPT_RAR_ENTRIES	12	/* RAR[0], SHRA[0-10] */
  
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
--		if ((local != t->parms.iph.saddr &&
--		     (local != t->parms.iph.daddr ||
--		      !ipv4_is_multicast(local))) ||
--		    !(t->dev->flags & IFF_UP))
-+		if ((local != t->parms.iph.saddr || t->parms.iph.daddr != 0) &&
-+		    (local != t->parms.iph.daddr || !ipv4_is_multicast(local)))
-+			continue;
-+
-+		if (!(t->dev->flags & IFF_UP))
- 			continue;
- 
- 		if (!ip_tunnel_key_match(&t->parms, flags, key))
-@@ -202,6 +204,8 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
- 
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
- 		if (t->parms.i_key != key ||
-+		    t->parms.iph.saddr != 0 ||
-+		    t->parms.iph.daddr != 0 ||
- 		    !(t->dev->flags & IFF_UP))
- 			continue;
- 
+ #define PHY_PAGE_SHIFT		5
 -- 
 2.0.1
 
