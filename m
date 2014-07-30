@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaG3K5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 06:57:13 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:47961 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751223AbaG3K5M (ORCPT
+	id S1752427AbaG3K6U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 06:58:20 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:35840 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbaG3K6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 06:57:12 -0400
-Date: Wed, 30 Jul 2014 11:57:07 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Yuyang Du <yuyang.du@intel.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "bsegall@google.com" <bsegall@google.com>,
-        "arjan.van.de.ven@intel.com" <arjan.van.de.ven@intel.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "alan.cox@intel.com" <alan.cox@intel.com>,
-        "mark.gross@intel.com" <mark.gross@intel.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
-Subject: Re: [PATCH 0/2 v4] sched: Rewrite per entity runnable load average
- tracking
-Message-ID: <20140730105707.GC3001@e103034-lin>
-References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
- <20140718153931.GJ8700@e103034-lin>
- <20140727190237.GB22986@intel.com>
- <20140730101331.GB15761@e103687>
- <20140730102128.GJ19379@twins.programming.kicks-ass.net>
+	Wed, 30 Jul 2014 06:58:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140730102128.GJ19379@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140730091215.GE10301@distanz.ch>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	<1405413956-2772-3-git-send-email-lftan@altera.com>
+	<20140730091215.GE10301@distanz.ch>
+Date: Wed, 30 Jul 2014 18:58:16 +0800
+X-Google-Sender-Auth: kAoUTkSlaCkdtX3j28nSEidzfbU
+Message-ID: <CAFiDJ596dR5XCPcAHJezFXR0dq4dMR0-dPFfmjEgpWv-9px=nw@mail.gmail.com>
+Subject: Re: [PATCH v2 02/29] nios2: Kernel booting and initialization
+From: Ley Foon Tan <lftan@altera.com>
+To: Tobias Klauser <tklauser@distanz.ch>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 11:21:28AM +0100, Peter Zijlstra wrote:
-> On Wed, Jul 30, 2014 at 11:13:31AM +0100, Morten Rasmussen wrote:
-> > It is a very real problem when user-space uses priorities extensively
-> > like Android does. Tasks related to audio run at very high priorities
-> > but only for a very short amount of time, but due the to priority
-> > scaling their load ends up being several times higher than tasks running
-> > all the time at normal priority. Hence task load is a very poor
-> > indicator of utilization.
-> 
-> FWIW Android (which I think does this through binder) is utterly insane
-> in this regard. But yes, we have to live with it.
+On Wed, Jul 30, 2014 at 5:12 PM, Tobias Klauser <tklauser@distanz.ch> wrote:
+>> +/*
+>> + * Stack layout in 'ret_from_exception':
+>> + *
+>> + * This allows access to the syscall arguments in registers r4-r8
+>> + *
+>> + *    0(sp) - r8
+>> + *    4(sp) - r9
+>> + *    8(sp) - r10
+>> + *    C(sp) - r11
+>> + *   10(sp) - r12
+>> + *   14(sp) - r13
+>> + *   18(sp) - r14
+>> + *   1C(sp) - r15
+>> + *   20(sp) - r1
+>> + *   24(sp) - r2
+>> + *   28(sp) - r3
+>> + *   2C(sp) - r4
+>> + *   30(sp) - r5
+>> + *   34(sp) - r6
+>> + *   38(sp) - r7
+>> + *   3C(sp) - orig_r2
+>> + *   40(sp) - ra
+>> + *   44(sp) - fp
+>> + *   48(sp) - sp
+>> + *   4C(sp) - gp
+>> + *   50(sp) - estatus
+>> + *   54(sp) - status_extension (NOMMU only)
+>> + *   58(sp) - ea
+>> + */
+>
+> status_extension no longer exists and orig_r7 is missing in the list
+> above. Since this corresponds to the order of struct pt_regs anyhow,
+> this comment seems rather pointless to me, so you might as well want to
+> remove it altogether.
+Okay, I will remove these comments.
+Thanks for review.
 
-I agree that its use of priorities seems a bit extreme. I'm not trying
-to defend it in any way :-) 
+Regards
+Ley Foon
