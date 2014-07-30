@@ -1,97 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098AbaG3Nnr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 09:43:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1949 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751059AbaG3Nnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 09:43:45 -0400
-Date: Wed, 30 Jul 2014 09:43:42 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Andrew Jones <drjones@redhat.com>
-Cc: Ulrich Obergfell <uobergfe@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, pbonzini@redhat.com, akpm@linux-foundation.org,
-        mingo@redhat.com
-Subject: Re: [PATCH 2/3] watchdog: control hard lockup detection default
-Message-ID: <20140730134342.GA7959@redhat.com>
-References: <1406196811-5384-1-git-send-email-drjones@redhat.com>
- <1406196811-5384-3-git-send-email-drjones@redhat.com>
- <615371508.17867577.1406277175913.JavaMail.zimbra@redhat.com>
- <20140725112510.GA3456@hawk.usersys.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140725112510.GA3456@hawk.usersys.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753472AbaG3NpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 09:45:05 -0400
+Received: from smtp105.ord1c.emailsrvr.com ([108.166.43.105]:44024 "EHLO
+	smtp105.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752713AbaG3NpE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 09:45:04 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH 1/2] Input: jornada720_ts: Switch to using Managed resources
+Date: Wed, 30 Jul 2014 19:18:26 +0530
+Message-Id: <1406728107-26969-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 01:25:11PM +0200, Andrew Jones wrote:
-> > to enable hard lockup detection explicitly.
-> > 
-> > I think changing the 'watchdog_thresh' while 'watchdog_running' is true should
-> > _not_ enable hard lockup detection as a side-effect, because a user may have a
-> > 'sysctl.conf' entry such as
-> > 
-> >    kernel.watchdog_thresh = ...
-> > 
-> > or may only want to change the 'watchdog_thresh' on the fly.
-> > 
-> > I think the following flow of execution could cause such undesired side-effect.
-> > 
-> >    proc_dowatchdog
-> >      if (watchdog_user_enabled && watchdog_thresh) {
-> > 
-> >          watchdog_enable_hardlockup_detector
-> >            hardlockup_detector_enabled = true
-> > 
-> >          watchdog_enable_all_cpus
-> >            if (!watchdog_running) {
-> >                ...
-> >            } else if (sample_period_changed)
-> >                       update_timers_all_cpus
-> >                         for_each_online_cpu
-> >                             update_timers
-> >                               watchdog_nmi_disable
-> >                               ...
-> >                               watchdog_nmi_enable
-> > 
-> >                                 watchdog_hardlockup_detector_is_enabled
-> >                                   return true
-> > 
-> >                                 enable perf counter for hard lockup detection
-> > 
-> > Regards,
-> > 
-> > Uli
-> 
-> Nice catch. Looks like this will need a v2. Paolo, do we have a
-> consensus on the proc echoing? Or should that be revisited in the v2 as
-> well?
+This switches the driver to using managed resources to simplify
+error handling and to do away with remove function.
 
-As discussed privately, how about something like this to handle that case:
-(applied on top of these patches)
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-Cheers,
-Don
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+---
+ drivers/input/touchscreen/jornada720_ts.c |   38 ++++++-----------------------
+ 1 file changed, 8 insertions(+), 30 deletions(-)
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 34eca29..027fb6c 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -666,7 +666,12 @@ int proc_dowatchdog(struct ctl_table *table, int write,
- 	 * watchdog_*_all_cpus() function takes care of this.
- 	 */
- 	if (watchdog_user_enabled && watchdog_thresh) {
--		watchdog_enable_hardlockup_detector(true);
-+		/*
-+		 * Prevent a change in watchdog_thresh accidentally overriding
-+		 * the enablement of the hardlockup detector.
-+		 */
-+		if (watchdog_user_enabled != old_enabled)
-+			watchdog_enable_hardlockup_detector(true);
- 		err = watchdog_enable_all_cpus(old_thresh != watchdog_thresh);
- 	} else
- 		watchdog_disable_all_cpus();
+diff --git a/drivers/input/touchscreen/jornada720_ts.c b/drivers/input/touchscreen/jornada720_ts.c
+index 7324c5c..7422480 100644
+--- a/drivers/input/touchscreen/jornada720_ts.c
++++ b/drivers/input/touchscreen/jornada720_ts.c
+@@ -104,13 +104,10 @@ static int jornada720_ts_probe(struct platform_device *pdev)
+ 	struct input_dev *input_dev;
+ 	int error;
+ 
+-	jornada_ts = kzalloc(sizeof(struct jornada_ts), GFP_KERNEL);
+-	input_dev = input_allocate_device();
+-
+-	if (!jornada_ts || !input_dev) {
+-		error = -ENOMEM;
+-		goto fail1;
+-	}
++	jornada_ts = devm_kzalloc(&pdev->dev, sizeof(*jornada_ts), GFP_KERNEL);
++	input_dev = devm_input_allocate_device(&pdev->dev);
++	if (!jornada_ts || !input_dev)
++		return -ENOMEM;
+ 
+ 	platform_set_drvdata(pdev, jornada_ts);
+ 
+@@ -126,36 +123,18 @@ static int jornada720_ts_probe(struct platform_device *pdev)
+ 	input_set_abs_params(input_dev, ABS_X, 270, 3900, 0, 0);
+ 	input_set_abs_params(input_dev, ABS_Y, 180, 3700, 0, 0);
+ 
+-	error = request_irq(IRQ_GPIO9,
++	error = devm_request_irq(&pdev->dev, IRQ_GPIO9,
+ 			jornada720_ts_interrupt,
+ 			IRQF_TRIGGER_RISING,
+ 			"HP7XX Touchscreen driver", pdev);
+ 	if (error) {
+-		printk(KERN_INFO "HP7XX TS : Unable to acquire irq!\n");
+-		goto fail1;
++		dev_err(&pdev->dev, "HP7XX TS : Unable to acquire irq!\n");
++		return error;
+ 	}
+ 
+ 	error = input_register_device(jornada_ts->dev);
+ 	if (error)
+-		goto fail2;
+-
+-	return 0;
+-
+- fail2:
+-	free_irq(IRQ_GPIO9, pdev);
+- fail1:
+-	input_free_device(input_dev);
+-	kfree(jornada_ts);
+-	return error;
+-}
+-
+-static int jornada720_ts_remove(struct platform_device *pdev)
+-{
+-	struct jornada_ts *jornada_ts = platform_get_drvdata(pdev);
+-
+-	free_irq(IRQ_GPIO9, pdev);
+-	input_unregister_device(jornada_ts->dev);
+-	kfree(jornada_ts);
++		return error;
+ 
+ 	return 0;
+ }
+@@ -165,7 +144,6 @@ MODULE_ALIAS("platform:jornada_ts");
+ 
+ static struct platform_driver jornada720_ts_driver = {
+ 	.probe		= jornada720_ts_probe,
+-	.remove		= jornada720_ts_remove,
+ 	.driver		= {
+ 		.name	= "jornada_ts",
+ 		.owner	= THIS_MODULE,
+-- 
+1.7.9.5
 
