@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185AbaG3KNq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 06:13:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42065 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141AbaG3KNm (ORCPT
+	id S1751586AbaG3KTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 06:19:38 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46004 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaG3KTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 06:13:42 -0400
-Date: Wed, 30 Jul 2014 12:13:28 +0200
+	Wed, 30 Jul 2014 06:19:36 -0400
+Date: Wed, 30 Jul 2014 12:19:20 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Rik van Riel <riel@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
-        jhladky@redhat.com, ktkhai@parallels.com, tim.c.chen@linux.intel.com,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: [PATCH 1/2] sched: fix and clean up calculate_imbalance
-Message-ID: <20140730101328.GH19379@twins.programming.kicks-ass.net>
-References: <1406571388-3227-1-git-send-email-riel@redhat.com>
- <1406571388-3227-2-git-send-email-riel@redhat.com>
- <CAKfTPtDuFLOf3Kzt4PSdox3HpBoz9aWXb-QzkibAL-Z4xBm=tw@mail.gmail.com>
- <20140729145910.GH3935@laptop>
- <20140729152705.GX12054@laptop.lan>
- <CAKfTPtC8kJuBRT4HsZnQhzH4k_qDaq4nybYR+UW7rk6_Yx9_NQ@mail.gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Gioh Kim <gioh.kim@lge.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
+        Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH 0/2] new API to allocate buffer-cache for superblock in
+ non-movable area
+Message-ID: <20140730101920.GI19379@twins.programming.kicks-ass.net>
+References: <53CDF437.4090306@lge.com>
+ <20140722073005.GT3935@laptop>
+ <20140722093838.GA22331@quack.suse.cz>
+ <53D8A258.7010904@lge.com>
+ <20140730101143.GB19205@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="T9ZmEEwwNkzOGLQ8"
+	protocol="application/pgp-signature"; boundary="l9eMEW72KrFG5Pxz"
 Content-Disposition: inline
-In-Reply-To: <CAKfTPtC8kJuBRT4HsZnQhzH4k_qDaq4nybYR+UW7rk6_Yx9_NQ@mail.gmail.com>
+In-Reply-To: <20140730101143.GB19205@quack.suse.cz>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---T9ZmEEwwNkzOGLQ8
+--l9eMEW72KrFG5Pxz
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jul 30, 2014 at 11:32:36AM +0200, Vincent Guittot wrote:
->=20
-> FWIW, you can add my ack for the new version of the patchset which
-> includes this patch
->=20
+On Wed, Jul 30, 2014 at 12:11:43PM +0200, Jan Kara wrote:
+> > sb_bread allocates page from movable area but it is not movable until the
+> > reference counter of the buffer-head becomes zero.
+> > There is no lock for the buffer but the reference counter acts like lock.
+>   OK, but why do you care about a single page (of at most handful if you
+> have more filesystems) which isn't movable? That shouldn't make a big
+> difference to compaction...
 
-Thanks, done!
+The thing is, CMA _must_ be able to clear all the pages in its range,
+otherwise its broken.
 
---T9ZmEEwwNkzOGLQ8
+So placing nonmovable pages in a movable block utterly wrecks that.
+
+Now, Ted said that there's more effectively pinned stuff from
+filesystems (and I imagine those would be things like the root inode
+etc.) and those would equally wreck this..
+
+But Gioh didn't mention any of that.. he should I suppose.
+
+--l9eMEW72KrFG5Pxz
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJT2MVIAAoJEHZH4aRLwOS6r0IP/2i0I79jmP54v/vxMaq9a4U/
-49Y4FVIxks2sFbzTfsrvzwgdSvLW+Snwz3LCT9/POZ03hcJUwP3o45jE/RlUWSRB
-SS/77Hd+aU1hpnEHfXfXuFLYfcmYWR4jf0iLPLH1VehMCS22EWOvBUT8FEkypVlD
-CHVigC/02tD9ctvPvlOieZK10sfGJdukebKUCC/Ik1zf1EcSjdBE5eNbV2UZAhqi
-An9yTl92zuyrYZokeWj+GaPiyJp/Koev2GFwIp+8rfZ9b04I5pk0rppM+3DQpdvZ
-+wOXGk/ywRTJxSrbJPKosdsMYfTctoRCFAZ0QQ35rXepy3lDys6/IovDQ7wS5lR0
-/1hONf5XW1m9H5yDfnH+FA8TSX2Kt4emy/AcwaW77+J5gET9EbeIKcqodIWSW+6s
-ko3pkuKzGxFiTw293ue9wIcbSNfk/RscBXb4yHMTz6JH7Q7f10j6YW/PZY9TZHjY
-mqJwUDuWjBKPdUeyuJThzjKUzmzxxwBJUoj344XgWjbNpX9r85rDoIsNPKs0vGdx
-/zO9eLRykUmCpmRvaR1yhmS6tJw9GRnSVzxAeptWIF8ZbF03AyDZxEgui8T4GzTp
-xfI4rFlKvWeAUpACvWS3spDndL7RGFYAXK2aJ+DC8VYw2k7cP3DGgZxHz0KBacO6
-X8BGfX+8uexPSHPY4nWG
-=lHgC
+iQIcBAEBAgAGBQJT2MaoAAoJEHZH4aRLwOS6GNgQALZnfGN7cB0xynAZh2C6mLUk
+j9DG7H3LZAc8uA0cAG6wTia/y2TbJWSIhpiUo2j2z7Y1UiDYFx6qXvvXU2oS3Vs4
+qC07XEgv9r2IkEN30PYYcz+V6I4USTj8Q6AImm09qIprB+7w/K38KCq01DHHxIwQ
+Q8lyqqCr9Iwwrwp2a170vKo/gxZD56h1t7cauFqw0aGnnchqrZjbBEX2hBC1f1/1
+TS/Lv5OJ/ULsoqnh6tC4wnMx4juAqbxpM3o+0QjpCkYzf9QfJwlKqgB0TUNPL+RK
+aGLo45TPEd/op227dOAxypYIPyXBLUOQkJIWFsWAL7iEszJcnK+w2j/+rihfeILp
+QGD2YYYVylAe3e0jI0331ZJe+14E4SKk5/WaNYr5dcbO3f9yIYVilNYj9XAETjAN
+AT1l4oghDHCu30WkX3nYGXtVIHqycB4s+X5DJY8P/MjC4Xv4hayBuOA7K1M9AThj
+VslMtXWBiqdvhtxQfuP8SjEUfEUgGIXzzkwNnaaSAi+4UmMjArEQy7WAseI8izDO
+J/QcYLBc+h/fulIlknkFVZpdhJcp85q9YKD4a2Jzyk9X1A35heMgYNWusPwuW71M
+E9eIj5K7Mgkj7mty5B+wQbjMtLOIGlM5goKn8ChTYwhMOR+CUuXNIGLuCufP5coB
+0tLDCub4+a/SFEEa7aIE
+=nSKD
 -----END PGP SIGNATURE-----
 
---T9ZmEEwwNkzOGLQ8--
+--l9eMEW72KrFG5Pxz--
