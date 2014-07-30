@@ -1,121 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864AbaG3TUs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 15:20:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41486 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753369AbaG3TUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 15:20:46 -0400
-From: Nishanth Menon <nm@ti.com>
-To: <tony@atomide.com>
-CC: <devicetree@vger.kernel.org>, <inux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH] ARM: dts: DRA7: fix interrupt-cells for GPIO
-Date: Wed, 30 Jul 2014 14:20:32 -0500
-Message-ID: <1406748032-19417-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755887AbaG3TWc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 15:22:32 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:39136 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755550AbaG3TWa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 15:22:30 -0400
+Date: Wed, 30 Jul 2014 12:22:27 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 00/94] 3.12.26-stable review
+Message-ID: <20140730192227.GA3810@roeck-us.net>
+References: <cover.1406722269.git.jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GPIO modules are also interrupt sources. However, they require both the
-GPIO number and IRQ type to function properly.
+On Wed, Jul 30, 2014 at 02:15:03PM +0200, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.26 release.
+> There are 94 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Fri Aug  1 14:11:10 CEST 2014.
+> Anything received after that time might be too late.
+> 
+Build results:
+	total: 139 pass: 139 fail: 0
 
-By declaring that GPIO uses interrupt-cells=<1>, we essentially do not
-allow users of the nodes to use the interrupt property appropritely.
+Qemu tests all passed.
 
-With this change, the following now works:
+Details are available at http://server.roeck-us.net:8010/builders.
 
-interrupt-parent = <&gpio6>;
-interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
-
-Fixes: 6e58b8f1daaf ('ARM: dts: DRA7: Add the dts files for dra7 SoC and dra7-evm board')
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
-Based on v3.16-rc7
-
- arch/arm/boot/dts/dra7.dtsi |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-index 8012763..f21ef39 100644
---- a/arch/arm/boot/dts/dra7.dtsi
-+++ b/arch/arm/boot/dts/dra7.dtsi
-@@ -172,7 +172,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		gpio2: gpio@48055000 {
-@@ -183,7 +183,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		gpio3: gpio@48057000 {
-@@ -194,7 +194,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		gpio4: gpio@48059000 {
-@@ -205,7 +205,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		gpio5: gpio@4805b000 {
-@@ -216,7 +216,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		gpio6: gpio@4805d000 {
-@@ -227,7 +227,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		gpio7: gpio@48051000 {
-@@ -238,7 +238,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		gpio8: gpio@48053000 {
-@@ -249,7 +249,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		uart1: serial@4806a000 {
--- 
-1.7.9.5
-
+Guenter
