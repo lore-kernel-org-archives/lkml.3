@@ -1,171 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294AbaG3MQz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:16:55 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36940 "EHLO
+	id S1753489AbaG3MSC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:18:02 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36863 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753108AbaG3MPk (ORCPT
+	by vger.kernel.org with ESMTP id S1753063AbaG3MPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 08:15:40 -0400
+	Wed, 30 Jul 2014 08:15:35 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Vineet Gupta <vgupta@synopsys.com>, Jason Low <jason.low2@hp.com>,
-        Waiman Long <waiman.long@hp.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        John David Anglin <dave.anglin@bell.net>,
-        James Hogan <james.hogan@imgtec.com>,
+Cc: linux-kernel@vger.kernel.org, HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        sparclinux@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 71/94] locking/mutex: Disable optimistic spinning on some architectures
-Date: Wed, 30 Jul 2014 14:15:00 +0200
-Message-Id: <91b2716ab0210733b2e26fbe9d490e9136b79672.1406722270.git.jslaby@suse.cz>
+        Ingo Molnar <mingo@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 58/94] perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
+Date: Wed, 30 Jul 2014 14:14:47 +0200
+Message-Id: <d4f6852ea66a0446a8aad7b4ac714d3b8c588745.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
 References: <cover.1406722269.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 4badad352a6bb202ec68afa7a574c0bb961e5ebc upstream.
+commit b292d7a10487aee6e74b1c18b8d95b92f40d4a4f upstream.
 
-The optimistic spin code assumes regular stores and cmpxchg() play nice;
-this is found to not be true for at least: parisc, sparc32, tile32,
-metag-lock1, arc-!llsc and hexagon.
+Currently, any NMI is falsely handled by a NMI handler of NMI watchdog
+if CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR is set.
 
-There is further wreckage, but this in particular seemed easy to
-trigger, so blacklist this.
+For example, we use external NMI to make system panic to get crash
+dump, but in this case, the external NMI is falsely handled do to the
+issue.
 
-Opt in for known good archs.
+This commit deals with the issue simply by ignoring CondChgd bit.
 
+Here is explanation in detail.
+
+On x86 NMI watchdog uses performance monitoring feature to
+periodically signal NMI each time performance counter gets overflowed.
+
+intel_pmu_handle_irq() is called as a NMI_LOCAL handler from a NMI
+handler of NMI watchdog, perf_event_nmi_handler(). It identifies an
+owner of a given NMI by looking at overflow status bits in
+MSR_CORE_PERF_GLOBAL_STATUS MSR. If some of the bits are set, then it
+handles the given NMI as its own NMI.
+
+The problem is that the intel_pmu_handle_irq() doesn't distinguish
+CondChgd bit from other bits. Unlike the other status bits, CondChgd
+bit doesn't represent overflow status for performance counters. Thus,
+CondChgd bit cannot be thought of as a mark indicating a given NMI is
+NMI watchdog's.
+
+As a result, if CondChgd bit is set, any NMI is falsely handled by the
+NMI handler of NMI watchdog. Also, if type of the falsely handled NMI
+is either NMI_UNKNOWN, NMI_SERR or NMI_IO_CHECK, the corresponding
+action is never performed until CondChgd bit is cleared.
+
+I noticed this behavior on systems with Ivy Bridge processors: Intel
+Xeon CPU E5-2630 v2 and Intel Xeon CPU E7-8890 v2. On both systems,
+CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR has already been set
+in the beginning at boot. Then the CondChgd bit is immediately cleared
+by next wrmsr to MSR_CORE_PERF_GLOBAL_CTRL MSR and appears to remain
+0.
+
+On the other hand, on older processors such as Nehalem, Xeon E7540,
+CondChgd bit is not set in the beginning at boot.
+
+I'm not sure about exact behavior of CondChgd bit, in particular when
+this bit is set. Although I read Intel System Programmer's Manual to
+figure out that, the descriptions I found are:
+
+  In 18.9.1:
+
+  "The MSR_PERF_GLOBAL_STATUS MSR also provides a ¡sticky bit¢ to
+   indicate changes to the state of performancmonitoring hardware"
+
+  In Table 35-2 IA-32 Architectural MSRs
+
+  63 CondChg: status bits of this register has changed.
+
+These are different from the bahviour I see on the actual system as I
+explained above.
+
+At least, I think ignoring CondChgd bit should be enough for NMI
+watchdog perspective.
+
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: David Miller <davem@davemloft.net>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Vineet Gupta <vgupta@synopsys.com>
-Cc: Jason Low <jason.low2@hp.com>
-Cc: Waiman Long <waiman.long@hp.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: John David Anglin <dave.anglin@bell.net>
-Cc: James Hogan <james.hogan@imgtec.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: sparclinux@vger.kernel.org
-Link: http://lkml.kernel.org/r/20140606175316.GV13930@laptop.programming.kicks-ass.net
+Link: http://lkml.kernel.org/r/20140625.103503.409316067.d.hatayama@jp.fujitsu.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/Kconfig     | 1 +
- arch/arm64/Kconfig   | 1 +
- arch/powerpc/Kconfig | 1 +
- arch/sparc/Kconfig   | 1 +
- arch/x86/Kconfig     | 1 +
- kernel/Kconfig.locks | 5 ++++-
- 6 files changed, 9 insertions(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index e47fcd1e9645..99e1ce978cf9 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -5,6 +5,7 @@ config ARM
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
- 	select ARCH_HAVE_CUSTOM_GPIO_H
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select BUILDTIME_EXTABLE_SORT if MMU
- 	select CLONE_BACKWARDS
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index c04454876bcb..fe70eaea0e28 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -1,6 +1,7 @@
- config ARM64
- 	def_bool y
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARCH_WANT_COMPAT_IPC_PARSE_VERSION
- 	select ARCH_WANT_FRAME_POINTERS
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index d5d026b6d237..2e0ddfadc0b9 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -138,6 +138,7 @@ config PPC
- 	select OLD_SIGSUSPEND
- 	select OLD_SIGACTION if PPC32
- 	select HAVE_DEBUG_STACKOVERFLOW
-+	select ARCH_SUPPORTS_ATOMIC_RMW
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index f31a1655d1ff..aa4b5c132c66 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1365,6 +1365,15 @@ again:
+ 	intel_pmu_lbr_read();
  
- config EARLY_PRINTK
- 	bool
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 4e5683877b93..d60f34dbae89 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -75,6 +75,7 @@ config SPARC64
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select HAVE_C_RECORDMCOUNT
- 	select NO_BOOTMEM
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 
- config ARCH_DEFCONFIG
- 	string
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index eb2dfa61eabe..9dc1a24d41b8 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -123,6 +123,7 @@ config X86
- 	select COMPAT_OLD_SIGACTION if IA32_EMULATION
- 	select RTC_LIB
- 	select HAVE_DEBUG_STACKOVERFLOW
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 
- config INSTRUCTION_DECODER
- 	def_bool y
-diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
-index d2b32ac27a39..ecee67a00f5f 100644
---- a/kernel/Kconfig.locks
-+++ b/kernel/Kconfig.locks
-@@ -220,6 +220,9 @@ config INLINE_WRITE_UNLOCK_IRQRESTORE
- 
- endif
- 
-+config ARCH_SUPPORTS_ATOMIC_RMW
-+	bool
+ 	/*
++	 * CondChgd bit 63 doesn't mean any overflow status. Ignore
++	 * and clear the bit.
++	 */
++	if (__test_and_clear_bit(63, (unsigned long *)&status)) {
++		if (!status)
++			goto done;
++	}
 +
- config MUTEX_SPIN_ON_OWNER
- 	def_bool y
--	depends on SMP && !DEBUG_MUTEXES
-+	depends on SMP && !DEBUG_MUTEXES && ARCH_SUPPORTS_ATOMIC_RMW
++	/*
+ 	 * PEBS overflow sets bit 62 in the global status register
+ 	 */
+ 	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
 -- 
 2.0.1
 
