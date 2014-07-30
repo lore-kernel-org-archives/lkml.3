@@ -1,90 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032AbaG3Voh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 17:44:37 -0400
-Received: from forward3l.mail.yandex.net ([84.201.143.136]:40904 "EHLO
-	forward3l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887AbaG3Vms (ORCPT
+	id S1756048AbaG3Vp0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 17:45:26 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:35331 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701AbaG3VpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 17:42:48 -0400
-X-Yandex-Uniq: 1a3369ed-4a13-4329-8f60-377b7f55cfe5
-Authentication-Results: smtp1o.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Subject: [PATCH v3 0/5] sched: Add on_rq states and remove several double rq
- locks
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: linux-kernel@vger.kernel.org
-Cc: nicolas.pitre@linaro.org, peterz@infradead.org, pjt@google.com,
-        oleg@redhat.com, rostedt@goodmis.org, umgwanakikbuti@gmail.com,
-        ktkhai@parallels.com, tim.c.chen@linux.intel.com, mingo@kernel.org
-Date: Thu, 31 Jul 2014 01:42:35 +0400
-Message-ID: <20140730213219.27604.11218.stgit@localhost>
-User-Agent: StGit/0.17.1-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Jul 2014 17:45:25 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        iss_storagedev@hp.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] scsi: hpsa.c:  Cleaning up code clarification using strlcpy
+Date: Wed, 30 Jul 2014 23:46:52 +0200
+Message-Id: <1406756812-20526-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series aims to get rid of some places where locks of two RQs are held
-at the same time.
+Code clarification using strlcpy instead of strncpy.
+And removed unnecessary memset
 
-Patch [1/5] is a preparation/cleanup. It replaces old (task_struct::on_rq == 1)
-with new (task_struct::on_rq == ONRQ_QUEUED) everywhere. No functional changes.
-
-Patch [2/5] is main in the series. It introduces new ONRQ_MIGRATING state and
-teaches scheduler to understand it (we need little changes in try_to_wake_up()
-and task_rq_lock() family). This will be used in the following way:
-
-        (we are changing task's rq)
-
-        raw_spin_lock(&src_rq->lock);
-
-	p = ...; /* Some src_rq task */
-
-        dequeue_task(src_rq, p, 0);
-        p->on_rq = ONRQ_MIGRATING;
-        set_task_cpu(p, dst_cpu);
-        raw_spin_unlock(&src_rq->lock);
-
-	/*
-	 * Now p os dequeued, and both
-         * RQ locks are unlocked, but
-	 * its on_rq is not zero.
-	 * Nobody can manipulate p
-	 * while it's migrating,
-	 * even when spinlocks are
-	 * unlocked.
-	 */
-
-        raw_spin_lock(&dst_rq->lock);
-        p->on_rq = ONRQ_QUEUED;
-        enqueue_task(dst_rq, p, 0);
-        raw_spin_unlock(&dst_rq->lock);
-
-Patches [3,4,5/5] remove double locks and use new ONRQ_MIGRATING state.
-They allow unlocked using of 3-4 function, which looks safe for me.
-
-The profit is double_rq_lock() is not need now, so we reduce the
-total time when RQs are locked.
-
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
+ drivers/scsi/hpsa.c |   16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-Kirill Tkhai (5):
-      sched: Wrapper for checking task_struct::on_rq
-      sched: Teach scheduler to understand ONRQ_MIGRATING state
-      sched: Remove double_rq_lock() from __migrate_task()
-      sched/fair: Remove double_lock_balance() from active_load_balance_cpu_stop()
-      sched/fair: Remove double_lock_balance() from load_balance()
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 31184b3..814d64d 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -315,16 +315,15 @@ static ssize_t host_store_hp_ssd_smart_path_status(struct device *dev,
+ 					 struct device_attribute *attr,
+ 					 const char *buf, size_t count)
+ {
+-	int status, len;
++	int status;
+ 	struct ctlr_info *h;
+ 	struct Scsi_Host *shost = class_to_shost(dev);
+ 	char tmpbuf[10];
+ 
+ 	if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SYS_RAWIO))
+ 		return -EACCES;
+-	len = count > sizeof(tmpbuf) - 1 ? sizeof(tmpbuf) - 1 : count;
+-	strncpy(tmpbuf, buf, len);
+-	tmpbuf[len] = '\0';
++	strlcpy(tmpbuf, buf,
++		count > sizeof(tmpbuf) ? sizeof(tmpbuf) : count);
+ 	if (sscanf(tmpbuf, "%d", &status) != 1)
+ 		return -EINVAL;
+ 	h = shost_to_hba(shost);
+@@ -339,16 +338,15 @@ static ssize_t host_store_raid_offload_debug(struct device *dev,
+ 					 struct device_attribute *attr,
+ 					 const char *buf, size_t count)
+ {
+-	int debug_level, len;
++	int debug_level;
+ 	struct ctlr_info *h;
+ 	struct Scsi_Host *shost = class_to_shost(dev);
+ 	char tmpbuf[10];
+ 
+ 	if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SYS_RAWIO))
+ 		return -EACCES;
+-	len = count > sizeof(tmpbuf) - 1 ? sizeof(tmpbuf) - 1 : count;
+-	strncpy(tmpbuf, buf, len);
+-	tmpbuf[len] = '\0';
++	strlcpy(tmpbuf, buf,
++		count > sizeof(tmpbuf) ? sizeof(tmpbuf) : count);
+ 	if (sscanf(tmpbuf, "%d", &debug_level) != 1)
+ 		return -EINVAL;
+ 	if (debug_level < 0)
+@@ -5881,8 +5879,8 @@ static int hpsa_controller_hard_reset(struct pci_dev *pdev,
+ 
+ static void init_driver_version(char *driver_version, int len)
+ {
+-	memset(driver_version, 0, len);
+ 	strncpy(driver_version, HPSA " " HPSA_DRIVER_VERSION, len - 1);
++	driver_version[len - 1] = '\0';
+ }
+ 
+ static int write_driver_ver_to_cfgtable(struct CfgTable __iomem *cfgtable)
+-- 
+1.7.10.4
 
-
- kernel/sched/core.c      |  115 +++++++++++++++++--------------
- kernel/sched/deadline.c  |   14 ++--
- kernel/sched/fair.c      |  172 +++++++++++++++++++++++++++++++---------------
- kernel/sched/rt.c        |   16 ++--
- kernel/sched/sched.h     |   13 +++
- kernel/sched/stop_task.c |    2 -
- 6 files changed, 211 insertions(+), 121 deletions(-)
-
---
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
