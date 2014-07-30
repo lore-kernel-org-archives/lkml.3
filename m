@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547AbaG3B6i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:58:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60668 "EHLO
+	id S1755553AbaG3B65 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:58:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60665 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380AbaG3BuF (ORCPT
+	with ESMTP id S1755152AbaG3BuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:50:05 -0400
+	Tue, 29 Jul 2014 21:50:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Philippe Troin <phil@fifi.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.15 06/37] nfs: only show Posix ACLs in listxattr if actually present
-Date: Tue, 29 Jul 2014 18:48:42 -0700
-Message-Id: <20140730014827.928270890@linuxfoundation.org>
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.15 05/37] media: tda10071: force modulation to QPSK on DVB-S
+Date: Tue, 29 Jul 2014 18:48:41 -0700
+Message-Id: <20140730014827.873796384@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014827.565626091@linuxfoundation.org>
 References: <20140730014827.565626091@linuxfoundation.org>
@@ -29,94 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 74adf83f5d7720925499b4938f930591f947b660 upstream.
+commit db4175ae2095634dbecd4c847da439f9c83e1b3b upstream.
 
-The big ACL switched nfs to use generic_listxattr, which calls all existing
-->list handlers.  Add a custom .listxattr implementation that only lists
-the ACLs if they actually are present on the given inode.
+Only supported modulation for DVB-S is QPSK. Modulation parameter
+contains invalid value for DVB-S on some cases, which leads driver
+refusing tuning attempt. Due to that, hard code modulation to QPSK
+in case of DVB-S.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Philippe Troin <phil@fifi.org>
-Tested-by: Philippe Troin <phil@fifi.org>
-Fixes: 013cdf1088d7 (nfs: use generic posix ACL infrastructure ...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs3acl.c  |   43 +++++++++++++++++++++++++++++++++++++++++++
- fs/nfs/nfs3proc.c |    4 ++--
- 2 files changed, 45 insertions(+), 2 deletions(-)
+ drivers/media/dvb-frontends/tda10071.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/nfs3acl.c
-+++ b/fs/nfs/nfs3acl.c
-@@ -247,3 +247,46 @@ const struct xattr_handler *nfs3_xattr_h
- 	&posix_acl_default_xattr_handler,
- 	NULL,
- };
+--- a/drivers/media/dvb-frontends/tda10071.c
++++ b/drivers/media/dvb-frontends/tda10071.c
+@@ -668,6 +668,7 @@ static int tda10071_set_frontend(struct
+ 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+ 	int ret, i;
+ 	u8 mode, rolloff, pilot, inversion, div;
++	fe_modulation_t modulation;
+ 
+ 	dev_dbg(&priv->i2c->dev,
+ 			"%s: delivery_system=%d modulation=%d frequency=%d symbol_rate=%d inversion=%d pilot=%d rolloff=%d\n",
+@@ -702,10 +703,13 @@ static int tda10071_set_frontend(struct
+ 
+ 	switch (c->delivery_system) {
+ 	case SYS_DVBS:
++		modulation = QPSK;
+ 		rolloff = 0;
+ 		pilot = 2;
+ 		break;
+ 	case SYS_DVBS2:
++		modulation = c->modulation;
 +
-+static int
-+nfs3_list_one_acl(struct inode *inode, int type, const char *name, void *data,
-+		size_t size, ssize_t *result)
-+{
-+	struct posix_acl *acl;
-+	char *p = data + *result;
-+
-+	acl = get_acl(inode, type);
-+	if (!acl)
-+		return 0;
-+
-+	posix_acl_release(acl);
-+
-+	*result += strlen(name);
-+	*result += 1;
-+	if (!size)
-+		return 0;
-+	if (*result > size)
-+		return -ERANGE;
-+
-+	strcpy(p, name);
-+	return 0;
-+}
-+
-+ssize_t
-+nfs3_listxattr(struct dentry *dentry, char *data, size_t size)
-+{
-+	struct inode *inode = dentry->d_inode;
-+	ssize_t result = 0;
-+	int error;
-+
-+	error = nfs3_list_one_acl(inode, ACL_TYPE_ACCESS,
-+			POSIX_ACL_XATTR_ACCESS, data, size, &result);
-+	if (error)
-+		return error;
-+
-+	error = nfs3_list_one_acl(inode, ACL_TYPE_DEFAULT,
-+			POSIX_ACL_XATTR_DEFAULT, data, size, &result);
-+	if (error)
-+		return error;
-+	return result;
-+}
---- a/fs/nfs/nfs3proc.c
-+++ b/fs/nfs/nfs3proc.c
-@@ -891,7 +891,7 @@ static const struct inode_operations nfs
- 	.getattr	= nfs_getattr,
- 	.setattr	= nfs_setattr,
- #ifdef CONFIG_NFS_V3_ACL
--	.listxattr	= generic_listxattr,
-+	.listxattr	= nfs3_listxattr,
- 	.getxattr	= generic_getxattr,
- 	.setxattr	= generic_setxattr,
- 	.removexattr	= generic_removexattr,
-@@ -905,7 +905,7 @@ static const struct inode_operations nfs
- 	.getattr	= nfs_getattr,
- 	.setattr	= nfs_setattr,
- #ifdef CONFIG_NFS_V3_ACL
--	.listxattr	= generic_listxattr,
-+	.listxattr	= nfs3_listxattr,
- 	.getxattr	= generic_getxattr,
- 	.setxattr	= generic_setxattr,
- 	.removexattr	= generic_removexattr,
+ 		switch (c->rolloff) {
+ 		case ROLLOFF_20:
+ 			rolloff = 2;
+@@ -750,7 +754,7 @@ static int tda10071_set_frontend(struct
+ 
+ 	for (i = 0, mode = 0xff; i < ARRAY_SIZE(TDA10071_MODCOD); i++) {
+ 		if (c->delivery_system == TDA10071_MODCOD[i].delivery_system &&
+-			c->modulation == TDA10071_MODCOD[i].modulation &&
++			modulation == TDA10071_MODCOD[i].modulation &&
+ 			c->fec_inner == TDA10071_MODCOD[i].fec) {
+ 			mode = TDA10071_MODCOD[i].val;
+ 			dev_dbg(&priv->i2c->dev, "%s: mode found=%02x\n",
 
 
