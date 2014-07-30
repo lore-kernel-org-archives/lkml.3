@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbaG3JmV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 05:42:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29059 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751427AbaG3JmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 05:42:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,763,1400050800"; 
-   d="scan'208";a="569350589"
-Message-ID: <53D8BD5E.2090601@intel.com>
-Date: Wed, 30 Jul 2014 17:39:42 +0800
-From: Jike Song <jike.song@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Dario Faggioli <dario.faggioli@citrix.com>
-CC: "White, Michael L" <michael.l.white@intel.com>,
-        "Dong, Eddie" <eddie.dong@intel.com>, intel-gfx@lists.freedesktop.org,
-        "Li, Susie" <susie.li@intel.com>,
-        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xen.org,
-        "Haron, Sandra" <sandra.haron@intel.com>
-Subject: Re: [Xen-devel] [Intel-gfx] [Announcement] Updates to XenGT - a Mediated
- Graphics Passthrough Solution from Intel
-References: <53D215D3.50608@intel.com> <1406628570.4038.37.camel@Solace>
-In-Reply-To: <1406628570.4038.37.camel@Solace>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752157AbaG3Jn7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 05:43:59 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:61069 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896AbaG3Jn5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 05:43:57 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-7f-53d8be5a47eb
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mina86@mina86.com,
+        m.szyprowski@samsung.com, andrzej.p@samsung.com, k.opasiak@samsung.com,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH v3 0/3] usb: gadget: f_fs: userspace API fixes and improvements
+Date: Wed, 30 Jul 2014 11:43:40 +0200
+Message-id: <1406713423-32472-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplluLIzCtJLcpLzFFi42I5/e+xoG7UvhvBBofazCxmvWxnsTh4v96i
+	efF6NovbE6exWVzeNYfNYtGyVmaLtUfuslssON7CavHg8E52B06P/XPXsHus+/OKyaNvyypG
+	j+M3tjN5fN4kF8AaxWWTkpqTWZZapG+XwJUx48JRloJFXBX3z99ma2BcyNHFyMkhIWAiMW3W
+	XGYIW0ziwr31bF2MXBxCAtMZJX6/aWWBcNqZJK497gSrYhPQkdjyfQIjiC0iICCx/sUldpAi
+	ZoEHjBLtty4DtXNwCAv4S7T0CIHUsAioSty4/x2snlfAVaL9Ui/UNjmJk8cms05g5F7AyLCK
+	UTS1ILmgOCk911CvODG3uDQvXS85P3cTIzhwnkntYFzZYHGIUYCDUYmHd8b/68FCrIllxZW5
+	hxglOJiVRHj71t4IFuJNSaysSi3Kjy8qzUktPsQozcGiJM57oNU6UEggPbEkNTs1tSC1CCbL
+	xMEp1cB4egWvk/Q5T8WMWsEp0dM+FvT9EBC846/c9JZbxkDs0JnsH4XJX/f/sq6JvmCzT+ru
+	5t0/S5qN7X3fLtBpmqFu77b8n8K5c65t1jKXa59qHf7OEWqR8NhzDa/6z5a1nw8JF0xZe3Pa
+	wrnWIruO7tRdx9G3JMHtYa5tVZHxlBN1y/U0he69PfVViaU4I9FQi7moOBEATs1KdhgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2014 06:09 PM, Dario Faggioli wrote:
-> Perhaps the info is available somewhere already (in which case, sorry),
-> but what's the (if any) upstreaming plan/status/ETA?
->
-> I think this info could well be part of these updates. :-)
+This patchset contains changes in FunctionFS making it easier and
+safer to use. It fixes bug in endpoint files handling code, adds new
+ioctl allowing to obtain endpoint descriptor, and introduces virtual
+address mapping which allows to separate endpoint address space in
+function from physical endpoint addresses, and introduces new endpoint
+files naming convention.
 
-Thanks for your opinion :-)
+Changelog:
 
-We plan to start the upstreaming work in this quarter. For your information,
-Wei's IOREQ server enhancement(aka "Extend ioreq-server to support page write protection")
-is actually part of the upstreaming effort.
+v3:
+- move fix for the redundant ep files problem into sepatare patch
+- merge user space API affecting changes into single patch
+- add flag switching between old and new style API
 
-Patches for different components will be sent out later.
+v2: https://lkml.org/lkml/2014/7/25/296
+- return proper endpont address in setup request handling
+- add patch usb: gadget: f_fs: add ioctl returning ep descriptor
+- add patch usb: gadget: f_fs: make numbers in ep file names the same
+  as ep addresses
 
->
-> Thanks and Regards,
-> Dario
->
+v1: https://lkml.org/lkml/2014/7/18/1010
 
---
-Thanks,
-Jike
+Robert Baldyga (3):
+  usb: gadget: f_fs: fix the redundant ep files problem
+  usb: gadget: f_fs: add ioctl returning ep descriptor
+  usb: gadget: f_fs: virtual endpoint address mapping
+
+ drivers/usb/gadget/f_fs.c           | 107 +++++++++++++++++++++++++++++++-----
+ drivers/usb/gadget/u_fs.h           |   4 ++
+ include/uapi/linux/usb/functionfs.h |   7 +++
+ 3 files changed, 105 insertions(+), 13 deletions(-)
+
+-- 
+1.9.1
+
