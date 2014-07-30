@@ -1,107 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615AbaG3QWm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 12:22:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42039 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755621AbaG3QWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 12:22:38 -0400
-Message-ID: <53D91BC9.7080506@suse.cz>
-Date: Wed, 30 Jul 2014 18:22:33 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755264AbaG3Q0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 12:26:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37426 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262AbaG3Q0o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 12:26:44 -0400
+Message-ID: <53D91CBC.1000901@canonical.com>
+Date: Wed, 30 Jul 2014 12:26:36 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v5 02/14] mm, compaction: defer each zone individually
- instead of preferred zone
-References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-3-git-send-email-vbabka@suse.cz> <20140729063840.GA1610@js1304-P5Q-DELUXE> <53D76592.10105@suse.cz>
-In-Reply-To: <53D76592.10105@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: david@fromorbit.com, xfs@oss.sgi.com,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH][v3.2.y] xfs: really fix the cursor leak in xfs_alloc_ag_vextent_near
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2014 11:12 AM, Vlastimil Babka wrote:
-> On 07/29/2014 08:38 AM, Joonsoo Kim wrote:
->>>    /* Return values for compact_zone() and try_to_compact_pages() */
->>> +/* compaction didn't start as it was deferred due to past failures */
->>> +#define COMPACT_DEFERRED	0
->>>    /* compaction didn't start as it was not possible or direct reclaim was more suitable */
->>> -#define COMPACT_SKIPPED		0
->>> +#define COMPACT_SKIPPED		1
->>
->> Hello,
->>
->> This change makes some users of compaction_suitable() failed
->> unintentionally, because they assume that COMPACT_SKIPPED is 0.
->> Please fix them according to this change.
->
-> Oops, good catch. Thanks!
->
->>> @@ -2324,27 +2327,31 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->>>    				order, zonelist, high_zoneidx,
->>>    				alloc_flags & ~ALLOC_NO_WATERMARKS,
->>>    				preferred_zone, classzone_idx, migratetype);
->>> +
->>>    		if (page) {
->>> -			preferred_zone->compact_blockskip_flush = false;
->>> -			compaction_defer_reset(preferred_zone, order, true);
->>> +			struct zone *zone = page_zone(page);
->>> +
->>> +			zone->compact_blockskip_flush = false;
->>> +			compaction_defer_reset(zone, order, true);
->>>    			count_vm_event(COMPACTSUCCESS);
->>>    			return page;
->>>    		}
->>>
->>>    		/*
->>> +		 * last_compact_zone is where try_to_compact_pages thought
->>> +		 * allocation should succeed, so it did not defer compaction.
->>> +		 * But now we know that it didn't succeed, so we do the defer.
->>> +		 */
->>> +		if (last_compact_zone && mode != MIGRATE_ASYNC)
->>> +			defer_compaction(last_compact_zone, order);
->>
->> I still don't understand why defer_compaction() is needed here.
->> defer_compaction() is intended for not struggling doing compaction on
->> the zone where we already have tried compaction and found that it
->> isn't suitable for compaction. Allocation failure doesn't tell us
->> that we have tried compaction for all the zone range so we shouldn't
->> make a decision here to defer compaction on this zone carelessly.
->
-> OK I can remove that, it should make the code nicer anyway.
+Hello,
+    
+Please consider including mainline commit
+e3a746f5aab71f2dd0a83116772922fb37ae29d6 in the next v3.2.y release.  It
+was included in the mainline tree as of v3.5.  It has been tested and
+confirmed
+to resolve http://bugs.launchpad.net/bugs/1327360 .
 
-Weird, that removal of this defer_compaction() call seems ho have 
-quadrupled compact_stall and compact_fail counts. The scanner pages 
-counters however increased by only 10% so that could indicate the 
-problem is occuring only in a small zone such as DMA. Could be another 
-case of mismatch between watermark checking in compaction and 
-allocation? Perhaps the lack of proper classzone_idx in the compaction 
-check? Sigh.
 
-> I also agree
-> with the argument "for all the zone range" and I also realized that it's
-> not (both before and after this patch) really the case. I planned to fix
-> that in the future, but I can probably do it now.
-> The plan is to call defer_compaction() only when compaction returned
-> COMPACT_COMPLETE (and not COMPACT_PARTIAL) as it means the whole zone
-> was scanned. Otherwise there will be bias towards the beginning of the
-> zone in the migration scanner - compaction will be deferred half-way and
-> then cached pfn's might be reset when it restarts, and the rest of the
-> zone won't be scanned at all.
+commit e3a746f5aab71f2dd0a83116772922fb37ae29d6
+Author: Dave Chinner <dchinner@redhat.com>
+Date:   Thu Jul 12 07:40:42 2012 +1000
 
-Hm despite expectations, this didn't seem to make much difference. But 
-maybe there will be once I have some idea what happened to those stalls.
+    xfs: really fix the cursor leak in xfs_alloc_ag_vextent_near
 
->> Thanks.
->>
->
+
+Sincerely,
+Joseph Salisbury
 
