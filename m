@@ -1,52 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700AbaG3TRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 15:17:12 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:39859 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917AbaG3TRL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 15:17:11 -0400
-X-Originating-IP: 78.210.48.61
-Date: Wed, 30 Jul 2014 21:16:40 +0200
-From: Guillaume Clement <gclement@baobob.org>
-To: Fernando Apesteguia <fernando.apesteguia@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Tobias Klauser <tklauser@distanz.ch>
-Subject: Re: [PATCH] Staging: vt6655: staticfy variable
-Message-ID: <20140730191638.GA5493@pleinair.baobob.org>
+	id S1755864AbaG3TUs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 15:20:48 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41486 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753369AbaG3TUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 15:20:46 -0400
+From: Nishanth Menon <nm@ti.com>
+To: <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <inux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH] ARM: dts: DRA7: fix interrupt-cells for GPIO
+Date: Wed, 30 Jul 2014 14:20:32 -0500
+Message-ID: <1406748032-19417-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+GPIO modules are also interrupt sources. However, they require both the
+GPIO number and IRQ type to function properly.
 
-> Add static to variable.
-> Signed-off-by: Fernando Apesteguia <fernando.apesteguia@gmail.com>
-> ---
->  drivers/staging/vt6655/ioctl.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/staging/vt6655/ioctl.c
-> b/drivers/staging/vt6655/ioctl.c
-> index 65e5933..cc6e47b 100644
-> --- a/drivers/staging/vt6655/ioctl.c
-> +++ b/drivers/staging/vt6655/ioctl.c
-> @@ -41,7 +41,7 @@
->  static int msglevel = MSG_LEVEL_INFO;
->
->  #ifdef WPA_SM_Transtatus
-> -SWPAResult wpa_Result;
-> +static SWPAResult wpa_Result;
->  #endif
+By declaring that GPIO uses interrupt-cells=<1>, we essentially do not
+allow users of the nodes to use the interrupt property appropritely.
 
-This changes breaks the compilation (actually the linking). wpa_Result
-is actually used in device_main.c in device_open with the following:
+With this change, the following now works:
 
-> #ifdef WPA_SM_Transtatus
-> 	extern SWPAResult wpa_Result;
-> #endif
+interrupt-parent = <&gpio6>;
+interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
+
+Fixes: 6e58b8f1daaf ('ARM: dts: DRA7: Add the dts files for dra7 SoC and dra7-evm board')
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+Based on v3.16-rc7
+
+ arch/arm/boot/dts/dra7.dtsi |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 8012763..f21ef39 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -172,7 +172,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
+ 
+ 		gpio2: gpio@48055000 {
+@@ -183,7 +183,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
+ 
+ 		gpio3: gpio@48057000 {
+@@ -194,7 +194,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
+ 
+ 		gpio4: gpio@48059000 {
+@@ -205,7 +205,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
+ 
+ 		gpio5: gpio@4805b000 {
+@@ -216,7 +216,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
+ 
+ 		gpio6: gpio@4805d000 {
+@@ -227,7 +227,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
+ 
+ 		gpio7: gpio@48051000 {
+@@ -238,7 +238,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
+ 
+ 		gpio8: gpio@48053000 {
+@@ -249,7 +249,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
+ 
+ 		uart1: serial@4806a000 {
+-- 
+1.7.9.5
+
