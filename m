@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919AbaG3Wgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 18:36:31 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:57793 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755847AbaG3Wg3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 18:36:29 -0400
-X-Sasl-enc: 3p+hJZJTXlO6JKD/gEB4QBuZEh4FHEXTR8yuUctIsUZP 1406759787
-Date: Wed, 30 Jul 2014 15:35:59 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kim Phillips <kim.phillips@freescale.com>
-Subject: Re: linux-next: manual merge of the clk tree with the driver-core
- tree
-Message-ID: <20140730223559.GB9004@kroah.com>
-References: <20140730185708.12a99f00@canb.auug.org.au>
+	id S1753879AbaG3Wk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 18:40:59 -0400
+Received: from smtp.pobox.com ([208.72.237.35]:60228 "EHLO smtp.pobox.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752256AbaG3Wk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 18:40:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type; q=dns; s=
+	sasl; b=LP4+P9rz0RtTmBNBgTVt3vzstwaVnPFLhrUfIMI/zE2dr/otObJmgkkg
+	6va2k12TBqy7MddLDTP573SOue1+3tefCyG6MetZwrwfugCeA/q4yA3ugNR6i4w3
+	PlVMgsolYp4rPIJL18k4XaXax9P3CIP/1wbF8t4l9Qck9eYDptQ=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v2.0.4
+Date: Wed, 30 Jul 2014 15:40:48 -0700
+Message-ID: <xmqqfvhixyfj.fsf@gitster.dls.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140730185708.12a99f00@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Pobox-Relay-ID: 8E2B2B7E-183A-11E4-8BDF-9903E9FBB39C-77302942!pb-smtp0.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 06:57:08PM +1000, Stephen Rothwell wrote:
-> Hi Mike,
-> 
-> Today's linux-next merge of the clk tree got a conflict in
-> drivers/base/platform.c between commit 3d713e0e382e ("driver core:
-> platform: add device binding path 'driver_override'") from the
-> driver-core tree and commit 86be408bfbd8 ("clk: Support for clock
-> parents and rates assigned from device tree") from the clk tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+The latest maintenance release Git v2.0.4 is now available at
+the usual places.
 
-Looks good, thanks.
+This is primarily to fix a regression of "git diff-tree" in v2.0.2.
 
-greg k-h
+The tarballs are found at:
+
+    https://www.kernel.org/pub/software/scm/git/
+
+The following public repositories all have a copy of the 'v2.0.4'
+tag and the 'maint' branch that the tag points at:
+
+  url = https://kernel.googlesource.com/pub/scm/git/git
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+Git v2.0.4 Release Notes
+========================
+
+ * An earlier update to v2.0.2 broken output from "git diff-tree",
+   which is fixed in this release.
+
+----------------------------------------------------------------
+
+Changes since v2.0.3 are as follows:
+
+Fabian Ruch (1):
+      commit --amend: test specifies authorship but forgets to check
+
+Jeff King (8):
+      alloc: write out allocator definitions
+      move setting of object->type to alloc_* functions
+      parse_object_buffer: do not set object type
+      add object_as_type helper for casting objects
+      alloc: factor out commit index
+      object_as_type: set commit index
+      diff-tree: avoid lookup_unknown_object
+      t4013: test diff-tree's --stdin commit formatting
+
+Junio C Hamano (1):
+      Git 2.0.4
+
+Ramsay Allan Jones (1):
+      alloc.c: remove the alloc_raw_commit_node() function
+
