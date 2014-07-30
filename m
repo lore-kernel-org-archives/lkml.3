@@ -1,172 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167AbaG3OXW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 10:23:22 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:52807 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753374AbaG3OXU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 10:23:20 -0400
-Date: Wed, 30 Jul 2014 07:23:11 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140730142311.GJ11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140728225556.GA19493@linux.vnet.ibm.com>
- <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140729081416.GR20603@laptop.programming.kicks-ass.net>
- <20140729172304.GA16073@linux.vnet.ibm.com>
- <20140729173332.GM3935@laptop>
- <20140729180656.GY11241@linux.vnet.ibm.com>
- <1406726619.5889.17.camel@marge.simpson.net>
+	id S1754099AbaG3OY2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 10:24:28 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38352 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751472AbaG3OY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 10:24:27 -0400
+Message-ID: <53D90008.4060908@ti.com>
+Date: Wed, 30 Jul 2014 17:24:08 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1406726619.5889.17.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073014-0928-0000-0000-000003C378C6
+To: Dexuan Cui <decui@microsoft.com>
+CC: <gregkh@linuxfoundation.org>, <dan.carpenter@oracle.com>,
+        <linux-kernel@vger.kernel.org>,
+        <driverdev-devel@linuxdriverproject.org>, <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <olaf@aepfle.de>, <apw@canonical.com>,
+        <jasowang@redhat.com>, <kys@microsoft.com>, <haiyangz@microsoft.com>
+Subject: Re: [PATCH v3] video: hyperv: hyperv_fb: refresh the VM screen by
+ force on VM panic
+References: <1404875063-27424-1-git-send-email-decui@microsoft.com>
+In-Reply-To: <1404875063-27424-1-git-send-email-decui@microsoft.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="aVvRXgTRnjxjuLwnBtHaxCVfO667WmnPc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 03:23:39PM +0200, Mike Galbraith wrote:
-> On Tue, 2014-07-29 at 11:06 -0700, Paul E. McKenney wrote: 
-> > On Tue, Jul 29, 2014 at 07:33:32PM +0200, Peter Zijlstra wrote:
-> 
-> > > FWIW its _the_ thing that makes nohz_full uninteresting for me. The
-> > > required overhead is insane. But yes there are people willing to pay
-> > > that etc..
-> > 
-> > It would indeed be good to reduce the overhead.  I could imagine all sorts
-> > of insane approaches involving assuming that CPU write buffers flush in
-> > bounded time, though CPU vendors seem unwilling to make guarantees in
-> > this area.  ;-)
-> > 
-> > Or is something other than rcu_user_enter() and rcu_user_exit() causing
-> > the pain here?
-> 
-> Border guards stamping visas.  Note native_sched_clock().
+--aVvRXgTRnjxjuLwnBtHaxCVfO667WmnPc
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Thank you for running this!
+On 09/07/14 06:04, Dexuan Cui wrote:
+> Currently the VSC has no chance to notify the VSP of the dirty rectangl=
+e on VM
+> panic because the notification work is done in a workqueue, and in pani=
+c() the
+> kernel typically ends up in an infinite loop, and a typical kernel conf=
+ig has
+> CONFIG_PREEMPT_VOLUNTARY=3Dy and CONFIG_PREEMPT is not set, so a contex=
+t switch
+> can't happen in panic() and the workqueue won't have a chance to run. A=
+s a
+> result, the VM Connection window can't refresh until it's closed and we=
 
-So the delta accounting is much of the pain.  Hmmm...
+> re-connect to the VM.
+>=20
+> We can register a handler on panic_notifier_list: the handler can notif=
+y
+> the VSC and switch the framebuffer driver to a "synchronous mode", mean=
+ing
+> the VSC flushes any future framebuffer change to the VSP immediately.
+>=20
+> v2: removed the MS-TFS line in the commit message
+> v3: remove some 'unlikely' markings
+>=20
+> Signed-off-by: Dexuan Cui <decui@microsoft.com>
+> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> ---
+>  drivers/video/fbdev/hyperv_fb.c | 58 +++++++++++++++++++++++++++++++++=
++++++---
+>  1 file changed, 55 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/drivers/video/fbdev/hyperv_fb.c b/drivers/video/fbdev/hype=
+rv_fb.c
+> index e23392e..a7b98e1 100644
+> --- a/drivers/video/fbdev/hyperv_fb.c
+> +++ b/drivers/video/fbdev/hyperv_fb.c
+> @@ -226,11 +226,16 @@ struct hvfb_par {
+>  	u8 recv_buf[MAX_VMBUS_PKT_SIZE];
+>  };
+> =20
+> +static struct fb_info *hvfb_info;
 
-							Thanx, Paul
+Static variables like these are usually a no-no. This prevents you from
+having multiple device instances.
 
-> echo 0 > sched_wakeup_granularity_ns
-> taskset -c 3 pipe-test 1
-> 
->     CONFIG_NO_HZ_FULL=y 604.2 KHz           CONFIG_NO_HZ_FULL=y, nohz_full=3 303.5 KHz
->     10.45%   __schedule                     8.74%   native_sched_clock
->     10.03%   system_call                    5.63%   __schedule
->      4.86%   _raw_spin_lock_irqsave         4.75%   _raw_spin_lock
->      4.51%   __switch_to                    4.35%   reschedule_interrupt
->      4.31%   copy_user_generic_string       3.91%   _raw_spin_unlock_irqrestore
->      3.50%   pipe_read                      3.35%   system_call
->      3.02%   pipe_write                     2.73%   context_tracking_user_exit
->      2.76%   mutex_lock                     2.30%   _raw_spin_lock_irqsave
->      2.30%   native_sched_clock             2.08%   context_tracking_user_enter
->      2.27%   copy_page_to_iter_iovec        1.94%   __switch_to
->      2.16%   mutex_unlock                   1.88%   copy_user_generic_string
->      2.15%   _raw_spin_unlock_irqrestore    1.80%   account_system_time
->      1.86%   copy_page_from_iter_iovec      1.77%   rcu_eqs_enter_common.isra.42
->      1.85%   vfs_write                      1.60%   pipe_read
->      1.67%   new_sync_read                  1.58%   pipe_write
->      1.61%   new_sync_write                 1.39%   mutex_lock
->      1.49%   vfs_read                       1.37%   enqueue_task_fair
->      1.47%   fsnotify                       1.25%   rcu_eqs_exit_common.isra.43
->      1.43%   __fget_light                   1.14%   get_vtime_delta
->      1.36%   enqueue_task_fair              1.11%   flat_send_IPI_mask
->      1.28%   finish_task_switch             1.07%   tracesys
->      1.26%   dequeue_task_fair              1.03%   dequeue_task_fair
->      1.25%   __sb_start_write               1.01%   copy_page_to_iter_iovec
->      1.22%   _raw_spin_lock_irq             1.01%   int_check_syscall_exit_work
->      1.20%   try_to_wake_up                 0.97%   vfs_write
->      1.16%   update_curr                    0.94%   __context_tracking_task_switch
->      1.05%   __fsnotify_parent              0.93%   mutex_unlock
->      1.03%   pick_next_task_fair            0.88%   copy_page_from_iter_iovec
->      1.02%   sys_write                      0.87%   new_sync_write
->      1.01%   sys_read                       0.86%   __fget_light
->      1.00%   __wake_up_sync_key             0.85%   __sb_start_write
->      0.93%   __wake_up_common               0.85%   int_ret_from_sys_call
->      0.92%   copy_page_to_iter              0.83%   syscall_trace_leave
->      0.90%   check_preempt_wakeup           0.78%   new_sync_read
->      0.90%   __srcu_read_lock               0.78%   account_user_time
->      0.89%   put_prev_task_fair             0.76%   update_curr
->      0.88%   copy_page_from_iter            0.74%   fsnotify
->      0.82%   __sb_end_write                 0.73%   try_to_wake_up
->      0.76%   __percpu_counter_add           0.71%   finish_task_switch
->      0.74%   prepare_to_wait                0.70%   _raw_spin_lock_irq
->      0.72%   touch_atime                    0.69%   __wake_up_sync_key
->      0.71%   pipe_wait                      0.69%   __tick_nohz_task_switch
-> 
-> pinned endless stat("/", &buf)
-> 
->     CONFIG_NO_HZ_FULL=y                     CONFIG_NO_HZ_FULL=y, nohz_full=3
->     17.13%   system_call                    8.78%   system_call
->     11.20%   kmem_cache_alloc               8.52%   native_sched_clock
->      7.14%   lockref_get_not_dead           6.02%   context_tracking_user_exit
->      7.10%   kmem_cache_free                4.53%   kmem_cache_alloc
->      6.42%   path_init                      4.46%   _raw_spin_lock
->      5.69%   copy_user_generic_string       4.13%   copy_user_generic_string
->      5.25%   lockref_put_or_lock            4.01%   kmem_cache_free
->      4.14%   strncpy_from_user              3.36%   context_tracking_user_enter
->      3.99%   path_lookupat                  3.25%   lockref_get_not_dead
->      3.12%   complete_walk                  3.25%   lockref_put_or_lock
->      2.91%   getname_flags                  2.86%   rcu_eqs_enter_common.isra.42
->      2.88%   cp_new_stat                    2.84%   path_init
->      2.79%   vfs_fstatat                    2.56%   rcu_eqs_exit_common.isra.43
->      2.59%   user_path_at_empty             2.52%   int_check_syscall_exit_work
->      1.93%   link_path_walk                 2.51%   tracesys
->      1.81%   generic_fillattr               2.08%   cp_new_stat
->      1.75%   dput                           2.00%   syscall_trace_leave
->      1.71%   filename_lookup.isra.50        1.75%   complete_walk
->      1.66%   mntput                         1.69%   path_lookupat
->      1.45%   vfs_getattr_nosec              1.58%   strncpy_from_user
->      1.04%   final_putname                  1.56%   get_vtime_delta
->      1.02%   SYSC_newstat                   1.34%   int_with_check
-> 
->      CONFIG_NO_HZ_FULL=y, nohz_full=3
-> -    8.53%  [kernel]         [k] native_sched_clock                                                                                                                                                                                        ▒
->    - native_sched_clock                                                                                                                                                                                                                    ▒
->       - 96.76% local_clock                                                                                                                                                                                                                 ▒
->          - get_vtime_delta                                                                                                                                                                                                                 ▒
->             - 51.95% vtime_account_user                                                                                                                                                                                                    ▒
->                  99.96% context_tracking_user_exit                                                                                                                                                                                         ▒
->                     syscall_trace_enter                                                                                                                                                                                                    ▒
->                     tracesys                                                                                                                                                                                                               ▒
->                     __xstat64                                                                                                                                                                                                              ▒
->                     __libc_start_main                                                                                                                                                                                                      ▒
->             - 48.05% __vtime_account_system                                                                                                                                                                                                ▒
->                  99.96% vtime_user_enter                                                                                                                                                                                                   ▒
->                     context_tracking_user_enter                                                                                                                                                                                            ▒
->                     syscall_trace_leave                                                                                                                                                                                                    ◆
->                     int_check_syscall_exit_work                                                                                                                                                                                            ▒
->                     __xstat64                                                                                                                                                                                                              ▒
->                     __libc_start_main                                                                                                                                                                                                      ▒
->       - 3.23% get_vtime_delta                                                                                                                                                                                                              ▒
->            52.96% vtime_account_user                                                                                                                                                                                                       ▒
->               context_tracking_user_exit                                                                                                                                                                                                   ▒
->               syscall_trace_enter                                                                                                                                                                                                          ▒
->               tracesys                                                                                                                                                                                                                     ▒
->               __xstat64                                                                                                                                                                                                                    ▒
->               __libc_start_main                                                                                                                                                                                                            ▒
->            47.04% __vtime_account_system                                                                                                                                                                                                   ▒
->               vtime_user_enter                                                                                                                                                                                                             ▒
->               context_tracking_user_enter                                                                                                                                                                                                  ▒
->               syscall_trace_leave                                                                                                                                                                                                          ▒
->               int_check_syscall_exit_work                                                                                                                                                                                                  ▒
->               __xstat64                                                                                                                                                                                                                    ▒
->               __libc_start_main
-> 
+>  static uint screen_width =3D HVFB_WIDTH;
+>  static uint screen_height =3D HVFB_HEIGHT;
+>  static uint screen_depth;
+>  static uint screen_fb_size;
+> =20
+> +/* If true, the VSC notifies the VSP on every framebuffer change */
+> +static bool synchronous_fb;
+> +
 
+Same comment here.
+
+However, if (and only if) the driver is already designed to work only
+with single device instance, then this patch is probably ok. But even
+then, I'd prefer this to be handled without static variables so that the
+driver could eventually be changed to support multiple device instances.
+
+ Tomi
+
+
+
+--aVvRXgTRnjxjuLwnBtHaxCVfO667WmnPc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT2QAIAAoJEPo9qoy8lh71KGcP/1q/CPSZCmvv9TczbRM33JPD
+EHsIFynqkUMgqapY8/idWLa+cUwUooaTi5Z3taqikrqiJAm8Fn3MBA9K2shmxjxv
+oxMMSGf8efI8Li6oOQfs4fqQitbwPDTq8NAbhJDVO4wPbQqw9usGF5gfjXEDrR4m
+4YCBFgwzJEGbd2VQ0j+Nfr7hwm44Ez0BfjrYOtQAU5XeAGwKmIae5FhEOde9u5I7
+ozcXRvHBmBwRBGi4F8Rcbkofqnjn1rhjeekesMcEdRXSCBmu8BvCDaSJXDwx4AAv
+IBB9c+M+TJLEFl1pCzX+FBQcesQY+x6O08wO82B3bfcCSmZdMGti1sgXRaUog1ke
+MSJr4pjaX6JkbUlkaEeS+gBSLaw9++bJyMj/MnPgRRBOOSYZXL6Df+YV1End59ck
+hXvmQTAWyOwaX45X/h/GQ6M6ZmIVZkJJL73QfkdzFQzO/l8XefbYvYc7dDIJuQZ9
+ih3dGBf1njRFPHb4usHoEJ4CpeKUlttzNYzcugj2am0zgAcCiLK2AfbaWUDfXxoy
+PYy/gP/bVnB+i2dkRxJweVykgfd4UGXUtXU9BV3aexaG14CuXmt/7OPlULT1LlWS
+XKHcq0Bq6BkYYqNsO80o+8NyxV59sv9FGlLsaEpfw7+W9ZEbhIENJkvxUEobp2zl
+q5IDpW+iq2OpbbH0up3b
+=8/jh
+-----END PGP SIGNATURE-----
+
+--aVvRXgTRnjxjuLwnBtHaxCVfO667WmnPc--
