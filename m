@@ -1,194 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012AbaG3RAH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 13:00:07 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:50066 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754218AbaG3RAC (ORCPT
+	id S1755316AbaG3RAf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 13:00:35 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:7250 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754555AbaG3RAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 13:00:02 -0400
-Date: Wed, 30 Jul 2014 18:59:56 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-arch <linux-arch@vger.kernel.org>, X86 ML <x86@kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 0/5] x86: two-phase syscall tracing and seccomp
- fastpath
-Message-ID: <20140730165940.GB27954@localhost.localdomain>
-References: <cover.1406604806.git.luto@amacapital.net>
- <20140729192056.GA6308@redhat.com>
- <CALCETrX6P7SJQdgc0gTM7FLdwyT_Ld1MWvkLYpTO_2xsvBC9sA@mail.gmail.com>
- <CALCETrXHF5YzPQDvnJs=mFNm2Ff_FekGu_Y8-JyMaWh2hctR7A@mail.gmail.com>
+	Wed, 30 Jul 2014 13:00:31 -0400
+Message-ID: <53D924A8.2050008@fb.com>
+Date: Wed, 30 Jul 2014 13:00:24 -0400
+From: Josef Bacik <jbacik@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXHF5YzPQDvnJs=mFNm2Ff_FekGu_Y8-JyMaWh2hctR7A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Takashi Iwai <tiwai@suse.de>
+CC: Chris Mason <clm@fb.com>, <linux-btrfs@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Btrfs: Fix memory corruption by ulist_add_merge() on
+ 32bit arch
+References: <1406537824-2376-1-git-send-email-tiwai@suse.de>	<53D64D40.80606@fb.com>	<s5hzjft7fwm.wl%tiwai@suse.de>	<s5hsill7fak.wl%tiwai@suse.de>	<s5hsiljrwwy.wl%tiwai@suse.de>	<53D9015A.90001@fb.com>	<s5h61iesxen.wl%tiwai@suse.de>	<s5h1tt2sx94.wl%tiwai@suse.de>	<53D911DE.7000806@fb.com>	<s5hwqaurgic.wl%tiwai@suse.de>	<53D916DB.9020901@fb.com> <s5hsilirehv.wl%tiwai@suse.de>
+In-Reply-To: <s5hsilirehv.wl%tiwai@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-30_06:2014-07-30,2014-07-30,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.63113411666416e-11 kscore.compositescore=0
+ circleOfTrustscore=29.7083259529277 compositescore=0.9989857498195
+ urlsuspect_oldscore=0.9989857498195 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.9989857498195 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1407300201
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 04:30:58PM -0700, Andy Lutomirski wrote:
-> On Tue, Jul 29, 2014 at 1:54 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > On Jul 29, 2014 12:22 PM, "Oleg Nesterov" <oleg@redhat.com> wrote:
-> >>
-> >> Andy, to avoid the confusion: I am not trying to review this changes.
-> >> As you probably know my understanding of asm code in entry.S is very
-> >> limited.
-> >>
-> >> Just a couple of questions to ensure I understand this correctly.
-> >>
-> >> On 07/28, Andy Lutomirski wrote:
-> >> >
-> >> > This is both a cleanup and a speedup.  It reduces overhead due to
-> >> > installing a trivial seccomp filter by 87%.  The speedup comes from
-> >> > avoiding the full syscall tracing mechanism for filters that don't
-> >> > return SECCOMP_RET_TRACE.
-> >>
-> >> And only after I look at 5/5 I _seem_ to actually understand where
-> >> this speedup comes from.
-> >>
-> >> So. Currently tracesys: path always lead to "iret" after syscall, with
-> >> this change we can avoid it if phase_1() returns zero, correct?
-> >>
-> >> And, this also removes the special TIF_SYSCALL_AUDIT-only case in entry.S,
-> >> cool.
-> >>
-> >> I am wondering if we can do something similar with do_notify_resume() ?
-> >>
-> >>
-> >> Stupid question. To simplify, lets forget that syscall_trace_enter()
-> >> already returns the value. Can't we simplify the asm code if we do
-> >> not export 2 functions, but make syscall_trace_enter() return
-> >> "bool slow_path_is_needed". So that "tracesys:" could do
-> >>
-> >>         // pseudo code
-> >>
-> >> tracesys:
-> >>         SAVE_REST
-> >>         FIXUP_TOP_OF_STACK
-> >>
-> >>         call syscall_trace_enter
-> >>
-> >>         if (!slow_path_is_needed) {
-> >>                 addq REST_SKIP, %rsp
-> >>                 jmp system_call_fastpath
-> >>         }
-> >>
-> >>         ...
-> >>
-> >> ?
-> >>
-> >> Once again, I am just curious, it is not that I actually suggest to consider
-> >> this option.
-> >
-> > We could, but this would lose a decent amount of the speedup.  I could
-> > try it and benchmark it, but I'm guessing that the save and restore is
-> > kind of expensive.  This will make audit slower than it currently is,
-> > which may also annoy some people.  (Not me.)
-> >
-> > I'm also not convinced that it would be much simpler.  My code is currently:
-> >
-> > tracesys:
-> >     leaq -REST_SKIP(%rsp), %rdi
-> >     movq $AUDIT_ARCH_X86_64, %rsi
-> >     call syscall_trace_enter_phase1
-> >     test %rax, %rax
-> >     jnz tracesys_phase2        /* if needed, run the slow path */
-> >     LOAD_ARGS 0            /* else restore clobbered regs */
-> >     jmp system_call_fastpath    /*      and return to the fast path */
-> >
-> > tracesys_phase2:
-> >     SAVE_REST
-> >     FIXUP_TOP_OF_STACK %rdi
-> >     movq %rsp, %rdi
-> >     movq $AUDIT_ARCH_X86_64, %rsi
-> >     movq %rax,%rdx
-> >     call syscall_trace_enter_phase2
-> >
-> >     LOAD_ARGS ARGOFFSET, 1
-> >     RESTORE_REST
-> >
-> >     ... slow path here ...
-> >
-> > It would end up looking more like (totally untested):
-> >
-> > tracesys:
-> >     SAVE_REST
-> >     FIXUP_TOP_OF_STACK %rdi
-> >     mov %rsp, %rdi
-> >     movq $AUDIT_ARCH_X86_64, %rsi
-> >     call syscall_trace_enter
-> >     LOAD_ARGS
-> >     RESTORE_REST
-> >     test [whatever condition]
-> >     j[cond] system_call_fastpath
-> >
-> >     ... slow path here ...
-> >
-> > So it's a bit simpler.  Oddly, the ia32entry code doesn't have this
-> > multiple syscall path distinction.
-> >
-> > SAVE_REST is 6 movq instructions and a subq.  FIXUP_TOP_OF_STACK is 7
-> > movqs (and 8 if I ever get my way).  RESTORE_TOP_OF_STACK is 4.
-> > RESTORE_REST is 6 movqs and an adsq.  So we're talking about avoiding
-> > 21 movqs, and addq, and a subq.  That may be significant.  (And I
-> > suspect that the difference is much larger on platforms like arm64,
-> > but that's a separate issue.)
-> 
-> To put some more options on the table: there's an argument to be made
-> that the whole fast-path/slow-path split isn't worth it.  We could
-> unconditionally set up a full frame for all syscalls.  This means:
-> 
-> No FIXUP_TOP_OF_STACK.  Instead, the system_call entry sets up RSP,
-> SS, CS, RCX, and EFLAGS right away.  That's five stores for all
-> syscalls instead of two loads and five stores for syscalls that need
-> it.  But it also gets rid of RESTORE_TOP_OF_STACK completely.
-> 
-> No more bugs involving C code that assumes a full stack frame when no
-> such frame exists inside syscall code.
-> 
-> We could possibly remove a whole bunch of duplicated code.
-> 
-> The upshot would be simpler code, faster slow-path syscalls, and
-> slower fast-path syscalls (but probably not much slower).  On the
-> other hand, there's zero chance that this would be ready for 3.17.
+On 07/30/2014 12:35 PM, Takashi Iwai wrote:
+> At Wed, 30 Jul 2014 12:01:31 -0400,
+> Josef Bacik wrote:
+>>
+>> On 07/30/2014 11:52 AM, Takashi Iwai wrote:
+>>> At Wed, 30 Jul 2014 11:40:14 -0400,
+>>> Josef Bacik wrote:
+>>>>
+>>>> On 07/30/2014 11:05 AM, Takashi Iwai wrote:
+>>>>> At Wed, 30 Jul 2014 17:01:52 +0200,
+>>>>> Takashi Iwai wrote:
+>>>>>>
+>>>>>> At Wed, 30 Jul 2014 10:29:46 -0400,
+>>>>>> Josef Bacik wrote:
+>>>>>>>
+>>>>>>> On 07/30/2014 05:57 AM, Takashi Iwai wrote:
+>>>>>>>> At Mon, 28 Jul 2014 16:01:55 +0200,
+>>>>>>>> Takashi Iwai wrote:
+>>>>>>>>>
+>>>>>>>>> At Mon, 28 Jul 2014 15:48:41 +0200,
+>>>>>>>>> Takashi Iwai wrote:
+>>>>>>>>>>
+>>>>>>>>>> At Mon, 28 Jul 2014 09:16:48 -0400,
+>>>>>>>>>> Josef Bacik wrote:
+>>>>>>>>>>>
+>>>>>>>>>>> On 07/28/2014 04:57 AM, Takashi Iwai wrote:
+>>>>>>>>>>>> We've got bug reports that btrfs crashes when quota is enabled on
+>>>>>>>>>>>> 32bit kernel, typically with the Oops like below:
+>>>>>>>>>>>>       BUG: unable to handle kernel NULL pointer dereference at 00000004
+>>>>>>>>>>>>       IP: [<f9234590>] find_parent_nodes+0x360/0x1380 [btrfs]
+>>>>>>>>>>>>       *pde = 00000000
+>>>>>>>>>>>>       Oops: 0000 [#1] SMP
+>>>>>>>>>>>>       CPU: 0 PID: 151 Comm: kworker/u8:2 Tainted: G S      W 3.15.2-1.gd43d97e-default #1
+>>>>>>>>>>>>       Workqueue: btrfs-qgroup-rescan normal_work_helper [btrfs]
+>>>>>>>>>>>>       task: f1478130 ti: f147c000 task.ti: f147c000
+>>>>>>>>>>>>       EIP: 0060:[<f9234590>] EFLAGS: 00010213 CPU: 0
+>>>>>>>>>>>>       EIP is at find_parent_nodes+0x360/0x1380 [btrfs]
+>>>>>>>>>>>>       EAX: f147dda8 EBX: f147ddb0 ECX: 00000011 EDX: 00000000
+>>>>>>>>>>>>       ESI: 00000000 EDI: f147dda4 EBP: f147ddf8 ESP: f147dd38
+>>>>>>>>>>>>        DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+>>>>>>>>>>>>       CR0: 8005003b CR2: 00000004 CR3: 00bf3000 CR4: 00000690
+>>>>>>>>>>>>       Stack:
+>>>>>>>>>>>>        00000000 00000000 f147dda4 00000050 00000001 00000000 00000001 00000050
+>>>>>>>>>>>>        00000001 00000000 d3059000 00000001 00000022 000000a8 00000000 00000000
+>>>>>>>>>>>>        00000000 000000a1 00000000 00000000 00000001 00000000 00000000 11800000
+>>>>>>>>>>>>       Call Trace:
+>>>>>>>>>>>>        [<f923564d>] __btrfs_find_all_roots+0x9d/0xf0 [btrfs]
+>>>>>>>>>>>>        [<f9237bb1>] btrfs_qgroup_rescan_worker+0x401/0x760 [btrfs]
+>>>>>>>>>>>>        [<f9206148>] normal_work_helper+0xc8/0x270 [btrfs]
+>>>>>>>>>>>>        [<c025e38b>] process_one_work+0x11b/0x390
+>>>>>>>>>>>>        [<c025eea1>] worker_thread+0x101/0x340
+>>>>>>>>>>>>        [<c026432b>] kthread+0x9b/0xb0
+>>>>>>>>>>>>        [<c0712a71>] ret_from_kernel_thread+0x21/0x30
+>>>>>>>>>>>>        [<c0264290>] kthread_create_on_node+0x110/0x110
+>>>>>>>>>>>>
+>>>>>>>>>>>> This indicates a NULL corruption in prefs_delayed list.  The further
+>>>>>>>>>>>> investigation and bisection pointed that the call of ulist_add_merge()
+>>>>>>>>>>>> results in the corruption.
+>>>>>>>>>>>>
+>>>>>>>>>>>> ulist_add_merge() takes u64 as aux and writes a 64bit value into
+>>>>>>>>>>>> old_aux.  The callers of this function in backref.c, however, pass a
+>>>>>>>>>>>> pointer of a pointer to old_aux.  That is, the function overwrites
+>>>>>>>>>>>> 64bit value on 32bit pointer.  This caused a NULL in the adjacent
+>>>>>>>>>>>> variable, in this case, prefs_delayed.
+>>>>>>>>>>>>
+>>>>>>>>>>>> Here is a quick attempt to band-aid over this: a new function,
+>>>>>>>>>>>> ulist_add_merge_ptr() is introduced to pass/store properly a pointer
+>>>>>>>>>>>> value instead of u64.  There are still ugly void ** cast remaining
+>>>>>>>>>>>> in the callers because void ** cannot be taken implicitly.  But, it's
+>>>>>>>>>>>> safer than explicit cast to u64, anyway.
+>>>>>>>>>>>>
+>>>>>>>>>>>> Bugzilla: https://urldefense.proofpoint.com/v1/url?u=https://bugzilla.novell.com/show_bug.cgi?id%3D887046&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=cKCbChRKsMpTX8ybrSkonQ%3D%3D%0A&m=m3qrbo6ngjqKO%2B7ofuwRfQflb9Cx%2FXrF8TKejkPjxfA%3D%0A&s=199a5b6f0ed181925e9ba2c1060fe20d1c8ad2831dd1d96cc7eddd2a343fa72b
+>>>>>>>>>>>> Cc: <stable@vger.kernel.org> [v3.11+]
+>>>>>>>>>>>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>>>>>>>>>>>> ---
+>>>>>>>>>>>>
+>>>>>>>>>>>> Alternatively, we can change the argument of aux and old_aux to a
+>>>>>>>>>>>> pointer from u64, as backref.c is the only user of ulist_add_merge()
+>>>>>>>>>>>> function.  I'll cook up another patch if it's the preferred way.
+>>>>>>>>>>>>
+>>>>>>>>>>>
+>>>>>>>>>>> Yeah lets just use a pointer and see how that works out.  Thanks,
+>>>>>>>>>>
+>>>>>>>>>> Oops, I forgot that ulist_add() takes aux as u64 and it calling
+>>>>>>>>>> ulist_add_merge() internally.  So, we can't change the type blindly
+>>>>>>>>>> there, unfortunately.
+>>>>>>>>>
+>>>>>>>>> Looking back at the code, it seems that all aux arguments passed to
+>>>>>>>>> ulist_add() in qgroup.c are pointers, too.  So, indeed, all aux values
+>>>>>>>>> are pointers, so far, and it'd be even cleaner to replace all these
+>>>>>>>>> from u64 to void *.
+>>>>>>>>>
+>>>>>>>>> But, such a replacement patch will become difficult for backporting to
+>>>>>>>>> stable kernels (the bug existed since 3.11, at least).  So IMO, we
+>>>>>>>>> should put a smaller fix like my previous one, let it backported to
+>>>>>>>>> stable kernels, and do more comprehensive replacements to pointer on
+>>>>>>>>> its top.
+>>>>>>>>
+>>>>>>>> Ping.  Could you guys take my original patch as is, or do you prefer
+>>>>>>>> changing in a different way?  If so, how?
+>>>>>>>>
+>>>>>>>
+>>>>>>> I don't care how hard it is to backport to stable,
+>>>>>>
+>>>>>> You must do care as a maintainer.  It's a long-standing and serious
+>>>>>> bug since 3.11.  The kernel hangs up immediately when you enable quota
+>>>>>> on 32bit kernel.  And it's really hard to revert it when the rootfs is
+>>>>>> btrfs.  (The mount follows the immediate hang up after reboot.)
+>>>>>>
+>>>>
+>>>> What I mean is that we want the right fix first, not something that is easier to
+>>>> pull back to stable and then the right fix later.  Do it right first and then
+>>>> backport it to the stable kernels, it's perfectly acceptable to adjust patches
+>>>> when sending them to the stable team.  "But it's hard" is not a valid excuse for
+>>>> not doing it right the first time.
+>>>
+>>> Well, I guess this underestimates the burden of backports.  Currently,
+>>> there is stable kernel for each kernel release.  Anyone has to
+>>> backport for each version, and you'll be asked.  I, as a long-time
+>>> subsystem maintainer, wouldn't go in that way :)
+>>>
+>>> And, speaking of "rightness" -- replacing the callers with a wrapper
+>>> is also a right fix.  It's even a safer fix.  That's basically why I
+>>> posted it as the primary patch.
+>>>
+>>> The merit of replacing all callers is that you can eliminate nasty
+>>> casts by that.  This is however rather a cleanup, which is a different
+>>> bonus from what we need to fix.
+>>>
+>>>>>>> since we're using pointers
+>>>>>>> everywhere just change it to void * and be done with it.  Thanks,
+>>>>>>
+>>>>>> Fix it quickly, then do cleanup.  This is the golden rule for
+>>>>>> regression :)
+>>>>>
+>>>>> Also, another question is whether you guys are OK to change the type
+>>>>> to a pointer.  Through a glance, the ulist code was intended to handle
+>>>>> any generic data, thus it uses u64, right?  Using void pointer breaks
+>>>>> this concept.
+>>>>>
+>>>>
+>>>> It's fine, ulist today resembles very little from what it was originally.  The
+>>>> current users all shove pointers into there, so we might as well just make it a
+>>>> pointer.  Thanks,
+>>>
+>>> OK, good to know.
+>>>
+>>> If this post still doesn't convince you, I'll prepare the patch to do
+>>> all replacements.
+>>>
+>>>
+>>
+>> I don't care that much, do it however you want.  Thanks,
+>
+> Yes, I do care because I know of this kind of horror very well.
+>
+> OK, I'm going to send the new patch(es).
+>
 
-Indeed.
+I meant that I don't care how you do it, if you want to do it the simple way
+first and then send the cleanup later thats fine by me.  Thanks,
 
-If we ever take that direction (ie: remove that partial frame optimization),
-there is that common part that we can find in many archs when they return
-from syscalls, exceptions or interrupts which could be more or less consolidated as:
-
-void sysret_check(struct pt_regs *regs)
-{
-          while(test_thread_flag(TIF_ALLWORK_MASK)) {
-              int resched = need_resched();
-
-              local_irq_enable();
-              if (resched)
-                  schedule();
-              else
-                  do_notify_resume(regs);
-              local_irq_disable()
-           }
-}
-
-But well, probably the syscall fastpath is still worth it.              
-
-> 
-> I'd tend to advocate for keeping the approach in my patches for now.
-> It's probably a smaller assembly diff than any of the other options --
-> the split between fast-path, slower fast-path, and slow-path already
-> exists due to the audit crap.  If we end up making more radical
-> changes later, then at worst we end up reverting part of the change to
-> ptrace.c.
-> 
-> --Andy
+Josef
