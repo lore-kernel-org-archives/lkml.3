@@ -1,80 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaG3I5T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 04:57:19 -0400
-Received: from ozlabs.org ([103.22.144.67]:53271 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751386AbaG3I5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 04:57:16 -0400
-Date: Wed, 30 Jul 2014 18:57:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mike Turquette <mturquette@linaro.org>, Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kim Phillips <kim.phillips@freescale.com>
-Subject: linux-next: manual merge of the clk tree with the driver-core tree
-Message-ID: <20140730185708.12a99f00@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1752038AbaG3I5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 04:57:47 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:38025 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaG3I5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 04:57:44 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Dahlmann <dahlmann.thomas@arcor.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Li Yang <leoli@freescale.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] MAINTAINERS: Update usb/gadget patterns
+Date: Wed, 30 Jul 2014 10:58:02 +0200
+Message-ID: <3040193.IdGZMy9E2c@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <d07bbb44f8c937d7e10a0b7a52689ca59d55b787.1406691397.git.joe@perches.com>
+References: <cover.1406691397.git.joe@perches.com> <d07bbb44f8c937d7e10a0b7a52689ca59d55b787.1406691397.git.joe@perches.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/MJAAzOcNE.bvnm./NZ5_ffa"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/MJAAzOcNE.bvnm./NZ5_ffa
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Joe,
 
-Hi Mike,
+Thank you for the patch.
 
-Today's linux-next merge of the clk tree got a conflict in
-drivers/base/platform.c between commit 3d713e0e382e ("driver core:
-platform: add device binding path 'driver_override'") from the
-driver-core tree and commit 86be408bfbd8 ("clk: Support for clock
-parents and rates assigned from device tree") from the clk tree.
+On Tuesday 29 July 2014 20:38:40 Joe Perches wrote:
+> Several commits have moved files around, update the section patterns.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> cc: Thomas Dahlmann <dahlmann.thomas@arcor.de>
+> cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> cc: Li Yang <leoli@freescale.com>
+> cc: Eric Miao <eric.y.miao@gmail.com>
+> cc: Russell King <linux@arm.linux.org.uk>
+> cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+> cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+> ---
+>  MAINTAINERS | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 66d5894..6033aaf 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -596,7 +596,7 @@ AMD GEODE CS5536 USB DEVICE CONTROLLER DRIVER
+>  M:	Thomas Dahlmann <dahlmann.thomas@arcor.de>
+>  L:	linux-geode@lists.infradead.org (moderated for non-subscribers)
+>  S:	Supported
+> -F:	drivers/usb/gadget/amd5536udc.*
+> +F:	drivers/usb/gadget/udc/amd5536udc.*
+> 
+>  AMD GEODE PROCESSOR/CHIPSET SUPPORT
+>  P:	Andres Salomon <dilinger@queued.net>
+> @@ -1688,7 +1688,7 @@ ATMEL USBA UDC DRIVER
+>  M:	Nicolas Ferre <nicolas.ferre@atmel.com>
+>  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>  S:	Supported
+> -F:	drivers/usb/gadget/atmel_usba_udc.*
+> +F:	drivers/usb/gadget/udc/atmel_usba_udc.*
+> 
+>  ATMEL WIRELESS DRIVER
+>  M:	Simon Kelley <simon@thekelleys.org.uk>
+> @@ -3798,7 +3798,7 @@ M:	Li Yang <leoli@freescale.com>
+>  L:	linux-usb@vger.kernel.org
+>  L:	linuxppc-dev@lists.ozlabs.org
+>  S:	Maintained
+> -F:	drivers/usb/gadget/fsl*
+> +F:	drivers/usb/gadget/udc/fsl*
+> 
+>  FREESCALE QUICC ENGINE UCC ETHERNET DRIVER
+>  M:	Li Yang <leoli@freescale.com>
+> @@ -7232,7 +7232,7 @@ S:	Maintained
+>  F:	arch/arm/mach-pxa/
+>  F:	drivers/pcmcia/pxa2xx*
+>  F:	drivers/spi/spi-pxa2xx*
+> -F:	drivers/usb/gadget/pxa2*
+> +F:	drivers/usb/gadget/udc/pxa2*
+>  F:	include/sound/pxa2xx-lib.h
+>  F:	sound/arm/pxa*
+>  F:	sound/soc/pxa/
+> @@ -9576,8 +9576,8 @@ USB WEBCAM GADGET
+>  M:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>  L:	linux-usb@vger.kernel.org
+>  S:	Maintained
+> -F:	drivers/usb/gadget/*uvc*.c
+> -F:	drivers/usb/gadget/webcam.c
+> +F:	drivers/usb/gadget/function/*uvc*.c
+> +F:	drivers/usb/gadget/legacy/webcam.c
+> 
+>  USB WIRELESS RNDIS DRIVER (rndis_wlan)
+>  M:	Jussi Kivilinna <jussi.kivilinna@iki.fi>
 
-diff --cc drivers/base/platform.c
-index 7cc7440b014d,ac47643b1b69..000000000000
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@@ -23,7 -23,7 +23,8 @@@
-  #include <linux/pm_runtime.h>
-  #include <linux/idr.h>
-  #include <linux/acpi.h>
- +#include <linux/limits.h>
-+ #include <linux/clk/clk-conf.h>
- =20
-  #include "base.h"
-  #include "power/power.h"
+-- 
+Regards,
 
---Sig_/MJAAzOcNE.bvnm./NZ5_ffa
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Laurent Pinchart
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT2LNpAAoJEMDTa8Ir7ZwVw3kP/0UlwnmAVLXXbFNRqViOGjmm
-WubjNEvHVqtZM76G2/OXI91jfVrugEdkPEG6wPVuNKrTJI4YH8mBFb6o5VCI9hAa
-pUrQN7op2h/5ci7Z4WkyEJC6wET26MTZq9qG2et4cyAXsfvMOSIFdVjPHGOqAnSU
-zl7IFg0RwLJi6ahNcSHnqMt1J3q9pv8XUqYQl11KxbtGu5CGlBbL5vMMOh0/Giw0
-YI1vAlPwQorAJt1OIePQybw+s5SolLtt3Gfeh+R4YCIcsbk8moHQxv26gRNv24kJ
-+8w7H1vD7ddMoVTyWYgBelZ5yJM4GB2kC85sfzx0241J/HdT9SLFun9fdCFrStY/
-aTti2KkJgDNWWq3uMowzsgxd5lOJ/gexZ9uWjY+14flC+ObviiKWLwpldMx6LxAL
-p8elqfxs0EPVB3tQ449GiBOcuQBJ1/n0FVrje283pTszGBcfhVQXeuO2hvTb+rkq
-zW11730skj8btkPaoxitwivcNca6OMPAEmYsH2wadpTdBxDW0MWp321PSFqKIfqw
-CuvTdnTUMfWHKyA0d8K4SR1iEyCa7gtc5E4lsKSKEPnYWQXXMaJ04Kxm6N+aQGAD
-viPPt5DWoNBEu0vIO9uTaiuxpTxxRXn2xe7pyjNTQ+HDGq9HA1ZdCGFzHKlqJvd6
-IEDTY23y4TfXViwCWVtj
-=M3Q5
------END PGP SIGNATURE-----
-
---Sig_/MJAAzOcNE.bvnm./NZ5_ffa--
