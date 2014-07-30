@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963AbaG3Mnn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:43:43 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36636 "EHLO
+	id S1755949AbaG3Mnl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:43:41 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36638 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752749AbaG3MPZ (ORCPT
+	by vger.kernel.org with ESMTP id S1752755AbaG3MPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 15/94] Drivers: hv: util: Fix a bug in the KVP code
-Date: Wed, 30 Jul 2014 14:14:04 +0200
-Message-Id: <65769bee8f02c6f0d22211732030ae7c62358862.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Abbas Raza <Abbas_Raza@mentor.com>,
+        Peter Chen <peter.chen@freescale.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 12/94] usb: chipidea: udc: Disable auto ZLP generation on ep0
+Date: Wed, 30 Jul 2014 14:14:01 +0200
+Message-Id: <1a24f2200c6cf94e54c5f1eedc47fbc1878aed4e.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,84 +23,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Abbas Raza <Abbas_Raza@mentor.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9bd2d0dfe4714dd5d7c09a93a5c9ea9e14ceb3fc upstream.
+commit 953c66469735aed8d2ada639a72b150f01dae605 upstream.
 
-Add code to poll the channel since we process only one message
-at a time and the host may not interrupt us. Also increase the
-receive buffer size since some KVP messages are close to 8K bytes in size.
+There are 2 methods for ZLP (zero-length packet) generation:
+1) In software
+2) Automatic generation by device controller
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+1) is implemented in UDC driver and it attaches ZLP to IN packet if
+   descriptor->size < wLength
+2) can be enabled/disabled by setting ZLT bit in the QH
+
+When gadget ffs is connected to ubuntu host, the host sends
+get descriptor request and wLength in setup packet is 255 while the
+size of descriptor which will be sent by gadget in IN packet is
+64 byte. So the composite driver sets req->zero = 1.
+In UDC driver following code will be executed then
+
+        if (hwreq->req.zero && hwreq->req.length
+            && (hwreq->req.length % hwep->ep.maxpacket == 0))
+                add_td_to_list(hwep, hwreq, 0);
+
+Case-A:
+So in case of ubuntu host, UDC driver will attach a ZLP to the IN packet.
+ubuntu host will request 255 byte in IN request, gadget will send 64 byte
+with ZLP and host will come to know that there is no more data.
+But hold on, by default ZLT=0 for endpoint 0 so hardware also tries to
+automatically generate the ZLP which blocks enumeration for ~6 seconds due
+to endpoint 0 STALL, NAKs are sent to host for any requests (OUT/PING)
+
+Case-B:
+In case when gadget ffs is connected to Apple device, Apple device sends
+setup packet with wLength=64. So descriptor->size = 64 and wLength=64
+therefore req->zero = 0 and UDC driver will not attach any ZLP to the
+IN packet. Apple device requests 64 bytes, gets 64 bytes and doesn't
+further request for IN data. But ZLT=0 by default for endpoint 0 so
+hardware tries to automatically generate the ZLP which blocks enumeration
+for ~6 seconds due to endpoint 0 STALL, NAKs are sent to host for any
+requests (OUT/PING)
+
+According to USB2.0 specs:
+
+    8.5.3.2 Variable-length Data Stage
+    A control pipe may have a variable-length data phase in which the
+    host requests more data than is contained in the specified data
+    structure. When all of the data structure is returned to the host,
+    the function should indicate that the Data stage is ended by
+    returning a packet that is shorter than the MaxPacketSize for the
+    pipe. If the data structure is an exact multiple of wMaxPacketSize
+    for the pipe, the function will return a zero-length packet to indicate
+    the end of the Data stage.
+
+In Case-A mentioned above:
+If we disable software ZLP generation & ZLT=0 for endpoint 0 OR if software
+ZLP generation is not disabled but we set ZLT=1 for endpoint 0 then
+enumeration doesn't block for 6 seconds.
+
+In Case-B mentioned above:
+If we disable software ZLP generation & ZLT=0 for endpoint then enumeration
+still blocks due to ZLP automatically generated by hardware and host not needing
+it. But if we keep software ZLP generation enabled but we set ZLT=1 for
+endpoint 0 then enumeration doesn't block for 6 seconds.
+
+So the proper solution for this issue seems to disable automatic ZLP generation
+by hardware (i.e by setting ZLT=1 for endpoint 0) and let software (UDC driver)
+handle the ZLP generation based on req->zero field.
+
+Signed-off-by: Abbas Raza <Abbas_Raza@mentor.com>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/hv/hv_kvp.c  | 14 ++++++++++++--
- drivers/hv/hv_util.c |  2 +-
- 2 files changed, 13 insertions(+), 3 deletions(-)
+ drivers/usb/chipidea/udc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
-index 09988b289622..816782a65488 100644
---- a/drivers/hv/hv_kvp.c
-+++ b/drivers/hv/hv_kvp.c
-@@ -127,6 +127,15 @@ kvp_work_func(struct work_struct *dummy)
- 	kvp_respond_to_host(NULL, HV_E_FAIL);
- }
+diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
+index a18c2cfafe6d..455e4e6b9926 100644
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -1178,8 +1178,8 @@ static int ep_enable(struct usb_ep *ep,
  
-+static void poll_channel(struct vmbus_channel *channel)
-+{
-+	unsigned long flags;
+ 	if (hwep->type == USB_ENDPOINT_XFER_CONTROL)
+ 		cap |= QH_IOS;
+-	if (hwep->num)
+-		cap |= QH_ZLT;
 +
-+	spin_lock_irqsave(&channel->inbound_lock, flags);
-+	hv_kvp_onchannelcallback(channel);
-+	spin_unlock_irqrestore(&channel->inbound_lock, flags);
-+}
-+
- static int kvp_handle_handshake(struct hv_kvp_msg *msg)
- {
- 	int ret = 1;
-@@ -155,7 +164,7 @@ static int kvp_handle_handshake(struct hv_kvp_msg *msg)
- 		kvp_register(dm_reg_value);
- 		kvp_transaction.active = false;
- 		if (kvp_transaction.kvp_context)
--			hv_kvp_onchannelcallback(kvp_transaction.kvp_context);
-+			poll_channel(kvp_transaction.kvp_context);
- 	}
- 	return ret;
- }
-@@ -568,6 +577,7 @@ response_done:
- 
- 	vmbus_sendpacket(channel, recv_buffer, buf_len, req_id,
- 				VM_PKT_DATA_INBAND, 0);
-+	poll_channel(channel);
- 
- }
- 
-@@ -603,7 +613,7 @@ void hv_kvp_onchannelcallback(void *context)
- 		return;
- 	}
- 
--	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 2, &recvlen,
-+	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 4, &recvlen,
- 			 &requestid);
- 
- 	if (recvlen > 0) {
-diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
-index 273e3ddb3a20..665b7dac6b7d 100644
---- a/drivers/hv/hv_util.c
-+++ b/drivers/hv/hv_util.c
-@@ -312,7 +312,7 @@ static int util_probe(struct hv_device *dev,
- 		(struct hv_util_service *)dev_id->driver_data;
- 	int ret;
- 
--	srv->recv_buffer = kmalloc(PAGE_SIZE * 2, GFP_KERNEL);
-+	srv->recv_buffer = kmalloc(PAGE_SIZE * 4, GFP_KERNEL);
- 	if (!srv->recv_buffer)
- 		return -ENOMEM;
- 	if (srv->util_init) {
++	cap |= QH_ZLT;
+ 	cap |= (hwep->ep.maxpacket << __ffs(QH_MAX_PKT)) & QH_MAX_PKT;
+ 	/*
+ 	 * For ISO-TX, we set mult at QH as the largest value, and use
 -- 
 2.0.1
 
