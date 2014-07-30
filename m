@@ -1,44 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273AbaG3QHZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 12:07:25 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:36142 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754630AbaG3QHU (ORCPT
+	id S1755288AbaG3QIU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 12:08:20 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:46001 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754129AbaG3QIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 12:07:20 -0400
-Date: Wed, 30 Jul 2014 09:07:17 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/21] 3.10.51-stable review
-Message-ID: <20140730160717.GB26561@roeck-us.net>
-References: <20140730014830.424826215@linuxfoundation.org>
+	Wed, 30 Jul 2014 12:08:19 -0400
+Date: Wed, 30 Jul 2014 09:08:12 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, bobby.prani@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140730160812.GO11241@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140728225556.GA19493@linux.vnet.ibm.com>
+ <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140730154949.GA26787@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140730014830.424826215@linuxfoundation.org>
+In-Reply-To: <20140730154949.GA26787@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14073016-0928-0000-0000-000003BB66A6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 06:48:29PM -0700, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.51 release.
-> There are 21 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Wed, Jul 30, 2014 at 05:49:49PM +0200, Oleg Nesterov wrote:
+> On 07/28, Paul E. McKenney wrote:
+> >
+> > This commit adds a new RCU-tasks flavor of RCU, which provides
+> > call_rcu_tasks().  This RCU flavor's quiescent states are voluntary
+> > context switch (not preemption!), userspace execution, and the idle loop.
+> > Note that unlike other RCU flavors, these quiescent states occur in tasks,
+> > not necessarily CPUs.  Includes fixes from Steven Rostedt.
 > 
-> Responses should be made by Fri Aug  1 01:48:18 UTC 2014.
-> Anything received after that time might be too late.
+> I still hope I will read this series later. Not that I really hope I will
+> understand it ;)
+
+Well, don't put too much time into it just now.  Bozo here has been doing
+concurrent programming so long that he sometimes misses opportunities
+for single-threaded programming.  Hence the locked-list stuff.  :-/
+
+> Just one question for now,
 > 
-Build results:
-	total: 140 pass: 140 fail: 0
+> > +static int __noreturn rcu_tasks_kthread(void *arg)
+> > +{
+> > +	unsigned long flags;
+> > +	struct task_struct *g, *t;
+> > +	struct rcu_head *list;
+> > +	struct rcu_head *next;
+> > +
+> > +	/* FIXME: Add housekeeping affinity. */
+> > +
+> > +	/*
+> > +	 * Each pass through the following loop makes one check for
+> > +	 * newly arrived callbacks, and, if there are some, waits for
+> > +	 * one RCU-tasks grace period and then invokes the callbacks.
+> > +	 * This loop is terminated by the system going down.  ;-)
+> > +	 */
+> > +	for (;;) {
+> > +
+> > +		/* Pick up any new callbacks. */
+> > +		raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
+> > +		smp_mb__after_unlock_lock(); /* Enforce GP memory ordering. */
+> > +		list = rcu_tasks_cbs_head;
+> > +		rcu_tasks_cbs_head = NULL;
+> > +		rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
+> > +		raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
+> > +
+> > +		/* If there were none, wait a bit and start over. */
+> > +		if (!list) {
+> > +			schedule_timeout_interruptible(HZ);
+> > +			flush_signals(current);
+> 
+> Why? And I see more flush_signals() in the current kernel/rcu/ code. Unless
+> a kthread does allow_signal() it can't have a pending signal?
 
-Qemu tests all passed.
+Because I am overly paranoid.  ;-)
 
-Details are available at http://server.roeck-us.net:8010/builders.
+							Thanx, Paul
 
-Guenter
