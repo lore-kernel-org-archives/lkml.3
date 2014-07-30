@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339AbaG3HNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 03:13:14 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:47203 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073AbaG3HNL (ORCPT
+	id S1755365AbaG3HNz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 03:13:55 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:42613 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073AbaG3HNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 03:13:11 -0400
-Date: Wed, 30 Jul 2014 09:13:08 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Jakub Jelinek <jakub@redhat.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3.15 33/37] Fix gcc-4.9.0 miscompilation of
- load_balance()  in scheduler
-Message-ID: <20140730071308.GF22904@x4>
-References: <20140730014827.565626091@linuxfoundation.org>
- <20140730014829.344302554@linuxfoundation.org>
- <20140730065312.GA1652@laptop.redhat.com>
+	Wed, 30 Jul 2014 03:13:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140730065312.GA1652@laptop.redhat.com>
+In-Reply-To: <CAGUYZuRhLXL7fwDhZLtSgxKF0AABnfc6rt-aKEqcZx9Lj3r8Tg@mail.gmail.com>
+References: <CAGUYZuQxJtjNKfvpEY_6GR1SxZCcbmwv5p0Lpu5jx7CgC5os9Q@mail.gmail.com>
+ <20140729151451.GA9080@kroah.com> <CAGUYZuRhLXL7fwDhZLtSgxKF0AABnfc6rt-aKEqcZx9Lj3r8Tg@mail.gmail.com>
+From: Abhay Sachan <lkp.abhay@gmail.com>
+Date: Wed, 30 Jul 2014 12:43:33 +0530
+Message-ID: <CAKHchJwmn12+oS4O+ZOMpPkz--q=xbo6UX+jy3+abDbrewdB-Q@mail.gmail.com>
+Subject: Re: Open-ended task In kernel
+To: sanjeev sharma <sanjeevsharmaengg@gmail.com>
+Cc: gregkh <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014.07.30 at 08:53 +0200, Jakub Jelinek wrote:
-> On Tue, Jul 29, 2014 at 06:49:09PM -0700, Greg Kroah-Hartman wrote:
-> > 3.15-stable review patch.  If anyone has any objections, please let me know.
-> 
-> IMNSHO this is a too big hammer approach.  The bug happened on a single
-> file only (right?), so if anything, IMHO it could be disabled for that
-> single file only, and better do it only for compilers with the bug.
+https://bugzilla.kernel.org/
 
-No. There are many more files affected. It just happens that Linus
-analyzed the assembly of this single file (fair.c) and found a bug. 
-Just build your redhat distro kernel with GCC_COMPARE_DEBUG=1 and you'll
-see. So unless someone analyzes the assembly output of all other
-affected files by hand and finds no issues, one has to assume the worst.
+On Wed, Jul 30, 2014 at 10:48 AM, sanjeev sharma
+<sanjeevsharmaengg@gmail.com> wrote:
+> Thanks greg
+>
+> so I need to find issue myself and then start from there.Do we have
+> some link somewhere open-ended task is captured.
+>
+> Regards
+> Sanjeev Sharma
+>
+> On Tue, Jul 29, 2014 at 8:44 PM, gregkh <gregkh@linuxfoundation.org> wrote:
+>> On Tue, Jul 29, 2014 at 12:46:46PM +0530, sanjeev sharma wrote:
+>>> Hello All,
+>>>
+>>> I have started recently in contributing into Linux kernel and submitted patches
+>>> in staging directory and now I want to do outside staging directory specially
+>>> in main kernel and driver part.Do we have anything in Linux kernel i.e some
+>>> specific areas which I can looked upon.I think we should have some list of
+>>> open-point where people can contribute.
+>>>
+>>> If anyone has some information,please share on mailing list so that I can focus
+>>> myself in correct direction.
+>>
+>> Yes, I know lots of "open ended" tasks in the kernel.
+>>
+>> But just because I, or someone else, writes them down doesn't mean that
+>> you will want to do them, or be sucessful at them.
+>>
+>> My suggestion always is, "Find something that bothers you, fix it, and
+>> go from there."  And if you can't find a problem with the kernel on your
+>> machine, then you really aren't looking hard enough.
+>>
+>> Best of luck,
+>>
+>> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> If there are wrong code bugs with -O2 (we've fixed many in the past), you
-> also don't turn off -O2 everywhere, similarly for -Os or any other options.
-> Disabling it just in case the same bug happens elsewhere when it actually
-> took 5 years before the bug caused miscompilation of something is too
-> defensive.  We had at least 15 other wrong-code bugfixes just in between
-> 4.9.0 and 4.9.1.  -fvar-tracking-assignments doesn't make a small difference
-> in debug info, but significant for optimized code.
-> If you build the kernel without and with -fno-var-tracking-assignments,
-> you can use e.g. the dwlocstat tool to see what kind of difference it makes
-> for the kernel in particular in variable debug info coverage.
 
-I'm sure it would be possible to backport a proper check based on the
-gcc testcase to the stable kernels, once it gets implemented.
 
 -- 
-Markus
+Abhay
