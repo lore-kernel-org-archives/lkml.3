@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077AbaG3Nkg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 09:40:36 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:1482 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903AbaG3Nkf (ORCPT
+	id S1753340AbaG3NmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 09:42:00 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:44330 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472AbaG3Nl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 09:40:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 30 Jul 2014 06:32:14 -0700
-Message-ID: <53D8F578.1030409@nvidia.com>
-Date: Wed, 30 Jul 2014 19:09:04 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 30 Jul 2014 09:41:59 -0400
+Date: Wed, 30 Jul 2014 15:41:54 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140730134152.GB18158@localhost.localdomain>
+References: <20140728225556.GA19493@linux.vnet.ibm.com>
+ <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Eduardo Valentin <edubezval@gmail.com>,
-        Lucas Stach <l.stach@pengutronix.de>
-CC: "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH] thermal: of: look for sensor driver parent node if device
- node missing
-References: <1405336354-31310-1-git-send-email-ldewangan@nvidia.com> <1405339495.4627.3.camel@weser.hi.pengutronix.de> <20140730131846.GB14219@developer>
-In-Reply-To: <20140730131846.GB14219@developer>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 July 2014 06:48 PM, Eduardo Valentin wrote:
-> Laxman,
->
-> On Mon, Jul 14, 2014 at 02:04:55PM +0200, Lucas Stach wrote:
->> Am Montag, den 14.07.2014, 16:42 +0530 schrieb Laxman Dewangan:
->>> There are some mfd devices which supports junction thermal interrupt
->>> like ams,AS3722. The DT binding of these devices are defined as the
->>> flat and drivers for sub module of such devices are registered as
->>> the mfd_add_devices. In this method, the sub devices registered as
->>> platform driver and these do not have the of_node pointer on their
->>> device structure. In this case, use the parent of_node pointer to
->>> get the required of_node pointer.
->>>
->>> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
->>> ---
->>>   drivers/thermal/of-thermal.c | 2 ++
->>>   1 file changed, 2 insertions(+)
->>>
->>> diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
->>> index 04b1be7..85a7d71 100644
->>> --- a/drivers/thermal/of-thermal.c
->>> +++ b/drivers/thermal/of-thermal.c
->>> @@ -396,6 +396,8 @@ thermal_zone_of_sensor_register(struct device *dev, int sensor_id,
->>>   		return ERR_PTR(-EINVAL);
->>>   
->>>   	sensor_np = dev->of_node;
->>> +	if (!sensor_np && dev->parent)
->>> +		sensor_np = dev->parent->of_node;
->>>   
->>>   	for_each_child_of_node(np, child) {
->>>   		struct of_phandle_args sensor_specs;
->> This seems like the wrong way around. If the MFD has subdev information
->> stored in the parent node it should be the MFD drivers responsibility to
->> populate the subdev of_node with its own node. The subdev should not be
->> forced to make such possible unsafe assumptions.
->>
-> This is my understanding too. MFD device drivers must populate the
-> required data onto their sub devices while creating them.
->
+On Mon, Jul 28, 2014 at 03:56:12PM -0700, Paul E. McKenney wrote:
+> +/* RCU-tasks kthread that detects grace periods and invokes callbacks. */
+> +static int __noreturn rcu_tasks_kthread(void *arg)
+> +{
+> +	unsigned long flags;
+> +	struct task_struct *g, *t;
+> +	struct rcu_head *list;
+> +	struct rcu_head *next;
+> +
+> +	/* FIXME: Add housekeeping affinity. */
+> +
+> +	/*
+> +	 * Each pass through the following loop makes one check for
+> +	 * newly arrived callbacks, and, if there are some, waits for
+> +	 * one RCU-tasks grace period and then invokes the callbacks.
+> +	 * This loop is terminated by the system going down.  ;-)
+> +	 */
+> +	for (;;) {
+> +
+> +		/* Pick up any new callbacks. */
+> +		raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
+> +		smp_mb__after_unlock_lock(); /* Enforce GP memory ordering. */
+> +		list = rcu_tasks_cbs_head;
+> +		rcu_tasks_cbs_head = NULL;
+> +		rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
+> +		raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
+> +
+> +		/* If there were none, wait a bit and start over. */
+> +		if (!list) {
+> +			schedule_timeout_interruptible(HZ);
+> +			flush_signals(current);
+> +			continue;
+> +		}
+> +
+> +		/*
+> +		 * There were callbacks, so we need to wait for an
+> +		 * RCU-tasks grace period.  Start off by scanning
+> +		 * the task list for tasks that are not already
+> +		 * voluntarily blocked.  Mark these tasks and make
+> +		 * a list of them in rcu_tasks_holdouts.
+> +		 */
+> +		rcu_read_lock();
+> +		do_each_thread(g, t) {
+> +			if (t != current && ACCESS_ONCE(t->on_rq) &&
+> +			    !is_idle_task(t)) {
+> +				t->rcu_tasks_holdout = 1;
+> +				list_add(&t->rcu_tasks_holdout_list,
+> +					 &rcu_tasks_holdouts);
+> +			}
+> +		} while_each_thread(g, t);
+> +		rcu_read_unlock();
 
-Sometime ago, Stephen sent patch on MFD to initialize the mfd sub 
-devices of_node with parent node.
-
-mfd: always assign of_node in mfd_add_device()
-http://lists.infradead.org/pipermail/linux-arm-kernel/2013-December/217482.html
-
-But it has unforeseen issue and reverted with patch
-mfd: Revert "mfd: Always assign of_node in mfd_add_device()"
-https://groups.google.com/forum/#!msg/rtc-linux/2LeLipSPFs0/XfPCKpT1BnUJ
-
-So we do not have any mechanism here to pass the parent of_node to the 
-of-thermal.
-
-Adding Stephen and Lee for more comment.
+I think you need for_each_process_thread() to be RCU-safe.
+while_each_thread() has shown to be racy against exec even with rcu_read_lock().
