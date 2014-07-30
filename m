@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091AbaG3MX6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:23:58 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36780 "EHLO
+	id S1754224AbaG3MYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:24:52 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36771 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753002AbaG3MPd (ORCPT
+	by vger.kernel.org with ESMTP id S1752987AbaG3MPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:33 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans Verkuil <hverkuil@xs4all.nl>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 77/94] media: hdpvr: fix two audio bugs
-Date: Wed, 30 Jul 2014 14:15:06 +0200
-Message-Id: <21e636e72e52ef809de79c36f568fbc4acd30914.1406722270.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 70/94] PM / sleep: Fix request_firmware() error at resume
+Date: Wed, 30 Jul 2014 14:14:59 +0200
+Message-Id: <d5f32654455c75265f46e2c2ff1cdcadd3ebbabb.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -25,69 +24,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans Verkuil <hverkuil@xs4all.nl>
+From: Takashi Iwai <tiwai@suse.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 3445857b22eafb70a6ac258979e955b116bfd2c6 upstream.
+commit 4320f6b1d9db4ca912c5eb6ecb328b2e090e1586 upstream.
 
-When the audio encoding is changed the driver calls hdpvr_set_audio
-with the current opt->audio_input value. However, that should have
-been opt->audio_input + 1. So changing the audio encoding inadvertently
-changes the input as well. This bug has always been there.
+The commit [247bc037: PM / Sleep: Mitigate race between the freezer
+and request_firmware()] introduced the finer state control, but it
+also leads to a new bug; for example, a bug report regarding the
+firmware loading of intel BT device at suspend/resume:
+  https://bugzilla.novell.com/show_bug.cgi?id=873790
 
-The second bug was introduced in kernel 3.10 and that broke the
-default_audio_input module option handling: the audio encoding was
-never switched to AC3 if default_audio_input was set to 2 (SPDIF input).
+The root cause seems to be a small window between the process resume
+and the clear of usermodehelper lock.  The request_firmware() function
+checks the UMH lock and gives up when it's in UMH_DISABLE state.  This
+is for avoiding the invalid  f/w loading during suspend/resume phase.
+The problem is, however, that usermodehelper_enable() is called at the
+end of thaw_processes().  Thus, a thawed process in between can kick
+off the f/w loader code path (in this case, via btusb_setup_intel())
+even before the call of usermodehelper_enable().  Then
+usermodehelper_read_trylock() returns an error and request_firmware()
+spews WARN_ON() in the end.
 
-In addition, since starting with 3.10 the audio encoding is always set
-at the start the first bug now always happens when the driver is loaded.
-In the past this bug would only surface if the user would change the
-audio encoding after the driver was loaded.
+This oneliner patch fixes the issue just by setting to UMH_FREEZING
+state again before restarting tasks, so that the call of
+request_firmware() will be blocked until the end of this function
+instead of returning an error.
 
-Also fixes a small trivial typo (bufffer -> buffer).
-
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Reported-by: Scott Doty <scott@corp.sonic.net>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Fixes: 247bc0374254 (PM / Sleep: Mitigate race between the freezer and request_firmware())
+Link: https://bugzilla.novell.com/show_bug.cgi?id=873790
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/media/usb/hdpvr/hdpvr-video.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ kernel/power/process.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/media/usb/hdpvr/hdpvr-video.c b/drivers/media/usb/hdpvr/hdpvr-video.c
-index 0500c4175d5f..6bce01a674f9 100644
---- a/drivers/media/usb/hdpvr/hdpvr-video.c
-+++ b/drivers/media/usb/hdpvr/hdpvr-video.c
-@@ -82,7 +82,7 @@ static void hdpvr_read_bulk_callback(struct urb *urb)
- }
+diff --git a/kernel/power/process.c b/kernel/power/process.c
+index 06ec8869dbf1..14f9a8d4725d 100644
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -184,6 +184,7 @@ void thaw_processes(void)
  
- /*=========================================================================*/
--/* bufffer bits */
-+/* buffer bits */
+ 	printk("Restarting tasks ... ");
  
- /* function expects dev->io_mutex to be hold by caller */
- int hdpvr_cancel_queue(struct hdpvr_device *dev)
-@@ -926,7 +926,7 @@ static int hdpvr_s_ctrl(struct v4l2_ctrl *ctrl)
- 	case V4L2_CID_MPEG_AUDIO_ENCODING:
- 		if (dev->flags & HDPVR_FLAG_AC3_CAP) {
- 			opt->audio_codec = ctrl->val;
--			return hdpvr_set_audio(dev, opt->audio_input,
-+			return hdpvr_set_audio(dev, opt->audio_input + 1,
- 					      opt->audio_codec);
- 		}
- 		return 0;
-@@ -1198,7 +1198,7 @@ int hdpvr_register_videodev(struct hdpvr_device *dev, struct device *parent,
- 	v4l2_ctrl_new_std_menu(hdl, &hdpvr_ctrl_ops,
- 		V4L2_CID_MPEG_AUDIO_ENCODING,
- 		ac3 ? V4L2_MPEG_AUDIO_ENCODING_AC3 : V4L2_MPEG_AUDIO_ENCODING_AAC,
--		0x7, V4L2_MPEG_AUDIO_ENCODING_AAC);
-+		0x7, ac3 ? dev->options.audio_codec : V4L2_MPEG_AUDIO_ENCODING_AAC);
- 	v4l2_ctrl_new_std_menu(hdl, &hdpvr_ctrl_ops,
- 		V4L2_CID_MPEG_VIDEO_ENCODING,
- 		V4L2_MPEG_VIDEO_ENCODING_MPEG_4_AVC, 0x3,
++	__usermodehelper_set_disable_depth(UMH_FREEZING);
+ 	thaw_workqueues();
+ 
+ 	read_lock(&tasklist_lock);
 -- 
 2.0.1
 
