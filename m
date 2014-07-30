@@ -1,109 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176AbaG3SRe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 14:17:34 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:38486
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755410AbaG3SQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 14:16:53 -0400
-From: <tthayer@opensource.altera.com>
-To: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>, <atull@altera.com>,
-        <delicious.quinoa@gmail.com>, <dinguyen@altera.com>,
-        <dougthompson@xmission.com>, <grant.likely@linaro.org>, <bp@alien8.de>,
-        <sameo@linux.intel.com>, <lee.jones@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>,
-        <tthayer@opensource.altera.com>
-Subject: [PATCHv9 3/3] arm: dts: Add Altera SDRAM controller bindings
-Date: Wed, 30 Jul 2014 13:22:53 -0500
-Message-ID: <1406744573-609-4-git-send-email-tthayer@opensource.altera.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1406744573-609-1-git-send-email-tthayer@opensource.altera.com>
-References: <1406744573-609-1-git-send-email-tthayer@opensource.altera.com>
+	id S1755958AbaG3SQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 14:16:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57842 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755505AbaG3SOH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 14:14:07 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, tj@kernel.org
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v14 7/8] ARM: berlin: add the AHCI node for the BG2Q
+Date: Wed, 30 Jul 2014 20:14:00 +0200
+Message-Id: <1406744041-1269-8-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406744041-1269-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1406744041-1269-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BN1PR02CA0028.namprd02.prod.outlook.com (10.141.56.28) To
- BN1PR03MB123.namprd03.prod.outlook.com (10.255.201.27)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0288CD37D9
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(199002)(189002)(50986999)(76176999)(33646002)(77156001)(21056001)(66066001)(104166001)(99396002)(74662001)(31966008)(92566001)(74502001)(86152002)(77096002)(80022001)(76482001)(83072002)(69596002)(85852003)(48376002)(53416004)(107046002)(87976001)(62966002)(47776003)(83322001)(64706001)(88136002)(20776003)(89996001)(46102001)(79102001)(4396001)(92726001)(87286001)(93916002)(229853001)(2201001)(77982001)(86362001)(42186005)(102836001)(101416001)(19580395003)(95666004)(19580405001)(85306003)(50226001)(81342001)(81156004)(81542001)(50466002)(106356001)(921003)(1121002)(2101003)(83996005);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR03MB123;H:dinh-ubuntu.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thor Thayer <tthayer@opensource.altera.com>
+The BG2Q has an AHCI SATA controller. Add the corresponding nodes
+(AHCI, PHY) into its device tree.
 
-Add the Altera SDRAM controller bindings and device tree changes to the Altera SoC project.
-
-Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 ---
-v2: Changes to SoC SDRAM EDAC code.
+ arch/arm/boot/dts/berlin2q.dtsi | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
-v3: Implement code suggestions for SDRAM EDAC code.
-
-v4: Remove syscon from SDRAM controller bindings.
-
-v5: No Change, bump version for consistency.
-
-v6: Only map the ctrlcfg register as syscon.
-
-v7: No change. Bump for consistency.
-
-v8: No change. Bump for consistency.
-
-v9: Changes to support a MFD SDRAM controller with nested EDAC.
----
- .../devicetree/bindings/arm/altera/socfpga-sdr.txt |   13 +++++++++++++
- arch/arm/boot/dts/socfpga.dtsi                     |   10 ++++++++++
- 2 files changed, 23 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdr.txt
-
-diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdr.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdr.txt
-new file mode 100644
-index 0000000..2bb1ddf
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdr.txt
-@@ -0,0 +1,13 @@
-+Altera SOCFPGA SDRAM Controller
-+The SDRAM controller is implemented as a MFD so various drivers may
-+nest under this main SDRAM controller binding.
-+
-+Required properties:
-+- compatible : "altr,sdr";
-+- reg : Should contain 1 register range(address and length)
-+
-+Example:
-+	sdr@0xffc25000 {
-+		compatible = "altr,sdr";
-+		reg = <0xffc25000 0x1000>;
-+	};
-diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-index 4676f25..ecb306d 100644
---- a/arch/arm/boot/dts/socfpga.dtsi
-+++ b/arch/arm/boot/dts/socfpga.dtsi
-@@ -603,6 +603,16 @@
- 			};
+diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+index 635a16a64cb4..658975d22df7 100644
+--- a/arch/arm/boot/dts/berlin2q.dtsi
++++ b/arch/arm/boot/dts/berlin2q.dtsi
+@@ -303,6 +303,45 @@
+ 			clock-names = "refclk";
  		};
  
-+		sdr@0xffc25000 {
-+			compatible = "altr,sdr";
-+			reg = <0xffc25000 0x1000>;
++		ahci: sata@e90000 {
++			compatible = "marvell,berlin2q-ahci", "generic-ahci";
++			reg = <0xe90000 0x1000>;
++			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&chip CLKID_SATA>;
++			#address-cells = <1>;
++			#size-cells = <0>;
 +
-+			sdramedac@0 {
-+				compatible = "altr,sdram-edac";
-+				interrupts = <0 39 4>;
++			sata0: sata-port@0 {
++				reg = <0>;
++				phys = <&sata_phy 0>;
++				status = "disabled";
++			};
++
++			sata1: sata-port@1 {
++				reg = <1>;
++				phys = <&sata_phy 1>;
++				status = "disabled";
 +			};
 +		};
 +
- 		L2: l2-cache@fffef000 {
- 			compatible = "arm,pl310-cache";
- 			reg = <0xfffef000 0x1000>;
++		sata_phy: phy@e900a0 {
++			compatible = "marvell,berlin2q-sata-phy";
++			reg = <0xe900a0 0x200>;
++			clocks = <&chip CLKID_SATA>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			#phy-cells = <1>;
++			status = "disabled";
++
++			sata-phy@0 {
++				reg = <0>;
++			};
++
++			sata-phy@1 {
++				reg = <1>;
++			};
++		};
++
+ 		apb@fc0000 {
+ 			compatible = "simple-bus";
+ 			#address-cells = <1>;
 -- 
-1.7.9.5
+1.9.1
 
