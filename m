@@ -1,229 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456AbaG3Mps (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:45:48 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36622 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752729AbaG3MPZ (ORCPT
+	id S1755503AbaG3MrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:47:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36042 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752960AbaG3MrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 08:15:25 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Wed, 30 Jul 2014 08:47:14 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 08/94] shmem: fix faulting into a hole, not taking i_mutex
-Date: Wed, 30 Jul 2014 14:13:57 +0200
-Message-Id: <38d05809df1ea5272a658e7f4d5f2a3027ad2fd2.1406722270.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
-References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
-In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
-References: <cover.1406722269.git.jslaby@suse.cz>
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        kernel-team@lists.ubuntu.com
+Subject: [3.11.y.z extended stable] Patch "perf/x86/intel: ignore CondChgd bit to avoid false NMI handling" has been added to staging queue
+Date: Wed, 30 Jul 2014 13:47:00 +0100
+Message-Id: <1406724420-16251-1-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+X-Extended-Stable: 3.11
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hugh Dickins <hughd@google.com>
+This is a note to let you know that I have just added a patch titled
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+    perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
 
-===============
+to the linux-3.11.y-queue branch of the 3.11.y.z extended stable tree 
+which can be found at:
 
-commit 8e205f779d1443a94b5ae81aa359cb535dd3021e upstream.
+ http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.11.y-queue
 
-Commit f00cdc6df7d7 ("shmem: fix faulting into a hole while it's
-punched") was buggy: Sasha sent a lockdep report to remind us that
-grabbing i_mutex in the fault path is a no-no (write syscall may already
-hold i_mutex while faulting user buffer).
+If you, or anyone else, feels it should not be added to this tree, please 
+reply to this email.
 
-We tried a completely different approach (see following patch) but that
-proved inadequate: good enough for a rational workload, but not good
-enough against trinity - which forks off so many mappings of the object
-that contention on i_mmap_mutex while hole-puncher holds i_mutex builds
-into serious starvation when concurrent faults force the puncher to fall
-back to single-page unmap_mapping_range() searches of the i_mmap tree.
+For more information about the 3.11.y.z tree, see
+https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
 
-So return to the original umbrella approach, but keep away from i_mutex
-this time.  We really don't want to bloat every shmem inode with a new
-mutex or completion, just to protect this unlikely case from trinity.
-So extend the original with wait_queue_head on stack at the hole-punch
-end, and wait_queue item on the stack at the fault end.
+Thanks.
+-Luis
 
-This involves further use of i_lock to guard against the races: lockdep
-has been happy so far, and I see fs/inode.c:unlock_new_inode() holds
-i_lock around wake_up_bit(), which is comparable to what we do here.
-i_lock is more convenient, but we could switch to shmem's info->lock.
+------
 
-This issue has been tagged with CVE-2014-4171, which will require commit
-f00cdc6df7d7 and this and the following patch to be backported: we
-suggest to 3.1+, though in fact the trinity forkbomb effect might go
-back as far as 2.6.16, when madvise(,,MADV_REMOVE) came in - or might
-not, since much has changed, with i_mmap_mutex a spinlock before 3.0.
-Anyone running trinity on 3.0 and earlier? I don't think we need care.
+>From af961b2e8088e933535dd5cd1dbe8819d49159a6 Mon Sep 17 00:00:00 2001
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Date: Wed, 25 Jun 2014 10:09:07 +0900
+Subject: perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Lukas Czerner <lczerner@redhat.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: <stable@vger.kernel.org>	[3.1+]
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+commit b292d7a10487aee6e74b1c18b8d95b92f40d4a4f upstream.
+
+Currently, any NMI is falsely handled by a NMI handler of NMI watchdog
+if CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR is set.
+
+For example, we use external NMI to make system panic to get crash
+dump, but in this case, the external NMI is falsely handled do to the
+issue.
+
+This commit deals with the issue simply by ignoring CondChgd bit.
+
+Here is explanation in detail.
+
+On x86 NMI watchdog uses performance monitoring feature to
+periodically signal NMI each time performance counter gets overflowed.
+
+intel_pmu_handle_irq() is called as a NMI_LOCAL handler from a NMI
+handler of NMI watchdog, perf_event_nmi_handler(). It identifies an
+owner of a given NMI by looking at overflow status bits in
+MSR_CORE_PERF_GLOBAL_STATUS MSR. If some of the bits are set, then it
+handles the given NMI as its own NMI.
+
+The problem is that the intel_pmu_handle_irq() doesn't distinguish
+CondChgd bit from other bits. Unlike the other status bits, CondChgd
+bit doesn't represent overflow status for performance counters. Thus,
+CondChgd bit cannot be thought of as a mark indicating a given NMI is
+NMI watchdog's.
+
+As a result, if CondChgd bit is set, any NMI is falsely handled by the
+NMI handler of NMI watchdog. Also, if type of the falsely handled NMI
+is either NMI_UNKNOWN, NMI_SERR or NMI_IO_CHECK, the corresponding
+action is never performed until CondChgd bit is cleared.
+
+I noticed this behavior on systems with Ivy Bridge processors: Intel
+Xeon CPU E5-2630 v2 and Intel Xeon CPU E7-8890 v2. On both systems,
+CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR has already been set
+in the beginning at boot. Then the CondChgd bit is immediately cleared
+by next wrmsr to MSR_CORE_PERF_GLOBAL_CTRL MSR and appears to remain
+0.
+
+On the other hand, on older processors such as Nehalem, Xeon E7540,
+CondChgd bit is not set in the beginning at boot.
+
+I'm not sure about exact behavior of CondChgd bit, in particular when
+this bit is set. Although I read Intel System Programmer's Manual to
+figure out that, the descriptions I found are:
+
+  In 18.9.1:
+
+  "The MSR_PERF_GLOBAL_STATUS MSR also provides a ¡sticky bit¢ to
+   indicate changes to the state of performancmonitoring hardware"
+
+  In Table 35-2 IA-32 Architectural MSRs
+
+  63 CondChg: status bits of this register has changed.
+
+These are different from the bahviour I see on the actual system as I
+explained above.
+
+At least, I think ignoring CondChgd bit should be enough for NMI
+watchdog perspective.
+
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Link: http://lkml.kernel.org/r/20140625.103503.409316067.d.hatayama@jp.fujitsu.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/shmem.c | 78 +++++++++++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 52 insertions(+), 26 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 00d412fd2254..6f5626fca3cc 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -85,7 +85,7 @@ static struct vfsmount *shm_mnt;
-  * a time): we would prefer not to enlarge the shmem inode just for that.
-  */
- struct shmem_falloc {
--	int	mode;		/* FALLOC_FL mode currently operating */
-+	wait_queue_head_t *waitq; /* faults into hole wait for punch to end */
- 	pgoff_t start;		/* start of range currently being fallocated */
- 	pgoff_t next;		/* the next page offset to be fallocated */
- 	pgoff_t nr_falloced;	/* how many new pages have been fallocated */
-@@ -827,7 +827,7 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
- 			spin_lock(&inode->i_lock);
- 			shmem_falloc = inode->i_private;
- 			if (shmem_falloc &&
--			    !shmem_falloc->mode &&
-+			    !shmem_falloc->waitq &&
- 			    index >= shmem_falloc->start &&
- 			    index < shmem_falloc->next)
- 				shmem_falloc->nr_unswapped++;
-@@ -1306,38 +1306,58 @@ static int shmem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	 * Trinity finds that probing a hole which tmpfs is punching can
- 	 * prevent the hole-punch from ever completing: which in turn
- 	 * locks writers out with its hold on i_mutex.  So refrain from
--	 * faulting pages into the hole while it's being punched, and
--	 * wait on i_mutex to be released if vmf->flags permits.
-+	 * faulting pages into the hole while it's being punched.  Although
-+	 * shmem_undo_range() does remove the additions, it may be unable to
-+	 * keep up, as each new page needs its own unmap_mapping_range() call,
-+	 * and the i_mmap tree grows ever slower to scan if new vmas are added.
-+	 *
-+	 * It does not matter if we sometimes reach this check just before the
-+	 * hole-punch begins, so that one fault then races with the punch:
-+	 * we just need to make racing faults a rare case.
-+	 *
-+	 * The implementation below would be much simpler if we just used a
-+	 * standard mutex or completion: but we cannot take i_mutex in fault,
-+	 * and bloating every shmem inode for this unlikely case would be sad.
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index a45d8d4ace10..6eb3e3e7fc4c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1217,6 +1217,15 @@ again:
+ 	intel_pmu_lbr_read();
+
+ 	/*
++	 * CondChgd bit 63 doesn't mean any overflow status. Ignore
++	 * and clear the bit.
++	 */
++	if (__test_and_clear_bit(63, (unsigned long *)&status)) {
++		if (!status)
++			goto done;
++	}
++
++	/*
+ 	 * PEBS overflow sets bit 62 in the global status register
  	 */
- 	if (unlikely(inode->i_private)) {
- 		struct shmem_falloc *shmem_falloc;
- 
- 		spin_lock(&inode->i_lock);
- 		shmem_falloc = inode->i_private;
--		if (!shmem_falloc ||
--		    shmem_falloc->mode != FALLOC_FL_PUNCH_HOLE ||
--		    vmf->pgoff < shmem_falloc->start ||
--		    vmf->pgoff >= shmem_falloc->next)
--			shmem_falloc = NULL;
--		spin_unlock(&inode->i_lock);
--		/*
--		 * i_lock has protected us from taking shmem_falloc seriously
--		 * once return from shmem_fallocate() went back up that stack.
--		 * i_lock does not serialize with i_mutex at all, but it does
--		 * not matter if sometimes we wait unnecessarily, or sometimes
--		 * miss out on waiting: we just need to make those cases rare.
--		 */
--		if (shmem_falloc) {
-+		if (shmem_falloc &&
-+		    shmem_falloc->waitq &&
-+		    vmf->pgoff >= shmem_falloc->start &&
-+		    vmf->pgoff < shmem_falloc->next) {
-+			wait_queue_head_t *shmem_falloc_waitq;
-+			DEFINE_WAIT(shmem_fault_wait);
-+
-+			ret = VM_FAULT_NOPAGE;
- 			if ((vmf->flags & FAULT_FLAG_ALLOW_RETRY) &&
- 			   !(vmf->flags & FAULT_FLAG_RETRY_NOWAIT)) {
-+				/* It's polite to up mmap_sem if we can */
- 				up_read(&vma->vm_mm->mmap_sem);
--				mutex_lock(&inode->i_mutex);
--				mutex_unlock(&inode->i_mutex);
--				return VM_FAULT_RETRY;
-+				ret = VM_FAULT_RETRY;
- 			}
--			/* cond_resched? Leave that to GUP or return to user */
--			return VM_FAULT_NOPAGE;
-+
-+			shmem_falloc_waitq = shmem_falloc->waitq;
-+			prepare_to_wait(shmem_falloc_waitq, &shmem_fault_wait,
-+					TASK_UNINTERRUPTIBLE);
-+			spin_unlock(&inode->i_lock);
-+			schedule();
-+
-+			/*
-+			 * shmem_falloc_waitq points into the shmem_fallocate()
-+			 * stack of the hole-punching task: shmem_falloc_waitq
-+			 * is usually invalid by the time we reach here, but
-+			 * finish_wait() does not dereference it in that case;
-+			 * though i_lock needed lest racing with wake_up_all().
-+			 */
-+			spin_lock(&inode->i_lock);
-+			finish_wait(shmem_falloc_waitq, &shmem_fault_wait);
-+			spin_unlock(&inode->i_lock);
-+			return ret;
- 		}
-+		spin_unlock(&inode->i_lock);
- 	}
- 
- 	error = shmem_getpage(inode, vmf->pgoff, &vmf->page, SGP_CACHE, &ret);
-@@ -1855,13 +1875,13 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
- 
- 	mutex_lock(&inode->i_mutex);
- 
--	shmem_falloc.mode = mode & ~FALLOC_FL_KEEP_SIZE;
--
- 	if (mode & FALLOC_FL_PUNCH_HOLE) {
- 		struct address_space *mapping = file->f_mapping;
- 		loff_t unmap_start = round_up(offset, PAGE_SIZE);
- 		loff_t unmap_end = round_down(offset + len, PAGE_SIZE) - 1;
-+		DECLARE_WAIT_QUEUE_HEAD_ONSTACK(shmem_falloc_waitq);
- 
-+		shmem_falloc.waitq = &shmem_falloc_waitq;
- 		shmem_falloc.start = unmap_start >> PAGE_SHIFT;
- 		shmem_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
- 		spin_lock(&inode->i_lock);
-@@ -1873,8 +1893,13 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
- 					    1 + unmap_end - unmap_start, 0);
- 		shmem_truncate_range(inode, offset, offset + len - 1);
- 		/* No need to unmap again: hole-punching leaves COWed pages */
-+
-+		spin_lock(&inode->i_lock);
-+		inode->i_private = NULL;
-+		wake_up_all(&shmem_falloc_waitq);
-+		spin_unlock(&inode->i_lock);
- 		error = 0;
--		goto undone;
-+		goto out;
- 	}
- 
- 	/* We need to check rlimit even when FALLOC_FL_KEEP_SIZE */
-@@ -1890,6 +1915,7 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
- 		goto out;
- 	}
- 
-+	shmem_falloc.waitq = NULL;
- 	shmem_falloc.start = start;
- 	shmem_falloc.next  = start;
- 	shmem_falloc.nr_falloced = 0;
--- 
-2.0.1
+ 	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
+--
+1.9.1
 
