@@ -1,91 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704AbaG3IUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 04:20:47 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:53458 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751387AbaG3IUn (ORCPT
+	id S1751917AbaG3IVy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 04:21:54 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:63604 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbaG3IVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 04:20:43 -0400
-Date: Wed, 30 Jul 2014 10:20:38 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, kishon@ti.com,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v11 3/8] ata: libahci_platform: move port_map parameters
- into the AHCI structure
-Message-ID: <20140730082038.GB29900@kwain>
-References: <1406193450-17283-1-git-send-email-antoine.tenart@free-electrons.com>
- <1406193450-17283-4-git-send-email-antoine.tenart@free-electrons.com>
- <20140729144042.GD4791@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140729144042.GD4791@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 Jul 2014 04:21:51 -0400
+From: Zhouyi Zhou <zhouzhouyi@gmail.com>
+To: <rdunlap@infradead.org>, <davem@davemloft.net>, <minipli@googlemail.com>,
+        <brouer@redhat.com>, <steffen.klassert@secunet.com>,
+        <fan.du@windriver.com>, <dborkman@redhat.com>,
+        <fengguang.wu@intel.com>, <tgraf@suug.ch>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Cc: Zhouyi Zhou <zhouzhouyi@gmail.com>, Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Subject: [PATCH net-next] pktgen: add ttl option for pktgen
+Date: Wed, 30 Jul 2014 16:21:26 +0800
+Message-Id: <1406708486-23427-1-git-send-email-zhouzhouyi@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 10:40:42AM -0400, Tejun Heo wrote:
-> On Thu, Jul 24, 2014 at 11:17:25AM +0200, Antoine Ténart wrote:
-> > @@ -321,6 +321,8 @@ struct ahci_host_priv {
-> >  	u32			cap;		/* cap to use */
-> >  	u32			cap2;		/* cap2 to use */
-> >  	u32			port_map;	/* port map to use */
-> > +	u32			force_port_map;	/* force port map */
-> > +	u32			mask_port_map;	/* mask out particular bits */
-> 
-> Let's collect the inputs, including flags, at the top and mark them clearly.
+I think it is useful to add ttl option for pktgen, for example
+if a some ISP want to test its network quality, it could set 
+ttl so that the tested links get the packet while end users won't
+get it. 
 
-Done.
+Also, add a blank line after declarations in pktgen.c
 
-> 
-> >  int ahci_platform_init_host(struct platform_device *pdev,
-> >  			    struct ahci_host_priv *hpriv,
-> >  			    const struct ata_port_info *pi_template,
-> > -			    unsigned long host_flags,
-> > -			    unsigned int force_port_map,
-> > -			    unsigned int mask_port_map)
-> > +			    unsigned long host_flags)
-> 
-> This doesn't make much sense to me.  Near the head of the function, it
-> does
-> 
-> 	hpriv->flags |= host_flags;
-> 
-> Wouldn't it make more sense to just let the caller set hpriv->flags?
+Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+---
+ Documentation/networking/pktgen.txt |    2 +-
+ net/core/pktgen.c                   |   24 ++++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 1 deletions(-)
 
-I just removed the host_flags parameter and updated the drivers calling
-it.
-
-
-How do you want me to send the series? There is two conflicts when
-applying to libata/for-3.17:
-- patch 4/8: it takes into account a patch not in libata/for-3.17 but
-  added before rc7. It should be better to first merge rc7, otherwise
-  some modifications won't make sense.
-- patch 6/8: "fsl,imx53-ahci" was removed from the documentation in
-  libata/for-3.17 but not in rc7. Resolving the conflict is really
-  simple.
-
-I think it's better to apply the whole thing after merging rc7 into
-libata/for-3.17, because it will only have a really simple conflict to
-resolve.
-
-Please tell me what do you prefer before I send the updated version.
-
-Antoine
-
+diff --git a/Documentation/networking/pktgen.txt b/Documentation/networking/pktgen.txt
+index 0dffc6e..abad388 100644
+--- a/Documentation/networking/pktgen.txt
++++ b/Documentation/networking/pktgen.txt
+@@ -180,7 +180,7 @@ Examples:
+  pgset "vlan_id 9999"     > 4095 remove vlan and svlan tags
+  pgset "svlan 9999"       > 4095 remove svlan tag
+ 
+-
++ pgset "ttl xx"           set former IPv4 TTL field (default 32)
+  pgset "tos XX"           set former IPv4 TOS field (e.g. "tos 28" for AF11 no ECN, default 00)
+  pgset "traffic_class XX" set former IPv6 TRAFFIC CLASS (e.g. "traffic_class B8" for EF no ECN, default 00)
+ 
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index 8b849dd..54cb750 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -318,6 +318,8 @@ struct pktgen_dev {
+ 	__u16 udp_dst_min;	/* inclusive, dest UDP port */
+ 	__u16 udp_dst_max;	/* exclusive, dest UDP port */
+ 
++	__u8 ttl;            /* time to live */
++
+ 	/* DSCP + ECN */
+ 	__u8 tos;            /* six MSB of (former) IPv4 TOS
+ 				are for dscp codepoint */
+@@ -606,6 +608,8 @@ static int pktgen_if_show(struct seq_file *seq, void *v)
+ 			   pkt_dev->svlan_id, pkt_dev->svlan_p,
+ 			   pkt_dev->svlan_cfi);
+ 
++	seq_printf(seq, "     ttl: 0x%02x\n", pkt_dev->ttl);
++
+ 	if (pkt_dev->tos)
+ 		seq_printf(seq, "     tos: 0x%02x\n", pkt_dev->tos);
+ 
+@@ -1667,8 +1671,26 @@ static ssize_t pktgen_if_write(struct file *file,
+ 		return count;
+ 	}
+ 
++	if (!strcmp(name, "ttl")) {
++		__u32 tmp_value = 0;
++
++		len = hex32_arg(&user_buffer[i], 2, &tmp_value);
++		if (len < 0)
++			return len;
++
++		i += len;
++		if (len == 2) {
++			pkt_dev->ttl = tmp_value;
++			sprintf(pg_result, "OK: ttl=0x%02x", pkt_dev->ttl);
++		} else {
++			sprintf(pg_result, "ERROR: tos must be 00-ff");
++		}
++		return count;
++	}
++
+ 	if (!strcmp(name, "tos")) {
+ 		__u32 tmp_value = 0;
++
+ 		len = hex32_arg(&user_buffer[i], 2, &tmp_value);
+ 		if (len < 0)
+ 			return len;
+@@ -1685,6 +1707,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 
+ 	if (!strcmp(name, "traffic_class")) {
+ 		__u32 tmp_value = 0;
++
+ 		len = hex32_arg(&user_buffer[i], 2, &tmp_value);
+ 		if (len < 0)
+ 			return len;
+@@ -3558,6 +3581,7 @@ static int pktgen_add_device(struct pktgen_thread *t, const char *ifname)
+ 	pkt_dev->udp_src_max = 9;
+ 	pkt_dev->udp_dst_min = 9;
+ 	pkt_dev->udp_dst_max = 9;
++	pkt_dev->ttl = 32;
+ 	pkt_dev->vlan_p = 0;
+ 	pkt_dev->vlan_cfi = 0;
+ 	pkt_dev->vlan_id = 0xffff;
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.7.1
+
