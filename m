@@ -1,394 +1,511 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742AbaG3D02 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 23:26:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:51646 "EHLO mga01.intel.com"
+	id S1754816AbaG3Dbx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 23:31:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29144 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753918AbaG3D01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 23:26:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,761,1400050800"; 
-   d="scan'208";a="569223865"
-Message-ID: <53D865D3.7030308@intel.com>
-Date: Wed, 30 Jul 2014 11:26:11 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1753918AbaG3Dbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 23:31:50 -0400
+Message-ID: <53D866DC.7030108@redhat.com>
+Date: Tue, 29 Jul 2014 23:30:36 -0400
+From: "Carlos O'Donell" <carlos@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Daniel Borkmann <dborkman@redhat.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: [LKP] [net] 8f61059a96c: +55.7% netperf.Throughput_Mbps
-References: <53d86506.yoGX4XkxhQurKbRW%fengguang.wu@intel.com>
-In-Reply-To: <53d86506.yoGX4XkxhQurKbRW%fengguang.wu@intel.com>
-X-Forwarded-Message-Id: <53d86506.yoGX4XkxhQurKbRW%fengguang.wu@intel.com>
-Content-Type: multipart/mixed;
- boundary="------------090200070308090401070205"
+To: Jeff Layton <jlayton@primarydata.com>, libc-alpha@sourceware.org
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>, Rich Felker <dalias@libc.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        Stefan Metzmacher <metze@samba.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Boaz Harrosh <bharrosh@panasas.com>, "Alfred M. Szmidt" <ams@gnu.org>,
+        =?UTF-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>,
+        Jeffrey Layton <jlayton@redhat.com>
+Subject: Re: [PATCH resend #7] fcntl-linux.h: add new definitions and manual
+ updates for open file description locks
+References: <1406139665-29731-1-git-send-email-jlayton@primarydata.com>
+In-Reply-To: <1406139665-29731-1-git-send-email-jlayton@primarydata.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090200070308090401070205
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+On 07/23/2014 02:21 PM, Jeff Layton wrote:
+> From: Jeff Layton <jlayton@poochiereds.net>
 
-FYI, we noticed the below changes on
+Thanks for resending. Sorry for the delay.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
-commit 8f61059a96c2a29c1cc5a39dfe23d06ef5b4b065 ("net: sctp: improve timer slack calculation for transport HBs")
+Your use of 3 different emails caused me to miss the recent
+resends. That's my fault and tied to the way I'm tracking
+everything from patchwork using the first email you used.
 
-test case: lkp-wsx02/netperf/300s-200%-10K-SCTP_STREAM_MANY
+I am assuming that this work is under Red Hat's copyright
+status since you submitted it originally from @redhat.com.
 
-eb1ac820c61d0d8  8f61059a96c2a29c1cc5a39df  
----------------  -------------------------  
-      1349 ~ 2%     +55.7%       2101 ~ 1%  TOTAL netperf.Throughput_Mbps
-    170805 ~12%    +398.9%     852164 ~14%  TOTAL cpuidle.C1-NHM.usage
-      4.18 ~ 5%    -100.0%       0.00 ~ 0%  TOTAL perf-profile.cpu-cycles._raw_spin_lock_irqsave.mod_timer.sctp_transport_reset_timers.sctp_outq_flush.sctp_outq_uncork
-      4.42 ~ 2%     -99.5%       0.02 ~18%  TOTAL perf-profile.cpu-cycles.lock_timer_base.isra.34.mod_timer.sctp_transport_reset_timers.sctp_outq_flush.sctp_outq_uncork
-     10.60 ~ 2%     -99.7%       0.03 ~14%  TOTAL perf-profile.cpu-cycles.sctp_transport_timeout.sctp_transport_reset_timers.sctp_outq_flush.sctp_outq_uncork.sctp_cmd_interpreter
-      1.77 ~ 4%     -78.8%       0.38 ~ 4%  TOTAL perf-profile.cpu-cycles.sctp_outq_flush.sctp_outq_uncork.sctp_cmd_interpreter.sctp_do_sm.sctp_assoc_bh_rcv
-      3.42 ~11%    +196.0%      10.11 ~ 5%  TOTAL perf-profile.cpu-cycles._raw_spin_lock.free_one_page.__free_pages_ok.__free_pages.__free_kmem_pages
-      3.52 ~10%    +174.1%       9.64 ~ 6%  TOTAL perf-profile.cpu-cycles._raw_spin_lock_irqsave.get_page_from_freelist.__alloc_pages_nodemask.alloc_kmem_pages_node.kmalloc_large_node
-  14540720 ~17%    +162.1%   38114453 ~15%  TOTAL cpuidle.C1-NHM.time
-  18604327 ~ 7%     -43.0%   10606401 ~12%  TOTAL cpuidle.C1E-NHM.time
-   5.4e+09 ~ 2%     +55.7%  8.406e+09 ~ 1%  TOTAL proc-vmstat.pgfree
-  5.29e+09 ~ 2%     +55.4%   8.22e+09 ~ 1%  TOTAL proc-vmstat.pgalloc_normal
-      0.17 ~10%     +52.9%       0.27 ~21%  TOTAL turbostat.%c1
-      1294 ~ 4%     -17.2%       1071 ~11%  TOTAL numa-vmstat.node0.nr_page_table_pages
-      5176 ~ 4%     -17.2%       4288 ~11%  TOTAL numa-meminfo.node0.PageTables
-      1.58 ~ 3%     +20.3%       1.90 ~ 0%  TOTAL perf-profile.cpu-cycles.get_page_from_freelist.__alloc_pages_nodemask.alloc_kmem_pages_node.kmalloc_large_node.__kmalloc_node_track_caller
-      2.60 ~ 1%     +16.3%       3.02 ~ 1%  TOTAL perf-profile.cpu-cycles.memcpy.sctp_packet_transmit_chunk.sctp_outq_flush.sctp_outq_uncork.sctp_cmd_interpreter
-      6.49 ~ 0%     +12.8%       7.32 ~ 2%  TOTAL perf-profile.cpu-cycles.copy_user_generic_string.skb_copy_datagram_iovec.sctp_recvmsg.sock_common_recvmsg.sock_recvmsg
-     11700 ~ 4%     +18.7%      13891 ~ 7%  TOTAL proc-vmstat.pgmigrate_success
-     11700 ~ 4%     +18.7%      13891 ~ 7%  TOTAL proc-vmstat.numa_pages_migrated
-    139702 ~ 1%     +16.3%     162521 ~ 5%  TOTAL proc-vmstat.numa_hint_faults
-       977 ~ 2%     +16.0%       1133 ~ 8%  TOTAL proc-vmstat.pgmigrate_fail
-      6.81 ~ 0%     +12.2%       7.64 ~ 2%  TOTAL perf-profile.cpu-cycles.copy_user_generic_string.sctp_user_addto_chunk.sctp_datamsg_from_user.sctp_sendmsg.inet_sendmsg
-      4.98 ~ 0%     +11.8%       5.57 ~ 2%  TOTAL perf-profile.cpu-cycles.memcpy.sctp_outq_flush.sctp_outq_uncork.sctp_cmd_interpreter.sctp_do_sm
-    160357 ~ 1%     +14.2%     183117 ~ 4%  TOTAL proc-vmstat.numa_pte_updates
-      1653 ~ 3%      -8.5%       1512 ~ 4%  TOTAL numa-vmstat.node0.nr_alloc_batch
-    310335 ~ 2%     +55.9%     483905 ~ 1%  TOTAL vmstat.system.cs
+I've committed this to trunk with small tweaks and the following
+NEWS entry:
 
-Legend:
-	~XX%    - stddev percent
-	[+-]XX% - change percent
+* Support for file description locks is added to systems running the
+  Linux kernel. The standard file locking interfaces are extended to
+  operate on file descriptions, not file descriptors, via the use of
+  F_OFD_GETLK, F_OFD_SETLK, and F_OFD_SETLKW. File description locks
+  are associated with an open file instead of a process.
 
+This will be in 2.20 when we cut the branch.
+ 
+> Open file description locks have been merged into the Linux kernel for
+> v3.15.  Add the appropriate command-value definitions and an update to
+> the manual that describes their usage.
+> 
+> ChangeLog:
+> 
+> 2014-04-24  Jeff Layton  <jlayton@poochiereds.net>
+> 
+> 	[BZ#16839]
+> 	* manual/llio.texi: add section about open file description locks
+> 
+> 	* manual/examples/ofdlocks.c:
+> 	  example of open file description lock usage
+> 
+> 	* sysdeps/unix/sysv/linux/bits/fcntl-linux.h:
+> 	  (F_OFD_GETLK, F_OFD_SETLK, F_OFD_SETLKW): New macros.
 
-                              netperf.Throughput_Mbps
+I simplified it a bit.
 
-  2300 ++-------------------------------------------------------------------+
-  2200 O+OO O  O                                                            |
-       |      O  O OO OO O OO O O     O   O  O    O                         |
-  2100 ++                            O  O  O  O O  O O                      |
-  2000 ++                        O                                          |
-       |                           O                                        |
-  1900 ++                                                                   |
-  1800 ++                                                                   |
-  1700 ++                                                                   |
-       |                                                                    |
-  1600 ++                                                                   |
-  1500 ++                                                                   |
-       |                                                *.                  |
-  1400 *+**.*.**.*. *.**.*.**.*.**.*.**.*. *.**. .**.*. : *.**.*.     .*.**.|
-  1300 ++----------*----------------------*-----*------*---------**-**------*
+A space in the ChangeLog indicates a distinct commit, which this is not,
+so I lump them together.
 
+This is what went in:
 
-                                  vmstat.system.cs
+2014-07-29  Jeff Layton  <jlayton@poochiereds.net>
 
-  650000 ++-----------------------------------------------------------------+
-         |                                                                  |
-  600000 ++    O                                                            |
-         | O  O                                                             |
-  550000 O+ O    O                                                          |
-         |                                                                  |
-  500000 ++        OO OO O OO OO O     O   O  O   O                         |
-         |                         O  O  O  O  O O  O O                     |
-  450000 ++                         O                                       |
-         |                                                                  |
-  400000 ++                                                                 |
-         |                                                                  |
-  350000 ++                                                                 |
-         *. *.* .*.*   *. .*    .*.**.**.*. *.*   *.*.  .**.*.**.      *.*  |
-  300000 ++*---*----*-*--*--*-**-----------*---*-*----**---------**-*-*---*-*
+        [BZ #16839]
+        * manual/llio.texi: Add section about open file description locks.
+        * manual/examples/ofdlocks.c: Example of open file description
+        lock usage.
+        * sysdeps/unix/sysv/linux/bits/fcntl-linux.h: Define F_OFD_GETLK,
+        F_OFD_SETLK, and F_OFD_SETLKW.
 
+As the committer I added #16839 to the fixed bug list following:
 
-	[*] bisect-good sample
-	[O] bisect-bad  sample
+https://sourceware.org/glibc/wiki/Committer%20checklist
 
+> ---
+>  manual/examples/ofdlocks.c                 |  77 +++++++++
+>  manual/llio.texi                           | 241 ++++++++++++++++++++++++++++-
+>  sysdeps/unix/sysv/linux/bits/fcntl-linux.h |  17 ++
+>  3 files changed, 332 insertions(+), 3 deletions(-)
+>  create mode 100644 manual/examples/ofdlocks.c
+> 
+> diff --git a/manual/examples/ofdlocks.c b/manual/examples/ofdlocks.c
+> new file mode 100644
+> index 000000000000..85e193cdabe6
+> --- /dev/null
+> +++ b/manual/examples/ofdlocks.c
+> @@ -0,0 +1,77 @@
+> +/* Open File Description Locks Usage Example
+> +   Copyright (C) 1991-2014 Free Software Foundation, Inc.
+> +
+> +   This program is free software; you can redistribute it and/or
+> +   modify it under the terms of the GNU General Public License
+> +   as published by the Free Software Foundation; either version 2
+> +   of the License, or (at your option) any later version.
+> +
+> +   This program is distributed in the hope that it will be useful,
+> +   but WITHOUT ANY WARRANTY; without even the implied warranty of
+> +   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> +   GNU General Public License for more details.
+> +
+> +   You should have received a copy of the GNU General Public License
+> +   along with this program; if not, see <http://www.gnu.org/licenses/>.
+> +*/
+> +
+> +#define _GNU_SOURCE
+> +#include <stdio.h>
+> +#include <sys/types.h>
+> +#include <sys/stat.h>
+> +#include <unistd.h>
+> +#include <fcntl.h>
+> +#include <pthread.h>
+> +
+> +#define FILENAME	"/tmp/foo"
+> +#define NUM_THREADS	3
+> +#define ITERATIONS	5
+> +
+> +void *
+> +thread_start (void *arg)
+> +{
+> +  int i, fd, len;
+> +  long tid = (long) arg;
+> +  char buf[256];
+> +  struct flock lck = {
+> +    .l_whence = SEEK_SET,
+> +    .l_start = 0,
+> +    .l_len = 1,
+> +  };
+> +
+> +  fd = open ("/tmp/foo", O_RDWR | O_CREAT, 0666);
+> +
+> +  for (i = 0; i < ITERATIONS; i++)
+> +    {
+> +      lck.l_type = F_WRLCK;
+> +      fcntl (fd, F_OFD_SETLKW, &lck);
+> +
+> +      len = sprintf (buf, "%d: tid=%ld fd=%d\n", i, tid, fd);
+> +
+> +      lseek (fd, 0, SEEK_END);
+> +      write (fd, buf, len);
+> +      fsync (fd);
+> +
+> +      lck.l_type = F_UNLCK;
+> +      fcntl (fd, F_OFD_SETLK, &lck);
+> +
+> +      /* sleep to ensure lock is yielded to another thread */
+> +      usleep (1);
+> +    }
+> +  pthread_exit (NULL);
+> +}
+> +
+> +int
+> +main (int argc, char **argv)
+> +{
+> +  long i;
+> +  pthread_t threads[NUM_THREADS];
+> +
+> +  truncate (FILENAME, 0);
+> +
+> +  for (i = 0; i < NUM_THREADS; i++)
+> +    pthread_create (&threads[i], NULL, thread_start, (void *) i);
+> +
+> +  pthread_exit (NULL);
+> +  return 0;
+> +}
+> diff --git a/manual/llio.texi b/manual/llio.texi
+> index 6f8adfc607d7..864060dc7140 100644
+> --- a/manual/llio.texi
+> +++ b/manual/llio.texi
+> @@ -57,6 +57,10 @@ directly.)
+>                                           flags associated with open files.
+>  * File Locks::                          Fcntl commands for implementing
+>                                           file locking.
+> +* Open File Description Locks::         Fcntl commands for implementing
+> +                                         open file description locking.
+> +* Open File Description Locks Example:: An example of open file description lock
+> +                                         usage
+>  * Interrupt Input::                     Getting an asynchronous signal when
+>                                           input arrives.
+>  * IOCTLs::                              Generic I/O Control operations.
+> @@ -2890,7 +2894,7 @@ Get flags associated with the open file.  @xref{File Status Flags}.
+>  Set flags associated with the open file.  @xref{File Status Flags}.
+>  
+>  @item F_GETLK
+> -Get a file lock.  @xref{File Locks}.
+> +Test a file lock.  @xref{File Locks}.
+>  
+>  @item F_SETLK
+>  Set or clear a file lock.  @xref{File Locks}.
+> @@ -2898,6 +2902,18 @@ Set or clear a file lock.  @xref{File Locks}.
+>  @item F_SETLKW
+>  Like @code{F_SETLK}, but wait for completion.  @xref{File Locks}.
+>  
+> +@item F_OFD_GETLK
+> +Test an open file description lock.  @xref{Open File Description Locks}.
+> +Specific to Linux.
+> +
+> +@item F_OFD_SETLK
+> +Set or clear an open file description lock.  @xref{Open File Description Locks}.
+> +Specific to Linux.
+> +
+> +@item F_OFD_SETLKW
+> +Like @code{F_OFD_SETLK}, but block until lock is acquired.
+> +@xref{Open File Description Locks}.  Specific to Linux.
+> +
+>  @item F_GETOWN
+>  Get process or process group ID to receive @code{SIGIO} signals.
+>  @xref{Interrupt Input}.
+> @@ -3576,6 +3592,10 @@ set_nonblock_flag (int desc, int value)
+>  
+>  @cindex file locks
+>  @cindex record locking
+> +This section describes record locks that are associated with the process.
+> +There is also a different type of record lock that is associated with the
+> +open file description instead of the process.  @xref{Open File Description Locks}.
+> +
+>  The remaining @code{fcntl} commands are used to support @dfn{record
+>  locking}, which permits multiple cooperating programs to prevent each
+>  other from simultaneously accessing parts of a file in error-prone
+> @@ -3641,7 +3661,10 @@ the file.
+>  @item pid_t l_pid
+>  This field is the process ID (@pxref{Process Creation Concepts}) of the
+>  process holding the lock.  It is filled in by calling @code{fcntl} with
+> -the @code{F_GETLK} command, but is ignored when making a lock.
+> +the @code{F_GETLK} command, but is ignored when making a lock.  If the
+> +conflicting lock is an open file description lock
+> +(@pxref{Open File Description Locks}), then this field will be set to
+> +@math{-1}.
+>  @end table
+>  @end deftp
+>  
+> @@ -3813,10 +3836,222 @@ that part of the file for writing.
+>  
+>  @c ??? This section could use an example program.
+>  
+> -Remember that file locks are only a @emph{voluntary} protocol for
+> +Remember that file locks are only an @emph{advisory} protocol for
+>  controlling access to a file.  There is still potential for access to
+>  the file by programs that don't use the lock protocol.
+>  
+> +@node Open File Description Locks
+> +@section Open File Description Locks
+> +
+> +In contrast to process-associated record locks (@pxref{File Locks}),
+> +open file description record locks are associated with an open file
+> +description rather than a process.
+> +
+> +Using @code{fcntl} to apply an open file description lock on a region that
+> +already has an existing open file description lock that was created via the
+> +same file descriptor will never cause a lock conflict.
+> +
+> +Open file description locks are also inherited by child processes across
+> +@code{fork}, or @code{clone} with @code{CLONE_FILES} set
+> +(@pxref{Creating a Process}), along with the file descriptor.
+> +
+> +It is important to distinguish between the open file @emph{description} (an
+> +instance of an open file, usually created by a call to @code{open}) and
+> +an open file @emph{descriptor}, which is a numeric value that refers to the
+> +open file description.  The locks described here are associated with the
+> +open file @emph{description} and not the open file @emph{descriptor}.
+> +
+> +Using @code{dup} (@pxref{Duplicating Descriptors}) to copy a file
+> +descriptor does not give you a new open file description, but rather copies a
+> +reference to an existing open file description and assigns it to a new
+> +file descriptor.  Thus, open file description locks set on a file
+> +descriptor cloned by @code{dup} will never conflict with open file
+> +description locks set on the original descriptor since they refer to the
+> +same open file description.  Depending on the range and type of lock
+> +involved, the original lock may be modified by a @code{F_OFD_SETLK} or
+> +@code{F_OFD_SETLKW} command in this situation however.
+> +
+> +Open file description locks always conflict with process-associated locks,
+> +even if acquired by the same process or on the same open file
+> +descriptor.
+> +
+> +Open file description locks use the same @code{struct flock} as
+> +process-associated locks as an argument (@pxref{File Locks}) and the
+> +macros for the @code{command} values are also declared in the header file
+> +@file{fcntl.h}. To use them, the macro @code{_GNU_SOURCE} must be
+> +defined prior to including any header file.
+> +
+> +In contrast to process-associated locks, any @code{struct flock} used as
+> +an argument to open file description lock commands must have the @code{l_pid}
+> +value set to @math{0}.  Also, when returning information about an
+> +open file description lock in a @code{F_GETLK} or @code{F_OFD_GETLK} request,
+> +the @code{l_pid} field in @code{struct flock} will be set to @math{-1}
+> +to indicate that the lock is not associated with a process.
+> +
+> +When the same @code{struct flock} is reused as an argument to a
+> +@code{F_OFD_SETLK} or @code{F_OFD_SETLKW} request after being used for an
+> +@code{F_OFD_GETLK} request, it is necessary to inspect and reset the
+> +@code{l_pid} field to @math{0}.
+> +
+> +@pindex fcntl.h.
+> +
+> +@deftypevr Macro int F_OFD_GETLK
+> +This macro is used as the @var{command} argument to @code{fcntl}, to
+> +specify that it should get information about a lock.  This command
+> +requires a third argument of type @w{@code{struct flock *}} to be passed
+> +to @code{fcntl}, so that the form of the call is:
+> +
+> +@smallexample
+> +fcntl (@var{filedes}, F_OFD_GETLK, @var{lockp})
+> +@end smallexample
+> +
+> +If there is a lock already in place that would block the lock described
+> +by the @var{lockp} argument, information about that lock is written to
+> +@code{*@var{lockp}}.  Existing locks are not reported if they are
+> +compatible with making a new lock as specified.  Thus, you should
+> +specify a lock type of @code{F_WRLCK} if you want to find out about both
+> +read and write locks, or @code{F_RDLCK} if you want to find out about
+> +write locks only.
+> +
+> +There might be more than one lock affecting the region specified by the
+> +@var{lockp} argument, but @code{fcntl} only returns information about
+> +one of them. Which lock is returned in this situation is undefined.
+> +
+> +The @code{l_whence} member of the @var{lockp} structure are set to
+> +@code{SEEK_SET} and the @code{l_start} and @code{l_len} fields are set
+> +to identify the locked region.
+> +
+> +If no conflicting lock exists, the only change to the @var{lockp} structure
+> +is to update the @code{l_type} field to the value @code{F_UNLCK}.
+> +
+> +The normal return value from @code{fcntl} with this command is either @math{0}
+> +on success or @math{-1}, which indicates an error. The following @code{errno}
+> +error conditions are defined for this command:
+> +
+> +@table @code
+> +@item EBADF
+> +The @var{filedes} argument is invalid.
+> +
+> +@item EINVAL
+> +Either the @var{lockp} argument doesn't specify valid lock information,
+> +the operating system kernel doesn't support open file description locks, or the file
+> +associated with @var{filedes} doesn't support locks.
+> +@end table
+> +@end deftypevr
+> +
+> +@comment fcntl.h
+> +@comment POSIX.1
+> +@deftypevr Macro int F_OFD_SETLK
+> +This macro is used as the @var{command} argument to @code{fcntl}, to
+> +specify that it should set or clear a lock.  This command requires a
+> +third argument of type @w{@code{struct flock *}} to be passed to
+> +@code{fcntl}, so that the form of the call is:
+> +
+> +@smallexample
+> +fcntl (@var{filedes}, F_OFD_SETLK, @var{lockp})
+> +@end smallexample
+> +
+> +If the open file already has a lock on any part of the
+> +region, the old lock on that part is replaced with the new lock.  You
+> +can remove a lock by specifying a lock type of @code{F_UNLCK}.
+> +
+> +If the lock cannot be set, @code{fcntl} returns immediately with a value
+> +of @math{-1}.  This command does not wait for other tasks
+> +to release locks.  If @code{fcntl} succeeds, it returns @math{0}.
+> +
+> +The following @code{errno} error conditions are defined for this
+> +command:
+> +
+> +@table @code
+> +@item EAGAIN
+> +The lock cannot be set because it is blocked by an existing lock on the
+> +file.
+> +
+> +@item EBADF
+> +Either: the @var{filedes} argument is invalid; you requested a read lock
+> +but the @var{filedes} is not open for read access; or, you requested a
+> +write lock but the @var{filedes} is not open for write access.
+> +
+> +@item EINVAL
+> +Either the @var{lockp} argument doesn't specify valid lock information,
+> +the operating system kernel doesn't support open file description locks, or the
+> +file associated with @var{filedes} doesn't support locks.
+> +
+> +@item ENOLCK
+> +The system has run out of file lock resources; there are already too
+> +many file locks in place.
+> +
+> +Well-designed file systems never report this error, because they have no
+> +limitation on the number of locks.  However, you must still take account
+> +of the possibility of this error, as it could result from network access
+> +to a file system on another machine.
+> +@end table
+> +@end deftypevr
+> +
+> +@comment fcntl.h
+> +@comment POSIX.1
+> +@deftypevr Macro int F_OFD_SETLKW
+> +This macro is used as the @var{command} argument to @code{fcntl}, to
+> +specify that it should set or clear a lock.  It is just like the
+> +@code{F_OFD_SETLK} command, but causes the process to wait until the request
+> +can be completed.
+> +
+> +This command requires a third argument of type @code{struct flock *}, as
+> +for the @code{F_OFD_SETLK} command.
+> +
+> +The @code{fcntl} return values and errors are the same as for the
+> +@code{F_OFD_SETLK} command, but these additional @code{errno} error conditions
+> +are defined for this command:
+> +
+> +@table @code
+> +@item EINTR
+> +The function was interrupted by a signal while it was waiting.
+> +@xref{Interrupted Primitives}.
+> +
+> +@end table
+> +@end deftypevr
+> +
+> +Open file description locks are useful in the same sorts of situations as
+> +process-associated locks. They can also be used to synchronize file
+> +access between threads within the same process by having each thread perform
+> +its own @code{open} of the file, to obtain its own open file description.
+> +
+> +Because open file description locks are automatically freed only upon
+> +closing the last file descriptor that refers to the open file
+> +description, this locking mechanism avoids the possibility that locks
+> +are inadvertently released due to a library routine opening and closing
+> +a file without the application being aware.
+> +
+> +As with process-associated locks, open file description locks are advisory.
+> +
+> +@node Open File Description Locks Example
+> +@section Open File Description Locks Example
+> +
+> +Here is an example of using open file description locks in a threaded
+> +program. If this program used process-associated locks, then it would be
+> +subject to data corruption because process-associated locks are shared
+> +by the threads inside a process, and thus cannot be used by one thread
+> +to lock out another thread in the same process.
+> +
+> +Proper error handling has been omitted in the following program for
+> +brevity.
+> +
+> +@smallexample
+> +@include ofdlocks.c.texi
+> +@end smallexample
+> +
+> +This example creates three threads each of which loops five times,
+> +appending to the file.  Access to the file is serialized via open file
+> +description locks. If we compile and run the above program, we'll end up
+> +with /tmp/foo that has 15 lines in it.
+> +
+> +If we, however, were to replace the @code{F_OFD_SETLK} and
+> +@code{F_OFD_SETLKW} commands with their process-associated lock
+> +equivalents, the locking essentially becomes a noop since it is all done
+> +within the context of the same process. That leads to data corruption
+> +(typically manifested as missing lines) as some threads race in and
+> +overwrite the data written by others.
+> +
+>  @node Interrupt Input
+>  @section Interrupt-Driven Input
+>  
+> diff --git a/sysdeps/unix/sysv/linux/bits/fcntl-linux.h b/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
+> index 527eb5c8b5d9..b5b5d0fbfa4c 100644
+> --- a/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
+> +++ b/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
+> @@ -117,6 +117,23 @@
+>  # define F_SETLKW64	14	/* Set record locking info (blocking).	*/
+>  #endif
+>  
+> +/* open file description locks.
+> +
+> +   Usually record locks held by a process are released on *any* close and are
+> +   not inherited across a fork.
+> +
+> +   These cmd values will set locks that conflict with process-associated record
+> +   locks, but are "owned" by the opened file description, not the process.
+> +   This means that they are inherited across fork or clone with CLONE_FILES
+> +   like BSD (flock) locks, and they are only released automatically when the
+> +   last reference to the the file description against which they were acquired
+> +   is put. */
+> +#if __USE_GNU
 
-Disclaimer:
-Results have been estimated based on internal Intel analysis and are provided
-for informational purposes only. Any difference in system hardware or software
-design or configuration may affect actual performance.
+This was changed back to `#ifdef' given Joseph's request to avoid partial
+conversion of macro usages.
 
-Thanks,
-Aaron
+> +# define F_OFD_GETLK	36
+> +# define F_OFD_SETLK	37
+> +# define F_OFD_SETLKW	38
+> +#endif
+> +
+>  #ifdef __USE_LARGEFILE64
+>  # define O_LARGEFILE __O_LARGEFILE
+>  #endif
+> 
 
---------------090200070308090401070205
-Content-Type: text/plain; charset=UTF-8;
- name="reproduce"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="reproduce"
-
-ZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTAvY3B1ZnJl
-cS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lz
-dGVtL2NwdS9jcHUxL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNl
-ID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MTAvY3B1ZnJlcS9zY2FsaW5nX2dvdmVy
-bm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUxMS9j
-cHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNl
-cy9zeXN0ZW0vY3B1L2NwdTEyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZv
-cm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MTMvY3B1ZnJlcS9zY2FsaW5n
-X2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9j
-cHUxNC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMv
-ZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTE1L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hv
-IHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MTYvY3B1ZnJlcS9z
-Y2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVt
-L2NwdS9jcHUxNy9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+
-IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTE4L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5v
-cgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MTkvY3B1
-ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMv
-c3lzdGVtL2NwdS9jcHUyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1h
-bmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MjAvY3B1ZnJlcS9zY2FsaW5nX2dv
-dmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUy
-MS9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2
-aWNlcy9zeXN0ZW0vY3B1L2NwdTIyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBl
-cmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MjMvY3B1ZnJlcS9zY2Fs
-aW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2Nw
-dS9jcHUyNC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9z
-eXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTI1L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgpl
-Y2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MjYvY3B1ZnJl
-cS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lz
-dGVtL2NwdS9jcHUyNy9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5j
-ZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTI4L2NwdWZyZXEvc2NhbGluZ19nb3Zl
-cm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1Mjkv
-Y3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2Rldmlj
-ZXMvc3lzdGVtL2NwdS9jcHUzL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZv
-cm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MzAvY3B1ZnJlcS9zY2FsaW5n
-X2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9j
-cHUzMS9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMv
-ZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTMyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hv
-IHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MzMvY3B1ZnJlcS9z
-Y2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVt
-L2NwdS9jcHUzNC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+
-IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTM1L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5v
-cgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MzYvY3B1
-ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMv
-c3lzdGVtL2NwdS9jcHUzNy9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3Jt
-YW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTM4L2NwdWZyZXEvc2NhbGluZ19n
-b3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1
-MzkvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2Rl
-dmljZXMvc3lzdGVtL2NwdS9jcHU0L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBl
-cmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NDAvY3B1ZnJlcS9zY2Fs
-aW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2Nw
-dS9jcHU0MS9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9z
-eXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTQyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgpl
-Y2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NDMvY3B1ZnJl
-cS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lz
-dGVtL2NwdS9jcHU0NC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5j
-ZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTQ1L2NwdWZyZXEvc2NhbGluZ19nb3Zl
-cm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NDYv
-Y3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2Rldmlj
-ZXMvc3lzdGVtL2NwdS9jcHU0Ny9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJm
-b3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTQ4L2NwdWZyZXEvc2NhbGlu
-Z19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUv
-Y3B1NDkvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lz
-L2RldmljZXMvc3lzdGVtL2NwdS9jcHU1L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hv
-IHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NTAvY3B1ZnJlcS9z
-Y2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVt
-L2NwdS9jcHU1MS9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+
-IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTUyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5v
-cgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NTMvY3B1
-ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMv
-c3lzdGVtL2NwdS9jcHU1NC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3Jt
-YW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTU1L2NwdWZyZXEvc2NhbGluZ19n
-b3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1
-NTYvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2Rl
-dmljZXMvc3lzdGVtL2NwdS9jcHU1Ny9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBw
-ZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTU4L2NwdWZyZXEvc2Nh
-bGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9j
-cHUvY3B1NTkvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAv
-c3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHU2L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgpl
-Y2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NjAvY3B1ZnJl
-cS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lz
-dGVtL2NwdS9jcHU2MS9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5j
-ZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTYyL2NwdWZyZXEvc2NhbGluZ19nb3Zl
-cm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NjMv
-Y3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2Rldmlj
-ZXMvc3lzdGVtL2NwdS9jcHU2NC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJm
-b3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTY1L2NwdWZyZXEvc2NhbGlu
-Z19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUv
-Y3B1NjYvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lz
-L2RldmljZXMvc3lzdGVtL2NwdS9jcHU2Ny9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNo
-byBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTY4L2NwdWZyZXEv
-c2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3Rl
-bS9jcHUvY3B1NjkvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2Ug
-PiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHU3L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5v
-cgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NzAvY3B1
-ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMv
-c3lzdGVtL2NwdS9jcHU3MS9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3Jt
-YW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTcyL2NwdWZyZXEvc2NhbGluZ19n
-b3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1
-NzMvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2Rl
-dmljZXMvc3lzdGVtL2NwdS9jcHU3NC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBw
-ZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTc1L2NwdWZyZXEvc2Nh
-bGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9j
-cHUvY3B1NzYvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAv
-c3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHU3Ny9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IK
-ZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTc4L2NwdWZy
-ZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5
-c3RlbS9jcHUvY3B1NzkvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFu
-Y2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHU4L2NwdWZyZXEvc2NhbGluZ19nb3Zl
-cm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1OS9j
-cHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKbmV0c2VydmVyCm5ldHBlcmYgLXQgU0NUUF9TVFJF
-QU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1f
-TUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFO
-WSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAt
-YyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAt
-QyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAt
-bCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAz
-MDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAg
-LS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0g
-LW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0g
-MTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBL
-Cm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5l
-dHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBl
-cmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYg
-LXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQg
-U0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NU
-UF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9T
-VFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJF
-QU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1f
-TUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFO
-WSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAt
-YyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAt
-QyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAt
-bCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAz
-MDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAg
-LS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0g
-LW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0g
-MTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBL
-Cm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5l
-dHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBl
-cmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYg
-LXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQg
-U0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NU
-UF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9T
-VFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJF
-QU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1f
-TUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFO
-WSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAt
-YyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAt
-QyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAt
-bCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAz
-MDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAg
-LS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0g
-LW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0g
-MTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBL
-Cm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5l
-dHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBl
-cmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYg
-LXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQg
-U0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NU
-UF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9T
-VFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJF
-QU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1f
-TUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFO
-WSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAt
-YyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAt
-QyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAt
-bCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAz
-MDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAg
-LS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0g
-LW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0g
-MTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBL
-Cm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5l
-dHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBl
-cmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYg
-LXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQg
-U0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NU
-UF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9T
-VFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJF
-QU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1f
-TUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFO
-WSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAt
-YyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAt
-QyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAt
-bCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAz
-MDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAg
-LS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0g
-LW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0g
-MTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBL
-Cm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5l
-dHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBl
-cmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYg
-LXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQg
-U0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NU
-UF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9T
-VFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJF
-QU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1f
-TUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFO
-WSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAt
-YyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAt
-QyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAt
-bCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAz
-MDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAg
-LS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0g
-LW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0g
-MTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBL
-Cm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5l
-dHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBl
-cmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYg
-LXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQg
-U0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NU
-UF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9T
-VFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJF
-QU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1f
-TUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFO
-WSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAt
-YyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAt
-QyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAt
-bCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAz
-MDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAg
-LS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0g
-LW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0g
-MTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBL
-Cm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5l
-dHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBl
-cmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYg
-LXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQg
-U0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NU
-UF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9T
-VFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJF
-QU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1f
-TUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFO
-WSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAt
-YyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAt
-QyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAt
-bCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAz
-MDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAg
-LS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0g
-LW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0g
-MTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBL
-Cm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5l
-dHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBl
-cmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYg
-LXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQg
-U0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NU
-UF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9T
-VFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJF
-QU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1f
-TUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFO
-WSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAt
-YyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAt
-QyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAt
-bCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAz
-MDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAg
-LS0gLW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0g
-LW0gMTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0g
-MTBLCm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBL
-Cm5ldHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5l
-dHBlcmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBl
-cmYgLXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYg
-LXQgU0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCm5ldHBlcmYgLXQg
-U0NUUF9TVFJFQU1fTUFOWSAtYyAtQyAtbCAzMDAgLS0gLW0gMTBLCgo=
---------------090200070308090401070205--
+Cheers,
+Carlos.
