@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181AbaG3OSd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 10:18:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37436 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753411AbaG3OSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 10:18:32 -0400
-Message-ID: <53D8FEB1.5040808@redhat.com>
-Date: Wed, 30 Jul 2014 10:18:25 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1754210AbaG3OSz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 10:18:55 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:39435 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753385AbaG3OSx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 10:18:53 -0400
+Message-ID: <53D8FEC7.8020804@plexistor.com>
+Date: Wed, 30 Jul 2014 17:18:47 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
- to be held for duration of changing governors [v2]
-References: <1406634362-811-1-git-send-email-prarit@redhat.com> <1727443.QxEjMbNBsd@vostro.rjw.lan>
-In-Reply-To: <1727443.QxEjMbNBsd@vostro.rjw.lan>
+To: Jens Axboe <axboe@kernel.dk>, Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>
+CC: linux-scsi <linux-scsi@vger.kernel.org>, Nick Piggin <npiggin@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] brd: Fix brd_direct_access with partitions
+References: <53D7CDDD.1000302@gmail.com> <1406654379.2767.1.camel@rzwisler-mobl1.amr.corp.intel.com> <53D8D2C4.1030101@gmail.com> <53D8FE1F.1060009@plexistor.com>
+In-Reply-To: <53D8FE1F.1060009@plexistor.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,196 +26,40 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+When brd_direct_access() is called on a partition-bdev
+it would access the wrong sector. And caller would then
+corrupt the device's data.
 
-On 07/29/2014 08:03 PM, Rafael J. Wysocki wrote:
-> On Tuesday, July 29, 2014 07:46:02 AM Prarit Bhargava wrote:
->> [v2]: Fixed wording of commit, and added additional testing information.
->>
->> A while ago we added a test to mimic some of our users' userspace governor
->> programs which monitor system behaviour and will switch governors on the
->> fly.  The decision process for this includes looking at time of day,
->> expected system load, etc.  For some time now we have had reports of
->> system panics in the cpufreq code when using the userspace governor
->> utility.
->>
->> The userspace utility writes
->> /sys/devices/system/cpu/cpuX/cpufreq/scaling_governor and sets the
->> governor.  In some cases this can happen rapidly, and under heavy load
->> there are occasions where the changes are delayed.  This can mean that
->> several governor changes may occur within a short period of time.
->>
->> This has exposed a bug in the store_scaling_governor path.  When the sysfs
->> file is written to,
->>
->> store()
->> 	->down_write(&policy->rwsem);
->> 	->store_scaling_governor()
->> 		-> cpufreq_set_policy()
->> 			up_write(&policy->rwsem);
->> 			__cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
->> 			down_write(&policy->rwsem);
->>
->> The release of the policy->rwsem results in a situation where another
->> write to the scaling_governor file can now start and overwrite pointers
->> and cause corruption.
->>
->> ex)
->>
->>  Oops: 0000 [#1] SMP
->>  Modules linked in: sg e1000e igb iTCO_wdt iTCO_vendor_support coretemp kvm_intel ptp kvm pps_core i7300_edac edac_core ses lpc_ich enclosure ioatdma mfd_core shpchp dca i2c_i801 serio_raw acpi_cpufreq pcspkr mperf nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sr_mod cdrom sd_mod ata_generic crc_t10dif crct10dif_common pata_acpi radeon i2c_algo_bit drm_kms_helper ttm drm ata_piix libata i2c_core megaraid_sas dm_mirror dm_region_hash dm_log dm_mod
->>  CPU: 7 PID: 565 Comm: kworker/7:2 Not tainted 3.10.0-121.el7.x86_64 #1
->>  Hardware name: Intel MP Server/S7000FC4UR, BIOS SFC4UR.86B.01.00.0031.021820102042 02/18/2010
->>  Workqueue: events od_dbs_timer
->>  task: ffff88046544cfa0 ti: ffff880465438000 task.ti: ffff880465438000
->>  RIP: 0010:[<ffffffff81489bed>]  [<ffffffff81489bed>] od_dbs_timer+0x2d/0x160
->>  RSP: 0018:ffff880465439de0  EFLAGS: 00010282
->>  RAX: ffff88007f03d500 RBX: 0000000000010de0 RCX: 0000000000000006
->>  RDX: 0000000000000006 RSI: 7040000000000000 RDI: ffff88046f2f0e08
->>  e1000e 0000:06:00.0: irq 79 for MSI/MSI-X
->>  IPv6: ADDRCONF(NETDEV_UP): enp6s0f0: link is not ready
->>  RBP: ffff880465439e18 R08: ffff88046f2f0e10 R09: dfedcb48370f0e08
->>  R10: dfedcb48370f0e08 R11: 0000000000000000 R12: ffff880465a69200
->>  R13: 0000000000000000 R14: ffff88046f2f0e08 R15: 00000000000001c0
->>  e1000e 0000:06:00.1: irq 80 for MSI/MSI-X
->>  FS:  0000000000000000(0000) GS:ffff88046f2e0000(0000) knlGS:0000000000000000
->>  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->>  CR2: 0000000000000010 CR3: 0000000466be5000 CR4: 00000000000007e0
->>  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->>  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->>  Stack:
->>   ffff88045ef8d140 ffff880468e1ad80 ffff88046f2f0e08 ffff880465a69200
->>   ffff88046f2f3e00 ffff88046f2f7f00 00000000000001c0 ffff880465439e60
->>   ffffffff8107e02b 000000006f2f3e18 0000000000000000 ffff88046f2f3e18
->>  Call Trace:
->>   [<ffffffff8107e02b>] process_one_work+0x17b/0x460
->>   [<ffffffff8107edfb>] worker_thread+0x11b/0x400
->>   [<ffffffff8107ece0>] ? rescuer_thread+0x400/0x400
->>   [<ffffffff81085aef>] kthread+0xcf/0xe0
->>   [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
->>  e1000e 0000:06:00.1: irq 80 for MSI/MSI-X
->>  IPv6: ADDRCONF(NETDEV_UP): enp6s0f1: link is not ready
->>   [<ffffffff815fc76c>] ret_from_fork+0x7c/0xb0
->>   [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
->>  Code: 66 66 90 55 48 89 e5 41 57 41 56 49 89 fe 41 55 41 54 53 48 c7 c3 e0 0d 01 00 48 83 ec 10 48 8b 47 f8 8b 50 14 4c 8b 68 40 89 d1 <4d> 8b 7d 10 89 55 cc 48 03 1c cd 80 78 9e 81 48 8d 83 a8 00 00
->>  RIP  [<ffffffff81489bed>] od_dbs_timer+0x2d/0x160
->>   RSP <ffff880465439de0>
->>  CR2: 0000000000000010
->>  BUG: unable to handle kernel  ---[ end trace c9a1ca82e01a4294 ]---
->>  Kernel panic - not syncing: Fatal exception
->> NULL pointer dereference at 0000000000000014
->>  IP: [<ffffffff81489be4>] od_dbs_timer+0x24/0x160
->>  PGD 46661d067 PUD 465540067 PMD 0
->>  Oops: 0000 [#2] SMP
->>  Modules linked in: sg e1000e igb iTCO_wdt iTCO_vendor_support coretemp kvm_intel ptp kvm pps_core i7300_edac edac_core ses lpc_ich enclosure ioatdma mfd_core shpchp dca i2c_i801 serio_raw acpi_cpufreq pcspkr mperf nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sr_mod cdrom sd_mod ata_generic crc_t10dif crct10dif_common pata_acpi radeon i2c_algo_bit drm_kms_helper ttm drm ata_piix libata i2c_core megaraid_sas dm_mirror dm_region_hash dm_log dm_mod
->>  CPU: 6 PID: 506 Comm: kworker/6:2 Tainted: G      D     --------------   3.10.0-121.el7.x86_64 #1
->>  Hardware name: Intel MP Server/S7000FC4UR, BIOS SFC4UR.86B.01.00.0031.021820102042 02/18/2010
->>  Workqueue: events od_dbs_timer
->>  task: ffff880465448b60 ti: ffff880463730000 task.ti: ffff880463730000
->>  RIP: 0010:[<ffffffff81489be4>]  [<ffffffff81489be4>] od_dbs_timer+0x24/0x160
->>  RSP: 0018:ffff880463731de0  EFLAGS: 00010282
->>  RAX: 0000000000000000 RBX: 0000000000010de0 RCX: dead000000200200
->>  RDX: 0000000000000001 RSI: 7040000000000000 RDI: ffff88046f2d0e08
->>  RBP: ffff880463731e18 R08: ffff88046f2d0e10 R09: dfedcb50370d0e08
->>  R10: dfedcb50370d0e08 R11: 0000000000000000 R12: ffff880465bd2b80
->>  R13: ffff88046f2d3e00 R14: ffff88046f2d0e08 R15: 0000000000000180
->>  FS:  0000000000000000(0000) GS:ffff88046f2c0000(0000) knlGS:0000000000000000
->>  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->>  CR2: 0000000000000014 CR3: 0000000466be5000 CR4: 00000000000007e0
->>  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->>  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->>  Stack:
->>   ffff88045ef8d140 ffff880468dcf1c0 ffff88046f2d0e08 ffff880465bd2b80
->>   ffff88046f2d3e00 ffff88046f2d7f00 0000000000000180 ffff880463731e60
->>   ffffffff8107e02b 000000006f2d3e18 0000000000000000 ffff88046f2d3e18
->>  Call Trace:
->>   [<ffffffff8107e02b>] process_one_work+0x17b/0x460
->>   [<ffffffff8107edfb>] worker_thread+0x11b/0x400
->>   [<ffffffff8107ece0>] ? rescuer_thread+0x400/0x400
->>   [<ffffffff81085aef>] kthread+0xcf/0xe0
->>   [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
->>   [<ffffffff815fc76c>] ret_from_fork+0x7c/0xb0
->>   [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
->>  Code: 1f 84 00 00 00 00 00 66 66 66 66 90 55 48 89 e5 41 57 41 56 49 89 fe 41 55 41 54 53 48 c7 c3 e0 0d 01 00 48 83 ec 10 48 8b 47 f8 <8b> 50 14 4c 8b 68 40 89 d1 4d 8b 7d 10 89 55 cc 48 03 1c cd 80
->>  RIP  [<ffffffff81489be4>] od_dbs_timer+0x24/0x160
->>   RSP <ffff880463731de0>
->>  CR2: 0000000000000014
->>  drm_kms_helper: panic occurred, switching back to text console
->>
->> There are other panics associated with this, including list corruption and
->> various flavors of panics in the od_dbs_timer & work code.
->>
->> As a test I introduced a separate mutex around the cpufreq_set_policy() call.
->> After doing so system behaves as expected, and the panics no longer happen.
->> I narrowed the mutex down to the "governor switch" code in
->> cpufreq_set_policy() and saw that everything stabilized.
->>
->> I then reverted commit 955ef4833574636819cd269cfbae12f79cbde63a, cpufreq: Drop
->> rwsem lock around CPUFREQ_GOV_POLICY_EXIT, which added the dropping of the
->> policy->rwsem and again, the panics no longer occurred.
->>
->> The closer I looked at commit 955ef483, the more questions I have.  The first
->> thing is that it appears that the stacktrace includes function calls that
->> are not, and never have been, part of the linux.git tree, ie) the call trace
->> shows
->>
->>             [<c0055a79>] lock_acquire+0x61/0xbc
->>             [<c00fabf1>] sysfs_addrm_finish+0xc1/0x128
->>             [<c00f9819>] sysfs_hash_and_remove+0x35/0x64
->>             [<c00fbe6f>] remove_files.isra.0+0x1b/0x24
->>             [<c00fbea5>] sysfs_remove_group+0x2d/0xa8
->>             [<c02f9a0b>] cpufreq_governor_interactive+0x13b/0x35c
->>             [<c02f61df>] __cpufreq_governor+0x2b/0x8c
->>             [<c02f6579>] __cpufreq_set_policy+0xa9/0xf8
->>             [<c02f6b75>] store_scaling_governor+0x61/0x100
->>             [<c02f6f4d>] store+0x39/0x60
->>             [<c00f9b81>] sysfs_write_file+0xed/0x114
->>             [<c00b3fd1>] vfs_write+0x65/0xd8
->>             [<c00b424b>] sys_write+0x2f/0x50
->>             [<c000cdc1>] ret_fast_syscall+0x1/0x52
->>
->> and the top part of the stack from cpufreq_governor_interactive() appear to
->> be for a driver that is not in the linux.git tree.  Google search does show
->> that it exists in various android trees, however, my concern is that the "core"
->> scaling governors are now broken because of an out tree driver.
->>
->> It seems like the patch fixed this problem incorrectly by breaking the existing
->> locking.  The whole point of the policy->rwsem is to single thread updates
->> to the policy struct; this is no longer the case after that commit as we
->> are breaking the locking right in the middle of a policy->governor update.
->> The fix should have been to the cpufreq_governor_interactive out-of-tree
->> driver and fix the locking there in its release code.  In any case, the current
->> linux.git code no longer can reproduce the original failure; the locking in the
->> sysfs release code has changed.
->>
->> In case anyone is interested in reproducing, the reproducer I used was
->>
->> i=0
->> while [ True ]; do
->>         i=$((i+1))
->>         echo "ondemand" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor &
->>         echo "performance" > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor &
->>         echo "ondemand" > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor  &
->>         echo "performance" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor &
->>         if [ $((i % 100)) = 0 ]; then
->>                 num_ps=$(ps aux | grep doit | wc -l)
->>                 echo "$i running, $num_ps outstanding"
->>         fi
->> done
->>
->> and the system usually panics within 500 iterations.
->>
->> I have tested this extensively across 15 systems of various configurations.
->> In the unpatched kernel I see oopses usually within 500 iterations.  In the
->> patched kernel which fixes the broken locking, I can go several hours
->> without any issues.
->>
->> This patch effectively reverts commit 955ef483.
-> 
-> OK, I'm convinced by this.
-> 
-> I suppose we should push it for -stable from 3.10 through 3.15.x, right?
+This is a preliminary fix, Matthew Wilcox has a patch
+in his DAX patchset which will define a global wrapper
+to bdev->bd_disk->fops->direct_access that will do the
+proper checks and translations before calling a driver
+global member. (The way it is done at the rest of the
+block stack)
 
-Rafael, I think that is a good idea.  I'm not sure what the protocol is for
-adding stable@kernel.org though ...
+CC: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
+---
+ drivers/block/brd.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-P.
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 92334f6..7506864 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -378,9 +378,10 @@ static int brd_direct_access(struct block_device *bdev, sector_t sector,
+ 
+ 	if (!brd)
+ 		return -ENODEV;
++	sector += get_start_sect(bdev);
+ 	if (sector & (PAGE_SECTORS-1))
+ 		return -EINVAL;
+-	if (sector + PAGE_SECTORS > get_capacity(bdev->bd_disk))
++	if (unlikely(sector + PAGE_SECTORS > part_nr_sects_read(bdev->bd_part)))
+ 		return -ERANGE;
+ 	page = brd_insert_page(brd, sector);
+ 	if (!page)
+-- 
+1.9.3
+
+
