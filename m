@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041AbaG3P2f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 11:28:35 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:34515 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754935AbaG3P23 (ORCPT
+	id S1755211AbaG3P3B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 11:29:01 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:52654 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870AbaG3P22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 11:28:29 -0400
+	Wed, 30 Jul 2014 11:28:28 -0400
 From: Peter Griffin <peter.griffin@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         maxime.coquelin@st.com, patrice.chotard@st.com,
@@ -14,9 +14,9 @@ To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         balbi@ti.com
 Cc: peter.griffin@linaro.org, lee.jones@linaro.org, linux-usb@vger.kernel.org,
         linux-omap@vger.kernel.org, peppe.cavallaro@st.com
-Subject: [PATCH v4 3/3] MAINTAINERS: Add dwc3-st.c file to ARCH/STI architecture
-Date: Wed, 30 Jul 2014 16:28:11 +0100
-Message-Id: <1406734091-16202-4-git-send-email-peter.griffin@linaro.org>
+Subject: [PATCH v4 2/3] usb: dwc3: dwc3-st: Add st-dwc3 devicetree bindings documentation
+Date: Wed, 30 Jul 2014 16:28:10 +0100
+Message-Id: <1406734091-16202-3-git-send-email-peter.griffin@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406734091-16202-1-git-send-email-peter.griffin@linaro.org>
 References: <1406734091-16202-1-git-send-email-peter.griffin@linaro.org>
@@ -24,24 +24,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch documents the device tree documentation required for
+the ST usb3 controller glue layer found in STiH407 devices.
+
+Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
 Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
 Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- MAINTAINERS | 1 +
- 1 file changed, 1 insertion(+)
+ Documentation/devicetree/bindings/usb/dwc3-st.txt | 69 +++++++++++++++++++++++
+ 1 file changed, 69 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/dwc3-st.txt
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 702ca10..269ad3b 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1325,6 +1325,7 @@ F:	drivers/pinctrl/pinctrl-st.c
- F:	drivers/media/rc/st_rc.c
- F:	drivers/i2c/busses/i2c-st.c
- F:	drivers/tty/serial/st-asc.c
-+F:	drivers/usb/dwc3/dwc3-st.c
- 
- ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
- M:	Lennert Buytenhek <kernel@wantstofly.org>
+diff --git a/Documentation/devicetree/bindings/usb/dwc3-st.txt b/Documentation/devicetree/bindings/usb/dwc3-st.txt
+new file mode 100644
+index 0000000..de3fea3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/dwc3-st.txt
+@@ -0,0 +1,69 @@
++ST DWC3 glue logic
++
++This file documents the parameters for the dwc3-st driver.
++This driver controls the glue logic used to configure the dwc3 core on
++STiH407 based platforms.
++
++Required properties:
++ - compatible	: must be "st,stih407-dwc3"
++ - reg		: glue logic base address and USB syscfg ctrl register offset
++ - reg-names	: should be "reg-glue" and "syscfg-reg"
++ - st,syscon	: should be phandle to system configuration node which
++		  encompasses the glue registers
++ - resets	: list of phandle and reset specifier pairs. There should be two entries, one
++		  for the powerdown and softreset lines of the usb3 IP
++ - reset-names	: list of reset signal names. Names should be "powerdown" and "softreset"
++See: Documentation/devicetree/bindings/reset/st,sti-powerdown.txt
++See: Documentation/devicetree/bindings/reset/reset.txt
++
++ - #address-cells, #size-cells : should be '1' if the device has sub-nodes
++                                 with 'reg' property
++
++ - pinctl-names	: A pinctrl state named "default" must be defined
++See: Documentation/devicetree/bindings/pinctrl/pinctrl-binding.txt
++
++ - pinctrl-0	: Pin control group
++See: Documentation/devicetree/bindings/pinctrl/pinctrl-binding.txt
++
++ - ranges	: allows valid 1:1 translation between child's address space and
++		  parent's address space
++
++Sub-nodes:
++The dwc3 core should be added as subnode to ST DWC3 glue as shown in the
++example below. The DT binding details of dwc3 can be found in:
++Documentation/devicetree/bindings/usb/dwc3.txt
++
++NB: The dr_mode property described in [1] is NOT optional for this driver, as the default value
++is "otg", which isn't supported by this SoC. Valid dr_mode values for dwc3-st are either "host"
++or "device".
++
++[1] Documentation/devicetree/bindings/usb/generic.txt
++
++Example:
++
++st_dwc3: dwc3@8f94000 {
++	status		= "disabled";
++	compatible	= "st,stih407-dwc3";
++	reg		= <0x08f94000 0x1000>, <0x110 0x4>;
++	reg-names	= "reg-glue", "syscfg-reg";
++	st,syscfg	= <&syscfg_core>;
++	resets		= <&powerdown STIH407_USB3_POWERDOWN>;
++			  <&softreset STIH407_MIPHY2_SOFTRESET>;
++	reset-names	= "powerdown",
++			  "softreset";
++	#address-cells	= <1>;
++	#size-cells	= <1>;
++	pinctrl-names	= "default";
++	pinctrl-0	= <&pinctrl_usb3>;
++	ranges;
++
++	dwc3: dwc3@9900000 {
++		compatible	= "snps,dwc3";
++		reg		= <0x09900000 0x100000>;
++		interrupts	= <GIC_SPI 155 IRQ_TYPE_NONE>;
++		dr_mode		= "host"
++		usb-phy		= <&usb3_phy>;
++		phy-names	= "usb2-phy";
++		phys		= <&usb2_picophy2>;
++	};
++};
 -- 
 1.9.1
 
