@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072AbaG3B7w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:59:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60631 "EHLO
+	id S1755105AbaG3Bt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:49:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60579 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120AbaG3BuA (ORCPT
+	with ESMTP id S1755079AbaG3Btz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:50:00 -0400
+	Tue, 29 Jul 2014 21:49:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.15 12/37] s390/ptrace: fix PSW mask check
-Date: Tue, 29 Jul 2014 18:48:48 -0700
-Message-Id: <20140730014828.258081449@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Guillaume Morin <guillaume@morinfr.org>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 25/29] mm: hugetlb: fix copy_hugetlb_page_range()
+Date: Tue, 29 Jul 2014 18:49:00 -0700
+Message-Id: <20140730014810.383143286@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
-In-Reply-To: <20140730014827.565626091@linuxfoundation.org>
-References: <20140730014827.565626091@linuxfoundation.org>
+In-Reply-To: <20140730014809.316066303@linuxfoundation.org>
+References: <20140730014809.316066303@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,60 +28,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit dab6cf55f81a6e16b8147aed9a843e1691dcd318 upstream.
+commit 0253d634e0803a8376a0d88efee0bf523d8673f9 upstream.
 
-The PSW mask check of the PTRACE_POKEUSR_AREA command is incorrect.
-The PSW_MASK_USER define contains the PSW_MASK_ASC bits, the ptrace
-interface accepts all combinations for the address-space-control
-bits. To protect the kernel space the PSW mask check in ptrace needs
-to reject the address-space-control bit combination for home space.
+Commit 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
+migration/hwpoisoned entry") changed the order of
+huge_ptep_set_wrprotect() and huge_ptep_get(), which leads to breakage
+in some workloads like hugepage-backed heap allocation via libhugetlbfs.
+This patch fixes it.
 
-Fixes CVE-2014-3534
+The test program for the problem is shown below:
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+  $ cat heap.c
+  #include <unistd.h>
+  #include <stdlib.h>
+  #include <string.h>
+
+  #define HPS 0x200000
+
+  int main() {
+  	int i;
+  	char *p = malloc(HPS);
+  	memset(p, '1', HPS);
+  	for (i = 0; i < 5; i++) {
+  		if (!fork()) {
+  			memset(p, '2', HPS);
+  			p = malloc(HPS);
+  			memset(p, '3', HPS);
+  			free(p);
+  			return 0;
+  		}
+  	}
+  	sleep(1);
+  	free(p);
+  	return 0;
+  }
+
+  $ export HUGETLB_MORECORE=yes ; export HUGETLB_NO_PREFAULT= ; hugectl --heap ./heap
+
+Fixes 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
+migration/hwpoisoned entry"), so is applicable to -stable kernels which
+include it.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reported-by: Guillaume Morin <guillaume@morinfr.org>
+Suggested-by: Guillaume Morin <guillaume@morinfr.org>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/ptrace.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ mm/hugetlb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/s390/kernel/ptrace.c
-+++ b/arch/s390/kernel/ptrace.c
-@@ -334,9 +334,14 @@ static int __poke_user(struct task_struc
- 			unsigned long mask = PSW_MASK_USER;
- 
- 			mask |= is_ri_task(child) ? PSW_MASK_RI : 0;
--			if ((data & ~mask) != PSW_USER_BITS)
-+			if ((data ^ PSW_USER_BITS) & ~mask)
-+				/* Invalid psw mask. */
-+				return -EINVAL;
-+			if ((data & PSW_MASK_ASC) == PSW_ASC_HOME)
-+				/* Invalid address-space-control bits */
- 				return -EINVAL;
- 			if ((data & PSW_MASK_EA) && !(data & PSW_MASK_BA))
-+				/* Invalid addressing mode bits */
- 				return -EINVAL;
- 		}
- 		*(addr_t *)((addr_t) &task_pt_regs(child)->psw + addr) = data;
-@@ -672,9 +677,12 @@ static int __poke_user_compat(struct tas
- 
- 			mask |= is_ri_task(child) ? PSW32_MASK_RI : 0;
- 			/* Build a 64 bit psw mask from 31 bit mask. */
--			if ((tmp & ~mask) != PSW32_USER_BITS)
-+			if ((tmp ^ PSW32_USER_BITS) & ~mask)
- 				/* Invalid psw mask. */
- 				return -EINVAL;
-+			if ((data & PSW32_MASK_ASC) == PSW32_ASC_HOME)
-+				/* Invalid address-space-control bits */
-+				return -EINVAL;
- 			regs->psw.mask = (regs->psw.mask & ~PSW_MASK_USER) |
- 				(regs->psw.mask & PSW_MASK_BA) |
- 				(__u64)(tmp & mask) << 32;
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2422,6 +2422,7 @@ int copy_hugetlb_page_range(struct mm_st
+ 		} else {
+ 			if (cow)
+ 				huge_ptep_set_wrprotect(src, addr, src_pte);
++			entry = huge_ptep_get(src_pte);
+ 			ptepage = pte_page(entry);
+ 			get_page(ptepage);
+ 			page_dup_rmap(ptepage);
 
 
