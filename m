@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171AbaG3CGD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:06:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60492 "EHLO
+	id S1754963AbaG3Btm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:49:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60463 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939AbaG3Btn (ORCPT
+	with ESMTP id S1754897AbaG3Btk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:43 -0400
+	Tue, 29 Jul 2014 21:49:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.14 15/29] Input: synaptics - add min/max quirk for pnp-id LEN2002 (Edge E531)
-Date: Tue, 29 Jul 2014 18:48:50 -0700
-Message-Id: <20140730014809.975171551@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.14 01/29] media: staging: tighten omap4iss dependencies
+Date: Tue, 29 Jul 2014 18:48:36 -0700
+Message-Id: <20140730014809.372121459@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014809.316066303@linuxfoundation.org>
 References: <20140730014809.316066303@linuxfoundation.org>
@@ -29,40 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit e76aed9da7189eeb41b9856552ce5721181e8e8d upstream.
+commit 4856fbd12d69965d3ab680c686222db93872728d upstream.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1114768
+The OMAP4 camera support depends on I2C and VIDEO_V4L2, both
+of which can be loadable modules. This causes build failures
+if we want the camera driver to be built-in.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+This can be solved by turning the option into "tristate",
+which unfortunately causes another problem, because the
+driver incorrectly calls a platform-internal interface
+for omap4_ctrl_pad_readl/omap4_ctrl_pad_writel.
+
+Instead, this patch just forbids the invalid configurations
+and ensures that the driver can only be built if all its
+dependencies are built-in.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/synaptics.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/staging/media/omap4iss/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -132,7 +132,8 @@ static const struct min_max_quirk min_ma
- 		1232, 5710, 1156, 4696
- 	},
- 	{
--		(const char * const []){"LEN0034", "LEN0036", "LEN2004", NULL},
-+		(const char * const []){"LEN0034", "LEN0036", "LEN2002",
-+					"LEN2004", NULL},
- 		1024, 5112, 2024, 4832
- 	},
- 	{
-@@ -168,7 +169,7 @@ static const char * const topbuttonpad_p
- 	"LEN0049",
- 	"LEN2000",
- 	"LEN2001", /* Edge E431 */
--	"LEN2002",
-+	"LEN2002", /* Edge E531 */
- 	"LEN2003",
- 	"LEN2004", /* L440 */
- 	"LEN2005",
+--- a/drivers/staging/media/omap4iss/Kconfig
++++ b/drivers/staging/media/omap4iss/Kconfig
+@@ -1,6 +1,6 @@
+ config VIDEO_OMAP4
+ 	bool "OMAP 4 Camera support"
+-	depends on VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API && I2C && ARCH_OMAP4
++	depends on VIDEO_V4L2=y && VIDEO_V4L2_SUBDEV_API && I2C=y && ARCH_OMAP4
+ 	select VIDEOBUF2_DMA_CONTIG
+ 	---help---
+ 	  Driver for an OMAP 4 ISS controller.
 
 
