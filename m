@@ -1,44 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264AbaG3Q0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 12:26:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37426 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262AbaG3Q0o (ORCPT
+	id S1755016AbaG3Qav (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 12:30:51 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:63058 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238AbaG3Qat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 12:26:44 -0400
-Message-ID: <53D91CBC.1000901@canonical.com>
-Date: Wed, 30 Jul 2014 12:26:36 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 30 Jul 2014 12:30:49 -0400
+Message-ID: <53D91DB7.8050806@linaro.org>
+Date: Wed, 30 Jul 2014 18:30:47 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: david@fromorbit.com, xfs@oss.sgi.com,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH][v3.2.y] xfs: really fix the cursor leak in xfs_alloc_ag_vextent_near
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+CC: Tomasz Figa <t.figa@samsung.com>, Sachin Kamat <sachin.kamat@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v3 0/4] ARM: EXYNOS: cpuidle: fix AFTR mode on boards
+ with secure firmware enabled
+References: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
+In-Reply-To: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-    
-Please consider including mainline commit
-e3a746f5aab71f2dd0a83116772922fb37ae29d6 in the next v3.2.y release.  It
-was included in the mainline tree as of v3.5.  It has been tested and
-confirmed
-to resolve http://bugs.launchpad.net/bugs/1327360 .
+
+Hi Bartlomiej,
+
+I tried to apply this patchset on top of next-20140708 but it does not 
+apply.
+
+Do you have a more recent version ?
+
+Thanks in advance
+
+   -- Daniel
+
+On 07/09/2014 07:17 PM, Bartlomiej Zolnierkiewicz wrote:
+> Hi,
+>
+> This patch series adds support for AFTR idle mode on boards with
+> secure firmware enabled and allows EXYNOS cpuidle driver usage on
+> Exynos4x12 SoCs.
+>
+> It has been tested on Trats2 board (using Exynos4412 SoC with secure
+> firmware enabled) on which AFTR mode reduces power consumption by ~12%
+> when EXYNOS cpuidle driver is enabled (in both cases the default
+> exynos_defconfig config is used and CPU1-3 are offlined).
+>
+> v3:
+> - rebased on top of next-20140708 +
+>    http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32809.html
+>    (with rejects fixed)
+>    http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32808.html
+>    http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32991.html
+>    (with rejects fixed in patch #2)
+> - addressed review comments from Tomasz Figa and Daniel Lezcano
+>
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+>
+>
+> Bartlomiej Zolnierkiewicz (4):
+>    ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_* macros by static inlines
+>    ARM: EXYNOS: add AFTR mode support to firmware do_idle method
+>    ARM: EXYNOS: cpuidle: add secure firmware support to AFTR mode code
+>    ARM: EXYNOS: cpuidle: allow driver usage on Exynos4x12 SoCs
+>
+>   arch/arm/include/asm/firmware.h  |  2 +-
+>   arch/arm/mach-exynos/common.h    |  7 ++++++-
+>   arch/arm/mach-exynos/exynos.c    |  3 ++-
+>   arch/arm/mach-exynos/firmware.c  | 36 ++++++++++++++++++++++++++----------
+>   arch/arm/mach-exynos/pm.c        | 39 +++++++++++++++++++++++++++++----------
+>   drivers/cpuidle/cpuidle-exynos.c |  6 +++---
+>   6 files changed, 67 insertions(+), 26 deletions(-)
+>
 
 
-commit e3a746f5aab71f2dd0a83116772922fb37ae29d6
-Author: Dave Chinner <dchinner@redhat.com>
-Date:   Thu Jul 12 07:40:42 2012 +1000
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-    xfs: really fix the cursor leak in xfs_alloc_ag_vextent_near
-
-
-Sincerely,
-Joseph Salisbury
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
