@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372AbaG3CBQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:01:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60600 "EHLO
+	id S1755585AbaG3CBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:01:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60573 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086AbaG3Bt5 (ORCPT
+	with ESMTP id S1755033AbaG3Btw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:57 -0400
+	Tue, 29 Jul 2014 21:49:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Guenter Roeck <linux@roeck-us.net>, Rob Herring <robh@kernel.org>
-Subject: [PATCH 3.14 29/29] platform_get_irq: Revert to platform_get_resource if of_irq_get fails
-Date: Tue, 29 Jul 2014 18:49:04 -0700
-Message-Id: <20140730014810.557830253@linuxfoundation.org>
+        Christoph Hellwig <hch@lst.de>, Philippe Troin <phil@fifi.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.14 05/29] nfs: only show Posix ACLs in listxattr if actually present
+Date: Tue, 29 Jul 2014 18:48:40 -0700
+Message-Id: <20140730014809.532250356@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014809.316066303@linuxfoundation.org>
 References: <20140730014809.316066303@linuxfoundation.org>
@@ -32,55 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Christoph Hellwig <hch@lst.de>
 
-commit aff008ad813c7cf3cfe7b532e7ba2c526c136f22 upstream.
+commit 74adf83f5d7720925499b4938f930591f947b660 upstream.
 
-Commits 9ec36ca (of/irq: do irq resolution in platform_get_irq)
-and ad69674 (of/irq: do irq resolution in platform_get_irq_byname)
-change the semantics of platform_get_irq and platform_get_irq_byname
-to always rely on devicetree information if devicetree is enabled
-and if a devicetree node is attached to the device. The functions
-now return an error if the devicetree data does not include interrupt
-information, even if the information is available as platform resource
-data.
+The big ACL switched nfs to use generic_listxattr, which calls all existing
+->list handlers.  Add a custom .listxattr implementation that only lists
+the ACLs if they actually are present on the given inode.
 
-This causes mfd client drivers to fail if the interrupt number is
-passed via platform resources. Therefore, if of_irq_get fails, try
-platform_get_resource as method of last resort. This restores the
-original functionality for drivers depending on platform resources
-to get irq information.
-
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Rob Herring <robh@kernel.org>
-[ Guenter Roeck: backported to 3.15 ]
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Philippe Troin <phil@fifi.org>
+Tested-by: Philippe Troin <phil@fifi.org>
+Fixes: 013cdf1088d7 (nfs: use generic posix ACL infrastructure ...)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/platform.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ fs/nfs/nfs3acl.c  |   43 +++++++++++++++++++++++++++++++++++++++++++
+ fs/nfs/nfs3proc.c |    4 ++--
+ 2 files changed, 45 insertions(+), 2 deletions(-)
 
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -89,8 +89,13 @@ int platform_get_irq(struct platform_dev
- 	return dev->archdata.irqs[num];
- #else
- 	struct resource *r;
--	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node)
--		return of_irq_get(dev->dev.of_node, num);
-+	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node) {
-+		int ret;
+--- a/fs/nfs/nfs3acl.c
++++ b/fs/nfs/nfs3acl.c
+@@ -247,3 +247,46 @@ const struct xattr_handler *nfs3_xattr_h
+ 	&posix_acl_default_xattr_handler,
+ 	NULL,
+ };
 +
-+		ret = of_irq_get(dev->dev.of_node, num);
-+		if (ret >= 0 || ret == -EPROBE_DEFER)
-+			return ret;
-+	}
- 
- 	r = platform_get_resource(dev, IORESOURCE_IRQ, num);
- 
++static int
++nfs3_list_one_acl(struct inode *inode, int type, const char *name, void *data,
++		size_t size, ssize_t *result)
++{
++	struct posix_acl *acl;
++	char *p = data + *result;
++
++	acl = get_acl(inode, type);
++	if (!acl)
++		return 0;
++
++	posix_acl_release(acl);
++
++	*result += strlen(name);
++	*result += 1;
++	if (!size)
++		return 0;
++	if (*result > size)
++		return -ERANGE;
++
++	strcpy(p, name);
++	return 0;
++}
++
++ssize_t
++nfs3_listxattr(struct dentry *dentry, char *data, size_t size)
++{
++	struct inode *inode = dentry->d_inode;
++	ssize_t result = 0;
++	int error;
++
++	error = nfs3_list_one_acl(inode, ACL_TYPE_ACCESS,
++			POSIX_ACL_XATTR_ACCESS, data, size, &result);
++	if (error)
++		return error;
++
++	error = nfs3_list_one_acl(inode, ACL_TYPE_DEFAULT,
++			POSIX_ACL_XATTR_DEFAULT, data, size, &result);
++	if (error)
++		return error;
++	return result;
++}
+--- a/fs/nfs/nfs3proc.c
++++ b/fs/nfs/nfs3proc.c
+@@ -926,7 +926,7 @@ static const struct inode_operations nfs
+ 	.getattr	= nfs_getattr,
+ 	.setattr	= nfs_setattr,
+ #ifdef CONFIG_NFS_V3_ACL
+-	.listxattr	= generic_listxattr,
++	.listxattr	= nfs3_listxattr,
+ 	.getxattr	= generic_getxattr,
+ 	.setxattr	= generic_setxattr,
+ 	.removexattr	= generic_removexattr,
+@@ -940,7 +940,7 @@ static const struct inode_operations nfs
+ 	.getattr	= nfs_getattr,
+ 	.setattr	= nfs_setattr,
+ #ifdef CONFIG_NFS_V3_ACL
+-	.listxattr	= generic_listxattr,
++	.listxattr	= nfs3_listxattr,
+ 	.getxattr	= generic_getxattr,
+ 	.setxattr	= generic_setxattr,
+ 	.removexattr	= generic_removexattr,
 
 
