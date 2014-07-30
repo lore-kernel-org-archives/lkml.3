@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457AbaG3CBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:01:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60595 "EHLO
+	id S1755372AbaG3CBQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:01:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60600 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755084AbaG3Bt5 (ORCPT
+	with ESMTP id S1755086AbaG3Bt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Jul 2014 21:49:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.14 28/29] nl80211: move set_qos_map command into split state
-Date: Tue, 29 Jul 2014 18:49:03 -0700
-Message-Id: <20140730014810.517755068@linuxfoundation.org>
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Guenter Roeck <linux@roeck-us.net>, Rob Herring <robh@kernel.org>
+Subject: [PATCH 3.14 29/29] platform_get_irq: Revert to platform_get_resource if of_irq_get fails
+Date: Tue, 29 Jul 2014 18:49:04 -0700
+Message-Id: <20140730014810.557830253@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014809.316066303@linuxfoundation.org>
 References: <20140730014809.316066303@linuxfoundation.org>
@@ -29,48 +32,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 02df00eb0019e7d15a1fcddebe4d020226c1ccda upstream.
+commit aff008ad813c7cf3cfe7b532e7ba2c526c136f22 upstream.
 
-The non-split wiphy state shouldn't be increased in size
-so move the new set_qos_map command into the split if
-statement.
+Commits 9ec36ca (of/irq: do irq resolution in platform_get_irq)
+and ad69674 (of/irq: do irq resolution in platform_get_irq_byname)
+change the semantics of platform_get_irq and platform_get_irq_byname
+to always rely on devicetree information if devicetree is enabled
+and if a devicetree node is attached to the device. The functions
+now return an error if the devicetree data does not include interrupt
+information, even if the information is available as platform resource
+data.
 
-Fixes: fa9ffc745610 ("cfg80211: Add support for QoS mapping")
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This causes mfd client drivers to fail if the interrupt number is
+passed via platform resources. Therefore, if of_irq_get fails, try
+platform_get_resource as method of last resort. This restores the
+original functionality for drivers depending on platform resources
+to get irq information.
+
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Rob Herring <robh@kernel.org>
+[ Guenter Roeck: backported to 3.15 ]
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 
 ---
- net/wireless/nl80211.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/base/platform.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -1450,18 +1450,17 @@ static int nl80211_send_wiphy(struct cfg
- 		}
- 		CMD(start_p2p_device, START_P2P_DEVICE);
- 		CMD(set_mcast_rate, SET_MCAST_RATE);
-+#ifdef CONFIG_NL80211_TESTMODE
-+		CMD(testmode_cmd, TESTMODE);
-+#endif
- 		if (state->split) {
- 			CMD(crit_proto_start, CRIT_PROTOCOL_START);
- 			CMD(crit_proto_stop, CRIT_PROTOCOL_STOP);
- 			if (dev->wiphy.flags & WIPHY_FLAG_HAS_CHANNEL_SWITCH)
- 				CMD(channel_switch, CHANNEL_SWITCH);
-+			CMD(set_qos_map, SET_QOS_MAP);
- 		}
--		CMD(set_qos_map, SET_QOS_MAP);
--
--#ifdef CONFIG_NL80211_TESTMODE
--		CMD(testmode_cmd, TESTMODE);
--#endif
--
-+		/* add into the if now */
- #undef CMD
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -89,8 +89,13 @@ int platform_get_irq(struct platform_dev
+ 	return dev->archdata.irqs[num];
+ #else
+ 	struct resource *r;
+-	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node)
+-		return of_irq_get(dev->dev.of_node, num);
++	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node) {
++		int ret;
++
++		ret = of_irq_get(dev->dev.of_node, num);
++		if (ret >= 0 || ret == -EPROBE_DEFER)
++			return ret;
++	}
  
- 		if (dev->ops->connect || dev->ops->auth) {
+ 	r = platform_get_resource(dev, IORESOURCE_IRQ, num);
+ 
 
 
