@@ -1,188 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837AbaG3Cp5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:45:57 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:44508 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895AbaG3Cpz (ORCPT
+	id S1754845AbaG3Cqt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:46:49 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:20504 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895AbaG3Cqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 22:45:55 -0400
-Message-ID: <53D85C2E.3060205@huawei.com>
-Date: Wed, 30 Jul 2014 10:45:02 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, <Paul.Mundt@huawei.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, <linux-pci@vger.kernel.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        <virtualization@lists.linux-foundation.org>,
-        "Xinwei Hu" <huxinwei@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Wuyun <wuyun.wu@huawei.com>
-Subject: Re: [RFC PATCH 00/11] Refactor MSI to support Non-PCI device
-References: <1406344128-27055-1-git-send-email-wangyijing@huawei.com> <1748052.OMBQJiOLYT@wuerfel>
-In-Reply-To: <1748052.OMBQJiOLYT@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+	Tue, 29 Jul 2014 22:46:47 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-40-53d85c8a0cdb
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>,
+        "'Changman Lee'" <cm224.lee@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <1406328445-63707-1-git-send-email-jaegeuk@kernel.org>
+ <1406328445-63707-7-git-send-email-jaegeuk@kernel.org>
+ <20140729004111.GA442@lcm> <20140729122215.GB84378@jaegeuk-mac02>
+ <20140729235455.GB442@lcm> <20140730010821.GA98706@jaegeuk-mac02>
+In-reply-to: <20140730010821.GA98706@jaegeuk-mac02>
+Subject: RE: [f2fs-dev] [PATCH 07/11] f2fs: enable in-place-update for fdatasync
+Date: Wed, 30 Jul 2014 10:45:38 +0800
+Message-id: <00a501cfaba0$76077130$62165390$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Content-language: zh-cn
+Thread-index: AQH0/sFA7oYZ7Fd/hcfctysO+ZeFcgFjuqn+AmMGyhQCjii93wHKeb4VAmNfkHmbGStYAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t9jQd2umBvBBtevcltc29fIZPFk/Sxm
+	i0uL3C327D3JYnF51xw2B1aPTas62Tx2L/jM5NG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
+	k1aHFbQYVDy4Poe5gXGlahcjJ4eEgInE45+72SBsMYkL99YD2VwcQgLTGSXe/dvBBOH8YJT4
+	+Xo/O0gVm4CKxPKO/0wgtoiAn8T0+1/BupkFMiXmvJ7MCtHQzCRxvvUiUBEHB6eAscTmU0kg
+	prBAgMT7hbYgJouAqsTBK7IgnbwClhK9N96xQ9iCEj8m32OBmKglsX7ncSYIW15i85q3zBB3
+	KkjsOPuaESIuLrHxyC0WiGsiJPZ9fcM6gVFoFpJRs5CMmoVk1Cwk7QsYWVYxiqYWJBcUJ6Xn
+	GukVJ+YWl+al6yXn525iBEfCM+kdjKsaLA4xCnAwKvHwzvh/PViINbGsuDL3EKMEB7OSCO9X
+	uRvBQrwpiZVVqUX58UWlOanFhxilOViUxHkPtloHCgmkJ5akZqemFqQWwWSZODilGhi5TgZy
+	RlaEyz0MmmSzc8EcZgnXhq9f5HUPLN5yN+H1Mu0EAfFzsp2egd3Rkitm/bpq6ipzvePbhS1u
+	zxWL1np9ODNtgvT/MrFLddZP3t5Y8ot92xQe5pXK+llR4q+P3Xl2VPjvi0dS817dtHBvatXN
+	XaAuqB+20FunZcv0qA0azyYlr/zdcNxDiaU4I9FQi7moOBEATNe4E4ACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/7/29 22:08, Arnd Bergmann wrote:
-> On Saturday 26 July 2014 11:08:37 Yijing Wang wrote:
->>         The series is a draft of generic MSI driver that supports PCI
->> and Non-PCI device which have MSI capability. If you're not interested
->> it, sorry for the noise.
+Hi Jaegeuk Changman,
+
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> Sent: Wednesday, July 30, 2014 9:08 AM
+> To: Changman Lee
+> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Subject: Re: [f2fs-dev] [PATCH 07/11] f2fs: enable in-place-update for fdatasync
 > 
-> I've finally managed to take some time to look at the series. Overall,
-> the concept looks good to me, and the patches look very well implemented.
+> On Wed, Jul 30, 2014 at 08:54:55AM +0900, Changman Lee wrote:
+> > On Tue, Jul 29, 2014 at 05:22:15AM -0700, Jaegeuk Kim wrote:
+> > > Hi Changman,
+> > >
+> > > On Tue, Jul 29, 2014 at 09:41:11AM +0900, Changman Lee wrote:
+> > > > Hi Jaegeuk,
+> > > >
+> > > > On Fri, Jul 25, 2014 at 03:47:21PM -0700, Jaegeuk Kim wrote:
+> > > > > This patch enforces in-place-updates only when fdatasync is requested.
+> > > > > If we adopt this in-place-updates for the fdatasync, we can skip to write the
+> > > > > recovery information.
+> > > >
+> > > > But, as you know, random write occurs when changing into in-place-updates.
+> > > > It will degrade write performance. Is there any case in-place-updates is
+> > > > better, except recovery or high utilization?
+> > >
+> > > As I described, you can easily imagine, if users requested small amount of data
+> > > writes with fdatasync, we should do data writes + node writes.
+> > > But, if we can do in-place-update, we don't need to write node blocks.
+> > > Surely it triggers random writes, however, the amount of data is preety small
+> > > and the device handles them very fast by its inside cache, so that it can
+> > > enhance the performance.
+> > >
+> > > Thanks,
+> >
+> > Partially agree. Sometimes, I see that SSR shows lower performance than
+> > IPU. One of the reasons might be node writes.
 > 
-> The part I'm not sure about is the interface we want to end up with
-> at the end of the series. More on that below
-
-Hi Arnd,
-   Thanks for your review and comments very much!
-Please refer the inline comments.
-
+> What did you mean? That's why I consider IPU eagarly instead of SSR and LFS
+> under the very strict cases.
 > 
->> The series is based on Linux-3.16-rc1.
->>
->> MSI was introduced in PCI Spec 2.2. Currently, kernel MSI 
->> driver codes are bonding with PCI device. Because MSI has a lot
->> advantages in design. More and more non-PCI devices want to
->> use MSI as their default interrupt. The existing MSI device
->> include HPET. HPET driver provide its own MSI code to initialize
->> and process MSI interrupts. In the latest GIC v3 spec, legacy device
->> can deliver MSI by the help of a relay device named consolidator.
->> Consolidator can translate the legacy interrupts connected to it
->> to MSI/MSI-X. And new non-PCI device will be designed to 
->> support MSI in future. So make the MSI driver code be generic will 
->> help the non-PCI device use MSI more simply.
->>
->> The new data struct for generic MSI driver.
->> struct msi_irqs {
->>         u8 msi_enabled:1; /* Enable flag */
->>         u8 msix_enabled:1;
->>         struct list_head msi_list; /* MSI desc list */
->>         void *data;     /* help to find the MSI device */
->>         struct msi_ops *ops; /* MSI device specific hook */
->> };
->> struct msi_irqs is used to manage MSI related informations. Every device supports
->> MSI should contain this data struct and allocate it.
+> > Anyway, if so, we should know total dirty pages for fdatasync and it's very
+> > tunable according to a random write performance of device.
 > 
-> I think you should have a stronger association with the 'struct
-> device' here. Can you replace the 'void *data' with 'struct device *dev'?
+> Agreed. We can do that either by comparing the number of dirty pages,
+> additional data/node writes, and cost of checkpoint at the same time.
+> And there is another thing is that we need to consider the number of
+> waiting time for end_io.
+> I'll look into this at some time.
 
-Actually, I used the struct device *dev in my first draft, finally, I replaced
-it with void *data, because some MSI devices don't have a struct device *dev,
-like the existing hpet device, dmar msi device, and OF device, like the ARM consolidator.
-
-Of course, we can make the MSI devices have their own struct device, and register to
-device tree, eg, add a class device named MSI_DEV. But I'm not sure whether it is appropriate.
-
-> 
-> The other part I'm not completely sure about is how you want to
-> have MSIs map into normal IRQ descriptors. At the moment, all
-> MSI users are based on IRQ numbers, but this has known scalability problems.
-
-Hmmm, I still use the IRQ number to map the MSIs to IRQ description.
-I'm sorry, I don't understand you meaning.
-What are the scalability problems you mentioned ?
-For device drivers, they always process interrupt in two steps.
-If irq is the legacy interrupt, drivers will first
-use the irq_of_parse_and_map() or pci_enable_device() to parse and get the IRQ number.
-Then drivers will call the request_irq() to register the interrupt handler.
-If irq is MSIs, first call pci_enable_msi/x() to get the IRQ number and then call
-request_irq() to register interrupt handler.
-
-> I wonder if we can do the interface in a way that
-> hides the interrupt number from generic device drivers and just
-> passes a 'struct irq_desc'. Note that there are long-term plans to
-> get rid of IRQ numbers entirely, but those plans have existed for
-> a long time already without anybody seriously addressing the device
-> driver interfaces so far, so it might never really happen.
-> 
-
-Maybe this is a huge work, now hundreds drivers use the IRQ number, so maybe we can consider
-this in a separate title.
-
->> struct msi_ops {
->>         struct msi_desc *(*msi_setup_entry)(struct msi_irqs *msi, struct msi_desc *entry);
->>         int msix_setup_entries(struct msi_irqs *msi, struct msix_entry *entries);
->>         u32 (*msi_mask_irq)(struct msi_desc *desc, u32 mask, u32 flag);
->>         u32 (*msix_mask_irq)(struct msi_desc *desc, u32 flag);
->>         void (*msi_read_message)(struct msi_desc *desc, struct msi_msg *msg);
->>         void (*msi_write_message)(struct msi_desc *desc, struct msi_msg *msg);
->>         void (*msi_set_intx)(struct msi_irqs *msi, int enable);
->> };
->> struct msi_ops provides several hook functions, generic MSI driver will call
->> the hook functions to access device specific registers. PCI devices will share
->> the same msi_ops, because they have the same way to access MSI hardware registers.
->>
->> Generic MSI layer export msi_capability_init() and msix_capability_init() functions
->> to drivers. msi/x_capability_init() will initialize MSI capability data struct msi_desc
->> and alloc the irq, then write the msi address/data value to hardware registers.
->>
->> This series only did compile test, we will test it in x86 and arm platform later.
-> 
-> For the generic drivers, I don't see much point in differentiating between
-> MSI and MSI-X, as I believe the difference is something internal to the PCI
-> implementation.
-
-Yes, we can integrate them, and use a generic ops, add a type in hook function to
-differentiate them.
+Agreed, but please additionally consider that the number we got is not highly
+accurate because without protection of ->i_mutex writer could generate more
+dirty pages.
 
 > 
-> With the other operations, I think they should all take a 'struct device *'
-> as the first argument for convenience and consistency. I don't think you actually
-> need msi_read_message(), and we could avoid msi_write_message() by doing it
-> the other way round.
+> Thanks,
 > 
-
-There only two functions use the read_msi_msg(), because every msi_desc has
-a struct msi_msg, and it caches the msi address and data. I will consider to
-retrieve the msg from cached msi_msg, then we can avoid the msi_read_message().
-But msi_write_message() maybe necessary, some xxx_set_affinity() functions and
-restore functions need the msi_write_message() to rewrite the address and data.
-
-> What I'd envision as the API from the device driver perspective is something
-> as simple like this:
+> >
+> > Thanks,
+> >
+> > >
+> > > >
+> > > > Thanks
+> > > >
+> > > > >
+> > > > > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> > > > > ---
+> > > > >  fs/f2fs/f2fs.h    | 1 +
+> > > > >  fs/f2fs/file.c    | 7 +++++++
+> > > > >  fs/f2fs/segment.h | 4 ++++
+> > > > >  3 files changed, 12 insertions(+)
+> > > > >
+> > > > > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> > > > > index ab36025..8f8685e 100644
+> > > > > --- a/fs/f2fs/f2fs.h
+> > > > > +++ b/fs/f2fs/f2fs.h
+> > > > > @@ -998,6 +998,7 @@ enum {
+> > > > >  	FI_INLINE_DATA,		/* used for inline data*/
+> > > > >  	FI_APPEND_WRITE,	/* inode has appended data */
+> > > > >  	FI_UPDATE_WRITE,	/* inode has in-place-update data */
+> > > > > +	FI_NEED_IPU,		/* used fo ipu for fdatasync */
+> > > > >  };
+> > > > >
+> > > > >  static inline void set_inode_flag(struct f2fs_inode_info *fi, int flag)
+> > > > > diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+> > > > > index 121689a..e339856 100644
+> > > > > --- a/fs/f2fs/file.c
+> > > > > +++ b/fs/f2fs/file.c
+> > > > > @@ -127,11 +127,18 @@ int f2fs_sync_file(struct file *file, loff_t start, loff_t end,
+> int datasync)
+> > > > >  		return 0;
+> > > > >
+> > > > >  	trace_f2fs_sync_file_enter(inode);
+> > > > > +
+> > > > > +	/* if fdatasync is triggered, let's do in-place-update */
+> > > > > +	if (datasync)
+> > > > > +		set_inode_flag(fi, FI_NEED_IPU);
+> > > > > +
+> > > > >  	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
+> > > > >  	if (ret) {
+> > > > >  		trace_f2fs_sync_file_exit(inode, need_cp, datasync, ret);
+> > > > >  		return ret;
+> > > > >  	}
+> > > > > +	if (datasync)
+> > > > > +		clear_inode_flag(fi, FI_NEED_IPU);
+> > > > >
+> > > > >  	/*
+> > > > >  	 * if there is no written data, don't waste time to write recovery info.
+> > > > > diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
+> > > > > index ee5c75e..55973f7 100644
+> > > > > --- a/fs/f2fs/segment.h
+> > > > > +++ b/fs/f2fs/segment.h
+> > > > > @@ -486,6 +486,10 @@ static inline bool need_inplace_update(struct inode *inode)
+> > > > >  	if (S_ISDIR(inode->i_mode))
+> > > > >  		return false;
+> > > > >
+> > > > > +	/* this is only set during fdatasync */
+> > > > > +	if (is_inode_flag_set(F2FS_I(inode), FI_NEED_IPU))
+> > > > > +		return true;
+> > > > > +
+> > > > >  	switch (SM_I(sbi)->ipu_policy) {
+> > > > >  	case F2FS_IPU_FORCE:
+> > > > >  		return true;
+> > > > > --
+> > > > > 1.8.5.2 (Apple Git-48)
+> > > > >
+> > > > >
+> > > > > ------------------------------------------------------------------------------
+> > > > > Want fast and easy access to all the code in your enterprise? Index and
+> > > > > search up to 200,000 lines of code with a free copy of Black Duck
+> > > > > Code Sight - the same software that powers the world's largest code
+> > > > > search on Ohloh, the Black Duck Open Hub! Try it now.
+> > > > > http://p.sf.net/sfu/bds
+> > > > > _______________________________________________
+> > > > > Linux-f2fs-devel mailing list
+> > > > > Linux-f2fs-devel@lists.sourceforge.net
+> > > > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 > 
-> struct msi_desc *msi_request(struct msi_chip *chip, irq_handler_t handler,
-> 			unsigned long flags, const char *name, struct device *dev);
-> 
-> which would get an msi descriptor that is valid for this device (dev)
-> connected to a particular msi_chip, and associate a handler function
-> with it. The device driver can call that function and retrieve the
-> address/message pair from the msi_desc in order to store it in its own
-> device specific registers. The request_irq() can be handled internally
-> to msi_request().
-
-This is a huge change for device drivers, and some device drivers don't know which msi_chip
-their MSI irq deliver to. I'm reworking the msi_chip, and try to use msi_chip to eliminate
-all arch_msi_xxx() under every arch in kernel. And the important point is how to create the
-binding for the MSI device to the target msi_chip.
-
-For PCI device, some arm platform already bound the msi_chip to the pci hostbridge, then all
-pci devices under the pci hostbridge deliver their MSI irqs to the target msi_chip.
-And other platform create the binding in DTS file, then the MSI device can find their msi_chip
-by device_node.
-I don't know whether there are other situations, we should provide a generic interface that
-every MSI device under every platform can use it to find its msi_chip exactly.
-
-
-Thanks!
-Yijing.
-
-> 
-> .
-> 
-
-
--- 
-Thanks!
-Yijing
+> ------------------------------------------------------------------------------
+> Infragistics Professional
+> Build stunning WinForms apps today!
+> Reboot your WinForms applications with our WinForms controls.
+> Build a bridge from your legacy apps to the future.
+> http://pubads.g.doubleclick.net/gampad/clk?id=153845071&iu=/4140/ostg.clktrk
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 
