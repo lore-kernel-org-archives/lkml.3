@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105AbaG3CNw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:13:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60318 "EHLO
+	id S1756123AbaG3COO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:14:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60313 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724AbaG3BtU (ORCPT
+	with ESMTP id S1754721AbaG3BtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Jul 2014 21:49:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xi Wang <xi.wang@gmail.com>, Alex Elder <elder@dreamhost.com>,
-        David Airlie <airlied@linux.ie>, Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 09/10] introduce SIZE_MAX
-Date: Tue, 29 Jul 2014 18:48:40 -0700
-Message-Id: <20140730014808.019118207@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [PATCH 3.4 08/10] s390/ptrace: fix PSW mask check
+Date: Tue, 29 Jul 2014 18:48:39 -0700
+Message-Id: <20140730014807.962378939@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014807.477761030@linuxfoundation.org>
 References: <20140730014807.477761030@linuxfoundation.org>
@@ -32,84 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit a3860c1c5dd1137db23d7786d284939c5761d517 upstream.
+commit dab6cf55f81a6e16b8147aed9a843e1691dcd318 upstream.
 
-ULONG_MAX is often used to check for integer overflow when calculating
-allocation size.  While ULONG_MAX happens to work on most systems, there
-is no guarantee that `size_t' must be the same size as `long'.
+The PSW mask check of the PTRACE_POKEUSR_AREA command is incorrect.
+The PSW_MASK_USER define contains the PSW_MASK_ASC bits, the ptrace
+interface accepts all combinations for the address-space-control
+bits. To protect the kernel space the PSW mask check in ptrace needs
+to reject the address-space-control bit combination for home space.
 
-This patch introduces SIZE_MAX, the maximum value of `size_t', to improve
-portability and readability for allocation size validation.
+Fixes CVE-2014-3534
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Acked-by: Alex Elder <elder@dreamhost.com>
-Cc: David Airlie <airlied@linux.ie>
-Cc: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Qiang Huang <h.huangqiang@huawei.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/snap.c             |    2 +-
- include/drm/drm_mem_util.h |    4 ++--
- include/linux/kernel.h     |    1 +
- include/linux/slab.h       |    2 +-
- 4 files changed, 5 insertions(+), 4 deletions(-)
+ arch/s390/kernel/ptrace.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/fs/ceph/snap.c
-+++ b/fs/ceph/snap.c
-@@ -331,7 +331,7 @@ static int build_snap_context(struct cep
- 
- 	/* alloc new snap context */
- 	err = -ENOMEM;
--	if (num > (ULONG_MAX - sizeof(*snapc)) / sizeof(u64))
-+	if (num > (SIZE_MAX - sizeof(*snapc)) / sizeof(u64))
- 		goto fail;
- 	snapc = kzalloc(sizeof(*snapc) + num*sizeof(u64), GFP_NOFS);
- 	if (!snapc)
---- a/include/drm/drm_mem_util.h
-+++ b/include/drm/drm_mem_util.h
-@@ -31,7 +31,7 @@
- 
- static __inline__ void *drm_calloc_large(size_t nmemb, size_t size)
- {
--	if (size != 0 && nmemb > ULONG_MAX / size)
-+	if (size != 0 && nmemb > SIZE_MAX / size)
- 		return NULL;
- 
- 	if (size * nmemb <= PAGE_SIZE)
-@@ -44,7 +44,7 @@ static __inline__ void *drm_calloc_large
- /* Modeled after cairo's malloc_ab, it's like calloc but without the zeroing. */
- static __inline__ void *drm_malloc_ab(size_t nmemb, size_t size)
- {
--	if (size != 0 && nmemb > ULONG_MAX / size)
-+	if (size != 0 && nmemb > SIZE_MAX / size)
- 		return NULL;
- 
- 	if (size * nmemb <= PAGE_SIZE)
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -35,6 +35,7 @@
- #define LLONG_MAX	((long long)(~0ULL>>1))
- #define LLONG_MIN	(-LLONG_MAX - 1)
- #define ULLONG_MAX	(~0ULL)
-+#define SIZE_MAX	(~(size_t)0)
- 
- #define STACK_MAGIC	0xdeadbeef
- 
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -242,7 +242,7 @@ size_t ksize(const void *);
-  */
- static inline void *kmalloc_array(size_t n, size_t size, gfp_t flags)
- {
--	if (size != 0 && n > ULONG_MAX / size)
-+	if (size != 0 && n > SIZE_MAX / size)
- 		return NULL;
- 	return __kmalloc(n * size, flags);
- }
+--- a/arch/s390/kernel/ptrace.c
++++ b/arch/s390/kernel/ptrace.c
+@@ -292,7 +292,9 @@ static int __poke_user(struct task_struc
+ 		 * psw and gprs are stored on the stack
+ 		 */
+ 		if (addr == (addr_t) &dummy->regs.psw.mask &&
+-		    ((data & ~PSW_MASK_USER) != psw_user_bits ||
++		    (((data^psw_user_bits) & ~PSW_MASK_USER) ||
++		     (((data^psw_user_bits) & PSW_MASK_ASC) &&
++		      ((data|psw_user_bits) & PSW_MASK_ASC) == PSW_MASK_ASC) ||
+ 		     ((data & PSW_MASK_EA) && !(data & PSW_MASK_BA))))
+ 			/* Invalid psw mask. */
+ 			return -EINVAL;
+@@ -595,7 +597,10 @@ static int __poke_user_compat(struct tas
+ 		 */
+ 		if (addr == (addr_t) &dummy32->regs.psw.mask) {
+ 			/* Build a 64 bit psw mask from 31 bit mask. */
+-			if ((tmp & ~PSW32_MASK_USER) != psw32_user_bits)
++			if (((tmp^psw32_user_bits) & ~PSW32_MASK_USER) ||
++			    (((tmp^psw32_user_bits) & PSW32_MASK_ASC) &&
++			     ((tmp|psw32_user_bits) & PSW32_MASK_ASC)
++			     == PSW32_MASK_ASC))
+ 				/* Invalid psw mask. */
+ 				return -EINVAL;
+ 			regs->psw.mask = (regs->psw.mask & ~PSW_MASK_USER) |
 
 
