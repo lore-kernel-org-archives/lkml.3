@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653AbaG3CDD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:03:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60549 "EHLO
+	id S1755680AbaG3CDY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:03:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60512 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755019AbaG3Btt (ORCPT
+	with ESMTP id S1754966AbaG3Bts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:49 -0400
+	Tue, 29 Jul 2014 21:49:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.14 10/29] s390/ptrace: fix PSW mask check
-Date: Tue, 29 Jul 2014 18:48:45 -0700
-Message-Id: <20140730014809.756830943@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Mike Qiu <qiudayu@linux.vnet.ibm.com>,
+        Jesse Brandeburg <jesse.brandeburg@gmail.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Kevin Hao <haokexin@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [PATCH 3.14 09/29] libata: introduce ata_host->n_tags to avoid oops on SAS controllers
+Date: Tue, 29 Jul 2014 18:48:44 -0700
+Message-Id: <20140730014809.716282345@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014809.316066303@linuxfoundation.org>
 References: <20140730014809.316066303@linuxfoundation.org>
@@ -28,56 +33,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit dab6cf55f81a6e16b8147aed9a843e1691dcd318 upstream.
+commit 1a112d10f03e83fb3a2fdc4c9165865dec8a3ca6 upstream.
 
-The PSW mask check of the PTRACE_POKEUSR_AREA command is incorrect.
-The PSW_MASK_USER define contains the PSW_MASK_ASC bits, the ptrace
-interface accepts all combinations for the address-space-control
-bits. To protect the kernel space the PSW mask check in ptrace needs
-to reject the address-space-control bit combination for home space.
+1871ee134b73 ("libata: support the ata host which implements a queue
+depth less than 32") directly used ata_port->scsi_host->can_queue from
+ata_qc_new() to determine the number of tags supported by the host;
+unfortunately, SAS controllers doing SATA don't initialize ->scsi_host
+leading to the following oops.
 
-Fixes CVE-2014-3534
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000058
+ IP: [<ffffffff814e0618>] ata_qc_new_init+0x188/0x1b0
+ PGD 0
+ Oops: 0002 [#1] SMP
+ Modules linked in: isci libsas scsi_transport_sas mgag200 drm_kms_helper ttm
+ CPU: 1 PID: 518 Comm: udevd Not tainted 3.16.0-rc6+ #62
+ Hardware name: Intel Corporation S2600CO/S2600CO, BIOS SE5C600.86B.02.02.0002.122320131210 12/23/2013
+ task: ffff880c1a00b280 ti: ffff88061a000000 task.ti: ffff88061a000000
+ RIP: 0010:[<ffffffff814e0618>]  [<ffffffff814e0618>] ata_qc_new_init+0x188/0x1b0
+ RSP: 0018:ffff88061a003ae8  EFLAGS: 00010012
+ RAX: 0000000000000001 RBX: ffff88000241ca80 RCX: 00000000000000fa
+ RDX: 0000000000000020 RSI: 0000000000000020 RDI: ffff8806194aa298
+ RBP: ffff88061a003ae8 R08: ffff8806194a8000 R09: 0000000000000000
+ R10: 0000000000000000 R11: ffff88000241ca80 R12: ffff88061ad58200
+ R13: ffff8806194aa298 R14: ffffffff814e67a0 R15: ffff8806194a8000
+ FS:  00007f3ad7fe3840(0000) GS:ffff880627620000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: 0000000000000058 CR3: 000000061a118000 CR4: 00000000001407e0
+ Stack:
+  ffff88061a003b20 ffffffff814e96e1 ffff88000241ca80 ffff88061ad58200
+  ffff8800b6bf6000 ffff880c1c988000 ffff880619903850 ffff88061a003b68
+  ffffffffa0056ce1 ffff88061a003b48 0000000013d6e6f8 ffff88000241ca80
+ Call Trace:
+  [<ffffffff814e96e1>] ata_sas_queuecmd+0xa1/0x430
+  [<ffffffffa0056ce1>] sas_queuecommand+0x191/0x220 [libsas]
+  [<ffffffff8149afee>] scsi_dispatch_cmd+0x10e/0x300 [<ffffffff814a3bc5>] scsi_request_fn+0x2f5/0x550
+  [<ffffffff81317613>] __blk_run_queue+0x33/0x40
+  [<ffffffff8131781a>] queue_unplugged+0x2a/0x90
+  [<ffffffff8131ceb4>] blk_flush_plug_list+0x1b4/0x210
+  [<ffffffff8131d274>] blk_finish_plug+0x14/0x50
+  [<ffffffff8117eaa8>] __do_page_cache_readahead+0x198/0x1f0
+  [<ffffffff8117ee21>] force_page_cache_readahead+0x31/0x50
+  [<ffffffff8117ee7e>] page_cache_sync_readahead+0x3e/0x50
+  [<ffffffff81172ac6>] generic_file_read_iter+0x496/0x5a0
+  [<ffffffff81219897>] blkdev_read_iter+0x37/0x40
+  [<ffffffff811e307e>] new_sync_read+0x7e/0xb0
+  [<ffffffff811e3734>] vfs_read+0x94/0x170
+  [<ffffffff811e43c6>] SyS_read+0x46/0xb0
+  [<ffffffff811e33d1>] ? SyS_lseek+0x91/0xb0
+  [<ffffffff8171ee29>] system_call_fastpath+0x16/0x1b
+ Code: 00 00 00 88 50 29 83 7f 08 01 19 d2 83 e2 f0 83 ea 50 88 50 34 c6 81 1d 02 00 00 40 c6 81 17 02 00 00 00 5d c3 66 0f 1f 44 00 00 <89> 14 25 58 00 00 00
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Fix it by introducing ata_host->n_tags which is initialized to
+ATA_MAX_QUEUE - 1 in ata_host_init() for SAS controllers and set to
+scsi_host_template->can_queue in ata_host_register() for !SAS ones.
+As SAS hosts are never registered, this will give them the same
+ATA_MAX_QUEUE - 1 as before.  Note that we can't use
+scsi_host->can_queue directly for SAS hosts anyway as they can go
+higher than the libata maximum.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+Reported-by: Jesse Brandeburg <jesse.brandeburg@gmail.com>
+Reported-by: Peter Hurley <peter@hurleysoftware.com>
+Reported-by: Peter Zijlstra <peterz@infradead.org>
+Tested-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+Fixes: 1871ee134b73 ("libata: support the ata host which implements a queue depth less than 32")
+Cc: Kevin Hao <haokexin@gmail.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/ptrace.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/ata/libata-core.c |   16 ++++------------
+ include/linux/libata.h    |    1 +
+ 2 files changed, 5 insertions(+), 12 deletions(-)
 
---- a/arch/s390/kernel/ptrace.c
-+++ b/arch/s390/kernel/ptrace.c
-@@ -323,9 +323,14 @@ static int __poke_user(struct task_struc
- 			unsigned long mask = PSW_MASK_USER;
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4798,9 +4798,8 @@ void swap_buf_le16(u16 *buf, unsigned in
+ static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
+ {
+ 	struct ata_queued_cmd *qc = NULL;
+-	unsigned int i, tag, max_queue;
+-
+-	max_queue = ap->scsi_host->can_queue;
++	unsigned int max_queue = ap->host->n_tags;
++	unsigned int i, tag;
  
- 			mask |= is_ri_task(child) ? PSW_MASK_RI : 0;
--			if ((data & ~mask) != PSW_USER_BITS)
-+			if ((data ^ PSW_USER_BITS) & ~mask)
-+				/* Invalid psw mask. */
-+				return -EINVAL;
-+			if ((data & PSW_MASK_ASC) == PSW_ASC_HOME)
-+				/* Invalid address-space-control bits */
- 				return -EINVAL;
- 			if ((data & PSW_MASK_EA) && !(data & PSW_MASK_BA))
-+				/* Invalid addressing mode bits */
- 				return -EINVAL;
- 		}
- 		*(addr_t *)((addr_t) &task_pt_regs(child)->psw + addr) = data;
-@@ -661,9 +666,12 @@ static int __poke_user_compat(struct tas
+ 	/* no command while frozen */
+ 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
+@@ -6109,6 +6108,7 @@ void ata_host_init(struct ata_host *host
+ {
+ 	spin_lock_init(&host->lock);
+ 	mutex_init(&host->eh_mutex);
++	host->n_tags = ATA_MAX_QUEUE - 1;
+ 	host->dev = dev;
+ 	host->ops = ops;
+ }
+@@ -6190,15 +6190,7 @@ int ata_host_register(struct ata_host *h
+ {
+ 	int i, rc;
  
- 			mask |= is_ri_task(child) ? PSW32_MASK_RI : 0;
- 			/* Build a 64 bit psw mask from 31 bit mask. */
--			if ((tmp & ~mask) != PSW32_USER_BITS)
-+			if ((tmp ^ PSW32_USER_BITS) & ~mask)
- 				/* Invalid psw mask. */
- 				return -EINVAL;
-+			if ((data & PSW32_MASK_ASC) == PSW32_ASC_HOME)
-+				/* Invalid address-space-control bits */
-+				return -EINVAL;
- 			regs->psw.mask = (regs->psw.mask & ~PSW_MASK_USER) |
- 				(regs->psw.mask & PSW_MASK_BA) |
- 				(__u64)(tmp & mask) << 32;
+-	/*
+-	 * The max queue supported by hardware must not be greater than
+-	 * ATA_MAX_QUEUE.
+-	 */
+-	if (sht->can_queue > ATA_MAX_QUEUE) {
+-		dev_err(host->dev, "BUG: the hardware max queue is too large\n");
+-		WARN_ON(1);
+-		return -EINVAL;
+-	}
++	host->n_tags = clamp(sht->can_queue, 1, ATA_MAX_QUEUE - 1);
+ 
+ 	/* host must have been started */
+ 	if (!(host->flags & ATA_HOST_STARTED)) {
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -593,6 +593,7 @@ struct ata_host {
+ 	struct device 		*dev;
+ 	void __iomem * const	*iomap;
+ 	unsigned int		n_ports;
++	unsigned int		n_tags;			/* nr of NCQ tags */
+ 	void			*private_data;
+ 	struct ata_port_operations *ops;
+ 	unsigned long		flags;
 
 
