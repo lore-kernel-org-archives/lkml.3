@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492AbaG3B4S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:56:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60695 "EHLO
+	id S1755481AbaG3B4Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:56:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60699 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174AbaG3BuI (ORCPT
+	with ESMTP id S1755177AbaG3BuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Jul 2014 21:50:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
-        Jean Delvare <jdelvare@suse.de>
-Subject: [PATCH 3.15 26/37] hwmon: (smsc47m192) Fix temperature limit and vrm write operations
-Date: Tue, 29 Jul 2014 18:49:02 -0700
-Message-Id: <20140730014828.968833102@linuxfoundation.org>
+        Randy Dunlap <rdunlap@infradead.org>, Mark Salter <msalter@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 27/37] parport: fix menu breakage
+Date: Tue, 29 Jul 2014 18:49:03 -0700
+Message-Id: <20140730014829.027571102@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014827.565626091@linuxfoundation.org>
 References: <20140730014827.565626091@linuxfoundation.org>
@@ -29,46 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Randy Dunlap <rdunlap@infradead.org>
 
-commit 043572d5444116b9d9ad8ae763cf069e7accbc30 upstream.
+commit edffe1b626b39bd7121691dfdecb548431003bbb upstream.
 
-Temperature limit clamps are applied after converting the temperature
-from milli-degrees C to degrees C, so either the clamp limit needs
-to be specified in degrees C, not milli-degrees C, or clamping must
-happen before converting to degrees C. Use the latter method to avoid
-overflows.
+Do not split the PARPORT-related symbols with the new kconfig
+symbol ARCH_MIGHT_HAVE_PC_PARPORT. The split was causing incorrect
+display of these symbols -- they were not being displayed together
+as they should be.
 
-vrm is an u8, so the written value needs to be limited to [0, 255].
+Fixes: d90c3eb31535 "Kconfig cleanup (PARPORT_PC dependencies)"
 
-Cc: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: Mark Salter <msalter@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/smsc47m192.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/parport/Kconfig |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/hwmon/smsc47m192.c
-+++ b/drivers/hwmon/smsc47m192.c
-@@ -86,7 +86,7 @@ static inline u8 IN_TO_REG(unsigned long
-  */
- static inline s8 TEMP_TO_REG(int val)
- {
--	return clamp_val(SCALE(val, 1, 1000), -128000, 127000);
-+	return SCALE(clamp_val(val, -128000, 127000), 1, 1000);
- }
+--- a/drivers/parport/Kconfig
++++ b/drivers/parport/Kconfig
+@@ -5,6 +5,12 @@
+ # Parport configuration.
+ #
  
- static inline int TEMP_FROM_REG(s8 val)
-@@ -384,6 +384,8 @@ static ssize_t set_vrm(struct device *de
- 	err = kstrtoul(buf, 10, &val);
- 	if (err)
- 		return err;
-+	if (val > 255)
-+		return -EINVAL;
++config ARCH_MIGHT_HAVE_PC_PARPORT
++	bool
++	help
++	  Select this config option from the architecture Kconfig if
++	  the architecture might have PC parallel port hardware.
++
+ menuconfig PARPORT
+ 	tristate "Parallel port support"
+ 	depends on HAS_IOMEM
+@@ -31,12 +37,6 @@ menuconfig PARPORT
  
- 	data->vrm = val;
- 	return count;
+ 	  If unsure, say Y.
+ 
+-config ARCH_MIGHT_HAVE_PC_PARPORT
+-	bool
+-	help
+-	  Select this config option from the architecture Kconfig if
+-	  the architecture might have PC parallel port hardware.
+-
+ if PARPORT
+ 
+ config PARPORT_PC
 
 
