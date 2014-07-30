@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860AbaG3UBF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 16:01:05 -0400
-Received: from mail-oa0-f73.google.com ([209.85.219.73]:46485 "EHLO
-	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805AbaG3UAR (ORCPT
+	id S1751514AbaG3UE4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 16:04:56 -0400
+Received: from smtp.opengridcomputing.com ([72.48.136.20]:56786 "EHLO
+	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750836AbaG3UEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 16:00:17 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Heiko Stuebner <heiko@sntech.de>, Kever Yang <kever.yang@rock-chips.com>
-Cc: Sonny Rao <sonnyrao@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        sergei.shtylyov@cogentembedded.com,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] ARM: dts: add rk3288 ehci usb devices
-Date: Wed, 30 Jul 2014 13:00:11 -0700
-Message-Id: <1406750412-15592-3-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1406750412-15592-1-git-send-email-dianders@chromium.org>
-References: <1406750412-15592-1-git-send-email-dianders@chromium.org>
+	Wed, 30 Jul 2014 16:04:55 -0400
+X-Greylist: delayed 325 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Jul 2014 16:04:55 EDT
+Message-ID: <53D94EA6.10201@opengridcomputing.com>
+Date: Wed, 30 Jul 2014 14:59:34 -0500
+From: Steve Wise <swise@opengridcomputing.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>, himangi774@gmail.com
+CC: trond.myklebust@primarydata.com, bfields@fieldses.org,
+        linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
+Subject: Re: [PATCH] svcrdma: delete double assignment
+References: <20140728152938.GA3040@himangi-Dell> <20140729.155050.311148635959938226.davem@davemloft.net>
+In-Reply-To: <20140729.155050.311148635959938226.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kever Yang <kever.yang@rock-chips.com>
+On 7/29/2014 5:50 PM, David Miller wrote:
+> From: Himangi Saraogi <himangi774@gmail.com>
+> Date: Mon, 28 Jul 2014 20:59:38 +0530
+>
+>> Delete successive assignments to the same location.
+>>
+>> A simplified version of Coccinelle semantic match that finds this problem is as
+>> follows:
+>>
+>> // <smpl>
+>> @@
+>> expression i;
+>> @@
+>>
+>> *i = ...;
+>>   i = ...;
+>> // </smpl>
+>>
+>> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> I am not so sure about this change either.
+>
+>> @@ -956,7 +956,6 @@ static struct svc_xprt *svc_rdma_accept(struct svc_xprt *xprt)
+>>   			dprintk("svcrdma: failed to create QP, ret=%d\n", ret);
+>>   			goto errout;
+>>   		}
+>> -		newxprt->sc_max_sge = qp_attr.cap.max_send_sge;
+>>   		newxprt->sc_max_sge = qp_attr.cap.max_recv_sge;
+>>   		newxprt->sc_sq_depth = qp_attr.cap.max_send_wr;
+>>   		newxprt->sc_max_requests = qp_attr.cap.max_recv_wr;
+> ->sc_max_sge is used to limit the number of segments used during sends,
+> currently in this code.  Grep for where it is used.
+>
+> Therefore, if anything, the correct thing to do would be to retain the
+> first line rather than the second line.
+>
+> Someone who actually works on this code and understands it should
+> really take a close look at this before anyone even thinks about
+> applying this patch.
 
-rk3288 has two kind of usb controller; this adds the ehci variant for
-host0 and hsic.
+We should remove that whole block that tries to recover from a 
+rdma_create_qp() failure.   I don't believe we would ever hit it. The 
+value initially stored in sc_max_sge is from the device attribute 
+max_sge returned from ib_query_device() just above the code we're 
+talking about.  If rdma_create_qp() fails, it would not be because the 
+max_send_sge and max_recv_sge values passed in exceed the device's max...
 
-At the moment we don't add any phys for these controllers, but the
-default settings seem to work OK.
+Like this:
 
-There is a hardware problem in ohci controller which make it
-unavailable and host0 controller can only support high-speed devices.
+diff --git a/net/sunrpc/xprtrdma/svc_rdma_transport.c 
+b/net/sunrpc/xprtrdma/svc_rdma_transport.c
+index e7323fb..282a43b 100644
+--- a/net/sunrpc/xprtrdma/svc_rdma_transport.c
++++ b/net/sunrpc/xprtrdma/svc_rdma_transport.c
+@@ -942,23 +942,8 @@ static struct svc_xprt *svc_rdma_accept(struct 
+svc_xprt *xprt)
 
-Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v2:
-- Kever is now the author
-- Node is now named usb
+         ret = rdma_create_qp(newxprt->sc_cm_id, newxprt->sc_pd, &qp_attr);
+         if (ret) {
+-               /*
+-                * XXX: This is a hack. We need a xx_request_qp interface
+-                * that will adjust the qp_attr's with a best-effort
+-                * number
+-                */
+-               qp_attr.cap.max_send_sge -= 2;
+-               qp_attr.cap.max_recv_sge -= 2;
+-               ret = rdma_create_qp(newxprt->sc_cm_id, newxprt->sc_pd,
+-                                    &qp_attr);
+-               if (ret) {
+-                       dprintk("svcrdma: failed to create QP, 
+ret=%d\n", ret);
+-                       goto errout;
+-               }
+-               newxprt->sc_max_sge = qp_attr.cap.max_send_sge;
+-               newxprt->sc_max_sge = qp_attr.cap.max_recv_sge;
+-               newxprt->sc_sq_depth = qp_attr.cap.max_send_wr;
+-               newxprt->sc_max_requests = qp_attr.cap.max_recv_wr;
++               dprintk("svcrdma: failed to create QP, ret=%d\n", ret);
++               goto errout;
+         }
+         newxprt->sc_qp = newxprt->sc_cm_id->qp;
 
- arch/arm/boot/dts/rk3288.dtsi | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 3ef8951..e7cb008 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -251,6 +251,26 @@
- 		status = "disabled";
- 	};
- 
-+	usb_host0_ehci: usb@ff500000 {
-+		compatible = "generic-ehci";
-+		reg = <0xff500000 0x100>;
-+		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru HCLK_USBHOST0>;
-+		clock-names = "usbhost";
-+		status = "disabled";
-+	};
-+
-+	/* NOTE: ohci@ff520000 doesn't actually work on hardware */
-+
-+	usb_hsic: usb@ff5c0000 {
-+		compatible = "generic-ehci";
-+		reg = <0xff5c0000 0x100>;
-+		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru HCLK_HSIC>;
-+		clock-names = "usbhost";
-+		status = "disabled";
-+	};
-+
- 	gic: interrupt-controller@ffc01000 {
- 		compatible = "arm,gic-400";
- 		interrupt-controller;
--- 
-2.0.0.526.g5318336
+Steve.
+
+
+
 
