@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726AbaG3WUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 18:20:43 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:47018 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754089AbaG3WUm (ORCPT
+	id S1755406AbaG3WVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 18:21:30 -0400
+Received: from mail.orcon.net.nz ([219.88.242.56]:40078 "EHLO
+	mail.orcon.net.nz" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753288AbaG3WV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 18:20:42 -0400
-Message-ID: <53D96FBB.4010907@gmail.com>
-Date: Wed, 30 Jul 2014 16:20:43 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 30 Jul 2014 18:21:29 -0400
+Date: Thu, 31 Jul 2014 10:21:13 +1200
+From: Michael Cree <mcree@orcon.net.nz>
+To: Richard Henderson <rth@twiddle.net>
+Cc: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org
+Subject: Re: [PATCH 2/2] alpha: Add sched_set/getattr and renameat2 syscalls
+Message-ID: <20140730222113.GC23324@stolen.phys.waikato.ac.nz>
+References: <1406756552-23864-1-git-send-email-rth@twiddle.net>
+ <1406756552-23864-3-git-send-email-rth@twiddle.net>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Namhyung Kim <namhyung@kernel.org>
-CC: Minchan Kim <minchan@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 1/2] perf tools: Ensure --symfs ends with '/'
-References: <1406251908-8195-1-git-send-email-namhyung@kernel.org> <20140729050246.GC22707@bbox> <20140729123305.GO7831@kernel.org> <87ppgnhge3.fsf@sejong.aot.lge.com> <20140730151932.GS7831@kernel.org> <20140730205521.GU7831@kernel.org>
-In-Reply-To: <20140730205521.GU7831@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406756552-23864-3-git-send-email-rth@twiddle.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Bayes-Prob: 0.0001 (Score 0: No Bayes scoring rules defined, tokens from: outbound)
+X-Spam-Score: -3.00 () [Hold at 3.00] FREEMAIL_FROM:0.001,CC(NZ:-3)
+X-CanIt-Geo: ip=130.217.188.11; country=NZ; latitude=-41.0000; longitude=174.0000; http://maps.google.com/maps?q=-41.0000,174.0000&z=6
+X-CanItPRO-Stream: base:outbound
+X-Canit-Stats-ID: 02MwKlkGX - 31b93b71156a - 20140731
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/30/14, 2:55 PM, Arnaldo Carvalho de Melo wrote:
-> @@ -143,6 +144,14 @@ struct symbol_conf {
->   };
->
->   extern struct symbol_conf symbol_conf;
-> +
-> +static inline int __symbol__join_symfs(char *bf, size_t size, const char *path)
-> +{
-> +	return path__join(bf, size, symbol_conf.symfs, path);
-> +}
-> +
-> +#define symbol__join_symfs(bf, path) __symbol__join_symfs(bf, sizeof(bf), path)
-> +
->   extern int vmlinux_path__nr_entries;
->   extern char **vmlinux_path;
->
+On Wed, Jul 30, 2014 at 11:42:32AM -1000, Richard Henderson wrote:
+> Signed-off-by: Richard Henderson <rth@twiddle.net>
+> ---
+>  arch/alpha/include/asm/unistd.h      | 2 +-
+>  arch/alpha/include/uapi/asm/unistd.h | 3 +++
+>  arch/alpha/kernel/systbls.S          | 3 +++
+>  3 files changed, 7 insertions(+), 1 deletion(-)
 
-I am not comfortable with the sizeof(bf) in the macro there. It is to a 
-large degree hiding an important detail and sets up odd failures in the 
-future. ie., It works fine for 'char bf[N];' but not for 'char *bf = 
-"some string";'.
+I thought Matt had already sent my patch to do just that to Linus.
 
-David
+Cheers
+Michael.
