@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227AbaG3Mbo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:31:44 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36738 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752924AbaG3MPc (ORCPT
+	id S1755253AbaG3Mby (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:31:54 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54556 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752555AbaG3Mbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 08:15:32 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 56/94] dns_resolver: assure that dns_query() result is null-terminated
-Date: Wed, 30 Jul 2014 14:14:45 +0200
-Message-Id: <d48784b054635ec818cfe3959249de5b2f43ea6a.1406722270.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
-References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
-In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
-References: <cover.1406722269.git.jslaby@suse.cz>
+	Wed, 30 Jul 2014 08:31:52 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: William Dauchy <wdauchy@gmail.com>
+Cc: Vinson Lee <vlee@twopensource.com>, Zdenek Kabelac <zkabelac@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: WARNING: CPU: 0 PID: 2623 at drivers/pnp/pnpacpi/core.c:96 pnpacpi_set_resource
+Date: Wed, 30 Jul 2014 14:50:22 +0200
+Message-ID: <2051431.ekkUkyD6yC@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAJ75kXa_h=A9yLjG=BtY4Fk_GY+37fb+u1x1wVy2n9X8S-P9KQ@mail.gmail.com>
+References: <5386F2C7.8080400@redhat.com> <8487820.GRUnuPqyXT@vostro.rjw.lan> <CAJ75kXa_h=A9yLjG=BtY4Fk_GY+37fb+u1x1wVy2n9X8S-P9KQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manuel Schölling <manuel.schoelling@gmx.de>
+On Wednesday, July 30, 2014 01:49:55 PM William Dauchy wrote:
+> Hi Rafael,
+> 
+> On Wed, Jul 30, 2014 at 12:39 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > William, it would be good if you could test it too as I'd like to
+> > push it for 3.16.
+> 
+> It also fixes the issue in 3.14.x
+> 
+> Tested-by: William Dauchy <william@gandi.net>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Great, thanks for testing!
 
-===============
-
-[ Upstream commit 84a7c0b1db1c17d5ded8d3800228a608e1070b40 ]
-
-dns_query() credulously assumes that keys are null-terminated and
-returns a copy of a memory block that is off by one.
-
-Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- net/dns_resolver/dns_query.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
-index c32be292c7e3..ede0e2d7412e 100644
---- a/net/dns_resolver/dns_query.c
-+++ b/net/dns_resolver/dns_query.c
-@@ -150,7 +150,9 @@ int dns_query(const char *type, const char *name, size_t namelen,
- 	if (!*_result)
- 		goto put;
- 
--	memcpy(*_result, upayload->data, len + 1);
-+	memcpy(*_result, upayload->data, len);
-+	*_result[len] = '\0';
-+
- 	if (_expiry)
- 		*_expiry = rkey->expiry;
- 
 -- 
-2.0.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
