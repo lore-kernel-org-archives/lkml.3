@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246AbaG3Ho3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 03:44:29 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51762 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755002AbaG3Ho1 (ORCPT
+	id S1751684AbaG3H4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 03:56:38 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:59484 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034AbaG3H4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 03:44:27 -0400
+	Wed, 30 Jul 2014 03:56:35 -0400
 X-Original-SENDERIP: 10.178.33.69
 X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <53D8A258.7010904@lge.com>
-Date: Wed, 30 Jul 2014 16:44:24 +0900
+Message-ID: <53D8A52B.5000006@lge.com>
+Date: Wed, 30 Jul 2014 16:56:27 +0900
 From: Gioh Kim <gioh.kim@lge.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>, Peter Zijlstra <peterz@infradead.org>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>,
+To: "Theodore Ts'o" <tytso@mit.edu>, Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
+        Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
         Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
-        Joonsoo Kim <js1304@gmail.com>
+        Joonsoo Kim <js1304@gmail.com>, Minchan Kim <minchan@kernel.org>
 Subject: Re: [PATCH 0/2] new API to allocate buffer-cache for superblock in
  non-movable area
-References: <53CDF437.4090306@lge.com> <20140722073005.GT3935@laptop> <20140722093838.GA22331@quack.suse.cz>
-In-Reply-To: <20140722093838.GA22331@quack.suse.cz>
+References: <53CDF437.4090306@lge.com> <20140722073005.GT3935@laptop> <20140722081440.GA5137@thunk.org> <20140727010144.GA13438@thunk.org>
+In-Reply-To: <20140727010144.GA13438@thunk.org>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,69 +34,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-2014-07-22 오후 6:38, Jan Kara 쓴 글:
-> On Tue 22-07-14 09:30:05, Peter Zijlstra wrote:
->> On Tue, Jul 22, 2014 at 02:18:47PM +0900, Gioh Kim wrote:
->>> Hello,
->>>
->>> This patch try to solve problem that a long-lasting page cache of
->>> ext4 superblock disturbs page migration.
->>>
->>> I've been testing CMA feature on my ARM-based platform
->>> and found some pages for page caches cannot be migrated.
->>> Some of them are page caches of superblock of ext4 filesystem.
->>>
->>> Current ext4 reads superblock with sb_bread(). sb_bread() allocates page
->>> from movable area. But the problem is that ext4 hold the page until
->>> it is unmounted. If root filesystem is ext4 the page cannot be migrated forever.
->>>
->>> I introduce a new API for allocating page from non-movable area.
->>> It is useful for ext4 and others that want to hold page cache for a long time.
->>
->> There's no word on why you can't teach ext4 to still migrate that page.
->> For all I know it might be impossible, but at least mention why.
-
-I am very sorry for lacking of details.
-
-In ext4_fill_super() the buffer-head of superblock is stored in sbi->s_sbh.
-The page belongs to the buffer-head is allocated from movable area.
-To migrate the page the buffer-head should be released via brelse().
-But brelse() is not called until unmount.
-
-For example, fat_fill_super() reads superblock via sb_bread()
-and release it via brelse() immediately. Therefore the page that stores superblock can be migrated.
-
-
-
->    It doesn't seem to be worth the effort to make that page movable to me
-> (it's reasonably doable since superblock buffer isn't accessed in *that*
-> many places but single movable page doesn't seem like a good tradeoff for
-> the complexity).
+2014-07-27 오전 10:01, Theodore Ts'o 쓴 글:
+> Gioh,
 >
-> But this made me look into the migration code and it isn't completely clear
-> to me what makes the migration code decide that sb buffer isn't movable? We
-> seem to be locking the buffers before moving the underlying page but we
-> don't do any reference or state checks on the buffers... That seems to be
-> assuming that noone looks at bh->b_data without holding buffer lock. That
-> is likely true for ordinary data but definitely not true for metadata
-> buffers (i.e., buffers for pages from block device mappings).
-
-The sb buffer is not movable because it is not released.
-sb_bread increase the reference counter of buffer-head so that
-the page of the buffer-head cannot be movable.
-
-sb_bread allocates page from movable area but it is not movable until the
-reference counter of the buffer-head becomes zero.
-There is no lock for the buffer but the reference counter acts like lock.
-
-Actually it is strange that ext4 keeps buffer-head in superblock structure until unmount (it can be long time)
-I thinks the buffer-head should be released immediately like fat_fill_super() did.
-I believe there is a reason to keep buffer-head so that I suggest this patch.
-
-
-
+> As follow up, if you want some further discussions about why these
+> patches should be accepted, it would be good to get some hard data
+> about why the keeping the ext4 superblock pinned is causing such a
+> problem for page migation.  Can you give us more details about what
+> the impact is of not having these patches?  And how it compres to
+> other data structures which are currently allocated in the moveable
+> area and tend to be pinned effectively indefinitely?
 >
-> Added linux-mm to CC to enlighten me a bit ;)
+> Thanks,
 >
-> 								Honza
+> 						- Ted
 >
+
+I am very sorry to be late. I couldn't access the network for a week.
+
+sb_bread() allocates page from movable area but the reference count of the buffer-head
+that manages page should be zero to migrate the page.
+Therefore brelase() should be called immediately after sb_bread() such like fat_fill_super().
+But ext4 called brelse() when unmount the superblock.
+The page cannot be movable until unmount.
+CMA/HOTPLUG memory try to move the page but it fails.
+
+If ext4 needs to keep buffer-cache of superblock until unmount,
+it should allocated the page from non-movable area (because it can be a long time).
+This patch try to do it.
+
+I also sent an email to Jan Kara. Please refer it.
+
+Thank you for your kindness.
+Please inform me if you need any information.
