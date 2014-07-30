@@ -1,160 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664AbaG3Aft (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 20:35:49 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55568 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754572AbaG3Afq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 20:35:46 -0400
-From: Suman Anna <s-anna@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Jassi Brar <jaswinder.singh@linaro.org>, Dave Gerlach <d-gerlach@ti.com>,
-        Markus Mayer <markus.mayer@linaro.org>, Pavel Machek <pavel@ucw.cz>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Suman Anna <s-anna@ti.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCHv3 1/5] Documentation: dt: add omap mailbox bindings
-Date: Tue, 29 Jul 2014 19:34:35 -0500
-Message-ID: <1406680479-18446-2-git-send-email-s-anna@ti.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1406680479-18446-1-git-send-email-s-anna@ti.com>
-References: <1406680479-18446-1-git-send-email-s-anna@ti.com>
+	id S1754690AbaG3Afx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 20:35:53 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:58243 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754663AbaG3Afu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 20:35:50 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH, v6] irq / PM: Fix IRQF_NO_SUSPEND problem with shared interrupts
+Date: Wed, 30 Jul 2014 02:54:22 +0200
+Message-ID: <5406863.luk6QaqFAf@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <37028068.N4oZ2EyB94@vostro.rjw.lan>
+References: <20140724212620.GO3935@laptop> <1574820.JRmxKN4N9f@vostro.rjw.lan> <37028068.N4oZ2EyB94@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the device tree bindings document for OMAP2+ mailbox.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Signed-off-by: Suman Anna <s-anna@ti.com>
+Since __disable_irq() only checks IRQF_NO_SUSPEND for the first
+irqaction in a given irq_desc, that value of that bit for the
+first irqaction affects all of the other irqactions sharing the
+interrupt with it.  This is problematic in two cases.
+
+First, if IRQF_NO_SUSPEND is set in the first irqaction and unset
+in at least one of the other irqactions sharing the same interrupt,
+the interrupt handlers in the other irqactions with IRQF_NO_SUSPEND
+unset will be invoked after suspend_device_irqs() has returned even
+though they are not supposed to.  That shouldn't be a problem if
+those interrupt handlers are implemented correctly and the
+corresponding devices are properly suspended, but it may lead to
+functional issues otherwise.
+
+Second, if IRQF_NO_SUSPEND is unset in the first irqaction and set
+in at least one of the other irqactions sharing the same interrupt,
+the interrupt handlers in the other irqactions with IRQF_NO_SUSPEND
+set will not be invoked after suspend_device_irqs() has returned, but
+they are supposed to be invoked then.  That may be a problem if the
+corresponding devices are wakeup devices or if their interrupts have
+to be properly handled during system suspend/resume too for other
+reasons, which is the case for timer interrupts or the ACPI SCI for
+example.
+
+To address this, modify the handling of IRQF_NO_SUSPEND by
+suspend_device_irqs() and resume_device_irqs() and make
+note_interrupt() handle suspended interrupts.
+
+First of all, make suspend_device_irqs() check IRQF_NO_SUSPEND for
+all irqactions sharing the same irq_desc and avoid disabling the IRQ
+if at least one of them has IRQF_NO_SUSPEND set.  If that flag is
+also unset for at least one irqaction in the given irq_desc, however,
+suspend_device_irqs() will move the irqactions with IRQF_NO_SUSPEND
+unset over to a list of "suspended actions" whose interrupt handlers
+won't be invoked going forward.
+
+Second, modify note_interrupt() to disable misbehaving IRQs faster if
+spuroius interrupts occur during system suspend/resume (that is, for
+an irq_desc with IRQS_SUSPENDED set).
+
+Finally, make resume_device_irqs() move irqactions from the list of
+"suspended actions" created by suspend_device_irqs() back to the
+regular "action" list.  It also will clear the IRQS_SPURIOUS_DISABLED
+flag for IRQS_SUSPENDED IRQs that were emergency disabled after
+suspend_device_irqs() had returned and will log warning messages for
+them.
+
+This should address the problematic case (when IRQF_NO_SUSPEND is set
+for at least one and unset for at least one irqaction sharing one
+irq_desc) and that case only without changing behavior in any other
+cases.
+
+It also effectively reverts a previous change to refuse interrupt
+requests with IRQF_NO_SUSPEND settings that do not match the
+existing ones (as it is not needed any more) and a previous change
+that added a IRQD_WAKEUP_STATE check to __disable_irqs() (as that
+mechanism has the same problem with shared interrupts as described
+above).
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- .../devicetree/bindings/mailbox/omap-mailbox.txt   | 108 +++++++++++++++++++++
- 1 file changed, 108 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mailbox/omap-mailbox.txt
 
-diff --git a/Documentation/devicetree/bindings/mailbox/omap-mailbox.txt b/Documentation/devicetree/bindings/mailbox/omap-mailbox.txt
-new file mode 100644
-index 0000000..48edc4b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mailbox/omap-mailbox.txt
-@@ -0,0 +1,108 @@
-+OMAP2+ Mailbox Driver
-+=====================
+One more minor update, sorry about that.
+
+I've just noticed that in v5 I used the same name (no_suspend) for two different
+variables in the same function (in different scopes, but still confusing), so
+this is fixed here.
+
+Rafael
+
+---
+ include/linux/irqdesc.h |    2 +
+ kernel/irq/internals.h  |    4 +-
+ kernel/irq/manage.c     |   31 +++---------------
+ kernel/irq/pm.c         |   82 ++++++++++++++++++++++++++++++++++++++++++++++--
+ kernel/irq/spurious.c   |   14 +++++++-
+ 5 files changed, 102 insertions(+), 31 deletions(-)
+
+Index: linux-pm/kernel/irq/manage.c
+===================================================================
+--- linux-pm.orig/kernel/irq/manage.c
++++ linux-pm/kernel/irq/manage.c
+@@ -382,15 +382,8 @@ setup_affinity(unsigned int irq, struct
+ }
+ #endif
+ 
+-void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
++void __disable_irq(struct irq_desc *desc, unsigned int irq)
+ {
+-	if (suspend) {
+-		if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND)
+-		    || irqd_has_set(&desc->irq_data, IRQD_WAKEUP_STATE))
+-			return;
+-		desc->istate |= IRQS_SUSPENDED;
+-	}
+-
+ 	if (!desc->depth++)
+ 		irq_disable(desc);
+ }
+@@ -402,7 +395,7 @@ static int __disable_irq_nosync(unsigned
+ 
+ 	if (!desc)
+ 		return -EINVAL;
+-	__disable_irq(desc, irq, false);
++	__disable_irq(desc, irq);
+ 	irq_put_desc_busunlock(desc, flags);
+ 	return 0;
+ }
+@@ -443,20 +436,8 @@ void disable_irq(unsigned int irq)
+ }
+ EXPORT_SYMBOL(disable_irq);
+ 
+-void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume)
++void __enable_irq(struct irq_desc *desc, unsigned int irq)
+ {
+-	if (resume) {
+-		if (!(desc->istate & IRQS_SUSPENDED)) {
+-			if (!desc->action)
+-				return;
+-			if (!(desc->action->flags & IRQF_FORCE_RESUME))
+-				return;
+-			/* Pretend that it got disabled ! */
+-			desc->depth++;
+-		}
+-		desc->istate &= ~IRQS_SUSPENDED;
+-	}
+-
+ 	switch (desc->depth) {
+ 	case 0:
+  err_out:
+@@ -498,7 +479,7 @@ void enable_irq(unsigned int irq)
+ 		 KERN_ERR "enable_irq before setup/request_irq: irq %u\n", irq))
+ 		goto out;
+ 
+-	__enable_irq(desc, irq, false);
++	__enable_irq(desc, irq);
+ out:
+ 	irq_put_desc_busunlock(desc, flags);
+ }
+@@ -1079,7 +1060,7 @@ __setup_irq(unsigned int irq, struct irq
+ 		 */
+ 
+ #define IRQF_MISMATCH \
+-	(IRQF_TRIGGER_MASK | IRQF_ONESHOT | IRQF_NO_SUSPEND)
++	(IRQF_TRIGGER_MASK | IRQF_ONESHOT)
+ 
+ 		if (!((old->flags & new->flags) & IRQF_SHARED) ||
+ 		    ((old->flags ^ new->flags) & IRQF_MISMATCH))
+@@ -1232,7 +1213,7 @@ __setup_irq(unsigned int irq, struct irq
+ 	 */
+ 	if (shared && (desc->istate & IRQS_SPURIOUS_DISABLED)) {
+ 		desc->istate &= ~IRQS_SPURIOUS_DISABLED;
+-		__enable_irq(desc, irq, false);
++		__enable_irq(desc, irq);
+ 	}
+ 
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+Index: linux-pm/kernel/irq/spurious.c
+===================================================================
+--- linux-pm.orig/kernel/irq/spurious.c
++++ linux-pm/kernel/irq/spurious.c
+@@ -391,10 +391,20 @@ void note_interrupt(unsigned int irq, st
+ 		 * otherwise the counter becomes a doomsday timer for otherwise
+ 		 * working systems
+ 		 */
+-		if (time_after(jiffies, desc->last_unhandled + HZ/10))
++		if (time_after(jiffies, desc->last_unhandled + HZ/10)) {
+ 			desc->irqs_unhandled = 1;
+-		else
++		} else {
+ 			desc->irqs_unhandled++;
++			if (unlikely(desc->istate & IRQS_SUSPENDED)) {
++				/*
++				 * That shouldn't happen.  It means IRQs from
++				 * a device that is supposed to be suspended at
++				 * this point.  Decay faster.
++				 */
++				desc->irqs_unhandled += 999;
++				desc->irq_count += 999;
++			}
++		}
+ 		desc->last_unhandled = jiffies;
+ 	}
+ 
+Index: linux-pm/include/linux/irqdesc.h
+===================================================================
+--- linux-pm.orig/include/linux/irqdesc.h
++++ linux-pm/include/linux/irqdesc.h
+@@ -20,6 +20,7 @@ struct irq_desc;
+  * @handle_irq:		highlevel irq-events handler
+  * @preflow_handler:	handler called before the flow handler (currently used by sparc)
+  * @action:		the irq action chain
++ * @action_suspended:	suspended irq action chain
+  * @status:		status information
+  * @core_internal_state__do_not_mess_with_it: core internal status information
+  * @depth:		disable-depth, for nested irq_disable() calls
+@@ -47,6 +48,7 @@ struct irq_desc {
+ 	irq_preflow_handler_t	preflow_handler;
+ #endif
+ 	struct irqaction	*action;	/* IRQ action list */
++	struct irqaction	*action_suspended;
+ 	unsigned int		status_use_accessors;
+ 	unsigned int		core_internal_state__do_not_mess_with_it;
+ 	unsigned int		depth;		/* nested irq disables */
+Index: linux-pm/kernel/irq/internals.h
+===================================================================
+--- linux-pm.orig/kernel/irq/internals.h
++++ linux-pm/kernel/irq/internals.h
+@@ -63,8 +63,8 @@ enum {
+ 
+ extern int __irq_set_trigger(struct irq_desc *desc, unsigned int irq,
+ 		unsigned long flags);
+-extern void __disable_irq(struct irq_desc *desc, unsigned int irq, bool susp);
+-extern void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume);
++extern void __disable_irq(struct irq_desc *desc, unsigned int irq);
++extern void __enable_irq(struct irq_desc *desc, unsigned int irq);
+ 
+ extern int irq_startup(struct irq_desc *desc, bool resend);
+ extern void irq_shutdown(struct irq_desc *desc);
+Index: linux-pm/kernel/irq/pm.c
+===================================================================
+--- linux-pm.orig/kernel/irq/pm.c
++++ linux-pm/kernel/irq/pm.c
+@@ -13,6 +13,50 @@
+ 
+ #include "internals.h"
+ 
++static void suspend_irq(struct irq_desc *desc, int irq)
++{
++	struct irqaction *action = desc->action;
++	unsigned int no_suspend, flags;
 +
-+The OMAP mailbox hardware facilitates communication between different processors
-+using a queued mailbox interrupt mechanism. The IP block is external to the
-+various processor subsystems and is connected on an interconnect bus. The
-+communication is achieved through a set of registers for message storage and
-+interrupt configuration registers.
++	if (!action)
++		return;
 +
-+Each mailbox IP block has a certain number of h/w fifo queues and output
-+interrupt lines. An output interrupt line is routed to an interrupt controller
-+within a processor subsystem, and there can be more than one line going to a
-+specific processor's interrupt controller. The interrupt line connections are
-+fixed for an instance and are dictated by the IP integration into the SoC
-+(excluding the SoCs that have a Interrupt Crossbar IP). Each interrupt line is
-+programmable through a set of interrupt configuration registers, and have a rx
-+and tx interrupt source per h/w fifo. Communication between different processors
-+is achieved through the appropriate programming of the rx and tx interrupt
-+sources on the appropriate interrupt lines.
++	no_suspend = IRQF_NO_SUSPEND;
++	flags = 0;
++	do {
++		no_suspend &= action->flags;
++		flags |= action->flags;
++		action = action->next;
++	} while (action);
++	if (no_suspend)
++		return;
 +
-+The number of h/w fifo queues and interrupt lines dictate the usable registers.
-+All the current OMAP SoCs except for the newest DRA7xx SoC has a single IP
-+instance. DRA7xx has multiple instances with different number of h/w fifo queues
-+and interrupt lines between different instances. The interrupt lines can also be
-+routed to different processor sub-systems on DRA7xx as they are routed through
-+the Crossbar, a kind of interrupt router/multiplexer.
++	desc->istate |= IRQS_SUSPENDED;
 +
-+Mailbox Device Node:
-+====================
-+A Mailbox device node is used to represent a Mailbox IP instance within a SoC.
-+The sub-mailboxes are represented as child nodes of this parent node.
++	if ((flags & IRQF_NO_SUSPEND) &&
++	    !(desc->istate & IRQS_SPURIOUS_DISABLED)) {
++		struct irqaction *active = NULL;
++		struct irqaction *suspended = NULL;
++		struct irqaction *head = desc->action;
 +
-+Required properties:
-+--------------------
-+- compatible:		Should be one of the following,
-+			    "ti,omap2-mailbox" for OMAP2420, OMAP2430 SoCs
-+			    "ti,omap3-mailbox" for OMAP3430, OMAP3630 SoCs
-+			    "ti,omap4-mailbox" for OMAP44xx, OMAP54xx, AM33xx,
-+						   AM43xx and DRA7xx SoCs
-+- reg:			Contains the mailbox register address range (base
-+			address and length)
-+- interrupts:		Contains the interrupt information for the mailbox
-+			device. The format is dependent on which interrupt
-+			controller the OMAP device uses
-+- ti,hwmods:		Name of the hwmod associated with the mailbox
-+- ti,mbox-num-users:	Number of targets (processor devices) that the mailbox
-+			device can interrupt
-+- ti,mbox-num-fifos:	Number of h/w fifo queues within the mailbox IP block
++		do {
++			action = head;
++			head = action->next;
++			if (action->flags & IRQF_NO_SUSPEND) {
++				action->next = active;
++				active = action;
++			} else {
++				action->next = suspended;
++				suspended = action;
++			}
++		} while (head);
++		desc->action = active;
++		desc->action_suspended = suspended;
++		return;
++	}
++	__disable_irq(desc, irq);
++}
 +
-+Child Nodes:
-+============
-+A child node is used for representing the actual sub-mailbox device that is
-+used for the communication between the host processor and a remote processor.
-+Each child node should have a unique node name across all the different
-+mailbox device nodes.
+ /**
+  * suspend_device_irqs - disable all currently enabled interrupt lines
+  *
+@@ -30,7 +74,7 @@ void suspend_device_irqs(void)
+ 		unsigned long flags;
+ 
+ 		raw_spin_lock_irqsave(&desc->lock, flags);
+-		__disable_irq(desc, irq, true);
++		suspend_irq(desc, irq);
+ 		raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	}
+ 
+@@ -40,6 +84,40 @@ void suspend_device_irqs(void)
+ }
+ EXPORT_SYMBOL_GPL(suspend_device_irqs);
+ 
++static void resume_irq(struct irq_desc *desc, int irq)
++{
++	if (desc->istate & IRQS_SUSPENDED) {
++		desc->istate &= ~IRQS_SUSPENDED;
++		if (desc->action_suspended) {
++			struct irqaction *action = desc->action;
 +
-+Required properties:
-+--------------------
-+- ti,mbox-tx:		sub-mailbox descriptor property defining a Tx fifo
-+- ti,mbox-rx:		sub-mailbox descriptor property defining a Rx fifo
++			while (action->next)
++				action = action->next;
 +
-+Sub-mailbox Descriptor Data
-+---------------------------
-+Each of the above ti,mbox-tx and ti,mbox-rx properties should have 3 cells of
-+data that represent the following:
-+    Cell #1 (fifo_id) - mailbox fifo id used either for transmitting
-+                        (ti,mbox-tx) or for receiving (ti,mbox-rx)
-+    Cell #2 (irq_id)  - irq identifier index number to use from the parent's
-+                        interrupts data. Should be 0 for most of the cases, a
-+                        positive index value is seen only on mailboxes that have
-+                        multiple interrupt lines connected to the MPU processor.
-+    Cell #3 (usr_id)  - mailbox user id for identifying the interrupt line
-+                        associated with generating a tx/rx fifo interrupt.
++			action->next = desc->action_suspended;
++			desc->action_suspended = NULL;
 +
-+Example:
-+--------
++			if (desc->istate & IRQS_SPURIOUS_DISABLED) {
++				pr_err("Re-enabling emergency disabled IRQ %d\n",
++				       irq);
++				desc->istate &= ~IRQS_SPURIOUS_DISABLED;
++			} else {
++				return;
++			}
++		}
++	} else {
++		if (!desc->action)
++			return;
 +
-+/* OMAP4 */
-+mailbox: mailbox@4a0f4000 {
-+	compatible = "ti,omap4-mailbox";
-+	reg = <0x4a0f4000 0x200>;
-+	interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
-+	ti,hwmods = "mailbox";
-+	ti,mbox-num-users = <3>;
-+	ti,mbox-num-fifos = <8>;
-+	mbox_ipu: mbox_ipu {
-+		ti,mbox-tx = <0 0 0>;
-+		ti,mbox-rx = <1 0 0>;
-+	};
-+	mbox_dsp: mbox_dsp {
-+		ti,mbox-tx = <3 0 0>;
-+		ti,mbox-rx = <2 0 0>;
-+	};
-+};
++		if (!(desc->action->flags & IRQF_FORCE_RESUME))
++			return;
 +
-+/* AM33xx */
-+mailbox: mailbox@480C8000 {
-+	compatible = "ti,omap4-mailbox";
-+	reg = <0x480C8000 0x200>;
-+	interrupts = <77>;
-+	ti,hwmods = "mailbox";
-+	ti,mbox-num-users = <4>;
-+	ti,mbox-num-fifos = <8>;
-+	mbox_wkupm3: wkup_m3 {
-+		ti,mbox-tx = <0 0 0>;
-+		ti,mbox-rx = <0 0 3>;
-+	};
-+};
--- 
-2.0.0
++		/* Pretend that it got disabled ! */
++		desc->depth++;
++	}
++	__enable_irq(desc, irq);
++}
++
+ static void resume_irqs(bool want_early)
+ {
+ 	struct irq_desc *desc;
+@@ -54,7 +132,7 @@ static void resume_irqs(bool want_early)
+ 			continue;
+ 
+ 		raw_spin_lock_irqsave(&desc->lock, flags);
+-		__enable_irq(desc, irq, true);
++		resume_irq(desc, irq);
+ 		raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	}
+ }
 
