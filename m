@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576AbaG3RWh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 13:22:37 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:36633 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754972AbaG3RWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 13:22:35 -0400
-Message-ID: <53D929C3.3040709@cs.wisc.edu>
-Date: Wed, 30 Jul 2014 12:22:11 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
+	id S1755598AbaG3RX7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 13:23:59 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:49848 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302AbaG3RX4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 13:23:56 -0400
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: poma <pomidorabelisima@gmail.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, linux-scsi@vger.kernel.org
-Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69 kmem_cache_create+0x1a9/0x330()
-References: <53C8DF7F.5060707@gmail.com> <53C8FD95.5020302@gmail.com> <20140718132104.GK27940@esperanza> <20140718141747.GA23272@lst.de> <53C97D34.5040707@gmail.com> <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com> <20140719164454.GA24530@lst.de> <53CCDFC3.5010802@gmail.com> <20140726162102.GA7126@lst.de>
-In-Reply-To: <20140726162102.GA7126@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140730164344.GA27954@localhost.localdomain>
+References: <cover.1406604806.git.luto@amacapital.net> <7123b2489cc5d1d5abb7bcf1364ca729cab3e6ca.1406604806.git.luto@amacapital.net>
+ <20140729193232.GA8153@redhat.com> <20140730164344.GA27954@localhost.localdomain>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 30 Jul 2014 10:23:34 -0700
+Message-ID: <CALCETrUVaz3JFiNbyU=r3M-E9muHa1ffn7RX+_-4V_0U-hVaPw@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] x86,entry: Only call user_exit if TIF_NOHZ
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2014 11:21 AM, Christoph Hellwig wrote:
-> Here's a formal one.
-> 
-> James, can I get your signoff for it?
-> 
-> Vladimir, can I get a reviewed-by from you (or anyone else)?
-> 
-> ---
-> From 73b1034ab1418e2dea75ccf642bc85c728b57313 Mon Sep 17 00:00:00 2001
-> From: James Bottomley <James.Bottomley@HansenPartnership.com>
-> Date: Sat, 26 Jul 2014 12:21:26 -0400
-> Subject: scsi: use short driver name for per-driver cmd slab caches
-> 
-> hostt->name might contain space, so use the ->proc_name short name instead
-> when creating per-driver command slabs.
-> 
-> Reported-by: Vladimir Davydov <vdavydov@parallels.com>
-> Tested-by: Vladimir Davydov <vdavydov@parallels.com>
-> ---
->  drivers/scsi/scsi.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-> index 33318f5..df33060 100644
-> --- a/drivers/scsi/scsi.c
-> +++ b/drivers/scsi/scsi.c
-> @@ -365,8 +365,8 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
->  	if (!pool)
->  		return NULL;
->  
-> -	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
-> -	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->name);
-> +	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->proc_name);
-> +	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->proc_name);
->  	if (!pool->cmd_name || !pool->sense_name) {
->  		scsi_free_host_cmd_pool(pool);
->  		return NULL;
+On Wed, Jul 30, 2014 at 9:43 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Tue, Jul 29, 2014 at 09:32:32PM +0200, Oleg Nesterov wrote:
+>> On 07/28, Andy Lutomirski wrote:
+>> >
+>> > @@ -1449,7 +1449,12 @@ long syscall_trace_enter(struct pt_regs *regs)
+>> >  {
+>> >     long ret = 0;
+>> >
+>> > -   user_exit();
+>> > +   /*
+>> > +    * If TIF_NOHZ is set, we are required to call user_exit() before
+>> > +    * doing anything that could touch RCU.
+>> > +    */
+>> > +   if (test_thread_flag(TIF_NOHZ))
+>> > +           user_exit();
+>>
+>> Personally I still think this change just adds more confusion, but I leave
+>> this to you and Frederic.
+>>
+>> It is not that "If TIF_NOHZ is set, we are required to call user_exit()", we
+>> need to call user_exit() just because we enter the kernel. TIF_NOHZ is just
+>> the implementation detail which triggers this slow path.
+>>
+>> At least it should be correct, unless I am confused even more than I think.
+>
+> Agreed, Perhaps the confusion is on the syscall_trace_enter() name which suggests
+> this is only about tracing? syscall_slowpath_enter() could be an alternative.
+> But that's still tracing in a general sense so...
 
-Some drivers like qla2xxx do not set proc_name. I think if 2 drivers
-like that are loaded then you will hit some other warns/bugs in the kmem
-cache setup code right?
+At the end of the day, the syscall slowpath code calls a bunch of
+functions depending on what TIF_XYZ flags are set.  As long as it's
+structured like "if (TIF_A) do_a(); if (TIF_B) do_b();" or something
+like that, it's comprehensible.  But once random functions with no
+explicit flag checks or comments start showing up, it gets confusing.
 
+If it's indeed all-or-nothing, I could remove the check and add a
+comment.  But please keep in mind that, currently, the slow path is
+*slow*, and my patches only improve the entry case.  So enabling
+context tracking on every task will hurt.
+
+--Andy
