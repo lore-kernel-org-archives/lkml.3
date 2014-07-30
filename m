@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669AbaG3MSW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:18:22 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:39026 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683AbaG3MSR (ORCPT
+	id S1753574AbaG3MSI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:18:08 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36803 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752712AbaG3MPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 08:18:17 -0400
-From: Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>
-To: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Heiko Carstens <heicars2@linux.vnet.ibm.com>,
-        Torsten Duwe <duwe@suse.de>, Hendrik Brueckner <brueckner@de.ibm.com>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Harald Freudenberger <freude@de.ibm.com>,
-        Ingo Tuchscherer <ingo.tuchscherer@linux.vnet.ibm.com>,
-        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>
-Subject: [PATCH] s390/zcrypt: enable s390 hwrng to seed kernel entropy
-Date: Wed, 30 Jul 2014 14:17:36 +0200
-Message-Id: <1406722656-6506-1-git-send-email-ingo.tuchscherer@de.ibm.com>
-X-Mailer: git-send-email 1.8.5.5
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073012-5024-0000-0000-000000D70F6D
+	Wed, 30 Jul 2014 08:15:34 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Amitkumar Karwar <akarwar@marvell.com>,
+        Maithili Hinge <maithili@marvell.com>,
+        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 59/94] mwifiex: fix Tx timeout issue
+Date: Wed, 30 Jul 2014 14:14:48 +0200
+Message-Id: <a113b6a577411ff322386e70b3c0f8637bd2ddc6.1406722270.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
+References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
+In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
+References: <cover.1406722269.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the 'quality' property in the zcrypt rng device structure to enable the
-zcrypt hwrng device to take part in the kernel entropy seeding process.
-A module parameter named hwrng_seed will be introduced to disable the
-participation. By default this parameter is set to 1 (enabled).
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-Signed-off-by: Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>
+3.12-stable review patch.  If anyone has any objections, please let me know.
+
+===============
+
+commit d76744a93246eccdca1106037e8ee29debf48277 upstream.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=70191
+https://bugzilla.kernel.org/show_bug.cgi?id=77581
+
+It is observed that sometimes Tx packet is downloaded without
+adding driver's txpd header. This results in firmware parsing
+garbage data as packet length. Sometimes firmware is unable
+to read the packet if length comes out as invalid. This stops
+further traffic and timeout occurs.
+
+The root cause is uninitialized fields in tx_info(skb->cb) of
+packet used to get garbage values. In this case if
+MWIFIEX_BUF_FLAG_REQUEUED_PKT flag is mistakenly set, txpd
+header was skipped. This patch makes sure that tx_info is
+correctly initialized to fix the problem.
+
+Reported-by: Andrew Wiley <wiley.andrew.j@gmail.com>
+Reported-by: Linus Gasser <list@markas-al-nour.org>
+Reported-by: Michael Hirsch <hirsch@teufel.de>
+Tested-by: Xinming Hu <huxm@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Maithili Hinge <maithili@marvell.com>
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/s390/crypto/ap_bus.c     | 5 +++++
- drivers/s390/crypto/ap_bus.h     | 1 +
- drivers/s390/crypto/zcrypt_api.c | 3 +++
- 3 files changed, 9 insertions(+)
+ drivers/net/wireless/mwifiex/main.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/s390/crypto/ap_bus.c b/drivers/s390/crypto/ap_bus.c
-index 4038437..19fac5f 100644
---- a/drivers/s390/crypto/ap_bus.c
-+++ b/drivers/s390/crypto/ap_bus.c
-@@ -85,6 +85,11 @@ static int ap_thread_flag = 0;
- module_param_named(poll_thread, ap_thread_flag, int, S_IRUSR|S_IRGRP);
- MODULE_PARM_DESC(poll_thread, "Turn on/off poll thread, default is 0 (off).");
+diff --git a/drivers/net/wireless/mwifiex/main.c b/drivers/net/wireless/mwifiex/main.c
+index c2b91f566e05..edf5239d93df 100644
+--- a/drivers/net/wireless/mwifiex/main.c
++++ b/drivers/net/wireless/mwifiex/main.c
+@@ -654,6 +654,7 @@ mwifiex_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	}
  
-+int ap_hwrng_seed = 1;
-+EXPORT_SYMBOL(ap_hwrng_seed);
-+module_param_named(hwrng_seed, ap_hwrng_seed, int, S_IRUSR|S_IRGRP);
-+MODULE_PARM_DESC(hwrng_seed, "Turn on/off hwrng auto seed, default is 1 (on).");
-+
- static struct device *ap_root_device = NULL;
- static struct ap_config_info *ap_configuration;
- static DEFINE_SPINLOCK(ap_device_list_lock);
-diff --git a/drivers/s390/crypto/ap_bus.h b/drivers/s390/crypto/ap_bus.h
-index 6405ae2..b0be09a 100644
---- a/drivers/s390/crypto/ap_bus.h
-+++ b/drivers/s390/crypto/ap_bus.h
-@@ -38,6 +38,7 @@
- #define AP_POLL_TIME 1		/* Time in ticks between receive polls. */
+ 	tx_info = MWIFIEX_SKB_TXCB(skb);
++	memset(tx_info, 0, sizeof(*tx_info));
+ 	tx_info->bss_num = priv->bss_num;
+ 	tx_info->bss_type = priv->bss_type;
  
- extern int ap_domain_index;
-+extern int ap_hwrng_seed;
- 
- /**
-  * The ap_qid_t identifier of an ap queue. It contains a
-diff --git a/drivers/s390/crypto/zcrypt_api.c b/drivers/s390/crypto/zcrypt_api.c
-index 0e18c5d..ed91665 100644
---- a/drivers/s390/crypto/zcrypt_api.c
-+++ b/drivers/s390/crypto/zcrypt_api.c
-@@ -1374,6 +1374,7 @@ static int zcrypt_rng_data_read(struct hwrng *rng, u32 *data)
- static struct hwrng zcrypt_rng_dev = {
- 	.name		= "zcrypt",
- 	.data_read	= zcrypt_rng_data_read,
-+	.quality	= 990,
- };
- 
- static int zcrypt_rng_device_add(void)
-@@ -1388,6 +1389,8 @@ static int zcrypt_rng_device_add(void)
- 			goto out;
- 		}
- 		zcrypt_rng_buffer_index = 0;
-+		if (!ap_hwrng_seed)
-+			zcrypt_rng_dev.quality = 0;
- 		rc = hwrng_register(&zcrypt_rng_dev);
- 		if (rc)
- 			goto out_free;
 -- 
-1.8.5.5
+2.0.1
 
