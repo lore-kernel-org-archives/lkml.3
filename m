@@ -1,134 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543AbaG3QrM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 12:47:12 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49586 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754130AbaG3QrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 12:47:09 -0400
-Date: Wed, 30 Jul 2014 18:47:01 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: x86-ml <x86@kernel.org>, linux-crypto@vger.kernel.org
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86, crypto: Check if gas supports CRC32
-Message-ID: <20140730164701.GA19604@pd.tnic>
+	id S1755321AbaG3Qrb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 12:47:31 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57156 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755200AbaG3Qr3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 12:47:29 -0400
+Date: Wed, 30 Jul 2014 18:47:21 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, kishon@ti.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 3/8] ata: libahci_platform: move port_map parameters
+ into the AHCI structure
+Message-ID: <20140730164721.GA15772@kwain>
+References: <1406193450-17283-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1406193450-17283-4-git-send-email-antoine.tenart@free-electrons.com>
+ <20140729144042.GD4791@htj.dyndns.org>
+ <20140730082038.GB29900@kwain>
+ <20140730153526.GB23734@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140730153526.GB23734@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building current kernel with some old toolchain (gcc 4.1.2 and gas 2.17)
-chokes with:
+On Wed, Jul 30, 2014 at 11:35:26AM -0400, Tejun Heo wrote:
+> On Wed, Jul 30, 2014 at 10:20:38AM +0200, Antoine Ténart wrote:
+> > How do you want me to send the series? There is two conflicts when
+> > applying to libata/for-3.17:
+> > - patch 4/8: it takes into account a patch not in libata/for-3.17 but
+> >   added before rc7. It should be better to first merge rc7, otherwise
+> >   some modifications won't make sense.
+> > - patch 6/8: "fsl,imx53-ahci" was removed from the documentation in
+> >   libata/for-3.17 but not in rc7. Resolving the conflict is really
+> >   simple.
+> > 
+> > I think it's better to apply the whole thing after merging rc7 into
+> > libata/for-3.17, because it will only have a really simple conflict to
+> > resolve.
+> > 
+> > Please tell me what do you prefer before I send the updated version.
+> 
+> Hmmm... does pulling in libata/for-3.16-fixes into libata/for-3.17
+> resolves the conflict?  If so, please send the patch on top of the
+> merged branch.  I wanna avoid pulling in -rc7 wholesale at this point.
 
-arch/x86/crypto/crc32c-pcl-intel-asm_64.S: Assembler messages:
-arch/x86/crypto/crc32c-pcl-intel-asm_64.S:128: Error: no such instruction: `crc32b %bl,%r8d'
-arch/x86/crypto/crc32c-pcl-intel-asm_64.S:204: Error: no such instruction: `crc32q -i*8(%rcx),%r8'
-...
+Works for me. I'll cook and send a series based on top of
+libata/for-3.16-fixes merged into libata/for-3.17.
 
-due to the fact that gas doesn't know the CRC32 instruction. Check that
-before building.
-
-Cc: linux-crypto@vger.kernel.org
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
-
-So this is one possibility to address this. Code already
-has the ifdeffery around crc_pcl() which is implemented in
-crc32c-pcl-intel-asm_64.S so we can piggyback on that and not build that
-file if gas doesn't know CRC32.
-
-If no CRC32 support, it still builds fine silently, however it would be
-better to probably say that due to old toolchain, kernel doesn't include
-fast CRC32 stuff in crc32c-intel.ko.
-
-Hmmm.
-
-
- arch/x86/crypto/Makefile            |  8 +++++++-
- arch/x86/crypto/crc32c-intel_glue.c |  7 ++++---
- scripts/gas-can-do-crc32.sh         | 12 ++++++++++++
- 3 files changed, 23 insertions(+), 4 deletions(-)
- create mode 100755 scripts/gas-can-do-crc32.sh
-
-diff --git a/arch/x86/crypto/Makefile b/arch/x86/crypto/Makefile
-index 61d6e281898b..707bf7ecb903 100644
---- a/arch/x86/crypto/Makefile
-+++ b/arch/x86/crypto/Makefile
-@@ -83,7 +83,13 @@ ifeq ($(avx2_supported),yes)
- sha1-ssse3-y += sha1_avx2_x86_64_asm.o
- endif
- crc32c-intel-y := crc32c-intel_glue.o
--crc32c-intel-$(CONFIG_64BIT) += crc32c-pcl-intel-asm_64.o
-+
-+gas_can_crc32 := $(srctree)/scripts/gas-can-do-crc32.sh
-+CONFIG_GAS_SUPPORTS_CRC32=$(shell $(CONFIG_SHELL) $(gas_can_crc32) $(AS))
-+
-+ifdef CONFIG_64BIT
-+crc32c-intel-$(CONFIG_GAS_SUPPORTS_CRC32) += crc32c-pcl-intel-asm_64.o
-+endif
- crc32-pclmul-y := crc32-pclmul_asm.o crc32-pclmul_glue.o
- sha256-ssse3-y := sha256-ssse3-asm.o sha256-avx-asm.o sha256-avx2-asm.o sha256_ssse3_glue.o
- sha512-ssse3-y := sha512-ssse3-asm.o sha512-avx-asm.o sha512-avx2-asm.o sha512_ssse3_glue.o
-diff --git a/arch/x86/crypto/crc32c-intel_glue.c b/arch/x86/crypto/crc32c-intel_glue.c
-index 6812ad98355c..4ce8e2db2984 100644
---- a/arch/x86/crypto/crc32c-intel_glue.c
-+++ b/arch/x86/crypto/crc32c-intel_glue.c
-@@ -46,7 +46,7 @@
- #define REX_PRE
- #endif
- 
--#ifdef CONFIG_X86_64
-+#if defined(CONFIG_X86_64) && defined(CONFIG_GAS_SUPPORTS_CRC32)
- /*
-  * use carryless multiply version of crc32c when buffer
-  * size is >= 512 (when eager fpu is enabled) or
-@@ -181,7 +181,7 @@ static int crc32c_intel_cra_init(struct crypto_tfm *tfm)
- 	return 0;
- }
- 
--#ifdef CONFIG_X86_64
-+#if defined(CONFIG_X86_64) && defined(CONFIG_GAS_SUPPORTS_CRC32)
- static int crc32c_pcl_intel_update(struct shash_desc *desc, const u8 *data,
- 			       unsigned int len)
- {
-@@ -257,7 +257,8 @@ static int __init crc32c_intel_mod_init(void)
- {
- 	if (!x86_match_cpu(crc32c_cpu_id))
- 		return -ENODEV;
--#ifdef CONFIG_X86_64
-+
-+#if defined(CONFIG_X86_64) && defined(CONFIG_GAS_SUPPORTS_CRC32)
- 	if (cpu_has_pclmulqdq) {
- 		alg.update = crc32c_pcl_intel_update;
- 		alg.finup = crc32c_pcl_intel_finup;
-diff --git a/scripts/gas-can-do-crc32.sh b/scripts/gas-can-do-crc32.sh
-new file mode 100755
-index 000000000000..88ff476bd3cc
---- /dev/null
-+++ b/scripts/gas-can-do-crc32.sh
-@@ -0,0 +1,12 @@
-+#!/bin/sh
-+
-+TMP=$(mktemp)
-+
-+echo "crc32 %rax,%rbx" | $* --warn - -o $TMP 2>/dev/null
-+if [ "$?" -eq "0" ]; then
-+	echo y
-+else
-+	echo n
-+fi
-+
-+rm -f $TMP
--- 
-2.0.0
-
+Antoine
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
