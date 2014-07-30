@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023AbaG3M3W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:29:22 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36751 "EHLO
+	id S1754984AbaG3M3U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:29:20 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36760 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752938AbaG3MPd (ORCPT
+	by vger.kernel.org with ESMTP id S1752949AbaG3MPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:33 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexander.deucher@amd.com>,
+Cc: linux-kernel@vger.kernel.org, Mike Snitzer <snitzer@redhat.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 65/94] drm/radeon: avoid leaking edid data
-Date: Wed, 30 Jul 2014 14:14:54 +0200
-Message-Id: <9fc6b11117125440fe9cd9d590804f530c951f64.1406722270.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 69/94] dm cache metadata: do not allow the data block size to change
+Date: Wed, 30 Jul 2014 14:14:58 +0200
+Message-Id: <e0779220de345bf4cd25873367ee61021ffa1d7e.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,48 +23,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 0ac66effe7fcdee55bda6d5d10d3372c95a41920 upstream.
+commit 048e5a07f282c57815b3901d4a68a77fa131ce0a upstream.
 
-In some cases we fetch the edid in the detect() callback
-in order to determine what sort of monitor is connected.
-If that happens, don't fetch the edid again in the get_modes()
-callback or we will leak the edid.
+The block size for the dm-cache's data device must remained fixed for
+the life of the cache.  Disallow any attempt to change the cache's data
+block size.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/radeon/radeon_display.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/md/dm-cache-metadata.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
-index 0254a7596a55..9a19a0432f0f 100644
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -708,6 +708,10 @@ int radeon_ddc_get_modes(struct radeon_connector *radeon_connector)
- 	struct radeon_device *rdev = dev->dev_private;
- 	int ret = 0;
+diff --git a/drivers/md/dm-cache-metadata.c b/drivers/md/dm-cache-metadata.c
+index 1d38019bb022..b564c0610259 100644
+--- a/drivers/md/dm-cache-metadata.c
++++ b/drivers/md/dm-cache-metadata.c
+@@ -407,6 +407,15 @@ static int __open_metadata(struct dm_cache_metadata *cmd)
  
-+	/* don't leak the edid if we already fetched it in detect() */
-+	if (radeon_connector->edid)
-+		goto got_edid;
+ 	disk_super = dm_block_data(sblock);
+ 
++	/* Verify the data block size hasn't changed */
++	if (le32_to_cpu(disk_super->data_block_size) != cmd->data_block_size) {
++		DMERR("changing the data block size (from %u to %llu) is not supported",
++		      le32_to_cpu(disk_super->data_block_size),
++		      (unsigned long long)cmd->data_block_size);
++		r = -EINVAL;
++		goto bad;
++	}
 +
- 	/* on hw with routers, select right port */
- 	if (radeon_connector->router.ddc_valid)
- 		radeon_router_select_ddc_port(radeon_connector);
-@@ -747,6 +751,7 @@ int radeon_ddc_get_modes(struct radeon_connector *radeon_connector)
- 			radeon_connector->edid = radeon_bios_get_hardcoded_edid(rdev);
- 	}
- 	if (radeon_connector->edid) {
-+got_edid:
- 		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
- 		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
- 		drm_edid_to_eld(&radeon_connector->base, radeon_connector->edid);
+ 	r = __check_incompat_features(disk_super, cmd);
+ 	if (r < 0)
+ 		goto bad;
 -- 
 2.0.1
 
