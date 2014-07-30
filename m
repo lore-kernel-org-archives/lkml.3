@@ -1,54 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaG3Nw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 09:52:56 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:14234 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753576AbaG3Nwx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 09:52:53 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 30 Jul 2014 06:44:33 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@linaro.org>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH-REPOST] regulator: gpio: fix default of regulator-type property
-Date: Wed, 30 Jul 2014 19:21:08 +0530
-Message-ID: <1406728268-17725-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
+	id S1753766AbaG3Nxk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 09:53:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39214 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753189AbaG3Nwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 09:52:34 -0400
+From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v3 3/4] ARM: dts: Clean up exynos5250-snow
+Date: Wed, 30 Jul 2014 15:50:43 +0200
+Message-Id: <1406728244-5105-4-git-send-email-afaerber@suse.de>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1406728244-5105-1-git-send-email-afaerber@suse.de>
+References: <1406728244-5105-1-git-send-email-afaerber@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per driver, the absense of "regulator-type" default to voltage
-type. Correct the document to say default is voltage instead of
-current.
+Use the new style of referencing inherited nodes and use symbolic names.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Suggested-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Andreas Färber <afaerber@suse.de>
 ---
-Seems somehow this is missed for review, reposting it.
+ v3: New (Doug Anderson)
 
- Documentation/devicetree/bindings/regulator/gpio-regulator.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/exynos5250-snow.dts | 182 +++++++++++++++++-----------------
+ 1 file changed, 90 insertions(+), 92 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/regulator/gpio-regulator.txt b/Documentation/devicetree/bindings/regulator/gpio-regulator.txt
-index e5cac1e..dd1ed78 100644
---- a/Documentation/devicetree/bindings/regulator/gpio-regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/gpio-regulator.txt
-@@ -13,7 +13,7 @@ Optional properties:
- - startup-delay-us	: Startup time in microseconds.
- - enable-active-high	: Polarity of GPIO is active high (default is low).
- - regulator-type	: Specifies what is being regulated, must be either
--			  "voltage" or "current", defaults to current.
-+			  "voltage" or "current", defaults to voltage.
+diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+index 1c36cd72905f..2ed6cb04a2db 100644
+--- a/arch/arm/boot/dts/exynos5250-snow.dts
++++ b/arch/arm/boot/dts/exynos5250-snow.dts
+@@ -9,6 +9,8 @@
+ */
  
- Any property defined as part of the core regulator binding defined in
- regulator.txt can also be used.
+ /dts-v1/;
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/input.h>
+ #include "exynos5250.dtsi"
+ 
+ / {
+@@ -30,85 +32,19 @@
+ 		status = "okay";
+ 	};
+ 
+-	pinctrl@11400000 {
+-		ec_irq: ec-irq {
+-			samsung,pins = "gpx1-6";
+-			samsung,pin-function = <0>;
+-			samsung,pin-pud = <0>;
+-			samsung,pin-drv = <0>;
+-		};
+-
+-		sd3_clk: sd3-clk {
+-			samsung,pin-drv = <0>;
+-		};
+-
+-		sd3_cmd: sd3-cmd {
+-			samsung,pin-pud = <3>;
+-			samsung,pin-drv = <0>;
+-		};
+-
+-		sd3_bus4: sd3-bus-width4 {
+-			samsung,pin-drv = <0>;
+-		};
+-
+-		max98095_en: max98095-en {
+-			samsung,pins = "gpx1-7";
+-			samsung,pin-function = <0>;
+-			samsung,pin-pud = <3>;
+-			samsung,pin-drv = <0>;
+-		};
+-
+-		tps65090_irq: tps65090-irq {
+-			samsung,pins = "gpx2-6";
+-			samsung,pin-function = <0>;
+-			samsung,pin-pud = <0>;
+-			samsung,pin-drv = <0>;
+-		};
+-
+-		usb3_vbus_en: usb3-vbus-en {
+-			samsung,pins = "gpx2-7";
+-			samsung,pin-function = <1>;
+-			samsung,pin-pud = <0>;
+-			samsung,pin-drv = <0>;
+-		};
+-
+-		hdmi_hpd_irq: hdmi-hpd-irq {
+-			samsung,pins = "gpx3-7";
+-			samsung,pin-function = <0>;
+-			samsung,pin-pud = <1>;
+-			samsung,pin-drv = <0>;
+-		};
+-	};
+-
+-	pinctrl@13400000 {
+-		arb_their_claim: arb-their-claim {
+-			samsung,pins = "gpe0-4";
+-			samsung,pin-function = <0>;
+-			samsung,pin-pud = <3>;
+-			samsung,pin-drv = <0>;
+-		};
+-
+-		arb_our_claim: arb-our-claim {
+-			samsung,pins = "gpf0-3";
+-			samsung,pin-function = <1>;
+-			samsung,pin-pud = <0>;
+-			samsung,pin-drv = <0>;
+-		};
+-	};
+-
+ 	gpio-keys {
+ 		compatible = "gpio-keys";
+ 
+ 		power {
+ 			label = "Power";
+-			gpios = <&gpx1 3 1>;
+-			linux,code = <116>; /* KEY_POWER */
++			gpios = <&gpx1 3 GPIO_ACTIVE_LOW>;
++			linux,code = <KEY_POWER>;
+ 			gpio-key,wakeup;
+ 		};
+ 
+ 		lid-switch {
+ 			label = "Lid";
+-			gpios = <&gpx3 5 1>;
++			gpios = <&gpx3 5 GPIO_ACTIVE_LOW>;
+ 			linux,input-type = <5>; /* EV_SW */
+ 			linux,code = <0>; /* SW_LID */
+ 			debounce-interval = <1>;
+@@ -129,8 +65,8 @@
+ 
+ 		i2c-parent = <&{/i2c@12CA0000}>;
+ 
+-		our-claim-gpio = <&gpf0 3 1>;
+-		their-claim-gpios = <&gpe0 4 1>;
++		our-claim-gpio = <&gpf0 3 GPIO_ACTIVE_LOW>;
++		their-claim-gpios = <&gpe0 4 GPIO_ACTIVE_LOW>;
+ 		slew-delay-us = <10>;
+ 		wait-retry-us = <3000>;
+ 		wait-free-us = <50000>;
+@@ -239,19 +175,6 @@
+ 		};
+ 	};
+ 
+-	i2c@12CD0000 {
+-		max98095: codec@11 {
+-			compatible = "maxim,max98095";
+-			reg = <0x11>;
+-			pinctrl-0 = <&max98095_en>;
+-			pinctrl-names = "default";
+-		};
+-	};
+-
+-	i2s0: i2s@03830000 {
+-		status = "okay";
+-	};
+-
+ 	sound {
+ 		compatible = "google,snow-audio-max98095";
+ 
+@@ -265,18 +188,14 @@
+ 		regulator-name = "P5.0V_USB3CON";
+ 		regulator-min-microvolt = <5000000>;
+ 		regulator-max-microvolt = <5000000>;
+-		gpio = <&gpx2 7 0>;
++		gpio = <&gpx2 7 GPIO_ACTIVE_HIGH>;
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&usb3_vbus_en>;
+ 		enable-active-high;
+ 	};
+ 
+-	phy@12100000 {
+-		vbus-supply = <&usb3_vbus_reg>;
+-	};
+-
+ 	usb@12110000 {
+-		samsung,vbus-gpio = <&gpx1 1 0>;
++		samsung,vbus-gpio = <&gpx1 1 GPIO_ACTIVE_HIGH>;
+ 	};
+ 
+ 	fixed-rate-clocks {
+@@ -287,7 +206,7 @@
+ 	};
+ 
+ 	hdmi {
+-		hpd-gpio = <&gpx3 7 0>;
++		hpd-gpio = <&gpx3 7 GPIO_ACTIVE_HIGH>;
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&hdmi_hpd_irq>;
+ 		phy = <&hdmiphy>;
+@@ -322,7 +241,7 @@
+ 		samsung,color-depth = <1>;
+ 		samsung,link-rate = <0x0a>;
+ 		samsung,lane-count = <2>;
+-		samsung,hpd-gpio = <&gpx0 7 0>;
++		samsung,hpd-gpio = <&gpx0 7 GPIO_ACTIVE_HIGH>;
+ 
+ 		display-timings {
+ 			native-mode = <&timing1>;
+@@ -547,6 +466,13 @@
+ 	status = "okay";
+ 	samsung,i2c-sda-delay = <100>;
+ 	samsung,i2c-max-bus-freq = <66000>;
++
++	max98095: codec@11 {
++		compatible = "maxim,max98095";
++		reg = <0x11>;
++		pinctrl-0 = <&max98095_en>;
++		pinctrl-names = "default";
++	};
+ };
+ 
+ &i2c_8 {
+@@ -560,6 +486,10 @@
+ 	};
+ };
+ 
++&i2s0 {
++	status = "okay";
++};
++
+ &mmc_0 {
+ 	status = "okay";
+ 	num-slots = <1>;
+@@ -625,6 +555,70 @@
+ 		samsung,pin-pud = <0>;
+ 		samsung,pin-drv = <0>;
+ 	};
++
++	ec_irq: ec-irq {
++		samsung,pins = "gpx1-6";
++		samsung,pin-function = <0>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	max98095_en: max98095-en {
++		samsung,pins = "gpx1-7";
++		samsung,pin-function = <0>;
++		samsung,pin-pud = <3>;
++		samsung,pin-drv = <0>;
++	};
++
++	tps65090_irq: tps65090-irq {
++		samsung,pins = "gpx2-6";
++		samsung,pin-function = <0>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	usb3_vbus_en: usb3-vbus-en {
++		samsung,pins = "gpx2-7";
++		samsung,pin-function = <1>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++
++	hdmi_hpd_irq: hdmi-hpd-irq {
++		samsung,pins = "gpx3-7";
++		samsung,pin-function = <0>;
++		samsung,pin-pud = <1>;
++		samsung,pin-drv = <0>;
++	};
++};
++
++&pinctrl_1 {
++	arb_their_claim: arb-their-claim {
++		samsung,pins = "gpe0-4";
++		samsung,pin-function = <0>;
++		samsung,pin-pud = <3>;
++		samsung,pin-drv = <0>;
++	};
++
++	arb_our_claim: arb-our-claim {
++		samsung,pins = "gpf0-3";
++		samsung,pin-function = <1>;
++		samsung,pin-pud = <0>;
++		samsung,pin-drv = <0>;
++	};
++};
++
++&sd3_clk {
++	samsung,pin-drv = <0>;
++};
++
++&sd3_cmd {
++	samsung,pin-pud = <3>;
++	samsung,pin-drv = <0>;
++};
++
++&sd3_bus4 {
++	samsung,pin-drv = <0>;
+ };
+ 
+ &spi_1 {
+@@ -633,4 +627,8 @@
+ 	num-cs = <1>;
+ };
+ 
++&usbdrd_phy {
++	vbus-supply = <&usb3_vbus_reg>;
++};
++
+ #include "cros-ec-keyboard.dtsi"
 -- 
-1.8.1.5
+1.9.3
 
