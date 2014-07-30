@@ -1,103 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194AbaG3MPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:15:52 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36805 "EHLO
+	id S1753160AbaG3MPv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:15:51 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36800 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753039AbaG3MPe (ORCPT
+	by vger.kernel.org with ESMTP id S1753042AbaG3MPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 92/94] drm/radeon: fix irq ring buffer overflow handling
-Date: Wed, 30 Jul 2014 14:15:21 +0200
-Message-Id: <b50f86698fce9a68b8ef64a66c7acbcbb363e2b5.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 78/94] media: tda10071: force modulation to QPSK on DVB-S
+Date: Wed, 30 Jul 2014 14:15:07 +0200
+Message-Id: <aa0bb3b50855eefdfbf93e7d87999e4b7cf53390.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
 References: <cover.1406722269.git.jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christian König <christian.koenig@amd.com>
+From: Antti Palosaari <crope@iki.fi>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit e8c214d22e76dd0ead38f97f8d2dc09aac70d651 upstream.
+commit db4175ae2095634dbecd4c847da439f9c83e1b3b upstream.
 
-We must mask out the overflow bit as well, otherwise
-the wptr will never match the rptr again and the interrupt
-handler will loop forever.
+Only supported modulation for DVB-S is QPSK. Modulation parameter
+contains invalid value for DVB-S on some cases, which leads driver
+refusing tuning attempt. Due to that, hard code modulation to QPSK
+in case of DVB-S.
 
-Signed-off-by: Christian König <christian.koenig@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/radeon/cik.c       | 1 +
- drivers/gpu/drm/radeon/evergreen.c | 1 +
- drivers/gpu/drm/radeon/r600.c      | 1 +
- drivers/gpu/drm/radeon/si.c        | 1 +
- 4 files changed, 4 insertions(+)
+ drivers/media/dvb-frontends/tda10071.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index bb7f2ae7683d..14836dfd04e7 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -6554,6 +6554,7 @@ static inline u32 cik_get_ih_wptr(struct radeon_device *rdev)
- 		tmp = RREG32(IH_RB_CNTL);
- 		tmp |= IH_WPTR_OVERFLOW_CLEAR;
- 		WREG32(IH_RB_CNTL, tmp);
-+		wptr &= ~RB_OVERFLOW;
- 	}
- 	return (wptr & rdev->ih.ptr_mask);
- }
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 4564bb1ab837..7ca58fc7a1c6 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -4664,6 +4664,7 @@ static u32 evergreen_get_ih_wptr(struct radeon_device *rdev)
- 		tmp = RREG32(IH_RB_CNTL);
- 		tmp |= IH_WPTR_OVERFLOW_CLEAR;
- 		WREG32(IH_RB_CNTL, tmp);
-+		wptr &= ~RB_OVERFLOW;
- 	}
- 	return (wptr & rdev->ih.ptr_mask);
- }
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 2c2b91f16ecf..88eb936fbc2f 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -3657,6 +3657,7 @@ static u32 r600_get_ih_wptr(struct radeon_device *rdev)
- 		tmp = RREG32(IH_RB_CNTL);
- 		tmp |= IH_WPTR_OVERFLOW_CLEAR;
- 		WREG32(IH_RB_CNTL, tmp);
-+		wptr &= ~RB_OVERFLOW;
- 	}
- 	return (wptr & rdev->ih.ptr_mask);
- }
-diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
-index c9f9c07f888d..4d41a0dc1796 100644
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -6041,6 +6041,7 @@ static inline u32 si_get_ih_wptr(struct radeon_device *rdev)
- 		tmp = RREG32(IH_RB_CNTL);
- 		tmp |= IH_WPTR_OVERFLOW_CLEAR;
- 		WREG32(IH_RB_CNTL, tmp);
-+		wptr &= ~RB_OVERFLOW;
- 	}
- 	return (wptr & rdev->ih.ptr_mask);
- }
+diff --git a/drivers/media/dvb-frontends/tda10071.c b/drivers/media/dvb-frontends/tda10071.c
+index 8ad3a57cf640..287b977862e2 100644
+--- a/drivers/media/dvb-frontends/tda10071.c
++++ b/drivers/media/dvb-frontends/tda10071.c
+@@ -667,6 +667,7 @@ static int tda10071_set_frontend(struct dvb_frontend *fe)
+ 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+ 	int ret, i;
+ 	u8 mode, rolloff, pilot, inversion, div;
++	fe_modulation_t modulation;
+ 
+ 	dev_dbg(&priv->i2c->dev, "%s: delivery_system=%d modulation=%d " \
+ 		"frequency=%d symbol_rate=%d inversion=%d pilot=%d " \
+@@ -701,10 +702,13 @@ static int tda10071_set_frontend(struct dvb_frontend *fe)
+ 
+ 	switch (c->delivery_system) {
+ 	case SYS_DVBS:
++		modulation = QPSK;
+ 		rolloff = 0;
+ 		pilot = 2;
+ 		break;
+ 	case SYS_DVBS2:
++		modulation = c->modulation;
++
+ 		switch (c->rolloff) {
+ 		case ROLLOFF_20:
+ 			rolloff = 2;
+@@ -749,7 +753,7 @@ static int tda10071_set_frontend(struct dvb_frontend *fe)
+ 
+ 	for (i = 0, mode = 0xff; i < ARRAY_SIZE(TDA10071_MODCOD); i++) {
+ 		if (c->delivery_system == TDA10071_MODCOD[i].delivery_system &&
+-			c->modulation == TDA10071_MODCOD[i].modulation &&
++			modulation == TDA10071_MODCOD[i].modulation &&
+ 			c->fec_inner == TDA10071_MODCOD[i].fec) {
+ 			mode = TDA10071_MODCOD[i].val;
+ 			dev_dbg(&priv->i2c->dev, "%s: mode found=%02x\n",
 -- 
 2.0.1
 
