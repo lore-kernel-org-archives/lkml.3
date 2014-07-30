@@ -1,95 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761AbaG3CyH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:54:07 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:59833 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754723AbaG3CyF (ORCPT
+	id S1754793AbaG3C4U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:56:20 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:25067 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754188AbaG3C4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 22:54:05 -0400
+	Tue, 29 Jul 2014 22:56:18 -0400
+X-IronPort-AV: E=Sophos;i="5.00,992,1396972800"; 
+   d="scan'208";a="33940660"
+Message-ID: <53D85F20.7020206@cn.fujitsu.com>
+Date: Wed, 30 Jul 2014 10:57:36 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <53D84558.7060406@codeaurora.org>
-References: <53D788A7.4020303@mm-sol.com> <3794875.CZFbAag5Sv@wuerfel>
- <53D7AA72.6010309@mm-sol.com> <20140729234522.E9FF1C40738@trevor.secretlab.ca>
- <53D84558.7060406@codeaurora.org>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 29 Jul 2014 21:53:42 -0500
-Message-ID: <CAL_JsqJjH0OH+X=fzwqAPeWarjoLev7v6Nv_QhAa+nZyztMnFA@mail.gmail.com>
-Subject: Re: use IORESOURCE_REG resource type for non-translatable addresses
- in DT
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Brown <broonie@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Christoph Lameter <cl@gentwo.org>
+CC: <akpm@linux-foundation.org>, Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <hughd@google.com>, <viresh.kumar@linaro.org>, <hpa@zytor.com>,
+        <mingo@kernel.org>, <peterz@infradead.org>
+Subject: Re: vmstat: On demand vmstat workers V8
+References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org>
+In-Reply-To: <alpine.DEB.2.11.1407100903130.12483@gentwo.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 8:07 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 07/29/14 16:45, Grant Likely wrote:
->> On Tue, 29 Jul 2014 17:06:42 +0300, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
->>>
->>> This was just an example. Of course it has many issues and probaly it is
->>> wrong:) The main goal was to understand does IORESOURCE_REG resource
->>> type and parsing the *reg* properties for non-translatable addresses are
->>> feasible. And also does it acceptable by community and OF platform
->>> maintainers.
->> The use case is actually very different from of_address_to_resource or
->> of_get_address() because those APIs explicitly return physical memory
->> addresses from the CPU perspective. It makes more sense to create a new
->> API that doesn't attempt to translate the reg address. Alternately, a
->> new API that only translates upto a given parent node.
->
-> The most important thing is that platform_get_resource{_by_name}(&pdev,
-> IORESOURCE_REG, n) returns the reg property and optional size encoded
-> into a struct resource. I think Rob is suggesting we circumvent the
-> entire of_address_to_resource() path and do some if
-> (IS_ENABLED(CONFIG_OF) && type == IORESOURCE_REG) check in
-> platform_get_resource() to package up the reg property into a struct
-> resource. That should work.
+If I understand the semantics of the cpu_stat_off correctly, please read.
 
-No, I'm saying why are you using platform_get_resource at all and
-adding a new resource type? I don't see any advantage.
+cpu_stat_off = a set of such CPU: the cpu is online && vmstat_work is off
+I consider some code forget to guarantee each cpu in cpu_stat_off is online.
 
-You might as well do of_property_read_u32 in the below example.
+Thanks,
+Lai
 
-Rob
+On 07/10/2014 10:04 PM, Christoph Lameter wrote:
 
-> It sounds like you think partially translating addresses is risky
-> though. Fair enough. Perhaps we should call WARN() if someone tries to
-> call platform_get_resource() with IORESOURCE_REG and the parent node has
-> a ranges property that isn't a one-to-one conversion. That way if we
-> want to do something like this we can.
->
-> pmic@0 {
->     #address-cells = <1>;
->     #size-cells = <0>;
->     reg = <0>;
->
->     regulators {
->         ranges;
->         #address-cells = <1>;
->         #size-cells = <0>;
->
->         regulator@40 {
->             reg = <0x40>;
->         };
->
->         regulator@50 {
->             reg = <0x50>;
->         }
->     };
-> };
->
+> +
+> +/*
+> + * Shepherd worker thread that checks the
+> + * differentials of processors that have their worker
+> + * threads for vm statistics updates disabled because of
+> + * inactivity.
+> + */
+> +static void vmstat_shepherd(struct work_struct *w);
+> +
+> +static DECLARE_DELAYED_WORK(shepherd, vmstat_shepherd);
+> +
+> +static void vmstat_shepherd(struct work_struct *w)
+> +{
+> +	int cpu;
+> +
+> +	/* Check processors whose vmstat worker threads have been disabled */
+
+I think the bug is here, it re-queues the per_cpu(vmstat_work, cpu) which is offline
+(after vmstat_cpuup_callback(CPU_DOWN_PREPARE).  And cpu_stat_off is accessed without
+proper lock.
+
+I suggest to use get_cpu_online() or a new cpu_stat_off_mutex to protect it.
+
+
+	get_cpu_online(); /* mutex_lock(&cpu_stat_off_mutex); */
+	for_each_cpu(cpu, cpu_stat_off)
+		if (need_update(cpu) &&
+			cpumask_test_and_clear_cpu(cpu, cpu_stat_off))
+
+			schedule_delayed_work_on(cpu, &per_cpu(vmstat_work, cpu),
+				__round_jiffies_relative(sysctl_stat_interval, cpu));
+	put_cpu_online(); /* mutex_unlock(&cpu_stat_off_mutex); */
+
+
+
+> +
+> +
+> +	schedule_delayed_work(&shepherd,
+>  		round_jiffies_relative(sysctl_stat_interval));
+> +
+>  }
+> 
+> -static void start_cpu_timer(int cpu)
+> +static void __init start_shepherd_timer(void)
+>  {
+> -	struct delayed_work *work = &per_cpu(vmstat_work, cpu);
+> +	int cpu;
+> +
+> +	for_each_possible_cpu(cpu)
+> +		INIT_DEFERRABLE_WORK(per_cpu_ptr(&vmstat_work, cpu),
+> +			vmstat_update);
+> +
+> +	cpu_stat_off = kmalloc(cpumask_size(), GFP_KERNEL);
+> +	cpumask_copy(cpu_stat_off, cpu_online_mask);
+> 
+> -	INIT_DEFERRABLE_WORK(work, vmstat_update);
+> -	schedule_delayed_work_on(cpu, work, __round_jiffies_relative(HZ, cpu));
+> +	schedule_delayed_work(&shepherd,
+> +		round_jiffies_relative(sysctl_stat_interval));
+>  }
+> 
+>  static void vmstat_cpu_dead(int node)
+> @@ -1272,17 +1373,17 @@ static int vmstat_cpuup_callback(struct
+>  	case CPU_ONLINE:
+>  	case CPU_ONLINE_FROZEN:
+>  		refresh_zone_stat_thresholds();
+> -		start_cpu_timer(cpu);
+>  		node_set_state(cpu_to_node(cpu), N_CPU);
+> +		cpumask_set_cpu(cpu, cpu_stat_off);
+>  		break;
+>  	case CPU_DOWN_PREPARE:
+>  	case CPU_DOWN_PREPARE_FROZEN:
+> -		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+> -		per_cpu(vmstat_work, cpu).work.func = NULL;
+> +		if (!cpumask_test_and_set_cpu(cpu, cpu_stat_off))
+> +			cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+
+It is suggest that cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu)) should
+be called unconditionally.  And the cpu should be cleared from cpu_stat_off.
+(you set it, it is BUG according to vmstat_shepherd() and the semantics of the
+cpu_stat_off).
+
+	/* mutex_lock(&cpu_stat_off_mutex); */
+		/*if you use cpu_stat_off_mutex instead of get_cpu_online() */
+	cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+	cpumask_clear_cpu(cpu, cpu_stat_off);
+	/* mutex_unlock(&cpu_stat_off_mutex); */
+
+	/* don't forget to use cpu_stat_off_mutex on other place for
+	   accessing to cpu_stat_off except the one in vmstat_update() which
+	   is protected by cancel_delayed_work_sync() + other stuffs
+	   please also update that comments and keep that VM_BUG_ON() */
+
+
+>  		break;
+>  	case CPU_DOWN_FAILED:
+>  	case CPU_DOWN_FAILED_FROZEN:
+> -		start_cpu_timer(cpu);
+> +		cpumask_set_cpu(cpu, cpu_stat_off);
+>  		break;
+>  	case CPU_DEAD:
+>  	case CPU_DEAD_FROZEN:
+> @@ -1302,15 +1403,10 @@ static struct notifier_block vmstat_noti
+>  static int __init setup_vmstat(void)
+>  {
+>  #ifdef CONFIG_SMP
+> -	int cpu;
+> -
+>  	cpu_notifier_register_begin();
+>  	__register_cpu_notifier(&vmstat_notifier);
+> 
+> -	for_each_online_cpu(cpu) {
+> -		start_cpu_timer(cpu);
+> -		node_set_state(cpu_to_node(cpu), N_CPU);
+> -	}
+> +	start_shepherd_timer();
+>  	cpu_notifier_register_done();
+>  #endif
+>  #ifdef CONFIG_PROC_FS
 > --
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
->
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> .
+> 
+
