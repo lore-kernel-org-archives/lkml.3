@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284AbaG3Pwa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 11:52:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3983 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755166AbaG3PwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 11:52:25 -0400
-Date: Wed, 30 Jul 2014 17:49:49 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, bobby.prani@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140730154949.GA26787@redhat.com>
-References: <20140728225556.GA19493@linux.vnet.ibm.com> <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1755322AbaG3PxR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 11:53:17 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43660 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754411AbaG3PxQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 11:53:16 -0400
+Date: Wed, 30 Jul 2014 16:53:03 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "broonie@kernel.org" <broonie@kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] regulator: userspace-consumer: add DT binding details
+Message-ID: <20140730155302.GE20162@leverpostej>
+References: <1406728440-17837-1-git-send-email-ldewangan@nvidia.com>
+ <1406728440-17837-2-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1406728440-17837-2-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28, Paul E. McKenney wrote:
->
-> This commit adds a new RCU-tasks flavor of RCU, which provides
-> call_rcu_tasks().  This RCU flavor's quiescent states are voluntary
-> context switch (not preemption!), userspace execution, and the idle loop.
-> Note that unlike other RCU flavors, these quiescent states occur in tasks,
-> not necessarily CPUs.  Includes fixes from Steven Rostedt.
-
-I still hope I will read this series later. Not that I really hope I will
-understand it ;)
-
-Just one question for now,
-
-> +static int __noreturn rcu_tasks_kthread(void *arg)
-> +{
-> +	unsigned long flags;
-> +	struct task_struct *g, *t;
-> +	struct rcu_head *list;
-> +	struct rcu_head *next;
+On Wed, Jul 30, 2014 at 02:54:00PM +0100, Laxman Dewangan wrote:
+> Add DT binding document and details DT binding for the driver
+> regulator/userspace-consumer.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+>  .../bindings/regulator/userspace-consumer.txt      | 26 ++++++++++++++++++++++
+>  1 file changed, 26 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/regulator/userspace-consumer.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/regulator/userspace-consumer.txt b/Documentation/devicetree/bindings/regulator/userspace-consumer.txt
+> new file mode 100644
+> index 0000000..73c651c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/regulator/userspace-consumer.txt
+> @@ -0,0 +1,26 @@
+> +Userspace consumer regulators
 > +
-> +	/* FIXME: Add housekeeping affinity. */
-> +
-> +	/*
-> +	 * Each pass through the following loop makes one check for
-> +	 * newly arrived callbacks, and, if there are some, waits for
-> +	 * one RCU-tasks grace period and then invokes the callbacks.
-> +	 * This loop is terminated by the system going down.  ;-)
-> +	 */
-> +	for (;;) {
-> +
-> +		/* Pick up any new callbacks. */
-> +		raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
-> +		smp_mb__after_unlock_lock(); /* Enforce GP memory ordering. */
-> +		list = rcu_tasks_cbs_head;
-> +		rcu_tasks_cbs_head = NULL;
-> +		rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
-> +		raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
-> +
-> +		/* If there were none, wait a bit and start over. */
-> +		if (!list) {
-> +			schedule_timeout_interruptible(HZ);
-> +			flush_signals(current);
+> +Required properties:
+> +- compatible		: Must be "reg-userspace-consumer".
 
-Why? And I see more flush_signals() in the current kernel/rcu/ code. Unless
-a kthread does allow_signal() it can't have a pending signal?
+I would never expect to see "userspace" in a DT beinding string; this is
+entirely a software abstraction description and has nothing to do with
+the interaction of HW components.
 
-Oleg.
+Why do you think we need this in the DT?
 
+Thanks,
+Mark.
+
+> +- regulator-supplies: Supply names for this regulator. This can be
+> +	multiple strings.
+> +
+> +Optional properties:
+> +- regulator-name: Name of the consumer line.
+> +- regulator-boot-on: Enable regulator on booting.
+> +
+> +With all supply names, there should be <supply-name>-supply to pass regulators
+> +handle as defined in regulator.txt.
+> +
+> +Example:
+> +
+> +	userspace-consumer {
+> +		compatible = "reg-userspace-consumer";
+> +
+> +		regulator-name = "gps-consumer";
+> +		regulator-boot-on;
+> +		regulator-supplies = "vdd", "vcc", "vdd-3v3";
+> +		vdd-supply = <&reg1>;
+> +		vcc-supply = <&reg2>;
+> +		vdd-3v3-supply = <&reg3>;
+> +	};
+> -- 
+> 1.8.1.5
+> 
+> 
