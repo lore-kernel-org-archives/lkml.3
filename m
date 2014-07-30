@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553AbaG3B65 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:58:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60665 "EHLO
+	id S1755557AbaG3B7T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:59:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60651 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755152AbaG3BuE (ORCPT
+	with ESMTP id S1755144AbaG3BuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:50:04 -0400
+	Tue, 29 Jul 2014 21:50:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Scott Doty <scott@corp.sonic.net>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.15 05/37] media: tda10071: force modulation to QPSK on DVB-S
-Date: Tue, 29 Jul 2014 18:48:41 -0700
-Message-Id: <20140730014827.873796384@linuxfoundation.org>
+Subject: [PATCH 3.15 04/37] media: hdpvr: fix two audio bugs
+Date: Tue, 29 Jul 2014 18:48:40 -0700
+Message-Id: <20140730014827.824894465@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014827.565626091@linuxfoundation.org>
 References: <20140730014827.565626091@linuxfoundation.org>
@@ -29,55 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: Hans Verkuil <hverkuil@xs4all.nl>
 
-commit db4175ae2095634dbecd4c847da439f9c83e1b3b upstream.
+commit 3445857b22eafb70a6ac258979e955b116bfd2c6 upstream.
 
-Only supported modulation for DVB-S is QPSK. Modulation parameter
-contains invalid value for DVB-S on some cases, which leads driver
-refusing tuning attempt. Due to that, hard code modulation to QPSK
-in case of DVB-S.
+When the audio encoding is changed the driver calls hdpvr_set_audio
+with the current opt->audio_input value. However, that should have
+been opt->audio_input + 1. So changing the audio encoding inadvertently
+changes the input as well. This bug has always been there.
 
-Signed-off-by: Antti Palosaari <crope@iki.fi>
+The second bug was introduced in kernel 3.10 and that broke the
+default_audio_input module option handling: the audio encoding was
+never switched to AC3 if default_audio_input was set to 2 (SPDIF input).
+
+In addition, since starting with 3.10 the audio encoding is always set
+at the start the first bug now always happens when the driver is loaded.
+In the past this bug would only surface if the user would change the
+audio encoding after the driver was loaded.
+
+Also fixes a small trivial typo (bufffer -> buffer).
+
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Reported-by: Scott Doty <scott@corp.sonic.net>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/tda10071.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/media/usb/hdpvr/hdpvr-video.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/media/dvb-frontends/tda10071.c
-+++ b/drivers/media/dvb-frontends/tda10071.c
-@@ -668,6 +668,7 @@ static int tda10071_set_frontend(struct
- 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
- 	int ret, i;
- 	u8 mode, rolloff, pilot, inversion, div;
-+	fe_modulation_t modulation;
+--- a/drivers/media/usb/hdpvr/hdpvr-video.c
++++ b/drivers/media/usb/hdpvr/hdpvr-video.c
+@@ -82,7 +82,7 @@ static void hdpvr_read_bulk_callback(str
+ }
  
- 	dev_dbg(&priv->i2c->dev,
- 			"%s: delivery_system=%d modulation=%d frequency=%d symbol_rate=%d inversion=%d pilot=%d rolloff=%d\n",
-@@ -702,10 +703,13 @@ static int tda10071_set_frontend(struct
+ /*=========================================================================*/
+-/* bufffer bits */
++/* buffer bits */
  
- 	switch (c->delivery_system) {
- 	case SYS_DVBS:
-+		modulation = QPSK;
- 		rolloff = 0;
- 		pilot = 2;
- 		break;
- 	case SYS_DVBS2:
-+		modulation = c->modulation;
-+
- 		switch (c->rolloff) {
- 		case ROLLOFF_20:
- 			rolloff = 2;
-@@ -750,7 +754,7 @@ static int tda10071_set_frontend(struct
- 
- 	for (i = 0, mode = 0xff; i < ARRAY_SIZE(TDA10071_MODCOD); i++) {
- 		if (c->delivery_system == TDA10071_MODCOD[i].delivery_system &&
--			c->modulation == TDA10071_MODCOD[i].modulation &&
-+			modulation == TDA10071_MODCOD[i].modulation &&
- 			c->fec_inner == TDA10071_MODCOD[i].fec) {
- 			mode = TDA10071_MODCOD[i].val;
- 			dev_dbg(&priv->i2c->dev, "%s: mode found=%02x\n",
+ /* function expects dev->io_mutex to be hold by caller */
+ int hdpvr_cancel_queue(struct hdpvr_device *dev)
+@@ -926,7 +926,7 @@ static int hdpvr_s_ctrl(struct v4l2_ctrl
+ 	case V4L2_CID_MPEG_AUDIO_ENCODING:
+ 		if (dev->flags & HDPVR_FLAG_AC3_CAP) {
+ 			opt->audio_codec = ctrl->val;
+-			return hdpvr_set_audio(dev, opt->audio_input,
++			return hdpvr_set_audio(dev, opt->audio_input + 1,
+ 					      opt->audio_codec);
+ 		}
+ 		return 0;
+@@ -1198,7 +1198,7 @@ int hdpvr_register_videodev(struct hdpvr
+ 	v4l2_ctrl_new_std_menu(hdl, &hdpvr_ctrl_ops,
+ 		V4L2_CID_MPEG_AUDIO_ENCODING,
+ 		ac3 ? V4L2_MPEG_AUDIO_ENCODING_AC3 : V4L2_MPEG_AUDIO_ENCODING_AAC,
+-		0x7, V4L2_MPEG_AUDIO_ENCODING_AAC);
++		0x7, ac3 ? dev->options.audio_codec : V4L2_MPEG_AUDIO_ENCODING_AAC);
+ 	v4l2_ctrl_new_std_menu(hdl, &hdpvr_ctrl_ops,
+ 		V4L2_CID_MPEG_VIDEO_ENCODING,
+ 		V4L2_MPEG_VIDEO_ENCODING_MPEG_4_AVC, 0x3,
 
 
