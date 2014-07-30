@@ -1,167 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764AbaG3PkY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 11:40:24 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:5874 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753182AbaG3PkV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 11:40:21 -0400
-Message-ID: <53D911DE.7000806@fb.com>
-Date: Wed, 30 Jul 2014 11:40:14 -0400
-From: Josef Bacik <jbacik@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754789AbaG3Pl5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 11:41:57 -0400
+Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:44196
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754109AbaG3Ply (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 11:41:54 -0400
+From: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        Michal Simek <michals@xilinx.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Punnaiah Choudary <kpc528@gmail.com>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        Srikanth Vemula <svemula@xilinx.com>
+Subject: RE: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr ecc
+ controller
+Thread-Topic: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr
+ ecc controller
+Thread-Index: Ac+sDL1D4VO4hX43QSOxWbwM1x4+UA==
+Date: Wed, 30 Jul 2014 15:41:47 +0000
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.231.182]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Chris Mason <clm@fb.com>, <linux-btrfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Btrfs: Fix memory corruption by ulist_add_merge() on
- 32bit arch
-References: <1406537824-2376-1-git-send-email-tiwai@suse.de>	<53D64D40.80606@fb.com>	<s5hzjft7fwm.wl%tiwai@suse.de>	<s5hsill7fak.wl%tiwai@suse.de>	<s5hsiljrwwy.wl%tiwai@suse.de>	<53D9015A.90001@fb.com>	<s5h61iesxen.wl%tiwai@suse.de> <s5h1tt2sx94.wl%tiwai@suse.de>
-In-Reply-To: <s5h1tt2sx94.wl%tiwai@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-30_06:2014-07-30,2014-07-30,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=7.21311899098964e-13 kscore.compositescore=0
- circleOfTrustscore=29.7083259529277 compositescore=0.9989857498195
- urlsuspect_oldscore=0.9989857498195 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.9989857498195 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1407300185
-X-FB-Internal: deliver
+X-RCIS-Action: ALLOW
+Message-ID: <9dc2a947-d2ab-4f00-8ed3-d2499cb6fdfd@BN1BFFO11FD002.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(13464003)(51704005)(377454003)(24454002)(199002)(189002)(19580405001)(50986999)(19580395003)(83322001)(64706001)(86362001)(110136001)(83072002)(23676002)(47776003)(85306003)(79102001)(81342001)(53416004)(80022001)(74316001)(21056001)(2656002)(50466002)(33646002)(77096002)(70736001)(44976005)(46102001)(92726001)(31696002)(104016003)(92566001)(77982001)(76482001)(74502001)(95666004)(99396002)(1496007)(85852003)(87936001)(20776003)(106466001)(74662001)(6806004)(107046002)(54356999)(81542001)(31966008)(4396001)(107986001)(23106004)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB067;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0288CD37D9
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=punnaiah.choudary.kalluri@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6UFg17i002122
 
-On 07/30/2014 11:05 AM, Takashi Iwai wrote:
-> At Wed, 30 Jul 2014 17:01:52 +0200,
-> Takashi Iwai wrote:
->>
->> At Wed, 30 Jul 2014 10:29:46 -0400,
->> Josef Bacik wrote:
->>>
->>> On 07/30/2014 05:57 AM, Takashi Iwai wrote:
->>>> At Mon, 28 Jul 2014 16:01:55 +0200,
->>>> Takashi Iwai wrote:
->>>>>
->>>>> At Mon, 28 Jul 2014 15:48:41 +0200,
->>>>> Takashi Iwai wrote:
->>>>>>
->>>>>> At Mon, 28 Jul 2014 09:16:48 -0400,
->>>>>> Josef Bacik wrote:
->>>>>>>
->>>>>>> On 07/28/2014 04:57 AM, Takashi Iwai wrote:
->>>>>>>> We've got bug reports that btrfs crashes when quota is enabled on
->>>>>>>> 32bit kernel, typically with the Oops like below:
->>>>>>>>     BUG: unable to handle kernel NULL pointer dereference at 00000004
->>>>>>>>     IP: [<f9234590>] find_parent_nodes+0x360/0x1380 [btrfs]
->>>>>>>>     *pde = 00000000
->>>>>>>>     Oops: 0000 [#1] SMP
->>>>>>>>     CPU: 0 PID: 151 Comm: kworker/u8:2 Tainted: G S      W 3.15.2-1.gd43d97e-default #1
->>>>>>>>     Workqueue: btrfs-qgroup-rescan normal_work_helper [btrfs]
->>>>>>>>     task: f1478130 ti: f147c000 task.ti: f147c000
->>>>>>>>     EIP: 0060:[<f9234590>] EFLAGS: 00010213 CPU: 0
->>>>>>>>     EIP is at find_parent_nodes+0x360/0x1380 [btrfs]
->>>>>>>>     EAX: f147dda8 EBX: f147ddb0 ECX: 00000011 EDX: 00000000
->>>>>>>>     ESI: 00000000 EDI: f147dda4 EBP: f147ddf8 ESP: f147dd38
->>>>>>>>      DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
->>>>>>>>     CR0: 8005003b CR2: 00000004 CR3: 00bf3000 CR4: 00000690
->>>>>>>>     Stack:
->>>>>>>>      00000000 00000000 f147dda4 00000050 00000001 00000000 00000001 00000050
->>>>>>>>      00000001 00000000 d3059000 00000001 00000022 000000a8 00000000 00000000
->>>>>>>>      00000000 000000a1 00000000 00000000 00000001 00000000 00000000 11800000
->>>>>>>>     Call Trace:
->>>>>>>>      [<f923564d>] __btrfs_find_all_roots+0x9d/0xf0 [btrfs]
->>>>>>>>      [<f9237bb1>] btrfs_qgroup_rescan_worker+0x401/0x760 [btrfs]
->>>>>>>>      [<f9206148>] normal_work_helper+0xc8/0x270 [btrfs]
->>>>>>>>      [<c025e38b>] process_one_work+0x11b/0x390
->>>>>>>>      [<c025eea1>] worker_thread+0x101/0x340
->>>>>>>>      [<c026432b>] kthread+0x9b/0xb0
->>>>>>>>      [<c0712a71>] ret_from_kernel_thread+0x21/0x30
->>>>>>>>      [<c0264290>] kthread_create_on_node+0x110/0x110
->>>>>>>>
->>>>>>>> This indicates a NULL corruption in prefs_delayed list.  The further
->>>>>>>> investigation and bisection pointed that the call of ulist_add_merge()
->>>>>>>> results in the corruption.
->>>>>>>>
->>>>>>>> ulist_add_merge() takes u64 as aux and writes a 64bit value into
->>>>>>>> old_aux.  The callers of this function in backref.c, however, pass a
->>>>>>>> pointer of a pointer to old_aux.  That is, the function overwrites
->>>>>>>> 64bit value on 32bit pointer.  This caused a NULL in the adjacent
->>>>>>>> variable, in this case, prefs_delayed.
->>>>>>>>
->>>>>>>> Here is a quick attempt to band-aid over this: a new function,
->>>>>>>> ulist_add_merge_ptr() is introduced to pass/store properly a pointer
->>>>>>>> value instead of u64.  There are still ugly void ** cast remaining
->>>>>>>> in the callers because void ** cannot be taken implicitly.  But, it's
->>>>>>>> safer than explicit cast to u64, anyway.
->>>>>>>>
->>>>>>>> Bugzilla: https://urldefense.proofpoint.com/v1/url?u=https://bugzilla.novell.com/show_bug.cgi?id%3D887046&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=cKCbChRKsMpTX8ybrSkonQ%3D%3D%0A&m=m3qrbo6ngjqKO%2B7ofuwRfQflb9Cx%2FXrF8TKejkPjxfA%3D%0A&s=199a5b6f0ed181925e9ba2c1060fe20d1c8ad2831dd1d96cc7eddd2a343fa72b
->>>>>>>> Cc: <stable@vger.kernel.org> [v3.11+]
->>>>>>>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
->>>>>>>> ---
->>>>>>>>
->>>>>>>> Alternatively, we can change the argument of aux and old_aux to a
->>>>>>>> pointer from u64, as backref.c is the only user of ulist_add_merge()
->>>>>>>> function.  I'll cook up another patch if it's the preferred way.
->>>>>>>>
->>>>>>>
->>>>>>> Yeah lets just use a pointer and see how that works out.  Thanks,
->>>>>>
->>>>>> Oops, I forgot that ulist_add() takes aux as u64 and it calling
->>>>>> ulist_add_merge() internally.  So, we can't change the type blindly
->>>>>> there, unfortunately.
->>>>>
->>>>> Looking back at the code, it seems that all aux arguments passed to
->>>>> ulist_add() in qgroup.c are pointers, too.  So, indeed, all aux values
->>>>> are pointers, so far, and it'd be even cleaner to replace all these
->>>>> from u64 to void *.
->>>>>
->>>>> But, such a replacement patch will become difficult for backporting to
->>>>> stable kernels (the bug existed since 3.11, at least).  So IMO, we
->>>>> should put a smaller fix like my previous one, let it backported to
->>>>> stable kernels, and do more comprehensive replacements to pointer on
->>>>> its top.
->>>>
->>>> Ping.  Could you guys take my original patch as is, or do you prefer
->>>> changing in a different way?  If so, how?
->>>>
->>>
->>> I don't care how hard it is to backport to stable,
->>
->> You must do care as a maintainer.  It's a long-standing and serious
->> bug since 3.11.  The kernel hangs up immediately when you enable quota
->> on 32bit kernel.  And it's really hard to revert it when the rootfs is
->> btrfs.  (The mount follows the immediate hang up after reboot.)
->>
+Hi Boris,
 
-What I mean is that we want the right fix first, not something that is easier to
-pull back to stable and then the right fix later.  Do it right first and then
-backport it to the stable kernels, it's perfectly acceptable to adjust patches
-when sending them to the stable team.  "But it's hard" is not a valid excuse for
-not doing it right the first time.
-
->>> since we're using pointers
->>> everywhere just change it to void * and be done with it.  Thanks,
->>
->> Fix it quickly, then do cleanup.  This is the golden rule for
->> regression :)
+>-----Original Message-----
+>From: Borislav Petkov [mailto:bp@alien8.de]
+>Sent: Monday, July 28, 2014 11:32 PM
+>To: Punnaiah Choudary Kalluri
+>Cc: Punnaiah Choudary Kalluri; dougthompson@xmission.com;
+>robh+dt@kernel.org; pawel.moll@arm.com; Michal Simek;
+>mark.rutland@arm.com; ijc+devicetree@hellion.org.uk; Kumar Gala; Rob
+>Landley; devicetree@vger.kernel.org; linux-doc@vger.kernel.org; linux-
+>edac@vger.kernel.org; linux-kernel@vger.kernel.org; linux-arm-
+>kernel@lists.infradead.org; Punnaiah Choudary; Anirudha Sarangi; Srikanth
+>Vemula
+>Subject: Re: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr
+>ecc controller
 >
-> Also, another question is whether you guys are OK to change the type
-> to a pointer.  Through a glance, the ulist code was intended to handle
-> any generic data, thus it uses u64, right?  Using void pointer breaks
-> this concept.
+>On Mon, Jul 28, 2014 at 10:53:26PM +0530, punnaiah choudary kalluri wrote:
+>> I can agree with you that we can use shorter names.But ZYNQ has
+>> programmable logic next to processing system where one can add soft
+>> memory controller in the same system and may use different driver. So,
+>> the edac driver for zynq may include multiple drivers for different
+>> memory controllers in the same file. In this case it is difficult to
+>> maintain generic macros as you suggested above.
 >
+>So?
+>
+>You can still shorten them a bit - the current names are awfully long.
+>SYNPS_DDRC_ECC_ is too much information, for example. We know it is DDR
+>and we know it is about ECC. So do SYNPS and ZYNQ or OTHER or whatever
+>you wanna call it prefix and then the rest. I.e.,
+>
+>    SYNPS_<reg>_<bits*>
+>    ZYNQ_<reg>_bits*>
+>
+>You can even use single letter prefixes like S_ and Z_ and add a comment
+>explaining what those mean. Still much more readable than the long
+>repeating prefixes currently.
 
-It's fine, ulist today resembles very little from what it was originally.  The
-current users all shove pointers into there, so we might as well just make it a
-pointer.  Thanks,
+Ok.
+>
+>> Also the current edac framework for edac memory controllers is
+>> expecting the mc_num from the driver while allocating the memory
+>> controller instance using the edac_mc_alloc function. This requirement
+>> mandates that if the system contains two different memory controllers
+>> then the corresponding edac drivers should be in single file.
+>
+>So you're telling me that you want one edac driver for *two* memory
+>controllers which can be present on a single system *at* *the* *same*
+>*time*? Is that it?
 
-Josef
+Yes.
+>
+>How exactly is that topology supposed to look like, work, etc, etc? What
+>kind of error reporting do you imagine you want to do with EDAC?
+
+Zynq (All programmable SOC) contains a dual core ARM cortex A9 based processing
+System(PS) and Xilinx programmable logic(PL) in a single device.
+
+Assume the application is a broadcast camera. The design for this system use PS as
+Control plane and use PL as data plane for processing the video data. So, the design 
+may have two different memory controllers one in PS and another one in PL.   
+PS is running with Linux OS and PL doesn't have the OS and it is  controlled by the 
+OS running on PS.
+ Now the requirement is to develop a monitoring system for all the hardware failures 
+Including ddr ecc errors. Since the broadcast camera involves more data processing and
+DDR memory access, there is a high probability of getting ddr ecc errors over the period.
+So, the user should be intimated with these errors when they occur and if the error rate
+ is high, then the user can consider the preventive methods. Without this error reporting
+mechanism it is difficult to debug the issues like memory corruption, kernel oops which
+ may occur due to ddr ecc failures.
+
+Since, the memory controllers are different, it need two edac drivers for reporting the ecc 
+errors and also maintaining the statistics of that particular memory controller. With the current
+framework, there is a chance that both the drivers get mc_num as zero and malfunction. 
+Assume the code for the two drivers looks like below
+
+Driver 1:
+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
+			    sizeof(struct  ctrl1_drvdata));
+
+Driver 2:
+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
+			    sizeof(struct ctrl2_drvdata));
+
+Issue:
+  Since driver is providing the mc_num to framework, now there is chance that only one device active as
+ both the drivers claiming the same number.
+
+Solution 1:
+ Keep two drivers in single file and use static global variable for tracking the mc_num. This solution looks
+good but the drivers may not be generic as these driver would be in a zynq_edac.c file. So others may not
+reuse these drivers
+static int mc_num = 0;
+
+Driver 1:
+	mci = edac_mc_alloc(mc_num, ARRAY_SIZE(layers), layers,
+			    sizeof(struct  ctrl1_drvdata));
+              mc_num++;
+
+Driver 2:
+	mci = edac_mc_alloc(mc_num, ARRAY_SIZE(layers), layers,
+			    sizeof(struct ctrl2_drvdata));
+                 mc_num++;
+
+Solution 2:
+  Let the framework assign the mc_num to the edac driver
+
+     mc_num = edac_mc_get_id(); /* returns the next available mci slot */
+     mci = edac_mc_alloc(mc_num,...);
+
+
+In my opinion solution 2  looks neat and it eliminates the dependency on tracking
+ the mc_num.
+
+Please suggest your view on this solution.
+ 
+At this point of time, my requirement is reporting the ecc correctable and uncorrectable
+ errors and also maintaining the error stats for future decision making. Since the linux edac
+Framework is ready, we decided to use this framework.
+ 
+Meanwhile, I will  submit the next revision of the patch for the above cooments. 
+
+Regards,
+Punnaiah
+>
+>IOW, more info would be appreciated.
+>
+>Thanks.
+>
+>--
+>Regards/Gruss,
+>    Boris.
+>
+>Sent from a fat crate under my desk. Formatting is fine.
+>--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
