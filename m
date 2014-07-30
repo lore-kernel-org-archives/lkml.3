@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165AbaG3CD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:03:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60533 "EHLO
+	id S1755014AbaG3Bts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:49:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60508 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755007AbaG3Btr (ORCPT
+	with ESMTP id S1754966AbaG3Btp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:47 -0400
+	Tue, 29 Jul 2014 21:49:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.14 07/29] block: dont assume last put of shared tags is for the host
-Date: Tue, 29 Jul 2014 18:48:42 -0700
-Message-Id: <20140730014809.610789939@linuxfoundation.org>
+        Randy Dunlap <rdunlap@infradead.org>, Mark Salter <msalter@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 20/29] parport: fix menu breakage
+Date: Tue, 29 Jul 2014 18:48:55 -0700
+Message-Id: <20140730014810.182534349@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014809.316066303@linuxfoundation.org>
 References: <20140730014809.316066303@linuxfoundation.org>
@@ -28,90 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Randy Dunlap <rdunlap@infradead.org>
 
-commit d45b3279a5a2252cafcd665bbf2db8c9b31ef783 upstream.
+commit edffe1b626b39bd7121691dfdecb548431003bbb upstream.
 
-There is no inherent reason why the last put of a tag structure must be
-the one for the Scsi_Host, as device model objects can be held for
-arbitrary periods.  Merge blk_free_tags and __blk_free_tags into a single
-funtion that just release a references and get rid of the BUG() when the
-host reference wasn't the last.
+Do not split the PARPORT-related symbols with the new kconfig
+symbol ARCH_MIGHT_HAVE_PC_PARPORT. The split was causing incorrect
+display of these symbols -- they were not being displayed together
+as they should be.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Fixes: d90c3eb31535 "Kconfig cleanup (PARPORT_PC dependencies)"
+
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: Mark Salter <msalter@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-tag.c |   33 +++++++--------------------------
- 1 file changed, 7 insertions(+), 26 deletions(-)
+ drivers/parport/Kconfig |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/block/blk-tag.c
-+++ b/block/blk-tag.c
-@@ -27,18 +27,15 @@ struct request *blk_queue_find_tag(struc
- EXPORT_SYMBOL(blk_queue_find_tag);
+--- a/drivers/parport/Kconfig
++++ b/drivers/parport/Kconfig
+@@ -5,6 +5,12 @@
+ # Parport configuration.
+ #
  
- /**
-- * __blk_free_tags - release a given set of tag maintenance info
-+ * blk_free_tags - release a given set of tag maintenance info
-  * @bqt:	the tag map to free
-  *
-- * Tries to free the specified @bqt.  Returns true if it was
-- * actually freed and false if there are still references using it
-+ * Drop the reference count on @bqt and frees it when the last reference
-+ * is dropped.
-  */
--static int __blk_free_tags(struct blk_queue_tag *bqt)
-+void blk_free_tags(struct blk_queue_tag *bqt)
- {
--	int retval;
++config ARCH_MIGHT_HAVE_PC_PARPORT
++	bool
++	help
++	  Select this config option from the architecture Kconfig if
++	  the architecture might have PC parallel port hardware.
++
+ menuconfig PARPORT
+ 	tristate "Parallel port support"
+ 	depends on HAS_IOMEM
+@@ -31,12 +37,6 @@ menuconfig PARPORT
+ 
+ 	  If unsure, say Y.
+ 
+-config ARCH_MIGHT_HAVE_PC_PARPORT
+-	bool
+-	help
+-	  Select this config option from the architecture Kconfig if
+-	  the architecture might have PC parallel port hardware.
 -
--	retval = atomic_dec_and_test(&bqt->refcnt);
--	if (retval) {
-+	if (atomic_dec_and_test(&bqt->refcnt)) {
- 		BUG_ON(find_first_bit(bqt->tag_map, bqt->max_depth) <
- 							bqt->max_depth);
+ if PARPORT
  
-@@ -50,9 +47,8 @@ static int __blk_free_tags(struct blk_qu
- 
- 		kfree(bqt);
- 	}
--
--	return retval;
- }
-+EXPORT_SYMBOL(blk_free_tags);
- 
- /**
-  * __blk_queue_free_tags - release tag maintenance info
-@@ -69,28 +65,13 @@ void __blk_queue_free_tags(struct reques
- 	if (!bqt)
- 		return;
- 
--	__blk_free_tags(bqt);
-+	blk_free_tags(bqt);
- 
- 	q->queue_tags = NULL;
- 	queue_flag_clear_unlocked(QUEUE_FLAG_QUEUED, q);
- }
- 
- /**
-- * blk_free_tags - release a given set of tag maintenance info
-- * @bqt:	the tag map to free
-- *
-- * For externally managed @bqt frees the map.  Callers of this
-- * function must guarantee to have released all the queues that
-- * might have been using this tag map.
-- */
--void blk_free_tags(struct blk_queue_tag *bqt)
--{
--	if (unlikely(!__blk_free_tags(bqt)))
--		BUG();
--}
--EXPORT_SYMBOL(blk_free_tags);
--
--/**
-  * blk_queue_free_tags - release tag maintenance info
-  * @q:  the request queue for the device
-  *
+ config PARPORT_PC
 
 
