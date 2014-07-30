@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953AbaG3M3S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:29:18 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36752 "EHLO
+	id S1754913AbaG3M3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:29:17 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36755 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752933AbaG3MPd (ORCPT
+	by vger.kernel.org with ESMTP id S1752947AbaG3MPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:33 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ben Pfaff <blp@nicira.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 50/94] netlink: Fix handling of error from netlink_dump().
-Date: Wed, 30 Jul 2014 14:14:39 +0200
-Message-Id: <8df19ce788d3d18eb4054862daa55a7ee4c883b0.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sharvil Nanavati <sharvil@google.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 66/94] alarmtimer: Fix bug where relative alarm timers were treated as absolute
+Date: Wed, 30 Jul 2014 14:14:55 +0200
+Message-Id: <bde32a05cc099e4ba4a117afb678134dd7082e82.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,59 +25,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Pfaff <blp@nicira.com>
+From: John Stultz <john.stultz@linaro.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit ac30ef832e6af0505b6f0251a6659adcfa74975e ]
+commit 16927776ae757d0d132bdbfabbfe2c498342bd59 upstream.
 
-netlink_dump() returns a negative errno value on error.  Until now,
-netlink_recvmsg() directly recorded that negative value in sk->sk_err, but
-that's wrong since sk_err takes positive errno values.  (This manifests as
-userspace receiving a positive return value from the recv() system call,
-falsely indicating success.) This bug was introduced in the commit that
-started checking the netlink_dump() return value, commit b44d211 (netlink:
-handle errors from netlink_dump()).
+Sharvil noticed with the posix timer_settime interface, using the
+CLOCK_REALTIME_ALARM or CLOCK_BOOTTIME_ALARM clockid, if the users
+tried to specify a relative time timer, it would incorrectly be
+treated as absolute regardless of the state of the flags argument.
 
-Multithreaded Netlink dumps are one way to trigger this behavior in
-practice, as described in the commit message for the userspace workaround
-posted here:
-    http://openvswitch.org/pipermail/dev/2014-June/042339.html
+This patch corrects this, properly checking the absolute/relative flag,
+as well as adds further error checking that no invalid flag bits are set.
 
-This commit also fixes the same bug in netlink_poll(), introduced in commit
-cd1df525d (netlink: add flow control for memory mapped I/O).
-
-Signed-off-by: Ben Pfaff <blp@nicira.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sharvil Nanavati <sharvil@google.com>
+Link: http://lkml.kernel.org/r/1404767171-6902-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/netlink/af_netlink.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/time/alarmtimer.c | 20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index e6d457c4a4e4..d9a2598a5190 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -628,7 +628,7 @@ static unsigned int netlink_poll(struct file *file, struct socket *sock,
- 		while (nlk->cb_running && netlink_dump_space(nlk)) {
- 			err = netlink_dump(sk);
- 			if (err < 0) {
--				sk->sk_err = err;
-+				sk->sk_err = -err;
- 				sk->sk_error_report(sk);
- 				break;
- 			}
-@@ -2440,7 +2440,7 @@ static int netlink_recvmsg(struct kiocb *kiocb, struct socket *sock,
- 	    atomic_read(&sk->sk_rmem_alloc) <= sk->sk_rcvbuf / 2) {
- 		ret = netlink_dump(sk);
- 		if (ret) {
--			sk->sk_err = ret;
-+			sk->sk_err = -ret;
- 			sk->sk_error_report(sk);
- 		}
- 	}
+diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+index 88c9c65a430d..fe75444ae7ec 100644
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -585,9 +585,14 @@ static int alarm_timer_set(struct k_itimer *timr, int flags,
+ 				struct itimerspec *new_setting,
+ 				struct itimerspec *old_setting)
+ {
++	ktime_t exp;
++
+ 	if (!rtcdev)
+ 		return -ENOTSUPP;
+ 
++	if (flags & ~TIMER_ABSTIME)
++		return -EINVAL;
++
+ 	if (old_setting)
+ 		alarm_timer_get(timr, old_setting);
+ 
+@@ -597,8 +602,16 @@ static int alarm_timer_set(struct k_itimer *timr, int flags,
+ 
+ 	/* start the timer */
+ 	timr->it.alarm.interval = timespec_to_ktime(new_setting->it_interval);
+-	alarm_start(&timr->it.alarm.alarmtimer,
+-			timespec_to_ktime(new_setting->it_value));
++	exp = timespec_to_ktime(new_setting->it_value);
++	/* Convert (if necessary) to absolute time */
++	if (flags != TIMER_ABSTIME) {
++		ktime_t now;
++
++		now = alarm_bases[timr->it.alarm.alarmtimer.type].gettime();
++		exp = ktime_add(now, exp);
++	}
++
++	alarm_start(&timr->it.alarm.alarmtimer, exp);
+ 	return 0;
+ }
+ 
+@@ -730,6 +743,9 @@ static int alarm_timer_nsleep(const clockid_t which_clock, int flags,
+ 	if (!alarmtimer_get_rtcdev())
+ 		return -ENOTSUPP;
+ 
++	if (flags & ~TIMER_ABSTIME)
++		return -EINVAL;
++
+ 	if (!capable(CAP_WAKE_ALARM))
+ 		return -EPERM;
+ 
 -- 
 2.0.1
 
