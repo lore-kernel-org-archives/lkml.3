@@ -1,84 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160AbaG3MPv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:15:51 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36800 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753042AbaG3MPe (ORCPT
+	id S1753254AbaG3MQi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:16:38 -0400
+Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:47695 "EHLO
+	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752676AbaG3MQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 08:15:34 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 78/94] media: tda10071: force modulation to QPSK on DVB-S
-Date: Wed, 30 Jul 2014 14:15:07 +0200
-Message-Id: <aa0bb3b50855eefdfbf93e7d87999e4b7cf53390.1406722270.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
-References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
-In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
-References: <cover.1406722269.git.jslaby@suse.cz>
+	Wed, 30 Jul 2014 08:16:37 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH] Input: jornada720_ts: Switch to using Managed resources
+Date: Wed, 30 Jul 2014 17:39:43 +0530
+Message-Id: <1406722183-22678-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Antti Palosaari <crope@iki.fi>
+This switches the driver to using managed resources to simplify
+error handling and to do away with remove function.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Also fixes some indentations by replacing spaces with tabs.
 
-===============
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit db4175ae2095634dbecd4c847da439f9c83e1b3b upstream.
-
-Only supported modulation for DVB-S is QPSK. Modulation parameter
-contains invalid value for DVB-S on some cases, which leads driver
-refusing tuning attempt. Due to that, hard code modulation to QPSK
-in case of DVB-S.
-
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 ---
- drivers/media/dvb-frontends/tda10071.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/input/touchscreen/jornada720_ts.c |   62 ++++++++++-------------------
+ 1 file changed, 20 insertions(+), 42 deletions(-)
 
-diff --git a/drivers/media/dvb-frontends/tda10071.c b/drivers/media/dvb-frontends/tda10071.c
-index 8ad3a57cf640..287b977862e2 100644
---- a/drivers/media/dvb-frontends/tda10071.c
-+++ b/drivers/media/dvb-frontends/tda10071.c
-@@ -667,6 +667,7 @@ static int tda10071_set_frontend(struct dvb_frontend *fe)
- 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
- 	int ret, i;
- 	u8 mode, rolloff, pilot, inversion, div;
-+	fe_modulation_t modulation;
+diff --git a/drivers/input/touchscreen/jornada720_ts.c b/drivers/input/touchscreen/jornada720_ts.c
+index 7324c5c..0c23bba 100644
+--- a/drivers/input/touchscreen/jornada720_ts.c
++++ b/drivers/input/touchscreen/jornada720_ts.c
+@@ -37,21 +37,21 @@ struct jornada_ts {
+ static void jornada720_ts_collect_data(struct jornada_ts *jornada_ts)
+ {
  
- 	dev_dbg(&priv->i2c->dev, "%s: delivery_system=%d modulation=%d " \
- 		"frequency=%d symbol_rate=%d inversion=%d pilot=%d " \
-@@ -701,10 +702,13 @@ static int tda10071_set_frontend(struct dvb_frontend *fe)
+-    /* 3 low word X samples */
+-    jornada_ts->x_data[0] = jornada_ssp_byte(TXDUMMY);
+-    jornada_ts->x_data[1] = jornada_ssp_byte(TXDUMMY);
+-    jornada_ts->x_data[2] = jornada_ssp_byte(TXDUMMY);
++	/* 3 low word X samples */
++	jornada_ts->x_data[0] = jornada_ssp_byte(TXDUMMY);
++	jornada_ts->x_data[1] = jornada_ssp_byte(TXDUMMY);
++	jornada_ts->x_data[2] = jornada_ssp_byte(TXDUMMY);
  
- 	switch (c->delivery_system) {
- 	case SYS_DVBS:
-+		modulation = QPSK;
- 		rolloff = 0;
- 		pilot = 2;
- 		break;
- 	case SYS_DVBS2:
-+		modulation = c->modulation;
-+
- 		switch (c->rolloff) {
- 		case ROLLOFF_20:
- 			rolloff = 2;
-@@ -749,7 +753,7 @@ static int tda10071_set_frontend(struct dvb_frontend *fe)
+-    /* 3 low word Y samples */
+-    jornada_ts->y_data[0] = jornada_ssp_byte(TXDUMMY);
+-    jornada_ts->y_data[1] = jornada_ssp_byte(TXDUMMY);
+-    jornada_ts->y_data[2] = jornada_ssp_byte(TXDUMMY);
++	/* 3 low word Y samples */
++	jornada_ts->y_data[0] = jornada_ssp_byte(TXDUMMY);
++	jornada_ts->y_data[1] = jornada_ssp_byte(TXDUMMY);
++	jornada_ts->y_data[2] = jornada_ssp_byte(TXDUMMY);
  
- 	for (i = 0, mode = 0xff; i < ARRAY_SIZE(TDA10071_MODCOD); i++) {
- 		if (c->delivery_system == TDA10071_MODCOD[i].delivery_system &&
--			c->modulation == TDA10071_MODCOD[i].modulation &&
-+			modulation == TDA10071_MODCOD[i].modulation &&
- 			c->fec_inner == TDA10071_MODCOD[i].fec) {
- 			mode = TDA10071_MODCOD[i].val;
- 			dev_dbg(&priv->i2c->dev, "%s: mode found=%02x\n",
+-    /* combined x samples bits */
+-    jornada_ts->x_data[3] = jornada_ssp_byte(TXDUMMY);
++	/* combined x samples bits */
++	jornada_ts->x_data[3] = jornada_ssp_byte(TXDUMMY);
+ 
+-    /* combined y samples bits */
+-    jornada_ts->y_data[3] = jornada_ssp_byte(TXDUMMY);
++	/* combined y samples bits */
++	jornada_ts->y_data[3] = jornada_ssp_byte(TXDUMMY);
+ }
+ 
+ static int jornada720_ts_average(int coords[4])
+@@ -104,13 +104,10 @@ static int jornada720_ts_probe(struct platform_device *pdev)
+ 	struct input_dev *input_dev;
+ 	int error;
+ 
+-	jornada_ts = kzalloc(sizeof(struct jornada_ts), GFP_KERNEL);
+-	input_dev = input_allocate_device();
+-
+-	if (!jornada_ts || !input_dev) {
+-		error = -ENOMEM;
+-		goto fail1;
+-	}
++	jornada_ts = devm_kzalloc(&pdev->dev, sizeof(*jornada_ts), GFP_KERNEL);
++	input_dev = devm_input_allocate_device(&pdev->dev);
++	if (!jornada_ts || !input_dev)
++		return -ENOMEM;
+ 
+ 	platform_set_drvdata(pdev, jornada_ts);
+ 
+@@ -126,36 +123,18 @@ static int jornada720_ts_probe(struct platform_device *pdev)
+ 	input_set_abs_params(input_dev, ABS_X, 270, 3900, 0, 0);
+ 	input_set_abs_params(input_dev, ABS_Y, 180, 3700, 0, 0);
+ 
+-	error = request_irq(IRQ_GPIO9,
++	error = devm_request_irq(&pdev->dev, IRQ_GPIO9,
+ 			jornada720_ts_interrupt,
+ 			IRQF_TRIGGER_RISING,
+ 			"HP7XX Touchscreen driver", pdev);
+ 	if (error) {
+-		printk(KERN_INFO "HP7XX TS : Unable to acquire irq!\n");
+-		goto fail1;
++		dev_err(&pdev->dev, "HP7XX TS : Unable to acquire irq!\n");
++		return error;
+ 	}
+ 
+ 	error = input_register_device(jornada_ts->dev);
+ 	if (error)
+-		goto fail2;
+-
+-	return 0;
+-
+- fail2:
+-	free_irq(IRQ_GPIO9, pdev);
+- fail1:
+-	input_free_device(input_dev);
+-	kfree(jornada_ts);
+-	return error;
+-}
+-
+-static int jornada720_ts_remove(struct platform_device *pdev)
+-{
+-	struct jornada_ts *jornada_ts = platform_get_drvdata(pdev);
+-
+-	free_irq(IRQ_GPIO9, pdev);
+-	input_unregister_device(jornada_ts->dev);
+-	kfree(jornada_ts);
++		return error;
+ 
+ 	return 0;
+ }
+@@ -165,7 +144,6 @@ MODULE_ALIAS("platform:jornada_ts");
+ 
+ static struct platform_driver jornada720_ts_driver = {
+ 	.probe		= jornada720_ts_probe,
+-	.remove		= jornada720_ts_remove,
+ 	.driver		= {
+ 		.name	= "jornada_ts",
+ 		.owner	= THIS_MODULE,
 -- 
-2.0.1
+1.7.9.5
 
