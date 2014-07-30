@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840AbaG3DIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 23:08:21 -0400
-Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:4776
+	id S1754910AbaG3DIe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 23:08:34 -0400
+Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:4660
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753918AbaG3DIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 23:08:18 -0400
+	id S1753918AbaG3DIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 23:08:22 -0400
 From: Nicolin Chen <nicoleotsuka@gmail.com>
 To: <broonie@kernel.org>
 CC: <alsa-devel@alsa-project.org>, <lgirdwood@gmail.com>, <tiwai@suse.de>,
         <perex@perex.cz>, <linux-kernel@vger.kernel.org>, <timur@tabi.org>,
         <Li.Xiubo@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
         <b42378@freescale.com>, <b02247@freescale.com>
-Subject: [PATCH 3/4] ASoC: fsl_spdif: Add stream names for DPCM usage
-Date: Wed, 30 Jul 2014 11:10:28 +0800
-Message-ID: <d8b80d9f84e923104ccc714d1c2e7d480596db92.1406688049.git.nicoleotsuka@gmail.com>
+Subject: [PATCH 4/4] ASoC: fsl_ssi: Add stream names for DPCM usage
+Date: Wed, 30 Jul 2014 11:10:29 +0800
+Message-ID: <891b9f4edbba81a03c2b8350abc5ccf923db9260.1406688049.git.nicoleotsuka@gmail.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <cover.1406688048.git.nicoleotsuka@gmail.com>
 References: <cover.1406688048.git.nicoleotsuka@gmail.com>
 X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130511632959816132;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(73972005)(64706001)(20776003)(55446002)(88136002)(19580405001)(4396001)(92726001)(107046002)(81542001)(86362001)(92566001)(89996001)(62966002)(47776003)(95666004)(50466002)(6806004)(81442001)(229853001)(85306003)(102836001)(81342001)(105596002)(106466001)(19580395003)(48376002)(26826002)(87936001)(44976005)(83072002)(50226001)(68736004)(46102001)(79102001)(104166001)(61266001)(21056001)(77982001)(76176999)(73392001)(97736001)(80022001)(50986999)(104016003)(110136001)(33646002)(82202001)(74662001)(36756003)(93916002)(85852003)(2351001)(87286001)(31966008)(87572001)(99396002)(84676001)(77156001)(74502001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB361;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Matching-Connectors: 130511632993351268;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(80022001)(85306003)(79102001)(82202001)(87936001)(81442001)(36756003)(76176999)(83072002)(46102001)(26826002)(99396002)(61266001)(105596002)(50986999)(104016003)(21056001)(229853001)(93916002)(89996001)(81542001)(104166001)(55446002)(110136001)(106466001)(77156001)(81342001)(85852003)(92566001)(33646002)(87572001)(107046002)(86362001)(20776003)(2351001)(88136002)(19580405001)(6806004)(44976005)(87286001)(50466002)(74662001)(19580395003)(74502001)(73972005)(102836001)(50226001)(95666004)(84676001)(47776003)(77982001)(92726001)(48376002)(31966008)(68736004)(97736001)(73392001)(64706001)(4396001)(62966002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB364;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
@@ -35,32 +35,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 DPCM needs extra dapm routes in the machine driver to route audio
 between Front-End and Back-End. In order to differ the stream names
 in the route map from CODECs, we here add specific stream names to
-SPDIF driver so that we can implement ASRC via DPCM to it.
+SSI driver so that we can implement ASRC via DPCM to it.
 
 Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
 ---
- sound/soc/fsl/fsl_spdif.c | 2 ++
+ sound/soc/fsl/fsl_ssi.c | 2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/sound/soc/fsl/fsl_spdif.c b/sound/soc/fsl/fsl_spdif.c
-index 495b9f3..70acfe4 100644
---- a/sound/soc/fsl/fsl_spdif.c
-+++ b/sound/soc/fsl/fsl_spdif.c
-@@ -975,12 +975,14 @@ static int fsl_spdif_dai_probe(struct snd_soc_dai *dai)
- static struct snd_soc_dai_driver fsl_spdif_dai = {
- 	.probe = &fsl_spdif_dai_probe,
+diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
+index 3043d57..87eb577 100644
+--- a/sound/soc/fsl/fsl_ssi.c
++++ b/sound/soc/fsl/fsl_ssi.c
+@@ -1032,12 +1032,14 @@ static const struct snd_soc_dai_ops fsl_ssi_dai_ops = {
+ static struct snd_soc_dai_driver fsl_ssi_dai_template = {
+ 	.probe = fsl_ssi_dai_probe,
  	.playback = {
 +		.stream_name = "CPU-Playback",
- 		.channels_min = 2,
+ 		.channels_min = 1,
  		.channels_max = 2,
- 		.rates = FSL_SPDIF_RATES_PLAYBACK,
- 		.formats = FSL_SPDIF_FORMATS_PLAYBACK,
+ 		.rates = FSLSSI_I2S_RATES,
+ 		.formats = FSLSSI_I2S_FORMATS,
  	},
  	.capture = {
 +		.stream_name = "CPU-Capture",
- 		.channels_min = 2,
+ 		.channels_min = 1,
  		.channels_max = 2,
- 		.rates = FSL_SPDIF_RATES_CAPTURE,
+ 		.rates = FSLSSI_I2S_RATES,
 -- 
 1.8.4
 
