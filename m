@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460AbaG3Byf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:54:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60721 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755208AbaG3BuL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755203AbaG3BuL (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 29 Jul 2014 21:50:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60651 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755132AbaG3BuC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 21:50:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Guillaume Morin <guillaume@morinfr.org>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 32/37] mm: hugetlb: fix copy_hugetlb_page_range()
-Date: Tue, 29 Jul 2014 18:49:08 -0700
-Message-Id: <20140730014829.280839785@linuxfoundation.org>
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.15 02/37] media: media: v4l2-core: v4l2-dv-timings.c: Cleaning up code wrong value used in aspect ratio
+Date: Tue, 29 Jul 2014 18:48:38 -0700
+Message-Id: <20140730014827.715456865@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014827.565626091@linuxfoundation.org>
 References: <20140730014827.565626091@linuxfoundation.org>
@@ -32,70 +31,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-commit 0253d634e0803a8376a0d88efee0bf523d8673f9 upstream.
+commit f71920efb1066d71d74811e1dbed658173adf9bf upstream.
 
-Commit 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
-migration/hwpoisoned entry") changed the order of
-huge_ptep_set_wrprotect() and huge_ptep_get(), which leads to breakage
-in some workloads like hugepage-backed heap allocation via libhugetlbfs.
-This patch fixes it.
+Wrong value used in same cases for the aspect ratio.
 
-The test program for the problem is shown below:
-
-  $ cat heap.c
-  #include <unistd.h>
-  #include <stdlib.h>
-  #include <string.h>
-
-  #define HPS 0x200000
-
-  int main() {
-  	int i;
-  	char *p = malloc(HPS);
-  	memset(p, '1', HPS);
-  	for (i = 0; i < 5; i++) {
-  		if (!fork()) {
-  			memset(p, '2', HPS);
-  			p = malloc(HPS);
-  			memset(p, '3', HPS);
-  			free(p);
-  			return 0;
-  		}
-  	}
-  	sleep(1);
-  	free(p);
-  	return 0;
-  }
-
-  $ export HUGETLB_MORECORE=yes ; export HUGETLB_NO_PREFAULT= ; hugectl --heap ./heap
-
-Fixes 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
-migration/hwpoisoned entry"), so is applicable to -stable kernels which
-include it.
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reported-by: Guillaume Morin <guillaume@morinfr.org>
-Suggested-by: Guillaume Morin <guillaume@morinfr.org>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/hugetlb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/v4l2-core/v4l2-dv-timings.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2461,6 +2461,7 @@ int copy_hugetlb_page_range(struct mm_st
- 		} else {
- 			if (cow)
- 				huge_ptep_set_wrprotect(src, addr, src_pte);
-+			entry = huge_ptep_get(src_pte);
- 			ptepage = pte_page(entry);
- 			get_page(ptepage);
- 			page_dup_rmap(ptepage);
+--- a/drivers/media/v4l2-core/v4l2-dv-timings.c
++++ b/drivers/media/v4l2-core/v4l2-dv-timings.c
+@@ -599,10 +599,10 @@ struct v4l2_fract v4l2_calc_aspect_ratio
+ 		aspect.denominator = 9;
+ 	} else if (ratio == 34) {
+ 		aspect.numerator = 4;
+-		aspect.numerator = 3;
++		aspect.denominator = 3;
+ 	} else if (ratio == 68) {
+ 		aspect.numerator = 15;
+-		aspect.numerator = 9;
++		aspect.denominator = 9;
+ 	} else {
+ 		aspect.numerator = hor_landscape + 99;
+ 		aspect.denominator = 100;
 
 
