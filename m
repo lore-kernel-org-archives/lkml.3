@@ -1,98 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879AbaG3GZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 02:25:53 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:51593 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407AbaG3GZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 02:25:49 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Drysdale <drysdale@google.com>
-Cc: LSM List <linux-security-module@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>
-References: <1406296033-32693-1-git-send-email-drysdale@google.com>
-	<871tt796i0.fsf@x220.int.ebiederm.org>
-	<CAHse=S_7Jpb9bTXHgU8q8_UZ=ce2gwdq8C15a+jbfO_pHmV_iA@mail.gmail.com>
-	<87ha21qja0.fsf@x220.int.ebiederm.org>
-	<CAHse=S_w4+AMuc=-XbAK_PiaD56_ks13R53RENMHif5KRN_Kiw@mail.gmail.com>
-Date: Tue, 29 Jul 2014 23:22:01 -0700
-In-Reply-To: <CAHse=S_w4+AMuc=-XbAK_PiaD56_ks13R53RENMHif5KRN_Kiw@mail.gmail.com>
-	(David Drysdale's message of "Tue, 29 Jul 2014 11:58:21 +0100")
-Message-ID: <87iomfgyd2.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S932079AbaG3G0a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 02:26:30 -0400
+Received: from mx0b-0016ce01.pphosted.com ([67.231.156.153]:20557 "EHLO
+	mx0b-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752135AbaG3G03 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 02:26:29 -0400
+From: Nilesh Javali <nilesh.javali@qlogic.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "Vikas Chaudhary" <vikas.chaudhary@qlogic.com>,
+        Dept-Eng iSCSI Driver <Dept-iSCSIDriver@qlogic.com>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] scsi: qla4xxx: ql4_mbx.c:  Cleaning up missing
+ null-terminate in conjunction with strncpy
+Thread-Topic: [PATCH] scsi: qla4xxx: ql4_mbx.c:  Cleaning up missing
+ null-terminate in conjunction with strncpy
+Thread-Index: AQHPqartC/6vmequq0ixuVr9rXsurZu4Kt8Q
+Date: Wed, 30 Jul 2014 06:26:21 +0000
+Message-ID: <058691E078642A44B7C96BB0B1DB4F2446C29A25@avmb2.qlogic.org>
+References: <1406473062-12509-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1406473062-12509-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.4.10]
+disclaimer: bypass
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX192xcS6SemSKnWGelvwlzrpmyt/Dy0Qhko=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  3.0 XMDrug1234561 Drug references
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4999]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ****;David Drysdale <drysdale@google.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC PATCHv2 00/11] Adding FreeBSD's Capsicum security framework
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7514 signatures=670489
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1407300083
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Acked-By: Nilesh Javali <nilesh.javali@qlogic.com>
 
-I have cut this down to just focus on O_BENEATH openat case.
 
-David Drysdale <drysdale@google.com> writes:
+-----Original Message-----
+From: Rickard Strandqvist [mailto:rickard_strandqvist@spectrumdigital.se] 
+Sent: Sunday, July 27, 2014 8:28 PM
+To: Vikas Chaudhary; Dept-Eng iSCSI Driver
+Cc: Rickard Strandqvist; James E.J. Bottomley; linux-scsi; linux-kernel
+Subject: [PATCH] scsi: qla4xxx: ql4_mbx.c: Cleaning up missing null-terminate in conjunction with strncpy
 
-> On Mon, Jul 28, 2014 at 10:13 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
+Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+And in some cases modified to copy one character less than the overall length, as the entire area is already zeroed.
 
->> Nope.  What you can implement today if you want fine grained limitations
->> like this is to create a mount namespace with exactly the subdirectory
->> tree you want to allow access to and to return a file descriptor that
->> points into that mount namespace.  (When complete the only user of that
->> mount namespace would be your file descriptor).
->
-> How does that solve the particular example I mentioned?  The DFD
-> within the mount namespace will still allow any operation on any file
-> that's already in the subdirectory -- or am I misunderstanding
-> something?
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/scsi/qla4xxx/ql4_mbx.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-The goal was to bound the DFD to the directory and all of it's
-subdirectories such that openat(dfd, "../../..") would open
-the dfd, and that further opens of other directories would also not
-allow you to escape.
+diff --git a/drivers/scsi/qla4xxx/ql4_mbx.c b/drivers/scsi/qla4xxx/ql4_mbx.c index 0a3312c..2b2756e 100644
+--- a/drivers/scsi/qla4xxx/ql4_mbx.c
++++ b/drivers/scsi/qla4xxx/ql4_mbx.c
+@@ -1620,8 +1620,8 @@ int qla4xxx_get_chap(struct scsi_qla_host *ha, char *username, char *password,
+ 		goto exit_get_chap;
+ 	}
+ 
+-	strncpy(password, chap_table->secret, QL4_CHAP_MAX_SECRET_LEN);
+-	strncpy(username, chap_table->name, QL4_CHAP_MAX_NAME_LEN);
++	strlcpy(password, chap_table->secret, QL4_CHAP_MAX_SECRET_LEN);
++	strlcpy(username, chap_table->name, QL4_CHAP_MAX_NAME_LEN);
+ 	chap_table->cookie = __constant_cpu_to_le16(CHAP_VALID_COOKIE);
+ 
+ exit_get_chap:
+@@ -1663,8 +1663,8 @@ int qla4xxx_set_chap(struct scsi_qla_host *ha, char *username, char *password,
+ 	else
+ 		chap_table->flags |= BIT_7; /* local */
+ 	chap_table->secret_len = strlen(password);
+-	strncpy(chap_table->secret, password, MAX_CHAP_SECRET_LEN);
+-	strncpy(chap_table->name, username, MAX_CHAP_NAME_LEN);
++	strncpy(chap_table->secret, password, MAX_CHAP_SECRET_LEN - 1);
++	strncpy(chap_table->name, username, MAX_CHAP_NAME_LEN - 1);
+ 	chap_table->cookie = __constant_cpu_to_le16(CHAP_VALID_COOKIE);
+ 
+ 	if (is_qla40XX(ha)) {
+@@ -1742,8 +1742,8 @@ int qla4xxx_get_uni_chap_at_index(struct scsi_qla_host *ha, char *username,
+ 		goto exit_unlock_uni_chap;
+ 	}
+ 
+-	strncpy(password, chap_table->secret, MAX_CHAP_SECRET_LEN);
+-	strncpy(username, chap_table->name, MAX_CHAP_NAME_LEN);
++	strlcpy(password, chap_table->secret, MAX_CHAP_SECRET_LEN);
++	strlcpy(username, chap_table->name, MAX_CHAP_NAME_LEN);
+ 
+ 	rval = QLA_SUCCESS;
+ 
+@@ -2295,7 +2295,7 @@ int qla4_8xxx_set_param(struct scsi_qla_host *ha, int param)
+ 	if (param == SET_DRVR_VERSION) {
+ 		mbox_cmd[1] = SET_DRVR_VERSION;
+ 		strncpy((char *)&mbox_cmd[2], QLA4XXX_DRIVER_VERSION,
+-			MAX_DRVR_VER_LEN);
++			MAX_DRVR_VER_LEN - 1);
+ 	} else {
+ 		ql4_printk(KERN_ERR, ha, "%s: invalid parameter 0x%x\n",
+ 			   __func__, param);
+--
+1.7.10.4
 
-Since the mount namespace only contains the choosen directory and it's
-subdirectories that works easily and trivially.
-
-So while you can indeed perform any file operation on that dfd who
-cares because none of those operations can get you anywhere you aren't
-supposed to be.
-
-My point was that you can as granular as you would like by binding a dfd
-to a mount namespace instead of binding a process to a mount namespace,
-and the code already exists and is being maintained.
-
-So while things are not packaged in the form that has been requested it
-looks to me as if the functionality for directories already exists
-within the Linux kernel.
-
-Eric
