@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514AbaG3UE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 16:04:56 -0400
-Received: from smtp.opengridcomputing.com ([72.48.136.20]:56786 "EHLO
-	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750836AbaG3UEz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 16:04:55 -0400
-X-Greylist: delayed 325 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Jul 2014 16:04:55 EDT
-Message-ID: <53D94EA6.10201@opengridcomputing.com>
-Date: Wed, 30 Jul 2014 14:59:34 -0500
-From: Steve Wise <swise@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751685AbaG3UF4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 16:05:56 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:33416 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751230AbaG3UFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 16:05:55 -0400
+Date: Wed, 30 Jul 2014 14:05:13 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Richard Zhu <r65037@freescale.com>,
+        Marek Vasut <marex@denx.de>, Randy Dunlap <rdunlap@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-pci@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7 4/5] PCI: add PCI controller for keystone PCIe h/w
+Message-ID: <20140730200513.GA11918@obsidianresearch.com>
+References: <1405961925-27248-1-git-send-email-m-karicheri2@ti.com>
+ <1405961925-27248-5-git-send-email-m-karicheri2@ti.com>
+ <20140722223527.GA27965@google.com>
+ <53CEEB1C.9020202@ti.com>
+ <20140722235200.GC27965@google.com>
+ <20140723174228.GB11270@obsidianresearch.com>
+ <53D948D4.6080603@ti.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, himangi774@gmail.com
-CC: trond.myklebust@primarydata.com, bfields@fieldses.org,
-        linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH] svcrdma: delete double assignment
-References: <20140728152938.GA3040@himangi-Dell> <20140729.155050.311148635959938226.davem@davemloft.net>
-In-Reply-To: <20140729.155050.311148635959938226.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53D948D4.6080603@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/29/2014 5:50 PM, David Miller wrote:
-> From: Himangi Saraogi <himangi774@gmail.com>
-> Date: Mon, 28 Jul 2014 20:59:38 +0530
->
->> Delete successive assignments to the same location.
->>
->> A simplified version of Coccinelle semantic match that finds this problem is as
->> follows:
->>
->> // <smpl>
->> @@
->> expression i;
->> @@
->>
->> *i = ...;
->>   i = ...;
->> // </smpl>
->>
->> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> I am not so sure about this change either.
->
->> @@ -956,7 +956,6 @@ static struct svc_xprt *svc_rdma_accept(struct svc_xprt *xprt)
->>   			dprintk("svcrdma: failed to create QP, ret=%d\n", ret);
->>   			goto errout;
->>   		}
->> -		newxprt->sc_max_sge = qp_attr.cap.max_send_sge;
->>   		newxprt->sc_max_sge = qp_attr.cap.max_recv_sge;
->>   		newxprt->sc_sq_depth = qp_attr.cap.max_send_wr;
->>   		newxprt->sc_max_requests = qp_attr.cap.max_recv_wr;
-> ->sc_max_sge is used to limit the number of segments used during sends,
-> currently in this code.  Grep for where it is used.
->
-> Therefore, if anything, the correct thing to do would be to retain the
-> first line rather than the second line.
->
-> Someone who actually works on this code and understands it should
-> really take a close look at this before anyone even thinks about
-> applying this patch.
+On Wed, Jul 30, 2014 at 03:34:44PM -0400, Murali Karicheri wrote:
 
-We should remove that whole block that tries to recover from a 
-rdma_create_qp() failure.   I don't believe we would ever hit it. The 
-value initially stored in sc_max_sge is from the device attribute 
-max_sge returned from ib_query_device() just above the code we're 
-talking about.  If rdma_create_qp() fails, it would not be because the 
-max_send_sge and max_recv_sge values passed in exceed the device's max...
+> • Maximum remote read request size of 256 bytes
 
-Like this:
+The PCI spec simply does not permit a completer to impose this
+limitation.
 
-diff --git a/net/sunrpc/xprtrdma/svc_rdma_transport.c 
-b/net/sunrpc/xprtrdma/svc_rdma_transport.c
-index e7323fb..282a43b 100644
---- a/net/sunrpc/xprtrdma/svc_rdma_transport.c
-+++ b/net/sunrpc/xprtrdma/svc_rdma_transport.c
-@@ -942,23 +942,8 @@ static struct svc_xprt *svc_rdma_accept(struct 
-svc_xprt *xprt)
+See spec 2.3.1.1
 
-         ret = rdma_create_qp(newxprt->sc_cm_id, newxprt->sc_pd, &qp_attr);
-         if (ret) {
--               /*
--                * XXX: This is a hack. We need a xx_request_qp interface
--                * that will adjust the qp_attr's with a best-effort
--                * number
--                */
--               qp_attr.cap.max_send_sge -= 2;
--               qp_attr.cap.max_recv_sge -= 2;
--               ret = rdma_create_qp(newxprt->sc_cm_id, newxprt->sc_pd,
--                                    &qp_attr);
--               if (ret) {
--                       dprintk("svcrdma: failed to create QP, 
-ret=%d\n", ret);
--                       goto errout;
--               }
--               newxprt->sc_max_sge = qp_attr.cap.max_send_sge;
--               newxprt->sc_max_sge = qp_attr.cap.max_recv_sge;
--               newxprt->sc_sq_depth = qp_attr.cap.max_send_wr;
--               newxprt->sc_max_requests = qp_attr.cap.max_recv_wr;
-+               dprintk("svcrdma: failed to create QP, ret=%d\n", ret);
-+               goto errout;
-         }
-         newxprt->sc_qp = newxprt->sc_cm_id->qp;
+It is not an option to error a read request because it is too
+long. All requests must be completed. All completions must be segmented
+according to the RCB and Max_Payload_Size.
 
+> completion packets. So it seems to be able to segment up to maximum
+> 256 bytes of read request. Where do I find the requirement in PCI
+> spec that "read response segmentation at the host bridge does not
+> work" ?
 
-Steve.
+You just said it. Segmenting up to only 256 bytes is not a limitation
+the completer can impose. Such a device is non-conformant.
 
+> >So, the only fix is that every downstream device must always have a
+> >MRSS set to less than the MPS of the host bridge.
+> 
+> Why this can't be the default behavior in the PCI core? Any cons?
 
+It increases read request traffic and read response latency on the bus
+for large transfers.
 
+The MRSS is intented as a performance tuning knob, it is not something
+that ever needs to be set properly for correct bus operation.
 
+Jason
