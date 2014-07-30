@@ -1,344 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921AbaG3JNr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 05:13:47 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55316 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750999AbaG3JNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 05:13:44 -0400
-Message-ID: <53D8B709.9000703@ti.com>
-Date: Wed, 30 Jul 2014 14:42:41 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751653AbaG3J0s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 05:26:48 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:57222 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750999AbaG3J0r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 05:26:47 -0400
+Date: Wed, 30 Jul 2014 10:26:35 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Matt Porter <mporter@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, Gregory Fong <gregory.0xf0@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Marc Carino <marc.ceeeee@gmail.com>
+Subject: Re: [PATCH v8 01/11] ARM: brcmstb: add infrastructure for
+	ARM-based Broadcom STB SoCs
+Message-ID: <20140730092635.GI30282@n2100.arm.linux.org.uk>
+References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com> <1405976886-27807-2-git-send-email-computersforpeace@gmail.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        <sebastian.hesselbarth@gmail.com>, <tj@kernel.org>
-CC: <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-ide@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v11 4/8] ata: libahci: allow to use multiple PHYs
-References: <1406193450-17283-1-git-send-email-antoine.tenart@free-electrons.com> <1406193450-17283-5-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1406193450-17283-5-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405976886-27807-2-git-send-email-computersforpeace@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thursday 24 July 2014 02:47 PM, Antoine Ténart wrote:
-> The current implementation of the libahci does not allow to use multiple
-> PHYs. This patch adds the support of multiple PHYs by the libahci while
-> keeping the old bindings valid for device tree compatibility.
-> 
-> This introduce a new way of defining SATA ports in the device tree, with
-> one port per sub-node. This as the advantage of allowing a per port
-> configuration. Because some ports may be accessible but disabled in the
-> device tree, the port_map mask is computed automatically when using
-> this.
-> 
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-
-FWIW:
-Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->  drivers/ata/ahci.h             |   7 +-
->  drivers/ata/libahci_platform.c | 190 ++++++++++++++++++++++++++++++++---------
->  2 files changed, 157 insertions(+), 40 deletions(-)
-> 
-> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-> index cb8d58926851..47de53284ad7 100644
-> --- a/drivers/ata/ahci.h
-> +++ b/drivers/ata/ahci.h
-> @@ -332,7 +332,12 @@ struct ahci_host_priv {
->  	bool			got_runtime_pm; /* Did we do pm_runtime_get? */
->  	struct clk		*clks[AHCI_MAX_CLKS]; /* Optional */
->  	struct regulator	*target_pwr;	/* Optional */
-> -	struct phy		*phy;		/* If platform uses phy */
+On Mon, Jul 21, 2014 at 02:07:56PM -0700, Brian Norris wrote:
+> +static DEFINE_SPINLOCK(boot_lock);
+> +
+> +static void brcmstb_secondary_init(unsigned int cpu)
+> +{
 > +	/*
-> +	 * If platform uses PHYs. There is a 1:1 relation between the port number and
-> +	 * the PHY position in this array.
+> +	 * Synchronise with the boot thread.
 > +	 */
-> +	struct phy		**phys;
-> +	unsigned		nports;		/* Number of ports */
->  	void			*plat_data;	/* Other platform data */
->  	/*
->  	 * Optional ahci_start_engine override, if not set this gets set to the
-> diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
-> index db9b90d876dd..095df56432d9 100644
-> --- a/drivers/ata/libahci_platform.c
-> +++ b/drivers/ata/libahci_platform.c
-> @@ -39,6 +39,67 @@ static struct scsi_host_template ahci_platform_sht = {
->  };
->  
->  /**
-> + * ahci_platform_enable_phys - Enable PHYs
-> + * @hpriv: host private area to store config values
-> + *
-> + * This function enables all the PHYs found in hpriv->phys, if any.
-> + * If a PHY fails to be enabled, it disables all the PHYs already
-> + * enabled in reverse order and returns an error.
-> + *
-> + * RETURNS:
-> + * 0 on success otherwise a negative error code
-> + */
-> +int ahci_platform_enable_phys(struct ahci_host_priv *hpriv)
-> +{
-> +	int rc, i;
-> +
-> +	for (i = 0; i < hpriv->nports; i++) {
-> +		if (!hpriv->phys[i])
-> +			continue;
-> +
-> +		rc = phy_init(hpriv->phys[i]);
-> +		if (rc)
-> +			goto disable_phys;
-> +
-> +		rc = phy_power_on(hpriv->phys[i]);
-> +		if (rc) {
-> +			phy_exit(hpriv->phys[i]);
-> +			goto disable_phys;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +
-> +disable_phys:
-> +	while (--i >= 0) {
-> +		phy_power_off(hpriv->phys[i]);
-> +		phy_exit(hpriv->phys[i]);
-> +	}
-> +	return rc;
+> +	spin_lock(&boot_lock);
+> +	spin_unlock(&boot_lock);
 > +}
-> +EXPORT_SYMBOL_GPL(ahci_platform_enable_phys);
 > +
-> +/**
-> + * ahci_platform_disable_phys - Enable PHYs
-> + * @hpriv: host private area to store config values
-> + *
-> + * This function disables all PHYs found in hpriv->phys.
-> + */
-> +void ahci_platform_disable_phys(struct ahci_host_priv *hpriv)
+> +static int brcmstb_boot_secondary(unsigned int cpu, struct task_struct *idle)
 > +{
-> +	int i;
+> +	/*
+> +	 * set synchronisation state between this boot processor
+> +	 * and the secondary one
+> +	 */
+> +	spin_lock(&boot_lock);
 > +
-> +	for (i = 0; i < hpriv->nports; i++) {
-> +		if (!hpriv->phys[i])
-> +			continue;
+> +	/* Bring up power to the core if necessary */
+> +	if (brcmstb_cpu_get_power_state(cpu) == 0)
+> +		brcmstb_cpu_power_on(cpu);
 > +
-> +		phy_power_off(hpriv->phys[i]);
-> +		phy_exit(hpriv->phys[i]);
-> +	}
-> +}
-> +EXPORT_SYMBOL_GPL(ahci_platform_disable_phys);
+> +	brcmstb_cpu_boot(cpu);
 > +
-> +/**
->   * ahci_platform_enable_clks - Enable platform clocks
->   * @hpriv: host private area to store config values
->   *
-> @@ -92,7 +153,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_disable_clks);
->   * following order:
->   * 1) Regulator
->   * 2) Clocks (through ahci_platform_enable_clks)
-> - * 3) Phy
-> + * 3) Phys
->   *
->   * If resource enabling fails at any point the previous enabled resources
->   * are disabled in reverse order.
-> @@ -114,17 +175,9 @@ int ahci_platform_enable_resources(struct ahci_host_priv *hpriv)
->  	if (rc)
->  		goto disable_regulator;
->  
-> -	if (hpriv->phy) {
-> -		rc = phy_init(hpriv->phy);
-> -		if (rc)
-> -			goto disable_clks;
-> -
-> -		rc = phy_power_on(hpriv->phy);
-> -		if (rc) {
-> -			phy_exit(hpriv->phy);
-> -			goto disable_clks;
-> -		}
-> -	}
-> +	rc = ahci_platform_enable_phys(hpriv);
-> +	if (rc)
-> +		goto disable_clks;
->  
->  	return 0;
->  
-> @@ -144,16 +197,13 @@ EXPORT_SYMBOL_GPL(ahci_platform_enable_resources);
->   *
->   * This function disables all ahci_platform managed resources in the
->   * following order:
-> - * 1) Phy
-> + * 1) Phys
->   * 2) Clocks (through ahci_platform_disable_clks)
->   * 3) Regulator
->   */
->  void ahci_platform_disable_resources(struct ahci_host_priv *hpriv)
->  {
-> -	if (hpriv->phy) {
-> -		phy_power_off(hpriv->phy);
-> -		phy_exit(hpriv->phy);
-> -	}
-> +	ahci_platform_disable_phys(hpriv);
->  
->  	ahci_platform_disable_clks(hpriv);
->  
-> @@ -187,7 +237,7 @@ static void ahci_platform_put_resources(struct device *dev, void *res)
->   * 2) regulator for controlling the targets power (optional)
->   * 3) 0 - AHCI_MAX_CLKS clocks, as specified in the devs devicetree node,
->   *    or for non devicetree enabled platforms a single clock
-> - *	4) phy (optional)
-> + *	4) phys (optional)
->   *
->   * RETURNS:
->   * The allocated ahci_host_priv on success, otherwise an ERR_PTR value
-> @@ -197,7 +247,9 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
->  	struct device *dev = &pdev->dev;
->  	struct ahci_host_priv *hpriv;
->  	struct clk *clk;
-> -	int i, rc = -ENOMEM;
-> +	struct device_node *child;
-> +	int i, enabled_ports = 0, rc = -ENOMEM;
-> +	u32 mask_port_map = 0;
->  
->  	if (!devres_open_group(dev, NULL, GFP_KERNEL))
->  		return ERR_PTR(-ENOMEM);
-> @@ -246,27 +298,87 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
->  		hpriv->clks[i] = clk;
->  	}
->  
-> -	hpriv->phy = devm_phy_get(dev, "sata-phy");
-> -	if (IS_ERR(hpriv->phy)) {
-> -		rc = PTR_ERR(hpriv->phy);
-> -		switch (rc) {
-> -		case -ENOSYS:
-> -			/* No PHY support. Check if PHY is required. */
-> -			if (of_find_property(dev->of_node, "phys", NULL)) {
-> -				dev_err(dev, "couldn't get sata-phy: ENOSYS\n");
-> +	hpriv->nports = of_get_child_count(dev->of_node);
-> +
-> +	if (hpriv->nports) {
-> +		hpriv->phys = devm_kzalloc(dev,
-> +					   hpriv->nports * sizeof(*hpriv->phys),
-> +					   GFP_KERNEL);
-> +		if (!hpriv->phys) {
-> +			rc = -ENOMEM;
-> +			goto err_out;
-> +		}
-> +
-> +		for_each_child_of_node(dev->of_node, child) {
-> +			u32 port;
-> +
-> +			if (!of_device_is_available(child))
-> +				continue;
-> +
-> +			if (of_property_read_u32(child, "reg", &port)) {
-> +				rc = -EINVAL;
->  				goto err_out;
->  			}
-> -		case -ENODEV:
-> -			/* continue normally */
-> -			hpriv->phy = NULL;
-> -			break;
->  
-> -		case -EPROBE_DEFER:
-> -			goto err_out;
-> +			if (port >= hpriv->nports) {
-> +				dev_warn(dev, "invalid port number %d\n", port);
-> +				continue;
-> +			}
->  
-> -		default:
-> -			dev_err(dev, "couldn't get sata-phy\n");
-> -			goto err_out;
-> +			mask_port_map |= BIT(port);
-> +
-> +			hpriv->phys[port] = devm_of_phy_get(dev, child, NULL);
-> +			if (IS_ERR(hpriv->phys[port])) {
-> +				rc = PTR_ERR(hpriv->phys[port]);
-> +				dev_err(dev,
-> +					"couldn't get PHY in node %s: %d\n",
-> +					child->name, rc);
-> +				goto err_out;
-> +			}
-> +
-> +			enabled_ports++;
-> +		}
-> +		if (!enabled_ports) {
-> +			dev_warn(dev, "No port enabled\n");
-> +			return ERR_PTR(-ENODEV);
-> +		}
-> +
-> +		if (!hpriv->mask_port_map)
-> +			hpriv->mask_port_map = mask_port_map;
-> +	} else {
-> +		/*
-> +		 * If no sub-node was found, keep this for device tree
-> +		 * compatibility
-> +		 */
-> +		struct phy *phy = devm_phy_get(dev, "sata-phy");
-> +		if (!IS_ERR(phy)) {
-> +			hpriv->phys = devm_kzalloc(dev, sizeof(*hpriv->phys),
-> +						   GFP_KERNEL);
-> +			if (!hpriv->phys) {
-> +				rc = -ENOMEM;
-> +				goto err_out;
-> +			}
-> +
-> +			hpriv->phys[0] = phy;
-> +			hpriv->nports = 1;
-> +		} else {
-> +			rc = PTR_ERR(phy);
-> +			switch (rc) {
-> +				case -ENOSYS:
-> +					/* No PHY support. Check if PHY is required. */
-> +					if (of_find_property(dev->of_node, "phys", NULL)) {
-> +						dev_err(dev, "couldn't get sata-phy: ENOSYS\n");
-> +						goto err_out;
-> +					}
-> +				case -ENODEV:
-> +					/* continue normally */
-> +					hpriv->phys = NULL;
-> +					break;
-> +
-> +				default:
-> +					goto err_out;
-> +
-> +			}
->  		}
->  	}
->  
-> @@ -291,7 +403,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_get_resources);
->   * @host_flags: ahci host flags used in ahci_host_priv
->   *
->   * This function does all the usual steps needed to bring up an
-> - * ahci-platform host, note any necessary resources (ie clks, phy, etc.)
-> + * ahci-platform host, note any necessary resources (ie clks, phys, etc.)
->   * must be initialized / enabled before calling this.
->   *
->   * RETURNS:
-> @@ -395,7 +507,7 @@ static void ahci_host_stop(struct ata_host *host)
->   * @dev: device pointer for the host
->   *
->   * This function does all the usual steps needed to suspend an
-> - * ahci-platform host, note any necessary resources (ie clks, phy, etc.)
-> + * ahci-platform host, note any necessary resources (ie clks, phys, etc.)
->   * must be disabled after calling this.
->   *
->   * RETURNS:
-> @@ -432,7 +544,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_suspend_host);
->   * @dev: device pointer for the host
->   *
->   * This function does all the usual steps needed to resume an ahci-platform
-> - * host, note any necessary resources (ie clks, phy, etc.)  must be
-> + * host, note any necessary resources (ie clks, phys, etc.)  must be
->   * initialized / enabled before calling this.
->   *
->   * RETURNS:
-> 
+> +	/*
+> +	 * now the secondary core is starting up let it run its
+> +	 * calibrations, then wait for it to finish
+> +	 */
+> +	spin_unlock(&boot_lock);
+
+I've just read through this code (because it caused my allmodconfig to
+break) and spotted this.
+
+What function does boot_lock perform here?  Please, don't quote the
+comments (I know where the comments came from) but what I want to hear
+is your comments about why you decided to retain this.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
