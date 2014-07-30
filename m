@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094AbaG3BzE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:55:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60707 "EHLO
+	id S1755465AbaG3BzD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:55:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60712 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755187AbaG3BuJ (ORCPT
+	with ESMTP id S1754537AbaG3BuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Jul 2014 21:50:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vasily Averin <vvs@openvz.org>, Ian Kent <raven@themaw.net>,
-        Jeff Layton <jlayton@primarydata.com>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.15 28/37] fs: umount on symlink leaks mnt count
-Date: Tue, 29 Jul 2014 18:49:04 -0700
-Message-Id: <20140730014829.071658550@linuxfoundation.org>
+        Sven Wegener <sven.wegener@stealer.net>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 3.15 29/37] x86_32, entry: Store badsys error code in %eax
+Date: Tue, 29 Jul 2014 18:49:05 -0700
+Message-Id: <20140730014829.121434943@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014827.565626091@linuxfoundation.org>
 References: <20140730014827.565626091@linuxfoundation.org>
@@ -29,49 +29,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasily Averin <vvs@parallels.com>
+From: Sven Wegener <sven.wegener@stealer.net>
 
-commit 295dc39d941dc2ae53d5c170365af4c9d5c16212 upstream.
+commit 8142b215501f8b291a108a202b3a053a265b03dd upstream.
 
-Currently umount on symlink blocks following umount:
+Commit 554086d ("x86_32, entry: Do syscall exit work on badsys
+(CVE-2014-4508)") introduced a regression in the x86_32 syscall entry
+code, resulting in syscall() not returning proper errors for undefined
+syscalls on CPUs supporting the sysenter feature.
 
-/vz is separate mount
+The following code:
 
-# ls /vz/ -al | grep test
-drwxr-xr-x.  2 root root       4096 Jul 19 01:14 testdir
-lrwxrwxrwx.  1 root root         11 Jul 19 01:16 testlink -> /vz/testdir
-# umount -l /vz/testlink
-umount: /vz/testlink: not mounted (expected)
+> int result = syscall(666);
+> printf("result=%d errno=%d error=%s\n", result, errno, strerror(errno));
 
-# lsof /vz
-# umount /vz
-umount: /vz: device is busy. (unexpected)
+results in:
 
-In this case mountpoint_last() gets an extra refcount on path->mnt
+> result=666 errno=0 error=Success
 
-Signed-off-by: Vasily Averin <vvs@openvz.org>
-Acked-by: Ian Kent <raven@themaw.net>
-Acked-by: Jeff Layton <jlayton@primarydata.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Obviously, the syscall return value is the called syscall number, but it
+should have been an ENOSYS error. When run under ptrace it behaves
+correctly, which makes it hard to debug in the wild:
+
+> result=-1 errno=38 error=Function not implemented
+
+The %eax register is the return value register. For debugging via ptrace
+the syscall entry code stores the complete register context on the
+stack. The badsys handlers only store the ENOSYS error code in the
+ptrace register set and do not set %eax like a regular syscall handler
+would. The old resume_userspace call chain contains code that clobbers
+%eax and it restores %eax from the ptrace registers afterwards. The same
+goes for the ptrace-enabled call chain. When ptrace is not used, the
+syscall return value is the passed-in syscall number from the untouched
+%eax register.
+
+Use %eax as the return value register in syscall_badsys and
+sysenter_badsys, like a real syscall handler does, and have the caller
+push the value onto the stack for ptrace access.
+
+Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
+Link: http://lkml.kernel.org/r/alpine.LNX.2.11.1407221022380.31021@titan.int.lan.stealer.net
+Reviewed-and-tested-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namei.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/kernel/entry_32.S |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2256,9 +2256,10 @@ done:
- 		goto out;
- 	}
- 	path->dentry = dentry;
--	path->mnt = mntget(nd->path.mnt);
-+	path->mnt = nd->path.mnt;
- 	if (should_follow_link(dentry, nd->flags & LOOKUP_FOLLOW))
- 		return 1;
-+	mntget(path->mnt);
- 	follow_mount(path);
- 	error = 0;
- out:
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -433,8 +433,8 @@ sysenter_do_call:
+ 	cmpl $(NR_syscalls), %eax
+ 	jae sysenter_badsys
+ 	call *sys_call_table(,%eax,4)
+-	movl %eax,PT_EAX(%esp)
+ sysenter_after_call:
++	movl %eax,PT_EAX(%esp)
+ 	LOCKDEP_SYS_EXIT
+ 	DISABLE_INTERRUPTS(CLBR_ANY)
+ 	TRACE_IRQS_OFF
+@@ -514,6 +514,7 @@ ENTRY(system_call)
+ 	jae syscall_badsys
+ syscall_call:
+ 	call *sys_call_table(,%eax,4)
++syscall_after_call:
+ 	movl %eax,PT_EAX(%esp)		# store the return value
+ syscall_exit:
+ 	LOCKDEP_SYS_EXIT
+@@ -683,12 +684,12 @@ syscall_fault:
+ END(syscall_fault)
+ 
+ syscall_badsys:
+-	movl $-ENOSYS,PT_EAX(%esp)
+-	jmp syscall_exit
++	movl $-ENOSYS,%eax
++	jmp syscall_after_call
+ END(syscall_badsys)
+ 
+ sysenter_badsys:
+-	movl $-ENOSYS,PT_EAX(%esp)
++	movl $-ENOSYS,%eax
+ 	jmp sysenter_after_call
+ END(syscall_badsys)
+ 	CFI_ENDPROC
 
 
