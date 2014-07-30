@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445AbaG3MeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:34:18 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36716 "EHLO
+	id S1755412AbaG3MeR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:34:17 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36719 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752884AbaG3MPc (ORCPT
+	by vger.kernel.org with ESMTP id S1752888AbaG3MPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:32 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Eric Dumazet <edumazet@google.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 39/94] ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix
-Date: Wed, 30 Jul 2014 14:14:28 +0200
-Message-Id: <8728b0c1932dada25f2d1ccfa1669b5b41fe7937.1406722270.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 57/94] ipv4: fix buffer overflow in ip_options_compile()
+Date: Wed, 30 Jul 2014 14:14:46 +0200
+Message-Id: <5ac7d1658804e7a2b10f934481eddce5a644ae2d.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -30,121 +29,83 @@ From: Eric Dumazet <edumazet@google.com>
 
 ===============
 
-[ Upstream commit 7f502361531e9eecb396cf99bdc9e9a59f7ebd7f ]
+[ Upstream commit 10ec9472f05b45c94db3c854d22581a20b97db41 ]
 
-We have two different ways to handle changes to sk->sk_dst
+There is a benign buffer overflow in ip_options_compile spotted by
+AddressSanitizer[1] :
 
-First way (used by TCP) assumes socket lock is owned by caller, and use
-no extra lock : __sk_dst_set() & __sk_dst_reset()
+Its benign because we always can access one extra byte in skb->head
+(because header is followed by struct skb_shared_info), and in this case
+this byte is not even used.
 
-Another way (used by UDP) uses sk_dst_lock because socket lock is not
-always taken. Note that sk_dst_lock is not softirq safe.
+[28504.910798] ==================================================================
+[28504.912046] AddressSanitizer: heap-buffer-overflow in ip_options_compile
+[28504.913170] Read of size 1 by thread T15843:
+[28504.914026]  [<ffffffff81802f91>] ip_options_compile+0x121/0x9c0
+[28504.915394]  [<ffffffff81804a0d>] ip_options_get_from_user+0xad/0x120
+[28504.916843]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
+[28504.918175]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
+[28504.919490]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
+[28504.920835]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
+[28504.922208]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
+[28504.923459]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
+[28504.924722]
+[28504.925106] Allocated by thread T15843:
+[28504.925815]  [<ffffffff81804995>] ip_options_get_from_user+0x35/0x120
+[28504.926884]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
+[28504.927975]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
+[28504.929175]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
+[28504.930400]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
+[28504.931677]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
+[28504.932851]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
+[28504.934018]
+[28504.934377] The buggy address ffff880026382828 is located 0 bytes to the right
+[28504.934377]  of 40-byte region [ffff880026382800, ffff880026382828)
+[28504.937144]
+[28504.937474] Memory state around the buggy address:
+[28504.938430]  ffff880026382300: ........ rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.939884]  ffff880026382400: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.941294]  ffff880026382500: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.942504]  ffff880026382600: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.943483]  ffff880026382700: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.944511] >ffff880026382800: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.945573]                         ^
+[28504.946277]  ffff880026382900: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.094949]  ffff880026382a00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.096114]  ffff880026382b00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.097116]  ffff880026382c00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.098472]  ffff880026382d00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.099804] Legend:
+[28505.100269]  f - 8 freed bytes
+[28505.100884]  r - 8 redzone bytes
+[28505.101649]  . - 8 allocated bytes
+[28505.102406]  x=1..7 - x allocated bytes + (8-x) redzone bytes
+[28505.103637] ==================================================================
 
-These ways are not inter changeable for a given socket type.
-
-ipv4_sk_update_pmtu(), added in linux-3.8, added a race, as it used
-the socket lock as synchronization, but users might be UDP sockets.
-
-Instead of converting sk_dst_lock to a softirq safe version, use xchg()
-as we did for sk_rx_dst in commit e47eb5dfb296b ("udp: ipv4: do not use
-sk_dst_lock from softirq context")
-
-In a follow up patch, we probably can remove sk_dst_lock, as it is
-only used in IPv6.
+[1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
 
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Fixes: 9cb3a50c5f63e ("ipv4: Invalidate the socket cached route on pmtu events if possible")
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/net/sock.h | 12 ++++++------
- net/ipv4/route.c   | 15 ++++++++-------
- 2 files changed, 14 insertions(+), 13 deletions(-)
+ net/ipv4/ip_options.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index dc84ec518ff5..def541a583de 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1789,9 +1789,11 @@ __sk_dst_set(struct sock *sk, struct dst_entry *dst)
- static inline void
- sk_dst_set(struct sock *sk, struct dst_entry *dst)
- {
--	spin_lock(&sk->sk_dst_lock);
--	__sk_dst_set(sk, dst);
--	spin_unlock(&sk->sk_dst_lock);
-+	struct dst_entry *old_dst;
-+
-+	sk_tx_queue_clear(sk);
-+	old_dst = xchg(&sk->sk_dst_cache, dst);
-+	dst_release(old_dst);
- }
- 
- static inline void
-@@ -1803,9 +1805,7 @@ __sk_dst_reset(struct sock *sk)
- static inline void
- sk_dst_reset(struct sock *sk)
- {
--	spin_lock(&sk->sk_dst_lock);
--	__sk_dst_reset(sk);
--	spin_unlock(&sk->sk_dst_lock);
-+	sk_dst_set(sk, NULL);
- }
- 
- extern struct dst_entry *__sk_dst_check(struct sock *sk, u32 cookie);
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 2b681867164d..310963d7c028 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1032,20 +1032,21 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
- 	const struct iphdr *iph = (const struct iphdr *) skb->data;
- 	struct flowi4 fl4;
- 	struct rtable *rt;
--	struct dst_entry *dst;
-+	struct dst_entry *odst = NULL;
- 	bool new = false;
- 
- 	bh_lock_sock(sk);
--	rt = (struct rtable *) __sk_dst_get(sk);
-+	odst = sk_dst_get(sk);
- 
--	if (sock_owned_by_user(sk) || !rt) {
-+	if (sock_owned_by_user(sk) || !odst) {
- 		__ipv4_sk_update_pmtu(skb, sk, mtu);
- 		goto out;
- 	}
- 
- 	__build_flow_key(&fl4, sk, iph, 0, 0, 0, 0, 0);
- 
--	if (!__sk_dst_check(sk, 0)) {
-+	rt = (struct rtable *)odst;
-+	if (odst->obsolete && odst->ops->check(odst, 0) == NULL) {
- 		rt = ip_route_output_flow(sock_net(sk), &fl4, sk);
- 		if (IS_ERR(rt))
- 			goto out;
-@@ -1055,8 +1056,7 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
- 
- 	__ip_rt_update_pmtu((struct rtable *) rt->dst.path, &fl4, mtu);
- 
--	dst = dst_check(&rt->dst, 0);
--	if (!dst) {
-+	if (!dst_check(&rt->dst, 0)) {
- 		if (new)
- 			dst_release(&rt->dst);
- 
-@@ -1068,10 +1068,11 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
- 	}
- 
- 	if (new)
--		__sk_dst_set(sk, &rt->dst);
-+		sk_dst_set(sk, &rt->dst);
- 
- out:
- 	bh_unlock_sock(sk);
-+	dst_release(odst);
- }
- EXPORT_SYMBOL_GPL(ipv4_sk_update_pmtu);
- 
+diff --git a/net/ipv4/ip_options.c b/net/ipv4/ip_options.c
+index ec7264514a82..089ed81d1878 100644
+--- a/net/ipv4/ip_options.c
++++ b/net/ipv4/ip_options.c
+@@ -288,6 +288,10 @@ int ip_options_compile(struct net *net,
+ 			optptr++;
+ 			continue;
+ 		}
++		if (unlikely(l < 2)) {
++			pp_ptr = optptr;
++			goto error;
++		}
+ 		optlen = optptr[1];
+ 		if (optlen<2 || optlen>l) {
+ 			pp_ptr = optptr;
 -- 
 2.0.1
 
