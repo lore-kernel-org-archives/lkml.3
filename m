@@ -1,43 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887AbaG3TWc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 15:22:32 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:39136 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755550AbaG3TWa (ORCPT
+	id S1755926AbaG3TXn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 15:23:43 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:52561 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693AbaG3TXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 15:22:30 -0400
-Date: Wed, 30 Jul 2014 12:22:27 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 00/94] 3.12.26-stable review
-Message-ID: <20140730192227.GA3810@roeck-us.net>
-References: <cover.1406722269.git.jslaby@suse.cz>
+	Wed, 30 Jul 2014 15:23:41 -0400
+X-Originating-IP: 173.246.103.110
+Date: Wed, 30 Jul 2014 12:23:32 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] efi-bgrt: Add error handling; inform the user when ignoring
+ the BGRT
+Message-ID: <20140730192331.GA23730@jtriplet-mobl1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 02:15:03PM +0200, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.26 release.
-> There are 94 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Fri Aug  1 14:11:10 CEST 2014.
-> Anything received after that time might be too late.
-> 
-Build results:
-	total: 139 pass: 139 fail: 0
+Gracefully handle failures to allocate memory for the image, which might
+be arbitrarily large.
 
-Qemu tests all passed.
+efi_bgrt_init can fail in various ways as well, usually because the
+BIOS-provided BGRT structure does not match expectations.  Add
+appropriate error messages rather than failing silently.
 
-Details are available at http://server.roeck-us.net:8010/builders.
+Reported-by: Srihari Vijayaraghavan
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81321
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ arch/x86/platform/efi/efi-bgrt.c | 36 ++++++++++++++++++++++++++++++------
+ 1 file changed, 30 insertions(+), 6 deletions(-)
 
-Guenter
+diff --git a/arch/x86/platform/efi/efi-bgrt.c b/arch/x86/platform/efi/efi-bgrt.c
+index f15103d..d143d21 100644
+--- a/arch/x86/platform/efi/efi-bgrt.c
++++ b/arch/x86/platform/efi/efi-bgrt.c
+@@ -40,20 +40,40 @@ void __init efi_bgrt_init(void)
+ 	if (ACPI_FAILURE(status))
+ 		return;
+ 
+-	if (bgrt_tab->header.length < sizeof(*bgrt_tab))
++	if (bgrt_tab->header.length < sizeof(*bgrt_tab)) {
++		pr_err("Ignoring BGRT: invalid length %u (expected %zu)\n",
++		       bgrt_tab->header.length, sizeof(*bgrt_tab));
+ 		return;
+-	if (bgrt_tab->version != 1 || bgrt_tab->status != 1)
++	}
++	if (bgrt_tab->version != 1) {
++		pr_err("Ignoring BGRT: invalid version %u (expected 1)\n",
++		       bgrt_tab->version);
++		return;
++	}
++	if (bgrt_tab->status != 1) {
++		pr_err("Ignoring BGRT: invalid status %u (expected 1)\n",
++		       bgrt_tab->status);
++		return;
++	}
++	if (bgrt_tab->image_type != 0) {
++		pr_err("Ignoring BGRT: invalid image type %u (expected 0)\n",
++		       bgrt_tab->image_type);
+ 		return;
+-	if (bgrt_tab->image_type != 0 || !bgrt_tab->image_address)
++	}
++	if (!bgrt_tab->image_address) {
++		pr_err("Ignoring BGRT: null image address\n");
+ 		return;
++	}
+ 
+ 	image = efi_lookup_mapped_addr(bgrt_tab->image_address);
+ 	if (!image) {
+ 		image = early_memremap(bgrt_tab->image_address,
+ 				       sizeof(bmp_header));
+ 		ioremapped = true;
+-		if (!image)
++		if (!image) {
++			pr_err("Ignoring BGRT: failed to map image header memory\n");
+ 			return;
++		}
+ 	}
+ 
+ 	memcpy_fromio(&bmp_header, image, sizeof(bmp_header));
+@@ -61,14 +81,18 @@ void __init efi_bgrt_init(void)
+ 		early_iounmap(image, sizeof(bmp_header));
+ 	bgrt_image_size = bmp_header.size;
+ 
+-	bgrt_image = kmalloc(bgrt_image_size, GFP_KERNEL);
+-	if (!bgrt_image)
++	bgrt_image = kmalloc(bgrt_image_size, GFP_KERNEL | __GFP_NOWARN);
++	if (!bgrt_image) {
++		pr_err("Ignoring BGRT: failed to allocate memory for image (wanted %zu bytes)\n",
++		       bgrt_image_size);
+ 		return;
++	}
+ 
+ 	if (ioremapped) {
+ 		image = early_memremap(bgrt_tab->image_address,
+ 				       bmp_header.size);
+ 		if (!image) {
++			pr_err("Ignoring BGRT: failed to map image memory\n");
+ 			kfree(bgrt_image);
+ 			bgrt_image = NULL;
+ 			return;
+-- 
+2.0.1
+
