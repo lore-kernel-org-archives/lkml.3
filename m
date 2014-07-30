@@ -1,61 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126AbaG3HiX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 03:38:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:53232 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755061AbaG3HiV (ORCPT
+	id S1755246AbaG3Ho3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 03:44:29 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51762 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755002AbaG3Ho1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 03:38:21 -0400
-Date: Wed, 30 Jul 2014 09:38:16 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v12 4/8] ata: libahci: allow to use multiple PHYs
-Message-ID: <20140730073816.GA29900@kwain>
-References: <1406618447-25499-1-git-send-email-antoine.tenart@free-electrons.com>
- <20140729143438.GB4791@htj.dyndns.org>
+	Wed, 30 Jul 2014 03:44:27 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53D8A258.7010904@lge.com>
+Date: Wed, 30 Jul 2014 16:44:24 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: Jan Kara <jack@suse.cz>, Peter Zijlstra <peterz@infradead.org>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
+        Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH 0/2] new API to allocate buffer-cache for superblock in
+ non-movable area
+References: <53CDF437.4090306@lge.com> <20140722073005.GT3935@laptop> <20140722093838.GA22331@quack.suse.cz>
+In-Reply-To: <20140722093838.GA22331@quack.suse.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140729143438.GB4791@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 10:34:38AM -0400, Tejun Heo wrote:
-> On Tue, Jul 29, 2014 at 09:20:47AM +0200, Antoine Ténart wrote:
-> > The current implementation of the libahci does not allow to use multiple
-> > PHYs. This patch adds the support of multiple PHYs by the libahci while
-> > keeping the old bindings valid for device tree compatibility.
-> > 
-> > This introduce a new way of defining SATA ports in the device tree, with
-> > one port per sub-node. This as the advantage of allowing a per port
-> > configuration. Because some ports may be accessible but disabled in the
-> > device tree, the port_map mask is computed automatically when using
-> > this.
-> > 
-> > Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> > Acked-by: Hans de Goede <hdegoede@redhat.com>
-> 
-> Patch doesn't apply to libata/for-3.17.  Please refresh.
 
-This patch is base on top of v3.16-rc7, taking in account a patch[1]
-introduced after rc1 modifying this same file.
 
-[1] https://lkml.org/lkml/2014/6/6/75
+2014-07-22 ì˜¤í›„ 6:38, Jan Kara ì“´ ê¸€:
+> On Tue 22-07-14 09:30:05, Peter Zijlstra wrote:
+>> On Tue, Jul 22, 2014 at 02:18:47PM +0900, Gioh Kim wrote:
+>>> Hello,
+>>>
+>>> This patch try to solve problem that a long-lasting page cache of
+>>> ext4 superblock disturbs page migration.
+>>>
+>>> I've been testing CMA feature on my ARM-based platform
+>>> and found some pages for page caches cannot be migrated.
+>>> Some of them are page caches of superblock of ext4 filesystem.
+>>>
+>>> Current ext4 reads superblock with sb_bread(). sb_bread() allocates page
+>>> from movable area. But the problem is that ext4 hold the page until
+>>> it is unmounted. If root filesystem is ext4 the page cannot be migrated forever.
+>>>
+>>> I introduce a new API for allocating page from non-movable area.
+>>> It is useful for ext4 and others that want to hold page cache for a long time.
+>>
+>> There's no word on why you can't teach ext4 to still migrate that page.
+>> For all I know it might be impossible, but at least mention why.
 
-Antoine
+I am very sorry for lacking of details.
 
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+In ext4_fill_super() the buffer-head of superblock is stored in sbi->s_sbh.
+The page belongs to the buffer-head is allocated from movable area.
+To migrate the page the buffer-head should be released via brelse().
+But brelse() is not called until unmount.
+
+For example, fat_fill_super() reads superblock via sb_bread()
+and release it via brelse() immediately. Therefore the page that stores superblock can be migrated.
+
+
+
+>    It doesn't seem to be worth the effort to make that page movable to me
+> (it's reasonably doable since superblock buffer isn't accessed in *that*
+> many places but single movable page doesn't seem like a good tradeoff for
+> the complexity).
+>
+> But this made me look into the migration code and it isn't completely clear
+> to me what makes the migration code decide that sb buffer isn't movable? We
+> seem to be locking the buffers before moving the underlying page but we
+> don't do any reference or state checks on the buffers... That seems to be
+> assuming that noone looks at bh->b_data without holding buffer lock. That
+> is likely true for ordinary data but definitely not true for metadata
+> buffers (i.e., buffers for pages from block device mappings).
+
+The sb buffer is not movable because it is not released.
+sb_bread increase the reference counter of buffer-head so that
+the page of the buffer-head cannot be movable.
+
+sb_bread allocates page from movable area but it is not movable until the
+reference counter of the buffer-head becomes zero.
+There is no lock for the buffer but the reference counter acts like lock.
+
+Actually it is strange that ext4 keeps buffer-head in superblock structure until unmount (it can be long time)
+I thinks the buffer-head should be released immediately like fat_fill_super() did.
+I believe there is a reason to keep buffer-head so that I suggest this patch.
+
+
+
+>
+> Added linux-mm to CC to enlighten me a bit ;)
+>
+> 								Honza
+>
