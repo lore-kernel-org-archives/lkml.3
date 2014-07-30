@@ -1,96 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055AbaG3QTM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 12:19:12 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:43965 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575AbaG3QTK (ORCPT
+	id S1755309AbaG3QUX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 12:20:23 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:17540 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753783AbaG3QUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 12:19:10 -0400
-Date: Wed, 30 Jul 2014 09:10:35 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140730161035.GP11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140728225556.GA19493@linux.vnet.ibm.com>
- <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140730134152.GB18158@localhost.localdomain>
+	Wed, 30 Jul 2014 12:20:21 -0400
+X-IronPort-AV: E=Sophos;i="5.01,765,1400025600"; 
+   d="scan'208";a="157771060"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: Steffen Klassert <steffen.klassert@secunet.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Daniel Borkmann <dborkman@redhat.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>,
+        Joe Perches <joe@perches.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: [PATCH net-next v3 0/3] pktgen: Upstreaming features useful for xen-netback/front testing
+Date: Wed, 30 Jul 2014 17:20:08 +0100
+Message-ID: <1406737212-23351-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140730134152.GB18158@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073016-6688-0000-0000-000003A7F640
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 03:41:54PM +0200, Frederic Weisbecker wrote:
-> On Mon, Jul 28, 2014 at 03:56:12PM -0700, Paul E. McKenney wrote:
-> > +/* RCU-tasks kthread that detects grace periods and invokes callbacks. */
-> > +static int __noreturn rcu_tasks_kthread(void *arg)
-> > +{
-> > +	unsigned long flags;
-> > +	struct task_struct *g, *t;
-> > +	struct rcu_head *list;
-> > +	struct rcu_head *next;
-> > +
-> > +	/* FIXME: Add housekeeping affinity. */
-> > +
-> > +	/*
-> > +	 * Each pass through the following loop makes one check for
-> > +	 * newly arrived callbacks, and, if there are some, waits for
-> > +	 * one RCU-tasks grace period and then invokes the callbacks.
-> > +	 * This loop is terminated by the system going down.  ;-)
-> > +	 */
-> > +	for (;;) {
-> > +
-> > +		/* Pick up any new callbacks. */
-> > +		raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
-> > +		smp_mb__after_unlock_lock(); /* Enforce GP memory ordering. */
-> > +		list = rcu_tasks_cbs_head;
-> > +		rcu_tasks_cbs_head = NULL;
-> > +		rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
-> > +		raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
-> > +
-> > +		/* If there were none, wait a bit and start over. */
-> > +		if (!list) {
-> > +			schedule_timeout_interruptible(HZ);
-> > +			flush_signals(current);
-> > +			continue;
-> > +		}
-> > +
-> > +		/*
-> > +		 * There were callbacks, so we need to wait for an
-> > +		 * RCU-tasks grace period.  Start off by scanning
-> > +		 * the task list for tasks that are not already
-> > +		 * voluntarily blocked.  Mark these tasks and make
-> > +		 * a list of them in rcu_tasks_holdouts.
-> > +		 */
-> > +		rcu_read_lock();
-> > +		do_each_thread(g, t) {
-> > +			if (t != current && ACCESS_ONCE(t->on_rq) &&
-> > +			    !is_idle_task(t)) {
-> > +				t->rcu_tasks_holdout = 1;
-> > +				list_add(&t->rcu_tasks_holdout_list,
-> > +					 &rcu_tasks_holdouts);
-> > +			}
-> > +		} while_each_thread(g, t);
-> > +		rcu_read_unlock();
-> 
-> I think you need for_each_process_thread() to be RCU-safe.
-> while_each_thread() has shown to be racy against exec even with rcu_read_lock().
+This series is my work during stressing the xen network drivers, hopefully
+others can benefit from it.
+1/4: Filling payload with pattern, useful for checking data correctness when the
+packets travelling without checksum (~ intrahost VM-to-VM). Already sent it
+separately feq times, so its version number differs
+2/4: fine-grained buffer geometrics
+3/4: fix UDP checksuming
+4/4: sending TCP GSO packets. This is an RFC yet, as I'm not certain about all
+things changed here
 
-Good catch, thank you!
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Thomas Graf <tgraf@suug.ch>
+Cc: Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xenproject.org
 
-							Thanx, Paul
+v2: respin for net-next changes
 
+v3:
+- code style changes and smaller bugfixes
+- new patch to fix UDP checksuming
+- rework TCP checksuming and GSO in the last patch
