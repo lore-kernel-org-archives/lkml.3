@@ -1,113 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaG3NXp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 09:23:45 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:45343 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370AbaG3NXm (ORCPT
+	id S1753200AbaG3NXt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 09:23:49 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:64540 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502AbaG3NXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 09:23:42 -0400
-Date: Wed, 30 Jul 2014 15:23:36 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 07/10] nohz: Enforce timekeeping on CPU 0
-Message-ID: <20140730132333.GA18158@localhost.localdomain>
-References: <1406569056-30217-1-git-send-email-fweisbec@gmail.com>
- <1406569056-30217-8-git-send-email-fweisbec@gmail.com>
- <20140729121237.GY3935@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140729121237.GY3935@laptop>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 30 Jul 2014 09:23:44 -0400
+Message-ID: <1406726619.5889.17.camel@marge.simpson.net>
+Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, bobby.prani@gmail.com
+Date: Wed, 30 Jul 2014 15:23:39 +0200
+In-Reply-To: <20140729180656.GY11241@linux.vnet.ibm.com>
+References: <20140728225556.GA19493@linux.vnet.ibm.com>
+	 <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <20140729081416.GR20603@laptop.programming.kicks-ass.net>
+	 <20140729172304.GA16073@linux.vnet.ibm.com> <20140729173332.GM3935@laptop>
+	 <20140729180656.GY11241@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 02:12:37PM +0200, Peter Zijlstra wrote:
-> On Mon, Jul 28, 2014 at 07:37:33PM +0200, Frederic Weisbecker wrote:
-> > The timekeeper gets initialized to the value of the CPU where the
-> > first clockevent device is setup. This works well because the timekeeper
-> > can be any online CPU in most configs.
-> > 
-> > Full dynticks has its own requirement though and needs the timekeeper
-> > to always be 0. And this requirement seem to accomodate pretty well with
-> > the above described boot timekeeper setting because the first clockevent
-> > device happens to be initialized, most of the time, on the boot CPU
-> > (which should be CPU 0).
+On Tue, 2014-07-29 at 11:06 -0700, Paul E. McKenney wrote: 
+> On Tue, Jul 29, 2014 at 07:33:32PM +0200, Peter Zijlstra wrote:
+
+> > FWIW its _the_ thing that makes nohz_full uninteresting for me. The
+> > required overhead is insane. But yes there are people willing to pay
+> > that etc..
 > 
-> This isn't true in general, Voyager (which we dropped support for iirc)
-> had a boot cpu != 0, and I think there's ARM platforms where the same
-> can be true.
-
-Ah I didn't know that. But I heard before that assuming CPU0 as the boot
-CPU is a mistake.
-
+> It would indeed be good to reduce the overhead.  I could imagine all sorts
+> of insane approaches involving assuming that CPU write buffers flush in
+> bounded time, though CPU vendors seem unwilling to make guarantees in
+> this area.  ;-)
 > 
-> > However there is no mention of such a guarantee anywhere. This assumption
-> > might well be defeated on some corner case now or in the future.
-> 
-> Right..
-> 
-> > So lets wipe out the FUD and force tick_do_timer_cpu to CPU 0 on boot
-> > when full dynticks is used.
-> > 
-> > This way we can even remove some corner case code that handled scenarios
-> > where all clockevent devices were setup on full dynticks CPUs.
-> 
-> > diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-> > index 0a0608e..cb57bce 100644
-> > --- a/kernel/time/tick-common.c
-> > +++ b/kernel/time/tick-common.c
-> > @@ -179,10 +179,10 @@ static void tick_setup_device(struct tick_device *td,
-> >  		 * this cpu:
-> >  		 */
-> >  		if (tick_do_timer_cpu == TICK_DO_TIMER_BOOT) {
-> > -			if (!tick_nohz_full_cpu(cpu))
-> > -				tick_do_timer_cpu = cpu;
-> > +			if (tick_nohz_full_enabled())
-> > +				tick_do_timer_cpu = TICK_DO_TIMER_DEFAULT;
-> >  			else
-> > -				tick_do_timer_cpu = TICK_DO_TIMER_NONE;
-> > +				tick_do_timer_cpu = cpu;
-> >  			tick_next_period = ktime_get();
-> >  			tick_period = ktime_set(0, NSEC_PER_SEC / HZ);
-> >  		}
-> 
-> So from what I can tell this code can get called before SMP setup, which
-> would mean we could get here before CPU0 is online?
+> Or is something other than rcu_user_enter() and rcu_user_exit() causing
+> the pain here?
 
-If CPU0 is a secondary CPU then yeah we have a problem.
+Border guards stamping visas.  Note native_sched_clock().
 
-Look, the most important for me is to determine the boot CPU and make sure
-we don't need to offline it for suspend.
+echo 0 > sched_wakeup_granularity_ns
+taskset -c 3 pipe-test 1
 
-Looking at disable_nonboot_cpus(), it seems that the lowest number from the online set
-is considered the boot CPU. But if CPU0 boots after the boot CPU, this assumption is defeated,
-right?
+    CONFIG_NO_HZ_FULL=y 604.2 KHz           CONFIG_NO_HZ_FULL=y, nohz_full=3 303.5 KHz
+    10.45%   __schedule                     8.74%   native_sched_clock
+    10.03%   system_call                    5.63%   __schedule
+     4.86%   _raw_spin_lock_irqsave         4.75%   _raw_spin_lock
+     4.51%   __switch_to                    4.35%   reschedule_interrupt
+     4.31%   copy_user_generic_string       3.91%   _raw_spin_unlock_irqrestore
+     3.50%   pipe_read                      3.35%   system_call
+     3.02%   pipe_write                     2.73%   context_tracking_user_exit
+     2.76%   mutex_lock                     2.30%   _raw_spin_lock_irqsave
+     2.30%   native_sched_clock             2.08%   context_tracking_user_enter
+     2.27%   copy_page_to_iter_iovec        1.94%   __switch_to
+     2.16%   mutex_unlock                   1.88%   copy_user_generic_string
+     2.15%   _raw_spin_unlock_irqrestore    1.80%   account_system_time
+     1.86%   copy_page_from_iter_iovec      1.77%   rcu_eqs_enter_common.isra.42
+     1.85%   vfs_write                      1.60%   pipe_read
+     1.67%   new_sync_read                  1.58%   pipe_write
+     1.61%   new_sync_write                 1.39%   mutex_lock
+     1.49%   vfs_read                       1.37%   enqueue_task_fair
+     1.47%   fsnotify                       1.25%   rcu_eqs_exit_common.isra.43
+     1.43%   __fget_light                   1.14%   get_vtime_delta
+     1.36%   enqueue_task_fair              1.11%   flat_send_IPI_mask
+     1.28%   finish_task_switch             1.07%   tracesys
+     1.26%   dequeue_task_fair              1.03%   dequeue_task_fair
+     1.25%   __sb_start_write               1.01%   copy_page_to_iter_iovec
+     1.22%   _raw_spin_lock_irq             1.01%   int_check_syscall_exit_work
+     1.20%   try_to_wake_up                 0.97%   vfs_write
+     1.16%   update_curr                    0.94%   __context_tracking_task_switch
+     1.05%   __fsnotify_parent              0.93%   mutex_unlock
+     1.03%   pick_next_task_fair            0.88%   copy_page_from_iter_iovec
+     1.02%   sys_write                      0.87%   new_sync_write
+     1.01%   sys_read                       0.86%   __fget_light
+     1.00%   __wake_up_sync_key             0.85%   __sb_start_write
+     0.93%   __wake_up_common               0.85%   int_ret_from_sys_call
+     0.92%   copy_page_to_iter              0.83%   syscall_trace_leave
+     0.90%   check_preempt_wakeup           0.78%   new_sync_read
+     0.90%   __srcu_read_lock               0.78%   account_user_time
+     0.89%   put_prev_task_fair             0.76%   update_curr
+     0.88%   copy_page_from_iter            0.74%   fsnotify
+     0.82%   __sb_end_write                 0.73%   try_to_wake_up
+     0.76%   __percpu_counter_add           0.71%   finish_task_switch
+     0.74%   prepare_to_wait                0.70%   _raw_spin_lock_irq
+     0.72%   touch_atime                    0.69%   __wake_up_sync_key
+     0.71%   pipe_wait                      0.69%   __tick_nohz_task_switch
 
-Probably disable_nonboot_cpus() doesn't look for the real boot CPU but
-rather it just tries to keep at least one CPU alive for stopping and resuming the
-suspend process.
+pinned endless stat("/", &buf)
 
-It looks like the only sane thing I can do is:
+    CONFIG_NO_HZ_FULL=y                     CONFIG_NO_HZ_FULL=y, nohz_full=3
+    17.13%   system_call                    8.78%   system_call
+    11.20%   kmem_cache_alloc               8.52%   native_sched_clock
+     7.14%   lockref_get_not_dead           6.02%   context_tracking_user_exit
+     7.10%   kmem_cache_free                4.53%   kmem_cache_alloc
+     6.42%   path_init                      4.46%   _raw_spin_lock
+     5.69%   copy_user_generic_string       4.13%   copy_user_generic_string
+     5.25%   lockref_put_or_lock            4.01%   kmem_cache_free
+     4.14%   strncpy_from_user              3.36%   context_tracking_user_enter
+     3.99%   path_lookupat                  3.25%   lockref_get_not_dead
+     3.12%   complete_walk                  3.25%   lockref_put_or_lock
+     2.91%   getname_flags                  2.86%   rcu_eqs_enter_common.isra.42
+     2.88%   cp_new_stat                    2.84%   path_init
+     2.79%   vfs_fstatat                    2.56%   rcu_eqs_exit_common.isra.43
+     2.59%   user_path_at_empty             2.52%   int_check_syscall_exit_work
+     1.93%   link_path_walk                 2.51%   tracesys
+     1.81%   generic_fillattr               2.08%   cp_new_stat
+     1.75%   dput                           2.00%   syscall_trace_leave
+     1.71%   filename_lookup.isra.50        1.75%   complete_walk
+     1.66%   mntput                         1.69%   path_lookupat
+     1.45%   vfs_getattr_nosec              1.58%   strncpy_from_user
+     1.04%   final_putname                  1.56%   get_vtime_delta
+     1.02%   SYSC_newstat                   1.34%   int_with_check
 
-1) Pick up the boot CPU (the one that calls tick_nohz_init() for example) as the
-default timekeeper.
+     CONFIG_NO_HZ_FULL=y, nohz_full=3
+-    8.53%  [kernel]         [k] native_sched_clock                                                                                                                                                                                        ▒
+   - native_sched_clock                                                                                                                                                                                                                    ▒
+      - 96.76% local_clock                                                                                                                                                                                                                 ▒
+         - get_vtime_delta                                                                                                                                                                                                                 ▒
+            - 51.95% vtime_account_user                                                                                                                                                                                                    ▒
+                 99.96% context_tracking_user_exit                                                                                                                                                                                         ▒
+                    syscall_trace_enter                                                                                                                                                                                                    ▒
+                    tracesys                                                                                                                                                                                                               ▒
+                    __xstat64                                                                                                                                                                                                              ▒
+                    __libc_start_main                                                                                                                                                                                                      ▒
+            - 48.05% __vtime_account_system                                                                                                                                                                                                ▒
+                 99.96% vtime_user_enter                                                                                                                                                                                                   ▒
+                    context_tracking_user_enter                                                                                                                                                                                            ▒
+                    syscall_trace_leave                                                                                                                                                                                                    ◆
+                    int_check_syscall_exit_work                                                                                                                                                                                            ▒
+                    __xstat64                                                                                                                                                                                                              ▒
+                    __libc_start_main                                                                                                                                                                                                      ▒
+      - 3.23% get_vtime_delta                                                                                                                                                                                                              ▒
+           52.96% vtime_account_user                                                                                                                                                                                                       ▒
+              context_tracking_user_exit                                                                                                                                                                                                   ▒
+              syscall_trace_enter                                                                                                                                                                                                          ▒
+              tracesys                                                                                                                                                                                                                     ▒
+              __xstat64                                                                                                                                                                                                                    ▒
+              __libc_start_main                                                                                                                                                                                                            ▒
+           47.04% __vtime_account_system                                                                                                                                                                                                   ▒
+              vtime_user_enter                                                                                                                                                                                                             ▒
+              context_tracking_user_enter                                                                                                                                                                                                  ▒
+              syscall_trace_leave                                                                                                                                                                                                          ▒
+              int_check_syscall_exit_work                                                                                                                                                                                                  ▒
+              __xstat64                                                                                                                                                                                                                    ▒
+              __libc_start_main
 
-2) Let it be offlined but then handover its timekeeping duty to any online CPU,
-whether full dynticks or not (of course then the full dynticks timekeeper won't be
-ever allowed to enter in full dynticks mode), we don't have the choice anyway.
-
-But then we need a way to reset the sysidle state when we handover the timekeeping
-duty.
-
-Big headaches on the horizon!
-
-Why haven't we kept CPU0 as the boot CPU for everyone? Things were just simple that way...
