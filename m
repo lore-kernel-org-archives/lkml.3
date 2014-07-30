@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895AbaG3Btd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:49:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60412 "EHLO
+	id S1754937AbaG3Bti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:49:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60452 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754855AbaG3Btb (ORCPT
+	with ESMTP id S1754898AbaG3Btf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:31 -0400
+	Tue, 29 Jul 2014 21:49:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Silesh C V <svellattu@mvista.com>, Oleg Nesterov <oleg@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 13/21] coredump: fix the setting of PF_DUMPCORE
-Date: Tue, 29 Jul 2014 18:48:42 -0700
-Message-Id: <20140730014831.030390588@linuxfoundation.org>
+        Zoltan Kiss <zoltan.kiss@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [PATCH 3.10 21/21] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy and handle errors
+Date: Tue, 29 Jul 2014 18:48:50 -0700
+Message-Id: <20140730014831.371270105@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014830.424826215@linuxfoundation.org>
 References: <20140730014830.424826215@linuxfoundation.org>
@@ -31,38 +30,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Silesh C V <svellattu@mvista.com>
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
 
-commit aed8adb7688d5744cb484226820163af31d2499a upstream.
+commit 36d5fe6a000790f56039afe26834265db0a3ad4c upstream.
 
-Commit 079148b919d0 ("coredump: factor out the setting of PF_DUMPCORE")
-cleaned up the setting of PF_DUMPCORE by removing it from all the
-linux_binfmt->core_dump() and moving it to zap_threads().But this ended
-up clearing all the previously set flags.  This causes issues during
-core generation when tsk->flags is checked again (eg.  for PF_USED_MATH
-to dump floating point registers).  Fix this.
+skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+orphan them. Also, it doesn't handle errors, so this patch takes care of that
+as well, and modify the callers accordingly. skb_tx_error() is also added to
+the callers so they will signal the failed delivery towards the creator of the
+skb.
 
-Signed-off-by: Silesh C V <svellattu@mvista.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Backported to 3.13: skb_zerocopy() is new in 3.14, but was moved from a
+ static function in nfnetlink_queue.  We need to patch that and its caller, but
+ not openvswitch.]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/coredump.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/netfilter/nfnetlink_queue_core.c |   29 +++++++++++++++++++++--------
+ 1 file changed, 21 insertions(+), 8 deletions(-)
 
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -299,7 +299,7 @@ static int zap_threads(struct task_struc
- 	if (unlikely(nr < 0))
- 		return nr;
+--- a/net/netfilter/nfnetlink_queue_core.c
++++ b/net/netfilter/nfnetlink_queue_core.c
+@@ -227,22 +227,23 @@ nfqnl_flush(struct nfqnl_instance *queue
+ 	spin_unlock_bh(&queue->lock);
+ }
  
--	tsk->flags = PF_DUMPCORE;
-+	tsk->flags |= PF_DUMPCORE;
- 	if (atomic_read(&mm->mm_users) == nr + 1)
- 		goto done;
- 	/*
+-static void
++static int
+ nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
+ {
+ 	int i, j = 0;
+ 	int plen = 0; /* length of skb->head fragment */
++	int ret;
+ 	struct page *page;
+ 	unsigned int offset;
+ 
+ 	/* dont bother with small payloads */
+-	if (len <= skb_tailroom(to)) {
+-		skb_copy_bits(from, 0, skb_put(to, len), len);
+-		return;
+-	}
++	if (len <= skb_tailroom(to))
++		return skb_copy_bits(from, 0, skb_put(to, len), len);
+ 
+ 	if (hlen) {
+-		skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
++		ret = skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
++		if (unlikely(ret))
++			return ret;
+ 		len -= hlen;
+ 	} else {
+ 		plen = min_t(int, skb_headlen(from), len);
+@@ -260,6 +261,11 @@ nfqnl_zcopy(struct sk_buff *to, const st
+ 	to->len += len + plen;
+ 	to->data_len += len + plen;
+ 
++	if (unlikely(skb_orphan_frags(from, GFP_ATOMIC))) {
++		skb_tx_error(from);
++		return -ENOMEM;
++	}
++
+ 	for (i = 0; i < skb_shinfo(from)->nr_frags; i++) {
+ 		if (!len)
+ 			break;
+@@ -270,6 +276,8 @@ nfqnl_zcopy(struct sk_buff *to, const st
+ 		j++;
+ 	}
+ 	skb_shinfo(to)->nr_frags = j;
++
++	return 0;
+ }
+ 
+ static int nfqnl_put_packet_info(struct sk_buff *nlskb, struct sk_buff *packet)
+@@ -355,13 +363,16 @@ nfqnl_build_packet_message(struct nfqnl_
+ 
+ 	skb = nfnetlink_alloc_skb(&init_net, size, queue->peer_portid,
+ 				  GFP_ATOMIC);
+-	if (!skb)
++	if (!skb) {
++		skb_tx_error(entskb);
+ 		return NULL;
++	}
+ 
+ 	nlh = nlmsg_put(skb, 0, 0,
+ 			NFNL_SUBSYS_QUEUE << 8 | NFQNL_MSG_PACKET,
+ 			sizeof(struct nfgenmsg), 0);
+ 	if (!nlh) {
++		skb_tx_error(entskb);
+ 		kfree_skb(skb);
+ 		return NULL;
+ 	}
+@@ -481,13 +492,15 @@ nfqnl_build_packet_message(struct nfqnl_
+ 		nla->nla_type = NFQA_PAYLOAD;
+ 		nla->nla_len = nla_attr_size(data_len);
+ 
+-		nfqnl_zcopy(skb, entskb, data_len, hlen);
++		if (nfqnl_zcopy(skb, entskb, data_len, hlen))
++			goto nla_put_failure;
+ 	}
+ 
+ 	nlh->nlmsg_len = skb->len;
+ 	return skb;
+ 
+ nla_put_failure:
++	skb_tx_error(entskb);
+ 	kfree_skb(skb);
+ 	net_err_ratelimited("nf_queue: error creating packet message\n");
+ 	return NULL;
 
 
