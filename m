@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918AbaG3UrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 16:47:19 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:2350 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750990AbaG3UrS (ORCPT
+	id S1751535AbaG3Utm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 16:49:42 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:61945 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbaG3Utl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 16:47:18 -0400
-Message-ID: <53D959D0.1020303@fb.com>
-Date: Wed, 30 Jul 2014 16:47:12 -0400
-From: Josef Bacik <jbacik@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Nicholas Krause <xerofoify@gmail.com>, <clm@fb.com>
-CC: <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Remove certain calls for releasing page cache
-References: <1406752954-26158-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1406752954-26158-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-30_07:2014-07-30,2014-07-30,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=1749.24041094204
- compositescore=0.324642340081358 urlsuspect_oldscore=0.324642340081358
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=2524143
- rbsscore=0.324642340081358 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1407300242
-X-FB-Internal: deliver
+	Wed, 30 Jul 2014 16:49:41 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] scsi: ch.c:  Cleaning up missing null-terminate in conjunction with strncpy
+Date: Wed, 30 Jul 2014 22:51:08 +0200
+Message-Id: <1406753468-19983-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2014 04:42 PM, Nicholas Krause wrote:
-> This patch removes the lines for releasing the page cache in certain
-> files as this may aid in perfomance with writes in the compression
-> rountines of btrfs. Please note that this patch has not been tested
-> on my own hardware due to no compression based btrfs volumes of my
-> own.
->
+If you are going to use memset before strncpy you must copy sizeof -1.
+And removed unnecessary magic numbers.
 
-http://37.media.tumblr.com/tumblr_m44v95k9Y11qjhgo6o1_250.gif
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/scsi/ch.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-Josef
+diff --git a/drivers/scsi/ch.c b/drivers/scsi/ch.c
+index 2a32374..1fecf60 100644
+--- a/drivers/scsi/ch.c
++++ b/drivers/scsi/ch.c
+@@ -634,19 +634,23 @@ static long ch_ioctl(struct file *file,
+ 		memset(&vparams,0,sizeof(vparams));
+ 		if (ch->counts[CHET_V1]) {
+ 			vparams.cvp_n1  = ch->counts[CHET_V1];
+-			strncpy(vparams.cvp_label1,vendor_labels[0],16);
++			strncpy(vparams.cvp_label1, vendor_labels[0],
++					sizeof(vparams.cvp_label1) - 1);
+ 		}
+ 		if (ch->counts[CHET_V2]) {
+ 			vparams.cvp_n2  = ch->counts[CHET_V2];
+-			strncpy(vparams.cvp_label2,vendor_labels[1],16);
++			strncpy(vparams.cvp_label2, vendor_labels[1],
++					sizeof(vparams.cvp_label2) - 1);
+ 		}
+ 		if (ch->counts[CHET_V3]) {
+ 			vparams.cvp_n3  = ch->counts[CHET_V3];
+-			strncpy(vparams.cvp_label3,vendor_labels[2],16);
++			strncpy(vparams.cvp_label3, vendor_labels[2],
++					sizeof(vparams.cvp_label3) - 1);
+ 		}
+ 		if (ch->counts[CHET_V4]) {
+ 			vparams.cvp_n4  = ch->counts[CHET_V4];
+-			strncpy(vparams.cvp_label4,vendor_labels[3],16);
++			strncpy(vparams.cvp_label4, vendor_labels[3],
++					sizeof(vparams.cvp_label4) - 1);
+ 		}
+ 		if (copy_to_user(argp, &vparams, sizeof(vparams)))
+ 			return -EFAULT;
+-- 
+1.7.10.4
+
