@@ -1,44 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356AbaG3QJg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 12:09:36 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:59380 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754768AbaG3QJf (ORCPT
+	id S1755111AbaG3QMV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 12:12:21 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:37851 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753783AbaG3QMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 12:09:35 -0400
-Date: Wed, 30 Jul 2014 09:09:31 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.15 00/37] 3.15.8-stable review
-Message-ID: <20140730160931.GD26561@roeck-us.net>
-References: <20140730014827.565626091@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140730014827.565626091@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 Jul 2014 12:12:19 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: alex.williamson@redhat.com, kvm@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH] KVM: x86: always exit on EOIs for interrupts listed in the IOAPIC redir table
+Date: Wed, 30 Jul 2014 18:12:08 +0200
+Message-Id: <1406736728-8516-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 06:48:36PM -0700, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.15.8 release.
-> There are 37 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Fri Aug  1 01:48:13 UTC 2014.
-> Anything received after that time might be too late.
-> 
-Build results:
-	total: 141 pass: 141 fail: 0
+Currently, the EOI exit bitmap (used for APICv) does not include
+interrupts that are masked.  However, this can cause a bug that manifests
+as an interrupt storm inside the guest.  Alex Williamson reported the
+bug and is the one who really debugged this; I only wrote the patch. :)
 
-Qemu tests all passed.
+The scenario involves a multi-function PCI device with OHCI and EHCI
+USB functions and an audio function, all assigned to the guest, where
+both USB functions use legacy INTx interrupts.
 
-Details are available at http://server.roeck-us.net:8010/builders.
+As soon as the guest boots, interrupts for these devices turn into an
+interrupt storm in the guest; the host does not see the interrupt storm.
+Basically the EOI path does not work, and the guest continues to see the
+interrupt over and over, even after it attempts to mask it at the APIC.
+The bug is only visible with older kernels (RHEL6.5, based on 2.6.32
+with not many changes in the area of APIC/IOAPIC handling).
 
-Guenter
+Alex then tried forcing bit 59 (corresponding to the USB functions' IRQ)
+on in the eoi_exit_bitmap and TMR, and things then work.  What happens
+is that VFIO asserts IRQ11, then KVM recomputes the EOI exit bitmap.
+It does not have set bit 59 because the RTE was masked, so the IOAPIC
+never sees the EOI and the interrupt continues to fire in the guest.
+
+Probably, the guest is masking the interrupt in the redirection table in
+the interrupt routine, i.e. while the interrupt is set in a LAPIC's ISR.
+The simplest fix is to ignore the masking state, we would rather have
+an unnecessary exit rather than a missed IRQ ACK and anyway IOAPIC
+interrupts are not as performance-sensitive as for example MSIs.
+
+[Thanks to Alex for his precise description of the problem
+ and initial debugging effort.  A lot of the text above is
+ based on emails exchanged with him.]
+
+Reported-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ virt/kvm/ioapic.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+index 2458a1dc2ba9..e8ce34c9db32 100644
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -254,10 +254,9 @@ void kvm_ioapic_scan_entry(struct kvm_vcpu *vcpu, u64 *eoi_exit_bitmap,
+ 	spin_lock(&ioapic->lock);
+ 	for (index = 0; index < IOAPIC_NUM_PINS; index++) {
+ 		e = &ioapic->redirtbl[index];
+-		if (!e->fields.mask &&
+-			(e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
+-			 kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC,
+-				 index) || index == RTC_GSI)) {
++		if (e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
++		    kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC, index) ||
++		    index == RTC_GSI) {
+ 			if (kvm_apic_match_dest(vcpu, NULL, 0,
+ 				e->fields.dest_id, e->fields.dest_mode)) {
+ 				__set_bit(e->fields.vector,
+-- 
+1.8.3.1
+
