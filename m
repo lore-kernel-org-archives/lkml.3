@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935AbaG3CID (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:08:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60459 "EHLO
+	id S1755953AbaG3CI1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:08:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60430 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754901AbaG3Btg (ORCPT
+	with ESMTP id S1754887AbaG3Btd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:36 -0400
+	Tue, 29 Jul 2014 21:49:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew de los Reyes <adlr@chromium.org>,
-        Benson Leung <bleung@chromium.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 12/21] Input: fix defuzzing logic
-Date: Tue, 29 Jul 2014 18:48:41 -0700
-Message-Id: <20140730014830.981041618@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Guillaume Morin <guillaume@morinfr.org>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 17/21] mm: hugetlb: fix copy_hugetlb_page_range()
+Date: Tue, 29 Jul 2014 18:48:46 -0700
+Message-Id: <20140730014831.202690528@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014830.424826215@linuxfoundation.org>
 References: <20140730014830.424826215@linuxfoundation.org>
@@ -32,56 +32,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dtor@chromium.org>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 50c5d36dab930b1f1b1e3348b8608aa8b9ee7610 upstream.
+commit 0253d634e0803a8376a0d88efee0bf523d8673f9 upstream.
 
-We attempt to remove noise from coordinates reported by devices in
-input_handle_abs_event(), unfortunately, unless we were dropping the
-event altogether, we were ignoring the adjusted value and were passing
-on the original value instead.
+Commit 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
+migration/hwpoisoned entry") changed the order of
+huge_ptep_set_wrprotect() and huge_ptep_get(), which leads to breakage
+in some workloads like hugepage-backed heap allocation via libhugetlbfs.
+This patch fixes it.
 
-Reviewed-by: Andrew de los Reyes <adlr@chromium.org>
-Reviewed-by: Benson Leung <bleung@chromium.org>
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+The test program for the problem is shown below:
+
+  $ cat heap.c
+  #include <unistd.h>
+  #include <stdlib.h>
+  #include <string.h>
+
+  #define HPS 0x200000
+
+  int main() {
+  	int i;
+  	char *p = malloc(HPS);
+  	memset(p, '1', HPS);
+  	for (i = 0; i < 5; i++) {
+  		if (!fork()) {
+  			memset(p, '2', HPS);
+  			p = malloc(HPS);
+  			memset(p, '3', HPS);
+  			free(p);
+  			return 0;
+  		}
+  	}
+  	sleep(1);
+  	free(p);
+  	return 0;
+  }
+
+  $ export HUGETLB_MORECORE=yes ; export HUGETLB_NO_PREFAULT= ; hugectl --heap ./heap
+
+Fixes 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
+migration/hwpoisoned entry"), so is applicable to -stable kernels which
+include it.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reported-by: Guillaume Morin <guillaume@morinfr.org>
+Suggested-by: Guillaume Morin <guillaume@morinfr.org>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/input.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ mm/hugetlb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/input/input.c
-+++ b/drivers/input/input.c
-@@ -257,9 +257,10 @@ static int input_handle_abs_event(struct
- }
- 
- static int input_get_disposition(struct input_dev *dev,
--			  unsigned int type, unsigned int code, int value)
-+			  unsigned int type, unsigned int code, int *pval)
- {
- 	int disposition = INPUT_IGNORE_EVENT;
-+	int value = *pval;
- 
- 	switch (type) {
- 
-@@ -357,6 +358,7 @@ static int input_get_disposition(struct
- 		break;
- 	}
- 
-+	*pval = value;
- 	return disposition;
- }
- 
-@@ -365,7 +367,7 @@ static void input_handle_event(struct in
- {
- 	int disposition;
- 
--	disposition = input_get_disposition(dev, type, code, value);
-+	disposition = input_get_disposition(dev, type, code, &value);
- 
- 	if ((disposition & INPUT_PASS_TO_DEVICE) && dev->event)
- 		dev->event(dev, type, code, value);
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2400,6 +2400,7 @@ int copy_hugetlb_page_range(struct mm_st
+ 		} else {
+ 			if (cow)
+ 				huge_ptep_set_wrprotect(src, addr, src_pte);
++			entry = huge_ptep_get(src_pte);
+ 			ptepage = pte_page(entry);
+ 			get_page(ptepage);
+ 			page_dup_rmap(ptepage);
 
 
