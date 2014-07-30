@@ -1,98 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716AbaG3BtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:49:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60291 "EHLO
+	id S1754802AbaG3BtY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:49:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60313 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754657AbaG3BtJ (ORCPT
+	with ESMTP id S1754655AbaG3BtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:09 -0400
+	Tue, 29 Jul 2014 21:49:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.4 00/10] 3.4.101-stable review
-Date: Tue, 29 Jul 2014 18:48:31 -0700
-Message-Id: <20140730014807.477761030@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sven Wegener <sven.wegener@stealer.net>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 3.4 05/10] x86_32, entry: Store badsys error code in %eax
+Date: Tue, 29 Jul 2014 18:48:36 -0700
+Message-Id: <20140730014807.793300013@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
+In-Reply-To: <20140730014807.477761030@linuxfoundation.org>
+References: <20140730014807.477761030@linuxfoundation.org>
 User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.101 release.
-There are 10 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Fri Aug  1 01:47:50 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.101-rc1.gz
-and the diffstat can be found below.
+From: Sven Wegener <sven.wegener@stealer.net>
 
-thanks,
+commit 8142b215501f8b291a108a202b3a053a265b03dd upstream.
 
-greg k-h
+Commit 554086d ("x86_32, entry: Do syscall exit work on badsys
+(CVE-2014-4508)") introduced a regression in the x86_32 syscall entry
+code, resulting in syscall() not returning proper errors for undefined
+syscalls on CPUs supporting the sysenter feature.
 
--------------
-Pseudo-Shortlog of commits:
+The following code:
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.101-rc1
+> int result = syscall(666);
+> printf("result=%d errno=%d error=%s\n", result, errno, strerror(errno));
 
-Catalin Marinas <catalin.marinas@arm.com>
-    mm: kmemleak: avoid false negatives on vmalloc'ed objects
+results in:
 
-Xi Wang <xi.wang@gmail.com>
-    introduce SIZE_MAX
+> result=666 errno=0 error=Success
 
-Martin Schwidefsky <schwidefsky@de.ibm.com>
-    s390/ptrace: fix PSW mask check
+Obviously, the syscall return value is the called syscall number, but it
+should have been an ENOSYS error. When run under ptrace it behaves
+correctly, which makes it hard to debug in the wild:
 
-Linus Torvalds <torvalds@linux-foundation.org>
-    Fix gcc-4.9.0 miscompilation of load_balance() in scheduler
+> result=-1 errno=38 error=Function not implemented
 
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-    mm: hugetlb: fix copy_hugetlb_page_range()
+The %eax register is the return value register. For debugging via ptrace
+the syscall entry code stores the complete register context on the
+stack. The badsys handlers only store the ENOSYS error code in the
+ptrace register set and do not set %eax like a regular syscall handler
+would. The old resume_userspace call chain contains code that clobbers
+%eax and it restores %eax from the ptrace registers afterwards. The same
+goes for the ptrace-enabled call chain. When ptrace is not used, the
+syscall return value is the passed-in syscall number from the untouched
+%eax register.
 
-Sven Wegener <sven.wegener@stealer.net>
-    x86_32, entry: Store badsys error code in %eax
+Use %eax as the return value register in syscall_badsys and
+sysenter_badsys, like a real syscall handler does, and have the caller
+push the value onto the stack for ptrace access.
 
-Romain Degez <romain.degez@gmail.com>
-    ahci: add support for the Promise FastTrak TX8660 SATA HBA (ahci mode)
+Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
+Link: http://lkml.kernel.org/r/alpine.LNX.2.11.1407221022380.31021@titan.int.lan.stealer.net
+Reviewed-and-tested-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Tejun Heo <tj@kernel.org>
-    libata: introduce ata_host->n_tags to avoid oops on SAS controllers
+---
+ arch/x86/kernel/entry_32.S |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-Kevin Hao <haokexin@gmail.com>
-    libata: support the ata host which implements a queue depth less than 32
-
-Christoph Hellwig <hch@lst.de>
-    block: don't assume last put of shared tags is for the host
-
-
--------------
-
-Diffstat:
-
- Makefile                   |  6 ++++--
- arch/s390/kernel/ptrace.c  |  9 +++++++--
- arch/x86/kernel/entry_32.S |  9 +++++----
- block/blk-tag.c            | 33 +++++++--------------------------
- drivers/ata/ahci.c         |  1 +
- drivers/ata/libata-core.c  | 12 ++++++++++--
- fs/ceph/snap.c             |  2 +-
- include/drm/drm_mem_util.h |  4 ++--
- include/linux/kernel.h     |  1 +
- include/linux/libata.h     |  1 +
- include/linux/slab.h       |  2 +-
- mm/hugetlb.c               |  1 +
- mm/kmemleak.c              |  4 +++-
- mm/vmalloc.c               | 14 ++++++++++----
- 14 files changed, 54 insertions(+), 45 deletions(-)
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -428,8 +428,8 @@ sysenter_do_call:
+ 	cmpl $(NR_syscalls), %eax
+ 	jae sysenter_badsys
+ 	call *sys_call_table(,%eax,4)
+-	movl %eax,PT_EAX(%esp)
+ sysenter_after_call:
++	movl %eax,PT_EAX(%esp)
+ 	LOCKDEP_SYS_EXIT
+ 	DISABLE_INTERRUPTS(CLBR_ANY)
+ 	TRACE_IRQS_OFF
+@@ -510,6 +510,7 @@ ENTRY(system_call)
+ 	jae syscall_badsys
+ syscall_call:
+ 	call *sys_call_table(,%eax,4)
++syscall_after_call:
+ 	movl %eax,PT_EAX(%esp)		# store the return value
+ syscall_exit:
+ 	LOCKDEP_SYS_EXIT
+@@ -678,12 +679,12 @@ syscall_fault:
+ END(syscall_fault)
+ 
+ syscall_badsys:
+-	movl $-ENOSYS,PT_EAX(%esp)
+-	jmp syscall_exit
++	movl $-ENOSYS,%eax
++	jmp syscall_after_call
+ END(syscall_badsys)
+ 
+ sysenter_badsys:
+-	movl $-ENOSYS,PT_EAX(%esp)
++	movl $-ENOSYS,%eax
+ 	jmp sysenter_after_call
+ END(syscall_badsys)
+ 	CFI_ENDPROC
 
 
