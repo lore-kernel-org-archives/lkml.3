@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581AbaG3V4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 17:56:16 -0400
-Received: from exprod5og126.obsmtp.com ([64.18.0.251]:44891 "HELO
-	exprod5og126.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752017AbaG3V4O (ORCPT
+	id S1753917AbaG3V4T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 17:56:19 -0400
+Received: from exprod5og106.obsmtp.com ([64.18.0.182]:48705 "HELO
+	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753471AbaG3V4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 17:56:14 -0400
+	Wed, 30 Jul 2014 17:56:16 -0400
 From: Feng Kan <fkan@apm.com>
 To: tglx@linutronix.de, jason@lakedaemon.net, marc.zyngier@arm.com,
         linux-kernel@vger.kernel.org
 Cc: Feng Kan <fkan@apm.com>
-Subject: [PATCH V4 RESEND 1/2] irqchip: gic: replace hex numbers with defines.
-Date: Wed, 30 Jul 2014 14:56:58 -0700
-Message-Id: <1406757419-18729-2-git-send-email-fkan@apm.com>
+Subject: [PATCH V4 RESEND 2/2] irqchip: gic: preserve gic V2 bypass bits in cpu ctrl register
+Date: Wed, 30 Jul 2014 14:56:59 -0700
+Message-Id: <1406757419-18729-3-git-send-email-fkan@apm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406757419-18729-1-git-send-email-fkan@apm.com>
 References: <1406757419-18729-1-git-send-email-fkan@apm.com>
@@ -21,185 +21,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to cleanup some hex numbers used in the code and replace
-them with defines to make the code cleaner.
+This change is made to preserve the GIC v2 bypass bits in the
+GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
+This code will preserve all bits configured by the bootloader regarding
+v2 bypass group bits. In the X-Gene platform, the bypass functionality
+is not used and bypass bits should not be changed by the kernel gic
+code as it could lead to incorrect behavior.
 
 Signed-off-by: Feng Kan <fkan@apm.com>
+Reviewed-by: Vinayak Kale <vkale@apm.com>
 Reviewed-by: Anup Patel <apatel@apm.com>
 ---
- drivers/irqchip/irq-gic-common.c | 15 +++++++++------
- drivers/irqchip/irq-gic.c        | 25 +++++++++++++------------
- include/linux/irqchip/arm-gic.h  | 15 +++++++++++++++
- 3 files changed, 37 insertions(+), 18 deletions(-)
+ drivers/irqchip/irq-gic.c       | 25 ++++++++++++++++++++++---
+ include/linux/irqchip/arm-gic.h |  1 +
+ 2 files changed, 23 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/irqchip/irq-gic-common.c b/drivers/irqchip/irq-gic-common.c
-index 60ac704..61541ff 100644
---- a/drivers/irqchip/irq-gic-common.c
-+++ b/drivers/irqchip/irq-gic-common.c
-@@ -74,20 +74,22 @@ void __init gic_dist_config(void __iomem *base, int gic_irqs,
- 	 * Set all global interrupts to be level triggered, active low.
- 	 */
- 	for (i = 32; i < gic_irqs; i += 16)
--		writel_relaxed(0, base + GIC_DIST_CONFIG + i / 4);
-+		writel_relaxed(GICD_INT_ACTLOW_LVLTRIG,
-+					base + GIC_DIST_CONFIG + i / 4);
- 
- 	/*
- 	 * Set priority on all global interrupts.
- 	 */
- 	for (i = 32; i < gic_irqs; i += 4)
--		writel_relaxed(0xa0a0a0a0, base + GIC_DIST_PRI + i);
-+		writel_relaxed(GICD_INT_DEF_PRI_X4, base + GIC_DIST_PRI + i);
- 
- 	/*
- 	 * Disable all interrupts.  Leave the PPI and SGIs alone
- 	 * as they are enabled by redistributor registers.
- 	 */
- 	for (i = 32; i < gic_irqs; i += 32)
--		writel_relaxed(0xffffffff, base + GIC_DIST_ENABLE_CLEAR + i / 8);
-+		writel_relaxed(GICD_INT_EN_CLR_X32,
-+					base + GIC_DIST_ENABLE_CLEAR + i / 8);
- 
- 	if (sync_access)
- 		sync_access();
-@@ -101,14 +103,15 @@ void gic_cpu_config(void __iomem *base, void (*sync_access)(void))
- 	 * Deal with the banked PPI and SGI interrupts - disable all
- 	 * PPI interrupts, ensure all SGI interrupts are enabled.
- 	 */
--	writel_relaxed(0xffff0000, base + GIC_DIST_ENABLE_CLEAR);
--	writel_relaxed(0x0000ffff, base + GIC_DIST_ENABLE_SET);
-+	writel_relaxed(GICD_INT_EN_CLR_PPI, base + GIC_DIST_ENABLE_CLEAR);
-+	writel_relaxed(GICD_INT_EN_SET_SGI, base + GIC_DIST_ENABLE_SET);
- 
- 	/*
- 	 * Set priority on PPI and SGI interrupts
- 	 */
- 	for (i = 0; i < 32; i += 4)
--		writel_relaxed(0xa0a0a0a0, base + GIC_DIST_PRI + i * 4 / 4);
-+		writel_relaxed(GICD_INT_DEF_PRI_X4,
-+					base + GIC_DIST_PRI + i * 4 / 4);
- 
- 	if (sync_access)
- 		sync_access();
 diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 508b815..2075d52 100644
+index 2075d52..c31eea4 100644
 --- a/drivers/irqchip/irq-gic.c
 +++ b/drivers/irqchip/irq-gic.c
-@@ -299,8 +299,8 @@ static void gic_handle_cascade_irq(unsigned int irq, struct irq_desc *desc)
- 	status = readl_relaxed(gic_data_cpu_base(chip_data) + GIC_CPU_INTACK);
- 	raw_spin_unlock(&irq_controller_lock);
- 
--	gic_irq = (status & 0x3ff);
--	if (gic_irq == 1023)
-+	gic_irq = (status & GICC_IAR_INT_ID_MASK);
-+	if (gic_irq == GICC_INT_SPURIOUS)
- 		goto out;
- 
- 	cascade_irq = irq_find_mapping(chip_data->domain, gic_irq);
-@@ -361,7 +361,7 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
- 	unsigned int gic_irqs = gic->gic_irqs;
- 	void __iomem *base = gic_data_dist_base(gic);
- 
--	writel_relaxed(0, base + GIC_DIST_CTRL);
-+	writel_relaxed(GICD_DISABLE, base + GIC_DIST_CTRL);
- 
- 	/*
- 	 * Set all global interrupts to this CPU only.
-@@ -374,7 +374,7 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
- 
- 	gic_dist_config(base, gic_irqs, NULL);
- 
--	writel_relaxed(1, base + GIC_DIST_CTRL);
-+	writel_relaxed(GICD_ENABLE, base + GIC_DIST_CTRL);
+@@ -354,6 +354,21 @@ static u8 gic_get_cpumask(struct gic_chip_data *gic)
+ 	return mask;
  }
  
- static void gic_cpu_init(struct gic_chip_data *gic)
-@@ -401,8 +401,8 @@ static void gic_cpu_init(struct gic_chip_data *gic)
- 
++static void gic_cpu_if_up(void)
++{
++	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
++	u32 bypass = 0;
++
++	/*
++	* Preserve bypass disable bits to be written back later
++	*/
++	bypass = readl(cpu_base + GIC_CPU_CTRL);
++	bypass &= GICC_DIS_BYPASS_MASK;
++
++	writel_relaxed(bypass | GICC_ENABLE, cpu_base + GIC_CPU_CTRL);
++}
++
++
+ static void __init gic_dist_init(struct gic_chip_data *gic)
+ {
+ 	unsigned int i;
+@@ -402,13 +417,17 @@ static void gic_cpu_init(struct gic_chip_data *gic)
  	gic_cpu_config(dist_base, NULL);
  
--	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
--	writel_relaxed(1, base + GIC_CPU_CTRL);
-+	writel_relaxed(GICC_INT_PRI_THRESHOLD, base + GIC_CPU_PRIMASK);
-+	writel_relaxed(GICC_ENABLE, base + GIC_CPU_CTRL);
+ 	writel_relaxed(GICC_INT_PRI_THRESHOLD, base + GIC_CPU_PRIMASK);
+-	writel_relaxed(GICC_ENABLE, base + GIC_CPU_CTRL);
++	gic_cpu_if_up();
  }
  
  void gic_cpu_if_down(void)
-@@ -468,14 +468,14 @@ static void gic_dist_restore(unsigned int gic_nr)
- 	if (!dist_base)
- 		return;
- 
--	writel_relaxed(0, dist_base + GIC_DIST_CTRL);
-+	writel_relaxed(GICD_DISABLE, dist_base + GIC_DIST_CTRL);
- 
- 	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 16); i++)
- 		writel_relaxed(gic_data[gic_nr].saved_spi_conf[i],
- 			dist_base + GIC_DIST_CONFIG + i * 4);
- 
- 	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
--		writel_relaxed(0xa0a0a0a0,
-+		writel_relaxed(GICD_INT_DEF_PRI_X4,
- 			dist_base + GIC_DIST_PRI + i * 4);
- 
- 	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
-@@ -486,7 +486,7 @@ static void gic_dist_restore(unsigned int gic_nr)
- 		writel_relaxed(gic_data[gic_nr].saved_spi_enable[i],
- 			dist_base + GIC_DIST_ENABLE_SET + i * 4);
- 
--	writel_relaxed(1, dist_base + GIC_DIST_CTRL);
-+	writel_relaxed(GICD_ENABLE, dist_base + GIC_DIST_CTRL);
+ {
+ 	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
+-	writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
++	u32 val = 0;
++
++	val = readl(cpu_base + GIC_CPU_CTRL);
++	val &= ~GICC_ENABLE;
++	writel_relaxed(val, cpu_base + GIC_CPU_CTRL);
  }
  
- static void gic_cpu_save(unsigned int gic_nr)
-@@ -540,10 +540,11 @@ static void gic_cpu_restore(unsigned int gic_nr)
- 		writel_relaxed(ptr[i], dist_base + GIC_DIST_CONFIG + i * 4);
+ #ifdef CONFIG_CPU_PM
+@@ -544,7 +563,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+ 					dist_base + GIC_DIST_PRI + i * 4);
  
- 	for (i = 0; i < DIV_ROUND_UP(32, 4); i++)
--		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
-+		writel_relaxed(GICD_INT_DEF_PRI_X4,
-+					dist_base + GIC_DIST_PRI + i * 4);
- 
--	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
--	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
-+	writel_relaxed(GICC_INT_PRI_THRESHOLD, cpu_base + GIC_CPU_PRIMASK);
-+	writel_relaxed(GICC_ENABLE, cpu_base + GIC_CPU_CTRL);
+ 	writel_relaxed(GICC_INT_PRI_THRESHOLD, cpu_base + GIC_CPU_PRIMASK);
+-	writel_relaxed(GICC_ENABLE, cpu_base + GIC_CPU_CTRL);
++	gic_cpu_if_up();
  }
  
  static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
 diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
-index 45e2d8c..5cb9d41 100644
+index 5cb9d41..13eed92 100644
 --- a/include/linux/irqchip/arm-gic.h
 +++ b/include/linux/irqchip/arm-gic.h
-@@ -21,7 +21,10 @@
- #define GIC_CPU_ACTIVEPRIO		0xd0
- #define GIC_CPU_IDENT			0xfc
- 
-+#define GICC_ENABLE			0x1
-+#define GICC_INT_PRI_THRESHOLD		0xf0
+@@ -25,6 +25,7 @@
+ #define GICC_INT_PRI_THRESHOLD		0xf0
  #define GICC_IAR_INT_ID_MASK		0x3ff
-+#define GICC_INT_SPURIOUS		1023
+ #define GICC_INT_SPURIOUS		1023
++#define GICC_DIS_BYPASS_MASK		0x1e0
  
  #define GIC_DIST_CTRL			0x000
  #define GIC_DIST_CTR			0x004
-@@ -39,6 +42,18 @@
- #define GIC_DIST_SGI_PENDING_CLEAR	0xf10
- #define GIC_DIST_SGI_PENDING_SET	0xf20
- 
-+#define GICD_ENABLE			0x1
-+#define GICD_DISABLE			0x0
-+#define GICD_INT_ACTLOW_LVLTRIG		0x0
-+#define GICD_INT_EN_CLR_X32		0xffffffff
-+#define GICD_INT_EN_SET_SGI		0x0000ffff
-+#define GICD_INT_EN_CLR_PPI		0xffff0000
-+#define GICD_INT_DEF_PRI		0xa0
-+#define GICD_INT_DEF_PRI_X4		((GICD_INT_DEF_PRI << 24) |\
-+					(GICD_INT_DEF_PRI << 16) |\
-+					(GICD_INT_DEF_PRI << 8) |\
-+					GICD_INT_DEF_PRI)
-+
- #define GICH_HCR			0x0
- #define GICH_VTR			0x4
- #define GICH_VMCR			0x8
 -- 
 1.9.1
 
