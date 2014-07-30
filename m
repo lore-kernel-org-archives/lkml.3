@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423AbaG3QP2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 12:15:28 -0400
-Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:38959
-	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755399AbaG3QPZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 12:15:25 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>, Dan Carpenter <dan.carpenter@oracle.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 13/19 v2] staging: comedi: amplc_pci230: remove
- unnecessary braces
-Thread-Topic: [PATCH 13/19 v2] staging: comedi: amplc_pci230: remove
- unnecessary braces
-Thread-Index: AQHPq+0YkfyE5NmIy0KGLGGG8zHHjpu5FYmAgAAGMoCAAAFyAIAABSiA//+oaWA=
-Date: Wed, 30 Jul 2014 16:15:23 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F2A3C2@P3PWEX4MB008.ex4.secureserver.net>
-References: <1406635107-27950-14-git-send-email-abbotti@mev.co.uk>
- <1406721227-8144-1-git-send-email-abbotti@mev.co.uk>
- <20140730134153.GJ4856@mwanda> <53D8FB53.3050501@mev.co.uk>
- <20140730140914.GK4856@mwanda> <53D900DD.6060006@mev.co.uk>
-In-Reply-To: <53D900DD.6060006@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755055AbaG3QTM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 12:19:12 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:43965 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754575AbaG3QTK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 12:19:10 -0400
+Date: Wed, 30 Jul 2014 09:10:35 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140730161035.GP11241@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140728225556.GA19493@linux.vnet.ibm.com>
+ <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140730134152.GB18158@localhost.localdomain>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140730134152.GB18158@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14073016-6688-0000-0000-000003A7F640
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 30, 2014 7:28 AM, Ian Abbott wrote:
-> On 2014-07-30 15:09, Dan Carpenter wrote:
->> On Wed, Jul 30, 2014 at 03:04:03PM +0100, Ian Abbott wrote:
->>> On 2014-07-30 14:41, Dan Carpenter wrote:
->>>> On Wed, Jul 30, 2014 at 12:53:47PM +0100, Ian Abbott wrote:
->>>>> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
->>>>> ---
->>>>> v2: Be less aggressive in brace removal.  Keep them for outer nested
->>>>> 'if's.  Keep them in outer control statements where the inner control
->>>>> statement uses braces.
->>>>
->>>> Really every multi-line indent should have braces for readability.  This
->>>> isn't documented anywhere, but it's normal kernel style and Greg prefers
->>>> it for staging as well but I can't find the URL on google where he
->>>> mentioned that.
->>>
->>> With this version of the patch, amplc_pci230.c conforms to that --
->>> as long as you don't count comments, or splitting a simple statement
->>> across multiple lines to fit within 80 columns, e.g.:
->>>
->>> 			if (foo)
->>> 				/* do this */
->>> 				bar = baz +
->>> 				      qux;
->>
->> Heh...  I am counting comments and broken lines, though.  It's not a
->> totally strict rule and it's especially not strict for broken lines.
->> But we would prefer braces in those situations.
->
-> If necessary, patches 13 and 19 can be dropped entirely.
+On Wed, Jul 30, 2014 at 03:41:54PM +0200, Frederic Weisbecker wrote:
+> On Mon, Jul 28, 2014 at 03:56:12PM -0700, Paul E. McKenney wrote:
+> > +/* RCU-tasks kthread that detects grace periods and invokes callbacks. */
+> > +static int __noreturn rcu_tasks_kthread(void *arg)
+> > +{
+> > +	unsigned long flags;
+> > +	struct task_struct *g, *t;
+> > +	struct rcu_head *list;
+> > +	struct rcu_head *next;
+> > +
+> > +	/* FIXME: Add housekeeping affinity. */
+> > +
+> > +	/*
+> > +	 * Each pass through the following loop makes one check for
+> > +	 * newly arrived callbacks, and, if there are some, waits for
+> > +	 * one RCU-tasks grace period and then invokes the callbacks.
+> > +	 * This loop is terminated by the system going down.  ;-)
+> > +	 */
+> > +	for (;;) {
+> > +
+> > +		/* Pick up any new callbacks. */
+> > +		raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
+> > +		smp_mb__after_unlock_lock(); /* Enforce GP memory ordering. */
+> > +		list = rcu_tasks_cbs_head;
+> > +		rcu_tasks_cbs_head = NULL;
+> > +		rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
+> > +		raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
+> > +
+> > +		/* If there were none, wait a bit and start over. */
+> > +		if (!list) {
+> > +			schedule_timeout_interruptible(HZ);
+> > +			flush_signals(current);
+> > +			continue;
+> > +		}
+> > +
+> > +		/*
+> > +		 * There were callbacks, so we need to wait for an
+> > +		 * RCU-tasks grace period.  Start off by scanning
+> > +		 * the task list for tasks that are not already
+> > +		 * voluntarily blocked.  Mark these tasks and make
+> > +		 * a list of them in rcu_tasks_holdouts.
+> > +		 */
+> > +		rcu_read_lock();
+> > +		do_each_thread(g, t) {
+> > +			if (t != current && ACCESS_ONCE(t->on_rq) &&
+> > +			    !is_idle_task(t)) {
+> > +				t->rcu_tasks_holdout = 1;
+> > +				list_add(&t->rcu_tasks_holdout_list,
+> > +					 &rcu_tasks_holdouts);
+> > +			}
+> > +		} while_each_thread(g, t);
+> > +		rcu_read_unlock();
+> 
+> I think you need for_each_process_thread() to be RCU-safe.
+> while_each_thread() has shown to be racy against exec even with rcu_read_lock().
 
-That might be best for now.
+Good catch, thank you!
 
-The rest of the series applies fine with them dropped.
-
-Regards,
-Hartley
+							Thanx, Paul
 
