@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306AbaG3Mcd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:32:33 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36740 "EHLO
+	id S1755382AbaG3Mdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:33:45 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36732 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752922AbaG3MPc (ORCPT
+	by vger.kernel.org with ESMTP id S1752904AbaG3MPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:32 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexander.deucher@amd.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 63/94] drm/radeon: set default bl level to something reasonable
-Date: Wed, 30 Jul 2014 14:14:52 +0200
-Message-Id: <ef34ede9581679fdbd02e6f13494b04de656fb38.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
+        Jason Cooper <jason@lakedaemon.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 62/94] irqchip: gic: Fix core ID calculation when topology is read from DT
+Date: Wed, 30 Jul 2014 14:14:51 +0200
+Message-Id: <5ef74eaa47bf0fe5e43bbd0d8f0a9d9cb7363a6a.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,63 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Tomasz Figa <t.figa@samsung.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 201bb62402e0227375c655446ea04fcd0acf7287 upstream.
+commit 29e697b11853d3f83b1864ae385abdad4aa2c361 upstream.
 
-If the value in the scratch register is 0, set it to the
-max level.  This fixes an issue where the console fb blanking
-code calls back into the backlight driver on unblank and then
-sets the backlight level to 0 after the driver has already
-set the mode and enabled the backlight.
+Certain GIC implementation, namely those found on earlier, single
+cluster, Exynos SoCs, have registers mapped without per-CPU banking,
+which means that the driver needs to use different offset for each CPU.
 
-bugs:
-https://bugs.freedesktop.org/show_bug.cgi?id=81382
-https://bugs.freedesktop.org/show_bug.cgi?id=70207
+Currently the driver calculates the offset by multiplying value returned
+by cpu_logical_map() by CPU offset parsed from DT. This is correct when
+CPU topology is not specified in DT and aforementioned function returns
+core ID alone. However when DT contains CPU topology, the function
+changes to return cluster ID as well, which is non-zero on mentioned
+SoCs and so breaks the calculation in GIC driver.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Tested-by: David Heidelberger <david.heidelberger@ixit.cz>
+This patch fixes this by masking out cluster ID in CPU offset
+calculation so that only core ID is considered. Multi-cluster Exynos
+SoCs already have banked GIC implementations, so this simple fix should
+be enough.
+
+Reported-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Fixes: db0d4db22a78d ("ARM: gic: allow GIC to support non-banked setups")
+Link: https://lkml.kernel.org/r/1405610624-18722-1-git-send-email-t.figa@samsung.com
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/irqchip/irq-gic.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
-index 583345636d4b..6a965172d8dd 100644
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -183,7 +183,6 @@ void radeon_atom_backlight_init(struct radeon_encoder *radeon_encoder,
- 	struct backlight_properties props;
- 	struct radeon_backlight_privdata *pdata;
- 	struct radeon_encoder_atom_dig *dig;
--	u8 backlight_level;
- 	char bl_name[16];
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 36fcc1b6264e..0fcbf921fff3 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -42,6 +42,7 @@
+ #include <linux/irqchip/chained_irq.h>
+ #include <linux/irqchip/arm-gic.h>
  
- 	/* Mac laptops with multiple GPUs use the gmux driver for backlight
-@@ -222,12 +221,17 @@ void radeon_atom_backlight_init(struct radeon_encoder *radeon_encoder,
++#include <asm/cputype.h>
+ #include <asm/irq.h>
+ #include <asm/exception.h>
+ #include <asm/smp_plat.h>
+@@ -760,7 +761,9 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ 		}
  
- 	pdata->encoder = radeon_encoder;
- 
--	backlight_level = radeon_atom_get_backlight_level_from_reg(rdev);
--
- 	dig = radeon_encoder->enc_priv;
- 	dig->bl_dev = bd;
- 
- 	bd->props.brightness = radeon_atom_backlight_get_brightness(bd);
-+	/* Set a reasonable default here if the level is 0 otherwise
-+	 * fbdev will attempt to turn the backlight on after console
-+	 * unblanking and it will try and restore 0 which turns the backlight
-+	 * off again.
-+	 */
-+	if (bd->props.brightness == 0)
-+		bd->props.brightness = RADEON_MAX_BL_LEVEL;
- 	bd->props.power = FB_BLANK_UNBLANK;
- 	backlight_update_status(bd);
- 
+ 		for_each_possible_cpu(cpu) {
+-			unsigned long offset = percpu_offset * cpu_logical_map(cpu);
++			u32 mpidr = cpu_logical_map(cpu);
++			u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
++			unsigned long offset = percpu_offset * core_id;
+ 			*per_cpu_ptr(gic->dist_base.percpu_base, cpu) = dist_base + offset;
+ 			*per_cpu_ptr(gic->cpu_base.percpu_base, cpu) = cpu_base + offset;
+ 		}
 -- 
 2.0.1
 
