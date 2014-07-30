@@ -1,584 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260AbaG3O6O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 10:58:14 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:37457 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753698AbaG3O6L (ORCPT
+	id S1754474AbaG3O6i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 10:58:38 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:33534 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815AbaG3O6g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 10:58:11 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: "suravee.suthikulpanit\@amd.com" <suravee.suthikulpanit@amd.com>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        "jason\@lakedaemon.net" <jason@lakedaemon.net>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "tglx\@linutronix.de" <tglx@linutronix.de>,
-        "Harish.Kasiviswanathan\@amd.com" <Harish.Kasiviswanathan@amd.com>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci\@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc\@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 3/4 V3] irqchip: gic: Add supports for ARM GICv2m MSI(-X)
-In-Reply-To: <1404947104-21345-4-git-send-email-suravee.suthikulpanit@amd.com>
-	(suravee's message of "Thu, 10 Jul 2014 00:05:03 +0100")
-Organization: ARM Ltd
-References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
-	<1404947104-21345-4-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Wed, 30 Jul 2014 15:57:47 +0100
-Message-ID: <87zjfqj3mc.fsf@approximate.cambridge.arm.com>
+	Wed, 30 Jul 2014 10:58:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140730142923.GR16537@localhost>
+References: <20140730142923.GR16537@localhost>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 30 Jul 2014 07:58:13 -0700
+Message-ID: <CALCETrW2Pygpt8sFWuXtijtcZGxrHcLa8hSFk7ooKvPiU9-M3w@mail.gmail.com>
+Subject: Re: [x86_64,vsyscall] Kernel panic - not syncing: Attempted to kill
+ init! exitcode=0x0000000b
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel@lists.xenproject.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 10 2014 at 12:05:03 am BST, "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com> wrote:
+On Wed, Jul 30, 2014 at 7:29 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Greetings,
+>
+> 0day kernel testing robot got the below dmesg and the first bad commit is
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/luto/linux.git x86/vsyscall
+> commit 442aba0c6131f0c41dfc5edb6bfb88335556523f
+> Author:     Andy Lutomirski <luto@amacapital.net>
+> AuthorDate: Mon Jun 16 18:50:12 2014 -0700
+> Commit:     Andy Lutomirski <luto@amacapital.net>
+> CommitDate: Mon Jun 30 14:32:44 2014 -0700
 
-Hi Suravee,
-
-> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
->
-> ARM GICv2m specification extends GICv2 to support MSI(-X) with
-> a new set of register frames. This patch introduces support for
-> the non-secure GICv2m register frame.
->
-> The driver currently matchs "arm,gic-400-plus" in device tree binding,
-> which implements GICv2m.
->
-> The "msi-controller" keyword in ARM GIC devicetree binding is used to indentify
-> GIC driver that it should enable MSI(-X) support, The region of GICv2m MSI
-> register frame is specified using the register frame index 4 in the device tree.
-> MSI support is optional.
->
-> Each GIC maintains an "msi_chip" structure. To discover the msi_chip,
-> PCI host driver can do the following:
->
->     struct device_node *gic_node = of_irq_find_parent(pdev->dev.of_node);
->     pcie_bus->msi_chip = of_pci_find_msi_chip_by_node(gic_node);
->
-> Cc: Mark Rutland <Mark.Rutland@arm.com>
-> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Catalin Marinas <Catalin.Marinas@arm.com>
-> Cc: Will Deacon <Will.Deacon@arm.com>
-> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> ---
->  Documentation/devicetree/bindings/arm/gic.txt |  20 +-
->  arch/arm64/Kconfig                            |   1 +
->  drivers/irqchip/Kconfig                       |   7 +
->  drivers/irqchip/Makefile                      |   1 +
->  drivers/irqchip/irq-gic-v2m.c                 | 251 ++++++++++++++++++++++++++
->  drivers/irqchip/irq-gic-v2m.h                 |  13 ++
->  drivers/irqchip/irq-gic.c                     |  23 ++-
->  drivers/irqchip/irq-gic.h                     |  31 +++-
->  8 files changed, 334 insertions(+), 13 deletions(-)
->  create mode 100644 drivers/irqchip/irq-gic-v2m.c
->  create mode 100644 drivers/irqchip/irq-gic-v2m.h
->
-> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
-> index 5573c08..d2eea0b 100644
-> --- a/Documentation/devicetree/bindings/arm/gic.txt
-> +++ b/Documentation/devicetree/bindings/arm/gic.txt
-> @@ -12,11 +12,14 @@ Main node required properties:
->
->  - compatible : should be one of:
->         "arm,gic-400"
-> +       "arm,gic-400-v2m"
->         "arm,cortex-a15-gic"
->         "arm,cortex-a9-gic"
->         "arm,cortex-a7-gic"
->         "arm,arm11mp-gic"
-> +
->  - interrupt-controller : Identifies the node as an interrupt controller
-> +
->  - #interrupt-cells : Specifies the number of cells needed to encode an
->    interrupt source.  The type shall be a <u32> and the value shall be 3.
->
-> @@ -37,9 +40,16 @@ Main node required properties:
->         the 8 possible cpus attached to the GIC.  A bit set to '1' indicated
->         the interrupt is wired to that CPU.  Only valid for PPI interrupts.
->
-> -- reg : Specifies base physical address(s) and size of the GIC registers. The
-> -  first region is the GIC distributor register base and size. The 2nd region is
-> -  the GIC cpu interface register base and size.
-> +- reg : Specifies base physical address(s) and size of the GIC register frames.
-> +
-> +  Region | Description
-> +  Index  |
-> +  -------------------------------------------------------------------
-> +     0   | GIC distributor register base and size
-> +     1   | GIC cpu interface register base and size
-> +     2   | VGIC interface control register base and size (Optional)
-> +     3   | VGIC CPU interface register base and size (Optional)
-> +     4   | GICv2m MSI interface register base and size (Optional)
-
-Given that the v2m block is somehow bolted on the side of a standard
-GICv2, I'd rather see it as a subnode of the main GIC.
-
-Then you could directly call into the v2m layer to initialize it,
-instead of the odd "reverse probing" you're using here...
-
->  Optional
->  - interrupts   : Interrupt source of the parent interrupt controller on
-> @@ -55,6 +65,10 @@ Optional
->                   by a crossbar/multiplexer preceding the GIC. The GIC irq
->                   input line is assigned dynamically when the corresponding
->                   peripheral's crossbar line is mapped.
-> +
-> +- msi-controller : Identifies the node as an MSI controller.
-> +                   (Required for GICv2m)
-> +
->  Example:
->
->         intc: interrupt-controller@fff11000 {
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index be52492..0f9b11d 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -9,6 +9,7 @@ config ARM64
->         select ARM_AMBA
->         select ARM_ARCH_TIMER
->         select ARM_GIC
-> +       select ARM_GIC_V2M if (PCI && PCI_MSI)
->         select ARM_GIC_V3
->         select BUILDTIME_EXTABLE_SORT
->         select CLONE_BACKWARDS
-> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-> index 7f0c2a3..274910d 100644
-> --- a/drivers/irqchip/Kconfig
-> +++ b/drivers/irqchip/Kconfig
-> @@ -7,6 +7,13 @@ config ARM_GIC
->         select IRQ_DOMAIN
->         select MULTI_IRQ_HANDLER
->
-> +config ARM_GIC_V2M
-> +       bool
-> +       select IRQ_DOMAIN
-> +       select MULTI_IRQ_HANDLER
-> +       depends on ARM_GIC
-> +       depends on PCI && PCI_MSI
-> +
->  config GIC_NON_BANKED
->         bool
->
-> diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-> index c57e642..09c035a 100644
-> --- a/drivers/irqchip/Makefile
-> +++ b/drivers/irqchip/Makefile
-> @@ -16,6 +16,7 @@ obj-$(CONFIG_ARCH_SUNXI)              += irq-sun4i.o
->  obj-$(CONFIG_ARCH_SUNXI)               += irq-sunxi-nmi.o
->  obj-$(CONFIG_ARCH_SPEAR3XX)            += spear-shirq.o
->  obj-$(CONFIG_ARM_GIC)                  += irq-gic.o irq-gic-common.o
-> +obj-$(CONFIG_ARM_GIC_V2M)              += irq-gic-v2m.o
->  obj-$(CONFIG_ARM_GIC_V3)               += irq-gic-v3.o irq-gic-common.o
->  obj-$(CONFIG_ARM_NVIC)                 += irq-nvic.o
->  obj-$(CONFIG_ARM_VIC)                  += irq-vic.o
-> diff --git a/drivers/irqchip/irq-gic-v2m.c b/drivers/irqchip/irq-gic-v2m.c
-> new file mode 100644
-> index 0000000..e54ca1d
-> --- /dev/null
-> +++ b/drivers/irqchip/irq-gic-v2m.c
-> @@ -0,0 +1,251 @@
-> +/*
-> + * ARM GIC v2m MSI(-X) support
-> + * Support for Message Signalelled Interrupts for systems that
-> + * implement ARM Generic Interrupt Controller: GICv2m.
-> + *
-> + * Copyright (C) 2014 Advanced Micro Devices, Inc.
-> + * Authors: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-> + *          Harish Kasiviswanathan <harish.kasiviswanathan@amd.com>
-> + *          Brandon Anderson <brandon.anderson@amd.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published
-> + * by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/pci.h>
-> +#include <linux/irq.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/slab.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_pci.h>
-> +#include <linux/bitmap.h>
-> +
-> +#include "irqchip.h"
-> +#include "irq-gic.h"
-> +
-> +/*
-> +* MSI_TYPER:
-> +*     [31:26] Reserved
-> +*     [25:16] lowest SPI assigned to MSI
-> +*     [15:10] Reserved
-> +*     [9:0]   Numer of SPIs assigned to MSI
-> +*/
-> +#define V2M_MSI_TYPER                  0x008
-> +#define V2M_MSI_TYPER_BASE_SHIFT       (16)
-> +#define V2M_MSI_TYPER_BASE_MASK                (0x3FF)
-> +#define V2M_MSI_TYPER_NUM_MASK         (0x3FF)
-> +#define V2M_MSI_SETSPI_NS              0x040
-> +#define V2M_MIN_SPI                    32
-> +#define V2M_MAX_SPI                    1019
-> +
-> +#define GIC_OF_MSIV2M_RANGE_INDEX      4
-> +
-> +/*
-> + * alloc_msi_irq - Allocate MSIs from avaialbe MSI bitmap.
-> + * @data: Pointer to v2m_data
-> + * @nvec: Number of interrupts to allocate
-> + * @irq: Pointer to the allocated irq
-> + *
-> + * Allocates interrupts only if the contiguous range of MSIs
-> + * with specified nvec are available. Otherwise return the number
-> + * of available interrupts. If none are available, then returns -ENOENT.
-> + */
-> +static int alloc_msi_irq(struct v2m_data *data, int nvec, int *irq)
-> +{
-> +       int size = data->nr_spis;
-> +       int next = size, i = nvec, ret;
-> +
-> +       /* We should never allocate more than available nr_spis */
-> +       if (i >= size)
-> +               i = size;
-> +
-> +       spin_lock(&data->msi_cnt_lock);
-> +
-> +       for (; i > 0; i--) {
-> +               next = bitmap_find_next_zero_area(data->bm,
-> +                                       size, 0, i, 0);
-> +               if (next < size)
-> +                       break;
-> +       }
-> +
-> +       if (i != nvec) {
-> +               ret = i ? : -ENOENT;
-> +       } else {
-> +               bitmap_set(data->bm, next, nvec);
-> +               *irq = data->spi_start + next;
-> +               ret = 0;
-> +       }
-> +
-> +       spin_unlock(&data->msi_cnt_lock);
-> +
-> +       return ret;
-> +}
-> +
-> +static struct v2m_data *to_v2m_data(struct msi_chip *chip)
-> +{
-> +       struct gic_chip_data *gic = container_of(chip, struct gic_chip_data,
-> +                                                msi_chip);
-> +       return &gic->v2m_data;
-> +}
-> +
-> +static void gicv2m_teardown_msi_irq(struct msi_chip *chip, unsigned int irq)
-> +{
-> +       int pos;
-> +       struct v2m_data *data = to_v2m_data(chip);
-> +
-> +       spin_lock(&data->msi_cnt_lock);
-> +
-> +       pos = irq - data->spi_start;
-> +       if (pos >= 0 && pos < data->nr_spis)
-> +               bitmap_clear(data->bm, pos, 1);
-> +
-> +       spin_unlock(&data->msi_cnt_lock);
-> +}
-> +
-> +static int gicv2m_setup_msi_irq(struct msi_chip *chip, struct pci_dev *pdev,
-> +                     struct msi_desc *desc)
-> +{
-> +       int avail, irq = 0;
-> +       struct msi_msg msg;
-> +       phys_addr_t addr;
-> +       struct v2m_data *data = to_v2m_data(chip);
-> +
-> +       if (!desc) {
-> +               dev_err(&pdev->dev,
-> +                       "GICv2m: MSI setup failed. Invalid msi descriptor\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       avail = alloc_msi_irq(data, 1, &irq);
-> +       if (avail != 0) {
-> +               dev_err(&pdev->dev,
-> +                       "GICv2m: MSI setup failed. Cannnot allocate IRQ\n");
-> +               return -ENOSPC;
-> +       }
-> +
-> +       irq_set_chip_data(irq, chip);
-> +       irq_set_msi_desc(irq, desc);
-> +       irq_set_irq_type(irq, IRQ_TYPE_EDGE_RISING);
-> +
-> +       addr = data->res.start + V2M_MSI_SETSPI_NS;
-> +
-> +       msg.address_hi = (u32)(addr >> 32);
-> +       msg.address_lo = (u32)(addr);
-> +       msg.data = irq;
-> +       write_msi_msg(irq, &msg);
-> +
-> +       return 0;
-> +}
-> +
-> +static int __init
-> +gicv2m_msi_init(struct device_node *node, struct v2m_data *v2m)
-> +{
-> +       unsigned int val;
-> +
-> +       if (of_address_to_resource(node, GIC_OF_MSIV2M_RANGE_INDEX,
-> +                                  &v2m->res)) {
-> +               pr_err("GICv2m: Failed locate GICv2m MSI register frame\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       v2m->base = of_iomap(node, GIC_OF_MSIV2M_RANGE_INDEX);
-> +       if (!v2m->base) {
-> +               pr_err("GICv2m: Failed to map GIC MSI registers\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       val = readl_relaxed(v2m->base + V2M_MSI_TYPER);
-> +       if (!val) {
-> +               pr_warn("GICv2m: Failed to read V2M_MSI_TYPER register\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       v2m->spi_start = (val >> V2M_MSI_TYPER_BASE_SHIFT) &
-> +                               V2M_MSI_TYPER_BASE_MASK;
-> +       v2m->nr_spis = val & V2M_MSI_TYPER_NUM_MASK;
-> +       if ((v2m->spi_start < V2M_MIN_SPI) || (v2m->nr_spis >= V2M_MAX_SPI)) {
-> +                       pr_err("GICv2m: Invalid MSI_TYPER (%#x)\n", val);
-> +                       return -EINVAL;
-> +       }
-> +
-> +       v2m->bm = kzalloc(sizeof(long) * BITS_TO_LONGS(v2m->nr_spis),
-> +                         GFP_KERNEL);
-> +       if (!v2m->bm) {
-> +               pr_err("GICv2m: Failed to allocate MSI bitmap\n");
-> +               return -ENOMEM;
-> +       }
-> +
-> +       spin_lock_init(&v2m->msi_cnt_lock);
-> +
-> +       pr_info("GICv2m: SPI range [%d:%d]\n",
-> +               v2m->spi_start, (v2m->spi_start + v2m->nr_spis));
-> +
-> +       return 0;
-> +}
-
-This function is assuming that you will only see one single MSI frame
-here. Is there any chance that there would be more than one in a system?
-
-> +
-> +static void gicv2m_mask_irq(struct irq_data *d)
-> +{
-> +       gic_mask_irq(d);
-> +       if (d->msi_desc)
-> +               mask_msi_irq(d);
-> +}
-> +
-> +static void gicv2m_unmask_irq(struct irq_data *d)
-> +{
-> +       gic_unmask_irq(d);
-> +       if (d->msi_desc)
-> +               unmask_msi_irq(d);
-> +}
-> +
-> +static struct irq_chip gicv2m_chip = {
-> +       .name                   = "GICv2m",
-> +       .irq_mask               = gicv2m_mask_irq,
-> +       .irq_unmask             = gicv2m_unmask_irq,
-> +       .irq_eoi                = gic_eoi_irq,
-> +       .irq_set_type           = gic_set_type,
-> +       .irq_retrigger          = gic_retrigger,
-
-I think you can loose the retrigger here.
-
-> +#ifdef CONFIG_SMP
-> +       .irq_set_affinity       = gic_set_affinity,
-> +#endif
-> +#ifdef CONFIG_PM
-> +       .irq_set_wake           = gic_set_wake,
-> +#endif
-> +};
-> +
-> +#ifdef CONFIG_OF
-> +static int __init
-> +gicv2m_of_init(struct device_node *node, struct device_node *parent)
-> +{
-> +       struct gic_chip_data *gic;
-> +       int ret;
-> +
-> +       ret = _gic_of_init(node, parent, &gicv2m_chip, &gic);
-> +       if (ret) {
-> +               pr_err("GICv2m: Failed to initialize GIC\n");
-> +               return ret;
-> +       }
-> +
-> +       gic->msi_chip.owner = THIS_MODULE;
-> +       gic->msi_chip.of_node = node;
-> +       gic->msi_chip.setup_irq = gicv2m_setup_msi_irq;
-> +       gic->msi_chip.teardown_irq = gicv2m_teardown_msi_irq;
-> +       ret = of_pci_msi_chip_add(&gic->msi_chip);
-> +       if (ret) {
-> +               /* MSI is optional and not supported here */
-> +               pr_info("GICv2m: MSI is not supported.\n");
-> +               return 0;
-> +       }
-> +
-> +       ret = gicv2m_msi_init(node, &gic->v2m_data);
-> +       if (ret)
-> +               return ret;
-> +       return ret;
-> +}
-> +
-> +IRQCHIP_DECLARE(arm_gic_400_v2m, "arm,gic-400-v2m", gicv2m_of_init);
-
-So if you follow my advise of reversing your probing and call into the
-v2m init from the main GIC driver, you could take a irq_chip as a
-parameter, and use it to populate the v2m irq_chip, only overriding the
-two methods that actually differ.
-
-This would have the net effect of completely dropping patch #2, which
-becomes effectively useless.
-
-> +#endif /* CONFIG_OF */
-> diff --git a/drivers/irqchip/irq-gic-v2m.h b/drivers/irqchip/irq-gic-v2m.h
-> new file mode 100644
-> index 0000000..2d93a87
-> --- /dev/null
-> +++ b/drivers/irqchip/irq-gic-v2m.h
-> @@ -0,0 +1,13 @@
-> +#ifndef _IRQ_GIC_V2M_H_
-> +#define _IRQ_GIC_V2M_H_
-> +
-> +struct v2m_data {
-> +       spinlock_t msi_cnt_lock;
-> +       struct resource res;      /* GICv2m resource */
-> +       void __iomem *base;       /* GICv2m virt address */
-> +       unsigned int spi_start;   /* The SPI number that MSIs start */
-> +       unsigned int nr_spis;     /* The number of SPIs for MSIs */
-> +       unsigned long *bm;        /* MSI vector bitmap */
-> +};
-> +
-> +#endif /*_IRQ_GIC_V2M_H_*/
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 966e1d5..a054e0d 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -111,15 +111,34 @@ static inline void gic_set_base_accessor(struct gic_chip_data *data,
->  #define gic_set_base_accessor(d, f)
->  #endif
->
-> +static inline
-> +struct gic_chip_data *irq_data_get_gic_chip_data(struct irq_data *d)
-> +{
-> +       struct gic_chip_data *gic_data;
-> +       struct msi_chip *mchip;
-> +
-> +       /*
-> +        * For MSI, irq_data.chip_data points to struct msi_chip.
-> +        * For non-MSI, irq_data.chip_data points to struct gic_chip_data.
-> +        */
-> +       if (d->msi_desc) {
-> +               mchip = irq_data_get_irq_chip_data(d);
-> +               gic_data = container_of(mchip, struct gic_chip_data, msi_chip);
-> +       } else {
-> +               gic_data = irq_data_get_irq_chip_data(d);
-> +       }
-> +       return gic_data;
-> +}
-> +
->  static inline void __iomem *gic_dist_base(struct irq_data *d)
->  {
-> -       struct gic_chip_data *gic_data = irq_data_get_irq_chip_data(d);
-> +       struct gic_chip_data *gic_data = irq_data_get_gic_chip_data(d);
->         return gic_data_dist_base(gic_data);
->  }
->
->  static inline void __iomem *gic_cpu_base(struct irq_data *d)
->  {
-> -       struct gic_chip_data *gic_data = irq_data_get_irq_chip_data(d);
-> +       struct gic_chip_data *gic_data = irq_data_get_gic_chip_data(d);
->         return gic_data_cpu_base(gic_data);
->  }
->
-> diff --git a/drivers/irqchip/irq-gic.h b/drivers/irqchip/irq-gic.h
-> index a4beb4a..1c6547d 100644
-> --- a/drivers/irqchip/irq-gic.h
-> +++ b/drivers/irqchip/irq-gic.h
-> @@ -8,6 +8,17 @@ union gic_base {
->         void __percpu * __iomem *percpu_base;
->  };
->
-> +#ifdef CONFIG_ARM_GIC_V2M
-> +struct v2m_data {
-> +       spinlock_t msi_cnt_lock;
-> +       struct resource res;      /* GICv2m resource */
-> +       void __iomem *base;       /* GICv2m virt address */
-> +       unsigned int spi_start;   /* The SPI number that MSIs start */
-> +       unsigned int nr_spis;     /* The number of SPIs for MSIs */
-> +       unsigned long *bm;        /* MSI vector bitmap */
-> +};
-> +#endif
-> +
->  struct gic_chip_data {
->         union gic_base dist_base;
->         union gic_base cpu_base;
-> @@ -20,12 +31,23 @@ struct gic_chip_data {
->  #endif
->         struct irq_domain *domain;
->         unsigned int gic_irqs;
-> -       struct irq_chip *irq_chip;
->  #ifdef CONFIG_GIC_NON_BANKED
->         void __iomem *(*get_base)(union gic_base *);
->  #endif
-> +       struct irq_chip *irq_chip;
-> +       struct msi_chip msi_chip;
-> +#ifdef CONFIG_ARM_GIC_V2M
-> +       struct v2m_data v2m_data;
-> +#endif
-
-Why isn't msi_chip directly part of v2m_data? I think that would make
-some of the code slightly clearer, and avoid polluting unsuspecting
-architectures...
-
->  };
->
-> +#ifdef CONFIG_OF
-> +int _gic_of_init(struct device_node *node,
-> +                struct device_node *parent,
-> +                struct irq_chip *chip,
-> +                struct gic_chip_data **gic) __init;
-> +#endif
-> +
->  void gic_mask_irq(struct irq_data *d);
->  void gic_unmask_irq(struct irq_data *d);
->  void gic_eoi_irq(struct irq_data *d);
-> @@ -42,11 +64,4 @@ int gic_set_affinity(struct irq_data *d,
->  int gic_set_wake(struct irq_data *d, unsigned int on);
->  #endif
->
-> -#ifdef CONFIG_OF
-> -int _gic_of_init(struct device_node *node,
-> -                struct device_node *parent,
-> -                struct irq_chip *chip,
-> -                struct gic_chip_data **gic) __init;
-> -#endif
-> -
->  #endif /* _IRQ_GIC_H_ */
-
-What is the purpose of this move?
+Was this a merge?  Is there an easy way to see exactly what was
+tested?  I had a buggy commit called "x86: Split syscall_trace_enter
+into two phases" that could have caused this problem.
+3f649f5658a163645e3ce15156176c325283762e was bad, but
+714cf438762d342673b3b131d5c90bc69ca921a9 (the newer version of that
+commit) should be okay.  Neither is an ancestor of the commit that the
+bisect identified, though.
 
 Thanks,
+Andy
 
-	M.
+>
+>     x86_64,vsyscall: Make vsyscall emulation configurable
+>
+>     This adds CONFIG_X86_VSYSCALL_EMULATION, guarded by CONFIG_EXPERT.
+>     Turning it off completely disables vsyscall emulation, saving ~3.5k
+>     for vsyscall_64.c, 4k for vsyscall_emu_64.S (the fake vsyscall
+>     page), some tiny amount of core mm code that supports a gate area,
+>     and possibly 4k for a wasted pagetable.  The latter is because the
+>     vsyscall addresses are misaligned and fit poorly in the fixmap.
+>
+>     Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>
+> ===================================================
+> PARENT COMMIT NOT CLEAN. LOOK OUT FOR WRONG BISECT!
+> ===================================================
+> Attached dmesg for the parent commit, too, to help confirm whether it is a noise error.
+>
+> +-----------------------------------------------------------+------------+------------+------------------+
+> |                                                           | e1656ab2ad | 442aba0c61 | v3.16-rc4_071018 |
+> +-----------------------------------------------------------+------------+------------+------------------+
+> | boot_successes                                            | 1160       | 99         | 3                |
+> | boot_failures                                             | 160        | 231        | 8                |
+> | BUG:kernel_boot_hang                                      | 160        | 51         | 2                |
+> | Kernel_panic-not_syncing:Attempted_to_kill_init_exitcode= | 0          | 180        | 6                |
+> | INFO:suspicious_RCU_usage                                 | 0          | 180        | 6                |
+> +-----------------------------------------------------------+------------+------------+------------------+
+>
+> mount: can't read '/proc/mounts': No such file or directory
+> [   33.736413] init[1]: segfault at ffffffffff600400 ip ffffffffff600400 sp 00007fff2894a8a8 error 15
+> [   33.737608] init[1]: segfault at ffffffffff600400 ip ffffffffff600400 sp 00007fff28949eb8 error 15
+> [   33.739046] Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+> [   33.739046]
+> [   33.740015] CPU: 0 PID: 1 Comm: init Not tainted 3.16.0-rc3-00010-g442aba0 #4
+> [   33.740015]  0000000000000000 ffff880000033cc0 ffffffff81ff485f ffff880000033d38
+> [   33.740015]  ffffffff81ff1342 ffff880000000010 ffff880000033d48 ffff880000033ce8
+> [   33.740015]  ffffffff82c440c0 000000000000000b 8c6318c6318c6320 00000007db00a678
+> [   33.740015] Call Trace:
+> [   33.740015]  [<ffffffff81ff485f>] dump_stack+0x19/0x1b
+> [   33.740015]  [<ffffffff81ff1342>] panic+0xcb/0x1fb
+> [   33.740015]  [<ffffffff81093b2f>] do_exit+0x3dd/0x80f
+> [   33.740015]  [<ffffffff810b071d>] ? local_clock+0x14/0x1d
+> [   33.740015]  [<ffffffff81094002>] do_group_exit+0x75/0xb4
+> [   33.740015]  [<ffffffff8109c7e7>] get_signal_to_deliver+0x48a/0x4aa
+> [   33.740015]  [<ffffffff8100231a>] do_signal+0x43/0x5ba
+> [   33.740015]  [<ffffffff810b4b79>] ? lock_release_holdtime+0x6c/0x77
+> [   33.740015]  [<ffffffff810b83b5>] ? lock_release_non_nested+0xd0/0x21e
+> [   33.740015]  [<ffffffff810b0646>] ? sched_clock_cpu+0x4e/0x62
+> [   33.740015]  [<ffffffff810fd465>] ? might_fault+0x4f/0x9c
+> [   33.740015]  [<ffffffff810b6163>] ? trace_hardirqs_off_caller+0x36/0xa5
+> [   33.740015]  [<ffffffff82004298>] ? retint_signal+0x11/0x99
+> [   33.740015]  [<ffffffff810028b5>] do_notify_resume+0x24/0x53
+> [   33.740015]  [<ffffffff820042d4>] retint_signal+0x4d/0x99
+> [   33.740015] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
+> [   33.740015] drm_kms_helper: panic occurred, switching back to text console
+> [   33.740015]
+> [   33.740015] ===============================
+> [   33.740015] [ INFO: suspicious RCU usage. ]
+> [   33.740015] 3.16.0-rc3-00010-g442aba0 #4 Not tainted
+> [   33.740015] -------------------------------
+> [   33.740015] include/linux/rcupdate.h:539 Illegal context switch in RCU read-side critical section!
+> [   33.740015]
+> [   33.740015] other info that might help us debug this:
+> [   33.740015]
+> [   33.740015]
+> [   33.740015] rcu_scheduler_active = 1, debug_locks = 0
+> [   33.740015] 3 locks held by init/1:
+> [   33.740015]  #0:  (panic_lock){....+.}, at: [<ffffffff81ff12ba>] panic+0x43/0x1fb
+> [   33.740015]  #1:  (rcu_read_lock){......}, at: [<ffffffff810ab879>] rcu_lock_acquire+0x0/0x23
+> [   33.740015]  #2:  (&dev->mode_config.mutex){+.+.+.}, at: [<ffffffff814a74d7>] drm_fb_helper_panic+0x5d/0xab
+> [   33.740015]
+> [   33.740015] stack backtrace:
+> [   33.740015] CPU: 0 PID: 1 Comm: init Not tainted 3.16.0-rc3-00010-g442aba0 #4
+> [   33.740015]  0000000000000000 ffff8800000339d0 ffffffff81ff485f ffff880000033a00
+> [   33.740015]  ffffffff810b8824 ffffffff82836248 000000000000024a 0000000000000000
+> [   33.740015]  ffff88001012e008 ffff880000033a10 ffffffff810adce3 ffff880000033a38
+> [   33.740015] Call Trace:
+> [   33.740015]  [<ffffffff81ff485f>] dump_stack+0x19/0x1b
+> [   33.740015]  [<ffffffff810b8824>] lockdep_rcu_suspicious+0xf6/0xff
+> [   33.740015]  [<ffffffff810adce3>] rcu_preempt_sleep_check+0x45/0x47
+> [   33.740015]  [<ffffffff810afedf>] __might_sleep+0x17/0x19a
+> [   33.740015]  [<ffffffff8200019e>] mutex_lock_nested+0x2e/0x369
+> [   33.740015]  [<ffffffff810b8657>] ? lock_release+0x154/0x185
+> [   33.740015]  [<ffffffff810b61df>] ? trace_hardirqs_off+0xd/0xf
+> [   33.740015]  [<ffffffff814b4ad3>] _object_find+0x25/0x6c
+> [   33.740015]  [<ffffffff814b5283>] drm_mode_object_find+0x38/0x53
+> [   33.740015]  [<ffffffff81593f6e>] cirrus_connector_best_encoder+0x21/0x2f
+> [   33.740015]  [<ffffffff814a5382>] drm_crtc_helper_set_config+0x38c/0x83c
+> [   33.740015]  [<ffffffff814b6c44>] drm_mode_set_config_internal+0x53/0xca
+> [   33.740015]  [<ffffffff814a731f>] restore_fbdev_mode+0x91/0xad
+> [   33.740015]  [<ffffffff814a74e3>] drm_fb_helper_panic+0x69/0xab
+> [   33.740015]  [<ffffffff810ab92c>] notifier_call_chain+0x61/0x8b
+> [   33.740015]  [<ffffffff810aba4f>] __atomic_notifier_call_chain+0x7e/0xe6
+> [   33.740015]  [<ffffffff810abac6>] atomic_notifier_call_chain+0xf/0x11
+> [   33.740015]  [<ffffffff81ff1367>] panic+0xf0/0x1fb
+> [   33.740015]  [<ffffffff81093b2f>] do_exit+0x3dd/0x80f
+> [   33.740015]  [<ffffffff810b071d>] ? local_clock+0x14/0x1d
+> [   33.740015]  [<ffffffff81094002>] do_group_exit+0x75/0xb4
+> [   33.740015]  [<ffffffff8109c7e7>] get_signal_to_deliver+0x48a/0x4aa
+> [   33.740015]  [<ffffffff8100231a>] do_signal+0x43/0x5ba
+> [   33.740015]  [<ffffffff810b4b79>] ? lock_release_holdtime+0x6c/0x77
+> [   33.740015]  [<ffffffff810b83b5>] ? lock_release_non_nested+0xd0/0x21e
+> [   33.740015]  [<ffffffff810b0646>] ? sched_clock_cpu+0x4e/0x62
+> [   33.740015]  [<ffffffff810fd465>] ? might_fault+0x4f/0x9c
+> [   33.740015]  [<ffffffff810b6163>] ? trace_hardirqs_off_caller+0x36/0xa5
+> [   33.740015]  [<ffffffff82004298>] ? retint_signal+0x11/0x99
+> [   33.740015]  [<ffffffff810028b5>] do_notify_resume+0x24/0x53
+> [   33.740015]  [<ffffffff820042d4>] retint_signal+0x4d/0x99
+> [   33.740015] Rebooting in 10 seconds..
+> Elapsed time: 40
+> qemu-system-x86_64 -cpu kvm64 -enable-kvm -kernel /kernel/x86_64-randconfig-hsxa0-07110255/442aba0c6131f0c41dfc5edb6bfb88335556523f/vmlinuz-3.16.0-rc3-00010-g442aba0 -append 'hung_task_panic=1 earlyprintk=ttyS0,115200 debug apic=debug sysrq_always_enabled rcupdate.rcu_cpu_stall_timeout=100 panic=10 softlockup_panic=1 nmi_watchdog=panic  prompt_ramdisk=0 console=ttyS0,115200 console=tty0 vga=normal  root=/dev/ram0 rw link=/kbuild-tests/run-queue/kvm/x86_64-randconfig-hsxa0-07110255/linux-devel:devel-hourly-2014071018:442aba0c6131f0c41dfc5edb6bfb88335556523f:bisect-linux9/.vmlinuz-442aba0c6131f0c41dfc5edb6bfb88335556523f-20140711073043-10-ivb41 branch=linux-devel/devel-hourly-2014071018 BOOT_IMAGE=/kernel/x86_64-randconfig-hsxa0-07110255/442aba0c6131f0c41dfc5edb6bfb88335556523f/vmlinuz-3.16.0-rc3-00010-g442aba0 drbd.minor_count=8'  -initrd /kernel-tests/initrd/yocto-minimal-x86_64.cgz -m 320 -smp 1 -net nic,vlan=1,model=e1000 -net user,vlan=1 -boot order=nc -no-reboot -watchdog i6300esb -rtc base=localtime -pidfile /dev/shm/kboot/pid-yocto-ivb41-17 -serial file:/dev/shm/kboot/serial-yocto-ivb41-17 -daemonize -display none -monitor null
+>
+> git bisect start c80be3ae11770011071103d3e920864c275472a8 cd3de83f147601356395b57a8673e9c5ff1e59d1 --
+> git bisect  bad 6e36d433610a3ebfdef000f1fb283e3f218a8a32  # 20:54      0-     19  Merge 'omap/omap-for-v3.16/fixes' into devel-hourly-2014071018
+> git bisect  bad 14604ab36faba88a89cb2c9611509f5a1c1cac21  # 20:54      0-    222  Merge 'ulf.hansson-mmc/next' into devel-hourly-2014071018
+> git bisect good 9141a68d71aa193f78aac5306fc728fba8fb59f4  # 21:50    330+     94  Merge 'm68k/for-linus' into devel-hourly-2014071018
+> git bisect  bad 13987d1746951b727146fef187406b7be00a3fd0  # 22:12      0-      7  Merge 'luto/x86/vsyscall' into devel-hourly-2014071018
+> git bisect good 7104a2e08de8bddb52d4714fad63d8a7977ea7f2  # 23:19    330+     22  x86_64: Move getcpu code from vsyscall_64.c to vdso/vma.c
+> git bisect good e1656ab2adfd1891f62610abe3e85ad992ee0cbf  # 23:26    330+    113  arm64,ia64,ppc,s390,sh,tile,um,x86,mm: Remove default gate area
+> git bisect  bad 465c34985bb9823bb4536eb6751197f2d295ca32  # 23:29     54-     91  x86,vdso: Set VM_MAYREAD for the vvar vma
+> git bisect  bad 442aba0c6131f0c41dfc5edb6bfb88335556523f  # 23:31      0-     37  x86_64,vsyscall: Make vsyscall emulation configurable
+> # first bad commit: [442aba0c6131f0c41dfc5edb6bfb88335556523f] x86_64,vsyscall: Make vsyscall emulation configurable
+> git bisect good e1656ab2adfd1891f62610abe3e85ad992ee0cbf  # 12:09    990+    160  arm64,ia64,ppc,s390,sh,tile,um,x86,mm: Remove default gate area
+> git bisect  bad c80be3ae11770011071103d3e920864c275472a8  # 12:10      0-      8  0day head guard for 'devel-hourly-2014071018'
+> git bisect good 85d90faed31ec74fb28a450fbc368d982a785924  # 13:11    990+    518  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux
+> git bisect good 47cf0ce945c8310228ff2d4bd756e5313f4659c1  # 13:21    990+    418  Add linux-next specific files for 20140710
+>
+>
+>
+> Thanks,
+> Fengguang
+>
+> _______________________________________________
+> LKP mailing list
+> LKP@linux.intel.com
+>
+
+
+
 -- 
-Jazz is not dead. It just smells funny.
+Andy Lutomirski
+AMA Capital Management, LLC
