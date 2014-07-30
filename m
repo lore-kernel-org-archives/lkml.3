@@ -1,36 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbaG3X1d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 19:27:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42356 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185AbaG3X1c (ORCPT
+	id S1752596AbaG3XaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 19:30:19 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:45380 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363AbaG3XaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 19:27:32 -0400
-Date: Wed, 30 Jul 2014 16:27:03 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: adrianremonda@gmail.com
-Cc: daniel@ffwll.ch, waydi1@gmail.com, sumit.semwal@linaro.org,
-        ydroneaud@opteya.com, maarten.lankhorst@canonical.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: android: Missing a blank line after
- declarations in sw_sync.c This is a patch to the sw_sync.c file that fixes
- up a missing a blank warning found by the checkpatch.pl tool
-Message-ID: <20140730232703.GA11777@kroah.com>
-References: <1406581660-7863-1-git-send-email-adrianremonda@gmail.com>
+	Wed, 30 Jul 2014 19:30:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406581660-7863-1-git-send-email-adrianremonda@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1406752954-26158-1-git-send-email-xerofoify@gmail.com>
+References: <1406752954-26158-1-git-send-email-xerofoify@gmail.com>
+Date: Thu, 31 Jul 2014 09:30:15 +1000
+Message-ID: <CAPM=9ty2PhMdLykVX4c074Tdkyh0OO_jtfw-CAFHk8ANcZA4kQ@mail.gmail.com>
+Subject: Re: [PATCH] Remove certain calls for releasing page cache
+From: Dave Airlie <airlied@gmail.com>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: clm@fb.com, jbacik@fb.com, linux-btrfs@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 11:07:40PM +0200, adrianremonda@gmail.com wrote:
-> From: Adrian Remonda <adrianremonda@gmail.com>
-> 
+> This patch removes the lines for releasing the page cache in certain
+> files as this may aid in perfomance with writes in the compression
+> rountines of btrfs. Please note that this patch has not been tested
+> on my own hardware due to no compression based btrfs volumes of my
+> own.
+>
 
-Your changelog text is up there in the subject, not down here in the
-body of the email :(
+For all that is sacred, STOP.
 
+Go and do something else, you are wasting people's valuable time,
+
+Don't send any patches you haven't tested ever. If you aren't capable
+of setting up a VM to run compressed btrfs volumes in, what makes you
+think you can patch the code.
+
+This isn't how you learn to be a kernel developer by wasting other
+kernel developers time, if you can't work out why releasing the page cache
+is necessary then don't send the patch until you have spent the time
+understanding what the page cache is.
+
+I know you'll just ignore this, and keep on trucking just like you ignored
+the other messages from Stephen before.
+
+But if you want to work on the kernel, this isn't the way to do it, and
+nobody will ever take a patch from you seriously if you continue in this
+fashion.
+
+Dave.
