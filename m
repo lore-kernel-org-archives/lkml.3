@@ -1,157 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200AbaG3NXt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 09:23:49 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:64540 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaG3NXo (ORCPT
+	id S1753326AbaG3NYC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 09:24:02 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:50737 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211AbaG3NX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 09:23:44 -0400
-Message-ID: <1406726619.5889.17.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, bobby.prani@gmail.com
-Date: Wed, 30 Jul 2014 15:23:39 +0200
-In-Reply-To: <20140729180656.GY11241@linux.vnet.ibm.com>
-References: <20140728225556.GA19493@linux.vnet.ibm.com>
-	 <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20140729081416.GR20603@laptop.programming.kicks-ass.net>
-	 <20140729172304.GA16073@linux.vnet.ibm.com> <20140729173332.GM3935@laptop>
-	 <20140729180656.GY11241@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Wed, 30 Jul 2014 09:23:58 -0400
+Date: Wed, 30 Jul 2014 15:23:50 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        Varun Sethi <varun.sethi@freescale.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        arm@kernel.org
+Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140730132348.GM29590@ulmo>
+References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
+ <20140730110425.GI12239@arm.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JlJsEFsx9RQyiX4C"
+Content-Disposition: inline
+In-Reply-To: <20140730110425.GI12239@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-29 at 11:06 -0700, Paul E. McKenney wrote: 
-> On Tue, Jul 29, 2014 at 07:33:32PM +0200, Peter Zijlstra wrote:
 
-> > FWIW its _the_ thing that makes nohz_full uninteresting for me. The
-> > required overhead is insane. But yes there are people willing to pay
-> > that etc..
-> 
-> It would indeed be good to reduce the overhead.  I could imagine all sorts
-> of insane approaches involving assuming that CPU write buffers flush in
-> bounded time, though CPU vendors seem unwilling to make guarantees in
-> this area.  ;-)
-> 
-> Or is something other than rcu_user_enter() and rcu_user_exit() causing
-> the pain here?
+--JlJsEFsx9RQyiX4C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Border guards stamping visas.  Note native_sched_clock().
+On Wed, Jul 30, 2014 at 12:04:25PM +0100, Will Deacon wrote:
+> Hi all,
+>=20
+> On Fri, Jul 04, 2014 at 04:29:17PM +0100, Thierry Reding wrote:
+> > From: Thierry Reding <treding@nvidia.com>
+> >=20
+> > This commit introduces a generic device tree binding for IOMMU devices.
+> > Only a very minimal subset is described here, but it is enough to cover
+> > the requirements of both the Exynos System MMU and Tegra SMMU as
+> > discussed here:
+> >=20
+> >     https://lkml.org/lkml/2014/4/27/346
+> >=20
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> > ---
+> > Changes in v4:
+> > - clarify that disabling an IOMMU DT node may not disable translation
+> > - be more explicit that examples are only examples
+> > - add multi-ID master example
+> >=20
+> > Changes in v3:
+> > - use #iommu-cells instead of #address-cells/#size-cells
+> > - drop optional iommu-names property
+> >=20
+> > Changes in v2:
+> > - add notes about "dma-ranges" property (drop note from commit message)
+> > - document priorities of "iommus" property vs. "dma-ranges" property
+> > - drop #iommu-cells in favour of #address-cells and #size-cells
+> > - remove multiple-master device example
+> >=20
+> >  Documentation/devicetree/bindings/iommu/iommu.txt | 172 ++++++++++++++=
+++++++++
+> >  1 file changed, 172 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/iommu/iommu.txt
+>=20
+> I'm concerned that this patch hasn't been picked up for 3.17 (I can't see=
+ it
+> in -next). If we want to move the ARM SMMU driver over to this new bindin=
+g,
+> we can't keep dragging our feet for much longer as I *really* don't plan =
+to
+> support two bindings in parallel (one is complicated enough already).
+>=20
+> Any chance we can see this merged, please?
 
-echo 0 > sched_wakeup_granularity_ns
-taskset -c 3 pipe-test 1
+I think there weren't any comments left for me to address and I've
+mostly been waiting for Joerg to pick it up.
 
-    CONFIG_NO_HZ_FULL=y 604.2 KHz           CONFIG_NO_HZ_FULL=y, nohz_full=3 303.5 KHz
-    10.45%   __schedule                     8.74%   native_sched_clock
-    10.03%   system_call                    5.63%   __schedule
-     4.86%   _raw_spin_lock_irqsave         4.75%   _raw_spin_lock
-     4.51%   __switch_to                    4.35%   reschedule_interrupt
-     4.31%   copy_user_generic_string       3.91%   _raw_spin_unlock_irqrestore
-     3.50%   pipe_read                      3.35%   system_call
-     3.02%   pipe_write                     2.73%   context_tracking_user_exit
-     2.76%   mutex_lock                     2.30%   _raw_spin_lock_irqsave
-     2.30%   native_sched_clock             2.08%   context_tracking_user_enter
-     2.27%   copy_page_to_iter_iovec        1.94%   __switch_to
-     2.16%   mutex_unlock                   1.88%   copy_user_generic_string
-     2.15%   _raw_spin_unlock_irqrestore    1.80%   account_system_time
-     1.86%   copy_page_from_iter_iovec      1.77%   rcu_eqs_enter_common.isra.42
-     1.85%   vfs_write                      1.60%   pipe_read
-     1.67%   new_sync_read                  1.58%   pipe_write
-     1.61%   new_sync_write                 1.39%   mutex_lock
-     1.49%   vfs_read                       1.37%   enqueue_task_fair
-     1.47%   fsnotify                       1.25%   rcu_eqs_exit_common.isra.43
-     1.43%   __fget_light                   1.14%   get_vtime_delta
-     1.36%   enqueue_task_fair              1.11%   flat_send_IPI_mask
-     1.28%   finish_task_switch             1.07%   tracesys
-     1.26%   dequeue_task_fair              1.03%   dequeue_task_fair
-     1.25%   __sb_start_write               1.01%   copy_page_to_iter_iovec
-     1.22%   _raw_spin_lock_irq             1.01%   int_check_syscall_exit_work
-     1.20%   try_to_wake_up                 0.97%   vfs_write
-     1.16%   update_curr                    0.94%   __context_tracking_task_switch
-     1.05%   __fsnotify_parent              0.93%   mutex_unlock
-     1.03%   pick_next_task_fair            0.88%   copy_page_from_iter_iovec
-     1.02%   sys_write                      0.87%   new_sync_write
-     1.01%   sys_read                       0.86%   __fget_light
-     1.00%   __wake_up_sync_key             0.85%   __sb_start_write
-     0.93%   __wake_up_common               0.85%   int_ret_from_sys_call
-     0.92%   copy_page_to_iter              0.83%   syscall_trace_leave
-     0.90%   check_preempt_wakeup           0.78%   new_sync_read
-     0.90%   __srcu_read_lock               0.78%   account_user_time
-     0.89%   put_prev_task_fair             0.76%   update_curr
-     0.88%   copy_page_from_iter            0.74%   fsnotify
-     0.82%   __sb_end_write                 0.73%   try_to_wake_up
-     0.76%   __percpu_counter_add           0.71%   finish_task_switch
-     0.74%   prepare_to_wait                0.70%   _raw_spin_lock_irq
-     0.72%   touch_atime                    0.69%   __wake_up_sync_key
-     0.71%   pipe_wait                      0.69%   __tick_nohz_task_switch
+Joerg, can you take this through the iommu tree for 3.17? Will acked
+this, but perhaps you were waiting for an ACK from the device tree
+bindings maintainers?
 
-pinned endless stat("/", &buf)
+Will, perhaps you can get Pawel or Mark to look at this?
 
-    CONFIG_NO_HZ_FULL=y                     CONFIG_NO_HZ_FULL=y, nohz_full=3
-    17.13%   system_call                    8.78%   system_call
-    11.20%   kmem_cache_alloc               8.52%   native_sched_clock
-     7.14%   lockref_get_not_dead           6.02%   context_tracking_user_exit
-     7.10%   kmem_cache_free                4.53%   kmem_cache_alloc
-     6.42%   path_init                      4.46%   _raw_spin_lock
-     5.69%   copy_user_generic_string       4.13%   copy_user_generic_string
-     5.25%   lockref_put_or_lock            4.01%   kmem_cache_free
-     4.14%   strncpy_from_user              3.36%   context_tracking_user_enter
-     3.99%   path_lookupat                  3.25%   lockref_get_not_dead
-     3.12%   complete_walk                  3.25%   lockref_put_or_lock
-     2.91%   getname_flags                  2.86%   rcu_eqs_enter_common.isra.42
-     2.88%   cp_new_stat                    2.84%   path_init
-     2.79%   vfs_fstatat                    2.56%   rcu_eqs_exit_common.isra.43
-     2.59%   user_path_at_empty             2.52%   int_check_syscall_exit_work
-     1.93%   link_path_walk                 2.51%   tracesys
-     1.81%   generic_fillattr               2.08%   cp_new_stat
-     1.75%   dput                           2.00%   syscall_trace_leave
-     1.71%   filename_lookup.isra.50        1.75%   complete_walk
-     1.66%   mntput                         1.69%   path_lookupat
-     1.45%   vfs_getattr_nosec              1.58%   strncpy_from_user
-     1.04%   final_putname                  1.56%   get_vtime_delta
-     1.02%   SYSC_newstat                   1.34%   int_with_check
+Arnd, I'm sure if we had your Acked-by that would go a long way too.
 
-     CONFIG_NO_HZ_FULL=y, nohz_full=3
--    8.53%  [kernel]         [k] native_sched_clock                                                                                                                                                                                        ▒
-   - native_sched_clock                                                                                                                                                                                                                    ▒
-      - 96.76% local_clock                                                                                                                                                                                                                 ▒
-         - get_vtime_delta                                                                                                                                                                                                                 ▒
-            - 51.95% vtime_account_user                                                                                                                                                                                                    ▒
-                 99.96% context_tracking_user_exit                                                                                                                                                                                         ▒
-                    syscall_trace_enter                                                                                                                                                                                                    ▒
-                    tracesys                                                                                                                                                                                                               ▒
-                    __xstat64                                                                                                                                                                                                              ▒
-                    __libc_start_main                                                                                                                                                                                                      ▒
-            - 48.05% __vtime_account_system                                                                                                                                                                                                ▒
-                 99.96% vtime_user_enter                                                                                                                                                                                                   ▒
-                    context_tracking_user_enter                                                                                                                                                                                            ▒
-                    syscall_trace_leave                                                                                                                                                                                                    ◆
-                    int_check_syscall_exit_work                                                                                                                                                                                            ▒
-                    __xstat64                                                                                                                                                                                                              ▒
-                    __libc_start_main                                                                                                                                                                                                      ▒
-      - 3.23% get_vtime_delta                                                                                                                                                                                                              ▒
-           52.96% vtime_account_user                                                                                                                                                                                                       ▒
-              context_tracking_user_exit                                                                                                                                                                                                   ▒
-              syscall_trace_enter                                                                                                                                                                                                          ▒
-              tracesys                                                                                                                                                                                                                     ▒
-              __xstat64                                                                                                                                                                                                                    ▒
-              __libc_start_main                                                                                                                                                                                                            ▒
-           47.04% __vtime_account_system                                                                                                                                                                                                   ▒
-              vtime_user_enter                                                                                                                                                                                                             ▒
-              context_tracking_user_enter                                                                                                                                                                                                  ▒
-              syscall_trace_leave                                                                                                                                                                                                          ▒
-              int_check_syscall_exit_work                                                                                                                                                                                                  ▒
-              __xstat64                                                                                                                                                                                                                    ▒
-              __libc_start_main
+Thierry
 
+--JlJsEFsx9RQyiX4C
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT2PHkAAoJEN0jrNd/PrOhEXsP/1njba0aCMArPnhItjmpLgVN
+G3sMtFCbgOSD0tM1mGDkyMyEv3k/RxeuxKISGUAvjRkod+0YkDYpUlxIDZEdHo35
+cDRBXNDjaNn9dLuwJnXaaohieMQi3esaVJ3/32T/DVu9QdQP60Vmxmd+DQEcw/XF
+0rpUEMsAWT+2FhXDXyjgmdM+LZQsJkoe+Mt3Gb8qXio2yq9XdbWQjWvhT8XE8lHM
+m1FXrl9bxBIj9Z4zqskvBdlJRrmRkYJ3rAvAITuO4rD9T9bbHPx/jrWO+aGVApYU
+ptzgtg6t0341Mu+FK8MNSh9N0GV7X4CfQn/CMYdebs/0dpcusOuXa0uc4DuuCgmJ
+hJK5tAAPvF8WhrJYino2ry7r2T8cVGsNuUAMsfB4U2pZXiVOlzww9oEG9vyEz+0N
+5UCz7sl50cLP/raEXw0GgB4IJkVqTjqANfPtIBvkXweMjkxXM6TlrdW1Os6j/Zxf
+v7qwx9jRmDRdM1aUVkz0biSOZ+cvlBVWxPY+fUFdbGOV8b/6KehsfCbsAsq6CRl7
+uXqhT5fB7Q36sNKGtgAXYWjqkFt2KY2jYx2RTABQ0R3tFwowfDAXMrif7SJWsrO4
+7a3KXaKoKdtfN6nzpSP8IuC5XboNvGXuoHXMMuP+MBcCsnMxzP+PVjogScxiOv8c
+COjKVqLqrX2DnhplB9KC
+=i/nQ
+-----END PGP SIGNATURE-----
+
+--JlJsEFsx9RQyiX4C--
