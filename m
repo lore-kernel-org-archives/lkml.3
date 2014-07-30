@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164AbaG3M43 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:56:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43961 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754097AbaG3M41 (ORCPT
+	id S1754249AbaG3M4k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:56:40 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44873 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754173AbaG3M4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 08:56:27 -0400
-Date: Wed, 30 Jul 2014 05:55:27 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-8578b891ec38c39abd5d6376afd05fce78e2628c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
-        peterz@infradead.org, namhyung@gmail.com, fweisbec@gmail.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, jolsa@kernel.org,
-        peterz@infradead.org, namhyung@gmail.com, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <20140728065844.GK6758@twins.programming.kicks-ass.net>
-References: <20140728065844.GK6758@twins.programming.kicks-ass.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] Revert "perf tools:
-  Fix jump label always changing during tracing"
-Git-Commit-ID: 8578b891ec38c39abd5d6376afd05fce78e2628c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Wed, 30 Jul 2014 08:56:37 -0400
+Message-ID: <1406724992.4865.65.camel@jarvis>
+Subject: Re: [PATCH v2 13/29] nios2: DMA mapping API
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        lftan.linux@gmail.com, cltang@codesourcery.com
+Date: Wed, 30 Jul 2014 16:56:32 +0400
+In-Reply-To: <4843763.ps2D25LEeM@wuerfel>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	 <1405413956-2772-14-git-send-email-lftan@altera.com>
+	 <4843763.ps2D25LEeM@wuerfel>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8578b891ec38c39abd5d6376afd05fce78e2628c
-Gitweb:     http://git.kernel.org/tip/8578b891ec38c39abd5d6376afd05fce78e2628c
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Mon, 28 Jul 2014 15:58:47 +0200
-Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Mon, 28 Jul 2014 16:39:18 +0200
+On Tue, 2014-07-15 at 11:38 +0200, Arnd Bergmann wrote:
+> More importantly: you do the same operation for both _for_cpu and _for_device.
+> I assume your CPU can never do speculative cache prefetches, so it's not
+> incorrect, but you do twice the number of invalidations and flushes that
+> you need. 
 
-Revert "perf tools: Fix jump label always changing during tracing"
+That's not necessarily a correct assumption.  A lot of CPUs (x86, arm,
+parisc) feel entitled to speculate provided they have a TLB entry.
+Usually they don't just do it for a whim, so the cpu has to be doing
+something to cause the speculation, like reading from an adjacent page.
+However, for DMA you always have to assume the possibility (unless you
+really, really know the architecture cannot).
 
-This reverts commit deaff8b659cf4d34181c087b8cdf74f1eb17b02b.
+Therefore the pattern should be (assuming your bus doesn't need some
+kind of flush and all flushes are only for the CPU).
 
-This commit makes CLOEXEC feature undetected for normal users,
-because per-cpu events are priviledged.
+DMA_TO_DEVICE: flush before (_for_device) do nothing after (_for_cpu)
 
-Reported-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/20140728065844.GK6758@twins.programming.kicks-ass.net
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/util/cloexec.c | 9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+DMA_FROM_DEVICE: do nothing before (_for_device), invalidate after
+(_for_cpu)
 
-diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
-index 6a37be5..c5d05ec 100644
---- a/tools/perf/util/cloexec.c
-+++ b/tools/perf/util/cloexec.c
-@@ -1,4 +1,3 @@
--#include <sched.h>
- #include "util.h"
- #include "../perf.h"
- #include "cloexec.h"
-@@ -15,13 +14,9 @@ static int perf_flag_probe(void)
- 	};
- 	int fd;
- 	int err;
--	int cpu = sched_getcpu();
--
--	if (cpu < 0)
--		cpu = 0;
- 
- 	/* check cloexec flag */
--	fd = sys_perf_event_open(&attr, -1, cpu, -1,
-+	fd = sys_perf_event_open(&attr, 0, -1, -1,
- 				 PERF_FLAG_FD_CLOEXEC);
- 	err = errno;
- 
-@@ -35,7 +30,7 @@ static int perf_flag_probe(void)
- 		  err, strerror(err));
- 
- 	/* not supported, confirm error related to PERF_FLAG_FD_CLOEXEC */
--	fd = sys_perf_event_open(&attr, -1, cpu, -1, 0);
-+	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
- 	err = errno;
- 
- 	if (WARN_ONCE(fd < 0,
+DMA_BIDIRECTIONAL: flush before (_for_device) and invalidate after
+(_for_cpu).
+
+James
+
+
