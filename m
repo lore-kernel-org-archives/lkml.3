@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927AbaG3Pfc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 11:35:32 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:34189 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046AbaG3Pfa (ORCPT
+	id S1754503AbaG3Phv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 11:37:51 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:39577 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753622AbaG3Pht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 11:35:30 -0400
-Date: Wed, 30 Jul 2014 11:35:26 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-Cc: sebastian.hesselbarth@gmail.com, kishon@ti.com,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v11 3/8] ata: libahci_platform: move port_map parameters
- into the AHCI structure
-Message-ID: <20140730153526.GB23734@htj.dyndns.org>
-References: <1406193450-17283-1-git-send-email-antoine.tenart@free-electrons.com>
- <1406193450-17283-4-git-send-email-antoine.tenart@free-electrons.com>
- <20140729144042.GD4791@htj.dyndns.org>
- <20140730082038.GB29900@kwain>
+	Wed, 30 Jul 2014 11:37:49 -0400
+Message-ID: <53D91147.6050907@plexistor.com>
+Date: Wed, 30 Jul 2014 18:37:43 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140730082038.GB29900@kwain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Matthew Wilcox <willy@linux.intel.com>
+CC: Jens Axboe <axboe@kernel.dk>, Ross Zwisler <ross.zwisler@linux.intel.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Nick Piggin <npiggin@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] brd: Fix brd_direct_access with partitions
+References: <53D7CDDD.1000302@gmail.com> <1406654379.2767.1.camel@rzwisler-mobl1.amr.corp.intel.com> <53D8D2C4.1030101@gmail.com> <53D8FE1F.1060009@plexistor.com> <53D8FEC7.8020804@plexistor.com> <20140730153402.GP6754@linux.intel.com>
+In-Reply-To: <20140730153402.GP6754@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Jul 30, 2014 at 10:20:38AM +0200, Antoine Ténart wrote:
-> How do you want me to send the series? There is two conflicts when
-> applying to libata/for-3.17:
-> - patch 4/8: it takes into account a patch not in libata/for-3.17 but
->   added before rc7. It should be better to first merge rc7, otherwise
->   some modifications won't make sense.
-> - patch 6/8: "fsl,imx53-ahci" was removed from the documentation in
->   libata/for-3.17 but not in rc7. Resolving the conflict is really
->   simple.
+On 07/30/2014 06:34 PM, Matthew Wilcox wrote:
+> On Wed, Jul 30, 2014 at 05:18:47PM +0300, Boaz Harrosh wrote:
+>> When brd_direct_access() is called on a partition-bdev
+>> it would access the wrong sector. And caller would then
+>> corrupt the device's data.
+>>
+>> This is a preliminary fix, Matthew Wilcox has a patch
+>> in his DAX patchset which will define a global wrapper
+>> to bdev->bd_disk->fops->direct_access that will do the
+>> proper checks and translations before calling a driver
+>> global member. (The way it is done at the rest of the
+>> block stack)
 > 
-> I think it's better to apply the whole thing after merging rc7 into
-> libata/for-3.17, because it will only have a really simple conflict to
-> resolve.
+> Uh, no, let's just focus on getting the DAX code in instead of putting
+> in interim patches that will conflict.  Patch 4/22 is uncontroversial,
+> fixes this problem, has no dependencies, and is key to the rest of the DAX
+> patchset.  If this problem wants to be fixed, then put 4/22 in instead.
 > 
-> Please tell me what do you prefer before I send the updated version.
 
-Hmmm... does pulling in libata/for-3.16-fixes into libata/for-3.17
-resolves the conflict?  If so, please send the patch on top of the
-merged branch.  I wanna avoid pulling in -rc7 wholesale at this point.
+OK, I agree, could you please push  4/22 as reply to here for
+Jens to take for 3.17 ? (together with my 1/2)
 
-Thanks.
+Thanks
+Boaz
 
--- 
-tejun
