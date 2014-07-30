@@ -1,48 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbaG3N5d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 09:57:33 -0400
-Received: from tex.lwn.net ([70.33.254.29]:41883 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753286AbaG3N5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 09:57:12 -0400
-Date: Wed, 30 Jul 2014 09:57:09 -0400
-From: Jonathan Corbet <corbet@lwn.net>
-To: Abhijith Das <adas@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        cluster-devel@redhat.com
-Subject: Re: [RFC PATCH 5/5] gfs2: Add xreaddir file operation and
- supporting functions
-Message-ID: <20140730095709.62bade17@lwn.net>
-In-Reply-To: <584806381.15003446.1406672757956.JavaMail.zimbra@redhat.com>
-References: <1406309888-10749-1-git-send-email-adas@redhat.com>
-	<1406309888-10749-6-git-send-email-adas@redhat.com>
-	<20140729145808.79bec165@lwn.net>
-	<584806381.15003446.1406672757956.JavaMail.zimbra@redhat.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S1753991AbaG3N5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 09:57:51 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59349 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286AbaG3N5t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 09:57:49 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53D8F9DA.2090607@roeck-us.net>
+Date: Wed, 30 Jul 2014 06:57:46 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+To: Andreas Werner <andreas.werner@men.de>
+CC: Wim Van Sebroeck <wim@iguana.be>, Bryan Wu <cooloney@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v3 3/3] drivers/leds/leds-menf21bmc: introduce MEN 14F021P00
+ BMC LED driver
+References: <cover.1405602280.git.andreas.werner@men.de> <fec81db0dd6e08e1e07d3b7c00cb933b2ab63ab3.1405602280.git.andreas.werner@men.de> <CAK5ve-KG=dBgrBLQ2ejZ3XZip-gk2_5PfmpdKi6d6=B9hMDH1g@mail.gmail.com> <20140725093728.GA1371@awelinux> <20140729211256.GB30849@spo001.leaseweb.com> <53D8165C.6000302@roeck-us.net> <20140730080839.GA455@awelinux>
+In-Reply-To: <20140730080839.GA455@awelinux>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jul 2014 18:25:57 -0400 (EDT)
-Abhijith Das <adas@redhat.com> wrote:
+On 07/30/2014 01:08 AM, Andreas Werner wrote:
+> On Tue, Jul 29, 2014 at 02:47:08PM -0700, Guenter Roeck wrote:
+>> On 07/29/2014 02:12 PM, Wim Van Sebroeck wrote:
+>>> Hi Andreas,
+>>>
+>>>> aOn Thu, Jul 24, 2014 at 03:00:09PM -0700, Bryan Wu wrote:
+>>>>> On Thu, Jul 17, 2014 at 6:18 AM, Andreas Werner <andreas.werner@men.de> wrote:
+>>>>>> Added driver to support the 14F021P00 BMC LEDs.
+>>>>>> The BMC is a Board Management Controll include four LEDs which
+>>>>>> can be switched on and off.
+>>>>>>
+>>>>>> This driver use the I2C interface to the BMC using the menf21bmc MFD Core driver.
+>>>>>>
+>>>>>> Signed-off-by: Andreas Werner <andreas.werner@men.de>
+>>>>>> ---
+>>>>>>   drivers/leds/Kconfig          |   6 ++
+>>>>>>   drivers/leds/Makefile         |   1 +
+>>>>>>   drivers/leds/leds-menf21bmc.c | 134 ++++++++++++++++++++++++++++++++++++++++++
+>>>>>>   3 files changed, 141 insertions(+)
+>>>>>>   create mode 100644 drivers/leds/leds-menf21bmc.c
+>>>>>>
+>>>>>> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+>>>>>> index 27cf0cd..d38ff3f 100644
+>>>>>> --- a/drivers/leds/Kconfig
+>>>>>> +++ b/drivers/leds/Kconfig
+>>>>>> @@ -458,6 +458,12 @@ config LEDS_OT200
+>>>>>>            This option enables support for the LEDs on the Bachmann OT200.
+>>>>>>            Say Y to enable LEDs on the Bachmann OT200.
+>>>>>>
+>>>>>> +config LEDS_MENF21BMC
+>>>>>> +       tristate "LED support for the MEN 14F021P00 BMC"
+>>>>>> +       depends on LEDS_CLASS && MFD_MENF21BMC
+>>>>>
+>>>>> I think it also depends on I2C.
+>>>>
+>>>> Yes you are right.
+>>>>
+>>>>>
+>>>>>> +       help
+>>>>>> +         Say Y here to include support for the MEN 14F021P00 BMC LEDs.
+>>>>>> +
+>>>>>>   comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
+>>>>>>
+>>>>>>   config LEDS_BLINKM
+>>>>>> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+>>>>>> index 3c03666..cadc433 100644
+>>>>>> --- a/drivers/leds/Makefile
+>>>>>> +++ b/drivers/leds/Makefile
+>>>>>> @@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)            += leds-max8997.o
+>>>>>>   obj-$(CONFIG_LEDS_LM355x)              += leds-lm355x.o
+>>>>>>   obj-$(CONFIG_LEDS_BLINKM)              += leds-blinkm.o
+>>>>>>   obj-$(CONFIG_LEDS_VERSATILE)           += leds-versatile.o
+>>>>>> +obj-$(CONFIG_LEDS_MENF21BMC)           += leds-menf21bmc.o
+>>>>>>
+>>>>>>   # LED SPI Drivers
+>>>>>>   obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
+>>>>>> diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
+>>>>>> new file mode 100644
+>>>>>> index 0000000..5eaa119
+>>>>>> --- /dev/null
+>>>>>> +++ b/drivers/leds/leds-menf21bmc.c
+>>>>>> @@ -0,0 +1,134 @@
+>>>>>> +/*
+>>>>>> + *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
+>>>>>> + *
+>>>>>> + *  This is the core LED driver of the MEN 14F021P00 BMC.
+>>>>>> + *  There are four LEDs available which can be switched on and off.
+>>>>>> + *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
+>>>>>> + *
+>>>>>> + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
+>>>>>> + *  Author: Andreas Werner <andreas.werner@men.de>
+>>>>>> + *  All rights reserved.
+>>>>>> + *
+>>>>>> + *  This program is free software; you can redistribute  it and/or modify it
+>>>>>> + *  under  the terms of  the GNU General  Public License as published by the
+>>>>>> + *  Free Software Foundation;  either version 2 of the  License, or (at your
+>>>>>> + *  option) any later version.
+>>>>>> + *
+>>>>>> + */
+>>>>>> +
+>>>>>> +#include <linux/module.h>
+>>>>>> +#include <linux/kernel.h>
+>>>>>> +#include <linux/platform_device.h>
+>>>>>> +#include <linux/leds.h>
+>>>>>> +#include <linux/i2c.h>
+>>>>>> +
+>>>>>> +#define BMC_CMD_LED_GET_SET    0xA0
+>>>>>> +#define BMC_BIT_LED_STATUS     BIT(0)
+>>>>>> +#define BMC_BIT_LED_HOTSWAP    BIT(1)
+>>>>>> +#define BMC_BIT_LED_USER1      BIT(2)
+>>>>>> +#define BMC_BIT_LED_USER2      BIT(3)
+>>>>>> +
+>>>>>> +struct menf21bmc_led {
+>>>>>> +       struct led_classdev cdev;
+>>>>>> +       u8 led_bit;
+>>>>>> +       const char *name;
+>>>>>> +       struct i2c_client *i2c_client;
+>>>>>> +};
+>>>>>> +
+>>>>>> +static struct menf21bmc_led leds[] = {
+>>>>>> +       {
+>>>>>> +               .name = "menf21bmc:led_status",
+>>>>>> +               .led_bit = BMC_BIT_LED_STATUS,
+>>>>>> +       },
+>>>>>> +       {
+>>>>>> +               .name = "menf21bmc:led_hotswap",
+>>>>>> +               .led_bit = BMC_BIT_LED_HOTSWAP,
+>>>>>> +       },
+>>>>>> +       {
+>>>>>> +               .name = "menf21bmc:led_user1",
+>>>>>> +               .led_bit = BMC_BIT_LED_USER1,
+>>>>>> +       },
+>>>>>> +       {
+>>>>>> +               .name = "menf21bmc:led_user2",
+>>>>>> +               .led_bit = BMC_BIT_LED_USER2,
+>>>>>> +       }
+>>>>>> +};
+>>>>>> +
+>>>>>> +static DEFINE_MUTEX(led_lock);
+>>>>>> +
+>>>>>> +static void
+>>>>>> +menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
+>>>>>> +{
+>>>>>> +       int led_val;
+>>>>>> +       struct menf21bmc_led *led = container_of(led_cdev,
+>>>>>> +                                       struct menf21bmc_led, cdev);
+>>>>>> +
+>>>>>> +       mutex_lock(&led_lock);
+>>>>>> +       led_val = i2c_smbus_read_byte_data(led->i2c_client,
+>>>>>> +                                               BMC_CMD_LED_GET_SET);
+>>>>>> +       if (led_val < 0)
+>>>>>> +               goto err_out;
+>>>>>> +
+>>>>>> +       if (value == LED_OFF)
+>>>>>> +               led_val &= ~led->led_bit;
+>>>>>> +       else
+>>>>>> +               led_val |= led->led_bit;
+>>>>>> +
+>>>>>> +       i2c_smbus_write_byte_data(led->i2c_client,
+>>>>>> +                                       BMC_CMD_LED_GET_SET, led_val);
+>>>>>> +err_out:
+>>>>>> +       mutex_unlock(&led_lock);
+>>>>>> +}
+>>>>>> +
+>>>>>> +static int menf21bmc_led_probe(struct platform_device *pdev)
+>>>>>> +{
+>>>>>> +       int i;
+>>>>>> +       int ret;
+>>>>>> +       struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
+>>>>>> +
+>>>>>> +       for (i = 0; i < ARRAY_SIZE(leds); i++) {
+>>>>>> +               leds[i].cdev.name = leds[i].name;
+>>>>>> +               leds[i].cdev.brightness_set = menf21bmc_led_set;
+>>>>>> +               leds[i].i2c_client = i2c_client;
+>>>>>> +               ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
+>>>>>> +               if (ret < 0)
+>>>>>> +                       goto err_free_leds;
+>>>>>> +       }
+>>>>>> +       dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
+>>>>>> +
+>>>>>> +       return 0;
+>>>>>> +
+>>>>>> +err_free_leds:
+>>>>>> +       dev_err(&pdev->dev, "failed to register LED device\n");
+>>>>>> +
+>>>>>> +       for (i = i - 1; i >= 0; i--)
+>>>>>> +               led_classdev_unregister(&leds[i].cdev);
+>>>>>> +
+>>>>>> +       return ret;
+>>>>>> +}
+>>>>>> +
+>>>>>> +static int menf21bmc_led_remove(struct platform_device *pdev)
+>>>>>> +{
+>>>>>> +       int i;
+>>>>>> +
+>>>>>> +       for (i = 0; i < ARRAY_SIZE(leds); i++)
+>>>>>> +               led_classdev_unregister(&leds[i].cdev);
+>>>>>> +
+>>>>>> +       return 0;
+>>>>>> +}
+>>>>>> +
+>>>>>> +static struct platform_driver menf21bmc_led = {
+>>>>>> +       .probe          = menf21bmc_led_probe,
+>>>>>> +       .remove         = menf21bmc_led_remove,
+>>>>>> +       .driver         = {
+>>>>>> +               .name           = "menf21bmc_led",
+>>>>>> +               .owner          = THIS_MODULE,
+>>>>>> +       },
+>>>>>> +};
+>>>>>> +
+>>>>>
+>>>>> This is not a normal platform driver, it should be a I2C driver.
+>>>>>
+>>>>>> +module_platform_driver(menf21bmc_led);
+>>>>>
+>>>>> So please move to use module_i2c_driver.
+>>>>
+>>>> Ok, but then I have to change that in the watchdog driver too, which
+>>>> is quite the same as here.
+>>>>
+>>>> Lee, Guenther what do you think regarding the watchdog driver?
+>>>
+>>> If the watchdog part is indeed also i2c alike device then the watchdog part should also be an i2c driver...
+>>>
+>>
+>> Isn't this all the same chip ? If so, there should be only one i2c driver.
+>> Unless the i2c access is too complicated, it might make sense to use regmap
+>> to access the chip, and pass the regmap pointer to the mfd slave drivers
+>> to handle the actual communication with the chip.
+>>
+>> Guenter
+>>
+>
+> Yes this is all the same chip which has different features like LEDs and Watchdog.
+> This is why the mfd is the i2c_driver which instantiates the slave devices which
+> are platform drivers.
+>
+> Is that not the normal way to handle those device?
+> Is it really necessary to handle this to regmap?
+>
 
-> > > +	if ((xc->xc_xattr_mask & XSTAT_XATTR_ALL) &&
-> > > +		lxd->xd_blob.xb_xattr_count) {  
-> > 
-> > How can that be right?  lxd is __user, it doesn't seem right to be
-> > dereferencing it directly...?  
-> 
-> Wouldn't the call to access_ok() at the start of the syscall take care of this? All the
-> __user pointers point to areas within the user supplied buffer buf and overflow past the
-> end of the buffer for the last lxd is checked for.
+Not really sure if 'necessary' is the right term, it is just convenient.
+Regmap takes care of register caching, for example, so you would not have to
+re-read register values again and again from the chip just to modify a bit
+of a register.
+You can pass the regmap pointer in the platform data, or you can pass the
+pointer to the i2c client. Using regmap makes the client driver independent
+of the i2c subsystem. The one thing you can _not_ do is to declare the client
+drivers to be i2c drivers.
 
-No, dereferencing user-space pointers in the kernel is never OK.  What
-if user space remapped that page after the access_ok() call?  You need
-to use copy_*_user() to get at user-space structures from the kernel.
+Guenter
 
-jon
