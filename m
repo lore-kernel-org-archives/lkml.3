@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412AbaG3MeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:34:17 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36719 "EHLO
+	id S1753525AbaG3MeP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:34:15 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36722 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752888AbaG3MPc (ORCPT
+	by vger.kernel.org with ESMTP id S1752895AbaG3MPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:32 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 57/94] ipv4: fix buffer overflow in ip_options_compile()
-Date: Wed, 30 Jul 2014 14:14:46 +0200
-Message-Id: <5ac7d1658804e7a2b10f934481eddce5a644ae2d.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jason Wang <jasowang@redhat.com>,
+        Gerd Hoffmann <kraxel@redhat.com>, Dave Airlie <airlied@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 64/94] drm/qxl: return IRQ_NONE if it was not our irq
+Date: Wed, 30 Jul 2014 14:14:53 +0200
+Message-Id: <5cdebe8864e4f0f8ade5be17cce50bceee69a961.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,89 +24,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+From: Jason Wang <jasowang@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 10ec9472f05b45c94db3c854d22581a20b97db41 ]
+commit fbb60fe35ad579b511de8604b06a30b43846473b upstream.
 
-There is a benign buffer overflow in ip_options_compile spotted by
-AddressSanitizer[1] :
+Return IRQ_NONE if it was not our irq. This is necessary for the case
+when qxl is sharing irq line with a device A in a crash kernel. If qxl
+is initialized before A and A's irq was raised during this gap,
+returning IRQ_HANDLED in this case will cause this irq to be raised
+again after EOI since kernel think it was handled but in fact it was
+not.
 
-Its benign because we always can access one extra byte in skb->head
-(because header is followed by struct skb_shared_info), and in this case
-this byte is not even used.
-
-[28504.910798] ==================================================================
-[28504.912046] AddressSanitizer: heap-buffer-overflow in ip_options_compile
-[28504.913170] Read of size 1 by thread T15843:
-[28504.914026]  [<ffffffff81802f91>] ip_options_compile+0x121/0x9c0
-[28504.915394]  [<ffffffff81804a0d>] ip_options_get_from_user+0xad/0x120
-[28504.916843]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
-[28504.918175]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
-[28504.919490]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
-[28504.920835]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
-[28504.922208]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
-[28504.923459]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
-[28504.924722]
-[28504.925106] Allocated by thread T15843:
-[28504.925815]  [<ffffffff81804995>] ip_options_get_from_user+0x35/0x120
-[28504.926884]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
-[28504.927975]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
-[28504.929175]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
-[28504.930400]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
-[28504.931677]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
-[28504.932851]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
-[28504.934018]
-[28504.934377] The buggy address ffff880026382828 is located 0 bytes to the right
-[28504.934377]  of 40-byte region [ffff880026382800, ffff880026382828)
-[28504.937144]
-[28504.937474] Memory state around the buggy address:
-[28504.938430]  ffff880026382300: ........ rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.939884]  ffff880026382400: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.941294]  ffff880026382500: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.942504]  ffff880026382600: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.943483]  ffff880026382700: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.944511] >ffff880026382800: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.945573]                         ^
-[28504.946277]  ffff880026382900: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.094949]  ffff880026382a00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.096114]  ffff880026382b00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.097116]  ffff880026382c00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.098472]  ffff880026382d00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.099804] Legend:
-[28505.100269]  f - 8 freed bytes
-[28505.100884]  r - 8 redzone bytes
-[28505.101649]  . - 8 allocated bytes
-[28505.102406]  x=1..7 - x allocated bytes + (8-x) redzone bytes
-[28505.103637] ==================================================================
-
-[1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Gerd Hoffmann <kraxel@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ipv4/ip_options.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/qxl/qxl_irq.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/net/ipv4/ip_options.c b/net/ipv4/ip_options.c
-index ec7264514a82..089ed81d1878 100644
---- a/net/ipv4/ip_options.c
-+++ b/net/ipv4/ip_options.c
-@@ -288,6 +288,10 @@ int ip_options_compile(struct net *net,
- 			optptr++;
- 			continue;
- 		}
-+		if (unlikely(l < 2)) {
-+			pp_ptr = optptr;
-+			goto error;
-+		}
- 		optlen = optptr[1];
- 		if (optlen<2 || optlen>l) {
- 			pp_ptr = optptr;
+diff --git a/drivers/gpu/drm/qxl/qxl_irq.c b/drivers/gpu/drm/qxl/qxl_irq.c
+index 21393dc4700a..f4b6b89b98f3 100644
+--- a/drivers/gpu/drm/qxl/qxl_irq.c
++++ b/drivers/gpu/drm/qxl/qxl_irq.c
+@@ -33,6 +33,9 @@ irqreturn_t qxl_irq_handler(DRM_IRQ_ARGS)
+ 
+ 	pending = xchg(&qdev->ram_header->int_pending, 0);
+ 
++	if (!pending)
++		return IRQ_NONE;
++
+ 	atomic_inc(&qdev->irq_received);
+ 
+ 	if (pending & QXL_INTERRUPT_DISPLAY) {
 -- 
 2.0.1
 
