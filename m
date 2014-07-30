@@ -1,113 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaG3Ji0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 05:38:26 -0400
-Received: from frost.carfax.org.uk ([85.119.82.111]:34012 "EHLO
-	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505AbaG3JiY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 05:38:24 -0400
-Date: Wed, 30 Jul 2014 10:38:21 +0100
-From: Hugo Mills <hugo@carfax.org.uk>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
-	<linux-btrfs@vger.kernel.org>
-Subject: Re: Work Queue for btrfs compression writes
-Message-ID: <20140730093821.GJ31950@carfax.org.uk>
-Mail-Followup-To: Hugo Mills <hugo@carfax.org.uk>,
-	Nick Krause <xerofoify@gmail.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" <linux-btrfs@vger.kernel.org>
-References: <CAPDOMVjJHbCwDVyKQ+Vuse7G76FLSLq69Ja4kmopDbjtEb_Zkw@mail.gmail.com>
+	id S1752166AbaG3JkA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 05:40:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34076 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751720AbaG3Jj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 05:39:58 -0400
+Message-ID: <53D8BD6B.8040704@suse.cz>
+Date: Wed, 30 Jul 2014 11:39:55 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2fjX3cMESU3XgGmZ"
-Content-Disposition: inline
-In-Reply-To: <CAPDOMVjJHbCwDVyKQ+Vuse7G76FLSLq69Ja4kmopDbjtEb_Zkw@mail.gmail.com>
-X-GPG-Fingerprint: B25A 5A66 69D3 1E15 2DD8  0998 BF73 F4E5 65E7 4AC0
-X-GPG-Key: 65E74AC0
-X-Parrot: It is no more. It has joined the choir invisible.
-X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-frost.carfax.org.uk-Spam-Score: 0.0 (/)
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v5 05/14] mm, compaction: move pageblock checks up from
+ isolate_migratepages_range()
+References: <1406553101-29326-1-git-send-email-vbabka@suse.cz> <1406553101-29326-6-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1407281709050.8998@chino.kir.corp.google.com> <53D7690D.5070307@suse.cz> <alpine.DEB.2.02.1407291559130.20991@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1407291559130.20991@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/30/2014 01:02 AM, David Rientjes wrote:
+>>>>
+>>>>    /*
+>>>> - * Isolate all pages that can be migrated from the block pointed to by
+>>>> - * the migrate scanner within compact_control.
+>>>> + * Isolate all pages that can be migrated from the first suitable block,
+>>>> + * starting at the block pointed to by the migrate scanner pfn within
+>>>> + * compact_control.
+>>>>     */
+>>>>    static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>>>>    					struct compact_control *cc)
+>>>>    {
+>>>>    	unsigned long low_pfn, end_pfn;
+>>>> +	struct page *page;
+>>>> +	const isolate_mode_t isolate_mode =
+>>>> +		(cc->mode == MIGRATE_ASYNC ? ISOLATE_ASYNC_MIGRATE : 0);
+>>>>
+>>>> -	/* Do not scan outside zone boundaries */
+>>>> -	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
+>>>> +	/*
+>>>> +	 * Start at where we last stopped, or beginning of the zone as
+>>>> +	 * initialized by compact_zone()
+>>>> +	 */
+>>>> +	low_pfn = cc->migrate_pfn;
+>>>>
+>>>>    	/* Only scan within a pageblock boundary */
+>>>>    	end_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages);
+>>>>
+>>>> -	/* Do not cross the free scanner or scan within a memory hole */
+>>>> -	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
+>>>> -		cc->migrate_pfn = end_pfn;
+>>>> -		return ISOLATE_NONE;
+>>>> -	}
+>>>> +	/*
+>>>> +	 * Iterate over whole pageblocks until we find the first suitable.
+>>>> +	 * Do not cross the free scanner.
+>>>> +	 */
+>>>> +	for (; end_pfn <= cc->free_pfn;
+>>>> +			low_pfn = end_pfn, end_pfn += pageblock_nr_pages) {
+>>>> +
+>>>> +		/*
+>>>> +		 * This can potentially iterate a massively long zone with
+>>>> +		 * many pageblocks unsuitable, so periodically check if we
+>>>> +		 * need to schedule, or even abort async compaction.
+>>>> +		 */
+>>>> +		if (!(low_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))
+>>>> +						&& compact_should_abort(cc))
+>>>> +			break;
+>>>> +
+>>>> +		/* Skip whole pageblock in case of a memory hole */
+>>>> +		if (!pfn_valid(low_pfn))
+>>>> +			continue;
+>>>> +
+>>>> +		page = pfn_to_page(low_pfn);
+>>>> +
+>>>> +		/* If isolation recently failed, do not retry */
+>>>> +		if (!isolation_suitable(cc, page))
+>>>> +			continue;
+>>>> +
+>>>> +		/*
+>>>> +		 * For async compaction, also only scan in MOVABLE blocks.
+>>>> +		 * Async compaction is optimistic to see if the minimum amount
+>>>> +		 * of work satisfies the allocation.
+>>>> +		 */
+>>>> +		if (cc->mode == MIGRATE_ASYNC &&
+>>>> +		    !migrate_async_suitable(get_pageblock_migratetype(page)))
+>>>> +			continue;
+>>>> +
+>>>> +		/* Perform the isolation */
+>>>> +		low_pfn = isolate_migratepages_block(cc, low_pfn, end_pfn,
+>>>> +								isolate_mode);
+>>>
+>>> Hmm, why would we want to unconditionally set pageblock_skip if no pages
+>>> could be isolated from a pageblock when
+>>> isolate_mode == ISOLATE_ASYNC_MIGRATE?  It seems like it erroneously skip
+>>> pageblocks for cases when isolate_mode == 0.
+>>
+>> Well pageblock_skip is a single bit and you don't know if the next attempt
+>> will be async or sync. So now you would maybe skip needlessly if the next
+>> attempt would be sync. If we changed that, you wouldn't skip if the next
+>> attempt would be async again. Could be that one way is better than other but
+>> I'm not sure, and would consider it separately.
+>> The former patch 15 (quick skip pageblock that won't be fully migrated) could
+>> perhaps change the balance here.
+>>
+>
+> That's why we have two separate per-zone cached start pfns, though, right?
+> The next call to async compaction should start from where the previous
+> caller left off so there would be no need to set pageblock skip in that
+> case until we have checked all memory.  Or are you considering the case of
+> concurrent async compaction?
 
---2fjX3cMESU3XgGmZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ah, well the lifecycle of cached pfn's and pageblock_skip is not 
+generally in sync. It may be that cached pfn's are reset, but 
+pageblock_skip bits remain. So this would be one async pass setting 
+hints for the next async pass.
 
-On Tue, Jul 29, 2014 at 11:54:20PM -0400, Nick Krause wrote:
-> Hey Guys ,
-> I am new to   reading  and writing  kernel code.I got interested in
-> writing code for btrfs as it seems to
-> need more work then other file systems and this seems other then
-> drivers, a good use of time on my part.
-> I interested in helping improving the compression of btrfs by using  a
-> set of threads using work queues like XFS
-> or reads and keeping the page cache after reading compressed blocks as
-> these seem to be a great way to improve
-> on  compression performance mostly with large partitions of compressed
-> data. I am not asking you to write the code
-> for me but as I am new a little guidance and help would be greatly
-> appreciated as this seems like too much work for just a newbie.
+But maybe we've already reduced the impact of sync compaction enough so 
+it could now be ignoring pageblock_skip completely, and leave those 
+hints only for async compaction.
 
- * Documentation/workqueue.txt (in general, grep in Documentation
-   usually throws up something useful)
-
- * grep -r alloc_workqueue fs/ shows a lot of uses (including in
-   btrfs), so it should be fairly easy to see how to create and manage
-   a workqueue.
-
-   I suspect that this may be a medium-sized project, rather than a
-small one. My gut feeling (based on limited experience) is that the
-fallocate extensions project would be considerably simpler.
-
-   I also noticed from the public reply to the private mail (don't do
-this without getting permission from the other person) that you posted
-to LKML in this thread (don't switch mailing lists mid-thread) that
-you anticipated having problems testing with limited disks -- what you
-will find is that testing new kernel code is something that you don't
-do on your main development OS installation. Instead, you will need
-either a scratch machine that you can easily update, or one or more
-virtual machines. qemu/kvm is good for this, because it has a mode
-that bypasses the BIOS and bootloader emulation, and just directly
-runs a kernel from a file on the host machine. This is fast. You can
-pass large sparse files to the VM to act as scratch disks, plus keep
-another smaller file for the guest OS (and a copy of it so that you
-can throw one away and make another one quickly and easily).
-
-   Hugo.
-
--- 
-=== Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
-  PGP key: 65E74AC0 from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
-  --- You've read the project plan.  Forget that. We're going to Do ---  
-                      Stuff and Have Fun doing it.                       
-
---2fjX3cMESU3XgGmZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUBU9i9DVheFHXiqx3kAQIACA//fhbSusPVM5BjtIlvm/BJhcNHi5oEH2h5
-gD0xv5fWA3UxM3eAcjqTDGtRrdKDspg/wfCwU0HTxpnWwKAn/QGqmw9oMHHB6m2v
-XR9S/r8MBKG3h6+9vISR9GqZ7YPyohZNxClFsbW+xqltPyu3smgJ8VR+t/08Kepr
-Y4/+aMkjcQuWEZRYXWSohiL8MllERSogyZG+GAO/iidqKHuYTNM0AScIe9nLsmmt
-KiKR6uH806JZiA8mV+6pyrc/e/dGDDcYmJ88Gto8dZxfCod2jMI4vQCT/naoD5AA
-l+/YVgcR+WE2SZLkUHUZNLnBrMRsbMHNSlYfvZG5vPZyp5k/sl+DpPKM/yzMO/77
-M84zpgQ5M5/DkyU28mR+HqJ8JU9tjmTCaB1w+Bh/DY/Kvlm2iYZ+ox93ZqLNU8IJ
-zw89uADUaU0J8FtokhuQwh30gTUsrGwzi5WsmfJTbxRU4QHLc6ya1jhfHIvSVli8
-goq7W7d7jybLdeqIY+aNjGCndkNqwN9xxzkF0UkPDuWR3CIHEMZxLFYKFhu168Uc
-wmzZxgMVW4JfT4JZj4gqPu9p8h/VZTe9QUgdVOr8sJPP8HIuppQE9O7piYAUzWlX
-/NftCmL5rgSeX7nbHjBkbpLsHa/8UOHALKPMz2tusUKTs/EkY90KSUcR2cTvRVID
-HQ6UuixxmL8=
-=2A8V
------END PGP SIGNATURE-----
-
---2fjX3cMESU3XgGmZ--
