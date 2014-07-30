@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782AbaG3Ovl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 10:51:41 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:44638 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753334AbaG3Ovj (ORCPT
+	id S1754161AbaG3OwR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 10:52:17 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:49120 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477AbaG3OwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 10:51:39 -0400
+	Wed, 30 Jul 2014 10:52:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <87iomfgyd2.fsf@x220.int.ebiederm.org>
-References: <1406296033-32693-1-git-send-email-drysdale@google.com>
- <871tt796i0.fsf@x220.int.ebiederm.org> <CAHse=S_7Jpb9bTXHgU8q8_UZ=ce2gwdq8C15a+jbfO_pHmV_iA@mail.gmail.com>
- <87ha21qja0.fsf@x220.int.ebiederm.org> <CAHse=S_w4+AMuc=-XbAK_PiaD56_ks13R53RENMHif5KRN_Kiw@mail.gmail.com>
- <87iomfgyd2.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 30 Jul 2014 07:51:17 -0700
-Message-ID: <CALCETrXANJQn_X=Okm+WnB0Bq__xXg3f4em01q1Uzkgh7m5DNQ@mail.gmail.com>
-Subject: Re: [RFC PATCHv2 00/11] Adding FreeBSD's Capsicum security framework
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Paolo Bonzini <pbonzini@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Moore <paul@paul-moore.com>,
-        James Morris <james.l.morris@oracle.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Christoph Hellwig <hch@infradead.org>
+In-Reply-To: <53D90340.3010000@suse.cz>
+References: <1406729236-19887-1-git-send-email-sudipm.mukherjee@gmail.com>
+	<53D90340.3010000@suse.cz>
+Date: Wed, 30 Jul 2014 20:22:14 +0530
+Message-ID: <CADVatmOooxEKJ26i9nED2OKmBghOwuz6fjGJmYO0tuopTEoLDw@mail.gmail.com>
+Subject: Re: [PATCH] tty: serial: serial_core.c: printk replacement
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@linuxfoundation.org, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 29, 2014 11:25 PM, "Eric W. Biederman" <ebiederm@xmission.com> wrote:
+On Wed, Jul 30, 2014 at 8:07 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+> On 07/30/2014, 04:07 PM, Sudip Mukherjee wrote:
+>> printk replaced with corresponding dev_*
+>> fixed two broken user-visible strings used by the corresponding printk
+>>
+>>
+>> Signed-off-by: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+>> ---
+>>  drivers/tty/serial/serial_core.c | 19 ++++++++++---------
+>>  1 file changed, 10 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+>> index 8bb19da..ef48d0f 100644
+>> --- a/drivers/tty/serial/serial_core.c
+>> +++ b/drivers/tty/serial/serial_core.c
+> ...
+>> @@ -1974,8 +1974,8 @@ int uart_suspend_port(struct uart_driver *drv, struct uart_port *uport)
+>>               for (tries = 3; !ops->tx_empty(uport) && tries; tries--)
+>>                       msleep(10);
+>>               if (!tries)
+>> -                     printk(KERN_ERR "%s%s%s%d: Unable to drain "
+>> -                                     "transmitter\n",
+>> +                     dev_err(uport->dev,
+>> +                             "%s%s%s%d: Unable to drain transmitter\n",
+>>                              uport->dev ? dev_name(uport->dev) : "",
 >
+> Hi, this does not look correct. You use uport->dev, but there is a test
+> whether it is NULL in the parameters.
 >
-> I have cut this down to just focus on O_BENEATH openat case.
->
-> David Drysdale <drysdale@google.com> writes:
->
-> > On Mon, Jul 28, 2014 at 10:13 PM, Eric W. Biederman
-> > <ebiederm@xmission.com> wrote:
->
-> >> Nope.  What you can implement today if you want fine grained limitations
-> >> like this is to create a mount namespace with exactly the subdirectory
-> >> tree you want to allow access to and to return a file descriptor that
-> >> points into that mount namespace.  (When complete the only user of that
-> >> mount namespace would be your file descriptor).
-> >
-> > How does that solve the particular example I mentioned?  The DFD
-> > within the mount namespace will still allow any operation on any file
-> > that's already in the subdirectory -- or am I misunderstanding
-> > something?
->
-> The goal was to bound the DFD to the directory and all of it's
-> subdirectories such that openat(dfd, "../../..") would open
-> the dfd, and that further opens of other directories would also not
-> allow you to escape.
->
-> Since the mount namespace only contains the choosen directory and it's
-> subdirectories that works easily and trivially.
->
-> So while you can indeed perform any file operation on that dfd who
-> cares because none of those operations can get you anywhere you aren't
-> supposed to be.
->
-> My point was that you can as granular as you would like by binding a dfd
-> to a mount namespace instead of binding a process to a mount namespace,
-> and the code already exists and is being maintained.
->
-> So while things are not packaged in the form that has been requested it
-> looks to me as if the functionality for directories already exists
-> within the Linux kernel.
+> You would have to investigate if and when uport->dev can be NULL and
+> document it in the commit log above.
 
-I think this would be amazingly expensive -- every constrained fd
-would need to carry an entire mount namespace with it.  That namespace
-might need to have shared recursive mounts under it.  And dfds created
-for subdirectories would need yet another mount namespace.  And all
-these mount namespaces would probably need user namespaces to go along
-with them.
+HI
+Thanks for reviewing it . I am checking out all the cases in which
+uport can be null and will resend the patch.
 
-It would also have odd semantics.  If you have a dfd pointing to /foo,
-and /foo/link is a symlink to "../bar", then looking up "link"
-relative to /foo should fail; it should not try to resolve /foo/bar.
-
-IOW I think this is impractical.
+Thanks
+Sudip
 
 >
-> Eric
+> thanks,
+> --
+> js
+> suse labs
