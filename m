@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642AbaG3Pej (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 11:34:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16543 "EHLO mga09.intel.com"
+	id S1754805AbaG3PfV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 11:35:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20450 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754027AbaG3Peh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 11:34:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,764,1400050800"; 
-   d="scan'208";a="551349931"
-Date: Wed, 30 Jul 2014 11:34:02 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Boaz Harrosh <boaz@plexistor.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Ross Zwisler <ross.zwisler@linux.intel.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Nick Piggin <npiggin@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] brd: Fix brd_direct_access with partitions
-Message-ID: <20140730153402.GP6754@linux.intel.com>
-References: <53D7CDDD.1000302@gmail.com>
- <1406654379.2767.1.camel@rzwisler-mobl1.amr.corp.intel.com>
- <53D8D2C4.1030101@gmail.com>
- <53D8FE1F.1060009@plexistor.com>
- <53D8FEC7.8020804@plexistor.com>
+	id S1754109AbaG3PfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 11:35:19 -0400
+Date: Wed, 30 Jul 2014 17:32:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-arch <linux-arch@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/5] x86: two-phase syscall tracing and seccomp
+	fastpath
+Message-ID: <20140730153259.GA25478@redhat.com>
+References: <cover.1406604806.git.luto@amacapital.net> <20140729192056.GA6308@redhat.com> <CALCETrX6P7SJQdgc0gTM7FLdwyT_Ld1MWvkLYpTO_2xsvBC9sA@mail.gmail.com> <CALCETrXHF5YzPQDvnJs=mFNm2Ff_FekGu_Y8-JyMaWh2hctR7A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53D8FEC7.8020804@plexistor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALCETrXHF5YzPQDvnJs=mFNm2Ff_FekGu_Y8-JyMaWh2hctR7A@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 05:18:47PM +0300, Boaz Harrosh wrote:
-> When brd_direct_access() is called on a partition-bdev
-> it would access the wrong sector. And caller would then
-> corrupt the device's data.
-> 
-> This is a preliminary fix, Matthew Wilcox has a patch
-> in his DAX patchset which will define a global wrapper
-> to bdev->bd_disk->fops->direct_access that will do the
-> proper checks and translations before calling a driver
-> global member. (The way it is done at the rest of the
-> block stack)
+On 07/29, Andy Lutomirski wrote:
+>
+> > SAVE_REST is 6 movq instructions and a subq.  FIXUP_TOP_OF_STACK is 7
+> > movqs (and 8 if I ever get my way).  RESTORE_TOP_OF_STACK is 4.
+> > RESTORE_REST is 6 movqs and an adsq.  So we're talking about avoiding
+> > 21 movqs, and addq, and a subq.  That may be significant.  (And I
+> > suspect that the difference is much larger on platforms like arm64,
+> > but that's a separate issue.)
 
-Uh, no, let's just focus on getting the DAX code in instead of putting
-in interim patches that will conflict.  Patch 4/22 is uncontroversial,
-fixes this problem, has no dependencies, and is key to the rest of the DAX
-patchset.  If this problem wants to be fixed, then put 4/22 in instead.
+OK, thanks. We could probably simplify the logic in phase1 + phase2 if
+it was a single function though.
+
+> To put some more options on the table: there's an argument to be made
+> that the whole fast-path/slow-path split isn't worth it.  We could
+> unconditionally set up a full frame for all syscalls.  This means:
+
+Or, at least, can't we allocate the full frame and avoid "add/sub %rsp"?
+
+> This means:
+...
+> On the
+> other hand, there's zero chance that this would be ready for 3.17.
+>
+> I'd tend to advocate for keeping the approach in my patches for now.
+
+Yes, sure, I didn't try to convince you to change this code. Thanks.
+
+Oleg.
+
