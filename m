@@ -1,96 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497AbaG3Mge (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:36:34 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36682 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752852AbaG3MPb (ORCPT
+	id S1755512AbaG3Mgj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:36:39 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55473 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752864AbaG3Mgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 08:15:31 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <edumazet@google.com>, Yuchung Cheng <ycheng@google.com>,
-        Ilpo Jarvinen <ilpo.jarvinen@helsinki.fi>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 34/94] tcp: fix tcp_match_skb_to_sack() for unaligned SACK at end of an skb
-Date: Wed, 30 Jul 2014 14:14:23 +0200
-Message-Id: <5f8c661beedfe757e0c56b415cbe6e2781892718.1406722270.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
-References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
-In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
-References: <cover.1406722269.git.jslaby@suse.cz>
+	Wed, 30 Jul 2014 08:36:33 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        Sachin Kamat <sachin.kamat@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: linux-next: manual merge of the pm tree with the arm-soc tree
+Date: Wed, 30 Jul 2014 14:55:04 +0200
+Message-ID: <2943176.NOpchz9a7V@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140730122305.7b1b7838@canb.auug.org.au>
+References: <20140730122305.7b1b7838@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Neal Cardwell <ncardwell@google.com>
+On Wednesday, July 30, 2014 12:23:05 PM Stephen Rothwell wrote:
+> 
+> --Sig_/ACOdpNyKdCGq/4_bRoeLLze
+> Content-Type: text/plain; charset=US-ASCII
+> Content-Transfer-Encoding: quoted-printable
+> 
+> Hi Rafael,
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Hi Stephen,
 
-===============
+> Today's linux-next merge of the pm tree got a conflict in
+> drivers/cpuidle/Kconfig.arm between commit 2aaafcdb6883 ("cpuidle:
+> big.LITTLE: Add ARCH_EXYNOS entry in config") from the arm-soc tree and
+> commit 6ee7f5dd57fc ("cpuidle: big_little: Fix build error") from the
+> pm tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-[ Upstream commit 2cd0d743b05e87445c54ca124a9916f22f16742e ]
+Thanks for the fix!
 
-If there is an MSS change (or misbehaving receiver) that causes a SACK
-to arrive that covers the end of an skb but is less than one MSS, then
-tcp_match_skb_to_sack() was rounding up pkt_len to the full length of
-the skb ("Round if necessary..."), then chopping all bytes off the skb
-and creating a zero-byte skb in the write queue.
 
-This was visible now because the recently simplified TLP logic in
-bef1909ee3ed1c ("tcp: fixing TLP's FIN recovery") could find that 0-byte
-skb at the end of the write queue, and now that we do not check that
-skb's length we could send it as a TLP probe.
+> diff --cc drivers/cpuidle/Kconfig.arm
+> index 33fc0ff0af1c,a186dec8e5df..000000000000
+> --- a/drivers/cpuidle/Kconfig.arm
+> +++ b/drivers/cpuidle/Kconfig.arm
+> @@@ -1,9 -1,16 +1,10 @@@
+>   #
+>   # ARM CPU Idle drivers
+>   #
+>  -config ARM_ARMADA_370_XP_CPUIDLE
+>  -	bool "CPU Idle Driver for Armada 370/XP family processors"
+>  -	depends on ARCH_MVEBU
+>  -	help
+>  -	  Select this to enable cpuidle on Armada 370/XP processors.
+>  -
+>   config ARM_BIG_LITTLE_CPUIDLE
+>   	bool "Support for ARM big.LITTLE processors"
+>  -	depends on ARCH_VEXPRESS_TC2_PM
+>  +	depends on ARCH_VEXPRESS_TC2_PM || ARCH_EXYNOS
+> + 	depends on MCPM
+>   	select ARM_CPU_SUSPEND
+>   	select CPU_IDLE_MULTIPLE_DRIVERS
+>   	help
+> 
+> --Sig_/ACOdpNyKdCGq/4_bRoeLLze
+> Content-Type: application/pgp-signature; name=signature.asc
+> Content-Disposition: attachment; filename=signature.asc
+> 
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v2
+> 
+> iQIcBAEBCAAGBQJT2FcWAAoJEMDTa8Ir7ZwVpXAP/i6U5VfuEjywNOnyq2GF13qx
+> gpKWy6BNWg6TACRERzfngwOBID7nUVeQH3ksri2ReiDJkjM655dOnR2T1d4q+Txc
+> CYc+TYp1x37ErXOVarlrnoVSqeNKSiARQdKLSE0ztLWfg/s+zmAuCjznbbBkFwyo
+> tEbfa7kkMRo6TBopPVHevQ/Pe/s0ZVFXqS8KNyd5XImgeEmUAnvGl0KBSetA+b8u
+> 1zB/U8V7d4cnWH6jRiijVDOBBs1RlmTJHV12NeKWzukjjEWd8QJ2cQHLRo/aS/js
+> AVwCMUE5Q5AFAOj+aLtETpo2wc3VPNkq6QwFk4sJgmizvISQ5l/8nveBJgGU457m
+> XQAHlgvhWAArtD2uowLP/aGhUJE3D3MBDs/6r/eMxfYeTBJSgfLllz9jXTayfshM
+> 7saBQtwh+npKK2M4tDivUGE0zFoRj/qcCdiSB/+r0XYGaFwGIqoqEHnlsS/YElUF
+> HJBCQgUPpzv832JXuJUuR5RnCOiGYiWlTGBs+WHoWXgVpVyIpZOfOPGinTbaOgIa
+> 23OHAdHLTdWTg+adfKmrTGPu++OTxI985oooYhqHsmpp6MPLxC6ABgqlWlUh15zb
+> sNs02B6XLBvm6Sa4v3w2anYAZCtwrO3TcihsL5mFhLHxForyq+U45qbktcZ6CBbF
+> xI0c32N77d98oZMV81vN
+> =U/IC
+> -----END PGP SIGNATURE-----
+> 
+> --Sig_/ACOdpNyKdCGq/4_bRoeLLze--
+> 
 
-Consider the following example scenario:
-
- mss: 1000
- skb: seq: 0 end_seq: 4000  len: 4000
- SACK: start_seq: 3999 end_seq: 4000
-
-The tcp_match_skb_to_sack() code will compute:
-
- in_sack = false
- pkt_len = start_seq - TCP_SKB_CB(skb)->seq = 3999 - 0 = 3999
- new_len = (pkt_len / mss) * mss = (3999/1000)*1000 = 3000
- new_len += mss = 4000
-
-Previously we would find the new_len > skb->len check failing, so we
-would fall through and set pkt_len = new_len = 4000 and chop off
-pkt_len of 4000 from the 4000-byte skb, leaving a 0-byte segment
-afterward in the write queue.
-
-With this new commit, we notice that the new new_len >= skb->len check
-succeeds, so that we return without trying to fragment.
-
-Fixes: adb92db857ee ("tcp: Make SACK code to split only at mss boundaries")
-Reported-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Ilpo Jarvinen <ilpo.jarvinen@helsinki.fi>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- net/ipv4/tcp_input.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 0e8af08a98fc..3c6ee41ba419 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1120,7 +1120,7 @@ static int tcp_match_skb_to_sack(struct sock *sk, struct sk_buff *skb,
- 			unsigned int new_len = (pkt_len / mss) * mss;
- 			if (!in_sack && new_len < pkt_len) {
- 				new_len += mss;
--				if (new_len > skb->len)
-+				if (new_len >= skb->len)
- 					return 0;
- 			}
- 			pkt_len = new_len;
 -- 
-2.0.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
