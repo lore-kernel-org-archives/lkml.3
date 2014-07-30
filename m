@@ -1,109 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581AbaG3IKe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 04:10:34 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:40186 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbaG3IKa (ORCPT
+	id S1751853AbaG3IMd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 04:12:33 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:38901 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720AbaG3IM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 04:10:30 -0400
-Message-ID: <1406707812.22788.3.camel@BR9GV9YG.de.ibm.com>
-Subject: Re: [PATCH] s390: net: claw.c:  Fix a define larger than in a
- sizeof in conjunction with strncpy
-From: Ursula Braun <ubraun@linux.vnet.ibm.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Ursula Braun <ursula.braun@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 30 Jul 2014 10:10:12 +0200
-In-Reply-To: <1406461822-11249-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1406461822-11249-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	 <1406461822-11249-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073008-5024-0000-0000-000000D6152D
+	Wed, 30 Jul 2014 04:12:29 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53D8A8EB.3090600@lge.com>
+Date: Wed, 30 Jul 2014 17:12:27 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>, Mel Gorman <mel@csn.ul.ie>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "'?????????'" <iamjoonsoo.kim@lge.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ????????? <gunho.lee@lge.com>,
+        "'Chanho Min'" <chanho.min@lge.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
+References: <53C8C290.90503@lge.com> <20140721025047.GA7707@bbox> <53CCB02A.7070301@lge.com> <20140721073651.GA15912@bbox> <20140721130146.GO10544@csn.ul.ie> <20140722001545.GC15912@bbox> <53CDB8A6.80801@lge.com>
+In-Reply-To: <53CDB8A6.80801@lge.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-07-27 at 13:50 +0200, Rickard Strandqvist wrote:
-> The MAX_NAME_LEN is larger than sizeof, which could potentially
-> giving lots of error here.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/s390/net/claw.c |   31 +++++++++++++++++++------------
->  1 file changed, 19 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/s390/net/claw.c b/drivers/s390/net/claw.c
-> index d837c3c..0172ce8 100644
-> --- a/drivers/s390/net/claw.c
-> +++ b/drivers/s390/net/claw.c
-> @@ -3068,12 +3068,15 @@ claw_hname_write(struct device *dev, struct device_attribute *attr,
->  	if (!priv)
->  		return -ENODEV;
->  	p_env = priv->p_env;
-> -	if (count > MAX_NAME_LEN+1)
-> +	if (count >= sizeof(p_env->host_name) && count > 0)
->  		return -EINVAL;
-> -	memset(p_env->host_name, 0x20, MAX_NAME_LEN);
-> +
->  	strncpy(p_env->host_name,buf, count);
-> -	p_env->host_name[count-1] = 0x20;  /* clear extra 0x0a */
-> -	p_env->host_name[MAX_NAME_LEN] = 0x00;
-> +	/* clear extra 0x0a */
-> +	memset(&p_env->host_name[count - 1],
-> +			' ', sizeof(p_env->host_name) - count);
-> +	p_env->host_name[sizeof(p_env->host_name) - 1] = '\0';
-> +
->  	CLAW_DBF_TEXT(2, setup, "HstnSet");
->  	CLAW_DBF_TEXT_(2, setup, "%s", p_env->host_name);
-> 
-> @@ -3106,12 +3109,14 @@ claw_adname_write(struct device *dev, struct device_attribute *attr,
->  	if (!priv)
->  		return -ENODEV;
->  	p_env = priv->p_env;
-> -	if (count > MAX_NAME_LEN+1)
-> +	if (count >= sizeof(p_env->adapter_name) && count > 0)
->  		return -EINVAL;
-> -	memset(p_env->adapter_name, 0x20, MAX_NAME_LEN);
-> +
->  	strncpy(p_env->adapter_name,buf, count);
-> -	p_env->adapter_name[count-1] = 0x20; /* clear extra 0x0a */
-> -	p_env->adapter_name[MAX_NAME_LEN] = 0x00;
-> +	/* clear extra 0x0a */
-> +	memset(&p_env->adapter_name[count - 1],
-> +			' ', sizeof(p_env->adapter_name) - count);
-> +	p_env->adapter_name[sizeof(p_env->adapter_name) - 1] = '\0';
->  	CLAW_DBF_TEXT(2, setup, "AdnSet");
->  	CLAW_DBF_TEXT_(2, setup, "%s", p_env->adapter_name);
-> 
-> @@ -3145,12 +3150,14 @@ claw_apname_write(struct device *dev, struct device_attribute *attr,
->  	if (!priv)
->  		return -ENODEV;
->  	p_env = priv->p_env;
-> -	if (count > MAX_NAME_LEN+1)
-> +	if (count >= sizeof(p_env->api_type) && count > 0)
->  		return -EINVAL;
-> -	memset(p_env->api_type, 0x20, MAX_NAME_LEN);
-> +
->  	strncpy(p_env->api_type,buf, count);
-> -	p_env->api_type[count-1] = 0x20;  /* we get a loose 0x0a */
-> -	p_env->api_type[MAX_NAME_LEN] = 0x00;
-> +	/* we get a loose 0x0a */
-> +	memset(&p_env->api_type[count - 1],
-> +			' ', sizeof(p_env->api_type) - count);
-> +	p_env->api_type[sizeof(p_env->api_type) - 1] = '\0';
->  	if(strncmp(p_env->api_type,WS_APPL_NAME_PACKED,6) == 0) {
->  		p_env->read_size=DEF_PACK_BUFSIZE;
->  		p_env->write_size=DEF_PACK_BUFSIZE;
 
-Why do you say "MAX_NAME_LEN is larger than sizeof"? MAX_NAME_LEN is 8,
-and claw_env has defined its char arrays as ...[9]?
 
+2014-07-22 오전 10:04, Gioh Kim 쓴 글:
+>
+>
+> 2014-07-22 오전 9:15, Minchan Kim 쓴 글:
+>> Hello Mel,
+>>
+>> On Mon, Jul 21, 2014 at 02:01:46PM +0100, Mel Gorman wrote:
+>>> On Mon, Jul 21, 2014 at 04:36:51PM +0900, Minchan Kim wrote:
+>>>
+>>> I'm not reviewing this in detail at all, didn't even look at the patch
+>>> but two things popped out at me during the discussion.
+>>>
+>>>>>> Anyway, why cannot CMA have the cost without affecting other subsystem?
+>>>>>> I mean it's okay for CMA to consume more time to shoot out the bh
+>>>>>> instead of simple all bh_lru invalidation because big order allocation is
+>>>>>> kinds of slow thing in the VM and everybody already know that and even
+>>>>>> sometime get failed so it's okay to add more code that extremly slow path.
+>>>>>
+>>>>> There are 2 reasons to invalidate entire bh_lru.
+>>>>>
+>>>>> 1. I think CMA allocation is very rare so that invalidaing bh_lru affects the system little.
+>>>>> How do you think about it? My platform does not call CMA allocation often.
+>>>>> Is the CMA allocation or Memory-Hotplug called often?
+>>>>
+>>>> It depends on usecase and you couldn't assume anyting because we couldn't
+>>>> ask every people in the world. "Please ask to us whenever you try to use CMA".
+>>>>
+>>>> The key point is how the patch is maintainable.
+>>>> If it's too complicate to maintain, maybe we could go with simple solution
+>>>> but if it's not too complicate, we can go with more smart thing to consider
+>>>> other cases in future. Why not?
+>>>>
+>>>> Another point is that how user can detect where the regression is from.
+>>>> If we cannot notice the regression, it's not a good idea to go with simple
+>>>> version.
+>>>>
+>>>
+>>> The buffer LRU avoids a lookup of a radix tree. If the LRU hit rate is
+>>> low then the performance penalty of repeated radix tree lookups is
+>>> severe but the cost of missing one hot lookup because CMA invalidate it
+>>> is not.
+>>>
+>>> The real cost to be concerned with is the cost of performing the
+>>> invalidation not the fact a lookup in the LRU was missed. It's because
+>>> the cost of invalidation is high that this is being pushed to CMA because
+>>> for CMA an allocation failure can be a functional failure and not just a
+>>> performance problem.
+>>>
+>>>>>
+>>>>> 2. Adding code in drop_buffers() can affect the system more that adding code in alloc_contig_range()
+>>>>> because the drop_buffers does not have a way to distinguish migrate type.
+>>>>> Even-though the lmbech results that it has almost the same performance.
+>>>>> But I am afraid that it can be changed.
+>>>>> As you said if bh_lru size can be changed it affects more than now.
+>>>>> SO I do not want to touch non-CMA related code.
+>>>>
+>>>> I'm not saying to add hook in drop_buffers.
+>>>> What I suggest is to handle failure by bh_lrus in migrate_pages
+>>>> because it's not a problem only in CMA.
+>>>
+>>> No, please do not insert a global IPI to invalidate buffer heads in the
+>>> general migration case. It's too expensive for either THP allocations or
+>>> automatic NUMA migrates. The global IPI cost is justified for rare events
+>>> where it causes functional problems if it fails to migreate -- CMA, memory
+>>> hot-remove, memory poisoning etc.
+>>
+>> I didn't want to add that flushing in migrate_pages *unconditionlly*.
+>> Please, look at this patch. It fixes only CMA although it's an issue
+>> for others. Even, it depends on retry logic of upper layer of
+>> alloc_contig_range but even cma_alloc(ie, upper layer of alloc_contig_range)
+>> doesn't have retry logic. :(
+>> That's why I suggested it in migrate_pages.
+>>
+>> Actually, I'd like to go with making migrate_pages's user blind on pcp
+>> draining stuff by squeezing that inside migrate_pages.
+>> IOW, current users of migrate pages don't need to be aware of per-cpu
+>> draining. What they should know is just they should use MIGRATE_SYNC
+>> for best effort but costly opeartion.
+>>
+>> For implemenation, we could use retry logic in migrate_pages.
+>>
+>> int migrate_pages(xxx)
+>> {
+>>          for (pass = 0; pass < 10 && retry; pass++)
+>>                  if (retry && pass > 2 && mode == MIGRATE_SYNC)
+>>                          flush_all_of_percpu_stuff();
+>> }
+>>
+>> migrate_page has migrate_mode and retry logic with 'pass', even
+>> reason if we want ot filter out MR_CMA|MEMORY_HOTPLUG|MR_MEMORY_FAILURE.
+>> so that we could handle all of things inside migrate_pages.
+>>
+>> Normally, MIGRATE_SYNC would be expensive operation and mostly
+>> it is used for CMA, memory-hotplug, memory-poisoning so THP and
+>> automatic NUMA cannot affect so I believe adding IPI to that is not
+>> a big problem in such trouble condition(ie, retry && pass > 2).
+>
+>
+> I agree Minchan's point.
+> I am not sure it is ok to touch the common code such as migrate_pages().
+>
+> If Mel agrees, I am going to report another patch of flush_all_of_percpu_stuff() like following:
+>
+> flush_all_of_percpu_stuff()
+> {
+>      drop_only_bh_of_migrating_page();
+>      lru_add_drain_all();
+>      drain_all_pages();
+> }
+>
+> And remove lru_add_drain_all() and drain_all_pages() in CMA/HOTPLUG codes.
+
+
+First things first.
+
+I think the first step is making CMA/HOTPLUG work.
+I'm going to make v2 patch that inserts invalidate_bh_lrus() in both of CMA and HOTPLUG.
+
+Minchan's idea can be applied later.
+
+
+
+>
+>
+>
+>>
+>>>
+>>> --
+>>> Mel Gorman
+>>> SUSE Labs
+>>>
+>>> --
+>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>> see: http://www.linux-mm.org/ .
+>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
