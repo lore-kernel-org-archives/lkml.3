@@ -1,122 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbaG3Grf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 02:47:35 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:19585 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751300AbaG3Grd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 02:47:33 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19c6AFg9sKkypFbBqZS7QlR
-Date: Tue, 29 Jul 2014 23:46:05 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, linux-kernel@vger.kernel.org,
-        marek.belisko@gmail.com, linux@arm.linux.org.uk,
-        gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        hns@goldelico.com
-Subject: Re: [PATCH v3 0/2] usb: fix controller-PHY binding for OMAP3 platform
-Message-ID: <20140730064605.GZ29045@atomide.com>
-References: <1387209225-11520-1-git-send-email-kishon@ti.com>
- <20140721151557.GH6852@saruman.home>
- <53CF7978.4090709@ti.com>
- <14357891.vooz1N5zDC@avalon>
- <20140729163935.GH17808@saruman.home>
+	id S1754957AbaG3Grl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 02:47:41 -0400
+Received: from mga14.intel.com ([192.55.52.115]:40379 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754832AbaG3Grg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 02:47:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="365728176"
+Message-ID: <53D89502.60506@linux.intel.com>
+Date: Wed, 30 Jul 2014 14:47:30 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140729163935.GH17808@saruman.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Yijing Wang <wangyijing@huawei.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Paul.Mundt@huawei.com,
+        Marc Zyngier <marc.zyngier@arm.com>, linux-pci@vger.kernel.org,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        virtualization@lists.linux-foundation.org,
+        Xinwei Hu <huxinwei@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Wuyun <wuyun.wu@huawei.com>
+Subject: Re: [RFC PATCH 00/11] Refactor MSI to support Non-PCI device
+References: <1406344128-27055-1-git-send-email-wangyijing@huawei.com> <1748052.OMBQJiOLYT@wuerfel> <53D85C2E.3060205@huawei.com>
+In-Reply-To: <53D85C2E.3060205@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [140729 09:42]:
-> Hi,
+
+
+On 2014/7/30 10:45, Yijing Wang wrote:
+> On 2014/7/29 22:08, Arnd Bergmann wrote:
+>> On Saturday 26 July 2014 11:08:37 Yijing Wang wrote:
+>>>         The series is a draft of generic MSI driver that supports PCI
+>>> and Non-PCI device which have MSI capability. If you're not interested
+>>> it, sorry for the noise.
+>>
+>> I've finally managed to take some time to look at the series. Overall,
+>> the concept looks good to me, and the patches look very well implemented.
+>>
+>> The part I'm not sure about is the interface we want to end up with
+>> at the end of the series. More on that below
 > 
-> On Tue, Jul 29, 2014 at 02:38:24PM +0200, Laurent Pinchart wrote:
-> > On Wednesday 23 July 2014 14:29:36 Kishon Vijay Abraham I wrote:
-> > > On Monday 21 July 2014 08:45 PM, Felipe Balbi wrote:
-> > > > On Mon, Jul 21, 2014 at 05:04:57PM +0200, Laurent Pinchart wrote:
-> > > >> Hi Felipe,
-> > > >> 
-> > > >> What happened to these two patches ?
-> > > > 
-> > > > looks like I lost them.
-> > > > 
-> > > >> On Monday 16 December 2013 17:48:29 Felipe Balbi wrote:
-> > > >>> On Mon, Dec 16, 2013 at 02:38:27PM -0800, Tony Lindgren wrote:
-> > > >>>> * Felipe Balbi <balbi@ti.com> [131216 13:31]:
-> > > >>>>> On Mon, Dec 16, 2013 at 09:23:43PM +0530, Kishon Vijay Abraham I 
-> > wrote:
-> > > >>>>>> After the platform devices are created using PLATFORM_DEVID_AUTO, the
-> > > >>>>>> device names given in usb_bind_phy (in board file) does not match
-> > > >>>>>> with the actual device name causing the USB PHY library not to return
-> > > >>>>>> the PHY reference when the MUSB controller request for the PHY in the
-> > > >>>>>> non-dt boot case.
-> > > >>>>>> So removed creating platform devices using PLATFORM_DEVID_AUTO in
-> > > >>>>>> omap2430.c.
-> > > >>>>>> 
-> > > >>>>>> Did enumeration testing in omap3 beagle.
-> > > >>>>>> 
-> > > >>>>>> Changes from v2:
-> > > >>>>>> * Fixed the commit log
-> > > >>>>>> 
-> > > >>>>>> Changes from v1:
-> > > >>>>>> * refreshed to the latested mainline kernel
-> > > >>>>>> * added musb_put_id from omap2430 remove.
-> > > >>>>> 
-> > > >>>>> Tony, how do you want to handle this ? You want me to provide you a
-> > > >>>>> branch which we both merge ?
-> > > >>>> 
-> > > >>>> Yes that would be great thanks. For the mach-omap2 touching parts:
-> > > >>>> 
-> > > >>>> Acked-by: Tony Lindgren <tony@atomide.com>
-> > > >>> 
-> > > >>> Here it is, let me know if you prefer a signed tag:
-> > > >>> 
-> > > >>> The following changes since commit 
-> > 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
-> > > >>>   Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
-> > > >>> 
-> > > >>> are available in the git repository at:
-> > > >>>   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
-> > > >>> 
-> > > >>> usb-phy-binding-omap3
-> > > >>> 
-> > > >>> for you to fetch changes up to 23ada3130cf4e56acb86fdff4c26113188d52d18:
-> > > >>>   arm: omap: remove *.auto* from device names given in usb_bind_phy
-> > > >>> 
-> > > >>> (2013-12-16 17:44:43 -0600)
-> > > >>> 
-> > > >>> ----------------------------------------------------------------
-> > > >>> 
-> > > >>> Kishon Vijay Abraham I (2):
-> > > >>>       usb: musb: omap: remove using PLATFORM_DEVID_AUTO in omap2430.c
-> > > >>>       arm: omap: remove *.auto* from device names given in usb_bind_phy
-> > > > 
-> > > > Kishon, are these still valid ?
-> > > 
-> > > Looks like board-2430sdp.c got removed. Apart from that the reset of the
-> > > patch series is still applicable for non-dt boot.
-> > 
-> > Felipe, do you plan to apply the patch without the baord-2430sdp.c change, or 
-> > would you like Kishon to rebase and resubmit it ?
+> Hi Arnd,
+>    Thanks for your review and comments very much!
+> Please refer the inline comments.
 > 
-> Not sure if Tony still wants board-* modifications. Tony ?
+>>
+>>> The series is based on Linux-3.16-rc1.
+>>>
+>>> MSI was introduced in PCI Spec 2.2. Currently, kernel MSI 
+>>> driver codes are bonding with PCI device. Because MSI has a lot
+>>> advantages in design. More and more non-PCI devices want to
+>>> use MSI as their default interrupt. The existing MSI device
+>>> include HPET. HPET driver provide its own MSI code to initialize
+>>> and process MSI interrupts. In the latest GIC v3 spec, legacy device
+>>> can deliver MSI by the help of a relay device named consolidator.
+>>> Consolidator can translate the legacy interrupts connected to it
+>>> to MSI/MSI-X. And new non-PCI device will be designed to 
+>>> support MSI in future. So make the MSI driver code be generic will 
+>>> help the non-PCI device use MSI more simply.
+>>>
+>>> The new data struct for generic MSI driver.
+>>> struct msi_irqs {
+>>>         u8 msi_enabled:1; /* Enable flag */
+>>>         u8 msix_enabled:1;
+>>>         struct list_head msi_list; /* MSI desc list */
+>>>         void *data;     /* help to find the MSI device */
+>>>         struct msi_ops *ops; /* MSI device specific hook */
+>>> };
+>>> struct msi_irqs is used to manage MSI related informations. Every device supports
+>>> MSI should contain this data struct and allocate it.
+>>
+>> I think you should have a stronger association with the 'struct
+>> device' here. Can you replace the 'void *data' with 'struct device *dev'?
+> 
+> Actually, I used the struct device *dev in my first draft, finally, I replaced
+> it with void *data, because some MSI devices don't have a struct device *dev,
+> like the existing hpet device, dmar msi device, and OF device, like the ARM consolidator.
+> 
+> Of course, we can make the MSI devices have their own struct device, and register to
+> device tree, eg, add a class device named MSI_DEV. But I'm not sure whether it is appropriate.
+> 
+>>
+>> The other part I'm not completely sure about is how you want to
+>> have MSIs map into normal IRQ descriptors. At the moment, all
+>> MSI users are based on IRQ numbers, but this has known scalability problems.
+> 
+> Hmmm, I still use the IRQ number to map the MSIs to IRQ description.
+> I'm sorry, I don't understand you meaning.
+> What are the scalability problems you mentioned ?
+We have soft limitation of nr_irqs or hard limitation NR_IRQS,
+we couldn't allocate as much irq number as we need in some cases,
+such as to support MSI-x.
 
-Well omap2 is DT only already, so sounds like you can just ignore
-board-2430sdp.c as it no longer exists.
-
-If there are other minimal board-*.c file changes needed, then that's
-fine as long as they fix things or are needed to keep things working.
-
-Regards,
-
-Tony
-
+> For device drivers, they always process interrupt in two steps.
+> If irq is the legacy interrupt, drivers will first
+> use the irq_of_parse_and_map() or pci_enable_device() to parse and get the IRQ number.
+> Then drivers will call the request_irq() to register the interrupt handler.
+> If irq is MSIs, first call pci_enable_msi/x() to get the IRQ number and then call
+> request_irq() to register interrupt handler.
+> 
+>> I wonder if we can do the interface in a way that
+>> hides the interrupt number from generic device drivers and just
+>> passes a 'struct irq_desc'. Note that there are long-term plans to
+>> get rid of IRQ numbers entirely, but those plans have existed for
+>> a long time already without anybody seriously addressing the device
+>> driver interfaces so far, so it might never really happen.
+>>
+> 
+> Maybe this is a huge work, now hundreds drivers use the IRQ number, so maybe we can consider
+> this in a separate title.
+> 
+>>> struct msi_ops {
+>>>         struct msi_desc *(*msi_setup_entry)(struct msi_irqs *msi, struct msi_desc *entry);
+>>>         int msix_setup_entries(struct msi_irqs *msi, struct msix_entry *entries);
+>>>         u32 (*msi_mask_irq)(struct msi_desc *desc, u32 mask, u32 flag);
+>>>         u32 (*msix_mask_irq)(struct msi_desc *desc, u32 flag);
+>>>         void (*msi_read_message)(struct msi_desc *desc, struct msi_msg *msg);
+>>>         void (*msi_write_message)(struct msi_desc *desc, struct msi_msg *msg);
+>>>         void (*msi_set_intx)(struct msi_irqs *msi, int enable);
+>>> };
+>>> struct msi_ops provides several hook functions, generic MSI driver will call
+>>> the hook functions to access device specific registers. PCI devices will share
+>>> the same msi_ops, because they have the same way to access MSI hardware registers.
+>>>
+>>> Generic MSI layer export msi_capability_init() and msix_capability_init() functions
+>>> to drivers. msi/x_capability_init() will initialize MSI capability data struct msi_desc
+>>> and alloc the irq, then write the msi address/data value to hardware registers.
+>>>
+>>> This series only did compile test, we will test it in x86 and arm platform later.
+>>
+>> For the generic drivers, I don't see much point in differentiating between
+>> MSI and MSI-X, as I believe the difference is something internal to the PCI
+>> implementation.
+> 
+> Yes, we can integrate them, and use a generic ops, add a type in hook function to
+> differentiate them.
+> 
+>>
+>> With the other operations, I think they should all take a 'struct device *'
+>> as the first argument for convenience and consistency. I don't think you actually
+>> need msi_read_message(), and we could avoid msi_write_message() by doing it
+>> the other way round.
+>>
+> 
+> There only two functions use the read_msi_msg(), because every msi_desc has
+> a struct msi_msg, and it caches the msi address and data. I will consider to
+> retrieve the msg from cached msi_msg, then we can avoid the msi_read_message().
+> But msi_write_message() maybe necessary, some xxx_set_affinity() functions and
+> restore functions need the msi_write_message() to rewrite the address and data.
+> 
+>> What I'd envision as the API from the device driver perspective is something
+>> as simple like this:
+>>
+>> struct msi_desc *msi_request(struct msi_chip *chip, irq_handler_t handler,
+>> 			unsigned long flags, const char *name, struct device *dev);
+>>
+>> which would get an msi descriptor that is valid for this device (dev)
+>> connected to a particular msi_chip, and associate a handler function
+>> with it. The device driver can call that function and retrieve the
+>> address/message pair from the msi_desc in order to store it in its own
+>> device specific registers. The request_irq() can be handled internally
+>> to msi_request().
+> 
+> This is a huge change for device drivers, and some device drivers don't know which msi_chip
+> their MSI irq deliver to. I'm reworking the msi_chip, and try to use msi_chip to eliminate
+> all arch_msi_xxx() under every arch in kernel. And the important point is how to create the
+> binding for the MSI device to the target msi_chip.
+> 
+> For PCI device, some arm platform already bound the msi_chip to the pci hostbridge, then all
+> pci devices under the pci hostbridge deliver their MSI irqs to the target msi_chip.
+> And other platform create the binding in DTS file, then the MSI device can find their msi_chip
+> by device_node.
+> I don't know whether there are other situations, we should provide a generic interface that
+> every MSI device under every platform can use it to find its msi_chip exactly.
+> 
+> 
+> Thanks!
+> Yijing.
+> 
+>>
+>> .
+>>
+> 
+> 
