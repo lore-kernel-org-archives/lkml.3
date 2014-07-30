@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaG3OjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 10:39:25 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38872 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725AbaG3OjV (ORCPT
+	id S1753835AbaG3Olh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 10:41:37 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:3320 "EHLO
+	esgaroth.tuxoid.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772AbaG3Olg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 10:39:21 -0400
-Date: Wed, 30 Jul 2014 15:37:58 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Julien Tinnes <jln@google.com>, David Drysdale <drysdale@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Paolo Bonzini <pbonzini@redhat.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Moore <paul@paul-moore.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        linux-crypto@vger.kernel.org
-Subject: Re: General flags to turn things off (getrandom, pid lookup, etc)
-Message-ID: <20140730153758.6431fafa@alan.etchedpixels.co.uk>
-In-Reply-To: <CALCETrXHNFYaQjksBJyN3O0HJpKw_D_tU7b4O23=nyJt9CPSLg@mail.gmail.com>
-References: <CALCETrWGvBfrX1W5XaFgJZhKHLf+oac9YrwPR3ppK=deQtu5hA@mail.gmail.com>
-	<20140725223550.3153f436@alan.etchedpixels.co.uk>
-	<CALCETrXHNFYaQjksBJyN3O0HJpKw_D_tU7b4O23=nyJt9CPSLg@mail.gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 30 Jul 2014 10:41:36 -0400
+Subject: Re: [PATCH -v4] random: introduce getrandom(2) system call
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Bob Beck <beck@openbsd.org>
+Cc: Pavel Machek <pavel@ucw.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-api@vger.kernel.org,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        Theo de Raadt <deraadt@cvs.openbsd.org>
+Date: Wed, 30 Jul 2014 16:40:52 +0200
+In-Reply-To: <CAComcpMnAdOk=Hs8Dtc7VZeJDHnpKQtzZ_=_67tqCeYU3pdJ_Q@mail.gmail.com>
+References: <1405718127-30042-1-git-send-email-tytso@mit.edu>
+	 <20140730122620.GC13965@amd.pavel.ucw.cz>
+	 <CAComcpMnAdOk=Hs8Dtc7VZeJDHnpKQtzZ_=_67tqCeYU3pdJ_Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1406731254.26034.4.camel@thorin>
+Mime-Version: 1.0
+X-DCC-wuwien-Metrics: esgaroth.tuxoid.at 1290; Body=7 Fuz1=7 Fuz2=7
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	* -0.2 AWL AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > We sort of have one. It's called capable(). Just needs extending to cover
-> > anything else you care about, and probably all the numeric constants
-> > replacing with textual names.
-> >
-> 
-> Except that it's all backwards: these are things that default to *on*,
-> and people might want them to turn off.  capable() is totally fscked
-> if you want otherwise unprivileged users to carry capabilities around
+On Mit, 2014-07-30 at 07:56 -0600, Bob Beck wrote:
+> Pavel. I have bit 'ol enterprise daemon running with established file
+> descriptors serving thousands of connections
+> which periodically require entropy.  Now I run out of descriptors. I
+> can't establish new connections. but I should
+> now halt all the other ones that require entropy?  I should raise
+> SIGKILL on my process serving these thousands
+> of connetions?  I don't think so.
 
-The userspace API is, but capable() as a userspace API and capable() as
-an in kernel check are only connected by history.
+If that long-running daemon periodically needs something from a device,
+one would better keep the fd for that open the whole time. Saves some
+CPU cycles and latency too BTW.
 
-For the in kernel part you can either teach everyone another disjoint API
-or we can have a single API in kernel for saying "is XYZ allowed".
+	Bernd
+-- 
+"I dislike type abstraction if it has no real reason. And saving
+on typing is not a good reason - if your typing speed is the main
+issue when you're coding, you're doing something seriously wrong."
+    - Linus Torvalds
+
