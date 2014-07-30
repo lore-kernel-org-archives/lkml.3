@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830AbaG3Bt2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:49:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60354 "EHLO
+	id S1756030AbaG3CLe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:11:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60374 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754806AbaG3Bt0 (ORCPT
+	with ESMTP id S1754831AbaG3Bt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:26 -0400
+	Tue, 29 Jul 2014 21:49:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 3.10 10/21] slab_common: Do not check for duplicate slab names
-Date: Tue, 29 Jul 2014 18:48:39 -0700
-Message-Id: <20140730014830.873136277@linuxfoundation.org>
+        Kevin Hao <haokexin@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 05/21] libata: support the ata host which implements a queue depth less than 32
+Date: Tue, 29 Jul 2014 18:48:34 -0700
+Message-Id: <20140730014830.667659585@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014830.424826215@linuxfoundation.org>
 References: <20140730014830.424826215@linuxfoundation.org>
@@ -29,69 +29,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Lameter <cl@linux.com>
+From: Kevin Hao <haokexin@gmail.com>
 
-commit 3e374919b314f20e2a04f641ebc1093d758f66a4 upstream.
+commit 1871ee134b73fb4cadab75752a7152ed2813c751 upstream.
 
-SLUB can alias multiple slab kmem_create_requests to one slab cache to save
-memory and increase the cache hotness. As a result the name of the slab can be
-stale. Only check the name for duplicates if we are in debug mode where we do
-not merge multiple caches.
+The sata on fsl mpc8315e is broken after the commit 8a4aeec8d2d6
+("libata/ahci: accommodate tag ordered controllers"). The reason is
+that the ata controller on this SoC only implement a queue depth of
+16. When issuing the commands in tag order, all the commands in tag
+16 ~ 31 are mapped to tag 0 unconditionally and then causes the sata
+malfunction. It makes no senses to use a 32 queue in software while
+the hardware has less queue depth. So consider the queue depth
+implemented by the hardware when requesting a command tag.
 
-This fixes the following problem reported by Jonathan Brassow:
-
-  The problem with kmem_cache* is this:
-
-  *) Assume CONFIG_SLUB is set
-  1) kmem_cache_create(name="foo-a")
-  - creates new kmem_cache structure
-  2) kmem_cache_create(name="foo-b")
-  - If identical cache characteristics, it will be merged with the previously
-    created cache associated with "foo-a".  The cache's refcount will be
-    incremented and an alias will be created via sysfs_slab_alias().
-  3) kmem_cache_destroy(<ptr>)
-  - Attempting to destroy cache associated with "foo-a", but instead the
-    refcount is simply decremented.  I don't even think the sysfs aliases are
-    ever removed...
-  4) kmem_cache_create(name="foo-a")
-  - This FAILS because kmem_cache_sanity_check colides with the existing
-    name ("foo-a") associated with the non-removed cache.
-
-  This is a problem for RAID (specifically dm-raid) because the name used
-  for the kmem_cache_create is ("raid%d-%p", level, mddev).  If the cache
-  persists for long enough, the memory address of an old mddev will be
-  reused for a new mddev - causing an identical formulation of the cache
-  name.  Even though kmem_cache_destory had long ago been used to delete
-  the old cache, the merging of caches has cause the name and cache of that
-  old instance to be preserved and causes a colision (and thus failure) in
-  kmem_cache_create().  I see this regularly in my testing.
-
-Reported-by: Jonathan Brassow <jbrassow@redhat.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Fixes: 8a4aeec8d2d6 ("libata/ahci: accommodate tag ordered controllers")
+Signed-off-by: Kevin Hao <haokexin@gmail.com>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/slab_common.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/ata/libata-core.c |   22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -55,6 +55,7 @@ static int kmem_cache_sanity_check(struc
- 			continue;
- 		}
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4758,6 +4758,10 @@ void swap_buf_le16(u16 *buf, unsigned in
+  *	ata_qc_new - Request an available ATA command, for queueing
+  *	@ap: target port
+  *
++ *	Some ATA host controllers may implement a queue depth which is less
++ *	than ATA_MAX_QUEUE. So we shouldn't allocate a tag which is beyond
++ *	the hardware limitation.
++ *
+  *	LOCKING:
+  *	None.
+  */
+@@ -4765,14 +4769,16 @@ void swap_buf_le16(u16 *buf, unsigned in
+ static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
+ {
+ 	struct ata_queued_cmd *qc = NULL;
+-	unsigned int i, tag;
++	unsigned int i, tag, max_queue;
++
++	max_queue = ap->scsi_host->can_queue;
  
-+#if !defined(CONFIG_SLUB) || !defined(CONFIG_SLUB_DEBUG_ON)
- 		/*
- 		 * For simplicity, we won't check this in the list of memcg
- 		 * caches. We have control over memcg naming, and if there
-@@ -68,6 +69,7 @@ static int kmem_cache_sanity_check(struc
- 			s = NULL;
- 			return -EINVAL;
- 		}
-+#endif
- 	}
+ 	/* no command while frozen */
+ 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
+ 		return NULL;
  
- 	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
+-	for (i = 0; i < ATA_MAX_QUEUE; i++) {
+-		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
++	for (i = 0, tag = ap->last_tag + 1; i < max_queue; i++, tag++) {
++		tag = tag < max_queue ? tag : 0;
+ 
+ 		/* the last tag is reserved for internal command. */
+ 		if (tag == ATA_TAG_INTERNAL)
+@@ -6154,6 +6160,16 @@ int ata_host_register(struct ata_host *h
+ {
+ 	int i, rc;
+ 
++	/*
++	 * The max queue supported by hardware must not be greater than
++	 * ATA_MAX_QUEUE.
++	 */
++	if (sht->can_queue > ATA_MAX_QUEUE) {
++		dev_err(host->dev, "BUG: the hardware max queue is too large\n");
++		WARN_ON(1);
++		return -EINVAL;
++	}
++
+ 	/* host must have been started */
+ 	if (!(host->flags & ATA_HOST_STARTED)) {
+ 		dev_err(host->dev, "BUG: trying to register unstarted host\n");
 
 
