@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606AbaG3RKf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 13:10:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43730 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754801AbaG3RKd (ORCPT
+	id S1755357AbaG3RRW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 13:17:22 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:38647 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454AbaG3RRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 13:10:33 -0400
-Message-ID: <53D92700.3040803@infradead.org>
-Date: Wed, 30 Jul 2014 10:10:24 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 30 Jul 2014 13:17:21 -0400
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>, Matt Fleming <matt@console-pimps.org>
-CC: Colin Ian King <colin.king@canonical.com>, Borislav Petkov <bp@alien8.de>,
-        linux-kernel@vger.kernel.org, lszubowi@redhat.com,
-        Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH] x86, efi: print debug values in Kib not MB
-References: <1406653761-3884-1-git-send-email-prarit@redhat.com> <20140729222932.GA17481@pd.tnic> <20140730144803.GB15082@console-pimps.org> <53D909C3.9050205@canonical.com> <53D9259F.5050307@redhat.com>
-In-Reply-To: <53D9259F.5050307@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <y0m1tt226lj.fsf@fche.csb>
+References: <1406000723-4872-1-git-send-email-ast@plumgrid.com>
+	<1406000723-4872-4-git-send-email-ast@plumgrid.com>
+	<y0m1tt226lj.fsf@fche.csb>
+Date: Wed, 30 Jul 2014 10:17:17 -0700
+Message-ID: <CAMEtUuxNs=HBhtFwhBX3HOU6+QqtYZ+v7sJ74+cg-o+bi5GdoA@mail.gmail.com>
+Subject: Re: [PATCH RFC v3 net-next 3/3] samples: bpf: eBPF dropmon example in C
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/14 10:04, Prarit Bhargava wrote:
-> 
-> 
-> On 07/30/2014 11:05 AM, Colin Ian King wrote:
->> On 30/07/14 15:48, Matt Fleming wrote:
->>> On Wed, 30 Jul, at 12:29:32AM, Borislav Petkov wrote:
->>>> On Tue, Jul 29, 2014 at 01:09:21PM -0400, Prarit Bhargava wrote:
->>>>> The current debug print in EFI does
->>>>>
->>>>> [    0.000000] efi: mem84: type=3, attr=0xf, range=[0x00000000645b5000-0x00000000645fb000) (0MB)
->>>>>
->>>>> and rounds off the size to 0MB and isn't very useful.  We should print this in
->>>>> Kib.  After applying this patch we get better info with
->>>>>
->>>>> [    0.000000] efi: mem84: type=3, attr=0xf, range=[0x00000000645b5000-0x00000000645fb000) (280kiB)
->>>>
->>>> Turning this into kiB unconditionally won't always work ok:
->>>>
->>>> First of all, there might be something which parses that output so I'd
->>>> make sure I'm not breaking that. Maybe fwts... Matt will know.
->>>
->>> I'm not aware of anything that parses the dmesg output, but I'm
->>> including Colin in case he has any insight.
->>>
->> That won't break fwts.
-> 
-> Matt -- could you make a decision on whether or not this should be strictly in
-> KiB or if it should be a rolling KiB, Mib, and GiB?
-> 
-> My issue is simply that I'd like to know *exactly* how big each range is and not
-> have it rounded off.  Others think that it is easier to read Mib & Gib ...
+On Wed, Jul 30, 2014 at 8:45 AM, Frank Ch. Eigler <fche@redhat.com> wrote:
+> For the record, this is not entirely accurate as to dtrace.  dtrace
+> delegates aggregation and most reporting to userspace.  Also,
+> systemtap is "short and deterministic" even for aggregations & nice
+> graphs, but since it limits its storage & cpu consumption, its
+> arrays/reports cannot get super large.
 
-It is easier to read in MiB or GiB IMHO, but since it is debug info,
-exact is good.  It would be even better [more readable] to use commas
-(or periods/dots) to separate it into groups of 3 digits.
+My understanding of systemtap is that the whole .stp script is converted
+to C, compiled as .ko and loaded, so all map walking and prints are
+happening in the kernel. Similarly for ktap which has special functions
+in kernel to print histograms.
+I thought dtrace printf are also happening from the kernel. What is the
+trick they use to know which pieces of dtrace script should be run in
+user space?
+In ebpf examples there are two C files: one for kernel with ebpf isa
+and one for userspace as native. I thought about combining them,
+but couldn't figure out a clean way of doing it.
 
+>> [...]
+>> +SEC("events/skb/kfree_skb")
+>> +int bpf_prog2(struct bpf_context *ctx)
+>> +{
+>> +[...]
+>> +     value = bpf_map_lookup_elem(&my_map, &loc);
+>> +     if (value)
+>> +             (*(long *) value) += 1;
+>> +     else
+>> +             bpf_map_update_elem(&my_map, &loc, &init_val);
+>> +     return 0;
+>> +}
+>
+> What kind of locking/serialization is provided by the ebpf runtime
+> over shared variables such as my_map?
 
--- 
-~Randy
+it's traditional rcu scheme.
+Programs are running under rcu_read_lock(), so that
+bpf_map_lookup_elem() can return pointer to map value which
+won't disappear while program is running.
+In-kernel map implementation needs to use rcu style to match
+ebpf program assumptions. map implementation is enforcing
+the limit to the number of elements.
+I didn't post 'array' type of map yet. bpf_map_lookup in this
+implementation will just return 'base + index' pointer.
+Regardless of type of map the same ebpf program running on
+different cpus may lookup the same 'key' and receive the same
+map value pointer. In such case concurrent write access to
+map value can be done with bpf_xadd instruction, though
+using normal read/write is also allowed. In some cases
+the speed of racy var++ is preferred over 'lock xadd'.
+There are no lock/unlock function helpers available to ebpf
+programs, since program may terminate early with div by zero
+for example, so in-kernel lock helper implementation would
+be complicated and slow. It's possible to do, but for the use
+cases so far there is no need.
