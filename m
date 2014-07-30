@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755980AbaG3CIw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 22:08:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60417 "EHLO
+	id S1755964AbaG3CIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 22:08:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60412 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754875AbaG3Btd (ORCPT
+	with ESMTP id S1754807AbaG3Btc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:49:33 -0400
+	Tue, 29 Jul 2014 21:49:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sven Wegener <sven.wegener@stealer.net>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.10 16/21] x86_32, entry: Store badsys error code in %eax
-Date: Tue, 29 Jul 2014 18:48:45 -0700
-Message-Id: <20140730014831.156312467@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+        Jean Delvare <jdelvare@suse.de>
+Subject: [PATCH 3.10 15/21] hwmon: (smsc47m192) Fix temperature limit and vrm write operations
+Date: Tue, 29 Jul 2014 18:48:44 -0700
+Message-Id: <20140730014831.116776423@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014830.424826215@linuxfoundation.org>
 References: <20140730014830.424826215@linuxfoundation.org>
@@ -29,89 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Wegener <sven.wegener@stealer.net>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 8142b215501f8b291a108a202b3a053a265b03dd upstream.
+commit 043572d5444116b9d9ad8ae763cf069e7accbc30 upstream.
 
-Commit 554086d ("x86_32, entry: Do syscall exit work on badsys
-(CVE-2014-4508)") introduced a regression in the x86_32 syscall entry
-code, resulting in syscall() not returning proper errors for undefined
-syscalls on CPUs supporting the sysenter feature.
+Temperature limit clamps are applied after converting the temperature
+from milli-degrees C to degrees C, so either the clamp limit needs
+to be specified in degrees C, not milli-degrees C, or clamping must
+happen before converting to degrees C. Use the latter method to avoid
+overflows.
 
-The following code:
+vrm is an u8, so the written value needs to be limited to [0, 255].
 
-> int result = syscall(666);
-> printf("result=%d errno=%d error=%s\n", result, errno, strerror(errno));
-
-results in:
-
-> result=666 errno=0 error=Success
-
-Obviously, the syscall return value is the called syscall number, but it
-should have been an ENOSYS error. When run under ptrace it behaves
-correctly, which makes it hard to debug in the wild:
-
-> result=-1 errno=38 error=Function not implemented
-
-The %eax register is the return value register. For debugging via ptrace
-the syscall entry code stores the complete register context on the
-stack. The badsys handlers only store the ENOSYS error code in the
-ptrace register set and do not set %eax like a regular syscall handler
-would. The old resume_userspace call chain contains code that clobbers
-%eax and it restores %eax from the ptrace registers afterwards. The same
-goes for the ptrace-enabled call chain. When ptrace is not used, the
-syscall return value is the passed-in syscall number from the untouched
-%eax register.
-
-Use %eax as the return value register in syscall_badsys and
-sysenter_badsys, like a real syscall handler does, and have the caller
-push the value onto the stack for ptrace access.
-
-Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
-Link: http://lkml.kernel.org/r/alpine.LNX.2.11.1407221022380.31021@titan.int.lan.stealer.net
-Reviewed-and-tested-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/entry_32.S |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/hwmon/smsc47m192.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -436,8 +436,8 @@ sysenter_do_call:
- 	cmpl $(NR_syscalls), %eax
- 	jae sysenter_badsys
- 	call *sys_call_table(,%eax,4)
--	movl %eax,PT_EAX(%esp)
- sysenter_after_call:
-+	movl %eax,PT_EAX(%esp)
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_OFF
-@@ -517,6 +517,7 @@ ENTRY(system_call)
- 	jae syscall_badsys
- syscall_call:
- 	call *sys_call_table(,%eax,4)
-+syscall_after_call:
- 	movl %eax,PT_EAX(%esp)		# store the return value
- syscall_exit:
- 	LOCKDEP_SYS_EXIT
-@@ -686,12 +687,12 @@ syscall_fault:
- END(syscall_fault)
+--- a/drivers/hwmon/smsc47m192.c
++++ b/drivers/hwmon/smsc47m192.c
+@@ -86,7 +86,7 @@ static inline u8 IN_TO_REG(unsigned long
+  */
+ static inline s8 TEMP_TO_REG(int val)
+ {
+-	return clamp_val(SCALE(val, 1, 1000), -128000, 127000);
++	return SCALE(clamp_val(val, -128000, 127000), 1, 1000);
+ }
  
- syscall_badsys:
--	movl $-ENOSYS,PT_EAX(%esp)
--	jmp syscall_exit
-+	movl $-ENOSYS,%eax
-+	jmp syscall_after_call
- END(syscall_badsys)
+ static inline int TEMP_FROM_REG(s8 val)
+@@ -384,6 +384,8 @@ static ssize_t set_vrm(struct device *de
+ 	err = kstrtoul(buf, 10, &val);
+ 	if (err)
+ 		return err;
++	if (val > 255)
++		return -EINVAL;
  
- sysenter_badsys:
--	movl $-ENOSYS,PT_EAX(%esp)
-+	movl $-ENOSYS,%eax
- 	jmp sysenter_after_call
- END(syscall_badsys)
- 	CFI_ENDPROC
+ 	data->vrm = val;
+ 	return count;
 
 
