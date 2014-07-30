@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592AbaG3Mhx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:37:53 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36674 "EHLO
+	id S1755534AbaG3Mhz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:37:55 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36664 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752794AbaG3MP1 (ORCPT
+	by vger.kernel.org with ESMTP id S1752791AbaG3MP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:27 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 22/94] tracing: Add TRACE_ITER_PRINTK flag check in __trace_puts/__trace_bputs
-Date: Wed, 30 Jul 2014 14:14:11 +0200
-Message-Id: <e12331d98e5726a6a0597eac8853d9408bae5a12.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Stefan Assmann <sassmann@kpanic.de>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 27/94] igb: do a reset on SR-IOV re-init if device is down
+Date: Wed, 30 Jul 2014 14:14:16 +0200
+Message-Id: <4e873a3de6ff547928e8b171a6de07993823e572.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,51 +24,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+From: Stefan Assmann <sassmann@kpanic.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f0160a5a2912267c02cfe692eac955c360de5fdf upstream.
+commit 76252723e88681628a3dbb9c09c963e095476f73 upstream.
 
-The TRACE_ITER_PRINTK check in __trace_puts/__trace_bputs is missing,
-so add it, to be consistent with __trace_printk/__trace_bprintk.
-Those functions are all called by the same function: trace_printk().
+To properly re-initialize SR-IOV it is necessary to reset the device
+even if it is already down. Not doing this may result in Tx unit hangs.
 
-Link: http://lkml.kernel.org/p/51E7A7D6.8090900@huawei.com
-
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Stefan Assmann <sassmann@kpanic.de>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/trace/trace.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/ethernet/intel/igb/igb_main.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 952cde4d4e3c..b7566fe4d607 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -436,6 +436,9 @@ int __trace_puts(unsigned long ip, const char *str, int size)
- 	int alloc;
- 	int pc;
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index d366df533726..76e43c417a31 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -7295,6 +7295,8 @@ static int igb_sriov_reinit(struct pci_dev *dev)
  
-+	if (!(trace_flags & TRACE_ITER_PRINTK))
-+		return 0;
-+
- 	pc = preempt_count();
+ 	if (netif_running(netdev))
+ 		igb_close(netdev);
++	else
++		igb_reset(adapter);
  
- 	if (unlikely(tracing_selftest_running || tracing_disabled))
-@@ -483,6 +486,9 @@ int __trace_bputs(unsigned long ip, const char *str)
- 	int size = sizeof(struct bputs_entry);
- 	int pc;
+ 	igb_clear_interrupt_scheme(adapter);
  
-+	if (!(trace_flags & TRACE_ITER_PRINTK))
-+		return 0;
-+
- 	pc = preempt_count();
- 
- 	if (unlikely(tracing_selftest_running || tracing_disabled))
 -- 
 2.0.1
 
