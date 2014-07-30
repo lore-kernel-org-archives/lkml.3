@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583AbaG3Mjg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:39:36 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36679 "EHLO
+	id S1755100AbaG3Mjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:39:35 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36672 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752802AbaG3MP1 (ORCPT
+	by vger.kernel.org with ESMTP id S1752796AbaG3MP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:27 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Dmitry Popov <ixaphire@qrator.net>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 33/94] net: sctp: propagate sysctl errors from proc_do* properly
-Date: Wed, 30 Jul 2014 14:14:22 +0200
-Message-Id: <ad51ee3ff44cf847dac105e5687565e2b9fd329c.1406722270.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 31/94] ip_tunnel: fix ip_tunnel_lookup
+Date: Wed, 30 Jul 2014 14:14:20 +0200
+Message-Id: <a1258d5375d479c6391391e0a86a118c1819fe4c.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,93 +23,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Dmitry Popov <ixaphire@qrator.net>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit ff5e92c1affe7166b3f6e7073e648ed65a6e2e59 ]
+[ Upstream commit e0056593b61253f1a8a9941dacda22e73b963cdc ]
 
-sysctl handler proc_sctp_do_hmac_alg(), proc_sctp_do_rto_min() and
-proc_sctp_do_rto_max() do not properly reflect some error cases
-when writing values via sysctl from internal proc functions such
-as proc_dointvec() and proc_dostring().
+This patch fixes 3 similar bugs where incoming packets might be routed into
+wrong non-wildcard tunnels:
 
-In all these cases we pass the test for write != 0 and partially
-do additional work just to notice that additional sanity checks
-fail and we return with hard-coded -EINVAL while proc_do*
-functions might also return different errors. So fix this up by
-simply testing a successful return of proc_do* right after
-calling it.
+1) Consider the following setup:
+    ip address add 1.1.1.1/24 dev eth0
+    ip address add 1.1.1.2/24 dev eth0
+    ip tunnel add ipip1 remote 2.2.2.2 local 1.1.1.1 mode ipip dev eth0
+    ip link set ipip1 up
 
-This also allows to propagate its return value onwards to the user.
-While touching this, also fix up some minor style issues.
+Incoming ipip packets from 2.2.2.2 were routed into ipip1 even if it has dst =
+1.1.1.2. Moreover even if there was wildcard tunnel like
+   ip tunnel add ipip0 remote 2.2.2.2 local any mode ipip dev eth0
+but it was created before explicit one (with local 1.1.1.1), incoming ipip
+packets with src = 2.2.2.2 and dst = 1.1.1.2 were still routed into ipip1.
 
-Fixes: 4f3fdf3bc59c ("sctp: add check rto_min and rto_max in sysctl")
-Fixes: 3c68198e7511 ("sctp: Make hmac algorithm selection for cookie generation dynamic")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Same issue existed with all tunnels that use ip_tunnel_lookup (gre, vti)
+
+2)  ip address add 1.1.1.1/24 dev eth0
+    ip tunnel add ipip1 remote 2.2.146.85 local 1.1.1.1 mode ipip dev eth0
+    ip link set ipip1 up
+
+Incoming ipip packets with dst = 1.1.1.1 were routed into ipip1, no matter what
+src address is. Any remote ip address which has ip_tunnel_hash = 0 raised this
+issue, 2.2.146.85 is just an example, there are more than 4 million of them.
+And again, wildcard tunnel like
+   ip tunnel add ipip0 remote any local 1.1.1.1 mode ipip dev eth0
+wouldn't be ever matched if it was created before explicit tunnel like above.
+
+Gre & vti tunnels had the same issue.
+
+3)  ip address add 1.1.1.1/24 dev eth0
+    ip tunnel add gre1 remote 2.2.146.84 local 1.1.1.1 key 1 mode gre dev eth0
+    ip link set gre1 up
+
+Any incoming gre packet with key = 1 were routed into gre1, no matter what
+src/dst addresses are. Any remote ip address which has ip_tunnel_hash = 0 raised
+the issue, 2.2.146.84 is just an example, there are more than 4 million of them.
+Wildcard tunnel like
+   ip tunnel add gre2 remote any local any key 1 mode gre dev eth0
+wouldn't be ever matched if it was created before explicit tunnel like above.
+
+All this stuff happened because while looking for a wildcard tunnel we didn't
+check that matched tunnel is a wildcard one. Fixed.
+
+Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/sctp/sysctl.c | 19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ net/ipv4/ip_tunnel.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/net/sctp/sysctl.c b/net/sctp/sysctl.c
-index 3e5ac1948607..976c89d5295b 100644
---- a/net/sctp/sysctl.c
-+++ b/net/sctp/sysctl.c
-@@ -303,41 +303,40 @@ static int proc_sctp_do_hmac_alg(struct ctl_table *ctl,
- 				loff_t *ppos)
- {
- 	struct net *net = current->nsproxy->net_ns;
--	char tmp[8];
- 	struct ctl_table tbl;
--	int ret;
--	int changed = 0;
-+	bool changed = false;
- 	char *none = "none";
-+	char tmp[8];
-+	int ret;
+diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
+index d9dbe0f78612..edd5a8171357 100644
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -166,6 +166,7 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
  
- 	memset(&tbl, 0, sizeof(struct ctl_table));
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+ 		if (remote != t->parms.iph.daddr ||
++		    t->parms.iph.saddr != 0 ||
+ 		    !(t->dev->flags & IFF_UP))
+ 			continue;
  
- 	if (write) {
- 		tbl.data = tmp;
--		tbl.maxlen = 8;
-+		tbl.maxlen = sizeof(tmp);
- 	} else {
- 		tbl.data = net->sctp.sctp_hmac_alg ? : none;
- 		tbl.maxlen = strlen(tbl.data);
- 	}
--		ret = proc_dostring(&tbl, write, buffer, lenp, ppos);
+@@ -182,10 +183,11 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+ 	head = &itn->tunnels[hash];
  
--	if (write) {
-+	ret = proc_dostring(&tbl, write, buffer, lenp, ppos);
-+	if (write && ret == 0) {
- #ifdef CONFIG_CRYPTO_MD5
- 		if (!strncmp(tmp, "md5", 3)) {
- 			net->sctp.sctp_hmac_alg = "md5";
--			changed = 1;
-+			changed = true;
- 		}
- #endif
- #ifdef CONFIG_CRYPTO_SHA1
- 		if (!strncmp(tmp, "sha1", 4)) {
- 			net->sctp.sctp_hmac_alg = "sha1";
--			changed = 1;
-+			changed = true;
- 		}
- #endif
- 		if (!strncmp(tmp, "none", 4)) {
- 			net->sctp.sctp_hmac_alg = NULL;
--			changed = 1;
-+			changed = true;
- 		}
--
- 		if (!changed)
- 			ret = -EINVAL;
- 	}
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+-		if ((local != t->parms.iph.saddr &&
+-		     (local != t->parms.iph.daddr ||
+-		      !ipv4_is_multicast(local))) ||
+-		    !(t->dev->flags & IFF_UP))
++		if ((local != t->parms.iph.saddr || t->parms.iph.daddr != 0) &&
++		    (local != t->parms.iph.daddr || !ipv4_is_multicast(local)))
++			continue;
++
++		if (!(t->dev->flags & IFF_UP))
+ 			continue;
+ 
+ 		if (!ip_tunnel_key_match(&t->parms, flags, key))
+@@ -202,6 +204,8 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+ 
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+ 		if (t->parms.i_key != key ||
++		    t->parms.iph.saddr != 0 ||
++		    t->parms.iph.daddr != 0 ||
+ 		    !(t->dev->flags & IFF_UP))
+ 			continue;
+ 
 -- 
 2.0.1
 
