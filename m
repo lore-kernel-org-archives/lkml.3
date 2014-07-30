@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379AbaG3Qun (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 12:50:43 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:47738 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083AbaG3Quk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 12:50:40 -0400
-Date: Wed, 30 Jul 2014 12:50:32 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-Cc: sebastian.hesselbarth@gmail.com, kishon@ti.com,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v11 3/8] ata: libahci_platform: move port_map parameters
- into the AHCI structure
-Message-ID: <20140730165032.GD23734@htj.dyndns.org>
-References: <1406193450-17283-1-git-send-email-antoine.tenart@free-electrons.com>
- <1406193450-17283-4-git-send-email-antoine.tenart@free-electrons.com>
- <20140729144042.GD4791@htj.dyndns.org>
- <20140730082038.GB29900@kwain>
- <20140730153526.GB23734@htj.dyndns.org>
- <20140730164721.GA15772@kwain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140730164721.GA15772@kwain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755397AbaG3Qv0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 12:51:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19271 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754555AbaG3QvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 12:51:24 -0400
+Message-ID: <1406739083.2963.78.camel@ul30vt.home>
+Subject: Re: [PATCH] KVM: x86: always exit on EOIs for interrupts listed in
+ the IOAPIC redir table
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, stable@vger.kernel.org
+Date: Wed, 30 Jul 2014 10:51:23 -0600
+In-Reply-To: <1406736728-8516-1-git-send-email-pbonzini@redhat.com>
+References: <1406736728-8516-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 06:47:21PM +0200, Antoine Ténart wrote:
-> On Wed, Jul 30, 2014 at 11:35:26AM -0400, Tejun Heo wrote:
-> > On Wed, Jul 30, 2014 at 10:20:38AM +0200, Antoine Ténart wrote:
-> > > How do you want me to send the series? There is two conflicts when
-> > > applying to libata/for-3.17:
-> > > - patch 4/8: it takes into account a patch not in libata/for-3.17 but
-> > >   added before rc7. It should be better to first merge rc7, otherwise
-> > >   some modifications won't make sense.
-> > > - patch 6/8: "fsl,imx53-ahci" was removed from the documentation in
-> > >   libata/for-3.17 but not in rc7. Resolving the conflict is really
-> > >   simple.
-> > > 
-> > > I think it's better to apply the whole thing after merging rc7 into
-> > > libata/for-3.17, because it will only have a really simple conflict to
-> > > resolve.
-> > > 
-> > > Please tell me what do you prefer before I send the updated version.
-> > 
-> > Hmmm... does pulling in libata/for-3.16-fixes into libata/for-3.17
-> > resolves the conflict?  If so, please send the patch on top of the
-> > merged branch.  I wanna avoid pulling in -rc7 wholesale at this point.
+On Wed, 2014-07-30 at 18:12 +0200, Paolo Bonzini wrote:
+> Currently, the EOI exit bitmap (used for APICv) does not include
+> interrupts that are masked.  However, this can cause a bug that manifests
+> as an interrupt storm inside the guest.  Alex Williamson reported the
+> bug and is the one who really debugged this; I only wrote the patch. :)
 > 
-> Works for me. I'll cook and send a series based on top of
-> libata/for-3.16-fixes merged into libata/for-3.17.
+> The scenario involves a multi-function PCI device with OHCI and EHCI
+> USB functions and an audio function, all assigned to the guest, where
+> both USB functions use legacy INTx interrupts.
+> 
+> As soon as the guest boots, interrupts for these devices turn into an
+> interrupt storm in the guest; the host does not see the interrupt storm.
+> Basically the EOI path does not work, and the guest continues to see the
+> interrupt over and over, even after it attempts to mask it at the APIC.
+> The bug is only visible with older kernels (RHEL6.5, based on 2.6.32
+> with not many changes in the area of APIC/IOAPIC handling).
+> 
+> Alex then tried forcing bit 59 (corresponding to the USB functions' IRQ)
+> on in the eoi_exit_bitmap and TMR, and things then work.  What happens
+> is that VFIO asserts IRQ11, then KVM recomputes the EOI exit bitmap.
+> It does not have set bit 59 because the RTE was masked, so the IOAPIC
+> never sees the EOI and the interrupt continues to fire in the guest.
+> 
+> Probably, the guest is masking the interrupt in the redirection table in
+> the interrupt routine, i.e. while the interrupt is set in a LAPIC's ISR.
+> The simplest fix is to ignore the masking state, we would rather have
+> an unnecessary exit rather than a missed IRQ ACK and anyway IOAPIC
+> interrupts are not as performance-sensitive as for example MSIs.
+> 
+> [Thanks to Alex for his precise description of the problem
+>  and initial debugging effort.  A lot of the text above is
+>  based on emails exchanged with him.]
+> 
+> Reported-by: Alex Williamson <alex.williamson@redhat.com>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 
-I pulled libata/for-3.16-fixes into for-3.17, so you can just base on
-that one.
+Thanks Paolo
 
-Thanks.
+Tested-by: Alex Williamson <alex.williamson@redhat.com>
 
--- 
-tejun
+> ---
+>  virt/kvm/ioapic.c | 7 +++----
+>  1 file changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+> index 2458a1dc2ba9..e8ce34c9db32 100644
+> --- a/virt/kvm/ioapic.c
+> +++ b/virt/kvm/ioapic.c
+> @@ -254,10 +254,9 @@ void kvm_ioapic_scan_entry(struct kvm_vcpu *vcpu, u64 *eoi_exit_bitmap,
+>  	spin_lock(&ioapic->lock);
+>  	for (index = 0; index < IOAPIC_NUM_PINS; index++) {
+>  		e = &ioapic->redirtbl[index];
+> -		if (!e->fields.mask &&
+> -			(e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
+> -			 kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC,
+> -				 index) || index == RTC_GSI)) {
+> +		if (e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
+> +		    kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC, index) ||
+> +		    index == RTC_GSI) {
+>  			if (kvm_apic_match_dest(vcpu, NULL, 0,
+>  				e->fields.dest_id, e->fields.dest_mode)) {
+>  				__set_bit(e->fields.vector,
+
+
+
