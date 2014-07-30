@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571AbaG3Mio (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:38:44 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36677 "EHLO
+	id S1754996AbaG3Mil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:38:41 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36657 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752800AbaG3MP1 (ORCPT
+	by vger.kernel.org with ESMTP id S1752783AbaG3MP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:27 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tyler Hall <tylerwhall@gmail.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Andre Naujoks <nautsch2@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Todd Fujinaka <todd.fujinaka@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 32/94] slcan: Port write_wakeup deadlock fix from slip
-Date: Wed, 30 Jul 2014 14:14:21 +0200
-Message-Id: <a0df2450354b882547bfa9a41827dbfb215b9442.1406722270.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 26/94] igb: Workaround for i210 Errata 25: Slow System Clock
+Date: Wed, 30 Jul 2014 14:14:15 +0200
+Message-Id: <13089c3a001a83dabdfb650d387ac93945c59855.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -25,127 +24,239 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tyler Hall <tylerwhall@gmail.com>
+From: Todd Fujinaka <todd.fujinaka@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit a8e83b17536aad603fbeae4c460f2da0ee9fe6ed ]
+commit 948264879b6894dc389a44b99fae4f0b72932619 upstream.
 
-The commit "slip: Fix deadlock in write_wakeup" fixes a deadlock caused
-by a change made in both slcan and slip. This is a direct port of that
-fix.
+On some devices, the internal PLL circuit occasionally provides the
+wrong clock frequency after power up. The probability of failure is less
+than one failure per 1000 power cycles. When the failure occurs, the
+internal clock frequency is around 1/20 of the correct frequency.
 
-Signed-off-by: Tyler Hall <tylerwhall@gmail.com>
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>
-Cc: Andre Naujoks <nautsch2@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Todd Fujinaka <todd.fujinaka@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/can/slcan.c | 41 +++++++++++++++++++++++++++++------------
- 1 file changed, 29 insertions(+), 12 deletions(-)
+ drivers/net/ethernet/intel/igb/e1000_82575.c   |  7 +++
+ drivers/net/ethernet/intel/igb/e1000_defines.h | 18 +++----
+ drivers/net/ethernet/intel/igb/e1000_hw.h      |  3 ++
+ drivers/net/ethernet/intel/igb/e1000_i210.c    | 66 ++++++++++++++++++++++++++
+ drivers/net/ethernet/intel/igb/e1000_i210.h    | 12 +++++
+ drivers/net/ethernet/intel/igb/e1000_regs.h    |  1 +
+ drivers/net/ethernet/intel/igb/igb_main.c      | 14 ++++++
+ 7 files changed, 113 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/can/slcan.c b/drivers/net/can/slcan.c
-index 25377e547f9b..3c28d1f187c0 100644
---- a/drivers/net/can/slcan.c
-+++ b/drivers/net/can/slcan.c
-@@ -54,6 +54,7 @@
- #include <linux/delay.h>
- #include <linux/init.h>
- #include <linux/kernel.h>
-+#include <linux/workqueue.h>
- #include <linux/can.h>
- #include <linux/can/skb.h>
+diff --git a/drivers/net/ethernet/intel/igb/e1000_82575.c b/drivers/net/ethernet/intel/igb/e1000_82575.c
+index 47c2d10df826..974558e36588 100644
+--- a/drivers/net/ethernet/intel/igb/e1000_82575.c
++++ b/drivers/net/ethernet/intel/igb/e1000_82575.c
+@@ -1403,6 +1403,13 @@ static s32 igb_init_hw_82575(struct e1000_hw *hw)
+ 	s32 ret_val;
+ 	u16 i, rar_count = mac->rar_entry_count;
  
-@@ -87,6 +88,7 @@ struct slcan {
- 	struct tty_struct	*tty;		/* ptr to TTY structure	     */
- 	struct net_device	*dev;		/* easy for intr handling    */
- 	spinlock_t		lock;
-+	struct work_struct	tx_work;	/* Flushes transmit buffer   */
++	if ((hw->mac.type >= e1000_i210) &&
++	    !(igb_get_flash_presence_i210(hw))) {
++		ret_val = igb_pll_workaround_i210(hw);
++		if (ret_val)
++			return ret_val;
++	}
++
+ 	/* Initialize identification LED */
+ 	ret_val = igb_id_led_init(hw);
+ 	if (ret_val) {
+diff --git a/drivers/net/ethernet/intel/igb/e1000_defines.h b/drivers/net/ethernet/intel/igb/e1000_defines.h
+index 978eca31ceda..956c4c3ae70b 100644
+--- a/drivers/net/ethernet/intel/igb/e1000_defines.h
++++ b/drivers/net/ethernet/intel/igb/e1000_defines.h
+@@ -46,14 +46,15 @@
+ /* Extended Device Control */
+ #define E1000_CTRL_EXT_SDP3_DATA 0x00000080 /* Value of SW Defineable Pin 3 */
+ /* Physical Func Reset Done Indication */
+-#define E1000_CTRL_EXT_PFRSTD    0x00004000
+-#define E1000_CTRL_EXT_LINK_MODE_MASK 0x00C00000
+-#define E1000_CTRL_EXT_LINK_MODE_PCIE_SERDES  0x00C00000
+-#define E1000_CTRL_EXT_LINK_MODE_1000BASE_KX  0x00400000
+-#define E1000_CTRL_EXT_LINK_MODE_SGMII   0x00800000
+-#define E1000_CTRL_EXT_LINK_MODE_GMII   0x00000000
+-#define E1000_CTRL_EXT_EIAME          0x01000000
+-#define E1000_CTRL_EXT_IRCA           0x00000001
++#define E1000_CTRL_EXT_PFRSTD	0x00004000
++#define E1000_CTRL_EXT_SDLPE	0X00040000  /* SerDes Low Power Enable */
++#define E1000_CTRL_EXT_LINK_MODE_MASK	0x00C00000
++#define E1000_CTRL_EXT_LINK_MODE_PCIE_SERDES	0x00C00000
++#define E1000_CTRL_EXT_LINK_MODE_1000BASE_KX	0x00400000
++#define E1000_CTRL_EXT_LINK_MODE_SGMII	0x00800000
++#define E1000_CTRL_EXT_LINK_MODE_GMII	0x00000000
++#define E1000_CTRL_EXT_EIAME	0x01000000
++#define E1000_CTRL_EXT_IRCA		0x00000001
+ /* Interrupt delay cancellation */
+ /* Driver loaded bit for FW */
+ #define E1000_CTRL_EXT_DRV_LOAD       0x10000000
+@@ -62,6 +63,7 @@
+ /* packet buffer parity error detection enabled */
+ /* descriptor FIFO parity error detection enable */
+ #define E1000_CTRL_EXT_PBA_CLR		0x80000000 /* PBA Clear */
++#define E1000_CTRL_EXT_PHYPDEN		0x00100000
+ #define E1000_I2CCMD_REG_ADDR_SHIFT	16
+ #define E1000_I2CCMD_PHY_ADDR_SHIFT	24
+ #define E1000_I2CCMD_OPCODE_READ	0x08000000
+diff --git a/drivers/net/ethernet/intel/igb/e1000_hw.h b/drivers/net/ethernet/intel/igb/e1000_hw.h
+index 37a9c06a6c68..80f20d1f1cfe 100644
+--- a/drivers/net/ethernet/intel/igb/e1000_hw.h
++++ b/drivers/net/ethernet/intel/igb/e1000_hw.h
+@@ -569,4 +569,7 @@ extern struct net_device *igb_get_hw_dev(struct e1000_hw *hw);
+ /* These functions must be implemented by drivers */
+ s32  igb_read_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value);
+ s32  igb_write_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value);
++
++void igb_read_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value);
++void igb_write_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value);
+ #endif /* _E1000_HW_H_ */
+diff --git a/drivers/net/ethernet/intel/igb/e1000_i210.c b/drivers/net/ethernet/intel/igb/e1000_i210.c
+index 0c0393316a3a..0217d4e229a0 100644
+--- a/drivers/net/ethernet/intel/igb/e1000_i210.c
++++ b/drivers/net/ethernet/intel/igb/e1000_i210.c
+@@ -835,3 +835,69 @@ s32 igb_init_nvm_params_i210(struct e1000_hw *hw)
+ 	}
+ 	return ret_val;
+ }
++
++/**
++ * igb_pll_workaround_i210
++ * @hw: pointer to the HW structure
++ *
++ * Works around an errata in the PLL circuit where it occasionally
++ * provides the wrong clock frequency after power up.
++ **/
++s32 igb_pll_workaround_i210(struct e1000_hw *hw)
++{
++	s32 ret_val;
++	u32 wuc, mdicnfg, ctrl, ctrl_ext, reg_val;
++	u16 nvm_word, phy_word, pci_word, tmp_nvm;
++	int i;
++
++	/* Get and set needed register values */
++	wuc = rd32(E1000_WUC);
++	mdicnfg = rd32(E1000_MDICNFG);
++	reg_val = mdicnfg & ~E1000_MDICNFG_EXT_MDIO;
++	wr32(E1000_MDICNFG, reg_val);
++
++	/* Get data from NVM, or set default */
++	ret_val = igb_read_invm_word_i210(hw, E1000_INVM_AUTOLOAD,
++					  &nvm_word);
++	if (ret_val)
++		nvm_word = E1000_INVM_DEFAULT_AL;
++	tmp_nvm = nvm_word | E1000_INVM_PLL_WO_VAL;
++	for (i = 0; i < E1000_MAX_PLL_TRIES; i++) {
++		/* check current state directly from internal PHY */
++		igb_read_phy_reg_gs40g(hw, (E1000_PHY_PLL_FREQ_PAGE |
++					 E1000_PHY_PLL_FREQ_REG), &phy_word);
++		if ((phy_word & E1000_PHY_PLL_UNCONF)
++		    != E1000_PHY_PLL_UNCONF) {
++			ret_val = 0;
++			break;
++		} else {
++			ret_val = -E1000_ERR_PHY;
++		}
++		/* directly reset the internal PHY */
++		ctrl = rd32(E1000_CTRL);
++		wr32(E1000_CTRL, ctrl|E1000_CTRL_PHY_RST);
++
++		ctrl_ext = rd32(E1000_CTRL_EXT);
++		ctrl_ext |= (E1000_CTRL_EXT_PHYPDEN | E1000_CTRL_EXT_SDLPE);
++		wr32(E1000_CTRL_EXT, ctrl_ext);
++
++		wr32(E1000_WUC, 0);
++		reg_val = (E1000_INVM_AUTOLOAD << 4) | (tmp_nvm << 16);
++		wr32(E1000_EEARBC_I210, reg_val);
++
++		igb_read_pci_cfg(hw, E1000_PCI_PMCSR, &pci_word);
++		pci_word |= E1000_PCI_PMCSR_D3;
++		igb_write_pci_cfg(hw, E1000_PCI_PMCSR, &pci_word);
++		usleep_range(1000, 2000);
++		pci_word &= ~E1000_PCI_PMCSR_D3;
++		igb_write_pci_cfg(hw, E1000_PCI_PMCSR, &pci_word);
++		reg_val = (E1000_INVM_AUTOLOAD << 4) | (nvm_word << 16);
++		wr32(E1000_EEARBC_I210, reg_val);
++
++		/* restore WUC register */
++		wr32(E1000_WUC, wuc);
++	}
++	/* restore MDICNFG setting */
++	wr32(E1000_MDICNFG, mdicnfg);
++	return ret_val;
++}
+diff --git a/drivers/net/ethernet/intel/igb/e1000_i210.h b/drivers/net/ethernet/intel/igb/e1000_i210.h
+index dde3c4b7ea99..99f4611d6f48 100644
+--- a/drivers/net/ethernet/intel/igb/e1000_i210.h
++++ b/drivers/net/ethernet/intel/igb/e1000_i210.h
+@@ -48,6 +48,7 @@ extern s32 igb_write_xmdio_reg(struct e1000_hw *hw, u16 addr, u8 dev_addr,
+ 			       u16 data);
+ extern s32 igb_init_nvm_params_i210(struct e1000_hw *hw);
+ extern bool igb_get_flash_presence_i210(struct e1000_hw *hw);
++s32 igb_pll_workaround_i210(struct e1000_hw *hw);
  
- 	/* These are pointers to the malloc()ed frame buffers. */
- 	unsigned char		rbuff[SLC_MTU];	/* receiver buffer	     */
-@@ -311,34 +313,44 @@ static void slc_encaps(struct slcan *sl, struct can_frame *cf)
- 	sl->dev->stats.tx_bytes += cf->can_dlc;
+ #define E1000_STM_OPCODE		0xDB00
+ #define E1000_EEPROM_FLASH_SIZE_WORD	0x11
+@@ -93,4 +94,15 @@ enum E1000_INVM_STRUCTURE_TYPE {
+ #define NVM_LED_1_CFG_DEFAULT_I211	0x0184
+ #define NVM_LED_0_2_CFG_DEFAULT_I211	0x200C
+ 
++/* PLL Defines */
++#define E1000_PCI_PMCSR			0x44
++#define E1000_PCI_PMCSR_D3		0x03
++#define E1000_MAX_PLL_TRIES		5
++#define E1000_PHY_PLL_UNCONF		0xFF
++#define E1000_PHY_PLL_FREQ_PAGE		0xFC0000
++#define E1000_PHY_PLL_FREQ_REG		0x000E
++#define E1000_INVM_DEFAULT_AL		0x202F
++#define E1000_INVM_AUTOLOAD		0x0A
++#define E1000_INVM_PLL_WO_VAL		0x0010
++
+ #endif
+diff --git a/drivers/net/ethernet/intel/igb/e1000_regs.h b/drivers/net/ethernet/intel/igb/e1000_regs.h
+index 82632c6c53af..7156981ec813 100644
+--- a/drivers/net/ethernet/intel/igb/e1000_regs.h
++++ b/drivers/net/ethernet/intel/igb/e1000_regs.h
+@@ -69,6 +69,7 @@
+ #define E1000_PBA      0x01000  /* Packet Buffer Allocation - RW */
+ #define E1000_PBS      0x01008  /* Packet Buffer Size */
+ #define E1000_EEMNGCTL 0x01010  /* MNG EEprom Control */
++#define E1000_EEARBC_I210 0x12024  /* EEPROM Auto Read Bus Control */
+ #define E1000_EEWR     0x0102C  /* EEPROM Write Register - RW */
+ #define E1000_I2CCMD   0x01028  /* SFPI2C Command Register - RW */
+ #define E1000_FRTIMER  0x01048  /* Free Running Timer - RW */
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 8cf44f2a8ccd..d366df533726 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -6918,6 +6918,20 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
+ 	}
  }
  
--/*
-- * Called by the driver when there's room for more data.  If we have
-- * more packets to send, we send them here.
-- */
--static void slcan_write_wakeup(struct tty_struct *tty)
-+/* Write out any remaining transmit buffer. Scheduled when tty is writable */
-+static void slcan_transmit(struct work_struct *work)
- {
-+	struct slcan *sl = container_of(work, struct slcan, tx_work);
- 	int actual;
--	struct slcan *sl = (struct slcan *) tty->disc_data;
- 
-+	spin_lock_bh(&sl->lock);
- 	/* First make sure we're connected. */
--	if (!sl || sl->magic != SLCAN_MAGIC || !netif_running(sl->dev))
-+	if (!sl->tty || sl->magic != SLCAN_MAGIC || !netif_running(sl->dev)) {
-+		spin_unlock_bh(&sl->lock);
- 		return;
-+	}
- 
--	spin_lock(&sl->lock);
- 	if (sl->xleft <= 0)  {
- 		/* Now serial buffer is almost free & we can start
- 		 * transmission of another packet */
- 		sl->dev->stats.tx_packets++;
--		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
--		spin_unlock(&sl->lock);
-+		clear_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
-+		spin_unlock_bh(&sl->lock);
- 		netif_wake_queue(sl->dev);
- 		return;
- 	}
- 
--	actual = tty->ops->write(tty, sl->xhead, sl->xleft);
-+	actual = sl->tty->ops->write(sl->tty, sl->xhead, sl->xleft);
- 	sl->xleft -= actual;
- 	sl->xhead += actual;
--	spin_unlock(&sl->lock);
-+	spin_unlock_bh(&sl->lock);
++void igb_read_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value)
++{
++	struct igb_adapter *adapter = hw->back;
++
++	pci_read_config_word(adapter->pdev, reg, value);
 +}
 +
-+/*
-+ * Called by the driver when there's room for more data.
-+ * Schedule the transmit.
-+ */
-+static void slcan_write_wakeup(struct tty_struct *tty)
++void igb_write_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value)
 +{
-+	struct slcan *sl = tty->disc_data;
++	struct igb_adapter *adapter = hw->back;
 +
-+	schedule_work(&sl->tx_work);
- }
- 
- /* Send a can_frame to a TTY queue. */
-@@ -524,6 +536,7 @@ static struct slcan *slc_alloc(dev_t line)
- 	sl->magic = SLCAN_MAGIC;
- 	sl->dev	= dev;
- 	spin_lock_init(&sl->lock);
-+	INIT_WORK(&sl->tx_work, slcan_transmit);
- 	slcan_devs[i] = dev;
- 
- 	return sl;
-@@ -622,8 +635,12 @@ static void slcan_close(struct tty_struct *tty)
- 	if (!sl || sl->magic != SLCAN_MAGIC || sl->tty != tty)
- 		return;
- 
-+	spin_lock_bh(&sl->lock);
- 	tty->disc_data = NULL;
- 	sl->tty = NULL;
-+	spin_unlock_bh(&sl->lock);
++	pci_write_config_word(adapter->pdev, reg, *value);
++}
 +
-+	flush_work(&sl->tx_work);
- 
- 	/* Flush network side */
- 	unregister_netdev(sl->dev);
+ s32 igb_read_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value)
+ {
+ 	struct igb_adapter *adapter = hw->back;
 -- 
 2.0.1
 
