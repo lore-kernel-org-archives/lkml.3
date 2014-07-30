@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683AbaG3Vry (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 17:47:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41808 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452AbaG3Vrx (ORCPT
+	id S1753152AbaG3V4N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 17:56:13 -0400
+Received: from exprod5og125.obsmtp.com ([64.18.0.245]:43474 "HELO
+	exprod5og125.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752017AbaG3V4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 17:47:53 -0400
-Date: Wed, 30 Jul 2014 14:47:52 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chintan Pandya <cpandya@codeaurora.org>
-Cc: tglx@linutronix.de, john.stultz@linaro.org, peterz@infradead.org,
-        mingo@redhat.com, hughd@google.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v2 2/2] ksm: Provide support to use deferrable timers
- for scanner thread
-Message-Id: <20140730144752.8c931d9ed997324632d5f2fd@linux-foundation.org>
-In-Reply-To: <1406299698-6357-2-git-send-email-cpandya@codeaurora.org>
-References: <1406299698-6357-1-git-send-email-cpandya@codeaurora.org>
-	<1406299698-6357-2-git-send-email-cpandya@codeaurora.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Jul 2014 17:56:11 -0400
+From: Feng Kan <fkan@apm.com>
+To: tglx@linutronix.de, jason@lakedaemon.net, marc.zyngier@arm.com,
+        linux-kernel@vger.kernel.org
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH V4 RESEND 0/2] irqchip: gic: Add support for GIC v2 bypass disable
+Date: Wed, 30 Jul 2014 14:56:57 -0700
+Message-Id: <1406757419-18729-1-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jul 2014 20:18:18 +0530 Chintan Pandya <cpandya@codeaurora.org> wrote:
+This patch series cleans up hex number in the gic driver and then adds
+the code to preserve GIC v2 bypass disable bits in the GIC driver.
 
-> KSM thread to scan pages is scheduled on definite timeout. That wakes
-> up CPU from idle state and hence may affect the power consumption.
-> Provide an optional support to use deferrable timer which suites
-> low-power use-cases.
-> 
-> Typically, on our setup we observed, 10% less power consumption with
-> some use-cases in which CPU goes to power collapse frequently. For
-> example, playing audio while typically CPU remains idle.
-> 
-> To enable deferrable timers,
-> $ echo 1 > /sys/kernel/mm/ksm/deferrable_timer
+V4 Change: rebase off latest irq tree, merge after gic v3 changes.
 
-This could not have been the version which you tested.  What's up?
+V3 Change: remove incorrect Signoff by 
 
---- a/mm/ksm.c~ksm-provide-support-to-use-deferrable-timers-for-scanner-thread-fix-fix-2
-+++ a/mm/ksm.c
-@@ -1720,8 +1720,6 @@ static int ksmd_should_run(void)
- 
- static int ksm_scan_thread(void *nothing)
- {
--	signed long to;
--
- 	set_freezable();
- 	set_user_nice(current, 5);
- 
-@@ -1735,7 +1733,9 @@ static int ksm_scan_thread(void *nothing
- 		try_to_freeze();
- 
- 		if (ksmd_should_run()) {
--			timeout = msecs_to_jiffies(ksm_thread_sleep_millisecs);
-+			signed long to;
-+
-+			to = msecs_to_jiffies(ksm_thread_sleep_millisecs);
- 			if (use_deferrable_timer)
- 				schedule_timeout_deferrable_interruptible(to);
- 			else
-_
+V2 Change:
+	seem my send email was not working correctly, resending this with
+        rebase pull.
+	- had to pull HaoJian's change out of arm-gic.h to keep consistency.
+	- replace GIC defines as noted by Marc
+	- remove GIC_CPU_DISABLE since it no longer used.
+	- fix gic_cpu_if_down as noted by Marc
+
+
+Feng Kan (2):
+  irqchip: gic: replace hex numbers with defines.
+  irqchip: gic: preserve gic V2 bypass bits in cpu ctrl register
+
+ drivers/irqchip/irq-gic-common.c | 15 +++++++------
+ drivers/irqchip/irq-gic.c        | 46 ++++++++++++++++++++++++++++------------
+ include/linux/irqchip/arm-gic.h  | 16 ++++++++++++++
+ 3 files changed, 58 insertions(+), 19 deletions(-)
+
+-- 
+1.9.1
 
