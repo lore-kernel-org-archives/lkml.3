@@ -1,99 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655AbaG3VCi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 17:02:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44431 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909AbaG3VCh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 17:02:37 -0400
-Message-ID: <53D95D68.1000402@infradead.org>
-Date: Wed, 30 Jul 2014 14:02:32 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752248AbaG3VCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 17:02:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47152 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751708AbaG3VCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 17:02:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,767,1400050800"; 
+   d="scan'208";a="581399893"
+Date: Wed, 30 Jul 2014 17:02:40 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the DAX
+ page fault handler
+Message-ID: <20140730210239.GS6754@linux.intel.com>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <c2e602f401a580c4fac54b9b8f4a6f8dd0ac1071.1395591795.git.matthew.r.wilcox@intel.com>
+ <20140409102758.GM32103@quack.suse.cz>
+ <20140409205111.GG5727@linux.intel.com>
+ <20140409214331.GQ32103@quack.suse.cz>
+ <20140729121259.GL6754@linux.intel.com>
+ <20140729210457.GA17807@quack.suse.cz>
+ <20140729212333.GO6754@linux.intel.com>
+ <20140730095229.GA19205@quack.suse.cz>
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>, peterz@infradead.org, mingo@kernel.org
-CC: jason.low2@hp.com, aswin@hp.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -tip v2 6/7] locking: Move docs into Documentation/locking/
-References: <1406752916-3341-1-git-send-email-davidlohr@hp.com> <1406752916-3341-6-git-send-email-davidlohr@hp.com>
-In-Reply-To: <1406752916-3341-6-git-send-email-davidlohr@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140730095229.GA19205@quack.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/14 13:41, Davidlohr Bueso wrote:
-> Specifically:
->   Documentation/locking/lockdep-design.txt
->   Documentation/locking/lockstat.txt
->   Documentation/locking/mutex-design.txt
->   Documentation/locking/rt-mutex-design.txt
->   Documentation/locking/rt-mutex.txt
->   Documentation/locking/spinlocks.txt
->   Documentation/locking/ww-mutex-design.txt
+On Wed, Jul 30, 2014 at 11:52:29AM +0200, Jan Kara wrote:
+>   I see the problem now. How about an attached patch? Do you see other
+> lockdep warnings with it?
+
+This patch fixes the problem, thanks!  Regardless of DAX, I think this
+patch should be applied in order to avoid creating a dependency between
+i_mmap_mutex and jbd2_handle.
+
+I've now run into a different problem with COW pages ... more later.
+
+> >From c01c905cf3c4c6304a5ea9836389d9cf0d575884 Mon Sep 17 00:00:00 2001
+> From: Jan Kara <jack@suse.cz>
+> Date: Wed, 30 Jul 2014 11:49:07 +0200
+> Subject: [PATCH] ext4: Avoid lock inversion between i_mmap_mutex and
+>  transaction start
 > 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-
-Did you read and use Documentation/SubmittingPatches?  see:
-
-Please use "git diff -M --stat --summary" to generate the diffstat:
-the -M enables rename detection, and the summary enables a summary of
-new/deleted or renamed files.
-
-With rename detection, the statistics are rather different [...]
-because git will notice that a fair number of the changes are renames.
-
-
-
-We really want to see the renames when possible.  Otherwise it's good.
-
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-Thanks.
-
-
+> When DAX is enabled, it uses i_mmap_mutex as a protection against
+> truncate during page fault. This inevitably forces i_mmap_mutex to rank
+> outside of a transaction start and thus we have to avoid calling
+> pagecache purging operations when transaction is started.
+> 
+> Signed-off-by: Jan Kara <jack@suse.cz>
 > ---
->  Documentation/00-INDEX                    |   2 +
->  Documentation/DocBook/kernel-locking.tmpl |   2 +-
->  Documentation/lockdep-design.txt          | 286 -----------
->  Documentation/locking/lockdep-design.txt  | 286 +++++++++++
->  Documentation/locking/lockstat.txt        | 178 +++++++
->  Documentation/locking/mutex-design.txt    | 157 ++++++
->  Documentation/locking/rt-mutex-design.txt | 781 ++++++++++++++++++++++++++++++
->  Documentation/locking/rt-mutex.txt        |  79 +++
->  Documentation/locking/spinlocks.txt       | 167 +++++++
->  Documentation/locking/ww-mutex-design.txt | 344 +++++++++++++
->  Documentation/lockstat.txt                | 178 -------
->  Documentation/mutex-design.txt            | 157 ------
->  Documentation/rt-mutex-design.txt         | 781 ------------------------------
->  Documentation/rt-mutex.txt                |  79 ---
->  Documentation/spinlocks.txt               | 167 -------
->  Documentation/ww-mutex-design.txt         | 344 -------------
->  MAINTAINERS                               |   4 +-
->  drivers/gpu/drm/drm_modeset_lock.c        |   2 +-
->  include/linux/lockdep.h                   |   2 +-
->  include/linux/mutex.h                     |   2 +-
->  include/linux/rwsem.h                     |   2 +-
->  kernel/locking/mutex.c                    |   2 +-
->  kernel/locking/rtmutex.c                  |   2 +-
->  lib/Kconfig.debug                         |   4 +-
->  24 files changed, 2005 insertions(+), 2003 deletions(-)
->  delete mode 100644 Documentation/lockdep-design.txt
->  create mode 100644 Documentation/locking/lockdep-design.txt
->  create mode 100644 Documentation/locking/lockstat.txt
->  create mode 100644 Documentation/locking/mutex-design.txt
->  create mode 100644 Documentation/locking/rt-mutex-design.txt
->  create mode 100644 Documentation/locking/rt-mutex.txt
->  create mode 100644 Documentation/locking/spinlocks.txt
->  create mode 100644 Documentation/locking/ww-mutex-design.txt
->  delete mode 100644 Documentation/lockstat.txt
->  delete mode 100644 Documentation/mutex-design.txt
->  delete mode 100644 Documentation/rt-mutex-design.txt
->  delete mode 100644 Documentation/rt-mutex.txt
->  delete mode 100644 Documentation/spinlocks.txt
->  delete mode 100644 Documentation/ww-mutex-design.txt
+>  fs/ext4/inode.c | 14 ++++++++++----
+>  1 file changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index 8a064734e6eb..494a8645d63e 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -3631,13 +3631,19 @@ int ext4_punch_hole(struct inode *inode, loff_t offset, loff_t length)
+>  	if (IS_SYNC(inode))
+>  		ext4_handle_sync(handle);
+>  
+> -	/* Now release the pages again to reduce race window */
+> +	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
+> +	ext4_mark_inode_dirty(handle, inode);
+> +	ext4_journal_stop(handle);
+> +
+> +	/*
+> +	 * Now release the pages again to reduce race window. This has to happen
+> +	 * outside of a transaction to avoid lock inversion on i_mmap_mutex
+> +	 * when DAX is enabled.
+> +	 */
+>  	if (last_block_offset > first_block_offset)
+>  		truncate_pagecache_range(inode, first_block_offset,
+>  					 last_block_offset);
+> -
+> -	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
+> -	ext4_mark_inode_dirty(handle, inode);
+> +	goto out_dio;
+>  out_stop:
+>  	ext4_journal_stop(handle);
+>  out_dio:
+> -- 
+> 1.8.1.4
+> 
 
-
--- 
-~Randy
