@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623AbaG3WE0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 18:04:26 -0400
-Received: from unicorn.mansr.com ([81.2.72.234]:49697 "EHLO unicorn.mansr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752017AbaG3WEZ convert rfc822-to-8bit (ORCPT
+	id S1753306AbaG3WHN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 18:07:13 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44382 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452AbaG3WHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 18:04:25 -0400
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Richard Henderson <rth@twiddle.net>
-Cc: linux-kernel@vger.kernel.org, mcree@orcon.net.nz,
-        linux-alpha@vger.kernel.org
-Subject: Re: [PATCH 1/2] alpha: Remove "strange" OSF/1 fork semantics
-References: <1406756552-23864-1-git-send-email-rth@twiddle.net>
-	<1406756552-23864-2-git-send-email-rth@twiddle.net>
-Date: Wed, 30 Jul 2014 23:04:20 +0100
-In-Reply-To: <1406756552-23864-2-git-send-email-rth@twiddle.net> (Richard
-	Henderson's message of "Wed, 30 Jul 2014 11:42:31 -1000")
-Message-ID: <yw1xk36u5wrf.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 30 Jul 2014 18:07:11 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v2 0/3] x86: PER_CPU segment improvements
+Date: Wed, 30 Jul 2014 15:07:02 -0700
+Message-Id: <cover.1406757779.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Henderson <rth@twiddle.net> writes:
+x86 sets up a per-cpu GDT entry so that vgetcpu can use LSL on it
+to determine the CPU number and node.
 
-> The assignment to regs->r20 kills the original tls_val input
-> to the clone syscall, which means that clone can no longer be
-> restarted with the original inputs.
->
-> We could, perhaps, retain this result for true fork, but OSF/1
-> compatibility is no longer important.  Note that glibc has never
-> used the r20 result value, instead always testing r0 vs 0 to
-> determine the child/parent status.
+This series, in little baby steps, cleans up that code and sets
+the accessed and 32-bit flags on the segment.
 
-What effect does this have on OSF/1 compat?
+The accessed bit prevents user code from setting the accessed bit
+on its own, and making the segment 32-bit prevents concerns about
+shenanigans involving CPU oddities with 16-bit data segments.
 
-> This failure can be seen in the glibc nptl/tst-eintr* tests.
->
-> Reported-by: Michael Cree <mcree@orcon.net.nz>
-> Signed-off-by: Richard Henderson <rth@twiddle.net>
-> ---
->  arch/alpha/kernel/process.c | 2 --
->  1 file changed, 2 deletions(-)
->
-> diff --git a/arch/alpha/kernel/process.c b/arch/alpha/kernel/process.c
-> index 1941a07..77028d7 100644
-> --- a/arch/alpha/kernel/process.c
-> +++ b/arch/alpha/kernel/process.c
-> @@ -278,8 +278,6 @@ copy_thread(unsigned long clone_flags, unsigned long usp,
->  	*childregs = *regs;
->  	childregs->r0 = 0;
->  	childregs->r19 = 0;
-> -	childregs->r20 = 1;	/* OSF/1 has some strange fork() semantics.  */
-> -	regs->r20 = 0;
->  	stack = ((struct switch_stack *) regs) - 1;
->  	*childstack = *stack;
->  	childstack->r26 = (unsigned long) ret_from_fork;
-> -- 
-> 1.9.3
->
+The latter isn't a real problem -- if it were a 16-bit read/write
+segment, it could be used to bypass espfix64, but fortunately
+RO segments can't be loaded into SS.
+
+Changes from v1:
+ - Fix patch 2's changelog.
+ - Learn to spell "Not a system segment".
+
+Andy Lutomirski (3):
+  x86,vdso: Change the PER_CPU segment to use struct desc_struct
+  x86,vdso: Make the PER_CPU segment start out accessed
+  x86,vdso: Make the PER_CPU segment 32 bits
+
+ arch/x86/kernel/vsyscall_64.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
 -- 
-Måns Rullgård
-mans@mansr.com
+1.9.3
+
