@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbaG3WHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 18:07:13 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44382 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452AbaG3WHL (ORCPT
+	id S1753725AbaG3WHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 18:07:19 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:35010 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452AbaG3WHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 18:07:11 -0400
+	Wed, 30 Jul 2014 18:07:14 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
 Cc: Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 0/3] x86: PER_CPU segment improvements
-Date: Wed, 30 Jul 2014 15:07:02 -0700
-Message-Id: <cover.1406757779.git.luto@amacapital.net>
+Subject: [PATCH v2 1/3] x86,vdso: Change the PER_CPU segment to use struct desc_struct
+Date: Wed, 30 Jul 2014 15:07:03 -0700
+Message-Id: <46076f2fdde1d6ee88b2cdd85b968c93338f9596.1406757779.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1406757779.git.luto@amacapital.net>
+References: <cover.1406757779.git.luto@amacapital.net>
+In-Reply-To: <cover.1406757779.git.luto@amacapital.net>
+References: <cover.1406757779.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86 sets up a per-cpu GDT entry so that vgetcpu can use LSL on it
-to determine the CPU number and node.
+This makes it easier to see what's going on.  It produces exactly
+the same segment descriptor as the old code.
 
-This series, in little baby steps, cleans up that code and sets
-the accessed and 32-bit flags on the segment.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/kernel/vsyscall_64.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-The accessed bit prevents user code from setting the accessed bit
-on its own, and making the segment 32-bit prevents concerns about
-shenanigans involving CPU oddities with 16-bit data segments.
-
-The latter isn't a real problem -- if it were a 16-bit read/write
-segment, it could be used to bypass espfix64, but fortunately
-RO segments can't be loaded into SS.
-
-Changes from v1:
- - Fix patch 2's changelog.
- - Learn to spell "Not a system segment".
-
-Andy Lutomirski (3):
-  x86,vdso: Change the PER_CPU segment to use struct desc_struct
-  x86,vdso: Make the PER_CPU segment start out accessed
-  x86,vdso: Make the PER_CPU segment 32 bits
-
- arch/x86/kernel/vsyscall_64.c | 19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
-
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index e1e1e80..28d0ad6 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -289,7 +289,7 @@ sigsegv:
+  */
+ static void vsyscall_set_cpu(int cpu)
+ {
+-	unsigned long d;
++	struct desc_struct d;
+ 	unsigned long node = 0;
+ #ifdef CONFIG_NUMA
+ 	node = cpu_to_node(cpu);
+@@ -298,13 +298,17 @@ static void vsyscall_set_cpu(int cpu)
+ 		write_rdtscp_aux((node << 12) | cpu);
+ 
+ 	/*
+-	 * Store cpu number in limit so that it can be loaded quickly
+-	 * in user space in vgetcpu. (12 bits for the CPU and 8 bits for the node)
++	 * Store cpu number in limit so that it can be loaded
++	 * quickly in user space in vgetcpu. (12 bits for the CPU
++	 * and 8 bits for the node)
+ 	 */
+-	d = 0x0f40000000000ULL;
+-	d |= cpu;
+-	d |= (node & 0xf) << 12;
+-	d |= (node >> 4) << 48;
++	memset(&d, 0, sizeof(d));
++	d.limit0 = cpu | ((node & 0xf) << 12);
++	d.limit = node >> 4;
++	d.type = 4;		/* RO data, expand down */
++	d.dpl = 3;		/* Visible to user code */
++	d.s = 1;		/* Not a system segment */
++	d.p = 1;		/* Present */
+ 
+ 	write_gdt_entry(get_cpu_gdt_table(cpu), GDT_ENTRY_PER_CPU, &d, DESCTYPE_S);
+ }
 -- 
 1.9.3
 
