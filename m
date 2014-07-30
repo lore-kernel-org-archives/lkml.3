@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbaG3VCq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 17:02:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47152 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708AbaG3VCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 17:02:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,767,1400050800"; 
-   d="scan'208";a="581399893"
-Date: Wed, 30 Jul 2014 17:02:40 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the DAX
- page fault handler
-Message-ID: <20140730210239.GS6754@linux.intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
- <c2e602f401a580c4fac54b9b8f4a6f8dd0ac1071.1395591795.git.matthew.r.wilcox@intel.com>
- <20140409102758.GM32103@quack.suse.cz>
- <20140409205111.GG5727@linux.intel.com>
- <20140409214331.GQ32103@quack.suse.cz>
- <20140729121259.GL6754@linux.intel.com>
- <20140729210457.GA17807@quack.suse.cz>
- <20140729212333.GO6754@linux.intel.com>
- <20140730095229.GA19205@quack.suse.cz>
+	id S1752467AbaG3VEK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 17:04:10 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:34755 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230AbaG3VEJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 17:04:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140730095229.GA19205@quack.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAKMK7uGcFhfzeNTPNk=X_N=C4pda0LTtsb51JLGNBZAU5kg6tg@mail.gmail.com>
+References: <1406742127-27654-1-git-send-email-benjamin.gaignard@linaro.org>
+	<1406742127-27654-12-git-send-email-benjamin.gaignard@linaro.org>
+	<CAKMK7uGcFhfzeNTPNk=X_N=C4pda0LTtsb51JLGNBZAU5kg6tg@mail.gmail.com>
+Date: Wed, 30 Jul 2014 17:04:07 -0400
+Message-ID: <CAF6AEGsA_j1BNP0mwcHPDRJxMRygBP0-GeSYSuTrM9u=RH5guw@mail.gmail.com>
+Subject: Re: [PATCH v8 11/11] drm: sti: Add DRM driver itself
+From: Rob Clark <robdclark@gmail.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Benjamin Gaignard <benjamin.gaignard@linaro.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 11:52:29AM +0200, Jan Kara wrote:
->   I see the problem now. How about an attached patch? Do you see other
-> lockdep warnings with it?
+On Wed, Jul 30, 2014 at 3:48 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Wed, Jul 30, 2014 at 7:42 PM, Benjamin Gaignard
+> <benjamin.gaignard@linaro.org> wrote:
+>> @@ -87,11 +90,50 @@ static int sti_compositor_bind(struct device *dev, struct device *master,
+>>         struct sti_compositor *compo = dev_get_drvdata(dev);
+>>         struct drm_device *drm_dev = data;
+>>         unsigned int i, crtc = 0, plane = 0;
+>> +       struct sti_drm_private *dev_priv = drm_dev->dev_private;
+>> +       struct drm_plane *cursor = NULL;
+>> +       struct drm_plane *primary = NULL;
+>> +
+>> +       dev_priv->compo = compo;
+>>
+>>         drm_vblank_init(drm_dev, crtc);
+>
+>
+> This looks strange - you should pass this the total number of crtcs
+> (the same that eventually ends up in dev->mode_config.num_crtc), not
+> 0. And the assignement of cursors to crtcs looks a bit strange on
 
-This patch fixes the problem, thanks!  Regardless of DAX, I think this
-patch should be applied in order to avoid creating a dependency between
-i_mmap_mutex and jbd2_handle.
+hmm, Benjamin probably should try modetest w/ -v arg..  it does look a
+bit like something is missing here..
 
-I've now run into a different problem with COW pages ... more later.
+BR,
+-R
 
-> >From c01c905cf3c4c6304a5ea9836389d9cf0d575884 Mon Sep 17 00:00:00 2001
-> From: Jan Kara <jack@suse.cz>
-> Date: Wed, 30 Jul 2014 11:49:07 +0200
-> Subject: [PATCH] ext4: Avoid lock inversion between i_mmap_mutex and
->  transaction start
-> 
-> When DAX is enabled, it uses i_mmap_mutex as a protection against
-> truncate during page fault. This inevitably forces i_mmap_mutex to rank
-> outside of a transaction start and thus we have to avoid calling
-> pagecache purging operations when transaction is started.
-> 
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/ext4/inode.c | 14 ++++++++++----
->  1 file changed, 10 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> index 8a064734e6eb..494a8645d63e 100644
-> --- a/fs/ext4/inode.c
-> +++ b/fs/ext4/inode.c
-> @@ -3631,13 +3631,19 @@ int ext4_punch_hole(struct inode *inode, loff_t offset, loff_t length)
->  	if (IS_SYNC(inode))
->  		ext4_handle_sync(handle);
->  
-> -	/* Now release the pages again to reduce race window */
-> +	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
-> +	ext4_mark_inode_dirty(handle, inode);
-> +	ext4_journal_stop(handle);
-> +
-> +	/*
-> +	 * Now release the pages again to reduce race window. This has to happen
-> +	 * outside of a transaction to avoid lock inversion on i_mmap_mutex
-> +	 * when DAX is enabled.
-> +	 */
->  	if (last_block_offset > first_block_offset)
->  		truncate_pagecache_range(inode, first_block_offset,
->  					 last_block_offset);
-> -
-> -	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
-> -	ext4_mark_inode_dirty(handle, inode);
-> +	goto out_dio;
->  out_stop:
->  	ext4_journal_stop(handle);
->  out_dio:
-> -- 
-> 1.8.1.4
-> 
-
+> first read-through, but I have no clue about the sti hw. And in any
+> case those pointers really only matter for backwards compat with
+> existing pageflip and cursor ioctls, so doesn't really matter too
+> much.
+>
+> Anyway didn't spot anything else which would need to be upgrade to
+> never kms interfaces, so ack from my side for that. Only looked at
+> that since right now I'm refreshing drm docs in those areas ;-)
+> -Daniel
+> --
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
