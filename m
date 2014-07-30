@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125AbaG3QOb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 12:14:31 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20816 "EHLO mga01.intel.com"
+	id S1755403AbaG3QPY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 12:15:24 -0400
+Received: from verein.lst.de ([213.95.11.211]:48038 "EHLO newverein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753705AbaG3QO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 12:14:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,765,1400050800"; 
-   d="scan'208";a="577763483"
-Date: Wed, 30 Jul 2014 21:36:07 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        laurent.pinchart@ideasonboard.com, ludovic.desroches@atmel.com,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
- dma controller API
-Message-ID: <20140730160607.GM8181@intel.com>
-References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1755342AbaG3QPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 12:15:23 -0400
+Date: Wed, 30 Jul 2014 18:15:17 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Christoph Hellwig <hch@lst.de>, Josh Boyer <jwboyer@fedoraproject.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-scsi@vger.kernel.org,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        poma <pomidorabelisima@gmail.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Christoph Lameter <cl@linux.com>
+Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69
+	kmem_cache_create+0x1a9/0x330()
+Message-ID: <20140730161517.GA22229@lst.de>
+References: <53C97D34.5040707@gmail.com> <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com> <20140719164454.GA24530@lst.de> <53CCDFC3.5010802@gmail.com> <20140726162102.GA7126@lst.de> <1406533762.2003.13.camel@jarvis> <20140729122611.GA25980@lst.de> <20140730122135.GE28613@hansolo.jdub.homelinux.org> <20140730145225.GA15757@lst.de> <1406732699.4865.92.camel@jarvis>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1406732699.4865.92.camel@jarvis>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 06:03:13PM +0200, Maxime Ripard wrote:
-> The dmaengine is neither trivial nor properly documented at the moment, which
-> means a lot of trial and error development, which is not that good for such a
-> central piece of the system.
+On Wed, Jul 30, 2014 at 07:04:59PM +0400, James Bottomley wrote:
+> It's been remarkably current, I believe ... it's already up to date.
+
+I've updated the drivers tree today and it will get a few more updates
+さoon.
+
+> However, we only have 2 -next builds between now and the anticipated
+> 3.16 release (unless Linus does another -rc) so there's not enough time
+> for a patch that isn't already in (although this one is).
+
+Yes, that's why I'm not eager to complicate things.
+
+> > If James wants to cherry pick it and send it on at this time that might
+> > still work fine, but he seems fairly busy.
 > 
-> Attempt at making such a documentation.
+> I'll pull it out and refactor the tree.
 
-Did you miss Documentation/dmaengine.txt, lots of this is already covered
-there. But yes i would be really glad to know what isnt, so that we can fix
-that.
-
-> +  * device_slave_caps
-> +    - Isn't that redundant with the cap_mask already?
-> +    - Only a few drivers seem to implement it
-For audio to know what your channel can do rather than hardcoding it
-
-> +
-> +  * dma cookies?
-cookie is dma transaction representation which is monotonically incrementing
-number.
-
--- 
-~Vinod
+I'd rather stop rebasing this close to the release.  Linus never had
+problems if he got a commit twice due to a cherry pick.
