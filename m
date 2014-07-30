@@ -1,119 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842AbaG3XGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 19:06:23 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:9351 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaG3XGW (ORCPT
+	id S1752719AbaG3XHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 19:07:18 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:46526 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973AbaG3XHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 19:06:22 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 30 Jul 2014 15:58:00 -0700
-Message-ID: <53D97B70.1050305@nvidia.com>
-Date: Wed, 30 Jul 2014 16:10:40 -0700
-From: Matt Longnecker <mlongnecker@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Wed, 30 Jul 2014 19:07:16 -0400
+Message-ID: <53D97A9E.3090908@twiddle.net>
+Date: Wed, 30 Jul 2014 13:07:10 -1000
+From: Richard Henderson <rth@twiddle.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>, Eduardo Valentin <edubezval@gmail.com>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <mlongnecker@nvidia.com>
-Subject: [PATCH] thermal: tell cooling devices when a trip_point changes
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+CC: linux-kernel@vger.kernel.org, mcree@orcon.net.nz,
+        linux-alpha@vger.kernel.org
+Subject: Re: [PATCH 1/2] alpha: Remove "strange" OSF/1 fork semantics
+References: <1406756552-23864-1-git-send-email-rth@twiddle.net>	<1406756552-23864-2-git-send-email-rth@twiddle.net> <yw1xk36u5wrf.fsf@unicorn.mansr.com>
+In-Reply-To: <yw1xk36u5wrf.fsf@unicorn.mansr.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some hardware can react autonomously at a programmed temperature.
-For example, an SoC might implement a last ditch throttle or a
-hardware thermal shutdown. The driver for such a device can
-register itself as a cooling_device with the thermal framework.
+On 07/30/2014 12:04 PM, Måns Rullgård wrote:
+> Richard Henderson <rth@twiddle.net> writes:
+> 
+>> The assignment to regs->r20 kills the original tls_val input
+>> to the clone syscall, which means that clone can no longer be
+>> restarted with the original inputs.
+>>
+>> We could, perhaps, retain this result for true fork, but OSF/1
+>> compatibility is no longer important.  Note that glibc has never
+>> used the r20 result value, instead always testing r0 vs 0 to
+>> determine the child/parent status.
+> 
+> What effect does this have on OSF/1 compat?
 
-With this change, the thermal framework notifies such a driver
-when userspace alters the relevant trip temperature so that
-the driver can reprogram its hardware
+I don't know, as I've never had access to osf/1 myself.  It depends on how that
+$20 value is used -- potentially, fork(3) no longer works.
 
-Signed-off-by: Matt Longnecker <mlongnecker@nvidia.com>
----
- drivers/thermal/thermal_core.c |   30 ++++++++++++++++++++++++++++++
- include/linux/thermal.h        |    2 ++
- 2 files changed, 32 insertions(+)
+I can imagine that we could retain these assignments under the condition of
+clone_flags == 0, which both implies a basic fork as well as the fact that the
+tls_val argument is unused.
 
-diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index 71b0ec0..f25272e 100644
---- a/drivers/thermal/thermal_core.c
-+++ b/drivers/thermal/thermal_core.c
-@@ -597,6 +597,7 @@ trip_point_temp_store(struct device *dev, struct device_attribute *attr,
- 	struct thermal_zone_device *tz = to_thermal_zone(dev);
- 	int trip, ret;
- 	unsigned long temperature;
-+	struct thermal_instance *pos = NULL;
- 
- 	if (!tz->ops->set_trip_temp)
- 		return -EPERM;
-@@ -609,6 +610,20 @@ trip_point_temp_store(struct device *dev, struct device_attribute *attr,
- 
- 	ret = tz->ops->set_trip_temp(tz, trip, temperature);
- 
-+	/*
-+	 * Notify bound cooling devices that this trip point changed.
-+	 * This is useful for cooling devices which represent a behavior
-+	 * which trips in hardware (e.g. catastrophic shutdown)
-+	 */
-+	list_for_each_entry(pos, &tz->thermal_instances, tz_node) {
-+		if (pos->tz == tz && pos->trip == trip && pos->cdev) {
-+			if (pos->cdev->ops->trip_point_changed)
-+				pos->cdev->ops->trip_point_changed(pos->cdev,
-+								   pos->tz,
-+								   trip);
-+		}
-+	}
-+
- 	return ret ? ret : count;
- }
- 
-@@ -641,6 +656,7 @@ trip_point_hyst_store(struct device *dev, struct device_attribute *attr,
- 	struct thermal_zone_device *tz = to_thermal_zone(dev);
- 	int trip, ret;
- 	unsigned long temperature;
-+	struct thermal_instance *pos = NULL;
- 
- 	if (!tz->ops->set_trip_hyst)
- 		return -EPERM;
-@@ -658,6 +674,20 @@ trip_point_hyst_store(struct device *dev, struct device_attribute *attr,
- 	 */
- 	ret = tz->ops->set_trip_hyst(tz, trip, temperature);
- 
-+	/*
-+	 * Notify bound cooling devices that this trip point changed.
-+	 * This is useful for cooling devices which represent a behavior
-+	 * which trips in hardware (e.g. catastrophic shutdown)
-+	 */
-+	list_for_each_entry(pos, &tz->thermal_instances, tz_node) {
-+		if (pos->tz == tz && pos->trip == trip && pos->cdev) {
-+			if (pos->cdev->ops->trip_point_changed)
-+				pos->cdev->ops->trip_point_changed(pos->cdev,
-+								   pos->tz,
-+								   trip);
-+		}
-+	}
-+
- 	return ret ? ret : count;
- }
- 
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index f7e11c7..7da7fc5 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -138,6 +138,8 @@ struct thermal_cooling_device_ops {
- 	int (*get_max_state) (struct thermal_cooling_device *, unsigned long *);
- 	int (*get_cur_state) (struct thermal_cooling_device *, unsigned long *);
- 	int (*set_cur_state) (struct thermal_cooling_device *, unsigned long);
-+	void (*trip_point_changed) (struct thermal_cooling_device *,
-+				    struct thermal_zone_device *, int);
- };
- 
- struct thermal_cooling_device {
--- 
-1.7.9.5
+But I do have to ask first if anyone actually cares.  Surely the amount of
+osf-on-linux emulation is a vanishingly small proportion of the already small
+alpha-linux population.
 
+
+r~
