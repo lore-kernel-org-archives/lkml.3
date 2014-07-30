@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097AbaG3OMh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 10:12:37 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:59424 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752996AbaG3OMg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 10:12:36 -0400
+	id S1753656AbaG3ONf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 10:13:35 -0400
+Received: from imap.thunk.org ([74.207.234.97]:36473 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752565AbaG3ONd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 10:13:33 -0400
+Date: Wed, 30 Jul 2014 10:13:29 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Hugo Mills <hugo@carfax.org.uk>, Nick Krause <xerofoify@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
+	<linux-btrfs@vger.kernel.org>
+Subject: Re: Work Queue for btrfs compression writes
+Message-ID: <20140730141329.GC20353@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Hugo Mills <hugo@carfax.org.uk>, Nick Krause <xerofoify@gmail.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" <linux-btrfs@vger.kernel.org>
+References: <CAPDOMVjJHbCwDVyKQ+Vuse7G76FLSLq69Ja4kmopDbjtEb_Zkw@mail.gmail.com>
+ <20140730093821.GJ31950@carfax.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20140730114313.GG10301@distanz.ch>
-References: <1406655864-8694-1-git-send-email-fernando.apesteguia@gmail.com>
-	<20140730114313.GG10301@distanz.ch>
-Date: Wed, 30 Jul 2014 16:12:34 +0200
-Message-ID: <CAGwOe2bmOp-jknvDyLB68sb4KEHkMHMC5=9+HDNHptVHv1Xw7A@mail.gmail.com>
-Subject: Re: [PATCH] staging: vt6655: Fix device table definition.
-From: =?UTF-8?Q?Fernando_Apestegu=C3=ADa?= 
-	<fernando.apesteguia@gmail.com>
-To: Tobias Klauser <tklauser@distanz.ch>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140730093821.GJ31950@carfax.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 1:43 PM, Tobias Klauser <tklauser@distanz.ch> wrote:
->
-> On 2014-07-29 at 19:44:24 +0200, fernando.apesteguia@gmail.com <fernando.apesteguia@gmail.com> wrote:
-> > From: Fernando Apesteguia <fernando.apesteguia@gmail.com>
-> >
-> > Add static to the definition of the pci device table.
-> >
-> > Signed-off-by: Fernando Apesteguia <fernando.apesteguia@gmail.com>
->
-> This change is already part of Greg's tree, see commit
-> 9e4c5c2837a4 ("staging: vt6655: statify some variables") in branch
-> staging-next. Please make sure you work against that branch (which is
-> also a part of linux-next) for any patches you submit.
+On Wed, Jul 30, 2014 at 10:38:21AM +0100, Hugo Mills wrote:
+> qemu/kvm is good for this, because it has a mode
+> that bypasses the BIOS and bootloader emulation, and just directly
+> runs a kernel from a file on the host machine. This is fast. You can
+> pass large sparse files to the VM to act as scratch disks, plus keep
+> another smaller file for the guest OS (and a copy of it so that you
+> can throw one away and make another one quickly and easily).
 
-Ooops. I will. Thanks for the hint!
+Nick,
 
->
-> Cheers
-> Tobias
+The xfstests-bld/kvm-xfstests git tree I pointed out to you has an
+example of a test infrastructure which does this for ext4.  It's been
+on my todo list to support other file systems, and I have some plans
+for how to do thi, but it's been low on my priority list.  If someone
+in the btrfs development community is interested in working with me on
+this, they should contact me.
+
+Or the btrfs developers can create their own automated systems which
+then gets promulgated, but either way, it's something that I strongly
+recommend.  The set of test configs that ext4 developers would run
+significantly increased after I cleaned up my test scripts and made it
+something that other people could use, and it means that I can ask
+people who are implementing new features that they run a complete
+regression test run, with many different file systems features enabled
+and disabled, so they find the problems before they propose a patch
+for merging.
+
+Cheers,
+
+					- Ted
+
+
