@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaG3MXa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:23:30 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36765 "EHLO
+	id S1753629AbaG3MX2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:23:28 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36786 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753011AbaG3MPe (ORCPT
+	by vger.kernel.org with ESMTP id S1753014AbaG3MPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Christoph Schulz <develop@kristov.de>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 54/94] net: pppoe: use correct channel MTU when using Multilink PPP
-Date: Wed, 30 Jul 2014 14:14:43 +0200
-Message-Id: <b06db24ccc0a21ea9e899a1309b0630603e230e1.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@fb.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 83/94] blkcg: don't call into policy draining if root_blkg is already gone
+Date: Wed, 30 Jul 2014 14:15:12 +0200
+Message-Id: <5bc1169e96e8aa2a4fe39e4f04cc91b4dc5a598f.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,135 +23,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Schulz <develop@kristov.de>
+From: Tejun Heo <tj@kernel.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit a8a3e41c67d24eb12f9ab9680cbb85e24fcd9711 ]
+commit 0b462c89e31f7eb6789713437eb551833ee16ff3 upstream.
 
-The PPP channel MTU is used with Multilink PPP when ppp_mp_explode() (see
-ppp_generic module) tries to determine how big a fragment might be. According
-to RFC 1661, the MTU excludes the 2-byte PPP protocol field, see the
-corresponding comment and code in ppp_mp_explode():
+While a queue is being destroyed, all the blkgs are destroyed and its
+->root_blkg pointer is set to NULL.  If someone else starts to drain
+while the queue is in this state, the following oops happens.
 
-		/*
-		 * hdrlen includes the 2-byte PPP protocol field, but the
-		 * MTU counts only the payload excluding the protocol field.
-		 * (RFC1661 Section 2)
-		 */
-		mtu = pch->chan->mtu - (hdrlen - 2);
+  NULL pointer dereference at 0000000000000028
+  IP: [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
+  PGD e4a1067 PUD b773067 PMD 0
+  Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+  Modules linked in: cfq_iosched(-) [last unloaded: cfq_iosched]
+  CPU: 1 PID: 537 Comm: bash Not tainted 3.16.0-rc3-work+ #2
+  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  task: ffff88000e222250 ti: ffff88000efd4000 task.ti: ffff88000efd4000
+  RIP: 0010:[<ffffffff8144e944>]  [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
+  RSP: 0018:ffff88000efd7bf0  EFLAGS: 00010046
+  RAX: 0000000000000000 RBX: ffff880015091450 RCX: 0000000000000001
+  RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+  RBP: ffff88000efd7c10 R08: 0000000000000000 R09: 0000000000000001
+  R10: ffff88000e222250 R11: 0000000000000000 R12: ffff880015091450
+  R13: ffff880015092e00 R14: ffff880015091d70 R15: ffff88001508fc28
+  FS:  00007f1332650740(0000) GS:ffff88001fa80000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 0000000000000028 CR3: 0000000009446000 CR4: 00000000000006e0
+  Stack:
+   ffffffff8144e8f6 ffff880015091450 0000000000000000 ffff880015091d80
+   ffff88000efd7c28 ffffffff8144ae2f ffff880015091450 ffff88000efd7c58
+   ffffffff81427641 ffff880015091450 ffffffff82401f00 ffff880015091450
+  Call Trace:
+   [<ffffffff8144ae2f>] blkcg_drain_queue+0x1f/0x60
+   [<ffffffff81427641>] __blk_drain_queue+0x71/0x180
+   [<ffffffff81429b3e>] blk_queue_bypass_start+0x6e/0xb0
+   [<ffffffff814498b8>] blkcg_deactivate_policy+0x38/0x120
+   [<ffffffff8144ec44>] blk_throtl_exit+0x34/0x50
+   [<ffffffff8144aea5>] blkcg_exit_queue+0x35/0x40
+   [<ffffffff8142d476>] blk_release_queue+0x26/0xd0
+   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
+   [<ffffffff81454848>] kobject_put+0x28/0x60
+   [<ffffffff81427505>] blk_put_queue+0x15/0x20
+   [<ffffffff817d07bb>] scsi_device_dev_release_usercontext+0x16b/0x1c0
+   [<ffffffff810bc339>] execute_in_process_context+0x89/0xa0
+   [<ffffffff817d064c>] scsi_device_dev_release+0x1c/0x20
+   [<ffffffff817930e2>] device_release+0x32/0xa0
+   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
+   [<ffffffff81454848>] kobject_put+0x28/0x60
+   [<ffffffff817934d7>] put_device+0x17/0x20
+   [<ffffffff817d11b9>] __scsi_remove_device+0xa9/0xe0
+   [<ffffffff817d121b>] scsi_remove_device+0x2b/0x40
+   [<ffffffff817d1257>] sdev_store_delete+0x27/0x30
+   [<ffffffff81792ca8>] dev_attr_store+0x18/0x30
+   [<ffffffff8126f75e>] sysfs_kf_write+0x3e/0x50
+   [<ffffffff8126ea87>] kernfs_fop_write+0xe7/0x170
+   [<ffffffff811f5e9f>] vfs_write+0xaf/0x1d0
+   [<ffffffff811f69bd>] SyS_write+0x4d/0xc0
+   [<ffffffff81d24692>] system_call_fastpath+0x16/0x1b
 
-However, the pppoe module *does* include the PPP protocol field in the channel
-MTU, which is wrong as it causes the PPP payload to be 1-2 bytes too big under
-certain circumstances (one byte if PPP protocol compression is used, two
-otherwise), causing the generated Ethernet packets to be dropped. So the pppoe
-module has to subtract two bytes from the channel MTU. This error only
-manifests itself when using Multilink PPP, as otherwise the channel MTU is not
-used anywhere.
+776687bce42b ("block, blk-mq: draining can't be skipped even if
+bypass_depth was non-zero") made it easier to trigger this bug by
+making blk_queue_bypass_start() drain even when it loses the first
+bypass test to blk_cleanup_queue(); however, the bug has always been
+there even before the commit as blk_queue_bypass_start() could race
+against queue destruction, win the initial bypass test but perform the
+actual draining after blk_cleanup_queue() already destroyed all blkgs.
 
-In the following, I will describe how to reproduce this bug. We configure two
-pppd instances for multilink PPP over two PPPoE links, say eth2 and eth3, with
-a MTU of 1492 bytes for each link and a MRRU of 2976 bytes. (This MRRU is
-computed by adding the two link MTUs and subtracting the MP header twice, which
-is 4 bytes long.) The necessary pppd statements on both sides are "multilink
-mtu 1492 mru 1492 mrru 2976". On the client side, we additionally need "plugin
-rp-pppoe.so eth2" and "plugin rp-pppoe.so eth3", respectively; on the server
-side, we additionally need to start two pppoe-server instances to be able to
-establish two PPPoE sessions, one over eth2 and one over eth3. We set the MTU
-of the PPP network interface to the MRRU (2976) on both sides of the connection
-in order to make use of the higher bandwidth. (If we didn't do that, IP
-fragmentation would kick in, which we want to avoid.)
+Fix it by skippping calling into policy draining if all the blkgs are
+already gone.
 
-Now we send a ICMPv4 echo request with a payload of 2948 bytes from client to
-server over the PPP link. This results in the following network packet:
-
-   2948 (echo payload)
- +    8 (ICMPv4 header)
- +   20 (IPv4 header)
----------------------
-   2976 (PPP payload)
-
-These 2976 bytes do not exceed the MTU of the PPP network interface, so the
-IP packet is not fragmented. Now the multilink PPP code in ppp_mp_explode()
-prepends one protocol byte (0x21 for IPv4), making the packet one byte bigger
-than the negotiated MRRU. So this packet would have to be divided in three
-fragments. But this does not happen as each link MTU is assumed to be two bytes
-larger. So this packet is diveded into two fragments only, one of size 1489 and
-one of size 1488. Now we have for that bigger fragment:
-
-   1489 (PPP payload)
- +    4 (MP header)
- +    2 (PPP protocol field for the MP payload (0x3d))
- +    6 (PPPoE header)
---------------------------
-   1501 (Ethernet payload)
-
-This packet exceeds the link MTU and is discarded.
-
-If one configures the link MTU on the client side to 1501, one can see the
-discarded Ethernet frames with tcpdump running on the client. A
-
-ping -s 2948 -c 1 192.168.15.254
-
-leads to the smaller fragment that is correctly received on the server side:
-
-(tcpdump -vvvne -i eth3 pppoes and ppp proto 0x3d)
-52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
-  length 1514: PPPoE  [ses 0x3] MLPPP (0x003d), length 1494: seq 0x000,
-  Flags [end], length 1492
-
-and to the bigger fragment that is not received on the server side:
-
-(tcpdump -vvvne -i eth2 pppoes and ppp proto 0x3d)
-52:54:00:70:9e:89 > 52:54:00:5d:6f:b0, ethertype PPPoE S (0x8864),
-  length 1515: PPPoE  [ses 0x5] MLPPP (0x003d), length 1495: seq 0x000,
-  Flags [begin], length 1493
-
-With the patch below, we correctly obtain three fragments:
-
-52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
-  length 1514: PPPoE  [ses 0x1] MLPPP (0x003d), length 1494: seq 0x000,
-  Flags [begin], length 1492
-52:54:00:70:9e:89 > 52:54:00:5d:6f:b0, ethertype PPPoE S (0x8864),
-  length 1514: PPPoE  [ses 0x1] MLPPP (0x003d), length 1494: seq 0x000,
-  Flags [none], length 1492
-52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
-  length 27: PPPoE  [ses 0x1] MLPPP (0x003d), length 7: seq 0x000,
-  Flags [end], length 5
-
-And the ICMPv4 echo request is successfully received at the server side:
-
-IP (tos 0x0, ttl 64, id 21925, offset 0, flags [DF], proto ICMP (1),
-  length 2976)
-    192.168.222.2 > 192.168.15.254: ICMP echo request, id 30530, seq 0,
-      length 2956
-
-The bug was introduced in commit c9aa6895371b2a257401f59d3393c9f7ac5a8698
-("[PPPOE]: Advertise PPPoE MTU") from the very beginning. This patch applies
-to 3.10 upwards but the fix can be applied (with minor modifications) to
-kernels as old as 2.6.32.
-
-Signed-off-by: Christoph Schulz <develop@kristov.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Shirish Pargaonkar <spargaonkar@suse.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Reported-by: Jet Chen <jet.chen@intel.com>
+Tested-by: Shirish Pargaonkar <spargaonkar@suse.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ppp/pppoe.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ block/blk-cgroup.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/net/ppp/pppoe.c b/drivers/net/ppp/pppoe.c
-index 82ee6ed954cb..addd23246eb6 100644
---- a/drivers/net/ppp/pppoe.c
-+++ b/drivers/net/ppp/pppoe.c
-@@ -675,7 +675,7 @@ static int pppoe_connect(struct socket *sock, struct sockaddr *uservaddr,
- 		po->chan.hdrlen = (sizeof(struct pppoe_hdr) +
- 				   dev->hard_header_len);
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index dd0dd2d4ceca..d8f80e733cf8 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -859,6 +859,13 @@ void blkcg_drain_queue(struct request_queue *q)
+ {
+ 	lockdep_assert_held(q->queue_lock);
  
--		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr);
-+		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr) - 2;
- 		po->chan.private = sk;
- 		po->chan.ops = &pppoe_chan_ops;
++	/*
++	 * @q could be exiting and already have destroyed all blkgs as
++	 * indicated by NULL root_blkg.  If so, don't confuse policies.
++	 */
++	if (!q->root_blkg)
++		return;
++
+ 	blk_throtl_drain(q);
+ }
  
 -- 
 2.0.1
