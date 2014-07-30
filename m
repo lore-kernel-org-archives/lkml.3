@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009AbaG3MU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:20:26 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36794 "EHLO
+	id S1753205AbaG3MUZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:20:25 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36788 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753016AbaG3MPe (ORCPT
+	by vger.kernel.org with ESMTP id S1753020AbaG3MPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 85/94] slab_common: fix the check for duplicate slab names
-Date: Wed, 30 Jul 2014 14:15:14 +0200
-Message-Id: <ff916b570e74476b1e18dd017921f5914a26b2cc.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        Jens Axboe <axboe@fb.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 80/94] block: don't assume last put of shared tags is for the host
+Date: Wed, 30 Jul 2014 14:15:09 +0200
+Message-Id: <b786221fb1e1c1664140d49a46b4bf844afc272c.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -23,61 +23,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Christoph Hellwig <hch@lst.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 694617474e33b8603fc76e090ed7d09376514b1a upstream.
+commit d45b3279a5a2252cafcd665bbf2db8c9b31ef783 upstream.
 
-The patch 3e374919b314f20e2a04f641ebc1093d758f66a4 is supposed to fix the
-problem where kmem_cache_create incorrectly reports duplicate cache name
-and fails. The problem is described in the header of that patch.
+There is no inherent reason why the last put of a tag structure must be
+the one for the Scsi_Host, as device model objects can be held for
+arbitrary periods.  Merge blk_free_tags and __blk_free_tags into a single
+funtion that just release a references and get rid of the BUG() when the
+host reference wasn't the last.
 
-However, the patch doesn't really fix the problem because of these
-reasons:
-
-* the logic to test for debugging is reversed. It was intended to perform
-  the check only if slub debugging is enabled (which implies that caches
-  with the same parameters are not merged). Therefore, there should be
-  #if !defined(CONFIG_SLUB) || defined(CONFIG_SLUB_DEBUG_ON)
-  The current code has the condition reversed and performs the test if
-  debugging is disabled.
-
-* slub debugging may be enabled or disabled based on kernel command line,
-  CONFIG_SLUB_DEBUG_ON is just the default settings. Therefore the test
-  based on definition of CONFIG_SLUB_DEBUG_ON is unreliable.
-
-This patch fixes the problem by removing the test
-"!defined(CONFIG_SLUB_DEBUG_ON)". Therefore, duplicate names are never
-checked if the SLUB allocator is used.
-
-Note to stable kernel maintainers: when backporint this patch, please
-backport also the patch 3e374919b314f20e2a04f641ebc1093d758f66a4.
-
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/slab_common.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ block/blk-tag.c | 33 +++++++--------------------------
+ 1 file changed, 7 insertions(+), 26 deletions(-)
 
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index e2e98af703ea..97e5f5eeca12 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -56,7 +56,7 @@ static int kmem_cache_sanity_check(struct mem_cgroup *memcg, const char *name,
- 			continue;
- 		}
+diff --git a/block/blk-tag.c b/block/blk-tag.c
+index 3f33d8672268..a185b86741e5 100644
+--- a/block/blk-tag.c
++++ b/block/blk-tag.c
+@@ -27,18 +27,15 @@ struct request *blk_queue_find_tag(struct request_queue *q, int tag)
+ EXPORT_SYMBOL(blk_queue_find_tag);
  
--#if !defined(CONFIG_SLUB) || !defined(CONFIG_SLUB_DEBUG_ON)
-+#if !defined(CONFIG_SLUB)
- 		/*
- 		 * For simplicity, we won't check this in the list of memcg
- 		 * caches. We have control over memcg naming, and if there
+ /**
+- * __blk_free_tags - release a given set of tag maintenance info
++ * blk_free_tags - release a given set of tag maintenance info
+  * @bqt:	the tag map to free
+  *
+- * Tries to free the specified @bqt.  Returns true if it was
+- * actually freed and false if there are still references using it
++ * Drop the reference count on @bqt and frees it when the last reference
++ * is dropped.
+  */
+-static int __blk_free_tags(struct blk_queue_tag *bqt)
++void blk_free_tags(struct blk_queue_tag *bqt)
+ {
+-	int retval;
+-
+-	retval = atomic_dec_and_test(&bqt->refcnt);
+-	if (retval) {
++	if (atomic_dec_and_test(&bqt->refcnt)) {
+ 		BUG_ON(find_first_bit(bqt->tag_map, bqt->max_depth) <
+ 							bqt->max_depth);
+ 
+@@ -50,9 +47,8 @@ static int __blk_free_tags(struct blk_queue_tag *bqt)
+ 
+ 		kfree(bqt);
+ 	}
+-
+-	return retval;
+ }
++EXPORT_SYMBOL(blk_free_tags);
+ 
+ /**
+  * __blk_queue_free_tags - release tag maintenance info
+@@ -69,28 +65,13 @@ void __blk_queue_free_tags(struct request_queue *q)
+ 	if (!bqt)
+ 		return;
+ 
+-	__blk_free_tags(bqt);
++	blk_free_tags(bqt);
+ 
+ 	q->queue_tags = NULL;
+ 	queue_flag_clear_unlocked(QUEUE_FLAG_QUEUED, q);
+ }
+ 
+ /**
+- * blk_free_tags - release a given set of tag maintenance info
+- * @bqt:	the tag map to free
+- *
+- * For externally managed @bqt frees the map.  Callers of this
+- * function must guarantee to have released all the queues that
+- * might have been using this tag map.
+- */
+-void blk_free_tags(struct blk_queue_tag *bqt)
+-{
+-	if (unlikely(!__blk_free_tags(bqt)))
+-		BUG();
+-}
+-EXPORT_SYMBOL(blk_free_tags);
+-
+-/**
+  * blk_queue_free_tags - release tag maintenance info
+  * @q:  the request queue for the device
+  *
 -- 
 2.0.1
 
