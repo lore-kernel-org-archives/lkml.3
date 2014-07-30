@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598AbaG3RX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 13:23:59 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:49848 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302AbaG3RX4 (ORCPT
+	id S1755628AbaG3RZG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 13:25:06 -0400
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:56487 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755075AbaG3RZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 13:23:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140730164344.GA27954@localhost.localdomain>
-References: <cover.1406604806.git.luto@amacapital.net> <7123b2489cc5d1d5abb7bcf1364ca729cab3e6ca.1406604806.git.luto@amacapital.net>
- <20140729193232.GA8153@redhat.com> <20140730164344.GA27954@localhost.localdomain>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 30 Jul 2014 10:23:34 -0700
-Message-ID: <CALCETrUVaz3JFiNbyU=r3M-E9muHa1ffn7RX+_-4V_0U-hVaPw@mail.gmail.com>
-Subject: Re: [PATCH v4 2/5] x86,entry: Only call user_exit if TIF_NOHZ
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 30 Jul 2014 13:25:04 -0400
+X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Jul 2014 13:25:04 EDT
+From: Debabrata Banerjee <dbanerje@akamai.com>
+To: netdev@vger.kernel.org, "David S . Miller" <davem@davemloft.net>
+Cc: Debabrata Banerjee <dbanerje@akamai.com>, Julian Anastasov <ja@ssi.bg>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] tcp: don't require root to read tcp_metrics
+Date: Wed, 30 Jul 2014 13:13:35 -0400
+Message-Id: <1406740415-9386-1-git-send-email-dbanerje@akamai.com>
+X-Mailer: git-send-email 2.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 9:43 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Tue, Jul 29, 2014 at 09:32:32PM +0200, Oleg Nesterov wrote:
->> On 07/28, Andy Lutomirski wrote:
->> >
->> > @@ -1449,7 +1449,12 @@ long syscall_trace_enter(struct pt_regs *regs)
->> >  {
->> >     long ret = 0;
->> >
->> > -   user_exit();
->> > +   /*
->> > +    * If TIF_NOHZ is set, we are required to call user_exit() before
->> > +    * doing anything that could touch RCU.
->> > +    */
->> > +   if (test_thread_flag(TIF_NOHZ))
->> > +           user_exit();
->>
->> Personally I still think this change just adds more confusion, but I leave
->> this to you and Frederic.
->>
->> It is not that "If TIF_NOHZ is set, we are required to call user_exit()", we
->> need to call user_exit() just because we enter the kernel. TIF_NOHZ is just
->> the implementation detail which triggers this slow path.
->>
->> At least it should be correct, unless I am confused even more than I think.
->
-> Agreed, Perhaps the confusion is on the syscall_trace_enter() name which suggests
-> this is only about tracing? syscall_slowpath_enter() could be an alternative.
-> But that's still tracing in a general sense so...
+commit d23ff701643a4a725e2c7a8ba2d567d39daa29ea introduced netlink support for
+the new tcp_metrics, however it restricted getting of tcp_metrics to root user
+only. This is a change from how these values could have been fetched when in
+the old route cache. Unless there's a legitimate reason to restrict the reading
+of these values it would be better if normal users could fetch them.
 
-At the end of the day, the syscall slowpath code calls a bunch of
-functions depending on what TIF_XYZ flags are set.  As long as it's
-structured like "if (TIF_A) do_a(); if (TIF_B) do_b();" or something
-like that, it's comprehensible.  But once random functions with no
-explicit flag checks or comments start showing up, it gets confusing.
+Cc: Julian Anastasov <ja@ssi.bg>
+Cc: linux-kernel@vger.kernel.org
+---
+ net/ipv4/tcp_metrics.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-If it's indeed all-or-nothing, I could remove the check and add a
-comment.  But please keep in mind that, currently, the slow path is
-*slow*, and my patches only improve the entry case.  So enabling
-context tracking on every task will hurt.
+diff --git a/net/ipv4/tcp_metrics.c b/net/ipv4/tcp_metrics.c
+index 4fe0418..0d54e59 100644
+--- a/net/ipv4/tcp_metrics.c
++++ b/net/ipv4/tcp_metrics.c
+@@ -1093,7 +1093,6 @@ static const struct genl_ops tcp_metrics_nl_ops[] = {
+ 		.doit = tcp_metrics_nl_cmd_get,
+ 		.dumpit = tcp_metrics_nl_dump,
+ 		.policy = tcp_metrics_nl_policy,
+-		.flags = GENL_ADMIN_PERM,
+ 	},
+ 	{
+ 		.cmd = TCP_METRICS_CMD_DEL,
+-- 
+2.0.3
 
---Andy
