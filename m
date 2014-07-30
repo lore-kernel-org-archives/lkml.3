@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948AbaG3Ump (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 16:42:45 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:39424 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755901AbaG3Umj (ORCPT
+	id S1755898AbaG3Umd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 16:42:33 -0400
+Received: from g2t2353.austin.hp.com ([15.217.128.52]:41484 "EHLO
+	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761AbaG3UmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 16:42:39 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: clm@fb.com
-Cc: jbacik@fb.com, linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Remove certain calls for releasing page cache
-Date: Wed, 30 Jul 2014 16:42:34 -0400
-Message-Id: <1406752954-26158-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 30 Jul 2014 16:42:12 -0400
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: peterz@infradead.org, mingo@kernel.org
+Cc: jason.low2@hp.com, davidlohr@hp.com, aswin@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH -tip v2 7/7] Documentation: Update locking/mutex-design.txt disadvantages
+Date: Wed, 30 Jul 2014 13:41:56 -0700
+Message-Id: <1406752916-3341-7-git-send-email-davidlohr@hp.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1406752916-3341-1-git-send-email-davidlohr@hp.com>
+References: <1406752916-3341-1-git-send-email-davidlohr@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the lines for releasing the page cache in certain
-files as this may aid in perfomance with writes in the compression
-rountines of btrfs. Please note that this patch has not been tested
-on my own hardware due to no compression based btrfs volumes of my
-own.
+Fortunately Jason was able to reduce some of the overhead we
+had introduced in the original rwsem optimistic spinning -
+an it is now the same size as mutexes. Update the documentation
+accordingly.
 
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+Acked-by: Jason Low <jason.low2@hp.com>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 ---
- fs/btrfs/compression.c | 17 +----------------
- 1 file changed, 1 insertion(+), 16 deletions(-)
+ Documentation/locking/mutex-design.txt | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/btrfs/compression.c b/fs/btrfs/compression.c
-index 1daea0b..b55b0e1 100644
---- a/fs/btrfs/compression.c
-+++ b/fs/btrfs/compression.c
-@@ -1,4 +1,5 @@
- /*
-+	
-  * Copyright (C) 2008 Oracle.  All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or
-@@ -246,7 +247,6 @@ static noinline void end_compressed_writeback(struct inode *inode, u64 start,
- 		}
- 		for (i = 0; i < ret; i++) {
- 			end_page_writeback(pages[i]);
--			page_cache_release(pages[i]);
- 		}
- 		nr_pages -= ret;
- 		index += ret;
-@@ -293,21 +293,6 @@ static void end_compressed_bio_write(struct bio *bio, int err)
+diff --git a/Documentation/locking/mutex-design.txt b/Documentation/locking/mutex-design.txt
+index ee231ed..60c482d 100644
+--- a/Documentation/locking/mutex-design.txt
++++ b/Documentation/locking/mutex-design.txt
+@@ -145,9 +145,9 @@ Disadvantages
  
- 	end_compressed_writeback(inode, cb->start, cb->len);
- 	/* note, our inode could be gone now */
--
--	/*
--	 * release the compressed pages, these came from alloc_page and
--	 * are not attached to the inode at all
--	 */
--	index = 0;
--	for (index = 0; index < cb->nr_pages; index++) {
--		page = cb->compressed_pages[index];
--		page->mapping = NULL;
--		page_cache_release(page);
--	}
--
--	/* finally free the cb struct */
--	kfree(cb->compressed_pages);
--	kfree(cb);
- out:
- 	bio_put(bio);
- }
+ Unlike its original design and purpose, 'struct mutex' is larger than
+ most locks in the kernel. E.g: on x86-64 it is 40 bytes, almost twice
+-as large as 'struct semaphore' (24 bytes) and 8 bytes shy of the
+-'struct rw_semaphore' variant. Larger structure sizes mean more CPU
+-cache and memory footprint.
++as large as 'struct semaphore' (24 bytes) and tied, along with rwsems,
++for the largest lock in the kernel. Larger structure sizes mean more
++CPU cache and memory footprint.
+ 
+ When to use mutexes
+ -------------------
 -- 
-1.9.1
+1.8.1.4
 
