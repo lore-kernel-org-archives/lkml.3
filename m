@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168AbaG3HZL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 03:25:11 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:48655 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932135AbaG3HZJ (ORCPT
+	id S932184AbaG3H1u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 03:27:50 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:50221 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754618AbaG3H1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 03:25:09 -0400
-Date: Wed, 30 Jul 2014 08:25:04 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] mfd: ab8500-core: Use 'ifdef' for config options
-Message-ID: <20140730072504.GD9030@lee--X1>
-References: <1406683788-7776-1-git-send-email-festevam@gmail.com>
+	Wed, 30 Jul 2014 03:27:49 -0400
+Date: Wed, 30 Jul 2014 09:27:47 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jakub Jelinek <jakub@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3.15 33/37] Fix gcc-4.9.0 miscompilation of
+ load_balance()  in scheduler
+Message-ID: <20140730072747.GG22904@x4>
+References: <20140730014827.565626091@linuxfoundation.org>
+ <20140730014829.344302554@linuxfoundation.org>
+ <20140730065312.GA1652@laptop.redhat.com>
+ <20140730071308.GF22904@x4>
+ <20140730072120.GB1652@laptop.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1406683788-7776-1-git-send-email-festevam@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140730072120.GB1652@laptop.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jul 2014, Fabio Estevam wrote:
-
-> From: Fabio Estevam <fabio.estevam@freescale.com>
+On 2014.07.30 at 09:21 +0200, Jakub Jelinek wrote:
+> On Wed, Jul 30, 2014 at 09:13:08AM +0200, Markus Trippelsdorf wrote:
+> > On 2014.07.30 at 08:53 +0200, Jakub Jelinek wrote:
+> > > On Tue, Jul 29, 2014 at 06:49:09PM -0700, Greg Kroah-Hartman wrote:
+> > > > 3.15-stable review patch.  If anyone has any objections, please let me know.
+> > > 
+> > > IMNSHO this is a too big hammer approach.  The bug happened on a single
+> > > file only (right?), so if anything, IMHO it could be disabled for that
+> > > single file only, and better do it only for compilers with the bug.
+> > 
+> > No. There are many more files affected. It just happens that Linus
+> > analyzed the assembly of this single file (fair.c) and found a bug. 
+> > Just build your redhat distro kernel with GCC_COMPARE_DEBUG=1 and you'll
+> > see. So unless someone analyzes the assembly output of all other
+> > affected files by hand and finds no issues, one has to assume the worst.
 > 
-> The config symbol 'CONFIG_DEBUG_FS' should be protected by a 'ifdef' instead
-> of a plain 'if'.
-> 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-> ---
->  drivers/mfd/ab8500-core.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> I'm talking about wrong-code issues.  For -fcompare-debug, we indeed check
+> it primarily during gcc bootstrap (through bootstrap-debug) and some
+> testcases, and we'll certainly try to build some more code with
+> -fcompare-debug and fix the issues.
 
-Applied, thanks.
-
-> diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
-> index ce48aa7..bde2fc0 100644
-> --- a/drivers/mfd/ab8500-core.c
-> +++ b/drivers/mfd/ab8500-core.c
-> @@ -1754,7 +1754,7 @@ static int ab8500_probe(struct platform_device *pdev)
->  	if (ret)
->  		return ret;
->  
-> -#if CONFIG_DEBUG_FS
-> +#ifdef CONFIG_DEBUG_FS
->  	/* Pass to debugfs */
->  	ab8500_debug_resources[0].start = ab8500->irq;
->  	ab8500_debug_resources[0].end = ab8500->irq;
+Yes, I'm talking about wrong-code issues, too. For example the pr61801.c
+testcase was reduced from kernel/exit.c.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Markus
