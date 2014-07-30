@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726AbaG3Ru7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 13:50:59 -0400
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:30842 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755268AbaG3Ru6 (ORCPT
+	id S1755523AbaG3Rzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 13:55:42 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:39248 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755178AbaG3Rzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 13:50:58 -0400
-From: Debabrata Banerjee <dbanerje@akamai.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        netdev@vger.kernel.org, "David S . Miller" <davem@davemloft.net>
-Cc: Debabrata Banerjee <dbanerje@akamai.com>, Julian Anastasov <ja@ssi.bg>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] tcp: don't require root to read tcp_metrics
-Date: Wed, 30 Jul 2014 13:50:17 -0400
-Message-Id: <1406742617-10556-1-git-send-email-dbanerje@akamai.com>
-X-Mailer: git-send-email 2.0.3
-In-Reply-To: <53D92D92.4090403@cogentembedded.com>
-References: <53D92D92.4090403@cogentembedded.com>
+	Wed, 30 Jul 2014 13:55:40 -0400
+Message-ID: <53D9319A.9060407@cogentembedded.com>
+Date: Wed, 30 Jul 2014 21:55:38 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Kever Yang <kever.yang@rock-chips.com>, heiko@sntech.de,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, linux@arm.linux.org.uk, paulz@synopsys.com,
+        gregkh@linuxfoundation.org, mporter@linaro.org, kishon@ti.com,
+        balbi@ti.com
+CC: swarren@wwwdotorg.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        addy.ke@rock-chips.com, xjq@rock-chips.com, cf@rock-chips.com,
+        lyz@rock-chips.com, wulf@rock-chips.com, dianders@chromium.org,
+        olof@lixom.net, sonnyrao@chromium.org
+Subject: Re: [PATCH 2/4] ARM: dts: add rk3288 dwc2 controller support
+References: <1406683873-18194-1-git-send-email-kever.yang@rock-chips.com> <1406684075-18271-1-git-send-email-kever.yang@rock-chips.com> <53D90CC4.9070009@cogentembedded.com>
+In-Reply-To: <53D90CC4.9070009@cogentembedded.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit d23ff7016 (tcp: add generic netlink support for tcp_metrics) introduced
-netlink support for the new tcp_metrics, however it restricted getting of
-tcp_metrics to root user only. This is a change from how these values could
-have been fetched when in the old route cache. Unless there's a legitimate
-reason to restrict the reading of these values it would be better if normal
-users could fetch them.
+On 07/30/2014 07:18 PM, Sergei Shtylyov wrote:
 
-Cc: Julian Anastasov <ja@ssi.bg>
-Cc: linux-kernel@vger.kernel.org
+>> rk3288 has two kind of usb controller, this add the dwc2 controller
+>> for otg and host1.
 
-Signed-off-by: Debabrata Banerjee <dbanerje@akamai.com>
----
- net/ipv4/tcp_metrics.c | 1 -
- 1 file changed, 1 deletion(-)
+>> Controller can works with usb PHY default setting and Vbus on.
 
-diff --git a/net/ipv4/tcp_metrics.c b/net/ipv4/tcp_metrics.c
-index 4fe0418..0d54e59 100644
---- a/net/ipv4/tcp_metrics.c
-+++ b/net/ipv4/tcp_metrics.c
-@@ -1093,7 +1093,6 @@ static const struct genl_ops tcp_metrics_nl_ops[] = {
- 		.doit = tcp_metrics_nl_cmd_get,
- 		.dumpit = tcp_metrics_nl_dump,
- 		.policy = tcp_metrics_nl_policy,
--		.flags = GENL_ADMIN_PERM,
- 	},
- 	{
- 		.cmd = TCP_METRICS_CMD_DEL,
--- 
-2.0.3
+>> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+>> ---
+>>   arch/arm/boot/dts/rk3288.dtsi |   20 ++++++++++++++++++++
+>>   1 file changed, 20 insertions(+)
+
+>> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+>> index abc51f5..4309c4f 100644
+>> --- a/arch/arm/boot/dts/rk3288.dtsi
+>> +++ b/arch/arm/boot/dts/rk3288.dtsi
+>> @@ -646,5 +646,25 @@
+>>               clock-names = "baudclk", "apb_pclk";
+>>               status = "disabled";
+>>           };
+>> +
+>> +        usb_otg: dwc2@ff580000 {
+
+>     The ePAPR standard [1] says:
+
+> The name of a node should be somewhat generic, reflecting the function of the
+> device and not its precise programming model. If appropriate, the name should
+> be one of the following choices:
+
+> [...]
+>     • usb
+
+>> +            compatible = "rockchip,rk3288-usb", "rockchip,rk3066-usb",
+>> +                    "snps,dwc2";
+>> +            reg = <0xff580000 0x40000>;
+>> +            interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
+>> +            clocks = <&cru HCLK_OTG0>;
+>> +            clock-names = "otg";
+>> +            status = "disabled";
+>> +        };
+>> +
+>> +        usb_host1: dwc2@ff540000 {
+
+>     Same here.
+
+    Oops, forgot to give the ePAPR link:
+
+[1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
+
+WBR, Sergei
 
