@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789AbaG3WgM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 18:36:12 -0400
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:39080 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751934AbaG3WgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 18:36:11 -0400
-X-Greylist: delayed 1948 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Jul 2014 18:36:11 EDT
-Date: Thu, 31 Jul 2014 01:02:53 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: David Miller <davem@davemloft.net>
-cc: aaro.koskinen@iki.fi, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hughd@google.com,
-        cat.schulze@alice-dsl.net
-Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
-In-Reply-To: <20140729.162635.638786990787878495.davem@davemloft.net>
-Message-ID: <alpine.SOC.1.00.1407310101550.2065@math.ut.ee>
-References: <20140414184353.GA5630@drone.musicnaut.iki.fi> <20140416.145822.1317931249717152474.davem@davemloft.net> <alpine.SOC.1.00.1404170119550.20193@math.ut.ee> <20140729.162635.638786990787878495.davem@davemloft.net>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1755919AbaG3Wgb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 18:36:31 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:57793 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755847AbaG3Wg3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 18:36:29 -0400
+X-Sasl-enc: 3p+hJZJTXlO6JKD/gEB4QBuZEh4FHEXTR8yuUctIsUZP 1406759787
+Date: Wed, 30 Jul 2014 15:35:59 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kim Phillips <kim.phillips@freescale.com>
+Subject: Re: linux-next: manual merge of the clk tree with the driver-core
+ tree
+Message-ID: <20140730223559.GB9004@kroah.com>
+References: <20140730185708.12a99f00@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140730185708.12a99f00@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Here is something I'd like you guys to test.
+On Wed, Jul 30, 2014 at 06:57:08PM +1000, Stephen Rothwell wrote:
+> Hi Mike,
+> 
+> Today's linux-next merge of the clk tree got a conflict in
+> drivers/base/platform.c between commit 3d713e0e382e ("driver core:
+> platform: add device binding path 'driver_override'") from the
+> driver-core tree and commit 86be408bfbd8 ("clk: Support for clock
+> parents and rates assigned from device tree") from the clk tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-Very interesting.
+Looks good, thanks.
 
-[...]
-> Could you guys please try this patch below?  Thanks.
-
-  CC      arch/sparc/mm/init_64.o
-arch/sparc/mm/init_64.c: In function 'update_mmu_cache_pmd':
-arch/sparc/mm/init_64.c:2625:6: error: 'pte' may be used uninitialized in this function [-Werror=uninitialized]
-
-gcc 4.6.4.
-
--- 
-Meelis Roos (mroos@linux.ee)
+greg k-h
