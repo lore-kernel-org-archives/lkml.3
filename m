@@ -1,43 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253AbaG3Mby (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:31:54 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54556 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752555AbaG3Mbw (ORCPT
+	id S1755198AbaG3Mbn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:31:43 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36750 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752732AbaG3MPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 08:31:52 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: William Dauchy <wdauchy@gmail.com>
-Cc: Vinson Lee <vlee@twopensource.com>, Zdenek Kabelac <zkabelac@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: WARNING: CPU: 0 PID: 2623 at drivers/pnp/pnpacpi/core.c:96 pnpacpi_set_resource
-Date: Wed, 30 Jul 2014 14:50:22 +0200
-Message-ID: <2051431.ekkUkyD6yC@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAJ75kXa_h=A9yLjG=BtY4Fk_GY+37fb+u1x1wVy2n9X8S-P9KQ@mail.gmail.com>
-References: <5386F2C7.8080400@redhat.com> <8487820.GRUnuPqyXT@vostro.rjw.lan> <CAJ75kXa_h=A9yLjG=BtY4Fk_GY+37fb+u1x1wVy2n9X8S-P9KQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Wed, 30 Jul 2014 08:15:32 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Martin Lau <kafai@fb.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 60/94] ring-buffer: Fix polling on trace_pipe
+Date: Wed, 30 Jul 2014 14:14:49 +0200
+Message-Id: <9b1829d6d4a1036a52bcdec52eab9b1d5b330369.1406722270.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
+References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
+In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
+References: <cover.1406722269.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 30, 2014 01:49:55 PM William Dauchy wrote:
-> Hi Rafael,
-> 
-> On Wed, Jul 30, 2014 at 12:39 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > William, it would be good if you could test it too as I'd like to
-> > push it for 3.16.
-> 
-> It also fixes the issue in 3.14.x
-> 
-> Tested-by: William Dauchy <william@gandi.net>
+From: Martin Lau <kafai@fb.com>
 
-Great, thanks for testing!
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
+===============
+
+commit 97b8ee845393701edc06e27ccec2876ff9596019 upstream.
+
+ring_buffer_poll_wait() should always put the poll_table to its wait_queue
+even there is immediate data available.  Otherwise, the following epoll and
+read sequence will eventually hang forever:
+
+1. Put some data to make the trace_pipe ring_buffer read ready first
+2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
+3. epoll_wait()
+4. read(trace_pipe_fd) till EAGAIN
+5. Add some more data to the trace_pipe ring_buffer
+6. epoll_wait() -> this epoll_wait() will block forever
+
+~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
+  ring_buffer_poll_wait() returns immediately without adding poll_table,
+  which has poll_table->_qproc pointing to ep_poll_callback(), to its
+  wait_queue.
+~ During the epoll_wait() call in step 3 and step 6,
+  ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
+  because the poll_table->_qproc is NULL and it is how epoll works.
+~ When there is new data available in step 6, ring_buffer does not know
+  it has to call ep_poll_callback() because it is not in its wait queue.
+  Hence, block forever.
+
+Other poll implementation seems to call poll_wait() unconditionally as the very
+first thing to do.  For example, tcp_poll() in tcp.c.
+
+Link: http://lkml.kernel.org/p/20140610060637.GA14045@devbig242.prn2.facebook.com
+
+Fixes: 2a2cc8f7c4d0 "ftrace: allow the event pipe to be polled"
+Reviewed-by: Chris Mason <clm@fb.com>
+Signed-off-by: Martin Lau <kafai@fb.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ kernel/trace/ring_buffer.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 15c4ae203885..a758ec217bc0 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -616,10 +616,6 @@ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct rb_irq_work *work;
+ 
+-	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
+-	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
+-		return POLLIN | POLLRDNORM;
+-
+ 	if (cpu == RING_BUFFER_ALL_CPUS)
+ 		work = &buffer->irq_work;
+ 	else {
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+2.0.1
+
