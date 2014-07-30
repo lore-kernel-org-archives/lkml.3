@@ -1,191 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789AbaG3Pl5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 11:41:57 -0400
-Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:44196
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754109AbaG3Ply (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 11:41:54 -0400
-From: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        Michal Simek <michals@xilinx.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Punnaiah Choudary <kpc528@gmail.com>,
-        Anirudha Sarangi <anirudh@xilinx.com>,
-        Srikanth Vemula <svemula@xilinx.com>
-Subject: RE: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr ecc
- controller
-Thread-Topic: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr
- ecc controller
-Thread-Index: Ac+sDL1D4VO4hX43QSOxWbwM1x4+UA==
-Date: Wed, 30 Jul 2014 15:41:47 +0000
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.231.182]
-Content-Type: text/plain; charset="utf-8"
+	id S1754461AbaG3Ppo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 11:45:44 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:55686 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084AbaG3Ppm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 11:45:42 -0400
 MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <9dc2a947-d2ab-4f00-8ed3-d2499cb6fdfd@BN1BFFO11FD002.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(13464003)(51704005)(377454003)(24454002)(199002)(189002)(19580405001)(50986999)(19580395003)(83322001)(64706001)(86362001)(110136001)(83072002)(23676002)(47776003)(85306003)(79102001)(81342001)(53416004)(80022001)(74316001)(21056001)(2656002)(50466002)(33646002)(77096002)(70736001)(44976005)(46102001)(92726001)(31696002)(104016003)(92566001)(77982001)(76482001)(74502001)(95666004)(99396002)(1496007)(85852003)(87936001)(20776003)(106466001)(74662001)(6806004)(107046002)(54356999)(81542001)(31966008)(4396001)(107986001)(23106004)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB067;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0288CD37D9
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=punnaiah.choudary.kalluri@xilinx.com; 
+In-Reply-To: <20140730144059.GA7272@saruman.home>
+References: <1406582183-696-1-git-send-email-balbi@ti.com>
+	<1406582183-696-30-git-send-email-balbi@ti.com>
+	<20140729121425.GR29045@atomide.com>
+	<20140729141522.GB17808@saruman.home>
+	<20140729152052.GV29045@atomide.com>
+	<20140729154057.GE17808@saruman.home>
+	<20140729163345.GF17808@saruman.home>
+	<20140730060420.GY29045@atomide.com>
+	<20140730144059.GA7272@saruman.home>
+Date: Wed, 30 Jul 2014 10:45:41 -0500
+X-Google-Sender-Auth: 3bB4zqCUfS3pLvowlCZWuoRE7Us
+Message-ID: <CAGo_u6ou+MoKOE_tTTmjxyFNW=jTaN9vnTsHrxR6sQHsieJyLA@mail.gmail.com>
+Subject: Re: [PATCH 29/35] arm: omap: intc: switch over to linear irq domain
+From: Nishanth Menon <nm@ti.com>
+To: "Balbi, Felipe" <balbi@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, dt list <devicetree@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        jason@lakedaemon.net, Kevin Hilman <khilman@deeprootsystems.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tero Kristo <t-kristo@ti.com>, Benoit Cousson <bcousson@baylibre.com>,
+        tglx@linutronix.de,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6UFg17i002122
 
-Hi Boris,
-
->-----Original Message-----
->From: Borislav Petkov [mailto:bp@alien8.de]
->Sent: Monday, July 28, 2014 11:32 PM
->To: Punnaiah Choudary Kalluri
->Cc: Punnaiah Choudary Kalluri; dougthompson@xmission.com;
->robh+dt@kernel.org; pawel.moll@arm.com; Michal Simek;
->mark.rutland@arm.com; ijc+devicetree@hellion.org.uk; Kumar Gala; Rob
->Landley; devicetree@vger.kernel.org; linux-doc@vger.kernel.org; linux-
->edac@vger.kernel.org; linux-kernel@vger.kernel.org; linux-arm-
->kernel@lists.infradead.org; Punnaiah Choudary; Anirudha Sarangi; Srikanth
->Vemula
->Subject: Re: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr
->ecc controller
+On Wed, Jul 30, 2014 at 9:40 AM, Felipe Balbi <balbi@ti.com> wrote:
+> HI,
 >
->On Mon, Jul 28, 2014 at 10:53:26PM +0530, punnaiah choudary kalluri wrote:
->> I can agree with you that we can use shorter names.But ZYNQ has
->> programmable logic next to processing system where one can add soft
->> memory controller in the same system and may use different driver. So,
->> the edac driver for zynq may include multiple drivers for different
->> memory controllers in the same file. In this case it is difficult to
->> maintain generic macros as you suggested above.
+> On Tue, Jul 29, 2014 at 11:04:21PM -0700, Tony Lindgren wrote:
+>> * Felipe Balbi <balbi@ti.com> [140729 09:36]:
+>> > Hi,
+>> >
+>> > On Tue, Jul 29, 2014 at 10:40:57AM -0500, Felipe Balbi wrote:
+>> > > On Tue, Jul 29, 2014 at 08:20:52AM -0700, Tony Lindgren wrote:
+>> > > > * Felipe Balbi <balbi@ti.com> [140729 07:18]:
+>> > > > > Hi,
+>> > > > >
+>> > > > > On Tue, Jul 29, 2014 at 05:14:25AM -0700, Tony Lindgren wrote:
+>> > > > > > * Felipe Balbi <balbi@ti.com> [140728 14:19]:
+>> > > > > > > now that we don't need to support legacy board-files,
+>> > > > > > > we can completely switch over to a linear irq domain
+>> > > > > > > and make use of irq_alloc_domain_generic_chips() to
+>> > > > > > > allocate all generic irq chips for us.
+>> > > > > >
+>> > > > > > This patch seems to somehow break off-idle for omap3
+>> > > > > > where it no longer wakes up.
+>> > > > >
+>> > > > > Sure your bisection is correct ? This patch just switches from legacy
+>> > > > > irq domain to linear irq domain.
+>> > > >
+>> > > > Yes, I tried it a few times. Just enabling
+>> > > > retention idle hangs too with this patch.
+>> > > >
+>> > > > Maybe it's omap3_prcm_irq_setup that relies on
+>> > > > 11 + OMAP_INTC_START? There may be other such issues
+>> > >
+>> > > lol.
+>> > >
+>> > > OMAP4 has the same nonsense.
+>> >
+>> > made me think why (if) OMAP4 works with that same setup. Does wake from
+>> > OFF work with OMAP4 ?
+>>
+>> Not without similar changes, omap4+ has the same issue.. There's a RFC
+>> series from Nishant to fix some of this, and Tero is moving the PRCM
+>> into a driver.
+>>
+>> > Anyway, here's a quick little hack to check if that's the reason for the
+>> > regression:
+>>
+>> OK yeah that's along the same lines with Nishant's RFC series in thread
+>> "[RFC PATCH 0/7] ARM: OMAP4+: PRM: minor cleanups and dt support of
+>> interrupts"
+>>
+>> FYI, it did not compile, needs to include linux/of_irq.h. But yes,
 >
->So?
+> I might have sent the wrong version as I had that same build error and
+> fixed it localy.
 >
->You can still shorten them a bit - the current names are awfully long.
->SYNPS_DDRC_ECC_ is too much information, for example. We know it is DDR
->and we know it is about ECC. So do SYNPS and ZYNQ or OTHER or whatever
->you wanna call it prefix and then the rest. I.e.,
+>> it fixes the regression for me, Also now the whole series works for
+>> me :)
 >
->    SYNPS_<reg>_<bits*>
->    ZYNQ_<reg>_bits*>
+> good to know.
 >
->You can even use single letter prefixes like S_ and Z_ and add a comment
->explaining what those mean. Still much more readable than the long
->repeating prefixes currently.
+> What do you want to do now ? Wait for PRCM to become a driver ? Wait for
+> Nishanth's series to get accepted ? I guess the same thing could be done
+> for OMAP3 and AM33, then we would have a chance of having working wake
+> from idle with the new irqchip.
 
-Ok.
->
->> Also the current edac framework for edac memory controllers is
->> expecting the mc_num from the driver while allocating the memory
->> controller instance using the edac_mc_alloc function. This requirement
->> mandates that if the system contains two different memory controllers
->> then the corresponding edac drivers should be in single file.
->
->So you're telling me that you want one edac driver for *two* memory
->controllers which can be present on a single system *at* *the* *same*
->*time*? Is that it?
-
-Yes.
->
->How exactly is that topology supposed to look like, work, etc, etc? What
->kind of error reporting do you imagine you want to do with EDAC?
-
-Zynq (All programmable SOC) contains a dual core ARM cortex A9 based processing
-System(PS) and Xilinx programmable logic(PL) in a single device.
-
-Assume the application is a broadcast camera. The design for this system use PS as
-Control plane and use PL as data plane for processing the video data. So, the design 
-may have two different memory controllers one in PS and another one in PL.   
-PS is running with Linux OS and PL doesn't have the OS and it is  controlled by the 
-OS running on PS.
- Now the requirement is to develop a monitoring system for all the hardware failures 
-Including ddr ecc errors. Since the broadcast camera involves more data processing and
-DDR memory access, there is a high probability of getting ddr ecc errors over the period.
-So, the user should be intimated with these errors when they occur and if the error rate
- is high, then the user can consider the preventive methods. Without this error reporting
-mechanism it is difficult to debug the issues like memory corruption, kernel oops which
- may occur due to ddr ecc failures.
-
-Since, the memory controllers are different, it need two edac drivers for reporting the ecc 
-errors and also maintaining the statistics of that particular memory controller. With the current
-framework, there is a chance that both the drivers get mc_num as zero and malfunction. 
-Assume the code for the two drivers looks like below
-
-Driver 1:
-	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
-			    sizeof(struct  ctrl1_drvdata));
-
-Driver 2:
-	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
-			    sizeof(struct ctrl2_drvdata));
-
-Issue:
-  Since driver is providing the mc_num to framework, now there is chance that only one device active as
- both the drivers claiming the same number.
-
-Solution 1:
- Keep two drivers in single file and use static global variable for tracking the mc_num. This solution looks
-good but the drivers may not be generic as these driver would be in a zynq_edac.c file. So others may not
-reuse these drivers
-static int mc_num = 0;
-
-Driver 1:
-	mci = edac_mc_alloc(mc_num, ARRAY_SIZE(layers), layers,
-			    sizeof(struct  ctrl1_drvdata));
-              mc_num++;
-
-Driver 2:
-	mci = edac_mc_alloc(mc_num, ARRAY_SIZE(layers), layers,
-			    sizeof(struct ctrl2_drvdata));
-                 mc_num++;
-
-Solution 2:
-  Let the framework assign the mc_num to the edac driver
-
-     mc_num = edac_mc_get_id(); /* returns the next available mci slot */
-     mci = edac_mc_alloc(mc_num,...);
+I can repost the current series as it stands now once 17-rc1 comes out
+(without the build failure ofcourse).. if that helps to move it out of
+RFC status.
 
 
-In my opinion solution 2  looks neat and it eliminates the dependency on tracking
- the mc_num.
-
-Please suggest your view on this solution.
- 
-At this point of time, my requirement is reporting the ecc correctable and uncorrectable
- errors and also maintaining the error stats for future decision making. Since the linux edac
-Framework is ready, we decided to use this framework.
- 
-Meanwhile, I will  submit the next revision of the patch for the above cooments. 
-
+-- 
+---
 Regards,
-Punnaiah
->
->IOW, more info would be appreciated.
->
->Thanks.
->
->--
->Regards/Gruss,
->    Boris.
->
->Sent from a fat crate under my desk. Formatting is fine.
->--
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Nishanth Menon
