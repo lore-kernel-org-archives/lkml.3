@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519AbaG3FSQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 01:18:16 -0400
-Received: from mail-oi0-f43.google.com ([209.85.218.43]:56940 "EHLO
-	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020AbaG3FSO (ORCPT
+	id S1751840AbaG3Fd0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 01:33:26 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:60703 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020AbaG3FdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 01:18:14 -0400
+	Wed, 30 Jul 2014 01:33:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140729151451.GA9080@kroah.com>
-References: <CAGUYZuQxJtjNKfvpEY_6GR1SxZCcbmwv5p0Lpu5jx7CgC5os9Q@mail.gmail.com>
-	<20140729151451.GA9080@kroah.com>
-Date: Wed, 30 Jul 2014 10:48:14 +0530
-Message-ID: <CAGUYZuRhLXL7fwDhZLtSgxKF0AABnfc6rt-aKEqcZx9Lj3r8Tg@mail.gmail.com>
-Subject: Re: Open-ended task In kernel
-From: sanjeev sharma <sanjeevsharmaengg@gmail.com>
-To: gregkh <gregkh@linuxfoundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <0c84bc47f6fe383b7d2cf2f77ed831be570aba0b.1406691397.git.joe@perches.com>
+References: <cover.1406691397.git.joe@perches.com> <0c84bc47f6fe383b7d2cf2f77ed831be570aba0b.1406691397.git.joe@perches.com>
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Wed, 30 Jul 2014 11:03:04 +0530
+Message-ID: <CAO_48GEHFxGq8kW0BLQTcDLk_t23zmQSbQ+h38WFK_REe2tgQA@mail.gmail.com>
+Subject: Re: [PATCH 1/6] MAINTAINERS: Update DMA BUFFER SHARING patterns
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks greg
+Hi Joe!
 
-so I need to find issue myself and then start from there.Do we have
-some link somewhere open-ended task is captured.
+On 30 July 2014 09:08, Joe Perches <joe@perches.com> wrote:
+> One pattern per F: line please...
+Thanks for catching this;
+Acked-by: Sumit Semwal <sumit.semwal@linaro.org>
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> CC: Sumit Semwal <sumit.semwal@linaro.org>
+> ---
+>  MAINTAINERS | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 5e5478b..66d5894 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -2941,7 +2941,9 @@ L:        linux-media@vger.kernel.org
+>  L:     dri-devel@lists.freedesktop.org
+>  L:     linaro-mm-sig@lists.linaro.org
+>  F:     drivers/dma-buf/
+> -F:     include/linux/dma-buf* include/linux/reservation.h include/linux/*fence.h
+> +F:     include/linux/dma-buf*
+> +F:     include/linux/reservation.h
+> +F:     include/linux/*fence.h
+>  F:     Documentation/dma-buf-sharing.txt
+>  T:     git git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git
+>
+> --
+> 1.8.1.2.459.gbcd45b4.dirty
+>
 
-Regards
-Sanjeev Sharma
 
-On Tue, Jul 29, 2014 at 8:44 PM, gregkh <gregkh@linuxfoundation.org> wrote:
-> On Tue, Jul 29, 2014 at 12:46:46PM +0530, sanjeev sharma wrote:
->> Hello All,
->>
->> I have started recently in contributing into Linux kernel and submitted patches
->> in staging directory and now I want to do outside staging directory specially
->> in main kernel and driver part.Do we have anything in Linux kernel i.e some
->> specific areas which I can looked upon.I think we should have some list of
->> open-point where people can contribute.
->>
->> If anyone has some information,please share on mailing list so that I can focus
->> myself in correct direction.
->
-> Yes, I know lots of "open ended" tasks in the kernel.
->
-> But just because I, or someone else, writes them down doesn't mean that
-> you will want to do them, or be sucessful at them.
->
-> My suggestion always is, "Find something that bothers you, fix it, and
-> go from there."  And if you can't find a problem with the kernel on your
-> machine, then you really aren't looking hard enough.
->
-> Best of luck,
->
-> greg k-h
+Best regards,
+~Sumit.
