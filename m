@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998AbaG3Mpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:45:55 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36621 "EHLO
+	id S1755984AbaG3Mpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:45:53 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36618 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752726AbaG3MPZ (ORCPT
+	by vger.kernel.org with ESMTP id S1752727AbaG3MPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 08:15:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tyler Hall <tylerwhall@gmail.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Andre Naujoks <nautsch2@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 06/94] slip: Fix deadlock in write_wakeup
-Date: Wed, 30 Jul 2014 14:13:55 +0200
-Message-Id: <7b10a5267a7c5e4522b2ba467fb16bb70ac19741.1406722270.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 09/94] shmem: fix splicing from a hole while it's punched
+Date: Wed, 30 Jul 2014 14:13:58 +0200
+Message-Id: <a428dc008e435c5a36b1288fb5b8c4b58472e28c.1406722270.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
 References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
@@ -25,210 +28,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tyler Hall <tylerwhall@gmail.com>
+From: Hugh Dickins <hughd@google.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 661f7fda21b15ec52f57fcd397c03370acc28688 upstream.
+commit b1a366500bd537b50c3aad26dc7df083ec03a448 upstream.
 
-Use schedule_work() to avoid potentially taking the spinlock in
-interrupt context.
+shmem_fault() is the actual culprit in trinity's hole-punch starvation,
+and the most significant cause of such problems: since a page faulted is
+one that then appears page_mapped(), needing unmap_mapping_range() and
+i_mmap_mutex to be unmapped again.
 
-Commit cc9fa74e2a ("slip/slcan: added locking in wakeup function") added
-necessary locking to the wakeup function and 367525c8c2/ddcde142be ("can:
-slcan: Fix spinlock variant") converted it to spin_lock_bh() because the lock
-is also taken in timers.
+But it is not the only way in which a page can be brought into a hole in
+the radix_tree while that hole is being punched; and Vlastimil's testing
+implies that if enough other processors are busy filling in the hole,
+then shmem_undo_range() can be kept from completing indefinitely.
 
-Disabling softirqs is not sufficient, however, as tty drivers may call
-write_wakeup from interrupt context. This driver calls tty->ops->write() with
-its spinlock held, which may immediately cause an interrupt on the same CPU and
-subsequent spin_bug().
+shmem_file_splice_read() is the main other user of SGP_CACHE, which can
+instantiate shmem pagecache pages in the read-only case (without holding
+i_mutex, so perhaps concurrently with a hole-punch).  Probably it's
+silly not to use SGP_READ already (using the ZERO_PAGE for holes): which
+ought to be safe, but might bring surprises - not a change to be rushed.
 
-Simply converting to spin_lock_irq/irqsave() prevents this deadlock, but
-causes lockdep to point out a possible circular locking dependency
-between these locks:
+shmem_read_mapping_page_gfp() is an internal interface used by
+drivers/gpu/drm GEM (and next by uprobes): it should be okay.  And
+shmem_file_read_iter() uses the SGP_DIRTY variant of SGP_CACHE, when
+called internally by the kernel (perhaps for a stacking filesystem,
+which might rely on holes to be reserved): it's unclear whether it could
+be provoked to keep hole-punch busy or not.
 
-(&(&sl->lock)->rlock){-.....}, at: slip_write_wakeup
-(&port_lock_key){-.....}, at: serial8250_handle_irq.part.13
+We could apply the same umbrella as now used in shmem_fault() to
+shmem_file_splice_read() and the others; but it looks ugly, and use over
+a range raises questions - should it actually be per page? can these get
+starved themselves?
 
-The slip transmit is holding the slip spinlock when calling the tty write.
-This grabs the port lock. On an interrupt, the handler grabs the port
-lock and calls write_wakeup which grabs the slip lock. This could be a
-problem if a serial interrupt occurs on another CPU during the slip
-transmit.
+The origin of this part of the problem is my v3.1 commit d0823576bf4b
+("mm: pincer in truncate_inode_pages_range"), once it was duplicated
+into shmem.c.  It seemed like a nice idea at the time, to ensure
+(barring RCU lookup fuzziness) that there's an instant when the entire
+hole is empty; but the indefinitely repeated scans to ensure that make
+it vulnerable.
 
-To deal with these issues, don't grab the lock in the wakeup function by
-deferring the writeout to a workqueue. Also hold the lock during close
-when de-assigning the tty pointer to safely disarm the worker and
-timers.
+Revert that "enhancement" to hole-punch from shmem_undo_range(), but
+retain the unproblematic rescanning when it's truncating; add a couple
+of comments there.
 
-This bug is easily reproducible on the first transmit when slip is
-used with the standard 8250 serial driver.
+Remove the "indices[0] >= end" test: that is now handled satisfactorily
+by the inner loop, and mem_cgroup_uncharge_start()/end() are too light
+to be worth avoiding here.
 
-[<c0410b7c>] (spin_bug+0x0/0x38) from [<c006109c>] (do_raw_spin_lock+0x60/0x1d0)
- r5:eab27000 r4:ec02754c
-[<c006103c>] (do_raw_spin_lock+0x0/0x1d0) from [<c04185c0>] (_raw_spin_lock+0x28/0x2c)
- r10:0000001f r9:eabb814c r8:eabb8140 r7:40070193 r6:ec02754c r5:eab27000
- r4:ec02754c r3:00000000
-[<c0418598>] (_raw_spin_lock+0x0/0x2c) from [<bf3a0220>] (slip_write_wakeup+0x50/0xe0 [slip])
- r4:ec027540 r3:00000003
-[<bf3a01d0>] (slip_write_wakeup+0x0/0xe0 [slip]) from [<c026e420>] (tty_wakeup+0x48/0x68)
- r6:00000000 r5:ea80c480 r4:eab27000 r3:bf3a01d0
-[<c026e3d8>] (tty_wakeup+0x0/0x68) from [<c028a8ec>] (uart_write_wakeup+0x2c/0x30)
- r5:ed68ea90 r4:c06790d8
-[<c028a8c0>] (uart_write_wakeup+0x0/0x30) from [<c028dc44>] (serial8250_tx_chars+0x114/0x170)
-[<c028db30>] (serial8250_tx_chars+0x0/0x170) from [<c028dffc>] (serial8250_handle_irq+0xa0/0xbc)
- r6:000000c2 r5:00000060 r4:c06790d8 r3:00000000
-[<c028df5c>] (serial8250_handle_irq+0x0/0xbc) from [<c02933a4>] (dw8250_handle_irq+0x38/0x64)
- r7:00000000 r6:edd2f390 r5:000000c2 r4:c06790d8
-[<c029336c>] (dw8250_handle_irq+0x0/0x64) from [<c028d2f4>] (serial8250_interrupt+0x44/0xc4)
- r6:00000000 r5:00000000 r4:c06791c4 r3:c029336c
-[<c028d2b0>] (serial8250_interrupt+0x0/0xc4) from [<c0067fe4>] (handle_irq_event_percpu+0xb4/0x2b0)
- r10:c06790d8 r9:eab27000 r8:00000000 r7:00000000 r6:0000001f r5:edd52980
- r4:ec53b6c0 r3:c028d2b0
-[<c0067f30>] (handle_irq_event_percpu+0x0/0x2b0) from [<c006822c>] (handle_irq_event+0x4c/0x6c)
- r10:c06790d8 r9:eab27000 r8:c0673ae0 r7:c05c2020 r6:ec53b6c0 r5:edd529d4
- r4:edd52980
-[<c00681e0>] (handle_irq_event+0x0/0x6c) from [<c006b140>] (handle_level_irq+0xe8/0x100)
- r6:00000000 r5:edd529d4 r4:edd52980 r3:00022000
-[<c006b058>] (handle_level_irq+0x0/0x100) from [<c00676f8>] (generic_handle_irq+0x30/0x40)
- r5:0000001f r4:0000001f
-[<c00676c8>] (generic_handle_irq+0x0/0x40) from [<c000f57c>] (handle_IRQ+0xd0/0x13c)
- r4:ea997b18 r3:000000e0
-[<c000f4ac>] (handle_IRQ+0x0/0x13c) from [<c00086c4>] (armada_370_xp_handle_irq+0x4c/0x118)
- r8:000003ff r7:ea997b18 r6:ffffffff r5:60070013 r4:c0674dc0
-[<c0008678>] (armada_370_xp_handle_irq+0x0/0x118) from [<c0013840>] (__irq_svc+0x40/0x70)
-Exception stack(0xea997b18 to 0xea997b60)
-7b00:                                                       00000001 20070013
-7b20: 00000000 0000000b 20070013 eab27000 20070013 00000000 ed10103e eab27000
-7b40: c06790d8 ea997b74 ea997b60 ea997b60 c04186c0 c04186c8 60070013 ffffffff
- r9:eab27000 r8:ed10103e r7:ea997b4c r6:ffffffff r5:60070013 r4:c04186c8
-[<c04186a4>] (_raw_spin_unlock_irqrestore+0x0/0x54) from [<c0288fc0>] (uart_start+0x40/0x44)
- r4:c06790d8 r3:c028ddd8
-[<c0288f80>] (uart_start+0x0/0x44) from [<c028982c>] (uart_write+0xe4/0xf4)
- r6:0000003e r5:00000000 r4:ed68ea90 r3:0000003e
-[<c0289748>] (uart_write+0x0/0xf4) from [<bf3a0d20>] (sl_xmit+0x1c4/0x228 [slip])
- r10:ed388e60 r9:0000003c r8:ffffffdd r7:0000003e r6:ec02754c r5:ea717eb8
- r4:ec027000
-[<bf3a0b5c>] (sl_xmit+0x0/0x228 [slip]) from [<c0368d74>] (dev_hard_start_xmit+0x39c/0x6d0)
- r8:eaf163c0 r7:ec027000 r6:ea717eb8 r5:00000000 r4:00000000
+But if we do not always loop indefinitely, we do need to handle the case
+of swap swizzled back to page before shmem_free_swap() gets it: add a
+retry for that case, as suggested by Konstantin Khlebnikov; and for the
+case of page swizzled back to swap, as suggested by Johannes Weiner.
 
-Signed-off-by: Tyler Hall <tylerwhall@gmail.com>
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>
-Cc: Andre Naujoks <nautsch2@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Suggested-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Lukas Czerner <lczerner@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: <stable@vger.kernel.org>	[3.1+]
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/slip/slip.c | 36 ++++++++++++++++++++++++++----------
- drivers/net/slip/slip.h |  1 +
- 2 files changed, 27 insertions(+), 10 deletions(-)
+ mm/shmem.c | 24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/slip/slip.c b/drivers/net/slip/slip.c
-index ad4a94e9ff57..87526443841f 100644
---- a/drivers/net/slip/slip.c
-+++ b/drivers/net/slip/slip.c
-@@ -83,6 +83,7 @@
- #include <linux/delay.h>
- #include <linux/init.h>
- #include <linux/slab.h>
-+#include <linux/workqueue.h>
- #include "slip.h"
- #ifdef CONFIG_INET
- #include <linux/ip.h>
-@@ -416,36 +417,46 @@ static void sl_encaps(struct slip *sl, unsigned char *icp, int len)
- #endif
- }
- 
--/*
-- * Called by the driver when there's room for more data.  If we have
-- * more packets to send, we send them here.
-- */
--static void slip_write_wakeup(struct tty_struct *tty)
-+/* Write out any remaining transmit buffer. Scheduled when tty is writable */
-+static void slip_transmit(struct work_struct *work)
- {
-+	struct slip *sl = container_of(work, struct slip, tx_work);
- 	int actual;
--	struct slip *sl = tty->disc_data;
- 
-+	spin_lock_bh(&sl->lock);
- 	/* First make sure we're connected. */
--	if (!sl || sl->magic != SLIP_MAGIC || !netif_running(sl->dev))
-+	if (!sl->tty || sl->magic != SLIP_MAGIC || !netif_running(sl->dev)) {
-+		spin_unlock_bh(&sl->lock);
- 		return;
-+	}
- 
--	spin_lock_bh(&sl->lock);
- 	if (sl->xleft <= 0)  {
- 		/* Now serial buffer is almost free & we can start
- 		 * transmission of another packet */
- 		sl->dev->stats.tx_packets++;
--		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
-+		clear_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
- 		spin_unlock_bh(&sl->lock);
- 		sl_unlock(sl);
- 		return;
- 	}
- 
--	actual = tty->ops->write(tty, sl->xhead, sl->xleft);
-+	actual = sl->tty->ops->write(sl->tty, sl->xhead, sl->xleft);
- 	sl->xleft -= actual;
- 	sl->xhead += actual;
- 	spin_unlock_bh(&sl->lock);
- }
- 
-+/*
-+ * Called by the driver when there's room for more data.
-+ * Schedule the transmit.
-+ */
-+static void slip_write_wakeup(struct tty_struct *tty)
-+{
-+	struct slip *sl = tty->disc_data;
-+
-+	schedule_work(&sl->tx_work);
-+}
-+
- static void sl_tx_timeout(struct net_device *dev)
- {
- 	struct slip *sl = netdev_priv(dev);
-@@ -749,6 +760,7 @@ static struct slip *sl_alloc(dev_t line)
- 	sl->magic       = SLIP_MAGIC;
- 	sl->dev	      	= dev;
- 	spin_lock_init(&sl->lock);
-+	INIT_WORK(&sl->tx_work, slip_transmit);
- 	sl->mode        = SL_MODE_DEFAULT;
- #ifdef CONFIG_SLIP_SMART
- 	/* initialize timer_list struct */
-@@ -872,8 +884,12 @@ static void slip_close(struct tty_struct *tty)
- 	if (!sl || sl->magic != SLIP_MAGIC || sl->tty != tty)
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 6f5626fca3cc..0da81aaeb4cc 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -534,22 +534,19 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
  		return;
  
-+	spin_lock_bh(&sl->lock);
- 	tty->disc_data = NULL;
- 	sl->tty = NULL;
-+	spin_unlock_bh(&sl->lock);
-+
-+	flush_work(&sl->tx_work);
+ 	index = start;
+-	for ( ; ; ) {
++	while (index < end) {
+ 		cond_resched();
+ 		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
+ 				min(end - index, (pgoff_t)PAGEVEC_SIZE),
+ 							pvec.pages, indices);
+ 		if (!pvec.nr) {
+-			if (index == start || unfalloc)
++			/* If all gone or hole-punch or unfalloc, we're done */
++			if (index == start || end != -1)
+ 				break;
++			/* But if truncating, restart to make sure all gone */
+ 			index = start;
+ 			continue;
+ 		}
+-		if ((index == start || unfalloc) && indices[0] >= end) {
+-			shmem_deswap_pagevec(&pvec);
+-			pagevec_release(&pvec);
+-			break;
+-		}
+ 		mem_cgroup_uncharge_start();
+ 		for (i = 0; i < pagevec_count(&pvec); i++) {
+ 			struct page *page = pvec.pages[i];
+@@ -561,8 +558,12 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+ 			if (radix_tree_exceptional_entry(page)) {
+ 				if (unfalloc)
+ 					continue;
+-				nr_swaps_freed += !shmem_free_swap(mapping,
+-								index, page);
++				if (shmem_free_swap(mapping, index, page)) {
++					/* Swap was replaced by page: retry */
++					index--;
++					break;
++				}
++				nr_swaps_freed++;
+ 				continue;
+ 			}
  
- 	/* VSV = very important to remove timers */
- #ifdef CONFIG_SLIP_SMART
-diff --git a/drivers/net/slip/slip.h b/drivers/net/slip/slip.h
-index 67673cf1266b..cf32aadf508f 100644
---- a/drivers/net/slip/slip.h
-+++ b/drivers/net/slip/slip.h
-@@ -53,6 +53,7 @@ struct slip {
-   struct tty_struct	*tty;		/* ptr to TTY structure		*/
-   struct net_device	*dev;		/* easy for intr handling	*/
-   spinlock_t		lock;
-+  struct work_struct	tx_work;	/* Flushes transmit buffer	*/
- 
- #ifdef SL_INCLUDE_CSLIP
-   struct slcompress	*slcomp;	/* for header compression 	*/
+@@ -571,6 +572,11 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+ 				if (page->mapping == mapping) {
+ 					VM_BUG_ON(PageWriteback(page));
+ 					truncate_inode_page(mapping, page);
++				} else {
++					/* Page was replaced by swap: retry */
++					unlock_page(page);
++					index--;
++					break;
+ 				}
+ 			}
+ 			unlock_page(page);
 -- 
 2.0.1
 
