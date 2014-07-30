@@ -1,94 +1,381 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498AbaG3SMV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 14:12:21 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:61958 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454AbaG3SMS (ORCPT
+	id S1755704AbaG3SOO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 14:14:14 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57823 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755396AbaG3SOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 14:12:18 -0400
+	Wed, 30 Jul 2014 14:14:05 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, tj@kernel.org
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v14 3/8] ata: libahci_platform: move port_map parameters into the AHCI structure
+Date: Wed, 30 Jul 2014 20:13:56 +0200
+Message-Id: <1406744041-1269-4-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406744041-1269-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1406744041-1269-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:2811:8aec:a585:9833]
-In-Reply-To: <1406732794-20920-3-git-send-email-rric@kernel.org>
-References: <1406732794-20920-1-git-send-email-rric@kernel.org>
-	<1406732794-20920-3-git-send-email-rric@kernel.org>
-Date: Wed, 30 Jul 2014 11:12:17 -0700
-Message-ID: <CAOesGMj9PnfddJO7PorZ7U2OoBFBe4LqONRnbJeMiEkQV1mmWw@mail.gmail.com>
-Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder SoC
-From: Olof Johansson <olof@lixom.net>
-To: Robert Richter <rric@kernel.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        Robert Richter <rrichter@cavium.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 8:06 AM, Robert Richter <rric@kernel.org> wrote:
-> From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
->
-> Add initial device tree nodes for Cavium Thunder SoCs with support of
-> 48 cores and gicv3. The dts file requires further changes, esp. for
-> pci, gicv3-its and smmu. This changes will be added later together
-> with the device drivers.
->
-> Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-> Signed-off-by: Robert Richter <rrichter@cavium.com>
-> ---
->  arch/arm64/boot/dts/Makefile         |   1 +
->  arch/arm64/boot/dts/thunder-88xx.dts | 387 +++++++++++++++++++++++++++++++++++
->  2 files changed, 388 insertions(+)
->  create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
->
-> diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
-> index c52bdb051f66..f8001a62029c 100644
-> --- a/arch/arm64/boot/dts/Makefile
-> +++ b/arch/arm64/boot/dts/Makefile
-> @@ -1,3 +1,4 @@
-> +dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
->  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
->  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
->
-> diff --git a/arch/arm64/boot/dts/thunder-88xx.dts b/arch/arm64/boot/dts/thunder-88xx.dts
-> new file mode 100644
-> index 000000000000..4cf20ac9138b
-> --- /dev/null
-> +++ b/arch/arm64/boot/dts/thunder-88xx.dts
-> @@ -0,0 +1,387 @@
-> +/*
-> + * Cavium Thunder DTS file
-> + *
-> + * Copyright (C) 2013, Cavium Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation; either version 2 of
-> + * the License, or (at your option) any later version.
-> + */
-> +/dts-v1/;
-> +
-> +/* Reserving first 12MB of DDR for firmware */
-> +/memreserve/ 0x00000000 0x00c00000;
-> +
-> +/ {
-> +       model = "Cavium ThunderX CN88XX Family";
-> +       compatible = "cavium,thunder-88xx";
+This patch moves force_port_map and mask_port_map into the
+ahci_host_priv structure. This allows to modify them into the AHCI
+framework. This is needed by the new dt bindings representing ports as
+the port_map mask is computed automatically.
 
-Hmm. I take it this platform is compliant with some level of SBSA? We
-should probably have a compatible value for that so that platforms can
-communicate it.
+Parameters modifying force_port_map, mask_port_map and flags have been
+removed from the ahci_platform_init_host() function, and inputs in the
+ahci_host_priv structure are now directly filed.
 
-Mark, are there already plans for this?
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+---
+ drivers/ata/acard-ahci.c       |  2 +-
+ drivers/ata/ahci.c             |  3 +--
+ drivers/ata/ahci.h             | 10 ++++++----
+ drivers/ata/ahci_da850.c       |  3 +--
+ drivers/ata/ahci_imx.c         |  3 +--
+ drivers/ata/ahci_mvebu.c       |  3 +--
+ drivers/ata/ahci_platform.c    |  6 ++----
+ drivers/ata/ahci_st.c          |  2 +-
+ drivers/ata/ahci_sunxi.c       |  8 +++-----
+ drivers/ata/ahci_tegra.c       |  3 +--
+ drivers/ata/ahci_xgene.c       |  6 ++----
+ drivers/ata/libahci.c          | 19 +++++++------------
+ drivers/ata/libahci_platform.c | 13 +++----------
+ drivers/ata/sata_highbank.c    |  2 +-
+ include/linux/ahci_platform.h  |  5 +----
+ 15 files changed, 32 insertions(+), 56 deletions(-)
 
+diff --git a/drivers/ata/acard-ahci.c b/drivers/ata/acard-ahci.c
+index 0cd7c7a39e5b..25d0ac32e721 100644
+--- a/drivers/ata/acard-ahci.c
++++ b/drivers/ata/acard-ahci.c
+@@ -441,7 +441,7 @@ static int acard_ahci_init_one(struct pci_dev *pdev, const struct pci_device_id
+ 	hpriv->mmio = pcim_iomap_table(pdev)[AHCI_PCI_BAR];
+ 
+ 	/* save initial config */
+-	ahci_save_initial_config(&pdev->dev, hpriv, 0, 0);
++	ahci_save_initial_config(&pdev->dev, hpriv);
+ 
+ 	/* prepare host */
+ 	if (hpriv->cap & HOST_CAP_NCQ)
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 4cd52a4541a9..a29f8012fb08 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -526,8 +526,7 @@ static void ahci_pci_save_initial_config(struct pci_dev *pdev,
+ 			  "Disabling your PATA port. Use the boot option 'ahci.marvell_enable=0' to avoid this.\n");
+ 	}
+ 
+-	ahci_save_initial_config(&pdev->dev, hpriv, force_port_map,
+-				 mask_port_map);
++	ahci_save_initial_config(&pdev->dev, hpriv);
+ }
+ 
+ static int ahci_pci_reset_controller(struct ata_host *host)
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+index 2ed84e1c70ea..15396f0330ae 100644
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -316,8 +316,12 @@ struct ahci_port_priv {
+ };
+ 
+ struct ahci_host_priv {
+-	void __iomem *		mmio;		/* bus-independent mem map */
++	/* Input fields */
+ 	unsigned int		flags;		/* AHCI_HFLAG_* */
++	u32			force_port_map;	/* force port map */
++	u32			mask_port_map;	/* mask out particular bits */
++
++	void __iomem *		mmio;		/* bus-independent mem map */
+ 	u32			cap;		/* cap to use */
+ 	u32			cap2;		/* cap2 to use */
+ 	u32			port_map;	/* port map to use */
+@@ -361,9 +365,7 @@ unsigned int ahci_dev_classify(struct ata_port *ap);
+ void ahci_fill_cmd_slot(struct ahci_port_priv *pp, unsigned int tag,
+ 			u32 opts);
+ void ahci_save_initial_config(struct device *dev,
+-			      struct ahci_host_priv *hpriv,
+-			      unsigned int force_port_map,
+-			      unsigned int mask_port_map);
++			      struct ahci_host_priv *hpriv);
+ void ahci_init_controller(struct ata_host *host);
+ int ahci_reset_controller(struct ata_host *host);
+ 
+diff --git a/drivers/ata/ahci_da850.c b/drivers/ata/ahci_da850.c
+index 2b77d53bccf8..ad1e71ec10cf 100644
+--- a/drivers/ata/ahci_da850.c
++++ b/drivers/ata/ahci_da850.c
+@@ -85,8 +85,7 @@ static int ahci_da850_probe(struct platform_device *pdev)
+ 
+ 	da850_sata_init(dev, pwrdn_reg, hpriv->mmio);
+ 
+-	rc = ahci_platform_init_host(pdev, hpriv, &ahci_da850_port_info,
+-				     0, 0, 0);
++	rc = ahci_platform_init_host(pdev, hpriv, &ahci_da850_port_info);
+ 	if (rc)
+ 		goto disable_resources;
+ 
+diff --git a/drivers/ata/ahci_imx.c b/drivers/ata/ahci_imx.c
+index 1e5fa5f21aff..f3970b4ed889 100644
+--- a/drivers/ata/ahci_imx.c
++++ b/drivers/ata/ahci_imx.c
+@@ -620,8 +620,7 @@ static int imx_ahci_probe(struct platform_device *pdev)
+ 	reg_val = clk_get_rate(imxpriv->ahb_clk) / 1000;
+ 	writel(reg_val, hpriv->mmio + IMX_TIMER1MS);
+ 
+-	ret = ahci_platform_init_host(pdev, hpriv, &ahci_imx_port_info,
+-				      0, 0, 0);
++	ret = ahci_platform_init_host(pdev, hpriv, &ahci_imx_port_info);
+ 	if (ret)
+ 		goto disable_sata;
+ 
+diff --git a/drivers/ata/ahci_mvebu.c b/drivers/ata/ahci_mvebu.c
+index fd3dfd733b84..68672d2692ee 100644
+--- a/drivers/ata/ahci_mvebu.c
++++ b/drivers/ata/ahci_mvebu.c
+@@ -88,8 +88,7 @@ static int ahci_mvebu_probe(struct platform_device *pdev)
+ 	ahci_mvebu_mbus_config(hpriv, dram);
+ 	ahci_mvebu_regret_option(hpriv);
+ 
+-	rc = ahci_platform_init_host(pdev, hpriv, &ahci_mvebu_port_info,
+-				     0, 0, 0);
++	rc = ahci_platform_init_host(pdev, hpriv, &ahci_mvebu_port_info);
+ 	if (rc)
+ 		goto disable_resources;
+ 
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index b10d81ddb528..fb3eca5cd66c 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -34,7 +34,6 @@ static int ahci_probe(struct platform_device *pdev)
+ 	struct device *dev = &pdev->dev;
+ 	struct ahci_platform_data *pdata = dev_get_platdata(dev);
+ 	struct ahci_host_priv *hpriv;
+-	unsigned long hflags = 0;
+ 	int rc;
+ 
+ 	hpriv = ahci_platform_get_resources(pdev);
+@@ -58,10 +57,9 @@ static int ahci_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	if (of_device_is_compatible(dev->of_node, "hisilicon,hisi-ahci"))
+-		hflags |= AHCI_HFLAG_NO_FBS | AHCI_HFLAG_NO_NCQ;
++		hpriv->flags |= AHCI_HFLAG_NO_FBS | AHCI_HFLAG_NO_NCQ;
+ 
+-	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info,
+-				     hflags, 0, 0);
++	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info);
+ 	if (rc)
+ 		goto pdata_exit;
+ 
+diff --git a/drivers/ata/ahci_st.c b/drivers/ata/ahci_st.c
+index 29821b9fd13d..835d6eea84fd 100644
+--- a/drivers/ata/ahci_st.c
++++ b/drivers/ata/ahci_st.c
+@@ -166,7 +166,7 @@ static int st_ahci_probe(struct platform_device *pdev)
+ 	if (err)
+ 		return err;
+ 
+-	err = ahci_platform_init_host(pdev, hpriv, &st_ahci_port_info, 0, 0, 0);
++	err = ahci_platform_init_host(pdev, hpriv, &st_ahci_port_info);
+ 	if (err) {
+ 		ahci_platform_disable_resources(hpriv);
+ 		return err;
+diff --git a/drivers/ata/ahci_sunxi.c b/drivers/ata/ahci_sunxi.c
+index 02002f125bd4..e44d675a30ec 100644
+--- a/drivers/ata/ahci_sunxi.c
++++ b/drivers/ata/ahci_sunxi.c
+@@ -167,7 +167,6 @@ static int ahci_sunxi_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct ahci_host_priv *hpriv;
+-	unsigned long hflags;
+ 	int rc;
+ 
+ 	hpriv = ahci_platform_get_resources(pdev);
+@@ -184,11 +183,10 @@ static int ahci_sunxi_probe(struct platform_device *pdev)
+ 	if (rc)
+ 		goto disable_resources;
+ 
+-	hflags = AHCI_HFLAG_32BIT_ONLY | AHCI_HFLAG_NO_MSI |
+-		 AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ;
++	hpriv->flags = AHCI_HFLAG_32BIT_ONLY | AHCI_HFLAG_NO_MSI |
++		       AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ;
+ 
+-	rc = ahci_platform_init_host(pdev, hpriv, &ahci_sunxi_port_info,
+-				     hflags, 0, 0);
++	rc = ahci_platform_init_host(pdev, hpriv, &ahci_sunxi_port_info);
+ 	if (rc)
+ 		goto disable_resources;
+ 
+diff --git a/drivers/ata/ahci_tegra.c b/drivers/ata/ahci_tegra.c
+index d30bb21afd67..fc3df47fca35 100644
+--- a/drivers/ata/ahci_tegra.c
++++ b/drivers/ata/ahci_tegra.c
+@@ -348,8 +348,7 @@ static int tegra_ahci_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = ahci_platform_init_host(pdev, hpriv, &ahci_tegra_port_info,
+-				      0, 0, 0);
++	ret = ahci_platform_init_host(pdev, hpriv, &ahci_tegra_port_info);
+ 	if (ret)
+ 		goto deinit_controller;
+ 
+diff --git a/drivers/ata/ahci_xgene.c b/drivers/ata/ahci_xgene.c
+index 1cfbdca638d2..bc281115490b 100644
+--- a/drivers/ata/ahci_xgene.c
++++ b/drivers/ata/ahci_xgene.c
+@@ -422,7 +422,6 @@ static int xgene_ahci_probe(struct platform_device *pdev)
+ 	struct ahci_host_priv *hpriv;
+ 	struct xgene_ahci_context *ctx;
+ 	struct resource *res;
+-	unsigned long hflags;
+ 	int rc;
+ 
+ 	hpriv = ahci_platform_get_resources(pdev);
+@@ -481,10 +480,9 @@ static int xgene_ahci_probe(struct platform_device *pdev)
+ 	/* Configure the host controller */
+ 	xgene_ahci_hw_init(hpriv);
+ 
+-	hflags = AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ;
++	hpriv->flags = AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ;
+ 
+-	rc = ahci_platform_init_host(pdev, hpriv, &xgene_ahci_port_info,
+-				     hflags, 0, 0);
++	rc = ahci_platform_init_host(pdev, hpriv, &xgene_ahci_port_info);
+ 	if (rc)
+ 		goto disable_resources;
+ 
+diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+index d72ce0470309..b784e9de426a 100644
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -382,8 +382,6 @@ static ssize_t ahci_show_em_supported(struct device *dev,
+  *	ahci_save_initial_config - Save and fixup initial config values
+  *	@dev: target AHCI device
+  *	@hpriv: host private area to store config values
+- *	@force_port_map: force port map to a specified value
+- *	@mask_port_map: mask out particular bits from port map
+  *
+  *	Some registers containing configuration info might be setup by
+  *	BIOS and might be cleared on reset.  This function saves the
+@@ -398,10 +396,7 @@ static ssize_t ahci_show_em_supported(struct device *dev,
+  *	LOCKING:
+  *	None.
+  */
+-void ahci_save_initial_config(struct device *dev,
+-			      struct ahci_host_priv *hpriv,
+-			      unsigned int force_port_map,
+-			      unsigned int mask_port_map)
++void ahci_save_initial_config(struct device *dev, struct ahci_host_priv *hpriv)
+ {
+ 	void __iomem *mmio = hpriv->mmio;
+ 	u32 cap, cap2, vers, port_map;
+@@ -468,17 +463,17 @@ void ahci_save_initial_config(struct device *dev,
+ 		cap &= ~HOST_CAP_FBS;
+ 	}
+ 
+-	if (force_port_map && port_map != force_port_map) {
++	if (hpriv->force_port_map && port_map != hpriv->force_port_map) {
+ 		dev_info(dev, "forcing port_map 0x%x -> 0x%x\n",
+-			 port_map, force_port_map);
+-		port_map = force_port_map;
++			 port_map, hpriv->force_port_map);
++		port_map = hpriv->force_port_map;
+ 	}
+ 
+-	if (mask_port_map) {
++	if (hpriv->mask_port_map) {
+ 		dev_warn(dev, "masking port_map 0x%x -> 0x%x\n",
+ 			port_map,
+-			port_map & mask_port_map);
+-		port_map &= mask_port_map;
++			port_map & hpriv->mask_port_map);
++		port_map &= hpriv->mask_port_map;
+ 	}
+ 
+ 	/* cross check port_map and cap.n_ports */
+diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
+index 28840a2f470f..00582d3a46a4 100644
+--- a/drivers/ata/libahci_platform.c
++++ b/drivers/ata/libahci_platform.c
+@@ -288,9 +288,6 @@ EXPORT_SYMBOL_GPL(ahci_platform_get_resources);
+  * @pdev: platform device pointer for the host
+  * @hpriv: ahci-host private data for the host
+  * @pi_template: template for the ata_port_info to use
+- * @host_flags: ahci host flags used in ahci_host_priv
+- * @force_port_map: param passed to ahci_save_initial_config
+- * @mask_port_map: param passed to ahci_save_initial_config
+  *
+  * This function does all the usual steps needed to bring up an
+  * ahci-platform host, note any necessary resources (ie clks, phy, etc.)
+@@ -301,10 +298,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_get_resources);
+  */
+ int ahci_platform_init_host(struct platform_device *pdev,
+ 			    struct ahci_host_priv *hpriv,
+-			    const struct ata_port_info *pi_template,
+-			    unsigned long host_flags,
+-			    unsigned int force_port_map,
+-			    unsigned int mask_port_map)
++			    const struct ata_port_info *pi_template)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct ata_port_info pi = *pi_template;
+@@ -319,10 +313,9 @@ int ahci_platform_init_host(struct platform_device *pdev,
+ 	}
+ 
+ 	/* prepare host */
+-	pi.private_data = (void *)host_flags;
+-	hpriv->flags |= host_flags;
++	pi.private_data = (void *)hpriv->flags;
+ 
+-	ahci_save_initial_config(dev, hpriv, force_port_map, mask_port_map);
++	ahci_save_initial_config(dev, hpriv);
+ 
+ 	if (hpriv->cap & HOST_CAP_NCQ)
+ 		pi.flags |= ATA_FLAG_NCQ;
+diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
+index 65965cf5af06..da3bc2709c63 100644
+--- a/drivers/ata/sata_highbank.c
++++ b/drivers/ata/sata_highbank.c
+@@ -512,7 +512,7 @@ static int ahci_highbank_probe(struct platform_device *pdev)
+ 		return rc;
+ 
+ 
+-	ahci_save_initial_config(dev, hpriv, 0, 0);
++	ahci_save_initial_config(dev, hpriv);
+ 
+ 	/* prepare host */
+ 	if (hpriv->cap & HOST_CAP_NCQ)
+diff --git a/include/linux/ahci_platform.h b/include/linux/ahci_platform.h
+index 6dfd51a04d77..09a947e8bc87 100644
+--- a/include/linux/ahci_platform.h
++++ b/include/linux/ahci_platform.h
+@@ -43,10 +43,7 @@ struct ahci_host_priv *ahci_platform_get_resources(
+ 	struct platform_device *pdev);
+ int ahci_platform_init_host(struct platform_device *pdev,
+ 			    struct ahci_host_priv *hpriv,
+-			    const struct ata_port_info *pi_template,
+-			    unsigned long host_flags,
+-			    unsigned int force_port_map,
+-			    unsigned int mask_port_map);
++			    const struct ata_port_info *pi_template);
+ 
+ int ahci_platform_suspend_host(struct device *dev);
+ int ahci_platform_resume_host(struct device *dev);
+-- 
+1.9.1
 
--Olof
