@@ -1,210 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044AbaG3PrK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 11:47:10 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43530 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754735AbaG3PrH (ORCPT
+	id S1755181AbaG3Pr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 11:47:58 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:38739 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466AbaG3Pr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 11:47:07 -0400
-Date: Wed, 30 Jul 2014 16:46:26 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Robert Richter <rric@kernel.org>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        Robert Richter <rrichter@cavium.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder
- SoC
-Message-ID: <20140730154626.GD20162@leverpostej>
-References: <1406732794-20920-1-git-send-email-rric@kernel.org>
- <1406732794-20920-3-git-send-email-rric@kernel.org>
+	Wed, 30 Jul 2014 11:47:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406732794-20920-3-git-send-email-rric@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140730065312.GA1652@laptop.redhat.com>
+References: <20140730014827.565626091@linuxfoundation.org>
+	<20140730014829.344302554@linuxfoundation.org>
+	<20140730065312.GA1652@laptop.redhat.com>
+Date: Wed, 30 Jul 2014 08:47:55 -0700
+X-Google-Sender-Auth: 9MuBfIxvhO_rpyp11x6cxjy_-pY
+Message-ID: <CA+55aFzr_wJzt6RpojXpDo-ashV_N7sP+j7Ba0ND9mSpr7MKRQ@mail.gmail.com>
+Subject: Re: [PATCH 3.15 33/37] Fix gcc-4.9.0 miscompilation of load_balance()
+ in scheduler
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jakub Jelinek <jakub@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>,
+        =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jul 29, 2014 at 11:53 PM, Jakub Jelinek <jakub@redhat.com> wrote:
+>
+> IMNSHO this is a too big hammer approach.  The bug happened on a single
+> file only (right?)
 
-On Wed, Jul 30, 2014 at 04:06:31PM +0100, Robert Richter wrote:
-> From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-> 
-> Add initial device tree nodes for Cavium Thunder SoCs with support of
-> 48 cores and gicv3. The dts file requires further changes, esp. for
-> pci, gicv3-its and smmu. This changes will be added later together
-> with the device drivers.
-> 
-> Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-> Signed-off-by: Robert Richter <rrichter@cavium.com>
-> ---
->  arch/arm64/boot/dts/Makefile         |   1 +
->  arch/arm64/boot/dts/thunder-88xx.dts | 387 +++++++++++++++++++++++++++++++++++
->  2 files changed, 388 insertions(+)
->  create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
-> 
-> diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
-> index c52bdb051f66..f8001a62029c 100644
-> --- a/arch/arm64/boot/dts/Makefile
-> +++ b/arch/arm64/boot/dts/Makefile
-> @@ -1,3 +1,4 @@
-> +dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
->  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
->  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
->  
-> diff --git a/arch/arm64/boot/dts/thunder-88xx.dts b/arch/arm64/boot/dts/thunder-88xx.dts
-> new file mode 100644
-> index 000000000000..4cf20ac9138b
-> --- /dev/null
-> +++ b/arch/arm64/boot/dts/thunder-88xx.dts
-> @@ -0,0 +1,387 @@
-> +/*
-> + * Cavium Thunder DTS file
-> + *
-> + * Copyright (C) 2013, Cavium Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation; either version 2 of
-> + * the License, or (at your option) any later version.
-> + */
-> +/dts-v1/;
-> +
-> +/* Reserving first 12MB of DDR for firmware */
-> +/memreserve/ 0x00000000 0x00c00000;
+Very dubious. We happened to see it in a single case, and _maybe_ that
+was the only one in the whole kernel. But it's much more likely that
+it wasn't - it's not like the code in question was even all that
+unusual (just a percpu access triggering an asm - but we have tons of
+asms in the kernel).
 
-What exactly is this memreserve intended to protect at runtime?
+I'd argue that we were very lucky to get the problem happening
+reliably enough for a couple of people who then cared enoiugh to do
+good bug reports (considering that it needed an interrupt in *just*
+the right place) that we could debug it at all. In some code that gets
+run much less than the scheduler, it could easily have been one of
+those "people report it once in a blue moon, looks like memory
+corruption".
 
-The only item of runtime firmware I see in use below is PSCI on the
-secure side.
+Now, it would be interesting to hear if there is something very
+special that made that instruction scheduling bug trigger just for
+4.9.x, or if there is something else that made it very particular to
+that code sequence. But in the absence of good reasoning to the
+contrary, I'd much rather say "let's just avoid the bug entirely".
 
-How is the kernel booted on this platform? UEFI?
+And that's partly because we really don't care that much about the
+debug info. Yes, it gets used, but it's not *that* common, and the
+last time the issue of debug info sucking up tons of resources came
+up, the biggest users were people who just wanted line information for
+oopses. Yes, there are people running kgdb etc, but on the whole it's
+rare, and quite frankly, from everything I have _ever_ seen, that's
+not how the real kernel bugs are ever really discovered. So the kind
+of debug information that the variable tracking logic adds just isn't
+all that important for the kernel.
 
-> +/ {
-> +	model = "Cavium ThunderX CN88XX Family";
-> +	compatible = "cavium,thunder-88xx";
-
-Please don't use wildcards in compatible strings. Give this an absolute
-name, and override as necessary.
-
-> +	interrupt-parent = <&gic0>;
-> +	#address-cells = <2>;
-> +	#size-cells = <2>;
-> +
-> +	aliases {
-> +		serial0 = &uaa0;
-> +		serial1 = &uaa1;
-> +	};
-> +
-> +	psci {
-> +		compatible = "arm,psci-0.2";
-> +		method = "smc";
-> +	};
-
-Nice!
-
-> +
-> +	cpus {
-> +		#address-cells = <2>;
-> +		#size-cells = <0>;
-> +
-> +		cpu@000 {
-> +			device_type = "cpu";
-> +			compatible = "cavium,thunder", "arm,armv8";
-> +			reg = <0x0 0x000>;
-> +			enable-method = "psci";
-> +		};
-
-Just to check: both the SoC and CPU are called thunder?
-
-[...]
-
-> +
-> +	memory@00000000 {
-> +		device_type = "memory";
-> +		reg = <0x0 0x00000000 0x0 0x80000000>;
-> +	};
-> +
-> +	gic0: interrupt-controller@801000000000 {
-
-To make this easier to read, please place a comma between 32-bit
-portions of the unit address (e.g. here have 8010,00000000).
-
-> +		compatible = "arm,gic-v3";
-> +		#interrupt-cells = <3>;
-> +		#address-cells = <2>;
-> +		#size-cells = <2>;
-> +		ranges;
-
-This has no children, so why have ranges, #address-cells, and
-#size-cells?
-
-> +		interrupt-controller;
-> +		reg = <0x8010 0x00000000 0x0 0x010000>, /* GICD */
-> +		      <0x8010 0x80000000 0x0 0x200000>; /* GICR */
-> +		interrupts = <1 9 0xf04>;
-> +	};
-> +
-> +	timer {
-> +		compatible = "arm,armv8-timer";
-> +		interrupts = <1 13 0xff01>,
-> +		             <1 14 0xff01>,
-> +		             <1 11 0xff01>,
-> +		             <1 10 0xff01>;
-> +	};
-> +
-> +	soc {
-> +		compatible = "simple-bus";
-> +		#address-cells = <2>;
-> +		#size-cells = <2>;
-> +		ranges;
-> +
-> +		clocks {
-> +			#address-cells = <2>;
-> +			#size-cells = <2>;
-> +			ranges;
-> +
-> +			refclk50mhz: refclk50mhz {
-> +				compatible = "fixed-clock";
-> +				#clock-cells = <0>;
-> +				clock-frequency = <50000000>;
-> +				clock-output-names = "refclk50mhz";
-> +			};
-> +		};
-
-Please get rid of the clocks node and just put the clocks here.
-
-> +
-> +		uaa0: serial@87e024000000 {
-> +			compatible = "arm,pl011", "arm,primecell";
-> +			reg = <0x87e0 0x24000000 0x0 0x1000>;
-> +			interrupts = <1 21 4>;
-> +			clocks = <&refclk50mhz>;
-> +			clock-names = "apb_pclk";
-
-Is this actually the apb_pclk, or is the the uartclk? I assume it's the
-latter.
-
-> +		};
-> +
-> +		uaa1: serial@87e025000000 {
-> +			compatible = "arm,pl011", "arm,primecell";
-> +			reg = <0x87e0 0x25000000 0x0 0x1000>;
-> +			interrupts = <1 22 4>;
-> +			clocks = <&refclk50mhz>;
-> +			clock-names = "apb_pclk";
-
-Similarly?
-
-Thanks,
-Mark.
+                 Linus
