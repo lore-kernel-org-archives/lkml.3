@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551AbaG3AyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 20:54:22 -0400
-Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:51341
-	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754313AbaG3AyU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 20:54:20 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 00/19] staging: comedi: amplc_pci230: tidy up a bit
-Thread-Topic: [PATCH 00/19] staging: comedi: amplc_pci230: tidy up a bit
-Thread-Index: AQHPqyR2SEx7JmO/l0e00vxnl5Hy/Zu3yupg
-Date: Wed, 30 Jul 2014 00:54:19 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F28E5A@P3PWEX4MB008.ex4.secureserver.net>
-References: <1406635107-27950-1-git-send-email-abbotti@mev.co.uk>
-In-Reply-To: <1406635107-27950-1-git-send-email-abbotti@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754639AbaG3A43 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 20:56:29 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:48289 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754572AbaG3A41 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jul 2014 20:56:27 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v2 0/4] Support for Qualcomm QPNP PMIC's
+To: Stanimir Varbanov <svarbanov@mm-sol.com>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>
+In-Reply-To: <53C947C0.5020604@mm-sol.com>
+References: <1405613855-27572-1-git-send-email-svarbanov@mm-sol.com>
+	<53C857DE.7030507@codeaurora.org> <53C947C0.5020604@mm-sol.com>
+Date: Tue, 29 Jul 2014 18:56:23 -0600
+Message-Id: <20140730005623.EA57CC4062A@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 29, 2014 4:58 AM, Ian Abbott wrote:
+On Fri, 18 Jul 2014 19:13:52 +0300, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
+> On 07/18/2014 02:10 AM, Stephen Boyd wrote:
+> > On 07/17/14 09:17, Stanimir Varbanov wrote:
+> >> Hello everyone,
+> >>
+> >> Here is the continuation of patch sets sent recently about Qualcomm
+> >> QPNP SPMI PMICs.
+> >>
+> >> The previous version of the patch set can be found at [1].
+> >>
+> >> Changes since v1:
+> >>  - removed completely custom *of* parser
+> >>  - renamed the mfd driver from qpnp-spmi to pm8xxx-spmi
+> >>  - now MFD_PM8XXX_SPMI Kconfig option depends on SPMI
+> >>
+> >> Removing of the custom *of* parser leads to that that the *reg* devicetree
+> >> property cannot exist and therefore cannot be parsed to get PMIC peripheral
+> >> resources. I took this step aside because no one from mfd drivers does this
+> >> parsing. This will lead to inconvenience in the peripheral drivers to define
+> >> internally the SPMI base addresses depending on the compatible property
+> >> i.e. PMIC version. 
+> > 
+> > We should teach the of platform layer to translate reg properties up
+> > until the point that they can't be translated anymore. If they can't be
+> > translated all the way back to cpu addresses we can make the resource
+> > have IORESOURCE_REG instead of IORESOURCE_MEM and then said pmic
+> > platform drivers can use platform_get_resource() with IORESOURCE_REG
+> > instead of IORESOURCE_MEM to get the addresses.
+> > 
 > 
-> Tidy up the "amplc_pci230" driver a bit.  There are more changes to come
-> after this.  The only one of these that should alter the object code is
-> patch 06, which replaces a udelay() call with usleep_range().
->
-> 01) staging: comedi: amplc_pci230: reformat a load of comments
-> 02) staging: comedi: amplc_pci230: fix checkpatch line over 80
->     characters
-> 03) staging: comedi: amplc_pci230: logical continuations should be on
->     the previous line
-> 04) staging: comedi: amplc_pci230: blank lines aren't necessary before a
->     close brace '}'
-> 05) staging: comedi: amplc_pci230: alignment should match open
->     parenthesis
-> 06) staging: comedi: amplc_pci230: usleep_range is preferred over udelay
-> 07) staging: comedi: amplc_pci230: remove unused settling time constants
-> 08) staging: comedi: amplc_pci230: remove PCI230_ADC_CONV
-> 09) staging: comedi: amplc_pci230: remove PCI230_TEST_BIT()
-> 10) staging: comedi: amplc_pci230: add whitespace to register values
-> 11) staging: comedi: amplc_pci230: don't begin line with binary operator
-> 12) staging: comedi: amplc_pci230: omit '!= 0' from logical expressions
-> 13) staging: comedi: amplc_pci230: remove unnecessary braces
-> 14) staging: comedi: amplc_pci230: remove some indentation in
->     pci230_ai_check_chanlist()
-> 15) staging: comedi: amplc_pci230: no need for '&function'
-> 16) staging: comedi: amplc_pci230: add whitespace to pci230_boards[]
-> 17) staging: comedi: amplc_pci230: no need to initialize named members
->     to zero
-> 18) staging: comedi: amplc_pci230: tidy up stuct pci230_private
-> 19) staging: comedi: amplc_pci230: remove some unnecessary parentheses
->
->  drivers/staging/comedi/drivers/amplc_pci230.c | 1417 +++++++++++++------------
->  1 file changed, 736 insertions(+), 681 deletions(-)
+> I considered this as an option, if it is acceptable by OF maintainers it
+> will be awesome.
+> 
+> Rob, Grant, is that feasible?
 
-Other than my comment about patch 13, this looks ok.
+It doesn't really make sense to do that kind of translation because the
+resulting address only makes sense if you also know which node the
+translation stopped at.
 
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+A better solution is a new api for retrieving bus-local addresses
+instead of a global physical address. That would requires passing in a
+node or device to use as the translation root. If the child isn't a
+descended of that node, or if translation isn't possible then it should
+straight out fail instead of providing a partially translated value.
+
+g.
 
