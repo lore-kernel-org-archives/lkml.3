@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780AbaG3SOR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 14:14:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57843 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755500AbaG3SOH (ORCPT
+	id S1755827AbaG3SO1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 14:14:27 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:52317 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755790AbaG3SOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 14:14:07 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, tj@kernel.org
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v14 8/8] ARM: berlin: enable the eSATA interface on the BG2Q DMP
-Date: Wed, 30 Jul 2014 20:14:01 +0200
-Message-Id: <1406744041-1269-9-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406744041-1269-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1406744041-1269-1-git-send-email-antoine.tenart@free-electrons.com>
+	Wed, 30 Jul 2014 14:14:24 -0400
 MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:157d:2811:8aec:a585:9833]
+In-Reply-To: <1406732794-20920-3-git-send-email-rric@kernel.org>
+References: <1406732794-20920-1-git-send-email-rric@kernel.org>
+	<1406732794-20920-3-git-send-email-rric@kernel.org>
+Date: Wed, 30 Jul 2014 11:14:23 -0700
+Message-ID: <CAOesGMh9KkdKB_ytJ7CCbkPW7dHTX91NdfDMsMNfbmOBVOJ8PQ@mail.gmail.com>
+Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder SoC
+From: Olof Johansson <olof@lixom.net>
+To: Robert Richter <rric@kernel.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        Robert Richter <rrichter@cavium.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BG2Q has an AHCI SATA controller with an eSATA interface. Enable it.
-Only enable the first port, the BG2Q DMP does not support the second one.
+On Wed, Jul 30, 2014 at 8:06 AM, Robert Richter <rric@kernel.org> wrote:
+> From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+>
+> Add initial device tree nodes for Cavium Thunder SoCs with support of
+> 48 cores and gicv3. The dts file requires further changes, esp. for
+> pci, gicv3-its and smmu. This changes will be added later together
+> with the device drivers.
+>
+> Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+> Signed-off-by: Robert Richter <rrichter@cavium.com>
+> ---
+>  arch/arm64/boot/dts/Makefile         |   1 +
+>  arch/arm64/boot/dts/thunder-88xx.dts | 387 +++++++++++++++++++++++++++++++++++
+>  2 files changed, 388 insertions(+)
+>  create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
+>
+> diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
+> index c52bdb051f66..f8001a62029c 100644
+> --- a/arch/arm64/boot/dts/Makefile
+> +++ b/arch/arm64/boot/dts/Makefile
+> @@ -1,3 +1,4 @@
+> +dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
+>  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
+>  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
----
- arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Oh, and:
 
-diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-index 995150f93795..385f6af64d0c 100644
---- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-+++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-@@ -37,3 +37,11 @@
- &uart0 {
- 	status = "okay";
- };
-+
-+&sata0 {
-+	status = "okay";
-+};
-+
-+&sata_phy {
-+	status = "okay";
-+};
--- 
-1.9.1
+Let's fix the mistake we made on 32-bit here (that we can't undo
+unless we move all dts files now, which is too much churn), and put
+each SoC vendor in its own subdirectory.
 
+So, please add a arch/arm64/boot/dts/cavium/ directory, add a Makefile
+and the dts there.
+
+We should move vexpress under arm/   and xgene under apm/ too.
