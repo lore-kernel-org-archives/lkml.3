@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048AbaG3Vp0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 17:45:26 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:35331 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701AbaG3VpZ (ORCPT
+	id S1752683AbaG3Vry (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 17:47:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41808 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452AbaG3Vrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 17:45:25 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        iss_storagedev@hp.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: hpsa.c:  Cleaning up code clarification using strlcpy
-Date: Wed, 30 Jul 2014 23:46:52 +0200
-Message-Id: <1406756812-20526-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 30 Jul 2014 17:47:53 -0400
+Date: Wed, 30 Jul 2014 14:47:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chintan Pandya <cpandya@codeaurora.org>
+Cc: tglx@linutronix.de, john.stultz@linaro.org, peterz@infradead.org,
+        mingo@redhat.com, hughd@google.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v2 2/2] ksm: Provide support to use deferrable timers
+ for scanner thread
+Message-Id: <20140730144752.8c931d9ed997324632d5f2fd@linux-foundation.org>
+In-Reply-To: <1406299698-6357-2-git-send-email-cpandya@codeaurora.org>
+References: <1406299698-6357-1-git-send-email-cpandya@codeaurora.org>
+	<1406299698-6357-2-git-send-email-cpandya@codeaurora.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Code clarification using strlcpy instead of strncpy.
-And removed unnecessary memset
+On Fri, 25 Jul 2014 20:18:18 +0530 Chintan Pandya <cpandya@codeaurora.org> wrote:
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/scsi/hpsa.c |   16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+> KSM thread to scan pages is scheduled on definite timeout. That wakes
+> up CPU from idle state and hence may affect the power consumption.
+> Provide an optional support to use deferrable timer which suites
+> low-power use-cases.
+> 
+> Typically, on our setup we observed, 10% less power consumption with
+> some use-cases in which CPU goes to power collapse frequently. For
+> example, playing audio while typically CPU remains idle.
+> 
+> To enable deferrable timers,
+> $ echo 1 > /sys/kernel/mm/ksm/deferrable_timer
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 31184b3..814d64d 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -315,16 +315,15 @@ static ssize_t host_store_hp_ssd_smart_path_status(struct device *dev,
- 					 struct device_attribute *attr,
- 					 const char *buf, size_t count)
+This could not have been the version which you tested.  What's up?
+
+--- a/mm/ksm.c~ksm-provide-support-to-use-deferrable-timers-for-scanner-thread-fix-fix-2
++++ a/mm/ksm.c
+@@ -1720,8 +1720,6 @@ static int ksmd_should_run(void)
+ 
+ static int ksm_scan_thread(void *nothing)
  {
--	int status, len;
-+	int status;
- 	struct ctlr_info *h;
- 	struct Scsi_Host *shost = class_to_shost(dev);
- 	char tmpbuf[10];
+-	signed long to;
+-
+ 	set_freezable();
+ 	set_user_nice(current, 5);
  
- 	if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SYS_RAWIO))
- 		return -EACCES;
--	len = count > sizeof(tmpbuf) - 1 ? sizeof(tmpbuf) - 1 : count;
--	strncpy(tmpbuf, buf, len);
--	tmpbuf[len] = '\0';
-+	strlcpy(tmpbuf, buf,
-+		count > sizeof(tmpbuf) ? sizeof(tmpbuf) : count);
- 	if (sscanf(tmpbuf, "%d", &status) != 1)
- 		return -EINVAL;
- 	h = shost_to_hba(shost);
-@@ -339,16 +338,15 @@ static ssize_t host_store_raid_offload_debug(struct device *dev,
- 					 struct device_attribute *attr,
- 					 const char *buf, size_t count)
- {
--	int debug_level, len;
-+	int debug_level;
- 	struct ctlr_info *h;
- 	struct Scsi_Host *shost = class_to_shost(dev);
- 	char tmpbuf[10];
+@@ -1735,7 +1733,9 @@ static int ksm_scan_thread(void *nothing
+ 		try_to_freeze();
  
- 	if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SYS_RAWIO))
- 		return -EACCES;
--	len = count > sizeof(tmpbuf) - 1 ? sizeof(tmpbuf) - 1 : count;
--	strncpy(tmpbuf, buf, len);
--	tmpbuf[len] = '\0';
-+	strlcpy(tmpbuf, buf,
-+		count > sizeof(tmpbuf) ? sizeof(tmpbuf) : count);
- 	if (sscanf(tmpbuf, "%d", &debug_level) != 1)
- 		return -EINVAL;
- 	if (debug_level < 0)
-@@ -5881,8 +5879,8 @@ static int hpsa_controller_hard_reset(struct pci_dev *pdev,
- 
- static void init_driver_version(char *driver_version, int len)
- {
--	memset(driver_version, 0, len);
- 	strncpy(driver_version, HPSA " " HPSA_DRIVER_VERSION, len - 1);
-+	driver_version[len - 1] = '\0';
- }
- 
- static int write_driver_ver_to_cfgtable(struct CfgTable __iomem *cfgtable)
--- 
-1.7.10.4
+ 		if (ksmd_should_run()) {
+-			timeout = msecs_to_jiffies(ksm_thread_sleep_millisecs);
++			signed long to;
++
++			to = msecs_to_jiffies(ksm_thread_sleep_millisecs);
+ 			if (use_deferrable_timer)
+ 				schedule_timeout_deferrable_interruptible(to);
+ 			else
+_
 
