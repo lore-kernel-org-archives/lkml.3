@@ -1,193 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582AbaG3QBl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 12:01:41 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:53986 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753928AbaG3QBj (ORCPT
+	id S1754924AbaG3QDb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 12:03:31 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:49394 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754745AbaG3QD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 12:01:39 -0400
-Message-ID: <53D916DB.9020901@fb.com>
-Date: Wed, 30 Jul 2014 12:01:31 -0400
-From: Josef Bacik <jbacik@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 30 Jul 2014 12:03:29 -0400
+Message-ID: <53D9174C.7040906@gmail.com>
+Date: Wed, 30 Jul 2014 19:03:24 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Chris Mason <clm@fb.com>, <linux-btrfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Btrfs: Fix memory corruption by ulist_add_merge() on
- 32bit arch
-References: <1406537824-2376-1-git-send-email-tiwai@suse.de>	<53D64D40.80606@fb.com>	<s5hzjft7fwm.wl%tiwai@suse.de>	<s5hsill7fak.wl%tiwai@suse.de>	<s5hsiljrwwy.wl%tiwai@suse.de>	<53D9015A.90001@fb.com>	<s5h61iesxen.wl%tiwai@suse.de>	<s5h1tt2sx94.wl%tiwai@suse.de>	<53D911DE.7000806@fb.com> <s5hwqaurgic.wl%tiwai@suse.de>
-In-Reply-To: <s5hwqaurgic.wl%tiwai@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+CC: willy@linux.intel.com
+Subject: Re: [PATCH v8 04/22] Change direct_access calling convention
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com> <b78b33d94b669a5fbd02e06f2493b43dd5d77698.1406058387.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <b78b33d94b669a5fbd02e06f2493b43dd5d77698.1406058387.git.matthew.r.wilcox@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-30_06:2014-07-30,2014-07-30,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.11109094147466e-09 kscore.compositescore=0
- circleOfTrustscore=34.2817289695437 compositescore=0.998981209195878
- urlsuspect_oldscore=0.998981209195878 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.998981209195878 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1407300188
-X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2014 11:52 AM, Takashi Iwai wrote:
-> At Wed, 30 Jul 2014 11:40:14 -0400,
-> Josef Bacik wrote:
->>
->> On 07/30/2014 11:05 AM, Takashi Iwai wrote:
->>> At Wed, 30 Jul 2014 17:01:52 +0200,
->>> Takashi Iwai wrote:
->>>>
->>>> At Wed, 30 Jul 2014 10:29:46 -0400,
->>>> Josef Bacik wrote:
->>>>>
->>>>> On 07/30/2014 05:57 AM, Takashi Iwai wrote:
->>>>>> At Mon, 28 Jul 2014 16:01:55 +0200,
->>>>>> Takashi Iwai wrote:
->>>>>>>
->>>>>>> At Mon, 28 Jul 2014 15:48:41 +0200,
->>>>>>> Takashi Iwai wrote:
->>>>>>>>
->>>>>>>> At Mon, 28 Jul 2014 09:16:48 -0400,
->>>>>>>> Josef Bacik wrote:
->>>>>>>>>
->>>>>>>>> On 07/28/2014 04:57 AM, Takashi Iwai wrote:
->>>>>>>>>> We've got bug reports that btrfs crashes when quota is enabled on
->>>>>>>>>> 32bit kernel, typically with the Oops like below:
->>>>>>>>>>      BUG: unable to handle kernel NULL pointer dereference at 00000004
->>>>>>>>>>      IP: [<f9234590>] find_parent_nodes+0x360/0x1380 [btrfs]
->>>>>>>>>>      *pde = 00000000
->>>>>>>>>>      Oops: 0000 [#1] SMP
->>>>>>>>>>      CPU: 0 PID: 151 Comm: kworker/u8:2 Tainted: G S      W 3.15.2-1.gd43d97e-default #1
->>>>>>>>>>      Workqueue: btrfs-qgroup-rescan normal_work_helper [btrfs]
->>>>>>>>>>      task: f1478130 ti: f147c000 task.ti: f147c000
->>>>>>>>>>      EIP: 0060:[<f9234590>] EFLAGS: 00010213 CPU: 0
->>>>>>>>>>      EIP is at find_parent_nodes+0x360/0x1380 [btrfs]
->>>>>>>>>>      EAX: f147dda8 EBX: f147ddb0 ECX: 00000011 EDX: 00000000
->>>>>>>>>>      ESI: 00000000 EDI: f147dda4 EBP: f147ddf8 ESP: f147dd38
->>>>>>>>>>       DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
->>>>>>>>>>      CR0: 8005003b CR2: 00000004 CR3: 00bf3000 CR4: 00000690
->>>>>>>>>>      Stack:
->>>>>>>>>>       00000000 00000000 f147dda4 00000050 00000001 00000000 00000001 00000050
->>>>>>>>>>       00000001 00000000 d3059000 00000001 00000022 000000a8 00000000 00000000
->>>>>>>>>>       00000000 000000a1 00000000 00000000 00000001 00000000 00000000 11800000
->>>>>>>>>>      Call Trace:
->>>>>>>>>>       [<f923564d>] __btrfs_find_all_roots+0x9d/0xf0 [btrfs]
->>>>>>>>>>       [<f9237bb1>] btrfs_qgroup_rescan_worker+0x401/0x760 [btrfs]
->>>>>>>>>>       [<f9206148>] normal_work_helper+0xc8/0x270 [btrfs]
->>>>>>>>>>       [<c025e38b>] process_one_work+0x11b/0x390
->>>>>>>>>>       [<c025eea1>] worker_thread+0x101/0x340
->>>>>>>>>>       [<c026432b>] kthread+0x9b/0xb0
->>>>>>>>>>       [<c0712a71>] ret_from_kernel_thread+0x21/0x30
->>>>>>>>>>       [<c0264290>] kthread_create_on_node+0x110/0x110
->>>>>>>>>>
->>>>>>>>>> This indicates a NULL corruption in prefs_delayed list.  The further
->>>>>>>>>> investigation and bisection pointed that the call of ulist_add_merge()
->>>>>>>>>> results in the corruption.
->>>>>>>>>>
->>>>>>>>>> ulist_add_merge() takes u64 as aux and writes a 64bit value into
->>>>>>>>>> old_aux.  The callers of this function in backref.c, however, pass a
->>>>>>>>>> pointer of a pointer to old_aux.  That is, the function overwrites
->>>>>>>>>> 64bit value on 32bit pointer.  This caused a NULL in the adjacent
->>>>>>>>>> variable, in this case, prefs_delayed.
->>>>>>>>>>
->>>>>>>>>> Here is a quick attempt to band-aid over this: a new function,
->>>>>>>>>> ulist_add_merge_ptr() is introduced to pass/store properly a pointer
->>>>>>>>>> value instead of u64.  There are still ugly void ** cast remaining
->>>>>>>>>> in the callers because void ** cannot be taken implicitly.  But, it's
->>>>>>>>>> safer than explicit cast to u64, anyway.
->>>>>>>>>>
->>>>>>>>>> Bugzilla: https://urldefense.proofpoint.com/v1/url?u=https://bugzilla.novell.com/show_bug.cgi?id%3D887046&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=cKCbChRKsMpTX8ybrSkonQ%3D%3D%0A&m=m3qrbo6ngjqKO%2B7ofuwRfQflb9Cx%2FXrF8TKejkPjxfA%3D%0A&s=199a5b6f0ed181925e9ba2c1060fe20d1c8ad2831dd1d96cc7eddd2a343fa72b
->>>>>>>>>> Cc: <stable@vger.kernel.org> [v3.11+]
->>>>>>>>>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
->>>>>>>>>> ---
->>>>>>>>>>
->>>>>>>>>> Alternatively, we can change the argument of aux and old_aux to a
->>>>>>>>>> pointer from u64, as backref.c is the only user of ulist_add_merge()
->>>>>>>>>> function.  I'll cook up another patch if it's the preferred way.
->>>>>>>>>>
->>>>>>>>>
->>>>>>>>> Yeah lets just use a pointer and see how that works out.  Thanks,
->>>>>>>>
->>>>>>>> Oops, I forgot that ulist_add() takes aux as u64 and it calling
->>>>>>>> ulist_add_merge() internally.  So, we can't change the type blindly
->>>>>>>> there, unfortunately.
->>>>>>>
->>>>>>> Looking back at the code, it seems that all aux arguments passed to
->>>>>>> ulist_add() in qgroup.c are pointers, too.  So, indeed, all aux values
->>>>>>> are pointers, so far, and it'd be even cleaner to replace all these
->>>>>>> from u64 to void *.
->>>>>>>
->>>>>>> But, such a replacement patch will become difficult for backporting to
->>>>>>> stable kernels (the bug existed since 3.11, at least).  So IMO, we
->>>>>>> should put a smaller fix like my previous one, let it backported to
->>>>>>> stable kernels, and do more comprehensive replacements to pointer on
->>>>>>> its top.
->>>>>>
->>>>>> Ping.  Could you guys take my original patch as is, or do you prefer
->>>>>> changing in a different way?  If so, how?
->>>>>>
->>>>>
->>>>> I don't care how hard it is to backport to stable,
->>>>
->>>> You must do care as a maintainer.  It's a long-standing and serious
->>>> bug since 3.11.  The kernel hangs up immediately when you enable quota
->>>> on 32bit kernel.  And it's really hard to revert it when the rootfs is
->>>> btrfs.  (The mount follows the immediate hang up after reboot.)
->>>>
->>
->> What I mean is that we want the right fix first, not something that is easier to
->> pull back to stable and then the right fix later.  Do it right first and then
->> backport it to the stable kernels, it's perfectly acceptable to adjust patches
->> when sending them to the stable team.  "But it's hard" is not a valid excuse for
->> not doing it right the first time.
->
-> Well, I guess this underestimates the burden of backports.  Currently,
-> there is stable kernel for each kernel release.  Anyone has to
-> backport for each version, and you'll be asked.  I, as a long-time
-> subsystem maintainer, wouldn't go in that way :)
->
-> And, speaking of "rightness" -- replacing the callers with a wrapper
-> is also a right fix.  It's even a safer fix.  That's basically why I
-> posted it as the primary patch.
->
-> The merit of replacing all callers is that you can eliminate nasty
-> casts by that.  This is however rather a cleanup, which is a different
-> bonus from what we need to fix.
->
->>>>> since we're using pointers
->>>>> everywhere just change it to void * and be done with it.  Thanks,
->>>>
->>>> Fix it quickly, then do cleanup.  This is the golden rule for
->>>> regression :)
->>>
->>> Also, another question is whether you guys are OK to change the type
->>> to a pointer.  Through a glance, the ulist code was intended to handle
->>> any generic data, thus it uses u64, right?  Using void pointer breaks
->>> this concept.
->>>
->>
->> It's fine, ulist today resembles very little from what it was originally.  The
->> current users all shove pointers into there, so we might as well just make it a
->> pointer.  Thanks,
->
-> OK, good to know.
->
-> If this post still doesn't convince you, I'll prepare the patch to do
-> all replacements.
->
->
+On 07/22/2014 10:47 PM, Matthew Wilcox wrote:
+> In order to support accesses to larger chunks of memory, pass in a
+> 'size' parameter (counted in bytes), and return the amount available at
+> that address.
+> 
+> Support partitioning the underlying block device through a new helper
+> function, bdev_direct_access(), since partition handling should be done
+> in the block layer, not the filesystem, nor device driver.
+> 
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+> Reviewed-by: Jan Kara <jack@suse.cz>
+> ---
+>  Documentation/filesystems/xip.txt | 15 +++++++++------
+>  arch/powerpc/sysdev/axonram.c     | 12 ++++--------
+>  drivers/block/brd.c               |  8 +++++---
+>  drivers/s390/block/dcssblk.c      | 19 ++++++++++---------
+>  fs/block_dev.c                    | 28 ++++++++++++++++++++++++++++
+>  fs/ext2/xip.c                     | 31 +++++++++++++------------------
+>  include/linux/blkdev.h            |  6 ++++--
+>  7 files changed, 73 insertions(+), 46 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/xip.txt b/Documentation/filesystems/xip.txt
+> index 0466ee5..b62eabf 100644
+> --- a/Documentation/filesystems/xip.txt
+> +++ b/Documentation/filesystems/xip.txt
+> @@ -28,12 +28,15 @@ Implementation
+>  Execute-in-place is implemented in three steps: block device operation,
+>  address space operation, and file operations.
+>  
+> -A block device operation named direct_access is used to retrieve a
+> -reference (pointer) to a block on-disk. The reference is supposed to be
+> -cpu-addressable, physical address and remain valid until the release operation
+> -is performed. A struct block_device reference is used to address the device,
+> -and a sector_t argument is used to identify the individual block. As an
+> -alternative, memory technology devices can be used for this.
+> +A block device operation named direct_access is used to translate the
+> +block device sector number to a page frame number (pfn) that identifies
+> +the physical page for the memory.  It also returns a kernel virtual
+> +address that can be used to access the memory.
+> +
+> +The direct_access method takes a 'size' parameter that indicates the
+> +number of bytes being requested.  The function should return the number
+> +of bytes that it can provide, although it must not exceed the number of
+> +bytes requested.  It may also return a negative errno if an error occurs.
+>  
+>  The block device operation is optional, these block devices support it as of
+>  today:
+> diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
+> index 830edc8..3ee1c08 100644
+> --- a/arch/powerpc/sysdev/axonram.c
+> +++ b/arch/powerpc/sysdev/axonram.c
+> @@ -139,17 +139,13 @@ axon_ram_make_request(struct request_queue *queue, struct bio *bio)
+>   * axon_ram_direct_access - direct_access() method for block device
+>   * @device, @sector, @data: see block_device_operations method
+>   */
+> -static int
+> +static long
+>  axon_ram_direct_access(struct block_device *device, sector_t sector,
+> -		       void **kaddr, unsigned long *pfn)
+> +		       void **kaddr, unsigned long *pfn, long size)
+>  {
+>  	struct axon_ram_bank *bank = device->bd_disk->private_data;
+> -	loff_t offset;
+> +	loff_t offset = (loff_t)sector << AXON_RAM_SECTOR_SHIFT;
+>  
+> -	offset = sector;
+> -	if (device->bd_part != NULL)
+> -		offset += device->bd_part->start_sect;
+> -	offset <<= AXON_RAM_SECTOR_SHIFT;
+>  	if (offset >= bank->size) {
+>  		dev_err(&bank->device->dev, "Access outside of address space\n");
+>  		return -ERANGE;
+> @@ -158,7 +154,7 @@ axon_ram_direct_access(struct block_device *device, sector_t sector,
+>  	*kaddr = (void *)(bank->ph_addr + offset);
+>  	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+>  
+> -	return 0;
+> +	return min_t(long, size, bank->size - offset);
+>  }
+>  
+>  static const struct block_device_operations axon_ram_devops = {
+> diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+> index c7d138e..96e4c96 100644
+> --- a/drivers/block/brd.c
+> +++ b/drivers/block/brd.c
+> @@ -370,8 +370,8 @@ static int brd_rw_page(struct block_device *bdev, sector_t sector,
+>  }
+>  
+>  #ifdef CONFIG_BLK_DEV_XIP
+> -static int brd_direct_access(struct block_device *bdev, sector_t sector,
+> -			void **kaddr, unsigned long *pfn)
+> +static long brd_direct_access(struct block_device *bdev, sector_t sector,
+> +			void **kaddr, unsigned long *pfn, long size)
+>  {
+>  	struct brd_device *brd = bdev->bd_disk->private_data;
+>  	struct page *page;
 
-I don't care that much, do it however you want.  Thanks,
+Mathew hi You need to remove the wrong checks both alignment and
+size from this driver.
+(alignment is redundant but size is wrong)
 
-Josef
+These checks should be guarantied by the blk wrapper. (see below)
+
+> @@ -388,7 +388,9 @@ static int brd_direct_access(struct block_device *bdev, sector_t sector,
+>  	*kaddr = page_address(page);
+>  	*pfn = page_to_pfn(page);
+>  
+> -	return 0;
+> +	/* Could optimistically check to see if the next page in the
+> +	 * file is mapped to the next page of physical RAM */
+> +	return min_t(long, PAGE_SIZE, size);
+>  }
+>  #endif
+>  
+> diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
+> index 0f47175..58958d1 100644
+> --- a/drivers/s390/block/dcssblk.c
+> +++ b/drivers/s390/block/dcssblk.c
+> @@ -28,8 +28,8 @@
+>  static int dcssblk_open(struct block_device *bdev, fmode_t mode);
+>  static void dcssblk_release(struct gendisk *disk, fmode_t mode);
+>  static void dcssblk_make_request(struct request_queue *q, struct bio *bio);
+> -static int dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
+> -				 void **kaddr, unsigned long *pfn);
+> +static long dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
+> +				 void **kaddr, unsigned long *pfn, long size);
+>  
+>  static char dcssblk_segments[DCSSBLK_PARM_LEN] = "\0";
+>  
+> @@ -866,25 +866,26 @@ fail:
+>  	bio_io_error(bio);
+>  }
+>  
+> -static int
+> +static long
+>  dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
+> -			void **kaddr, unsigned long *pfn)
+> +			void **kaddr, unsigned long *pfn, long size)
+>  {
+>  	struct dcssblk_dev_info *dev_info;
+> -	unsigned long pgoff;
+> +	unsigned long offset, dev_sz;
+>  
+>  	dev_info = bdev->bd_disk->private_data;
+>  	if (!dev_info)
+>  		return -ENODEV;
+> +	dev_sz = dev_info->end - dev_info->start;
+>  	if (secnum % (PAGE_SIZE/512))
+>  		return -EINVAL;
+> -	pgoff = secnum / (PAGE_SIZE / 512);
+> -	if ((pgoff+1)*PAGE_SIZE-1 > dev_info->end - dev_info->start)
+> +	offset = secnum * 512;
+> +	if (offset > dev_sz)
+>  		return -ERANGE;
+> -	*kaddr = (void *) (dev_info->start+pgoff*PAGE_SIZE);
+> +	*kaddr = (void *) (dev_info->start + offset);
+>  	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+>  
+> -	return 0;
+> +	return min_t(long, size, dev_sz - offset);
+>  }
+>  
+>  static void
+> diff --git a/fs/block_dev.c b/fs/block_dev.c
+> index 6d72746..f1a158e 100644
+> --- a/fs/block_dev.c
+> +++ b/fs/block_dev.c
+> @@ -427,6 +427,34 @@ int bdev_write_page(struct block_device *bdev, sector_t sector,
+>  }
+>  EXPORT_SYMBOL_GPL(bdev_write_page);
+>  
+> +/**
+> + * bdev_direct_access() - Get the address for directly-accessibly memory
+> + * @bdev: The device containing the memory
+> + * @sector: The offset within the device
+> + * @addr: Where to put the address of the memory
+> + * @pfn: The Page Frame Number for the memory
+> + * @size: The number of bytes requested
+> + *
+> + * If a block device is made up of directly addressable memory, this function
+> + * will tell the caller the PFN and the address of the memory.  The address
+> + * may be directly dereferenced within the kernel without the need to call
+> + * ioremap(), kmap() or similar.  THe PFN is suitable for inserting into
+> + * page tables.
+> + *
+> + * Return: negative errno if an error occurs, otherwise the number of bytes
+> + * accessible at this address.
+> + */
+> +long bdev_direct_access(struct block_device *bdev, sector_t sector,
+> +			void **addr, unsigned long *pfn, long size)
+> +{
+> +	const struct block_device_operations *ops = bdev->bd_disk->fops;
+> +	if (!ops->direct_access)
+> +		return -EOPNOTSUPP;
+
+You need to check alignment on PAGE_SIZE since this API requires it, do
+to pfn defined to a page_number.
+
+(Unless you want to define another output-param like page_offset.
+ but this exercise can be left to the caller)
+
+You also need to check against the partition boundary. so something like:
+
++ 	if (sector & (PAGE_SECTORS-1))
++ 		return -EINVAL;
++	if (unlikely(sector + size > part_nr_sects_read(bdev->bd_part)))
++ 		return -ERANGE;
+
+Then perhaps you can remove that check from drivers
+
+> +	return ops->direct_access(bdev, sector + get_start_sect(bdev), addr,
+> +					pfn, size);
+> +}
+> +EXPORT_SYMBOL_GPL(bdev_direct_access);
+> +
+>  /*
+>   * pseudo-fs
+>   */
+> diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
+> index e98171a..bbc5fec 100644
+> --- a/fs/ext2/xip.c
+> +++ b/fs/ext2/xip.c
+> @@ -13,18 +13,12 @@
+>  #include "ext2.h"
+>  #include "xip.h"
+>  
+> -static inline int
+> -__inode_direct_access(struct inode *inode, sector_t block,
+> -		      void **kaddr, unsigned long *pfn)
+> +static inline long __inode_direct_access(struct inode *inode, sector_t block,
+> +				void **kaddr, unsigned long *pfn, long size)
+>  {
+>  	struct block_device *bdev = inode->i_sb->s_bdev;
+> -	const struct block_device_operations *ops = bdev->bd_disk->fops;
+> -	sector_t sector;
+> -
+> -	sector = block * (PAGE_SIZE / 512); /* ext2 block to bdev sector */
+> -
+> -	BUG_ON(!ops->direct_access);
+> -	return ops->direct_access(bdev, sector, kaddr, pfn);
+> +	sector_t sector = block * (PAGE_SIZE / 512);
+
+Style: Need a space between declaration and code (have you check-patch)
+
+> +	return bdev_direct_access(bdev, sector, kaddr, pfn, size);
+>  }
+>  
+>  static inline int
+> @@ -53,12 +47,13 @@ ext2_clear_xip_target(struct inode *inode, sector_t block)
+>  {
+>  	void *kaddr;
+>  	unsigned long pfn;
+> -	int rc;
+> +	long size;
+>  
+> -	rc = __inode_direct_access(inode, block, &kaddr, &pfn);
+> -	if (!rc)
+> -		clear_page(kaddr);
+> -	return rc;
+> +	size = __inode_direct_access(inode, block, &kaddr, &pfn, PAGE_SIZE);
+> +	if (size < 0)
+
+	if(size < PAGE_SIZE), No?
+
+You are going to memset PAGE_SIZE below in clear_page.
+
+> +		return size;
+> +	clear_page(kaddr);
+> +	return 0;
+>  }
+>  
+>  void ext2_xip_verify_sb(struct super_block *sb)
+> @@ -77,7 +72,7 @@ void ext2_xip_verify_sb(struct super_block *sb)
+>  int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+>  				void **kmem, unsigned long *pfn)
+>  {
+> -	int rc;
+> +	long rc;
+>  	sector_t block;
+>  
+>  	/* first, retrieve the sector number */
+> @@ -86,6 +81,6 @@ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+>  		return rc;
+>  
+>  	/* retrieve address of the target data */
+> -	rc = __inode_direct_access(mapping->host, block, kmem, pfn);
+> -	return rc;
+> +	rc = __inode_direct_access(mapping->host, block, kmem, pfn, PAGE_SIZE);
+> +	return (rc < 0) ? rc : 0;
+>  }
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index 8699bcf..bc5ea9e 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -1613,8 +1613,8 @@ struct block_device_operations {
+>  	int (*rw_page)(struct block_device *, sector_t, struct page *, int rw);
+>  	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+>  	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+> -	int (*direct_access) (struct block_device *, sector_t,
+> -						void **, unsigned long *);
+> +	long (*direct_access) (struct block_device *, sector_t,
+> +					void **, unsigned long *pfn, long size);
+>  	unsigned int (*check_events) (struct gendisk *disk,
+>  				      unsigned int clearing);
+>  	/* ->media_changed() is DEPRECATED, use ->check_events() instead */
+> @@ -1632,6 +1632,8 @@ extern int __blkdev_driver_ioctl(struct block_device *, fmode_t, unsigned int,
+>  extern int bdev_read_page(struct block_device *, sector_t, struct page *);
+>  extern int bdev_write_page(struct block_device *, sector_t, struct page *,
+>  						struct writeback_control *);
+> +extern long bdev_direct_access(struct block_device *, sector_t, void **addr,
+> +						unsigned long *pfn, long size);
+>  #else /* CONFIG_BLOCK */
+>  
+>  struct block_device;
+> 
+
+Thanks
+Boaz
+
