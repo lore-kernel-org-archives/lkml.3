@@ -1,60 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751377AbaG3Ts3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 15:48:29 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:65302 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaG3Ts2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 15:48:28 -0400
+	id S1751368AbaG3Tu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 15:50:59 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:11764 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750836AbaG3Tu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 15:50:57 -0400
+X-IronPort-AV: E=Sophos;i="5.01,766,1400025600"; 
+   d="scan'208";a="157289090"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: [PATCH] xen-netback: Using a new state bit instead of carrier
+Date: Wed, 30 Jul 2014 20:50:48 +0100
+Message-ID: <1406749849-4356-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <1406742127-27654-12-git-send-email-benjamin.gaignard@linaro.org>
-References: <1406742127-27654-1-git-send-email-benjamin.gaignard@linaro.org>
-	<1406742127-27654-12-git-send-email-benjamin.gaignard@linaro.org>
-Date: Wed, 30 Jul 2014 21:48:27 +0200
-X-Google-Sender-Auth: BB90Lu8LNv_h4FDxKaY8YTLY1XE
-Message-ID: <CAKMK7uGcFhfzeNTPNk=X_N=C4pda0LTtsb51JLGNBZAU5kg6tg@mail.gmail.com>
-Subject: Re: [PATCH v8 11/11] drm: sti: Add DRM driver itself
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Cc: dri-devel <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@linux.ie>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 7:42 PM, Benjamin Gaignard
-<benjamin.gaignard@linaro.org> wrote:
-> @@ -87,11 +90,50 @@ static int sti_compositor_bind(struct device *dev, struct device *master,
->         struct sti_compositor *compo = dev_get_drvdata(dev);
->         struct drm_device *drm_dev = data;
->         unsigned int i, crtc = 0, plane = 0;
-> +       struct sti_drm_private *dev_priv = drm_dev->dev_private;
-> +       struct drm_plane *cursor = NULL;
-> +       struct drm_plane *primary = NULL;
-> +
-> +       dev_priv->compo = compo;
->
->         drm_vblank_init(drm_dev, crtc);
+This patch introduces a new state bit VIF_STATUS_CONNECTED to track whether the
+vif is in a connected state. Using carrier will not work with the next patch
+in this series, which aims to turn the carrier temporarily off if the guest
+doesn't seem to be able to receive packets.
 
-
-This looks strange - you should pass this the total number of crtcs
-(the same that eventually ends up in dev->mode_config.num_crtc), not
-0. And the assignement of cursors to crtcs looks a bit strange on
-first read-through, but I have no clue about the sti hw. And in any
-case those pointers really only matter for backwards compat with
-existing pageflip and cursor ioctls, so doesn't really matter too
-much.
-
-Anyway didn't spot anything else which would need to be upgrade to
-never kms interfaces, so ack from my side for that. Only looked at
-that since right now I'm refreshing drm docs in those areas ;-)
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xenproject.org 
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index 28c9822..7231359 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -198,6 +198,11 @@ struct xenvif_queue { /* Per-queue data for xenvif */
+ 	struct xenvif_stats stats;
+ };
+ 
++enum vif_state_bit_shift {
++	/* This bit marks that the vif is connected */
++	VIF_STATUS_CONNECTED
++};
++
+ struct xenvif {
+ 	/* Unique identifier for this interface. */
+ 	domid_t          domid;
+@@ -220,6 +225,7 @@ struct xenvif {
+ 	 * frontend is rogue.
+ 	 */
+ 	bool disabled;
++	unsigned long status;
+ 
+ 	/* Queues */
+ 	struct xenvif_queue *queues;
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index bd59d9d..fbdadb3 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -55,7 +55,8 @@ static inline void xenvif_stop_queue(struct xenvif_queue *queue)
+ 
+ int xenvif_schedulable(struct xenvif *vif)
+ {
+-	return netif_running(vif->dev) && netif_carrier_ok(vif->dev);
++	return netif_running(vif->dev) &&
++		test_bit(VIF_STATUS_CONNECTED, &vif->status);
+ }
+ 
+ static irqreturn_t xenvif_tx_interrupt(int irq, void *dev_id)
+@@ -267,7 +268,7 @@ static void xenvif_down(struct xenvif *vif)
+ static int xenvif_open(struct net_device *dev)
+ {
+ 	struct xenvif *vif = netdev_priv(dev);
+-	if (netif_carrier_ok(dev))
++	if (test_bit(VIF_STATUS_CONNECTED, &vif->status))
+ 		xenvif_up(vif);
+ 	netif_tx_start_all_queues(dev);
+ 	return 0;
+@@ -276,7 +277,7 @@ static int xenvif_open(struct net_device *dev)
+ static int xenvif_close(struct net_device *dev)
+ {
+ 	struct xenvif *vif = netdev_priv(dev);
+-	if (netif_carrier_ok(dev))
++	if (test_bit(VIF_STATUS_CONNECTED, &vif->status))
+ 		xenvif_down(vif);
+ 	netif_tx_stop_all_queues(dev);
+ 	return 0;
+@@ -528,6 +529,7 @@ void xenvif_carrier_on(struct xenvif *vif)
+ 	if (!vif->can_sg && vif->dev->mtu > ETH_DATA_LEN)
+ 		dev_set_mtu(vif->dev, ETH_DATA_LEN);
+ 	netdev_update_features(vif->dev);
++	set_bit(VIF_STATUS_CONNECTED, &vif->status);
+ 	netif_carrier_on(vif->dev);
+ 	if (netif_running(vif->dev))
+ 		xenvif_up(vif);
+@@ -625,9 +627,11 @@ void xenvif_carrier_off(struct xenvif *vif)
+ 	struct net_device *dev = vif->dev;
+ 
+ 	rtnl_lock();
+-	netif_carrier_off(dev); /* discard queued packets */
+-	if (netif_running(dev))
+-		xenvif_down(vif);
++	if (test_and_clear_bit(VIF_STATUS_CONNECTED, &vif->status)) {
++		netif_carrier_off(dev); /* discard queued packets */
++		if (netif_running(dev))
++			xenvif_down(vif);
++	}
+ 	rtnl_unlock();
+ }
+ 
+@@ -656,8 +660,7 @@ void xenvif_disconnect(struct xenvif *vif)
+ 	unsigned int num_queues = vif->num_queues;
+ 	unsigned int queue_index;
+ 
+-	if (netif_carrier_ok(vif->dev))
+-		xenvif_carrier_off(vif);
++	xenvif_carrier_off(vif);
+ 
+ 	for (queue_index = 0; queue_index < num_queues; ++queue_index) {
+ 		queue = &vif->queues[queue_index];
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 769e553..6c4cc0f 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1953,7 +1953,7 @@ int xenvif_kthread_guest_rx(void *data)
+ 		 * context so we defer it here, if this thread is
+ 		 * associated with queue 0.
+ 		 */
+-		if (unlikely(queue->vif->disabled && netif_carrier_ok(queue->vif->dev) && queue->id == 0))
++		if (unlikely(queue->vif->disabled && queue->id == 0))
+ 			xenvif_carrier_off(queue->vif);
+ 
+ 		if (kthread_should_stop())
