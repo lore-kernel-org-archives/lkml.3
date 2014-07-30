@@ -1,231 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820AbaG3Mlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 08:41:39 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34874 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755051AbaG3Mlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 08:41:36 -0400
-Message-ID: <53D8F24B.7010104@ti.com>
-Date: Wed, 30 Jul 2014 16:25:31 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: Geert Uytterhoeven <geert+renesas@glider.be>, ulf.hansson@linaro.org,
-        Kevin Hilman <khilman@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 2/2] of/clk: use "clkops-clocks" to specify clocks
- handled by clock_ops domain
-References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be> <53D68CC4.1010704@ti.com> <CACxGe6uMke5vgzcNC9xUqjr2bHJ4QFHD6YjocSZWq8Ccx8Mm6A@mail.gmail.com> <2717555.fiA6A86F65@avalon>
-In-Reply-To: <2717555.fiA6A86F65@avalon>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1755777AbaG3MlT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 08:41:19 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:36648 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752768AbaG3MP0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 08:15:26 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 05/94] ACPI / resources: only reject zero length resources based at address zero
+Date: Wed, 30 Jul 2014 14:13:54 +0200
+Message-Id: <cff580582497c28eda54c9136b0f24dfcaa54c39.1406722270.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
+References: <e43bbc2c2b44d8f0bd0b7f65d6fd50ef738c57aa.1406722270.git.jslaby@suse.cz>
+In-Reply-To: <cover.1406722269.git.jslaby@suse.cz>
+References: <cover.1406722269.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+From: Andy Whitcroft <apw@canonical.com>
 
-On 07/30/2014 03:06 AM, Laurent Pinchart wrote:
-> Hi Grygorii and Grant,
-> 
-> On Monday 28 July 2014 23:52:34 Grant Likely wrote:
->> On Mon, Jul 28, 2014 at 11:47 AM, Grygorii Strashko wrote:
->>> On 07/28/2014 05:05 PM, Grant Likely wrote:
->>>> On Thu, 12 Jun 2014 19:53:43 +0300, Grygorii Strashko wrote:
->>>>> Use "clkops-clocks" property to specify clocks handled by
->>>>> clock_ops domain PM domain. Only clocks defined in "clkops-clocks"
->>>>> set of clocks will be handled by Runtime PM through clock_ops
->>>>> Pm domain.
->>>>>
->>>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->>>>> ---
->>>>>
->>>>>    drivers/of/of_clk.c |    7 ++-----
->>>>>    1 file changed, 2 insertions(+), 5 deletions(-)
->>>>>
->>>>> diff --git a/drivers/of/of_clk.c b/drivers/of/of_clk.c
->>>>> index 35f5e9f..5f9b90e 100644
->>>>> --- a/drivers/of/of_clk.c
->>>>> +++ b/drivers/of/of_clk.c
->>>>> @@ -86,11 +86,8 @@ int of_clk_register_runtime_pm_clocks(struct
->>>>> device_node *np,>>>
->>>>>       struct clk *clk;
->>>>>       int error;
->>>>>
->>>>> -    for (i = 0; (clk = of_clk_get(np, i)) && !IS_ERR(clk); i++) {
->>>>> -            if (!clk_may_runtime_pm(clk)) {
->>>>> -                    clk_put(clk);
->>>>> -                    continue;
->>>>> -            }
->>>>> +    for (i = 0; (clk = of_clk_get_from_set(np, "clkops", i)) &&
->>>>> +                 !IS_ERR(clk); i++) {
->>>>
->>>> This really looks like an ABI break to me. What happens to all the
->>>> existing platforms who don't have this new clkops-clocks in their device
->>>> tree?
->>>
->>> Agree. This patch as is will break such platforms.
->>> As possible solution for above problem - the NULL can be used as clock's
->>> prefix by default and platform code can configure new value of clock's
->>> prefix during initialization.
->>> In addition, to make this solution full the of_clk_get_by_name() will
->>> need to be modified too.
->>>
->>> But note pls, this is pure RFC patches which I did to find out the answer
->>> on questions: - What is better: maintain Runtime PM clocks configuration
->>> in DT or in code?
->>
->> In code. I don't think it is workable to embed runtime PM behaviour
->> into the DT bindings. I think there will be too much variance in what
->> hardware requires. We can create helpers to make this simpler, but I
->> don't think it is a good idea to set it up automatically without any
->> control from the driver itself.
->>
->>> - Where and when to call of_clk_register_runtime_pm_clocks()?
->>>
->>>    Bus notifier/ platform core/ device drivers
->>
->> I would say in device drivers.
-> 
-> I tend to agree with that.
-> 
-> It will help here to take a step back and remember what the problem we're
-> trying to solve is.
-> 
-> At the root is clock management. Our system comprise many clocks, and they
-> need to be handled. The Common Clock Framework nicely models the clocks, and
-> offers an API for drivers to retrieve device clocks and control them. Drivers
-> can thus implement clock management manually without much pain.
-> 
-> A clock can be managed in roughly three different ways :
-> 
-> - it can be enabled at probe time and disabled at remove time ;
-> 
-> - it can be enabled right before the device leaves its idle state and disabled
-> when the device goes back to idle ; or
-> 
-> - it can be enabled and disabled in a more fine-grained, device-specific
-> manner.
-> 
-> The selected clock management granularity depends on constraints specific to
-> the device and on how aggressive power saving needs to be. Enabling the clocks
-> at probe time and disabling them at remove time is enough for most devices,
-> but leads to a high power consumption. For that reason the second clock
-> management scheme is often desired.
-> 
-> Managing clocks manually in the driver is a valid option. However, when adding
-> runtime PM to the equation, and realizing that the clocks need to be enabled
-> in the runtime PM resume handler and disabled in the suspend handler, the
-> clock management code starts looking very similar in most drivers. We're thus
-> tempted to factorize it away from the drivers into a shared location.
-> 
-> It's important to note at this point that the goal here is only to simplify
-> drivers. Moving clock management code out of the drivers doesn't (unless I'm
-> missing something) open the door to new possibilities, it just serves as a
-> simplification.
-> 
-> Now, as Grygorii mentioned, differences between how a given IP core is
-> integrated in various SoCs can make clock management SoC-dependent. In the
-> vast majority of cases (which is really what we need to target, given that our
-> target is simplifying drivers) SoC integration can be described as a list of
-> clocks that must be managed. That list can be common to all devices in a given
-> SoC, or can be device-dependent as well.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-That's actually a problem - now we have static list of managed clocks per-SoC and
-not per device.
+===============
 
-> 
-> Few locations can be used to express a per-device list of per-SoC clocks. We
-> can have clocks lists in a per-SoC and per-device location, per-device clocks
-> lists in an SoC-specific location, or per-SoC clocks lists in a device-
-> specific location.
-> 
-> The first option would require listing clocks to be managed by runtime PM in
-> DT nodes, as proposed by this patch set. I don't think this is the best
-> option, as that information is a mix of hardware description and software
-> policy, with the hardware description part being already present in DT in the
-> clocks property.
+commit 867f9d463b82462793ea4610e748be0b04b37fc7 upstream.
 
-I'm not fully agree here. The clock is "functional clock" If It's managed by runtime PM.
-And all such clocks need to be enabled/disabled always when device is powered on/off.
-So, from my point of view it's HW description and it follows TRM. 
-Other clocks are optional and only drivers should control them.
-And question is how to define sets of such clocks in the best way?
+The recently merged change (in v3.14-rc6) to ACPI resource detection
+(below) causes all zero length ACPI resources to be elided from the
+table:
 
-> 
-> The second option calls for storing the lists in SoC code under arch/. As
-> we're trying to minimize the amount of SoC code there (and even remove SoC
-> code completely when possible) I don't think that's a good option.
-> 
-> The third option would require storing the clocks lists in device drivers. I
-> believe this is our best option, as a trade-off between simplicity and
-> versatility. Drivers that use runtime PM already need to enable it explicitly
-> when probing devices. Passing a list of clock names to runtime PM at that
-> point wouldn't complicate drivers much. When the clocks list isn't SoC-
-> dependent it could be stored as static information. Otherwise it could be
-> derived from DT (or any other source of hardware description) using C code,
-> offering all the versatility we need.
+  commit b355cee88e3b1a193f0e9a81db810f6f83ad728b
+  Author: Zhang Rui <rui.zhang@intel.com>
+  Date:   Thu Feb 27 11:37:15 2014 +0800
 
-Ok. if I understand right, you propose smth like this:
-1) DT based solution:
+    ACPI / resources: ignore invalid ACPI device resources
 
-devA {
-	clocks = <&clkpa>, <&clkcpgmac>, <&chipclk12>;
-	rpm-clocks = <&clkpa>, <&clkcpgmac>;
-- or -
-	clocks = <&clkpa>, <&clkcpgmac>, <&chipclk12>;
-	clock-names = "clk_pa", "clk_cpgmac", "cpsw_cpts_rft_clk";
-	rpm-clocks =  "clk_pa", "clk_cpgmac";
-}
+This change has caused a regression in (at least) serial port detection
+for a number of machines (see LP#1313981 [1]).  These seem to represent
+their IO regions (presumably incorrectly) as a zero length region.
+Reverting the above commit restores these serial devices.
 
-in driver:
- pm_runtime_enable();
-  |- of_clk_register_runtime_pm_clocks()
-- or -
- of_clk_register_runtime_pm_clocks()
- pm_runtime_enable();
+Only elide zero length resources which lie at address 0.
 
+Fixes: b355cee88e3b (ACPI / resources: ignore invalid ACPI device resources)
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+Acked-by: Zhang Rui <rui.zhang@intel.com>
+Cc: 3.14+ <stable@vger.kernel.org> # 3.14+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/acpi/resource.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-2) Static solution:
-char *con_ids_davinci[] =
-    { "fck", "master", "slave", NULL };
-char *con_ids_keystone[] =
-    { "clk_pa", "clk_cpgmac" };
-
-static struct of_device_id of_match[] = {
-	{ .compatible = "ti,keystone", con_ids_keystone},
-	{ .compatible = "ti,davinci", con_ids_davinci},
-	{},
-};
-
-Personally, I like option 1 and, seems, it will not break ABI. 
-
-> 
-> The only drawback of this solution I can think of right now is that the
-> runtime PM core couldn't manage device clocks before probing the device.
-> Specifically device clocks couldn't be managed if no driver is loaded for that
-> device. I somehow recall that someone raised this as being a problem, but I
-> can't remember why.
-> 
-
-I can recollect only OMAP2+ SoCs where some abstraction called HW_MOD is used 
-during platform initialization to reset all devices and turn off unused ones
-before probing the devices. But clock_ops are not used by OMAP2+:)
-
-regards,
--grygorii
+diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+index 0bdacc5e26a3..2ba8f02ced36 100644
+--- a/drivers/acpi/resource.c
++++ b/drivers/acpi/resource.c
+@@ -77,7 +77,7 @@ bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res)
+ 	switch (ares->type) {
+ 	case ACPI_RESOURCE_TYPE_MEMORY24:
+ 		memory24 = &ares->data.memory24;
+-		if (!memory24->address_length)
++		if (!memory24->minimum && !memory24->address_length)
+ 			return false;
+ 		acpi_dev_get_memresource(res, memory24->minimum,
+ 					 memory24->address_length,
+@@ -85,7 +85,7 @@ bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res)
+ 		break;
+ 	case ACPI_RESOURCE_TYPE_MEMORY32:
+ 		memory32 = &ares->data.memory32;
+-		if (!memory32->address_length)
++		if (!memory32->minimum && !memory32->address_length)
+ 			return false;
+ 		acpi_dev_get_memresource(res, memory32->minimum,
+ 					 memory32->address_length,
+@@ -93,7 +93,7 @@ bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res)
+ 		break;
+ 	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+ 		fixed_memory32 = &ares->data.fixed_memory32;
+-		if (!fixed_memory32->address_length)
++		if (!fixed_memory32->address && !fixed_memory32->address_length)
+ 			return false;
+ 		acpi_dev_get_memresource(res, fixed_memory32->address,
+ 					 fixed_memory32->address_length,
+@@ -150,7 +150,7 @@ bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res)
+ 	switch (ares->type) {
+ 	case ACPI_RESOURCE_TYPE_IO:
+ 		io = &ares->data.io;
+-		if (!io->address_length)
++		if (!io->minimum && !io->address_length)
+ 			return false;
+ 		acpi_dev_get_ioresource(res, io->minimum,
+ 					io->address_length,
+@@ -158,7 +158,7 @@ bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res)
+ 		break;
+ 	case ACPI_RESOURCE_TYPE_FIXED_IO:
+ 		fixed_io = &ares->data.fixed_io;
+-		if (!fixed_io->address_length)
++		if (!fixed_io->address && !fixed_io->address_length)
+ 			return false;
+ 		acpi_dev_get_ioresource(res, fixed_io->address,
+ 					fixed_io->address_length,
+-- 
+2.0.1
 
