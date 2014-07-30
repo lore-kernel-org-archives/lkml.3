@@ -1,76 +1,561 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530AbaG3OxG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 10:53:06 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:51767 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471AbaG3OxE (ORCPT
+	id S1754345AbaG3OzZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 10:55:25 -0400
+Received: from exprod7og107.obsmtp.com ([64.18.2.167]:49358 "EHLO
+	exprod7og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209AbaG3OzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 10:53:04 -0400
+	Wed, 30 Jul 2014 10:55:23 -0400
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 30 Jul 2014 08:52:43 -0600
-X-Google-Sender-Auth: mWTXGwbP7dWrmWHD_KSRzzj8lVU
-Message-ID: <CACxGe6vLUtEGAFs+cx4KxwXyXwrTo4Ksw36wLeBnWc8GMBxwfw@mail.gmail.com>
-Subject: [GIT PULL] Last minute bug fix for Exynos platform
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: Laura Abbott <lauraa@codeaurora.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <yq138dpgr6z.fsf@sermon.lab.mkp.net>
+References: <20140625103445.GA12943@avagotech.com>
+	<yq1zjg2m6lu.fsf@sermon.lab.mkp.net>
+	<CAK=zhgoQt5J=jh4jShAy5rBXNz34sN-tqf=uZDkY4zQJ9XhM5g@mail.gmail.com>
+	<yq18unklvda.fsf@sermon.lab.mkp.net>
+	<CAK=zhgpDWJLBMBB1mV-7u+o_UC86PiOCAp4vi4-UAn_hXHtF2A@mail.gmail.com>
+	<yq1r41bkgdp.fsf@sermon.lab.mkp.net>
+	<CAK=zhgp_v_sdt+VLDs1Mxxi8Cg4nZNnzgQ=d228h+Ht2EpdEqw@mail.gmail.com>
+	<yq138dpgr6z.fsf@sermon.lab.mkp.net>
+Date: Wed, 30 Jul 2014 20:25:14 +0530
+Message-ID: <CAK=zhgoEhW7fT7SV6ZkzgFa_A49W9quzWOgXb=DH3D_CrMAdDw@mail.gmail.com>
+Subject: Re: [RESEND][PATCH 07/10][SCSI]mpt2sas: Added Reply Descriptor Post
+ Queue (RDPQ) Array support
+From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: jejb@kernel.org, "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org,
+        Sathya Prakash <Sathya.Prakash@avagotech.com>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Martin,
 
-This bug fix has been brewing for a while. I hate sending it to you so
-late, but I only got confirmation that it solves the problem this past
-weekend. The diff looks big for a bug fix, but the majority of it is
-only executed in the Exynos quirk case. Unfortunately it required
-splitting early_init_dt_scan() in two and adding quirk handling in the
-middle of it on ARM.
+Sorry for the delay as I was on vacation.
 
-If you're not happy pulling at this late stage then I'll add it to my
-v3.17 merge queue and ask Greg to pull it into stable.
+Here are the change set when compared to the initial patch
 
-g.
+1. Declared the following functions at the beginning of the
+mpt2sas_base.c file instead of moving all these functions before
+mpt2sas_base_map_resources() function
+        a. _base_wait_for_doorbell_int()
+        b. _base_wait_for_doorbell_ack()
+        c. _base_wait_for_doorbell_not_used()
+        d. _base_handshake_req_reply_wait()
+        e. _base_get_ioc_facts()
 
-The following changes since commit 64aa90f26c06e1cb2aacfb98a7d0eccfbd6c1a91:
+2. Initially set the consistent DMA mask to 32 bit and then change it
+to 64 bit mask after allocating RDPQ pools by calling the function
+_base_change_consistent_dma_mask. This is to ensure that all the upper
+32 bits of RDPQ entries's base address to be same. Also allocated the
+RDPQ pools first and then allocated remaining pools such as request
+pool, sense buffer pools etc. Also this patch takes care to set the
+consistent DMA mask to 64 bit (if it supports) even after resume
+operation from hibernation.
 
-  Linux 3.16-rc7 (2014-07-27 12:41:55 -0700)
+3. Reduced the redundancy between the RDPQ and non-RDPQ support in
+these following functions
+        a. _base_release_memory_pools()
+        b. _base_allocate_memory_pools()
+        c. _base_send_ioc_init()
+        d. _base_make_ioc_operational()
 
-are available in the git repository at:
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+---
 
-  git://git.secretlab.ca/git/linux tags/devicetree-for-linus
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c
+b/drivers/scsi/mpt2sas/mpt2sas_base.c
+index 6b2a79e..d81230a 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -92,6 +92,22 @@ static int disable_discovery = -1;
+ module_param(disable_discovery, int, 0);
+ MODULE_PARM_DESC(disable_discovery, " disable discovery ");
 
-for you to fetch changes up to 5a12a597a8627b91fd9d94365853f9f69a4f399c:
++static int dma_mask;
++
++static int
++_base_wait_for_doorbell_int(struct MPT2SAS_ADAPTER *ioc, int timeout,
++                int sleep_flag);
++static int
++_base_wait_for_doorbell_ack(struct MPT2SAS_ADAPTER *ioc, int timeout,
++                int sleep_flag);
++static int
++_base_wait_for_doorbell_not_used(struct MPT2SAS_ADAPTER *ioc, int timeout,
++                 int sleep_flag);
++static int
++_base_handshake_req_reply_wait(struct MPT2SAS_ADAPTER *ioc, int request_bytes,
++    u32 *request, int reply_bytes, u16 *reply, int timeout, int sleep_flag);
++static int
++_base_get_ioc_facts(struct MPT2SAS_ADAPTER *ioc, int sleep_flag);
+ /**
+  * _scsih_set_fwfault_debug - global setting of ioc->fwfault_debug.
+  *
+@@ -1179,17 +1195,22 @@ static int
+ _base_config_dma_addressing(struct MPT2SAS_ADAPTER *ioc, struct pci_dev *pdev)
+ {
+     struct sysinfo s;
+-    char *desc = NULL;
++    u64 consistent_dma_mask;
++
++    if (dma_mask)
++        consistent_dma_mask = DMA_BIT_MASK(64);
++    else
++        consistent_dma_mask = DMA_BIT_MASK(32);
 
-  arm: Add devicetree fixup machine function (2014-07-29 21:26:49 -0600)
+     if (sizeof(dma_addr_t) > 4) {
+         const uint64_t required_mask =
+             dma_get_required_mask(&pdev->dev);
+         if ((required_mask > DMA_BIT_MASK(32)) && !pci_set_dma_mask(pdev,
+             DMA_BIT_MASK(64)) && !pci_set_consistent_dma_mask(pdev,
+-            DMA_BIT_MASK(64))) {
++            consistent_dma_mask)) {
+             ioc->base_add_sg_single = &_base_add_sg_single_64;
+             ioc->sge_size = sizeof(Mpi2SGESimple64_t);
+-            desc = "64";
++            dma_mask = 64;
+             goto out;
+         }
+     }
+@@ -1198,18 +1219,29 @@ _base_config_dma_addressing(struct
+MPT2SAS_ADAPTER *ioc, struct pci_dev *pdev)
+         && !pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32))) {
+         ioc->base_add_sg_single = &_base_add_sg_single_32;
+         ioc->sge_size = sizeof(Mpi2SGESimple32_t);
+-        desc = "32";
++        dma_mask = 32;
+     } else
+         return -ENODEV;
 
-----------------------------------------------------------------
-Device tree Exynos bug fix for v3.16-rc7
+  out:
+     si_meminfo(&s);
+-    printk(MPT2SAS_INFO_FMT "%s BIT PCI BUS DMA ADDRESSING SUPPORTED, "
+-        "total mem (%ld kB)\n", ioc->name, desc, convert_to_kb(s.totalram));
++    printk(MPT2SAS_INFO_FMT
++        "%d BIT PCI BUS DMA ADDRESSING SUPPORTED, total mem (%ld kB)\n",
++        ioc->name, dma_mask, convert_to_kb(s.totalram));
 
-Exynos has buggy firmware that puts bad data into the memory node. Commit
-1c2f87c2 (ARM: Get rid of meminfo) exposed the bug by dropping the artificial
-upper bound on the number of memory banks that can be added. Exynos fails to
-boot after that commit. This branch fixes it by splitting the early DT parse
-function and inserting a fixup hook. Exynos uses the hook to correct the DT
-before parsing memory regions.
+     return 0;
+ }
 
-----------------------------------------------------------------
-Laura Abbott (3):
-      of: Split early_init_dt_scan into two parts
-      of: Add memory limiting function for flattened devicetrees
-      arm: Add devicetree fixup machine function
++static int
++_base_change_consistent_dma_mask(struct MPT2SAS_ADAPTER *ioc,
++                  struct pci_dev *pdev)
++{
++    if (pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64))) {
++        if (pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32)))
++            return -ENODEV;
++    }
++    return 0;
++}
+ /**
+  * _base_check_enable_msix - checks MSIX capabable.
+  * @ioc: per adapter object
+@@ -1424,6 +1456,9 @@ _base_enable_msix(struct MPT2SAS_ADAPTER *ioc)
+     ioc->reply_queue_count = min_t(int, ioc->cpu_count,
+         ioc->msix_vector_count);
 
- arch/arm/include/asm/mach/arch.h |  1 +
- arch/arm/kernel/devtree.c        |  8 ++++-
- arch/arm/mach-exynos/exynos.c    | 10 ++++++
- drivers/of/fdt.c                 | 66 +++++++++++++++++++++++++++++++++++++++-
- include/linux/of_fdt.h           |  3 ++
- 5 files changed, 86 insertions(+), 2 deletions(-)
++    if (!ioc->rdpq_array_enable && max_msix_vectors == -1)
++        max_msix_vectors = 8;
++
+     if (max_msix_vectors > 0) {
+         ioc->reply_queue_count = min_t(int, max_msix_vectors,
+             ioc->reply_queue_count);
+@@ -1552,6 +1587,16 @@ mpt2sas_base_map_resources(struct MPT2SAS_ADAPTER *ioc)
+     }
+
+     _base_mask_interrupts(ioc);
++
++    r = _base_get_ioc_facts(ioc, CAN_SLEEP);
++    if (r)
++        goto out_fail;
++
++    if (!ioc->rdpq_array_enable_assigned) {
++        ioc->rdpq_array_enable = ioc->rdpq_array_capable;
++        ioc->rdpq_array_enable_assigned = 1;
++    }
++
+     r = _base_enable_msix(ioc);
+     if (r)
+         goto out_fail;
+@@ -2349,7 +2394,8 @@ _base_static_config_pages(struct MPT2SAS_ADAPTER *ioc)
+ static void
+ _base_release_memory_pools(struct MPT2SAS_ADAPTER *ioc)
+ {
+-    int i;
++    int i = 0;
++    struct reply_post_struct *rps;
+
+     dexitprintk(ioc, printk(MPT2SAS_INFO_FMT "%s\n", ioc->name,
+         __func__));
+@@ -2390,15 +2436,25 @@ _base_release_memory_pools(struct MPT2SAS_ADAPTER *ioc)
+         ioc->reply_free = NULL;
+     }
+
+-    if (ioc->reply_post_free) {
+-        pci_pool_free(ioc->reply_post_free_dma_pool,
+-            ioc->reply_post_free, ioc->reply_post_free_dma);
++    if (ioc->reply_post) {
++        do {
++            rps = &ioc->reply_post[i];
++            if (rps->reply_post_free) {
++                pci_pool_free(
++                    ioc->reply_post_free_dma_pool,
++                    rps->reply_post_free,
++                    rps->reply_post_free_dma);
++                dexitprintk(ioc, printk(MPT2SAS_INFO_FMT
++                    "reply_post_free_pool(0x%p): free\n",
++                    ioc->name, rps->reply_post_free));
++                rps->reply_post_free = NULL;
++            }
++        } while (ioc->rdpq_array_enable &&
++               (++i < ioc->reply_queue_count));
++
+         if (ioc->reply_post_free_dma_pool)
+             pci_pool_destroy(ioc->reply_post_free_dma_pool);
+-        dexitprintk(ioc, printk(MPT2SAS_INFO_FMT
+-            "reply_post_free_pool(0x%p): free\n", ioc->name,
+-            ioc->reply_post_free));
+-        ioc->reply_post_free = NULL;
++        kfree(ioc->reply_post);
+     }
+
+     if (ioc->config_page) {
+@@ -2541,6 +2597,69 @@ _base_allocate_memory_pools(struct
+MPT2SAS_ADAPTER *ioc,  int sleep_flag)
+         ioc->max_sges_in_chain_message, ioc->shost->sg_tablesize,
+         ioc->chains_needed_per_io));
+
++    /* reply post queue, 16 byte align */
++    reply_post_free_sz = ioc->reply_post_queue_depth *
++        sizeof(Mpi2DefaultReplyDescriptor_t);
++    if (ioc->rdpq_array_enable)
++        sz = reply_post_free_sz;
++    else {
++        if (_base_is_controller_msix_enabled(ioc))
++            sz = reply_post_free_sz * ioc->reply_queue_count;
++        else
++            sz = reply_post_free_sz;
++    }
++
++    ioc->reply_post = kcalloc((ioc->rdpq_array_enable) ?
++        (ioc->reply_queue_count):1,
++        sizeof(struct reply_post_struct), GFP_KERNEL);
++
++    if (!ioc->reply_post) {
++        printk(MPT2SAS_ERR_FMT "reply_post_free pool: kcalloc failed\n",
++            ioc->name);
++        goto out;
++    }
++    ioc->reply_post_free_dma_pool = pci_pool_create("reply_post_free pool",
++        ioc->pdev, sz, 16, 0);
++    if (!ioc->reply_post_free_dma_pool) {
++        printk(MPT2SAS_ERR_FMT
++         "reply_post_free pool: pci_pool_create failed\n",
++         ioc->name);
++        goto out;
++    }
++    i = 0;
++    do {
++        ioc->reply_post[i].reply_post_free =
++            pci_pool_alloc(ioc->reply_post_free_dma_pool,
++            GFP_KERNEL,
++            &ioc->reply_post[i].reply_post_free_dma);
++        if (!ioc->reply_post[i].reply_post_free) {
++            printk(MPT2SAS_ERR_FMT
++            "reply_post_free pool: pci_pool_alloc failed\n",
++            ioc->name);
++            goto out;
++        }
++        memset(ioc->reply_post[i].reply_post_free, 0, sz);
++        dinitprintk(ioc, printk(MPT2SAS_INFO_FMT
++            "reply post free pool (0x%p): depth(%d),"
++            "element_size(%d), pool_size(%d kB)\n", ioc->name,
++            ioc->reply_post[i].reply_post_free,
++            ioc->reply_post_queue_depth, 8, sz/1024));
++        dinitprintk(ioc, printk(MPT2SAS_INFO_FMT
++            "reply_post_free_dma = (0x%llx)\n", ioc->name,
++            (unsigned long long)
++            ioc->reply_post[i].reply_post_free_dma));
++        total_sz += sz;
++    } while (ioc->rdpq_array_enable && (++i < ioc->reply_queue_count));
++
++    if (dma_mask == 64) {
++        if (_base_change_consistent_dma_mask(ioc, ioc->pdev) != 0) {
++            printk(MPT2SAS_WARN_FMT
++                "no suitable consistent DMA mask for %s\n",
++                ioc->name, pci_name(ioc->pdev));
++            goto out;
++        }
++    }
++
+     ioc->scsiio_depth = ioc->hba_queue_depth -
+         ioc->hi_priority_depth - ioc->internal_depth;
+
+@@ -2752,37 +2871,6 @@ chain_done:
+         "(0x%llx)\n", ioc->name, (unsigned long long)ioc->reply_free_dma));
+     total_sz += sz;
+
+-    /* reply post queue, 16 byte align */
+-    reply_post_free_sz = ioc->reply_post_queue_depth *
+-        sizeof(Mpi2DefaultReplyDescriptor_t);
+-    if (_base_is_controller_msix_enabled(ioc))
+-        sz = reply_post_free_sz * ioc->reply_queue_count;
+-    else
+-        sz = reply_post_free_sz;
+-    ioc->reply_post_free_dma_pool = pci_pool_create("reply_post_free pool",
+-        ioc->pdev, sz, 16, 0);
+-    if (!ioc->reply_post_free_dma_pool) {
+-        printk(MPT2SAS_ERR_FMT "reply_post_free pool: pci_pool_create "
+-            "failed\n", ioc->name);
+-        goto out;
+-    }
+-    ioc->reply_post_free = pci_pool_alloc(ioc->reply_post_free_dma_pool ,
+-        GFP_KERNEL, &ioc->reply_post_free_dma);
+-    if (!ioc->reply_post_free) {
+-        printk(MPT2SAS_ERR_FMT "reply_post_free pool: pci_pool_alloc "
+-            "failed\n", ioc->name);
+-        goto out;
+-    }
+-    memset(ioc->reply_post_free, 0, sz);
+-    dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "reply post free pool"
+-        "(0x%p): depth(%d), element_size(%d), pool_size(%d kB)\n",
+-        ioc->name, ioc->reply_post_free, ioc->reply_post_queue_depth, 8,
+-        sz/1024));
+-    dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "reply_post_free_dma = "
+-        "(0x%llx)\n", ioc->name, (unsigned long long)
+-        ioc->reply_post_free_dma));
+-    total_sz += sz;
+-
+     ioc->config_page_sz = 512;
+     ioc->config_page = pci_alloc_consistent(ioc->pdev,
+         ioc->config_page_sz, &ioc->config_page_dma);
+@@ -3454,6 +3542,9 @@ _base_get_ioc_facts(struct MPT2SAS_ADAPTER *ioc,
+int sleep_flag)
+     facts->IOCCapabilities = le32_to_cpu(mpi_reply.IOCCapabilities);
+     if ((facts->IOCCapabilities & MPI2_IOCFACTS_CAPABILITY_INTEGRATED_RAID))
+         ioc->ir_firmware = 1;
++    if ((facts->IOCCapabilities &
++          MPI2_IOCFACTS_CAPABILITY_RDPQ_ARRAY_CAPABLE))
++        ioc->rdpq_array_capable = 1;
+     facts->FWVersion.Word = le32_to_cpu(mpi_reply.FWVersion.Word);
+     facts->IOCRequestFrameSize =
+         le16_to_cpu(mpi_reply.IOCRequestFrameSize);
+@@ -3489,9 +3580,12 @@ _base_send_ioc_init(struct MPT2SAS_ADAPTER
+*ioc, int sleep_flag)
+ {
+     Mpi2IOCInitRequest_t mpi_request;
+     Mpi2IOCInitReply_t mpi_reply;
+-    int r;
++    int i, r = 0;
+     struct timeval current_time;
+     u16 ioc_status;
++    u32 reply_post_free_array_sz = 0;
++    Mpi2IOCInitRDPQArrayEntry *reply_post_free_array = NULL;
++    dma_addr_t reply_post_free_array_dma;
+
+     dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "%s\n", ioc->name,
+         __func__));
+@@ -3520,9 +3614,31 @@ _base_send_ioc_init(struct MPT2SAS_ADAPTER
+*ioc, int sleep_flag)
+         cpu_to_le64((u64)ioc->request_dma);
+     mpi_request.ReplyFreeQueueAddress =
+         cpu_to_le64((u64)ioc->reply_free_dma);
+-    mpi_request.ReplyDescriptorPostQueueAddress =
+-        cpu_to_le64((u64)ioc->reply_post_free_dma);
+
++    if (ioc->rdpq_array_enable) {
++        reply_post_free_array_sz = ioc->reply_queue_count *
++            sizeof(Mpi2IOCInitRDPQArrayEntry);
++        reply_post_free_array = pci_alloc_consistent(ioc->pdev,
++            reply_post_free_array_sz, &reply_post_free_array_dma);
++        if (!reply_post_free_array) {
++            printk(MPT2SAS_ERR_FMT
++            "reply_post_free_array: pci_alloc_consistent failed\n",
++            ioc->name);
++            r = -ENOMEM;
++            goto out;
++        }
++        memset(reply_post_free_array, 0, reply_post_free_array_sz);
++        for (i = 0; i < ioc->reply_queue_count; i++)
++            reply_post_free_array[i].RDPQBaseAddress =
++                cpu_to_le64(
++                (u64)ioc->reply_post[i].reply_post_free_dma);
++        mpi_request.MsgFlags = MPI2_IOCINIT_MSGFLAG_RDPQ_ARRAY_MODE;
++        mpi_request.ReplyDescriptorPostQueueAddress =
++            cpu_to_le64((u64)reply_post_free_array_dma);
++    } else {
++        mpi_request.ReplyDescriptorPostQueueAddress =
++            cpu_to_le64((u64)ioc->reply_post[0].reply_post_free_dma);
++    }
+
+     /* This time stamp specifies number of milliseconds
+      * since epoch ~ midnight January 1, 1970.
+@@ -3550,7 +3666,7 @@ _base_send_ioc_init(struct MPT2SAS_ADAPTER *ioc,
+int sleep_flag)
+     if (r != 0) {
+         printk(MPT2SAS_ERR_FMT "%s: handshake failed (r=%d)\n",
+             ioc->name, __func__, r);
+-        return r;
++        goto out;
+     }
+
+     ioc_status = le16_to_cpu(mpi_reply.IOCStatus) & MPI2_IOCSTATUS_MASK;
+@@ -3560,7 +3676,12 @@ _base_send_ioc_init(struct MPT2SAS_ADAPTER
+*ioc, int sleep_flag)
+         r = -EIO;
+     }
+
+-    return 0;
++out:
++    if (reply_post_free_array)
++        pci_free_consistent(ioc->pdev, reply_post_free_array_sz,
++                    reply_post_free_array,
++                    reply_post_free_array_dma);
++    return r;
+ }
+
+ /**
+@@ -4093,7 +4214,7 @@ _base_make_ioc_operational(struct
+MPT2SAS_ADAPTER *ioc, int sleep_flag)
+     u8 hide_flag;
+     struct adapter_reply_queue *reply_q;
+     long reply_post_free;
+-    u32 reply_post_free_sz;
++    u32 reply_post_free_sz, index = 0;
+
+     dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "%s\n", ioc->name,
+         __func__));
+@@ -4164,19 +4285,27 @@ _base_make_ioc_operational(struct
+MPT2SAS_ADAPTER *ioc, int sleep_flag)
+         _base_assign_reply_queues(ioc);
+
+     /* initialize Reply Post Free Queue */
+-    reply_post_free = (long)ioc->reply_post_free;
+     reply_post_free_sz = ioc->reply_post_queue_depth *
+         sizeof(Mpi2DefaultReplyDescriptor_t);
++    reply_post_free = (long)ioc->reply_post[index].reply_post_free;
+     list_for_each_entry(reply_q, &ioc->reply_queue_list, list) {
+         reply_q->reply_post_host_index = 0;
+         reply_q->reply_post_free = (Mpi2ReplyDescriptorsUnion_t *)
+             reply_post_free;
+         for (i = 0; i < ioc->reply_post_queue_depth; i++)
+             reply_q->reply_post_free[i].Words =
+-                            cpu_to_le64(ULLONG_MAX);
++                             cpu_to_le64(ULLONG_MAX);
+         if (!_base_is_controller_msix_enabled(ioc))
+             goto skip_init_reply_post_free_queue;
+-        reply_post_free += reply_post_free_sz;
++        /*
++         * If RDPQ is enabled, switch to the next allocation.
++         * Otherwise advance within the contiguous region.
++         */
++        if (ioc->rdpq_array_enable)
++            reply_post_free = (long)
++                ioc->reply_post[++index].reply_post_free;
++        else
++            reply_post_free += reply_post_free_sz;
+     }
+  skip_init_reply_post_free_queue:
+
+@@ -4304,6 +4433,7 @@ mpt2sas_base_attach(struct MPT2SAS_ADAPTER *ioc)
+         }
+     }
+
++    ioc->rdpq_array_enable_assigned = 0;
+     r = mpt2sas_base_map_resources(ioc);
+     if (r)
+         goto out_free_resources;
+@@ -4664,6 +4794,16 @@ mpt2sas_base_hard_reset_handler(struct
+MPT2SAS_ADAPTER *ioc, int sleep_flag,
+         r = -EFAULT;
+         goto out;
+     }
++
++    r = _base_get_ioc_facts(ioc, CAN_SLEEP);
++    if (r)
++        goto out;
++
++    if (ioc->rdpq_array_enable && !ioc->rdpq_array_capable)
++        panic("%s: Issue occurred with flashing controller firmware."
++              "Please reboot the system and ensure that the correct"
++              "firmware version is running\n", ioc->name);
++
+     r = _base_make_ioc_operational(ioc, sleep_flag);
+     if (!r)
+         _base_reset_handler(ioc, MPT2_IOC_DONE_RESET);
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.h
+b/drivers/scsi/mpt2sas/mpt2sas_base.h
+index be2ae90..5f85002 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.h
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
+@@ -636,6 +636,11 @@ struct mpt2sas_port_facts {
+     u16            MaxPostedCmdBuffers;
+ };
+
++struct reply_post_struct {
++    Mpi2ReplyDescriptorsUnion_t    *reply_post_free;
++    dma_addr_t            reply_post_free_dma;
++};
++
+ /**
+  * enum mutex_type - task management mutex type
+  * @TM_MUTEX_OFF: mutex is not required becuase calling function is
+acquiring it
+@@ -779,8 +784,11 @@ typedef void (*MPT2SAS_FLUSH_RUNNING_CMDS)(struct
+MPT2SAS_ADAPTER *ioc);
+  * @reply_free_dma_pool:
+  * @reply_free_host_index: tail index in pool to insert free replys
+  * @reply_post_queue_depth: reply post queue depth
+- * @reply_post_free: pool for reply post (64bit descriptor)
+- * @reply_post_free_dma:
++ * @reply_post_struct: struct for reply_post_free physical & virt address
++ * @rdpq_array_capable: FW supports multiple reply queue addresses in ioc_init
++ * @rdpq_array_enable: rdpq_array support is enabled in the driver
++ * @rdpq_array_enable_assigned: this ensures that rdpq_array_enable flag
++ *                is assigned only ones
+  * @reply_queue_count: number of reply queue's
+  * @reply_queue_list: link list contaning the reply queue info
+  * @reply_post_host_index: head index in the pool where FW completes IO
+@@ -972,8 +980,10 @@ struct MPT2SAS_ADAPTER {
+
+     /* reply post queue */
+     u16         reply_post_queue_depth;
+-    Mpi2ReplyDescriptorsUnion_t *reply_post_free;
+-    dma_addr_t    reply_post_free_dma;
++    struct reply_post_struct *reply_post;
++    u8        rdpq_array_capable;
++    u8        rdpq_array_enable;
++    u8        rdpq_array_enable_assigned;
+     struct dma_pool *reply_post_free_dma_pool;
+     u8        reply_queue_count;
+     struct list_head reply_queue_list;
+
+On Sat, Jul 26, 2014 at 1:13 AM, Martin K. Petersen
+<martin.petersen@oracle.com> wrote:
+>>>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com> writes:
+>
+> Sreekanth,
+>
+> Sreekanth> Following are the changes that I have done in this patch over
+> Sreekanth> the first RDPQ support patch,
+>
+> Please, please do the function moves in a different patch. Or use a
+> simple prototype declaration like I did to avoid moving the code around
+> in the first place.
+>
+> Sreekanth> 2. Set pci_set_consistent_dma_mask() to
+> Sreekanth>    DMA_BIT_MASK(32). still I am analysing whether this change
+> Sreekanth>    may affect on any other things or not?
+>
+> I think you're done allocating things by the time this is called. But to
+> be sure you can call _base_config_dma_addressing() after you're done
+> with the RDPQ allocations (or rearrange the code so you allocate RDPQ
+> before the DMA mask is upped in general).
+>
+> --
+> Martin K. Petersen      Oracle Linux Engineering
