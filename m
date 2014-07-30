@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158AbaG3Ub2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 16:31:28 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:60308 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461AbaG3Ub0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 16:31:26 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Ursula Braun <ursula.braun@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux390@de.ibm.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] s390: net: claw.c:  Cleaning up possible error if incorrect in parameter
-Date: Wed, 30 Jul 2014 22:32:52 +0200
-Message-Id: <1406752372-19743-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751486AbaG3Uej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 16:34:39 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47537 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750831AbaG3Uei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 16:34:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,767,1400050800"; 
+   d="scan'208";a="569633189"
+Date: Wed, 30 Jul 2014 16:34:35 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Boaz Harrosh <openosd@gmail.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 04/22] Change direct_access calling convention
+Message-ID: <20140730203435.GR6754@linux.intel.com>
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+ <b78b33d94b669a5fbd02e06f2493b43dd5d77698.1406058387.git.matthew.r.wilcox@intel.com>
+ <53D9174C.7040906@gmail.com>
+ <53D9197C.2050000@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53D9197C.2050000@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Possible error if incorrect in parameter, count = 0.
-And clarified what the code actually does significantly.
+On Wed, Jul 30, 2014 at 07:12:44PM +0300, Boaz Harrosh wrote:
+> Off course I was wrong here size is in bytes not in sectors. Which points
+> out that maybe this API needs to be in sectors.
+> 
+> [Actually it needs to be in pages both size and offset, because of return of
+> pfn, but its your call.]
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/s390/net/claw.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+I considered a number of options here.  The VM wants things to be in pages.
+The filesystem wants things to be in block size.  The block device wants
+things to be in sectors.  It's all a mess when you try and converge.
+Everybody understands bytes.
 
-diff --git a/drivers/s390/net/claw.c b/drivers/s390/net/claw.c
-index d837c3c..8d5b7b6 100644
---- a/drivers/s390/net/claw.c
-+++ b/drivers/s390/net/claw.c
-@@ -3070,10 +3070,10 @@ claw_hname_write(struct device *dev, struct device_attribute *attr,
- 	p_env = priv->p_env;
- 	if (count > MAX_NAME_LEN+1)
- 		return -EINVAL;
--	memset(p_env->host_name, 0x20, MAX_NAME_LEN);
--	strncpy(p_env->host_name,buf, count);
--	p_env->host_name[count-1] = 0x20;  /* clear extra 0x0a */
--	p_env->host_name[MAX_NAME_LEN] = 0x00;
-+	strlcpy(p_env->host_name, buf,
-+			sizeof(p_env->host_name));
-+	strlcat(p_env->host_name, "        ",
-+			sizeof(p_env->host_name));
- 	CLAW_DBF_TEXT(2, setup, "HstnSet");
- 	CLAW_DBF_TEXT_(2, setup, "%s", p_env->host_name);
+Here's what I've come up with on top of patch 4/22.  Let me know what
+you think.
+
+
+diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
+index 3ee1c08..741293f 100644
+--- a/arch/powerpc/sysdev/axonram.c
++++ b/arch/powerpc/sysdev/axonram.c
+@@ -146,11 +146,6 @@ axon_ram_direct_access(struct block_device *device, sector_t sector,
+ 	struct axon_ram_bank *bank = device->bd_disk->private_data;
+ 	loff_t offset = (loff_t)sector << AXON_RAM_SECTOR_SHIFT;
  
-@@ -3108,10 +3108,10 @@ claw_adname_write(struct device *dev, struct device_attribute *attr,
- 	p_env = priv->p_env;
- 	if (count > MAX_NAME_LEN+1)
- 		return -EINVAL;
--	memset(p_env->adapter_name, 0x20, MAX_NAME_LEN);
--	strncpy(p_env->adapter_name,buf, count);
--	p_env->adapter_name[count-1] = 0x20; /* clear extra 0x0a */
--	p_env->adapter_name[MAX_NAME_LEN] = 0x00;
-+	strlcpy(p_env->adapter_name, buf,
-+			sizeof(p_env->adapter_name));
-+	strlcat(p_env->adapter_name, "        ",
-+			sizeof(p_env->adapter_name));
- 	CLAW_DBF_TEXT(2, setup, "AdnSet");
- 	CLAW_DBF_TEXT_(2, setup, "%s", p_env->adapter_name);
+-	if (offset >= bank->size) {
+-		dev_err(&bank->device->dev, "Access outside of address space\n");
+-		return -ERANGE;
+-	}
+-
+ 	*kaddr = (void *)(bank->ph_addr + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
  
-@@ -3147,10 +3147,10 @@ claw_apname_write(struct device *dev, struct device_attribute *attr,
- 	p_env = priv->p_env;
- 	if (count > MAX_NAME_LEN+1)
- 		return -EINVAL;
--	memset(p_env->api_type, 0x20, MAX_NAME_LEN);
--	strncpy(p_env->api_type,buf, count);
--	p_env->api_type[count-1] = 0x20;  /* we get a loose 0x0a */
--	p_env->api_type[MAX_NAME_LEN] = 0x00;
-+	strlcpy(p_env->api_type, buf,
-+			sizeof(p_env->api_type));
-+	strlcat(p_env->api_type, "        ",
-+			sizeof(p_env->api_type));
- 	if(strncmp(p_env->api_type,WS_APPL_NAME_PACKED,6) == 0) {
- 		p_env->read_size=DEF_PACK_BUFSIZE;
- 		p_env->write_size=DEF_PACK_BUFSIZE;
--- 
-1.7.10.4
-
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 33a39e7..3483458 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -378,10 +378,6 @@ static long brd_direct_access(struct block_device *bdev, sector_t sector,
+ 
+ 	if (!brd)
+ 		return -ENODEV;
+-	if (sector & (PAGE_SECTORS-1))
+-		return -EINVAL;
+-	if (sector + PAGE_SECTORS > get_capacity(bdev->bd_disk))
+-		return -ERANGE;
+ 	page = brd_insert_page(brd, sector);
+ 	if (!page)
+ 		return -ENOSPC;
+diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
+index 58958d1..2ee5556 100644
+--- a/drivers/s390/block/dcssblk.c
++++ b/drivers/s390/block/dcssblk.c
+@@ -877,11 +877,7 @@ dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
+ 	if (!dev_info)
+ 		return -ENODEV;
+ 	dev_sz = dev_info->end - dev_info->start;
+-	if (secnum % (PAGE_SIZE/512))
+-		return -EINVAL;
+ 	offset = secnum * 512;
+-	if (offset > dev_sz)
+-		return -ERANGE;
+ 	*kaddr = (void *) (dev_info->start + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+ 
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index f1a158e..93ebdd53 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -450,8 +450,14 @@ long bdev_direct_access(struct block_device *bdev, sector_t sector,
+ 	const struct block_device_operations *ops = bdev->bd_disk->fops;
+ 	if (!ops->direct_access)
+ 		return -EOPNOTSUPP;
+-	return ops->direct_access(bdev, sector + get_start_sect(bdev), addr,
+-					pfn, size);
++	if ((sector + DIV_ROUND_UP(size, 512)) >
++					part_nr_sects_read(bdev->bd_part))
++		return -ERANGE;
++	sector += get_start_sect(bdev);
++	if (sector % (PAGE_SIZE / 512))
++		return -EINVAL;
++	size = ops->direct_access(bdev, sector, addr, pfn, size);
++	return size ? size : -ERANGE;
+ }
+ EXPORT_SYMBOL_GPL(bdev_direct_access);
+ 
