@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082AbaG3BxH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jul 2014 21:53:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60762 "EHLO
+	id S1755431AbaG3BxF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jul 2014 21:53:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60765 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229AbaG3BuP (ORCPT
+	with ESMTP id S1755232AbaG3BuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jul 2014 21:50:15 -0400
+	Tue, 29 Jul 2014 21:50:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: [PATCH 3.15 23/37] fuse: add FUSE_NO_OPEN_SUPPORT flag to INIT
-Date: Tue, 29 Jul 2014 18:48:59 -0700
-Message-Id: <20140730014828.826040866@linuxfoundation.org>
+        Linus Walleij <linus.walleij@linaro.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        Maxime Coquelin <maxime.coquelin@st.com>
+Subject: [PATCH 3.15 24/37] pinctrl: st: Fix irqmux handler
+Date: Tue, 29 Jul 2014 18:49:00 -0700
+Message-Id: <20140730014828.867857798@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <20140730014827.565626091@linuxfoundation.org>
 References: <20140730014827.565626091@linuxfoundation.org>
@@ -28,64 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Gallagher <andrewjcg@fb.com>
+From: Maxime COQUELIN <maxime.coquelin@st.com>
 
-commit d7afaec0b564f0609e116f562983b8e72fc3e9c9 upstream.
+commit 7a2deccf0ef12f7f6e33150d5875020c0c94fa94 upstream.
 
-Here some additional changes to set a capability flag so that clients can
-detect when it's appropriate to return -ENOSYS from open.
+st_gpio_irqmux_handler() reads the status register to find out
+which banks inside the controller have pending IRQs.
+For each banks having pending IRQs, it calls the corresponding handler.
 
-This amends the following commit introduced in 3.14:
+Problem is that current code restricts the number of possible banks inside the
+controller to ST_GPIO_PINS_PER_BANK. This define represents the number of pins
+inside a bank, so it shouldn't be used here.
 
-  7678ac50615d  fuse: support clients that don't implement 'open'
+On STiH407, PIO_FRONT0 controller has 10 banks, so IRQs pending in the two
+last banks (PIO18 & PIO19) aren't handled.
 
-However we can only add the flag to 3.15 and later since there was no
-protocol version update in 3.14.
+This patch replace ST_GPIO_PINS_PER_BANK by the number of banks inside the
+controller.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Acked-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/inode.c           |    2 +-
- include/uapi/linux/fuse.h |    3 +++
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ drivers/pinctrl/pinctrl-st.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -935,7 +935,7 @@ static void fuse_send_init(struct fuse_c
- 		FUSE_SPLICE_WRITE | FUSE_SPLICE_MOVE | FUSE_SPLICE_READ |
- 		FUSE_FLOCK_LOCKS | FUSE_IOCTL_DIR | FUSE_AUTO_INVAL_DATA |
- 		FUSE_DO_READDIRPLUS | FUSE_READDIRPLUS_AUTO | FUSE_ASYNC_DIO |
--		FUSE_WRITEBACK_CACHE;
-+		FUSE_WRITEBACK_CACHE | FUSE_NO_OPEN_SUPPORT;
- 	req->in.h.opcode = FUSE_INIT;
- 	req->in.numargs = 1;
- 	req->in.args[0].size = sizeof(*arg);
---- a/include/uapi/linux/fuse.h
-+++ b/include/uapi/linux/fuse.h
-@@ -101,6 +101,7 @@
-  *  - add FATTR_CTIME
-  *  - add ctime and ctimensec to fuse_setattr_in
-  *  - add FUSE_RENAME2 request
-+ *  - add FUSE_NO_OPEN_SUPPORT flag
-  */
+--- a/drivers/pinctrl/pinctrl-st.c
++++ b/drivers/pinctrl/pinctrl-st.c
+@@ -1467,7 +1467,7 @@ static void st_gpio_irqmux_handler(unsig
  
- #ifndef _LINUX_FUSE_H
-@@ -229,6 +230,7 @@ struct fuse_file_lock {
-  * FUSE_READDIRPLUS_AUTO: adaptive readdirplus
-  * FUSE_ASYNC_DIO: asynchronous direct I/O submission
-  * FUSE_WRITEBACK_CACHE: use writeback cache for buffered writes
-+ * FUSE_NO_OPEN_SUPPORT: kernel supports zero-message opens
-  */
- #define FUSE_ASYNC_READ		(1 << 0)
- #define FUSE_POSIX_LOCKS	(1 << 1)
-@@ -247,6 +249,7 @@ struct fuse_file_lock {
- #define FUSE_READDIRPLUS_AUTO	(1 << 14)
- #define FUSE_ASYNC_DIO		(1 << 15)
- #define FUSE_WRITEBACK_CACHE	(1 << 16)
-+#define FUSE_NO_OPEN_SUPPORT	(1 << 17)
+ 	status = readl(info->irqmux_base);
  
- /**
-  * CUSE INIT request/reply flags
+-	for_each_set_bit(n, &status, ST_GPIO_PINS_PER_BANK)
++	for_each_set_bit(n, &status, info->nbanks)
+ 		__gpio_irq_handler(&info->banks[n]);
+ 
+ 	chained_irq_exit(chip, desc);
 
 
