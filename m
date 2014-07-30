@@ -1,259 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839AbaG3N7l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 09:59:41 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:44282 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792AbaG3N7j (ORCPT
+	id S1753524AbaG3OBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 10:01:12 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292AbaG3OBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 09:59:39 -0400
-Date: Wed, 30 Jul 2014 22:58:31 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Timofey Titovets <nefelim4ag@gmail.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH v3 RESEND] zram: auto add new devices on demand
-Message-ID: <20140730135831.GA1098@swordfish>
-References: <53CCEF76.4040002@gmail.com>
- <20140729030021.GA22707@bbox>
+	Wed, 30 Jul 2014 10:01:10 -0400
+From: Richard Weinberger <richard@sigma-star.at>
+To: linux-fsdevel@vger.kernel.org
+Cc: viro@zeniv.linux.org.uk, hch@infradead.org, paulmck@linux.vnet.ibm.com,
+        jeffm@suse.com, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@sigma-star.at>
+Subject: [PATCH] vfs: Fix RCU usage in __propagate_umount()
+Date: Wed, 30 Jul 2014 15:59:16 +0200
+Message-Id: <1406728756-32443-1-git-send-email-richard@sigma-star.at>
+X-Mailer: git-send-email 1.8.4.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140729030021.GA22707@bbox>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+If we use the plain list_empty() we might not see the
+hlist_del_init_rcu() and therefore miss one member of the
+list.
 
-On (07/29/14 12:00), Minchan Kim wrote:
-> Hello Timofey,
-> 
-> Sorry for late response and thanks for suggesting new feature.
-> 
-> First of all, I'd like to know your usecase.
-> 
-> I don't mean I am against this feature and I tend to agree it would
-> be good if we can make new device dynamically but until now, I don't
-> hear any requirement like that. So we need compelling usecase to
-> justify maintainance overhead.
-> 
-> On Mon, Jul 21, 2014 at 01:46:14PM +0300, Timofey Titovets wrote:
-> > From: Timofey Titovets <nefelim4ag@gmail.com>
-> > 
-> > This add supporting of auto allocate new zram devices on demand,
-> > like loop devices
-> > 
-> > This working by following rules:
-> > 	- Pre create zram devices specified by num_device
-> > 	- if all device already in use -> add new free device
-> > 
-> > From v1 -> v2:
-> > Delete useless variable 'ret', added documentation for explain new
-> > zram behavior
-> > 
-> > From v2 -> v3
-> > Delete logic to destroy not used devices, for avoid concurrency issues
-> > Code refactoring for made patch small and clean as possible
-> > Patch can pass the test:
-> > 
-> > #!/bin/sh
-> > modprobe zram
-> > while true; do
-> >                 echo 10485760 > /sys/block/zram0/disksize&
-> >                 echo 1 > /sys/block/zram0/reset&
-> > done
-> > 
-> > Can be pulled from:
-> > https://github.com/Nefelim4ag/linux.git
-> > 
-> > Tested on 3.15.5-2-ARCH, can be applied on any kernel version
-> > after this patch 'zram: add LZ4 compression support' - https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=6e76668e415adf799839f0ab205142ad7002d260
-> > 
-> > ---
-> > 
-> > diff --git a/Documentation/blockdev/zram.txt
-> > b/Documentation/blockdev/zram.txt
-> > index 0595c3f..a090ac7 100644
-> > --- a/Documentation/blockdev/zram.txt
-> > +++ b/Documentation/blockdev/zram.txt
-> > @@ -21,6 +21,9 @@ Following shows a typical sequence of steps for
-> > using zram.
-> >  	This creates 4 devices: /dev/zram{0,1,2,3}
-> >  	(num_devices parameter is optional. Default: 1)
-> > 
-> > +	If all device in use kernel will create new zram device
-> > +	(between num_devices and 31)
-> > +
-> >  2) Set max number of compression streams
-> >  	Compression backend may use up to max_comp_streams compression streams,
-> >  	thus allowing up to max_comp_streams concurrent compression operations.
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index 089e72c..cc78779 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -43,6 +43,8 @@ static const char *default_compressor = "lzo";
-> >  /* Module params (documentation at end) */
-> >  static unsigned int num_devices = 1;
-> > 
-> > +static inline int zram_add_dev(void);
-> > +
-> >  #define ZRAM_ATTR_RO(name)						\
-> >  static ssize_t zram_attr_##name##_show(struct device *d,		\
-> >  				struct device_attribute *attr, char *b)	\
-> > @@ -168,6 +170,7 @@ static ssize_t comp_algorithm_store(struct device *dev,
-> >  		struct device_attribute *attr, const char *buf, size_t len)
-> >  {
-> >  	struct zram *zram = dev_to_zram(dev);
-> > +
-> 
-> unnecessary change
-> 
-> >  	down_write(&zram->init_lock);
-> >  	if (init_done(zram)) {
-> >  		up_write(&zram->init_lock);
-> > @@ -239,6 +242,7 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
-> >  {
-> >  	size_t num_pages;
-> >  	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
-> > +
-> 
-> Ditto
-> 
-> >  	if (!meta)
-> >  		goto out;
-> > 
-> > @@ -374,6 +378,7 @@ static int zram_bvec_read(struct zram *zram,
-> > struct bio_vec *bvec,
-> >  	struct page *page;
-> >  	unsigned char *user_mem, *uncmem = NULL;
-> >  	struct zram_meta *meta = zram->meta;
-> > +
-> 
-> Ditto
-> 
-> >  	page = bvec->bv_page;
-> > 
-> >  	read_lock(&meta->tb_lock);
-> > @@ -607,6 +612,7 @@ static void zram_reset_device(struct zram *zram,
-> > bool reset_capacity)
-> >  	/* Free all pages that are still in this zram device */
-> >  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
-> >  		unsigned long handle = meta->table[index].handle;
-> > +
-> 
-> Ditto
-> 
-> >  		if (!handle)
-> >  			continue;
-> > 
-> > @@ -667,6 +673,7 @@ static ssize_t disksize_store(struct device *dev,
-> >  	zram->disksize = disksize;
-> >  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-> >  	revalidate_disk(zram->disk);
-> > +	zram_add_dev();
-> 
-> Why do you add new device unconditionally?
-> Maybe we need new konb on sysfs or ioctl for adding new device?
-> Any thought, guys?
+It fixes the following issue:
+$ unshare -m /usr/bin/sleep 10000 &
+$ mkdir -p foo/proc
+$ mount -t proc none foo/proc
+$ mount -t binfmt_misc none foo/proc/sys/fs/binfmt_misc
+$ umount -l foo/proc
+$ rmdir foo/proc
+rmdir: failed to remove ‘foo/proc’: Device or resource busy
 
+rmdir fails because the last entry in the RCU list, "proc", was
+not propagated as list_empty() still returned false instead of true.
 
-speaking of the patch, frankly, I (almost) see no gain comparing to the
-existing functionality.
+Signed-off-by: Richard Weinberger <richard@sigma-star.at>
+---
+Hi!
 
-speaking of the idea. well, I'm not 100% convinced yet. the use cases I
-see around do not imply dynamic creation/resizing/etc. that said, I need to
-think about it.
+Please review this patch with care, the comments in rculist.h
+confused me like hell:
 
-if we end up adding this functionality I tend to vote for sysfs knob, just
-because it seems to be more user friendly than writing some magic INTs to
-ioctl-d fd.
+First it says:
+/*
+ * Why is there no list_empty_rcu()?  Because list_empty() serves this
+ * purpose.  The list_empty() function fetches the RCU-protected pointer
+ * and compares it to the address of the list head, but neither dereferences
+ * this pointer itself nor provides this pointer to the caller.  Therefore,
+ * it is not necessary to use rcu_dereference(), so that list_empty() can
+ * be used anywhere you would want to use a list_empty_rcu().
+ */
 
-	-ss
-> 
-> >  	up_write(&zram->init_lock);
-> >  	return len;
-> > 
-> > @@ -954,6 +961,34 @@ static void destroy_device(struct zram *zram)
-> >  	blk_cleanup_queue(zram->queue);
-> >  }
-> > 
-> > +/*
-> > + * Automatically add empty zram device,
-> > + * if all created devices already initialized
-> > + */
-> > +static inline int zram_add_dev(void)
-> > +{
-> > +	int dev_id;
-> > +
-> > +	for (dev_id = 0; dev_id < num_devices; dev_id++) {
-> > +		if (!zram_devices[dev_id].disksize)
-> > +			return 0;
-> > +	}
-> > +
-> > +	if (max_num_devices <= num_devices) {
-> > +		pr_warn("Can't add zram%u, max device number reached\n", num_devices);
-> > +		return 1;
-> > +	}
-> > +
-> > +	if (create_device(&zram_devices[num_devices], num_devices)) {
-> > +		destroy_device(&zram_devices[num_devices]);
-> > +		return 1;
-> > +	}
-> > +	pr_info("Created zram%u device\n", num_devices);
-> > +	num_devices++;
-> 
-> Who protects num_devices race?
-> 
-> > +
-> > +	return 0;
-> > +}
-> 
-> There is only adding function. Where is removing function?
-> 
-> Sorry, I am on vacation tomorrow so pz, understand my late response.
-> 
-> > +
-> >  static int __init zram_init(void)
-> >  {
-> >  	int ret, dev_id;
-> > @@ -972,13 +1007,14 @@ static int __init zram_init(void)
-> >  		goto out;
-> >  	}
-> > 
-> > -	/* Allocate the device array and initialize each one */
-> > -	zram_devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
-> > +	/* Allocate the device array */
-> > +	zram_devices = kcalloc(max_num_devices, sizeof(struct zram), GFP_KERNEL);
-> >  	if (!zram_devices) {
-> >  		ret = -ENOMEM;
-> >  		goto unregister;
-> >  	}
-> > 
-> > +	/* Initialise zram{0..num_devices} */
-> >  	for (dev_id = 0; dev_id < num_devices; dev_id++) {
-> >  		ret = create_device(&zram_devices[dev_id], dev_id);
-> >  		if (ret)
-> > @@ -1025,7 +1061,7 @@ module_init(zram_init);
-> >  module_exit(zram_exit);
-> > 
-> >  module_param(num_devices, uint, 0);
-> > -MODULE_PARM_DESC(num_devices, "Number of zram devices");
-> > +MODULE_PARM_DESC(num_devices, "Number of pre created  zram devices");
-> > 
-> >  MODULE_LICENSE("Dual BSD/GPL");
-> >  MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
-> 
+And later:
+/**
+ * Where are list_empty_rcu() and list_first_entry_rcu()?
+ *
+ * Implementing those functions following their counterparts list_empty() and
+ * list_first_entry() is not advisable because they lead to subtle race
+ * conditions as the following snippet shows:
+ *
+ * if (!list_empty_rcu(mylist)) {
+ *      struct foo *bar = list_first_entry_rcu(mylist, struct foo, list_member);
+ *      do_something(bar);
+ * }
+ *
+ * The list may not be empty when list_empty_rcu checks it, but it may be when
+ * list_first_entry_rcu rereads the ->next pointer.
+ *
+ * Rereading the ->next pointer is not a problem for list_empty() and
+ * list_first_entry() because they would be protected by a lock that blocks
+ * writers.
+ *
+ * See list_first_or_null_rcu for an alternative.
+ */
+
+To my understanding we cannot use list_empty() and have to use list_first_or_null_rcu(),
+or am I missing something?
+
+Thanks,
+//richard
+
+ fs/pnode.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/fs/pnode.c b/fs/pnode.c
+index 302bf22..883901c 100644
+--- a/fs/pnode.c
++++ b/fs/pnode.c
+@@ -380,7 +380,8 @@ static void __propagate_umount(struct mount *mnt)
+ 		 * umount the child only if the child has no
+ 		 * other children
+ 		 */
+-		if (child && list_empty(&child->mnt_mounts)) {
++		if (child && list_first_or_null_rcu(&child->mnt_mounts,
++						    struct mount, mnt_mounts)) {
+ 			hlist_del_init_rcu(&child->mnt_hash);
+ 			hlist_add_before_rcu(&child->mnt_hash, &mnt->mnt_hash);
+ 		}
+-- 
+1.8.4.5
+
