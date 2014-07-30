@@ -1,205 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316AbaG3RAf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 13:00:35 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:7250 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754555AbaG3RAb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 13:00:31 -0400
-Message-ID: <53D924A8.2050008@fb.com>
-Date: Wed, 30 Jul 2014 13:00:24 -0400
-From: Josef Bacik <jbacik@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755207AbaG3RFB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 13:05:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754454AbaG3RE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 13:04:59 -0400
+Message-ID: <53D9259F.5050307@redhat.com>
+Date: Wed, 30 Jul 2014 13:04:31 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Chris Mason <clm@fb.com>, <linux-btrfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Btrfs: Fix memory corruption by ulist_add_merge() on
- 32bit arch
-References: <1406537824-2376-1-git-send-email-tiwai@suse.de>	<53D64D40.80606@fb.com>	<s5hzjft7fwm.wl%tiwai@suse.de>	<s5hsill7fak.wl%tiwai@suse.de>	<s5hsiljrwwy.wl%tiwai@suse.de>	<53D9015A.90001@fb.com>	<s5h61iesxen.wl%tiwai@suse.de>	<s5h1tt2sx94.wl%tiwai@suse.de>	<53D911DE.7000806@fb.com>	<s5hwqaurgic.wl%tiwai@suse.de>	<53D916DB.9020901@fb.com> <s5hsilirehv.wl%tiwai@suse.de>
-In-Reply-To: <s5hsilirehv.wl%tiwai@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Matt Fleming <matt@console-pimps.org>
+CC: Colin Ian King <colin.king@canonical.com>, Borislav Petkov <bp@alien8.de>,
+        linux-kernel@vger.kernel.org, lszubowi@redhat.com,
+        Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH] x86, efi: print debug values in Kib not MB
+References: <1406653761-3884-1-git-send-email-prarit@redhat.com> <20140729222932.GA17481@pd.tnic> <20140730144803.GB15082@console-pimps.org> <53D909C3.9050205@canonical.com>
+In-Reply-To: <53D909C3.9050205@canonical.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-30_06:2014-07-30,2014-07-30,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.63113411666416e-11 kscore.compositescore=0
- circleOfTrustscore=29.7083259529277 compositescore=0.9989857498195
- urlsuspect_oldscore=0.9989857498195 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.9989857498195 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1407300201
-X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2014 12:35 PM, Takashi Iwai wrote:
-> At Wed, 30 Jul 2014 12:01:31 -0400,
-> Josef Bacik wrote:
->>
->> On 07/30/2014 11:52 AM, Takashi Iwai wrote:
->>> At Wed, 30 Jul 2014 11:40:14 -0400,
->>> Josef Bacik wrote:
->>>>
->>>> On 07/30/2014 11:05 AM, Takashi Iwai wrote:
->>>>> At Wed, 30 Jul 2014 17:01:52 +0200,
->>>>> Takashi Iwai wrote:
->>>>>>
->>>>>> At Wed, 30 Jul 2014 10:29:46 -0400,
->>>>>> Josef Bacik wrote:
->>>>>>>
->>>>>>> On 07/30/2014 05:57 AM, Takashi Iwai wrote:
->>>>>>>> At Mon, 28 Jul 2014 16:01:55 +0200,
->>>>>>>> Takashi Iwai wrote:
->>>>>>>>>
->>>>>>>>> At Mon, 28 Jul 2014 15:48:41 +0200,
->>>>>>>>> Takashi Iwai wrote:
->>>>>>>>>>
->>>>>>>>>> At Mon, 28 Jul 2014 09:16:48 -0400,
->>>>>>>>>> Josef Bacik wrote:
->>>>>>>>>>>
->>>>>>>>>>> On 07/28/2014 04:57 AM, Takashi Iwai wrote:
->>>>>>>>>>>> We've got bug reports that btrfs crashes when quota is enabled on
->>>>>>>>>>>> 32bit kernel, typically with the Oops like below:
->>>>>>>>>>>>       BUG: unable to handle kernel NULL pointer dereference at 00000004
->>>>>>>>>>>>       IP: [<f9234590>] find_parent_nodes+0x360/0x1380 [btrfs]
->>>>>>>>>>>>       *pde = 00000000
->>>>>>>>>>>>       Oops: 0000 [#1] SMP
->>>>>>>>>>>>       CPU: 0 PID: 151 Comm: kworker/u8:2 Tainted: G S      W 3.15.2-1.gd43d97e-default #1
->>>>>>>>>>>>       Workqueue: btrfs-qgroup-rescan normal_work_helper [btrfs]
->>>>>>>>>>>>       task: f1478130 ti: f147c000 task.ti: f147c000
->>>>>>>>>>>>       EIP: 0060:[<f9234590>] EFLAGS: 00010213 CPU: 0
->>>>>>>>>>>>       EIP is at find_parent_nodes+0x360/0x1380 [btrfs]
->>>>>>>>>>>>       EAX: f147dda8 EBX: f147ddb0 ECX: 00000011 EDX: 00000000
->>>>>>>>>>>>       ESI: 00000000 EDI: f147dda4 EBP: f147ddf8 ESP: f147dd38
->>>>>>>>>>>>        DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
->>>>>>>>>>>>       CR0: 8005003b CR2: 00000004 CR3: 00bf3000 CR4: 00000690
->>>>>>>>>>>>       Stack:
->>>>>>>>>>>>        00000000 00000000 f147dda4 00000050 00000001 00000000 00000001 00000050
->>>>>>>>>>>>        00000001 00000000 d3059000 00000001 00000022 000000a8 00000000 00000000
->>>>>>>>>>>>        00000000 000000a1 00000000 00000000 00000001 00000000 00000000 11800000
->>>>>>>>>>>>       Call Trace:
->>>>>>>>>>>>        [<f923564d>] __btrfs_find_all_roots+0x9d/0xf0 [btrfs]
->>>>>>>>>>>>        [<f9237bb1>] btrfs_qgroup_rescan_worker+0x401/0x760 [btrfs]
->>>>>>>>>>>>        [<f9206148>] normal_work_helper+0xc8/0x270 [btrfs]
->>>>>>>>>>>>        [<c025e38b>] process_one_work+0x11b/0x390
->>>>>>>>>>>>        [<c025eea1>] worker_thread+0x101/0x340
->>>>>>>>>>>>        [<c026432b>] kthread+0x9b/0xb0
->>>>>>>>>>>>        [<c0712a71>] ret_from_kernel_thread+0x21/0x30
->>>>>>>>>>>>        [<c0264290>] kthread_create_on_node+0x110/0x110
->>>>>>>>>>>>
->>>>>>>>>>>> This indicates a NULL corruption in prefs_delayed list.  The further
->>>>>>>>>>>> investigation and bisection pointed that the call of ulist_add_merge()
->>>>>>>>>>>> results in the corruption.
->>>>>>>>>>>>
->>>>>>>>>>>> ulist_add_merge() takes u64 as aux and writes a 64bit value into
->>>>>>>>>>>> old_aux.  The callers of this function in backref.c, however, pass a
->>>>>>>>>>>> pointer of a pointer to old_aux.  That is, the function overwrites
->>>>>>>>>>>> 64bit value on 32bit pointer.  This caused a NULL in the adjacent
->>>>>>>>>>>> variable, in this case, prefs_delayed.
->>>>>>>>>>>>
->>>>>>>>>>>> Here is a quick attempt to band-aid over this: a new function,
->>>>>>>>>>>> ulist_add_merge_ptr() is introduced to pass/store properly a pointer
->>>>>>>>>>>> value instead of u64.  There are still ugly void ** cast remaining
->>>>>>>>>>>> in the callers because void ** cannot be taken implicitly.  But, it's
->>>>>>>>>>>> safer than explicit cast to u64, anyway.
->>>>>>>>>>>>
->>>>>>>>>>>> Bugzilla: https://urldefense.proofpoint.com/v1/url?u=https://bugzilla.novell.com/show_bug.cgi?id%3D887046&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=cKCbChRKsMpTX8ybrSkonQ%3D%3D%0A&m=m3qrbo6ngjqKO%2B7ofuwRfQflb9Cx%2FXrF8TKejkPjxfA%3D%0A&s=199a5b6f0ed181925e9ba2c1060fe20d1c8ad2831dd1d96cc7eddd2a343fa72b
->>>>>>>>>>>> Cc: <stable@vger.kernel.org> [v3.11+]
->>>>>>>>>>>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
->>>>>>>>>>>> ---
->>>>>>>>>>>>
->>>>>>>>>>>> Alternatively, we can change the argument of aux and old_aux to a
->>>>>>>>>>>> pointer from u64, as backref.c is the only user of ulist_add_merge()
->>>>>>>>>>>> function.  I'll cook up another patch if it's the preferred way.
->>>>>>>>>>>>
->>>>>>>>>>>
->>>>>>>>>>> Yeah lets just use a pointer and see how that works out.  Thanks,
->>>>>>>>>>
->>>>>>>>>> Oops, I forgot that ulist_add() takes aux as u64 and it calling
->>>>>>>>>> ulist_add_merge() internally.  So, we can't change the type blindly
->>>>>>>>>> there, unfortunately.
->>>>>>>>>
->>>>>>>>> Looking back at the code, it seems that all aux arguments passed to
->>>>>>>>> ulist_add() in qgroup.c are pointers, too.  So, indeed, all aux values
->>>>>>>>> are pointers, so far, and it'd be even cleaner to replace all these
->>>>>>>>> from u64 to void *.
->>>>>>>>>
->>>>>>>>> But, such a replacement patch will become difficult for backporting to
->>>>>>>>> stable kernels (the bug existed since 3.11, at least).  So IMO, we
->>>>>>>>> should put a smaller fix like my previous one, let it backported to
->>>>>>>>> stable kernels, and do more comprehensive replacements to pointer on
->>>>>>>>> its top.
->>>>>>>>
->>>>>>>> Ping.  Could you guys take my original patch as is, or do you prefer
->>>>>>>> changing in a different way?  If so, how?
->>>>>>>>
->>>>>>>
->>>>>>> I don't care how hard it is to backport to stable,
->>>>>>
->>>>>> You must do care as a maintainer.  It's a long-standing and serious
->>>>>> bug since 3.11.  The kernel hangs up immediately when you enable quota
->>>>>> on 32bit kernel.  And it's really hard to revert it when the rootfs is
->>>>>> btrfs.  (The mount follows the immediate hang up after reboot.)
->>>>>>
->>>>
->>>> What I mean is that we want the right fix first, not something that is easier to
->>>> pull back to stable and then the right fix later.  Do it right first and then
->>>> backport it to the stable kernels, it's perfectly acceptable to adjust patches
->>>> when sending them to the stable team.  "But it's hard" is not a valid excuse for
->>>> not doing it right the first time.
->>>
->>> Well, I guess this underestimates the burden of backports.  Currently,
->>> there is stable kernel for each kernel release.  Anyone has to
->>> backport for each version, and you'll be asked.  I, as a long-time
->>> subsystem maintainer, wouldn't go in that way :)
->>>
->>> And, speaking of "rightness" -- replacing the callers with a wrapper
->>> is also a right fix.  It's even a safer fix.  That's basically why I
->>> posted it as the primary patch.
->>>
->>> The merit of replacing all callers is that you can eliminate nasty
->>> casts by that.  This is however rather a cleanup, which is a different
->>> bonus from what we need to fix.
->>>
->>>>>>> since we're using pointers
->>>>>>> everywhere just change it to void * and be done with it.  Thanks,
->>>>>>
->>>>>> Fix it quickly, then do cleanup.  This is the golden rule for
->>>>>> regression :)
->>>>>
->>>>> Also, another question is whether you guys are OK to change the type
->>>>> to a pointer.  Through a glance, the ulist code was intended to handle
->>>>> any generic data, thus it uses u64, right?  Using void pointer breaks
->>>>> this concept.
->>>>>
->>>>
->>>> It's fine, ulist today resembles very little from what it was originally.  The
->>>> current users all shove pointers into there, so we might as well just make it a
->>>> pointer.  Thanks,
->>>
->>> OK, good to know.
->>>
->>> If this post still doesn't convince you, I'll prepare the patch to do
->>> all replacements.
->>>
->>>
->>
->> I don't care that much, do it however you want.  Thanks,
->
-> Yes, I do care because I know of this kind of horror very well.
->
-> OK, I'm going to send the new patch(es).
->
 
-I meant that I don't care how you do it, if you want to do it the simple way
-first and then send the cleanup later thats fine by me.  Thanks,
 
-Josef
+On 07/30/2014 11:05 AM, Colin Ian King wrote:
+> On 30/07/14 15:48, Matt Fleming wrote:
+>> On Wed, 30 Jul, at 12:29:32AM, Borislav Petkov wrote:
+>>> On Tue, Jul 29, 2014 at 01:09:21PM -0400, Prarit Bhargava wrote:
+>>>> The current debug print in EFI does
+>>>>
+>>>> [    0.000000] efi: mem84: type=3, attr=0xf, range=[0x00000000645b5000-0x00000000645fb000) (0MB)
+>>>>
+>>>> and rounds off the size to 0MB and isn't very useful.  We should print this in
+>>>> Kib.  After applying this patch we get better info with
+>>>>
+>>>> [    0.000000] efi: mem84: type=3, attr=0xf, range=[0x00000000645b5000-0x00000000645fb000) (280kiB)
+>>>
+>>> Turning this into kiB unconditionally won't always work ok:
+>>>
+>>> First of all, there might be something which parses that output so I'd
+>>> make sure I'm not breaking that. Maybe fwts... Matt will know.
+>>
+>> I'm not aware of anything that parses the dmesg output, but I'm
+>> including Colin in case he has any insight.
+>>
+> That won't break fwts.
+
+Matt -- could you make a decision on whether or not this should be strictly in
+KiB or if it should be a rolling KiB, Mib, and GiB?
+
+My issue is simply that I'd like to know *exactly* how big each range is and not
+have it rounded off.  Others think that it is easier to read Mib & Gib ...
+
+P.
+
+> 
+> Colin
+> 
