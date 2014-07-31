@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751394AbaGaTYf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 15:24:35 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49961 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906AbaGaTYe (ORCPT
+	id S1752876AbaGaTYp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 15:24:45 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:53139 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470AbaGaTYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 15:24:34 -0400
-Date: Thu, 31 Jul 2014 12:24:32 -0700 (PDT)
-Message-Id: <20140731.122432.358447367571730334.davem@davemloft.net>
-To: sasha.levin@oracle.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: ipv4: raw: don't agree to 0 sized headers
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1406726468-19035-1-git-send-email-sasha.levin@oracle.com>
-References: <1406726468-19035-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 31 Jul 2014 12:24:34 -0700 (PDT)
+	Thu, 31 Jul 2014 15:24:43 -0400
+Date: Thu, 31 Jul 2014 14:24:37 -0500
+From: Brian W Hart <hartb@linux.vnet.ibm.com>
+To: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] powerpc/powernv: update dev->dma_mask in pci_set_dma_mask()
+ path
+Message-ID: <20140731192437.GA18855@oc3347516403.ibm.com>
+Mail-Followup-To: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+	linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14073119-6688-0000-0000-000003AF7235
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sasha Levin <sasha.levin@oracle.com>
-Date: Wed, 30 Jul 2014 09:21:08 -0400
+powerpc defines various machine-specific routines for handling
+pci_set_dma_mask().  The routines for machine "PowerNV" may neglect
+to set dev->dma_mask.  This could confuse anyone (e.g. drivers) that
+consult dev->dma_mask to find the current mask.  Set the dma_mask in
+the PowerNV leaf routine.
 
-> For raw sockets, we'd always assume that a header is supplied and will attempt
-> to copy it into the ip header space using memcpy_fromiovecend():
-> 
-> 	if (memcpy_fromiovecend((void *)iph, from, 0, length))
-> 		goto error_free;
-> 
-> The problem is that memcpy_fromiovecend() assumes that there are actual data
-> to read from the iovec and doesn't deal with cases where there are none:
-> 
-> 	int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
-> 				int offset, int len)
-> 	{
-> 		/* Skip over the finished iovecs */
-> 		while (offset >= iov->iov_len) {
-> 			offset -= iov->iov_len;
-> 			iov++;
-> 		}
-> 		[...]
-> 
-> So when offset == 0 and iov->iov_len == 0, we'll just run iov into random
-> kernel memory until it hits something bad and dies in a BUG/panic - either
-> killing the kernel or leaking memory and held locks.
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Brian W. Hart <hartb@linux.vnet.ibm.com>
+---
+I assume the failure to set dma_mask in this path was just an oversight.
+With this change everything still seems to work fine on my powernv setup,
+and dev->dma_mask now carries the appropriate value after
+pci_set_dma_mask(dev, DMA_BIT_MASK(64).
 
-I sincerely think that memcpy_fromiovecend() is the part at fault here.
+ arch/powerpc/platforms/powernv/pci-ioda.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Defensively it should handle zero length copies, as memcpy_fromiovec()
-right above it does.
+diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
+index de19ede..3136ae2 100644
+--- a/arch/powerpc/platforms/powernv/pci-ioda.c
++++ b/arch/powerpc/platforms/powernv/pci-ioda.c
+@@ -491,6 +491,7 @@ static int pnv_pci_ioda_dma_set_mask(struct pnv_phb *phb,
+ 		set_dma_ops(&pdev->dev, &dma_iommu_ops);
+ 		set_iommu_table_base(&pdev->dev, &pe->tce32_table);
+ 	}
++	*pdev->dev.dma_mask = dma_mask;
+ 	return 0;
+ }
+ 
+-- 
+1.7.1
+
