@@ -1,169 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819AbaGaRYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:24:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11698 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521AbaGaRXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:23:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,773,1400050800"; 
-   d="scan'208";a="581800598"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
-        mingo@kernel.org, peterz@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 7/9] tools, perf: Make get_srcline fall back to sym+offset
-Date: Thu, 31 Jul 2014 10:17:07 -0700
-Message-Id: <1406827029-7991-8-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1406827029-7991-1-git-send-email-andi@firstfloor.org>
-References: <1406827029-7991-1-git-send-email-andi@firstfloor.org>
+	id S1753963AbaGaRYm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:24:42 -0400
+Received: from 3.mo5.mail-out.ovh.net ([46.105.40.108]:36815 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752762AbaGaRYl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 13:24:41 -0400
+Content-Type: text/plain; charset=utf-8
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] ARM: at91: spi: request all csgpio in spi probe
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+In-Reply-To: <20140731164836.GI3214@piout.net>
+Date: Fri, 1 Aug 2014 01:05:24 +0800
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        devicetree@vger.kernel.org,
+        =?utf-8?Q?Ji=C5=99=C3=AD_Prchal?= <jiri.prchal@aksignal.cz>,
+        Nicolas FERRE <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>, voice.shen@atmel.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1EB953D9-8221-47A0-9025-0C39DD09B631@jcrosoft.com>
+References: <b033d16ec31d26a895726ee72ec89b43943dfbae.1406547656.git.jiri.prchal@aksignal.cz> <20140728122103.GR9532@piout.net> <53D64ADA.1000102@aksignal.cz> <20140728223859.GA3214@piout.net> <20140729100017.31f0b1be@bbrezillon> <20140731155906.GH3214@piout.net> <C5B462AE-B1D2-4067-91EB-44FDF49D28FA@jcrosoft.com> <20140731164836.GI3214@piout.net>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+X-Mailer: Apple Mail (2.1878.6)
+X-Ovh-Tracer-Id: 8602719714417027987
+X-Ovh-Remote: 112.65.146.3 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrheegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrheegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
 
-When the source line is not found fall back to sym + offset.
-This is generally much more useful than a raw address.
-For this we need to pass in the symbol from the caller.
-For some callers it's awkward to compute, so we stay
-at the old behaviour.
+On Aug 1, 2014, at 12:48 AM, Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/util/annotate.c  |  2 +-
- tools/perf/util/callchain.c |  3 ++-
- tools/perf/util/map.c       |  2 +-
- tools/perf/util/sort.c      |  6 ++++--
- tools/perf/util/srcline.c   | 12 +++++++++---
- tools/perf/util/util.h      |  4 +++-
- 6 files changed, 20 insertions(+), 9 deletions(-)
+> 
+> On 01/08/2014 at 00:10:05 +0800, Jean-Christophe PLAGNIOL-VILLARD wrote :
+>>>>> While this solves the particular issue Jiří is seeing, this will not
+>>>>> solve the case where PA14 (CS0) is not used by the spi driver at all. It
+>>>>> will remained muxed as CS0 and toggle when the spi master needs to
+>>>>> access CS0 until another driver muxes it to something else. I still
+>>>>> believe we should explicitly ask pinctrl to mux them as gpios.
+>> 
+>> This is not the job of the kernel but to the bootloader
+>> no the pinctrl binding is not here and will never be here the configure a pin as a GPIO or
+> 
+> This is exactly what AT91_PERIPH_GPIO does though. Anyway, not request
+> the pinmuxing in the driver is not a good idea, then nothing prevents
+> another driver to request them to do something completely different.
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 12997ff..363b0c1 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -1187,7 +1187,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 			goto next;
- 
- 		offset = start + i;
--		src_line->path = get_srcline(map->dso, offset);
-+		src_line->path = get_srcline(map->dso, offset, NULL, false);
- 		insert_source_line(&tmp_root, src_line);
- 
- 	next:
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 8e75b35..efb1f4f 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -690,7 +690,8 @@ char *callchain_list__sym_name(struct callchain_list *cl,
- 		    cl->ms.map && !cl->srcline)
- 			cl->srcline = get_srcline(cl->ms.map->dso,
- 						  map__rip_2objdump(cl->ms.map,
--								    cl->ip));
-+								    cl->ip),
-+						  cl->ms.sym, false);
- 		if (cl->srcline)
- 			printed = scnprintf(bf, bfsize, "%s %s",
- 					cl->ms.sym->name, cl->srcline);
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 31b8905..76910f8 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -359,7 +359,7 @@ int map__fprintf_srcline(struct map *map, u64 addr, const char *prefix,
- 
- 	if (map && map->dso) {
- 		srcline = get_srcline(map->dso,
--				      map__rip_2objdump(map, addr));
-+				      map__rip_2objdump(map, addr), NULL, true);
- 		if (srcline != SRCLINE_UNKNOWN)
- 			ret = fprintf(fp, "%s%s", prefix, srcline);
- 		free_srcline(srcline);
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 58b4a92..9f49646 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -286,7 +286,8 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- 		else {
- 			struct map *map = left->ms.map;
- 			left->srcline = get_srcline(map->dso,
--					    map__rip_2objdump(map, left->ip));
-+					   map__rip_2objdump(map, left->ip),
-+						    left->ms.sym, true);
- 		}
- 	}
- 	if (!right->srcline) {
-@@ -295,7 +296,8 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- 		else {
- 			struct map *map = right->ms.map;
- 			right->srcline = get_srcline(map->dso,
--					    map__rip_2objdump(map, right->ip));
-+					     map__rip_2objdump(map, right->ip),
-+						     right->ms.sym, true);
- 		}
- 	}
- 	return strcmp(right->srcline, left->srcline);
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index ac877f9..36a7aff 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -8,12 +8,13 @@
- #include "util/util.h"
- #include "util/debug.h"
- 
-+#include "symbol.h"
-+
- #ifdef HAVE_LIBBFD_SUPPORT
- 
- /*
-  * Implement addr2line using libbfd.
-  */
--#define PACKAGE "perf"
- #include <bfd.h>
- 
- struct a2l_data {
-@@ -250,7 +251,8 @@ void dso__free_a2l(struct dso *dso __maybe_unused)
-  */
- #define A2L_FAIL_LIMIT 123
- 
--char *get_srcline(struct dso *dso, unsigned long addr)
-+char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
-+		  bool show_sym)
- {
- 	char *file = NULL;
- 	unsigned line = 0;
-@@ -289,7 +291,11 @@ out:
- 		dso->has_srcline = 0;
- 		dso__free_a2l(dso);
- 	}
--	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
-+	if (sym) {
-+		if (asprintf(&srcline, "%s+%ld", show_sym ? sym->name : "",
-+					addr - sym->start) < 0)
-+			return SRCLINE_UNKNOWN;
-+	} else if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
- 		return SRCLINE_UNKNOWN;
- 	return srcline;
- }
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 6686436..0086323 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -318,8 +318,10 @@ unsigned long parse_tag_value(const char *str, struct parse_tag *tags);
- #define SRCLINE_UNKNOWN  ((char *) "??:0")
- 
- struct dso;
-+struct symbol;
- 
--char *get_srcline(struct dso *dso, unsigned long addr);
-+char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
-+		  bool show_sym);
- void free_srcline(char *srcline);
- 
- int filename__read_int(const char *filename, int *value);
--- 
-1.9.3
+here it’s the same issue if you need to pin as GPIO use the GPIO API not the pinctrl
+
+AT91_PERIPH_GPIO is use the set specific pinmux (bouncing & etc…)
+
+
+> 
+>> to a specific state. This the job of the driver or the bootloader
+>> 
+> 
+> I agree that it must not allow to set the state, we are talking about
+> muxing.
+> 
+> 
+> -- 
+> Alexandre Belloni, Free Electrons
+> Embedded Linux, Kernel and Android engineering
+> http://free-electrons.com
 
