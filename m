@@ -1,68 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142AbaGaQNr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:13:47 -0400
-Received: from mail-pa0-f73.google.com ([209.85.220.73]:51375 "EHLO
-	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970AbaGaQNY (ORCPT
+	id S1752351AbaGaQKR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:10:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59693 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460AbaGaQKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:13:24 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Heiko Stuebner <heiko@sntech.de>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Addy Ke <addy.ke@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Doug Anderson <dianders@chromium.org>,
-        mark.rutland@arm.com, devicetree@vger.kernel.org,
-        linux@arm.linux.org.uk, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, linux-kernel@vger.kernel.org,
-        robh+dt@kernel.org, galak@codeaurora.org
-Subject: [PATCH v2 0/4] Add eMMC and SD card support for rk3288-evb
-Date: Thu, 31 Jul 2014 09:13:16 -0700
-Message-Id: <1406823200-20911-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	Thu, 31 Jul 2014 12:10:14 -0400
+Date: Thu, 31 Jul 2014 09:09:52 -0700
+From: tip-bot for Dave Hansen <tipbot@zytor.com>
+Message-ID: <tip-e9f4e0a9fe2723078b7a1a1169828dd46a7b2f9e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        riel@redhat.com, mgorman@suse.de, tglx@linutronix.de,
+        dave.hansen@linux.intel.com, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        riel@redhat.com, mgorman@suse.de, tglx@linutronix.de,
+        dave.hansen@linux.intel.com, hpa@linux.intel.com
+In-Reply-To: <20140731154055.ABC88E89@viggo.jf.intel.com>
+References: <20140731154055.ABC88E89@viggo.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86/mm: Rip out complicated, out-of-date,
+  buggy TLB flushing
+Git-Commit-ID: e9f4e0a9fe2723078b7a1a1169828dd46a7b2f9e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds basic eMMC and SD card support for the rk3288-evb
-board based on Addy's posted dw_mmc patch from:
-  https://patchwork.kernel.org/patch/4653631/
+Commit-ID:  e9f4e0a9fe2723078b7a1a1169828dd46a7b2f9e
+Gitweb:     http://git.kernel.org/tip/e9f4e0a9fe2723078b7a1a1169828dd46a7b2f9e
+Author:     Dave Hansen <dave.hansen@linux.intel.com>
+AuthorDate: Thu, 31 Jul 2014 08:40:55 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 31 Jul 2014 08:48:50 -0700
 
-The series is a little tricky because:
-* Jaehoon has some outstanding patches to remove the slot node.  Since
-  those haven't landed yet, I've posted my original patch with the
-  slot node and then some future patches that can land with Jaehoon's
-  patches.
+x86/mm: Rip out complicated, out-of-date, buggy TLB flushing
 
-So just to be explicit:
-- Patch #1 and #2 can land after Addy's patch lands.
-- Patch #3 and #4 can land after Jaehoon's patch lands, though there's
-  no huge hurry since Jaehoon's patch supports the old mode (it just
-  prints a warning).
+I think the flush_tlb_mm_range() code that tries to tune the
+flush sizes based on the CPU needs to get ripped out for
+several reasons:
 
-Note that we don't have regulators specified yet (no regulator driver
-for rk808-based board).  We also don't yet support UHS modes (which
-require regulator support plus dw_mmc driver support for tuning).
-Those features can come later.
+1. It is obviously buggy.  It uses mm->total_vm to judge the
+   task's footprint in the TLB.  It should certainly be using
+   some measure of RSS, *NOT* ->total_vm since only resident
+   memory can populate the TLB.
+2. Haswell, and several other CPUs are missing from the
+   intel_tlb_flushall_shift_set() function.  Thus, it has been
+   demonstrated to bitrot quickly in practice.
+3. It is plain wrong in my vm:
+	[    0.037444] Last level iTLB entries: 4KB 0, 2MB 0, 4MB 0
+	[    0.037444] Last level dTLB entries: 4KB 0, 2MB 0, 4MB 0
+	[    0.037444] tlb_flushall_shift: 6
+   Which leads to it to never use invlpg.
+4. The assumptions about TLB refill costs are wrong:
+	http://lkml.kernel.org/r/1337782555-8088-3-git-send-email-alex.shi@intel.com
+    (more on this in later patches)
+5. I can not reproduce the original data: https://lkml.org/lkml/2012/5/17/59
+   I believe the sample times were too short.  Running the
+   benchmark in a loop yields times that vary quite a bit.
 
-Changes in v2:
-- New patchwork link for Addy's patch
-- Squashed in the DDR50 mode since Addy spun his patch.
-- Refer to the new title of Jaehoon's patch
+Note that this leaves us with a static ceiling of 1 page.  This
+is a conservative, dumb setting, and will be revised in a later
+patch.
 
-Doug Anderson (4):
-  ARM: dts: Add emmc and sdmmc to the rk3288 device tree
-  ARM: dts: Enable emmc and sdmmc on the rk3288-evb boards
-  ARM: dts: Take the mmc slot node out of rk3288-evb
-  ARM: dts: mmc slot node gone on rk3288 => no more address / size cells
+This also removes the code which attempts to predict whether we
+are flushing data or instructions.  We expect instruction flushes
+to be relatively rare and not worth tuning for explicitly.
 
- arch/arm/boot/dts/rk3288-evb.dtsi | 25 +++++++++++++++++++++++++
- arch/arm/boot/dts/rk3288.dtsi     | 18 ++++++++++++++++++
- 2 files changed, 43 insertions(+)
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Link: http://lkml.kernel.org/r/20140731154055.ABC88E89@viggo.jf.intel.com
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/processor.h |  1 -
+ arch/x86/kernel/cpu/amd.c        |  7 ----
+ arch/x86/kernel/cpu/common.c     | 13 +-----
+ arch/x86/kernel/cpu/intel.c      | 26 ------------
+ arch/x86/mm/tlb.c                | 87 +++++-----------------------------------
+ 5 files changed, 13 insertions(+), 121 deletions(-)
 
--- 
-2.0.0.526.g5318336
-
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index a4ea023..43d61da 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -72,7 +72,6 @@ extern u16 __read_mostly tlb_lld_4k[NR_INFO];
+ extern u16 __read_mostly tlb_lld_2m[NR_INFO];
+ extern u16 __read_mostly tlb_lld_4m[NR_INFO];
+ extern u16 __read_mostly tlb_lld_1g[NR_INFO];
+-extern s8  __read_mostly tlb_flushall_shift;
+ 
+ /*
+  *  CPU type and hardware bug flags. Kept separately for each CPU.
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index ce8b8ff..a1a53d0 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -741,11 +741,6 @@ static unsigned int amd_size_cache(struct cpuinfo_x86 *c, unsigned int size)
+ }
+ #endif
+ 
+-static void cpu_set_tlb_flushall_shift(struct cpuinfo_x86 *c)
+-{
+-	tlb_flushall_shift = 6;
+-}
+-
+ static void cpu_detect_tlb_amd(struct cpuinfo_x86 *c)
+ {
+ 	u32 ebx, eax, ecx, edx;
+@@ -793,8 +788,6 @@ static void cpu_detect_tlb_amd(struct cpuinfo_x86 *c)
+ 		tlb_lli_2m[ENTRIES] = eax & mask;
+ 
+ 	tlb_lli_4m[ENTRIES] = tlb_lli_2m[ENTRIES] >> 1;
+-
+-	cpu_set_tlb_flushall_shift(c);
+ }
+ 
+ static const struct cpu_dev amd_cpu_dev = {
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 2cbbf88..2c17820 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -480,26 +480,17 @@ u16 __read_mostly tlb_lld_2m[NR_INFO];
+ u16 __read_mostly tlb_lld_4m[NR_INFO];
+ u16 __read_mostly tlb_lld_1g[NR_INFO];
+ 
+-/*
+- * tlb_flushall_shift shows the balance point in replacing cr3 write
+- * with multiple 'invlpg'. It will do this replacement when
+- *   flush_tlb_lines <= active_lines/2^tlb_flushall_shift.
+- * If tlb_flushall_shift is -1, means the replacement will be disabled.
+- */
+-s8  __read_mostly tlb_flushall_shift = -1;
+-
+ void cpu_detect_tlb(struct cpuinfo_x86 *c)
+ {
+ 	if (this_cpu->c_detect_tlb)
+ 		this_cpu->c_detect_tlb(c);
+ 
+ 	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n"
+-		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n"
+-		"tlb_flushall_shift: %d\n",
++		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n",
+ 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
+ 		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
+ 		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
+-		tlb_lld_1g[ENTRIES], tlb_flushall_shift);
++		tlb_lld_1g[ENTRIES]);
+ }
+ 
+ void detect_ht(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index a800290..cd61755 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -634,31 +634,6 @@ static void intel_tlb_lookup(const unsigned char desc)
+ 	}
+ }
+ 
+-static void intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
+-{
+-	switch ((c->x86 << 8) + c->x86_model) {
+-	case 0x60f: /* original 65 nm celeron/pentium/core2/xeon, "Merom"/"Conroe" */
+-	case 0x616: /* single-core 65 nm celeron/core2solo "Merom-L"/"Conroe-L" */
+-	case 0x617: /* current 45 nm celeron/core2/xeon "Penryn"/"Wolfdale" */
+-	case 0x61d: /* six-core 45 nm xeon "Dunnington" */
+-		tlb_flushall_shift = -1;
+-		break;
+-	case 0x63a: /* Ivybridge */
+-		tlb_flushall_shift = 2;
+-		break;
+-	case 0x61a: /* 45 nm nehalem, "Bloomfield" */
+-	case 0x61e: /* 45 nm nehalem, "Lynnfield" */
+-	case 0x625: /* 32 nm nehalem, "Clarkdale" */
+-	case 0x62c: /* 32 nm nehalem, "Gulftown" */
+-	case 0x62e: /* 45 nm nehalem-ex, "Beckton" */
+-	case 0x62f: /* 32 nm Xeon E7 */
+-	case 0x62a: /* SandyBridge */
+-	case 0x62d: /* SandyBridge, "Romely-EP" */
+-	default:
+-		tlb_flushall_shift = 6;
+-	}
+-}
+-
+ static void intel_detect_tlb(struct cpuinfo_x86 *c)
+ {
+ 	int i, j, n;
+@@ -683,7 +658,6 @@ static void intel_detect_tlb(struct cpuinfo_x86 *c)
+ 		for (j = 1 ; j < 16 ; j++)
+ 			intel_tlb_lookup(desc[j]);
+ 	}
+-	intel_tlb_flushall_shift_set(c);
+ }
+ 
+ static const struct cpu_dev intel_cpu_dev = {
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 378fbef..dff6dde 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -158,13 +158,14 @@ void flush_tlb_current_task(void)
+ 	preempt_enable();
+ }
+ 
++/* in units of pages */
++unsigned long tlb_single_page_flush_ceiling = 1;
++
+ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 				unsigned long end, unsigned long vmflag)
+ {
+-	bool need_flush_others_all = true;
++	int need_flush_others_all = 1;
+ 	unsigned long addr;
+-	unsigned act_entries, tlb_entries = 0;
+-	unsigned long nr_base_pages;
+ 
+ 	preempt_disable();
+ 	if (current->active_mm != mm)
+@@ -175,29 +176,16 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 		goto out;
+ 	}
+ 
+-	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1
+-					|| vmflag & VM_HUGETLB) {
++	if (end == TLB_FLUSH_ALL || vmflag & VM_HUGETLB) {
+ 		local_flush_tlb();
+ 		goto out;
+ 	}
+ 
+-	/* In modern CPU, last level tlb used for both data/ins */
+-	if (vmflag & VM_EXEC)
+-		tlb_entries = tlb_lli_4k[ENTRIES];
+-	else
+-		tlb_entries = tlb_lld_4k[ENTRIES];
+-
+-	/* Assume all of TLB entries was occupied by this task */
+-	act_entries = tlb_entries >> tlb_flushall_shift;
+-	act_entries = mm->total_vm > act_entries ? act_entries : mm->total_vm;
+-	nr_base_pages = (end - start) >> PAGE_SHIFT;
+-
+-	/* tlb_flushall_shift is on balance point, details in commit log */
+-	if (nr_base_pages > act_entries) {
++	if ((end - start) > tlb_single_page_flush_ceiling * PAGE_SIZE) {
+ 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 		local_flush_tlb();
+ 	} else {
+-		need_flush_others_all = false;
++		need_flush_others_all = 0;
+ 		/* flush range by one by one 'invlpg' */
+ 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
+ 			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
+@@ -259,68 +247,15 @@ static void do_kernel_range_flush(void *info)
+ 
+ void flush_tlb_kernel_range(unsigned long start, unsigned long end)
+ {
+-	unsigned act_entries;
+-	struct flush_tlb_info info;
+-
+-	/* In modern CPU, last level tlb used for both data/ins */
+-	act_entries = tlb_lld_4k[ENTRIES];
+ 
+ 	/* Balance as user space task's flush, a bit conservative */
+-	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1 ||
+-		(end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift)
+-
++	if (end == TLB_FLUSH_ALL ||
++	    (end - start) > tlb_single_page_flush_ceiling * PAGE_SIZE) {
+ 		on_each_cpu(do_flush_tlb_all, NULL, 1);
+-	else {
++	} else {
++		struct flush_tlb_info info;
+ 		info.flush_start = start;
+ 		info.flush_end = end;
+ 		on_each_cpu(do_kernel_range_flush, &info, 1);
+ 	}
+ }
+-
+-#ifdef CONFIG_DEBUG_TLBFLUSH
+-static ssize_t tlbflush_read_file(struct file *file, char __user *user_buf,
+-			     size_t count, loff_t *ppos)
+-{
+-	char buf[32];
+-	unsigned int len;
+-
+-	len = sprintf(buf, "%hd\n", tlb_flushall_shift);
+-	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
+-}
+-
+-static ssize_t tlbflush_write_file(struct file *file,
+-		 const char __user *user_buf, size_t count, loff_t *ppos)
+-{
+-	char buf[32];
+-	ssize_t len;
+-	s8 shift;
+-
+-	len = min(count, sizeof(buf) - 1);
+-	if (copy_from_user(buf, user_buf, len))
+-		return -EFAULT;
+-
+-	buf[len] = '\0';
+-	if (kstrtos8(buf, 0, &shift))
+-		return -EINVAL;
+-
+-	if (shift < -1 || shift >= BITS_PER_LONG)
+-		return -EINVAL;
+-
+-	tlb_flushall_shift = shift;
+-	return count;
+-}
+-
+-static const struct file_operations fops_tlbflush = {
+-	.read = tlbflush_read_file,
+-	.write = tlbflush_write_file,
+-	.llseek = default_llseek,
+-};
+-
+-static int __init create_tlb_flushall_shift(void)
+-{
+-	debugfs_create_file("tlb_flushall_shift", S_IRUSR | S_IWUSR,
+-			    arch_debugfs_dir, NULL, &fops_tlbflush);
+-	return 0;
+-}
+-late_initcall(create_tlb_flushall_shift);
+-#endif
