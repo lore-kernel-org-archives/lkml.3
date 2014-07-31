@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947AbaGaVFi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 17:05:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62809 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752658AbaGaVFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 17:05:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,774,1400050800"; 
-   d="scan'208";a="581910447"
-From: Andi Kleen <andi@firstfloor.org>
-To: peterz@infradead.org
-Cc: eranian@google.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, x86: Use extended offcore mask on Haswell
-Date: Thu, 31 Jul 2014 14:05:22 -0700
-Message-Id: <1406840722-25416-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
+	id S1753056AbaGaVFx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 17:05:53 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:44180 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153AbaGaVFv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 17:05:51 -0400
+Message-ID: <53DAAFAC.9000502@amacapital.net>
+Date: Thu, 31 Jul 2014 14:05:48 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: kan.liang@intel.com, peterz@infradead.org
+CC: andi@firstfloor.org, alexander.shishkin@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] x86 msr: msr goto extension support
+References: <1406799663-18192-1-git-send-email-kan.liang@intel.com>
+In-Reply-To: <1406799663-18192-1-git-send-email-kan.liang@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 07/31/2014 02:41 AM, kan.liang@intel.com wrote:
+> From: Kan Liang <kan.liang@intel.com>
+> 
+> Currently, {rd,wr}msrl_safe can handle the exception which caused by accessing
+> specific MSR.
+> However, it will introduce extra conditional branch for testing errors. That
+> will impact the "fast" path's performance.
+> The newly implemented {rd,wr}msrl_goto function can not only handle the
+> exception which caused by accessing specific MSR,
+> but also takes advantage of the asm goto extension to eliminate the impact of
+> performance.
+> 
+> The asm goto extension is supported by GCC 4.5 and later versions. If the
+> compiler doesn't support goto extension, _safe will be used to replace _goto.
+> 
+> Signed-off-by: Kan Liang <kan.liang@intel.com>
+> ---
+>  arch/x86/include/asm/msr.h      | 60 +++++++++++++++++++++++++++++++++++++++++
+>  arch/x86/include/asm/paravirt.h | 18 +++++++++++++
+>  2 files changed, 78 insertions(+)
+> 
+> diff --git a/arch/x86/include/asm/msr.h b/arch/x86/include/asm/msr.h
+> index de36f22..55438da 100644
+> --- a/arch/x86/include/asm/msr.h
+> +++ b/arch/x86/include/asm/msr.h
+> @@ -203,6 +203,66 @@ do {                                                            \
+>  
+>  #define rdtscpll(val, aux) (val) = native_read_tscp(&(aux))
+>  
+> +#ifdef CC_HAVE_ASM_GOTO
+> +
+> +/*
+> + * The _goto version is rdmsrl/wrmsrl with exception handling
+> + * The advantage (than _safe) is that it can directly jump in the
+> + * exception handling code, and never test in the "fast" path.
+> + *
+> + * Since _goto doesn't support output, try to protect the output
+> + * registers by clobbers, and process the registers immediately.
+> + */
+> +#define rdmsrl_goto(msr, result, fail_label)			\
+> +do {								\
+> +	DECLARE_ARGS(val, low, high);				\
+> +	asm_volatile_goto("2: rdmsr\n"				\
+> +			"1:\n\t"				\
+> +			_ASM_EXTABLE(2b, %l[fail_label])	\
+> +			: /* No outputs. */			\
+> +			: "c" (msr)				\
+> +			: "%rax", "%rdx"			\
+> +			: fail_label);				\
+> +	asm volatile (""					\
+> +			: EAX_EDX_RET(val, low, high)		\
+> +			: );					\
 
-HSW-EP has a larger offcore mask than the client Haswell CPUs.
-It is the same mask as on Sandy/IvyBridge-EP. All of
-Haswell was using the client mask, so some bits were missing.
+This is scary -- the compiler is free to optimize this incorrectly, and
+it doesn't even seem very farfetched to me.
 
-On the client parts some bits were also missing compared
-to Sandy/IvyBridge, in particular the bits to match on a L4
-cache hit.
+> +	result = EAX_EDX_VAL(val, low, high);			\
+> +} while (0)
+> +
+> +#define wrmsrl_goto(msr, val, fail_label)			\
+> +do {								\
+> +	unsigned low, high;					\
+> +	low = (u32)val;						\
+> +	high = (u32)(val >> 32);				\
+> +	asm_volatile_goto("2: wrmsr\n"				\
+> +			"1:\n\t"				\
+> +			_ASM_EXTABLE(2b, %l[fail_label])	\
+> +			: /* No outputs. */			\
+> +			: "c" (msr), "a" (low), "d" (high)	\
+> +			: "memory"				\
+> +			: fail_label);				\
+> +} while (0)
 
-The Haswell core in both client and server incarnations
-accepts the same bits (but some are nops), so we can use
-the same mask.
+I like this one.
 
-So use the snbep extended mask, which is a superset of the
-client and the server, for all of Haswell.
-
-This allows specifying a number of extra offcore events, like
-for example for HSW-EP.
-
-% perf stat -e cpu/event=0xb7,umask=0x1,offcore_rsp=0x3fffc00100,name=offcore_response_pf_l3_rfo_l3_miss_any_response/ true
-
-which were <not supported> before.
-
-v2: Post correct patch.
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 2502d0d..4648a1b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2552,7 +2552,7 @@ __init int intel_pmu_init(void)
- 
- 		x86_pmu.event_constraints = intel_hsw_event_constraints;
- 		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
--		x86_pmu.extra_regs = intel_snb_extra_regs;
-+		x86_pmu.extra_regs = intel_snbep_extra_regs;
- 		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
- 		/* all extra regs are per-cpu when HT is on */
- 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
--- 
-1.9.3
-
+--Andy
