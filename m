@@ -1,205 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245AbaGaFuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 01:50:40 -0400
-Received: from mga11.intel.com ([192.55.52.93]:13495 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362AbaGaFuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 01:50:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,769,1400050800"; 
-   d="scan'208";a="578044563"
-Date: Thu, 31 Jul 2014 13:50:35 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: [LKP] [mm] b72fd1470c9: -41.7%
- perf-profile.cpu-cycles.get_page_from_freelist.__alloc_pages_nodemask.alloc_pages_current.__page_cache_alloc.pagecache_get_page
-Message-ID: <20140731055035.GB19742@aaronlu.sh.intel.com>
+	id S1753933AbaGaF51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 01:57:27 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:49930 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885AbaGaF5Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 01:57:25 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="ftEhullJWpWg/VHq"
-Content-Disposition: inline
+In-Reply-To: <20140730221127.GF10213@pd.tnic>
+References: <20140730164701.GA19604@pd.tnic>
+	<20140730211937.GA14864@jig.fritz.box>
+	<20140730212814.GA15010@jig.fritz.box>
+	<20140730221127.GF10213@pd.tnic>
+Date: Thu, 31 Jul 2014 07:57:22 +0200
+Message-ID: <CA+rthh-Hi+1iqAQigcQ9WBkmUYDjpUEEHnaKHkECwtVjJgO4vw@mail.gmail.com>
+Subject: Re: [PATCH] x86, crypto: Check if gas supports CRC32
+From: Mathias Krause <minipli@googlemail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: x86-ml <x86@kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 31 July 2014 00:11, Borislav Petkov <bp@alien8.de> wrote:
+>
+> On Wed, Jul 30, 2014 at 11:28:14PM +0200, Mathias Krause wrote:
+> > Gah, CONFIG_AS_CRC32 gets defined as a preprocessor symbol only so
+> > cannot be used in makefiles. So crc32c-pcl-intel-asm_64.S needs a
+> > "#ifdef CONFIG_AS_CRC32" guard and still be compiled for CONFIG_64BIT,
+> > as it is now. It'll be an empty object for older binutils versions not
+> > supporting the crc32 instruction.
+>
+> Yeah, that makes it all even simpler, thanks!
+>
+> We're still b0rked though:
+>
+> arch/x86/crypto/crct10dif-pcl-asm_64.S: Assembler messages:
+> arch/x86/crypto/crct10dif-pcl-asm_64.S:147: Error: no such instruction: `pclmulqdq $0x0,%xmm10,%xmm0'
+> arch/x86/crypto/crct10dif-pcl-asm_64.S:148: Error: no such instruction: `pclmulqdq $0x11,%xmm10,%xmm8'
+> arch/x86/crypto/crct10dif-pcl-asm_64.S:149: Error: no such instruction: `pclmulqdq $0x0,%xmm10,%xmm1'
+> ...
+>
+> and need checking for more instructions. I'll play with this more
+> tomorrow.
+>
 
---ftEhullJWpWg/VHq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+You probably can reuse the AVX test for this -- either the
+CONFIG_AS_AVX preprocessor one or the $(avx_supported) make one, local
+to arch/x86/crypto/Makefile.
+Even though the CLMUL feature has not much to with AVX (it has a
+dedicated CPUID feature bit), support for it in binutils was added
+together with AVX support, see
+https://sourceware.org/git/?p=binutils-gdb.git;a=commit;h=c0f3af977b0f28a0dc5a620110b8dcf9d8286f84
 
-FYI, we noticed the below changes on
+Regards,
+Mathias
 
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
-commit b72fd1470c9735f53485d089aa918dc327a86077 ("mm: rearrange zone fields into read-only, page alloc, statistics and page reclaim lines")
-
-test case: lkp-st02/dd-write/5m-11HDD-JBOD-cfq-xfs-10dd
-
-e28c951ff01a805  b72fd1470c9735f53485d089a  
----------------  -------------------------  
-      1.06 ~ 6%     -41.7%       0.62 ~ 3%  TOTAL perf-profile.cpu-cycles.get_page_from_freelist.__alloc_pages_nodemask.alloc_pages_current.__page_cache_alloc.pagecache_get_page
-      1.34 ~ 2%     -19.8%       1.07 ~ 2%  TOTAL perf-profile.cpu-cycles.__block_write_begin.xfs_vm_write_begin.generic_perform_write.xfs_file_buffered_aio_write.xfs_file_write_iter
-      1.19 ~ 5%     -12.1%       1.05 ~ 4%  TOTAL perf-profile.cpu-cycles.copy_from_user_atomic_iovec.iov_iter_copy_from_user_atomic.generic_perform_write.xfs_file_buffered_aio_write.xfs_file_write_iter
-      2.78 ~ 1%     -16.3%       2.32 ~ 4%  TOTAL perf-profile.cpu-cycles.__clear_user.read_zero.read_zero.vfs_read.sys_read
-  2.96e+09 ~ 4%      -5.2%  2.806e+09 ~ 0%  TOTAL perf-stat.cache-misses
-  3.86e+12 ~ 5%      -5.2%  3.658e+12 ~ 1%  TOTAL perf-stat.ref-cycles
-
-Legend:
-	~XX%    - stddev percent
-	[+-]XX% - change percent
-
-
-
-Disclaimer:
-Results have been estimated based on internal Intel analysis and are provided
-for informational purposes only. Any difference in system hardware or software
-design or configuration may affect actual performance.
-
-Thanks,
-Aaron
-
---ftEhullJWpWg/VHq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=reproduce
-
-echo 1 > /sys/kernel/debug/tracing/events/writeback/balance_dirty_pages/enable
-echo 1 > /sys/kernel/debug/tracing/events/writeback/bdi_dirty_ratelimit/enable
-echo 1 > /sys/kernel/debug/tracing/events/writeback/global_dirty_state/enable
-echo 1 > /sys/kernel/debug/tracing/events/writeback/writeback_single_inode/enable
-mkfs -t xfs /dev/sdb1
-mkfs -t xfs /dev/sdj1
-mkfs -t xfs /dev/sdh1
-mkfs -t xfs /dev/sde1
-mkfs -t xfs /dev/sdc1
-mkfs -t xfs /dev/sdk1
-mkfs -t xfs /dev/sdd1
-mkfs -t xfs /dev/sdf1
-mkfs -t xfs /dev/sdg1
-mkfs -t xfs /dev/sdi1
-mkfs -t xfs /dev/sdl1
-mount -t xfs -o nobarrier,inode64 /dev/sdb1 /fs/sdb1
-mount -t xfs -o nobarrier,inode64 /dev/sdc1 /fs/sdc1
-mount -t xfs -o nobarrier,inode64 /dev/sdd1 /fs/sdd1
-mount -t xfs -o nobarrier,inode64 /dev/sde1 /fs/sde1
-mount -t xfs -o nobarrier,inode64 /dev/sdf1 /fs/sdf1
-mount -t xfs -o nobarrier,inode64 /dev/sdg1 /fs/sdg1
-mount -t xfs -o nobarrier,inode64 /dev/sdh1 /fs/sdh1
-mount -t xfs -o nobarrier,inode64 /dev/sdi1 /fs/sdi1
-mount -t xfs -o nobarrier,inode64 /dev/sdj1 /fs/sdj1
-mount -t xfs -o nobarrier,inode64 /dev/sdk1 /fs/sdk1
-mount -t xfs -o nobarrier,inode64 /dev/sdl1 /fs/sdl1
-dd  if=/dev/zero of=/fs/sdb1/zero-1 status=noxfer &
-dd  if=/dev/zero of=/fs/sdc1/zero-1 status=noxfer &
-dd  if=/dev/zero of=/fs/sdd1/zero-1 status=noxfer &
-dd  if=/dev/zero of=/fs/sde1/zero-1 status=noxfer &
-dd  if=/dev/zero of=/fs/sdf1/zero-1 status=noxfer &
-dd  if=/dev/zero of=/fs/sdg1/zero-1 status=noxfer &
-dd  if=/dev/zero of=/fs/sdh1/zero-1 status=noxfer &
-dd  if=/dev/zero of=/fs/sdi1/zero-1 status=noxfer &
-dd  if=/dev/zero of=/fs/sdj1/zero-1 status=noxfer &
-dd  if=/dev/zero of=/fs/sdk1/zero-1 status=noxfer &
-dd  if=/dev/zero of=/fs/sdl1/zero-1 status=noxfer &
-dd  if=/dev/zero of=/fs/sdb1/zero-2 status=noxfer &
-dd  if=/dev/zero of=/fs/sdc1/zero-2 status=noxfer &
-dd  if=/dev/zero of=/fs/sdd1/zero-2 status=noxfer &
-dd  if=/dev/zero of=/fs/sde1/zero-2 status=noxfer &
-dd  if=/dev/zero of=/fs/sdf1/zero-2 status=noxfer &
-dd  if=/dev/zero of=/fs/sdg1/zero-2 status=noxfer &
-dd  if=/dev/zero of=/fs/sdh1/zero-2 status=noxfer &
-dd  if=/dev/zero of=/fs/sdi1/zero-2 status=noxfer &
-dd  if=/dev/zero of=/fs/sdj1/zero-2 status=noxfer &
-dd  if=/dev/zero of=/fs/sdk1/zero-2 status=noxfer &
-dd  if=/dev/zero of=/fs/sdl1/zero-2 status=noxfer &
-dd  if=/dev/zero of=/fs/sdb1/zero-3 status=noxfer &
-dd  if=/dev/zero of=/fs/sdc1/zero-3 status=noxfer &
-dd  if=/dev/zero of=/fs/sdd1/zero-3 status=noxfer &
-dd  if=/dev/zero of=/fs/sde1/zero-3 status=noxfer &
-dd  if=/dev/zero of=/fs/sdf1/zero-3 status=noxfer &
-dd  if=/dev/zero of=/fs/sdg1/zero-3 status=noxfer &
-dd  if=/dev/zero of=/fs/sdh1/zero-3 status=noxfer &
-dd  if=/dev/zero of=/fs/sdi1/zero-3 status=noxfer &
-dd  if=/dev/zero of=/fs/sdj1/zero-3 status=noxfer &
-dd  if=/dev/zero of=/fs/sdk1/zero-3 status=noxfer &
-dd  if=/dev/zero of=/fs/sdl1/zero-3 status=noxfer &
-dd  if=/dev/zero of=/fs/sdb1/zero-4 status=noxfer &
-dd  if=/dev/zero of=/fs/sdc1/zero-4 status=noxfer &
-dd  if=/dev/zero of=/fs/sdd1/zero-4 status=noxfer &
-dd  if=/dev/zero of=/fs/sde1/zero-4 status=noxfer &
-dd  if=/dev/zero of=/fs/sdf1/zero-4 status=noxfer &
-dd  if=/dev/zero of=/fs/sdg1/zero-4 status=noxfer &
-dd  if=/dev/zero of=/fs/sdh1/zero-4 status=noxfer &
-dd  if=/dev/zero of=/fs/sdi1/zero-4 status=noxfer &
-dd  if=/dev/zero of=/fs/sdj1/zero-4 status=noxfer &
-dd  if=/dev/zero of=/fs/sdk1/zero-4 status=noxfer &
-dd  if=/dev/zero of=/fs/sdl1/zero-4 status=noxfer &
-dd  if=/dev/zero of=/fs/sdb1/zero-5 status=noxfer &
-dd  if=/dev/zero of=/fs/sdc1/zero-5 status=noxfer &
-dd  if=/dev/zero of=/fs/sdd1/zero-5 status=noxfer &
-dd  if=/dev/zero of=/fs/sde1/zero-5 status=noxfer &
-dd  if=/dev/zero of=/fs/sdf1/zero-5 status=noxfer &
-dd  if=/dev/zero of=/fs/sdg1/zero-5 status=noxfer &
-dd  if=/dev/zero of=/fs/sdh1/zero-5 status=noxfer &
-dd  if=/dev/zero of=/fs/sdi1/zero-5 status=noxfer &
-dd  if=/dev/zero of=/fs/sdj1/zero-5 status=noxfer &
-dd  if=/dev/zero of=/fs/sdk1/zero-5 status=noxfer &
-dd  if=/dev/zero of=/fs/sdl1/zero-5 status=noxfer &
-dd  if=/dev/zero of=/fs/sdb1/zero-6 status=noxfer &
-dd  if=/dev/zero of=/fs/sdc1/zero-6 status=noxfer &
-dd  if=/dev/zero of=/fs/sdd1/zero-6 status=noxfer &
-dd  if=/dev/zero of=/fs/sde1/zero-6 status=noxfer &
-dd  if=/dev/zero of=/fs/sdf1/zero-6 status=noxfer &
-dd  if=/dev/zero of=/fs/sdg1/zero-6 status=noxfer &
-dd  if=/dev/zero of=/fs/sdh1/zero-6 status=noxfer &
-dd  if=/dev/zero of=/fs/sdi1/zero-6 status=noxfer &
-dd  if=/dev/zero of=/fs/sdj1/zero-6 status=noxfer &
-dd  if=/dev/zero of=/fs/sdk1/zero-6 status=noxfer &
-dd  if=/dev/zero of=/fs/sdl1/zero-6 status=noxfer &
-dd  if=/dev/zero of=/fs/sdb1/zero-7 status=noxfer &
-dd  if=/dev/zero of=/fs/sdc1/zero-7 status=noxfer &
-dd  if=/dev/zero of=/fs/sdd1/zero-7 status=noxfer &
-dd  if=/dev/zero of=/fs/sde1/zero-7 status=noxfer &
-dd  if=/dev/zero of=/fs/sdf1/zero-7 status=noxfer &
-dd  if=/dev/zero of=/fs/sdg1/zero-7 status=noxfer &
-dd  if=/dev/zero of=/fs/sdh1/zero-7 status=noxfer &
-dd  if=/dev/zero of=/fs/sdi1/zero-7 status=noxfer &
-dd  if=/dev/zero of=/fs/sdj1/zero-7 status=noxfer &
-dd  if=/dev/zero of=/fs/sdk1/zero-7 status=noxfer &
-dd  if=/dev/zero of=/fs/sdl1/zero-7 status=noxfer &
-dd  if=/dev/zero of=/fs/sdb1/zero-8 status=noxfer &
-dd  if=/dev/zero of=/fs/sdc1/zero-8 status=noxfer &
-dd  if=/dev/zero of=/fs/sdd1/zero-8 status=noxfer &
-dd  if=/dev/zero of=/fs/sde1/zero-8 status=noxfer &
-dd  if=/dev/zero of=/fs/sdf1/zero-8 status=noxfer &
-dd  if=/dev/zero of=/fs/sdg1/zero-8 status=noxfer &
-dd  if=/dev/zero of=/fs/sdh1/zero-8 status=noxfer &
-dd  if=/dev/zero of=/fs/sdi1/zero-8 status=noxfer &
-dd  if=/dev/zero of=/fs/sdj1/zero-8 status=noxfer &
-dd  if=/dev/zero of=/fs/sdk1/zero-8 status=noxfer &
-dd  if=/dev/zero of=/fs/sdl1/zero-8 status=noxfer &
-dd  if=/dev/zero of=/fs/sdb1/zero-9 status=noxfer &
-dd  if=/dev/zero of=/fs/sdc1/zero-9 status=noxfer &
-dd  if=/dev/zero of=/fs/sdd1/zero-9 status=noxfer &
-dd  if=/dev/zero of=/fs/sde1/zero-9 status=noxfer &
-dd  if=/dev/zero of=/fs/sdf1/zero-9 status=noxfer &
-dd  if=/dev/zero of=/fs/sdg1/zero-9 status=noxfer &
-dd  if=/dev/zero of=/fs/sdh1/zero-9 status=noxfer &
-dd  if=/dev/zero of=/fs/sdi1/zero-9 status=noxfer &
-dd  if=/dev/zero of=/fs/sdj1/zero-9 status=noxfer &
-dd  if=/dev/zero of=/fs/sdk1/zero-9 status=noxfer &
-dd  if=/dev/zero of=/fs/sdl1/zero-9 status=noxfer &
-dd  if=/dev/zero of=/fs/sdb1/zero-10 status=noxfer &
-dd  if=/dev/zero of=/fs/sdc1/zero-10 status=noxfer &
-dd  if=/dev/zero of=/fs/sdd1/zero-10 status=noxfer &
-dd  if=/dev/zero of=/fs/sde1/zero-10 status=noxfer &
-dd  if=/dev/zero of=/fs/sdf1/zero-10 status=noxfer &
-dd  if=/dev/zero of=/fs/sdg1/zero-10 status=noxfer &
-dd  if=/dev/zero of=/fs/sdh1/zero-10 status=noxfer &
-dd  if=/dev/zero of=/fs/sdi1/zero-10 status=noxfer &
-dd  if=/dev/zero of=/fs/sdj1/zero-10 status=noxfer &
-dd  if=/dev/zero of=/fs/sdk1/zero-10 status=noxfer &
-dd  if=/dev/zero of=/fs/sdl1/zero-10 status=noxfer &
-sleep 298
-killall -9 dd
-
---ftEhullJWpWg/VHq--
+> Good night :-)
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
