@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaGaP5g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:57:36 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41834 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805AbaGaP5f (ORCPT
+	id S1752052AbaGaP7s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:59:48 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36699 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751255AbaGaP7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:57:35 -0400
-Date: Thu, 31 Jul 2014 17:57:23 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Aaron Lu <aaron.lu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org, jhladky@redhat.com
-Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1%
- proc-vmstat.numa_hint_faults_local
-Message-ID: <20140731155723.GY3588@twins.programming.kicks-ass.net>
-References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>
- <53D72FF5.90908@intel.com>
- <20140729023940.37b6aebc@annuminas.surriel.com>
- <20140731104241.GA9918@twins.programming.kicks-ass.net>
+	Thu, 31 Jul 2014 11:59:46 -0400
+Date: Thu, 31 Jul 2014 17:59:06 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: =?utf-8?B?SmnFmcOt?= Prchal <jiri.prchal@aksignal.cz>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
+        voice.shen@atmel.com, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH] ARM: at91: spi: request all csgpio in spi probe
+Message-ID: <20140731155906.GH3214@piout.net>
+References: <b033d16ec31d26a895726ee72ec89b43943dfbae.1406547656.git.jiri.prchal@aksignal.cz>
+ <20140728122103.GR9532@piout.net>
+ <53D64ADA.1000102@aksignal.cz>
+ <20140728223859.GA3214@piout.net>
+ <20140729100017.31f0b1be@bbrezillon>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GOaLjq+VdFesH+wR"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140731104241.GA9918@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140729100017.31f0b1be@bbrezillon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 29/07/2014 at 10:00:17 +0200, Boris Brezillon wrote :
+> Hi Alexandre,
+> 
+> > While this solves the particular issue Jiří is seeing, this will not
+> > solve the case where PA14 (CS0) is not used by the spi driver at all. It
+> > will remained muxed as CS0 and toggle when the spi master needs to
+> > access CS0 until another driver muxes it to something else. I still
+> > believe we should explicitly ask pinctrl to mux them as gpios.
+> > 
+> 
+> Do we really care about this case ?
+> After all, if a given pin needs a specific muxing during kernel boot
+> (i.e. a pin connected to a gpio-led that needs to stay in its previous
+> state or a pin connected to the reset line of a device that needs to
+> stay up and running during kernel boot) the bootloader/bootstrap should
+> have muxed this pin appropriately before booting the kernel.
+> 
 
---GOaLjq+VdFesH+wR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Jul 31, 2014 at 12:42:41PM +0200, Peter Zijlstra wrote:
-> On Tue, Jul 29, 2014 at 02:39:40AM -0400, Rik van Riel wrote:
-> > On Tue, 29 Jul 2014 13:24:05 +0800
-> > Aaron Lu <aaron.lu@intel.com> wrote:
-> >=20
-> > > FYI, we noticed the below changes on
-> > >=20
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git mas=
-ter
-> > > commit a43455a1d572daf7b730fe12eb747d1e17411365 ("sched/numa: Ensure =
-task_numa_migrate() checks the preferred node")
-> > >=20
-> > > ebe06187bf2aec1  a43455a1d572daf7b730fe12e =20
-> > > ---------------  ------------------------- =20
-> > >      94500 ~ 3%    +115.6%     203711 ~ 6%  ivb42/hackbench/50%-threa=
-ds-pipe
-> > >      67745 ~ 4%     +64.1%     111174 ~ 5%  lkp-snb01/hackbench/50%-t=
-hreads-socket
-> > >     162245 ~ 3%     +94.1%     314885 ~ 6%  TOTAL proc-vmstat.numa_hi=
-nt_faults_local
-> >=20
-> > Hi Aaron,
-> >=20
-> > Jirka Hladky has reported a regression with that changeset as
-> > well, and I have already spent some time debugging the issue.
->=20
-> Let me see if I can still find my SPECjbb2005 copy to see what that
-> does.
-
-Jirka, what kind of setup were you seeing SPECjbb regressions?
-
-I'm not seeing any on 2 sockets with a single SPECjbb instance, I'll go
-check one instance per socket now.
+Yeah, you are right.
 
 
+> What do you mean by "we should explicitly ask pinctrl to mux them as
+> gpios" ?
+> Do you mean configuring all the pins as GPIOs when the pin controller is
+> probed, or just adding a new pinctrl state configuring the pin as an
+> output GPIO and reference it in the pinctrl-0 property of the spi
+> controller.
+> 
+> If the former, you'll break devices that needs their pins to stay in
+> the state they were during the bootloader/boostrap phase.
+> The latter won't work if the pin you request as GPIO is later requested
+> by another device (which, if I'm correct, is exactly the case you're
+> trying to solve).
+> 
 
---GOaLjq+VdFesH+wR
-Content-Type: application/pgp-signature
+Again you are right, let's not care about that use case. I still feel
+that the pinctrl-0 property has to be filled correctly.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT2mdjAAoJEHZH4aRLwOS6M+kP/RD0SOAHigylQc6H9zG08DKz
-aPlJSp0xH3v4WtjFkTtmiSCZSnQLog7VOpa8RiUxTzB7rS5VjJfKoyM1klv9iJe1
-PW1cTGb1pfTAikpfxohwInHRRc+LzH1+DqwW7tSYfPaE0jlsvIp3jiW9g5aGLGUb
-Qw4nTJc/MVovYuD2TE01VMOYZIHIIhOrrogw1TtQLbozopx7pf4D/lILqoUe7/nd
-zUWX4VUzC/62tB9W54GnBqQjlmApap95tNHWwPgtDfEfvR62L3apNUzKCbqqQxV+
-0fxbgfOGqZQcCif6n2HiuXyCDnfB5Bw2t9cKazMdkcpZTJrcquBsXSr94r77d8Et
-pF/yHL2+OPkDg8fOsyfbN1VNjuCEAO+FdcMaIJmquIAnqHUyEEYPIb/i5FLFlB8g
-Uh8Vgbafbde3yzccMnJ9KtFWdC02ORvoGmZXqCpiedqkxzv9+crwEDrUlwSZu/oS
-necnnNtV8rGw3u+I7N4EiN8YsVi3dLS6hEed0sp4WPRrELYoQGnnetwI7zsnDWks
-aPHhb31TIcK9b44ZaEZnEtPrZ7X+5qyKmm+ZdrTG6Jk4FQ7krdjqxtJgX7WweLOC
-e8DaC/yMBqt4J+WbVtvY6671aX92s6RFuIXFVF4qnqLABmXU/wYUI8fyVgCNGsdn
-Si7yycmqNfRMXiROgAh3
-=QJ0z
------END PGP SIGNATURE-----
-
---GOaLjq+VdFesH+wR--
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
