@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947AbaGaCFT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 22:05:19 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:34313 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014AbaGaCFR (ORCPT
+	id S1755990AbaGaCGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 22:06:18 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62028 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751533AbaGaCGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 22:05:17 -0400
+	Wed, 30 Jul 2014 22:06:17 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: tglx@linutronix.de
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rafael.j.wysocki@intel.com, aubrey.li@linux.intel.com,
+        gnomes@lxorguk.ukuu.org.uk, dmitry.torokhov@gmail.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:irq/core] PM / sleep / irq: Do not suspend wakeup interrupts
+Date: Thu, 31 Jul 2014 04:24:50 +0200
+Message-ID: <1808876.udUlStYjHN@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <tip-d709f7bcbb3ab01704fa7b37a2e4b981cf3783c1@git.kernel.org>
+References: <4679574.kGUnqAuNl9@vostro.rjw.lan> <tip-d709f7bcbb3ab01704fa7b37a2e4b981cf3783c1@git.kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <CAPM=9ty2PhMdLykVX4c074Tdkyh0OO_jtfw-CAFHk8ANcZA4kQ@mail.gmail.com>
-References: <1406752954-26158-1-git-send-email-xerofoify@gmail.com>
-	<CAPM=9ty2PhMdLykVX4c074Tdkyh0OO_jtfw-CAFHk8ANcZA4kQ@mail.gmail.com>
-Date: Wed, 30 Jul 2014 22:05:16 -0400
-Message-ID: <CAPDOMVgXChx5HST-jMEZmWDydWKe0Yv15pyTiPeOuQSVEjihFA@mail.gmail.com>
-Subject: Re: [PATCH] Remove certain calls for releasing page cache
-From: Nick Krause <xerofoify@gmail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
-	<linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 7:30 PM, Dave Airlie <airlied@gmail.com> wrote:
->> This patch removes the lines for releasing the page cache in certain
->> files as this may aid in perfomance with writes in the compression
->> rountines of btrfs. Please note that this patch has not been tested
->> on my own hardware due to no compression based btrfs volumes of my
->> own.
->>
->
-> For all that is sacred, STOP.
->
-> Go and do something else, you are wasting people's valuable time,
->
-> Don't send any patches you haven't tested ever. If you aren't capable
-> of setting up a VM to run compressed btrfs volumes in, what makes you
-> think you can patch the code.
->
-> This isn't how you learn to be a kernel developer by wasting other
-> kernel developers time, if you can't work out why releasing the page cache
-> is necessary then don't send the patch until you have spent the time
-> understanding what the page cache is.
->
-> I know you'll just ignore this, and keep on trucking just like you ignored
-> the other messages from Stephen before.
->
-> But if you want to work on the kernel, this isn't the way to do it, and
-> nobody will ever take a patch from you seriously if you continue in this
-> fashion.
->
-> Dave.
-Dave ,
-Seems I need to have tested this code first.
-Regards Nick
+Hi Thomas,
+
+On Tuesday, July 15, 2014 04:01:10 AM tip-bot for Rafael J. Wysocki wrote:
+> Commit-ID:  d709f7bcbb3ab01704fa7b37a2e4b981cf3783c1
+> Gitweb:     http://git.kernel.org/tip/d709f7bcbb3ab01704fa7b37a2e4b981cf3783c1
+> Author:     Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> AuthorDate: Thu, 10 Jul 2014 23:37:54 +0200
+> Committer:  Thomas Gleixner <tglx@linutronix.de>
+> CommitDate: Tue, 15 Jul 2014 12:57:26 +0200
+> 
+> PM / sleep / irq: Do not suspend wakeup interrupts
+
+Please revert this one as it will introduce a problem with shared interrupts
+analogous to the one that the handling of IRQF_NO_SUSPEND has.
+
+Rafael
+
