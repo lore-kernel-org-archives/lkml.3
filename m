@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013AbaGaQpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:45:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46884 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751292AbaGaQpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:45:49 -0400
-Date: Thu, 31 Jul 2014 18:42:46 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v4 2/5] x86,entry: Only call user_exit if TIF_NOHZ
-Message-ID: <20140731164246.GA15974@redhat.com>
-References: <cover.1406604806.git.luto@amacapital.net> <7123b2489cc5d1d5abb7bcf1364ca729cab3e6ca.1406604806.git.luto@amacapital.net> <20140729193232.GA8153@redhat.com> <20140730164344.GA27954@localhost.localdomain> <CALCETrUVaz3JFiNbyU=r3M-E9muHa1ffn7RX+_-4V_0U-hVaPw@mail.gmail.com> <20140731151630.GA7842@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140731151630.GA7842@localhost.localdomain>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753212AbaGaQqN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:46:13 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36839 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307AbaGaQqK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:46:10 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: [PATCH 0/2] nohz: Avoid double clock write
+Date: Thu, 31 Jul 2014 18:45:54 +0200
+Message-Id: <1406825156-11901-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31, Frederic Weisbecker wrote:
->
-> On Wed, Jul 30, 2014 at 10:23:34AM -0700, Andy Lutomirski wrote:
-> >
-> > At the end of the day, the syscall slowpath code calls a bunch of
-> > functions depending on what TIF_XYZ flags are set.  As long as it's
-> > structured like "if (TIF_A) do_a(); if (TIF_B) do_b();" or something
-> > like that, it's comprehensible.  But once random functions with no
-> > explicit flag checks or comments start showing up, it gets confusing.
->
-> Yeah that's a point. I don't mind much the TIF_NOHZ test if you like.
+Hi Thomas,
 
-And in my opinion
+The tick reschedules itself unconditionally. That's what we want as long
+as the CPU is in periodic mode. It's not that relevant when the CPU
+is in dynticks mode though as the clock write is likely to be overwritten
+by the nohz code on irq exit.
 
-	if (work & TIF_XYZ)
-		user_exit();
+In low-res mode, that even result in unexpected periodic behaviour when
+no timer is scheduled in the future.
 
-looks even more confusing. Because, once again, TIF_XYZ is not the
-reason to call user_exit().
+So here is a set that proposes the removal of these double writes.
 
-Not to mention this adds a minor performance penalty.
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	origin/nohz/drop-double-write-v2
 
-> > If it's indeed all-or-nothing, I could remove the check and add a
-> > comment.  But please keep in mind that, currently, the slow path is
-> > *slow*, and my patches only improve the entry case.  So enabling
-> > context tracking on every task will hurt.
->
-> That's what we do anyway. I haven't found a safe way to enabled context tracking
-> without tracking all CPUs.
+Thanks,
+	Frederic
+---
 
-And if we change this, then the code above becomes racy. The state of
-TIF_XYZ can be changed right after the check. OK, it is racy anyway ;)
-but still this adds more confusion.
-
-I feel that TIF_XYZ must die. But yes, yes, I know that it is very simple
-to say this. And no, so far I do not know how we can improve this all.
+Viresh Kumar (2):
+      nohz: Fix spurious periodic tick behaviour in low-res dynticks mode
+      nohz: Avoid tick's double reprogramming in highres mode
 
 
-But again, again, I won't insist. Just another "can't resist" email,
-please ignore.
-
-Oleg.
-
+ kernel/time/tick-sched.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
