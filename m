@@ -1,170 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439AbaGaJdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 05:33:35 -0400
-Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:34887
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932277AbaGaJdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 05:33:31 -0400
-Date: Thu, 31 Jul 2014 11:33:18 +0200
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Punnaiah Choudary Kalluri <punnaia@xilinx.com>,
-        Borislav Petkov <bp@alien8.de>
-CC: "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Punnaiah Choudary <kpc528@gmail.com>,
-        Anirudha Sarangi <anirudh@xilinx.com>,
-        Srikanth Vemula <svemula@xilinx.com>
-Subject: Re: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr ecc
- controller
-References: <03CA77BA8AF6F1469AEDFBDA1322A7B74821CC98@XAP-PVEXMBX01.xlnx.xilinx.com>
-In-Reply-To: <03CA77BA8AF6F1469AEDFBDA1322A7B74821CC98@XAP-PVEXMBX01.xlnx.xilinx.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-Message-ID: <70b38686-5049-42a9-af87-b762b91e201e@BN1BFFO11FD018.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(51704005)(189002)(199002)(24454002)(164054003)(377454003)(479174003)(13464003)(79102001)(33646002)(81542001)(64126003)(95666004)(104016003)(20776003)(47776003)(107046002)(92726001)(83322001)(85306003)(19580405001)(21056001)(50466002)(92566001)(19580395003)(106466001)(77982001)(4396001)(50986999)(80022001)(64706001)(23676002)(65956001)(74316001)(46102001)(76176999)(76482001)(81342001)(102836001)(83506001)(31696002)(1496007)(70736001)(99396002)(86362001)(74502001)(83072002)(87936001)(85852003)(54356999)(74662001)(31966008)(6806004)(44976005)(65826006)(107986001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB064;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0289B6431E
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
+	id S932330AbaGaJne (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 05:43:34 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:59010 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932265AbaGaJnc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 05:43:32 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: yuyang.du@intel.com, peterz@infradead.org
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, pjt@google.com,
+        bsegall@google.com, arjan.van.de.ven@intel.com, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
+        engguang.wu@intel.com, morten.rasmussen@arm.com,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: 
+Date: Thu, 31 Jul 2014 11:40:41 +0200
+Message-Id: <1406799641-9462-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <20140729015344.GF5203@intel.com>
+References: <20140729015344.GF5203@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2014 05:41 PM, Punnaiah Choudary Kalluri wrote:
-> Hi Boris,
-> 
->> -----Original Message-----
->> From: Borislav Petkov [mailto:bp@alien8.de]
->> Sent: Monday, July 28, 2014 11:32 PM
->> To: Punnaiah Choudary Kalluri
->> Cc: Punnaiah Choudary Kalluri; dougthompson@xmission.com;
->> robh+dt@kernel.org; pawel.moll@arm.com; Michal Simek;
->> mark.rutland@arm.com; ijc+devicetree@hellion.org.uk; Kumar Gala; Rob
->> Landley; devicetree@vger.kernel.org; linux-doc@vger.kernel.org; linux-
->> edac@vger.kernel.org; linux-kernel@vger.kernel.org; linux-arm-
->> kernel@lists.infradead.org; Punnaiah Choudary; Anirudha Sarangi; Srikanth
->> Vemula
->> Subject: Re: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr
->> ecc controller
->>
->> On Mon, Jul 28, 2014 at 10:53:26PM +0530, punnaiah choudary kalluri wrote:
->>> I can agree with you that we can use shorter names.But ZYNQ has
->>> programmable logic next to processing system where one can add soft
->>> memory controller in the same system and may use different driver. So,
->>> the edac driver for zynq may include multiple drivers for different
->>> memory controllers in the same file. In this case it is difficult to
->>> maintain generic macros as you suggested above.
->>
->> So?
->>
->> You can still shorten them a bit - the current names are awfully long.
->> SYNPS_DDRC_ECC_ is too much information, for example. We know it is DDR
->> and we know it is about ECC. So do SYNPS and ZYNQ or OTHER or whatever
->> you wanna call it prefix and then the rest. I.e.,
->>
->>    SYNPS_<reg>_<bits*>
->>    ZYNQ_<reg>_bits*>
->>
->> You can even use single letter prefixes like S_ and Z_ and add a comment
->> explaining what those mean. Still much more readable than the long
->> repeating prefixes currently.
-> 
-> Ok.
->>
->>> Also the current edac framework for edac memory controllers is
->>> expecting the mc_num from the driver while allocating the memory
->>> controller instance using the edac_mc_alloc function. This requirement
->>> mandates that if the system contains two different memory controllers
->>> then the corresponding edac drivers should be in single file.
->>
->> So you're telling me that you want one edac driver for *two* memory
->> controllers which can be present on a single system *at* *the* *same*
->> *time*? Is that it?
-> 
-> Yes.
->>
->> How exactly is that topology supposed to look like, work, etc, etc? What
->> kind of error reporting do you imagine you want to do with EDAC?
-> 
-> Zynq (All programmable SOC) contains a dual core ARM cortex A9 based processing
-> System(PS) and Xilinx programmable logic(PL) in a single device.
-> 
-> Assume the application is a broadcast camera. The design for this system use PS as
-> Control plane and use PL as data plane for processing the video data. So, the design 
-> may have two different memory controllers one in PS and another one in PL.   
-> PS is running with Linux OS and PL doesn't have the OS and it is  controlled by the 
-> OS running on PS.
->  Now the requirement is to develop a monitoring system for all the hardware failures 
-> Including ddr ecc errors. Since the broadcast camera involves more data processing and
-> DDR memory access, there is a high probability of getting ddr ecc errors over the period.
-> So, the user should be intimated with these errors when they occur and if the error rate
->  is high, then the user can consider the preventive methods. Without this error reporting
-> mechanism it is difficult to debug the issues like memory corruption, kernel oops which
->  may occur due to ddr ecc failures.
-> 
-> Since, the memory controllers are different, it need two edac drivers for reporting the ecc 
-> errors and also maintaining the statistics of that particular memory controller. With the current
-> framework, there is a chance that both the drivers get mc_num as zero and malfunction. 
-> Assume the code for the two drivers looks like below
-> 
-> Driver 1:
-> 	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
-> 			    sizeof(struct  ctrl1_drvdata));
-> 
-> Driver 2:
-> 	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
-> 			    sizeof(struct ctrl2_drvdata));
-> 
-> Issue:
->   Since driver is providing the mc_num to framework, now there is chance that only one device active as
->  both the drivers claiming the same number.
-> 
-> Solution 1:
->  Keep two drivers in single file and use static global variable for tracking the mc_num. This solution looks
-> good but the drivers may not be generic as these driver would be in a zynq_edac.c file. So others may not
-> reuse these drivers
-> static int mc_num = 0;
-> 
-> Driver 1:
-> 	mci = edac_mc_alloc(mc_num, ARRAY_SIZE(layers), layers,
-> 			    sizeof(struct  ctrl1_drvdata));
->               mc_num++;
-> 
-> Driver 2:
-> 	mci = edac_mc_alloc(mc_num, ARRAY_SIZE(layers), layers,
-> 			    sizeof(struct ctrl2_drvdata));
->                  mc_num++;
-> 
-> Solution 2:
->   Let the framework assign the mc_num to the edac driver
-> 
->      mc_num = edac_mc_get_id(); /* returns the next available mci slot */
->      mci = edac_mc_alloc(mc_num,...);
-> 
-> 
-> In my opinion solution 2  looks neat and it eliminates the dependency on tracking
->  the mc_num.
+Hi Yuyang,
 
-Isn't there also 3rd option which is provide mc_num via DTS?
+Does something like the patch below to be applied of top of your patchset, seem
+reasonable add-on?
 
-Thanks,
-Michal
+It adds 1 new usage_sum statistics which is something that I use to detect the
+overload of a rq in my patchset that reworks cpu_power and removes
+capacity_factor
+
+And I think that the change I made on load_sum should match some of Morten's
+concerns
+
+Regards,
+Vincent
+
+---
+Subject: [PATCH] sched: add usage_sum statistic
+
+Add a new statitic that reflects the average time a task is running on CPU.
+
+load_sum is now the average runnable time before being weighted
+
+The sum of usage_sum of the tasks that are on a rq, is used to detect
+the overload of a rq.
+
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ include/linux/sched.h |  1 +
+ kernel/sched/fair.c   | 47 +++++++++++++++++++++++++++++++++++------------
+ kernel/sched/sched.h  |  2 ++
+ 3 files changed, 38 insertions(+), 12 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index b6617a1..3296e76 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1080,6 +1080,7 @@ struct sched_avg {
+ 	 */
+ 	u64 last_update_time;
+ 	u64 load_sum;
++	unsigned long usage_sum;
+ 	unsigned long load_avg;
+ 	u32 period_contrib;
+ };
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index a3a3168..78408a0 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -679,7 +679,8 @@ void init_task_runnable_average(struct task_struct *p)
+ 	 */
+ 	sa->period_contrib = 1023;
+ 	sa->load_avg = p->se.load.weight;
+-	sa->load_sum = p->se.load.weight * LOAD_AVG_MAX;
++	sa->load_sum = sa->usage_sum = LOAD_AVG_MAX;
++	;
+ 	/* when this task enqueue'ed, it will contribute to its cfs_rq's load_avg */
+ }
+ #else
+@@ -2300,7 +2301,7 @@ static u32 __compute_runnable_contrib(u64 n)
+  *            = u_0 + u_1*y + u_2*y^2 + ... [re-labeling u_i --> u_{i+1}]
+  */
+ static __always_inline int
+-__update_load_avg(u64 now, struct sched_avg *sa, unsigned long w)
++__update_load_avg(u64 now, struct sched_avg *sa, unsigned long w, int running)
+ {
+ 	u64 delta, periods;
+ 	u32 contrib;
+@@ -2340,7 +2341,9 @@ __update_load_avg(u64 now, struct sched_avg *sa, unsigned long w)
+ 		 */
+ 		delta_w = 1024 - delta_w;
+ 		if (w)
+-			sa->load_sum += w * delta_w;
++			sa->load_sum += delta_w;
++		if (running)
++			sa->usage_sum += delta_w;
+ 
+ 		delta -= delta_w;
+ 
+@@ -2349,21 +2352,26 @@ __update_load_avg(u64 now, struct sched_avg *sa, unsigned long w)
+ 		delta %= 1024;
+ 
+ 		sa->load_sum = decay_load(sa->load_sum, periods + 1);
++		sa->usage_sum = decay_load(sa->usage_sum, periods + 1);
+ 
+ 		/* Efficiently calculate \sum (1..n_period) 1024*y^i */
+ 		contrib = __compute_runnable_contrib(periods);
+ 		if (w)
+-			sa->load_sum += w * contrib;
++			sa->load_sum += contrib;
++		if (running)
++			sa->usage_sum += contrib;
+ 	}
+ 
+ 	/* Remainder of delta accrued against u_0` */
+ 	if (w)
+-		sa->load_sum += w * delta;
++		sa->load_sum +=  delta;
++	if (running)
++		sa->usage_sum += delta;
+ 
+ 	sa->period_contrib += delta;
+ 
+ 	if (decayed)
+-		sa->load_avg = div_u64(sa->load_sum, LOAD_AVG_MAX);
++		sa->load_avg = div_u64(sa->load_sum * w, LOAD_AVG_MAX);
+ 
+ 	return decayed;
+ }
+@@ -2404,11 +2412,17 @@ static inline int update_cfs_rq_load_avg(u64 now, struct cfs_rq *cfs_rq)
+ 	if (atomic_long_read(&cfs_rq->removed_load_avg)) {
+ 		long r = atomic_long_xchg(&cfs_rq->removed_load_avg, 0);
+ 		cfs_rq->avg.load_avg = subtract_until_zero(cfs_rq->avg.load_avg, r);
+-		r *= LOAD_AVG_MAX;
++	}
++	if (atomic_long_read(&cfs_rq->removed_load_sum)) {
++		long r = atomic_long_xchg(&cfs_rq->removed_load_sum, 0);
+ 		cfs_rq->avg.load_sum = subtract_until_zero(cfs_rq->avg.load_sum, r);
+ 	}
++	if (atomic_long_read(&cfs_rq->removed_usage_sum)) {
++		long r = atomic_long_xchg(&cfs_rq->removed_usage_sum, 0);
++		cfs_rq->avg.usage_sum = subtract_until_zero(cfs_rq->avg.usage_sum, r);
++	}
+ 
+-	decayed = __update_load_avg(now, &cfs_rq->avg, cfs_rq->load.weight);
++	decayed = __update_load_avg(now, &cfs_rq->avg, cfs_rq->load.weight, cfs_rq->curr != NULL);
+ 
+ #ifndef CONFIG_64BIT
+ 	if (cfs_rq->avg.last_update_time != cfs_rq->load_last_update_time_copy) {
+@@ -2430,7 +2444,8 @@ static inline void update_load_avg(struct sched_entity *se, int update_tg)
+ 	 * Track task load average for carrying it to new CPU after migrated,
+ 	 * and group sched_entity for task_h_load calc in migration
+ 	 */
+-	__update_load_avg(now, &se->avg, se->on_rq * se->load.weight);
++	__update_load_avg(now, &se->avg, se->on_rq * se->load.weight,
++			entity_is_task(se) ? task_of(se)->on_cpu : 0);
+ 
+ 	if (update_cfs_rq_load_avg(now, cfs_rq) && update_tg)
+ 		update_tg_load_avg(cfs_rq);
+@@ -2451,13 +2466,14 @@ static inline void enqueue_entity_load_avg(struct sched_entity *se)
+ 			migrated = 1;
+ 	}
+ 	else
+-		__update_load_avg(now, sa, se->on_rq * se->load.weight);
++		__update_load_avg(now, sa, se->on_rq * se->load.weight, entity_is_task(se) ? task_of(se)->on_cpu : 0);
+ 
+ 	decayed = update_cfs_rq_load_avg(now, cfs_rq);
+ 
+ 	if (migrated) {
+ 		cfs_rq->avg.load_avg += sa->load_avg;
+ 		cfs_rq->avg.load_sum += sa->load_sum;
++		cfs_rq->avg.usage_sum += sa->usage_sum;
+ 	}
+ 
+ 	if (decayed || migrated)
+@@ -4442,8 +4458,10 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
+ #else
+ 	last_update_time = cfs_rq->avg.last_update_time;
+ #endif
+-	__update_load_avg(last_update_time, &se->avg, 0);
++	__update_load_avg(last_update_time, &se->avg, 0, p->on_cpu);
+ 	atomic_long_add(se->avg.load_avg, &cfs_rq->removed_load_avg);
++	atomic_long_add(se->avg.load_sum, &cfs_rq->removed_load_sum);
++	atomic_long_add(se->avg.usage_sum, &cfs_rq->removed_usage_sum);
+ 
+ 	/*
+ 	 * We are supposed to update the task to "current" time, then its up to date
+@@ -7316,11 +7334,13 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
+ 	* Remove our load from contribution when we leave cfs_rq.
+ 	*/
+ 	__update_load_avg(cfs_rq->avg.last_update_time, &se->avg,
+-		se->on_rq * se->load.weight);
++		se->on_rq * se->load.weight, p->on_cpu);
+ 	cfs_rq->avg.load_avg =
+ 		subtract_until_zero(cfs_rq->avg.load_avg, se->avg.load_avg);
+ 	cfs_rq->avg.load_sum =
+ 		subtract_until_zero(cfs_rq->avg.load_sum, se->avg.load_sum);
++	cfs_rq->avg.usage_sum =
++		subtract_until_zero(cfs_rq->avg.usage_sum, se->avg.usage_sum);
+ #endif
+ }
+ 
+@@ -7378,6 +7398,8 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
+ #endif
+ #ifdef CONFIG_SMP
+ 	atomic_long_set(&cfs_rq->removed_load_avg, 0);
++	atomic_long_set(&cfs_rq->removed_load_sum, 0);
++	atomic_long_set(&cfs_rq->removed_usage_sum, 0);
+ #endif
+ }
+ 
+@@ -7428,6 +7450,7 @@ static void task_move_group_fair(struct task_struct *p, int on_rq)
+ 		p->se.avg.last_update_time = cfs_rq->avg.last_update_time;
+ 		cfs_rq->avg.load_avg += p->se.avg.load_avg;
+ 		cfs_rq->avg.load_sum += p->se.avg.load_sum;
++		cfs_rq->avg.usage_sum += p->se.avg.usage_sum;
+ #endif
+ 	}
+ }
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index f21ddde..1bdd878 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -335,6 +335,8 @@ struct cfs_rq {
+ 	struct sched_avg avg;
+ 	unsigned long tg_load_avg_contrib;
+ 	atomic_long_t removed_load_avg;
++	atomic_long_t removed_load_sum;
++	atomic_long_t removed_usage_sum;
+ #ifndef CONFIG_64BIT
+ 	u64 load_last_update_time_copy;
+ #endif
+-- 
+1.9.1
 
