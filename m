@@ -1,78 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328AbaGaKQp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 06:16:45 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:41793 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756300AbaGaKQm (ORCPT
+	id S1756378AbaGaKRE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 06:17:04 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:47261 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756354AbaGaKRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 06:16:42 -0400
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        ceph-devel@vger.kernel.org
-Subject: [PATCH] locking/mutexes: Revert "locking/mutexes: Add extra reschedule point"
-Date: Thu, 31 Jul 2014 14:16:37 +0400
-Message-Id: <1406801797-20139-1-git-send-email-ilya.dryomov@inktank.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 31 Jul 2014 06:17:00 -0400
+Message-ID: <53DA1796.4040105@gmail.com>
+Date: Thu, 31 Jul 2014 13:16:54 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Matthew Wilcox <willy@linux.intel.com>
+CC: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 04/22] Change direct_access calling convention
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com> <b78b33d94b669a5fbd02e06f2493b43dd5d77698.1406058387.git.matthew.r.wilcox@intel.com> <53D9174C.7040906@gmail.com> <53D9197C.2050000@gmail.com> <20140730203435.GR6754@linux.intel.com>
+In-Reply-To: <20140730203435.GR6754@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 34c6bc2c919a55e5ad4e698510a2f35ee13ab900.
+On 07/30/2014 11:34 PM, Matthew Wilcox wrote:
+> On Wed, Jul 30, 2014 at 07:12:44PM +0300, Boaz Harrosh wrote:
+>> Off course I was wrong here size is in bytes not in sectors. Which points
+>> out that maybe this API needs to be in sectors.
+>>
+>> [Actually it needs to be in pages both size and offset, because of return of
+>> pfn, but its your call.]
+> 
+> I considered a number of options here.  The VM wants things to be in pages.
+> The filesystem wants things to be in block size.  The block device wants
+> things to be in sectors.  It's all a mess when you try and converge.
+> Everybody understands bytes.
+> 
+> Here's what I've come up with on top of patch 4/22.  Let me know what
+> you think.
+> 
+> 
+> diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
+> index 3ee1c08..741293f 100644
+> --- a/arch/powerpc/sysdev/axonram.c
+> +++ b/arch/powerpc/sysdev/axonram.c
+> @@ -146,11 +146,6 @@ axon_ram_direct_access(struct block_device *device, sector_t sector,
+>  	struct axon_ram_bank *bank = device->bd_disk->private_data;
+>  	loff_t offset = (loff_t)sector << AXON_RAM_SECTOR_SHIFT;
+>  
+> -	if (offset >= bank->size) {
+> -		dev_err(&bank->device->dev, "Access outside of address space\n");
+> -		return -ERANGE;
+> -	}
+> -
+>  	*kaddr = (void *)(bank->ph_addr + offset);
+>  	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+>  
+> diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+> index 33a39e7..3483458 100644
+> --- a/drivers/block/brd.c
+> +++ b/drivers/block/brd.c
+> @@ -378,10 +378,6 @@ static long brd_direct_access(struct block_device *bdev, sector_t sector,
+>  
+>  	if (!brd)
+>  		return -ENODEV;
+> -	if (sector & (PAGE_SECTORS-1))
+> -		return -EINVAL;
+> -	if (sector + PAGE_SECTORS > get_capacity(bdev->bd_disk))
+> -		return -ERANGE;
+>  	page = brd_insert_page(brd, sector);
+>  	if (!page)
+>  		return -ENOSPC;
+> diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
+> index 58958d1..2ee5556 100644
+> --- a/drivers/s390/block/dcssblk.c
+> +++ b/drivers/s390/block/dcssblk.c
+> @@ -877,11 +877,7 @@ dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
+>  	if (!dev_info)
+>  		return -ENODEV;
+>  	dev_sz = dev_info->end - dev_info->start;
+> -	if (secnum % (PAGE_SIZE/512))
+> -		return -EINVAL;
+>  	offset = secnum * 512;
+> -	if (offset > dev_sz)
+> -		return -ERANGE;
+>  	*kaddr = (void *) (dev_info->start + offset);
+>  	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+>  
+> diff --git a/fs/block_dev.c b/fs/block_dev.c
+> index f1a158e..93ebdd53 100644
+> --- a/fs/block_dev.c
+> +++ b/fs/block_dev.c
+> @@ -450,8 +450,14 @@ long bdev_direct_access(struct block_device *bdev, sector_t sector,
+>  	const struct block_device_operations *ops = bdev->bd_disk->fops;
+>  	if (!ops->direct_access)
+>  		return -EOPNOTSUPP;
+> -	return ops->direct_access(bdev, sector + get_start_sect(bdev), addr,
+> -					pfn, size);
+> +	if ((sector + DIV_ROUND_UP(size, 512)) >
+> +					part_nr_sects_read(bdev->bd_part))
+> +		return -ERANGE;
+> +	sector += get_start_sect(bdev);
+> +	if (sector % (PAGE_SIZE / 512))
+> +		return -EINVAL;
+> +	size = ops->direct_access(bdev, sector, addr, pfn, size);
+> +	return size ? size : -ERANGE;
+>  }
+>  EXPORT_SYMBOL_GPL(bdev_direct_access);
+>  
+> 
 
-This commit can lead to deadlocks by way of what at a high level
-appears to look like a missing wakeup on mutex_unlock() when
-CONFIG_MUTEX_SPIN_ON_OWNER is set, which is how most distributions ship
-their kernels.  In particular, it causes reproducible deadlocks in
-libceph/rbd code under higher than moderate loads with the evidence
-actually pointing to the bowels of mutex_lock().
+Very nice yes.
 
-kernel/locking/mutex.c, __mutex_lock_common():
-476         osq_unlock(&lock->osq);
-477 slowpath:
-478         /*
-479          * If we fell out of the spin path because of need_resched(),
-480          * reschedule now, before we try-lock the mutex. This avoids getting
-481          * scheduled out right after we obtained the mutex.
-482          */
-483         if (need_resched())
-484                 schedule_preempt_disabled(); <-- never returns
-485 #endif
-486         spin_lock_mutex(&lock->wait_lock, flags);
+Only the check at ext2 I think is missing. Once you send the complete patch
+I'll review it again. It would be very helpful if you send this patch a head
+of Q, even for 3.17. It will help with merging later I think
 
-We started bumping into deadlocks in QA the day our branch has been
-rebased onto 3.15 (the release this commit went in) but then as part of
-debugging effort I enabled all locking debug options, which also
-disabled CONFIG_MUTEX_SPIN_ON_OWNER and made everything disappear,
-which is why it hasn't been looked into until now.  Revert makes the
-problem go away, confirmed by our users.
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: stable@vger.kernel.org # 3.15
-Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
----
- kernel/locking/mutex.c |    7 -------
- 1 file changed, 7 deletions(-)
-
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index acca2c1a3c5e..746ff280a2fc 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -475,13 +475,6 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 	}
- 	osq_unlock(&lock->osq);
- slowpath:
--	/*
--	 * If we fell out of the spin path because of need_resched(),
--	 * reschedule now, before we try-lock the mutex. This avoids getting
--	 * scheduled out right after we obtained the mutex.
--	 */
--	if (need_resched())
--		schedule_preempt_disabled();
- #endif
- 	spin_lock_mutex(&lock->wait_lock, flags);
- 
--- 
-1.7.10.4
+Thanks
+Boaz
 
