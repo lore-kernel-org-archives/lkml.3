@@ -1,108 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976AbaGaWyS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 18:54:18 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37905 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999AbaGaWyQ (ORCPT
+	id S1753679AbaGaW4Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 18:56:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50149 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753279AbaGaW4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 18:54:16 -0400
-Date: Fri, 1 Aug 2014 00:54:08 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: Re: [PATCH 1/3] irq / PM: New driver interface for wakeup
- interrupts
-In-Reply-To: <2140085.bSS0bVjyxJ@vostro.rjw.lan>
-Message-ID: <alpine.DEB.2.10.1408010016360.4997@nanos>
-References: <20140724212620.GO3935@laptop> <2084079.fEC1AulnFk@vostro.rjw.lan> <alpine.DEB.2.10.1407311230420.4997@nanos> <2140085.bSS0bVjyxJ@vostro.rjw.lan>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 31 Jul 2014 18:56:10 -0400
+From: Thomas Graf <tgraf@suug.ch>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, kaber@trash.net, paulmck@linux.vnet.ibm.com,
+        josh@joshtriplett.org, challa@noironetworks.com, walpole@cs.pdx.edu,
+        dev@openvswitch.org, tklauser@distanz.ch,
+        netfilter-devel@vger.kernel.org
+Subject: [PATCH v2 0/3 net-next] Lockless netlink_lookup() with new concurrent hash table
+Date: Fri,  1 Aug 2014 00:56:00 +0200
+Message-Id: <cover.1406846586.git.tgraf@suug.ch>
+X-Mailer: git-send-email 1.9.3
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@suug.ch> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jul 2014, Rafael J. Wysocki wrote:
-> On Thursday, July 31, 2014 12:44:24 PM Thomas Gleixner wrote:
-> > > > Aside of that I want to see a coherent explanation why a shared MSI
-> > > > interrupt makes any sense at all.
-> > > > 
-> > > > 25:  1 <....> 0   PCI-MSI-edge      aerdrv, PCIe PME
-> > > >
-> > > > AFAICT, that's the primary reason why you insist to support wakeup
-> > > > sources on shared irq lines. And to be honest, it's utter bullshit.
-> > > 
-> > > No, this isn't the primary reason.
-> > > 
-> > > Here's /proc/interrupts from my MSI Wind system and, as you can see,
-> > > PCIe PME are (a) not MSI and (b) shared with some interesting things
-> > > (USB, WiFi and the GPU).
-> > 
-> > >  16:       5217          0   IO-APIC-fasteoi   PCIe PME, uhci_hcd:usb4, i915
-> > >  17:      13964          0   IO-APIC-fasteoi   PCIe PME, rtl818x_pci
-> > 
-> > So the obvious question is: WHY are they not using MSI?
-> > 
-> > Just because MSI fucked up the MSI configuration of the device or is
-> > there any sane explanation for it?
-> 
-> It looks like they don't use MSI on that machine at all, so perhaps the chipset
-> is not capable of that or similar.  I'm not sure why it matters, though.  The
-> system shipped like that and with Linux on it, so we should be able to
-> handle it regardless.
+Netlink sockets are maintained in a hash table to allow efficient lookup
+via the port ID for unicast messages. However, lookups currently require
+a read lock to be taken. This series adds a new generic, resizable,
+scalable, concurrent hash table based on the paper referenced in the first
+patch. It then makes use of the new data type to implement lockless
+netlink_lookup().
 
-Sorry, but this is outright hillarious.
+Patch 3/3 to convert nft_hash is included for reference but should be
+merged via the netfilter tree. Inclusion in this series is to provide
+context for the suggested API.
 
-#1 "so perhaps the chipset is not capable of that or similar."
+Against net-next since the initial user of the new hash table is in net/
 
-   This is a fricking Intel chipset. All Intel chipsets which have a
-   PCIe root hub are MSI capable at least to my restricted knowledge.
+Changes:
+v1-v2:
+ - fixed traversal off-by-one as spotted by Tobias Klauser
+ - removed unlikely() from BUG_ON() as spotted by Josh Triplett
+ - new 3rd patch to convert nft_hash to rhashtable
+ - make rhashtable_insert() return void
+ - nl_sk_hash_lock must be a mutex
+ - fixed wrong name of rht_shrink_below_30()
+ - exported symbols rht_grow_above_75() and rht_shrink_below_30()
+ - allow table freeing with RCU callback
 
-   As an Intel employee you could have had the decency to RTFM of the
-   chipset which is in the machine you care about.
+Thomas Graf (3):
+  lib: Resizable, Scalable, Concurrent Hash Table
+  netlink: Convert netlink_lookup() to use RCU protected hash table
+  nftables: Convert nft_hash to use generic rhashtable
 
-#2 "I'm not sure why it matters"
+ include/linux/rhashtable.h | 213 ++++++++++++
+ lib/Kconfig.debug          |   8 +
+ lib/Makefile               |   2 +-
+ lib/rhashtable.c           | 797 +++++++++++++++++++++++++++++++++++++++++++++
+ net/netfilter/nft_hash.c   | 291 +++--------------
+ net/netlink/af_netlink.c   | 285 ++++++----------
+ net/netlink/af_netlink.h   |  18 +-
+ net/netlink/diag.c         |  11 +-
+ 8 files changed, 1190 insertions(+), 435 deletions(-)
+ create mode 100644 include/linux/rhashtable.h
+ create mode 100644 lib/rhashtable.c
 
-   It matters a lot.
-   
-   You're just fostering the industry mentality of "it works for us,
-   lets ship it" simply because you tell them:
+-- 
+1.9.3
 
-     No matter what brainfarts you have or what level of complete
-     ignorance and incompetence you have, we're going to cope with it.
-
-   You are sending out the wrong message. The message needs to be:
-
-     Despite your completely idiotic implementation which renders a
-     perfectly well designed piece of modern hardware into a last
-     century piece of shit, we went out on a limb to provide the
-     victims of your incompetence, i.e. your paying customers, a state
-     of the art user experience.
-
-  See the difference ?
-
-The only point where I agree is that we want to handle it, but not
-without pointing out that this stuff is a major piece of shite, which
-should not ever had been offered to customers who simply are not able
-to judge the shit level before spending their hard earned bucks for
-it.
-
-I'm well aware that neither Intel nor any other silicon vendor gives a
-rats ass about this as long as they sell enough chips. But that's no
-excuse for wasting the brains of community developers for no value,
-simply because that could have been avoided by applying a fraction of
-the brain power, which is necessary to cope with the damage, in the
-first place.
-
-I don't care how you feel about that, but I very much care about the
-waste of my own precious time.
-
-Thanks,
-
-	tglx
