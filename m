@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982AbaGaAF5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 20:05:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43041 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362AbaGaAF4 (ORCPT
+	id S1756019AbaGaAGU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 20:06:20 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:41638 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525AbaGaAGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 20:05:56 -0400
-Date: Wed, 30 Jul 2014 17:05:28 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: fernando.apesteguia@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8192u: Staticfy debug method.
-Message-ID: <20140731000528.GA18924@kroah.com>
-References: <1406756021-3578-1-git-send-email-fernando.apesteguia@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406756021-3578-1-git-send-email-fernando.apesteguia@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 30 Jul 2014 20:06:18 -0400
+From: Arjun Sreedharan <arjun024@gmail.com>
+To: rjw@rjwysocki.net
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        joe@perches.com
+Subject: [PATCH] Replace faulty is_hex_digit() by isxdigit()
+Date: Thu, 31 Jul 2014 05:35:55 +0530
+Message-Id: <1406765155-22755-1-git-send-email-arjun024@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1406750412.12100.65.camel@joe-AO725>
+References: <1406750412.12100.65.camel@joe-AO725>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 11:33:41PM +0200, fernando.apesteguia@gmail.com wrote:
-> From: Fernando Apesteguia <fernando.apesteguia@gmail.com>
-> 
-> Add static to debug method.
-> 
-> Signed-off-by: Fernando Apesteguia <fernando.apesteguia@gmail.com>
-> ---
->  drivers/staging/rtl8192u/r8192U_core.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-> index 7640386..c732a67 100644
-> --- a/drivers/staging/rtl8192u/r8192U_core.c
-> +++ b/drivers/staging/rtl8192u/r8192U_core.c
-> @@ -667,7 +667,7 @@ static void tx_timeout(struct net_device *dev)
->  
->  
->  /* this is only for debug */
-> -void dump_eprom(struct net_device *dev)
-> +static void dump_eprom(struct net_device *dev)
->  {
->  	int i;
->  	for (i = 0; i < 63; i++)
+0 is ascii for NULL. Hex digit matching should be from '0'.
+Unfixed version returns true for #,$,%,& etc.
 
-Someone sent this patch just before you :(
+Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+---
+ drivers/acpi/acpi_pnp.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
+index 4ddb0dc..6d5922d 100644
+--- a/drivers/acpi/acpi_pnp.c
++++ b/drivers/acpi/acpi_pnp.c
+@@ -320,11 +320,6 @@ static const struct acpi_device_id acpi_pnp_device_ids[] = {
+ 	{""},
+ };
+ 
+-static bool is_hex_digit(char c)
+-{
+-	return (c >= 0 && c <= '9') || (c >= 'A' && c <= 'F');
+-}
+-
+ static bool matching_id(char *idstr, char *list_id)
+ {
+ 	int i;
+@@ -335,7 +330,7 @@ static bool matching_id(char *idstr, char *list_id)
+ 	for (i = 3; i < 7; i++) {
+ 		char c = toupper(idstr[i]);
+ 
+-		if (!is_hex_digit(c)
++		if (!isxdigit(c)
+ 		    || (list_id[i] != 'X' && c != toupper(list_id[i])))
+ 			return false;
+ 	}
+-- 
+1.7.11.7
 
