@@ -1,142 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691AbaGaFAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 01:00:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49416 "EHLO mx2.suse.de"
+	id S1751924AbaGaFE7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 01:04:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18516 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975AbaGaFAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 01:00:46 -0400
-Message-ID: <53D9CD78.2050207@suse.de>
-Date: Thu, 31 Jul 2014 07:00:40 +0200
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751014AbaGaFE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 01:04:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,769,1400050800"; 
+   d="scan'208";a="578033561"
+Date: Thu, 31 Jul 2014 13:04:54 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org, jhladky@redhat.com
+Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1%
+ proc-vmstat.numa_hint_faults_local
+Message-ID: <20140731050454.GA9386@aaronlu.sh.intel.com>
+References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>
+ <53D72FF5.90908@intel.com>
+ <20140729023940.37b6aebc@annuminas.surriel.com>
+ <20140729081712.GS20603@laptop.programming.kicks-ass.net>
+ <20140729160437.4561742f@annuminas.surriel.com>
+ <20140730021425.GA25023@aaronlu.sh.intel.com>
+ <53D9003F.3050900@redhat.com>
 MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>
-CC: "'Olof Johansson'" <olof@lixom.net>, linux-samsung-soc@vger.kernel.org,
-        "'Tarek Dakhran'" <t.dakhran@samsung.com>,
-        "'Kevin Hilman'" <khilman@linaro.org>,
-        "'Pankaj Dubey'" <pankaj.dubey@samsung.com>,
-        "'Tomasz Figa'" <t.figa@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ajay Kumar <ajaykumar.rs@samsung.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [PATCH 0/3] ARM: EXYNOS: Fix Exynos5410 boot
-References: <1406463725-4208-1-git-send-email-afaerber@suse.de> <53D4EFBB.6000404@suse.de> <00c901cfa9fc$727b4e10$5771ea30$@samsung.com> <CAOesGMjh=xMZ3vB45ofh=CLjTFDMQxSxus5q_P67XQSbwg6-+A@mail.gmail.com> <03f501cfac5c$2c69be90$853d3bb0$@samsung.com> <53D9BF09.7060002@suse.de>
-In-Reply-To: <53D9BF09.7060002@suse.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53D9003F.3050900@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 31.07.2014 05:59, schrieb Andreas Färber:
-> Hi Kukjin,
+On Wed, Jul 30, 2014 at 10:25:03AM -0400, Rik van Riel wrote:
+> On 07/29/2014 10:14 PM, Aaron Lu wrote:
+> > On Tue, Jul 29, 2014 at 04:04:37PM -0400, Rik van Riel wrote:
+> >> On Tue, 29 Jul 2014 10:17:12 +0200
+> >> Peter Zijlstra <peterz@infradead.org> wrote:
+> >>
+> >>>> +#define NUMA_SCALE 1000
+> >>>> +#define NUMA_MOVE_THRESH 50
+> >>>
+> >>> Please make that 1024, there's no reason not to use power of two here.
+> >>> This base 10 factor thing annoyed me no end already, its time for it to
+> >>> die.
+> >>
+> >> That's easy enough.  However, it would be good to know whether
+> >> this actually helps with the regression Aaron found :)
+> > 
+> > Sorry for the delay.
+> > 
+> > I applied the last patch and queued the hackbench job to the ivb42 test
+> > machine for it to run 5 times, and here is the result(regarding the
+> > proc-vmstat.numa_hint_faults_local field):
+> > 173565
+> > 201262
+> > 192317
+> > 198342
+> > 198595
+> > avg:
+> > 192816
+> > 
+> > It seems it is still very big than previous kernels.
 > 
-> Am 31.07.2014 03:10, schrieb Kukjin Kim:
->> Olof Johansson wrote:
->>>
->>> Hi,
->>>
->> Hi Olof,
->>
->>> On Sun, Jul 27, 2014 at 5:39 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
->>>> Andreas Färber wrote:
->>>>>
->>>>> Am 27.07.2014 14:22, schrieb Andreas Färber:
->>>>>> Hello,
->>>>>>
->>>>>> This mini-series unbreaks booting on 5410 based ODROID-XU.
->>>>>>
->>>>>> Since I do not have access to a TRM, the address is a guess based on
->>>>>> 5250 and 5410. Such a node was not present in the 3.14 downstream tree.
->>>>>
->>>>> s/5410/5420/
->>>>>
->>>> OK.
->>>>
->>>>>>
->>>>>> Regards,
->>>>>> Andreas
->>>>>>
->>>>>> Andreas Färber (3):
->>>>>>   Documentation: devicetree: Document exynos5410 PMU
->>>>>>   ARM: dts: exynos: Add PMU to Exynos5410
->>>>>>   ARM: EXYNOS: Add support for Exynos5410 PMU
->>>>>>
->>>>>>  Documentation/devicetree/bindings/arm/samsung/pmu.txt | 1 +
->>>>>>  arch/arm/boot/dts/exynos5410.dtsi                     | 5 +++++
->>>>>>  arch/arm/mach-exynos/exynos.c                         | 1 +
->>>>>>  3 files changed, 7 insertions(+)
->>>>>
->>>> Andreas, thanks.
->>>>
->>>> I'll apply this whole series.
->>>
->>> We're getting close to the merge window. I'd prefer not to have to
->>> start reverting samsung code to recover from these regressions, so
->>> please send this up very soon.
->>>
->> Thanks for your gentle reminder.
->>
->> BTW I'm waiting for exynos5250-spring support from Andreas and I'd like to get
->> confirmation about that from Doug. And I'm looking at s2r related patches now.
->>
->> OK, I will send out current samsung tree tonight in my time anyway.
+> It looks like a step in the right direction, though.
 > 
-> That would be kind.
+> Could you try running with a larger threshold?
 > 
-> Patches 2-3 in spring v3 should be non-functional snow refactorings for
-> you to consider, but untested by me; patch 1 you could skip if you
-> modify patch 2, if necessary. As for patch 4, you can see from my
-> spring-next branch [1] how I am successfully testing it with a TEST_ONLY
-> patch: For simplefb usage I comment out the /dp-controller node to avoid
-> drm/exynos detection (not enabling the driver in the user's .config
-> would be an alternative); when I run into issues with the drm during
-> testing, I can usually ssh in via USB ethernet/wifi.
+> >> +++ b/kernel/sched/fair.c
+> >> @@ -924,10 +924,12 @@ static inline unsigned long group_faults_cpu(struct numa_group *group, int nid)
+> >>  
+> >>  /*
+> >>   * These return the fraction of accesses done by a particular task, or
+> >> - * task group, on a particular numa node.  The group weight is given a
+> >> - * larger multiplier, in order to group tasks together that are almost
+> >> - * evenly spread out between numa nodes.
+> >> + * task group, on a particular numa node.  The NUMA move threshold
+> >> + * prevents task moves with marginal improvement, and is set to 5%.
+> >>   */
+> >> +#define NUMA_SCALE 1024
+> >> +#define NUMA_MOVE_THRESH (5 * NUMA_SCALE / 100)
 > 
-> In the dmesg for drm/exynos bridge series testing [2] (which I guess is
-> not gonna hit 3.17 any more?) I noticed that the USB3503 /usb-hub node
-> new in v3 is not working yet (complains about lack of #gpio-cells, I
-> guess for my reset-gpios property), not sure how to fix, so we/you could
-> probably just drop that node - preparing to test that now.
+> It would be good to see if changing NUMA_MOVE_THRESH to
+> (NUMA_SCALE / 8) does the trick.
 
-Misread that message, it does not seem to be fatal. I do see the device
-as /sys/devices/usb-hub.
+With your 2nd patch and the above change, the result is:
 
-[    0.618757] of_get_named_gpiod_flags: can't parse gpios property of
-node '/usb-hub[0]'
-[    0.618763] of_get_named_gpiod_flags: can't parse gpios property of
-node '/usb-hub[0]'
-[    0.618777] /usb-hub: could not get #gpio-cells for
-/pinctrl@13400000/hsic-reset
-[    0.620743] of_get_named_gpiod_flags: can't parse gpios property of
-node '/usb-hub[0]'
-[    0.629797] usb3503 usb-hub: switched to HUB mode
-[    0.631752] usb3503 usb-hub: usb3503_probe: probed in hub mode
+"proc-vmstat.numa_hint_faults_local": [
+  199708,
+  209152,
+  200638,
+  187324,
+  196654
+  ],
 
-Andreas
+avg:
+198695
 
-> As for the rest of patch 4, it's a new DT, so we could fix up any
-> remaining bugs during 3.17 RC cycle, if it looks sane to you guys now. I
-> had replied to two series - namely cpufreq [3] and dwmmc [4] - where
-> merge conflicts might arise. Let me know if you need a respin for anything.
-> 
-> Regards,
-> Andreas
-> 
-> [1] https://github.com/afaerber/linux/commits/spring-next
-> [2]
-> http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34927.html
-> [3]
-> http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34807.html
-> [4]
-> http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34898.html
-> 
-
-
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+Regards,
+Aaron
