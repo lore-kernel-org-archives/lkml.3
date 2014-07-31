@@ -1,163 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413AbaGaLPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 07:15:04 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33736 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859AbaGaLPB (ORCPT
+	id S1751855AbaGaLTv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 07:19:51 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:36617 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151AbaGaLTt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 07:15:01 -0400
-Date: Thu, 31 Jul 2014 13:14:54 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <Will.Deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        Varun Sethi <varun.sethi@freescale.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140731111453.GA11955@ulmo>
-References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
- <20140730152646.GC20162@leverpostej>
- <CAOesGMi3zM1-cqmeGddJ69RNXx0ktFm_zXO_yq7N0EeA3HNrUQ@mail.gmail.com>
- <20140730181842.GG20162@leverpostej>
- <20140731100905.GA7458@ulmo>
- <20140731105017.GB22994@leverpostej>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
-Content-Disposition: inline
-In-Reply-To: <20140731105017.GB22994@leverpostej>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 31 Jul 2014 07:19:49 -0400
+References: <1406309851-10628-1-git-send-email-adas@redhat.com> <CA2BF8AB-6F61-4856-8B0E-9D954BDEB243@dilger.ca> <193414027.14151264.1406551934098.JavaMail.zimbra@redhat.com> <7EBB0CF1-6564-4C63-8006-7DEEE8800A19@dilger.ca> <20140731044909.GR26465@dastard>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <20140731044909.GR26465@dastard>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <351B218B-259B-4066-8E78-0B0EA05D087E@dilger.ca>
+Cc: Abhijith Das <adas@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>
+X-Mailer: iPhone Mail (11D257)
+From: Andreas Dilger <adilger@dilger.ca>
+Subject: Re: [RFC PATCH 0/2] dirreadahead system call
+Date: Thu, 31 Jul 2014 13:19:45 +0200
+To: Dave Chinner <david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Jul 31, 2014, at 6:49, Dave Chinner <david@fromorbit.com> wrote:
+> 
+>> On Mon, Jul 28, 2014 at 03:19:31PM -0600, Andreas Dilger wrote:
+>>> On Jul 28, 2014, at 6:52 AM, Abhijith Das <adas@redhat.com> wrote:
+>>> OnJuly 26, 2014 12:27:19 AM "Andreas Dilger" <adilger@dilger.ca> wrote:
+>>>> Is there a time when this doesn't get called to prefetch entries in
+>>>> readdir() order?  It isn't clear to me what benefit there is of returning
+>>>> the entries to userspace instead of just doing the statahead implicitly
+>>>> in the kernel?
+>>>> 
+>>>> The Lustre client has had what we call "statahead" for a while,
+>>>> and similar to regular file readahead it detects the sequential access
+>>>> pattern for readdir() + stat() in readdir() order (taking into account if
+>>>> ".*"
+>>>> entries are being processed or not) and starts fetching the inode
+>>>> attributes asynchronously with a worker thread.
+>>> 
+>>> Does this heuristic work well in practice? In the use case we were trying to
+>>> address, a Samba server is aware beforehand if it is going to stat all the
+>>> inodes in a directory.
+>> 
+>> Typically this works well for us, because this is done by the Lustre
+>> client, so the statahead is hiding the network latency of the RPCs to
+>> fetch attributes from the server.  I imagine the same could be seen with
+>> GFS2. I don't know if this approach would help very much for local
+>> filesystems because the latency is low.
+>> 
+>>>> This syscall might be more useful if userspace called readdir() to get
+>>>> the dirents and then passed the kernel the list of inode numbers
+>>>> to prefetch before starting on the stat() calls. That way, userspace
+>>>> could generate an arbitrary list of inodes (e.g. names matching a
+>>>> regexp) and the kernel doesn't need to guess if every inode is needed.
+>>> 
+>>> Were you thinking arbitrary inodes across the filesystem or just a subset
+>>> from a directory? Arbitrary inodes may potentially throw up locking issues.
+>> 
+>> I was thinking about inodes returned from readdir(), but the syscall
+>> would be much more useful if it could handle arbitrary inodes.
+> 
+> I'm not sure we can do that. The only way to safely identify a
+> specific inode in the filesystem from userspace is via a filehandle.
+> Plain inode numbers are susceptible to TOCTOU race conditions that
+> the kernel cannot resolve. Also, lookup by inode number bypasses
+> directory access permissions, so is not something we would expose
+> to arbitrary unprivileged users.
 
---gKMricLos+KVdGMg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+None of these issues are relevant in the API that I'm thinking about. 
+The syscall just passes the list of inode numbers to be prefetched
+into kernel memory, and then stat() is used to actually get the data into
+userspace (or whatever other operation is to be done on them),
+so there is no danger if the wrong inode is prefetched.  If the inode
+number is bad the filesystem can just ignore it. 
 
-On Thu, Jul 31, 2014 at 11:50:17AM +0100, Mark Rutland wrote:
-> On Thu, Jul 31, 2014 at 11:09:06AM +0100, Thierry Reding wrote:
-> > On Wed, Jul 30, 2014 at 07:18:42PM +0100, Mark Rutland wrote:
-> > [...]
-> > > > >> +
-> > > > >> +Multiple-master IOMMU with configurable DMA window:
-> > > > >> +---------------------------------------------------
-> > > > >> +
-> > > > >> +     / {
-> > > > >> +             #address-cells =3D <1>;
-> > > > >> +             #size-cells =3D <1>;
-> > > > >> +
-> > > > >> +             iommu {
-> > > > >> +                     /* master ID, address and length of DMA wi=
-ndow */
-> > > > >> +                     #iommu-cells =3D <4>;
-> > > > >> +             };
-> > > > >> +
-> > > > >> +             master {
-> > > > >> +                     /* master ID 42, 4 GiB DMA window starting=
- at 0 */
-> > > > >> +                     iommus =3D <&/iommu  42  0  0x1 0x0>;
-> > > > >
-> > > > > Is this that window is from the POV of the master, i.e. the maste=
-r can
-> > > > > address 0x0 to 0xffffffff when generating transactions, and these=
- get
-> > > > > translated somehow?
-> > > > >
-> > > > > Or is this the physical addresses to allocate to the master?
-> > > >=20
-> > > > It needs to be clarified in the documentation, but as far as I know=
- it
-> > > > is the DMA address space that is used.
-> > >=20
-> > > Ok. So that's pre-translation, from the POV of the master?
-> >=20
-> > Correct. It represents the window of the IOMMU's addressable I/O virtual
-> > address space that should be assigned to this particular master.
-> >=20
-> > > If we don't have that knowledge about the master already (e.g. based =
-on
-> > > the compatible string), surely we always need that information in a
-> > > given iommu-specifier format? Otherwise certain iommus won't be able =
-to
-> > > handle masters with limited addressing only due to limitations of the=
-ir
-> > > binding.
-> >=20
-> > This is only used for what's often called a windowed IOMMU. Many IOMMUs
-> > (non-windowed) typically allow only a complete address space to be
-> > assigned to a master without additional control over subregions. So this
-> > is really a property/capability of the IOMMU rather than the masters
-> > themselves.
->=20
-> I'm not sure I follow, but I'm happy to wait until we have the first
-> windowed IOMMU using this binding. I'll try to get myself up to speed in
-> the mean time.
+>> There are always going to be race conditions even if limited to a
+>> single directory (e.g. another client modifies the inode after calling
+>> dirreadahead(), but before calling stat()) that need to be handled.
+> 
+> Unlink/realloc to a different directory with different access
+> permissions is the big issue.
+> 
+>> I think there are a lot of benefits that could be had by the generic
+>> syscall, possibly similar to what XFS is doing with the "bulkstat"
+>> interfaces that Dave always mentions.  This would be much more so for
+>> cases were you don't want to stat all of the entries in a directory.
+> 
+> Bulkstat is not really suited to this - it gets it's speed
+> specifically by avoiding directory traversal to find inodes. Hence
+> it is a root-only operation because it bypasses directory based
+> access restrictions and hence is really only useful for
+> full-filesystem traversal operations like backups, defragmentation,
+> etc.
 
-As I understand it, a windowed IOMMU manages a given I/O virtual address
-space (only one or perhaps even several). Each such address space is the
-complete range that the IOMMU can take as inputs from any master. For
-purposes of virtualization and process separation it can subdivide this
-address space into subranges, so that each context can only access that
-given range of virtual I/O addresses. I suspect that this works by
-setting up a mapping between that range and the context's master ID(s).
-And I also suppose it could be possible for the DMA windows to be truly
-configurable within the IOMMU or for specific devices to be assigned a
-fixed window.
+Maybe it was a mistake to mention bulkstat in this discussion. The
+stat() information would not actually be returned to memory in my
+proposal, just the inodes would be loaded into memory in bulk so
+that the later stat() (or unlink() or whatever) can go quickly.
 
-Simpler IOMMUs (Tegra uses one of those for example) know only address
-spaces. That is each address space can be assigned to one or more
-masters. But each master can always access the whole address space and
-accesses cannot be restricted to subregions thereof.
+Cheers, Andreas
 
-So from a memory protection point of view the difference is that for
-non-windowed IOMMUs translations will fault only if no mapping has been
-set up for the I/O virtual address being accessed, whereas for windowed
-IOMMUs translations can in addition also fault if they access an I/O
-virtual addresses outside of the range that they've been assigned.
-
-Does that help? Note that I've never dealt with windowed IOMMUs myself,
-so this is largely based on what I scooped up in previous discussions
-with Arnd.
-
-Thierry
-
---gKMricLos+KVdGMg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT2iUtAAoJEN0jrNd/PrOhhyYP/idsFANwRuln/m9YRqBJchql
-nhE8TlmdbateiHmAsSH1+cUGMysvJEENqnK48yveLAHVlTnjKrhIKC5Z038OsCJX
-uyxWns5PbTMcfqtGobdPEOgOwqf5lTnXL+FRFCBaCzMC/W+EeZBawmEVY7fVuPxK
-qTQoyhYYNEchGovGVrQcyUtUNJZWZIdyWcy/OesTD4zXOccgLzxjLyYOqhiv62F+
-rTLn/woHsbLVgTU50t6Q3HpOm9LWYStfQk7PeaiiwJPVg77v/Ns0LA8AToj7WuPX
-eBKrbkGRocq3xo5Edghh/NfmjavrKtU4my4HrrZjgF7uYZIY+zQb/diUfMhvHd1e
-B96H5S8MCa1zJpBiqGpLUInYkf3F0OUW52QbkBOUaNIaYDUTPg7VPn4LHv+BhnM3
-VjGs1MYFijcz1WwAwSMqVmLGrLwcu28oCkla0hSKrO09MGIEFS59DXIJcriTY+lL
-Ce628gnZNU0NDpQzeHk/gIElwflanoMzJjpkGtOqHccf9HHyUsyfkrQlzQE/zk1w
-1dyzde2n4miho3M0V5GWjKGpmR1LLGronA8AYlpt7pRCmZBuizZe+GEvvOddObxJ
-gBkeBdNhtx7B/tRATfGdaSiZKX4EnZ5zFeqQuICeAevTjxB0rs0ULjRzj99CqLna
-jOqy2xRyl+aaPuYN7TF8
-=M/bv
------END PGP SIGNATURE-----
-
---gKMricLos+KVdGMg--
+> Bulkstat output also contains enough information to construct a
+> valid file handle in userspace and so access to inodes found via
+> bulkstat can be gained via the XFS open-by-handle interfaces. Again,
+> this bypasses permissions checking and hence is a root-only
+> operation. It does, however, avoid TOCTOU races because the open-by-handle
+> will fail if the inode is unlinked and reallocated between the
+> bulkstat call and the open-by-handle as the generation number in the
+> handle will no longer match that of the inode.
+> 
+> Cheers,
+> 
+> Dave.
+> 
+> 
+> 
+> -- 
+> Dave Chinner
+> david@fromorbit.com
