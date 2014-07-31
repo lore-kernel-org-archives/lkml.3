@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372AbaGaKck (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 06:32:40 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:33921 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219AbaGaKcj (ORCPT
+	id S932380AbaGaKej (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 06:34:39 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56678 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756268AbaGaKei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 06:32:39 -0400
+	Thu, 31 Jul 2014 06:34:38 -0400
+Date: Thu, 31 Jul 2014 11:33:23 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: "behanw@converseincode.com" <behanw@converseincode.com>
+Cc: "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "k.khlebnikov@samsung.com" <k.khlebnikov@samsung.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "takahiro.akashi@linaro.org" <takahiro.akashi@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Subject: Re: [PATCH 0/4] LLVMLinux: Patches to enable the kernel to be
+ compiled with clang/LLVM
+Message-ID: <20140731103323.GL26853@arm.com>
+References: <1406764649-20326-1-git-send-email-behanw@converseincode.com>
 MIME-Version: 1.0
-In-Reply-To: <1406801136-7861-1-git-send-email-byungchul.park@lge.com>
-References: <1406801136-7861-1-git-send-email-byungchul.park@lge.com>
-Date: Thu, 31 Jul 2014 12:32:37 +0200
-Message-ID: <CAKv+Gu9X9WJKShsx7FranJAowG21uuyTopLSrRyGQhjRY212Jw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] fix a typing error in fpsimd_save_partial_state ENDPROC
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: byungchul.park@lge.com, Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406764649-20326-1-git-send-email-behanw@converseincode.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 July 2014 12:05,  <byungchul.park@lge.com> wrote:
-> From: "byungchul.park" <byungchul.park@lge.com>
->
-> commit 190f1ca85d07 (arm64: add support for kernel mode NEON in interrupt context)
-> introduced a typing error in fpsimd_save_partial_state ENDPROC.
-> fix the typing error.
->
-> Signed-off-by: byungchul.park <byungchul.park@lge.com>
+On Thu, Jul 31, 2014 at 12:57:25AM +0100, behanw@converseincode.com wrote:
+> From: Behan Webster <behanw@converseincode.com>
+> 
+> This patch set moves from using locally defined named registers to access the
+> stack pointer to using a globally defined named register. This allows the code
+> to work both with gcc and clang.
+> 
+> The LLVMLinux project aims to fully build the Linux kernel using both gcc and
+> clang (the C front end for the LLVM compiler infrastructure project). 
+> 
+> Behan Webster (4):
+>   arm64: LLVMLinux: Add current_stack_pointer() for arm64
+>   arm64: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
+>   arm64: LLVMLinux: Calculate current_thread_info from
+>     current_stack_pointer
+>   arm64: LLVMLinux: Use current_stack_pointer in kernel/traps.c
 
-Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Once Andreas's comments have been addressed:
 
+  Acked-by: Will Deacon <will.deacon@arm.com>
 
-> ---
->  arch/arm64/kernel/entry-fpsimd.S |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/arm64/kernel/entry-fpsimd.S b/arch/arm64/kernel/entry-fpsimd.S
-> index d358cca..c44a82f 100644
-> --- a/arch/arm64/kernel/entry-fpsimd.S
-> +++ b/arch/arm64/kernel/entry-fpsimd.S
-> @@ -52,7 +52,7 @@ ENDPROC(fpsimd_load_state)
->  ENTRY(fpsimd_save_partial_state)
->         fpsimd_save_partial x0, 1, 8, 9
->         ret
-> -ENDPROC(fpsimd_load_partial_state)
-> +ENDPROC(fpsimd_save_partial_state)
->
->  /*
->   * Load the bottom n FP registers.
-> --
-> 1.7.9.5
->
+Please can you send a new series after the merge window?
+
+Cheers,
+
+Will
