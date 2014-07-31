@@ -1,52 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaGaOuq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 10:50:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:23986 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852AbaGaOup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 10:50:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,772,1400050800"; 
-   d="scan'208";a="569993045"
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Yan\, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, acme@infradead.org, eranian@google.com
-Subject: Re: [PATCH v4 0/9] perf, x86: large PEBS interrupt threshold
-References: <1406789104-25863-1-git-send-email-zheng.z.yan@intel.com>
-	<20140731072744.GN19379@twins.programming.kicks-ass.net>
-Date: Thu, 31 Jul 2014 07:50:44 -0700
-In-Reply-To: <20140731072744.GN19379@twins.programming.kicks-ass.net> (Peter
-	Zijlstra's message of "Thu, 31 Jul 2014 09:27:44 +0200")
-Message-ID: <8761idr397.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751402AbaGaOy0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 10:54:26 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:60559 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaGaOyZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 10:54:25 -0400
+Date: Thu, 31 Jul 2014 10:54:16 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <jweiner@redhat.com>,
+        Jerome Glisse <jglisse@redhat.com>, jroedel@suse.de,
+        Jay.Cornwall@amd.com, Oded.Gabbay@amd.com, John.Bridgman@amd.com,
+        Suravee.Suthikulpanit@amd.com, ben.sander@amd.com,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, iommu@lists.linux-foundation.org
+Subject: Re: [PATCH 0/3 v2] mmu_notifier: Allow to manage CPU external TLBs
+Message-ID: <20140731145414.GA1955@gmail.com>
+References: <1406650693-23315-1-git-send-email-joro@8bytes.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1406650693-23315-1-git-send-email-joro@8bytes.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
->
-> No feedback on the correctness aspects of the overflow crap?
+On Tue, Jul 29, 2014 at 06:18:10PM +0200, Joerg Roedel wrote:
+> Changes V1->V2:
+> 
+> * Rebase to v3.16-rc7
+> * Added call of ->invalidate_range to
+>   __mmu_notifier_invalidate_end() so that the subsystem
+>   doesn't need to register an ->invalidate_end() call-back,
+>   subsystems will likely either register
+>   invalidate_range_start/end or invalidate_range, so that
+>   should be fine.
+> * Re-orded declarations a bit to reflect that
+>   invalidate_range is not only called between
+>   invalidate_range_start/end
+> * Updated documentation to cover the case where
+>   invalidate_range is called outside of
+>   invalidate_range_start/end to flush page-table pages out
+>   of the TLB
+> 
+> Hi,
+> 
+> here is a patch-set to extend the mmu_notifiers in the Linux
+> kernel to allow managing CPU external TLBs. Those TLBs may
+> be implemented in IOMMUs or any other external device, e.g.
+> ATS/PRI capable PCI devices.
+> 
+> The problem with managing these TLBs are the semantics of
+> the invalidate_range_start/end call-backs currently
+> available. Currently the subsystem using mmu_notifiers has
+> to guarantee that no new TLB entries are established between
+> invalidate_range_start/end. Furthermore the
+> invalidate_range_start() function is called when all pages
+> are still mapped and invalidate_range_end() when the pages
+> are unmapped an already freed.
+> 
+> So both call-backs can't be used to safely flush any non-CPU
+> TLB because _start() is called too early and _end() too
+> late.
+> 
+> In the AMD IOMMUv2 driver this is currently implemented by
+> assigning an empty page-table to the external device between
+> _start() and _end(). But as tests have shown this doesn't
+> work as external devices don't re-fault infinitly but enter
+> a failure state after some time.
+> 
+> Next problem with this solution is that it causes an
+> interrupt storm for IO page faults to be handled when an
+> empty page-table is assigned.
+> 
+> Furthermore the _start()/end() notifiers only catch the
+> moment when page mappings are released, but not page-table
+> pages. But this is necessary for managing external TLBs when
+> the page-table is shared with the CPU.
+> 
+> To solve this situation I wrote a patch-set to introduce a
+> new notifier call-back: mmu_notifer_invalidate_range(). This
+> notifier lifts the strict requirements that no new
+> references are taken in the range between _start() and
+> _end(). When the subsystem can't guarantee that any new
+> references are taken is has to provide the
+> invalidate_range() call-back to clear any new references in
+> there.
+> 
+> It is called between invalidate_range_start() and _end()
+> every time the VMM has to wipe out any references to a
+> couple of pages. This are usually the places where the CPU
+> TLBs are flushed too and where its important that this
+> happens before invalidate_range_end() is called.
+> 
+> Any comments and review appreciated!
 
-I assume you mean collisions? See below.
+For the series :
 
-> A quick look at patch 6 reads like you still don't understand the issue
-> right. There are no 'collisions' as such in PEBS record generation, or
-> are there? See the earlier open discussion.
+Reviewed-by: Jérôme Glisse <jglisse@redhat.com>
 
-There can be collisions, but they are in practice extremely rare.
-
-The only way you can get a lot of collision is if you count
-the same thing multiple times which is not a useful configuration.
-A single monitoring tool only needs a single event once.
-While multiple processes may be configuring multiple events
-at the same time, they will not start them at the same
-time which also prevents collisions.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+> 
+> Thanks,
+> 
+> 	Joerg
+> 
+> Joerg Roedel (3):
+>   mmu_notifier: Add mmu_notifier_invalidate_range()
+>   mmu_notifier: Call mmu_notifier_invalidate_range() from VMM
+>   mmu_notifier: Add the call-back for mmu_notifier_invalidate_range()
+> 
+>  include/linux/mmu_notifier.h | 75 +++++++++++++++++++++++++++++++++++++++++---
+>  kernel/events/uprobes.c      |  2 +-
+>  mm/fremap.c                  |  2 +-
+>  mm/huge_memory.c             |  9 +++---
+>  mm/hugetlb.c                 |  7 ++++-
+>  mm/ksm.c                     |  4 +--
+>  mm/memory.c                  |  3 +-
+>  mm/migrate.c                 |  3 +-
+>  mm/mmu_notifier.c            | 25 +++++++++++++++
+>  mm/rmap.c                    |  2 +-
+>  10 files changed, 115 insertions(+), 17 deletions(-)
+> 
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
