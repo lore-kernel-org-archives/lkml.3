@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404AbaGaGDJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 02:03:09 -0400
+	id S1756447AbaGaGDT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 02:03:19 -0400
 Received: from mga14.intel.com ([192.55.52.115]:1809 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756383AbaGaGDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 02:03:06 -0400
+	id S1756411AbaGaGDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 02:03:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,770,1400050800"; 
-   d="scan'208";a="569799966"
+   d="scan'208";a="569800024"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 15/31] perf tools: Add a thread stack for synthesizing call chains
-Date: Thu, 31 Jul 2014 09:00:58 +0300
-Message-Id: <1406786474-9306-16-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 18/31] perf tools: Add helpers for calling Python objects
+Date: Thu, 31 Jul 2014 09:01:01 +0300
+Message-Id: <1406786474-9306-19-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406786474-9306-1-git-send-email-adrian.hunter@intel.com>
 References: <1406786474-9306-1-git-send-email-adrian.hunter@intel.com>
@@ -27,315 +27,247 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a thread stack for synthesizing call chains from call
-and return events.
+The Python script API repeatedly uses the same
+lines of code to get and call objects.  Make that
+into helper functions instead.  A side-effect is
+that some reference counting bugs disappear because
+the new call_object() function always decrements
+the reference count of 'retval'.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/Makefile.perf       |   2 +
- tools/perf/util/event.h        |  26 +++++++
- tools/perf/util/thread-stack.c | 151 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/thread-stack.h |  32 +++++++++
- tools/perf/util/thread.c       |   3 +
- tools/perf/util/thread.h       |   3 +
- 6 files changed, 217 insertions(+)
- create mode 100644 tools/perf/util/thread-stack.c
- create mode 100644 tools/perf/util/thread-stack.h
+ .../util/scripting-engines/trace-event-python.c    | 114 +++++++++------------
+ 1 file changed, 47 insertions(+), 67 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 2240974..f4333b5 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -302,6 +302,7 @@ LIB_H += ui/util.h
- LIB_H += ui/ui.h
- LIB_H += util/data.h
- LIB_H += util/kvm-stat.h
-+LIB_H += util/thread-stack.h
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index cbce254..26e5f14 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -73,6 +73,35 @@ static void pydict_set_item_string_decref(PyObject *dict, const char *key, PyObj
+ 	Py_DECREF(val);
+ }
  
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -377,6 +378,7 @@ LIB_OBJS += $(OUTPUT)util/srcline.o
- LIB_OBJS += $(OUTPUT)util/data.o
- LIB_OBJS += $(OUTPUT)util/tsc.o
- LIB_OBJS += $(OUTPUT)util/cloexec.o
-+LIB_OBJS += $(OUTPUT)util/thread-stack.o
- 
- LIB_OBJS += $(OUTPUT)ui/setup.o
- LIB_OBJS += $(OUTPUT)ui/helpline.o
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 08c6ae0..b8e5d1a 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -143,6 +143,32 @@ struct branch_stack {
- 	struct branch_entry	entries[0];
- };
- 
-+enum {
-+	PERF_FLAG_BRANCH		= 1ULL << 0,
-+	PERF_FLAG_CALL			= 1ULL << 1,
-+	PERF_FLAG_RETURN		= 1ULL << 2,
-+	PERF_FLAG_CONDITIONAL		= 1ULL << 3,
-+	PERF_FLAG_SYSCALLRET		= 1ULL << 4,
-+	PERF_FLAG_ASYNC			= 1ULL << 5,
-+	PERF_FLAG_INTERRUPT		= 1ULL << 6,
-+	PERF_FLAG_TX_ABORT		= 1ULL << 7,
-+	PERF_FLAG_TRACE_BEGIN		= 1ULL << 8,
-+	PERF_FLAG_TRACE_END		= 1ULL << 9,
-+	PERF_FLAG_IN_TX			= 1ULL << 10,
-+};
-+
-+#define PERF_BRANCH_MASK	(\
-+	PERF_FLAG_BRANCH	|\
-+	PERF_FLAG_CALL		|\
-+	PERF_FLAG_RETURN	|\
-+	PERF_FLAG_CONDITIONAL	|\
-+	PERF_FLAG_SYSCALLRET	|\
-+	PERF_FLAG_ASYNC		|\
-+	PERF_FLAG_INTERRUPT	|\
-+	PERF_FLAG_TX_ABORT	|\
-+	PERF_FLAG_TRACE_BEGIN	|\
-+	PERF_FLAG_TRACE_END)
-+
- struct perf_sample {
- 	u64 ip;
- 	u32 pid, tid;
-diff --git a/tools/perf/util/thread-stack.c b/tools/perf/util/thread-stack.c
-new file mode 100644
-index 0000000..c1ca2a9
---- /dev/null
-+++ b/tools/perf/util/thread-stack.c
-@@ -0,0 +1,151 @@
-+/*
-+ * thread-stack.c: Synthesize a thread's stack using call / return events
-+ * Copyright (c) 2014, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#include "thread.h"
-+#include "event.h"
-+#include "util.h"
-+#include "thread-stack.h"
-+
-+#define STACK_GROWTH 4096
-+
-+struct thread_stack_entry {
-+	u64 ret_addr;
-+};
-+
-+struct thread_stack {
-+	struct thread_stack_entry *stack;
-+	size_t cnt;
-+	size_t sz;
-+	u64 trace_nr;
-+};
-+
-+static void thread_stack__grow(struct thread_stack *ts)
++static PyObject *get_handler(const char *handler_name)
 +{
-+	struct thread_stack_entry *new_stack;
-+	size_t sz, new_sz;
++	PyObject *handler;
 +
-+	new_sz = ts->sz + STACK_GROWTH;
-+	sz = new_sz * sizeof(struct thread_stack_entry);
-+	new_stack = realloc(ts->stack, sz);
-+	if (new_stack) {
-+		ts->stack = new_stack;
-+		ts->sz = new_sz;
-+	}
-+}
-+
-+static struct thread_stack *thread_stack__new(void)
-+{
-+	struct thread_stack *ts;
-+
-+	ts = zalloc(sizeof(struct thread_stack));
-+	if (!ts)
++	handler = PyDict_GetItemString(main_dict, handler_name);
++	if (handler && !PyCallable_Check(handler))
 +		return NULL;
-+
-+	thread_stack__grow(ts);
-+	if (!ts->stack) {
-+		free(ts);
-+		return NULL;
-+	}
-+
-+	return ts;
++	return handler;
 +}
 +
-+static void thread_stack__push(struct thread_stack *ts, u64 ret_addr)
++static void call_object(PyObject *handler, PyObject *args, const char *die_msg)
 +{
-+	if (ts->cnt == ts->sz) {
-+		thread_stack__grow(ts);
-+		if (ts->cnt == ts->sz)
-+			ts->cnt = 0;
-+	}
++	PyObject *retval;
 +
-+	ts->stack[ts->cnt++].ret_addr = ret_addr;
++	retval = PyObject_CallObject(handler, args);
++	if (retval == NULL)
++		handler_call_die(die_msg);
++	Py_DECREF(retval);
 +}
 +
-+static void thread_stack__pop(struct thread_stack *ts, u64 ret_addr)
++static void try_call_object(const char *handler_name, PyObject *args)
 +{
-+	if (!ts->cnt)
-+		return;
++	PyObject *handler;
 +
-+	if (ts->stack[ts->cnt - 1].ret_addr == ret_addr) {
-+		ts->cnt -= 1;
-+	} else {
-+		size_t i = ts->cnt - 1;
-+
-+		while (i--) {
-+			if (ts->stack[i].ret_addr == ret_addr) {
-+				ts->cnt = i;
-+				return;
-+			}
-+		}
-+	}
++	handler = get_handler(handler_name);
++	if (handler)
++		call_object(handler, args, handler_name);
 +}
 +
-+void thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
-+			 u64 to_ip, u16 insn_len, u64 trace_nr)
-+{
-+	if (!thread)
-+		return;
-+
-+	if (!thread->ts) {
-+		thread->ts = thread_stack__new();
-+		if (!thread->ts)
-+			return;
-+		thread->ts->trace_nr = trace_nr;
-+	}
-+
-+	if (trace_nr != thread->ts->trace_nr) {
-+		thread->ts->trace_nr = trace_nr;
-+		thread->ts->cnt = 0;
-+	}
-+
-+	if (flags & PERF_FLAG_CALL) {
-+		u64 ret_addr;
-+
-+		if (!to_ip)
-+			return;
-+		ret_addr = from_ip + insn_len;
-+		if (ret_addr == to_ip)
-+			return; /* Zero-length calls are excluded */
-+		thread_stack__push(thread->ts, ret_addr);
-+	} else if (flags & PERF_FLAG_RETURN) {
-+		if (!from_ip)
-+			return;
-+		thread_stack__pop(thread->ts, to_ip);
-+	}
-+}
-+
-+void thread_stack__free(struct thread *thread)
-+{
-+	if (thread->ts) {
-+		zfree(&thread->ts->stack);
-+		zfree(&thread->ts);
-+	}
-+}
-+
-+void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
-+			  size_t sz, u64 ip)
-+{
-+	size_t i;
-+
-+	if (!thread || !thread->ts)
-+		chain->nr = 1;
-+	else
-+		chain->nr = min(sz, thread->ts->cnt + 1);
-+
-+	chain->ips[0] = ip;
-+
-+	for (i = 1; i < chain->nr; i++)
-+		chain->ips[i] = thread->ts->stack[thread->ts->cnt - i].ret_addr;
-+}
-diff --git a/tools/perf/util/thread-stack.h b/tools/perf/util/thread-stack.h
-new file mode 100644
-index 0000000..c0ba4cf
---- /dev/null
-+++ b/tools/perf/util/thread-stack.h
-@@ -0,0 +1,32 @@
-+/*
-+ * thread-stack.h: Synthesize a thread's stack using call / return events
-+ * Copyright (c) 2014, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#ifndef __PERF_THREAD_STACK_H
-+#define __PERF_THREAD_STACK_H
-+
-+#include <sys/types.h>
-+
-+#include <linux/types.h>
-+
-+struct thread;
-+struct ip_callchain;
-+
-+void thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
-+			 u64 to_ip, u16 insn_len, u64 trace_nr);
-+void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
-+			  size_t sz, u64 ip);
-+void thread_stack__free(struct thread *thread);
-+
-+#endif
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index a9df7f2..088c036 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -4,6 +4,7 @@
- #include <string.h>
- #include "session.h"
- #include "thread.h"
-+#include "thread-stack.h"
- #include "util.h"
- #include "debug.h"
- #include "comm.h"
-@@ -61,6 +62,8 @@ void thread__delete(struct thread *thread)
+ static void define_value(enum print_arg_type field_type,
+ 			 const char *ev_name,
+ 			 const char *field_name,
+@@ -80,7 +109,7 @@ static void define_value(enum print_arg_type field_type,
+ 			 const char *field_str)
  {
- 	struct comm *comm, *tmp;
+ 	const char *handler_name = "define_flag_value";
+-	PyObject *handler, *t, *retval;
++	PyObject *t;
+ 	unsigned long long value;
+ 	unsigned n = 0;
  
-+	thread_stack__free(thread);
-+
- 	if (thread->mg) {
- 		map_groups__put(thread->mg);
- 		thread->mg = NULL;
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 8c75fa7..a057820 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -8,6 +8,8 @@
- #include "symbol.h"
- #include <strlist.h>
+@@ -98,13 +127,7 @@ static void define_value(enum print_arg_type field_type,
+ 	PyTuple_SetItem(t, n++, PyInt_FromLong(value));
+ 	PyTuple_SetItem(t, n++, PyString_FromString(field_str));
  
-+struct thread_stack;
-+
- struct thread {
- 	union {
- 		struct rb_node	 rb_node;
-@@ -25,6 +27,7 @@ struct thread {
- 	int			comm_len;
+-	handler = PyDict_GetItemString(main_dict, handler_name);
+-	if (handler && PyCallable_Check(handler)) {
+-		retval = PyObject_CallObject(handler, t);
+-		if (retval == NULL)
+-			handler_call_die(handler_name);
+-		Py_DECREF(retval);
+-	}
++	try_call_object(handler_name, t);
  
- 	void			*priv;
-+	struct thread_stack	*ts;
- };
+ 	Py_DECREF(t);
+ }
+@@ -127,7 +150,7 @@ static void define_field(enum print_arg_type field_type,
+ 			 const char *delim)
+ {
+ 	const char *handler_name = "define_flag_field";
+-	PyObject *handler, *t, *retval;
++	PyObject *t;
+ 	unsigned n = 0;
  
- struct machine;
+ 	if (field_type == PRINT_SYMBOL)
+@@ -145,13 +168,7 @@ static void define_field(enum print_arg_type field_type,
+ 	if (field_type == PRINT_FLAGS)
+ 		PyTuple_SetItem(t, n++, PyString_FromString(delim));
+ 
+-	handler = PyDict_GetItemString(main_dict, handler_name);
+-	if (handler && PyCallable_Check(handler)) {
+-		retval = PyObject_CallObject(handler, t);
+-		if (retval == NULL)
+-			handler_call_die(handler_name);
+-		Py_DECREF(retval);
+-	}
++	try_call_object(handler_name, t);
+ 
+ 	Py_DECREF(t);
+ }
+@@ -362,7 +379,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
+ 				      struct thread *thread,
+ 				      struct addr_location *al)
+ {
+-	PyObject *handler, *retval, *context, *t, *obj, *callchain;
++	PyObject *handler, *context, *t, *obj, *callchain;
+ 	PyObject *dict = NULL;
+ 	static char handler_name[256];
+ 	struct format_field *field;
+@@ -387,9 +404,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
+ 
+ 	sprintf(handler_name, "%s__%s", event->system, event->name);
+ 
+-	handler = PyDict_GetItemString(main_dict, handler_name);
+-	if (handler && !PyCallable_Check(handler))
+-		handler = NULL;
++	handler = get_handler(handler_name);
+ 	if (!handler) {
+ 		dict = PyDict_New();
+ 		if (!dict)
+@@ -450,19 +465,9 @@ static void python_process_tracepoint(struct perf_sample *sample,
+ 		Py_FatalError("error resizing Python tuple");
+ 
+ 	if (handler) {
+-		retval = PyObject_CallObject(handler, t);
+-		if (retval == NULL)
+-			handler_call_die(handler_name);
+-		Py_DECREF(retval);
++		call_object(handler, t, handler_name);
+ 	} else {
+-		handler = PyDict_GetItemString(main_dict, "trace_unhandled");
+-		if (handler && PyCallable_Check(handler)) {
+-
+-			retval = PyObject_CallObject(handler, t);
+-			if (retval == NULL)
+-				handler_call_die("trace_unhandled");
+-			Py_DECREF(retval);
+-		}
++		try_call_object("trace_unhandled", t);
+ 		Py_DECREF(dict);
+ 	}
+ 
+@@ -474,7 +479,7 @@ static void python_process_general_event(struct perf_sample *sample,
+ 					 struct thread *thread,
+ 					 struct addr_location *al)
+ {
+-	PyObject *handler, *retval, *t, *dict, *callchain, *dict_sample;
++	PyObject *handler, *t, *dict, *callchain, *dict_sample;
+ 	static char handler_name[64];
+ 	unsigned n = 0;
+ 
+@@ -496,8 +501,8 @@ static void python_process_general_event(struct perf_sample *sample,
+ 
+ 	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
+ 
+-	handler = PyDict_GetItemString(main_dict, handler_name);
+-	if (!handler || !PyCallable_Check(handler))
++	handler = get_handler(handler_name);
++	if (!handler)
+ 		goto exit;
+ 
+ 	pydict_set_item_string_decref(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
+@@ -539,10 +544,7 @@ static void python_process_general_event(struct perf_sample *sample,
+ 	if (_PyTuple_Resize(&t, n) == -1)
+ 		Py_FatalError("error resizing Python tuple");
+ 
+-	retval = PyObject_CallObject(handler, t);
+-	if (retval == NULL)
+-		handler_call_die(handler_name);
+-	Py_DECREF(retval);
++	call_object(handler, t, handler_name);
+ exit:
+ 	Py_DECREF(dict);
+ 	Py_DECREF(t);
+@@ -566,36 +568,24 @@ static void python_process_event(union perf_event *event __maybe_unused,
+ 
+ static int run_start_sub(void)
+ {
+-	PyObject *handler, *retval;
+-	int err = 0;
+-
+ 	main_module = PyImport_AddModule("__main__");
+ 	if (main_module == NULL)
+ 		return -1;
+ 	Py_INCREF(main_module);
+ 
+ 	main_dict = PyModule_GetDict(main_module);
+-	if (main_dict == NULL) {
+-		err = -1;
++	if (main_dict == NULL)
+ 		goto error;
+-	}
+ 	Py_INCREF(main_dict);
+ 
+-	handler = PyDict_GetItemString(main_dict, "trace_begin");
+-	if (handler == NULL || !PyCallable_Check(handler))
+-		goto out;
++	try_call_object("trace_begin", NULL);
+ 
+-	retval = PyObject_CallObject(handler, NULL);
+-	if (retval == NULL)
+-		handler_call_die("trace_begin");
++	return 0;
+ 
+-	Py_DECREF(retval);
+-	return err;
+ error:
+ 	Py_XDECREF(main_dict);
+ 	Py_XDECREF(main_module);
+-out:
+-	return err;
++	return -1;
+ }
+ 
+ /*
+@@ -654,23 +644,13 @@ error:
+  */
+ static int python_stop_script(void)
+ {
+-	PyObject *handler, *retval;
+-	int err = 0;
++	try_call_object("trace_end", NULL);
+ 
+-	handler = PyDict_GetItemString(main_dict, "trace_end");
+-	if (handler == NULL || !PyCallable_Check(handler))
+-		goto out;
+-
+-	retval = PyObject_CallObject(handler, NULL);
+-	if (retval == NULL)
+-		handler_call_die("trace_end");
+-	Py_DECREF(retval);
+-out:
+ 	Py_XDECREF(main_dict);
+ 	Py_XDECREF(main_module);
+ 	Py_Finalize();
+ 
+-	return err;
++	return 0;
+ }
+ 
+ static int python_generate_script(struct pevent *pevent, const char *outfile)
 -- 
 1.8.3.2
 
