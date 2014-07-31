@@ -1,120 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859AbaGaPbH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:31:07 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:56427 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaGaPbG (ORCPT
+	id S1752103AbaGaPcB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:32:01 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55445 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaGaPb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:31:06 -0400
-Subject: [PATCH 00/17] Convert TTM to the new fence interface. v2
-To: airlied@linux.ie
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: thellstrom@vmware.com, nouveau@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        bskeggs@redhat.com, alexander.deucher@amd.com,
-        christian.koenig@amd.com
-Date: Thu, 31 Jul 2014 17:30:52 +0200
-Message-ID: <20140731152809.14619.29424.stgit@patser>
-User-Agent: StGit/0.15
+	Thu, 31 Jul 2014 11:31:59 -0400
+Message-ID: <53DA6171.30100@wwwdotorg.org>
+Date: Thu, 31 Jul 2014 09:32:01 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Mikko Perttunen <mperttunen@nvidia.com>
+CC: Andrew Bresticker <abrestic@chromium.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 5/8] of: Add Tegra124 EMC bindings
+References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>	<1405088313-20048-6-git-send-email-mperttunen@nvidia.com>	<CAL1qeaGHfjQhLHvgzt85hmbuY4FOG5-k=f80=CNvzPDEgi9_6w@mail.gmail.com>	<53CD860B.7030800@wwwdotorg.org>	<CAL1qeaHtGQxCO3cGdeCRUYuk6mxei6z1B63-iZdBECEbFqGhHw@mail.gmail.com>	<53CE9514.1050903@wwwdotorg.org> <CAL1qeaEkL+mxb0S4JhQbXBjyNyKJndffTSjMaAFQD6ooDJPd+Q@mail.gmail.com> <53CEA093.6060106@wwwdotorg.org> <53D75B90.7050501@nvidia.com> <53D7C276.2080204@wwwdotorg.org> <53DA1EF0.7060207@nvidia.com> <53DA230E.7060903@nvidia.com>
+In-Reply-To: <53DA230E.7060903@nvidia.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/31/2014 05:05 AM, Mikko Perttunen wrote:
+> On 31/07/14 13:48, Mikko Perttunen wrote:
+>>>
+>>> I see that the TRM implies the whole 4-bit field is RAM code, rather
+>>> than there being 2 separate 2-bit fields for RAM code and boot device
+>>> code. Can you please file a bug against the TRM to document this
+>>> correctly? (The details of which bits are which are visible on the
+>>> Jetson TK1 schematics for example).
+>>
+>> Yes, I'll file a bug.
+>
+> On a closer look, the downstream kernel has been recently updated to
+> consider the whole 4 bits the ram code. The relevant bug also has a
+> comment mentioning that starting from T124, the whole 4 bits is
+> considered the RAM code.
 
-This series applies on top of the driver-core-next branch of
-git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git
-
-Before converting ttm to the new fence interface I had to fix some
-drivers to require a reservation before poking with fence_obj.
-After flipping the switch RCU becomes available instead, and
-the extra reservations can be dropped again. 
-
-I've done at least basic testing on all the drivers I've converted
-at some point, but more testing is definitely welcomed!
-
-Changes since v1:
-- Almost all radeon changes, radeon reworked their page flip code which
-  made things easier for me.
-- Added a delayed work for radeon that checks gpu lockups.
-- Reworked the radeon fence implementation to remove deadlocks,
-  and end up slightly cleaner.
-
----
-
-Maarten Lankhorst (18):
-      fence: add debugging lines to fence_is_signaled for the callback
-      drm/ttm: add interruptible parameter to ttm_eu_reserve_buffers
-      drm/ttm: kill off some members to ttm_validate_buffer
-      drm/nouveau: add reservation to nouveau_gem_ioctl_cpu_prep
-      drm/nouveau: require reservations for nouveau_fence_sync and nouveau_bo_fence
-      drm/ttm: call ttm_bo_wait while inside a reservation
-      drm/ttm: kill fence_lock
-      drm/nouveau: rework to new fence interface
-      drm/radeon: handle lockup in delayed work, v2
-      drm/radeon: add timeout argument to radeon_fence_wait_seq
-      drm/radeon: use common fence implementation for fences, v2
-      drm/qxl: rework to new fence interface
-      drm/vmwgfx: get rid of different types of fence_flags entirely
-      drm/vmwgfx: rework to new fence interface
-      drm/ttm: flip the switch, and convert to dma_fence
-      drm/nouveau: use rcu in nouveau_gem_ioctl_cpu_prep
-      drm/radeon: use rcu waits in some ioctls
-      drm/vmwgfx: use rcu in vmw_user_dmabuf_synccpu_grab
-
-
- drivers/gpu/drm/nouveau/core/core/event.c |    4 
- drivers/gpu/drm/nouveau/nouveau_bo.c      |   59 +---
- drivers/gpu/drm/nouveau/nouveau_display.c |   25 +-
- drivers/gpu/drm/nouveau/nouveau_fence.c   |  431 +++++++++++++++++++----------
- drivers/gpu/drm/nouveau/nouveau_fence.h   |   22 +
- drivers/gpu/drm/nouveau/nouveau_gem.c     |   55 +---
- drivers/gpu/drm/nouveau/nv04_fence.c      |    4 
- drivers/gpu/drm/nouveau/nv10_fence.c      |    4 
- drivers/gpu/drm/nouveau/nv17_fence.c      |    2 
- drivers/gpu/drm/nouveau/nv50_fence.c      |    2 
- drivers/gpu/drm/nouveau/nv84_fence.c      |   11 -
- drivers/gpu/drm/qxl/Makefile              |    2 
- drivers/gpu/drm/qxl/qxl_cmd.c             |    7 
- drivers/gpu/drm/qxl/qxl_debugfs.c         |   16 +
- drivers/gpu/drm/qxl/qxl_drv.h             |   20 -
- drivers/gpu/drm/qxl/qxl_fence.c           |   91 ------
- drivers/gpu/drm/qxl/qxl_kms.c             |    1 
- drivers/gpu/drm/qxl/qxl_object.c          |    2 
- drivers/gpu/drm/qxl/qxl_object.h          |    6 
- drivers/gpu/drm/qxl/qxl_release.c         |  172 ++++++++++--
- drivers/gpu/drm/qxl/qxl_ttm.c             |   93 ------
- drivers/gpu/drm/radeon/radeon.h           |   21 +
- drivers/gpu/drm/radeon/radeon_cs.c        |   10 +
- drivers/gpu/drm/radeon/radeon_device.c    |   27 +-
- drivers/gpu/drm/radeon/radeon_display.c   |    8 -
- drivers/gpu/drm/radeon/radeon_fence.c     |  405 +++++++++++++++++++++------
- drivers/gpu/drm/radeon/radeon_gem.c       |   19 +
- drivers/gpu/drm/radeon/radeon_irq_kms.c   |   43 +++
- drivers/gpu/drm/radeon/radeon_object.c    |    8 -
- drivers/gpu/drm/radeon/radeon_ring.c      |    1 
- drivers/gpu/drm/radeon/radeon_ttm.c       |   34 --
- drivers/gpu/drm/radeon/radeon_uvd.c       |   10 -
- drivers/gpu/drm/radeon/radeon_vm.c        |   16 +
- drivers/gpu/drm/ttm/ttm_bo.c              |  239 +++++++++-------
- drivers/gpu/drm/ttm/ttm_bo_util.c         |   28 --
- drivers/gpu/drm/ttm/ttm_bo_vm.c           |    3 
- drivers/gpu/drm/ttm/ttm_execbuf_util.c    |  146 +++-------
- drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c    |   47 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.h       |    1 
- drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c   |   24 --
- drivers/gpu/drm/vmwgfx/vmwgfx_fence.c     |  329 ++++++++++++----------
- drivers/gpu/drm/vmwgfx/vmwgfx_fence.h     |   35 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_resource.c  |   43 +--
- include/drm/ttm/ttm_bo_api.h              |    7 
- include/drm/ttm/ttm_bo_driver.h           |   29 --
- include/drm/ttm/ttm_execbuf_util.h        |   22 +
- include/linux/fence.h                     |   23 +-
- 47 files changed, 1408 insertions(+), 1199 deletions(-)
- delete mode 100644 drivers/gpu/drm/qxl/qxl_fence.c
-
--- 
-Signature
+That's odd. Given the structure of the BCT hasn't change, I suspect 
+that's a documentation bug that's propagated elsewhere. Can you send me 
+the bug number internally, and I'll take a look? Thanks.
