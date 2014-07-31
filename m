@@ -1,85 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157AbaGaEqv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 00:46:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49352 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751555AbaGaEqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 00:46:49 -0400
-Message-ID: <53D9CA35.1030800@suse.de>
-Date: Thu, 31 Jul 2014 06:46:45 +0200
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932162AbaGaEtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 00:49:15 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:35438 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750834AbaGaEtO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 00:49:14 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArMLAGPJ2VN5LHOdPGdsb2JhbABPCoMOgSmCJ4UIp3sBAQEBAQEGoxsBgQgXBQEBAQE4NoQDAQEEATocFg0FCwgDDgoJDBkPBSUDBxoTiDoHvEQXGIVkiHQEWAcKhEAFjmWIWYQlmC8rL4ED
+Date: Thu, 31 Jul 2014 14:49:09 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Abhijith Das <adas@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        cluster-devel@redhat.com
+Subject: Re: [RFC PATCH 0/2] dirreadahead system call
+Message-ID: <20140731044909.GR26465@dastard>
+References: <1406309851-10628-1-git-send-email-adas@redhat.com>
+ <CA2BF8AB-6F61-4856-8B0E-9D954BDEB243@dilger.ca>
+ <193414027.14151264.1406551934098.JavaMail.zimbra@redhat.com>
+ <7EBB0CF1-6564-4C63-8006-7DEEE8800A19@dilger.ca>
 MIME-Version: 1.0
-To: linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>
-CC: Hakjoo Kim <ruppi.kim@hardkernel.com>,
-        Tarek Dakhran <t.dakhran@samsung.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Humberto Naves <hsnaves@gmail.com>
-Subject: Re: [RFC 0/5] ARM: EXYNOS: ODROID-XU DT and LEDs
-References: <1406549892-5558-1-git-send-email-afaerber@suse.de>
-In-Reply-To: <1406549892-5558-1-git-send-email-afaerber@suse.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7EBB0CF1-6564-4C63-8006-7DEEE8800A19@dilger.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kukjin,
-
-Am 28.07.2014 14:18, schrieb Andreas Färber:
-> Hello,
+On Mon, Jul 28, 2014 at 03:19:31PM -0600, Andreas Dilger wrote:
+> On Jul 28, 2014, at 6:52 AM, Abhijith Das <adas@redhat.com> wrote:
+> > OnJuly 26, 2014 12:27:19 AM "Andreas Dilger" <adilger@dilger.ca> wrote:
+> >> Is there a time when this doesn't get called to prefetch entries in
+> >> readdir() order?  It isn't clear to me what benefit there is of returning
+> >> the entries to userspace instead of just doing the statahead implicitly
+> >> in the kernel?
+> >> 
+> >> The Lustre client has had what we call "statahead" for a while,
+> >> and similar to regular file readahead it detects the sequential access
+> >> pattern for readdir() + stat() in readdir() order (taking into account if
+> >> ".*"
+> >> entries are being processed or not) and starts fetching the inode
+> >> attributes asynchronously with a worker thread.
+> > 
+> > Does this heuristic work well in practice? In the use case we were trying to
+> > address, a Samba server is aware beforehand if it is going to stat all the
+> > inodes in a directory.
 > 
-> This series adds a dedicated ODROID-XU device tree and enhances it with 
-> LED configuration, to match the downstream 3.14 based behavior.
+> Typically this works well for us, because this is done by the Lustre
+> client, so the statahead is hiding the network latency of the RPCs to
+> fetch attributes from the server.  I imagine the same could be seen with
+> GFS2. I don't know if this approach would help very much for local
+> filesystems because the latency is low.
 > 
-> It had turned out less trivial than I initially thought as the whole 
-> pinctrl stuff is still missing. I thus cherry-pick two downstream commits.
+> >> This syscall might be more useful if userspace called readdir() to get
+> >> the dirents and then passed the kernel the list of inode numbers
+> >> to prefetch before starting on the stat() calls. That way, userspace
+> >> could generate an arbitrary list of inodes (e.g. names matching a
+> >> regexp) and the kernel doesn't need to guess if every inode is needed.
+> > 
+> > Were you thinking arbitrary inodes across the filesystem or just a subset
+> > from a directory? Arbitrary inodes may potentially throw up locking issues.
 > 
-> Hakjoo, can you please reply with a Signed-off-by to your patches
-> so that we can get them into upstream? Thanks in advance!
+> I was thinking about inodes returned from readdir(), but the syscall
+> would be much more useful if it could handle arbitrary inodes.
 
-FTR, Hakjoo Kim did reply with signed off patches (thanks again!) and
-updated their branch accordingly:
+I'mnot sure we can do that. The only way to safely identify a
+specific inode in the filesystem from userspace is via a filehandle.
+Plain inode numbers are susceptible to TOCTOU race conditions that
+the kernel cannot resolve. Also, lookup by inode number bypasses
+directory access permissions, so is not something we would expose
+to arbitrary unprivileged users.
 
-https://github.com/hardkernel/linux/commits/odroid-3.14.y-linaro
-https://github.com/hardkernel/linux/commit/53edc3da0d1da287517681b47daf36679637b6ba
-https://github.com/hardkernel/linux/commit/afdc310e47e4d1799719566bfb5a47c55141a7cb
+> There are always going to be race conditions even if limited to a
+> single directory (e.g. another client modifies the inode after calling
+> dirreadahead(), but before calling stat()) that need to be handled.
 
-> Andreas Färber (3):
->   ARM: dts: exynos5410: Clean up SMDK5410 indentation
->   ARM: dts: exynos5410: Prepare ODROID-XU device tree
+Unlink/realloc to a different directory with different access
+permissions is the big issue.
 
-The functional changes below haven't been reviewed yet, but could you
-consider applying trivial patches 1-2?
+> I think there are a lot of benefits that could be had by the generic
+> syscall, possibly similar to what XFS is doing with the "bulkstat"
+> interfaces that Dave always mentions.  This would be much more so for
+> cases were you don't want to stat all of the entries in a directory.
 
-Regards,
-Andreas
+Bulkstat is not really suited to this - it gets it's speed
+specifically by avoiding directory traversal to find inodes. Hence
+it is a root-only operation because it bypasses directory based
+access restrictions and hence is really only useful for
+full-filesystem traversal operations like backups, defragmentation,
+etc.
 
->   ARM: dts: exynos5410: Add ODROID-XU LEDs
-> 
-> Hakjoo Kim (2):
->   pinctrl: exynos: add exynos5410 SoC specific data
->   ARM: dts: add pinctrl support to Exynos5410
-> 
->  .../bindings/pinctrl/samsung-pinctrl.txt           |   1 +
->  arch/arm/boot/dts/Makefile                         |   1 +
->  arch/arm/boot/dts/exynos5410-odroidxu.dts          | 111 ++++++
->  arch/arm/boot/dts/exynos5410-pinctrl.dtsi          | 408 +++++++++++++++++++++
->  arch/arm/boot/dts/exynos5410-smdk5410.dts          |   6 +-
->  arch/arm/boot/dts/exynos5410.dtsi                  |  32 ++
->  drivers/pinctrl/pinctrl-exynos.c                   | 126 +++++++
->  drivers/pinctrl/pinctrl-samsung.c                  |   2 +
->  drivers/pinctrl/pinctrl-samsung.h                  |   1 +
->  9 files changed, 685 insertions(+), 3 deletions(-)
->  create mode 100644 arch/arm/boot/dts/exynos5410-odroidxu.dts
->  create mode 100644 arch/arm/boot/dts/exynos5410-pinctrl.dtsi
-> 
+Bulkstat output also contains enough information to construct a
+valid file handle in userspace and so access to inodes found via
+bulkstat can be gained via the XFS open-by-handle interfaces. Again,
+this bypasses permissions checking and hence is a root-only
+operation. It does, however, avoid TOCTOU races because the open-by-handle
+will fail if the inode is unlinked and reallocated between the
+bulkstat call and the open-by-handle as the generation number in the
+handle will no longer match that of the inode.
+
+Cheers,
+
+Dave.
+
 
 
 -- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+Dave Chinner
+david@fromorbit.com
