@@ -1,123 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166AbaGaD7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 23:59:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48988 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755871AbaGaD7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 23:59:10 -0400
-Message-ID: <53D9BF09.7060002@suse.de>
-Date: Thu, 31 Jul 2014 05:59:05 +0200
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1750896AbaGaEAH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 00:00:07 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:45864 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756150AbaGaEAD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 00:00:03 -0400
 MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>
-CC: "'Olof Johansson'" <olof@lixom.net>, linux-samsung-soc@vger.kernel.org,
-        "'Tarek Dakhran'" <t.dakhran@samsung.com>,
-        "'Kevin Hilman'" <khilman@linaro.org>,
-        "'Pankaj Dubey'" <pankaj.dubey@samsung.com>,
-        "'Tomasz Figa'" <t.figa@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ajay Kumar <ajaykumar.rs@samsung.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [PATCH 0/3] ARM: EXYNOS: Fix Exynos5410 boot
-References: <1406463725-4208-1-git-send-email-afaerber@suse.de> <53D4EFBB.6000404@suse.de> <00c901cfa9fc$727b4e10$5771ea30$@samsung.com> <CAOesGMjh=xMZ3vB45ofh=CLjTFDMQxSxus5q_P67XQSbwg6-+A@mail.gmail.com> <03f501cfac5c$2c69be90$853d3bb0$@samsung.com>
-In-Reply-To: <03f501cfac5c$2c69be90$853d3bb0$@samsung.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <1406766558-8156-2-git-send-email-kever.yang@rock-chips.com>
+References: <1406766558-8156-1-git-send-email-kever.yang@rock-chips.com>
+	<1406766558-8156-2-git-send-email-kever.yang@rock-chips.com>
+Date: Wed, 30 Jul 2014 21:00:02 -0700
+X-Google-Sender-Auth: dQ8gcrEmd6vbtVSwaGhsGK7p-OI
+Message-ID: <CAD=FV=V7h1=RkUwT9TmVaNgPLVLSp6fObCMkFqzQHMmOU35K1w@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] Documentation: dt-bindings: add dt binding info
+ for dwc2 dr_mode
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: Paul Zimmerman <paulz@synopsys.com>, Heiko Stuebner <heiko@sntech.de>,
+        linux-arm-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matt Porter <mporter@linaro.org>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kukjin,
+Kever,
 
-Am 31.07.2014 03:10, schrieb Kukjin Kim:
-> Olof Johansson wrote:
->>
->> Hi,
->>
-> Hi Olof,
-> 
->> On Sun, Jul 27, 2014 at 5:39 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
->>> Andreas Färber wrote:
->>>>
->>>> Am 27.07.2014 14:22, schrieb Andreas Färber:
->>>>> Hello,
->>>>>
->>>>> This mini-series unbreaks booting on 5410 based ODROID-XU.
->>>>>
->>>>> Since I do not have access to a TRM, the address is a guess based on
->>>>> 5250 and 5410. Such a node was not present in the 3.14 downstream tree.
->>>>
->>>> s/5410/5420/
->>>>
->>> OK.
->>>
->>>>>
->>>>> Regards,
->>>>> Andreas
->>>>>
->>>>> Andreas Färber (3):
->>>>>   Documentation: devicetree: Document exynos5410 PMU
->>>>>   ARM: dts: exynos: Add PMU to Exynos5410
->>>>>   ARM: EXYNOS: Add support for Exynos5410 PMU
->>>>>
->>>>>  Documentation/devicetree/bindings/arm/samsung/pmu.txt | 1 +
->>>>>  arch/arm/boot/dts/exynos5410.dtsi                     | 5 +++++
->>>>>  arch/arm/mach-exynos/exynos.c                         | 1 +
->>>>>  3 files changed, 7 insertions(+)
->>>>
->>> Andreas, thanks.
->>>
->>> I'll apply this whole series.
->>
->> We're getting close to the merge window. I'd prefer not to have to
->> start reverting samsung code to recover from these regressions, so
->> please send this up very soon.
->>
-> Thanks for your gentle reminder.
-> 
-> BTW I'm waiting for exynos5250-spring support from Andreas and I'd like to get
-> confirmation about that from Doug. And I'm looking at s2r related patches now.
-> 
-> OK, I will send out current samsung tree tonight in my time anyway.
+On Wed, Jul 30, 2014 at 5:29 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> Indicate that the generic dr_mode binding should be used for dwc2.
+>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> ---
+>
+> Changes in v2:
+> - Split out dr_mode and rk3288 bindings.
+>
+>  Documentation/devicetree/bindings/usb/dwc2.txt |    2 ++
+>  1 file changed, 2 insertions(+)
 
-That would be kind.
-
-Patches 2-3 in spring v3 should be non-functional snow refactorings for
-you to consider, but untested by me; patch 1 you could skip if you
-modify patch 2, if necessary. As for patch 4, you can see from my
-spring-next branch [1] how I am successfully testing it with a TEST_ONLY
-patch: For simplefb usage I comment out the /dp-controller node to avoid
-drm/exynos detection (not enabling the driver in the user's .config
-would be an alternative); when I run into issues with the drm during
-testing, I can usually ssh in via USB ethernet/wifi.
-
-In the dmesg for drm/exynos bridge series testing [2] (which I guess is
-not gonna hit 3.17 any more?) I noticed that the USB3503 /usb-hub node
-new in v3 is not working yet (complains about lack of #gpio-cells, I
-guess for my reset-gpios property), not sure how to fix, so we/you could
-probably just drop that node - preparing to test that now.
-
-As for the rest of patch 4, it's a new DT, so we could fix up any
-remaining bugs during 3.17 RC cycle, if it looks sane to you guys now. I
-had replied to two series - namely cpufreq [3] and dwmmc [4] - where
-merge conflicts might arise. Let me know if you need a respin for anything.
-
-Regards,
-Andreas
-
-[1] https://github.com/afaerber/linux/commits/spring-next
-[2]
-http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34927.html
-[3]
-http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34807.html
-[4]
-http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34898.html
-
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+Reviewed-by: Doug Anderson <dianders@chromium.org>
