@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147AbaGaQIS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:08:18 -0400
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:44098 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaGaQIR (ORCPT
+	id S1752180AbaGaQJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:09:21 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:26294 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854AbaGaQJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:08:17 -0400
+	Thu, 31 Jul 2014 12:09:20 -0400
+X-CheckPoint: {53DA6A2F-C-2100090A-C0000000}
+Message-ID: <53DA6A2F.100@tilera.com>
+Date: Thu, 31 Jul 2014 12:09:19 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140731151941.244fd508@alan.etchedpixels.co.uk>
-References: <1406651242-20689-1-git-send-email-ricardo.ribalda@gmail.com>
- <1406651242-20689-2-git-send-email-ricardo.ribalda@gmail.com> <20140731151941.244fd508@alan.etchedpixels.co.uk>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Thu, 31 Jul 2014 18:07:55 +0200
-Message-ID: <CAPybu_1Ma+7nGaS0e17HpPcM1vk6ANSFN3C8MNR=JxWrBBmMOA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] serial: Add support for Fintek F81216A LPC to 4 UART
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>, Michael Welling <mwelling@ieee.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Joe Schultz <jschultz@xes-inc.com>, Ingo Molnar <mingo@elte.hu>,
-        Doug Anderson <dianders@chromium.org>, linux-serial@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Michal Hocko <mhocko@suse.cz>, Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@gentwo.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Khalid Aziz <khalid.aziz@oracle.com>, <linux-mm@kvack.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>
+Subject: Re: [PATCH] swap: remove the struct cpumask has_work
+References: <1406777421-12830-3-git-send-email-laijs@cn.fujitsu.com> <20140731115137.GA20244@dhcp22.suse.cz>
+In-Reply-To: <20140731115137.GA20244@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.9.0.23]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alan
-
-> Less than ideal in some ways because the base may well be remapped by
-> other hardware or on non x86 devices. No obvious ideas how to fix it
-> though and PnP kind of implies x86.
-
-If I extend the driver to consider other hw than x86 and PnP I will
-definitely  look into this.
-
+On 7/31/2014 7:51 AM, Michal Hocko wrote:
+> On Thu 31-07-14 11:30:19, Lai Jiangshan wrote:
+>> It is suggested that cpumask_var_t and alloc_cpumask_var() should be used
+>> instead of struct cpumask.  But I don't want to add this complicity nor
+>> leave this unwelcome "static struct cpumask has_work;", so I just remove
+>> it and use flush_work() to perform on all online drain_work.  flush_work()
+>> performs very quickly on initialized but unused work item, thus we don't
+>> need the struct cpumask has_work for performance.
+> Why? Just because there is general recommendation for using
+> cpumask_var_t rather than cpumask?
 >
-> On the bright side you can then make the resource layer do your locking
-> work for you. We have an IORESOURCE_MUXED flag for these little horrors
-> so you can request the resource with IORESOURCE_MUXED. If the resource is
-> busy then you will get a failure back, if it is idle you will get the
-> resource, if it is busy but held by another driver using IORESOURCE_MUXED
-> then the request will block until they finish with it.
+> In this particular case cpumask shouldn't matter much as it is static.
+> Your code will work as well, but I do not see any strong reason to
+> change it just to get rid of cpumask which is not on stack.
 
-I was not aware of request_mutex, thanks for your help!. I am
-preparing v2 with no mutex and requtest_mutex_region.
-
-Thanks!
+The code uses for_each_cpu with a cpumask to avoid waking cpus that don't
+need to do work.  This is important for the nohz_full type functionality,
+power efficiency, etc.  So, nack for this change.
 
 -- 
-Ricardo Ribalda
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
