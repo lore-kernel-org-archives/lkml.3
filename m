@@ -1,278 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753623AbaGaRSi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:18:38 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41542 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751715AbaGaRRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:17:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="366318854"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
-        mingo@kernel.org, peterz@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/9] perf, tools: Enable printing the srcline in the history
-Date: Thu, 31 Jul 2014 10:17:03 -0700
-Message-Id: <1406827029-7991-4-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1406827029-7991-1-git-send-email-andi@firstfloor.org>
-References: <1406827029-7991-1-git-send-email-andi@firstfloor.org>
+	id S1752588AbaGaRUF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:20:05 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:41256 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305AbaGaRUD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 13:20:03 -0400
+Message-ID: <53DA7ABF.8000406@gmail.com>
+Date: Thu, 31 Jul 2014 10:19:59 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Himangi Saraogi <himangi774@gmail.com>
+CC: Luka Perkov <luka@openwrt.org>, Russell King <rmk+kernel@arm.linux.org.uk>,
+        David Daney <david.daney@cavium.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] netdev: octeon_mgmt: Use devm_ioremap_resource
+References: <20140731070653.GA3759@himangi-Dell>
+In-Reply-To: <20140731070653.GA3759@himangi-Dell>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 07/31/2014 12:06 AM, Himangi Saraogi wrote:
+> This patch introduces the use of devm_ioremap_resource instead of
+> devm_request_mem_region and devm_ioremap. The error handling on the
+> platform_get_resource is done way with. The size and start fields in the
+> octeon_mgmt are no longer needed. So they are removed and there
+> initialization skipped. Also, error handling is added on the values
+> returned by devm_ioremap_resource.
+>
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> ---
+> Not compile tested.
 
-For lbr-as-callgraph we need to see the line number in the history,
-because many LBR entries can be in a single function, and just
-showing the same function name many times is not useful.
+There are compilers available for systems with this device:
 
-When the history code is configured to sort by address, also try to
-resolve the address to a file:srcline and display this in the browser.
-If that doesn't work still display the address.
 
-This can be also useful without LBRs for understanding which call in a large
-function (or in which inlined function) called something else.
+ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.9.0/x86_64-gcc-4.9.0-nolibc_mips64-linux.tar.xz
 
-Contains fixes from Namhyung Kim
+Could you try to at least see if it compiles?
 
-v2: Refactor code into common function
-v3: Fix GTK build
-v4: Rebase
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/ui/browsers/hists.c | 17 -----------------
- tools/perf/ui/gtk/hists.c      | 11 +----------
- tools/perf/ui/stdio/hist.c     | 23 +++++++++--------------
- tools/perf/util/callchain.c    | 29 +++++++++++++++++++++++++++++
- tools/perf/util/callchain.h    |  4 ++++
- tools/perf/util/machine.c      |  2 +-
- tools/perf/util/srcline.c      |  6 ++++--
- 7 files changed, 48 insertions(+), 44 deletions(-)
+David Daney
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index a94b11f..534022f 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -457,23 +457,6 @@ out:
- 	return key;
- }
- 
--static char *callchain_list__sym_name(struct callchain_list *cl,
--				      char *bf, size_t bfsize, bool show_dso)
--{
--	int printed;
--
--	if (cl->ms.sym)
--		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
--	else
--		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
--
--	if (show_dso)
--		scnprintf(bf + printed, bfsize - printed, " %s",
--			  cl->ms.map ? cl->ms.map->dso->short_name : "unknown");
--
--	return bf;
--}
--
- #define LEVEL_OFFSET_STEP 3
- 
- static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *browser,
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 6ca60e4..a21b77e 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -87,15 +87,6 @@ void perf_gtk__init_hpp(void)
- 				perf_gtk__hpp_color_overhead_acc;
- }
- 
--static void callchain_list__sym_name(struct callchain_list *cl,
--				     char *bf, size_t bfsize)
--{
--	if (cl->ms.sym)
--		scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
--	else
--		scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
--}
--
- static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
- 				    GtkTreeIter *parent, int col, u64 total)
- {
-@@ -126,7 +117,7 @@ static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
- 			scnprintf(buf, sizeof(buf), "%5.2f%%", percent);
- 			gtk_tree_store_set(store, &iter, 0, buf, -1);
- 
--			callchain_list__sym_name(chain, buf, sizeof(buf));
-+			callchain_list__sym_name(chain, buf, sizeof(buf), false);
- 			gtk_tree_store_set(store, &iter, col, buf, -1);
- 
- 			if (need_new_parent) {
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 40af0ac..886c409 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -41,6 +41,7 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
- {
- 	int i;
- 	size_t ret = 0;
-+	char bf[1024];
- 
- 	ret += callchain__fprintf_left_margin(fp, left_margin);
- 	for (i = 0; i < depth; i++) {
-@@ -56,11 +57,8 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
- 		} else
- 			ret += fprintf(fp, "%s", "          ");
- 	}
--	if (chain->ms.sym)
--		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
--	else
--		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
--
-+	fputs(callchain_list__sym_name(chain, bf, sizeof(bf), false), fp);
-+	fputc('\n', fp);
- 	return ret;
- }
- 
-@@ -168,6 +166,7 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
- 	struct rb_node *node;
- 	int i = 0;
- 	int ret = 0;
-+	char bf[1024];
- 
- 	/*
- 	 * If have one single callchain root, don't bother printing
-@@ -196,10 +195,8 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
- 			} else
- 				ret += callchain__fprintf_left_margin(fp, left_margin);
- 
--			if (chain->ms.sym)
--				ret += fprintf(fp, " %s\n", chain->ms.sym->name);
--			else
--				ret += fprintf(fp, " %p\n", (void *)(long)chain->ip);
-+			ret += fprintf(fp, "%s\n", callchain_list__sym_name(chain, bf, sizeof(bf),
-+							false));
- 
- 			if (++entries_printed == callchain_param.print_limit)
- 				break;
-@@ -219,6 +216,7 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
- {
- 	struct callchain_list *chain;
- 	size_t ret = 0;
-+	char bf[1024];
- 
- 	if (!node)
- 		return 0;
-@@ -229,11 +227,8 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
- 	list_for_each_entry(chain, &node->val, list) {
- 		if (chain->ip >= PERF_CONTEXT_MAX)
- 			continue;
--		if (chain->ms.sym)
--			ret += fprintf(fp, "                %s\n", chain->ms.sym->name);
--		else
--			ret += fprintf(fp, "                %p\n",
--					(void *)(long)chain->ip);
-+		ret += fprintf(fp, "                %s\n", callchain_list__sym_name(chain,
-+					bf, sizeof(bf), false));
- 	}
- 
- 	return ret;
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 64599b7..8e75b35 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -679,3 +679,32 @@ int fill_callchain_info(struct addr_location *al, struct callchain_cursor_node *
- out:
- 	return 1;
- }
-+
-+char *callchain_list__sym_name(struct callchain_list *cl,
-+			       char *bf, size_t bfsize, bool show_dso)
-+{
-+	int printed;
-+
-+	if (cl->ms.sym) {
-+		if (callchain_param.key == CCKEY_ADDRESS &&
-+		    cl->ms.map && !cl->srcline)
-+			cl->srcline = get_srcline(cl->ms.map->dso,
-+						  map__rip_2objdump(cl->ms.map,
-+								    cl->ip));
-+		if (cl->srcline)
-+			printed = scnprintf(bf, bfsize, "%s %s",
-+					cl->ms.sym->name, cl->srcline);
-+		else
-+			printed = scnprintf(bf, bfsize, "%s",
-+					    cl->ms.sym->name);
-+	} else
-+		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
-+
-+	if (show_dso)
-+		scnprintf(bf + printed, bfsize - printed, " %s",
-+			  cl->ms.map ?
-+			  cl->ms.map->dso->short_name :
-+			  "unknown");
-+
-+	return bf;
-+}
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 7a1788a..7e27bf1 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -66,6 +66,7 @@ struct callchain_param {
- struct callchain_list {
- 	u64			ip;
- 	struct map_symbol	ms;
-+	char		       *srcline;
- 	struct list_head	list;
- };
- 
-@@ -190,4 +191,7 @@ static inline int arch_skip_callchain_idx(struct machine *machine __maybe_unused
- }
- #endif
- 
-+char *callchain_list__sym_name(struct callchain_list *cl,
-+			       char *bf, size_t bfsize, bool show_dso);
-+
- #endif	/* __PERF_CALLCHAIN_H */
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index e90122e..6060b5e 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1357,7 +1357,7 @@ static int add_callchain_ip(struct machine *machine,
- 			return -EINVAL;
- 	}
- 
--	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
-+	return callchain_cursor_append(&callchain_cursor, al.addr, al.map, al.sym);
- }
- 
- #define CHASHSZ 127
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index f3e4bc5..c6a7cdc 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -258,7 +258,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
- 	const char *dso_name;
- 
- 	if (!dso->has_srcline)
--		return SRCLINE_UNKNOWN;
-+		goto out;
- 
- 	if (dso->symsrc_filename)
- 		dso_name = dso->symsrc_filename;
-@@ -289,7 +289,9 @@ out:
- 		dso->has_srcline = 0;
- 		dso__free_a2l(dso);
- 	}
--	return SRCLINE_UNKNOWN;
-+	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
-+		return SRCLINE_UNKNOWN;
-+	return srcline;
- }
- 
- void free_srcline(char *srcline)
--- 
-1.9.3
+
+>   drivers/net/ethernet/octeon/octeon_mgmt.c | 64 +++++++------------------------
+>   1 file changed, 13 insertions(+), 51 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
+> index 979c698..5d61a26 100644
+> --- a/drivers/net/ethernet/octeon/octeon_mgmt.c
+> +++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
+> @@ -148,12 +148,6 @@ struct octeon_mgmt {
+>   	struct tasklet_struct tx_clean_tasklet;
+>   	struct phy_device *phydev;
+>   	struct device_node *phy_np;
+> -	resource_size_t mix_phys;
+> -	resource_size_t mix_size;
+> -	resource_size_t agl_phys;
+> -	resource_size_t agl_size;
+> -	resource_size_t agl_prt_ctl_phys;
+> -	resource_size_t agl_prt_ctl_size;
+>   };
+>
+>   static void octeon_mgmt_set_rx_irq(struct octeon_mgmt *p, int enable)
+> @@ -1418,6 +1412,7 @@ static int octeon_mgmt_probe(struct platform_device *pdev)
+>   	struct resource *res_agl_prt_ctl;
+>   	int len;
+>   	int result;
+> +	void *ret;
+>
+>   	netdev = alloc_etherdev(sizeof(struct octeon_mgmt));
+>   	if (netdev == NULL)
+> @@ -1452,62 +1447,29 @@ static int octeon_mgmt_probe(struct platform_device *pdev)
+>   	p->irq = result;
+>
+>   	res_mix = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (res_mix == NULL) {
+> -		dev_err(&pdev->dev, "no 'reg' resource\n");
+> -		result = -ENXIO;
+> +	ret = devm_ioremap_resource(&pdev->dev, res_mix);
+> +	if (IS_ERR(ret)) {
+> +		result = PTR_ERR(ret);
+>   		goto err;
+>   	}
+> +	p->mix = (u64)ret;
+>
+>   	res_agl = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> -	if (res_agl == NULL) {
+> -		dev_err(&pdev->dev, "no 'reg' resource\n");
+> -		result = -ENXIO;
+> +	ret = devm_ioremap_resource(&pdev->dev, res_agl);
+> +	if (IS_ERR(ret)) {
+> +		result = PTR_ERR(ret);
+>   		goto err;
+>   	}
+> +	p->agl = (u64)ret;
+>
+>   	res_agl_prt_ctl = platform_get_resource(pdev, IORESOURCE_MEM, 3);
+> -	if (res_agl_prt_ctl == NULL) {
+> -		dev_err(&pdev->dev, "no 'reg' resource\n");
+> -		result = -ENXIO;
+> -		goto err;
+> -	}
+> -
+> -	p->mix_phys = res_mix->start;
+> -	p->mix_size = resource_size(res_mix);
+> -	p->agl_phys = res_agl->start;
+> -	p->agl_size = resource_size(res_agl);
+> -	p->agl_prt_ctl_phys = res_agl_prt_ctl->start;
+> -	p->agl_prt_ctl_size = resource_size(res_agl_prt_ctl);
+> -
+> -
+> -	if (!devm_request_mem_region(&pdev->dev, p->mix_phys, p->mix_size,
+> -				     res_mix->name)) {
+> -		dev_err(&pdev->dev, "request_mem_region (%s) failed\n",
+> -			res_mix->name);
+> -		result = -ENXIO;
+> -		goto err;
+> -	}
+> -
+> -	if (!devm_request_mem_region(&pdev->dev, p->agl_phys, p->agl_size,
+> -				     res_agl->name)) {
+> -		result = -ENXIO;
+> -		dev_err(&pdev->dev, "request_mem_region (%s) failed\n",
+> -			res_agl->name);
+> -		goto err;
+> -	}
+> -
+> -	if (!devm_request_mem_region(&pdev->dev, p->agl_prt_ctl_phys,
+> -				     p->agl_prt_ctl_size, res_agl_prt_ctl->name)) {
+> -		result = -ENXIO;
+> -		dev_err(&pdev->dev, "request_mem_region (%s) failed\n",
+> -			res_agl_prt_ctl->name);
+> +	ret = devm_ioremap_resource(&pdev->dev, res_agl_prt_ctl);
+> +	if (IS_ERR(ret)) {
+> +		result = PTR_ERR(ret);
+>   		goto err;
+>   	}
+> +	p->agl_prt_ctl = (u64)ret;
+>
+> -	p->mix = (u64)devm_ioremap(&pdev->dev, p->mix_phys, p->mix_size);
+> -	p->agl = (u64)devm_ioremap(&pdev->dev, p->agl_phys, p->agl_size);
+> -	p->agl_prt_ctl = (u64)devm_ioremap(&pdev->dev, p->agl_prt_ctl_phys,
+> -					   p->agl_prt_ctl_size);
+>   	spin_lock_init(&p->lock);
+>
+>   	skb_queue_head_init(&p->tx_list);
+>
 
