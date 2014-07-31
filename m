@@ -1,34 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251AbaGaIVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 04:21:08 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:40480 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073AbaGaIVH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 04:21:07 -0400
-Date: Thu, 31 Jul 2014 11:20:52 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: fernando.apesteguia@gmail.com
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8192u: Staticfy debug method.
-Message-ID: <20140731082051.GL4856@mwanda>
-References: <1406756021-3578-1-git-send-email-fernando.apesteguia@gmail.com>
+	id S932274AbaGaIVO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 04:21:14 -0400
+Received: from yes.iam.tj ([109.74.197.121]:37965 "EHLO iam.tj"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932073AbaGaIVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 04:21:11 -0400
+X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Jul 2014 04:21:11 EDT
+Message-ID: <53D9FADA.6020304@iam.tj>
+Date: Thu, 31 Jul 2014 09:14:18 +0100
+From: TJ <linux@iam.tj>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406756021-3578-1-git-send-email-fernando.apesteguia@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Regression: pci=realloc fails to modify bridge windows, causing devices
+ to fail BAR allocation
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You need to compile these things before sending them...
+See https://bugzilla.kernel.org/show_bug.cgi?id=81431
 
-This adds a GCC warning about uncalled functions.
+Summary:
 
-regards,
-dan carpenter
+Up until v3.15.7 booting with "pci=realloc,use_crs" successfully modifies the PCI bridge windows to allow an external ExpressCard <> ViDock4 + Nvidia Quadro NVS420 with its 2 GPUs to be configured.
 
+With v3.16rc6 and rc7 it fails to do this, leaving the NVS420 inoperable.
