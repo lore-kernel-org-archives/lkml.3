@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170AbaGaAj4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 20:39:56 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:57566 "EHLO
+	id S1756148AbaGaAjz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 20:39:55 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:57537 "EHLO
 	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756067AbaGaAjx (ORCPT
+	with ESMTP id S1755750AbaGaAjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 20:39:53 -0400
+	Wed, 30 Jul 2014 20:39:51 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,88 +15,408 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v2 tip/core/rcu 09/10] documentation: Add verbiage on RCU-tasks stall warning messages
-Date: Wed, 30 Jul 2014 17:39:41 -0700
-Message-Id: <1406767182-4356-9-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v2 tip/core/rcu 01/10] rcu: Add call_rcu_tasks()
+Date: Wed, 30 Jul 2014 17:39:33 -0700
+Message-Id: <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20140731003914.GA3872@linux.vnet.ibm.com>
 References: <20140731003914.GA3872@linux.vnet.ibm.com>
- <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073100-1542-0000-0000-000003A82F96
+x-cbid: 14073100-1542-0000-0000-000003A82F7E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit documents RCU-tasks stall warning messages and also describes
-when to use the new cond_resched_rcu_qs() API.
+This commit adds a new RCU-tasks flavor of RCU, which provides
+call_rcu_tasks().  This RCU flavor's quiescent states are voluntary
+context switch (not preemption!), userspace execution, and the idle loop.
+Note that unlike other RCU flavors, these quiescent states occur in tasks,
+not necessarily CPUs.  Includes fixes from Steven Rostedt.
 
+This RCU flavor is assumed to have very infrequent latency-tolerate
+updaters.  This assumption permits significant simplifications, including
+a single global callback list protected by a single global lock, along
+with a single linked list containing all tasks that have not yet passed
+through a quiescent state.  If experience shows this assumption to be
+incorrect, the required additional complexity will be added.
+
+Suggested-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/stallwarn.txt | 33 ++++++++++++++++++++++++---------
- 1 file changed, 24 insertions(+), 9 deletions(-)
+ include/linux/init_task.h |   9 +++
+ include/linux/rcupdate.h  |  36 ++++++++++
+ include/linux/sched.h     |  23 +++----
+ init/Kconfig              |  10 +++
+ kernel/rcu/tiny.c         |   2 +
+ kernel/rcu/tree.c         |   2 +
+ kernel/rcu/update.c       | 164 ++++++++++++++++++++++++++++++++++++++++++++++
+ 7 files changed, 235 insertions(+), 11 deletions(-)
 
-diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
-index 68fe3ad27015..ef5a2fd4ff70 100644
---- a/Documentation/RCU/stallwarn.txt
-+++ b/Documentation/RCU/stallwarn.txt
-@@ -56,8 +56,20 @@ RCU_STALL_RAT_DELAY
- 	two jiffies.  (This is a cpp macro, not a kernel configuration
- 	parameter.)
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 6df7f9fe0d01..78715ea7c30c 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -124,6 +124,14 @@ extern struct group_info init_groups;
+ #else
+ #define INIT_TASK_RCU_PREEMPT(tsk)
+ #endif
++#ifdef CONFIG_TASKS_RCU
++#define INIT_TASK_RCU_TASKS(tsk)					\
++	.rcu_tasks_holdout = false,					\
++	.rcu_tasks_holdout_list =					\
++		LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),
++#else
++#define INIT_TASK_RCU_TASKS(tsk)
++#endif
  
--When a CPU detects that it is stalling, it will print a message similar
--to the following:
-+rcupdate.rcu_task_stall_timeout
+ extern struct cred init_cred;
+ 
+@@ -231,6 +239,7 @@ extern struct task_group root_task_group;
+ 	INIT_FTRACE_GRAPH						\
+ 	INIT_TRACE_RECURSION						\
+ 	INIT_TASK_RCU_PREEMPT(tsk)					\
++	INIT_TASK_RCU_TASKS(tsk)					\
+ 	INIT_CPUSET_SEQ(tsk)						\
+ 	INIT_RT_MUTEXES(tsk)						\
+ 	INIT_VTIME(tsk)							\
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 6a94cc8b1ca0..05656b504295 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -197,6 +197,26 @@ void call_rcu_sched(struct rcu_head *head,
+ 
+ void synchronize_sched(void);
+ 
++/**
++ * call_rcu_tasks() - Queue an RCU for invocation task-based grace period
++ * @head: structure to be used for queueing the RCU updates.
++ * @func: actual callback function to be invoked after the grace period
++ *
++ * The callback function will be invoked some time after a full grace
++ * period elapses, in other words after all currently executing RCU
++ * read-side critical sections have completed. call_rcu_tasks() assumes
++ * that the read-side critical sections end at a voluntary context
++ * switch (not a preemption!), entry into idle, or transition to usermode
++ * execution.  As such, there are no read-side primitives analogous to
++ * rcu_read_lock() and rcu_read_unlock() because this primitive is intended
++ * to determine that all tasks have passed through a safe state, not so
++ * much for data-strcuture synchronization.
++ *
++ * See the description of call_rcu() for more detailed information on
++ * memory ordering guarantees.
++ */
++void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
 +
-+	This boot/sysfs parameter controls the RCU-tasks stall warning
-+	interval.  A value of zero or less suppresses RCU-tasks stall
-+	warnings.  A positive value sets the stall-warning interval
-+	in jiffies.  An RCU-tasks stall warning starts wtih the line:
+ #ifdef CONFIG_PREEMPT_RCU
+ 
+ void __rcu_read_lock(void);
+@@ -294,6 +314,22 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
+ 		rcu_irq_exit(); \
+ 	} while (0)
+ 
++/*
++ * Note a voluntary context switch for RCU-tasks benefit.  This is a
++ * macro rather than an inline function to avoid #include hell.
++ */
++#ifdef CONFIG_TASKS_RCU
++#define rcu_note_voluntary_context_switch(t) \
++	do { \
++		preempt_disable(); /* Exclude synchronize_sched(); */ \
++		if ((t)->rcu_tasks_holdout) \
++			smp_store_release(&(t)->rcu_tasks_holdout, 0); \
++		preempt_enable(); \
++	} while (0)
++#else /* #ifdef CONFIG_TASKS_RCU */
++#define rcu_note_voluntary_context_switch(t)	do { } while (0)
++#endif /* #else #ifdef CONFIG_TASKS_RCU */
 +
-+		INFO: rcu_tasks detected stalls on tasks:
+ #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP)
+ bool __rcu_is_watching(void);
+ #endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 306f4f0c987a..3cf124389ec7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1273,6 +1273,11 @@ struct task_struct {
+ #ifdef CONFIG_RCU_BOOST
+ 	struct rt_mutex *rcu_boost_mutex;
+ #endif /* #ifdef CONFIG_RCU_BOOST */
++#ifdef CONFIG_TASKS_RCU
++	unsigned long rcu_tasks_nvcsw;
++	int rcu_tasks_holdout;
++	struct list_head rcu_tasks_holdout_list;
++#endif /* #ifdef CONFIG_TASKS_RCU */
+ 
+ #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+ 	struct sched_info sched_info;
+@@ -1998,31 +2003,27 @@ extern void task_clear_jobctl_pending(struct task_struct *task,
+ 				      unsigned int mask);
+ 
+ #ifdef CONFIG_PREEMPT_RCU
+-
+ #define RCU_READ_UNLOCK_BLOCKED (1 << 0) /* blocked while in RCU read-side. */
+ #define RCU_READ_UNLOCK_NEED_QS (1 << 1) /* RCU core needs CPU response. */
++#endif /* #ifdef CONFIG_PREEMPT_RCU */
+ 
+ static inline void rcu_copy_process(struct task_struct *p)
+ {
++#ifdef CONFIG_PREEMPT_RCU
+ 	p->rcu_read_lock_nesting = 0;
+ 	p->rcu_read_unlock_special = 0;
+-#ifdef CONFIG_TREE_PREEMPT_RCU
+ 	p->rcu_blocked_node = NULL;
+-#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+ #ifdef CONFIG_RCU_BOOST
+ 	p->rcu_boost_mutex = NULL;
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+ 	INIT_LIST_HEAD(&p->rcu_node_entry);
++#endif /* #ifdef CONFIG_PREEMPT_RCU */
++#ifdef CONFIG_TASKS_RCU
++	p->rcu_tasks_holdout = false;
++	INIT_LIST_HEAD(&p->rcu_tasks_holdout_list);
++#endif /* #ifdef CONFIG_TASKS_RCU */
+ }
+ 
+-#else
+-
+-static inline void rcu_copy_process(struct task_struct *p)
+-{
+-}
+-
+-#endif
+-
+ static inline void tsk_restore_flags(struct task_struct *task,
+ 				unsigned long orig_flags, unsigned long flags)
+ {
+diff --git a/init/Kconfig b/init/Kconfig
+index 9d76b99af1b9..c56cb62a2df1 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -507,6 +507,16 @@ config PREEMPT_RCU
+ 	  This option enables preemptible-RCU code that is common between
+ 	  the TREE_PREEMPT_RCU and TINY_PREEMPT_RCU implementations.
+ 
++config TASKS_RCU
++	bool "Task_based RCU implementation using voluntary context switch"
++	default n
++	help
++	  This option enables a task-based RCU implementation that uses
++	  only voluntary context switch (not preemption!), idle, and
++	  user-mode execution as quiescent states.
 +
-+	And continues with the output of sched_show_task() for each
-+	task stalling the current RCU-tasks grace period.
++	  If unsure, say N.
 +
-+For non-RCU-tasks flavors of RCU, when a CPU detects that it is stalling,
-+it will print a message similar to the following:
+ config RCU_STALL_COMMON
+ 	def_bool ( TREE_RCU || TREE_PREEMPT_RCU || RCU_TRACE )
+ 	help
+diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
+index d9efcc13008c..717f00854fc0 100644
+--- a/kernel/rcu/tiny.c
++++ b/kernel/rcu/tiny.c
+@@ -254,6 +254,8 @@ void rcu_check_callbacks(int cpu, int user)
+ 		rcu_sched_qs(cpu);
+ 	else if (!in_softirq())
+ 		rcu_bh_qs(cpu);
++	if (user)
++		rcu_note_voluntary_context_switch(current);
+ }
  
- INFO: rcu_sched_state detected stall on CPU 5 (t=2500 jiffies)
+ /*
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 625d0b0cd75a..f958c52f644d 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -2413,6 +2413,8 @@ void rcu_check_callbacks(int cpu, int user)
+ 	rcu_preempt_check_callbacks(cpu);
+ 	if (rcu_pending(cpu))
+ 		invoke_rcu_core();
++	if (user)
++		rcu_note_voluntary_context_switch(current);
+ 	trace_rcu_utilization(TPS("End scheduler-tick"));
+ }
  
-@@ -174,8 +186,12 @@ o	A CPU looping with preemption disabled.  This condition can
- o	A CPU looping with bottom halves disabled.  This condition can
- 	result in RCU-sched and RCU-bh stalls.
+diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+index bc7883570530..b92268647a01 100644
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -47,6 +47,7 @@
+ #include <linux/hardirq.h>
+ #include <linux/delay.h>
+ #include <linux/module.h>
++#include <linux/kthread.h>
  
--o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the kernel
--	without invoking schedule().
-+o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the
-+	kernel without invoking schedule().  Note that cond_resched()
-+	does not necessarily prevent RCU CPU stall warnings.  Therefore,
-+	if the looping in the kernel is really expected and desirable
-+	behavior, you might need to replace some of the cond_resched()
-+	calls with calls to cond_resched_rcu_qs().
+ #define CREATE_TRACE_POINTS
  
- o	A CPU-bound real-time task in a CONFIG_PREEMPT kernel, which might
- 	happen to preempt a low-priority task in the middle of an RCU
-@@ -208,11 +224,10 @@ o	A hardware failure.  This is quite unlikely, but has occurred
- 	This resulted in a series of RCU CPU stall warnings, eventually
- 	leading the realization that the CPU had failed.
+@@ -350,3 +351,166 @@ static int __init check_cpu_stall_init(void)
+ early_initcall(check_cpu_stall_init);
  
--The RCU, RCU-sched, and RCU-bh implementations have CPU stall warning.
--SRCU does not have its own CPU stall warnings, but its calls to
--synchronize_sched() will result in RCU-sched detecting RCU-sched-related
--CPU stalls.  Please note that RCU only detects CPU stalls when there is
--a grace period in progress.  No grace period, no CPU stall warnings.
-+The RCU, RCU-sched, RCU-bh, and RCU-tasks implementations have CPU stall
-+warning.  Note that SRCU does -not- have CPU stall warnings.  Please note
-+that RCU only detects CPU stalls when there is a grace period in progress.
-+No grace period, no CPU stall warnings.
- 
- To diagnose the cause of the stall, inspect the stack traces.
- The offending function will usually be near the top of the stack.
+ #endif /* #ifdef CONFIG_RCU_STALL_COMMON */
++
++#ifdef CONFIG_TASKS_RCU
++
++/*
++ * Simple variant of RCU whose quiescent states are voluntary context switch,
++ * user-space execution, and idle.  As such, grace periods can take one good
++ * long time.  There are no read-side primitives similar to rcu_read_lock()
++ * and rcu_read_unlock() because this implementation is intended to get
++ * the system into a safe state for some of the manipulations involved in
++ * tracing and the like.  Finally, this implementation does not support
++ * high call_rcu_tasks() rates from multiple CPUs.  If this is required,
++ * per-CPU callback lists will be needed.
++ */
++
++/* Lists of tasks that we are still waiting for during this grace period. */
++static LIST_HEAD(rcu_tasks_holdouts);
++
++/* Global list of callbacks and associated lock. */
++static struct rcu_head *rcu_tasks_cbs_head;
++static struct rcu_head **rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
++static DEFINE_RAW_SPINLOCK(rcu_tasks_cbs_lock);
++
++/* Post an RCU-tasks callback. */
++void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
++{
++	unsigned long flags;
++
++	rhp->next = NULL;
++	rhp->func = func;
++	raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
++	*rcu_tasks_cbs_tail = rhp;
++	rcu_tasks_cbs_tail = &rhp->next;
++	raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
++}
++EXPORT_SYMBOL_GPL(call_rcu_tasks);
++
++/* RCU-tasks kthread that detects grace periods and invokes callbacks. */
++static int __noreturn rcu_tasks_kthread(void *arg)
++{
++	unsigned long flags;
++	struct task_struct *g, *t;
++	struct rcu_head *list;
++	struct rcu_head *next;
++
++	/* FIXME: Add housekeeping affinity. */
++
++	/*
++	 * Each pass through the following loop makes one check for
++	 * newly arrived callbacks, and, if there are some, waits for
++	 * one RCU-tasks grace period and then invokes the callbacks.
++	 * This loop is terminated by the system going down.  ;-)
++	 */
++	for (;;) {
++
++		/* Pick up any new callbacks. */
++		raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
++		smp_mb__after_unlock_lock(); /* Enforce GP memory ordering. */
++		list = rcu_tasks_cbs_head;
++		rcu_tasks_cbs_head = NULL;
++		rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
++		raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
++
++		/* If there were none, wait a bit and start over. */
++		if (!list) {
++			schedule_timeout_interruptible(HZ);
++			flush_signals(current);
++			continue;
++		}
++
++		/*
++		 * There were callbacks, so we need to wait for an
++		 * RCU-tasks grace period.  Start off by scanning
++		 * the task list for tasks that are not already
++		 * voluntarily blocked.  Mark these tasks and make
++		 * a list of them in rcu_tasks_holdouts.
++		 */
++		rcu_read_lock();
++		for_each_process_thread(g, t) {
++			if (t != current && ACCESS_ONCE(t->on_rq) &&
++			    !is_idle_task(t)) {
++				t->rcu_tasks_nvcsw = ACCESS_ONCE(t->nvcsw);
++				t->rcu_tasks_holdout = 1;
++				list_add(&t->rcu_tasks_holdout_list,
++					 &rcu_tasks_holdouts);
++			}
++		}
++		rcu_read_unlock();
++
++		/*
++		 * The "t != current" and "!is_idle_task()" comparisons
++		 * above are stable, but the "t->on_rq" value could
++		 * change at any time, and is generally unordered.
++		 * Therefore, we need some ordering.  The trick is
++		 * that t->on_rq is updated with a runqueue lock held,
++		 * and thus with interrupts disabled.  So the following
++		 * synchronize_sched() provides the needed ordering by:
++		 * (1) Waiting for all interrupts-disabled code sections
++		 * to complete and (2) The synchronize_sched() ordering
++		 * guarantees, which provide for a memory barrier on each
++		 * CPU since the completion of its last read-side critical
++		 * section, including interrupt-disabled code sections.
++		 */
++		synchronize_sched();
++
++		/*
++		 * Each pass through the following loop scans the list
++		 * of holdout tasks, removing any that are no longer
++		 * holdouts.  When the list is empty, we are done.
++		 */
++		while (!list_empty(&rcu_tasks_holdouts)) {
++			schedule_timeout_interruptible(HZ / 10);
++			flush_signals(current);
++			rcu_read_lock();
++			list_for_each_entry_rcu(t, &rcu_tasks_holdouts,
++						rcu_tasks_holdout_list) {
++				if (smp_load_acquire(&t->rcu_tasks_holdout)) {
++					if (t->rcu_tasks_nvcsw ==
++					    ACCESS_ONCE(t->nvcsw))
++						continue;
++					ACCESS_ONCE(t->rcu_tasks_holdout) = 0;
++				}
++				list_del_init(&t->rcu_tasks_holdout_list);
++				/* @@@ need to check for usermode on CPU. */
++			}
++			rcu_read_unlock();
++		}
++
++		/*
++		 * Because ->nvcsw is not guaranteed to have a full
++		 * memory barrier prior to it in the schedule() path,
++		 * memory reordering on other CPUs could cause their
++		 * RCU-tasks read-side critical sections to extend past
++		 * the end of the grace period.  However, because these
++		 * ->nvcsw updates are carried out with interrupts
++		 * disabled, we can use synchronize_sched() to force
++		 * the needed ordering on all such CPUs.
++		 */
++		synchronize_sched();
++
++		/* Invoke the callbacks. */
++		while (list) {
++			next = list->next;
++			local_bh_disable();
++			list->func(list);
++			local_bh_enable();
++			list = next;
++			cond_resched();
++		}
++	}
++}
++
++/* Spawn rcu_tasks_kthread() at boot time. */
++static int __init rcu_spawn_tasks_kthread(void)
++{
++	struct task_struct __maybe_unused *t;
++
++	t = kthread_run(rcu_tasks_kthread, NULL, "rcu_tasks_kthread");
++	BUG_ON(IS_ERR(t));
++	return 0;
++}
++early_initcall(rcu_spawn_tasks_kthread);
++
++#endif /* #ifdef CONFIG_TASKS_RCU */
 -- 
 1.8.1.5
 
