@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052AbaGaP7s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:59:48 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36699 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751255AbaGaP7q (ORCPT
+	id S1751386AbaGaQEi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:04:38 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:57603 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaGaQEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:59:46 -0400
-Date: Thu, 31 Jul 2014 17:59:06 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: =?utf-8?B?SmnFmcOt?= Prchal <jiri.prchal@aksignal.cz>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
-        voice.shen@atmel.com, Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH] ARM: at91: spi: request all csgpio in spi probe
-Message-ID: <20140731155906.GH3214@piout.net>
-References: <b033d16ec31d26a895726ee72ec89b43943dfbae.1406547656.git.jiri.prchal@aksignal.cz>
- <20140728122103.GR9532@piout.net>
- <53D64ADA.1000102@aksignal.cz>
- <20140728223859.GA3214@piout.net>
- <20140729100017.31f0b1be@bbrezillon>
+	Thu, 31 Jul 2014 12:04:37 -0400
+Message-ID: <53DA6909.1050007@converseincode.com>
+Date: Thu, 31 Jul 2014 09:04:25 -0700
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: =?windows-1252?Q?Andreas_F=E4rber?= <afaerber@suse.de>,
+        ard.biesheuvel@linaro.org, catalin.marinas@arm.com,
+        k.khlebnikov@samsung.com, olof@lixom.net, peterz@infradead.org,
+        takahiro.akashi@linaro.org, tglx@linutronix.de, will.deacon@arm.com
+CC: linux-kernel@vger.kernel.org, Mark Charlebois <charlebm@gmail.com>,
+        dwmw2@infradead.org, mingo@kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] arm64: LLVMLinux: Calculate current_thread_info from
+ current_stack_pointer
+References: <1406764649-20326-1-git-send-email-behanw@converseincode.com> <1406764649-20326-4-git-send-email-behanw@converseincode.com> <53D9D4B2.8070008@suse.de>
+In-Reply-To: <53D9D4B2.8070008@suse.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140729100017.31f0b1be@bbrezillon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/07/2014 at 10:00:17 +0200, Boris Brezillon wrote :
-> Hi Alexandre,
-> 
-> > While this solves the particular issue JiÅ™Ã­ is seeing, this will not
-> > solve the case where PA14 (CS0) is not used by the spi driver at all. It
-> > will remained muxed as CS0 and toggle when the spi master needs to
-> > access CS0 until another driver muxes it to something else. I still
-> > believe we should explicitly ask pinctrl to mux them as gpios.
-> > 
-> 
-> Do we really care about this case ?
-> After all, if a given pin needs a specific muxing during kernel boot
-> (i.e. a pin connected to a gpio-led that needs to stay in its previous
-> state or a pin connected to the reset line of a device that needs to
-> stay up and running during kernel boot) the bootloader/bootstrap should
-> have muxed this pin appropriately before booting the kernel.
-> 
+On 07/30/14 22:31, Andreas Färber wrote:
+> Hi,
+>
+> Am 31.07.2014 01:57, schrieb behanw@converseincode.com:
+>> From: Behan Webster <behanw@converseincode.com>
+>>
+>> Use the global current_stack_pointer to get the value of the stack pointer.
+>> This change supports being able to compile the kernel with both gcc and clang.
+>>
+>> Signed-off-by: Behan Webster <behanw@converseincode.com>
+>> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+>> Reviewed-by: Jan-Simon M??ller <dl9pf@gmx.de>
+> Something went wrong with ö encoding here and in 2/4.
+Yeah. That keeps happening. :(
 
-Yeah, you are right.
+Thanks.
 
+>> ---
+>>   arch/arm64/include/asm/thread_info.h | 4 ++--
+>>   1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
+>> index e6b6094..c2432d2 100644
+>> --- a/arch/arm64/include/asm/thread_info.h
+>> +++ b/arch/arm64/include/asm/thread_info.h
+>> @@ -80,8 +80,8 @@ static inline struct thread_info *current_thread_info(void) __attribute_const__;
+>>   
+>>   static inline struct thread_info *current_thread_info(void)
+>>   {
+>> -	register unsigned long sp asm ("sp");
+>> -	return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
+>> +	return (struct thread_info *) \
+> This is not a macro, so \ seems superfluous.
+Doh. Indeed. Will fix.
 
-> What do you mean by "we should explicitly ask pinctrl to mux them as
-> gpios" ?
-> Do you mean configuring all the pins as GPIOs when the pin controller is
-> probed, or just adding a new pinctrl state configuring the pin as an
-> output GPIO and reference it in the pinctrl-0 property of the spi
-> controller.
-> 
-> If the former, you'll break devices that needs their pins to stay in
-> the state they were during the bootloader/boostrap phase.
-> The latter won't work if the pin you request as GPIO is later requested
-> by another device (which, if I'm correct, is exactly the case you're
-> trying to solve).
-> 
-
-Again you are right, let's not care about that use case. I still feel
-that the pinctrl-0 property has to be filled correctly.
+Behan
 
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Behan Webster
+behanw@converseincode.com
+
