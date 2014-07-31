@@ -1,240 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939AbaGaAsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 20:48:12 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:42993 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883AbaGaAsK (ORCPT
+	id S1756033AbaGaAvF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 20:51:05 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:13323 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752976AbaGaAvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 20:48:10 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Miller <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Felix Fietkau <nbd@openwrt.org>,
-        Rajkumar Manoharan <rmanohar@qti.qualcomm.com>,
-        <netdev@vger.kernel.org>,
-        QCA ath9k Development <ath9k-devel@qca.qualcomm.com>,
-        linux-next@vger.kernel.org
-Subject: [RFC][PATCH v2] wireless: ath9k: Convert from timespecs to ktime_t
-Date: Wed, 30 Jul 2014 17:48:00 -0700
-Message-Id: <1406767680-716-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <20140731102750.4a4c1315@canb.auug.org.au>
-References: <20140731102750.4a4c1315@canb.auug.org.au>
+	Wed, 30 Jul 2014 20:51:04 -0400
+X-IronPort-AV: E=Sophos;i="5.00,999,1396972800"; 
+   d="scan'208";a="33990316"
+Message-ID: <53D99346.2080001@cn.fujitsu.com>
+Date: Thu, 31 Jul 2014 08:52:22 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Christoph Lameter <cl@gentwo.org>
+CC: <akpm@linux-foundation.org>, Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <hughd@google.com>, <viresh.kumar@linaro.org>, <hpa@zytor.com>,
+        <mingo@kernel.org>, <peterz@infradead.org>
+Subject: Re: vmstat: On demand vmstat workers V8
+References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <53D85F20.7020206@cn.fujitsu.com> <alpine.DEB.2.11.1407300934410.4608@gentwo.org>
+In-Reply-To: <alpine.DEB.2.11.1407300934410.4608@gentwo.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert from using timespecs to ktime_t for internal timekeeping
-needs. This simplifies the logic and avoids extra math required to
-convert from timespec to usecs.
+On 07/30/2014 10:45 PM, Christoph Lameter wrote:
+> On Wed, 30 Jul 2014, Lai Jiangshan wrote:
+> 
+>> I think the bug is here, it re-queues the per_cpu(vmstat_work, cpu) which is offline
+>> (after vmstat_cpuup_callback(CPU_DOWN_PREPARE).  And cpu_stat_off is accessed without
+>> proper lock.
+> 
+> Ok. I guess we need to make the preemption check output more information
+> so that it tells us that an operation was performed on a processor that is
+> down?
 
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: Felix Fietkau <nbd@openwrt.org>
-Cc: Rajkumar Manoharan <rmanohar@qti.qualcomm.com>
-Cc: <netdev@vger.kernel.org>
-Cc: QCA ath9k Development <ath9k-devel@qca.qualcomm.com>
-Cc: linux-next@vger.kernel.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
+If the cpu_allows of the percpu-kworker is changed, the specific processor of the kworker
+should have been down if workqueue is implemented correctly.
+(the preemption check checks the cpu_allows)
+> 
+>> I suggest to use get_cpu_online() or a new cpu_stat_off_mutex to protect it.
+> 
+> If a processor is downed then cpu_stat_off bit should be cleared but also
+> the worker thread should not run.
 
-Thomas made an earlier version of this patch which I queued,
-but it collided badly in -next with the timestamping rework in
-ath9k code. So this is my swing at fixing it up again.
+The kworker need to run for some reasons after the processor is down.
+Peter and TJ were just discussing it.
 
-v2: Fix an embarasing null pointer assignment Stephen pointed out
+The root cause (TO ME only) here is vmstat queues work to offline (or offlining) CPU,
+so the kworker has to run it.  We may add some check for queuing on offline CPU,
+but we can't check for higher level user guarantees.  (Example, vmstat can't queue
+work to a CPU which is still online but after vmstat_cpuup_callback(CPU_DOWN_PREPARE)).
 
-Compile tested only. Would apprecate feedback, testing, and review.
+> 
+>>>  	case CPU_DOWN_PREPARE:
+>>>  	case CPU_DOWN_PREPARE_FROZEN:
+>>> -		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+>>> -		per_cpu(vmstat_work, cpu).work.func = NULL;
+>>> +		if (!cpumask_test_and_set_cpu(cpu, cpu_stat_off))
+>>> +			cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+>>
+>> It is suggest that cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu)) should
+>> be called unconditionally.  And the cpu should be cleared from cpu_stat_off.
+>> (you set it, it is BUG according to vmstat_shepherd() and the semantics of the
+>> cpu_stat_off).
+> 
+> True.
+> 
+> Subject: vmstat ondemand: Fix online/offline races
+> 
+> Do not allow onlining/offlining while the shepherd task is checking
+> for vmstat threads.
+> 
+> On offlining a processor do the right thing cancelling the vmstat
+> worker thread if it exista and also exclude it from the shepherd
+> process checks.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> Index: linux/mm/vmstat.c
+> ===================================================================
+> --- linux.orig/mm/vmstat.c	2014-07-30 09:35:54.602662306 -0500
+> +++ linux/mm/vmstat.c	2014-07-30 09:43:07.109037043 -0500
+> @@ -1317,6 +1317,7 @@ static void vmstat_shepherd(struct work_
+>  {
+>  	int cpu;
+> 
+> +	get_online_cpus();
+>  	/* Check processors whose vmstat worker threads have been disabled */
+>  	for_each_cpu(cpu, cpu_stat_off)
+>  		if (need_update(cpu) &&
+> @@ -1325,6 +1326,7 @@ static void vmstat_shepherd(struct work_
+>  			schedule_delayed_work_on(cpu, &per_cpu(vmstat_work, cpu),
+>  				__round_jiffies_relative(sysctl_stat_interval, cpu));
+> 
+> +	put_online_cpus();
+> 
+>  	schedule_delayed_work(&shepherd,
+>  		round_jiffies_relative(sysctl_stat_interval));
+> @@ -1380,8 +1382,8 @@ static int vmstat_cpuup_callback(struct
+>  		break;
+>  	case CPU_DOWN_PREPARE:
+>  	case CPU_DOWN_PREPARE_FROZEN:
+> -		if (!cpumask_test_and_set_cpu(cpu, cpu_stat_off))
+> -			cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+> +		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+> +		cpumask_clear_cpu(cpu, cpu_stat_off);
 
- drivers/net/wireless/ath/ath9k/ath9k.h   |  2 +-
- drivers/net/wireless/ath/ath9k/channel.c | 18 +++++++++---------
- drivers/net/wireless/ath/ath9k/hw.c      | 19 ++++++++-----------
- drivers/net/wireless/ath/ath9k/hw.h      |  2 +-
- drivers/net/wireless/ath/ath9k/main.c    |  2 +-
- 5 files changed, 20 insertions(+), 23 deletions(-)
+Sasha Levin's test result?
 
-diff --git a/drivers/net/wireless/ath/ath9k/ath9k.h b/drivers/net/wireless/ath/ath9k/ath9k.h
-index 7fc13a8..5553c0f 100644
---- a/drivers/net/wireless/ath/ath9k/ath9k.h
-+++ b/drivers/net/wireless/ath/ath9k/ath9k.h
-@@ -335,7 +335,7 @@ struct ath_chanctx {
- 
- 	struct ath_beacon_config beacon;
- 	struct ath9k_hw_cal_data caldata;
--	struct timespec tsf_ts;
-+	ktime_t tsf_kt;
- 	u64 tsf_val;
- 	u32 last_beacon;
- 
-diff --git a/drivers/net/wireless/ath/ath9k/channel.c b/drivers/net/wireless/ath/ath9k/channel.c
-index ba214eb..2b37f8d 100644
---- a/drivers/net/wireless/ath/ath9k/channel.c
-+++ b/drivers/net/wireless/ath/ath9k/channel.c
-@@ -228,9 +228,9 @@ static bool ath_chanctx_defer_switch(struct ath_softc *sc)
- 
- static void ath_chanctx_set_next(struct ath_softc *sc, bool force)
- {
--	struct timespec ts;
- 	bool measure_time = false;
- 	bool send_ps = false;
-+	ktime_t now;
- 
- 	spin_lock_bh(&sc->chan_lock);
- 	if (!sc->next_chan) {
-@@ -248,7 +248,7 @@ static void ath_chanctx_set_next(struct ath_softc *sc, bool force)
- 		spin_unlock_bh(&sc->chan_lock);
- 
- 		if (sc->next_chan == &sc->offchannel.chan) {
--			getrawmonotonic(&ts);
-+			now = ktime_get_raw();
- 			measure_time = true;
- 		}
- 		__ath9k_flush(sc->hw, ~0, true);
-@@ -260,7 +260,7 @@ static void ath_chanctx_set_next(struct ath_softc *sc, bool force)
- 		spin_lock_bh(&sc->chan_lock);
- 
- 		if (sc->cur_chan != &sc->offchannel.chan) {
--			getrawmonotonic(&sc->cur_chan->tsf_ts);
-+			sc->cur_chan->tsf_kt = ktime_get_raw();
- 			sc->cur_chan->tsf_val = ath9k_hw_gettsf64(sc->sc_ah);
- 		}
- 	}
-@@ -279,7 +279,7 @@ static void ath_chanctx_set_next(struct ath_softc *sc, bool force)
- 		ath_set_channel(sc);
- 		if (measure_time)
- 			sc->sched.channel_switch_time =
--				ath9k_hw_get_tsf_offset(&ts, NULL);
-+				ath9k_hw_get_tsf_offset(&now, NULL);
- 	}
- 	if (send_ps)
- 		ath_chanctx_send_ps_frame(sc, false);
-@@ -440,8 +440,8 @@ ath_chanctx_get_next(struct ath_softc *sc, struct ath_chanctx *ctx)
- static void ath_chanctx_adjust_tbtt_delta(struct ath_softc *sc)
- {
- 	struct ath_chanctx *prev, *cur;
--	struct timespec ts;
- 	u32 cur_tsf, prev_tsf, beacon_int;
-+	ktime_t now;
- 	s32 offset;
- 
- 	beacon_int = TU_TO_USEC(sc->cur_chan->beacon.beacon_interval);
-@@ -449,12 +449,12 @@ static void ath_chanctx_adjust_tbtt_delta(struct ath_softc *sc)
- 	cur = sc->cur_chan;
- 	prev = ath_chanctx_get_next(sc, cur);
- 
--	getrawmonotonic(&ts);
-+	now = ktime_get_raw();
- 	cur_tsf = (u32) cur->tsf_val +
--		  ath9k_hw_get_tsf_offset(&cur->tsf_ts, &ts);
-+		  ath9k_hw_get_tsf_offset(&cur->tsf_kt, &now);
- 
- 	prev_tsf = prev->last_beacon - (u32) prev->tsf_val + cur_tsf;
--	prev_tsf -= ath9k_hw_get_tsf_offset(&prev->tsf_ts, &ts);
-+	prev_tsf -= ath9k_hw_get_tsf_offset(&prev->tsf_kt, &now);
- 
- 	/* Adjust the TSF time of the AP chanctx to keep its beacons
- 	 * at half beacon interval offset relative to the STA chanctx.
-@@ -614,7 +614,7 @@ void ath_chanctx_event(struct ath_softc *sc, struct ieee80211_vif *vif,
- 		 */
- 		tsf_time = sc->sched.switch_start_time;
- 		tsf_time -= (u32) sc->cur_chan->tsf_val +
--			ath9k_hw_get_tsf_offset(&sc->cur_chan->tsf_ts, NULL);
-+			ath9k_hw_get_tsf_offset(&sc->cur_chan->tsf_kt, NULL);
- 		tsf_time += ath9k_hw_gettsf32(ah);
- 
- 
-diff --git a/drivers/net/wireless/ath/ath9k/hw.c b/drivers/net/wireless/ath/ath9k/hw.c
-index fd0158f..1a0a556 100644
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -1731,19 +1731,16 @@ fail:
- 	return -EINVAL;
- }
- 
--u32 ath9k_hw_get_tsf_offset(struct timespec *last, struct timespec *cur)
-+u32 ath9k_hw_get_tsf_offset(ktime_t *last, ktime_t *cur)
- {
--	struct timespec ts;
-+	ktime_t tmp;
- 	s64 usec;
- 
- 	if (!cur) {
--		getrawmonotonic(&ts);
--		cur = &ts;
-+		tmp = ktime_get_raw();
-+		cur = &tmp;
- 	}
--
--	usec = cur->tv_sec * 1000000ULL + cur->tv_nsec / 1000;
--	usec -= last->tv_sec * 1000000ULL + last->tv_nsec / 1000;
--
-+	usec = ktime_to_us(ktime_sub(*cur, *last));
- 	return (u32) usec;
- }
- EXPORT_SYMBOL(ath9k_hw_get_tsf_offset);
-@@ -1752,7 +1749,7 @@ int ath9k_hw_reset(struct ath_hw *ah, struct ath9k_channel *chan,
- 		   struct ath9k_hw_cal_data *caldata, bool fastcc)
- {
- 	struct ath_common *common = ath9k_hw_common(ah);
--	struct timespec ts;
-+	ktime_t now;
- 	u32 saveLedState;
- 	u32 saveDefAntenna;
- 	u32 macStaId1;
-@@ -1801,7 +1798,7 @@ int ath9k_hw_reset(struct ath_hw *ah, struct ath9k_channel *chan,
- 
- 	/* Save TSF before chip reset, a cold reset clears it */
- 	tsf = ath9k_hw_gettsf64(ah);
--	getrawmonotonic(&ts);
-+	now = ktime_get_raw();
- 
- 	saveLedState = REG_READ(ah, AR_CFG_LED) &
- 		(AR_CFG_LED_ASSOC_CTL | AR_CFG_LED_MODE_SEL |
-@@ -1834,7 +1831,7 @@ int ath9k_hw_reset(struct ath_hw *ah, struct ath9k_channel *chan,
- 	}
- 
- 	/* Restore TSF */
--	ath9k_hw_settsf64(ah, tsf + ath9k_hw_get_tsf_offset(&ts, NULL));
-+	ath9k_hw_settsf64(ah, tsf + ath9k_hw_get_tsf_offset(&now, NULL));
- 
- 	if (AR_SREV_9280_20_OR_LATER(ah))
- 		REG_SET_BIT(ah, AR_GPIO_INPUT_EN_VAL, AR_GPIO_JTAG_DISABLE);
-diff --git a/drivers/net/wireless/ath/ath9k/hw.h b/drivers/net/wireless/ath/ath9k/hw.h
-index 51b4ebe..a57b4e2 100644
---- a/drivers/net/wireless/ath/ath9k/hw.h
-+++ b/drivers/net/wireless/ath/ath9k/hw.h
-@@ -1000,7 +1000,7 @@ u32 ath9k_hw_gettsf32(struct ath_hw *ah);
- u64 ath9k_hw_gettsf64(struct ath_hw *ah);
- void ath9k_hw_settsf64(struct ath_hw *ah, u64 tsf64);
- void ath9k_hw_reset_tsf(struct ath_hw *ah);
--u32 ath9k_hw_get_tsf_offset(struct timespec *last, struct timespec *cur);
-+u32 ath9k_hw_get_tsf_offset(ktime_t *last, ktime_t *cur);
- void ath9k_hw_set_tsfadjust(struct ath_hw *ah, bool set);
- void ath9k_hw_init_global_settings(struct ath_hw *ah);
- u32 ar9003_get_pll_sqsum_dvc(struct ath_hw *ah);
-diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
-index e6ac8d2..e47dbd3 100644
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -241,7 +241,7 @@ static bool ath_complete_reset(struct ath_softc *sc, bool start)
- 		if (sc->cur_chan->tsf_val) {
- 			u32 offset;
- 
--			offset = ath9k_hw_get_tsf_offset(&sc->cur_chan->tsf_ts,
-+			offset = ath9k_hw_get_tsf_offset(&sc->cur_chan->tsf_kt,
- 							 NULL);
- 			ath9k_hw_settsf64(ah, sc->cur_chan->tsf_val + offset);
- 		}
--- 
-1.9.1
+>  		break;
+>  	case CPU_DOWN_FAILED:
+>  	case CPU_DOWN_FAILED_FROZEN:
+> .
+> 
 
