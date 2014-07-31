@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932260AbaGaH0V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 03:26:21 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:58346 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932174AbaGaH0T (ORCPT
+	id S1756118AbaGaH17 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 03:27:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45818 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968AbaGaH16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 03:26:19 -0400
-Date: Thu, 31 Jul 2014 11:26:17 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Michael L. Semon" <mlsemon35@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, jason.low2@hp.com,
-        Sasha Levin <levinsasha928@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: cred_guard_mutex vs seq_file::lock [was: Re: 3.14.0+/x86:
- lockdep and mutexes not getting along]
-Message-ID: <20140731072617.GK3212@moon>
-References: <20140410142918.GU11096@twins.programming.kicks-ass.net>
- <alpine.LNX.2.11.1404060059020.8208@bpserver.ds>
- <20140409121940.GA12890@node.dhcp.inet.fi>
- <26259.1397227827@warthog.procyon.org.uk>
- <20140411150724.GI18016@ZenIV.linux.org.uk>
- <20140730223130.GA22417@node.dhcp.inet.fi>
+	Thu, 31 Jul 2014 03:27:58 -0400
+Date: Thu, 31 Jul 2014 09:27:44 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH v4 0/9] perf, x86: large PEBS interrupt threshold
+Message-ID: <20140731072744.GN19379@twins.programming.kicks-ass.net>
+References: <1406789104-25863-1-git-send-email-zheng.z.yan@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XJ5PZ61hszgMzeEB"
 Content-Disposition: inline
-In-Reply-To: <20140730223130.GA22417@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1406789104-25863-1-git-send-email-zheng.z.yan@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 01:31:30AM +0300, Kirill A. Shutemov wrote:
-...
-> > 
-> > *cringe*
-> > 
-> > I don't like it.  That really should be a responsiblity of specific ->show();
-> > "I'm going to take that mutex, bugger off if we are in execve()" makes a lot
-> > more sense than having e.g. seq_read() care of that.  IOW, I would very
-> > much prefer the patch you've sent last week.
-> > 
-> > And yes, it might leave lockdep false positives, but that's better dealt with
-> > by annotating the sucker ("this guy has a separate lockdep class for its
-> > ->lock").  E.g. by splitting proc_single_file_operations in two and having
-> > the one used for those files do lockdep_set_class() in its ->open().
-> 
-> I've got annoyed by the lockdep warning. What about the patch below?
-> 
-> From 54d8c463e12f23c09d6a2dbf93a4dc9bcb493c67 Mon Sep 17 00:00:00 2001
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> Date: Thu, 31 Jul 2014 00:59:52 +0300
-> Subject: [PATCH] procfs: silence lockdep warning about read vs. exec seq_file
-> 
-> Testcase:
-> 
->   cat /proc/self/maps >/dev/null
->   chmod +x /proc/self/net/packet
->   exec /proc/self/net/packet
-> 
-> It triggers lockdep warning:
-...
-> 
-> It's a false positive: seq files which take cred_guard_mutex are never
-> executable. Let's use separate lock class for them.
-> 
-> I don't know why we allow "chmod +x" on some proc files, notably net-related.
-> Is it a bug?
-> 
-> Also I suspect eb94cd96e05d fixes non-existing bug, like this one.
 
-Yeah, it should. And the patch looks good to me. Still I think maybe indeed
-we need to prevent ability to set executable attribute on proc seq files?
+--XJ5PZ61hszgMzeEB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+
+
+OK, so no feedback on the 'pending' discussions we had wrt PEBS record
+generation?
+
+No feedback on the correctness aspects of the overflow crap?
+
+Just a new series, which I then have to dig through to figure out wtf
+changed?
+
+A quick look at patch 6 reads like you still don't understand the issue
+right. There are no 'collisions' as such in PEBS record generation, or
+are there? See the earlier open discussion.
+
+_WHY_ are you sending me new patches without sorting the open points
+first?
+
+--XJ5PZ61hszgMzeEB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT2e/wAAoJEHZH4aRLwOS6c3AP+wftoEnX1ovF44cuZ2E97zb5
+eu3yd8VfPUWtG6DilUCla1huRvGrwmqQqDtftbJdIk/5YC50LSTAb0xz0qNPeldD
+iCA/cQ+y8RP0DLjENGKoQqrFvHongbX4xqrt6uP2VPvbdZlxSGoAz4ItQj5gNKXX
+8y8CxE9K2k6bE7sNzKpwBJjEw8wZi9OgYaVI+Xr0kdznoCB4LjiQnNPChOHtBU9H
+GONb6JUnYOzUIHFpx1Q6ATh+boRZdktTHbVZfFCGbOiPKoed22JcN4ptkzbSDUzg
+QrFXu1iXH0eA6TMG1sVCNGrgoDiu0HIUNc0f0ttULcNrHhb5YE5R/OmJGLjoZuU4
+qknFUxrYzdJM9JRtXccbrTN9v9R1CRMhFY5hFc+Ac4gRlafpIAhZGoL6vN2xIZ6u
+VZ6wYAmmKttcZvkJUUIRvro56uxHEa61Qjc0I4ppUotWPmvk935U6hEWLHQ340Px
+gHefiCr44m22xyliE+qyxEx649W9Er0efrCBIAR9MQl13+jGe47g+rlpySd0+N/U
+jg1HldT/UKZgEPrEHku+tRm0n7YGEwRfPFEryaXGC5DV7aD7msx8iZGivng2iRzK
+U074wwcFMrvUxmq0+2um5CUjcYz8OcKFZ4WDvdxqKXSH8pK/XvHxyIiO4HUIO3A4
+m/oxW6Kqdbjkw5UK3Olq
+=DZva
+-----END PGP SIGNATURE-----
+
+--XJ5PZ61hszgMzeEB--
