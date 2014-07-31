@@ -1,376 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233AbaGaLW1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 07:22:27 -0400
-Received: from asix.com.tw ([113.196.140.82]:22280 "EHLO freebsd2.asix.com.tw"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750859AbaGaLWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 07:22:25 -0400
-X-Greylist: delayed 910 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Jul 2014 07:22:23 EDT
-From: freddy@asix.com.tw
-To: davem@davemloft.net, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        louis@asix.com.tw
-Cc: Freddy Xin <freddy@asix.com.tw>
-Subject: [PATCH 1/1] AX88179_178A: Add ethtool ops for EEE support
-Date: Thu, 31 Jul 2014 19:06:35 +0800
-Message-Id: <1406804795-2754-1-git-send-email-freddy@asix.com.tw>
-X-Mailer: git-send-email 1.9.1
+	id S1753415AbaGaLWd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 07:22:33 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:55786 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245AbaGaLW3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 07:22:29 -0400
+From: Humberto Silva Naves <hsnaves@gmail.com>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Thomas Abraham <ta.omasab@gmail.com>,
+        Andreas Farber <afaerber@suse.de>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Humberto Silva Naves <hsnaves@gmail.com>
+Subject: [PATCHv2 0/5] clk: samsung: exynos5410: Implementation of the PLL clocks
+Date: Thu, 31 Jul 2014 13:22:07 +0200
+Message-Id: <1406805732-17372-1-git-send-email-hsnaves@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Freddy Xin <freddy@asix.com.tw>
+Hi,
 
-Add functions to support ethtool EEE manipulating, and the EEE
-is disabled in default setting to enhance the compatibility
-with certain switch.
+This patch series slightly improves the exynos5410 clock driver. Below is
+a list of changes introduced by the patch:
+ - Basic validation in the clock initialization routine
+ - Added resume/suspend handler
+ - Implemented some fixed rate clocks and changed the way "fin_pll" is defined
+ - Added the remaining PLL clocks
 
-Signed-off-by: Freddy Xin <freddy@asix.com.tw>
----
- drivers/net/usb/ax88179_178a.c | 264 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 264 insertions(+)
+Changelog since v1:
+ * Split the reordering and addition of new constants  into two different
+commits, as suggested by Thomas Abraham. For details, see:
+http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34950.html
+ * The rate tables are only installed if the clock rate of the parent matches
+a specific frequency of 24MHz. For details, please refer to:
+http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34953.html
+ * Added some fixed rate clocks.
 
-diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
-index 054e59c..be42757 100644
---- a/drivers/net/usb/ax88179_178a.c
-+++ b/drivers/net/usb/ax88179_178a.c
-@@ -23,6 +23,8 @@
- #include <linux/usb.h>
- #include <linux/crc32.h>
- #include <linux/usb/usbnet.h>
-+#include <uapi/linux/mdio.h>
-+#include <linux/mdio.h>
- 
- #define AX88179_PHY_ID				0x03
- #define AX_EEPROM_LEN				0x100
-@@ -170,8 +172,12 @@
- #define GMII_PHY_PAGE_SELECT			0x1f
- 	#define GMII_PHY_PGSEL_EXT	0x0007
- 	#define GMII_PHY_PGSEL_PAGE0	0x0000
-+	#define GMII_PHY_PGSEL_PAGE3	0x0003
-+	#define GMII_PHY_PGSEL_PAGE5	0x0005
- 
- struct ax88179_data {
-+	u8  eee_enabled;
-+	u8  eee_active;
- 	u16 rxctl;
- 	u16 reserved;
- };
-@@ -373,6 +379,60 @@ static void ax88179_mdio_write(struct net_device *netdev, int phy_id, int loc,
- 	ax88179_write_cmd(dev, AX_ACCESS_PHY, phy_id, (__u16)loc, 2, &res);
- }
- 
-+static inline int ax88179_phy_mmd_indirect(struct usbnet *dev, u16 prtad,
-+					   u16 devad)
-+{
-+	u16 tmp16;
-+	int ret;
-+
-+	tmp16 = devad;
-+	ret = ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
-+				MII_MMD_CTRL, 2, &tmp16);
-+
-+	tmp16 = prtad;
-+	ret = ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
-+				MII_MMD_DATA, 2, &tmp16);
-+
-+	tmp16 = devad | MII_MMD_CTRL_NOINCR;
-+	ret = ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
-+				MII_MMD_CTRL, 2, &tmp16);
-+
-+	return ret;
-+}
-+
-+static int
-+ax88179_phy_read_mmd_indirect(struct usbnet *dev, u16 prtad, u16 devad)
-+{
-+	int ret;
-+	u16 tmp16;
-+
-+	ax88179_phy_mmd_indirect(dev, prtad, devad);
-+
-+	ret = ax88179_read_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
-+			       MII_MMD_DATA, 2, &tmp16);
-+	if (ret < 0)
-+		return ret;
-+
-+	return tmp16;
-+}
-+
-+static int
-+ax88179_phy_write_mmd_indirect(struct usbnet *dev, u16 prtad, u16 devad,
-+			       u16 data)
-+{
-+	int ret;
-+
-+	ax88179_phy_mmd_indirect(dev, prtad, devad);
-+
-+	ret = ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
-+				MII_MMD_DATA, 2, &data);
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+
- static int ax88179_suspend(struct usb_interface *intf, pm_message_t message)
- {
- 	struct usbnet *dev = usb_get_intfdata(intf);
-@@ -572,6 +632,185 @@ static int ax88179_set_settings(struct net_device *net, struct ethtool_cmd *cmd)
- 	return mii_ethtool_sset(&dev->mii, cmd);
- }
- 
-+static int
-+ax88179_ethtool_get_eee(struct usbnet *dev, struct ethtool_eee *data)
-+{
-+	int val;
-+
-+	/* Get Supported EEE */
-+	val = ax88179_phy_read_mmd_indirect(dev, MDIO_PCS_EEE_ABLE,
-+					    MDIO_MMD_PCS);
-+	if (val < 0)
-+		return val;
-+	data->supported = mmd_eee_cap_to_ethtool_sup_t(val);
-+
-+	/* Get advertisement EEE */
-+	val = ax88179_phy_read_mmd_indirect(dev, MDIO_AN_EEE_ADV,
-+					    MDIO_MMD_AN);
-+	if (val < 0)
-+		return val;
-+	data->advertised = mmd_eee_adv_to_ethtool_adv_t(val);
-+
-+	/* Get LP advertisement EEE */
-+	val = ax88179_phy_read_mmd_indirect(dev, MDIO_AN_EEE_LPABLE,
-+					    MDIO_MMD_AN);
-+	if (val < 0)
-+		return val;
-+	data->lp_advertised = mmd_eee_adv_to_ethtool_adv_t(val);
-+
-+	return 0;
-+}
-+
-+static int
-+ax88179_ethtool_set_eee(struct usbnet *dev, struct ethtool_eee *data)
-+{
-+	u16 tmp16 = ethtool_adv_to_mmd_eee_adv_t(data->advertised);
-+
-+	return ax88179_phy_write_mmd_indirect(dev, MDIO_AN_EEE_ADV,
-+					      MDIO_MMD_AN, tmp16);
-+}
-+
-+static int ax88179_chk_eee(struct usbnet *dev)
-+{
-+	struct ethtool_cmd ecmd = { .cmd = ETHTOOL_GSET };
-+	struct ax88179_data *priv = (struct ax88179_data *)dev->data;
-+
-+	mii_ethtool_gset(&dev->mii, &ecmd);
-+
-+	if (ecmd.duplex & DUPLEX_FULL) {
-+		int eee_lp, eee_cap, eee_adv;
-+		u32 lp, cap, adv, supported = 0;
-+
-+		eee_cap = ax88179_phy_read_mmd_indirect(dev,
-+							MDIO_PCS_EEE_ABLE,
-+							MDIO_MMD_PCS);
-+		if (eee_cap < 0) {
-+			priv->eee_active = 0;
-+			return false;
-+		}
-+
-+		cap = mmd_eee_cap_to_ethtool_sup_t(eee_cap);
-+		if (!cap) {
-+			priv->eee_active = 0;
-+			return false;
-+		}
-+
-+		eee_lp = ax88179_phy_read_mmd_indirect(dev,
-+						       MDIO_AN_EEE_LPABLE,
-+						       MDIO_MMD_AN);
-+		if (eee_lp < 0) {
-+			priv->eee_active = 0;
-+			return false;
-+		}
-+
-+		eee_adv = ax88179_phy_read_mmd_indirect(dev,
-+							MDIO_AN_EEE_ADV,
-+							MDIO_MMD_AN);
-+
-+		if (eee_adv < 0) {
-+			priv->eee_active = 0;
-+			return false;
-+		}
-+
-+		adv = mmd_eee_adv_to_ethtool_adv_t(eee_adv);
-+		lp = mmd_eee_adv_to_ethtool_adv_t(eee_lp);
-+		supported = (ecmd.speed == SPEED_1000) ?
-+			     SUPPORTED_1000baseT_Full :
-+			     SUPPORTED_100baseT_Full;
-+
-+		if (!(lp & adv & supported)) {
-+			priv->eee_active = 0;
-+			return false;
-+		}
-+
-+		priv->eee_active = 1;
-+		return true;
-+	}
-+
-+	priv->eee_active = 0;
-+	return false;
-+}
-+
-+static void ax88179_disable_eee(struct usbnet *dev)
-+{
-+	u16 tmp16;
-+
-+	tmp16 = GMII_PHY_PGSEL_PAGE3;
-+	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
-+			  GMII_PHY_PAGE_SELECT, 2, &tmp16);
-+
-+	tmp16 = 0x3246;
-+	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
-+			  MII_PHYADDR, 2, &tmp16);
-+
-+	tmp16 = GMII_PHY_PGSEL_PAGE0;
-+	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
-+			  GMII_PHY_PAGE_SELECT, 2, &tmp16);
-+}
-+
-+static void ax88179_enable_eee(struct usbnet *dev)
-+{
-+	u16 tmp16;
-+
-+	tmp16 = GMII_PHY_PGSEL_PAGE3;
-+	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
-+			  GMII_PHY_PAGE_SELECT, 2, &tmp16);
-+
-+	tmp16 = 0x3247;
-+	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
-+			  MII_PHYADDR, 2, &tmp16);
-+
-+	tmp16 = GMII_PHY_PGSEL_PAGE5;
-+	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
-+			  GMII_PHY_PAGE_SELECT, 2, &tmp16);
-+
-+	tmp16 = 0x0680;
-+	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
-+			  MII_BMSR, 2, &tmp16);
-+
-+	tmp16 = GMII_PHY_PGSEL_PAGE0;
-+	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
-+			  GMII_PHY_PAGE_SELECT, 2, &tmp16);
-+}
-+
-+static int ax88179_get_eee(struct net_device *net, struct ethtool_eee *edata)
-+{
-+	struct usbnet *dev = netdev_priv(net);
-+	struct ax88179_data *priv = (struct ax88179_data *)dev->data;
-+
-+	edata->eee_enabled = priv->eee_enabled;
-+	edata->eee_active = priv->eee_active;
-+
-+	return ax88179_ethtool_get_eee(dev, edata);
-+}
-+
-+static int ax88179_set_eee(struct net_device *net, struct ethtool_eee *edata)
-+{
-+	struct usbnet *dev = netdev_priv(net);
-+	struct ax88179_data *priv = (struct ax88179_data *)dev->data;
-+	int ret = -EOPNOTSUPP;
-+
-+	priv->eee_enabled = edata->eee_enabled;
-+	if (!priv->eee_enabled) {
-+		ax88179_disable_eee(dev);
-+	} else {
-+		priv->eee_enabled = ax88179_chk_eee(dev);
-+		if (!priv->eee_enabled)
-+			return -EOPNOTSUPP;
-+
-+		ax88179_enable_eee(dev);
-+	}
-+
-+	ret = ax88179_ethtool_set_eee(dev, edata);
-+	if (ret)
-+		return ret;
-+
-+	mii_nway_restart(&dev->mii);
-+
-+	usbnet_link_change(dev, 0, 0);
-+
-+	return ret;
-+}
- 
- static int ax88179_ioctl(struct net_device *net, struct ifreq *rq, int cmd)
- {
-@@ -589,6 +828,8 @@ static const struct ethtool_ops ax88179_ethtool_ops = {
- 	.get_eeprom		= ax88179_get_eeprom,
- 	.get_settings		= ax88179_get_settings,
- 	.set_settings		= ax88179_set_settings,
-+	.get_eee		= ax88179_get_eee,
-+	.set_eee		= ax88179_set_eee,
- 	.nway_reset		= usbnet_nway_reset,
- };
- 
-@@ -980,6 +1221,7 @@ static int ax88179_bind(struct usbnet *dev, struct usb_interface *intf)
- 	u16 *tmp16;
- 	u8 *tmp;
- 	struct ax88179_data *ax179_data = (struct ax88179_data *)dev->data;
-+	struct ethtool_eee eee_data;
- 
- 	usbnet_get_endpoints(dev, intf);
- 
-@@ -1062,6 +1304,15 @@ static int ax88179_bind(struct usbnet *dev, struct usb_interface *intf)
- 
- 	ax88179_led_setting(dev);
- 
-+	ax179_data->eee_enabled = 0;
-+	ax179_data->eee_active = 0;
-+
-+	ax88179_disable_eee(dev);
-+
-+	ax88179_ethtool_get_eee(dev, &eee_data);
-+	eee_data.advertised = 0;
-+	ax88179_ethtool_set_eee(dev, &eee_data);
-+
- 	/* Restart autoneg */
- 	mii_nway_restart(&dev->mii);
- 
-@@ -1261,6 +1512,8 @@ static int ax88179_link_reset(struct usbnet *dev)
- 	ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_MEDIUM_STATUS_MODE,
- 			  2, 2, &mode);
- 
-+	ax179_data->eee_enabled = ax88179_chk_eee(dev);
-+
- 	netif_carrier_on(dev->net);
- 
- 	return 0;
-@@ -1271,6 +1524,8 @@ static int ax88179_reset(struct usbnet *dev)
- 	u8 buf[5];
- 	u16 *tmp16;
- 	u8 *tmp;
-+	struct ax88179_data *ax179_data = (struct ax88179_data *)dev->data;
-+	struct ethtool_eee eee_data;
- 
- 	tmp16 = (u16 *)buf;
- 	tmp = (u8 *)buf;
-@@ -1340,6 +1595,15 @@ static int ax88179_reset(struct usbnet *dev)
- 
- 	ax88179_led_setting(dev);
- 
-+	ax179_data->eee_enabled = 0;
-+	ax179_data->eee_active = 0;
-+
-+	ax88179_disable_eee(dev);
-+
-+	ax88179_ethtool_get_eee(dev, &eee_data);
-+	eee_data.advertised = 0;
-+	ax88179_ethtool_set_eee(dev, &eee_data);
-+
- 	/* Restart autoneg */
- 	mii_nway_restart(&dev->mii);
- 
+Humberto Silva Naves (5):
+  clk: samsung: exynos5410: Add NULL pointer checks in clock init
+  clk: samsung: exynos5410: Organize register offset constants
+  clk: samsung: exynos5410: Add suspend/resume handling
+  clk: samsung: exynos5410: Add fixed rate clocks
+  clk: samsung: exynos5410: Added clocks DPLL, EPLL, IPLL, and VPLL
+
+ .../devicetree/bindings/clock/exynos5410-clock.txt |   17 +-
+ drivers/clk/samsung/clk-exynos5410.c               |  437 ++++++++++++++++++--
+ include/dt-bindings/clock/exynos5410.h             |    5 +
+ 3 files changed, 430 insertions(+), 29 deletions(-)
+
 -- 
-1.9.1
+1.7.10.4
 
