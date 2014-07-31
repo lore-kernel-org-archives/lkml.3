@@ -1,78 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaGaSls (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 14:41:48 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:45074 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350AbaGaSlq (ORCPT
+	id S1752142AbaGaSrT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 14:47:19 -0400
+Received: from smtprelay.synopsys.com ([198.182.44.111]:35498 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952AbaGaSrR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 14:41:46 -0400
-Message-ID: <53DA8DE1.10601@samsung.com>
-Date: Fri, 01 Aug 2014 03:41:37 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Thu, 31 Jul 2014 14:47:17 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Kever Yang <kever.yang@rock-chips.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "mporter@linaro.org" <mporter@linaro.org>,
+        "kishon@ti.com" <kishon@ti.com>
+CC: "heiko@sntech.de" <heiko@sntech.de>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
+        "xjq@rock-chips.com" <xjq@rock-chips.com>,
+        "cf@rock-chips.com" <cf@rock-chips.com>,
+        "lyz@rock-chips.com" <lyz@rock-chips.com>,
+        "wulf@rock-chips.com" <wulf@rock-chips.com>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "sonnyrao@chromium.org" <sonnyrao@chromium.org>
+Subject: RE: [PATCH v2 2/2] usb: dwc2: add dr_mode support for dwc2
+Thread-Topic: [PATCH v2 2/2] usb: dwc2: add dr_mode support for dwc2
+Thread-Index: AQHPrFusUE8wWYml/kewBklC7kcBUJu6hlwA
+Date: Thu, 31 Jul 2014 18:47:13 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844C3424@US01WEMBX2.internal.synopsys.com>
+References: <1406766558-8156-1-git-send-email-kever.yang@rock-chips.com>
+ <1406768764-9684-1-git-send-email-kever.yang@rock-chips.com>
+In-Reply-To: <1406768764-9684-1-git-send-email-kever.yang@rock-chips.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.241]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-CC: linux-samsung-soc@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        open list <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Ben Dooks <ben-linux@fluff.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/4] ARM: dts: Fix MMC pinctrl for exynos5250-snow
-References: <1406822910-6255-1-git-send-email-afaerber@suse.de> <1406822910-6255-2-git-send-email-afaerber@suse.de>
-In-Reply-To: <1406822910-6255-2-git-send-email-afaerber@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/14 01:08, Andreas Färber wrote:
-> The pinctrl properties should be on the device directly and not on the
-> slot sub-node.
->
-> Reported-by: Doug Anderson<dianders@chromium.org>
-> Cc: Jaehoon Chung<jh80.chung@samsung.com>
-> Signed-off-by: Andreas Färber<afaerber@suse.de>
+> From: Kever Yang [mailto:kever.yang@rock-chips.com]
+> Sent: Wednesday, July 30, 2014 6:06 PM
+> 
+> Some devices with A female host port and without use of usb_id pin
+> will need this for the otg controller works as device role
+> during firmware period and works as host role in rich os.
+> 
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> 
 > ---
->   v3 ->  v4: Unchanged
->
->   v3: New (Doug Anderson)
->   Redundant with Jaehoon Chung's general slot@0 deprecation,
->   in case that hits the tree earlier.
->
->   arch/arm/boot/dts/exynos5250-snow.dts | 6 ++----
->   1 file changed, 2 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-> index f2b8c4116541..eb437f6afec1 100644
-> --- a/arch/arm/boot/dts/exynos5250-snow.dts
-> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
-> @@ -240,10 +240,8 @@
->   	 */
->   	mmc@12230000 {
->   		status = "okay";
-> -		slot@0 {
-> -			pinctrl-names = "default";
-> -			pinctrl-0 =<&sd3_clk&sd3_cmd&sd3_bus4>;
-> -		};
-> +		pinctrl-names = "default";
-> +		pinctrl-0 =<&sd3_clk&sd3_cmd&sd3_bus4>;
->   	};
->
->   	i2c@12CD0000 {
+> 
+> Changes in v2:
+> - put spaces around '+' operator
+> - expand the comment for dr_mode
+> - handle dr_mode is USB_DR_MODE_OTG
+> 
+>  drivers/usb/dwc2/core.c     |   18 ++++++++++++++++++
+>  drivers/usb/dwc2/core.h     |    5 +++++
+>  drivers/usb/dwc2/platform.c |    4 ++++
+>  3 files changed, 27 insertions(+)
+> 
+> diff --git a/drivers/usb/dwc2/core.c b/drivers/usb/dwc2/core.c
+> index 27d2c9b..738bec2 100644
+> --- a/drivers/usb/dwc2/core.c
+> +++ b/drivers/usb/dwc2/core.c
+> @@ -118,6 +118,7 @@ static int dwc2_core_reset(struct dwc2_hsotg *hsotg)
+>  {
+>  	u32 greset;
+>  	int count = 0;
+> +	u32 gusbcfg;
+> 
+>  	dev_vdbg(hsotg->dev, "%s()\n", __func__);
+> 
+> @@ -148,6 +149,23 @@ static int dwc2_core_reset(struct dwc2_hsotg *hsotg)
+>  		}
+>  	} while (greset & GRSTCTL_CSFTRST);
+> 
+> +	if (hsotg->dr_mode == USB_DR_MODE_HOST) {
+> +		gusbcfg = readl(hsotg->regs + GUSBCFG);
+> +		gusbcfg &= ~GUSBCFG_FORCEDEVMODE;
+> +		gusbcfg |= GUSBCFG_FORCEHOSTMODE;
+> +		writel(gusbcfg, hsotg->regs + GUSBCFG);
+> +	} else if (hsotg->dr_mode == USB_DR_MODE_PERIPHERAL) {
+> +		gusbcfg = readl(hsotg->regs + GUSBCFG);
+> +		gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
+> +		gusbcfg |= GUSBCFG_FORCEDEVMODE;
+> +		writel(gusbcfg, hsotg->regs + GUSBCFG);
+> +	} else if (hsotg->dr_mode == USB_DR_MODE_OTG) {
+> +		gusbcfg = readl(hsotg->regs + GUSBCFG);
+> +		gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
+> +		gusbcfg &= ~GUSBCFG_FORCEDEVMODE;
+> +		writel(gusbcfg, hsotg->regs + GUSBCFG);
+> +	}
+> +
+>  	/*
+>  	 * NOTE: This long sleep is _very_ important, otherwise the core will
+>  	 * not stay in host mode after a connector ID change!
+> diff --git a/drivers/usb/dwc2/core.h b/drivers/usb/dwc2/core.h
+> index 1efd10c..a34681c 100644
+> --- a/drivers/usb/dwc2/core.h
+> +++ b/drivers/usb/dwc2/core.h
+> @@ -501,6 +501,10 @@ struct dwc2_hw_params {
+>   *                      a_peripheral and b_device=>b_host) this may not match
+>   *                      the core, but allows the software to determine
+>   *                      transitions
+> + * @dr_mode:            Requested mode of operation, one of following:
+> + *                      - USB_DR_MODE_PERIPHERAL
+> + *                      - USB_DR_MODE_HOST
+> + *                      - USB_DR_MODE_OTG
+>   * @queuing_high_bandwidth: True if multiple packets of a high-bandwidth
+>   *                      transfer are in process of being queued
+>   * @srp_success:        Stores status of SRP request in the case of a FS PHY
+> @@ -592,6 +596,7 @@ struct dwc2_hsotg {
+>  	/** Params to actually use */
+>  	struct dwc2_core_params *core_params;
+>  	enum usb_otg_state op_state;
+> +	enum usb_dr_mode        dr_mode;
 
-Once I get Doug's reviewed tag on exynos5250-snow dt changes, I will 
-take this series :) Though Doug suggested or reported...
+Can you please fix the odd spacing here? Once you do that, you can add
+my acked-by.
 
-Thanks,
-Kukjin
+-- 
+Paul
+
