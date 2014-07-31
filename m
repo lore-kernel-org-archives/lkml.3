@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482AbaGaFbi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 01:31:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49774 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362AbaGaFbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 01:31:35 -0400
-Message-ID: <53D9D4B2.8070008@suse.de>
-Date: Thu, 31 Jul 2014 07:31:30 +0200
-From: =?ISO-8859-1?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755386AbaGaFbu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 01:31:50 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:64525 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204AbaGaFbr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 01:31:47 -0400
+From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+To: <gregkh@linuxfoundation.org>
+CC: <oort10@gmail.com>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: [PATCH v2 2/3] staging:r8180: coding style: Fixed too long lines
+Date: Thu, 31 Jul 2014 11:13:30 +0530
+Message-ID: <1406785411-12538-3-git-send-email-sanjeev_sharma@mentor.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1406785411-12538-1-git-send-email-sanjeev_sharma@mentor.com>
+References: <1406785411-12538-1-git-send-email-sanjeev_sharma@mentor.com>
 MIME-Version: 1.0
-To: behanw@converseincode.com, ard.biesheuvel@linaro.org,
-        catalin.marinas@arm.com, k.khlebnikov@samsung.com, olof@lixom.net,
-        peterz@infradead.org, takahiro.akashi@linaro.org, tglx@linutronix.de,
-        will.deacon@arm.com
-CC: linux-kernel@vger.kernel.org, Mark Charlebois <charlebm@gmail.com>,
-        dwmw2@infradead.org, mingo@kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] arm64: LLVMLinux: Calculate current_thread_info from
- current_stack_pointer
-References: <1406764649-20326-1-git-send-email-behanw@converseincode.com> <1406764649-20326-4-git-send-email-behanw@converseincode.com>
-In-Reply-To: <1406764649-20326-4-git-send-email-behanw@converseincode.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-OriginalArrivalTime: 31 Jul 2014 05:31:45.0389 (UTC) FILETIME=[B7A551D0:01CFAC80]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is a patch to the r8180_93cx6.h file that fixes
+long lines along with some additional warning.
 
-Am 31.07.2014 01:57, schrieb behanw@converseincode.com:
-> From: Behan Webster <behanw@converseincode.com>
-> 
-> Use the global current_stack_pointer to get the value of the stack pointer.
-> This change supports being able to compile the kernel with both gcc and clang.
-> 
-> Signed-off-by: Behan Webster <behanw@converseincode.com>
-> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-> Reviewed-by: Jan-Simon M??ller <dl9pf@gmx.de>
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+---
+Changes in v2:
+  - Added signed-off field.
 
-Something went wrong with ö encoding here and in 2/4.
+ drivers/staging/rtl8192u/r8180_93cx6.h | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-> ---
->  arch/arm64/include/asm/thread_info.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
-> index e6b6094..c2432d2 100644
-> --- a/arch/arm64/include/asm/thread_info.h
-> +++ b/arch/arm64/include/asm/thread_info.h
-> @@ -80,8 +80,8 @@ static inline struct thread_info *current_thread_info(void) __attribute_const__;
->  
->  static inline struct thread_info *current_thread_info(void)
->  {
-> -	register unsigned long sp asm ("sp");
-> -	return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
-> +	return (struct thread_info *) \
-
-This is not a macro, so \ seems superfluous.
-
-Looks okay otherwise.
-
-Regards,
-Andreas
-
-> +		(current_stack_pointer & ~(THREAD_SIZE - 1));
->  }
->  
->  #define thread_saved_pc(tsk)	\
-
+diff --git a/drivers/staging/rtl8192u/r8180_93cx6.h b/drivers/staging/rtl8192u/r8180_93cx6.h
+index ee55dbf..b840348 100644
+--- a/drivers/staging/rtl8192u/r8180_93cx6.h
++++ b/drivers/staging/rtl8192u/r8180_93cx6.h
+@@ -3,11 +3,14 @@
+ 	Copyright (C) Andrea Merello 2004-2005  <andrea.merello@gmail.com>
+ 	Released under the terms of GPL (General Public Licence)
+ 
+-	Parts of this driver are based on the GPL part of the official realtek driver
+-	Parts of this driver are based on the rtl8180 driver skeleton from Patric Schenke & Andres Salomon
++	Parts of this driver are based on the GPL part of the
++	official realtek driver
++	Parts of this driver are based on the rtl8180 driver skeleton
++	from Patric Schenke & Andres Salomon
+ 	Parts of this driver are based on the Intel Pro Wireless 2100 GPL driver
+ 
+-	We want to thank the Authors of such projects and the Ndiswrapper project Authors.
++	We want to thank the Authors of such projects and the Ndiswrapper
++	project Authors.
+ */
+ 
+ /*This files contains card eeprom (93c46 or 93c56) programming routines*/
+@@ -37,4 +40,4 @@
+ #define EPROM_TXPW1 0x3d
+ 
+ 
+-u32 eprom_read(struct net_device *dev,u32 addr); //reads a 16 bits word
++u32 eprom_read(struct net_device *dev, u32 addr); /* reads a 16 bits word */
 -- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+1.7.11.7
+
