@@ -1,176 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515AbaGaTqO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 15:46:14 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47962 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbaGaTqM (ORCPT
+	id S1751772AbaGaTtG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 15:49:06 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:49646 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868AbaGaTtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 15:46:12 -0400
-Message-ID: <53DA9D03.60606@codeaurora.org>
-Date: Thu, 31 Jul 2014 12:46:11 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 31 Jul 2014 15:49:04 -0400
 MIME-Version: 1.0
-To: Sudeep Holla <sudeep.holla@arm.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v2 2/9] drivers: base: support cpu cache information interface
- to userspace via sysfs
-References: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com> <1406306692-7135-1-git-send-email-sudeep.holla@arm.com> <1406306692-7135-3-git-send-email-sudeep.holla@arm.com> <53D829BF.3040907@codeaurora.org> <53D91BE8.8050008@arm.com>
-In-Reply-To: <53D91BE8.8050008@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140724170119.GR26600@ubuntumail>
+References: <1405626731-12220-1-git-send-email-adityakali@google.com>
+ <1405626731-12220-3-git-send-email-adityakali@google.com> <20140724170119.GR26600@ubuntumail>
+From: Aditya Kali <adityakali@google.com>
+Date: Thu, 31 Jul 2014 12:48:43 -0700
+Message-ID: <CAGr1F2FAiSFR_Y3t1=eBVoAtJvh4m=cNUi+vG146nDkgtBjisQ@mail.gmail.com>
+Subject: Re: [PATCH 2/5] sched: new clone flag CLONE_NEWCGROUP for cgroup namespace
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        cgroups@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/14 09:23, Sudeep Holla wrote:
-> Hi Stephen,
->
-> Thanks for reviewing this.
->
-> On 30/07/14 00:09, Stephen Boyd wrote:
->> On 07/25/14 09:44, Sudeep Holla wrote:
->
->>> +
->>> +             shared_cpu_map: logical cpu mask containing the list
->>> of cpus sharing
->>> +                             the cache
->>> +
->>> +             size: the total cache size in kB
->>> +
->>> +             type:
->>> +                     - instruction: cache that only holds instructions
->>> +                     - data: cache that only caches data
->>> +                     - unified: cache that holds both data and
->>> instructions
->>> +
->>> +             ways_of_associativity: degree of freedom in placing a
->>> particular block
->>> +                                     of memory in the cache
->>> diff --git a/drivers/base/cacheinfo.c b/drivers/base/cacheinfo.c
->>> new file mode 100644
->>> index 000000000000..983728a919ec
->>> --- /dev/null
->>> +++ b/drivers/base/cacheinfo.c
->>> @@ -0,0 +1,539 @@
->> [...]
->>> +
->>> +static int detect_cache_attributes(unsigned int cpu)
->>
->> Unused if sysfs is disabled? Actually it looks like everything except
->> the weak functions are unused in such a case.
+On Thu, Jul 24, 2014 at 10:01 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> Quoting Aditya Kali (adityakali@google.com):
+>> CLONE_NEWCGROUP will be used to create new cgroup namespace.
 >>
 >
->> I see that ia64 has this attributes file, but in that case only two
->> attributes exist (write through and write back) and only one value is
->> ever shown. When we have multiple attributes we'll have multiple lines
->> to parse here. What if we left attributes around for the ia64 case
->> (possibly even hiding that entirely within that architecture specific
->> code) and then have files like "allocation_policy" and "storage_method"
->> that correspond to whether its read/write allocation and write through
->> or write back? The goal being to make only one value exist in any sysfs
->> attribute.
+> This is fine and I'm not looking to bikeshed, but am wondering - did
+> you consider any other ways beside unshare (i.e. a new mount option
+> to cgroupfs)?  If so, do you have a list of the downsides of those?
+> (I mainly ask bc clone flags are still a scarce commodity)
+>
+
+I did consider couple of other ways:
+
+(1) having a cgroup.ns_root (or something) cgroup file. If this value
+is '1', it would mean that all processes it and its descendant cgroups
+will have their cgroup paths in /proc/self/cgroup terminated at this
+cgroup.
+ For ex:
+[A] --> [B] --> C
+    | --> [D] --> E
+
+[A], [B] and [D] has cgroup.ns_root = 1.
+* all processes in cgroup C & E will see their cgroup path as /C and
+/E respectively
+* all processes in cgroup B & D will see their own cgroup path as /
+
+In this model, its easy to know what to show if process is looking at
+its own cgroup paths (/proc/self/cgroup). It gets tricky when you are
+looking at other process's /proc/<pid>/cgroup. We may be able to come
+up with some hacky way read correct value, but depending on the
+cgroupfs mount, it may not make sense.
+One other major drawback of this approach is that "every" process in
+the cgroup will now get a restricted view. i.e., you cannot change
+cgroups without affecting your view. And this is undesirable for
+administrative processes.
+
+(2) Another idea that I didn't pursue further (and is a bit hacky as
+above) was having cgroup.ns_procs (like cgroup.procs, but all the pids
+in cgroup.ns_procs will have their /proc/self/cgroup restricted).
+Writing a pid to cgroup.ns_procs implies that you are writing it to
+cgroup.procs too. But, not vise-versa. So, you could move yourself in
+another cgroup by writing your pid in cgroup.procs, but not in
+cgroup.ns_procs, thus preventing from getting "rooted". I This was to
+solve administrative process issue in the above appraoch. But I think
+this is very clunky too and I find semantics for this approach to be
+non-intuitive. It almost looks like moving towards a separate "ns"
+subsystem. But as we already know, its a path to failure.
+
+I didn't think of using a mount option. I imagine the mount option
+(something like -o root=/bathjobs/container_1) could be used to
+restrict the visibility of cgroupfs inside the container's mount
+namespace. i.e., the value you read from /proc/<pid>/cgroup now
+depends on what mount namespace you are in. Its similar to cgroup
+namespace, but just that the cgroupns_root is now stored in the
+'struct mnt_namespace' instead of a separate 'struct
+cgroup_namespace'. But, since mount namespace on creation inherits
+mounts from its parent, the first cgroupfs mount in a mount namespace
+is now treated specially. Also, its not possible to restrict cgroups
+without mount namespace now. This is interesting and may not be too
+bad. I am willing to give this a try. But I feel the cgroup namespace
+approach fits well in-line with other namespaces where it does one
+thing - virtualize the view of /proc/<pid>/cgroup file for processes
+inside the namespace. The semantics are more intuitive as they are
+similar to other namespaces.
+
+Thanks,
+
+>> Signed-off-by: Aditya Kali <adityakali@google.com>
+>
+> Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+>
+>> ---
+>>  include/uapi/linux/sched.h | 3 +--
+>>  1 file changed, 1 insertion(+), 2 deletions(-)
 >>
->
-> I like your idea, but is it hard rule to have only one value in any
-> sysfs attribute ? Though one concern I have is if different cache designs
-> make have different features and like to express that, 'attributes' is a
-> unified place to do that similar to cpu features in /proc/cpuinfo.
-
-'attributes' seems too generic. Pretty much anything is an attribute.
-
->
-> Anyways if we decide to split it, how about write_policy instead of
-> storage_method ?
-
-Sounds good.
-
->
->>> +     buf[n] = '\0';
->>> +     return n;
->>> +}
->>> +
->>> +static umode_t
->>> +cache_default_attrs_is_visible(struct kobject *kobj,
->>> +                            struct attribute *attr, int unused)
->>> +{
->>> +     struct device *dev = kobj_to_dev(kobj);
->>> +     struct device_attribute *dev_attr;
->>> +     umode_t mode = attr->mode;
->>> +     char *buf;
->>> +
->>> +     dev_attr = container_of(attr, struct device_attribute, attr);
->>> +     buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
->>> +     if (!buf)
->>> +             return 0;
->>> +
->>> +     /* create attributes that provides meaningful value */
->>> +     if (dev_attr->show && dev_attr->show(dev, dev_attr, buf) < 0)
->>> +             mode = 0;
->>> +
->>> +     kfree(buf);
+>> diff --git a/include/uapi/linux/sched.h b/include/uapi/linux/sched.h
+>> index 34f9d73..2f90d00 100644
+>> --- a/include/uapi/linux/sched.h
+>> +++ b/include/uapi/linux/sched.h
+>> @@ -21,8 +21,7 @@
+>>  #define CLONE_DETACHED               0x00400000      /* Unused, ignored */
+>>  #define CLONE_UNTRACED               0x00800000      /* set if the tracing process can't force CLONE_PTRACE on this clone */
+>>  #define CLONE_CHILD_SETTID   0x01000000      /* set the TID in the child */
+>> -/* 0x02000000 was previously the unused CLONE_STOPPED (Start in stopped state)
+>> -   and is now available for re-use. */
+>> +#define CLONE_NEWCGROUP              0x02000000      /* New cgroup namespace */
+>>  #define CLONE_NEWUTS         0x04000000      /* New utsname group? */
+>>  #define CLONE_NEWIPC         0x08000000      /* New ipcs */
+>>  #define CLONE_NEWUSER                0x10000000      /* New user namespace */
+>> --
+>> 2.0.0.526.g5318336
 >>
->> This is sort of sad. We have to allocate a whole page and call the show
->> function to figure out if the attribute is visible? Why don't we
->> actually look at what the attribute is and check for the structure
->> members we care about? It looks like there are only a few combinations.
->>
->
-> Yes I thought about that, as even I didn't like that allocation. But if
-> we want the private attributes also use the same is_visible callback, we
-> can't check member directly as we don't know the details of the
-> individual element.
->
-> Even if we have compare elements we need to compare the attribute and
-> then the value for each element in the structure, requiring changes if
-> elements are added/removed. I am fine either way, just explaining why
-> it's done so.
+>> _______________________________________________
+>> Containers mailing list
+>> Containers@lists.linux-foundation.org
+>> https://lists.linuxfoundation.org/mailman/listinfo/containers
 
-Does any other sysfs attribute group do this? If it was desired I would
-think someone else would have done this already, or we wouldn't have
-even had an is_visible in the first place as this generic code would
-replace it.
 
->
->
->>> +     case CPU_ONLINE:
->>> +     case CPU_ONLINE_FROZEN:
->>> +             rc = detect_cache_attributes(cpu);
->>> +             if (!rc)
->>> +                     rc = cache_add_dev(cpu);
->>> +             break;
->>> +     case CPU_DEAD:
->>> +     case CPU_DEAD_FROZEN:
->>> +             cache_remove_dev(cpu);
->>> +             if (per_cpu_cacheinfo(cpu))
->>> +                     free_cache_attributes(cpu);
->>> +             break;
->>> +     }
->>> +     return notifier_from_errno(rc);
->>> +}
->>
->> Hm... adding/detecting/destroying this stuff every time a CPU is
->> logically hotplugged seems like a waste of time and energy. Why can't we
->> only do this work when the CPU is actually physically removed? The path
->> for that is via the subsys_interface and it would make it easier on
->> programs that want to learn about cache info as long as the CPU is
->> present in the system even if it isn't online at the time of reading.
->>
->
-> I agree, but the main reason I retained it as most of the existing
-> architectures implement this way and I didn't want tho change that
-> behaviour.
-
-Would anything bad happen if we loosened the behavior so that the
-directory is always present as long as the CPU is present? I doubt it.
-Seems like a low risk change.
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Aditya
