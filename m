@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799AbaGaVzS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 17:55:18 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:46228 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222AbaGaVzQ (ORCPT
+	id S1753542AbaGaV4j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 17:56:39 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:34509 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752695AbaGaVzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 17:55:16 -0400
+	Thu, 31 Jul 2014 17:55:18 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,112 +15,182 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period waiting for RCU-tasks
-Date: Thu, 31 Jul 2014 14:55:03 -0700
-Message-Id: <1406843709-23396-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v3 tip/core/rcu 2/9] rcu: Provide cond_resched_rcu_qs() to force quiescent states in long loops
+Date: Thu, 31 Jul 2014 14:55:02 -0700
+Message-Id: <1406843709-23396-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140731215445.GA21933@linux.vnet.ibm.com>
  <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073121-3532-0000-0000-00000387ABDE
+x-cbid: 14073121-9332-0000-0000-0000018F8813
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-It turns out to be easier to add the synchronous grace-period waiting
-functions to RCU-tasks than to work around their absense in rcutorture,
-so this commit adds them.  The key point is that the existence of
-call_rcu_tasks() means that rcutorture needs an rcu_barrier_tasks().
+RCU-tasks requires the occasional voluntary context switch
+from CPU-bound in-kernel tasks.  In some cases, this requires
+instrumenting cond_resched().  However, there is some reluctance
+to countenance unconditionally instrumenting cond_resched() (see
+http://lwn.net/Articles/603252/), so this commit creates a separate
+cond_resched_rcu_qs() that may be used in place of cond_resched() in
+locations prone to long-duration in-kernel looping.
+
+This commit currently instruments only RCU-tasks.  Future possibilities
+include also instrumenting RCU, RCU-bh, and RCU-sched in order to reduce
+IPI usage.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |  2 ++
- kernel/rcu/update.c      | 55 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 57 insertions(+)
+ fs/file.c                |  2 +-
+ include/linux/rcupdate.h | 13 +++++++++++++
+ kernel/rcu/rcutorture.c  |  4 ++--
+ kernel/rcu/tree.c        | 12 ++++++------
+ kernel/rcu/tree_plugin.h |  2 +-
+ mm/mlock.c               |  2 +-
+ 6 files changed, 24 insertions(+), 11 deletions(-)
 
+diff --git a/fs/file.c b/fs/file.c
+index 66923fe3176e..1cafc4c9275b 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -367,7 +367,7 @@ static struct fdtable *close_files(struct files_struct * files)
+ 				struct file * file = xchg(&fdt->fd[i], NULL);
+ 				if (file) {
+ 					filp_close(file, files);
+-					cond_resched();
++					cond_resched_rcu_qs();
+ 				}
+ 			}
+ 			i++;
 diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index ac87f587a1c1..1f073af940a5 100644
+index 829efc99df3e..ac87f587a1c1 100644
 --- a/include/linux/rcupdate.h
 +++ b/include/linux/rcupdate.h
-@@ -216,6 +216,8 @@ void synchronize_sched(void);
-  * memory ordering guarantees.
-  */
- void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
-+void synchronize_rcu_tasks(void);
-+void rcu_barrier_tasks(void);
- 
- #ifdef CONFIG_PREEMPT_RCU
- 
-diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index 50453589e3ca..fe866848a063 100644
---- a/kernel/rcu/update.c
-+++ b/kernel/rcu/update.c
-@@ -387,6 +387,61 @@ void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
- }
- EXPORT_SYMBOL_GPL(call_rcu_tasks);
+@@ -330,6 +330,19 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
+ #define rcu_note_voluntary_context_switch(t)	do { } while (0)
+ #endif /* #else #ifdef CONFIG_TASKS_RCU */
  
 +/**
-+ * synchronize_rcu_tasks - wait until an rcu-tasks grace period has elapsed.
++ * cond_resched_rcu_qs - Report potential quiescent states to RCU
 + *
-+ * Control will return to the caller some time after a full rcu-tasks
-+ * grace period has elapsed, in other words after all currently
-+ * executing rcu-tasks read-side critical sections have elapsed.  These
-+ * read-side critical sections are delimited by calls to schedule(),
-+ * cond_resched_rcu_qs(), idle execution, userspace execution, calls
-+ * to synchronize_rcu_tasks(), and (in theory, anyway) cond_resched().
-+ *
-+ * This is a very specialized primitive, intended only for a few uses in
-+ * tracing and other situations requiring manipulation of function
-+ * preambles and profiling hooks.  The synchronize_rcu_tasks() function
-+ * is not (yet) intended for heavy use from multiple CPUs.
-+ *
-+ * Note that this guarantee implies further memory-ordering guarantees.
-+ * On systems with more than one CPU, when synchronize_rcu_tasks() returns,
-+ * each CPU is guaranteed to have executed a full memory barrier since the
-+ * end of its last RCU-tasks read-side critical section whose beginning
-+ * preceded the call to synchronize_rcu_tasks().  In addition, each CPU
-+ * having an RCU-tasks read-side critical section that extends beyond
-+ * the return from synchronize_rcu_tasks() is guaranteed to have executed
-+ * a full memory barrier after the beginning of synchronize_rcu_tasks()
-+ * and before the beginning of that RCU-tasks read-side critical section.
-+ * Note that these guarantees include CPUs that are offline, idle, or
-+ * executing in user mode, as well as CPUs that are executing in the kernel.
-+ *
-+ * Furthermore, if CPU A invoked synchronize_rcu_tasks(), which returned
-+ * to its caller on CPU B, then both CPU A and CPU B are guaranteed
-+ * to have executed a full memory barrier during the execution of
-+ * synchronize_rcu_tasks() -- even if CPU A and CPU B are the same CPU
-+ * (but again only if the system has more than one CPU).
++ * This macro resembles cond_resched(), except that it is defined to
++ * report potential quiescent states to RCU-tasks even if the cond_resched()
++ * machinery were to be shut off, as some advocate for PREEMPT kernels.
 + */
-+void synchronize_rcu_tasks(void)
-+{
-+	/* Complain if the scheduler has not started.  */
-+	rcu_lockdep_assert(!rcu_scheduler_active,
-+			   "synchronize_rcu_tasks called too soon");
++#define cond_resched_rcu_qs() \
++do { \
++	rcu_note_voluntary_context_switch(current); \
++	cond_resched(); \
++} while (0)
 +
-+	/* Wait for the grace period. */
-+	wait_rcu_gp(call_rcu_tasks);
-+}
-+
-+/**
-+ * rcu_barrier_tasks - Wait for in-flight call_rcu_tasks() callbacks.
-+ *
-+ * Although the current implementation is guaranteed to wait, it is not
-+ * obligated to, for example, if there are no pending callbacks.
-+ */
-+void rcu_barrier_tasks(void)
-+{
-+	/* There is only one callback queue, so this is easy.  ;-) */
-+	synchronize_rcu_tasks();
-+}
-+
- /* RCU-tasks kthread that detects grace periods and invokes callbacks. */
- static int __noreturn rcu_tasks_kthread(void *arg)
- {
+ #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP)
+ bool __rcu_is_watching(void);
+ #endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index 7fa34f86e5ba..febe07062ac5 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -667,7 +667,7 @@ static int rcu_torture_boost(void *arg)
+ 				}
+ 				call_rcu_time = jiffies;
+ 			}
+-			cond_resched();
++			cond_resched_rcu_qs();
+ 			stutter_wait("rcu_torture_boost");
+ 			if (torture_must_stop())
+ 				goto checkwait;
+@@ -1019,7 +1019,7 @@ rcu_torture_reader(void *arg)
+ 		__this_cpu_inc(rcu_torture_batch[completed]);
+ 		preempt_enable();
+ 		cur_ops->readunlock(idx);
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 		stutter_wait("rcu_torture_reader");
+ 	} while (!torture_must_stop());
+ 	if (irqreader && cur_ops->irq_capable) {
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index f958c52f644d..645a33efc0d4 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -1650,7 +1650,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ 		    system_state == SYSTEM_RUNNING)
+ 			udelay(200);
+ #endif /* #ifdef CONFIG_PROVE_RCU_DELAY */
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 	}
+ 
+ 	mutex_unlock(&rsp->onoff_mutex);
+@@ -1739,7 +1739,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
+ 		/* smp_mb() provided by prior unlock-lock pair. */
+ 		nocb += rcu_future_gp_cleanup(rsp, rnp);
+ 		raw_spin_unlock_irq(&rnp->lock);
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 	}
+ 	rnp = rcu_get_root(rsp);
+ 	raw_spin_lock_irq(&rnp->lock);
+@@ -1788,7 +1788,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ 			/* Locking provides needed memory barrier. */
+ 			if (rcu_gp_init(rsp))
+ 				break;
+-			cond_resched();
++			cond_resched_rcu_qs();
+ 			flush_signals(current);
+ 			trace_rcu_grace_period(rsp->name,
+ 					       ACCESS_ONCE(rsp->gpnum),
+@@ -1831,10 +1831,10 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ 				trace_rcu_grace_period(rsp->name,
+ 						       ACCESS_ONCE(rsp->gpnum),
+ 						       TPS("fqsend"));
+-				cond_resched();
++				cond_resched_rcu_qs();
+ 			} else {
+ 				/* Deal with stray signal. */
+-				cond_resched();
++				cond_resched_rcu_qs();
+ 				flush_signals(current);
+ 				trace_rcu_grace_period(rsp->name,
+ 						       ACCESS_ONCE(rsp->gpnum),
+@@ -2437,7 +2437,7 @@ static void force_qs_rnp(struct rcu_state *rsp,
+ 	struct rcu_node *rnp;
+ 
+ 	rcu_for_each_leaf_node(rsp, rnp) {
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 		mask = 0;
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
+ 		smp_mb__after_unlock_lock();
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 02ac0fb186b8..a86a363ea453 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -1842,7 +1842,7 @@ static int rcu_oom_notify(struct notifier_block *self,
+ 	get_online_cpus();
+ 	for_each_online_cpu(cpu) {
+ 		smp_call_function_single(cpu, rcu_oom_notify_cpu, NULL, 1);
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 	}
+ 	put_online_cpus();
+ 
+diff --git a/mm/mlock.c b/mm/mlock.c
+index b1eb53634005..bc386a22d647 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -782,7 +782,7 @@ static int do_mlockall(int flags)
+ 
+ 		/* Ignore errors */
+ 		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 	}
+ out:
+ 	return 0;
 -- 
 1.8.1.5
 
