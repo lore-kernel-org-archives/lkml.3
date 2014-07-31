@@ -1,100 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750969AbaGaM0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 08:26:10 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29670 "EHLO mga02.intel.com"
+	id S1751201AbaGaM02 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 08:26:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44008 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750702AbaGaM0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 08:26:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,772,1400050800"; 
-   d="scan'208";a="581675929"
-Date: Thu, 31 Jul 2014 17:47:02 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, Joel Fernandes <joelf@ti.com>,
-        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org
-Subject: Re: [PATCH 1/7] dmaengine: edma: fix two faults which happen with
- the 8250_dma user
-Message-ID: <20140731121702.GU8181@intel.com>
-References: <1406660344-25307-1-git-send-email-bigeasy@linutronix.de>
- <1406660344-25307-2-git-send-email-bigeasy@linutronix.de>
+	id S1751071AbaGaM01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 08:26:27 -0400
+Date: Thu, 31 Jul 2014 09:26:21 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Minchan Kim <minchan@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/2] perf tools: Ensure --symfs ends with '/'
+Message-ID: <20140731122621.GV7831@kernel.org>
+References: <1406251908-8195-1-git-send-email-namhyung@kernel.org>
+ <20140729050246.GC22707@bbox>
+ <20140729123305.GO7831@kernel.org>
+ <87ppgnhge3.fsf@sejong.aot.lge.com>
+ <20140730151932.GS7831@kernel.org>
+ <20140730205521.GU7831@kernel.org>
+ <87ha1ygnn3.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406660344-25307-2-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87ha1ygnn3.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 08:58:58PM +0200, Sebastian Andrzej Siewior wrote:
-> The rx path of the 8250_dma user in the RX-timeout case:
-> - it starts the RX transfer
-> - if the rx-timeout interrupt occures, it dmaengine_pause() the transfer
-> - step two is dmaengine_terminate_all() on this channel.
-Okay after this whole channel needs to be reset, which means all the
-descriptors are discared.
-> - based on dmaengine_tx_status() it learns the number of transfered
->   bytes.
-> - the rx interrupt occures,
-why, channel is terminated, so existing txn needs to be aborted too
-
->   it does not start the RX-transfer because
->   according to dmaengine_tx_status() the status of the current transfer
->   is still DMA_IN_PROGRESS because the earlier dmaengine_terminate_all()
->   did not reset this.
-there is no current transfer anymore
-
-> - on rx-timeout it invokes dmaengine_pause() again. This time, it
->   segfaults because the channel has no descriptor yet.
+Em Thu, Jul 31, 2014 at 01:25:52PM +0900, Namhyung Kim escreveu:
+> Hi Arnaldo,
 > 
-> To make the upper case work better, this patch adds dma_cookie_complete()
-> to complete the cookie. Also it adds is an additional check for echan->edesc
-> in case the channel has no descriptor assigned.
-I think we are fixing the behvaiour rather than cause. terminate_all(()
-needs to do a proper cleanup of the channel
+> On Wed, 30 Jul 2014 17:55:21 -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Wed, Jul 30, 2014 at 12:19:32PM -0300, Arnaldo Carvalho de Melo escreveu:
+> >> Em Wed, Jul 30, 2014 at 08:52:36AM +0900, Namhyung Kim escreveu:
+> >> > I also thought about that way first but changed my mind to the current
+> >> > approach because I don't want to change current behavior.
+> >> 
+> >> > I worried about the common case which has empty symfs.  By your patch,
+> >> > it makes a pathname absolute even with an empty symfs - I can see most
+> >> > filenames are already absolute paths but I'm not 100% sure it's always
+> >> > the case.
+> >> 
+> >> Yeah, after doing some research on the tools/perf/ 'git log' I got your point,
+> >> we can't add the / after symfs usages when it is "", i.e. we need something
+> >> like:
 
-And this looks a series, without cover letter sent to all. Which makes it a
-bit hard to see what is getting done
+> >> [acme@zoo linux]$ python
+> >> >>> import os
+> >> >>> symfs = ""
+> >> >>> os.path.join(symfs, "dso_path")
+> >> 'dso_path'
+> >> >>> symfs = "/home/acme/embedded_device_dsos"
+> >> >>> os.path.join(symfs, "dso_path")
+> >> '/home/acme/embedded_device_dsos/dso_path'
 
--- 
-~Vinod
-> 
-> Cc: Joel Fernandes <joelf@ti.com>
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Cc: dmaengine@vger.kernel.org
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  drivers/dma/edma.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-> index d08c4de..ff05dd4 100644
-> --- a/drivers/dma/edma.c
-> +++ b/drivers/dma/edma.c
-> @@ -256,6 +256,7 @@ static int edma_terminate_all(struct edma_chan *echan)
->  	 * echan->edesc is NULL and exit.)
->  	 */
->  	if (echan->edesc) {
-> +		dma_cookie_complete(&echan->edesc->vdesc.tx);
->  		echan->edesc = NULL;
->  		edma_stop(echan->ch_num);
->  	}
-> @@ -282,7 +283,7 @@ static int edma_slave_config(struct edma_chan *echan,
->  static int edma_dma_pause(struct edma_chan *echan)
->  {
->  	/* Pause/Resume only allowed with cyclic mode */
-> -	if (!echan->edesc->cyclic)
-> +	if (!echan->edesc || !echan->edesc->cyclic)
->  		return -EINVAL;
->  
->  	edma_pause(echan->ch_num);
-> -- 
-> 2.0.1
-> 
+> >> I'll try and get that in place.
 
--- 
+> > Ok, the patch below should implement it just like above, if Minchan
+> > could please retest, I did just minimal testing, will do more later.
+ 
+> Are you still against my approach - adding '/' at the end of the symfs
+> string itself?  It seems that mine is simpler and shorter.
+
+Yes, I am.
+
+We are not just concatenating two strings, we are joining two path
+components.
+
+I think it is more clear and elegant to do it as python os.path.join()
+does.
+
+- Arnaldo
