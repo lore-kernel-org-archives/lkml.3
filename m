@@ -1,364 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110AbaGaFb5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 01:31:57 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:64635 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204AbaGaFbx (ORCPT
+	id S1756174AbaGaFco (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 01:32:44 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:11743 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756144AbaGaFcm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 01:31:53 -0400
-From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
-To: <gregkh@linuxfoundation.org>
-CC: <oort10@gmail.com>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-Subject: [PATCH v2 3/3] staging:r8190: coding style: Fixed checkpatch reported Error
-Date: Thu, 31 Jul 2014 11:13:31 +0530
-Message-ID: <1406785411-12538-4-git-send-email-sanjeev_sharma@mentor.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1406785411-12538-1-git-send-email-sanjeev_sharma@mentor.com>
-References: <1406785411-12538-1-git-send-email-sanjeev_sharma@mentor.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginalArrivalTime: 31 Jul 2014 05:31:52.0949 (UTC) FILETIME=[BC26E250:01CFAC80]
+	Thu, 31 Jul 2014 01:32:42 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-b7-53d9d4f82e67
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Changman Lee'" <cm224.lee@samsung.com>,
+        "'Jaegeuk Kim'" <jaegeuk@kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <003901cf96ad$dbd17680$93746380$@samsung.com>
+ <00f601cfabf7$691af580$3b50e080$@samsung.com> <20140731020708.GB24081@lcm>
+In-reply-to: <20140731020708.GB24081@lcm>
+Subject: RE: [f2fs-dev] [PATCH] f2fs: reduce competition among node page writes
+Date: Thu, 31 Jul 2014 13:31:46 +0800
+Message-id: <016201cfac80$d6e336c0$84a9a440$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Content-language: zh-cn
+Thread-index: AQIDqdX3kbhQL0bQPBsk1Qmt1GnMiAL7I+IyARKYY8ObMRsn0A==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9jQd0fV24GG5xsMra4tq+RyeLJ+lnM
+	FpcWuVvs2XuSxeLyrjlsDqwem1Z1snnsXvCZyaNvyypGj8+b5AJYorhsUlJzMstSi/TtErgy
+	Pu9dx1zwSb9i3ZETLA2Mv1W7GDk5JARMJJ6uuMkOYYtJXLi3nq2LkYtDSGA6o8TMSzuZIZwf
+	jBLTJu5gAaliE1CRWN7xn6mLkYNDRMBP4ma7PUiYWSBTYs7ryawQ9W2MEofPTWQGSXAKaEr0
+	zjwCZgsL+EvMnzabCcRmEVCVODtpFpjNK2Ap8enjXBYIW1Dix+R7LBBDtSTW7zzOBGHLS2xe
+	85YZ4lIFiR1nXzNCxMUlNh65BVYvIuAkcXrCGtYJjEKzkIyahWTULCSjZiFpX8DIsopRNLUg
+	uaA4KT3XSK84Mbe4NC9dLzk/dxMjOB6eSe9gXNVgcYhRgINRiYf3h8nNYCHWxLLiytxDjBIc
+	zEoivAcXAIV4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1DhQSSE8sSc1OTS1ILYLJMnFwSjUw
+	Tj+5124Ps27G3w1rkwymGcg4aOZe52Gv4DNjOORreFRa5IkPd49uNd9BWcFPKp0bm3WWTnix
+	Rr7jW5fz80qfnenuQR61lxNlOb3rtG6bSYWHLfGNnz55q/FCdonlf/eyvjTTE9SYd0/3P8/+
+	uM1TmvLcare8uKLbunrJ+thLi8/IPr78seiXEktxRqKhFnNRcSIASwpSpYMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the r8190_rtl8256.c file that fixes
-checkpatch reported space & coding style issues.
+Hi Changman,
 
-Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
----
-Changes in v2:
-  - Added space character in the signed-off-by field.
+> -----Original Message-----
+> From: Changman Lee [mailto:cm224.lee@samsung.com]
+> Sent: Thursday, July 31, 2014 10:07 AM
+> To: Chao Yu
+> Cc: 'Jaegeuk Kim'; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Subject: Re: [f2fs-dev] [PATCH] f2fs: reduce competition among node page writes
+> 
+> Hi Chao,
+> 
+> On Wed, Jul 30, 2014 at 09:07:49PM +0800, Chao Yu wrote:
+> > Hi Jaegeuk Changman,
+> >
+> > > -----Original Message-----
+> > > From: Chao Yu [mailto:chao2.yu@samsung.com]
+> > > Sent: Thursday, July 03, 2014 6:59 PM
+> > > To: Jaegeuk Kim; Changman Lee
+> > > Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > > linux-f2fs-devel@lists.sourceforge.net
+> > > Subject: [f2fs-dev] [PATCH] f2fs: reduce competition among node page writes
+> > >
+> > > We do not need to block on ->node_write among different node page writers e.g.
+> > > fsync/flush, unless we have a node page writer from write_checkpoint.
+> > > So it's better use rw_semaphore instead of mutex type for ->node_write to
+> > > promote performance.
+> >
+> > If you could have time to help explaining the problem of this patch, I will be
+> > appreciated for that.
+> 
+> I have no clue. Except checkpoint, I don't know why need to block to
+> write node page.
+> Do you have any problem when you test with this patch?
 
- drivers/staging/rtl8192u/r8190_rtl8256.c | 169 +++++++++++++++----------------
- 1 file changed, 79 insertions(+), 90 deletions(-)
+I don't have.
+I send this patch about one month ago, but got no respond.
+So I want to ask if any problem in this patch or forget to look at this patch?
 
-diff --git a/drivers/staging/rtl8192u/r8190_rtl8256.c b/drivers/staging/rtl8192u/r8190_rtl8256.c
-index 08e1bc9..43ed768 100644
---- a/drivers/staging/rtl8192u/r8190_rtl8256.c
-+++ b/drivers/staging/rtl8192u/r8190_rtl8256.c
-@@ -23,62 +23,64 @@
-  * Return:      NONE
-  * Note:	8226 support both 20M  and 40 MHz
-  *---------------------------------------------------------------------------*/
--void PHY_SetRF8256Bandwidth(struct net_device *dev , HT_CHANNEL_WIDTH Bandwidth)	//20M or 40M
-+void PHY_SetRF8256Bandwidth(struct net_device *dev , HT_CHANNEL_WIDTH Bandwidth)
- {
- 	u8	eRFPath;
- 	struct r8192_priv *priv = ieee80211_priv(dev);
- 
--	//for(eRFPath = RF90_PATH_A; eRFPath <pHalData->NumTotalRFPath; eRFPath++)
--	for(eRFPath = 0; eRFPath <RF90_PATH_MAX; eRFPath++)
--	{
-+	/* for(eRFPath = RF90_PATH_A; eRFPath <pHalData->NumTotalRFPath;
-+	 *  eRFPath++)
-+	 */
-+	for (eRFPath = 0; eRFPath < RF90_PATH_MAX; eRFPath++) {
- 		if (!rtl8192_phy_CheckIsLegalRFPath(dev, eRFPath))
- 			continue;
- 
--		switch (Bandwidth)
--		{
--			case HT_CHANNEL_WIDTH_20:
--				if(priv->card_8192_version == VERSION_819xU_A || priv->card_8192_version == VERSION_819xU_B)// 8256 D-cut, E-cut, xiong: consider it later!
--				{
--					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x0b, bMask12Bits, 0x100); //phy para:1ba
--					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x2c, bMask12Bits, 0x3d7);
--					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x0e, bMask12Bits, 0x021);
--
--					//cosa add for sd3's request 01/23/2008
--					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x14, bMask12Bits, 0x5ab);
--				}
--				else
--				{
-+		switch (Bandwidth) {
-+		case HT_CHANNEL_WIDTH_20:
-+				if (priv->card_8192_version == VERSION_819xU_A
-+					|| priv->card_8192_version
-+					== VERSION_819xU_B) { /* 8256 D-cut, E-cut, xiong: consider it later! */
-+					rtl8192_phy_SetRFReg(dev,
-+						(RF90_RADIO_PATH_E)eRFPath,
-+						0x0b, bMask12Bits, 0x100); /* phy para:1ba */
-+					rtl8192_phy_SetRFReg(dev,
-+						(RF90_RADIO_PATH_E)eRFPath,
-+						0x2c, bMask12Bits, 0x3d7);
-+					rtl8192_phy_SetRFReg(dev,
-+						(RF90_RADIO_PATH_E)eRFPath,
-+						0x0e, bMask12Bits, 0x021);
-+
-+					/* cosa add for sd3's request 01/23/2008
-+					 */
-+					rtl8192_phy_SetRFReg(dev,
-+						(RF90_RADIO_PATH_E)eRFPath,
-+						0x14, bMask12Bits, 0x5ab);
-+				} else {
- 					RT_TRACE(COMP_ERR, "PHY_SetRF8256Bandwidth(): unknown hardware version\n");
--				}
--
-+					}
- 				break;
--			case HT_CHANNEL_WIDTH_20_40:
--				if(priv->card_8192_version == VERSION_819xU_A ||priv->card_8192_version == VERSION_819xU_B)// 8256 D-cut, E-cut, xiong: consider it later!
--				{
-+		case HT_CHANNEL_WIDTH_20_40:
-+				if (priv->card_8192_version == VERSION_819xU_A || priv->card_8192_version == VERSION_819xU_B) { /* 8256 D-cut, E-cut, xiong: consider it later! */
- 					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x0b, bMask12Bits, 0x300); //phy para:3ba
- 					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x2c, bMask12Bits, 0x3df);
- 					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x0e, bMask12Bits, 0x0a1);
- 
- 					//cosa add for sd3's request 01/23/2008
--					if(priv->chan == 3 || priv->chan == 9) //I need to set priv->chan whenever current channel changes
-+					if (priv->chan == 3 || priv->chan == 9)
-+						//I need to set priv->chan whenever current channel changes
- 						rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x14, bMask12Bits, 0x59b);
- 					else
- 						rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x14, bMask12Bits, 0x5ab);
--				}
--				else
--				{
-+				} else {
- 					RT_TRACE(COMP_ERR, "PHY_SetRF8256Bandwidth(): unknown hardware version\n");
--				}
--
--
-+					}
- 				break;
--			default:
--				RT_TRACE(COMP_ERR, "PHY_SetRF8256Bandwidth(): unknown Bandwidth: %#X\n",Bandwidth);
-+		default:
-+				RT_TRACE(COMP_ERR, "PHY_SetRF8256Bandwidth(): unknown Bandwidth: %#X\n", Bandwidth);
- 				break;
- 
- 		}
- 	}
--	return;
- }
- /*--------------------------------------------------------------------------
-  * Overview:    Interface to config 8256
-@@ -95,8 +97,6 @@ void PHY_RF8256_Config(struct net_device *dev)
- 	priv->NumTotalRFPath = RTL819X_TOTAL_RF_PATH;
- 	// Config BB and RF
- 	phy_RF8256_Config_ParaFile(dev);
--
--	return;
- }
- /*--------------------------------------------------------------------------
-  * Overview:    Interface to config 8256
-@@ -122,8 +122,7 @@ void phy_RF8256_Config_ParaFile(struct net_device *dev)
- 	//3//-----------------------------------------------------------------
- 	//3// <2> Initialize RF
- 	//3//-----------------------------------------------------------------
--	for(eRFPath = (RF90_RADIO_PATH_E)RF90_PATH_A; eRFPath <priv->NumTotalRFPath; eRFPath++)
--	{
-+	for (eRFPath = (RF90_RADIO_PATH_E)RF90_PATH_A; eRFPath < priv->NumTotalRFPath; eRFPath++) {
- 		if (!rtl8192_phy_CheckIsLegalRFPath(dev, eRFPath))
- 			continue;
- 
-@@ -133,13 +132,12 @@ void phy_RF8256_Config_ParaFile(struct net_device *dev)
- 	//	pHalData->RfReg0Value[eRFPath] =  rtl8192_phy_QueryRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, rGlobalCtrl, bMaskDWord);
- 
- 		/*----Store original RFENV control type----*/
--		switch (eRFPath)
--		{
-+		switch (eRFPath) {
- 		case RF90_PATH_A:
- 		case RF90_PATH_C:
- 			u4RegValue = rtl8192_QueryBBReg(dev, pPhyReg->rfintfs, bRFSI_RFENV);
- 			break;
--		case RF90_PATH_B :
-+		case RF90_PATH_B:
- 		case RF90_PATH_D:
- 			u4RegValue = rtl8192_QueryBBReg(dev, pPhyReg->rfintfs, bRFSI_RFENV<<16);
- 			break;
-@@ -159,8 +157,7 @@ void phy_RF8256_Config_ParaFile(struct net_device *dev)
- 
- 		/*----Check RF block (for FPGA platform only)----*/
- 		// TODO: this function should be removed on ASIC , Emily 2007.2.2
--		if (rtl8192_phy_checkBBAndRF(dev, HW90_BLOCK_RF, (RF90_RADIO_PATH_E)eRFPath))
--		{
-+		if (rtl8192_phy_checkBBAndRF(dev, HW90_BLOCK_RF, (RF90_RADIO_PATH_E)eRFPath)) {
- 			RT_TRACE(COMP_ERR, "PHY_RF8256_Config():Check Radio[%d] Fail!!\n", eRFPath);
- 			goto phy_RF8256_Config_ParaFile_Fail;
- 		}
-@@ -168,39 +165,34 @@ void phy_RF8256_Config_ParaFile(struct net_device *dev)
- 		RetryTimes = ConstRetryTimes;
- 		RF3_Final_Value = 0;
- 		/*----Initialize RF fom connfiguration file----*/
--		switch (eRFPath)
--		{
-+		switch (eRFPath) {
- 		case RF90_PATH_A:
--			while(RF3_Final_Value!=RegValueToBeCheck && RetryTimes!=0)
--			{
--				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev,(RF90_RADIO_PATH_E)eRFPath);
-+			while (RF3_Final_Value != RegValueToBeCheck && RetryTimes != 0) {
-+				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev, (RF90_RADIO_PATH_E)eRFPath);
- 				RF3_Final_Value = rtl8192_phy_QueryRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, RegOffSetToBeCheck, bMask12Bits);
- 				RT_TRACE(COMP_RF, "RF %d %d register final value: %x\n", eRFPath, RegOffSetToBeCheck, RF3_Final_Value);
- 				RetryTimes--;
- 			}
- 			break;
- 		case RF90_PATH_B:
--			while(RF3_Final_Value!=RegValueToBeCheck && RetryTimes!=0)
--			{
--				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev,(RF90_RADIO_PATH_E)eRFPath);
-+			while (RF3_Final_Value != RegValueToBeCheck && RetryTimes != 0) {
-+				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev, (RF90_RADIO_PATH_E)eRFPath);
- 				RF3_Final_Value = rtl8192_phy_QueryRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, RegOffSetToBeCheck, bMask12Bits);
- 				RT_TRACE(COMP_RF, "RF %d %d register final value: %x\n", eRFPath, RegOffSetToBeCheck, RF3_Final_Value);
- 				RetryTimes--;
- 			}
- 			break;
- 		case RF90_PATH_C:
--			while(RF3_Final_Value!=RegValueToBeCheck && RetryTimes!=0)
--			{
--				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev,(RF90_RADIO_PATH_E)eRFPath);
-+			while (RF3_Final_Value != RegValueToBeCheck && RetryTimes != 0) {
-+				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev, (RF90_RADIO_PATH_E)eRFPath);
- 				RF3_Final_Value = rtl8192_phy_QueryRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, RegOffSetToBeCheck, bMask12Bits);
- 				RT_TRACE(COMP_RF, "RF %d %d register final value: %x\n", eRFPath, RegOffSetToBeCheck, RF3_Final_Value);
- 				RetryTimes--;
- 			}
- 			break;
- 		case RF90_PATH_D:
--			while(RF3_Final_Value!=RegValueToBeCheck && RetryTimes!=0)
--			{
--				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev,(RF90_RADIO_PATH_E)eRFPath);
-+			while (RF3_Final_Value != RegValueToBeCheck && RetryTimes != 0) {
-+				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev, (RF90_RADIO_PATH_E)eRFPath);
- 				RF3_Final_Value = rtl8192_phy_QueryRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, RegOffSetToBeCheck, bMask12Bits);
- 				RT_TRACE(COMP_RF, "RF %d %d register final value: %x\n", eRFPath, RegOffSetToBeCheck, RF3_Final_Value);
- 				RetryTimes--;
-@@ -209,50 +201,48 @@ void phy_RF8256_Config_ParaFile(struct net_device *dev)
- 		}
- 
- 		/*----Restore RFENV control type----*/;
--		switch (eRFPath)
--		{
-+		switch (eRFPath) {
- 		case RF90_PATH_A:
- 		case RF90_PATH_C:
- 			rtl8192_setBBreg(dev, pPhyReg->rfintfs, bRFSI_RFENV, u4RegValue);
- 			break;
--		case RF90_PATH_B :
-+		case RF90_PATH_B:
- 		case RF90_PATH_D:
- 			rtl8192_setBBreg(dev, pPhyReg->rfintfs, bRFSI_RFENV<<16, u4RegValue);
- 			break;
- 		}
- 
--		if(ret){
-+		if (ret) {
- 			RT_TRACE(COMP_ERR, "phy_RF8256_Config_ParaFile():Radio[%d] Fail!!", eRFPath);
- 			goto phy_RF8256_Config_ParaFile_Fail;
- 		}
- 
- 	}
- 
--	RT_TRACE(COMP_PHY, "PHY Initialization Success\n") ;
--	return ;
-+	RT_TRACE(COMP_PHY, "PHY Initialization Success\n");
-+	return;
- 
- phy_RF8256_Config_ParaFile_Fail:
--	RT_TRACE(COMP_ERR, "PHY Initialization failed\n") ;
--	return ;
-+	RT_TRACE(COMP_ERR, "PHY Initialization failed\n");
- }
- 
- 
- void PHY_SetRF8256CCKTxPower(struct net_device *dev, u8 powerlevel)
- {
--	u32	TxAGC=0;
-+	u32	TxAGC = 0;
- 	struct r8192_priv *priv = ieee80211_priv(dev);
- 	//modified by vivi, 20080109
- 	TxAGC = powerlevel;
- 
--	if(priv->bDynamicTxLowPower == TRUE) //cosa 05/22/2008 for scan
--	{
--		if(priv->CustomerID == RT_CID_819x_Netcore)
-+	if (priv->bDynamicTxLowPower == TRUE) {
-+		//cosa 05/22/2008 for scan
-+		if (priv->CustomerID == RT_CID_819x_Netcore)
- 			TxAGC = 0x22;
- 		else
- 			TxAGC += priv->CckPwEnl;
- 	}
- 
--	if(TxAGC > 0x24)
-+	if (TxAGC > 0x24)
- 		TxAGC = 0x24;
- 	rtl8192_setBBreg(dev, rTxAGC_CCK_Mcs32, bTxAGCRateCCK, TxAGC);
- }
-@@ -268,43 +258,42 @@ void PHY_SetRF8256OFDMTxPower(struct net_device *dev, u8 powerlevel)
- 	u8 byte0, byte1, byte2, byte3;
- 
- 	powerBase0 = powerlevel + priv->TxPowerDiff;	//OFDM rates
--	powerBase0 = (powerBase0<<24) | (powerBase0<<16) |(powerBase0<<8) |powerBase0;
-+	powerBase0 = (powerBase0<<24) | (powerBase0<<16) | (powerBase0<<8) | powerBase0;
- 	powerBase1 = powerlevel;							//MCS rates
--	powerBase1 = (powerBase1<<24) | (powerBase1<<16) |(powerBase1<<8) |powerBase1;
-+	powerBase1 = (powerBase1<<24) | (powerBase1<<16) | (powerBase1<<8) | powerBase1;
- 
--	for(index=0; index<6; index++)
--	{
--		writeVal = priv->MCSTxPowerLevelOriginalOffset[index] + ((index<2)?powerBase0:powerBase1);
-+	for (index = 0; index < 6; index++) {
-+		writeVal = priv->MCSTxPowerLevelOriginalOffset[index] + ((index < 2)?powerBase0:powerBase1);
- 		byte0 = (u8)(writeVal & 0x7f);
- 		byte1 = (u8)((writeVal & 0x7f00)>>8);
- 		byte2 = (u8)((writeVal & 0x7f0000)>>16);
- 		byte3 = (u8)((writeVal & 0x7f000000)>>24);
--		if(byte0 > 0x24)	// Max power index = 0x24
-+
-+		if (byte0 > 0x24)
-+			/* Max power index = 0x24 */
- 			byte0 = 0x24;
--		if(byte1 > 0x24)
-+		if (byte1 > 0x24)
- 			byte1 = 0x24;
--		if(byte2 > 0x24)
-+		if (byte2 > 0x24)
- 			byte2 = 0x24;
--		if(byte3 > 0x24)
-+		if (byte3 > 0x24)
- 			byte3 = 0x24;
- 
- 		//for tx power track
--		if(index == 3)
--		{
--			writeVal_tmp = (byte3<<24) | (byte2<<16) |(byte1<<8) |byte0;
-+		if (index == 3) {
-+			writeVal_tmp = (byte3<<24) | (byte2<<16) | (byte1<<8) | byte0;
- 			priv->Pwr_Track = writeVal_tmp;
- 		}
- 
--		if(priv->bDynamicTxHighPower == TRUE)     //Add by Jacken 2008/03/06
--		{
--			// Emily, 20080613. Set low tx power for both MCS and legacy OFDM
-+		if (priv->bDynamicTxHighPower == TRUE) {
-+			/*Add by Jacken 2008/03/06
-+			 *Emily, 20080613. Set low tx power for both MCS and legacy OFDM
-+			 */
- 			writeVal = 0x03030303;
--		}
--		else
--		{
--			writeVal = (byte3<<24) | (byte2<<16) |(byte1<<8) |byte0;
--		}
--		rtl8192_setBBreg(dev, RegOffset[index], 0x7f7f7f7f, writeVal);
-+		} else {
-+			writeVal = (byte3<<24) | (byte2<<16) | (byte1<<8) | byte0;
-+			}
-+			rtl8192_setBBreg(dev, RegOffset[index], 0x7f7f7f7f, writeVal);
- 	}
- 	return;
- 
--- 
-1.7.11.7
+To Jaegeuk:
+Any idea about this patch?
+
+> 
+> >
+> > Another question is what is ->writepages in sbi used for? I'm not quite clear.
+> >
+> 
+> I remember it is for writing data pages per thread as much as possible.
+> When multi-threads write some files simultaneously, multi-threads contended with
+> each other to allocate a block. So block allocation was interleaved
+> across threads. It makes fragmentation of file.
+
+Thank you for the explanation! :)
+I think what you say is reasonable.
+
+Previously I tested without this lock, although I found that the blocks written
+_almost_ were continuous in each '->writepages()'. Still I think we can gain more
+from readahead continuous block when using this lock, rather than remove it for
+promoting concurrent of writers.
+
+Thanks,
+Yu
+
+> 
+> Thanks,
+> 
+> > Thanks,
+> >
+> > >
+> > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > > ---
+> > >  fs/f2fs/checkpoint.c |    6 +++---
+> > >  fs/f2fs/f2fs.h       |    2 +-
+> > >  fs/f2fs/node.c       |    4 ++--
+> > >  fs/f2fs/super.c      |    2 +-
+> > >  4 files changed, 7 insertions(+), 7 deletions(-)
+> > >
+> > > diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+> > > index 0b4710c..eec406b 100644
+> > > --- a/fs/f2fs/checkpoint.c
+> > > +++ b/fs/f2fs/checkpoint.c
+> > > @@ -714,10 +714,10 @@ retry_flush_dents:
+> > >  	 * until finishing nat/sit flush.
+> > >  	 */
+> > >  retry_flush_nodes:
+> > > -	mutex_lock(&sbi->node_write);
+> > > +	down_write(&sbi->node_write);
+> > >
+> > >  	if (get_pages(sbi, F2FS_DIRTY_NODES)) {
+> > > -		mutex_unlock(&sbi->node_write);
+> > > +		up_write(&sbi->node_write);
+> > >  		sync_node_pages(sbi, 0, &wbc);
+> > >  		goto retry_flush_nodes;
+> > >  	}
+> > > @@ -726,7 +726,7 @@ retry_flush_nodes:
+> > >
+> > >  static void unblock_operations(struct f2fs_sb_info *sbi)
+> > >  {
+> > > -	mutex_unlock(&sbi->node_write);
+> > > +	up_write(&sbi->node_write);
+> > >  	f2fs_unlock_all(sbi);
+> > >  }
+> > >
+> > > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> > > index ae3b4ac..ca30b5a 100644
+> > > --- a/fs/f2fs/f2fs.h
+> > > +++ b/fs/f2fs/f2fs.h
+> > > @@ -444,7 +444,7 @@ struct f2fs_sb_info {
+> > >  	struct inode *meta_inode;		/* cache meta blocks */
+> > >  	struct mutex cp_mutex;			/* checkpoint procedure lock */
+> > >  	struct rw_semaphore cp_rwsem;		/* blocking FS operations */
+> > > -	struct mutex node_write;		/* locking node writes */
+> > > +	struct rw_semaphore node_write;		/* locking node writes */
+> > >  	struct mutex writepages;		/* mutex for writepages() */
+> > >  	bool por_doing;				/* recovery is doing or not */
+> > >  	wait_queue_head_t cp_wait;
+> > > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> > > index a90f51d..7b5b5de 100644
+> > > --- a/fs/f2fs/node.c
+> > > +++ b/fs/f2fs/node.c
+> > > @@ -1231,12 +1231,12 @@ static int f2fs_write_node_page(struct page *page,
+> > >  	if (wbc->for_reclaim)
+> > >  		goto redirty_out;
+> > >
+> > > -	mutex_lock(&sbi->node_write);
+> > > +	down_read(&sbi->node_write);
+> > >  	set_page_writeback(page);
+> > >  	write_node_page(sbi, page, &fio, nid, ni.blk_addr, &new_addr);
+> > >  	set_node_addr(sbi, &ni, new_addr, is_fsync_dnode(page));
+> > >  	dec_page_count(sbi, F2FS_DIRTY_NODES);
+> > > -	mutex_unlock(&sbi->node_write);
+> > > +	up_read(&sbi->node_write);
+> > >  	unlock_page(page);
+> > >  	return 0;
+> > >
+> > > diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+> > > index 8f96d93..bed9413 100644
+> > > --- a/fs/f2fs/super.c
+> > > +++ b/fs/f2fs/super.c
+> > > @@ -947,7 +947,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+> > >  	mutex_init(&sbi->gc_mutex);
+> > >  	mutex_init(&sbi->writepages);
+> > >  	mutex_init(&sbi->cp_mutex);
+> > > -	mutex_init(&sbi->node_write);
+> > > +	init_rwsem(&sbi->node_write);
+> > >  	sbi->por_doing = false;
+> > >  	spin_lock_init(&sbi->stat_lock);
+> > >
+> > > --
+> > > 1.7.9.5
+> > >
+> > >
+> > >
+> > > ------------------------------------------------------------------------------
+> > > Open source business process management suite built on Java and Eclipse
+> > > Turn processes into business applications with Bonita BPM Community Edition
+> > > Quickly connect people, data, and systems into organized workflows
+> > > Winner of BOSSIE, CODIE, OW2 and Gartner awards
+> > > http://p.sf.net/sfu/Bonitasoft
+> > > _______________________________________________
+> > > Linux-f2fs-devel mailing list
+> > > Linux-f2fs-devel@lists.sourceforge.net
+> > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 
