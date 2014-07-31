@@ -1,140 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402AbaGaOy0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 10:54:26 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:60559 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbaGaOyZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 10:54:25 -0400
-Date: Thu, 31 Jul 2014 10:54:16 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <jweiner@redhat.com>,
-        Jerome Glisse <jglisse@redhat.com>, jroedel@suse.de,
-        Jay.Cornwall@amd.com, Oded.Gabbay@amd.com, John.Bridgman@amd.com,
-        Suravee.Suthikulpanit@amd.com, ben.sander@amd.com,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, iommu@lists.linux-foundation.org
-Subject: Re: [PATCH 0/3 v2] mmu_notifier: Allow to manage CPU external TLBs
-Message-ID: <20140731145414.GA1955@gmail.com>
-References: <1406650693-23315-1-git-send-email-joro@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1406650693-23315-1-git-send-email-joro@8bytes.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751444AbaGaO5o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 10:57:44 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:58138 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750883AbaGaO5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 10:57:43 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: driverdev-devel@linuxdriverproject.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: comedi: ii_pci20kc: request and ioremap memory
+Date: Thu, 31 Jul 2014 15:57:27 +0100
+Message-Id: <1406818647-10107-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 29, 2014 at 06:18:10PM +0200, Joerg Roedel wrote:
-> Changes V1->V2:
-> 
-> * Rebase to v3.16-rc7
-> * Added call of ->invalidate_range to
->   __mmu_notifier_invalidate_end() so that the subsystem
->   doesn't need to register an ->invalidate_end() call-back,
->   subsystems will likely either register
->   invalidate_range_start/end or invalidate_range, so that
->   should be fine.
-> * Re-orded declarations a bit to reflect that
->   invalidate_range is not only called between
->   invalidate_range_start/end
-> * Updated documentation to cover the case where
->   invalidate_range is called outside of
->   invalidate_range_start/end to flush page-table pages out
->   of the TLB
-> 
-> Hi,
-> 
-> here is a patch-set to extend the mmu_notifiers in the Linux
-> kernel to allow managing CPU external TLBs. Those TLBs may
-> be implemented in IOMMUs or any other external device, e.g.
-> ATS/PRI capable PCI devices.
-> 
-> The problem with managing these TLBs are the semantics of
-> the invalidate_range_start/end call-backs currently
-> available. Currently the subsystem using mmu_notifiers has
-> to guarantee that no new TLB entries are established between
-> invalidate_range_start/end. Furthermore the
-> invalidate_range_start() function is called when all pages
-> are still mapped and invalidate_range_end() when the pages
-> are unmapped an already freed.
-> 
-> So both call-backs can't be used to safely flush any non-CPU
-> TLB because _start() is called too early and _end() too
-> late.
-> 
-> In the AMD IOMMUv2 driver this is currently implemented by
-> assigning an empty page-table to the external device between
-> _start() and _end(). But as tests have shown this doesn't
-> work as external devices don't re-fault infinitly but enter
-> a failure state after some time.
-> 
-> Next problem with this solution is that it causes an
-> interrupt storm for IO page faults to be handled when an
-> empty page-table is assigned.
-> 
-> Furthermore the _start()/end() notifiers only catch the
-> moment when page mappings are released, but not page-table
-> pages. But this is necessary for managing external TLBs when
-> the page-table is shared with the CPU.
-> 
-> To solve this situation I wrote a patch-set to introduce a
-> new notifier call-back: mmu_notifer_invalidate_range(). This
-> notifier lifts the strict requirements that no new
-> references are taken in the range between _start() and
-> _end(). When the subsystem can't guarantee that any new
-> references are taken is has to provide the
-> invalidate_range() call-back to clear any new references in
-> there.
-> 
-> It is called between invalidate_range_start() and _end()
-> every time the VMM has to wipe out any references to a
-> couple of pages. This are usually the places where the CPU
-> TLBs are flushed too and where its important that this
-> happens before invalidate_range_end() is called.
-> 
-> Any comments and review appreciated!
+The "ii_pci20kc" module is a comedi driver for Intelligent Instruments
+PCI-20001C carrier board and modules.  Despite the name, this is
+actually an ISA board and uses 1K of ISA memory space (below 1M) for the
+main board plus up to three modules.  The address is set by hardware
+jumpers.
 
-For the series :
+When the board is attached to Comedi via the `COMEDI_DEVCONFIG` ioctl
+and the driver's legacy "attach" handler, the base address is passed in.
+The driver currently uses that address as-is, which is a bad idea.  It
+doesn't even reserve the memory region.
 
-Reviewed-by: Jérôme Glisse <jglisse@redhat.com>
+Fix that by sanity checking the passed in address, reserving the memory
+region and ioremapping it.
 
-> 
-> Thanks,
-> 
-> 	Joerg
-> 
-> Joerg Roedel (3):
->   mmu_notifier: Add mmu_notifier_invalidate_range()
->   mmu_notifier: Call mmu_notifier_invalidate_range() from VMM
->   mmu_notifier: Add the call-back for mmu_notifier_invalidate_range()
-> 
->  include/linux/mmu_notifier.h | 75 +++++++++++++++++++++++++++++++++++++++++---
->  kernel/events/uprobes.c      |  2 +-
->  mm/fremap.c                  |  2 +-
->  mm/huge_memory.c             |  9 +++---
->  mm/hugetlb.c                 |  7 ++++-
->  mm/ksm.c                     |  4 +--
->  mm/memory.c                  |  3 +-
->  mm/migrate.c                 |  3 +-
->  mm/mmu_notifier.c            | 25 +++++++++++++++
->  mm/rmap.c                    |  2 +-
->  10 files changed, 115 insertions(+), 17 deletions(-)
-> 
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Replace the current "detach" handler `comedi_legacy_detach()` with a new
+handler `ii20k_detach()` which unmaps the memory and releases the
+region.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+ drivers/staging/comedi/drivers/ii_pci20kc.c | 32 ++++++++++++++++++++++++++---
+ 1 file changed, 29 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/ii_pci20kc.c b/drivers/staging/comedi/drivers/ii_pci20kc.c
+index b1f44b3..687db43 100644
+--- a/drivers/staging/comedi/drivers/ii_pci20kc.c
++++ b/drivers/staging/comedi/drivers/ii_pci20kc.c
+@@ -33,6 +33,7 @@
+ /*
+  * Register I/O map
+  */
++#define II20K_SIZE			0x400
+ #define II20K_MOD_OFFSET		0x100
+ #define II20K_ID_REG			0x00
+ #define II20K_ID_MOD1_EMPTY		(1 << 7)
+@@ -439,12 +440,29 @@ static int ii20k_attach(struct comedi_device *dev,
+ 			struct comedi_devconfig *it)
+ {
+ 	struct comedi_subdevice *s;
++	unsigned int membase;
+ 	unsigned char id;
+ 	bool has_dio;
+ 	int ret;
+ 
+-	/* FIXME: this doesn't seem right, should 'mmio' be ioremap'ed? */
+-	dev->mmio = (void __iomem *)(unsigned long)it->options[0];
++	membase = it->options[0];
++	if (!membase || (membase & ~(0x100000 - II20K_SIZE))) {
++		dev_warn(dev->class_dev,
++			 "%s: invalid memory address specified\n",
++			 dev->board_name);
++		return -EINVAL;
++	}
++
++	if (!request_mem_region(membase, II20K_SIZE, dev->board_name)) {
++		dev_warn(dev->class_dev, "%s: I/O mem conflict (%#x,%u)\n",
++			 dev->board_name, membase, II20K_SIZE);
++		return -EIO;
++	}
++	dev->iobase = membase;	/* actually, a memory address */
++
++	dev->mmio = ioremap(membase, II20K_SIZE);
++	if (!dev->mmio)
++		return -ENOMEM;
+ 
+ 	id = readb(dev->mmio + II20K_ID_REG);
+ 	switch (id & II20K_ID_MASK) {
+@@ -509,11 +527,19 @@ static int ii20k_attach(struct comedi_device *dev,
+ 	return 0;
+ }
+ 
++static void ii20k_detach(struct comedi_device *dev)
++{
++	if (dev->mmio)
++		iounmap(dev->mmio);
++	if (dev->iobase)	/* actually, a memory address */
++		release_mem_region(dev->iobase, II20K_SIZE);
++}
++
+ static struct comedi_driver ii20k_driver = {
+ 	.driver_name	= "ii_pci20kc",
+ 	.module		= THIS_MODULE,
+ 	.attach		= ii20k_attach,
+-	.detach		= comedi_legacy_detach,
++	.detach		= ii20k_detach,
+ };
+ module_comedi_driver(ii20k_driver);
+ 
+-- 
+2.0.0
+
