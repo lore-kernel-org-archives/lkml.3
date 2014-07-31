@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899AbaGaASd (ORCPT <rfc822;w@1wt.eu>);
+	id S1755988AbaGaASf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 20:18:35 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:58428
+	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755506AbaGaASd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jul 2014 20:18:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43186 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755172AbaGaASc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 20:18:32 -0400
-Date: Wed, 30 Jul 2014 17:17:58 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: android: sync.c: fix missing blank line after
- declaration
-Message-ID: <20140731001758.GB31573@kroah.com>
-References: <1406588626-6882-1-git-send-email-mopsfelder@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406588626-6882-1-git-send-email-mopsfelder@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/1] Drivers: net-next: hyperv
+Date: Wed, 30 Jul 2014 18:20:16 -0700
+Message-Id: <1406769616-29871-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 08:03:46PM -0300, Murilo Opsfelder Araujo wrote:
-> Fix coding style issue.
-> 
-> Signed-off-by: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
-> ---
->  drivers/staging/android/sync.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
-> index e7b2e02..69c16cb 100644
-> --- a/drivers/staging/android/sync.c
-> +++ b/drivers/staging/android/sync.c
-> @@ -705,6 +705,7 @@ static long sync_fence_ioctl(struct file *file, unsigned int cmd,
->  			     unsigned long arg)
->  {
->  	struct sync_fence *fence = file->private_data;
-> +
->  	switch (cmd) {
->  	case SYNC_IOC_WAIT:
->  		return sync_fence_ioctl_wait(fence, arg);
-> @@ -726,4 +727,3 @@ static const struct file_operations sync_fence_fops = {
->  	.unlocked_ioctl = sync_fence_ioctl,
->  	.compat_ioctl = sync_fence_ioctl,
->  };
-> -
+For forwarding scenarios, it will be useful to allocate larger
+sendbuf. Make the necessary adjustments to permit this.
 
-Also doesn't apply, are you sure you are using the staging-next branch
-of staging.git on git.kernel.org?
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/net/hyperv/hyperv_net.h |    2 +-
+ drivers/net/hyperv/netvsc.c     |    7 ++-----
+ 2 files changed, 3 insertions(+), 6 deletions(-)
 
-thanks,
+diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
+index 6cc37c1..40ba1ef 100644
+--- a/drivers/net/hyperv/hyperv_net.h
++++ b/drivers/net/hyperv/hyperv_net.h
+@@ -584,7 +584,7 @@ struct nvsp_message {
+ 
+ #define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024*16)	/* 16MB */
+ #define NETVSC_RECEIVE_BUFFER_SIZE_LEGACY	(1024*1024*15)  /* 15MB */
+-#define NETVSC_SEND_BUFFER_SIZE			(1024 * 1024)   /* 1MB */
++#define NETVSC_SEND_BUFFER_SIZE			(1024 * 1024 * 16)   /* 16MB */
+ #define NETVSC_INVALID_INDEX			-1
+ 
+ 
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index c041f63..c76178e 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -193,8 +193,7 @@ static int netvsc_destroy_buf(struct netvsc_device *net_device)
+ 	}
+ 	if (net_device->send_buf) {
+ 		/* Free up the receive buffer */
+-		free_pages((unsigned long)net_device->send_buf,
+-			   get_order(net_device->send_buf_size));
++		vfree(net_device->send_buf);
+ 		net_device->send_buf = NULL;
+ 	}
+ 	kfree(net_device->send_section_map);
+@@ -303,9 +302,7 @@ static int netvsc_init_buf(struct hv_device *device)
+ 
+ 	/* Now setup the send buffer.
+ 	 */
+-	net_device->send_buf =
+-		(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
+-					 get_order(net_device->send_buf_size));
++	net_device->send_buf = vzalloc(net_device->send_buf_size);
+ 	if (!net_device->send_buf) {
+ 		netdev_err(ndev, "unable to allocate send "
+ 			   "buffer of size %d\n", net_device->send_buf_size);
+-- 
+1.7.4.1
 
-greg k-h
