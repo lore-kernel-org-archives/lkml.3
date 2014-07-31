@@ -1,162 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953AbaGaRhQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:37:16 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:8862 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859AbaGaRhM (ORCPT
+	id S1753232AbaGaRhb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:37:31 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43794 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752986AbaGaRh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:37:12 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-d0-53da7ec6a805
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: amit daniel kachhap <amit.daniel@samsung.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>, Tomasz Figa <t.figa@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/9] thermal: exynos: various cleanups
-Date: Thu, 31 Jul 2014 19:37:08 +0200
-Message-id: <5064578.QsHz5kKYq8@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <20140729125848.GA18746@developer>
-References: <1403026045-16024-1-git-send-email-b.zolnierkie@samsung.com>
- <CADGdYn6EN-evo2KCjFfQ2h8gLoop=xTJZO3fnNxBxM9067tjxg@mail.gmail.com>
- <20140729125848.GA18746@developer>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9jQd1jdbeCDbpPC1s0XA2xWLP/J5PF
-	/CvXWC3ONr1ht7i8aw6bxefeI4wWM87vY7I4c/oSq8WTh31sFutnvGZx4PLYOesuu8fiPS+Z
-	PLZcbWfx6NuyitHj+I3tTB6fN8kFsEVx2aSk5mSWpRbp2yVwZWyedp+lYKlyxZu/1xkbGK9L
-	dzFyckgImEi83vSfEcIWk7hwbz1bFyMXh5DAdEaJfW82MUI4LUwS//8/AqtiE7CSmNi+CswW
-	EdCSOHFpOxNIEbPAfmaJyY/ngSWEBWwlju44xA5iswioSmx/Op+1i5GDg1dAU+JxrylIWFTA
-	U2LH9pVsIDangL7Ei/13WSGWbWGUWDtpDhNIgldAUOLH5HssIDazgLzEvv1TWSFsLYn1O48z
-	TWAUmIWkbBaSsllIyhYwMq9iFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI6HZ1I7GFc2WBxi
-	FOBgVOLhnRF+K1iINbGsuDL3EKMEB7OSCK9LOVCINyWxsiq1KD++qDQntfgQozQHi5I474FW
-	60AhgfTEktTs1NSC1CKYLBMHp1QDo8Qj61VMtlYCGa1NVW+djn5aofGW49u0vM2JzPqLfr2S
-	dDt2a+ma9QqyFbejbW2cr3revPmZ8bmtdZFTzMOwMH6xr20HeztWlnwrnV3HyXig8vX01k+F
-	6Wc+P1mer8SavS9dVjg0qunXqsIzRfMcRXYEcQX1z0o25J3B4F8318pf7OuJ5bM6lViKMxIN
-	tZiLihMB7MUiH4MCAAA=
+	Thu, 31 Jul 2014 13:37:29 -0400
+Date: Thu, 31 Jul 2014 19:37:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jirka Hladky <jhladky@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, Aaron Lu <aaron.lu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1%
+ proc-vmstat.numa_hint_faults_local
+Message-ID: <20140731173705.GC19379@twins.programming.kicks-ass.net>
+References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>
+ <53D72FF5.90908@intel.com>
+ <20140729023940.37b6aebc@annuminas.surriel.com>
+ <20140731104241.GA9918@twins.programming.kicks-ass.net>
+ <20140731155723.GY3588@twins.programming.kicks-ass.net>
+ <53DA6BDA.8080000@redhat.com>
+ <20140731162702.GZ19379@twins.programming.kicks-ass.net>
+ <53DA7129.7020100@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0L8GnrW3Ijgkafis"
+Content-Disposition: inline
+In-Reply-To: <53DA7129.7020100@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi,
+--0L8GnrW3Ijgkafis
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Tuesday, July 29, 2014 08:58:48 AM Eduardo Valentin wrote:
-> On Mon, Jul 28, 2014 at 08:30:53PM +0530, amit daniel kachhap wrote:
-> > Hi Eduardo,
-> 
-> Hello Amit,
-> 
-> > 
-> > Please reject this entire series as this is not re-based recently.
-> > Actually two point trimming which this series seeks to remove is used
-> > by exynos3250 and is in Rui's tree
-> > (https://git.kernel.org/cgit/linux/kernel/git/rzhang/linux.git/commit/?h=next&id=1fe56dc16a3dab400206443f70ae158c8f595c42).
-> > 
-> 
-> Yeah, that was my original concern when I first looked this series.
-> However, as I saw a couple of your acks I thought you would be in sync
-> with Bartlomiej. 
-> 
-> I agree with Bartlomiej that we need to keep the kernel code in very
-> good shape, but if we are removing features for the sake of reducing
-> LOCs and we end up dropping support to known chips, I definitely won't
-> agree. 
+On Thu, Jul 31, 2014 at 06:39:05PM +0200, Jirka Hladky wrote:
+> I'm doing 3 iterations (3 runs) to get some statistics. To speed up the test
+> significantly please do the run with 20 warehouses only
+> (or in general with #warehouses ==  number of nodes * number of PHYSICAL
+> cores)
 
-There is no intention to drop support for known chips.  Two months after
-initial posting of my patchset support for the new Exynos3250 SoC was
-posted and it happens to use the two point trimming calibration code (that
-was introduced back in September 2011 but never used previously).  If we
-had removed it earlier it would have to be readded partially but we are
-talking about less than 100 lines of rather straightforward code (also
-the calibration code in question is not perfect anyway and would profit
-from some cleaning but I left it as it is for now).
+Yeah, went and did that for my 4 node machine, its got a ton more cores, but I
+matches the warehouses to it:
 
-> Can you guys please reach a common agreement on these cleanups?
-> 
-> Bartlomiej, best thing to do is to sync your work on top of Rui's tree.
+-a43455a1d57	tip/master
 
-Done, I posted v3 of patchset today:
+979996.47	1144715.44
+876146		1098499.07
+1058974.18	1019499.38
+1055951.59	1139405.22
+970504.01	1099659.09
 
-  http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35013.html
+988314.45	1100355.64	(avg)
+75059.546179565	50085.7473975167(stdev)
 
-I hope that it is acceptable for Amit now (Amit, please take a look at
-patches when you find some time, thanks!).
+So for 5 runs, tip/master (which includes the offending patch) wins hands down.
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+Each run is 2 minutes.
 
-> For now I am dropping this series from my -next branch. :-(
-> 
-> > Thanks,
-> > Amit D
-> > 
-> > 
-> > On Mon, Jul 28, 2014 at 8:07 PM, Eduardo Valentin <edubezval@gmail.com> wrote:
-> > > On Tue, Jun 17, 2014 at 07:27:16PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> > >> Hi,
-> > >>
-> > >> This patch series contains various cleanups for EXYNOS thermal
-> > >> driver.  Overall it decreases driver's LOC by 12%.  It is based
-> > >> on next-20140617 kernel.  It should not cause any functionality
-> > >> changes.
-> > >>
-> > >> Changes since v1:
-> > >> - synced patches against next-20140617
-> > >> - merged patch "thermal: exynos: remove unused defines" into
-> > >>   "thermal: exynos: remove unused struct exynos_tmu_registers
-> > >>   entries" one (per request from Eduardo)
-> > >> - improved patch descriptions for patches #1-5
-> > >> - fixed documentation for pdata->gain and pdata->reference_voltage
-> > >> - added Reviewed-by from Amit to patches #6, #7 and #10
-> > >> - added missing Acked-by from Kyungmin Park
-> > >
-> > > Pulled the series.
-> > >
-> > > Thanks.
-> > >
-> > >>
-> > >> Best regards,
-> > >> --
-> > >> Bartlomiej Zolnierkiewicz
-> > >> Samsung R&D Institute Poland
-> > >> Samsung Electronics
-> > >>
-> > >>
-> > >> Bartlomiej Zolnierkiewicz (9):
-> > >>   thermal: exynos: remove unused struct exynos_tmu_registers entries
-> > >>   thermal: exynos: remove dead code for HW_MODE calibration
-> > >>   thermal: exynos: remove dead code for TYPE_TWO_POINT_TRIMMING
-> > >>     calibration
-> > >>   thermal: exynos: remove redundant pdata checks from
-> > >>     exynos_tmu_initialize()
-> > >>   thermal: exynos: remove redundant threshold_code checks from
-> > >>     exynos_tmu_initialize()
-> > >>   thermal: exynos: simplify temp_to_code() and code_to_temp()
-> > >>   thermal: exynos: cache non_hw_trigger_levels in pdata
-> > >>   thermal: exynos: remove redundant pdata checks from
-> > >>     exynos_tmu_control()
-> > >>   thermal: exynos: remove identical values from exynos*_tmu_registers
-> > >>     structures
-> > >>
-> > >>  drivers/thermal/samsung/exynos_thermal_common.h |   1 -
-> > >>  drivers/thermal/samsung/exynos_tmu.c            | 181 ++++--------------------
-> > >>  drivers/thermal/samsung/exynos_tmu.h            |  90 +-----------
-> > >>  drivers/thermal/samsung/exynos_tmu_data.c       |  64 +--------
-> > >>  drivers/thermal/samsung/exynos_tmu_data.h       |  33 +----
-> > >>  5 files changed, 41 insertions(+), 328 deletions(-)
-> > >>
-> > >> --
-> > >> 1.8.2.3
+--0L8GnrW3Ijgkafis
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT2n7BAAoJEHZH4aRLwOS6+o4P/3rmYTiWHHuXz9rouXN6v8Lx
+3oi5BctNHPr7oIiwJHxiaL5Ct3Ez4XS5XKP2ZFxo5+WE1s4B9/POUIIzrITl4HeC
+2/ruTz1ja415P2Arn+zmDvFhb0FS8mTglByBOc68DntZvnCZpICmpn6UIwHFkrDv
+VX8eW5tBd05Zq2gsbcdDmMrADLJPCKs7cpKRXNdXVNnt5FA0OtOvtSdqctjLsVHB
+/t6Pq2mfqXtlivQepHnPXzVTUI1sr1EzycePnM43NgKB+FuJguVCWmXpQLP7QrgH
+2Ecg6YYuPtCPKarRRS10foXmy1j1Ko+urFQ9RdrhUXVHJ0Zrp0Fb1vaB3pedEdDt
+u80kNf9AsKPIKW4LYq3FZq/nmabK0yrutc46ksLzlHg3hSC7n4o6e3fXgL68H8Lq
+gi/gp4tLXiA6cz/BaE5GlJ9bEKqujXwhZmGR9YzPN9CbeK/zxVHemGHu1xofVQih
+KzVszN71TH1B/gmJAio2fiAp2g6nILXzHnfcdKtgNgHrh6x7Bg2x7JZcbSEeDcIu
+YjEC9dn6Z+Z1VD8FKE8g3bBDoUNwrIjOn5rFwgqV0stGPUy2skPDa1twk6af6Tuu
+fTGQqef+Og86sJ8dcE3BstnrqBed11r/z2tHm7xttCRKqhbp0CMPmB03oDwLxMfu
++xpkWxHF0EO31k35MB3z
+=iIoP
+-----END PGP SIGNATURE-----
+
+--0L8GnrW3Ijgkafis--
