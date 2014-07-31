@@ -1,104 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589AbaGaVnX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 17:43:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49926 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153AbaGaVnW (ORCPT
+	id S1752986AbaGaVno (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 17:43:44 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:54199 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751AbaGaVnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 17:43:22 -0400
-Message-ID: <53DAB875.803@infradead.org>
-Date: Thu, 31 Jul 2014 14:43:17 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] Documentation: SubmittingPatches: overhaul changelog
- howto
-References: <1406754661-15897-1-git-send-email-hannes@cmpxchg.org>
-In-Reply-To: <1406754661-15897-1-git-send-email-hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Jul 2014 17:43:42 -0400
+From: Humberto Silva Naves <hsnaves@gmail.com>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Andreas Farber <afaerber@suse.de>,
+        Humberto Silva Naves <hsnaves@gmail.com>
+Subject: [PATCH] clk: samsung: Changed return behavior of samsung_clk_init
+Date: Thu, 31 Jul 2014 23:43:21 +0200
+Message-Id: <1406843002-15652-1-git-send-email-hsnaves@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/14 14:11, Johannes Weiner wrote:
-> Maintainers often repeat the same feedback on poorly written
-> changelogs - describe the problem, justify your changes, quantify
-> optimizations, describe user-visible changes - but our documentation
-> on writing changelogs doesn't include these things.  Fix that.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Instead of invoking panic, the samsung_clk_init returns a NULL
+pointer to indicate that an error has occurred. All the drivers
+using this function were changed appropriately (in this case
+just the clk-exynos5410).
 
-Applied with acks.
+This patch was suggested by Tomasz Figa in
+http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34982.html
 
-Thanks.
+Signed-off-by: Humberto Silva Naves <hsnaves@gmail.com>
+---
+ drivers/clk/samsung/clk-exynos5410.c |    2 ++
+ drivers/clk/samsung/clk.c            |    8 +++++---
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-> ---
->  Documentation/SubmittingPatches | 38 +++++++++++++++++++++++++++++++-------
->  1 file changed, 31 insertions(+), 7 deletions(-)
-> 
-> diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-> index dcadffcab2dc..0a523c9a5ff4 100644
-> --- a/Documentation/SubmittingPatches
-> +++ b/Documentation/SubmittingPatches
-> @@ -84,18 +84,42 @@ is another popular alternative.
->  
->  2) Describe your changes.
->  
-> -Describe the technical detail of the change(s) your patch includes.
-> -
-> -Be as specific as possible.  The WORST descriptions possible include
-> -things like "update driver X", "bug fix for driver X", or "this patch
-> -includes updates for subsystem X.  Please apply."
-> +Describe your problem.  Whether your patch is a one-line bug fix or
-> +5000 lines of a new feature, there must be an underlying problem that
-> +motivated you to do this work.  Convince the reviewer that there is a
-> +problem worth fixing and that it makes sense for them to read past the
-> +first paragraph.
-> +
-> +Describe user-visible impact.  Straight up crashes and lockups are
-> +pretty convincing, but not all bugs are that blatant.  Even if the
-> +problem was spotted during code review, describe the impact you think
-> +it can have on users.  Keep in mind that the majority of Linux
-> +installations run kernels from secondary stable trees or
-> +vendor/product-specific trees that cherry-pick only specific patches
-> +from upstream, so include anything that could help route your change
-> +downstream: provoking circumstances, excerpts from dmesg, crash
-> +descriptions, performance regressions, latency spikes, lockups, etc.
-> +
-> +Quantify optimizations and trade-offs.  If you claim improvements in
-> +performance, memory consumption, stack footprint, or binary size,
-> +include numbers that back them up.  But also describe non-obvious
-> +costs.  Optimizations usually aren't free but trade-offs between CPU,
-> +memory, and readability; or, when it comes to heuristics, between
-> +different workloads.  Describe the expected downsides of your
-> +optimization so that the reviewer can weigh costs against benefits.
-> +
-> +Once the problem is established, describe what you are actually doing
-> +about it in technical detail.  It's important to describe the change
-> +in plain English for the reviewer to verify that the code is behaving
-> +as you intend it to.
->  
->  The maintainer will thank you if you write your patch description in a
->  form which can be easily pulled into Linux's source code management
->  system, git, as a "commit log".  See #15, below.
->  
-> -If your description starts to get long, that's a sign that you probably
-> -need to split up your patch.  See #3, next.
-> +Solve only one problem per patch.  If your description starts to get
-> +long, that's a sign that you probably need to split up your patch.
-> +See #3, next.
->  
->  When you submit or resubmit a patch or patch series, include the
->  complete patch description and justification for it.  Don't just
-> 
-
-
+diff --git a/drivers/clk/samsung/clk-exynos5410.c b/drivers/clk/samsung/clk-exynos5410.c
+index 231475b..19657b4 100644
+--- a/drivers/clk/samsung/clk-exynos5410.c
++++ b/drivers/clk/samsung/clk-exynos5410.c
+@@ -193,6 +193,8 @@ static void __init exynos5410_clk_init(struct device_node *np)
+ 		panic("%s: failed to map registers\n", __func__);
+ 
+ 	ctx = samsung_clk_init(np, reg_base, CLK_NR_CLKS);
++	if (!ctx)
++		panic("%s: unable to allocate context.\n", __func__);
+ 
+ 	samsung_clk_register_pll(ctx, exynos5410_plls,
+ 			ARRAY_SIZE(exynos5410_plls), reg_base);
+diff --git a/drivers/clk/samsung/clk.c b/drivers/clk/samsung/clk.c
+index deab84d..0cf0ec6 100644
+--- a/drivers/clk/samsung/clk.c
++++ b/drivers/clk/samsung/clk.c
+@@ -57,11 +57,13 @@ struct samsung_clk_provider *__init samsung_clk_init(struct device_node *np,
+ 
+ 	ctx = kzalloc(sizeof(struct samsung_clk_provider), GFP_KERNEL);
+ 	if (!ctx)
+-		panic("could not allocate clock provider context.\n");
++		return NULL;
+ 
+ 	clk_table = kcalloc(nr_clks, sizeof(struct clk *), GFP_KERNEL);
+-	if (!clk_table)
+-		panic("could not allocate clock lookup table\n");
++	if (!clk_table) {
++		kfree(ctx);
++		return NULL;
++	}
+ 
+ 	for (i = 0; i < nr_clks; ++i)
+ 		clk_table[i] = ERR_PTR(-ENOENT);
 -- 
-~Randy
+1.7.10.4
+
