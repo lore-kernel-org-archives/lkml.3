@@ -1,114 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900AbaGaUaL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:30:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16389 "EHLO mx1.redhat.com"
+	id S1752386AbaGaUar (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:30:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37786 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945AbaGaUaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:30:09 -0400
-Message-ID: <53DAA749.5080506@redhat.com>
-Date: Thu, 31 Jul 2014 16:30:01 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1751966AbaGaUap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 16:30:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,774,1400050800"; 
+   d="scan'208";a="463729163"
+From: "Zwisler, Ross" <ross.zwisler@intel.com>
+To: "openosd@gmail.com" <openosd@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "willy@linux.intel.com" <willy@linux.intel.com>,
+        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH v8 04/22] Change direct_access calling convention
+Thread-Topic: [PATCH v8 04/22] Change direct_access calling convention
+Thread-Index: AQHPrP403h2bNslEHkOap3XJoZ/hlA==
+Date: Thu, 31 Jul 2014 20:30:02 +0000
+Message-ID: <1406838602.14136.12.camel@rzwisler-mobl1.amr.corp.intel.com>
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+	 <b78b33d94b669a5fbd02e06f2493b43dd5d77698.1406058387.git.matthew.r.wilcox@intel.com>
+	 <53D9174C.7040906@gmail.com> <20140730194503.GQ6754@linux.intel.com>
+	 <53DA165E.8040601@gmail.com> <20140731141315.GT6754@linux.intel.com>
+	 <53DA60A5.1030304@gmail.com> <20140731171953.GU6754@linux.intel.com>
+	 <53DA8518.3090604@gmail.com>
+In-Reply-To: <53DA8518.3090604@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.112.154]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <D7339778D56F9B42BA028B59A656DB6A@intel.com>
 MIME-Version: 1.0
-To: Saravana Kannan <skannan@codeaurora.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
- to be held for duration of changing governors [v2]
-References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org>
-In-Reply-To: <53DAA60B.6040802@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6VKUpBx011631
 
-
-
-On 07/31/2014 04:24 PM, Saravana Kannan wrote:
-> On 07/31/2014 11:26 AM, Prarit Bhargava wrote:
->>
->>
->> On 07/31/2014 02:38 PM, Rafael J. Wysocki wrote:
->>> On Thursday, July 31, 2014 01:57:29 PM Prarit Bhargava wrote:
->>>>
->>>> On 07/31/2014 12:36 PM, Rafael J. Wysocki wrote:
->>>>> On Thursday, July 31, 2014 06:23:18 AM Prarit Bhargava wrote:
->>>>>>
->>>>>> On 07/30/2014 10:16 PM, Rafael J. Wysocki wrote:
->>>>>>> On Wednesday, July 30, 2014 06:36:00 PM Saravana Kannan wrote:
->>>>>>>> On 07/30/2014 02:40 PM, Rafael J. Wysocki wrote:
->>>>>>>>> On Wednesday, July 30, 2014 10:18:25 AM Prarit Bhargava wrote:
->>>>>>>>>>
->>>>>>>>>> On 07/29/2014 08:03 PM, Rafael J. Wysocki wrote:
->>>>>>>>>>> On Tuesday, July 29, 2014 07:46:02 AM Prarit Bhargava wrote:
->>>>>>>>>
->>>>>>>>> [cut]
->>>>>>>>>
->>>>>>>>>>>> This patch effectively reverts commit 955ef483.
->>>>>>>>
->>>>>>>> The issue reported in this patch is valid. We are seeing that internally
->>>>>>>> too. I believe I reported it in another thread (within the past month).
->>>>>>>>
->>>>>>>> However, the original patch fixes a real deadlock issue (I'm too tired
->>>>>>>> to look it up now). We can revet the original, but it's going to bring
->>>>>>>> back the original issue. I just want to make sure Prarit and Raphael
->>>>>>>> realize this before proceeding.
->>>>>>>>
->>>>>>>> I do have plans for a proper fix for the mainline (not stable branches),
->>>>>>>> but plan to do that after the current set of suspend/hotplug patches go
->>>>>>>> through. The fix would be easier to make after that.
->>>>>>>>
->>>>>>>>>>>
->>>>>>>>>>> OK, I'm convinced by this.
->>>>>>>>>>>
->>>>>>>>>>> I suppose we should push it for -stable from 3.10 through 3.15.x, right?
->>>>>>>>>>
->>>>>>>>>> Rafael, I think that is a good idea.  I'm not sure what the protocol
->>>>>>>>>> is for
->>>>>>>>>> adding stable@kernel.org though ...
->>>>>>
->>>>>> Rafael, let me (again) re-write the patch description.  I think Saravana has
->>>>>> raised an important issue that I have not clearly identified why it is
->>>>>> safe to
->>>>>> remove this code in my patch description.  Also, I want to clearly
->>>>>> identify the
->>>>>> appropriate -stable releases to push this out to.
->>>>>>
->>>>>> I'll submit a [v3] later today or tomorrow.
->>>>>
->>>>> In any case that's too late for 3.16 final, unless there's an -rc8.
->>>>>
->>>>> Thanks for doing that work!
->>>>
->>>> Ugh ... I tried this (yet another) large system and hit another panic :(.
->>>>
->>>> I'm investigating now, and I'm hoping this is just something "new".
->>>
->>> Well, I've applied your patch as is and I can push it to Linus.
->>>
->>> However, if you want to update the changelog, I'll not do that, but in that
->>> case the patch will have to wait for the next week.
->>
->> Rafael, please let it wait for next week.  I _need_ to make sure this is correct
->> and I'd rather not pushed something half-done.
->>
+On Thu, 2014-07-31 at 21:04 +0300, Boaz Harrosh wrote:
+> On 07/31/2014 08:19 PM, Matthew Wilcox wrote:
+> > On Thu, Jul 31, 2014 at 06:28:37PM +0300, Boaz Harrosh wrote:
+> >> Matthew what is your opinion about this, do we need to push for removal
+> >> of the partition dead code which never worked for brd, or we need to push
+> >> for fixing and implementing new partition support for brd?
+> > 
+> > Fixing the code gets my vote.  brd is useful for testing things ... and
+> > sometimes we need to test things that involve partitions.
+> > 
 > 
-> Prarit,
+> OK I'm on it, its what I'm doing today.
 > 
-> I'm not an expert on sysfs locking, but I would think the specific sysfs lock
-> would depend on the file/attribute group. So, can you please try to hotplug a
-> core in/out (to trigger the POLICY_EXIT) and then read a sysfs file exported by
-> the governor? scaling_governor doesn't cut it since that file is not removed on
-> policy exit event to governor. If it's ondemand, try reading/write it's sampling
-> rate file.
+> rrr I manged to completely trash my vm by doing 'make install' of
+> util-linux and after reboot it never recovered, I remember that
+> mount complained about a now missing library and I forgot and rebooted,
+> that was the end of that. Anyway I installed a new fc20 system wanted
+> that for a long time over my old fc18
 
-Thanks Saravana -- will do.  I will get back to you shortly on this.
+Ah, I'm already working on this as well.  :)  If you want you can wait for my
+patches to BRD & test - they should be out this week.
 
-P.
+I'm planning on adding get_geo() and doing dynamic minors as is done in NVMe.
 
-> 
-> -Saravana
-> 
+- Ross
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
