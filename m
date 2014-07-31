@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaGaRjq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:39:46 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37023 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219AbaGaRjo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:39:44 -0400
-Message-ID: <53DA7F5F.3070500@wwwdotorg.org>
-Date: Thu, 31 Jul 2014 11:39:43 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752108AbaGaRoB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:44:01 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:60062 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750859AbaGaRoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 13:44:00 -0400
+X-IronPort-AV: E=Sophos;i="5.01,773,1400025600"; 
+   d="scan'208";a="157609883"
+Message-ID: <53DA805D.4020300@citrix.com>
+Date: Thu, 31 Jul 2014 18:43:57 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: Kever Yang <kever.yang@gmail.com>, Paul Zimmerman <paulz@synopsys.com>
-CC: dianders@chromium.org, heiko@sntech.de, olof@lixom.net,
-        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
-        xjq@rock-chips.com, wulf@rock-chips.com, lyz@rock-chips.com,
-        hj@rock-chips.com, huangtao@rock-chips.com,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Porter <mporter@linaro.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/4] Documentation: dt-bindings: add dt binding info
- for Rockchip dwc2
-References: <1406780999-17798-1-git-send-email-kever.yang@rock-chips.com> <1406780999-17798-2-git-send-email-kever.yang@rock-chips.com>
-In-Reply-To: <1406780999-17798-2-git-send-email-kever.yang@rock-chips.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Matt Rushton <mvrushton@gmail.com>, <konrad.wilk@oracle.com>,
+        <boris.ostrovsky@oracle.com>
+CC: <msw@amazon.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>, Matt Rushton <mrushton@amazon.com>
+Subject: Re: [PATCH v2 2/2] xen/setup: Remap Xen Identity Mapped RAM
+References: <1405814495-10868-1-git-send-email-mrushton@amazon.com> <1405814495-10868-2-git-send-email-mrushton@amazon.com>
+In-Reply-To: <1405814495-10868-2-git-send-email-mrushton@amazon.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2014 10:29 PM, Kever Yang wrote:
-> This add necessary dwc2 binding documentation for Rockchip socs:
-> rk3066, rk3188 and rk3288
+On 20/07/14 01:01, Matt Rushton wrote:
+> Instead of ballooning up and down dom0 memory this remaps the existing mfns
+> that were replaced by the identity map. The reason for this is that the
+> existing implementation ballooned memory up and and down which caused dom0
+> to have discontiguous pages. In some cases this resulted in the use of bounce
+> buffers which reduced network I/O performance significantly. This change will
+> honor the existing order of the pages with the exception of some boundary
+> conditions.
+> 
+> To do this we need to update both the Linux p2m table and the Xen m2p table.
+> Particular care must be taken when updating the p2m table since it's important
+> to limit table memory consumption and reuse the existing leaf pages which get
+> freed when an entire leaf page is set to the identity map. To implement this,
+> mapping updates are grouped into blocks with table entries getting cached
+> temporarily and then released.
+> 
+> On my test system before:
+> Total pages: 2105014
+> Total contiguous: 1640635
+> 
+> After:
+> Total pages: 2105014
+> Total contiguous: 2098904
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Applied to devel/for-linus-3.17
+
+Thanks.
+
+David
