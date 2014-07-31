@@ -1,288 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470AbaGaTkd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 15:40:33 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:53370 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaGaTkb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 15:40:31 -0400
-Message-ID: <53DA9BA9.60808@gmail.com>
-Date: Thu, 31 Jul 2014 21:40:25 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751927AbaGaTko (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 15:40:44 -0400
+Received: from mail.us.es ([193.147.175.20]:36674 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751515AbaGaTkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 15:40:41 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.4/19250. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-102.4/7.5):. 
+ Processed in 1.837385 secs); 31 Jul 2014 19:40:39 -0000
+X-Spam-ASN: AS42863 46.50.0.0/17
+X-Envelope-From: pneira@us.es
+Date: Thu, 31 Jul 2014 21:40:59 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Kees Cook <keescook@chromium.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH v4 net-next 5/5] net: filter: split 'struct sk_filter'
+ into socket and bpf parts
+Message-ID: <20140731194059.GA8681@salvia>
+References: <1406777656-27755-1-git-send-email-ast@plumgrid.com>
+ <1406777656-27755-6-git-send-email-ast@plumgrid.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
-        linux-samsung-soc@vger.kernel.org,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Doug Anderson <dianders@chromium.org>
-CC: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 4/4] ARM: dts: Add exynos5250-spring device tree
-References: <1406822910-6255-1-git-send-email-afaerber@suse.de> <1406822910-6255-5-git-send-email-afaerber@suse.de> <53DA936E.9060004@gmail.com> <53DA9709.10602@suse.de>
-In-Reply-To: <53DA9709.10602@suse.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406777656-27755-6-git-send-email-ast@plumgrid.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas,
-
-On 31.07.2014 21:20, Andreas Färber wrote:
-> Am 31.07.2014 21:05, schrieb Tomasz Figa:
->> On 31.07.2014 18:08, Andreas Färber wrote:
->>> Adds initial support for the HP Chromebook 11.
->>
->> [snip]
->>
->>> +	gpio-keys {
->>> +		compatible = "gpio-keys";
->>> +		pinctrl-names = "default";
->>> +		pinctrl-0 = <&power_key_irq>, <&lid_irq>;
->>> +
->>> +		power {
->>> +			label = "Power";
->>> +			gpios = <&gpx1 3 GPIO_ACTIVE_LOW>;
->>> +			linux,code = <KEY_POWER>;
->>
->> I assume the key is debounced in hardware, so there is no need for
->> debounce-interval here. Is this correct?
+On Wed, Jul 30, 2014 at 08:34:16PM -0700, Alexei Starovoitov wrote:
+> clean up names related to socket filtering and bpf in the following way:
+> - everything that deals with sockets keeps 'sk_*' prefix
+> - everything that is pure BPF is changed to 'bpf_*' prefix
 > 
-> You're asking the wrong person... This is copied from
-> -cros-common/-snow. Downstream 3.8 does not have a debounce-interval
-> property.
+> split 'struct sk_filter' into
+> struct sk_filter {
+> 	atomic_t        refcnt;
+> 	struct rcu_head rcu;
+> 	struct bpf_prog *prog;
+> };
 
-Doug, Vincent?
+I think you can use 'struct bpf_prog prog' instead so the entire
+sk_filter remains in the same memory blob (as it is before this
+patch).
 
-> 
->>
->>> +			gpio-key,wakeup;
->>> +		};
+You can add an inline function to retrieve the bpg prog from the
+filter:
 
-[snip]
+static inline struct bpf_prog *sk_filter_bpf(struct sk_filter *)
 
->>> +
->>> +	usb@12110000 {
->>
->> Since this is a brand new dts file, it should use the reference based
->> syntax, which would be something like
->>
->> &usbhost {
->> 	...
->> };
->>
->> below the / { ... }; block.
-> 
-> You will find that I already did that for all nodes that have a label.
-> Since there are lots of usb nodes, please suggest specific label names.
-> 
-> I originally tried to stay out of existing code, then I was asked to fix
-> -cros-common, clean up -snow too, now the SoC, ... ;)
-
-Well, adding labels should be pretty trivial and IMHO could be squashed
-into this patch. For usb@1211000 the right label would be "ehci".
-
-> 
->>> +		samsung,vbus-gpio = <&gpx1 1 GPIO_ACTIVE_HIGH>;
->>> +	};
->>> +
->>> +	usb-hub {
->>> +		compatible = "smsc,usb3503a";
->>> +		reset-gpios = <&hsic_reset>;
->>
->> Hmm, why a -gpios property points to a pinctrl node? Shouldn't there be
->> a phandle to GPIO bank + GPIO specifier instead?
-> 
-> Dunno, can change it. Can I just copy the gpio property from the
-> regulator above?
-
-Reading what Vincent posted earlier I would consider this as the right
-thing to do and it might even let you remove the fake regulator node.
-
-> 
->>> +	};
->>> +
->>> +	fixed-rate-clocks {
->>> +		xxti {
->>> +			compatible = "samsung,clock-xxti";
->>> +			clock-frequency = <24000000>;
->>> +		};
->>> +	};
->>
->> This is also referencing a node from higher level, so it should be done
->> using a reference.
->>
->>> +
->>> +	hdmi {
->>> +		hpd-gpio = <&gpx3 7 GPIO_ACTIVE_HIGH>;
->>> +		pinctrl-names = "default";
->>> +		pinctrl-0 = <&hdmi_hpd_irq>;
->>> +		phy = <&hdmiphy>;
->>> +		ddc = <&i2c_2>;
->>> +		hdmi-en-supply = <&s5m_ldo8_reg>;
->>> +		vdd-supply = <&s5m_ldo8_reg>;
->>> +		vdd_osc-supply = <&s5m_ldo10_reg>;
->>> +		vdd_pll-supply = <&s5m_ldo8_reg>;
->>> +	};
->>
->> Ditto.
-> 
-> hdmi?
-
-Sounds good.
-
-> 
->>
->>> +
->>> +	fimd@14400000 {
->>> +		status = "okay";
->>> +		samsung,invert-vclk;
->>> +	};
->>
->> Ditto.
-> 
-> fimd?
-
-OK.
-
-> 
->>
->>> +
->>> +	dp-controller@145B0000 {
->>> +		status = "okay";
->>> +		pinctrl-names = "default";
->>> +		pinctrl-0 = <&dp_hpd>;
->>> +		samsung,color-space = <0>;
->>> +		samsung,dynamic-range = <0>;
->>> +		samsung,ycbcr-coeff = <0>;
->>> +		samsung,color-depth = <1>;
->>> +		samsung,link-rate = <0x0a>;
->>> +		samsung,lane-count = <1>;
->>> +		samsung,hpd-gpio = <&gpc3 0 GPIO_ACTIVE_HIGH>;
->>> +	};
->>
->> Ditto.
-> 
-> dp_controller? display_port_controller?
-
-dp?
-
-> 
->>
->>> +};
->>> +
->>> +&dp_hpd {
->>> +	samsung,pins = "gpc3-0";
->>> +	samsung,pin-function = <0>;
->>> +	samsung,pin-pud = <3>;
->>> +	samsung,pin-drv = <0>;
->>> +};
->>
->> Hmm, what node is this referencing? I believe this should rather
->> reference the pin controller and add a new board-specific pinconf/pinmux
->> group instead....
-> 
-> It's a -pinctrl node. See v3->v4 change log and discussion on v3.
-> 
-
-Well, this is clearly a board specific node anyway, because it does not
-refer to a special function, but simply an input/interrupt GPIO. If it
-somehow has landed in generic pinctrl dtsi then it should be removed
-from there and this patch should simply introduce its own instance of
-dp_hpd node, so you did the right thing in v3.
-
->>> +
->>> +&i2c_0 {
->>> +	status = "okay";
->>> +	samsung,i2c-sda-delay = <100>;
->>> +	samsung,i2c-max-bus-freq = <378000>;
->>
->> [snip]
->>
->>> +/*
->>> + * Disabled pullups since external part has its own pullups and
->>> + * double-pulling gets us out of spec in some cases.
->>> + */
->>> +&i2c2_bus {
->>> +	samsung,pin-pud = <0>;
->>> +};
->>
->> OK, here overriding a generic pinconf group is justified and nicely
->> explained by a comment.
-> 
-> You seem to assume that I actually understand these things. ;)
-> Just copied from -cros-common/-snow.
-> 
-
-It is good if those things are being done with some level of
-understanding. The DT mechanics are quite well documented in
-Documentation/devicetree/bindings, while for HW-specific bits I believe
-Chromium guys could give you a hand.
-
->>> +
->>> +&i2c_2 {
->>> +	status = "okay";
->>> +	samsung,i2c-sda-delay = <100>;
->>> +	samsung,i2c-max-bus-freq = <66000>;
->>> +
->>> +	hdmiddc@50 {
->>> +		compatible = "samsung,exynos4210-hdmiddc";
->>> +		reg = <0x50>;
->>> +	};
->>
->> I don't think this matches current Exynos HDMI bindings, which I believe
->> have been changed to just take a phandle to i2c bus instead.
-> 
-> Copied from -cros-common/-snow.
-> 
-
-This means that somebody probably forgot to update -cros-common/-snow
-dts(i). Not the first and I guess probably not the last time...
-
->>> +};
->>> +
->>> +&i2c_3 {
->>> +	status = "okay";
->>> +	samsung,i2c-sda-delay = <100>;
->>> +	samsung,i2c-max-bus-freq = <66000>;
->>> +};
->>
->> [snip]
->>
->>> +&sd1_clk {
->>> +	samsung,pin-drv = <0>;
->>> +};
->>> +
->>> +&sd1_cmd {
->>> +	samsung,pin-pud = <3>;
->>> +	samsung,pin-drv = <0>;
->>> +};
->>> +
->>> +&sd1_cd {
->>> +	samsung,pin-drv = <0>;
->>> +};
->>> +
->>> +&sd1_bus4 {
->>> +	samsung,pin-drv = <0>;
->>> +};
->>
->> Here generic settings are being overridden, so it might be a good idea
->> to explain why, like with i2c pull-up above.
-> 
-> Snow does not have an explanation either, so please suggest what comment
-> you'd like to see. Consider me just a user with no specs. :)
-
-Doug, Vincent, someone else?
-
-Best regards,
-Tomasz
+and use it whenever possible to fetch the bpf program. I'm suggesting
+this because we can use the zero array size in the socket filtering
+abstraction later on, if the function above is used, this just needs
+one line in that function to be updated to fetch the program from the
+placeholder.
