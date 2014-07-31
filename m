@@ -1,73 +1,406 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751331AbaGaMKe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 08:10:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3347 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155AbaGaMKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 08:10:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="366182178"
-Date: Thu, 31 Jul 2014 17:32:05 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Vignesh Raman <Vignesh_Raman@mentor.com>
-Cc: dan.j.williams@intel.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiada_Wang@mentor.com
-Subject: Re: [PATCH 2/2] dma: imx-sdma: Adding tasklet_kill() in
- sdma_remove function.
-Message-ID: <20140731120205.GT8181@intel.com>
-References: <1406725875-9171-1-git-send-email-Vignesh_Raman@mentor.com>
- <1406725875-9171-3-git-send-email-Vignesh_Raman@mentor.com>
+	id S1751369AbaGaMLA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 08:11:00 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:25234 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751120AbaGaMK6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 08:10:58 -0400
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Christoffer Dall <cdall@cs.columbia.edu>,
+        "linux-next\@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: linux-next: manual merge of the kvm-arm tree with Linus' tree
+In-Reply-To: <20140731163004.474501fb@canb.auug.org.au> (Stephen Rothwell's
+	message of "Thu, 31 Jul 2014 07:30:04 +0100")
+Organization: ARM Ltd
+References: <20140731163004.474501fb@canb.auug.org.au>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Date: Thu, 31 Jul 2014 13:10:46 +0100
+Message-ID: <87r411iv95.fsf@approximate.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406725875-9171-3-git-send-email-Vignesh_Raman@mentor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 06:41:15PM +0530, Vignesh Raman wrote:
-> Several dma drivers calls tasklet_kill() in remove function. This is missing in
-> imx driver, so adding tasklet_kill() in sdma_remove function.
-And why should we do that ?
+On Thu, Jul 31 2014 at  7:30:04 am BST, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
+Hi Stephen,
+
+> Today's linux-next merge of the kvm-arm tree got a conflict in
+> virt/kvm/arm/vgic.c between commit 63afbe7a0ac1 ("kvm: arm64: vgic: fix
+> hyp panic with 64k pages on juno platform") from Linus' tree and commit
+> 8f186d522c69 ("KVM: ARM: vgic: split GICv2 backend from the main vgic
+> code") and others from the kvm-arm tree.
+>
+> I fixed it up (the latter extensively rewrites the function, so I just
+> used that) and can carry the fix as necessary (no action is required).
+
+Thanks for the heads up. Here's the resolution I came up with:
+
+commit cdc5159381f46d6475882d7051224e74c6256f60
+Merge: 3a1122d d329de0
+Author: Marc Zyngier <marc.zyngier@arm.com>
+Date:   Thu Jul 31 10:39:43 2014 +0100
+
+    Merge remote-tracking branch 'kvmarm/next' into tmpmerge
+    
+    Conflicts:
+    	virt/kvm/arm/vgic.c
+
+diff --cc virt/kvm/arm/vgic-v2.c
+index 0000000,d6c9c14..01124ef
+mode 000000,100644..100644
+--- a/virt/kvm/arm/vgic-v2.c
++++ b/virt/kvm/arm/vgic-v2.c
+@@@ -1,0 -1,249 +1,265 @@@
++ /*
++  * Copyright (C) 2012,2013 ARM Limited, All Rights Reserved.
++  * Author: Marc Zyngier <marc.zyngier@arm.com>
++  *
++  * This program is free software; you can redistribute it and/or modify
++  * it under the terms of the GNU General Public License version 2 as
++  * published by the Free Software Foundation.
++  *
++  * This program is distributed in the hope that it will be useful,
++  * but WITHOUT ANY WARRANTY; without even the implied warranty of
++  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++  * GNU General Public License for more details.
++  *
++  * You should have received a copy of the GNU General Public License
++  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++  */
++ 
++ #include <linux/cpu.h>
++ #include <linux/kvm.h>
++ #include <linux/kvm_host.h>
++ #include <linux/interrupt.h>
++ #include <linux/io.h>
++ #include <linux/of.h>
++ #include <linux/of_address.h>
++ #include <linux/of_irq.h>
++ 
++ #include <linux/irqchip/arm-gic.h>
++ 
++ #include <asm/kvm_emulate.h>
++ #include <asm/kvm_arm.h>
++ #include <asm/kvm_mmu.h>
++ 
++ static struct vgic_lr vgic_v2_get_lr(const struct kvm_vcpu *vcpu, int lr)
++ {
++ 	struct vgic_lr lr_desc;
++ 	u32 val = vcpu->arch.vgic_cpu.vgic_v2.vgic_lr[lr];
++ 
++ 	lr_desc.irq	= val & GICH_LR_VIRTUALID;
++ 	if (lr_desc.irq <= 15)
++ 		lr_desc.source	= (val >> GICH_LR_PHYSID_CPUID_SHIFT) & 0x7;
++ 	else
++ 		lr_desc.source = 0;
++ 	lr_desc.state	= 0;
++ 
++ 	if (val & GICH_LR_PENDING_BIT)
++ 		lr_desc.state |= LR_STATE_PENDING;
++ 	if (val & GICH_LR_ACTIVE_BIT)
++ 		lr_desc.state |= LR_STATE_ACTIVE;
++ 	if (val & GICH_LR_EOI)
++ 		lr_desc.state |= LR_EOI_INT;
++ 
++ 	return lr_desc;
++ }
++ 
++ static void vgic_v2_set_lr(struct kvm_vcpu *vcpu, int lr,
++ 			   struct vgic_lr lr_desc)
++ {
++ 	u32 lr_val = (lr_desc.source << GICH_LR_PHYSID_CPUID_SHIFT) | lr_desc.irq;
++ 
++ 	if (lr_desc.state & LR_STATE_PENDING)
++ 		lr_val |= GICH_LR_PENDING_BIT;
++ 	if (lr_desc.state & LR_STATE_ACTIVE)
++ 		lr_val |= GICH_LR_ACTIVE_BIT;
++ 	if (lr_desc.state & LR_EOI_INT)
++ 		lr_val |= GICH_LR_EOI;
++ 
++ 	vcpu->arch.vgic_cpu.vgic_v2.vgic_lr[lr] = lr_val;
++ }
++ 
++ static void vgic_v2_sync_lr_elrsr(struct kvm_vcpu *vcpu, int lr,
++ 				  struct vgic_lr lr_desc)
++ {
++ 	if (!(lr_desc.state & LR_STATE_MASK))
++ 		set_bit(lr, (unsigned long *)vcpu->arch.vgic_cpu.vgic_v2.vgic_elrsr);
++ }
++ 
++ static u64 vgic_v2_get_elrsr(const struct kvm_vcpu *vcpu)
++ {
++ 	u64 val;
++ 
++ #if BITS_PER_LONG == 64
++ 	val  = vcpu->arch.vgic_cpu.vgic_v2.vgic_elrsr[1];
++ 	val <<= 32;
++ 	val |= vcpu->arch.vgic_cpu.vgic_v2.vgic_elrsr[0];
++ #else
++ 	val = *(u64 *)vcpu->arch.vgic_cpu.vgic_v2.vgic_elrsr;
++ #endif
++ 	return val;
++ }
++ 
++ static u64 vgic_v2_get_eisr(const struct kvm_vcpu *vcpu)
++ {
++ 	u64 val;
++ 
++ #if BITS_PER_LONG == 64
++ 	val  = vcpu->arch.vgic_cpu.vgic_v2.vgic_eisr[1];
++ 	val <<= 32;
++ 	val |= vcpu->arch.vgic_cpu.vgic_v2.vgic_eisr[0];
++ #else
++ 	val = *(u64 *)vcpu->arch.vgic_cpu.vgic_v2.vgic_eisr;
++ #endif
++ 	return val;
++ }
++ 
++ static u32 vgic_v2_get_interrupt_status(const struct kvm_vcpu *vcpu)
++ {
++ 	u32 misr = vcpu->arch.vgic_cpu.vgic_v2.vgic_misr;
++ 	u32 ret = 0;
++ 
++ 	if (misr & GICH_MISR_EOI)
++ 		ret |= INT_STATUS_EOI;
++ 	if (misr & GICH_MISR_U)
++ 		ret |= INT_STATUS_UNDERFLOW;
++ 
++ 	return ret;
++ }
++ 
++ static void vgic_v2_enable_underflow(struct kvm_vcpu *vcpu)
++ {
++ 	vcpu->arch.vgic_cpu.vgic_v2.vgic_hcr |= GICH_HCR_UIE;
++ }
++ 
++ static void vgic_v2_disable_underflow(struct kvm_vcpu *vcpu)
++ {
++ 	vcpu->arch.vgic_cpu.vgic_v2.vgic_hcr &= ~GICH_HCR_UIE;
++ }
++ 
++ static void vgic_v2_get_vmcr(struct kvm_vcpu *vcpu, struct vgic_vmcr *vmcrp)
++ {
++ 	u32 vmcr = vcpu->arch.vgic_cpu.vgic_v2.vgic_vmcr;
++ 
++ 	vmcrp->ctlr = (vmcr & GICH_VMCR_CTRL_MASK) >> GICH_VMCR_CTRL_SHIFT;
++ 	vmcrp->abpr = (vmcr & GICH_VMCR_ALIAS_BINPOINT_MASK) >> GICH_VMCR_ALIAS_BINPOINT_SHIFT;
++ 	vmcrp->bpr  = (vmcr & GICH_VMCR_BINPOINT_MASK) >> GICH_VMCR_BINPOINT_SHIFT;
++ 	vmcrp->pmr  = (vmcr & GICH_VMCR_PRIMASK_MASK) >> GICH_VMCR_PRIMASK_SHIFT;
++ }
++ 
++ static void vgic_v2_set_vmcr(struct kvm_vcpu *vcpu, struct vgic_vmcr *vmcrp)
++ {
++ 	u32 vmcr;
++ 
++ 	vmcr  = (vmcrp->ctlr << GICH_VMCR_CTRL_SHIFT) & GICH_VMCR_CTRL_MASK;
++ 	vmcr |= (vmcrp->abpr << GICH_VMCR_ALIAS_BINPOINT_SHIFT) & GICH_VMCR_ALIAS_BINPOINT_MASK;
++ 	vmcr |= (vmcrp->bpr << GICH_VMCR_BINPOINT_SHIFT) & GICH_VMCR_BINPOINT_MASK;
++ 	vmcr |= (vmcrp->pmr << GICH_VMCR_PRIMASK_SHIFT) & GICH_VMCR_PRIMASK_MASK;
++ 
++ 	vcpu->arch.vgic_cpu.vgic_v2.vgic_vmcr = vmcr;
++ }
++ 
++ static void vgic_v2_enable(struct kvm_vcpu *vcpu)
++ {
++ 	/*
++ 	 * By forcing VMCR to zero, the GIC will restore the binary
++ 	 * points to their reset values. Anything else resets to zero
++ 	 * anyway.
++ 	 */
++ 	vcpu->arch.vgic_cpu.vgic_v2.vgic_vmcr = 0;
++ 
++ 	/* Get the show on the road... */
++ 	vcpu->arch.vgic_cpu.vgic_v2.vgic_hcr = GICH_HCR_EN;
++ }
++ 
++ static const struct vgic_ops vgic_v2_ops = {
++ 	.get_lr			= vgic_v2_get_lr,
++ 	.set_lr			= vgic_v2_set_lr,
++ 	.sync_lr_elrsr		= vgic_v2_sync_lr_elrsr,
++ 	.get_elrsr		= vgic_v2_get_elrsr,
++ 	.get_eisr		= vgic_v2_get_eisr,
++ 	.get_interrupt_status	= vgic_v2_get_interrupt_status,
++ 	.enable_underflow	= vgic_v2_enable_underflow,
++ 	.disable_underflow	= vgic_v2_disable_underflow,
++ 	.get_vmcr		= vgic_v2_get_vmcr,
++ 	.set_vmcr		= vgic_v2_set_vmcr,
++ 	.enable			= vgic_v2_enable,
++ };
++ 
++ static struct vgic_params vgic_v2_params;
++ 
++ /**
++  * vgic_v2_probe - probe for a GICv2 compatible interrupt controller in DT
++  * @node:	pointer to the DT node
++  * @ops: 	address of a pointer to the GICv2 operations
++  * @params:	address of a pointer to HW-specific parameters
++  *
++  * Returns 0 if a GICv2 has been found, with the low level operations
++  * in *ops and the HW parameters in *params. Returns an error code
++  * otherwise.
++  */
++ int vgic_v2_probe(struct device_node *vgic_node,
++ 		  const struct vgic_ops **ops,
++ 		  const struct vgic_params **params)
++ {
++ 	int ret;
++ 	struct resource vctrl_res;
++ 	struct resource vcpu_res;
++ 	struct vgic_params *vgic = &vgic_v2_params;
++ 
++ 	vgic->maint_irq = irq_of_parse_and_map(vgic_node, 0);
++ 	if (!vgic->maint_irq) {
++ 		kvm_err("error getting vgic maintenance irq from DT\n");
++ 		ret = -ENXIO;
++ 		goto out;
++ 	}
++ 
++ 	ret = of_address_to_resource(vgic_node, 2, &vctrl_res);
++ 	if (ret) {
++ 		kvm_err("Cannot obtain GICH resource\n");
++ 		goto out;
++ 	}
++ 
++ 	vgic->vctrl_base = of_iomap(vgic_node, 2);
++ 	if (!vgic->vctrl_base) {
++ 		kvm_err("Cannot ioremap GICH\n");
++ 		ret = -ENOMEM;
++ 		goto out;
++ 	}
++ 
++ 	vgic->nr_lr = readl_relaxed(vgic->vctrl_base + GICH_VTR);
++ 	vgic->nr_lr = (vgic->nr_lr & 0x3f) + 1;
++ 
++ 	ret = create_hyp_io_mappings(vgic->vctrl_base,
++ 				     vgic->vctrl_base + resource_size(&vctrl_res),
++ 				     vctrl_res.start);
++ 	if (ret) {
++ 		kvm_err("Cannot map VCTRL into hyp\n");
++ 		goto out_unmap;
++ 	}
++ 
++ 	if (of_address_to_resource(vgic_node, 3, &vcpu_res)) {
++ 		kvm_err("Cannot obtain GICV resource\n");
++ 		ret = -ENXIO;
++ 		goto out_unmap;
++ 	}
+++
+++	if (!PAGE_ALIGNED(vcpu_res.start)) {
+++		kvm_err("GICV physical address 0x%llx not page aligned\n",
+++			(unsigned long long)vcpu_res.start);
+++		ret = -ENXIO;
+++		goto out_unmap;
+++	}
+++
+++	if (!PAGE_ALIGNED(resource_size(&vcpu_res))) {
+++		kvm_err("GICV size 0x%llx not a multiple of page size 0x%lx\n",
+++			(unsigned long long)resource_size(&vcpu_res),
+++			PAGE_SIZE);
+++		ret = -ENXIO;
+++		goto out_unmap;
+++	}
+++
++ 	vgic->vcpu_base = vcpu_res.start;
++ 
++ 	kvm_info("%s@%llx IRQ%d\n", vgic_node->name,
++ 		 vctrl_res.start, vgic->maint_irq);
++ 
++ 	vgic->type = VGIC_V2;
++ 	*ops = &vgic_v2_ops;
++ 	*params = vgic;
++ 	goto out;
++ 
++ out_unmap:
++ 	iounmap(vgic->vctrl_base);
++ out:
++ 	of_node_put(vgic_node);
++ 	return ret;
++ }
+diff --cc virt/kvm/arm/vgic.c
+index 476d3bf,ede8f64..73eba79
+--- a/virt/kvm/arm/vgic.c
++++ b/virt/kvm/arm/vgic.c
+@@@ -1502,65 -1587,15 +1587,15 @@@ int kvm_vgic_hyp_init(void
+  		goto out_free_irq;
+  	}
+  
+- 	ret = of_address_to_resource(vgic_node, 2, &vctrl_res);
+- 	if (ret) {
+- 		kvm_err("Cannot obtain VCTRL resource\n");
+- 		goto out_free_irq;
+- 	}
+- 
+- 	vgic_vctrl_base = of_iomap(vgic_node, 2);
+- 	if (!vgic_vctrl_base) {
+- 		kvm_err("Cannot ioremap VCTRL\n");
+- 		ret = -ENOMEM;
+- 		goto out_free_irq;
+- 	}
+- 
+- 	vgic_nr_lr = readl_relaxed(vgic_vctrl_base + GICH_VTR);
+- 	vgic_nr_lr = (vgic_nr_lr & 0x3f) + 1;
+- 
+- 	ret = create_hyp_io_mappings(vgic_vctrl_base,
+- 				     vgic_vctrl_base + resource_size(&vctrl_res),
+- 				     vctrl_res.start);
+- 	if (ret) {
+- 		kvm_err("Cannot map VCTRL into hyp\n");
+- 		goto out_unmap;
+- 	}
+- 
+- 	if (of_address_to_resource(vgic_node, 3, &vcpu_res)) {
+- 		kvm_err("Cannot obtain VCPU resource\n");
+- 		ret = -ENXIO;
+- 		goto out_unmap;
+- 	}
+ -	on_each_cpu(vgic_init_maintenance_interrupt, NULL, 1);
+--
+- 	if (!PAGE_ALIGNED(vcpu_res.start)) {
+- 		kvm_err("GICV physical address 0x%llx not page aligned\n",
+- 			(unsigned long long)vcpu_res.start);
+- 		ret = -ENXIO;
+- 		goto out_unmap;
+- 	}
++ 	/* Callback into for arch code for setup */
++ 	vgic_arch_setup(vgic);
+  
+- 	if (!PAGE_ALIGNED(resource_size(&vcpu_res))) {
+- 		kvm_err("GICV size 0x%llx not a multiple of page size 0x%lx\n",
+- 			(unsigned long long)resource_size(&vcpu_res),
+- 			PAGE_SIZE);
+- 		ret = -ENXIO;
+- 		goto out_unmap;
+- 	}
+- 
+- 	vgic_vcpu_base = vcpu_res.start;
+- 
+- 	kvm_info("%s@%llx IRQ%d\n", vgic_node->name,
+- 		 vctrl_res.start, vgic_maint_irq);
+ +	on_each_cpu(vgic_init_maintenance_interrupt, NULL, 1);
+ +
+- 	goto out;
++ 	return 0;
+  
+- out_unmap:
+- 	iounmap(vgic_vctrl_base);
+  out_free_irq:
+- 	free_percpu_irq(vgic_maint_irq, kvm_get_running_vcpus());
+- out:
+- 	of_node_put(vgic_node);
++ 	free_percpu_irq(vgic->maint_irq, kvm_get_running_vcpus());
+  	return ret;
+  }
+  
+
+Thanks,
+
+	M.
 -- 
-~Vinod
-
-> 
-> Signed-off-by: Vignesh Raman <Vignesh_Raman@mentor.com>
-> ---
->  drivers/dma/imx-sdma.c |    7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index 1360b9d..974337f 100644
-> --- a/drivers/dma/imx-sdma.c
-> +++ b/drivers/dma/imx-sdma.c
-> @@ -1636,12 +1636,19 @@ static int sdma_remove(struct platform_device *pdev)
->  	struct sdma_engine *sdma = platform_get_drvdata(pdev);
->  	struct resource *iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	int irq = platform_get_irq(pdev, 0);
-> +	int i;
->  
->  	dma_async_device_unregister(&sdma->dma_device);
->  	kfree(sdma->script_addrs);
->  	free_irq(irq, sdma);
->  	iounmap(sdma->regs);
->  	release_mem_region(iores->start, resource_size(iores));
-> +	/* Kill the tasklet */
-> +	for (i = 0; i < MAX_DMA_CHANNELS; i++) {
-> +		struct sdma_channel *sdmac = &sdma->channel[i];
-> +
-> +		tasklet_kill(&sdmac->tasklet);
-> +	}
->  	kfree(sdma);
->  
->  	platform_set_drvdata(pdev, NULL);
-> -- 
-> 1.7.9.5
-> 
-
--- 
+Jazz is not dead. It just smells funny.
