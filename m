@@ -1,230 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaGaQL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:11:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59721 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370AbaGaQKz (ORCPT
+	id S1752883AbaGaQMV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:12:21 -0400
+Received: from 8.mo5.mail-out.ovh.net ([178.32.116.78]:48865 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751412AbaGaQMS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:10:55 -0400
-Date: Thu, 31 Jul 2014 09:10:37 -0700
-From: tip-bot for Dave Hansen <tipbot@zytor.com>
-Message-ID: <tip-d17d8f9dedb9dd76fd540a5c497101529d9eb25a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dave@sr71.net, riel@redhat.com, mgorman@suse.de, tglx@linutronix.de,
-        dave.hansen@linux.intel.com, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dave@sr71.net, riel@redhat.com, mgorman@suse.de, tglx@linutronix.de,
-        dave.hansen@linux.intel.com, hpa@linux.intel.com
-In-Reply-To: <20140731154059.4C96CBA5@viggo.jf.intel.com>
-References: <20140731154059.4C96CBA5@viggo.jf.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86/mm: Add tracepoints for TLB flushes
-Git-Commit-ID: d17d8f9dedb9dd76fd540a5c497101529d9eb25a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Thu, 31 Jul 2014 12:12:18 -0400
+Content-Type: text/plain; charset=utf-8
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] ARM: at91: spi: request all csgpio in spi probe
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+In-Reply-To: <20140731155906.GH3214@piout.net>
+Date: Fri, 1 Aug 2014 00:10:05 +0800
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        devicetree@vger.kernel.org,
+        =?utf-8?Q?Ji=C5=99=C3=AD_Prchal?= <jiri.prchal@aksignal.cz>,
+        Nicolas FERRE <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>, voice.shen@atmel.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C5B462AE-B1D2-4067-91EB-44FDF49D28FA@jcrosoft.com>
+References: <b033d16ec31d26a895726ee72ec89b43943dfbae.1406547656.git.jiri.prchal@aksignal.cz> <20140728122103.GR9532@piout.net> <53D64ADA.1000102@aksignal.cz> <20140728223859.GA3214@piout.net> <20140729100017.31f0b1be@bbrezillon> <20140731155906.GH3214@piout.net>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+X-Mailer: Apple Mail (2.1878.6)
+X-Ovh-Tracer-Id: 7689896364366605203
+X-Ovh-Remote: 112.65.146.3 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrheefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrheefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d17d8f9dedb9dd76fd540a5c497101529d9eb25a
-Gitweb:     http://git.kernel.org/tip/d17d8f9dedb9dd76fd540a5c497101529d9eb25a
-Author:     Dave Hansen <dave@sr71.net>
-AuthorDate: Thu, 31 Jul 2014 08:40:59 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 31 Jul 2014 08:48:51 -0700
 
-x86/mm: Add tracepoints for TLB flushes
+On Jul 31, 2014, at 11:59 PM, Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
 
-We don't have any good way to figure out what kinds of flushes
-are being attempted.  Right now, we can try to use the vm
-counters, but those only tell us what we actually did with the
-hardware (one-by-one vs full) and don't tell us what was actually
-_requested_.
+> On 29/07/2014 at 10:00:17 +0200, Boris Brezillon wrote :
+>> Hi Alexandre,
+>> 
+>>> While this solves the particular issue Jiří is seeing, this will not
+>>> solve the case where PA14 (CS0) is not used by the spi driver at all. It
+>>> will remained muxed as CS0 and toggle when the spi master needs to
+>>> access CS0 until another driver muxes it to something else. I still
+>>> believe we should explicitly ask pinctrl to mux them as gpios.
 
-This allows us to select out "interesting" TLB flushes that we
-might want to optimize (like the ranged ones) and ignore the ones
-that we have very little control over (the ones at context
-switch).
+This is not the job of the kernel but to the bootloader
+no the pinctrl binding is not here and will never be here the configure a pin as a GPIO or
+to a specific state. This the job of the driver or the bootloader
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Link: http://lkml.kernel.org/r/20140731154059.4C96CBA5@viggo.jf.intel.com
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/mmu_context.h |  6 ++++++
- arch/x86/mm/init.c                 |  7 +++++++
- arch/x86/mm/tlb.c                  | 11 +++++++++--
- include/linux/mm_types.h           |  8 ++++++++
- include/trace/events/tlb.h         | 40 ++++++++++++++++++++++++++++++++++++++
- 5 files changed, 70 insertions(+), 2 deletions(-)
+>>> 
+>> 
+>> Do we really care about this case ?
+>> After all, if a given pin needs a specific muxing during kernel boot
+>> (i.e. a pin connected to a gpio-led that needs to stay in its previous
+>> state or a pin connected to the reset line of a device that needs to
+>> stay up and running during kernel boot) the bootloader/bootstrap should
+>> have muxed this pin appropriately before booting the kernel.
+>> 
+> 
+> Yeah, you are right.
+> 
+> 
+>> What do you mean by "we should explicitly ask pinctrl to mux them as
+>> gpios" ?
+>> Do you mean configuring all the pins as GPIOs when the pin controller is
+>> probed, or just adding a new pinctrl state configuring the pin as an
+>> output GPIO and reference it in the pinctrl-0 property of the spi
+>> controller.
+>> 
+>> If the former, you'll break devices that needs their pins to stay in
+>> the state they were during the bootloader/boostrap phase.
+>> The latter won't work if the pin you request as GPIO is later requested
+>> by another device (which, if I'm correct, is exactly the case you're
+>> trying to solve).
+>> 
+> 
+> Again you are right, let's not care about that use case. I still feel
+> that the pinctrl-0 property has to be filled correctly.
+> 
+> -- 
+> Alexandre Belloni, Free Electrons
+> Embedded Linux, Kernel and Android engineering
+> http://free-electrons.com
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
-index be12c53..166af2a 100644
---- a/arch/x86/include/asm/mmu_context.h
-+++ b/arch/x86/include/asm/mmu_context.h
-@@ -3,6 +3,10 @@
- 
- #include <asm/desc.h>
- #include <linux/atomic.h>
-+#include <linux/mm_types.h>
-+
-+#include <trace/events/tlb.h>
-+
- #include <asm/pgalloc.h>
- #include <asm/tlbflush.h>
- #include <asm/paravirt.h>
-@@ -44,6 +48,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
- 
- 		/* Re-load page tables */
- 		load_cr3(next->pgd);
-+		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
- 
- 		/* Stop flush ipis for the previous mm */
- 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
-@@ -71,6 +76,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
- 			 * to make sure to use no freed page tables.
- 			 */
- 			load_cr3(next->pgd);
-+			trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
- 			load_LDT_nolock(&next->context);
- 		}
- 	}
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index f971306..66dba36 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -18,6 +18,13 @@
- #include <asm/dma.h>		/* for MAX_DMA_PFN */
- #include <asm/microcode.h>
- 
-+/*
-+ * We need to define the tracepoints somewhere, and tlb.c
-+ * is only compied when SMP=y.
-+ */
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/tlb.h>
-+
- #include "mm_internal.h"
- 
- static unsigned long __initdata pgt_buf_start;
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index add5a0f..6f00ecb 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -49,6 +49,7 @@ void leave_mm(int cpu)
- 	if (cpumask_test_cpu(cpu, mm_cpumask(active_mm))) {
- 		cpumask_clear_cpu(cpu, mm_cpumask(active_mm));
- 		load_cr3(swapper_pg_dir);
-+		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
- 	}
- }
- EXPORT_SYMBOL_GPL(leave_mm);
-@@ -107,15 +108,19 @@ static void flush_tlb_func(void *info)
- 
- 	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
- 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
--		if (f->flush_end == TLB_FLUSH_ALL)
-+		if (f->flush_end == TLB_FLUSH_ALL) {
- 			local_flush_tlb();
--		else {
-+			trace_tlb_flush(TLB_REMOTE_SHOOTDOWN, TLB_FLUSH_ALL);
-+		} else {
- 			unsigned long addr;
-+			unsigned long nr_pages =
-+				f->flush_end - f->flush_start / PAGE_SIZE;
- 			addr = f->flush_start;
- 			while (addr < f->flush_end) {
- 				__flush_tlb_single(addr);
- 				addr += PAGE_SIZE;
- 			}
-+			trace_tlb_flush(TLB_REMOTE_SHOOTDOWN, nr_pages);
- 		}
- 	} else
- 		leave_mm(smp_processor_id());
-@@ -153,6 +158,7 @@ void flush_tlb_current_task(void)
- 
- 	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
- 	local_flush_tlb();
-+	trace_tlb_flush(TLB_LOCAL_SHOOTDOWN, TLB_FLUSH_ALL);
- 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
- 		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
- 	preempt_enable();
-@@ -191,6 +197,7 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
- 			__flush_tlb_single(addr);
- 		}
- 	}
-+	trace_tlb_flush(TLB_LOCAL_MM_SHOOTDOWN, base_pages_to_flush);
- out:
- 	if (base_pages_to_flush == TLB_FLUSH_ALL) {
- 		start = 0UL;
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 96c5750..796deac 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -516,4 +516,12 @@ struct vm_special_mapping
- 	struct page **pages;
- };
- 
-+enum tlb_flush_reason {
-+	TLB_FLUSH_ON_TASK_SWITCH,
-+	TLB_REMOTE_SHOOTDOWN,
-+	TLB_LOCAL_SHOOTDOWN,
-+	TLB_LOCAL_MM_SHOOTDOWN,
-+	NR_TLB_FLUSH_REASONS,
-+};
-+
- #endif /* _LINUX_MM_TYPES_H */
-diff --git a/include/trace/events/tlb.h b/include/trace/events/tlb.h
-new file mode 100644
-index 0000000..13391d2
---- /dev/null
-+++ b/include/trace/events/tlb.h
-@@ -0,0 +1,40 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM tlb
-+
-+#if !defined(_TRACE_TLB_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_TLB_H
-+
-+#include <linux/mm_types.h>
-+#include <linux/tracepoint.h>
-+
-+#define TLB_FLUSH_REASON	\
-+	{ TLB_FLUSH_ON_TASK_SWITCH,	"flush on task switch" },	\
-+	{ TLB_REMOTE_SHOOTDOWN,		"remote shootdown" },		\
-+	{ TLB_LOCAL_SHOOTDOWN,		"local shootdown" },		\
-+	{ TLB_LOCAL_MM_SHOOTDOWN,	"local mm shootdown" }
-+
-+TRACE_EVENT(tlb_flush,
-+
-+	TP_PROTO(int reason, unsigned long pages),
-+	TP_ARGS(reason, pages),
-+
-+	TP_STRUCT__entry(
-+		__field(	  int, reason)
-+		__field(unsigned long,  pages)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->reason = reason;
-+		__entry->pages  = pages;
-+	),
-+
-+	TP_printk("pages:%ld reason:%s (%d)",
-+		__entry->pages,
-+		__print_symbolic(__entry->reason, TLB_FLUSH_REASON),
-+		__entry->reason)
-+);
-+
-+#endif /* _TRACE_TLB_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
