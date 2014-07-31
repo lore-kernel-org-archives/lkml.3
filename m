@@ -1,93 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452AbaGaUxw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:53:52 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:58617 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaGaUwF (ORCPT
+	id S1753523AbaGaUyF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:54:05 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51577 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaGaUyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:52:05 -0400
-From: Kever Yang <kever.yang@gmail.com>
-X-Google-Original-From: Kever Yang <kever.yang@rock-chips.com>
-To: Paul Zimmerman <paulz@synopsys.com>
-Cc: dianders@chromium.org, heiko@sntech.de, olof@lixom.net,
-        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
-        xjq@rock-chips.com, wulf@rock-chips.com, lyz@rock-chips.com,
-        hj@rock-chips.com, huangtao@rock-chips.com,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/5] usb: dwc2: add compatible data for rockchip soc
-Date: Thu, 31 Jul 2014 13:51:43 -0700
-Message-Id: <1406839906-14633-3-git-send-email-kever.yang@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1406839906-14633-1-git-send-email-kever.yang@rock-chips.com>
-References: <1406839906-14633-1-git-send-email-kever.yang@rock-chips.com>
+	Thu, 31 Jul 2014 16:54:02 -0400
+Message-ID: <53DAACE7.70500@codeaurora.org>
+Date: Thu, 31 Jul 2014 13:53:59 -0700
+From: David Collins <collinsd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v3 2/4] mfd: pm8xxx-spmi: document DT bindings for Qualcomm
+ SPMI PMICs
+References: <1406205921-7452-1-git-send-email-svarbanov@mm-sol.com> <1406205921-7452-3-git-send-email-svarbanov@mm-sol.com> <53D81EE1.7040309@codeaurora.org> <53DA054D.2050508@mm-sol.com>
+In-Reply-To: <53DA054D.2050508@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add compatible data for dwc2 controller found on
-rk3066, rk3188 and rk3288 processors from rockchip.
+On 07/31/2014 01:58 AM, Stanimir Varbanov wrote:
+> On 07/30/2014 01:23 AM, David Collins wrote:
+>> On 07/24/2014 05:45 AM, Stanimir Varbanov wrote:
+>>> Document DT bindings used to describe the Qualcomm SPMI PMICs.
+>>> Currently the SPMI PMICs supported are pm8941, pm8841 and pma8084.
+>>>
+>>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+>>
+>> (...)
+>>> +Required properties for peripheral child nodes:
+>>> +- compatible:      Should contain "qcom,pm8xxx-xxx", where "xxx" is
+>>> +                   peripheral name. The "pm8xxx" can be any of supported PMICs,
+>>> +                   see example below.
+>>
+>> I don't think that this binding document should be imposing any formatting
+>> restrictions on the compatible strings for QPNP peripheral drivers.  The
+>> QPNP peripheral drivers in the downstream msm-3.10 tree [1] do not specify
+>> per-PMIC compatible strings.  This is because ideally, a given QPNP
+>> peripheral represents a hardware block that is identical in interface and
+>> operation between PMICs.
+>>
+> 
+> Isn't "hardware block that is identical in interface and operation
+> between PMICs" exactly the meaning of *compatible* property?
+> 
+> No *compatible* property, no platform device. We must have this property
+> for every peripheral driver.
 
-Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-Acked-by: Paul Zimmerman <paulz@synopsys.com>
----
+I am not suggesting that we remove the compatible property for peripheral
+device nodes.  I agree that these nodes need to have a compatible
+property.  My concern is that this binding document should not require the
+peripheral nodes to have compatible property values that are PMIC specific.
 
-Changes in v3: None
-Changes in v2:
-- set most parameters as driver auto-detect
+For example, in the downstream msm-3.10 branch the power-on peripheral
+uses the same compatible string regardless of what PMIC the peripheral is
+found on: "qcom,qpnp-power-on" [1].  There is no reason for the driver to
+care about what PMIC the peripheral is found on.  Therefore, it does not
+make sense to force it to support compatible strings like
+"qcom,pm8941-power-on", "qcom,pm8841-power-on", "qcom,pma8084-power-on", etc.
 
- drivers/usb/dwc2/platform.c |   29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+Every QPNP PMIC peripheral has its own set of type and version registers
+that allow software to auto-detect its capabilities at runtime.
 
-diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
-index a10e7a3..b533a0d 100644
---- a/drivers/usb/dwc2/platform.c
-+++ b/drivers/usb/dwc2/platform.c
-@@ -75,6 +75,34 @@ static const struct dwc2_core_params params_bcm2835 = {
- 	.uframe_sched			= 0,
- };
- 
-+static const struct dwc2_core_params params_rk3066 = {
-+	.otg_cap			= 2,	/* non-HNP/non-SRP */
-+	.otg_ver			= -1,
-+	.dma_enable			= -1,
-+	.dma_desc_enable		= 0,
-+	.speed				= -1,
-+	.enable_dynamic_fifo		= 1,
-+	.en_multiple_tx_fifo		= -1,
-+	.host_rx_fifo_size		= 520,	/* 520 DWORDs */
-+	.host_nperio_tx_fifo_size	= 128,	/* 128 DWORDs */
-+	.host_perio_tx_fifo_size	= 256,	/* 256 DWORDs */
-+	.max_transfer_size		= -1,
-+	.max_packet_count		= -1,
-+	.host_channels			= -1,
-+	.phy_type			= -1,
-+	.phy_utmi_width			= -1,
-+	.phy_ulpi_ddr			= -1,
-+	.phy_ulpi_ext_vbus		= -1,
-+	.i2c_enable			= -1,
-+	.ulpi_fs_ls			= -1,
-+	.host_support_fs_ls_low_power	= -1,
-+	.host_ls_low_power_phy_clk	= -1,
-+	.ts_dline			= -1,
-+	.reload_ctl			= -1,
-+	.ahbcfg				= 0x7, /* INCR16 */
-+	.uframe_sched			= -1,
-+};
-+
- /**
-  * dwc2_driver_remove() - Called when the DWC_otg core is unregistered with the
-  * DWC_otg driver
-@@ -97,6 +125,7 @@ static int dwc2_driver_remove(struct platform_device *dev)
- 
- static const struct of_device_id dwc2_of_match_table[] = {
- 	{ .compatible = "brcm,bcm2835-usb", .data = &params_bcm2835 },
-+	{ .compatible = "rockchip,rk3066-usb", .data = &params_rk3066 },
- 	{ .compatible = "snps,dwc2", .data = NULL },
- 	{},
- };
+Take care,
+David
+
+[1]:
+https://www.codeaurora.org/cgit/quic/la/kernel/msm-3.10/tree/Documentation/devicetree/bindings/platform/msm/qpnp-power-on.txt?h=msm-3.10
+
 -- 
-1.7.9.5
-
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
