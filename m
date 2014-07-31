@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181AbaGaDe3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 23:34:29 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:39161 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932135AbaGaDe0 (ORCPT
+	id S1756111AbaGaDny (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 23:43:54 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:41305 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755871AbaGaDnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 23:34:26 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Kees Cook <keescook@chromium.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: [PATCH v4 net-next 0/5] net: filter: split sk_filter into socket and bpf, cleanup names
-Date: Wed, 30 Jul 2014 20:34:11 -0700
-Message-Id: <1406777656-27755-1-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 30 Jul 2014 23:43:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdZLXr7mTD4H1VXQPqrwZ3gcjU7CtehOK1-1_=L1J3OnfQ@mail.gmail.com>
+References: <1406299116-28492-1-git-send-email-acourbot@nvidia.com> <CACRpkdZLXr7mTD4H1VXQPqrwZ3gcjU7CtehOK1-1_=L1J3OnfQ@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 31 Jul 2014 12:43:32 +0900
+Message-ID: <CAAVeFuK0qe9Hi8OZv9pJjZYFZB_DexPJOD-D2=4DSG==7nHkJg@mail.gmail.com>
+Subject: Re: [PATCH] gpio: add flags argument to gpiod_get*() functions
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, Mark Brown <broonie@kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The main goal of the series is to split 'struct sk_filter' into socket and
-bpf parts and cleanup names in the following way:
-- everything that deals with sockets keeps 'sk_*' prefix
-- everything that is pure BPF is changed to 'bpf_*' prefix
+On Mon, Jul 28, 2014 at 7:30 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Fri, Jul 25, 2014 at 4:38 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>
+>> The huge majority of GPIOs have their direction and initial value set
+>> right after being obtained by one of the gpiod_get() functions. The
+>> integer GPIO API had gpio_request_one() that took a convenience flags
+>> parameter allowing to specify an direction and value applied to the
+>> returned GPIO. This feature greatly simplifies client code and ensures
+>> errors are always handled properly.
+>>
+>> A similar feature has been requested for the gpiod API. Since setting
+>> the direction of a GPIO is so often the very next action done after
+>> obtaining its descriptor, we prefer to extend the existing functions
+>> instead of introducing new functions that would raise the
+>> number of gpiod getters to 16 (!).
+>>
+>> The drawback of this approach is that all gpiod clients need to be
+>> updated. To limit the pain, temporary macros are introduced that allow
+>> gpiod_get*() to be called with or without the extra flags argument. They
+>> will be removed once all consumer code has been updated.
+>>
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>> ---
+>> This dude can be applied harmlessly to the GPIO tree - then I will go
+>> after every gpiod user to update the calls to gpiod_get*() before
+>> removing the macros in consumer.h.
+>
+> OK I trust you. Patch applied with Broonie's review tag.
 
-split 'struct sk_filter' into
-struct sk_filter {
-	atomic_t        refcnt;
-	struct rcu_head rcu;
-	struct bpf_prog *prog;
-};
-and
-struct bpf_prog {
-        u32                     jited:1,
-                                len:31;
-        struct sock_fprog_kern  *orig_prog;
-        unsigned int            (*bpf_func)(const struct sk_buff *skb,
-                                            const struct bpf_insn *filter);
-        union {
-                struct sock_filter      insns[0];
-                struct bpf_insn         insnsi[0];
-                struct work_struct      work;
-        };
-};
-so that 'struct bpf_prog' can be used independent of sockets and cleans up
-'unattached' bpf use cases:
-isdn, ppp, team, seccomp, ptp, xt_bpf, cls_bpf, test_bpf
-which don't need refcnt/rcu fields.
+Thanks! Unfortunately it is still not in -next due to a build error...
 
-It's a follow up to the rcu cleanup started by Pablo in
-commit 34c5bd66e5 ("net: filter: don't release unattached filter through call_rcu()")
+> Just so we don't forget how we should move forward: Alex what do
+> you think about adding a drivers/gpio/TODO.TXT file outlining the
+> overall plan of the gpiod refactoring and clean-up work?
 
-Patch 1 - cleans up socket memory charging and makes it possible for functions
-  sk(bpf)_migrate_filter(), sk(bpf)_prepare_filter() to be socket independent
-Patches 2-4 - trivial renames
-Patch 5 - sk_filter split and renames of related sk_*() functions
-
-Alexei Starovoitov (5):
-  net: filter: simplify socket charging
-  net: filter: rename sk_filter_proglen -> bpf_classic_proglen
-  net: filter: rename sk_chk_filter() -> bpf_check_classic()
-  net: filter: rename sk_convert_filter() -> bpf_convert_filter()
-  net: filter: split 'struct sk_filter' into socket and bpf parts
-
- Documentation/networking/filter.txt      |   12 +-
- arch/arm/net/bpf_jit_32.c                |    8 +-
- arch/mips/net/bpf_jit.c                  |    8 +-
- arch/powerpc/net/bpf_jit_comp.c          |    8 +-
- arch/s390/net/bpf_jit_comp.c             |    4 +-
- arch/sparc/net/bpf_jit_comp.c            |    4 +-
- arch/x86/net/bpf_jit_comp.c              |   14 +--
- drivers/isdn/i4l/isdn_ppp.c              |   26 ++---
- drivers/net/ppp/ppp_generic.c            |   28 ++---
- drivers/net/team/team_mode_loadbalance.c |   14 +--
- include/linux/filter.h                   |   51 +++++----
- include/linux/isdn_ppp.h                 |    4 +-
- include/uapi/linux/netfilter/xt_bpf.h    |    4 +-
- kernel/bpf/core.c                        |   34 +++---
- kernel/seccomp.c                         |   18 +--
- lib/test_bpf.c                           |   24 ++--
- net/core/filter.c                        |  183 +++++++++++++++---------------
- net/core/ptp_classifier.c                |    6 +-
- net/core/sock.c                          |    9 +-
- net/core/sock_diag.c                     |    4 +-
- net/netfilter/xt_bpf.c                   |    6 +-
- net/sched/cls_bpf.c                      |   12 +-
- 22 files changed, 243 insertions(+), 238 deletions(-)
-
--- 
-1.7.9.5
-
+I have such a file locally - I'm not sure if checking it into the
+kernel tree is relevant though. Sounds more like the task of a wiki
+page.
