@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328AbaGaJFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 05:05:08 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:36193 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932239AbaGaJFG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 05:05:06 -0400
-From: Arjun Sreedharan <arjun024@gmail.com>
-To: rjw@rjwysocki.net
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        joe@perches.com, rdunlap@infradead.org
-Subject: [PATCH] Replace faulty is_hex_digit() by isxdigit()
-Date: Thu, 31 Jul 2014 14:34:49 +0530
-Message-Id: <1406797489-4296-1-git-send-email-arjun024@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <53D9895A.1030902@infradead.org>
-References: <53D9895A.1030902@infradead.org>
+	id S932355AbaGaJFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 05:05:31 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51012 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932239AbaGaJF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 05:05:29 -0400
+Message-ID: <1406797513.4935.182.camel@pasglop>
+Subject: Re: [PATCH 0/3] therm_windtunnel doesn't work properly on PowerMac
+ G4
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Jean Delvare <jdelvare@suse.de>
+Cc: kreijack@inwind.it, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 31 Jul 2014 19:05:13 +1000
+In-Reply-To: <20140731085211.5941bd33@endymion.delvare>
+References: <53D95AAF.6030309@inwind.it> <1406770020.4935.166.camel@pasglop>
+	 <20140731085211.5941bd33@endymion.delvare>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-0 is ascii for NULL. Hex digit matching should be from '0'.
-Faulty version returns true for #,$,%,& etc.
+On Thu, 2014-07-31 at 08:52 +0200, Jean Delvare wrote:
+> This leaves only two drivers still using the old binding model:
+> macintosh/therm_pm72 and sound/ppc/keywest. Could any of you please
+> convert these to the standard binding model so that I can finally get
+> rid of i2c_driver.attach_adapter? That would be wonderful.
 
-Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
----
- drivers/acpi/acpi_pnp.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+therm_pm72 is deprecated, I wrote windfarm_pm72 to replace it so that I
+wouldn't have to convert the old one :-)
 
-diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
-index 4ddb0dc..996fa19 100644
---- a/drivers/acpi/acpi_pnp.c
-+++ b/drivers/acpi/acpi_pnp.c
-@@ -12,6 +12,7 @@
- 
- #include <linux/acpi.h>
- #include <linux/module.h>
-+#include <linux/ctype.h>
- 
- static const struct acpi_device_id acpi_pnp_device_ids[] = {
- 	/* soc_button_array */
-@@ -320,11 +321,6 @@ static const struct acpi_device_id acpi_pnp_device_ids[] = {
- 	{""},
- };
- 
--static bool is_hex_digit(char c)
--{
--	return (c >= 0 && c <= '9') || (c >= 'A' && c <= 'F');
--}
--
- static bool matching_id(char *idstr, char *list_id)
- {
- 	int i;
-@@ -335,7 +331,7 @@ static bool matching_id(char *idstr, char *list_id)
- 	for (i = 3; i < 7; i++) {
- 		char c = toupper(idstr[i]);
- 
--		if (!is_hex_digit(c)
-+		if (!isxdigit(c)
- 		    || (list_id[i] != 'X' && c != toupper(list_id[i])))
- 			return false;
- 	}
--- 
-1.7.11.7
+We can probably kill it now, it's been long enough.
+
+As for the old audio one, that's the trickiest bit. I'm so completely
+swamped at the moment, I really haven't had a chance, on the other hand
+I'm not sure anybody will notice anymore if we just kill the bloody
+thing ...
+
+Cheers,
+Ben.
+
 
