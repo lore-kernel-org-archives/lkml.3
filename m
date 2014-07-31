@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751441AbaGaEFL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 00:05:11 -0400
-Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:13339
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750766AbaGaEFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 00:05:10 -0400
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: <broonie@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <timur@tabi.org>,
-        <b42378@freescale.com>
-Subject: [PATCH] ASoC: fsl_asrc: Fix sparse warnings in FSL_ASRC_FORMATS due to typo
-Date: Thu, 31 Jul 2014 12:07:40 +0800
-Message-ID: <1406779660-17177-1-git-send-email-nicoleotsuka@gmail.com>
-X-Mailer: git-send-email 1.8.4
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130512531068775113;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(77156001)(50226001)(48376002)(82202001)(50466002)(74502001)(62966002)(77982001)(87286001)(73972005)(73392001)(81442001)(87936001)(81342001)(81542001)(19580405001)(64706001)(85852003)(97736001)(36756003)(89996001)(46102001)(83072002)(92566001)(88136002)(47776003)(87572001)(93916002)(107046002)(229853001)(104166001)(6806004)(80022001)(44976005)(2351001)(19580395003)(92726001)(104016003)(85306003)(84676001)(68736004)(55446002)(106466001)(74662001)(50986999)(99396002)(20776003)(61266001)(105596002)(21056001)(95666004)(102836001)(110136001)(31966008)(33646002)(79102001)(86362001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB367;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+	id S932118AbaGaEGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 00:06:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49027 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751493AbaGaEGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 00:06:38 -0400
+Date: Thu, 31 Jul 2014 14:06:27 +1000
+From: NeilBrown <neilb@suse.de>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Ian Kent <raven@themaw.net>, autofs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC] autofs: the documentation I wanted to read
+Message-ID: <20140731140627.5c5bfb06@notabene.brown>
+In-Reply-To: <53D93B5A.1040707@infradead.org>
+References: <20140729120017.53590fad@notabene.brown>
+	<53D93B5A.1040707@infradead.org>
+X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0289B6431E
-Authentication-Results: spf=softfail (sender IP is 192.88.168.50)
- smtp.mailfrom=nicoleotsuka@gmail.com; 
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/VY2gxxN+burVxzaGlvESzde"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-reproduce: make C=1 CF=-D__CHECK_ENDIAN__
+--Sig_/VY2gxxN+burVxzaGlvESzde
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-sparse warnings: (new ones prefixed by >>)
+On Wed, 30 Jul 2014 11:37:14 -0700 Randy Dunlap <rdunlap@infradead.org> wro=
+te:
 
->> sound/soc/fsl/fsl_asrc.c:563:28: sparse: restricted snd_pcm_format_t degrades to integer
->> sound/soc/fsl/fsl_asrc.c:570:28: sparse: restricted snd_pcm_format_t degrades to integer
+> On 07/28/14 19:00, NeilBrown wrote:
 
-vim +563 sound/soc/fsl/fsl_asrc.c
+> > +Directories further down the tree depend on the *max_proto* mount
+>=20
+>                                                     max_proto or maxproto=
+?  or either?
+> check/fix other places also.
 
-  557          .probe = fsl_asrc_dai_probe,
-  558          .playback = {
-  559                  .stream_name = "ASRC-Playback",
-  560                  .channels_min = 1,
-  561                  .channels_max = 10,
-  562                  .rates = FSL_ASRC_RATES,
-> 563                  .formats = FSL_ASRC_FORMATS,
-  564          },
-  565          .capture = {
-  566                  .stream_name = "ASRC-Capture",
-  567                  .channels_min = 1,
-  568                  .channels_max = 10,
-  569                  .rates = FSL_ASRC_RATES,
-> 570                  .formats = FSL_ASRC_FORMATS,
-  571          },
-  572          .ops = &fsl_asrc_dai_ops,
-  573  };
+The mount option is "maxproto", the internal variable name is
+"max_proto" :-)
+=20
+>=20
+> Thanks.  Nice job.
+>=20
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
----
- sound/soc/fsl/fsl_asrc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks so much for all those improvements - I really appreciate it.
+They'll all be in the next posting.
 
-diff --git a/sound/soc/fsl/fsl_asrc.c b/sound/soc/fsl/fsl_asrc.c
-index 41699f7..cdb5779 100644
---- a/sound/soc/fsl/fsl_asrc.c
-+++ b/sound/soc/fsl/fsl_asrc.c
-@@ -551,7 +551,7 @@ static int fsl_asrc_dai_probe(struct snd_soc_dai *dai)
- #define FSL_ASRC_RATES		 SNDRV_PCM_RATE_8000_192000
- #define FSL_ASRC_FORMATS	(SNDRV_PCM_FMTBIT_S24_LE | \
- 				 SNDRV_PCM_FMTBIT_S16_LE | \
--				 SNDRV_PCM_FORMAT_S20_3LE)
-+				 SNDRV_PCM_FMTBIT_S20_3LE)
- 
- static struct snd_soc_dai_driver fsl_asrc_dai = {
- 	.probe = fsl_asrc_dai_probe,
--- 
-1.8.4
+Thanks,
+NeilBrown
 
+--Sig_/VY2gxxN+burVxzaGlvESzde
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU9nAxDnsnt1WYoG5AQKMhg//R3YlNTvX9wlsVrQ3f+8CVy6U1/Y9W/7j
+u1VzyrRfeBTQFjxDWJfM0CqZuSCOR2Of7jPtVtJxVKkFz1fu+ig+9cRaFHfVjWNb
+87QxEktDbgFEWDQFLPQ5tBqn5+88M5Y1ZKIz5MWq+5b0vqS0QPhXZUlWK9WOM9Kc
+bSf+y2g2UUgaTuG+Z4qnqbjnG3X2nOY3aPHB7/chpMoQ1E0ifRaTHe0c8XvyxRf6
+2fjzTNS5WZek8THiL9IdcgEUNhCciys7RpAOXhFGn2Kq9cyDRMMdr3MPRIzAxhA6
+5rqM8hnPUUfuIDpA3t2Erjh+vZrnRoFyyfG1tg5idiqplyHtPwoHopHFpsT1KaIh
+RWJP5fMui49in6l39B7UW0j9f/QXy+8ZxtngvxZy8EX1N4XWaLQnA06lLhY2seJ+
+cfHcLKZ0pOzVlG4xnhrlVkJ80FpNWWbBa+uBMOpK5k4/hspC/ZLY3vjkXDuiPjgQ
+3VkcQx58AKaD21poZs6gDw5IudY7Bg2Ybib/6Eo/V5npBat3MD6NmQiu5ul/SqVX
+iNNFSFsu2OrQdvyFEv3eUrHBEuN/LZRpra+cEiKqNkG3HPlC7mWB4GUIex8qOvjZ
+sVQqVTdOcVOhTRoWO4RVDMtj+cpE/70Ds+u664+yr2eTKP+6lkJcKafKv7zoIKhf
+gncrODesEjw=
+=GTGW
+-----END PGP SIGNATURE-----
+
+--Sig_/VY2gxxN+burVxzaGlvESzde--
