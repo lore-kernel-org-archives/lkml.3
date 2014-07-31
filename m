@@ -1,70 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaGaPky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:40:54 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14409 "EHLO mga03.intel.com"
+	id S1752937AbaGaPk4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:40:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:18468 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316AbaGaPkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:40:53 -0400
+	id S1752817AbaGaPkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 11:40:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,772,1400050800"; 
-   d="scan'208";a="463627747"
-Subject: [PATCH 0/7] [RESEND][v4] x86: rework tlb range flushing code
+   d="scan'208";a="578280731"
+Subject: [PATCH 1/7] x86: mm: clean up tlb flushing code
 To: hpa@zytor.com
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Dave Hansen <dave@sr71.net>
+        Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com,
+        riel@redhat.com, mgorman@suse.de
 From: Dave Hansen <dave@sr71.net>
-Date: Thu, 31 Jul 2014 08:40:52 -0700
-Message-Id: <20140731154052.C7E7FBC1@viggo.jf.intel.com>
+Date: Thu, 31 Jul 2014 08:40:54 -0700
+References: <20140731154052.C7E7FBC1@viggo.jf.intel.com>
+In-Reply-To: <20140731154052.C7E7FBC1@viggo.jf.intel.com>
+Message-Id: <20140731154054.44F1CDDC@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86 Maintainers,
 
-I've sent this a couple of times and resolved all the feedback
-I've received.  It has sign-offs from Mel and Rik.  Could this
-get picked up in to the x86 tree, please?
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-Changes from v3:
- * Include the patch I was using to gather detailed statistics
-   about the length of the ranged TLB flushes
- * Fix some documentation typos
- * Add a patch to rework the remote tlb flush code to plumb the
-   tracepoints in easier, and add missing tracepoints
- * use __print_symbolic() for the human-readable tracepoint
-   descriptions
- * change an int to bool in patch 1
- * Specifically call out that we removed itlb vs. dtlb logic
+The
 
-Changes from v2:
- * Added a brief comment above the ceiling tunable
- * Updated the documentation to mention large pages and say
-   "individual flush" instead of invlpg in most cases.
+	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
 
-I've run this through a variety of systems in the LKP harness,
-as well as running it on my desktop for a few days.  I'm yet to
-see an to see if any perfmance regressions (or gains) show up.
+line of code is not exactly the easiest to audit, especially when
+it ends up at two different indentation levels.  This eliminates
+one of the the copy-n-paste versions.  It also gives us a unified
+exit point for each path through this function.  We need this in
+a minute for our tracepoint.
 
- arch/x86/include/asm/mmu_context.h |    6 ++
- arch/x86/include/asm/processor.h   |    1
- arch/x86/kernel/cpu/amd.c          |    7 --
- arch/x86/kernel/cpu/common.c       |   13 ----
- arch/x86/kernel/cpu/intel.c        |   26 ---------
- arch/x86/mm/tlb.c                  |  106 ++++++++++++++++++-------------------
- include/linux/mm_types.h           |    8 ++
- 7 files changed, 68 insertions(+), 99 deletions(-)
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+---
 
---
+ b/arch/x86/mm/tlb.c |   23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
 
-I originally went to look at this becuase I realized that newer
-CPUs were not present in the intel_tlb_flushall_shift_set() code.
-
-I went to try to figure out where to stick newer CPUs (do we
-consider them more like SandyBridge or IvyBridge), and was not
-able to repeat the original experiments.
-
-Instead, this set does:
- 1. Rework the code a bit to ready it for tracepoints
- 2. Add tracepoints
- 3. Add a new tunable and set it to a sane value
+diff -puN arch/x86/mm/tlb.c~simplify-tlb-code arch/x86/mm/tlb.c
+--- a/arch/x86/mm/tlb.c~simplify-tlb-code	2014-06-30 16:18:05.525535882 -0700
++++ b/arch/x86/mm/tlb.c	2014-06-30 16:18:05.535536335 -0700
+@@ -161,23 +161,24 @@ void flush_tlb_current_task(void)
+ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 				unsigned long end, unsigned long vmflag)
+ {
++	bool need_flush_others_all = true;
+ 	unsigned long addr;
+ 	unsigned act_entries, tlb_entries = 0;
+ 	unsigned long nr_base_pages;
+ 
+ 	preempt_disable();
+ 	if (current->active_mm != mm)
+-		goto flush_all;
++		goto out;
+ 
+ 	if (!current->mm) {
+ 		leave_mm(smp_processor_id());
+-		goto flush_all;
++		goto out;
+ 	}
+ 
+ 	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1
+ 					|| vmflag & VM_HUGETLB) {
+ 		local_flush_tlb();
+-		goto flush_all;
++		goto out;
+ 	}
+ 
+ 	/* In modern CPU, last level tlb used for both data/ins */
+@@ -196,22 +197,20 @@ void flush_tlb_mm_range(struct mm_struct
+ 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 		local_flush_tlb();
+ 	} else {
++		need_flush_others_all = false;
+ 		/* flush range by one by one 'invlpg' */
+ 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
+ 			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
+ 			__flush_tlb_single(addr);
+ 		}
+-
+-		if (cpumask_any_but(mm_cpumask(mm),
+-				smp_processor_id()) < nr_cpu_ids)
+-			flush_tlb_others(mm_cpumask(mm), mm, start, end);
+-		preempt_enable();
+-		return;
+ 	}
+-
+-flush_all:
++out:
++	if (need_flush_others_all) {
++		start = 0UL;
++		end = TLB_FLUSH_ALL;
++	}
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+-		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
++		flush_tlb_others(mm_cpumask(mm), mm, start, end);
+ 	preempt_enable();
+ }
+ 
+_
