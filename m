@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249AbaGaQN4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:13:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35523 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751442AbaGaQNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:13:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,773,1400050800"; 
-   d="scan'208";a="551905004"
-Subject: Re: [Regression 3.16-rc kernel] -55% reduction in throughput for
- OLTP benchmark
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, suruchi <suruchi.a.kadu@intel.com>,
-        ak <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "hubert.nueckel" <hubert.nueckel@intel.com>,
-        beth.marsh-prime@intel.com, "doug.nelson" <doug.nelson@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <20140730001248.GA32367@infradead.org>
-References: <1406584299.2970.924.camel@schen9-DESK>
-	 <20140729141908.GA4464@infradead.org>
-	 <1406651702.2970.927.camel@schen9-DESK>
-	 <20140729164951.GA23863@infradead.org>
-	 <1406678232.2970.943.camel@schen9-DESK>
-	 <20140730001248.GA32367@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 31 Jul 2014 09:13:50 -0700
-Message-ID: <1406823230.2970.946.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1753142AbaGaQNr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:13:47 -0400
+Received: from mail-pa0-f73.google.com ([209.85.220.73]:51375 "EHLO
+	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970AbaGaQNY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:13:24 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Doug Anderson <dianders@chromium.org>,
+        mark.rutland@arm.com, devicetree@vger.kernel.org,
+        linux@arm.linux.org.uk, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, linux-kernel@vger.kernel.org,
+        robh+dt@kernel.org, galak@codeaurora.org
+Subject: [PATCH v2 0/4] Add eMMC and SD card support for rk3288-evb
+Date: Thu, 31 Jul 2014 09:13:16 -0700
+Message-Id: <1406823200-20911-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-29 at 17:12 -0700, Christoph Hellwig wrote:
-> On Tue, Jul 29, 2014 at 04:57:12PM -0700, Tim Chen wrote:
-> > Christoph, we're glad to report that this patch does fix the problem.
-> > Wonder if Al or someone can pick it up.  It is a large regression
-> > that should not be left unfixed for 3.16.
-> 
-> Al has been away for a bit, and I prepared the last VFS pull.  I'll pick
-> it up for now and either Al or I will send it on before next weekend.
-> 
-> Can I get a tested-by tag from you for the patch?  Can anyone else
-> please cross check it?  The new total value might be different from
-> the old size value when we do a short write, but I can't see how
-> an async write would be a good thing if we had to finish the remainder
-> using buffered I/O if the old code really allowed that.
-> 
+This series adds basic eMMC and SD card support for the rk3288-evb
+board based on Addy's posted dw_mmc patch from:
+  https://patchwork.kernel.org/patch/4653631/
 
-Yes, please put in 
+The series is a little tricky because:
+* Jaehoon has some outstanding patches to remove the slot node.  Since
+  those haven't landed yet, I've posted my original patch with the
+  slot node and then some future patches that can land with Jaehoon's
+  patches.
 
-Tested-by: Tim Chen <tim.c.chen@linux.intel.com>
-Tested-by: Suruchi Kadu <suruchi.a.kadu@intel.com>
+So just to be explicit:
+- Patch #1 and #2 can land after Addy's patch lands.
+- Patch #3 and #4 can land after Jaehoon's patch lands, though there's
+  no huge hurry since Jaehoon's patch supports the old mode (it just
+  prints a warning).
 
-Tim
+Note that we don't have regulators specified yet (no regulator driver
+for rk808-based board).  We also don't yet support UHS modes (which
+require regulator support plus dw_mmc driver support for tuning).
+Those features can come later.
+
+Changes in v2:
+- New patchwork link for Addy's patch
+- Squashed in the DDR50 mode since Addy spun his patch.
+- Refer to the new title of Jaehoon's patch
+
+Doug Anderson (4):
+  ARM: dts: Add emmc and sdmmc to the rk3288 device tree
+  ARM: dts: Enable emmc and sdmmc on the rk3288-evb boards
+  ARM: dts: Take the mmc slot node out of rk3288-evb
+  ARM: dts: mmc slot node gone on rk3288 => no more address / size cells
+
+ arch/arm/boot/dts/rk3288-evb.dtsi | 25 +++++++++++++++++++++++++
+ arch/arm/boot/dts/rk3288.dtsi     | 18 ++++++++++++++++++
+ 2 files changed, 43 insertions(+)
+
+-- 
+2.0.0.526.g5318336
 
