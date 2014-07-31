@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932355AbaGaJFb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 05:05:31 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51012 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932239AbaGaJF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 05:05:29 -0400
-Message-ID: <1406797513.4935.182.camel@pasglop>
-Subject: Re: [PATCH 0/3] therm_windtunnel doesn't work properly on PowerMac
- G4
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: kreijack@inwind.it, LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 31 Jul 2014 19:05:13 +1000
-In-Reply-To: <20140731085211.5941bd33@endymion.delvare>
-References: <53D95AAF.6030309@inwind.it> <1406770020.4935.166.camel@pasglop>
-	 <20140731085211.5941bd33@endymion.delvare>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932359AbaGaJKf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 05:10:35 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:35427 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932265AbaGaJKe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 05:10:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140731082051.GL4856@mwanda>
+References: <1406756021-3578-1-git-send-email-fernando.apesteguia@gmail.com>
+	<20140731082051.GL4856@mwanda>
+Date: Thu, 31 Jul 2014 11:10:33 +0200
+Message-ID: <CAGwOe2aYVBbFjAAKtSojwSXF2p=d8AHgmWyHAofxmWQRht10ww@mail.gmail.com>
+Subject: Re: [PATCH] Staging: rtl8192u: Staticfy debug method.
+From: =?UTF-8?Q?Fernando_Apestegu=C3=ADa?= 
+	<fernando.apesteguia@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-31 at 08:52 +0200, Jean Delvare wrote:
-> This leaves only two drivers still using the old binding model:
-> macintosh/therm_pm72 and sound/ppc/keywest. Could any of you please
-> convert these to the standard binding model so that I can finally get
-> rid of i2c_driver.attach_adapter? That would be wonderful.
+El 31/07/2014 10:21, "Dan Carpenter" <dan.carpenter@oracle.com> escribió:
+>
+> You need to compile these things before sending them...
+>
+> This adds a GCC warning about uncalled functions.
 
-therm_pm72 is deprecated, I wrote windfarm_pm72 to replace it so that I
-wouldn't have to convert the old one :-)
+Sorry, but I did compile it with
 
-We can probably kill it now, it's been long enough.
+make C=1 M=drivers/staging
 
-As for the old audio one, that's the trickiest bit. I'm so completely
-swamped at the moment, I really haven't had a chance, on the other hand
-I'm not sure anybody will notice anymore if we just kill the bloody
-thing ...
+But for the function to be called, DEBUG_EPROM must be defined and I
+had it defined. That's why I overlooked the warning.
 
-Cheers,
-Ben.
-
-
+Apologies.
+>
+> regards,
+> dan carpenter
+>
