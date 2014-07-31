@@ -1,190 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557AbaGaVvJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 17:51:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42397 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907AbaGaVvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 17:51:08 -0400
-Date: Fri, 1 Aug 2014 07:50:53 +1000
-From: NeilBrown <neilb@suse.de>
-To: Ben Greear <greearb@candelatech.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: Killing process in D state on mount to dead NFS server. (when
- process is in fsync)
-Message-ID: <20140801075053.2120cb33@notabene.brown>
-In-Reply-To: <53DAB307.2000206@candelatech.com>
-References: <53DA8443.407@candelatech.com>
-	<20140801064217.01852788@notabene.brown>
-	<53DAB307.2000206@candelatech.com>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1752106AbaGaVyx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 17:54:53 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49736 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906AbaGaVyv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 17:54:51 -0400
+Date: Thu, 31 Jul 2014 14:54:46 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com
+Subject: [PATCH v3 tip/core/rcu 0/9
+Message-ID: <20140731215445.GA21933@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/0rsoDSzS+wKUixuGpkIJ=Xy"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14073121-1344-0000-0000-0000032CD33A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/0rsoDSzS+wKUixuGpkIJ=Xy
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hello!
 
-On Thu, 31 Jul 2014 14:20:07 -0700 Ben Greear <greearb@candelatech.com> wro=
-te:
+This series provides v3 of a prototype of an RCU-tasks implementation,
+which has been requested to assist with tramopoline removal.  This flavor
+of RCU is task-based rather than CPU-based, and has voluntary context
+switch, usermode execution, and the idle loops as its only quiescent
+states.  This selection of quiescent states ensures that at the end
+of a grace period, there will no longer be any tasks depending on a
+trampoline that was removed before the beginning of that grace period.
+This works because such trampolines do not contain function calls,
+do not contain voluntary context switches, do not switch to usermode,
+and do not switch to idle.
 
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->=20
-> On 07/31/2014 01:42 PM, NeilBrown wrote:
-> > On Thu, 31 Jul 2014 11:00:35 -0700 Ben Greear <greearb@candelatech.com>=
- wrote:
-> >=20
-> >> So, this has been asked all over the interweb for years and years, but=
- the best answer I can find is to reboot the system or create a fake NFS se=
-rver
-> >> somewhere with the same IP as the gone-away NFS server.
-> >>=20
-> >> The problem is:
-> >>=20
-> >> I have some mounts to an NFS server that no longer exists (crashed/pow=
-ered down).
-> >>=20
-> >> I have some processes stuck trying to write to files open on these mou=
-nts.
-> >>=20
-> >> I want to kill the process and unmount.
-> >>=20
-> >> umount -l will make the mount go a way, sort of.  But process is still=
- hung. umount -f complains: umount2:  Device or resource busy umount.nfs: /=
-mnt/foo:
-> >> device is busy
-> >>=20
-> >> kill -9 does not work on process.
-> >=20
-> > Kill -1 should work (since about 2.6.25 or so).
->=20
-> That is -[ONE], right?  Assuming so, it did not work for me.
+The patches in this series are as follows:
 
-No, it was "-9" .... sorry, I really shouldn't be let out without my proof
-reader.
+1.	Adds the basic call_rcu_tasks() functionality.
 
-However the 'stack' is sufficient to see what is going on.
+2.	Provides cond_resched_rcu_qs() to force quiescent states, including
+	RCU-tasks quiescent states, in long loops.
 
-The problem is that it is blocked inside the "VM" well away from NFS and
-there is no way for NFS to say "give up and go home".
+3.	Adds synchronous APIs: synchronize_rcu_tasks() and
+	rcu_barrier_tasks().
 
-I'd suggest that is a bug.   I cannot see any justification for fsync to not
-be killable.
-It wouldn't be too hard to create a patch to make it so.
-It would be a little harder to examine all call paths and create a
-convincing case that the patch was safe.
-It might be herculean task to convince others that it was the right thing
-to do.... so let's start with that one.
+4.	Adds GPL exports for the above APIs, courtesy of Steven Rostedt.
 
-Hi Linux-mm and fs-devel people.  What do people think of making "fsync" and
-variants "KILLABLE" ??
+5.	Adds rcutorture tests for RCU-tasks.
 
-I probably only need a little bit of encouragement to write a patch....
+6.	Adds RCU-tasks test cases to rcutorture scripting.
 
-Thanks,
-NeilBrown
+7.	Adds stall-warning checks for RCU-tasks.
 
->=20
-> Kernel is 3.14.4+, with some of extra patches, but probably nothing that
-> influences this particular behaviour.
->=20
-> [root@lf1005-14010010 ~]# cat /proc/3805/stack
-> [<ffffffff811371ba>] sleep_on_page+0x9/0xd
-> [<ffffffff8113738e>] wait_on_page_bit+0x71/0x78
-> [<ffffffff8113769a>] filemap_fdatawait_range+0xa2/0x16d
-> [<ffffffff8113780e>] filemap_write_and_wait_range+0x3b/0x77
-> [<ffffffffa0f04734>] nfs_file_fsync+0x37/0x83 [nfs]
-> [<ffffffff811a8d32>] vfs_fsync_range+0x19/0x1b
-> [<ffffffff811a8d4b>] vfs_fsync+0x17/0x19
-> [<ffffffffa0f05305>] nfs_file_flush+0x6b/0x6f [nfs]
-> [<ffffffff81183e46>] filp_close+0x3f/0x71
-> [<ffffffff8119c8ae>] __close_fd+0x80/0x98
-> [<ffffffff81183de5>] SyS_close+0x1c/0x3e
-> [<ffffffff815c55f9>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> [root@lf1005-14010010 ~]# kill -1 3805
-> [root@lf1005-14010010 ~]# cat /proc/3805/stack
-> [<ffffffff811371ba>] sleep_on_page+0x9/0xd
-> [<ffffffff8113738e>] wait_on_page_bit+0x71/0x78
-> [<ffffffff8113769a>] filemap_fdatawait_range+0xa2/0x16d
-> [<ffffffff8113780e>] filemap_write_and_wait_range+0x3b/0x77
-> [<ffffffffa0f04734>] nfs_file_fsync+0x37/0x83 [nfs]
-> [<ffffffff811a8d32>] vfs_fsync_range+0x19/0x1b
-> [<ffffffff811a8d4b>] vfs_fsync+0x17/0x19
-> [<ffffffffa0f05305>] nfs_file_flush+0x6b/0x6f [nfs]
-> [<ffffffff81183e46>] filp_close+0x3f/0x71
-> [<ffffffff8119c8ae>] __close_fd+0x80/0x98
-> [<ffffffff81183de5>] SyS_close+0x1c/0x3e
-> [<ffffffff815c55f9>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
->=20
-> Thanks,
-> Ben
->=20
-> > If it doesn't please report the kernel version and cat /proc/$PID/stack
-> >=20
-> > for some processes that cannot be killed.
-> >=20
-> > NeilBrown
-> >=20
-> >>=20
-> >>=20
-> >> Aside from bringing a fake NFS server back up on the same IP, is there=
- any other way to get these mounts unmounted and the processes killed witho=
-ut=20
-> >> rebooting?
-> >>=20
-> >> Thanks, Ben
-> >>=20
-> >=20
->=20
->=20
-> - --=20
-> Ben Greear <greearb@candelatech.com>
-> Candela Technologies Inc  http://www.candelatech.com
->=20
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.13 (GNU/Linux)
-> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
->=20
-> iQEcBAEBAgAGBQJT2rLiAAoJELbHqkYeJT4OqPgH/0taKW6Be90c1mETZf9yeqZF
-> YMLZk8XC2wloEd9nVz//mXREmiu18Hc+5p7Upd4Os21J2P4PBMGV6P/9DMxxehwH
-> YX1HKha0EoAsbO5ILQhbLf83cRXAPEpvJPgYHrq6xjlKB8Q8OxxND37rY7kl19Zz
-> sdAw6GiqHICF3Hq1ATa/jvixMluDnhER9Dln3wOdAGzmmuFYqpTsV4EwzbKKqInJ
-> 6C15q+cq/9aYh6usN6z2qJhbHgqM9EWcPL6jOrCwX4PbC1XjKHekpFN0t9oKQClx
-> qSPuweMQ7fP4IBd2Ke8L/QlyOVblAKSE7t+NdrjfzLmYPzyHTyfLABR/BI053to=3D
-> =3D/9FJ
-> -----END PGP SIGNATURE-----
+8.	Improves RCU-tasks energy efficiency by replacing polling with
+	wait/wakeup.
 
+9.	Document RCU-tasks stall-warning messages.
 
---Sig_/0rsoDSzS+wKUixuGpkIJ=Xy
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Changes from v2:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+o	Use get_task_struct() instead of do_exit() hooks to synchronize
+	with exiting tasks, as suggested by Lai Jiangshan.
 
-iQIVAwUBU9q6PTnsnt1WYoG5AQLpnA/9EeEvHe0bFrg9WztWnX7jocD3s6TC8pD4
-Jeq1vNoAbSWMzgHqdk91ddHy3xbB+r1fjre6AVtpr6tQ0ZJprEteqCQ3bg6CErSo
-FrqSC+eoQs1C2tXFLzv2V4NLbG/LQrbOOazTHW06kzzNde/8aC5ZYGpmQJUy8khT
-v3D4tpvZg35nVmR6OLLJNogbt2vlLBzkVrsFQV1Myp26Pt13oQVYWL/NjbHbVYA9
-cYALts3QpBCQx36yQR1Q2T/LhhsKA8S9bgxJN923N0r0CNoPz8EX1S3vOyZ3bPOL
-uPSvR4srtS53s3+mSL2b14/DS+7hqHXP63x9ZSvBf5LbjrZSO7KkLhsMmk5fDXqy
-y+IcZvEo+Pu1Hisx3X1nlXzuOMqHU3Yzhjj7RgQW0mFuA9KhttS7D1T6+uiB0fRJ
-yN/aRI8im5JR4kqiOrRRncToB9YpjxFfW4CAqyfSCaY96C1ohyomDQ5A1YUk8KbE
-yXhVZpoU3TQJRZ8PutYFbfB6OHj1YDiZ2kM6U1OJOiFV/e58dYJa52YQAWqdfbqd
-yge1p8vq7KELEL+m+YTyKOX5+RIN1k5YnSB3JKGi6yx0ThqY5KonHNSSMQvIEpcn
-GwAsENgS7DQmQixbIv47eTzaDSg3w5a4nkSqr+pj4KXAolunOu1M203B+OOqXmeT
-l9YxqmsinO4=
-=9A61
------END PGP SIGNATURE-----
+o	Add checks of ->on_rq to the grace-period-wait polling, again
+	as suggested by Lai Jiangshan.
 
---Sig_/0rsoDSzS+wKUixuGpkIJ=Xy--
+o	Repositioned synchronize_sched() calls and improved their
+	comments.
+
+Changes from v1:
+
+o	The lockdep issue with list locking was finessed by ditching
+	list locking in favor of having the list manipulated by a single
+	kthread.  This change trimmed about 150 highly concurrent lines
+	from the implementation.
+
+o	Get rid of the scheduler hooks in favor of polling the
+	per-task count of voluntary context switches, in response
+	to Peter Zijlstra's concerns about scheduler overhead.
+
+o	Passes more aggressive rcutorture runs, which indicates that
+	an increase in rcutorture's aggression is called for.
+
+o	Handled review comments from Peter Zijlstra, Lai Jiangshan,
+	Frederic Weisbecker, and Oleg Nesterov.
+
+o	Added RCU-tasks stall-warning documentation.
+
+Remaining issues include:
+
+o	It is not clear that trampolines in functions called from the
+	idle loop are correctly handled.  Or if anyone cares about
+	trampolines in functions called from the idle loop.
+
+o	The current implementation does not yet recognize tasks that start
+	out executing is usermode.  Instead, it waits for the next
+	scheduling-clock tick to note them.
+
+o	As a result, the current implementation does not handle nohz_full=
+	CPUs executing tasks running in usermode.  There are a couple of
+	possible fixes under consideration.
+
+o	If a task is preempted while executing in usermode, the RCU-tasks
+	grace period will not end until that task resumes.  (Is there
+	some reasonable way to determine that a given preempted task
+	was preempted from usermode execution?)
+
+o	More about RCU-tasks needs to be added to Documentation/RCU.
+
+o	This version creates rcu_tasks_kthread() even if there never will
+	be any uses, which is expected to be the common case.  A future
+	version might create rcu_tasks_kthread() on demand, as suggested
+	off-list by Josh Triplett.
+
+o	There are probably still bugs.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/Documentation/RCU/stallwarn.txt                             |   33 -
+ b/Documentation/kernel-parameters.txt                         |    5 
+ b/fs/file.c                                                   |    2 
+ b/include/linux/init_task.h                                   |    9 
+ b/include/linux/rcupdate.h                                    |   52 +
+ b/include/linux/sched.h                                       |   23 
+ b/init/Kconfig                                                |   10 
+ b/kernel/rcu/rcutorture.c                                     |   44 +
+ b/kernel/rcu/tiny.c                                           |    2 
+ b/kernel/rcu/tree.c                                           |   14 
+ b/kernel/rcu/tree_plugin.h                                    |    2 
+ b/kernel/rcu/update.c                                         |  292 +++++++++-
+ b/mm/mlock.c                                                  |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TASKS01      |    7 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TASKS01.boot |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TASKS02      |    6 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TASKS02.boot |    1 
+ 17 files changed, 460 insertions(+), 45 deletions(-)
+
