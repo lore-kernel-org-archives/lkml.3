@@ -1,46 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715AbaGaTfC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 15:35:02 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:43730 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaGaTfA (ORCPT
+	id S1751470AbaGaTkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 15:40:33 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:53370 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806AbaGaTkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 15:35:00 -0400
-From: Modestas Stankus <stankus.modestas@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: Modestas Stankus <stankus.modestas@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: wlan-ng: coding style problem fix
-Date: Thu, 31 Jul 2014 22:33:35 +0300
-Message-Id: <1406835215-15852-1-git-send-email-stankus.modestas@gmail.com>
-X-Mailer: git-send-email 2.0.3
+	Thu, 31 Jul 2014 15:40:31 -0400
+Message-ID: <53DA9BA9.60808@gmail.com>
+Date: Thu, 31 Jul 2014 21:40:25 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
+        linux-samsung-soc@vger.kernel.org,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Doug Anderson <dianders@chromium.org>
+CC: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 4/4] ARM: dts: Add exynos5250-spring device tree
+References: <1406822910-6255-1-git-send-email-afaerber@suse.de> <1406822910-6255-5-git-send-email-afaerber@suse.de> <53DA936E.9060004@gmail.com> <53DA9709.10602@suse.de>
+In-Reply-To: <53DA9709.10602@suse.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: break is not useful after a goto or return
-201: FILE: drivers/staging/wlan-ng/p80211conv.c:201:
-+               return 1;
-+               break;
+Andreas,
 
-Signed-off-by: Modestas Stankus <stankus.modestas@gmail.com>
----
- drivers/staging/wlan-ng/p80211conv.c | 1 -
- 1 file changed, 1 deletion(-)
+On 31.07.2014 21:20, Andreas Färber wrote:
+> Am 31.07.2014 21:05, schrieb Tomasz Figa:
+>> On 31.07.2014 18:08, Andreas Färber wrote:
+>>> Adds initial support for the HP Chromebook 11.
+>>
+>> [snip]
+>>
+>>> +	gpio-keys {
+>>> +		compatible = "gpio-keys";
+>>> +		pinctrl-names = "default";
+>>> +		pinctrl-0 = <&power_key_irq>, <&lid_irq>;
+>>> +
+>>> +		power {
+>>> +			label = "Power";
+>>> +			gpios = <&gpx1 3 GPIO_ACTIVE_LOW>;
+>>> +			linux,code = <KEY_POWER>;
+>>
+>> I assume the key is debounced in hardware, so there is no need for
+>> debounce-interval here. Is this correct?
+> 
+> You're asking the wrong person... This is copied from
+> -cros-common/-snow. Downstream 3.8 does not have a debounce-interval
+> property.
 
-diff --git a/drivers/staging/wlan-ng/p80211conv.c b/drivers/staging/wlan-ng/p80211conv.c
-index 913676e..3b5468c 100644
---- a/drivers/staging/wlan-ng/p80211conv.c
-+++ b/drivers/staging/wlan-ng/p80211conv.c
-@@ -198,7 +198,6 @@ int skb_ether_to_p80211(wlandevice_t *wlandev, u32 ethconv,
- 		netdev_err(wlandev->netdev,
- 			   "Error: Converting eth to wlan in unknown mode.\n");
- 		return 1;
--		break;
- 	}
- 
- 	p80211_wep->data = NULL;
--- 
-2.0.3
+Doug, Vincent?
 
+> 
+>>
+>>> +			gpio-key,wakeup;
+>>> +		};
+
+[snip]
+
+>>> +
+>>> +	usb@12110000 {
+>>
+>> Since this is a brand new dts file, it should use the reference based
+>> syntax, which would be something like
+>>
+>> &usbhost {
+>> 	...
+>> };
+>>
+>> below the / { ... }; block.
+> 
+> You will find that I already did that for all nodes that have a label.
+> Since there are lots of usb nodes, please suggest specific label names.
+> 
+> I originally tried to stay out of existing code, then I was asked to fix
+> -cros-common, clean up -snow too, now the SoC, ... ;)
+
+Well, adding labels should be pretty trivial and IMHO could be squashed
+into this patch. For usb@1211000 the right label would be "ehci".
+
+> 
+>>> +		samsung,vbus-gpio = <&gpx1 1 GPIO_ACTIVE_HIGH>;
+>>> +	};
+>>> +
+>>> +	usb-hub {
+>>> +		compatible = "smsc,usb3503a";
+>>> +		reset-gpios = <&hsic_reset>;
+>>
+>> Hmm, why a -gpios property points to a pinctrl node? Shouldn't there be
+>> a phandle to GPIO bank + GPIO specifier instead?
+> 
+> Dunno, can change it. Can I just copy the gpio property from the
+> regulator above?
+
+Reading what Vincent posted earlier I would consider this as the right
+thing to do and it might even let you remove the fake regulator node.
+
+> 
+>>> +	};
+>>> +
+>>> +	fixed-rate-clocks {
+>>> +		xxti {
+>>> +			compatible = "samsung,clock-xxti";
+>>> +			clock-frequency = <24000000>;
+>>> +		};
+>>> +	};
+>>
+>> This is also referencing a node from higher level, so it should be done
+>> using a reference.
+>>
+>>> +
+>>> +	hdmi {
+>>> +		hpd-gpio = <&gpx3 7 GPIO_ACTIVE_HIGH>;
+>>> +		pinctrl-names = "default";
+>>> +		pinctrl-0 = <&hdmi_hpd_irq>;
+>>> +		phy = <&hdmiphy>;
+>>> +		ddc = <&i2c_2>;
+>>> +		hdmi-en-supply = <&s5m_ldo8_reg>;
+>>> +		vdd-supply = <&s5m_ldo8_reg>;
+>>> +		vdd_osc-supply = <&s5m_ldo10_reg>;
+>>> +		vdd_pll-supply = <&s5m_ldo8_reg>;
+>>> +	};
+>>
+>> Ditto.
+> 
+> hdmi?
+
+Sounds good.
+
+> 
+>>
+>>> +
+>>> +	fimd@14400000 {
+>>> +		status = "okay";
+>>> +		samsung,invert-vclk;
+>>> +	};
+>>
+>> Ditto.
+> 
+> fimd?
+
+OK.
+
+> 
+>>
+>>> +
+>>> +	dp-controller@145B0000 {
+>>> +		status = "okay";
+>>> +		pinctrl-names = "default";
+>>> +		pinctrl-0 = <&dp_hpd>;
+>>> +		samsung,color-space = <0>;
+>>> +		samsung,dynamic-range = <0>;
+>>> +		samsung,ycbcr-coeff = <0>;
+>>> +		samsung,color-depth = <1>;
+>>> +		samsung,link-rate = <0x0a>;
+>>> +		samsung,lane-count = <1>;
+>>> +		samsung,hpd-gpio = <&gpc3 0 GPIO_ACTIVE_HIGH>;
+>>> +	};
+>>
+>> Ditto.
+> 
+> dp_controller? display_port_controller?
+
+dp?
+
+> 
+>>
+>>> +};
+>>> +
+>>> +&dp_hpd {
+>>> +	samsung,pins = "gpc3-0";
+>>> +	samsung,pin-function = <0>;
+>>> +	samsung,pin-pud = <3>;
+>>> +	samsung,pin-drv = <0>;
+>>> +};
+>>
+>> Hmm, what node is this referencing? I believe this should rather
+>> reference the pin controller and add a new board-specific pinconf/pinmux
+>> group instead....
+> 
+> It's a -pinctrl node. See v3->v4 change log and discussion on v3.
+> 
+
+Well, this is clearly a board specific node anyway, because it does not
+refer to a special function, but simply an input/interrupt GPIO. If it
+somehow has landed in generic pinctrl dtsi then it should be removed
+from there and this patch should simply introduce its own instance of
+dp_hpd node, so you did the right thing in v3.
+
+>>> +
+>>> +&i2c_0 {
+>>> +	status = "okay";
+>>> +	samsung,i2c-sda-delay = <100>;
+>>> +	samsung,i2c-max-bus-freq = <378000>;
+>>
+>> [snip]
+>>
+>>> +/*
+>>> + * Disabled pullups since external part has its own pullups and
+>>> + * double-pulling gets us out of spec in some cases.
+>>> + */
+>>> +&i2c2_bus {
+>>> +	samsung,pin-pud = <0>;
+>>> +};
+>>
+>> OK, here overriding a generic pinconf group is justified and nicely
+>> explained by a comment.
+> 
+> You seem to assume that I actually understand these things. ;)
+> Just copied from -cros-common/-snow.
+> 
+
+It is good if those things are being done with some level of
+understanding. The DT mechanics are quite well documented in
+Documentation/devicetree/bindings, while for HW-specific bits I believe
+Chromium guys could give you a hand.
+
+>>> +
+>>> +&i2c_2 {
+>>> +	status = "okay";
+>>> +	samsung,i2c-sda-delay = <100>;
+>>> +	samsung,i2c-max-bus-freq = <66000>;
+>>> +
+>>> +	hdmiddc@50 {
+>>> +		compatible = "samsung,exynos4210-hdmiddc";
+>>> +		reg = <0x50>;
+>>> +	};
+>>
+>> I don't think this matches current Exynos HDMI bindings, which I believe
+>> have been changed to just take a phandle to i2c bus instead.
+> 
+> Copied from -cros-common/-snow.
+> 
+
+This means that somebody probably forgot to update -cros-common/-snow
+dts(i). Not the first and I guess probably not the last time...
+
+>>> +};
+>>> +
+>>> +&i2c_3 {
+>>> +	status = "okay";
+>>> +	samsung,i2c-sda-delay = <100>;
+>>> +	samsung,i2c-max-bus-freq = <66000>;
+>>> +};
+>>
+>> [snip]
+>>
+>>> +&sd1_clk {
+>>> +	samsung,pin-drv = <0>;
+>>> +};
+>>> +
+>>> +&sd1_cmd {
+>>> +	samsung,pin-pud = <3>;
+>>> +	samsung,pin-drv = <0>;
+>>> +};
+>>> +
+>>> +&sd1_cd {
+>>> +	samsung,pin-drv = <0>;
+>>> +};
+>>> +
+>>> +&sd1_bus4 {
+>>> +	samsung,pin-drv = <0>;
+>>> +};
+>>
+>> Here generic settings are being overridden, so it might be a good idea
+>> to explain why, like with i2c pull-up above.
+> 
+> Snow does not have an explanation either, so please suggest what comment
+> you'd like to see. Consider me just a user with no specs. :)
+
+Doug, Vincent, someone else?
+
+Best regards,
+Tomasz
