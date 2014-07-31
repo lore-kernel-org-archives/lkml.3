@@ -1,85 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624AbaGaXom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 19:44:42 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:64446 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977AbaGaXok (ORCPT
+	id S1752738AbaGaXrl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 19:47:41 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:55347 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322AbaGaXrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 19:44:40 -0400
+	Thu, 31 Jul 2014 19:47:39 -0400
+X-Originating-IP: 173.246.103.110
+Date: Thu, 31 Jul 2014 16:47:23 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: akpm@linux-foundation.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christopher Li <sparse@chrisli.org>, Ingo Molnar <mingo@redhat.com>,
+        Jeff Layton <jlayton@poochiereds.net>, Michal Marek <mmarek@suse.cz>,
+        Neil Brown <neilb@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, linux-sparse@vger.kernel.org
+Subject: [PATCH 1/5] Add __designated_init, wrapping
+ __attribute__((designated_init))
+Message-ID: <3130b0553b15518e3bef6d14c80280beed0f5ff9.1406850006.git.josh@joshtriplett.org>
 MIME-Version: 1.0
-In-Reply-To: <1406823200-20911-3-git-send-email-dianders@chromium.org>
-References: <1406823200-20911-1-git-send-email-dianders@chromium.org>
-	<1406823200-20911-3-git-send-email-dianders@chromium.org>
-Date: Thu, 31 Jul 2014 16:44:39 -0700
-X-Google-Sender-Auth: d4Hnmxkfa6y_8Im4EBMtJ737QZo
-Message-ID: <CAD=FV=UcJD08wUB7kJH4DusJEZ+xdH=L-zig5DGZrUgu9HYbmA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] ARM: dts: Enable emmc and sdmmc on the rk3288-evb boards
-From: Doug Anderson <dianders@chromium.org>
-To: Heiko Stuebner <heiko@sntech.de>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Addy Ke <addy.ke@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Doug Anderson <dianders@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+GCC 4.10 and newer, and Sparse, supports
+__attribute__((designated_init)), which marks a structure as requiring
+a designated initializer rather than a positional one.  This helps
+reduce churn and errors when used with _ops structures and similar
+structures designed for future extension.
 
-On Thu, Jul 31, 2014 at 9:13 AM, Doug Anderson <dianders@chromium.org> wrote:
-> This adds support for the sdmmc and emmc ports on the rk3288 using the
-> currently posted driver from Addy at:
->   https://patchwork.kernel.org/patch/4653631/
->
-> This enables basic SD and eMMC support.  Things are not yet running at
-> the fastest speed and we don't have the regulators specified, but we
-> can at least use the eMMC and SD cards now.
->
-> A few notes:
-> * This is not baesd on Jaehoon's patch series removing the slot node,
->   but it does use new syntax like putting the bus width at the top
->   level and using the new cap-mmc-highspeed / cap-sd-highspeed.  A
->   future patch will modify this one to remove the slot node.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-> Changes in v2:
-> - Squashed in the DDR50 mode since Addy spun his patch.
-> - New patchwork link for Addy's patch
->
->  arch/arm/boot/dts/rk3288-evb.dtsi | 33 +++++++++++++++++++++++++++++++++
->  1 file changed, 33 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
-> index 749e20d..ec580fa 100644
-> --- a/arch/arm/boot/dts/rk3288-evb.dtsi
-> +++ b/arch/arm/boot/dts/rk3288-evb.dtsi
-> @@ -37,6 +37,39 @@
->         };
->  };
->
-> +&emmc {
-> +       broken-cd;
-> +       bus-width = <8>;
-> +       cap-mmc-highspeed;
-> +       mmc-ddr-1_8v;
+Add a wrapper __designated_init, which turns into
+__attribute__((designated_init)) for Sparse or sufficiently new GCC.
+Enable the corresponding warning as an error.
 
-Strangely DDR mode started failing all of a sudden for me.  Even going
-back to old git hashes made things fail.  ...I'd be curious to know if
-DDR mode is working for others.
+The following semantic patch can help mark structures containing
+function pointers as requiring designated initializers:
 
--Doug
+@@
+identifier I, f;
+type T;
+@@
+
+struct I {
+	...
+	T (*f)(...);
+	...
+}
++ __designated_init
+;
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ Makefile                      | 3 +++
+ include/linux/compiler-gcc4.h | 4 ++++
+ include/linux/compiler.h      | 5 +++++
+ 3 files changed, 12 insertions(+)
+
+diff --git a/Makefile b/Makefile
+index f6a7794..83773c2 100644
+--- a/Makefile
++++ b/Makefile
+@@ -744,6 +744,9 @@ KBUILD_CFLAGS   += $(call cc-option,-Werror=strict-prototypes)
+ # Prohibit date/time macros, which would make the build non-deterministic
+ KBUILD_CFLAGS   += $(call cc-option,-Werror=date-time)
+ 
++# Disallow positional initialization of designated structs
++KBUILD_CFLAGS += $(call cc-option,-Werror=designated-init)
++
+ # use the deterministic mode of AR if available
+ KBUILD_ARFLAGS := $(call ar-option,D)
+ 
+diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+index 2507fd2..5cd3c26 100644
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -85,4 +85,8 @@
+ #if GCC_VERSION >= 40800 || (defined(__powerpc__) && GCC_VERSION >= 40600)
+ #define __HAVE_BUILTIN_BSWAP16__
+ #endif
++
++#if GCC_VERSION >= 41000 || defined(__CHECKER__)
++#define __designated_init __attribute__((designated_init))
++#endif
+ #endif /* CONFIG_ARCH_USE_BUILTIN_BSWAP */
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index d5ad7b1..c2334b2 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -266,6 +266,11 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ #define __always_inline inline
+ #endif
+ 
++/* Marks a struct as requiring designated initializers, never positional. */
++#ifndef __designated_init
++#define __designated_init
++#endif
++
+ #endif /* __KERNEL__ */
+ 
+ /*
+-- 
+2.0.1
+
