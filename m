@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085AbaGaQeO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:34:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58546 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859AbaGaQeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:34:13 -0400
-Date: Thu, 31 Jul 2014 18:31:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v2 tip/core/rcu 01/10] rcu: Add call_rcu_tasks()
-Message-ID: <20140731163138.GA15228@redhat.com>
-References: <20140731003914.GA3872@linux.vnet.ibm.com> <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com> <53D9F084.7000706@cn.fujitsu.com> <20140731160924.GR11241@linux.vnet.ibm.com>
+	id S1752194AbaGaQff (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:35:35 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:59057 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaGaQfd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:35:33 -0400
+Date: Thu, 31 Jul 2014 18:35:24 +0200
+From: Robert Richter <rric@kernel.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        Robert Richter <rrichter@cavium.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder
+ SoC
+Message-ID: <20140731163524.GT4703@rric.localhost>
+References: <1406732794-20920-1-git-send-email-rric@kernel.org>
+ <1406732794-20920-3-git-send-email-rric@kernel.org>
+ <20140730154626.GD20162@leverpostej>
+ <CAL_JsqLJ_W34XTF2aMOW9z+Gq4oxbrX1RztyJN8Mi0OFPeNxfg@mail.gmail.com>
+ <20140731123443.GS4703@rric.localhost>
+ <CAL_JsqKgfjV4sEZOWuH4YcMjeOA_yNDvZLv_jTi_Sb=27cOD3g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140731160924.GR11241@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAL_JsqKgfjV4sEZOWuH4YcMjeOA_yNDvZLv_jTi_Sb=27cOD3g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Again, sorry, I didn't read the patches yet, just noticed your discussion...
-
-On 07/31, Paul E. McKenney wrote:
->
-> On Thu, Jul 31, 2014 at 03:30:12PM +0800, Lai Jiangshan wrote:
->
-> > > +				t->rcu_tasks_nvcsw = ACCESS_ONCE(t->nvcsw);
-> > > +				t->rcu_tasks_holdout = 1;
-> > > +				list_add(&t->rcu_tasks_holdout_list,
-> > > +					 &rcu_tasks_holdouts);
+On 31.07.14 10:22:19, Rob Herring wrote:
+> On Thu, Jul 31, 2014 at 7:34 AM, Robert Richter <rric@kernel.org> wrote:
+> > On 30.07.14 11:37:38, Rob Herring wrote:
+> >> On Wed, Jul 30, 2014 at 10:46 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> >> > On Wed, Jul 30, 2014 at 04:06:31PM +0100, Robert Richter wrote:
+> >> >> From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
 > >
-> > I think get_task_struct() is needed here to avoid the task disappears.
->
-> Hmmm...  Let's see...
->
-> Looks like get_task_struct() does a blind atomic increment of ->usage.
-> And put_task_struct() does an atomic_dec_and_test().  So one question
-> is "what prevents us from doing get_task_struct() after the final
-> put_task_struct() has pushed ->usage down to zero?"
->
-> Hopefully there is a grace period in there somewhere, otherwise it will
-> be necessary to take the task-list lock, which I would like to avoid.
->
-> Looks like the call_rcu() of delayed_put_task_struct() in release_task()
-> might be doing this.
+> >> >> +/ {
+> >> >> +     model = "Cavium ThunderX CN88XX Family";
+> >> >> +     compatible = "cavium,thunder-88xx";
+> >> >
+> >> > Please don't use wildcards in compatible strings. Give this an absolute
+> >> > name, and override as necessary.
+> >
+> > The naming 88xx refers to the processor family and arn't actually
+> > wildcards. In the future we might need another dts file for 87xx, but
+> > so far all SoCs of 88xx family should use the same dts files. In this
+> > sense the naming is very specific.
+> 
+> Yes, but each implementation can have its own errata. You might not
+> need to distinguish them now, but you could in the future.
+> 
+> However, if the family is really all the same die and different parts
+> are just marketing, then the name is fine. Or if you can easily probe
+> the exact part and revision it's probably fine.
 
-Yes, exactly, so get_task_struct() is always fine as long as task_struct
-itself is protected by RCU.
+Yes, this relates to the same soc.
 
-But can't we avoid get_task_struct()? This can pin a lot of task_struct's.
-Can't we just add list_del_rcu(holdout_list) into __unhash_process() ?
+> 
+> >
+> >
+> >> >> +     cpus {
+> >> >> +             #address-cells = <2>;
+> >> >> +             #size-cells = <0>;
+> >> >> +
+> >> >> +             cpu@000 {
+> >> >> +                     device_type = "cpu";
+> >> >> +                     compatible = "cavium,thunder", "arm,armv8";
+> >> >> +                     reg = <0x0 0x000>;
+> >> >> +                     enable-method = "psci";
+> >> >> +             };
+> >> >
+> >> > Just to check: both the SoC and CPU are called thunder?
+> >
+> > The soc is called thunder-88xx, the cpu thunder. E.g. an 87xx soc will
+> > have the same core in which is thunder.
+> 
+> And the next version of the core would be called something else?
+> thunder-v2? lightning? As long as they are distinguishable they should
+> be fine.
 
-We only need to ensure that list_add() above can't race with that list_del(),
-perhaps we can tolerate lock_task_sighand() ?
+Same here, the name relates to the same core.
 
-Oleg.
-
+-Robert
