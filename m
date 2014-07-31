@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589AbaGaKT4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 06:19:56 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55644 "EHLO bear.ext.ti.com"
+	id S1756596AbaGaKUV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 06:20:21 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43602 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850AbaGaKTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 06:19:53 -0400
+	id S1751850AbaGaKUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 06:20:17 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: <nsekhar@ti.com>, <robh+dt@kernel.org>
 CC: <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>,
         <davinci-linux-open-source@linux.davincidsp.com>, <pawel.moll@arm.com>,
         <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/6] ARM: DTS: da850-evm: Enable audio via simple-card
-Date: Thu, 31 Jul 2014 13:18:54 +0300
-Message-ID: <1406801934-23334-7-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 4/6] ARM: DTS: da850-evm: Enable McASP via DT boot
+Date: Thu, 31 Jul 2014 13:18:52 +0300
+Message-ID: <1406801934-23334-5-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <1406801934-23334-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1406801934-23334-1-git-send-email-peter.ujfalusi@ti.com>
@@ -24,52 +24,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The audio on the board is using McASP <-> tlv320aic3106 codec and we have
-LineIn and LineOut jacks.
+Add pinctrl nodes for the McASP0 pins and configure McASP to the desired
+mode for the board.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- arch/arm/boot/dts/da850-evm.dts | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ arch/arm/boot/dts/da850-evm.dts | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
 
 diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
-index b9ef2be0b145..031117a4a797 100644
+index 1e11e5a5f723..09118c72e83f 100644
 --- a/arch/arm/boot/dts/da850-evm.dts
 +++ b/arch/arm/boot/dts/da850-evm.dts
-@@ -143,6 +143,33 @@
- 		regulator-max-microvolt = <5000000>;
- 		regulator-boot-on;
+@@ -17,6 +17,18 @@
+ 	soc {
+ 		pmx_core: pinmux@1c14120 {
+ 			status = "okay";
++
++			mcasp0_pins: pinmux_mcasp0_pins {
++				pinctrl-single,bits = <
++					/*
++					 * AHCLKX, ACLKX, AFSX, AHCLKR, ACLKR,
++					 * AFSR, AMUTE
++					 */
++					0x00 0x11111111 0xffffffff
++					/* AXR11, AXR12 */
++					0x04 0x00011000 0x000ff000
++				>;
++			};
+ 		};
+ 		serial0: serial@1c42000 {
+ 			status = "okay";
+@@ -170,3 +182,22 @@
+ 		};
  	};
-+
-+	sound {
-+		compatible = "simple-audio-card";
-+		simple-audio-card,name = "DA850/OMAP-L138 EVM";
-+		simple-audio-card,widgets =
-+			"Line", "Line In",
-+			"Line", "Line Out";
-+		simple-audio-card,routing =
-+			"LINE1L", "Line In",
-+			"LINE1R", "Line In",
-+			"Line Out", "LLOUT",
-+			"Line Out", "RLOUT";
-+		simple-audio-card,format = "dsp_b";
-+		simple-audio-card,bitclock-master = <&link0_codec>;
-+		simple-audio-card,frame-master = <&link0_codec>;
-+		simple-audio-card,bitclock-inversion;
-+
-+		simple-audio-card,cpu {
-+			sound-dai = <&mcasp0>;
-+			system-clock-frequency = <24576000>;
-+		};
-+
-+		link0_codec: simple-audio-card,codec {
-+			sound-dai = <&tlv320aic3106>;
-+			system-clock-frequency = <24576000>;
-+		};
-+	};
  };
- 
- /include/ "tps6507x.dtsi"
++
++&mcasp0 {
++	#sound-dai-cells = <0>;
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&mcasp0_pins>;
++
++	op-mode = <0>;          /* MCASP_IIS_MODE */
++	tdm-slots = <2>;
++	/* 4 serializer */
++	serial-dir = <  /* 0: INACTIVE, 1: TX, 2: RX */
++		0 0 0 0
++		0 0 0 0
++		0 0 0 1
++		2 0 0 0
++	>;
++	tx-num-evt = <32>;
++	rx-num-evt = <32>;
++};
 -- 
 2.0.2
 
