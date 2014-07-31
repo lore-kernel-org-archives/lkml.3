@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751274AbaGaMID (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 08:08:03 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37429 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaGaMIA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 08:08:00 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Date: Thu, 31 Jul 2014 13:07:48 +0100
-Message-Id: <1406808468-12559-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 2.0.1
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] gpiolib: Don't allow drivers to specify a base with DT
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1751284AbaGaMIl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 08:08:41 -0400
+Received: from mga03.intel.com ([143.182.124.21]:41259 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716AbaGaMIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 08:08:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,771,1400050800"; 
+   d="scan'208";a="463548489"
+Date: Thu, 31 Jul 2014 17:30:12 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Vignesh Raman <Vignesh_Raman@mentor.com>
+Cc: dan.j.williams@intel.com, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiada_Wang@mentor.com
+Subject: Re: [PATCH 1/2] dma: imx-sdma: use module_platform_driver for SDMA
+ driver
+Message-ID: <20140731120011.GS8181@intel.com>
+References: <1406725875-9171-1-git-send-email-Vignesh_Raman@mentor.com>
+ <1406725875-9171-2-git-send-email-Vignesh_Raman@mentor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406725875-9171-2-git-send-email-Vignesh_Raman@mentor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+On Wed, Jul 30, 2014 at 06:41:14PM +0530, Vignesh Raman wrote:
+> Currently there is no module_exit declared in SDMA driver, so that once
+> sdma module is inserted, it's shown with permanent attribute by lsmod,
+> and it can't be removed.
+> Use module_platform_driver to register/unregister SDMA driver and modify
+> SDMA's remove operation, to make SDMA driver possible to be removed.
+where is this bit below?
 
-DT based systems should have no reason to use fixed GPIO numbers but some
-drivers that work on both DT and non-DT platforms specify them anyway. In
-order to improve robustness in cases where drivers use gpio_is_valid() to
-check for a valid GPIO on data initialized to zero as a default and avoid
-bugs due to assuptions about fixed numbers creeping in ignore any specified
-base when DT is in use.
-
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/gpio/gpiolib.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 768f0831db18..11d3cf1cbca7 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -234,7 +234,7 @@ int gpiochip_add(struct gpio_chip *chip)
- 
- 	spin_lock_irqsave(&gpio_lock, flags);
- 
--	if (base < 0) {
-+	if (base < 0 || of_have_populated_dt()) {
- 		base = gpiochip_find_base(chip->ngpio);
- 		if (base < 0) {
- 			status = base;
 -- 
-2.0.1
+~Vinod
+> 
+> Signed-off-by: Jiada Wang <jiada_wang@mentor.com>
+> ---
+>  drivers/dma/imx-sdma.c |   16 +++++++++++++++-
+>  1 file changed, 15 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> index 14867e3..1360b9d 100644
+> --- a/drivers/dma/imx-sdma.c
+> +++ b/drivers/dma/imx-sdma.c
+> @@ -1633,7 +1633,21 @@ err_irq:
+>  
+>  static int sdma_remove(struct platform_device *pdev)
+>  {
+> -	return -EBUSY;
+> +	struct sdma_engine *sdma = platform_get_drvdata(pdev);
+> +	struct resource *iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	int irq = platform_get_irq(pdev, 0);
+> +
+> +	dma_async_device_unregister(&sdma->dma_device);
+> +	kfree(sdma->script_addrs);
+> +	free_irq(irq, sdma);
+> +	iounmap(sdma->regs);
+> +	release_mem_region(iores->start, resource_size(iores));
+> +	kfree(sdma);
+> +
+> +	platform_set_drvdata(pdev, NULL);
+> +
+> +	dev_info(&pdev->dev, "Removed...\n");
+> +	return 0;
+>  }
+>  
+>  static struct platform_driver sdma_driver = {
+> -- 
+> 1.7.9.5
+> 
 
+-- 
