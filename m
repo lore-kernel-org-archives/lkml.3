@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631AbaGaUQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:16:13 -0400
-Received: from orange.myspectrum.nl ([149.210.134.247]:50621 "EHLO
-	orange.myspectrum.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaGaUQK (ORCPT
+	id S1751796AbaGaUYj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:24:39 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:54343 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806AbaGaUYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:16:10 -0400
-X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Jul 2014 16:16:10 EDT
-Message-ID: <53DAA2A0.3050205@myspectrum.nl>
-Date: Thu, 31 Jul 2014 22:10:08 +0200
-From: Jeroen Hofstee <dasuboot@myspectrum.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 31 Jul 2014 16:24:38 -0400
+X-CheckPoint: {53DAA605-7-2100090A-C0000000}
+Message-ID: <53DAA605.2030500@tilera.com>
+Date: Thu, 31 Jul 2014 16:24:37 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Hans de Goede <hdegoede@redhat.com>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>, u-boot@lists.denx.de
-CC: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: Re: [U-Boot] [PATCH] kconfig: Fix compiler warning in menu.c
-References: <1406816503-31963-1-git-send-email-hdegoede@redhat.com>
-In-Reply-To: <1406816503-31963-1-git-send-email-hdegoede@redhat.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Pawel Moll <pawel.moll@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>, <paul@pwsan.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>, <arm@kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] char: tile-srom: Remove reference to platform_bus
+References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com> <1406298233-27876-2-git-send-email-pawel.moll@arm.com>
+In-Reply-To: <1406298233-27876-2-git-send-email-pawel.moll@arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.9.0.23]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Hans,
-
-On 31-07-14 16:21, Hans de Goede wrote:
-> This fixes the following compiler warning:
+On 7/25/2014 10:23 AM, Pawel Moll wrote:
+> The code was creating "srom" class devices using
+> platform_bus as a parent. As they are not really
+> platform devices, make them virtual, using NULL instead.
 >
-> In file included from scripts/kconfig/zconf.tab.c:2537:0:
-> scripts/kconfig/menu.c: In function ‘get_symbol_str’:
-> scripts/kconfig/menu.c:590:18: warning: ‘jump’ may be used uninitialized in this function [-Wmaybe-uninitialized]
->       jump->offset = strlen(r->s);
->                    ^
-> In file included from scripts/kconfig/zconf.tab.c:2537:0:
-> scripts/kconfig/menu.c:551:19: note: ‘jump’ was declared here
->    struct jump_key *jump;
->
-> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+> Cc: Chris Metcalf<cmetcalf@tilera.com>
+> Signed-off-by: Pawel Moll<pawel.moll@arm.com>
 > ---
->   scripts/kconfig/menu.c | 2 +-
+>   drivers/char/tile-srom.c | 2 +-
 >   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
-> index a26cc5d..584e0fc 100644
-> --- a/scripts/kconfig/menu.c
-> +++ b/scripts/kconfig/menu.c
-> @@ -548,7 +548,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
->   {
->   	int i, j;
->   	struct menu *submenu[8], *menu, *location = NULL;
-> -	struct jump_key *jump;
-> +	struct jump_key *jump = NULL;
->   
->   	str_printf(r, _("Prompt: %s\n"), _(prop->text));
->   	menu = prop->menu->parent;
 
-just curious, which compiler is this? Since it is a false positive.
-(and it could know)
+Can you clarify the point of this change a bit?  The SROM devices
+in question are real devices (bits of silicon on the processor die), not
+some kind of virtual construct.  In addition, we also have user binaries
+in the wild that know to look for /sys/devices/platform/srom/ paths,
+so I'm pretty reluctant to change this path without good reason.
 
-Regards,
-Jeroen
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
