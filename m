@@ -1,115 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679AbaGaNWN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 09:22:13 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:52316 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277AbaGaNWK (ORCPT
+	id S1751740AbaGaNWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 09:22:36 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:59196 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750866AbaGaNWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 09:22:10 -0400
+	Thu, 31 Jul 2014 09:22:34 -0400
+Date: Thu, 31 Jul 2014 14:22:23 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dmaengine@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris Brezillon <boris@free-electrons.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        laurent.pinchart@ideasonboard.com, ludovic.desroches@atmel.com,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
+	dma controller API
+Message-ID: <20140731132223.GK30282@n2100.arm.linux.org.uk>
+References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com> <20140730160607.GM8181@intel.com> <20140731074440.GY3952@lukather>
 MIME-Version: 1.0
-In-Reply-To: <53DA37EA.7010306@gmail.com>
-References: <1406805732-17372-1-git-send-email-hsnaves@gmail.com>
- <1406805732-17372-2-git-send-email-hsnaves@gmail.com> <53DA37EA.7010306@gmail.com>
-From: Humberto Naves <hsnaves@gmail.com>
-Date: Thu, 31 Jul 2014 15:13:37 +0200
-Message-ID: <CAEe5pB-FnkY8E9qPjy+6R5ausEEx-pO2wupWYZO8Lscb2BAwiw@mail.gmail.com>
-Subject: Re: [PATCHv2 1/5] clk: samsung: exynos5410: Add NULL pointer checks
- in clock init
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Thomas Abraham <ta.omasab@gmail.com>,
-        Andreas Farber <afaerber@suse.de>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140731074440.GY3952@lukather>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jul 31, 2014 at 09:44:40AM +0200, Maxime Ripard wrote:
+> I didn't miss it. But I feel like it describes quite nicely the slave
+> API, but doesn't help at all whenever you're writing a DMAengine driver.
 
-I am bit confused by your response: first you mentioned that I should
-remove the NULL check for variable np, but later on you suggested that
-I should rearrange the conditional statement to avoid adding more
-indentation. My guess is that I should remove that if statement
-altogether?
+There's actually two documents:
 
-Regarding the ctx variable, should I still remove the NULL check? As
-you said, in the near future samsung_clk_init() won't panic anymore,
-and keeping the check in place won't hurt anybody.
+Documentation/crypto/async-tx-api.txt
+Documentation/dmaengine.txt
 
-Best,
-Humberto
+The first is the original DMA engine API for use with offloading things
+like memcpy, as well as the crypto API to hardware crypto DMA engines.
 
-On Thu, Jul 31, 2014 at 2:34 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> Hi Humberto,
->
-> Please see my comments inline.
->
-> On 31.07.2014 13:22, Humberto Silva Naves wrote:
->> Added NULL pointer checks for device_node input parameter and
->> for the samsung_clk_provider context returned by samsung_clk_init.
->> Even though the *current* samsung_clk_init function never returns
->> a NULL pointer, it is good to keep this check in place to avoid
->> possible problems in the future due to changes in implementation.
->> That way, we also improve the consistency of the code that performs
->> clock initialization across the different SoCs.
->>
->> Signed-off-by: Humberto Silva Naves <hsnaves@gmail.com>
->> ---
->>  drivers/clk/samsung/clk-exynos5410.c |   12 +++++++++---
->>  1 file changed, 9 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/clk/samsung/clk-exynos5410.c b/drivers/clk/samsung/clk-exynos5410.c
->> index 231475b..bf57c80 100644
->> --- a/drivers/clk/samsung/clk-exynos5410.c
->> +++ b/drivers/clk/samsung/clk-exynos5410.c
->> @@ -188,11 +188,17 @@ static void __init exynos5410_clk_init(struct device_node *np)
->>       struct samsung_clk_provider *ctx;
->>       void __iomem *reg_base;
->>
->> -     reg_base = of_iomap(np, 0);
->> -     if (!reg_base)
->> -             panic("%s: failed to map registers\n", __func__);
->> +     if (np) {
->
-> Since all Exynos-based boards are always booted using DT, this function
-> will never be called if there is no node for the clock controller and so
-> there is no way this pointer can end up being NULL. I don't see a point
-> in complicating this code with useless checks.
->
->> +             reg_base = of_iomap(np, 0);
->> +             if (!reg_base)
->> +                     panic("%s: failed to map registers\n", __func__);
->> +     } else {
->> +             panic("%s: unable to determine soc\n", __func__);
->> +     }
->
-> As a side note, since panic() does not return, the code above could be
-> changed to follow rest of checks in this function:
->
->         if (!np)
->                 panic("%s: unable to determine soc\n", __func__);
->
->         reg_base = of_iomap(np, 0);
->         ...
->
-> leading to more readable code with less indentation and less changes to
-> existing code.
->
->>
->>       ctx = samsung_clk_init(np, reg_base, CLK_NR_CLKS);
->> +     if (!ctx)
->> +             panic("%s: unable to allocate context.\n", __func__);
->
-> samsung_clk_init() already panics on any error, although now as I think
-> of it, it probably should be changed with a patch to just error out and
-> let the caller handle the error. However callers don't need to be
-> changed before this is done.
->
-> Best regards,
-> Tomasz
+The second is documentation for the DMA slave API which modifies some
+of the requirements of the first (like, the ability to call the slave
+DMA prepare functions from within the callback, which are not permitted
+in the async tx API.)
+
+Both documents are relevant for writing a DMA engine driver.
+
+> Because, for the moment, we're pretty much left in the dark with
+> different drivers doing the same thing in completetely different ways,
+> with basically no way to tell if it's either the framework that
+> requires such behaviour, or if the author was just feeling creative.
+
+DMA engine has lacked a lot of infrastructure for common patterns in
+drivers; some of that is solved by my efforts with the virt_dma.c
+support, and also various cleanups to existing drivers, but it's not
+easy to fix this problem after drivers have been merged.
+
+> There's numerous examples for this at the moment:
+>   - The GFP flags, with different drivers using either GFP_ATOMIC,
+>     GFP_NOWAIT or GFP_KERNEL in the same functions
+
+The slave prepare APIs should be using GFP_ATOMIC to ensure safety.
+
+>   - Having to set device_slave_caps or not?
+
+device_slave_caps is a relatively new invention, so old drivers don't
+implement it.  Newer drivers should, and there probably should be some
+motivation for older drivers to add it.
+
+>   - Some drivers use dma_run_depedencies, some other don't
+
+Dependent operations are part of the async-tx API, and aren't really
+applicable to the slave DMA API.  A driver implementing just the slave
+DMA API need not concern itself with dependent operations, but a
+driver implementing the async-tx APIs should do.
+
+>   - That might just be my experience, but judging from previous
+>     commits, DMA_PRIVATE is completely obscure, and we just set it
+>     because it was making it work, without knowing what it was
+>     supposed to do.
+
+DMA_PRIVATE means that the channel is unavailable for async-tx operations
+- in other words, it's slave-only.  Setting it before registration results
+in the private-use count being incremented, disabling the DMA_PRIVATE
+manipulation in the channel request/release APIs (requested channels are
+unavailable for async-tx operations, which is why that flag is also set
+there.)
+
+To put it another way, if a DMA engine driver only provides slave DMA
+support, it must set DMA_PRIVATE to mark the channel unavailable for
+async-tx operations.  If a DMA engine drivers channels can also be used
+for async-tx operations, then it should leave the flag clear.
+
+> And basically, we have no way to tell at the moment which one is
+> right and which one needs fixing.
+> 
+> The corollary being that it cripples the whole community ability to
+> maintain the framework and make it evolve.
+
+All respect to Vinod (who looks after the slave side of the DMA engine
+implementations) and Dan, what it needs is someone who knows the *whole*
+DMA engine picture to be in control of the subsystem, and who knows these
+details - not must one bit of it.  Someone who has the time to put into
+reviewing changes to it, and probably more importantly, has the time to
+clean up the existing code.  Finding someone who fits that is a struggle.
+
+Dan knows the whole picture (or used to when he was working on it at one
+of his former employers) but I don't think Dan had the available time to
+address various issues with it.
+
+> > cookie is dma transaction representation which is monotonically incrementing
+> > number.
+> 
+> Ok, and it identifies a unique dma_async_tx_descriptor, right?
+
+You really should not be concerned with DMA cookies anymore since one
+of my cleanups - I added a number of helper functions which hide the
+manipulation of DMA cookies, and take away from driver writers the
+semantics of how cookies themselves are operated upon.  virt-dma goes
+a little further and provides descriptor lists and methods to look up
+a descriptor given a cookie.
+
+The only thing that a driver writer should concern themselves with is
+making the appropriate cookie management calls at the relevant point in
+the code - in other words, allocating a cookie at in the submit callback,
+completing a cookie when a descriptor is complete, etc.
+
+Drivers should have no reason what so ever to be touching the cookie
+directly anymore.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
