@@ -1,54 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796AbaGaUYj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:24:39 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:54343 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaGaUYi (ORCPT
+	id S1752120AbaGaUYr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:24:47 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49478 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826AbaGaUYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:24:38 -0400
-X-CheckPoint: {53DAA605-7-2100090A-C0000000}
-Message-ID: <53DAA605.2030500@tilera.com>
-Date: Thu, 31 Jul 2014 16:24:37 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 31 Jul 2014 16:24:45 -0400
+Message-ID: <53DAA60B.6040802@codeaurora.org>
+Date: Thu, 31 Jul 2014 13:24:43 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Pawel Moll <pawel.moll@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@wwwdotorg.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>, <paul@pwsan.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>, <arm@kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] char: tile-srom: Remove reference to platform_bus
-References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com> <1406298233-27876-2-git-send-email-pawel.moll@arm.com>
-In-Reply-To: <1406298233-27876-2-git-send-email-pawel.moll@arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Prarit Bhargava <prarit@redhat.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
+ to be held for duration of changing governors [v2]
+References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com>
+In-Reply-To: <53DA8A41.2030601@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.9.0.23]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/25/2014 10:23 AM, Pawel Moll wrote:
-> The code was creating "srom" class devices using
-> platform_bus as a parent. As they are not really
-> platform devices, make them virtual, using NULL instead.
+On 07/31/2014 11:26 AM, Prarit Bhargava wrote:
 >
-> Cc: Chris Metcalf<cmetcalf@tilera.com>
-> Signed-off-by: Pawel Moll<pawel.moll@arm.com>
-> ---
->   drivers/char/tile-srom.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> On 07/31/2014 02:38 PM, Rafael J. Wysocki wrote:
+>> On Thursday, July 31, 2014 01:57:29 PM Prarit Bhargava wrote:
+>>>
+>>> On 07/31/2014 12:36 PM, Rafael J. Wysocki wrote:
+>>>> On Thursday, July 31, 2014 06:23:18 AM Prarit Bhargava wrote:
+>>>>>
+>>>>> On 07/30/2014 10:16 PM, Rafael J. Wysocki wrote:
+>>>>>> On Wednesday, July 30, 2014 06:36:00 PM Saravana Kannan wrote:
+>>>>>>> On 07/30/2014 02:40 PM, Rafael J. Wysocki wrote:
+>>>>>>>> On Wednesday, July 30, 2014 10:18:25 AM Prarit Bhargava wrote:
+>>>>>>>>>
+>>>>>>>>> On 07/29/2014 08:03 PM, Rafael J. Wysocki wrote:
+>>>>>>>>>> On Tuesday, July 29, 2014 07:46:02 AM Prarit Bhargava wrote:
+>>>>>>>>
+>>>>>>>> [cut]
+>>>>>>>>
+>>>>>>>>>>> This patch effectively reverts commit 955ef483.
+>>>>>>>
+>>>>>>> The issue reported in this patch is valid. We are seeing that internally
+>>>>>>> too. I believe I reported it in another thread (within the past month).
+>>>>>>>
+>>>>>>> However, the original patch fixes a real deadlock issue (I'm too tired
+>>>>>>> to look it up now). We can revet the original, but it's going to bring
+>>>>>>> back the original issue. I just want to make sure Prarit and Raphael
+>>>>>>> realize this before proceeding.
+>>>>>>>
+>>>>>>> I do have plans for a proper fix for the mainline (not stable branches),
+>>>>>>> but plan to do that after the current set of suspend/hotplug patches go
+>>>>>>> through. The fix would be easier to make after that.
+>>>>>>>
+>>>>>>>>>>
+>>>>>>>>>> OK, I'm convinced by this.
+>>>>>>>>>>
+>>>>>>>>>> I suppose we should push it for -stable from 3.10 through 3.15.x, right?
+>>>>>>>>>
+>>>>>>>>> Rafael, I think that is a good idea.  I'm not sure what the protocol is for
+>>>>>>>>> adding stable@kernel.org though ...
+>>>>>
+>>>>> Rafael, let me (again) re-write the patch description.  I think Saravana has
+>>>>> raised an important issue that I have not clearly identified why it is safe to
+>>>>> remove this code in my patch description.  Also, I want to clearly identify the
+>>>>> appropriate -stable releases to push this out to.
+>>>>>
+>>>>> I'll submit a [v3] later today or tomorrow.
+>>>>
+>>>> In any case that's too late for 3.16 final, unless there's an -rc8.
+>>>>
+>>>> Thanks for doing that work!
+>>>
+>>> Ugh ... I tried this (yet another) large system and hit another panic :(.
+>>>
+>>> I'm investigating now, and I'm hoping this is just something "new".
+>>
+>> Well, I've applied your patch as is and I can push it to Linus.
+>>
+>> However, if you want to update the changelog, I'll not do that, but in that
+>> case the patch will have to wait for the next week.
+>
+> Rafael, please let it wait for next week.  I _need_ to make sure this is correct
+> and I'd rather not pushed something half-done.
+>
 
-Can you clarify the point of this change a bit?  The SROM devices
-in question are real devices (bits of silicon on the processor die), not
-some kind of virtual construct.  In addition, we also have user binaries
-in the wild that know to look for /sys/devices/platform/srom/ paths,
-so I'm pretty reluctant to change this path without good reason.
+Prarit,
+
+I'm not an expert on sysfs locking, but I would think the specific sysfs 
+lock would depend on the file/attribute group. So, can you please try to 
+hotplug a core in/out (to trigger the POLICY_EXIT) and then read a sysfs 
+file exported by the governor? scaling_governor doesn't cut it since 
+that file is not removed on policy exit event to governor. If it's 
+ondemand, try reading/write it's sampling rate file.
+
+The main problem here is upon POLICY_EXIT to the governor, the governor 
+tries to remove its sysfs file. So, if you have the policy lock held 
+while sending POLICY_EXIT to the governor, you'll cause the:
+lock policy
+lock sysfs
+
+But trying to read the same file would cause:
+lock sysfs
+lock policy
+
+-Saravana
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
