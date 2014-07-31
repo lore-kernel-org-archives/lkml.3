@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932348AbaGaI67 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 04:58:59 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:41695 "EHLO extserv.mm-sol.com"
+	id S932302AbaGaJBv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 05:01:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:56507 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932239AbaGaI6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 04:58:55 -0400
-Message-ID: <53DA054D.2050508@mm-sol.com>
-Date: Thu, 31 Jul 2014 11:58:53 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S932239AbaGaJBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 05:01:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,770,1400050800"; 
+   d="scan'208";a="581611877"
+Date: Thu, 31 Jul 2014 17:01:30 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [LKP] [mm] b72fd1470c9: -41.7%
+ perf-profile.cpu-cycles.get_page_from_freelist.__alloc_pages_nodemask.alloc_pages_current.__page_cache_alloc.pagecache_get_page
+Message-ID: <20140731090130.GB23367@aaronlu.sh.intel.com>
+References: <20140731055035.GB19742@aaronlu.sh.intel.com>
+ <20140731084832.GP10819@suse.de>
 MIME-Version: 1.0
-To: David Collins <collinsd@codeaurora.org>
-CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v3 2/4] mfd: pm8xxx-spmi: document DT bindings for Qualcomm
- SPMI PMICs
-References: <1406205921-7452-1-git-send-email-svarbanov@mm-sol.com> <1406205921-7452-3-git-send-email-svarbanov@mm-sol.com> <53D81EE1.7040309@codeaurora.org>
-In-Reply-To: <53D81EE1.7040309@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140731084832.GP10819@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2014 01:23 AM, David Collins wrote:
-> On 07/24/2014 05:45 AM, Stanimir Varbanov wrote:
->> Document DT bindings used to describe the Qualcomm SPMI PMICs.
->> Currently the SPMI PMICs supported are pm8941, pm8841 and pma8084.
->>
->> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+On Thu, Jul 31, 2014 at 09:48:32AM +0100, Mel Gorman wrote:
+> On Thu, Jul 31, 2014 at 01:50:35PM +0800, Aaron Lu wrote:
+> > FYI, we noticed the below changes on
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
+> > commit b72fd1470c9735f53485d089aa918dc327a86077 ("mm: rearrange zone fields into read-only, page alloc, statistics and page reclaim lines")
+> > 
+> > test case: lkp-st02/dd-write/5m-11HDD-JBOD-cfq-xfs-10dd
+> > 
+> > e28c951ff01a805  b72fd1470c9735f53485d089a  
+> > ---------------  -------------------------  
+> >       1.06 ~ 6%     -41.7%       0.62 ~ 3%  TOTAL perf-profile.cpu-cycles.get_page_from_freelist.__alloc_pages_nodemask.alloc_pages_current.__page_cache_alloc.pagecache_get_page
+> >       1.34 ~ 2%     -19.8%       1.07 ~ 2%  TOTAL perf-profile.cpu-cycles.__block_write_begin.xfs_vm_write_begin.generic_perform_write.xfs_file_buffered_aio_write.xfs_file_write_iter
+> >       1.19 ~ 5%     -12.1%       1.05 ~ 4%  TOTAL perf-profile.cpu-cycles.copy_from_user_atomic_iovec.iov_iter_copy_from_user_atomic.generic_perform_write.xfs_file_buffered_aio_write.xfs_file_write_iter
+> >       2.78 ~ 1%     -16.3%       2.32 ~ 4%  TOTAL perf-profile.cpu-cycles.__clear_user.read_zero.read_zero.vfs_read.sys_read
+> >   2.96e+09 ~ 4%      -5.2%  2.806e+09 ~ 0%  TOTAL perf-stat.cache-misses
+> >   3.86e+12 ~ 5%      -5.2%  3.658e+12 ~ 1%  TOTAL perf-stat.ref-cycles
+> > 
+> > Legend:
+> > 	~XX%    - stddev percent
+> > 	[+-]XX% - change percent
+> > 
 > 
-> (...)
->> +Required properties for peripheral child nodes:
->> +- compatible:      Should contain "qcom,pm8xxx-xxx", where "xxx" is
->> +                   peripheral name. The "pm8xxx" can be any of supported PMICs,
->> +                   see example below.
-> 
-> I don't think that this binding document should be imposing any formatting
-> restrictions on the compatible strings for QPNP peripheral drivers.  The
-> QPNP peripheral drivers in the downstream msm-3.10 tree [1] do not specify
-> per-PMIC compatible strings.  This is because ideally, a given QPNP
-> peripheral represents a hardware block that is identical in interface and
-> operation between PMICs.
-> 
+> I'm not exactly sure what I'm reading here. I think it is reporting on cpu
+> cycles and cache misses used in various kernel functions. It's not clear what
+> the units are but it looks like percentages of overall cycles spent in the
+> reported functions. That may or may not be good depending on whether there
+> is a higher cost elsewhere pushing the percentages down but that detail
+> is not in the report. It looks like this is reporting that fewer clock
+> cycles are being spent and incurring fewer cache misses. What is the problem?
 
-Isn't "hardware block that is identical in interface and operation
-between PMICs" exactly the meaning of *compatible* property?
+LKP does not report problems only, it will also report commits that make
+things better :-)
 
-No *compatible* property, no platform device. We must have this property
-for every peripheral driver.
+>From the perf-stat.cache-misses, I think it is indicating your commit
+does something for good.
 
-> These peripheral drivers determine the base address for a given device
-> instance via device tree reg and reg-names properties.  In order for this
-> to continue to work with the pm8xxx-spmi driver, some mechanism will need
-> to be introduced which creates resource structs for the
-> non-memory-mappable SPMI base addresses.  One possible solution is
-> currently being discussed in another thread [2].  This document will need
-> to be updated to show the child node reg property scheme once a solution
-> is reached.
-> 
-
-That's correct. If we reach the "reg" solution this binding document
-must be changed.
-
-> (...)
->> +Example:
->> +
->> +	pm8941@0 {
->> +		compatible = "qcom,pm8941";
->> +		reg = <0x0 SPMI_USID>;
->> +
->> +		rtc {
->> +			compatible = "qcom,pm8941-rtc";
->> +			interrupts = <0x0 0x61 0x1 IRQ_TYPE_EDGE_RISING>;
->> +			interrupt-names = "alarm";
->> +		};
->> +	};
-> 
-> Can you please expand your example to include the second SID for the
-> PM8941 chip?  That way, it will be clear that each PMIC needs two DT
-> nodes; one for each SID.
-
-Sure, will do.
-
--- 
-regards,
-Stan
+Thanks,
+Aaron
