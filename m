@@ -1,99 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117AbaGaDyd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 23:54:33 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:33981 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755871AbaGaDyc (ORCPT
+	id S1756153AbaGaD5q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 23:57:46 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:62699 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755871AbaGaD5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 23:54:32 -0400
-Message-ID: <53D9BDAA.7080907@linaro.org>
-Date: Thu, 31 Jul 2014 11:53:14 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 30 Jul 2014 23:57:45 -0400
 MIME-Version: 1.0
-To: Sudeep Holla <sudeep.holla@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>
-CC: "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/19] ARM64 / ACPI: Parse FADT table to get PSCI flags
- for PSCI init
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <1406206825-15590-7-git-send-email-hanjun.guo@linaro.org> <53D7CE6F.1050407@arm.com>
-In-Reply-To: <53D7CE6F.1050407@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAPDOMVgXChx5HST-jMEZmWDydWKe0Yv15pyTiPeOuQSVEjihFA@mail.gmail.com>
+References: <1406752954-26158-1-git-send-email-xerofoify@gmail.com>
+	<CAPM=9ty2PhMdLykVX4c074Tdkyh0OO_jtfw-CAFHk8ANcZA4kQ@mail.gmail.com>
+	<CAPDOMVgXChx5HST-jMEZmWDydWKe0Yv15pyTiPeOuQSVEjihFA@mail.gmail.com>
+Date: Thu, 31 Jul 2014 13:57:43 +1000
+Message-ID: <CAPM=9txGAA3sanpjYBgAuk0BynZRP56SRBfL_Rd88oDzBKHZ_g@mail.gmail.com>
+Subject: Re: [PATCH] Remove certain calls for releasing page cache
+From: Dave Airlie <airlied@gmail.com>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
+	<linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-7-30 0:40, Sudeep Holla wrote:
-[...]
+On 31 July 2014 12:05, Nick Krause <xerofoify@gmail.com> wrote:
+> On Wed, Jul 30, 2014 at 7:30 PM, Dave Airlie <airlied@gmail.com> wrote:
+>>> This patch removes the lines for releasing the page cache in certain
+>>> files as this may aid in perfomance with writes in the compression
+>>> rountines of btrfs. Please note that this patch has not been tested
+>>> on my own hardware due to no compression based btrfs volumes of my
+>>> own.
+>>>
 >>
->> +/* 1 to indicate PSCI is implemented */
->> +int acpi_psci_present;
->> +
->> +/* 1 to indicate HVC must be used instead of SMC as the PSCI conduit */
->> +int acpi_psci_use_hvc;
->> +
-> 
-> These can be boolean but can be removed IMO, see below.
-> 
->>   /*
->>    * __acpi_map_table() will be called before page_init(), so early_ioremap()
->>    * or early_memremap() should be called here to for ACPI table mapping.
->> @@ -54,6 +62,33 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
->>       early_iounmap(map, size);
->>   }
+>> For all that is sacred, STOP.
 >>
->> +static int __init acpi_parse_fadt(struct acpi_table_header *table)
->> +{
->> +    struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
->> +
->> +    /*
->> +     * Revision in table header is the FADT Major version,
->> +     * and there is a minor version of FADT which was introduced
->> +     * by ACPI 5.1, we only deal with ACPI 5.1 or higher version
->> +     * to get arm boot flags, or we will disable ACPI.
->> +     */
->> +    if (table->revision < 5 || fadt->minor_version < 1) {
->> +        pr_info("FADT version is %d.%d, no PSCI support, should be 5.1 or
->> higher\n",
->> +            table->revision, fadt->minor_version);
->> +        acpi_psci_present = 0;
->> +        disable_acpi();
->> +        return -EINVAL;
->> +    }
->> +
->> +    if (acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_COMPLIANT)
->> +        acpi_psci_present = 1;
->> +
->> +    if (acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_USE_HVC)
->> +        acpi_psci_use_hvc = 1;
->> +
-> 
-> Why not make this macros instead of global variables as I suggested in
-> previous version. acpi_gbl_FADT is already global and you can avoid
-> creating new one especially they are just used on boot/init.
+>> Go and do something else, you are wasting people's valuable time,
+>>
+>> Don't send any patches you haven't tested ever. If you aren't capable
+>> of setting up a VM to run compressed btrfs volumes in, what makes you
+>> think you can patch the code.
+>>
+>> This isn't how you learn to be a kernel developer by wasting other
+>> kernel developers time, if you can't work out why releasing the page cache
+>> is necessary then don't send the patch until you have spent the time
+>> understanding what the page cache is.
+>>
+>> I know you'll just ignore this, and keep on trucking just like you ignored
+>> the other messages from Stephen before.
+>>
+>> But if you want to work on the kernel, this isn't the way to do it, and
+>> nobody will ever take a patch from you seriously if you continue in this
+>> fashion.
+>>
+>> Dave.
+> Dave ,
+> Seems I need to have tested this code first.
+> Regards Nick
 
-Ok, it makes sense to me, I will update it in next version.
 
-Thanks
-Hanjun
+No you needed to do a lot more, these one line replies from you are
+quite stupid,
 
+You are quite deliberately missing the point of people trying to help you,
+
+Dave.
