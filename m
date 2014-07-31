@@ -1,122 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338AbaGaSi0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 14:38:26 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:57445 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859AbaGaSiZ (ORCPT
+	id S1752555AbaGaSls (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 14:41:48 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:45074 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350AbaGaSlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 14:38:25 -0400
-Date: Thu, 31 Jul 2014 11:38:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: josh@joshtriplett.org
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v2 tip/core/rcu 0/10] RCU-tasks implementation
-Message-ID: <20140731183816.GA11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140731003914.GA3872@linux.vnet.ibm.com>
- <20140731161902.GA12697@cloud>
- <20140731165843.GV11241@linux.vnet.ibm.com>
- <20140731172024.GF12697@cloud>
+	Thu, 31 Jul 2014 14:41:46 -0400
+Message-ID: <53DA8DE1.10601@samsung.com>
+Date: Fri, 01 Aug 2014 03:41:37 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140731172024.GF12697@cloud>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073118-9332-0000-0000-0000018F0C08
+To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+CC: linux-samsung-soc@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        open list <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Ben Dooks <ben-linux@fluff.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 1/4] ARM: dts: Fix MMC pinctrl for exynos5250-snow
+References: <1406822910-6255-1-git-send-email-afaerber@suse.de> <1406822910-6255-2-git-send-email-afaerber@suse.de>
+In-Reply-To: <1406822910-6255-2-git-send-email-afaerber@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 10:20:24AM -0700, josh@joshtriplett.org wrote:
-> On Thu, Jul 31, 2014 at 09:58:43AM -0700, Paul E. McKenney wrote:
-> > On Thu, Jul 31, 2014 at 09:19:02AM -0700, josh@joshtriplett.org wrote:
-> > > On Wed, Jul 30, 2014 at 05:39:14PM -0700, Paul E. McKenney wrote:
-> > > > This series provides a prototype of an RCU-tasks implementation, which has
-> > > > been requested to assist with tramopoline removal.  This flavor of RCU
-> > > > is task-based rather than CPU-based, and has voluntary context switch,
-> > > > usermode execution, and the idle loops as its only quiescent states.
-> > > > This selection of quiescent states ensures that at the end of a grace
-> > > > period, there will no longer be any tasks depending on a trampoline that
-> > > > was removed before the beginning of that grace period.  This works because
-> > > > such trampolines do not contain function calls, do not contain voluntary
-> > > > context switches, do not switch to usermode, and do not switch to idle.
-> > > 
-> > > I'm concerned about the amount of system overhead this introduces.
-> > > Polling for holdout tasks seems quite excessive.  If I understand the
-> > > intended use case correctly, the users of this will want to free
-> > > relatively small amounts of memory; thus, waiting a while to do so seems
-> > > fine, especially if the system isn't under any particular memory
-> > > pressure.
-> > > 
-> > > Thus, rather than polling, could you simply flag the holdout
-> > > tasks, telling the scheduler "hey, next time you don't have anything
-> > > better to do..."?  Then don't bother with them again unless the system
-> > > runs low on memory and asks you to free some.  (And mandate that you can
-> > > only use this to free memory rather than for any other purpose.)
-> > 
-> > One of the many of my alternative suggestions that Steven rejected was
-> > to simply leak the memory.  ;-)
-> > 
-> > But from what I can see, if we simply flag the holdout tasks, we
-> > either are also holding onto the task_struct structures, re-introducing
-> > concurrency to the list of holdout tasks, or requiring that the eventual
-> > scan for holdout tasks scan the entire task list.  Neither of these seems
-> > particularly appetizing to me.
-> > 
-> > The nice thing about Lai Jiangshan's suggestion is that it allows the
-> > scan of the holdout list to be done completely unsynchronized, which
-> > allows pauses during the scan, thus allowing the loop to check for
-> > competing work on that CPU.  This should get almost all the effect
-> > of indefinite delay without the indefinite delay (at least in the
-> > common case).
-> > 
-> > Or am I missing something here?
-> 
-> If you only allow a single outstanding set of callbacks at a time, you
-> could have a single flag stored in the task, combined with a count
-> stored with the set of callbacks.  Each time one of the holdout tasks
-> comes up, clear the flag and decrement the count.  If and only if you
-> get asked to free up memory, start poking the scheduler to bring up
-> those tasks.  When the count hits 0, free the memory.
-> 
-> The set of trampolines won't change often, and presumably only changes
-> in response to user-driven requests to trace or stop tracing things.
-> So, if you have to wait for the existing set of callbacks to go away
-> before adding more, that seems fine.  And you could then ditch polling
-> entirely.
+On 08/01/14 01:08, Andreas Färber wrote:
+> The pinctrl properties should be on the device directly and not on the
+> slot sub-node.
+>
+> Reported-by: Doug Anderson<dianders@chromium.org>
+> Cc: Jaehoon Chung<jh80.chung@samsung.com>
+> Signed-off-by: Andreas Färber<afaerber@suse.de>
+> ---
+>   v3 ->  v4: Unchanged
+>
+>   v3: New (Doug Anderson)
+>   Redundant with Jaehoon Chung's general slot@0 deprecation,
+>   in case that hits the tree earlier.
+>
+>   arch/arm/boot/dts/exynos5250-snow.dts | 6 ++----
+>   1 file changed, 2 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+> index f2b8c4116541..eb437f6afec1 100644
+> --- a/arch/arm/boot/dts/exynos5250-snow.dts
+> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
+> @@ -240,10 +240,8 @@
+>   	 */
+>   	mmc@12230000 {
+>   		status = "okay";
+> -		slot@0 {
+> -			pinctrl-names = "default";
+> -			pinctrl-0 =<&sd3_clk&sd3_cmd&sd3_bus4>;
+> -		};
+> +		pinctrl-names = "default";
+> +		pinctrl-0 =<&sd3_clk&sd3_cmd&sd3_bus4>;
+>   	};
+>
+>   	i2c@12CD0000 {
 
-If I understand what you are suggesting, this requires hooks in the
-scheduler.  I used to have hooks in the scheduler, but I dropped them in
-favor of polling the voluntary context-switch count in response to Peter
-Zijlstra's concerns about adding overhead to the scheduler's fastpaths.
+Once I get Doug's reviewed tag on exynos5250-snow dt changes, I will 
+take this series :) Though Doug suggested or reported...
 
-Therefore, although the flags are sometimes cleared externally from the
-scheduling-clock interrupt (for usermode execution), it is quite possible
-that a given task might never have its flag cleared asynchronously.
-
-Another approach might be to poll more slowly or to make the polling
-evict itself if it detects that this CPU has something else to do.
-Would either or both of these help?
-
-> > > Also, ideally this should remain entirely optional; nothing in the core
-> > > kernel should depend on it.
-> > 
-> > Agreed, the CONFIG_TASKS_RCU is not likely to disappear anytime soon.
-> > I therefore do not see RCU-tasks as an obstacle to kernel tinification.
-> > I also would also guess that you might complain if someone does try to
-> > use if from the tinified core of the Linux kernel.  ;-)
-> 
-> Yes. :)
-
-Very good!  ;-) ;-) ;-)
-
-							Thanx, Paul
-
+Thanks,
+Kukjin
