@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200AbaGaFsX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 01:48:23 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:61085 "EHLO
+	id S1756236AbaGaFs1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 01:48:27 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:61082 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245AbaGaFro (ORCPT
+	with ESMTP id S1751499AbaGaFro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Jul 2014 01:47:44 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -15,65 +15,136 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 8/8] perf symbol: Don't demangle parameters and such by default
-Date: Thu, 31 Jul 2014 14:47:42 +0900
-Message-Id: <1406785662-5534-9-git-send-email-namhyung@kernel.org>
+Subject: [PATCHSET 0/8] perf tools: Honor column width setting (v3)
+Date: Thu, 31 Jul 2014 14:47:34 +0900
+Message-Id: <1406785662-5534-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1406785662-5534-1-git-send-email-namhyung@kernel.org>
-References: <1406785662-5534-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some C++ symbols have very long name and they make column length
-longer.  Most of them are about parameters including templates and we
-can ignore such info most of time IMHO.
+Hello,
 
-This patch passes DMGL_NO_OPTS by default when calling bfd_demangle().
-One can still see full symbols with -v/--verbose option.
+This patchset is to control perf report/top output column width by
+-w/--column-widths option so that it can fit into the terminal size.
+The -w option is there for perf report but it ignored by recent output
+field changed due to some reason.  This patchset fixes it and supports
+perf top also.
 
-before:
-  JS_CallFunctionValue(JSContext*, JSObject*, JS::Value, unsigned int, JS::Value*, JS::Value*)
+This is sometimes useful if your terminal is small and there's some
+C++ applications which have amazingly long symbol names.  Without this
+patchset user might not see those symbols on TUI, since it maps
+left/right arrow keys to other functions.
 
-after:
-  JS_CallFunctionValue
+The -w option sets column width starting from the first column
+(overhead or optional overhead_children column unless -F option is
+given).  It doesn't make sense to limit those overhead columns so it's
+not a hard-limit for them.  But it *is* a hard-limit for other columns
+such as comm, dso, symbol, and so on.  One can use 0 not to
+limit/force a width for those columns.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/symbol-elf.c | 7 +++++--
- tools/perf/util/symbol.h     | 1 +
- 2 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index d75349979e65..ec5ec1c9d9b5 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -939,8 +939,11 @@ new_symbol:
- 		 * to it...
- 		 */
- 		if (symbol_conf.demangle) {
--			demangled = bfd_demangle(NULL, elf_name,
--						 DMGL_PARAMS | DMGL_ANSI);
-+			int demangle_flags = DMGL_NO_OPTS;
-+			if (verbose)
-+				demangle_flags = DMGL_PARAMS | DMGL_ANSI;
-+
-+			demangled = bfd_demangle(NULL, elf_name, demangle_flags);
- 			if (demangled != NULL)
- 				elf_name = demangled;
- 		}
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index e7295e93cff9..c16dc16f83d5 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -59,6 +59,7 @@ extern Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
- #endif
- 
- #ifndef DMGL_PARAMS
-+#define DMGL_NO_OPTS     0              /* For readability... */
- #define DMGL_PARAMS      (1 << 0)       /* Include function args */
- #define DMGL_ANSI        (1 << 1)       /* Include const, volatile, etc */
- #endif
+For example:
+
+  $ perf report --stdio -s comm,dso
+  ...
+  # Overhead  Command          Shared Object                                        
+  # ........  ...............  .....................................................
+  #
+      71.08%  gnome-shell      perf-1497.map                                        
+       9.23%  gnome-shell      swrast_dri.so                                        
+       3.99%  Xorg             [unknown]                                            
+       3.18%  Xorg             [kernel.kallsyms]                                    
+       2.93%  gnome-shell      [kernel.kallsyms]                                    
+       2.41%  swapper          [kernel.kallsyms]                                    
+       1.55%  synergys         libpthread-2.15.so                                   
+       1.08%  synergys         synergys                                             
+       0.68%  systemd-journal  [kernel.kallsyms]                                    
+       0.59%  synergys         libstdc++.so.6.0.17                                  
+       0.58%  gnome-shell      libc-2.15.so                                         
+       0.54%  kworker/0:2      [kernel.kallsyms]                                    
+       0.20%  systemd-journal  [unknown]                                            
+       0.19%  gnome-shell      libclutter-1.0.so.0.1000.8.#prelink#.1kh1we (deleted)
+       0.18%  firefox          libxul.so (deleted)                                  
+       0.17%  gnome-shell      libcogl.so.9.1.1.#prelink#.ZL3fn1 (deleted)          
+       0.14%  firefox          [kernel.kallsyms]                                    
+       0.14%  gnome-shell      libgobject-2.0.so.0.3200.4                           
+       0.13%  gnome-shell      libpthread-2.15.so                                   
+       0.11%  synergys         [kernel.kallsyms]                                    
+       0.10%  perf             [kernel.kallsyms]                                    
+
+
+  $ perf report --stdio -s comm,dso -w 0,10,20   # 0 means no limit
+  ...
+  # Overhead  Command     Shared Object       
+  # ........  ..........  ....................
+  #
+      71.08%  gnome-shel  perf-1497.map       
+       9.23%  gnome-shel  swrast_dri.so       
+       3.99%  Xorg        [unknown]           
+       3.18%  Xorg        [kernel.kallsyms]   
+       2.93%  gnome-shel  [kernel.kallsyms]   
+       2.41%  swapper     [kernel.kallsyms]   
+       1.55%  synergys    libpthread-2.15.so  
+       1.08%  synergys    synergys            
+       0.68%  systemd-jo  [kernel.kallsyms]   
+       0.59%  synergys    libstdc++.so.6.0.17 
+       0.58%  gnome-shel  libc-2.15.so        
+       0.54%  kworker/0:  [kernel.kallsyms]   
+       0.20%  systemd-jo  [unknown]           
+       0.19%  gnome-shel  libclutter-1.0.so.0.
+       0.18%  firefox     libxul.so (deleted) 
+       0.17%  gnome-shel  libcogl.so.9.1.1.#pr
+       0.14%  firefox     [kernel.kallsyms]   
+       0.14%  gnome-shel  libgobject-2.0.so.0.
+       0.13%  gnome-shel  libpthread-2.15.so  
+       0.11%  synergys    [kernel.kallsyms]   
+       0.10%  perf        [kernel.kallsyms]   
+
+
+ * changes in v3:
+  - use single function for fmt->header() and ->width()  (Jiri)
+  - limit symbol sort print function to given width  (Jiri)
+  - do not demangle C++ function parameters by default
+
+ * changes in v2:
+  - fix TUI alignment when no header is shown  (Jiri)
+  - change printing order of pid sort key  (Jiri)
+
+You can also get this from 'perf/width-v3' branch on my tree
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Thanks,
+Namhyung
+
+
+Namhyung Kim (8):
+  perf tools: Left-align output contents
+  perf tools: Make __hpp__fmt() receive an additional len argument
+  perf tools: Save column length in perf_hpp_fmt
+  perf report: Honor column width setting
+  perf top: Add -w option for setting column width
+  perf tools: Add name field into perf_hpp_fmt
+  perf tools: Fix column alignment when headers aren't shown on TUI
+  perf symbol: Don't demangle parameters and such by default
+
+ tools/perf/Documentation/perf-report.txt |   2 +-
+ tools/perf/Documentation/perf-top.txt    |   6 +
+ tools/perf/builtin-top.c                 |   3 +
+ tools/perf/ui/browsers/hists.c           |  31 ++--
+ tools/perf/ui/gtk/hists.c                |  18 +-
+ tools/perf/ui/hist.c                     | 280 +++++++++++++++++++------------
+ tools/perf/ui/stdio/hist.c               |   4 +-
+ tools/perf/util/color.c                  |  16 ++
+ tools/perf/util/color.h                  |   1 +
+ tools/perf/util/hist.h                   |  17 +-
+ tools/perf/util/sort.c                   |  58 ++++---
+ tools/perf/util/symbol-elf.c             |   7 +-
+ tools/perf/util/symbol.h                 |   1 +
+ 13 files changed, 282 insertions(+), 162 deletions(-)
+
 -- 
 2.0.0
 
