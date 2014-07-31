@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962AbaGaB7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 21:59:20 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:44932 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654AbaGaB7S (ORCPT
+	id S1755530AbaGaCDj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 22:03:39 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50104 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751277AbaGaCDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 21:59:18 -0400
-Message-ID: <53D9A2F0.4040808@gmail.com>
-Date: Thu, 31 Jul 2014 09:59:12 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 30 Jul 2014 22:03:38 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: mingo@kernel.org, hpa@zytor.com, tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:irq/core] irq: Warn when shared interrupts do not match on NO_SUSPEND
+Date: Thu, 31 Jul 2014 04:22:11 +0200
+Message-ID: <1994397.YOcQsPY00D@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <tip-4fae4e7624653ef498d0e2a38f00620b9701ab04@git.kernel.org>
+References: <20140724133921.GY6758@twins.programming.kicks-ass.net> <tip-4fae4e7624653ef498d0e2a38f00620b9701ab04@git.kernel.org>
 MIME-Version: 1.0
-To: Cong Wang <cwang@twopensource.com>
-CC: "David S. Miller" <davem@davemloft.net>, Hong Zhiguo <honkiko@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        "Tao, Yue" <Yue.Tao@windriver.com>,
-        Alexandre Dietsch <alexandre.dietsch@windriver.com>,
-        zhuyj <zyjzyj2000@gmail.com>
-Subject: Re: ipv4: net namespace does not inherit network configurations
-References: <53D7697C.6020103@gmail.com> <CAHA+R7MC2gKeSWqR8pDDX26D-Th4BG1AveM+HseMMPjLBJuWDw@mail.gmail.com>
-In-Reply-To: <CAHA+R7MC2gKeSWqR8pDDX26D-Th4BG1AveM+HseMMPjLBJuWDw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2014 01:48 AM, Cong Wang wrote:
-> On Tue, Jul 29, 2014 at 2:29 AM, zhuyj <zyjzyj2000@gmail.com> wrote:
->> Hi,all
->>
->> I did a test on kernel3.16 rc6:
->>
->> root@qemu1:~# echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
->> root@qemu1:~# echo 1 > /proc/sys/net/ipv4/conf/all/forwarding
->> root@qemu1:~# ip netns list
->> root@qemu1:~# ip netns add fib1
->> root@qemu1:~# ip netns exec fib1 bash
->> root@qemu1:~# cat /proc/sys/net/ipv6/conf/all/forwarding
->> 0
->> root@qemu1:~# cat /proc/sys/net/ipv4/conf/all/forwarding
->> 1
->>
->> The behavior of ipv4 and ipv6 is very inconsistent. I checked
->> the kernel source code. I found that from this patch
->> [ipv6: fix bad free of addrconf_init_net], the above difference
->> appeared.
->>
->> Since a net namespace is independent to another. That is, there
->> is no any relationship between the net namespaces. So the behavior
->> of ipv4 is not correct.
->>
-> Well, they are already independent, not shared, just that the initial
-> value is duplicated from init_net for IPv4.
->
-> This change might break existing applications which rely on this
-> behavior, but given IPv6 change is almost the same, I think it's ok.
->
-> BTW, you need to submit a patch as normal, instead of as an attachment.
->
-OK. Thanks a lot.
+Hi Thomas,
 
-Zhu Yanjun
+On Thursday, July 24, 2014 08:36:36 AM tip-bot for Peter Zijlstra wrote:
+> Commit-ID:  4fae4e7624653ef498d0e2a38f00620b9701ab04
+> Gitweb:     http://git.kernel.org/tip/4fae4e7624653ef498d0e2a38f00620b9701ab04
+> Author:     Peter Zijlstra <peterz@infradead.org>
+> AuthorDate: Thu, 24 Jul 2014 15:39:21 +0200
+> Committer:  Thomas Gleixner <tglx@linutronix.de>
+> CommitDate: Thu, 24 Jul 2014 17:32:56 +0200
+> 
+> irq: Warn when shared interrupts do not match on NO_SUSPEND
+
+Please revert this one as it is likely to break existing stuff (I'm mostly
+worried about the ACPI interrupt, but also about a number of drivers that have
+been using NO_SUSPEND along with SHARED for quite some time).
+
+Rafael
+
