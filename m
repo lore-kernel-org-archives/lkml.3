@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352AbaGaPZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:25:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48724 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaGaPZ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:25:56 -0400
-Date: Thu, 31 Jul 2014 17:25:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, acme@infradead.org, eranian@google.com
-Subject: Re: [PATCH v3 6/9] perf, x86: handle multiple records in PEBS buffer
-Message-ID: <20140731152543.GX19379@twins.programming.kicks-ass.net>
-References: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
- <1406016602-31845-7-git-send-email-zheng.z.yan@intel.com>
- <20140725081033.GV3935@laptop>
- <53D216A4.3090600@intel.com>
- <20140725140652.GA6758@twins.programming.kicks-ass.net>
- <53D5B45E.4030403@intel.com>
- <20140728065255.GI6758@twins.programming.kicks-ass.net>
- <53D9F0D7.7030002@intel.com>
- <87a97pr3k3.fsf@tassilo.jf.intel.com>
+	id S1751548AbaGaP1M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:27:12 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58056 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751041AbaGaP1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 11:27:11 -0400
+Date: Thu, 31 Jul 2014 11:26:59 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch 2/3] mm, oom: remove unnecessary check for NULL zonelist
+Message-ID: <20140731152659.GB9952@cmpxchg.org>
+References: <alpine.DEB.2.02.1407231814110.22326@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1407231815090.22326@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="itXlm6KT/9NFvrz/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87a97pr3k3.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <alpine.DEB.2.02.1407231815090.22326@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 23, 2014 at 06:16:32PM -0700, David Rientjes wrote:
+> If the pagefault handler is modified to pass a non-NULL zonelist then an 
+> unnecessary check for a NULL zonelist in constrained_alloc() can be removed.
+>
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  mm/oom_kill.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -208,8 +208,6 @@ static enum oom_constraint constrained_alloc(struct zonelist *zonelist,
+>  	/* Default to all available memory */
+>  	*totalpages = totalram_pages + total_swap_pages;
+>  
+> -	if (!zonelist)
+> -		return CONSTRAINT_NONE;
+>  	/*
+>  	 * Reach here only when __GFP_NOFAIL is used. So, we should avoid
+>  	 * to kill current.We have to random task kill in this case.
+> @@ -696,7 +694,7 @@ void pagefault_out_of_memory(void)
+>  
+>  	zonelist = node_zonelist(first_memory_node, GFP_KERNEL);
+>  	if (try_set_zonelist_oom(zonelist, GFP_KERNEL)) {
+> -		out_of_memory(NULL, 0, 0, NULL, false);
+> +		out_of_memory(zonelist, 0, 0, NULL, false);
 
---itXlm6KT/9NFvrz/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+out_of_memory() wants the zonelist that was used during allocation,
+not just the random first node's zonelist that's simply picked to
+serialize page fault OOM kills system-wide.
 
-On Thu, Jul 31, 2014 at 07:44:12AM -0700, Andi Kleen wrote:
-> "Yan, Zheng" <zheng.z.yan@intel.com> writes:
-> >>=20
-> >> Please lock yourselves in room and do not come out until you can give a
-> >> straight and coherent answer.
-> >>=20
-> >
-> > Andi,
-> >
-> > please confirm this
->=20
-> The hardware can merge PEBS events that happen nearby each other.=20
-> I was wrong earlier in stating the opposite.
+This would even change how panic_on_oom behaves for page fault OOMs
+(in a completely unpredictable way) if we get CONSTRAINED_CPUSET.
 
-OK, thanks!
-
---itXlm6KT/9NFvrz/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT2l/2AAoJEHZH4aRLwOS6byQP/i8bQohZ5dRaOBY+hKTXdHa1
-Pc4OCXkG3rMcw4EpRObmi5Vs9q2bpoNcY374UqNnx7ryHCz87xZzk6xLOh4GYaB2
-eHUqSWC1ERTLcGs/owQ6gbekafgCBBsqKn+mx8jnvjvKr9uktRt6j8tIRiWd6m7a
-Qje1MtTZtY4Ph8QGleoUUsSJefeI9wepyzSQ9Clwp5bPrOopZqa86m0bnVSEFhFw
-8sS/FiAaJ5uQEo3AVAwh5K+DcCn0/s9O9DSQkhatLsDth8lSqkQALVVK2l6ujcY0
-Tcq+LLe7EuVEsgNY6jv44vL3FKnOsHUX7PeiSNYNBPdOIiCh742DMuVjfxFwvfdf
-q+Zuo/UBSHhzB6r6ZvJ2iSTgGXfUJH1oa/ZNJ2SW+KinZStCuOhBXP5apkLlVXsZ
-Enk2FqJLrUV7oT2dtKHfxRbPo73h+aiS+CEibs/slZcsrzDGjq8OdUaSULVxS6Sz
-IEQnH1TZIvCyPQDsZ1LNBr8AmvuBSoMBbrwoAIFqT8Zch9OEiRcCy7l0WlUY4dpd
-YWvH3tAIX5dSkOQTTBCJYAcK0sUvOtWqr/C2JB9RrmEwLZUBO9FzbT2ix9cmrhg3
-Han+GvHz6Y5K9Mbt9fTis1vMLayS/yFdOdyvlMcgYVkw4UorM6woPocXneFOeJh0
-Ufz9ZY+8piAYn6JKJ0L/
-=aFlB
------END PGP SIGNATURE-----
-
---itXlm6KT/9NFvrz/--
+This change makes no sense to me.
