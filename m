@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200AbaGaMHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 08:07:07 -0400
-Received: from mga03.intel.com ([143.182.124.21]:40936 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750738AbaGaMHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 08:07:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,771,1400050800"; 
-   d="scan'208";a="463547823"
-Date: Thu, 31 Jul 2014 17:28:17 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: nsekhar@ti.com, joelf@ti.com, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH 1/2] dmaengine: edma: Do not change the error code
- returned from edma_alloc_slot
-Message-ID: <20140731115817.GR8181@intel.com>
-References: <1406801558-13126-1-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406801558-13126-1-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751274AbaGaMID (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 08:08:03 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37429 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaGaMIA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 08:08:00 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
+Date: Thu, 31 Jul 2014 13:07:48 +0100
+Message-Id: <1406808468-12559-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 2.0.1
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] gpiolib: Don't allow drivers to specify a base with DT
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 01:12:37PM +0300, Peter Ujfalusi wrote:
-> In case of edma_alloc_slot() failure during probe we should return the error
-> unchanged to make debugging easier.
+From: Mark Brown <broonie@linaro.org>
 
-Applied both
+DT based systems should have no reason to use fixed GPIO numbers but some
+drivers that work on both DT and non-DT platforms specify them anyway. In
+order to improve robustness in cases where drivers use gpio_is_valid() to
+check for a valid GPIO on data initialized to zero as a default and avoid
+bugs due to assuptions about fixed numbers creeping in ignore any specified
+base when DT is in use.
 
-Thanks
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/gpio/gpiolib.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 768f0831db18..11d3cf1cbca7 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -234,7 +234,7 @@ int gpiochip_add(struct gpio_chip *chip)
+ 
+ 	spin_lock_irqsave(&gpio_lock, flags);
+ 
+-	if (base < 0) {
++	if (base < 0 || of_have_populated_dt()) {
+ 		base = gpiochip_find_base(chip->ngpio);
+ 		if (base < 0) {
+ 			status = base;
 -- 
-~Vinod
+2.0.1
 
