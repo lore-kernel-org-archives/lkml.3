@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052AbaGaWBz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 18:01:55 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:35613 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579AbaGaWBw (ORCPT
+	id S1752337AbaGaWDa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 18:03:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52278 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945AbaGaWD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 18:01:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <1406841985-15790-5-git-send-email-kever.yang@rock-chips.com>
-References: <1406841985-15790-1-git-send-email-kever.yang@rock-chips.com>
-	<1406841985-15790-5-git-send-email-kever.yang@rock-chips.com>
-Date: Thu, 31 Jul 2014 15:01:51 -0700
-X-Google-Sender-Auth: tuhLP7oCFr_CBFXz2LPSFkk-JeE
-Message-ID: <CAD=FV=U-7D016n08My-SZRjqN68wTW9iuBEMDzkpy+LdTGRdtw@mail.gmail.com>
-Subject: Re: [REPOST PATCH v3 4/5] ARM: dts: Fix the sort ordering of EHCI and
- HSIC in rk3288.dtsi
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Paul Zimmerman <paulz@synopsys.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, wulf <wulf@rock-chips.com>,
-        lyz <lyz@rock-chips.com>, han jiang <hj@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 31 Jul 2014 18:03:29 -0400
+Date: Thu, 31 Jul 2014 15:03:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH percpu/for-3.17 1/2] percpu: implement percpu_pool
+Message-Id: <20140731150328.d2b57d5f6d7aafa33f5ad979@linux-foundation.org>
+In-Reply-To: <20140718200804.GG13012@htj.dyndns.org>
+References: <20140718200804.GG13012@htj.dyndns.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
+On Fri, 18 Jul 2014 16:08:04 -0400 Tejun Heo <tj@kernel.org> wrote:
 
-On Thu, Jul 31, 2014 at 2:26 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> From: Doug Anderson <dianders@chromium.org>
->
-> The EHCI and HSIC device tree nodes were added in the wrong place.
-> Fix them.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
->
-> Changes in v3:
-> - EHCI and HSIC move new for version 3.
->
-> Changes in v2: None
->
->  arch/arm/boot/dts/rk3288.dtsi |   41 ++++++++++++++++++++---------------------
->  1 file changed, 20 insertions(+), 21 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-> index a5607a1..673dee3 100644
-> --- a/arch/arm/boot/dts/rk3288.dtsi
-> +++ b/arch/arm/boot/dts/rk3288.dtsi
-> @@ -205,6 +205,17 @@
->                 status = "disabled";
->         };
->
-> +       usb_host0_ehci: ehci@ff500000 {
+> percpu allocator requires sleepable context for allocations.  Most use
+> cases are fine with the requirement but blk-throttle currently
+> implements its own asynchronous allocation mechanism to allow
+> initiating allocation from atomic contexts and there are expected to
+> be more similar use cases.
+> 
+> It'd be best to make percpu allocator take GFP mask like other
+> allocators but its entanglement with kernel virtual address management
+> makes it very cumbersome.  Also, percpu allocations from atomic
+> contexts are likely to remain highly restricted.
+> 
+> This patch implements a simple asynchronous allocation pool, named
+> percpu_pool, which can be used from any context and is refilled
+> automatically.  A pool is initialized with the size and alignment of
+> the percpu areas to serve and the low an high watermarks.  When the
+> number of cached areas fall below the low watermark, a work item is
+> kicked off to fill it up to the high mark.  A pool can be statically
+> defined and can be manually filled and emptied.
 
-Argh.  When I was helping you I messed this up.  :(  I pointed you at
-an older version of the EHCI patch.
+I don't think we should add facilities such as this.  Because if we do,
+people will use them and thereby make the kernel less reliable, for
+obvious reasons.
 
-I'll post a fixup myself.  Sorry for the bother...
+It would be better to leave the nasty hack localized within
+blk-throttle.c and hope that someone finds a way of fixing it.
 
--Doug
