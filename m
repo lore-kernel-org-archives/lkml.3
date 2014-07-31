@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaGaUar (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:30:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:37786 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751966AbaGaUap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:30:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,774,1400050800"; 
-   d="scan'208";a="463729163"
-From: "Zwisler, Ross" <ross.zwisler@intel.com>
-To: "openosd@gmail.com" <openosd@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "willy@linux.intel.com" <willy@linux.intel.com>,
-        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v8 04/22] Change direct_access calling convention
-Thread-Topic: [PATCH v8 04/22] Change direct_access calling convention
-Thread-Index: AQHPrP403h2bNslEHkOap3XJoZ/hlA==
-Date: Thu, 31 Jul 2014 20:30:02 +0000
-Message-ID: <1406838602.14136.12.camel@rzwisler-mobl1.amr.corp.intel.com>
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-	 <b78b33d94b669a5fbd02e06f2493b43dd5d77698.1406058387.git.matthew.r.wilcox@intel.com>
-	 <53D9174C.7040906@gmail.com> <20140730194503.GQ6754@linux.intel.com>
-	 <53DA165E.8040601@gmail.com> <20140731141315.GT6754@linux.intel.com>
-	 <53DA60A5.1030304@gmail.com> <20140731171953.GU6754@linux.intel.com>
-	 <53DA8518.3090604@gmail.com>
-In-Reply-To: <53DA8518.3090604@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.112.154]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <D7339778D56F9B42BA028B59A656DB6A@intel.com>
+	id S1752449AbaGaUdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:33:53 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50003 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296AbaGaUdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 16:33:51 -0400
+Message-ID: <53DAA82D.4020901@codeaurora.org>
+Date: Thu, 31 Jul 2014 13:33:49 -0700
+From: David Collins <collinsd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v3 1/4] mfd: pm8xxx-spmi: add support for Qualcomm SPMI
+ PMICs
+References: <1406205921-7452-1-git-send-email-svarbanov@mm-sol.com> <1406205921-7452-2-git-send-email-svarbanov@mm-sol.com> <53D8182A.5050204@codeaurora.org> <53DA02C0.2050606@mm-sol.com>
+In-Reply-To: <53DA02C0.2050606@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6VKUpBx011631
 
-On Thu, 2014-07-31 at 21:04 +0300, Boaz Harrosh wrote:
-> On 07/31/2014 08:19 PM, Matthew Wilcox wrote:
-> > On Thu, Jul 31, 2014 at 06:28:37PM +0300, Boaz Harrosh wrote:
-> >> Matthew what is your opinion about this, do we need to push for removal
-> >> of the partition dead code which never worked for brd, or we need to push
-> >> for fixing and implementing new partition support for brd?
-> > 
-> > Fixing the code gets my vote.  brd is useful for testing things ... and
-> > sometimes we need to test things that involve partitions.
-> > 
+On 07/31/2014 01:48 AM, Stanimir Varbanov wrote:
+> Hi David,
 > 
-> OK I'm on it, its what I'm doing today.
+> Thanks for the comments!
 > 
-> rrr I manged to completely trash my vm by doing 'make install' of
-> util-linux and after reboot it never recovered, I remember that
-> mount complained about a now missing library and I forgot and rebooted,
-> that was the end of that. Anyway I installed a new fc20 system wanted
-> that for a long time over my old fc18
+> On 07/30/2014 12:54 AM, David Collins wrote:
+>> On 07/24/2014 05:45 AM, Stanimir Varbanov wrote:
+>>> From: Josh Cartwright <joshc@codeaurora.org>
+>>>
+>>> The Qualcomm SPMI PMIC chips are components used with the
+>>> Snapdragon 800 series SoC family.  This driver exists
+>>> largely as a glue mfd component, it exists to be an owner
+>>> of an SPMI regmap for children devices described in
+>>> device tree.
 
-Ah, I'm already working on this as well.  :)  If you want you can wait for my
-patches to BRD & test - they should be out this week.
+(...)
+>>> +static const struct regmap_config pm8xxx_regmap_config = {
+>>> +	.reg_bits	= 16,
+>>> +	.val_bits	= 8,
+>>> +	.max_register	= 0xffff,
+>>
+>> Can you please add the following line here?
+>>
+>> 	.fast_io	= true;
+>>
+>> This will cause a spinlock to be held during SPMI transactions instead of
+>> a mutex lock.  This is needed because several downstream peripheral
+>> drivers need to make SPMI read and write calls from atomic context.  I
+>> have commented on this point in a previous thread with specific examples [2].
+> 
+> OK, I understand the need of atomic context, but pmic_arb_read_cmd() and
+> pmic_arb_write_cmd() functions use raw_spin_lock_irqsave already. Isn't
+> those locks enough?
 
-I'm planning on adding get_geo() and doing dynamic minors as is done in NVMe.
+No, that isn't sufficient.  The problem is that the peripheral driver
+would already be in atomic context at the time that it needs to perform an
+SPMI read or write via regmap_read() or regmap_write() respectively.
+These regmap calls would take a mutex lock if fast_io == false.  This is
+not allowed since calling a sleepable function in atomic context can lead
+to deadlock.
 
-- Ross
+Take care,
+David
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
