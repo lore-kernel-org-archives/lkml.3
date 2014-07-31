@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103AbaGaPcB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:32:01 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55445 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbaGaPb7 (ORCPT
+	id S1752117AbaGaPcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:32:54 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:56677 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaGaPcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:31:59 -0400
-Message-ID: <53DA6171.30100@wwwdotorg.org>
-Date: Thu, 31 Jul 2014 09:32:01 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 31 Jul 2014 11:32:53 -0400
+Subject: [PATCH 01/19] fence: add debugging lines to fence_is_signaled for the
+ callback
+To: airlied@linux.ie
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: thellstrom@vmware.com, nouveau@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        bskeggs@redhat.com, alexander.deucher@amd.com,
+        christian.koenig@amd.com
+Date: Thu, 31 Jul 2014 17:32:45 +0200
+Message-ID: <20140731153245.15061.63023.stgit@patser>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Mikko Perttunen <mperttunen@nvidia.com>
-CC: Andrew Bresticker <abrestic@chromium.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 5/8] of: Add Tegra124 EMC bindings
-References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>	<1405088313-20048-6-git-send-email-mperttunen@nvidia.com>	<CAL1qeaGHfjQhLHvgzt85hmbuY4FOG5-k=f80=CNvzPDEgi9_6w@mail.gmail.com>	<53CD860B.7030800@wwwdotorg.org>	<CAL1qeaHtGQxCO3cGdeCRUYuk6mxei6z1B63-iZdBECEbFqGhHw@mail.gmail.com>	<53CE9514.1050903@wwwdotorg.org> <CAL1qeaEkL+mxb0S4JhQbXBjyNyKJndffTSjMaAFQD6ooDJPd+Q@mail.gmail.com> <53CEA093.6060106@wwwdotorg.org> <53D75B90.7050501@nvidia.com> <53D7C276.2080204@wwwdotorg.org> <53DA1EF0.7060207@nvidia.com> <53DA230E.7060903@nvidia.com>
-In-Reply-To: <53DA230E.7060903@nvidia.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2014 05:05 AM, Mikko Perttunen wrote:
-> On 31/07/14 13:48, Mikko Perttunen wrote:
->>>
->>> I see that the TRM implies the whole 4-bit field is RAM code, rather
->>> than there being 2 separate 2-bit fields for RAM code and boot device
->>> code. Can you please file a bug against the TRM to document this
->>> correctly? (The details of which bits are which are visible on the
->>> Jetson TK1 schematics for example).
->>
->> Yes, I'll file a bug.
->
-> On a closer look, the downstream kernel has been recently updated to
-> consider the whole 4 bits the ram code. The relevant bug also has a
-> comment mentioning that starting from T124, the whole 4 bits is
-> considered the RAM code.
+fence_is_signaled callback should support being run in
+atomic context, but not in irq context.
 
-That's odd. Given the structure of the BCT hasn't change, I suspect 
-that's a documentation bug that's propagated elsewhere. Can you send me 
-the bug number internally, and I'll take a look? Thanks.
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+---
+ include/linux/fence.h |   23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/fence.h b/include/linux/fence.h
+index d174585b874b..c1a4519ba2f5 100644
+--- a/include/linux/fence.h
++++ b/include/linux/fence.h
+@@ -143,6 +143,7 @@ struct fence_cb {
+  * the second time will be a noop since it was already signaled.
+  *
+  * Notes on signaled:
++ * Called with interrupts enabled, and never from interrupt context.
+  * May set fence->status if returning true.
+  *
+  * Notes on wait:
+@@ -268,15 +269,29 @@ fence_is_signaled_locked(struct fence *fence)
+ static inline bool
+ fence_is_signaled(struct fence *fence)
+ {
++	bool ret;
++
+ 	if (test_bit(FENCE_FLAG_SIGNALED_BIT, &fence->flags))
+ 		return true;
+ 
+-	if (fence->ops->signaled && fence->ops->signaled(fence)) {
++	if (!fence->ops->signaled)
++		return false;
++
++	if (config_enabled(CONFIG_PROVE_LOCKING))
++		WARN_ON(in_interrupt() || irqs_disabled());
++
++	if (config_enabled(CONFIG_DEBUG_ATOMIC_SLEEP))
++		preempt_disable();
++
++	ret = fence->ops->signaled(fence);
++
++	if (config_enabled(CONFIG_DEBUG_ATOMIC_SLEEP))
++		preempt_enable();
++
++	if (ret)
+ 		fence_signal(fence);
+-		return true;
+-	}
+ 
+-	return false;
++	return ret;
+ }
+ 
+ /**
+
