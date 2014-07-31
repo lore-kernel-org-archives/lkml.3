@@ -1,101 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751270AbaGaMfA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 08:35:00 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:56123 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008AbaGaMe4 (ORCPT
+	id S1751328AbaGaMhb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 08:37:31 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:51393 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708AbaGaMh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 08:34:56 -0400
-Message-ID: <53DA37EA.7010306@gmail.com>
-Date: Thu, 31 Jul 2014 14:34:50 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 31 Jul 2014 08:37:29 -0400
 MIME-Version: 1.0
-To: Humberto Silva Naves <hsnaves@gmail.com>,
-        linux-samsung-soc@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Thomas Abraham <ta.omasab@gmail.com>,
-        Andreas Farber <afaerber@suse.de>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: Re: [PATCHv2 1/5] clk: samsung: exynos5410: Add NULL pointer checks
- in clock init
-References: <1406805732-17372-1-git-send-email-hsnaves@gmail.com> <1406805732-17372-2-git-send-email-hsnaves@gmail.com>
-In-Reply-To: <1406805732-17372-2-git-send-email-hsnaves@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140731115759.GS19379@twins.programming.kicks-ass.net>
+References: <1406801797-20139-1-git-send-email-ilya.dryomov@inktank.com>
+	<20140731115759.GS19379@twins.programming.kicks-ass.net>
+Date: Thu, 31 Jul 2014 16:37:29 +0400
+Message-ID: <CALFYKtBGQpxaZ0EFXbdvuEHeDeASeU-7XxQ_1a6ZDM=aJS651w@mail.gmail.com>
+Subject: Re: [PATCH] locking/mutexes: Revert "locking/mutexes: Add extra
+ reschedule point"
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Ceph Development <ceph-devel@vger.kernel.org>, davidlohr@hp.com,
+        jason.low2@hp.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Humberto,
+On Thu, Jul 31, 2014 at 3:57 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Jul 31, 2014 at 02:16:37PM +0400, Ilya Dryomov wrote:
+>> This reverts commit 34c6bc2c919a55e5ad4e698510a2f35ee13ab900.
+>>
+>> This commit can lead to deadlocks by way of what at a high level
+>> appears to look like a missing wakeup on mutex_unlock() when
+>> CONFIG_MUTEX_SPIN_ON_OWNER is set, which is how most distributions ship
+>> their kernels.  In particular, it causes reproducible deadlocks in
+>> libceph/rbd code under higher than moderate loads with the evidence
+>> actually pointing to the bowels of mutex_lock().
+>>
+>> kernel/locking/mutex.c, __mutex_lock_common():
+>> 476         osq_unlock(&lock->osq);
+>> 477 slowpath:
+>> 478         /*
+>> 479          * If we fell out of the spin path because of need_resched(),
+>> 480          * reschedule now, before we try-lock the mutex. This avoids getting
+>> 481          * scheduled out right after we obtained the mutex.
+>> 482          */
+>> 483         if (need_resched())
+>> 484                 schedule_preempt_disabled(); <-- never returns
+>> 485 #endif
+>> 486         spin_lock_mutex(&lock->wait_lock, flags);
+>>
+>> We started bumping into deadlocks in QA the day our branch has been
+>> rebased onto 3.15 (the release this commit went in) but then as part of
+>> debugging effort I enabled all locking debug options, which also
+>> disabled CONFIG_MUTEX_SPIN_ON_OWNER and made everything disappear,
+>> which is why it hasn't been looked into until now.  Revert makes the
+>> problem go away, confirmed by our users.
+>
+> This doesn't make sense and you fail to explain how this can possibly
+> deadlock.
 
-Please see my comments inline.
+This didn't make sense to me at first too, and I'll be happy to be
+proven wrong, but we can reproduce this with rbd very reliably under
+higher than usual load, and the revert makes it go away.  What we are
+seeing in the rbd scenario is the following.
 
-On 31.07.2014 13:22, Humberto Silva Naves wrote:
-> Added NULL pointer checks for device_node input parameter and
-> for the samsung_clk_provider context returned by samsung_clk_init.
-> Even though the *current* samsung_clk_init function never returns
-> a NULL pointer, it is good to keep this check in place to avoid
-> possible problems in the future due to changes in implementation.
-> That way, we also improve the consistency of the code that performs
-> clock initialization across the different SoCs.
-> 
-> Signed-off-by: Humberto Silva Naves <hsnaves@gmail.com>
-> ---
->  drivers/clk/samsung/clk-exynos5410.c |   12 +++++++++---
->  1 file changed, 9 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/clk/samsung/clk-exynos5410.c b/drivers/clk/samsung/clk-exynos5410.c
-> index 231475b..bf57c80 100644
-> --- a/drivers/clk/samsung/clk-exynos5410.c
-> +++ b/drivers/clk/samsung/clk-exynos5410.c
-> @@ -188,11 +188,17 @@ static void __init exynos5410_clk_init(struct device_node *np)
->  	struct samsung_clk_provider *ctx;
->  	void __iomem *reg_base;
->  
-> -	reg_base = of_iomap(np, 0);
-> -	if (!reg_base)
-> -		panic("%s: failed to map registers\n", __func__);
-> +	if (np) {
+Suppose foo needs mutexes A and B, bar needs mutex B.  foo acquires
+A and then wants to acquire B, but B is held by bar.  foo spins
+a little and ends up calling schedule_preempt_disabled() on line 484
+above, but that call never returns, even though a hundred usecs later
+bar releases B.  foo ends up stuck in mutex_lock() indefinitely, but
+still holds A and everybody else who needs A gets behind A.  Given that
+this A happens to be a central libceph mutex all rbd activity halts.
+Deadlock may not be the best term for this, but never returning from
+mutex_lock(&B) even though B has been unlocked is *a* problem.
 
-Since all Exynos-based boards are always booted using DT, this function
-will never be called if there is no node for the clock controller and so
-there is no way this pointer can end up being NULL. I don't see a point
-in complicating this code with useless checks.
+This obviously doesn't happen every time schedule_preempt_disabled() on
+line 484 is called, so there must be some sort of race here.  I'll send
+along the actual rbd stack traces shortly.
 
-> +		reg_base = of_iomap(np, 0);
-> +		if (!reg_base)
-> +			panic("%s: failed to map registers\n", __func__);
-> +	} else {
-> +		panic("%s: unable to determine soc\n", __func__);
-> +	}
+Thanks,
 
-As a side note, since panic() does not return, the code above could be
-changed to follow rest of checks in this function:
-
-	if (!np)
-		panic("%s: unable to determine soc\n", __func__);
-
-	reg_base = of_iomap(np, 0);
-	...
-
-leading to more readable code with less indentation and less changes to
-existing code.
-
->  
->  	ctx = samsung_clk_init(np, reg_base, CLK_NR_CLKS);
-> +	if (!ctx)
-> +		panic("%s: unable to allocate context.\n", __func__);
-
-samsung_clk_init() already panics on any error, although now as I think
-of it, it probably should be changed with a patch to just error out and
-let the caller handle the error. However callers don't need to be
-changed before this is done.
-
-Best regards,
-Tomasz
+                Ilya
