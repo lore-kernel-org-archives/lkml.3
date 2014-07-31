@@ -1,165 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaGaL5F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 07:57:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63827 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952AbaGaL5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 07:57:00 -0400
-Message-ID: <53DA2EFB.5050406@redhat.com>
-Date: Thu, 31 Jul 2014 13:56:43 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751632AbaGaL5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 07:57:18 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:50414 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190AbaGaL5N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 07:57:13 -0400
+Message-ID: <53DA2F15.1070605@arm.com>
+Date: Thu, 31 Jul 2014 12:57:09 +0100
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, kvm@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        x86@kernel.org
-CC: Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, bsd@redhat.com,
-        Andrew Honig <ahonig@google.com>
-Subject: Re: [PATCH v5 4/5] x86,random,kvm: Use KVM_GET_RNG_SEED in arch_get_rng_seed
-References: <cover.1406177531.git.luto@amacapital.net> <e43e49f9ca4a9696f9c72e16182266593bbc1379.1406177531.git.luto@amacapital.net>
-In-Reply-To: <e43e49f9ca4a9696f9c72e16182266593bbc1379.1406177531.git.luto@amacapital.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        "peterz@infrdead.org" <peterz@infrdead.org>,
+        "bruno@wolff.to" <bruno@wolff.to>,
+        "jwboyer@redhat.com" <jwboyer@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: scheduler crash on Power
+References: <20140730072242.GA21516@us.ibm.com>
+In-Reply-To: <20140730072242.GA21516@us.ibm.com>
+X-OriginalArrivalTime: 31 Jul 2014 11:57:08.0736 (UTC) FILETIME=[8E3C1000:01CFACB6]
+X-MC-Unique: 114073112571003101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 24/07/2014 06:57, Andy Lutomirski ha scritto:
-> This is a straightforward implementation: for each bit of internal
-> RNG state, request one bit from KVM_GET_RNG_SEED.  This is done even
-> if RDSEED/RDRAND worked, since KVM_GET_RNG_SEED is likely to provide
-> cryptographically secure output even if the CPU's RNG is weak or
-> compromised.
+Hi Sukadev,
+
+On 30/07/14 08:22, Sukadev Bhattiprolu wrote:
 > 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> I am getting this crash on a Powerpc system using 3.16.0-rc7 kernel plus
+> some patches related to perf (24x7 counters) that Cody Schafer posted here:
+> 
+> 	https://lkml.org/lkml/2014/5/27/768
+> 
+> I don't get the crash on an unpatched kernel though.
+> 
+> I have been staring at the perf event patches, but can't find anything
+> impacting the scheduler. Besides the patches had worked on 3.16.0-rc2
+> kernel on a different Power system.
+> 
+> The crash occurs on an idle system, a minute or two after booting to
+> runlevel 3.
+> 
+> kernel/sched/core.c:
+> 
 > ---
->  arch/x86/Kconfig                 |  4 ++++
->  arch/x86/include/asm/kvm_guest.h |  9 +++++++++
->  arch/x86/kernel/archrandom.c     | 25 ++++++++++++++++++++++++-
->  arch/x86/kernel/kvm.c            | 10 ++++++++++
->  4 files changed, 47 insertions(+), 1 deletion(-)
+> 5877 static void init_sched_groups_capacity(int cpu, struct sched_domain *sd)
+> 5878 {
+> 5879         struct sched_group *sg = sd->groups;
+> 5880 
+> 5881         WARN_ON(!sg);
+> 5882 
+> 5883         do {
+> 5884                 sg->group_weight = cpumask_weight(sched_group_cpus(sg));
 > 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index a8f749e..adfa09c 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -593,6 +593,7 @@ config KVM_GUEST
->  	bool "KVM Guest support (including kvmclock)"
->  	depends on PARAVIRT
->  	select PARAVIRT_CLOCK
-> +	select ARCH_RANDOM
->  	default y
->  	---help---
->  	  This option enables various optimizations for running under the KVM
-> @@ -1507,6 +1508,9 @@ config ARCH_RANDOM
->  	  If supported, this is a high bandwidth, cryptographically
->  	  secure hardware random number generator.
+> ---
+> 
+> 
+> I tried applying the patch discussed in https://lkml.org/lkml/2014/7/16/386
+> but doesn't seem to help.
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index bc1638b..50702a8 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -5842,6 +5842,8 @@ build_sched_groups(struct sched_domain *sd, int cpu)
+>                         continue;
 >  
-> +	  This also enables paravirt RNGs such as KVM's if the relevant
-> +	  PV guest support is enabled.
-> +
->  config X86_SMAP
->  	def_bool y
->  	prompt "Supervisor Mode Access Prevention" if EXPERT
-> diff --git a/arch/x86/include/asm/kvm_guest.h b/arch/x86/include/asm/kvm_guest.h
-> index a92b176..8c4dbd5 100644
-> --- a/arch/x86/include/asm/kvm_guest.h
-> +++ b/arch/x86/include/asm/kvm_guest.h
-> @@ -3,4 +3,13 @@
+>                 group = get_group(i, sdd, &sg);
+> +               cpumask_clear(sched_group_cpus(sg));
+> +               sg->sgc->capacity = 0;
+>                 cpumask_setall(sched_group_mask(sg));
 >  
->  int kvm_setup_vsyscall_timeinfo(void);
->  
-> +#if defined(CONFIG_KVM_GUEST) && defined(CONFIG_ARCH_RANDOM)
-> +extern bool kvm_get_rng_seed(u64 *rv);
-> +#else
-> +static inline bool kvm_get_rng_seed(u64 *rv)
-> +{
-> +	return false;
-> +}
-> +#endif
-> +
->  #endif /* _ASM_X86_KVM_GUEST_H */
-> diff --git a/arch/x86/kernel/archrandom.c b/arch/x86/kernel/archrandom.c
-> index 47d13b0..8c8d021 100644
-> --- a/arch/x86/kernel/archrandom.c
-> +++ b/arch/x86/kernel/archrandom.c
-> @@ -15,6 +15,7 @@
->   */
->  
->  #include <asm/archrandom.h>
-> +#include <asm/kvm_guest.h>
->  
->  void arch_get_rng_seed(void *ctx,
->  		       void (*seed)(void *ctx, u32 data),
-> @@ -22,7 +23,7 @@ void arch_get_rng_seed(void *ctx,
->  		       const char *log_prefix)
->  {
->  	int i;
-> -	int rdseed_bits = 0, rdrand_bits = 0;
-> +	int rdseed_bits = 0, rdrand_bits = 0, kvm_bits = 0;
->  	char buf[128] = "";
->  	char *msgptr = buf;
->  
-> @@ -42,10 +43,32 @@ void arch_get_rng_seed(void *ctx,
->  #endif
->  	}
->  
-> +	/*
-> +	 * Use KVM_GET_RNG_SEED regardless of whether the CPU RNG
-> +	 * worked, since it incorporates entropy unavailable to the CPU,
-> +	 * and we shouldn't trust the hardware RNG more than we need to.
-> +	 * We request enough bits for the entire internal RNG state,
-> +	 * because there's no good reason not to.
-> +	 */
-> +	for (i = 0; i < bits_per_source; i += 64) {
-> +		u64 rv;
-> +
-> +		if (kvm_get_rng_seed(&rv)) {
-> +			seed(ctx, (u32)rv);
-> +			seed(ctx, (u32)(rv >> 32));
-> +			kvm_bits += 8 * sizeof(rv);
-> +		} else {
-> +			break;	/* If it fails once, it will keep failing. */
-> +		}
-> +	}
-> +
->  	if (rdseed_bits)
->  		msgptr += sprintf(msgptr, ", %d bits from RDSEED", rdseed_bits);
->  	if (rdrand_bits)
->  		msgptr += sprintf(msgptr, ", %d bits from RDRAND", rdrand_bits);
-> +	if (kvm_bits)
-> +		msgptr += sprintf(msgptr, ", %d bits from KVM_GET_RNG_BITS",
-> +				  kvm_bits);
->  	if (buf[0])
->  		pr_info("%s with %s\n", log_prefix, buf + 2);
->  }
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index 3dd8e2c..bd8783a 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -416,6 +416,16 @@ void kvm_disable_steal_time(void)
->  	wrmsr(MSR_KVM_STEAL_TIME, 0, 0);
->  }
->  
-> +bool kvm_get_rng_seed(u64 *v)
-> +{
-> +	/*
-> +	 * Allow migration from a hypervisor with the GET_RNG_SEED
-> +	 * feature to a hypervisor without it.
-> +	 */
-> +	return (kvm_para_has_feature(KVM_FEATURE_GET_RNG_SEED) &&
-> +		rdmsrl_safe(MSR_KVM_GET_RNG_SEED, v) == 0);
-> +}
-> +
->  #ifdef CONFIG_SMP
->  static void __init kvm_smp_prepare_boot_cpu(void)
->  {
+>                 for_each_cpu(j, span) {
+
+I don't think your problem is related to this one. None of the
+'build_sched_groups: got group x with cpus:' show that a sched_group got
+reused.
+
+> 
+> 
+> I am also attaching the debug messages that Peterz added
+> here: https://lkml.org/lkml/2014/7/17/288
+> 
+> Appreciate any debug suggestions.
+> 
+> Sukadev
+> 
+> 
+> ----
+> Red Hat Enterprise Linux Server 7.0 (Maipo)
+> Kernel 3.16.0-rc7-24x7+ on an ppc64
+> 
+> ltcbrazos2-lp07 login: 
+> 
+> Red Hat Enterprise Linux Server 7.0 (Maipo)
+> Kernel 3.16.0-rc7-24x7+ on an ppc64
+> 
+> ltcbrazos2-lp07 login: [  181.915974] ------------[ cut here ]------------
+> [  181.915991] WARNING: at ../kernel/sched/core.c:5881
+
+This warning indicates the problem. One of the struct sched_domains does
+not have it's groups member set.
+
+And its happening during a rebuild of the sched domain hierarchy, not
+during the initial build.
+
+You could run your system with the following patch-let (on top of
+https://lkml.org/lkml/2014/7/17/288)  w/ and w/o the perf related
+patches (w/ CONFIG_SCHED_DEBUG enabled).
+
+@@ -5882,6 +5882,9 @@ static void init_sched_groups_capacity(int cpu,
+struct sched_domain *sd)
+ {
+        struct sched_group *sg = sd->groups;
+
++#ifdef CONFIG_SCHED_DEBUG
++       printk("sd name: %s span: %pc\n", sd->name, sd->span);
++#endif
+        WARN_ON(!sg);
+
+        do {
+
+This will show if the rebuild of the sched domain hierarchy happens on
+both systems and hopefully indicate for which sched_domain the
+sd->groups is not set.
+
+> [  181.915994] Modules linked in: sg cfg80211 rfkill nx_crypto ibmveth pseries_rng xfs libcrc32c sd_mod crc_t10dif crct10dif_common ibmvscsi scsi_transport_srp scsi_tgt dm_mirror dm_region_hash dm_log dm_mod
+> [  181.916024] CPU: 4 PID: 1087 Comm: kworker/4:2 Not tainted 3.16.0-rc7-24x7+ #15
+> [  181.916034] Workqueue: events .topology_work_fn
+> [  181.916038] task: c0000000dbd40000 ti: c0000000da400000 task.ti: c0000000da400000
+> [  181.916043] NIP: c0000000000d7528 LR: c0000000000d7578 CTR: 0000000000000000
+> [  181.916047] REGS: c0000000da403580 TRAP: 0700   Not tainted  (3.16.0-rc7-24x7+)
+> [  181.916051] MSR: 8000000100029032 <SF,EE,ME,IR,DR,RI>  CR: 28484c24  XER: 00000000
+> [  181.916063] CFAR: c0000000000d74f4 SOFTE: 1 
+> GPR00: c0000000000d7578 c0000000da403800 c000000000eaa7f0 0000000000000800 
+> GPR04: 0000000000000800 0000000000000800 0000000000000000 c0000000009cf878 
+> GPR08: c0000000009cf880 0000000000000001 0000000000000010 0000000000000000 
+> GPR12: 0000000000000000 c00000000ebe1200 0000000000000800 c0000000cc2f0000 
+> GPR16: c000000000ef0a68 0000000000000078 c0000000e5000000 0000000000000078 
+> GPR20: 0000000000000000 0000000000000001 c0000000cc2f0000 0000000000000001 
+> GPR24: c000000000db4402 000000000000000f 0000000000000000 c0000000dea39300 
+> GPR28: c000000000ef0ae0 c0000000e5440000 0000000000000000 c000000000ef4f7c 
+> [  181.916146] NIP [c0000000000d7528] .build_sched_domains+0xc28/0xd90
+> [  181.916151] LR [c0000000000d7578] .build_sched_domains+0xc78/0xd90
+> [  181.916155] Call Trace:
+> [  181.916159] [c0000000da403800] [c0000000000d7578] .build_sched_domains+0xc78/0xd90 (unreliable)
+> [  181.916166] [c0000000da403950] [c0000000000d7950] .partition_sched_domains+0x260/0x3f0
+> [  181.916175] [c0000000da403a30] [c000000000141704] .rebuild_sched_domains_locked+0x54/0x70
+> [  181.916182] [c0000000da403ab0] [c000000000143a98] .rebuild_sched_domains+0x28/0x50
+> [  181.916188] [c0000000da403b30] [c00000000004f250] .topology_work_fn+0x10/0x30
+> [  181.916194] [c0000000da403ba0] [c0000000000b7100] .process_one_work+0x1a0/0x4c0
+> [  181.916199] [c0000000da403c40] [c0000000000b7970] .worker_thread+0x180/0x630
+> [  181.916205] [c0000000da403d30] [c0000000000bfc88] .kthread+0x108/0x130
+> [  181.916214] [c0000000da403e30] [c00000000000a3e4] .ret_from_kernel_thread+0x58/0x74
+> [  181.916220] Instruction dump:
+> [  181.916223] 7f47492a e93c0000 e90a0010 7d0a4378 7d4a482a 814a0000 2f8a0000 419e0008 
+> [  181.916235] 7f48492a ebdd0010 7fc90074 7929d182 <0b090000> 48000014 60000000 60000000 
+> [  181.916245] ---[ end trace 6e9d20016598c36c ]---
+> [  181.916253] Unable to handle kernel paging request for data at address 0x00000018
+> [  181.916257] Faulting instruction address: 0xc00000000039d1c0
+> [  181.916263] Oops: Kernel access of bad area, sig: 11 [#1]
+> [  181.916267] SMP NR_CPUS=2048 NUMA pSeries
+> [  181.916271] Modules linked in: sg cfg80211 rfkill nx_crypto ibmveth pseries_rng xfs libcrc32c sd_mod crc_t10dif crct10dif_common ibmvscsi scsi_transport_srp scsi_tgt dm_mirror dm_region_hash dm_log dm_mod
+> [  181.916293] CPU: 4 PID: 1087 Comm: kworker/4:2 Tainted: G        W     3.16.0-rc7-24x7+ #15
+> [  181.916299] Workqueue: events .topology_work_fn
+> [  181.916303] task: c0000000dbd40000 ti: c0000000da400000 task.ti: c0000000da400000
+> [  181.916309] NIP: c00000000039d1c0 LR: c0000000000d754c CTR: 0000000000000000
+> [  181.916313] REGS: c0000000da4034d0 TRAP: 0300   Tainted: G        W      (3.16.0-rc7-24x7+)
+> [  181.916317] MSR: 8000000100009032 <SF,EE,ME,IR,DR,RI>  CR: 28484c24  XER: 00000000
+> [  181.916327] CFAR: c000000000009358 DAR: 0000000000000018 DSISR: 40000000 SOFTE: 1 
+> GPR00: c0000000000d754c c0000000da403750 c000000000eaa7f0 0000000000000018 
+> GPR04: 0000000000000800 0000000000000800 0000000000000000 c0000000009cf878 
+> GPR08: c0000000009cf880 0000000000000001 0000000000000010 0000000000000000 
+> GPR12: 0000000000000000 c00000000ebe1200 0000000000000800 c0000000cc2f0000 
+> GPR16: c000000000ef0a68 0000000000000078 c0000000e5000000 0000000000000078 
+> GPR20: 0000000000000000 0000000000000001 c0000000cc2f0000 0000000000000001 
+> GPR24: c000000000db4402 0000000000000020 0000000000000018 0000000000000800 
+> GPR28: 0000000000000020 0000000000000110 0000000000000000 0000000000000010 
+> [  181.916406] NIP [c00000000039d1c0] .__bitmap_weight+0x70/0x100
+> [  181.916411] LR [c0000000000d754c] .build_sched_domains+0xc4c/0xd90
+> [  181.916415] Call Trace:
+> [  181.916418] [c0000000da403750] [c0000000da403800] 0xc0000000da403800 (unreliable)
+> [  181.916424] [c0000000da403800] [c0000000000d754c] .build_sched_domains+0xc4c/0xd90
+> [  181.916430] [c0000000da403950] [c0000000000d7950] .partition_sched_domains+0x260/0x3f0
+> [  181.916436] [c0000000da403a30] [c000000000141704] .rebuild_sched_domains_locked+0x54/0x70
+> [  181.916442] [c0000000da403ab0] [c000000000143a98] .rebuild_sched_domains+0x28/0x50
+> [  181.916448] [c0000000da403b30] [c00000000004f250] .topology_work_fn+0x10/0x30
+> [  181.916453] [c0000000da403ba0] [c0000000000b7100] .process_one_work+0x1a0/0x4c0
+> [  181.916458] [c0000000da403c40] [c0000000000b7970] .worker_thread+0x180/0x630
+> [  181.916463] [c0000000da403d30] [c0000000000bfc88] .kthread+0x108/0x130
+> [  181.916468] [c0000000da403e30] [c00000000000a3e4] .ret_from_kernel_thread+0x58/0x74
+> [  181.916472] Instruction dump:
+> [  181.916475] 409d00b4 3bbcffff 3be3fff8 7bbd1f48 3bc00000 7fa3ea14 48000018 60000000 
+> [  181.916484] 60000000 60000000 60000000 60420000 <e87f0009> 4bcb74e9 60000000 7fbfe840 
+> [  181.916493] ---[ end trace 6e9d20016598c36d ]---
+> [  181.924408] 
+> [  183.931081] Kernel panic - not syncing: Fatal exception
+> [  183.954314] Rebooting in 10 seconds..
 > 
 
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+
