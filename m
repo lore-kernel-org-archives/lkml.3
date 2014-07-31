@@ -1,52 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817AbaGaGnW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 02:43:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46491 "EHLO mx1.redhat.com"
+	id S1756023AbaGaGow (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 02:44:52 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57164 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751117AbaGaGnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 02:43:21 -0400
-Date: Thu, 31 Jul 2014 02:42:54 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org, jhladky@redhat.com
-Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1%
- proc-vmstat.numa_hint_faults_local
-Message-ID: <20140731024254.3dad1156@annuminas.surriel.com>
-In-Reply-To: <20140731050454.GA9386@aaronlu.sh.intel.com>
-References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>
-	<53D72FF5.90908@intel.com>
-	<20140729023940.37b6aebc@annuminas.surriel.com>
-	<20140729081712.GS20603@laptop.programming.kicks-ass.net>
-	<20140729160437.4561742f@annuminas.surriel.com>
-	<20140730021425.GA25023@aaronlu.sh.intel.com>
-	<53D9003F.3050900@redhat.com>
-	<20140731050454.GA9386@aaronlu.sh.intel.com>
-Organization: Red Hat, Inc.
+	id S1751837AbaGaGou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 02:44:50 -0400
+Date: Wed, 30 Jul 2014 23:45:14 -0700
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: "'Changman Lee'" <cm224.lee@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [f2fs-dev] [PATCH] f2fs: reduce competition among node page
+ writes
+Message-ID: <20140731064514.GA11415@jaegeuk-mac02>
+References: <003901cf96ad$dbd17680$93746380$@samsung.com>
+ <00f601cfabf7$691af580$3b50e080$@samsung.com>
+ <20140731020708.GB24081@lcm>
+ <016201cfac80$d6e336c0$84a9a440$@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <016201cfac80$d6e336c0$84a9a440$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jul 2014 13:04:54 +0800
-Aaron Lu <aaron.lu@intel.com> wrote:
-
-> On Wed, Jul 30, 2014 at 10:25:03AM -0400, Rik van Riel wrote:
-> > On 07/29/2014 10:14 PM, Aaron Lu wrote:
-
-> > >> +#define NUMA_SCALE 1024
-> > >> +#define NUMA_MOVE_THRESH (5 * NUMA_SCALE / 100)
+On Thu, Jul 31, 2014 at 01:31:46PM +0800, Chao Yu wrote:
+> Hi Changman,
+> 
+> > -----Original Message-----
+> > From: Changman Lee [mailto:cm224.lee@samsung.com]
+> > Sent: Thursday, July 31, 2014 10:07 AM
+> > To: Chao Yu
+> > Cc: 'Jaegeuk Kim'; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > linux-f2fs-devel@lists.sourceforge.net
+> > Subject: Re: [f2fs-dev] [PATCH] f2fs: reduce competition among node page writes
 > > 
-> > It would be good to see if changing NUMA_MOVE_THRESH to
-> > (NUMA_SCALE / 8) does the trick.
+> > Hi Chao,
+> > 
+> > On Wed, Jul 30, 2014 at 09:07:49PM +0800, Chao Yu wrote:
+> > > Hi Jaegeuk Changman,
+> > >
+> > > > -----Original Message-----
+> > > > From: Chao Yu [mailto:chao2.yu@samsung.com]
+> > > > Sent: Thursday, July 03, 2014 6:59 PM
+> > > > To: Jaegeuk Kim; Changman Lee
+> > > > Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > > > linux-f2fs-devel@lists.sourceforge.net
+> > > > Subject: [f2fs-dev] [PATCH] f2fs: reduce competition among node page writes
+> > > >
+> > > > We do not need to block on ->node_write among different node page writers e.g.
+> > > > fsync/flush, unless we have a node page writer from write_checkpoint.
+> > > > So it's better use rw_semaphore instead of mutex type for ->node_write to
+> > > > promote performance.
+> > >
+> > > If you could have time to help explaining the problem of this patch, I will be
+> > > appreciated for that.
+> > 
+> > I have no clue. Except checkpoint, I don't know why need to block to
+> > write node page.
+> > Do you have any problem when you test with this patch?
+> 
+> I don't have.
+> I send this patch about one month ago, but got no respond.
+> So I want to ask if any problem in this patch or forget to look at this patch?
+> 
+> To Jaegeuk:
+> Any idea about this patch?
 
-FWIW, running with NUMA_MOVE_THRESH set to (NUMA_SCALE / 8)
-seems to resolve the SPECjbb2005 threshold on my system.
+Oh, I forgot to send an email for this.
+At that time, when I looked at a glance, I thought that it was not clear why
+this should be merged.
 
-I will run some more sanity tests later today...
+But, when I contemplate again, it seems that several fsync threads could produce
+multiple node writers, resulting in some mutex contention.
+Just for sure, can you verify that?
 
--- 
-All rights reversed.
+Nevertheless, I think there would be no problem to merge this patch now.
+Merged.
+
+> 
+> > 
+> > >
+> > > Another question is what is ->writepages in sbi used for? I'm not quite clear.
+> > >
+> > 
+> > I remember it is for writing data pages per thread as much as possible.
+> > When multi-threads write some files simultaneously, multi-threads contended with
+> > each other to allocate a block. So block allocation was interleaved
+> > across threads. It makes fragmentation of file.
+
+Good. :)
+
+> 
+> Thank you for the explanation! :)
+> I think what you say is reasonable.
+> 
+> Previously I tested without this lock, although I found that the blocks written
+> _almost_ were continuous in each '->writepages()'. Still I think we can gain more
+> from readahead continuous block when using this lock, rather than remove it for
+> promoting concurrent of writers.
+> 
+> Thanks,
+> Yu
+> 
+> > 
+> > Thanks,
+> > 
+> > > Thanks,
+> > >
+> > > >
+> > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > > > ---
+> > > >  fs/f2fs/checkpoint.c |    6 +++---
+> > > >  fs/f2fs/f2fs.h       |    2 +-
+> > > >  fs/f2fs/node.c       |    4 ++--
+> > > >  fs/f2fs/super.c      |    2 +-
+> > > >  4 files changed, 7 insertions(+), 7 deletions(-)
+> > > >
+> > > > diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+> > > > index 0b4710c..eec406b 100644
+> > > > --- a/fs/f2fs/checkpoint.c
+> > > > +++ b/fs/f2fs/checkpoint.c
+> > > > @@ -714,10 +714,10 @@ retry_flush_dents:
+> > > >  	 * until finishing nat/sit flush.
+> > > >  	 */
+> > > >  retry_flush_nodes:
+> > > > -	mutex_lock(&sbi->node_write);
+> > > > +	down_write(&sbi->node_write);
+> > > >
+> > > >  	if (get_pages(sbi, F2FS_DIRTY_NODES)) {
+> > > > -		mutex_unlock(&sbi->node_write);
+> > > > +		up_write(&sbi->node_write);
+> > > >  		sync_node_pages(sbi, 0, &wbc);
+> > > >  		goto retry_flush_nodes;
+> > > >  	}
+> > > > @@ -726,7 +726,7 @@ retry_flush_nodes:
+> > > >
+> > > >  static void unblock_operations(struct f2fs_sb_info *sbi)
+> > > >  {
+> > > > -	mutex_unlock(&sbi->node_write);
+> > > > +	up_write(&sbi->node_write);
+> > > >  	f2fs_unlock_all(sbi);
+> > > >  }
+> > > >
+> > > > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> > > > index ae3b4ac..ca30b5a 100644
+> > > > --- a/fs/f2fs/f2fs.h
+> > > > +++ b/fs/f2fs/f2fs.h
+> > > > @@ -444,7 +444,7 @@ struct f2fs_sb_info {
+> > > >  	struct inode *meta_inode;		/* cache meta blocks */
+> > > >  	struct mutex cp_mutex;			/* checkpoint procedure lock */
+> > > >  	struct rw_semaphore cp_rwsem;		/* blocking FS operations */
+> > > > -	struct mutex node_write;		/* locking node writes */
+> > > > +	struct rw_semaphore node_write;		/* locking node writes */
+> > > >  	struct mutex writepages;		/* mutex for writepages() */
+> > > >  	bool por_doing;				/* recovery is doing or not */
+> > > >  	wait_queue_head_t cp_wait;
+> > > > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> > > > index a90f51d..7b5b5de 100644
+> > > > --- a/fs/f2fs/node.c
+> > > > +++ b/fs/f2fs/node.c
+> > > > @@ -1231,12 +1231,12 @@ static int f2fs_write_node_page(struct page *page,
+> > > >  	if (wbc->for_reclaim)
+> > > >  		goto redirty_out;
+> > > >
+> > > > -	mutex_lock(&sbi->node_write);
+> > > > +	down_read(&sbi->node_write);
+> > > >  	set_page_writeback(page);
+> > > >  	write_node_page(sbi, page, &fio, nid, ni.blk_addr, &new_addr);
+> > > >  	set_node_addr(sbi, &ni, new_addr, is_fsync_dnode(page));
+> > > >  	dec_page_count(sbi, F2FS_DIRTY_NODES);
+> > > > -	mutex_unlock(&sbi->node_write);
+> > > > +	up_read(&sbi->node_write);
+> > > >  	unlock_page(page);
+> > > >  	return 0;
+> > > >
+> > > > diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+> > > > index 8f96d93..bed9413 100644
+> > > > --- a/fs/f2fs/super.c
+> > > > +++ b/fs/f2fs/super.c
+> > > > @@ -947,7 +947,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+> > > >  	mutex_init(&sbi->gc_mutex);
+> > > >  	mutex_init(&sbi->writepages);
+> > > >  	mutex_init(&sbi->cp_mutex);
+> > > > -	mutex_init(&sbi->node_write);
+> > > > +	init_rwsem(&sbi->node_write);
+> > > >  	sbi->por_doing = false;
+> > > >  	spin_lock_init(&sbi->stat_lock);
+> > > >
+> > > > --
+> > > > 1.7.9.5
+> > > >
+> > > >
+> > > >
+> > > > ------------------------------------------------------------------------------
+> > > > Open source business process management suite built on Java and Eclipse
+> > > > Turn processes into business applications with Bonita BPM Community Edition
+> > > > Quickly connect people, data, and systems into organized workflows
+> > > > Winner of BOSSIE, CODIE, OW2 and Gartner awards
+> > > > http://p.sf.net/sfu/Bonitasoft
+> > > > _______________________________________________
+> > > > Linux-f2fs-devel mailing list
+> > > > Linux-f2fs-devel@lists.sourceforge.net
+> > > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
