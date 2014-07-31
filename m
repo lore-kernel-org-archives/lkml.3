@@ -1,122 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378AbaGaKRE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 06:17:04 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:47261 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756354AbaGaKRA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 06:17:00 -0400
-Message-ID: <53DA1796.4040105@gmail.com>
-Date: Thu, 31 Jul 2014 13:16:54 +0300
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1756434AbaGaKRu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 06:17:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49223 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751539AbaGaKRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 06:17:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,771,1400050800"; 
+   d="scan'208";a="578136826"
+Date: Thu, 31 Jul 2014 10:15:33 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>,
+        "arjan.van.de.ven@intel.com" <arjan.van.de.ven@intel.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "alan.cox@intel.com" <alan.cox@intel.com>,
+        "mark.gross@intel.com" <mark.gross@intel.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
+Subject: Re: [PATCH 0/2 v4] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140731021532.GE28673@intel.com>
+References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
+ <20140718153931.GJ8700@e103034-lin>
+ <20140727190237.GB22986@intel.com>
+ <20140730101331.GB15761@e103687>
+ <20140730191739.GD28673@intel.com>
+ <20140731085421.GD3001@e103034-lin>
 MIME-Version: 1.0
-To: Matthew Wilcox <willy@linux.intel.com>
-CC: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 04/22] Change direct_access calling convention
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com> <b78b33d94b669a5fbd02e06f2493b43dd5d77698.1406058387.git.matthew.r.wilcox@intel.com> <53D9174C.7040906@gmail.com> <53D9197C.2050000@gmail.com> <20140730203435.GR6754@linux.intel.com>
-In-Reply-To: <20140730203435.GR6754@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140731085421.GD3001@e103034-lin>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2014 11:34 PM, Matthew Wilcox wrote:
-> On Wed, Jul 30, 2014 at 07:12:44PM +0300, Boaz Harrosh wrote:
->> Off course I was wrong here size is in bytes not in sectors. Which points
->> out that maybe this API needs to be in sectors.
->>
->> [Actually it needs to be in pages both size and offset, because of return of
->> pfn, but its your call.]
+On Thu, Jul 31, 2014 at 09:54:21AM +0100, Morten Rasmussen wrote:
 > 
-> I considered a number of options here.  The VM wants things to be in pages.
-> The filesystem wants things to be in block size.  The block device wants
-> things to be in sectors.  It's all a mess when you try and converge.
-> Everybody understands bytes.
-> 
-> Here's what I've come up with on top of patch 4/22.  Let me know what
-> you think.
-> 
-> 
-> diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
-> index 3ee1c08..741293f 100644
-> --- a/arch/powerpc/sysdev/axonram.c
-> +++ b/arch/powerpc/sysdev/axonram.c
-> @@ -146,11 +146,6 @@ axon_ram_direct_access(struct block_device *device, sector_t sector,
->  	struct axon_ram_bank *bank = device->bd_disk->private_data;
->  	loff_t offset = (loff_t)sector << AXON_RAM_SECTOR_SHIFT;
->  
-> -	if (offset >= bank->size) {
-> -		dev_err(&bank->device->dev, "Access outside of address space\n");
-> -		return -ERANGE;
-> -	}
-> -
->  	*kaddr = (void *)(bank->ph_addr + offset);
->  	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
->  
-> diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-> index 33a39e7..3483458 100644
-> --- a/drivers/block/brd.c
-> +++ b/drivers/block/brd.c
-> @@ -378,10 +378,6 @@ static long brd_direct_access(struct block_device *bdev, sector_t sector,
->  
->  	if (!brd)
->  		return -ENODEV;
-> -	if (sector & (PAGE_SECTORS-1))
-> -		return -EINVAL;
-> -	if (sector + PAGE_SECTORS > get_capacity(bdev->bd_disk))
-> -		return -ERANGE;
->  	page = brd_insert_page(brd, sector);
->  	if (!page)
->  		return -ENOSPC;
-> diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
-> index 58958d1..2ee5556 100644
-> --- a/drivers/s390/block/dcssblk.c
-> +++ b/drivers/s390/block/dcssblk.c
-> @@ -877,11 +877,7 @@ dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
->  	if (!dev_info)
->  		return -ENODEV;
->  	dev_sz = dev_info->end - dev_info->start;
-> -	if (secnum % (PAGE_SIZE/512))
-> -		return -EINVAL;
->  	offset = secnum * 512;
-> -	if (offset > dev_sz)
-> -		return -ERANGE;
->  	*kaddr = (void *) (dev_info->start + offset);
->  	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
->  
-> diff --git a/fs/block_dev.c b/fs/block_dev.c
-> index f1a158e..93ebdd53 100644
-> --- a/fs/block_dev.c
-> +++ b/fs/block_dev.c
-> @@ -450,8 +450,14 @@ long bdev_direct_access(struct block_device *bdev, sector_t sector,
->  	const struct block_device_operations *ops = bdev->bd_disk->fops;
->  	if (!ops->direct_access)
->  		return -EOPNOTSUPP;
-> -	return ops->direct_access(bdev, sector + get_start_sect(bdev), addr,
-> -					pfn, size);
-> +	if ((sector + DIV_ROUND_UP(size, 512)) >
-> +					part_nr_sects_read(bdev->bd_part))
-> +		return -ERANGE;
-> +	sector += get_start_sect(bdev);
-> +	if (sector % (PAGE_SIZE / 512))
-> +		return -EINVAL;
-> +	size = ops->direct_access(bdev, sector, addr, pfn, size);
-> +	return size ? size : -ERANGE;
->  }
->  EXPORT_SYMBOL_GPL(bdev_direct_access);
->  
+> Overall, it is not clear to me why it is necessary to rewrite the
+> per-entity load-tracking. The code is somewhat simpler, but I don't see
+> any functional additions/improvements. If we have to go through a long
+> review and testing process, why not address some of the most obvious
+> issues with the existing implementation while we are at it? I don't see
+> the point in replacing something sub-optimal with equally sub-optimal
+> (or worse).
 > 
 
-Very nice yes.
+This is absolutely nonsense. First, we have improvements, second, even
+with no functions addition, but do you really understand what has been
+changed besides simpler. Even just simpler, simpler means a lot of things..
 
-Only the check at ext2 I think is missing. Once you send the complete patch
-I'll review it again. It would be very helpful if you send this patch a head
-of Q, even for 3.17. It will help with merging later I think
+> > I do think there absolutely can be sub-optimal cases.
 
-Thanks
-Boaz
+I said there absolutely can be sub-optimal cases, which exactly referred to
+the example you gave (one 10% 88761 vs. 8 100% 1024). Still, the links
+does not say anything about how serious. Exist, yes, serious, don't know.
 
+> > But as I said, I just don't think the problem description is clear enough.
+
+I said your description is not clear enough, and at the time I was not
+clear either. Arguably and sadly, none of what you said in this response
+made a tiny little progress. About blocked load, prediction, ..., can you
+be more wrong?
+
+The problem is not weight scaling. The problem is how weight is accumulated
+when not runnable. Why? Consider this, if all tasks are always runnalbe,
+weight scaling cann't be more right.
+
+WRT runnalbe weight, currently, it is runnalbe% * weight (simplified).
+Since weight has so big range, it dwarfs runnable time ratio. So maybe what
+can be done is (what I have in mind):
+
+1) runnalbe%^2 * weight
+2) bigger weight does faster decay
+
+Still, if you can prove the issue is serious, we can try something..., but just
+nothing is perfect.
+
+Thanks,
+Yuyang
