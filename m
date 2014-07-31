@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051AbaGaCHK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 22:07:10 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56685 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277AbaGaCHI (ORCPT
+	id S1756072AbaGaCI1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 22:08:27 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38459 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288AbaGaCIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 22:07:08 -0400
-Message-ID: <53D9A4CA.9050403@codeaurora.org>
-Date: Wed, 30 Jul 2014 19:07:06 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
- to be held for duration of changing governors [v2]
-References: <1406634362-811-1-git-send-email-prarit@redhat.com> <1816455.s1k7EgIPj9@vostro.rjw.lan> <53D99D80.8090905@codeaurora.org> <3140593.vs3eOK6CdF@vostro.rjw.lan>
-In-Reply-To: <3140593.vs3eOK6CdF@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 30 Jul 2014 22:08:25 -0400
+Date: Wed, 30 Jul 2014 19:08:24 -0700 (PDT)
+Message-Id: <20140730.190824.1834967880150777985.davem@davemloft.net>
+To: tgraf@suug.ch
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kaber@trash.net,
+        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
+        challa@noironetworks.com, walpole@cs.pdx.edu, dev@openvswitch.org
+Subject: Re: [PATCH 0/2 net-next] Lockless netlink_lookup() with new
+ concurrent hash table
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1406633945.git.tgraf@suug.ch>
+References: <cover.1406633945.git.tgraf@suug.ch>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 30 Jul 2014 19:08:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2014 07:16 PM, Rafael J. Wysocki wrote:
-> On Wednesday, July 30, 2014 06:36:00 PM Saravana Kannan wrote:
->> On 07/30/2014 02:40 PM, Rafael J. Wysocki wrote:
->>> On Wednesday, July 30, 2014 10:18:25 AM Prarit Bhargava wrote:
->>>>
->>>> On 07/29/2014 08:03 PM, Rafael J. Wysocki wrote:
->>>>> On Tuesday, July 29, 2014 07:46:02 AM Prarit Bhargava wrote:
->>>
->>> [cut]
->>>
->>>>>> This patch effectively reverts commit 955ef483.
->>
->> The issue reported in this patch is valid. We are seeing that internally
->> too. I believe I reported it in another thread (within the past month).
->>
->> However, the original patch fixes a real deadlock issue (I'm too tired
->> to look it up now). We can revet the original, but it's going to bring
->> back the original issue. I just want to make sure Prarit and Raphael
->> realize this before proceeding.
->>
->> I do have plans for a proper fix for the mainline (not stable branches),
->> but plan to do that after the current set of suspend/hotplug patches go
->> through. The fix would be easier to make after that.
->>
->>>>>
->>>>> OK, I'm convinced by this.
->>>>>
->>>>> I suppose we should push it for -stable from 3.10 through 3.15.x, right?
->>>>
->>>> Rafael, I think that is a good idea.  I'm not sure what the protocol is for
->>>> adding stable@kernel.org though ...
->>>
->>> I'll take care of this, thanks!
->>>
->>
->> But you aren't going to pull the in for the next release, right?
->
-> What do you mean?
->
+From: Thomas Graf <tgraf@suug.ch>
+Date: Tue, 29 Jul 2014 13:41:31 +0200
 
-Reverting the commit will bring back another dead lock issue. So, you 
-don't want to revert it on mainline. Do I still not make sense because 
-I'm not using the right terms?
+> Netlink sockets are maintained in a hash table to allow efficient lookup
+> via the port ID for unicast messages. However, lookups currently require
+> a read lock to be taken. This series adds a new generic, resizable,
+> scalable, concurrent hash table based on the paper referenced in the first
+> patch. It then makes use of the new data type to implement lockless
+> netlink_lookup().
+> 
+> Against net-next since the initial user of the new hash table is in net/
+> 
+> Thomas Graf (2):
+>   lib: Resizable, Scalable, Concurrent Hash Table
+>   netlink: Convert netlink_lookup() to use RCU protected hash table
 
--Saravana
+This series looks great, please post an updated series once you have
+addressed the current feedback.
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Thanks!
