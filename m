@@ -1,136 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765AbaGaUrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:47:52 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50635 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036AbaGaUru (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:47:50 -0400
-Message-ID: <53DAAB74.7050003@codeaurora.org>
-Date: Thu, 31 Jul 2014 13:47:48 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Saravana Kannan <skannan@codeaurora.org>
-CC: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Todd Poynor <toddpoynor@google.com>,
-        "Srivatsa S . Bhat" <srivatsa@mit.edu>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v4 1/5] cpufreq: Don't wait for CPU to going offline to
- restart governor
-References: <1406250448-470-1-git-send-email-skannan@codeaurora.org> <1406250448-470-2-git-send-email-skannan@codeaurora.org>
-In-Reply-To: <1406250448-470-2-git-send-email-skannan@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752802AbaGaUsR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:48:17 -0400
+Received: from mga03.intel.com ([143.182.124.21]:40686 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751151AbaGaUsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 16:48:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,774,1400050800"; 
+   d="scan'208";a="463739857"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: eranian@google.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, x86: Handle extended offcore mask on Haswell
+Date: Thu, 31 Jul 2014 13:48:09 -0700
+Message-Id: <1406839689-23491-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2014 06:07 PM, Saravana Kannan wrote:
-> There's no need to wait for the CPU going down to fully go offline to
-> restart the governor. We can stop the governor, change policy->cpus and
-> immediately restart the governor. This should reduce the time without any
-> CPUfreq monitoring and also help future patches with simplifying the code.
->
-> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
-> ---
->   drivers/cpufreq/cpufreq.c | 33 ++++++++++++++++++---------------
->   1 file changed, 18 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 62259d2..ee0eb7b 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1390,6 +1390,21 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
->   		cpufreq_driver->stop_cpu(policy);
->   	}
->
-> +	down_write(&policy->rwsem);
-> +	cpumask_clear_cpu(cpu, policy->cpus);
-> +	up_write(&policy->rwsem);
-> +
-> +	if (cpus > 1 && has_target()) {
-> +		ret = __cpufreq_governor(policy, CPUFREQ_GOV_START);
-> +		if (!ret)
-> +			ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
-> +
-> +		if (ret) {
-> +			pr_err("%s: Failed to start governor\n", __func__);
-> +			return ret;
-> +		}
-> +	}
-> +
->   	return 0;
->   }
->
-> @@ -1410,15 +1425,12 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
->   		return -EINVAL;
->   	}
->
-> -	down_write(&policy->rwsem);
-> +	down_read(&policy->rwsem);
->   	cpus = cpumask_weight(policy->cpus);
-> -
-> -	if (cpus > 1)
-> -		cpumask_clear_cpu(cpu, policy->cpus);
-> -	up_write(&policy->rwsem);
-> +	up_read(&policy->rwsem);
->
->   	/* If cpu is last user of policy, free policy */
-> -	if (cpus == 1) {
-> +	if (cpus == 0) {
->   		if (has_target()) {
->   			ret = __cpufreq_governor(policy,
->   					CPUFREQ_GOV_POLICY_EXIT);
-> @@ -1447,15 +1459,6 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
->
->   		if (!cpufreq_suspended)
->   			cpufreq_policy_free(policy);
-> -	} else if (has_target()) {
-> -		ret = __cpufreq_governor(policy, CPUFREQ_GOV_START);
-> -		if (!ret)
-> -			ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
-> -
-> -		if (ret) {
-> -			pr_err("%s: Failed to start governor\n", __func__);
-> -			return ret;
-> -		}
->   	}
->
->   	per_cpu(cpufreq_cpu_data, cpu) = NULL;
->
+From: Andi Kleen <ak@linux.intel.com>
 
-This patch should also fix another issue reported in-house recently. 
-cpufreq_update_policy() fails for an ONLINE CPU. This is the scenario 
-that triggers it:
+HSW-EP has a larger offcore mask than the client Haswell CPUs.
+It is the same mask as on Sandy/IvyBridge-EP.
 
-Thead A
-- Cluster with 4 CPUs
-- CPU3 is going down.
-- Governor is STOPed.
-- CPU3 is removed, but governor not STARTed yet.
+On the client parts some bits were also missing compared
+to Sandy/IvyBridge, in particular the bits to match on a L4
+cache hit.
 
-Thread B
-- get_online_cpus()
-- We cross this hotplug barrier since since POST_DEAD is sent AFTER 
-releasing the hotplug lock.
-- cpufreq_update_policy(CPU0) does a bunch of stuff
-- Then sends GOV_LIMITS to governor.
-- governor is currently STOPed, so it returns an error and 
-cpufreq_update_policy() fails.
+Specifying extra bits is ignored by the CPU.
 
-Thread A
-- In POST_DEAD notifier, STARTs the governor again.
+So use the snbep extended mask, which is a superset of the
+client and the server, for all of Haswell.
 
-So, a perfectly valid call (doing get_online_cpus() and checking for 
-cpu_online() on a CPU before calling) fails.
+This allows specifying a number of extra offcore events, like
+for example for HSW-EP.
 
--Saravana
+% perf stat -e cpu/event=0xb7,umask=0x1,offcore_rsp=0x3fffc00100,name=offcore_response_pf_l3_rfo_l3_miss_any_response/ true
 
+which were <not counted> before.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 2502d0d..42cd9bc 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2552,7 +2552,10 @@ __init int intel_pmu_init(void)
+ 
+ 		x86_pmu.event_constraints = intel_hsw_event_constraints;
+ 		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
+-		x86_pmu.extra_regs = intel_snb_extra_regs;
++		if (boot_cpu_data.x86_model == 63)
++			x86_pmu.extra_regs = intel_snbep_extra_regs;
++		else
++			x86_pmu.extra_regs = intel_snb_extra_regs;
+ 		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
+ 		/* all extra regs are per-cpu when HT is on */
+ 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.9.3
+
