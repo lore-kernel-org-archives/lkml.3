@@ -1,138 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635AbaGaRRT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:17:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41546 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864AbaGaRRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:17:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,773,1400050800"; 
-   d="scan'208";a="578327717"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
-        mingo@kernel.org, peterz@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/9] perf, tools: Add --branch-history option to report
-Date: Thu, 31 Jul 2014 10:17:02 -0700
-Message-Id: <1406827029-7991-3-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1406827029-7991-1-git-send-email-andi@firstfloor.org>
-References: <1406827029-7991-1-git-send-email-andi@firstfloor.org>
+	id S1752979AbaGaRRX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:17:23 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:35279 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558AbaGaRRU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 13:17:20 -0400
+Date: Thu, 31 Jul 2014 19:17:14 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v4 2/5] x86,entry: Only call user_exit if TIF_NOHZ
+Message-ID: <20140731171713.GE7842@localhost.localdomain>
+References: <cover.1406604806.git.luto@amacapital.net>
+ <7123b2489cc5d1d5abb7bcf1364ca729cab3e6ca.1406604806.git.luto@amacapital.net>
+ <20140729193232.GA8153@redhat.com>
+ <20140730164344.GA27954@localhost.localdomain>
+ <CALCETrUVaz3JFiNbyU=r3M-E9muHa1ffn7RX+_-4V_0U-hVaPw@mail.gmail.com>
+ <20140731151630.GA7842@localhost.localdomain>
+ <20140731164246.GA15974@redhat.com>
+ <20140731164918.GC7842@localhost.localdomain>
+ <20140731165423.GA16800@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140731165423.GA16800@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Thu, Jul 31, 2014 at 06:54:23PM +0200, Oleg Nesterov wrote:
+> On 07/31, Frederic Weisbecker wrote:
+> >
+> > On Thu, Jul 31, 2014 at 06:42:46PM +0200, Oleg Nesterov wrote:
+> > > On 07/31, Frederic Weisbecker wrote:
+> > > >
+> > > > On Wed, Jul 30, 2014 at 10:23:34AM -0700, Andy Lutomirski wrote:
+> > > > >
+> > > > > At the end of the day, the syscall slowpath code calls a bunch of
+> > > > > functions depending on what TIF_XYZ flags are set.  As long as it's
+> > > > > structured like "if (TIF_A) do_a(); if (TIF_B) do_b();" or something
+> > > > > like that, it's comprehensible.  But once random functions with no
+> > > > > explicit flag checks or comments start showing up, it gets confusing.
+> > > >
+> > > > Yeah that's a point. I don't mind much the TIF_NOHZ test if you like.
+> > >
+> > > And in my opinion
+> > >
+> > > 	if (work & TIF_XYZ)
+> > > 		user_exit();
+> > >
+> > > looks even more confusing. Because, once again, TIF_XYZ is not the
+> > > reason to call user_exit().
+> > >
+> > > Not to mention this adds a minor performance penalty.
+> >
+> > That's a point too! You guys both convinced me! ;-)
+> 
+> Very nice, now I know that you can agree with 2 opposite opinions at
+> the same time ;)
 
-Add a --branch-history option to perf report that changes all
-the settings necessary for using the branches in callstacks.
+That's what an Acked-by from Schroedinger would look like!
 
-This is just a short cut to make this nicer to use, it does
-not enable any functionality by itself.
+> 
+> > > > > If it's indeed all-or-nothing, I could remove the check and add a
+> > > > > comment.  But please keep in mind that, currently, the slow path is
+> > > > > *slow*, and my patches only improve the entry case.  So enabling
+> > > > > context tracking on every task will hurt.
+> > > >
+> > > > That's what we do anyway. I haven't found a safe way to enabled context tracking
+> > > > without tracking all CPUs.
+> > >
+> > > And if we change this, then the code above becomes racy. The state of
+> > > TIF_XYZ can be changed right after the check. OK, it is racy anyway ;)
+> > > but still this adds more confusion.
+> >
+> > No because all running tasks have this flag set when context tracking is
+> > enabled. And context tracking can't be disabled on runtime.
+> 
+> Yes, yes, please note that I said "if we change this".
 
-v2: Change sort order. Rename option to --branch-history to
-be less confusing.
-v3: Updates
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-report.txt |  5 +++++
- tools/perf/builtin-report.c              | 34 +++++++++++++++++++++++++++-----
- 2 files changed, 34 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 0031919..5b83edb 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -271,6 +271,11 @@ OPTIONS
- 	branch stacks and it will automatically switch to the branch view mode,
- 	unless --no-branch-stack is used.
- 
-+--branch-history::
-+	Add the addresses of sampled taken branches to the callstack.
-+	This allows to examine the path the program took to each sample.
-+	The data collection must have used -b (or -j) and -g.
-+
- --objdump=<path>::
-         Path to objdump binary.
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 4dcb4db..c2dc8f27 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -220,8 +220,9 @@ static int report__setup_sample_type(struct report *rep)
- 			return -EINVAL;
- 		}
- 		if (symbol_conf.use_callchain) {
--			ui__error("Selected -g but no callchain data. Did "
--				    "you call 'perf record' without -g?\n");
-+			ui__error("Selected -g or --branch-history but no "
-+				  "callchain data. Did\n"
-+				  "you call 'perf record' without -g?\n");
- 			return -1;
- 		}
- 	} else if (!rep->dont_use_callchains &&
-@@ -544,6 +545,16 @@ parse_branch_mode(const struct option *opt __maybe_unused,
- }
- 
- static int
-+parse_branch_call_mode(const struct option *opt __maybe_unused,
-+		  const char *str __maybe_unused, int unset)
-+{
-+	int *branch_mode = opt->value;
-+
-+	*branch_mode = !unset;
-+	return 0;
-+}
-+
-+static int
- parse_percent_limit(const struct option *opt, const char *str,
- 		    int unset __maybe_unused)
- {
-@@ -558,7 +569,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	struct perf_session *session;
- 	struct stat st;
- 	bool has_br_stack = false;
--	int branch_mode = -1;
-+	int branch_mode = -1, branch_call_mode = -1;
- 	int ret = -1;
- 	char callchain_default_opt[] = "fractal,0.5,callee";
- 	const char * const report_usage[] = {
-@@ -669,7 +680,11 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
- 		    "Show event group information together"),
- 	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
--		    "use branch records for histogram filling", parse_branch_mode),
-+		    "use branch records for per branch histogram filling",
-+		    parse_branch_mode),
-+	OPT_CALLBACK_NOOPT(0, "branch-history", &branch_call_mode, "",
-+		    "add last branch records to call history",
-+		    parse_branch_call_mode),
- 	OPT_STRING(0, "objdump", &objdump_path, "path",
- 		   "objdump binary to use for disassembly and annotations"),
- 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
-@@ -719,10 +734,19 @@ repeat:
- 	has_br_stack = perf_header__has_feat(&session->header,
- 					     HEADER_BRANCH_STACK);
- 
--	if (branch_mode == -1 && has_br_stack) {
-+	if (branch_mode == -1 && has_br_stack && branch_call_mode == -1) {
- 		sort__mode = SORT_MODE__BRANCH;
- 		symbol_conf.cumulate_callchain = false;
- 	}
-+	if (branch_call_mode != -1) {
-+		callchain_param.branch_callstack = 1;
-+		callchain_param.key = CCKEY_ADDRESS;
-+		symbol_conf.use_callchain = true;
-+		callchain_register_param(&callchain_param);
-+		if (sort_order == default_sort_order)
-+			sort_order = "srcline,symbol,dso";
-+		branch_mode = 0;
-+	}
- 
- 	if (report.mem_mode) {
- 		if (sort__mode == SORT_MODE__BRANCH) {
--- 
-1.9.3
-
+Yeah but the NO_HZ test wouldn't change much the situation I think.
