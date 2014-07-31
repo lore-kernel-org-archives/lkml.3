@@ -1,69 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaGaXiH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 19:38:07 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:54464 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907AbaGaXiG (ORCPT
+	id S1752314AbaGaXlj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 19:41:39 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38061 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952AbaGaXlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 19:38:06 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Minchan Kim <minchan@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/2] perf tools: Ensure --symfs ends with '/'
-References: <1406251908-8195-1-git-send-email-namhyung@kernel.org>
-	<20140729050246.GC22707@bbox> <20140729123305.GO7831@kernel.org>
-	<87ppgnhge3.fsf@sejong.aot.lge.com> <20140730151932.GS7831@kernel.org>
-	<20140730205521.GU7831@kernel.org> <87ha1ygnn3.fsf@sejong.aot.lge.com>
-	<20140731122621.GV7831@kernel.org>
-Date: Fri, 01 Aug 2014 08:38:02 +0900
-In-Reply-To: <20140731122621.GV7831@kernel.org> (Arnaldo Carvalho de Melo's
-	message of "Thu, 31 Jul 2014 09:26:21 -0300")
-Message-ID: <87d2clgkv9.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 31 Jul 2014 19:41:37 -0400
+Date: Fri, 1 Aug 2014 01:41:31 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Alan Stern <stern@rowland.harvard.edu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Dmitry Torokhov <dtor@google.com>
+Subject: Re: [PATCH 1/3] irq / PM: New driver interface for wakeup
+ interrupts
+In-Reply-To: <1483885.6aPDiGeI4u@vostro.rjw.lan>
+Message-ID: <alpine.DEB.2.10.1408010134440.4997@nanos>
+References: <Pine.LNX.4.44L0.1407311552530.885-100000@iolanthe.rowland.org> <1483885.6aPDiGeI4u@vostro.rjw.lan>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+On Thu, 31 Jul 2014, Rafael J. Wysocki wrote:
+> On Thursday, July 31, 2014 04:12:55 PM Alan Stern wrote:
+> > Pardon me for sticking my nose into the middle of the conversation, but
+> > here's what it looks like to me:
+> > 
+> > The entire no_irq phase of suspend/resume is starting to seem like a
+> > mistake.  We should never have done it.
+> 
+> In hindsight, I totally agree.  Question is what we can do about it now.
 
-On Thu, 31 Jul 2014 09:26:21 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Jul 31, 2014 at 01:25:52PM +0900, Namhyung Kim escreveu:
->> Are you still against my approach - adding '/' at the end of the symfs
->> string itself?  It seems that mine is simpler and shorter.
->
-> Yes, I am.
->
-> We are not just concatenating two strings, we are joining two path
-> components.
->
-> I think it is more clear and elegant to do it as python os.path.join()
-> does.
+<SNIP>
 
-Then I think you also need to care about trailing and leading '/' in the
-components so that, say, joining '/home/' and '/namhyung/' can result in
-'/home/namhyung/' not '/home///namhyung/'.
+> So how can we eliminate the noirq phase in a workable way?
 
-Btw, it seems like python's os.path.join() just use latter if it's an
-absolute path.
+The straight way to do that is breaking the world and some more and
+then fix up a gazillion of device drivers by doing a massive voodoo
+debugging effort simply because in most cases we do not get any useful
+information out of the system once the shit hits the fan.
 
-  $ python
-  Python 2.7.3 (default, Jul 24 2012, 10:05:38) 
-  [GCC 4.7.0 20120507 (Red Hat 4.7.0-5)] on linux2
-  Type "help", "copyright", "credits" or "license" for more information.
-  >>> import os.path
-  >>> os.path.join('/home/', '/namhyung/')
-  '/namhyung/'
-  >>> 
+We could add instrumentation to the core code about interrupts which
+are coming in unexpectedly during suspend, but that does not solve
+anything.
 
+We really cannot call any device handler at that point as clocks might
+be turned off already and any access to a device register might simply
+cause a full undebuggable stall of the CPU.
+
+And there is no way to prove that there is no chance of a spurious
+interrupt for a given device. 
+
+So if we cannot handle it at the infrastructure level, we need to make
+sure that every fricking device driver interrupt handler has a 
+
+     if (dev->suspended)
+     	return CRAP;
+
+conditional as the first line of code in it.
+
+What is that buying us? 
+
+Nothing than a shitload of hard to understand problems, really. The
+only sensible way to handle this is at the core level.
+
+#1 There is no way that you can rely on random drivers to do the Right
+   Thing. 
+
+#2 There is no way that all hardware is implemented in a sane way.
+
+#3 You CANNOT educate the people who are tasked to implement something
+   which "does the job" to understand all the subtle details of
+   suspend/resume or whatever.
+
+In fact such an approach would take the general aims of consolidating
+repeating patterns into core infrastructure and hiding complexity from
+the driver developers ad absurdum. No thanks. We have enough
+uncomprehensible shite in drivers/* already. We really can do without
+adding more reasons for voodoo programming.
+
+This is a classic core infrastructure problem and we need to get the
+semantics and the implementation straight by considering the
+challenges of new fangled hardware and the incompentent usage of
+that. Once we have that we need to fix the few offending drivers, but
+that's a task which can be handled with grep and some brain applied.
+
+Anyone who thinks that this can and should be solved at the driver
+level is simply taking the wrong drugs or ran out of supply of the
+proper ones. Either call your shrink or your drug dealer to get out of
+that.
 
 Thanks,
-Namhyung
+
+	tglx
+
+
+
+
