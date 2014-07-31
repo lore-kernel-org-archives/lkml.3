@@ -1,167 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaGaPWl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:22:41 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:51057 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770AbaGaPWk (ORCPT
+	id S1751352AbaGaPZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:25:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48724 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaGaPZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:22:40 -0400
+	Thu, 31 Jul 2014 11:25:56 -0400
+Date: Thu, 31 Jul 2014 17:25:43 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, acme@infradead.org, eranian@google.com
+Subject: Re: [PATCH v3 6/9] perf, x86: handle multiple records in PEBS buffer
+Message-ID: <20140731152543.GX19379@twins.programming.kicks-ass.net>
+References: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
+ <1406016602-31845-7-git-send-email-zheng.z.yan@intel.com>
+ <20140725081033.GV3935@laptop>
+ <53D216A4.3090600@intel.com>
+ <20140725140652.GA6758@twins.programming.kicks-ass.net>
+ <53D5B45E.4030403@intel.com>
+ <20140728065255.GI6758@twins.programming.kicks-ass.net>
+ <53D9F0D7.7030002@intel.com>
+ <87a97pr3k3.fsf@tassilo.jf.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20140731123443.GS4703@rric.localhost>
-References: <1406732794-20920-1-git-send-email-rric@kernel.org>
- <1406732794-20920-3-git-send-email-rric@kernel.org> <20140730154626.GD20162@leverpostej>
- <CAL_JsqLJ_W34XTF2aMOW9z+Gq4oxbrX1RztyJN8Mi0OFPeNxfg@mail.gmail.com> <20140731123443.GS4703@rric.localhost>
-From: Rob Herring <robherring2@gmail.com>
-Date: Thu, 31 Jul 2014 10:22:19 -0500
-Message-ID: <CAL_JsqKgfjV4sEZOWuH4YcMjeOA_yNDvZLv_jTi_Sb=27cOD3g@mail.gmail.com>
-Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder SoC
-To: Robert Richter <rric@kernel.org>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        Robert Richter <rrichter@cavium.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="itXlm6KT/9NFvrz/"
+Content-Disposition: inline
+In-Reply-To: <87a97pr3k3.fsf@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 7:34 AM, Robert Richter <rric@kernel.org> wrote:
-> On 30.07.14 11:37:38, Rob Herring wrote:
->> On Wed, Jul 30, 2014 at 10:46 AM, Mark Rutland <mark.rutland@arm.com> wrote:
->> > On Wed, Jul 30, 2014 at 04:06:31PM +0100, Robert Richter wrote:
->> >> From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
->
->> >> +/ {
->> >> +     model = "Cavium ThunderX CN88XX Family";
->> >> +     compatible = "cavium,thunder-88xx";
->> >
->> > Please don't use wildcards in compatible strings. Give this an absolute
->> > name, and override as necessary.
->
-> The naming 88xx refers to the processor family and arn't actually
-> wildcards. In the future we might need another dts file for 87xx, but
-> so far all SoCs of 88xx family should use the same dts files. In this
-> sense the naming is very specific.
 
-Yes, but each implementation can have its own errata. You might not
-need to distinguish them now, but you could in the future.
+--itXlm6KT/9NFvrz/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-However, if the family is really all the same die and different parts
-are just marketing, then the name is fine. Or if you can easily probe
-the exact part and revision it's probably fine.
+On Thu, Jul 31, 2014 at 07:44:12AM -0700, Andi Kleen wrote:
+> "Yan, Zheng" <zheng.z.yan@intel.com> writes:
+> >>=20
+> >> Please lock yourselves in room and do not come out until you can give a
+> >> straight and coherent answer.
+> >>=20
+> >
+> > Andi,
+> >
+> > please confirm this
+>=20
+> The hardware can merge PEBS events that happen nearby each other.=20
+> I was wrong earlier in stating the opposite.
 
->
->
->> >> +     cpus {
->> >> +             #address-cells = <2>;
->> >> +             #size-cells = <0>;
->> >> +
->> >> +             cpu@000 {
->> >> +                     device_type = "cpu";
->> >> +                     compatible = "cavium,thunder", "arm,armv8";
->> >> +                     reg = <0x0 0x000>;
->> >> +                     enable-method = "psci";
->> >> +             };
->> >
->> > Just to check: both the SoC and CPU are called thunder?
->
-> The soc is called thunder-88xx, the cpu thunder. E.g. an 87xx soc will
-> have the same core in which is thunder.
+OK, thanks!
 
-And the next version of the core would be called something else?
-thunder-v2? lightning? As long as they are distinguishable they should
-be fine.
+--itXlm6KT/9NFvrz/
+Content-Type: application/pgp-signature
 
-Rob
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
->
->
->> >> +     memory@00000000 {
->> >> +             device_type = "memory";
->> >> +             reg = <0x0 0x00000000 0x0 0x80000000>;
->> >> +     };
->> >> +
->> >> +     gic0: interrupt-controller@801000000000 {
->> >
->> > To make this easier to read, please place a comma between 32-bit
->> > portions of the unit address (e.g. here have 8010,00000000).
->
-> Changed this.
->
->>
->> Mark, perhaps a dtc or checkpatch.pl check for this?
->>
->> This should also be under a bus node.
->
-> Will do.
->
->>
->> >> +             compatible = "arm,gic-v3";
->> >> +             #interrupt-cells = <3>;
->> >> +             #address-cells = <2>;
->> >> +             #size-cells = <2>;
->> >> +             ranges;
->> >
->> > This has no children, so why have ranges, #address-cells, and
->> > #size-cells?
->
-> Right, this is a leftover from a change in a follow on patch that
-> introduces a child for its. Will remove #address-cells, #size-cells
-> and ranges in this patch and move the change to the later patch.
->
->> >
->> >> +             interrupt-controller;
->> >> +             reg = <0x8010 0x00000000 0x0 0x010000>, /* GICD */
->> >> +                   <0x8010 0x80000000 0x0 0x200000>; /* GICR */
->> >> +             interrupts = <1 9 0xf04>;
->> >> +     };
->
->> >> +             clocks {
->> >> +                     #address-cells = <2>;
->> >> +                     #size-cells = <2>;
->> >> +                     ranges;
->> >> +
->> >> +                     refclk50mhz: refclk50mhz {
->> >> +                             compatible = "fixed-clock";
->> >> +                             #clock-cells = <0>;
->> >> +                             clock-frequency = <50000000>;
->> >> +                             clock-output-names = "refclk50mhz";
->> >> +                     };
->> >> +             };
->> >
->> > Please get rid of the clocks node and just put the clocks here.
->
-> Will do.
->
->> >
->> >> +
->> >> +             uaa0: serial@87e024000000 {
->> >> +                     compatible = "arm,pl011", "arm,primecell";
->> >> +                     reg = <0x87e0 0x24000000 0x0 0x1000>;
->> >> +                     interrupts = <1 21 4>;
->> >> +                     clocks = <&refclk50mhz>;
->> >> +                     clock-names = "apb_pclk";
->> >
->> > Is this actually the apb_pclk, or is the the uartclk? I assume it's the
->> > latter.
->>
->> Shouldn't new bindings have both clocks here? A single clock was a
->> mistake I think (mine in fact).
->
-> Do you mean
->                         clock-names = "uartclk", "apb_pclk";
-> here?
+iQIcBAEBAgAGBQJT2l/2AAoJEHZH4aRLwOS6byQP/i8bQohZ5dRaOBY+hKTXdHa1
+Pc4OCXkG3rMcw4EpRObmi5Vs9q2bpoNcY374UqNnx7ryHCz87xZzk6xLOh4GYaB2
+eHUqSWC1ERTLcGs/owQ6gbekafgCBBsqKn+mx8jnvjvKr9uktRt6j8tIRiWd6m7a
+Qje1MtTZtY4Ph8QGleoUUsSJefeI9wepyzSQ9Clwp5bPrOopZqa86m0bnVSEFhFw
+8sS/FiAaJ5uQEo3AVAwh5K+DcCn0/s9O9DSQkhatLsDth8lSqkQALVVK2l6ujcY0
+Tcq+LLe7EuVEsgNY6jv44vL3FKnOsHUX7PeiSNYNBPdOIiCh742DMuVjfxFwvfdf
+q+Zuo/UBSHhzB6r6ZvJ2iSTgGXfUJH1oa/ZNJ2SW+KinZStCuOhBXP5apkLlVXsZ
+Enk2FqJLrUV7oT2dtKHfxRbPo73h+aiS+CEibs/slZcsrzDGjq8OdUaSULVxS6Sz
+IEQnH1TZIvCyPQDsZ1LNBr8AmvuBSoMBbrwoAIFqT8Zch9OEiRcCy7l0WlUY4dpd
+YWvH3tAIX5dSkOQTTBCJYAcK0sUvOtWqr/C2JB9RrmEwLZUBO9FzbT2ix9cmrhg3
+Han+GvHz6Y5K9Mbt9fTis1vMLayS/yFdOdyvlMcgYVkw4UorM6woPocXneFOeJh0
+Ufz9ZY+8piAYn6JKJ0L/
+=aFlB
+-----END PGP SIGNATURE-----
 
-Yes, but Mark said this change never happened so maybe it is fine. In
-any case, follow the pl011 binding documentation.
-
-Rob
+--itXlm6KT/9NFvrz/--
