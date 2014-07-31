@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633AbaGaUzK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:55:10 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:47226 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaGaUzI (ORCPT
+	id S1753692AbaGaUz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:55:58 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:56045 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357AbaGaUz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:55:08 -0400
-Date: Thu, 31 Jul 2014 13:55:02 -0700
+	Thu, 31 Jul 2014 16:55:57 -0400
+Date: Thu, 31 Jul 2014 13:55:50 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: josh@joshtriplett.org
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
@@ -16,69 +16,129 @@ Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
         oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v2 tip/core/rcu 04/10] rcu: Export RCU-tasks APIs to GPL
- modules
-Message-ID: <20140731205502.GB11241@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 tip/core/rcu 05/10] rcutorture: Add torture tests for
+ RCU-tasks
+Message-ID: <20140731205550.GC11241@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <20140731003914.GA3872@linux.vnet.ibm.com>
  <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1406767182-4356-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140731165620.GC12697@cloud>
+ <1406767182-4356-5-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140731170108.GE12697@cloud>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140731165620.GC12697@cloud>
+In-Reply-To: <20140731170108.GE12697@cloud>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073120-9332-0000-0000-0000018F680E
+x-cbid: 14073120-6688-0000-0000-000003AFEB48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 09:56:20AM -0700, josh@joshtriplett.org wrote:
-> On Wed, Jul 30, 2014 at 05:39:36PM -0700, Paul E. McKenney wrote:
-> > From: Steven Rostedt <rostedt@goodmis.org>
+On Thu, Jul 31, 2014 at 10:01:08AM -0700, josh@joshtriplett.org wrote:
+> On Wed, Jul 30, 2014 at 05:39:37PM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > > 
-> > This commit exports the RCU-tasks APIs, call_rcu_tasks(),
-> > synchronize_rcu_tasks(), and rcu_barrier_tasks(), to GPL-licensed
-> > kernel modules.
+> > This commit adds torture tests for RCU-tasks.  It also fixes a bug that
+> > would segfault for an RCU flavor lacking a callback-barrier function.
 > > 
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> 
-> Should this remain a separate patch, or go into the patch that creates
-> these APIs?
+> Seems reasonable; however, you could also set .cb_barrier =
+> synchronize_rcu_tasks and drop rcu_barrier_tasks.
 
-Excellent question.  Keeping them separate for now, but...
+Good point, though I like the idea of matching the existing RCU API
+template.
+
+> Either way:
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+And thank you for the review!
 
 							Thanx, Paul
 
-> >  kernel/rcu/update.c | 2 ++
-> >  1 file changed, 2 insertions(+)
+> >  include/linux/rcupdate.h |  1 +
+> >  kernel/rcu/rcutorture.c  | 40 +++++++++++++++++++++++++++++++++++++++-
+> >  2 files changed, 40 insertions(+), 1 deletion(-)
 > > 
-> > diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> > index c8d304dc6d8a..1bfc07ed854e 100644
-> > --- a/kernel/rcu/update.c
-> > +++ b/kernel/rcu/update.c
-> > @@ -429,6 +429,7 @@ void synchronize_rcu_tasks(void)
-> >  	/* Wait for the grace period. */
-> >  	wait_rcu_gp(call_rcu_tasks);
-> >  }
-> > +EXPORT_SYMBOL_GPL(synchronize_rcu_tasks);
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index 17c7e25c38be..ecb2198849e0 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -55,6 +55,7 @@ enum rcutorture_type {
+> >  	RCU_FLAVOR,
+> >  	RCU_BH_FLAVOR,
+> >  	RCU_SCHED_FLAVOR,
+> > +	RCU_TASKS_FLAVOR,
+> >  	SRCU_FLAVOR,
+> >  	INVALID_RCU_FLAVOR
+> >  };
+> > diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+> > index febe07062ac5..6d12ab6675bc 100644
+> > --- a/kernel/rcu/rcutorture.c
+> > +++ b/kernel/rcu/rcutorture.c
+> > @@ -602,6 +602,42 @@ static struct rcu_torture_ops sched_ops = {
+> >  };
 > >  
-> >  /**
-> >   * rcu_barrier_tasks - Wait for in-flight call_rcu_tasks() callbacks.
-> > @@ -441,6 +442,7 @@ void rcu_barrier_tasks(void)
-> >  	/* There is only one callback queue, so this is easy.  ;-) */
-> >  	synchronize_rcu_tasks();
-> >  }
-> > +EXPORT_SYMBOL_GPL(rcu_barrier_tasks);
+> >  /*
+> > + * Definitions for RCU-tasks torture testing.
+> > + */
+> > +
+> > +static int tasks_torture_read_lock(void)
+> > +{
+> > +	return 0;
+> > +}
+> > +
+> > +static void tasks_torture_read_unlock(int idx)
+> > +{
+> > +}
+> > +
+> > +static void rcu_tasks_torture_deferred_free(struct rcu_torture *p)
+> > +{
+> > +	call_rcu_tasks(&p->rtort_rcu, rcu_torture_cb);
+> > +}
+> > +
+> > +static struct rcu_torture_ops tasks_ops = {
+> > +	.ttype		= RCU_TASKS_FLAVOR,
+> > +	.init		= rcu_sync_torture_init,
+> > +	.readlock	= tasks_torture_read_lock,
+> > +	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
+> > +	.readunlock	= tasks_torture_read_unlock,
+> > +	.completed	= rcu_no_completed,
+> > +	.deferred_free	= rcu_tasks_torture_deferred_free,
+> > +	.sync		= synchronize_rcu_tasks,
+> > +	.exp_sync	= synchronize_rcu_tasks,
+> > +	.call		= call_rcu_tasks,
+> > +	.cb_barrier	= rcu_barrier_tasks,
+> > +	.fqs		= NULL,
+> > +	.stats		= NULL,
+> > +	.irq_capable	= 1,
+> > +	.name		= "tasks"
+> > +};
+> > +
+> > +/*
+> >   * RCU torture priority-boost testing.  Runs one real-time thread per
+> >   * CPU for moderate bursts, repeatedly registering RCU callbacks and
+> >   * spinning waiting for them to be invoked.  If a given callback takes
+> > @@ -1295,7 +1331,8 @@ static int rcu_torture_barrier_cbs(void *arg)
+> >  		if (atomic_dec_and_test(&barrier_cbs_count))
+> >  			wake_up(&barrier_wq);
+> >  	} while (!torture_must_stop());
+> > -	cur_ops->cb_barrier();
+> > +	if (cur_ops->cb_barrier != NULL)
+> > +		cur_ops->cb_barrier();
+> >  	destroy_rcu_head_on_stack(&rcu);
+> >  	torture_kthread_stopping("rcu_torture_barrier_cbs");
+> >  	return 0;
+> > @@ -1534,6 +1571,7 @@ rcu_torture_init(void)
+> >  	int firsterr = 0;
+> >  	static struct rcu_torture_ops *torture_ops[] = {
+> >  		&rcu_ops, &rcu_bh_ops, &rcu_busted_ops, &srcu_ops, &sched_ops,
+> > +		&tasks_ops,
+> >  	};
 > >  
-> >  /* RCU-tasks kthread that detects grace periods and invokes callbacks. */
-> >  static int __noreturn rcu_tasks_kthread(void *arg)
+> >  	if (!torture_init_begin(torture_type, verbose, &rcutorture_runnable))
 > > -- 
 > > 1.8.1.5
 > > 
