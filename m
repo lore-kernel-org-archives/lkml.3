@@ -1,328 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536AbaGaQKY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:10:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36157 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752412AbaGaQKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:10:19 -0400
-From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
-To: linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v4 3/4] ARM: dts: Clean up exynos5250-snow
-Date: Thu, 31 Jul 2014 18:08:28 +0200
-Message-Id: <1406822910-6255-4-git-send-email-afaerber@suse.de>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1406822910-6255-1-git-send-email-afaerber@suse.de>
-References: <1406822910-6255-1-git-send-email-afaerber@suse.de>
+	id S1752855AbaGaQL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:11:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59721 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaGaQKz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:10:55 -0400
+Date: Thu, 31 Jul 2014 09:10:37 -0700
+From: tip-bot for Dave Hansen <tipbot@zytor.com>
+Message-ID: <tip-d17d8f9dedb9dd76fd540a5c497101529d9eb25a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        dave@sr71.net, riel@redhat.com, mgorman@suse.de, tglx@linutronix.de,
+        dave.hansen@linux.intel.com, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dave@sr71.net, riel@redhat.com, mgorman@suse.de, tglx@linutronix.de,
+        dave.hansen@linux.intel.com, hpa@linux.intel.com
+In-Reply-To: <20140731154059.4C96CBA5@viggo.jf.intel.com>
+References: <20140731154059.4C96CBA5@viggo.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86/mm: Add tracepoints for TLB flushes
+Git-Commit-ID: d17d8f9dedb9dd76fd540a5c497101529d9eb25a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new style of referencing inherited nodes and use symbolic names.
+Commit-ID:  d17d8f9dedb9dd76fd540a5c497101529d9eb25a
+Gitweb:     http://git.kernel.org/tip/d17d8f9dedb9dd76fd540a5c497101529d9eb25a
+Author:     Dave Hansen <dave@sr71.net>
+AuthorDate: Thu, 31 Jul 2014 08:40:59 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 31 Jul 2014 08:48:51 -0700
 
-Suggested-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Andreas Färber <afaerber@suse.de>
+x86/mm: Add tracepoints for TLB flushes
+
+We don't have any good way to figure out what kinds of flushes
+are being attempted.  Right now, we can try to use the vm
+counters, but those only tell us what we actually did with the
+hardware (one-by-one vs full) and don't tell us what was actually
+_requested_.
+
+This allows us to select out "interesting" TLB flushes that we
+might want to optimize (like the ranged ones) and ignore the ones
+that we have very little control over (the ones at context
+switch).
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Link: http://lkml.kernel.org/r/20140731154059.4C96CBA5@viggo.jf.intel.com
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- v3 -> v4: Unchanged
- 
- v3: New (Doug Anderson)
+ arch/x86/include/asm/mmu_context.h |  6 ++++++
+ arch/x86/mm/init.c                 |  7 +++++++
+ arch/x86/mm/tlb.c                  | 11 +++++++++--
+ include/linux/mm_types.h           |  8 ++++++++
+ include/trace/events/tlb.h         | 40 ++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 70 insertions(+), 2 deletions(-)
 
- arch/arm/boot/dts/exynos5250-snow.dts | 182 +++++++++++++++++-----------------
- 1 file changed, 90 insertions(+), 92 deletions(-)
-
-diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-index 1c36cd72905f..2ed6cb04a2db 100644
---- a/arch/arm/boot/dts/exynos5250-snow.dts
-+++ b/arch/arm/boot/dts/exynos5250-snow.dts
-@@ -9,6 +9,8 @@
- */
+diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
+index be12c53..166af2a 100644
+--- a/arch/x86/include/asm/mmu_context.h
++++ b/arch/x86/include/asm/mmu_context.h
+@@ -3,6 +3,10 @@
  
- /dts-v1/;
-+#include <dt-bindings/gpio/gpio.h>
-+#include <dt-bindings/input/input.h>
- #include "exynos5250.dtsi"
- 
- / {
-@@ -30,85 +32,19 @@
- 		status = "okay";
- 	};
- 
--	pinctrl@11400000 {
--		ec_irq: ec-irq {
--			samsung,pins = "gpx1-6";
--			samsung,pin-function = <0>;
--			samsung,pin-pud = <0>;
--			samsung,pin-drv = <0>;
--		};
--
--		sd3_clk: sd3-clk {
--			samsung,pin-drv = <0>;
--		};
--
--		sd3_cmd: sd3-cmd {
--			samsung,pin-pud = <3>;
--			samsung,pin-drv = <0>;
--		};
--
--		sd3_bus4: sd3-bus-width4 {
--			samsung,pin-drv = <0>;
--		};
--
--		max98095_en: max98095-en {
--			samsung,pins = "gpx1-7";
--			samsung,pin-function = <0>;
--			samsung,pin-pud = <3>;
--			samsung,pin-drv = <0>;
--		};
--
--		tps65090_irq: tps65090-irq {
--			samsung,pins = "gpx2-6";
--			samsung,pin-function = <0>;
--			samsung,pin-pud = <0>;
--			samsung,pin-drv = <0>;
--		};
--
--		usb3_vbus_en: usb3-vbus-en {
--			samsung,pins = "gpx2-7";
--			samsung,pin-function = <1>;
--			samsung,pin-pud = <0>;
--			samsung,pin-drv = <0>;
--		};
--
--		hdmi_hpd_irq: hdmi-hpd-irq {
--			samsung,pins = "gpx3-7";
--			samsung,pin-function = <0>;
--			samsung,pin-pud = <1>;
--			samsung,pin-drv = <0>;
--		};
--	};
--
--	pinctrl@13400000 {
--		arb_their_claim: arb-their-claim {
--			samsung,pins = "gpe0-4";
--			samsung,pin-function = <0>;
--			samsung,pin-pud = <3>;
--			samsung,pin-drv = <0>;
--		};
--
--		arb_our_claim: arb-our-claim {
--			samsung,pins = "gpf0-3";
--			samsung,pin-function = <1>;
--			samsung,pin-pud = <0>;
--			samsung,pin-drv = <0>;
--		};
--	};
--
- 	gpio-keys {
- 		compatible = "gpio-keys";
- 
- 		power {
- 			label = "Power";
--			gpios = <&gpx1 3 1>;
--			linux,code = <116>; /* KEY_POWER */
-+			gpios = <&gpx1 3 GPIO_ACTIVE_LOW>;
-+			linux,code = <KEY_POWER>;
- 			gpio-key,wakeup;
- 		};
- 
- 		lid-switch {
- 			label = "Lid";
--			gpios = <&gpx3 5 1>;
-+			gpios = <&gpx3 5 GPIO_ACTIVE_LOW>;
- 			linux,input-type = <5>; /* EV_SW */
- 			linux,code = <0>; /* SW_LID */
- 			debounce-interval = <1>;
-@@ -129,8 +65,8 @@
- 
- 		i2c-parent = <&{/i2c@12CA0000}>;
- 
--		our-claim-gpio = <&gpf0 3 1>;
--		their-claim-gpios = <&gpe0 4 1>;
-+		our-claim-gpio = <&gpf0 3 GPIO_ACTIVE_LOW>;
-+		their-claim-gpios = <&gpe0 4 GPIO_ACTIVE_LOW>;
- 		slew-delay-us = <10>;
- 		wait-retry-us = <3000>;
- 		wait-free-us = <50000>;
-@@ -239,19 +175,6 @@
- 		};
- 	};
- 
--	i2c@12CD0000 {
--		max98095: codec@11 {
--			compatible = "maxim,max98095";
--			reg = <0x11>;
--			pinctrl-0 = <&max98095_en>;
--			pinctrl-names = "default";
--		};
--	};
--
--	i2s0: i2s@03830000 {
--		status = "okay";
--	};
--
- 	sound {
- 		compatible = "google,snow-audio-max98095";
- 
-@@ -265,18 +188,14 @@
- 		regulator-name = "P5.0V_USB3CON";
- 		regulator-min-microvolt = <5000000>;
- 		regulator-max-microvolt = <5000000>;
--		gpio = <&gpx2 7 0>;
-+		gpio = <&gpx2 7 GPIO_ACTIVE_HIGH>;
- 		pinctrl-names = "default";
- 		pinctrl-0 = <&usb3_vbus_en>;
- 		enable-active-high;
- 	};
- 
--	phy@12100000 {
--		vbus-supply = <&usb3_vbus_reg>;
--	};
--
- 	usb@12110000 {
--		samsung,vbus-gpio = <&gpx1 1 0>;
-+		samsung,vbus-gpio = <&gpx1 1 GPIO_ACTIVE_HIGH>;
- 	};
- 
- 	fixed-rate-clocks {
-@@ -287,7 +206,7 @@
- 	};
- 
- 	hdmi {
--		hpd-gpio = <&gpx3 7 0>;
-+		hpd-gpio = <&gpx3 7 GPIO_ACTIVE_HIGH>;
- 		pinctrl-names = "default";
- 		pinctrl-0 = <&hdmi_hpd_irq>;
- 		phy = <&hdmiphy>;
-@@ -322,7 +241,7 @@
- 		samsung,color-depth = <1>;
- 		samsung,link-rate = <0x0a>;
- 		samsung,lane-count = <2>;
--		samsung,hpd-gpio = <&gpx0 7 0>;
-+		samsung,hpd-gpio = <&gpx0 7 GPIO_ACTIVE_HIGH>;
- 
- 		display-timings {
- 			native-mode = <&timing1>;
-@@ -547,6 +466,13 @@
- 	status = "okay";
- 	samsung,i2c-sda-delay = <100>;
- 	samsung,i2c-max-bus-freq = <66000>;
+ #include <asm/desc.h>
+ #include <linux/atomic.h>
++#include <linux/mm_types.h>
 +
-+	max98095: codec@11 {
-+		compatible = "maxim,max98095";
-+		reg = <0x11>;
-+		pinctrl-0 = <&max98095_en>;
-+		pinctrl-names = "default";
-+	};
++#include <trace/events/tlb.h>
++
+ #include <asm/pgalloc.h>
+ #include <asm/tlbflush.h>
+ #include <asm/paravirt.h>
+@@ -44,6 +48,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 
+ 		/* Re-load page tables */
+ 		load_cr3(next->pgd);
++		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 
+ 		/* Stop flush ipis for the previous mm */
+ 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
+@@ -71,6 +76,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 			 * to make sure to use no freed page tables.
+ 			 */
+ 			load_cr3(next->pgd);
++			trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 			load_LDT_nolock(&next->context);
+ 		}
+ 	}
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index f971306..66dba36 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -18,6 +18,13 @@
+ #include <asm/dma.h>		/* for MAX_DMA_PFN */
+ #include <asm/microcode.h>
+ 
++/*
++ * We need to define the tracepoints somewhere, and tlb.c
++ * is only compied when SMP=y.
++ */
++#define CREATE_TRACE_POINTS
++#include <trace/events/tlb.h>
++
+ #include "mm_internal.h"
+ 
+ static unsigned long __initdata pgt_buf_start;
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index add5a0f..6f00ecb 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -49,6 +49,7 @@ void leave_mm(int cpu)
+ 	if (cpumask_test_cpu(cpu, mm_cpumask(active_mm))) {
+ 		cpumask_clear_cpu(cpu, mm_cpumask(active_mm));
+ 		load_cr3(swapper_pg_dir);
++		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(leave_mm);
+@@ -107,15 +108,19 @@ static void flush_tlb_func(void *info)
+ 
+ 	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
+ 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+-		if (f->flush_end == TLB_FLUSH_ALL)
++		if (f->flush_end == TLB_FLUSH_ALL) {
+ 			local_flush_tlb();
+-		else {
++			trace_tlb_flush(TLB_REMOTE_SHOOTDOWN, TLB_FLUSH_ALL);
++		} else {
+ 			unsigned long addr;
++			unsigned long nr_pages =
++				f->flush_end - f->flush_start / PAGE_SIZE;
+ 			addr = f->flush_start;
+ 			while (addr < f->flush_end) {
+ 				__flush_tlb_single(addr);
+ 				addr += PAGE_SIZE;
+ 			}
++			trace_tlb_flush(TLB_REMOTE_SHOOTDOWN, nr_pages);
+ 		}
+ 	} else
+ 		leave_mm(smp_processor_id());
+@@ -153,6 +158,7 @@ void flush_tlb_current_task(void)
+ 
+ 	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 	local_flush_tlb();
++	trace_tlb_flush(TLB_LOCAL_SHOOTDOWN, TLB_FLUSH_ALL);
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+ 		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
+ 	preempt_enable();
+@@ -191,6 +197,7 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 			__flush_tlb_single(addr);
+ 		}
+ 	}
++	trace_tlb_flush(TLB_LOCAL_MM_SHOOTDOWN, base_pages_to_flush);
+ out:
+ 	if (base_pages_to_flush == TLB_FLUSH_ALL) {
+ 		start = 0UL;
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 96c5750..796deac 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -516,4 +516,12 @@ struct vm_special_mapping
+ 	struct page **pages;
  };
  
- &i2c_8 {
-@@ -560,6 +486,10 @@
- 	};
- };
- 
-+&i2s0 {
-+	status = "okay";
++enum tlb_flush_reason {
++	TLB_FLUSH_ON_TASK_SWITCH,
++	TLB_REMOTE_SHOOTDOWN,
++	TLB_LOCAL_SHOOTDOWN,
++	TLB_LOCAL_MM_SHOOTDOWN,
++	NR_TLB_FLUSH_REASONS,
 +};
 +
- &mmc_0 {
- 	status = "okay";
- 	num-slots = <1>;
-@@ -625,6 +555,70 @@
- 		samsung,pin-pud = <0>;
- 		samsung,pin-drv = <0>;
- 	};
+ #endif /* _LINUX_MM_TYPES_H */
+diff --git a/include/trace/events/tlb.h b/include/trace/events/tlb.h
+new file mode 100644
+index 0000000..13391d2
+--- /dev/null
++++ b/include/trace/events/tlb.h
+@@ -0,0 +1,40 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM tlb
 +
-+	ec_irq: ec-irq {
-+		samsung,pins = "gpx1-6";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
++#if !defined(_TRACE_TLB_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_TLB_H
 +
-+	max98095_en: max98095-en {
-+		samsung,pins = "gpx1-7";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <3>;
-+		samsung,pin-drv = <0>;
-+	};
++#include <linux/mm_types.h>
++#include <linux/tracepoint.h>
 +
-+	tps65090_irq: tps65090-irq {
-+		samsung,pins = "gpx2-6";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
++#define TLB_FLUSH_REASON	\
++	{ TLB_FLUSH_ON_TASK_SWITCH,	"flush on task switch" },	\
++	{ TLB_REMOTE_SHOOTDOWN,		"remote shootdown" },		\
++	{ TLB_LOCAL_SHOOTDOWN,		"local shootdown" },		\
++	{ TLB_LOCAL_MM_SHOOTDOWN,	"local mm shootdown" }
 +
-+	usb3_vbus_en: usb3-vbus-en {
-+		samsung,pins = "gpx2-7";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
++TRACE_EVENT(tlb_flush,
 +
-+	hdmi_hpd_irq: hdmi-hpd-irq {
-+		samsung,pins = "gpx3-7";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <1>;
-+		samsung,pin-drv = <0>;
-+	};
-+};
++	TP_PROTO(int reason, unsigned long pages),
++	TP_ARGS(reason, pages),
 +
-+&pinctrl_1 {
-+	arb_their_claim: arb-their-claim {
-+		samsung,pins = "gpe0-4";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <3>;
-+		samsung,pin-drv = <0>;
-+	};
++	TP_STRUCT__entry(
++		__field(	  int, reason)
++		__field(unsigned long,  pages)
++	),
 +
-+	arb_our_claim: arb-our-claim {
-+		samsung,pins = "gpf0-3";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+};
++	TP_fast_assign(
++		__entry->reason = reason;
++		__entry->pages  = pages;
++	),
 +
-+&sd3_clk {
-+	samsung,pin-drv = <0>;
-+};
++	TP_printk("pages:%ld reason:%s (%d)",
++		__entry->pages,
++		__print_symbolic(__entry->reason, TLB_FLUSH_REASON),
++		__entry->reason)
++);
 +
-+&sd3_cmd {
-+	samsung,pin-pud = <3>;
-+	samsung,pin-drv = <0>;
-+};
++#endif /* _TRACE_TLB_H */
 +
-+&sd3_bus4 {
-+	samsung,pin-drv = <0>;
- };
- 
- &spi_1 {
-@@ -633,4 +627,8 @@
- 	num-cs = <1>;
- };
- 
-+&usbdrd_phy {
-+	vbus-supply = <&usb3_vbus_reg>;
-+};
-+
- #include "cros-ec-keyboard.dtsi"
--- 
-1.9.3
-
++/* This part must be outside protection */
++#include <trace/define_trace.h>
