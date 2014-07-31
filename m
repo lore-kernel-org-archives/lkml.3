@@ -1,70 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349AbaGaGBo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 02:01:44 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:46361 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499AbaGaGBn (ORCPT
+	id S1756155AbaGaGCW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 02:02:22 -0400
+Received: from regular1.263xmail.com ([211.150.99.132]:35290 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837AbaGaGCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 02:01:43 -0400
-Date: Wed, 30 Jul 2014 23:01:38 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Pramod Gurav <pramod.gurav.etc@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Lejun Zhu <lejun.zhu@linux.intel.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Subject: Re: [PATCH] input: ads7846: Release resources on failure for clean
- exit
-Message-ID: <20140731060138.GB4844@core.coreip.homeip.net>
-References: <1406699677-1347-1-git-send-email-pramod.gurav.etc@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406699677-1347-1-git-send-email-pramod.gurav.etc@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 31 Jul 2014 02:02:19 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: robh+dt@kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <f4f8b948cdbc44c892accfab57a95588>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Addy Ke <addy.ke@rock-chips.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
+        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
+        heiko@sntech.de, olof@lixom.net, dianders@chromium.org
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        zhenfu.fang@rock-chips.com, cf@rock-chips.com, lintao@rock-chips.com,
+        chenfen@rock-chips.com, zyf@rock-chips.com, xjq@rock-chips.com,
+        huangtao@rock-chips.com, zyw@rock-chips.com, yzq@rock-chips.com,
+        hj@rock-chips.com, kever.yang@rock-chips.com, zhangqing@rock-chips.com,
+        hl@rock-chips.com, Addy Ke <addy.ke@rock-chips.com>
+Subject: [PATCH] mmc: dw_mmc: add support for RK3288
+Date: Thu, 31 Jul 2014 14:01:38 +0800
+Message-Id: <1406786498-3935-1-git-send-email-addy.ke@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1404963109-3906-1-git-send-email-addy.ke@rock-chips.com>
+References: <1404963109-3906-1-git-send-email-addy.ke@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 11:24:37AM +0530, Pramod Gurav wrote:
-> From: Pramod Gurav <pramod.gurav@smartplayin.com>
-> 
-> Input device must be released(input_free_device) when ads7846_probe_dt
-> fails. This fixes the same by releasing resources on failure.
-> 
-> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> CC: Lejun Zhu <lejun.zhu@linux.intel.com>
-> CC: Sachin Kamat <sachin.kamat@linaro.org>
-> 
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+This patch focuses on clock setting for RK3288 mmc controller.
 
-Applied, thank you.
+In RK3288 mmc controller, CLKDIV register can only be set 0 or 1,
+and if DDR 8bit mode, CLKDIV register must be set 1.
 
-> ---
->  drivers/input/touchscreen/ads7846.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/input/touchscreen/ads7846.c b/drivers/input/touchscreen/ads7846.c
-> index da201b8..e57ba52 100644
-> --- a/drivers/input/touchscreen/ads7846.c
-> +++ b/drivers/input/touchscreen/ads7846.c
-> @@ -1302,8 +1302,10 @@ static int ads7846_probe(struct spi_device *spi)
->  	pdata = dev_get_platdata(&spi->dev);
->  	if (!pdata) {
->  		pdata = ads7846_probe_dt(&spi->dev);
-> -		if (IS_ERR(pdata))
-> -			return PTR_ERR(pdata);
-> +		if (IS_ERR(pdata)) {
-> +			err = PTR_ERR(pdata);
-> +			goto err_free_mem;
-> +		}
->  	}
->  
->  	ts->model = pdata->model ? : 7846;
-> -- 
-> 1.7.9.5
-> 
+Reported-by Doug Anderson <dianders@chromium.org>
+Suggested-by: Jaehoon Chung <jh80.chung@samsung.com>
+Suggested-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+---
+changes since v1:
+- dw_mci_rk3288_setup_clock: do not call clk_get_rate(), just use the
+  host->bus_hz which is already called by dw_mmc.c, suggested by Jaehoon Chung
 
+changes since v2:
+- merge from ChromiumOS tree, fix up clock settting bug, 
+  which cause DDR50 mode for emmc not to work, reported by Doug Anderson
+- remove MMC_TIMING_UHS_DDR50 condition, because on RK3288 only emmc can work
+  in 8bit mode, suggested by Doug Anderson
+
+ .../devicetree/bindings/mmc/rockchip-dw-mshc.txt   |  6 ++-
+ drivers/mmc/host/dw_mmc-pltfm.c                    | 56 +++++++++++++++++++++-
+ 2 files changed, 58 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
+index c559f3f..c327c2d 100644
+--- a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
++++ b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
+@@ -10,12 +10,14 @@ extensions to the Synopsys Designware Mobile Storage Host Controller.
+ Required Properties:
+ 
+ * compatible: should be
+-	- "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following
++	- "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following,
++							before RK3288
++	- "rockchip,rk3288-dw-mshc": for Rockchip RK3288
+ 
+ Example:
+ 
+ 	rkdwmmc0@12200000 {
+-		compatible = "rockchip,rk2928-dw-mshc";
++		compatible = "rockchip,rk3288-dw-mshc";
+ 		reg = <0x12200000 0x1000>;
+ 		interrupts = <0 75 0>;
+ 		#address-cells = <1>;
+diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
+index d4a47a9..b547f7a 100644
+--- a/drivers/mmc/host/dw_mmc-pltfm.c
++++ b/drivers/mmc/host/dw_mmc-pltfm.c
+@@ -21,17 +21,67 @@
+ #include <linux/mmc/mmc.h>
+ #include <linux/mmc/dw_mmc.h>
+ #include <linux/of.h>
++#include <linux/clk.h>
+ 
+ #include "dw_mmc.h"
+ #include "dw_mmc-pltfm.h"
+ 
++#define RK3288_CLKGEN_DIV	2
++
+ static void dw_mci_pltfm_prepare_command(struct dw_mci *host, u32 *cmdr)
+ {
+ 	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
+ }
+ 
+-static const struct dw_mci_drv_data rockchip_drv_data = {
++static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
++{
++	host->bus_hz /= RK3288_CLKGEN_DIV;
++
++	return 0;
++}
++
++static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
++{
++	int ret;
++	unsigned int cclkin;
++	u32 bus_hz;
++
++	/*
++	 * cclkin: source clock of mmc controller.
++	 * bus_hz: card interface clock generated by CLKGEN.
++	 * bus_hz = cclkin / RK3288_CLKGEN_DIV;
++	 * ios->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
++	 *
++	 * Note: div can only be 0 or 1
++	 *       if DDR50 8bit mode(only emmc work in 8bit mode),
++	 *       div must be set 1
++	 */
++	if ((ios->bus_width == MMC_BUS_WIDTH_8) &&
++	    (ios->timing == MMC_TIMING_MMC_DDR52))
++		cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
++	else
++		cclkin = ios->clock * RK3288_CLKGEN_DIV;
++
++	ret = clk_set_rate(host->ciu_clk, cclkin);
++	if (ret)
++		dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
++
++	bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
++	if (bus_hz != host->bus_hz) {
++		host->bus_hz = bus_hz;
++		/* force dw_mci_setup_bus() */
++		host->current_speed = 0;
++	}
++}
++
++static const struct dw_mci_drv_data rk2928_drv_data = {
++	.prepare_command	= dw_mci_pltfm_prepare_command,
++};
++
++static const struct dw_mci_drv_data rk3288_drv_data = {
+ 	.prepare_command	= dw_mci_pltfm_prepare_command,
++	.set_ios	= dw_mci_rk3288_set_ios,
++	.setup_clock	= dw_mci_rk3288_setup_clock,
+ };
+ 
+ static const struct dw_mci_drv_data socfpga_drv_data = {
+@@ -95,7 +145,9 @@ EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
+ static const struct of_device_id dw_mci_pltfm_match[] = {
+ 	{ .compatible = "snps,dw-mshc", },
+ 	{ .compatible = "rockchip,rk2928-dw-mshc",
+-		.data = &rockchip_drv_data },
++		.data = &rk2928_drv_data },
++	{ .compatible = "rockchip,rk3288-dw-mshc",
++		.data = &rk3288_drv_data },
+ 	{ .compatible = "altr,socfpga-dw-mshc",
+ 		.data = &socfpga_drv_data },
+ 	{},
 -- 
-Dmitry
+1.8.3.2
+
+
