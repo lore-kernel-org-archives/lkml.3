@@ -1,113 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162AbaGaEtP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 00:49:15 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:35438 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750834AbaGaEtO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 00:49:14 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArMLAGPJ2VN5LHOdPGdsb2JhbABPCoMOgSmCJ4UIp3sBAQEBAQEGoxsBgQgXBQEBAQE4NoQDAQEEATocFg0FCwgDDgoJDBkPBSUDBxoTiDoHvEQXGIVkiHQEWAcKhEAFjmWIWYQlmC8rL4ED
-Date: Thu, 31 Jul 2014 14:49:09 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: Abhijith Das <adas@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        cluster-devel@redhat.com
-Subject: Re: [RFC PATCH 0/2] dirreadahead system call
-Message-ID: <20140731044909.GR26465@dastard>
-References: <1406309851-10628-1-git-send-email-adas@redhat.com>
- <CA2BF8AB-6F61-4856-8B0E-9D954BDEB243@dilger.ca>
- <193414027.14151264.1406551934098.JavaMail.zimbra@redhat.com>
- <7EBB0CF1-6564-4C63-8006-7DEEE8800A19@dilger.ca>
+	id S1751691AbaGaFAr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 01:00:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49416 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750975AbaGaFAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 01:00:46 -0400
+Message-ID: <53D9CD78.2050207@suse.de>
+Date: Thu, 31 Jul 2014 07:00:40 +0200
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7EBB0CF1-6564-4C63-8006-7DEEE8800A19@dilger.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>
+CC: "'Olof Johansson'" <olof@lixom.net>, linux-samsung-soc@vger.kernel.org,
+        "'Tarek Dakhran'" <t.dakhran@samsung.com>,
+        "'Kevin Hilman'" <khilman@linaro.org>,
+        "'Pankaj Dubey'" <pankaj.dubey@samsung.com>,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Ajay Kumar <ajaykumar.rs@samsung.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: Re: [PATCH 0/3] ARM: EXYNOS: Fix Exynos5410 boot
+References: <1406463725-4208-1-git-send-email-afaerber@suse.de> <53D4EFBB.6000404@suse.de> <00c901cfa9fc$727b4e10$5771ea30$@samsung.com> <CAOesGMjh=xMZ3vB45ofh=CLjTFDMQxSxus5q_P67XQSbwg6-+A@mail.gmail.com> <03f501cfac5c$2c69be90$853d3bb0$@samsung.com> <53D9BF09.7060002@suse.de>
+In-Reply-To: <53D9BF09.7060002@suse.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 03:19:31PM -0600, Andreas Dilger wrote:
-> On Jul 28, 2014, at 6:52 AM, Abhijith Das <adas@redhat.com> wrote:
-> > OnJuly 26, 2014 12:27:19 AM "Andreas Dilger" <adilger@dilger.ca> wrote:
-> >> Is there a time when this doesn't get called to prefetch entries in
-> >> readdir() order?  It isn't clear to me what benefit there is of returning
-> >> the entries to userspace instead of just doing the statahead implicitly
-> >> in the kernel?
-> >> 
-> >> The Lustre client has had what we call "statahead" for a while,
-> >> and similar to regular file readahead it detects the sequential access
-> >> pattern for readdir() + stat() in readdir() order (taking into account if
-> >> ".*"
-> >> entries are being processed or not) and starts fetching the inode
-> >> attributes asynchronously with a worker thread.
-> > 
-> > Does this heuristic work well in practice? In the use case we were trying to
-> > address, a Samba server is aware beforehand if it is going to stat all the
-> > inodes in a directory.
+Am 31.07.2014 05:59, schrieb Andreas Färber:
+> Hi Kukjin,
 > 
-> Typically this works well for us, because this is done by the Lustre
-> client, so the statahead is hiding the network latency of the RPCs to
-> fetch attributes from the server.  I imagine the same could be seen with
-> GFS2. I don't know if this approach would help very much for local
-> filesystems because the latency is low.
+> Am 31.07.2014 03:10, schrieb Kukjin Kim:
+>> Olof Johansson wrote:
+>>>
+>>> Hi,
+>>>
+>> Hi Olof,
+>>
+>>> On Sun, Jul 27, 2014 at 5:39 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+>>>> Andreas Färber wrote:
+>>>>>
+>>>>> Am 27.07.2014 14:22, schrieb Andreas Färber:
+>>>>>> Hello,
+>>>>>>
+>>>>>> This mini-series unbreaks booting on 5410 based ODROID-XU.
+>>>>>>
+>>>>>> Since I do not have access to a TRM, the address is a guess based on
+>>>>>> 5250 and 5410. Such a node was not present in the 3.14 downstream tree.
+>>>>>
+>>>>> s/5410/5420/
+>>>>>
+>>>> OK.
+>>>>
+>>>>>>
+>>>>>> Regards,
+>>>>>> Andreas
+>>>>>>
+>>>>>> Andreas Färber (3):
+>>>>>>   Documentation: devicetree: Document exynos5410 PMU
+>>>>>>   ARM: dts: exynos: Add PMU to Exynos5410
+>>>>>>   ARM: EXYNOS: Add support for Exynos5410 PMU
+>>>>>>
+>>>>>>  Documentation/devicetree/bindings/arm/samsung/pmu.txt | 1 +
+>>>>>>  arch/arm/boot/dts/exynos5410.dtsi                     | 5 +++++
+>>>>>>  arch/arm/mach-exynos/exynos.c                         | 1 +
+>>>>>>  3 files changed, 7 insertions(+)
+>>>>>
+>>>> Andreas, thanks.
+>>>>
+>>>> I'll apply this whole series.
+>>>
+>>> We're getting close to the merge window. I'd prefer not to have to
+>>> start reverting samsung code to recover from these regressions, so
+>>> please send this up very soon.
+>>>
+>> Thanks for your gentle reminder.
+>>
+>> BTW I'm waiting for exynos5250-spring support from Andreas and I'd like to get
+>> confirmation about that from Doug. And I'm looking at s2r related patches now.
+>>
+>> OK, I will send out current samsung tree tonight in my time anyway.
 > 
-> >> This syscall might be more useful if userspace called readdir() to get
-> >> the dirents and then passed the kernel the list of inode numbers
-> >> to prefetch before starting on the stat() calls. That way, userspace
-> >> could generate an arbitrary list of inodes (e.g. names matching a
-> >> regexp) and the kernel doesn't need to guess if every inode is needed.
-> > 
-> > Were you thinking arbitrary inodes across the filesystem or just a subset
-> > from a directory? Arbitrary inodes may potentially throw up locking issues.
+> That would be kind.
 > 
-> I was thinking about inodes returned from readdir(), but the syscall
-> would be much more useful if it could handle arbitrary inodes.
+> Patches 2-3 in spring v3 should be non-functional snow refactorings for
+> you to consider, but untested by me; patch 1 you could skip if you
+> modify patch 2, if necessary. As for patch 4, you can see from my
+> spring-next branch [1] how I am successfully testing it with a TEST_ONLY
+> patch: For simplefb usage I comment out the /dp-controller node to avoid
+> drm/exynos detection (not enabling the driver in the user's .config
+> would be an alternative); when I run into issues with the drm during
+> testing, I can usually ssh in via USB ethernet/wifi.
+> 
+> In the dmesg for drm/exynos bridge series testing [2] (which I guess is
+> not gonna hit 3.17 any more?) I noticed that the USB3503 /usb-hub node
+> new in v3 is not working yet (complains about lack of #gpio-cells, I
+> guess for my reset-gpios property), not sure how to fix, so we/you could
+> probably just drop that node - preparing to test that now.
 
-I'mnot sure we can do that. The only way to safely identify a
-specific inode in the filesystem from userspace is via a filehandle.
-Plain inode numbers are susceptible to TOCTOU race conditions that
-the kernel cannot resolve. Also, lookup by inode number bypasses
-directory access permissions, so is not something we would expose
-to arbitrary unprivileged users.
+Misread that message, it does not seem to be fatal. I do see the device
+as /sys/devices/usb-hub.
 
-> There are always going to be race conditions even if limited to a
-> single directory (e.g. another client modifies the inode after calling
-> dirreadahead(), but before calling stat()) that need to be handled.
+[    0.618757] of_get_named_gpiod_flags: can't parse gpios property of
+node '/usb-hub[0]'
+[    0.618763] of_get_named_gpiod_flags: can't parse gpios property of
+node '/usb-hub[0]'
+[    0.618777] /usb-hub: could not get #gpio-cells for
+/pinctrl@13400000/hsic-reset
+[    0.620743] of_get_named_gpiod_flags: can't parse gpios property of
+node '/usb-hub[0]'
+[    0.629797] usb3503 usb-hub: switched to HUB mode
+[    0.631752] usb3503 usb-hub: usb3503_probe: probed in hub mode
 
-Unlink/realloc to a different directory with different access
-permissions is the big issue.
+Andreas
 
-> I think there are a lot of benefits that could be had by the generic
-> syscall, possibly similar to what XFS is doing with the "bulkstat"
-> interfaces that Dave always mentions.  This would be much more so for
-> cases were you don't want to stat all of the entries in a directory.
-
-Bulkstat is not really suited to this - it gets it's speed
-specifically by avoiding directory traversal to find inodes. Hence
-it is a root-only operation because it bypasses directory based
-access restrictions and hence is really only useful for
-full-filesystem traversal operations like backups, defragmentation,
-etc.
-
-Bulkstat output also contains enough information to construct a
-valid file handle in userspace and so access to inodes found via
-bulkstat can be gained via the XFS open-by-handle interfaces. Again,
-this bypasses permissions checking and hence is a root-only
-operation. It does, however, avoid TOCTOU races because the open-by-handle
-will fail if the inode is unlinked and reallocated between the
-bulkstat call and the open-by-handle as the generation number in the
-handle will no longer match that of the inode.
-
-Cheers,
-
-Dave.
-
+> As for the rest of patch 4, it's a new DT, so we could fix up any
+> remaining bugs during 3.17 RC cycle, if it looks sane to you guys now. I
+> had replied to two series - namely cpufreq [3] and dwmmc [4] - where
+> merge conflicts might arise. Let me know if you need a respin for anything.
+> 
+> Regards,
+> Andreas
+> 
+> [1] https://github.com/afaerber/linux/commits/spring-next
+> [2]
+> http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34927.html
+> [3]
+> http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34807.html
+> [4]
+> http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34898.html
+> 
 
 
 -- 
-Dave Chinner
-david@fromorbit.com
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
