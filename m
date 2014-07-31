@@ -1,78 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033AbaGaLck (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 07:32:40 -0400
-Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:55022
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750702AbaGaLcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 07:32:39 -0400
-Date: Thu, 31 Jul 2014 13:32:18 +0200
-From: Robert Richter <robert.richter@caviumnetworks.com>
-To: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>
-CC: Mark Rutland <mark.rutland@arm.com>, Robert Richter <rric@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
+	id S1753800AbaGaLdJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 07:33:09 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57502 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750710AbaGaLdG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 07:33:06 -0400
+Date: Thu, 31 Jul 2014 12:33:01 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Ganapatrao Kulkarni <gpkulkarni@gmail.com>
+Cc: Robert Richter <rric@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <rrichter@cavium.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+        leif.lindholm@linaro.org
 Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder
  SoC
-Message-ID: <20140731113218.GQ4703@rric.localhost>
+Message-ID: <20140731113301.GE22994@leverpostej>
 References: <1406732794-20920-1-git-send-email-rric@kernel.org>
  <1406732794-20920-3-git-send-email-rric@kernel.org>
  <20140730154626.GD20162@leverpostej>
- <CAL_JsqLJ_W34XTF2aMOW9z+Gq4oxbrX1RztyJN8Mi0OFPeNxfg@mail.gmail.com>
+ <CAFpQJXWKybVUxpHg8MVrVMjLj3swuxLGo_9r1tL+gZ4hxUHTzQ@mail.gmail.com>
+ <20140731095336.GB21850@leverpostej>
+ <CAFpQJXUtP=v7FSLd3_OU7FG3w=pKYy2ihTQULA_DPEacsSu0Og@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAL_JsqLJ_W34XTF2aMOW9z+Gq4oxbrX1RztyJN8Mi0OFPeNxfg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [92.224.199.242]
-X-ClientProxiedBy: AMSPR01CA004.eurprd01.prod.exchangelabs.com
- (10.255.167.149) To SN2PR0701MB813.namprd07.prod.outlook.com (25.160.16.147)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0289B6431E
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6069001)(6009001)(24454002)(164054003)(199002)(189002)(51704005)(81342001)(46406003)(95666004)(46102001)(81542001)(105586002)(4396001)(23726002)(80022001)(47776003)(64706001)(106356001)(20776003)(83506001)(74502001)(66066001)(77982001)(77096002)(85306003)(76482001)(50466002)(74662001)(76506005)(79102001)(92726001)(33656002)(107046002)(76176999)(87976001)(92566001)(83072002)(21056001)(97756001)(31966008)(101416001)(42186005)(102836001)(50986999)(54356999)(93886003)(86362001)(85852003)(83322001);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR0701MB813;H:rric.localhost;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-X-OriginatorOrg: caviumnetworks.com
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFpQJXUtP=v7FSLd3_OU7FG3w=pKYy2ihTQULA_DPEacsSu0Og@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob and Arnd,
+Please send plain text rather than HTML email; this is becoming painful
+to reply to.
 
-On 30.07.14 11:37:38, Rob Herring wrote:
-> >> +/*
-> >> + * Cavium Thunder DTS file
-> >> + *
-> >> + * Copyright (C) 2013, Cavium Inc.
-> >> + *
-> >> + * This program is free software; you can redistribute it and/or
-> >> + * modify it under the terms of the GNU General Public License as
-> >> + * published by the Free Software Foundation; either version 2 of
-> >> + * the License, or (at your option) any later version.
-> >> + */
+On Thu, Jul 31, 2014 at 12:12:33PM +0100, Ganapatrao Kulkarni wrote:
+>    On Thu, Jul 31, 2014 at 3:23 PM, Mark Rutland <[1]mark.rutland@arm.com>
+>    wrote:
 > 
-> You may want to reconsider if this should be BSD.
+>      On Thu, Jul 31, 2014 at 09:41:10AM +0100, Ganapatrao Kulkarni wrote:
+>      >    On Wed, Jul 30, 2014 at 9:16 PM, Mark Rutland
+>      <[1][2]mark.rutland@arm.com>
+>      >    wrote:
+>      >
+>      >      Hi,
+>      >      On Wed, Jul 30, 2014 at 04:06:31PM +0100, Robert Richter wrote:
+>      >      > From: Radha Mohan Chintakuntla <[2][3]rchintakuntla@cavium.com>
+>      >      >
+>      >      > Add initial device tree nodes for Cavium Thunder SoCs with
+>      support of
+>      >      > 48 cores and gicv3. The dts file requires further changes, esp.
+>      for
+>      >      > pci, gicv3-its and smmu. This changes will be added later
+>      together
+>      >      > with the device drivers.
+>      >      >
+>      >      > Signed-off-by: Radha Mohan Chintakuntla
+>      <[3][4]rchintakuntla@cavium.com>
+>      >      > Signed-off-by: Robert Richter <[4][5]rrichter@cavium.com>
+>      >      > ---
+>      >      >  arch/arm64/boot/dts/Makefile         |   1 +
+>      >      >  arch/arm64/boot/dts/thunder-88xx.dts | 387
+>      >      +++++++++++++++++++++++++++++++++++
+>      >      >  2 files changed, 388 insertions(+)
+>      >      >  create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
+>      >      >
+>      >      > diff --git a/arch/arm64/boot/dts/Makefile
+>      >      b/arch/arm64/boot/dts/Makefile
+>      >      > index c52bdb051f66..f8001a62029c 100644
+>      >      > --- a/arch/arm64/boot/dts/Makefile
+>      >      > +++ b/arch/arm64/boot/dts/Makefile
+>      >      > @@ -1,3 +1,4 @@
+>      >      > +dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
+>      >      >  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb
+>      foundation-v8.dtb
+>      >      >  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
+>      >      >
+>      >      > diff --git a/arch/arm64/boot/dts/thunder-88xx.dts
+>      >      b/arch/arm64/boot/dts/thunder-88xx.dts
+>      >      > new file mode 100644
+>      >      > index 000000000000..4cf20ac9138b
+>      >      > --- /dev/null
+>      >      > +++ b/arch/arm64/boot/dts/thunder-88xx.dts
+>      >      > @@ -0,0 +1,387 @@
+>      >      > +/*
+>      >      > + * Cavium Thunder DTS file
+>      >      > + *
+>      >      > + * Copyright (C) 2013, Cavium Inc.
+>      >      > + *
+>      >      > + * This program is free software; you can redistribute it
+>      and/or
+>      >      > + * modify it under the terms of the GNU General Public License
+>      as
+>      >      > + * published by the Free Software Foundation; either version 2
+>      of
+>      >      > + * the License, or (at your option) any later version.
+>      >      > + */
+>      >      > +/dts-v1/;
+>      >      > +
+>      >      > +/* Reserving first 12MB of DDR for firmware */
+>      >      > +/memreserve/ 0x00000000 0x00c00000;
+>      >
+>      >      What exactly is this memreserve intended to protect at runtime?
+>      >      Yes, this 12 MB is reserved for ATF and UEFI boot and run-time
+>      services.
+> 
+>      If booted as an EFI application Linux will use the UEFI memory map.
+>      Anything UEFI needs to have kept around will be marked as such, so
+>      there's no need to memreserve that.
+> 
+>    We are loading ATF and UEFI from flash(which is not XIP) within 12MB of
+>    DDR.
+>     I dont see UEFI stub freeing RAM address where UEFI  image is loaded.
 
-I understand that this is an issue for the inclusion in firmware
-binaries. Though, we just followed common practice here which is
-gplv2.
+Therefore we don't need the memreserve, then?
 
-I looked through existing dts files in arch/arm*/dts/* and about 590
-of 720 have a gplv2 statement in. The other files don't have any and
-thus following the COPYING file which is gplv2 too.                 
+>      I was under the impression that the ARM Trusted Firmware didn't need
+>      anything resident on the non-secure side, so I don't see why that needs
+>      a memreserve -- Linux should not be able to address anything it has
+>      resident.
+> 
+>    We mark RAM used by ATF as secure-RAM, however we don't support
+>    secure/non-secure address aliasing.
+>    i.e, a DRAM address that can be referenced from both a secure PA and a
+>    non-secure PA is not allowed.
 
-It is my understanding that the kernel requires licensing under gplv2.
-So an option would be to dual license the dts file, e.g. with BSD. How
-is this typically handled? Are there other repositories where dts
-files are included with a different license model than gplv2?
+What exactly do you mean by "not allowed"?
+
+If Linux maps that memory, what happens?
+
+What if Linux tried to read or write to it?
+
+If Linux should not map that memory, it should not be described in the
+memory map to begin with.
 
 Thanks,
-
--Robert
+Mark.
