@@ -1,635 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694AbaGaQK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:10:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36169 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752501AbaGaQKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:10:24 -0400
-From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
-To: linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v4 4/4] ARM: dts: Add exynos5250-spring device tree
-Date: Thu, 31 Jul 2014 18:08:29 +0200
-Message-Id: <1406822910-6255-5-git-send-email-afaerber@suse.de>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1406822910-6255-1-git-send-email-afaerber@suse.de>
-References: <1406822910-6255-1-git-send-email-afaerber@suse.de>
+	id S1752729AbaGaQLN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:11:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59733 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294AbaGaQLK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:11:10 -0400
+Date: Thu, 31 Jul 2014 09:10:51 -0700
+From: tip-bot for Dave Hansen <tipbot@zytor.com>
+Message-ID: <tip-2d040a1ce903ca5d6e7c983621fb29c6883c4c48@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        riel@redhat.com, mgorman@suse.de, tglx@linutronix.de,
+        dave.hansen@linux.intel.com, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        riel@redhat.com, mgorman@suse.de, tglx@linutronix.de,
+        dave.hansen@linux.intel.com, hpa@linux.intel.com
+In-Reply-To: <20140731154101.12B52CAF@viggo.jf.intel.com>
+References: <20140731154101.12B52CAF@viggo.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86/mm: New tunable for single vs full TLB flush
+Git-Commit-ID: 2d040a1ce903ca5d6e7c983621fb29c6883c4c48
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds initial support for the HP Chromebook 11.
+Commit-ID:  2d040a1ce903ca5d6e7c983621fb29c6883c4c48
+Gitweb:     http://git.kernel.org/tip/2d040a1ce903ca5d6e7c983621fb29c6883c4c48
+Author:     Dave Hansen <dave.hansen@linux.intel.com>
+AuthorDate: Thu, 31 Jul 2014 08:41:01 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 31 Jul 2014 08:48:51 -0700
 
-Cc: Vincent Palatin <vpalatin@chromium.org>
-Cc: Doug Anderson <dianders@chromium.org>
-Cc: Stephan van Schaik <stephan@synkhronix.com>
-Signed-off-by: Andreas Färber <afaerber@suse.de>
+x86/mm: New tunable for single vs full TLB flush
+
+Most of the logic here is in the documentation file.  Please take
+a look at it.
+
+I know we've come full-circle here back to a tunable, but this
+new one is *WAY* simpler.  I challenge anyone to describe in one
+sentence how the old one worked.  Here's the way the new one
+works:
+
+	If we are flushing more pages than the ceiling, we use
+	the full flush, otherwise we use per-page flushes.
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Link: http://lkml.kernel.org/r/20140731154101.12B52CAF@viggo.jf.intel.com
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- v3 -> v4:
- * Fixed samsung,pin-function 1 -> 0 for dp-hpd-gpio
- * Replaced dp-hpd-gpio with existing dp_hpd, overriding it
- 
- v2 -> v3:
- * Use GPIO_ACTIVE_{LOW,HIGH} (Doug Anderson)
- * Use symbolic KEY_POWER instead of comment
- * Moved hsic_reset to new USB3503 node's reset-gpios (Vincent Palatin)
- * Use dp_hpd_gpio for dp-controller (Doug Anderson, Ajay Kumar)
- * Override sd1_{clk,cmd,cd,bus4} pinctrl similar to Snow (Doug Anderson)
- * Added ec_irq pinctrl for cros_ec (Doug Anderson)
- * Reordered nodes to minimize diff against Snow (Doug Anderson)
- * Dropped obsolete mmc_2 override (Doug Anderson)
- * Added lid-switch node (Doug Anderson)
- * Added gpio-keys pinctrl (Doug Anderson)
- * Added bootargs to avoid empty /chosen node and to document console setting
- * Renamed s5m8767_pmic node to avoid underscore
- * Use new style for overriding inherited pinctrl nodes, too
- * Enable i2s0 node
- 
- v1 -> v2:
- * Use label-based overriding/extension of nodes. (Doug Anderson)
- * Dropped tps65090 for now, until we know where to place it.
- * Dropped non-Spring nodes from -cros-common.dtsi rather than disabling them.
- * Enabled a missing MMC node for access to internal storage.
- * Dropped display-timings from dp-controller node. (Ajay Kumar)
+ Documentation/x86/tlb.txt | 75 +++++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/mm/tlb.c         | 46 +++++++++++++++++++++++++++++
+ 2 files changed, 121 insertions(+)
 
- arch/arm/boot/dts/Makefile              |   1 +
- arch/arm/boot/dts/exynos5250-spring.dts | 539 ++++++++++++++++++++++++++++++++
- 2 files changed, 540 insertions(+)
- create mode 100644 arch/arm/boot/dts/exynos5250-spring.dts
-
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 80a781f76e88..dec4c292f63d 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -76,6 +76,7 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
- 	exynos5250-arndale.dtb \
- 	exynos5250-smdk5250.dtb \
- 	exynos5250-snow.dtb \
-+	exynos5250-spring.dtb \
- 	exynos5260-xyref5260.dtb \
- 	exynos5410-smdk5410.dtb \
- 	exynos5420-arndale-octa.dtb \
-diff --git a/arch/arm/boot/dts/exynos5250-spring.dts b/arch/arm/boot/dts/exynos5250-spring.dts
+diff --git a/Documentation/x86/tlb.txt b/Documentation/x86/tlb.txt
 new file mode 100644
-index 000000000000..1fdfa04182fc
+index 0000000..2b3a82e
 --- /dev/null
-+++ b/arch/arm/boot/dts/exynos5250-spring.dts
-@@ -0,0 +1,539 @@
-+/*
-+ * Google Spring board device tree source
-+ *
-+ * Copyright (c) 2013 Google, Inc
-+ * Copyright (c) 2014 SUSE LINUX Products GmbH
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
++++ b/Documentation/x86/tlb.txt
+@@ -0,0 +1,75 @@
++When the kernel unmaps or modified the attributes of a range of
++memory, it has two choices:
++ 1. Flush the entire TLB with a two-instruction sequence.  This is
++    a quick operation, but it causes collateral damage: TLB entries
++    from areas other than the one we are trying to flush will be
++    destroyed and must be refilled later, at some cost.
++ 2. Use the invlpg instruction to invalidate a single page at a
++    time.  This could potentialy cost many more instructions, but
++    it is a much more precise operation, causing no collateral
++    damage to other TLB entries.
 +
-+/dts-v1/;
-+#include <dt-bindings/gpio/gpio.h>
-+#include <dt-bindings/input/input.h>
-+#include "exynos5250.dtsi"
++Which method to do depends on a few things:
++ 1. The size of the flush being performed.  A flush of the entire
++    address space is obviously better performed by flushing the
++    entire TLB than doing 2^48/PAGE_SIZE individual flushes.
++ 2. The contents of the TLB.  If the TLB is empty, then there will
++    be no collateral damage caused by doing the global flush, and
++    all of the individual flush will have ended up being wasted
++    work.
++ 3. The size of the TLB.  The larger the TLB, the more collateral
++    damage we do with a full flush.  So, the larger the TLB, the
++    more attrative an individual flush looks.  Data and
++    instructions have separate TLBs, as do different page sizes.
++ 4. The microarchitecture.  The TLB has become a multi-level
++    cache on modern CPUs, and the global flushes have become more
++    expensive relative to single-page flushes.
 +
-+/ {
-+	model = "Google Spring";
-+	compatible = "google,spring", "samsung,exynos5250", "samsung,exynos5";
++There is obviously no way the kernel can know all these things,
++especially the contents of the TLB during a given flush.  The
++sizes of the flush will vary greatly depending on the workload as
++well.  There is essentially no "right" point to choose.
 +
-+	memory {
-+		reg = <0x40000000 0x80000000>;
-+	};
++You may be doing too many individual invalidations if you see the
++invlpg instruction (or instructions _near_ it) show up high in
++profiles.  If you believe that individual invalidations being
++called too often, you can lower the tunable:
 +
-+	chosen {
-+		bootargs = "console=tty1";
-+	};
++	/sys/debug/kernel/x86/tlb_single_page_flush_ceiling
 +
-+	gpio-keys {
-+		compatible = "gpio-keys";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&power_key_irq>, <&lid_irq>;
++This will cause us to do the global flush for more cases.
++Lowering it to 0 will disable the use of the individual flushes.
++Setting it to 1 is a very conservative setting and it should
++never need to be 0 under normal circumstances.
 +
-+		power {
-+			label = "Power";
-+			gpios = <&gpx1 3 GPIO_ACTIVE_LOW>;
-+			linux,code = <KEY_POWER>;
-+			gpio-key,wakeup;
-+		};
++Despite the fact that a single individual flush on x86 is
++guaranteed to flush a full 2MB [1], hugetlbfs always uses the full
++flushes.  THP is treated exactly the same as normal memory.
 +
-+		lid-switch {
-+			label = "Lid";
-+			gpios = <&gpx3 5 GPIO_ACTIVE_LOW>;
-+			linux,input-type = <5>; /* EV_SW */
-+			linux,code = <0>; /* SW_LID */
-+			debounce-interval = <1>;
-+			gpio-key,wakeup;
-+		};
-+	};
++You might see invlpg inside of flush_tlb_mm_range() show up in
++profiles, or you can use the trace_tlb_flush() tracepoints. to
++determine how long the flush operations are taking.
 +
-+	usb3_vbus_reg: regulator-usb3 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "P5.0V_USB3CON";
-+		regulator-min-microvolt = <5000000>;
-+		regulator-max-microvolt = <5000000>;
-+		gpio = <&gpe1 0 GPIO_ACTIVE_LOW>;
-+		enable-active-high;
-+	};
++Essentially, you are balancing the cycles you spend doing invlpg
++with the cycles that you spend refilling the TLB later.
 +
-+	usb@12110000 {
-+		samsung,vbus-gpio = <&gpx1 1 GPIO_ACTIVE_HIGH>;
-+	};
++You can measure how expensive TLB refills are by using
++performance counters and 'perf stat', like this:
 +
-+	usb-hub {
-+		compatible = "smsc,usb3503a";
-+		reset-gpios = <&hsic_reset>;
-+	};
++perf stat -e
++	cpu/event=0x8,umask=0x84,name=dtlb_load_misses_walk_duration/,
++	cpu/event=0x8,umask=0x82,name=dtlb_load_misses_walk_completed/,
++	cpu/event=0x49,umask=0x4,name=dtlb_store_misses_walk_duration/,
++	cpu/event=0x49,umask=0x2,name=dtlb_store_misses_walk_completed/,
++	cpu/event=0x85,umask=0x4,name=itlb_misses_walk_duration/,
++	cpu/event=0x85,umask=0x2,name=itlb_misses_walk_completed/
 +
-+	fixed-rate-clocks {
-+		xxti {
-+			compatible = "samsung,clock-xxti";
-+			clock-frequency = <24000000>;
-+		};
-+	};
++That works on an IvyBridge-era CPU (i5-3320M).  Different CPUs
++may have differently-named counters, but they should at least
++be there in some form.  You can use pmu-tools 'ocperf list'
++(https://github.com/andikleen/pmu-tools) to find the right
++counters for a given CPU.
 +
-+	hdmi {
-+		hpd-gpio = <&gpx3 7 GPIO_ACTIVE_HIGH>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&hdmi_hpd_irq>;
-+		phy = <&hdmiphy>;
-+		ddc = <&i2c_2>;
-+		hdmi-en-supply = <&s5m_ldo8_reg>;
-+		vdd-supply = <&s5m_ldo8_reg>;
-+		vdd_osc-supply = <&s5m_ldo10_reg>;
-+		vdd_pll-supply = <&s5m_ldo8_reg>;
-+	};
++1. A footnote in Intel's SDM "4.10.4.2 Recommended Invalidation"
++   says: "One execution of INVLPG is sufficient even for a page
++   with size greater than 4 KBytes."
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 6f00ecb..cb7cadd 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -265,3 +265,49 @@ void flush_tlb_kernel_range(unsigned long start, unsigned long end)
+ 		on_each_cpu(do_kernel_range_flush, &info, 1);
+ 	}
+ }
 +
-+	fimd@14400000 {
-+		status = "okay";
-+		samsung,invert-vclk;
-+	};
++static ssize_t tlbflush_read_file(struct file *file, char __user *user_buf,
++			     size_t count, loff_t *ppos)
++{
++	char buf[32];
++	unsigned int len;
 +
-+	dp-controller@145B0000 {
-+		status = "okay";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&dp_hpd>;
-+		samsung,color-space = <0>;
-+		samsung,dynamic-range = <0>;
-+		samsung,ycbcr-coeff = <0>;
-+		samsung,color-depth = <1>;
-+		samsung,link-rate = <0x0a>;
-+		samsung,lane-count = <1>;
-+		samsung,hpd-gpio = <&gpc3 0 GPIO_ACTIVE_HIGH>;
-+	};
++	len = sprintf(buf, "%ld\n", tlb_single_page_flush_ceiling);
++	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
++}
++
++static ssize_t tlbflush_write_file(struct file *file,
++		 const char __user *user_buf, size_t count, loff_t *ppos)
++{
++	char buf[32];
++	ssize_t len;
++	int ceiling;
++
++	len = min(count, sizeof(buf) - 1);
++	if (copy_from_user(buf, user_buf, len))
++		return -EFAULT;
++
++	buf[len] = '\0';
++	if (kstrtoint(buf, 0, &ceiling))
++		return -EINVAL;
++
++	if (ceiling < 0)
++		return -EINVAL;
++
++	tlb_single_page_flush_ceiling = ceiling;
++	return count;
++}
++
++static const struct file_operations fops_tlbflush = {
++	.read = tlbflush_read_file,
++	.write = tlbflush_write_file,
++	.llseek = default_llseek,
 +};
 +
-+&dp_hpd {
-+	samsung,pins = "gpc3-0";
-+	samsung,pin-function = <0>;
-+	samsung,pin-pud = <3>;
-+	samsung,pin-drv = <0>;
-+};
-+
-+&i2c_0 {
-+	status = "okay";
-+	samsung,i2c-sda-delay = <100>;
-+	samsung,i2c-max-bus-freq = <378000>;
-+
-+	s5m8767-pmic@66 {
-+		compatible = "samsung,s5m8767-pmic";
-+		reg = <0x66>;
-+		interrupt-parent = <&gpx3>;
-+		interrupts = <2 0>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&s5m8767_irq &s5m8767_dvs &s5m8767_ds>;
-+		wakeup-source;
-+
-+		s5m8767,pmic-buck-dvs-gpios = <&gpd1 0 GPIO_ACTIVE_LOW>, /* DVS1 */
-+		                              <&gpd1 1 GPIO_ACTIVE_LOW>, /* DVS2 */
-+		                              <&gpd1 2 GPIO_ACTIVE_LOW>; /* DVS3 */
-+
-+		s5m8767,pmic-buck-ds-gpios = <&gpx2 3 GPIO_ACTIVE_LOW>, /* SET1 */
-+		                             <&gpx2 4 GPIO_ACTIVE_LOW>, /* SET2 */
-+		                             <&gpx2 5 GPIO_ACTIVE_LOW>; /* SET3 */
-+
-+		/*
-+		 * The following arrays of DVS voltages are not used, since we are
-+		 * not using GPIOs to control PMIC bucks, but they must be defined
-+		 * to please the driver.
-+		 */
-+		s5m8767,pmic-buck2-dvs-voltage = <1350000>, <1300000>,
-+		                                 <1250000>, <1200000>,
-+		                                 <1150000>, <1100000>,
-+		                                 <1000000>, <950000>;
-+
-+		s5m8767,pmic-buck3-dvs-voltage = <1100000>, <1100000>,
-+		                                 <1100000>, <1100000>,
-+		                                 <1000000>, <1000000>,
-+		                                 <1000000>, <1000000>;
-+
-+		s5m8767,pmic-buck4-dvs-voltage = <1200000>, <1200000>,
-+		                                 <1200000>, <1200000>,
-+		                                 <1200000>, <1200000>,
-+		                                 <1200000>, <1200000>;
-+
-+		clocks {
-+			compatible = "samsung,s5m8767-clk";
-+			#clock-cells = <1>;
-+			clock-output-names = "en32khz_ap",
-+			                     "en32khz_cp",
-+			                     "en32khz_bt";
-+		};
-+
-+		regulators {
-+			s5m_ldo4_reg: LDO4 {
-+				regulator-name = "P1.0V_LDO_OUT4";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+				op_mode = <0>;
-+			};
-+
-+			s5m_ldo5_reg: LDO5 {
-+				regulator-name = "P1.0V_LDO_OUT5";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+				op_mode = <0>;
-+			};
-+
-+			s5m_ldo6_reg: LDO6 {
-+				regulator-name = "vdd_mydp";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+				op_mode = <3>;
-+			};
-+
-+			s5m_ldo7_reg: LDO7 {
-+				regulator-name = "P1.1V_LDO_OUT7";
-+				regulator-min-microvolt = <1100000>;
-+				regulator-max-microvolt = <1100000>;
-+				regulator-always-on;
-+				op_mode = <3>;
-+			};
-+
-+			s5m_ldo8_reg: LDO8 {
-+				regulator-name = "P1.0V_LDO_OUT8";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+				op_mode = <3>;
-+			};
-+
-+			s5m_ldo10_reg: LDO10 {
-+				regulator-name = "P1.8V_LDO_OUT10";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				op_mode = <3>;
-+			};
-+
-+			s5m_ldo11_reg: LDO11 {
-+				regulator-name = "P1.8V_LDO_OUT11";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				op_mode = <0>;
-+			};
-+
-+			s5m_ldo12_reg: LDO12 {
-+				regulator-name = "P3.0V_LDO_OUT12";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+				regulator-always-on;
-+				op_mode = <3>;
-+			};
-+
-+			s5m_ldo13_reg: LDO13 {
-+				regulator-name = "P1.8V_LDO_OUT13";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				op_mode = <0>;
-+			};
-+
-+			s5m_ldo14_reg: LDO14 {
-+				regulator-name = "P1.8V_LDO_OUT14";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				op_mode = <3>;
-+			};
-+
-+			s5m_ldo15_reg: LDO15 {
-+				regulator-name = "P1.0V_LDO_OUT15";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+				op_mode = <3>;
-+			};
-+
-+			s5m_ldo16_reg: LDO16 {
-+				regulator-name = "P1.8V_LDO_OUT16";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				op_mode = <3>;
-+			};
-+
-+			s5m_ldo17_reg: LDO17 {
-+				regulator-name = "P2.8V_LDO_OUT17";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+				regulator-always-on;
-+				op_mode = <0>;
-+			};
-+
-+			s5m_ldo25_reg: LDO25 {
-+				regulator-name = "vdd_bridge";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+				regulator-always-on;
-+				op_mode = <1>;
-+			};
-+
-+			BUCK1 {
-+				regulator-name = "vdd_mif";
-+				regulator-min-microvolt = <950000>;
-+				regulator-max-microvolt = <1300000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				op_mode = <3>;
-+			};
-+
-+			BUCK2 {
-+				regulator-name = "vdd_arm";
-+				regulator-min-microvolt = <850000>;
-+				regulator-max-microvolt = <1350000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				op_mode = <3>;
-+			};
-+
-+			BUCK3 {
-+				regulator-name = "vdd_int";
-+				regulator-min-microvolt = <900000>;
-+				regulator-max-microvolt = <1200000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				op_mode = <3>;
-+			};
-+
-+			BUCK4 {
-+				regulator-name = "vdd_g3d";
-+				regulator-min-microvolt = <850000>;
-+				regulator-max-microvolt = <1300000>;
-+				regulator-boot-on;
-+				op_mode = <3>;
-+			};
-+
-+			BUCK5 {
-+				regulator-name = "P1.8V_BUCK_OUT5";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				op_mode = <1>;
-+			};
-+
-+			BUCK6 {
-+				regulator-name = "P1.2V_BUCK_OUT6";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				op_mode = <0>;
-+			};
-+
-+			BUCK9 {
-+				regulator-name = "vdd_ummc";
-+				regulator-min-microvolt = <950000>;
-+				regulator-max-microvolt = <3000000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				op_mode = <3>;
-+			};
-+		};
-+	};
-+};
-+
-+&i2c_1 {
-+	status = "okay";
-+	samsung,i2c-sda-delay = <100>;
-+	samsung,i2c-max-bus-freq = <378000>;
-+};
-+
-+/*
-+ * Disabled pullups since external part has its own pullups and
-+ * double-pulling gets us out of spec in some cases.
-+ */
-+&i2c2_bus {
-+	samsung,pin-pud = <0>;
-+};
-+
-+&i2c_2 {
-+	status = "okay";
-+	samsung,i2c-sda-delay = <100>;
-+	samsung,i2c-max-bus-freq = <66000>;
-+
-+	hdmiddc@50 {
-+		compatible = "samsung,exynos4210-hdmiddc";
-+		reg = <0x50>;
-+	};
-+};
-+
-+&i2c_3 {
-+	status = "okay";
-+	samsung,i2c-sda-delay = <100>;
-+	samsung,i2c-max-bus-freq = <66000>;
-+};
-+
-+&i2c_4 {
-+	status = "okay";
-+	samsung,i2c-sda-delay = <100>;
-+	samsung,i2c-max-bus-freq = <66000>;
-+
-+	cros_ec: embedded-controller {
-+		compatible = "google,cros-ec-i2c";
-+		reg = <0x1e>;
-+		interrupts = <6 0>;
-+		interrupt-parent = <&gpx1>;
-+		wakeup-source;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&ec_irq>;
-+	};
-+};
-+
-+&i2c_5 {
-+	status = "okay";
-+	samsung,i2c-sda-delay = <100>;
-+	samsung,i2c-max-bus-freq = <66000>;
-+};
-+
-+&i2c_7 {
-+	status = "okay";
-+	samsung,i2c-sda-delay = <100>;
-+	samsung,i2c-max-bus-freq = <66000>;
-+};
-+
-+&i2c_8 {
-+	status = "okay";
-+	samsung,i2c-sda-delay = <100>;
-+	samsung,i2c-max-bus-freq = <378000>;
-+
-+	hdmiphy: hdmiphy@38 {
-+		compatible = "samsung,exynos4212-hdmiphy";
-+		reg = <0x38>;
-+	};
-+};
-+
-+&i2s0 {
-+	status = "okay";
-+};
-+
-+&mmc_0 {
-+	status = "okay";
-+	num-slots = <1>;
-+	supports-highspeed;
-+	broken-cd;
-+	card-detect-delay = <200>;
-+	samsung,dw-mshc-ciu-div = <3>;
-+	samsung,dw-mshc-sdr-timing = <2 3>;
-+	samsung,dw-mshc-ddr-timing = <1 2>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&sd0_clk &sd0_cmd &sd0_cd &sd0_bus4 &sd0_bus8>;
-+
-+	slot@0 {
-+		reg = <0>;
-+		bus-width = <8>;
-+	};
-+};
-+
-+&mmc_1 {
-+	status = "okay";
-+	num-slots = <1>;
-+	supports-highspeed;
-+	broken-cd;
-+	card-detect-delay = <200>;
-+	samsung,dw-mshc-ciu-div = <3>;
-+	samsung,dw-mshc-sdr-timing = <2 3>;
-+	samsung,dw-mshc-ddr-timing = <1 2>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&sd1_clk &sd1_cmd &sd1_cd &sd1_bus4>;
-+
-+	slot@0 {
-+		reg = <0>;
-+		bus-width = <4>;
-+	};
-+};
-+
-+&pinctrl_0 {
-+	s5m8767_dvs: s5m8767-dvs {
-+		samsung,pins = "gpd1-0", "gpd1-1", "gpd1-2";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <1>;
-+		samsung,pin-drv = <0>;
-+	};
-+
-+	power_key_irq: power-key-irq {
-+		samsung,pins = "gpx1-3";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
-+	ec_irq: ec-irq {
-+		samsung,pins = "gpx1-6";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
-+	s5m8767_ds: s5m8767-ds {
-+		samsung,pins = "gpx2-3", "gpx2-4", "gpx2-5";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <1>;
-+		samsung,pin-drv = <0>;
-+	};
-+
-+	s5m8767_irq: s5m8767-irq {
-+		samsung,pins = "gpx3-2";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
-+	lid_irq: lid-irq {
-+		samsung,pins = "gpx3-5";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
-+	hdmi_hpd_irq: hdmi-hpd-irq {
-+		samsung,pins = "gpx3-7";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <1>;
-+		samsung,pin-drv = <0>;
-+	};
-+};
-+
-+&pinctrl_1 {
-+	hsic_reset: hsic-reset {
-+		samsung,pins = "gpe1-0";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+};
-+
-+&sd1_clk {
-+	samsung,pin-drv = <0>;
-+};
-+
-+&sd1_cmd {
-+	samsung,pin-pud = <3>;
-+	samsung,pin-drv = <0>;
-+};
-+
-+&sd1_cd {
-+	samsung,pin-drv = <0>;
-+};
-+
-+&sd1_bus4 {
-+	samsung,pin-drv = <0>;
-+};
-+
-+&spi_1 {
-+	status = "okay";
-+	samsung,spi-src-clk = <0>;
-+	num-cs = <1>;
-+};
-+
-+&usbdrd_phy {
-+	vbus-supply = <&usb3_vbus_reg>;
-+};
-+
-+#include "cros-ec-keyboard.dtsi"
--- 
-1.9.3
-
++static int __init create_tlb_single_page_flush_ceiling(void)
++{
++	debugfs_create_file("tlb_single_page_flush_ceiling", S_IRUSR | S_IWUSR,
++			    arch_debugfs_dir, NULL, &fops_tlbflush);
++	return 0;
++}
++late_initcall(create_tlb_single_page_flush_ceiling);
