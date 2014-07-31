@@ -1,180 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854AbaGaGKq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 02:10:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:44617 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756158AbaGaGC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 02:02:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,770,1400050800"; 
-   d="scan'208";a="569799663"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 02/31] perf tools: Add machine__thread_exec_comm()
-Date: Thu, 31 Jul 2014 09:00:45 +0300
-Message-Id: <1406786474-9306-3-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1406786474-9306-1-git-send-email-adrian.hunter@intel.com>
-References: <1406786474-9306-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1756429AbaGaGRU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 02:17:20 -0400
+Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:12394
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752292AbaGaGRS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 02:17:18 -0400
+From: Yao Yuan <yao.yuan@freescale.com>
+To: Marek Vasut <marex@denx.de>,
+        =?iso-8859-1?Q?Lothar_Wa=DFmann?= <LW@karo-electronics.de>
+CC: Varka Bhadram <varkabhadram@gmail.com>,
+        "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: RE: [PATCH v5 1/2] i2c: add DMA support for freescale i2c driver
+Thread-Topic: [PATCH v5 1/2] i2c: add DMA support for freescale i2c driver
+Thread-Index: AQHPplZGZJt1rYr+30mdcMiYBrLa6JutadwAgAAUuKCAAANtgIAAEMcAgABNooCAC92bUA==
+Date: Thu, 31 Jul 2014 06:16:55 +0000
+Message-ID: <1a4d2e9ddc67421d8588305c927f3d3d@BL2PR03MB338.namprd03.prod.outlook.com>
+References: <1406103883-3572-1-git-send-email-yao.yuan@freescale.com>
+ <53CF9933.8030908@gmail.com> <20140723141502.2d726afe@ipc1.ka-ro>
+ <201407231852.53893.marex@denx.de>
+In-Reply-To: <201407231852.53893.marex@denx.de>
+Accept-Language: en-US, zh-CN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 0289B6431E
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(479174003)(189002)(199002)(24454002)(51704005)(83072002)(81342001)(31966008)(74662001)(74502001)(101416001)(50986999)(106116001)(64706001)(93886003)(66066001)(86362001)(95666004)(19580395003)(85852003)(105586002)(92566001)(76176999)(20776003)(81542001)(99286002)(19580405001)(80022001)(85306003)(83322001)(106356001)(76482001)(21056001)(99396002)(87936001)(46102001)(33646002)(77982001)(74316001)(54356999)(107046002)(76576001)(79102001)(2656002)(24736002)(108616003);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB337;H:BL2PR03MB338.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:3;LANG:en;
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add machine__thread_exec_comm() to return the comm
-that matches the last exec, if the comm_exec flag
-is present, or the last comm otherwise.
+Marek Vasut wrote:
+> On Wednesday, July 23, 2014 at 02:15:02 PM, Lothar Waßmann wrote:
+> > Hi,
+> >
+> > Varka Bhadram wrote:
+> > > On 07/23/2014 04:41 PM, Yao Yuan wrote:
+> > > > Hi,
+> > > >
+> > > > Thanks for your review.
+> > > >
+> > > > Lothar Waßmann wrote:
+> > > >> Yuan Yao wrote:
+> > > >>> Add dma support for i2c. This function depend on DMA driver.
+> > > >>> You can turn on it by write both the dmas and dma-name
+> > > >>> properties in dts node.
+> > > >>>
+> > > >>> Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
+> > > >>> ---
+> > > >>>
+> > > >>>   drivers/i2c/busses/i2c-imx.c | 377
+> > > >
+> > > > [...]
+> > > >
+> > > >>> +
+> > > >>> +fail_rx:
+> > > >>> +	dma_release_channel(dma->chan_rx);
+> > > >>> +fail_tx:
+> > > >>> +	dma_release_channel(dma->chan_tx);
+> > > >>> +fail_al:
+> > > >>> +	devm_kfree(dev, dma);
+> > > >>
+> > > >> No need for this one (that's the whole point of using devm_kzalloc())!
+> > > >
+> > > > When DMA request failed, I2C will switch to PIO mode. So if the
+> > > > failed reason is just like DMA channel request failed. At this
+> > > > time the DMA should free by devm_kfree(). Is it?
+> > >
+> > > If probe failed the memory will be freed automatically because we
+> > > are using devm_kzalloc()...
+> > >
+> > > If we use devm_kzalloc() ,no need to free manually on fail...
+> >
+> > Yes, but as Yuan Yao stated, the driver will still work without DMA
+> > but carry around the unecessary allocated imx_i2c_dma struct.
+> > The devm_kfree() is not in the failure path of the driver's probe()
+> > function, but in the function that tries to initialize the optional
+> > DMA support.
+> 
+> If the DMA fails, I'd just make the entire probe fail. In case you cannot probe
+> DMA for your hardware, which is exected to be DMA capable, it means
+> something is wrong anyway.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/machine.c | 26 ++++++++++++++++++++++++++
- tools/perf/util/machine.h |  4 ++++
- tools/perf/util/session.c | 24 +++++++++++++++++++++++-
- 3 files changed, 53 insertions(+), 1 deletion(-)
+Yes, but if there is something wrong in dma, I think the i2c is innocent. So I think the error message is necessary but i2c can continue work.
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index ea3e09f..b093b93 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -31,6 +31,7 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
- 
- 	machine->symbol_filter = NULL;
- 	machine->id_hdr_size = 0;
-+	machine->comm_exec = false;
- 
- 	machine->root_dir = strdup(root_dir);
- 	if (machine->root_dir == NULL)
-@@ -179,6 +180,19 @@ void machines__set_symbol_filter(struct machines *machines,
- 	}
- }
- 
-+void machines__set_comm_exec(struct machines *machines, bool comm_exec)
-+{
-+	struct rb_node *nd;
-+
-+	machines->host.comm_exec = comm_exec;
-+
-+	for (nd = rb_first(&machines->guests); nd; nd = rb_next(nd)) {
-+		struct machine *machine = rb_entry(nd, struct machine, rb_node);
-+
-+		machine->comm_exec = comm_exec;
-+	}
-+}
-+
- struct machine *machines__find(struct machines *machines, pid_t pid)
- {
- 	struct rb_node **p = &machines->guests.rb_node;
-@@ -398,6 +412,15 @@ struct thread *machine__find_thread(struct machine *machine, pid_t pid,
- 	return __machine__findnew_thread(machine, pid, tid, false);
- }
- 
-+struct comm *machine__thread_exec_comm(struct machine *machine,
-+				       struct thread *thread)
-+{
-+	if (machine->comm_exec)
-+		return thread__exec_comm(thread);
-+	else
-+		return thread__comm(thread);
-+}
-+
- int machine__process_comm_event(struct machine *machine, union perf_event *event,
- 				struct perf_sample *sample)
- {
-@@ -406,6 +429,9 @@ int machine__process_comm_event(struct machine *machine, union perf_event *event
- 							event->comm.tid);
- 	bool exec = event->header.misc & PERF_RECORD_MISC_COMM_EXEC;
- 
-+	if (exec)
-+		machine->comm_exec = true;
-+
- 	if (dump_trace)
- 		perf_event__fprintf_comm(event, stdout);
- 
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index b972824..61216e0 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -26,6 +26,7 @@ struct machine {
- 	struct rb_node	  rb_node;
- 	pid_t		  pid;
- 	u16		  id_hdr_size;
-+	bool		  comm_exec;
- 	char		  *root_dir;
- 	struct rb_root	  threads;
- 	struct list_head  dead_threads;
-@@ -47,6 +48,8 @@ struct map *machine__kernel_map(struct machine *machine, enum map_type type)
- 
- struct thread *machine__find_thread(struct machine *machine, pid_t pid,
- 				    pid_t tid);
-+struct comm *machine__thread_exec_comm(struct machine *machine,
-+				       struct thread *thread);
- 
- int machine__process_comm_event(struct machine *machine, union perf_event *event,
- 				struct perf_sample *sample);
-@@ -88,6 +91,7 @@ char *machine__mmap_name(struct machine *machine, char *bf, size_t size);
- 
- void machines__set_symbol_filter(struct machines *machines,
- 				 symbol_filter_t symbol_filter);
-+void machines__set_comm_exec(struct machines *machines, bool comm_exec);
- 
- struct machine *machine__new_host(void);
- int machine__init(struct machine *machine, const char *root_dir, pid_t pid);
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 88dfef7..bf24696 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -66,6 +66,25 @@ static void perf_session__destroy_kernel_maps(struct perf_session *session)
- 	machines__destroy_kernel_maps(&session->machines);
- }
- 
-+static bool perf_session__has_comm_exec(struct perf_session *session)
-+{
-+	struct perf_evsel *evsel;
-+
-+	evlist__for_each(session->evlist, evsel) {
-+		if (evsel->attr.comm_exec)
-+			return true;
-+	}
-+
-+	return false;
-+}
-+
-+static void perf_session__set_comm_exec(struct perf_session *session)
-+{
-+	bool comm_exec = perf_session__has_comm_exec(session);
-+
-+	machines__set_comm_exec(&session->machines, comm_exec);
-+}
-+
- struct perf_session *perf_session__new(struct perf_data_file *file,
- 				       bool repipe, struct perf_tool *tool)
- {
-@@ -91,6 +110,7 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
- 				goto out_close;
- 
- 			perf_session__set_id_hdr_size(session);
-+			perf_session__set_comm_exec(session);
- 		}
- 	}
- 
-@@ -1005,8 +1025,10 @@ static s64 perf_session__process_user_event(struct perf_session *session,
- 	switch (event->header.type) {
- 	case PERF_RECORD_HEADER_ATTR:
- 		err = tool->attr(tool, event, &session->evlist);
--		if (err == 0)
-+		if (err == 0) {
- 			perf_session__set_id_hdr_size(session);
-+			perf_session__set_comm_exec(session);
-+		}
- 		return err;
- 	case PERF_RECORD_HEADER_EVENT_TYPE:
- 		/*
--- 
-1.8.3.2
 
+Best regards,
+Yuan Yao
