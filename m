@@ -1,135 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751225AbaGaED5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 00:03:57 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:36859 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711AbaGaEDz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 00:03:55 -0400
-Date: Thu, 31 Jul 2014 13:02:30 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com, markh@compro.net
-Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com
-Subject: [PATCH V2] staging: dgap: introduce dgap_cleanup_nodes()
-Message-ID: <20140731040230.GA26206@devel.8.8.4.4>
+	id S1751441AbaGaEFL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 00:05:11 -0400
+Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:13339
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750766AbaGaEFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 00:05:10 -0400
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: <broonie@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <alsa-devel@alsa-project.org>, <timur@tabi.org>,
+        <b42378@freescale.com>
+Subject: [PATCH] ASoC: fsl_asrc: Fix sparse warnings in FSL_ASRC_FORMATS due to typo
+Date: Thu, 31 Jul 2014 12:07:40 +0800
+Message-ID: <1406779660-17177-1-git-send-email-nicoleotsuka@gmail.com>
+X-Mailer: git-send-email 1.8.4
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130512531068775113;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(77156001)(50226001)(48376002)(82202001)(50466002)(74502001)(62966002)(77982001)(87286001)(73972005)(73392001)(81442001)(87936001)(81342001)(81542001)(19580405001)(64706001)(85852003)(97736001)(36756003)(89996001)(46102001)(83072002)(92566001)(88136002)(47776003)(87572001)(93916002)(107046002)(229853001)(104166001)(6806004)(80022001)(44976005)(2351001)(19580395003)(92726001)(104016003)(85306003)(84676001)(68736004)(55446002)(106466001)(74662001)(50986999)(99396002)(20776003)(61266001)(105596002)(21056001)(95666004)(102836001)(110136001)(31966008)(33646002)(79102001)(86362001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB367;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0289B6431E
+Authentication-Results: spf=softfail (sender IP is 192.88.168.50)
+ smtp.mailfrom=nicoleotsuka@gmail.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a configration file is parsed with dgap_parsefile(),
-makes nodes for saving configrations for board.
+reproduce: make C=1 CF=-D__CHECK_ENDIAN__
 
-Making a node will allocate node memory and strings for saving
-configrations with kstrdup().
+sparse warnings: (new ones prefixed by >>)
 
-So these are freed when dgap is unloaded or failed to initialize.
+>> sound/soc/fsl/fsl_asrc.c:563:28: sparse: restricted snd_pcm_format_t degrades to integer
+>> sound/soc/fsl/fsl_asrc.c:570:28: sparse: restricted snd_pcm_format_t degrades to integer
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+vim +563 sound/soc/fsl/fsl_asrc.c
+
+  557          .probe = fsl_asrc_dai_probe,
+  558          .playback = {
+  559                  .stream_name = "ASRC-Playback",
+  560                  .channels_min = 1,
+  561                  .channels_max = 10,
+  562                  .rates = FSL_ASRC_RATES,
+> 563                  .formats = FSL_ASRC_FORMATS,
+  564          },
+  565          .capture = {
+  566                  .stream_name = "ASRC-Capture",
+  567                  .channels_min = 1,
+  568                  .channels_max = 10,
+  569                  .rates = FSL_ASRC_RATES,
+> 570                  .formats = FSL_ASRC_FORMATS,
+  571          },
+  572          .ops = &fsl_asrc_dai_ops,
+  573  };
+
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
 ---
-V2: Do not need to free for NULLNODE.
+ sound/soc/fsl/fsl_asrc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I have been too busy to solve this issue, sorry for late.
-
-Mark, Can you test this patch? I try to make simple module which is
-testing dgap_parsefile() and dgap_cleanup_nodes().
-
-There was a problem in freeing NULLNODE so if node is NULLNODE,
-just bypass and get next one.
-
- drivers/staging/dgap/dgap.c |   52 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 52 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 06c55cb..ac12e99 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -201,6 +201,7 @@ static int dgap_test_fep(struct board_t *brd);
- static int dgap_tty_register_ports(struct board_t *brd);
- static int dgap_firmware_load(struct pci_dev *pdev, int card_type,
- 			      struct board_t *brd);
-+static void dgap_cleanup_nodes(void);
+diff --git a/sound/soc/fsl/fsl_asrc.c b/sound/soc/fsl/fsl_asrc.c
+index 41699f7..cdb5779 100644
+--- a/sound/soc/fsl/fsl_asrc.c
++++ b/sound/soc/fsl/fsl_asrc.c
+@@ -551,7 +551,7 @@ static int fsl_asrc_dai_probe(struct snd_soc_dai *dai)
+ #define FSL_ASRC_RATES		 SNDRV_PCM_RATE_8000_192000
+ #define FSL_ASRC_FORMATS	(SNDRV_PCM_FMTBIT_S24_LE | \
+ 				 SNDRV_PCM_FMTBIT_S16_LE | \
+-				 SNDRV_PCM_FORMAT_S20_3LE)
++				 SNDRV_PCM_FMTBIT_S20_3LE)
  
- static void dgap_cleanup_module(void);
- 
-@@ -619,6 +620,7 @@ unregister_tty:
- free_flipbuf:
- 	dgap_free_flipbuf(brd);
- cleanup_brd:
-+	dgap_cleanup_nodes();
- 	dgap_release_remap(brd);
- 	kfree(brd);
- 
-@@ -659,6 +661,8 @@ static void dgap_cleanup_module(void)
- 		dgap_cleanup_board(dgap_board[i]);
- 	}
- 
-+	dgap_cleanup_nodes();
-+
- 	if (dgap_numboards)
- 		pci_unregister_driver(&dgap_driver);
- }
-@@ -6323,6 +6327,54 @@ static void dgap_remove_tty_sysfs(struct device *c)
- 	sysfs_remove_group(&c->kobj, &dgap_tty_attribute_group);
- }
- 
-+static void dgap_cleanup_nodes(void)
-+{
-+	struct cnode *p;
-+
-+	p = &dgap_head;
-+
-+	while (p) {
-+		struct cnode *tmp = p->next;
-+
-+		if (p->type == NULLNODE) {
-+			p = tmp;
-+			continue;
-+		}
-+
-+		switch (p->type) {
-+		case BNODE:
-+			kfree(p->u.board.portstr);
-+			kfree(p->u.board.addrstr);
-+			kfree(p->u.board.pcibusstr);
-+			kfree(p->u.board.pcislotstr);
-+			kfree(p->u.board.method);
-+			break;
-+		case CNODE:
-+			kfree(p->u.conc.id);
-+			kfree(p->u.conc.connect);
-+			break;
-+		case MNODE:
-+			kfree(p->u.module.id);
-+			break;
-+		case TNODE:
-+			kfree(p->u.ttyname);
-+			break;
-+		case CUNODE:
-+			kfree(p->u.cuname);
-+			break;
-+		case LNODE:
-+			kfree(p->u.line.cable);
-+			break;
-+		case PNODE:
-+			kfree(p->u.printname);
-+			break;
-+		}
-+
-+		kfree(p->u.board.status);
-+		kfree(p);
-+		p = tmp;
-+	}
-+}
- /*
-  * Parse a configuration file read into memory as a string.
-  */
+ static struct snd_soc_dai_driver fsl_asrc_dai = {
+ 	.probe = fsl_asrc_dai_probe,
 -- 
-1.7.1
+1.8.4
 
