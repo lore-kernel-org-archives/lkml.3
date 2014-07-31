@@ -1,146 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928AbaGaRaY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:30:24 -0400
+	id S1753151AbaGaRa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:30:27 -0400
 Received: from mga02.intel.com ([134.134.136.20]:25471 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752522AbaGaRaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:30:20 -0400
+	id S1752522AbaGaRaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 13:30:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,773,1400050800"; 
-   d="scan'208";a="551942858"
+   d="scan'208";a="551942926"
 From: kan.liang@intel.com
 To: peterz@infradead.org
 Cc: andi@firstfloor.org, alexander.shishkin@linux.intel.com,
         linux-kernel@vger.kernel.org, Kan Liang <kan.liang@intel.com>
-Subject: [PATCH 1/3] x86 msr: msr goto extension support
-Date: Thu, 31 Jul 2014 02:41:01 -0700
-Message-Id: <1406799663-18192-1-git-send-email-kan.liang@intel.com>
+Subject: [PATCH 3/3] x86 perf: Protect LBR and BTS enabling
+Date: Thu, 31 Jul 2014 02:41:03 -0700
+Message-Id: <1406799663-18192-3-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1406799663-18192-1-git-send-email-kan.liang@intel.com>
+References: <1406799663-18192-1-git-send-email-kan.liang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kan Liang <kan.liang@intel.com>
 
-Currently, {rd,wr}msrl_safe can handle the exception which caused by accessing
-specific MSR.
-However, it will introduce extra conditional branch for testing errors. That
-will impact the "fast" path's performance.
-The newly implemented {rd,wr}msrl_goto function can not only handle the
-exception which caused by accessing specific MSR,
-but also takes advantage of the asm goto extension to eliminate the impact of
-performance.
+If packet generation is enabled (IA32_RTIT_CTL.TraceEn = 1), any attempt to
+enable LBRs, LERs, BTS, or
+BTM (setting IA32_DEBUG_CTL.LBR =1 or IA32_DEBUG_CTL.TR = 1) will cause a
+general-protection fault (#GP).
 
-The asm goto extension is supported by GCC 4.5 and later versions. If the
-compiler doesn't support goto extension, _safe will be used to replace _goto.
+{rd,wr}msrl_safe can handle the exception which caused by enabling LBR/BTS
 
 Signed-off-by: Kan Liang <kan.liang@intel.com>
 ---
- arch/x86/include/asm/msr.h      | 60 +++++++++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/paravirt.h | 18 +++++++++++++
- 2 files changed, 78 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  | 4 ++--
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/msr.h b/arch/x86/include/asm/msr.h
-index de36f22..55438da 100644
---- a/arch/x86/include/asm/msr.h
-+++ b/arch/x86/include/asm/msr.h
-@@ -203,6 +203,66 @@ do {                                                            \
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 980970c..c2519b0 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -468,7 +468,7 @@ void intel_pmu_enable_bts(u64 config)
+ 	if (!(config & ARCH_PERFMON_EVENTSEL_USR))
+ 		debugctlmsr |= DEBUGCTLMSR_BTS_OFF_USR;
  
- #define rdtscpll(val, aux) (val) = native_read_tscp(&(aux))
- 
-+#ifdef CC_HAVE_ASM_GOTO
-+
-+/*
-+ * The _goto version is rdmsrl/wrmsrl with exception handling
-+ * The advantage (than _safe) is that it can directly jump in the
-+ * exception handling code, and never test in the "fast" path.
-+ *
-+ * Since _goto doesn't support output, try to protect the output
-+ * registers by clobbers, and process the registers immediately.
-+ */
-+#define rdmsrl_goto(msr, result, fail_label)			\
-+do {								\
-+	DECLARE_ARGS(val, low, high);				\
-+	asm_volatile_goto("2: rdmsr\n"				\
-+			"1:\n\t"				\
-+			_ASM_EXTABLE(2b, %l[fail_label])	\
-+			: /* No outputs. */			\
-+			: "c" (msr)				\
-+			: "%rax", "%rdx"			\
-+			: fail_label);				\
-+	asm volatile (""					\
-+			: EAX_EDX_RET(val, low, high)		\
-+			: );					\
-+	result = EAX_EDX_VAL(val, low, high);			\
-+} while (0)
-+
-+#define wrmsrl_goto(msr, val, fail_label)			\
-+do {								\
-+	unsigned low, high;					\
-+	low = (u32)val;						\
-+	high = (u32)(val >> 32);				\
-+	asm_volatile_goto("2: wrmsr\n"				\
-+			"1:\n\t"				\
-+			_ASM_EXTABLE(2b, %l[fail_label])	\
-+			: /* No outputs. */			\
-+			: "c" (msr), "a" (low), "d" (high)	\
-+			: "memory"				\
-+			: fail_label);				\
-+} while (0)
-+
-+#else /* CC_HAVE_ASM_GOTO */
-+
-+/*
-+ * If compiler doesn't support asm goto, use _safe to replace
-+ */
-+#define rdmsrl_goto(msr, result, fail_label)			\
-+do {								\
-+	if (rdmsrl_safe(msr, &result))				\
-+		goto fail_label;				\
-+} while (0)
-+
-+#define wrmsrl_goto(msr, result, fail_label)			\
-+do {								\
-+	if (wrmsr_safe((msr), (u32)(result),			\
-+				(u32)((result) >> 32)))		\
-+		goto fail_label;				\
-+} while (0)
-+
-+#endif  /* CC_HAVE_ASM_GOTO */
-+
- #endif	/* !CONFIG_PARAVIRT */
- 
- #define wrmsrl_safe(msr, val) wrmsr_safe((msr), (u32)(val),		\
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index cd6e161..1fa18a1 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -174,6 +174,24 @@ static inline int rdmsrl_safe(unsigned msr, unsigned long long *p)
- 	return err;
+-	update_debugctlmsr(debugctlmsr);
++	wrmsrl_safe(MSR_IA32_DEBUGCTLMSR, debugctlmsr);
  }
  
-+/*
-+ * TODO: paravirt _goto doesn't support yet.
-+ * But the implementation as below doesn't impact the current performance,
-+ * since rdmsrl/wrmsrl eventually call _safe version in paravirt now.
-+ */
-+#define rdmsrl_goto(msr, result, fail_label)			\
-+do {								\
-+	if (rdmsrl_safe(msr, &result))				\
-+		goto fail_label;				\
-+} while (0)
-+
-+#define wrmsrl_goto(msr, result, fail_label)			\
-+do {								\
-+	if (wrmsr_safe((msr), (u32)(result),			\
-+				(u32)((result) >> 32)))		\
-+		goto fail_label;				\
-+} while (0)
-+
- static inline u64 paravirt_read_tsc(void)
- {
- 	return PVOP_CALL0(u64, pv_cpu_ops.read_tsc);
+ void intel_pmu_disable_bts(void)
+@@ -485,7 +485,7 @@ void intel_pmu_disable_bts(void)
+ 		~(DEBUGCTLMSR_TR | DEBUGCTLMSR_BTS | DEBUGCTLMSR_BTINT |
+ 		  DEBUGCTLMSR_BTS_OFF_OS | DEBUGCTLMSR_BTS_OFF_USR);
+ 
+-	update_debugctlmsr(debugctlmsr);
++	wrmsrl_safe(MSR_IA32_DEBUGCTLMSR, debugctlmsr);
+ }
+ 
+ int intel_pmu_drain_bts_buffer(void)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index ec82e0e..688ac83 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -140,7 +140,7 @@ static void __intel_pmu_lbr_enable(void)
+ 
+ 	rdmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
+ 	debugctl |= (DEBUGCTLMSR_LBR | DEBUGCTLMSR_FREEZE_LBRS_ON_PMI);
+-	wrmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
++	wrmsrl_safe(MSR_IA32_DEBUGCTLMSR, debugctl);
+ }
+ 
+ static void __intel_pmu_lbr_disable(void)
+@@ -149,7 +149,7 @@ static void __intel_pmu_lbr_disable(void)
+ 
+ 	rdmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
+ 	debugctl &= ~(DEBUGCTLMSR_LBR | DEBUGCTLMSR_FREEZE_LBRS_ON_PMI);
+-	wrmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
++	wrmsrl_safe(MSR_IA32_DEBUGCTLMSR, debugctl);
+ }
+ 
+ static void intel_pmu_lbr_reset_32(void)
 -- 
 1.8.3.1
 
