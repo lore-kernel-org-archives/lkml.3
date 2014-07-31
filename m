@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaGaPj5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:39:57 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:43324 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047AbaGaPj4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:39:56 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:781a:650a:7145:334d]
-In-Reply-To: <20140731103323.GL26853@arm.com>
-References: <1406764649-20326-1-git-send-email-behanw@converseincode.com>
-	<20140731103323.GL26853@arm.com>
-Date: Thu, 31 Jul 2014 08:39:55 -0700
-Message-ID: <CAOesGMiCiGwuGdOePPvE5WhZLRnG6qRvoJmBQHV4P9602Gy5DA@mail.gmail.com>
-Subject: Re: [PATCH 0/4] LLVMLinux: Patches to enable the kernel to be
- compiled with clang/LLVM
-From: Olof Johansson <olof@lixom.net>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "behanw@converseincode.com" <behanw@converseincode.com>,
-        "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "k.khlebnikov@samsung.com" <k.khlebnikov@samsung.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "takahiro.akashi@linaro.org" <takahiro.akashi@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752834AbaGaPky (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:40:54 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14409 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751316AbaGaPkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 11:40:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,772,1400050800"; 
+   d="scan'208";a="463627747"
+Subject: [PATCH 0/7] [RESEND][v4] x86: rework tlb range flushing code
+To: hpa@zytor.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Thu, 31 Jul 2014 08:40:52 -0700
+Message-Id: <20140731154052.C7E7FBC1@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 3:33 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Thu, Jul 31, 2014 at 12:57:25AM +0100, behanw@converseincode.com wrote:
->> From: Behan Webster <behanw@converseincode.com>
->>
->> This patch set moves from using locally defined named registers to access the
->> stack pointer to using a globally defined named register. This allows the code
->> to work both with gcc and clang.
->>
->> The LLVMLinux project aims to fully build the Linux kernel using both gcc and
->> clang (the C front end for the LLVM compiler infrastructure project).
->>
->> Behan Webster (4):
->>   arm64: LLVMLinux: Add current_stack_pointer() for arm64
->>   arm64: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
->>   arm64: LLVMLinux: Calculate current_thread_info from
->>     current_stack_pointer
->>   arm64: LLVMLinux: Use current_stack_pointer in kernel/traps.c
->
-> Once Andreas's comments have been addressed:
->
->   Acked-by: Will Deacon <will.deacon@arm.com>
->
-> Please can you send a new series after the merge window?
+x86 Maintainers,
 
-Given that the ARM64 KVM guys are still actively breaking -next, and
-this is considerably smaller and lower risk than that, I think you can
-take it for 3.17?
+I've sent this a couple of times and resolved all the feedback
+I've received.  It has sign-offs from Mel and Rik.  Could this
+get picked up in to the x86 tree, please?
 
+Changes from v3:
+ * Include the patch I was using to gather detailed statistics
+   about the length of the ranged TLB flushes
+ * Fix some documentation typos
+ * Add a patch to rework the remote tlb flush code to plumb the
+   tracepoints in easier, and add missing tracepoints
+ * use __print_symbolic() for the human-readable tracepoint
+   descriptions
+ * change an int to bool in patch 1
+ * Specifically call out that we removed itlb vs. dtlb logic
 
--Olof
+Changes from v2:
+ * Added a brief comment above the ceiling tunable
+ * Updated the documentation to mention large pages and say
+   "individual flush" instead of invlpg in most cases.
+
+I've run this through a variety of systems in the LKP harness,
+as well as running it on my desktop for a few days.  I'm yet to
+see an to see if any perfmance regressions (or gains) show up.
+
+ arch/x86/include/asm/mmu_context.h |    6 ++
+ arch/x86/include/asm/processor.h   |    1
+ arch/x86/kernel/cpu/amd.c          |    7 --
+ arch/x86/kernel/cpu/common.c       |   13 ----
+ arch/x86/kernel/cpu/intel.c        |   26 ---------
+ arch/x86/mm/tlb.c                  |  106 ++++++++++++++++++-------------------
+ include/linux/mm_types.h           |    8 ++
+ 7 files changed, 68 insertions(+), 99 deletions(-)
+
+--
+
+I originally went to look at this becuase I realized that newer
+CPUs were not present in the intel_tlb_flushall_shift_set() code.
+
+I went to try to figure out where to stick newer CPUs (do we
+consider them more like SandyBridge or IvyBridge), and was not
+able to repeat the original experiments.
+
+Instead, this set does:
+ 1. Rework the code a bit to ready it for tracepoints
+ 2. Add tracepoints
+ 3. Add a new tunable and set it to a sane value
