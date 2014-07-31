@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaGaU2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:28:16 -0400
-Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:34320
-	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750836AbaGaU2O convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:28:14 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 00/18] staging: comedi: amplc_pci224: remove legacy stuff
-Thread-Topic: [PATCH 00/18] staging: comedi: amplc_pci224: remove legacy
- stuff
-Thread-Index: AQHPrMYV/m/cwd3ou0+rOyO4MPyZo5u6oc2g
-Date: Thu, 31 Jul 2014 20:28:04 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F33D7B@P3PWEX4MB002.ex4.secureserver.net>
-References: <1406814475-5923-1-git-send-email-abbotti@mev.co.uk>
-In-Reply-To: <1406814475-5923-1-git-send-email-abbotti@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751900AbaGaUaL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:30:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16389 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750945AbaGaUaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 16:30:09 -0400
+Message-ID: <53DAA749.5080506@redhat.com>
+Date: Thu, 31 Jul 2014 16:30:01 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
+To: Saravana Kannan <skannan@codeaurora.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
+ to be held for duration of changing governors [v2]
+References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org>
+In-Reply-To: <53DAA60B.6040802@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 31, 2014 6:48 AM, Ian Abbott wrote:
-> The "amplc_pci224" driver retains a "legacy" attach mechanism via the
-> `COMEDI_DEVCONFIG` ioctl and the comedi driver "attach" hook, but
-> usually attaches PCI devices automatically via the comedi driver's
-> "auto_attach" hook.  The legacy mechanism is only retained so that
-> options can be passed via the ioctl to indicate how some hardware
-> jumpers are set on the boards, which is used to set up the range tables.
-> That's no use if the PCI device is attached automatically as the range
-> tables will be set up according to the factory default jumper positions.
->
-> Change the range tables to include all possible ranges, regardless of
-> jumper positions.  Then there is no need to have options to control
-> setting up the range tables and the "legacy" attach mechanism can be
-> removed.
->
-> Also, tidy the code up a bit.
 
-Looks good.
 
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+On 07/31/2014 04:24 PM, Saravana Kannan wrote:
+> On 07/31/2014 11:26 AM, Prarit Bhargava wrote:
+>>
+>>
+>> On 07/31/2014 02:38 PM, Rafael J. Wysocki wrote:
+>>> On Thursday, July 31, 2014 01:57:29 PM Prarit Bhargava wrote:
+>>>>
+>>>> On 07/31/2014 12:36 PM, Rafael J. Wysocki wrote:
+>>>>> On Thursday, July 31, 2014 06:23:18 AM Prarit Bhargava wrote:
+>>>>>>
+>>>>>> On 07/30/2014 10:16 PM, Rafael J. Wysocki wrote:
+>>>>>>> On Wednesday, July 30, 2014 06:36:00 PM Saravana Kannan wrote:
+>>>>>>>> On 07/30/2014 02:40 PM, Rafael J. Wysocki wrote:
+>>>>>>>>> On Wednesday, July 30, 2014 10:18:25 AM Prarit Bhargava wrote:
+>>>>>>>>>>
+>>>>>>>>>> On 07/29/2014 08:03 PM, Rafael J. Wysocki wrote:
+>>>>>>>>>>> On Tuesday, July 29, 2014 07:46:02 AM Prarit Bhargava wrote:
+>>>>>>>>>
+>>>>>>>>> [cut]
+>>>>>>>>>
+>>>>>>>>>>>> This patch effectively reverts commit 955ef483.
+>>>>>>>>
+>>>>>>>> The issue reported in this patch is valid. We are seeing that internally
+>>>>>>>> too. I believe I reported it in another thread (within the past month).
+>>>>>>>>
+>>>>>>>> However, the original patch fixes a real deadlock issue (I'm too tired
+>>>>>>>> to look it up now). We can revet the original, but it's going to bring
+>>>>>>>> back the original issue. I just want to make sure Prarit and Raphael
+>>>>>>>> realize this before proceeding.
+>>>>>>>>
+>>>>>>>> I do have plans for a proper fix for the mainline (not stable branches),
+>>>>>>>> but plan to do that after the current set of suspend/hotplug patches go
+>>>>>>>> through. The fix would be easier to make after that.
+>>>>>>>>
+>>>>>>>>>>>
+>>>>>>>>>>> OK, I'm convinced by this.
+>>>>>>>>>>>
+>>>>>>>>>>> I suppose we should push it for -stable from 3.10 through 3.15.x, right?
+>>>>>>>>>>
+>>>>>>>>>> Rafael, I think that is a good idea.  I'm not sure what the protocol
+>>>>>>>>>> is for
+>>>>>>>>>> adding stable@kernel.org though ...
+>>>>>>
+>>>>>> Rafael, let me (again) re-write the patch description.  I think Saravana has
+>>>>>> raised an important issue that I have not clearly identified why it is
+>>>>>> safe to
+>>>>>> remove this code in my patch description.  Also, I want to clearly
+>>>>>> identify the
+>>>>>> appropriate -stable releases to push this out to.
+>>>>>>
+>>>>>> I'll submit a [v3] later today or tomorrow.
+>>>>>
+>>>>> In any case that's too late for 3.16 final, unless there's an -rc8.
+>>>>>
+>>>>> Thanks for doing that work!
+>>>>
+>>>> Ugh ... I tried this (yet another) large system and hit another panic :(.
+>>>>
+>>>> I'm investigating now, and I'm hoping this is just something "new".
+>>>
+>>> Well, I've applied your patch as is and I can push it to Linus.
+>>>
+>>> However, if you want to update the changelog, I'll not do that, but in that
+>>> case the patch will have to wait for the next week.
+>>
+>> Rafael, please let it wait for next week.  I _need_ to make sure this is correct
+>> and I'd rather not pushed something half-done.
+>>
+> 
+> Prarit,
+> 
+> I'm not an expert on sysfs locking, but I would think the specific sysfs lock
+> would depend on the file/attribute group. So, can you please try to hotplug a
+> core in/out (to trigger the POLICY_EXIT) and then read a sysfs file exported by
+> the governor? scaling_governor doesn't cut it since that file is not removed on
+> policy exit event to governor. If it's ondemand, try reading/write it's sampling
+> rate file.
 
-Side note:
+Thanks Saravana -- will do.  I will get back to you shortly on this.
 
-Now that the manual attach has been removed, you could also remove
-the board information from the comedi_driver declaration.
+P.
 
-Regards,
-Hartley
-
+> 
+> -Saravana
+> 
