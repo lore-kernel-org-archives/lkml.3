@@ -1,140 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509AbaGaORj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 10:17:39 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:55452 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbaGaORi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 10:17:38 -0400
-Date: Thu, 31 Jul 2014 07:17:33 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org
-Subject: Re: [x86,kaslr] [    0.000000] WARNING: CPU: 0 PID: 0 at
- arch/x86/kernel/cpu/common.c:1422 warn_pre_alternatives()
-Message-ID: <20140731141733.GJ11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140730140756.GN16537@localhost>
- <20140730141732.GP16537@localhost>
- <20140730155207.GM11241@linux.vnet.ibm.com>
- <20140731024212.GB10184@localhost>
- <20140731025837.GC11241@linux.vnet.ibm.com>
- <20140731112747.GA13753@localhost>
+	id S1751480AbaGaOTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 10:19:48 -0400
+Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:57423
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750859AbaGaOTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 10:19:45 -0400
+From: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
+To: Borislav Petkov <bp@alien8.de>, Michal Simek <michals@xilinx.com>
+CC: "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Punnaiah Choudary <kpc528@gmail.com>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        Srikanth Vemula <svemula@xilinx.com>
+Subject: RE: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr ecc
+ controller
+Thread-Topic: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr
+ ecc controller
+Thread-Index: AQHPrLM94VO4hX43QSOxWbwM1x4+UJu6KhS2gAALH+2AAAFz4A==
+Date: Thu, 31 Jul 2014 14:19:20 +0000
+References: <9dc2a947-d2ab-4f00-8ed3-d2499cb6fdfd@BN1BFFO11FD002.protection.gbl>
+ <20140731113324.GB4375@pd.tnic>
+ <808655a9-77eb-4e3a-9781-2b059ad9517b@BN1AFFO11FD020.protection.gbl>
+ <20140731131702.GC4375@pd.tnic>
+ <a366b39c-b354-4d90-8b1e-71e74ab77cf3@BL2FFO11FD011.protection.gbl>
+ <20140731135652.GD4375@pd.tnic>
+In-Reply-To: <20140731135652.GD4375@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.228.130]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140731112747.GA13753@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073114-3532-0000-0000-00000384E556
+X-RCIS-Action: ALLOW
+Message-ID: <299a13fb-f442-4ebf-b0fc-d09d0dfc536d@BN1AFFO11FD019.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(164054003)(52044002)(13464003)(189002)(199002)(51704005)(24454002)(377454003)(33646002)(83072002)(76482001)(74316001)(92726001)(77982001)(81342001)(2656002)(64706001)(87936001)(50986999)(92566001)(83322001)(21056001)(79102001)(74502001)(70736001)(4396001)(74662001)(104016003)(19580405001)(46102001)(50466002)(54356999)(6806004)(107046002)(31966008)(81542001)(85306003)(95666004)(93886003)(1496007)(76176999)(86362001)(44976005)(85852003)(53416004)(47776003)(19580395003)(20776003)(106466001)(80022001)(31696002)(106116001)(77096002)(107986001)(217873001)(23106004);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB026;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0289B6431E
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=punnaiah.choudary.kalluri@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6VEJr4s008995
 
-On Thu, Jul 31, 2014 at 07:27:47PM +0800, Fengguang Wu wrote:
-> On Wed, Jul 30, 2014 at 07:58:37PM -0700, Paul E. McKenney wrote:
-> > On Thu, Jul 31, 2014 at 10:42:12AM +0800, Fengguang Wu wrote:
-> > > On Wed, Jul 30, 2014 at 08:52:07AM -0700, Paul E. McKenney wrote:
-> > > > On Wed, Jul 30, 2014 at 10:17:32PM +0800, Fengguang Wu wrote:
-> > > > > On Wed, Jul 30, 2014 at 10:07:56PM +0800, Fengguang Wu wrote:
-> > > > > > Hi Andy,
-> > > > > > 
-> > > > > > Here is another WARNING message for the same commit.
-> > > > > > 
-> > > > > > commit d07c7f1ed61789e175fa975134855be32263be2c
-> > > > > > Author:     Andy Lutomirski <luto@amacapital.net>
-> > > > > > AuthorDate: Tue Jul 15 18:34:20 2014 -0700
-> > > > > > Commit:     Andy Lutomirski <luto@amacapital.net>
-> > > > > > CommitDate: Wed Jul 16 10:01:27 2014 -0700
-> > > > > > 
-> > > > > >     x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR if available
-> > > > > >     
-> > > > > >     It's considerably better than any of the alternatives on KVM.
-> > > > > >     
-> > > > > >     Rather than reinventing all of the cpu feature query code, this fixes
-> > > > > >     native_cpuid to work in PIC objects.
-> > > > > >     
-> > > > > >     I haven't combined it with boot/cpuflags.c's cpuid implementation:
-> > > > > >     including asm/processor.h from boot/cpuflags.c results in a flood of
-> > > > > >     unrelated errors, and fixing it might be messy.
-> > > > > >     
-> > > > > >     Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> > > > > > 
-> > > > > > +-------------------------------------------------------------------------+------------+------------+
-> > > > > > |                                                                         | c6f07a6360 | d07c7f1ed6 |
-> > > > > > +-------------------------------------------------------------------------+------------+------------+
-> > > > > > | boot_successes                                                          | 1000       | 636        |
-> > > > > > | boot_failures                                                           | 0          | 84         |
-> > > > > > | WARNING:CPU:PID:at_arch/x86/kernel/cpu/common.c:warn_pre_alternatives() | 0          | 84         |
-> > > > > > | BUG:unable_to_handle_kernel_NULL_pointer_dereference                    | 0          | 84         |
-> > > > > > | Oops                                                                    | 0          | 84         |
-> > > > > > | RIP:__free_pages_bootmem                                                | 0          | 84         |
-> > > > > > | Kernel_panic-not_syncing:Fatal_exception                                | 0          | 84         |
-> > > > > > | backtrace:free_all_bootmem                                              | 0          | 84         |
-> > > > > > | backtrace:mem_init                                                      | 0          | 84         |
-> > > > > > +-------------------------------------------------------------------------+------------+------------+
-> > > > > > 
-> > > > > > [    0.000000] PID hash table entries: 2048 (order: 2, 16384 bytes)
-> > > > > > [    0.000000] xsave: enabled xstate_bv 0x7, cntxt size 0x0
-> > > > > > [    0.000000] ------------[ cut here ]------------
-> > > > > > [    0.000000] WARNING: CPU: 0 PID: 0 at arch/x86/kernel/cpu/common.c:1422 warn_pre_alternatives+0x1e/0x20()
-> > > > > > [    0.000000] You're using static_cpu_has before alternatives have run!
-> > > > > > [    0.000000] Modules linked in:
-> > > > > > [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.16.0-rc5-00004-gd07c7f1 #4
-> > > > > > [    0.000000] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> > > > > > [    0.000000]  0000000000000000 ffffffff81803c18 ffffffff813a7bd2 ffffffff81803c60
-> > > > > > [    0.000000]  ffffffff81803c50 ffffffff810a5485 ffffffff810102f9 ffffffff81803e08
-> > > > > > [    0.000000]  0000000000000002 000000000000077c 0000000000000000 ffffffff81803cb0
-> > > > > > [    0.000000] Call Trace:
-> > > > > > [    0.000000]  [<ffffffff813a7bd2>] dump_stack+0x4d/0x66
-> > > > > > [    0.000000]  [<ffffffff810a5485>] warn_slowpath_common+0x7f/0x98
-> > > > > > [    0.000000]  [<ffffffff810102f9>] ? warn_pre_alternatives+0x1e/0x20
-> > > > > > [    0.000000]  [<ffffffff810a54ea>] warn_slowpath_fmt+0x4c/0x4e
-> > > > > > [    0.000000]  [<ffffffff813b14e3>] ? restore_args+0x30/0x30
-> > > > > > [    0.000000]  [<ffffffff810102f9>] warn_pre_alternatives+0x1e/0x20
-> > > > > > [    0.000000]  [<ffffffff810378b5>] __do_page_fault+0x1bd/0x7ca
-> > > > > > [    0.000000]  [<ffffffff810f5782>] ? console_unlock+0x377/0x3c1
-> > > > > > [    0.000000]  [<ffffffff810e912e>] ? trace_hardirqs_off+0xd/0xf
-> > > > > > [    0.000000]  [<ffffffff813afcc5>] ? _raw_spin_unlock_irqrestore+0x40/0x5e
-> > > > > > [    0.000000]  [<ffffffff81b93d22>] ? __next_mem_range_rev+0x205/0x232
-> > > > > > [    0.000000]  [<ffffffff810e90e0>] ? trace_hardirqs_off_caller+0xe7/0x128
-> > > > > > [    0.000000]  [<ffffffff81226d8a>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-> > > > > > [    0.000000]  [<ffffffff81037ee4>] do_page_fault+0x22/0x27
-> > > > > > [    0.000000]  [<ffffffff813b2378>] page_fault+0x28/0x30
-> > > > > > [    0.000000]  [<ffffffff81b74f76>] ? __free_pages_bootmem+0x2d/0xf9
-> > > > > > [    0.000000]  [<ffffffff81b78d61>] __free_memory_core+0xa7/0xbe
-> > > > > > [    0.000000]  [<ffffffff81b78fe9>] free_all_bootmem+0x51/0xd2
-> > > > > > [    0.000000]  [<ffffffff81b67188>] mem_init+0x5c/0x8d
-> > > > > > [    0.000000]  [<ffffffff81b53cca>] start_kernel+0x1f7/0x53d
-> > > > > > [    0.000000]  [<ffffffff81b53814>] ? set_init_arg+0x55/0x55
-> > > > > > [    0.000000]  [<ffffffff81b53120>] ? early_idt_handlers+0x120/0x120
-> > > > > > [    0.000000]  [<ffffffff81b53471>] x86_64_start_reservations+0x2a/0x2c
-> > > > > > [    0.000000]  [<ffffffff81b535b3>] x86_64_start_kernel+0x140/0x14d
-> > > > > > [    0.000000] ---[ end trace e4962b91bd705c64 ]---
-> > > > > > [    0.000000] BUG: unable to handle kernel NULL pointer dereference at 000000000000077c
-> > > > > 
-> > > > > 
-> > > > > Interestingly, the other bisect result for the above WARNING message
-> > > > > is
-> > > > > 
-> > > > > commit ddfb3b363440172d62ce62fbffdf046670d3ce2b
-> > > > 
-> > > > This is an obsolete commit, but...
-> > > 
-> > > Paul, would you suggest me to test any new commit or branch HEAD?
-> > 
-> > The latest branch containing this commit is rcu/dev.2014.07.28e,
-> > might be worth a shot.
-> 
-> The current rcu/dev.2014.07.28e HEAD commit
-> 8a73ddf16763989f53e85e422ab6af7ca8114c98 looks fine: 110 boots without
-> a single error!
+Hi Boris,
 
-Whew!  ;-)
+>-----Original Message-----
+>From: Borislav Petkov [mailto:bp@alien8.de]
+>Sent: Thursday, July 31, 2014 7:27 PM
+>To: Michal Simek
+>Cc: Punnaiah Choudary Kalluri; dougthompson@xmission.com;
+>robh+dt@kernel.org; pawel.moll@arm.com; mark.rutland@arm.com;
+>ijc+devicetree@hellion.org.uk; Kumar Gala; Rob Landley;
+>devicetree@vger.kernel.org; linux-doc@vger.kernel.org; linux-
+>edac@vger.kernel.org; linux-kernel@vger.kernel.org; linux-arm-
+>kernel@lists.infradead.org; Punnaiah Choudary; Anirudha Sarangi; Srikanth
+>Vemula
+>Subject: Re: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr
+>ecc controller
+>
+>On Thu, Jul 31, 2014 at 03:36:35PM +0200, Michal Simek wrote:
+>> Mixing functions for two/more different controller seems to me
+>> really messy.
+>
+>Just stating that something is "really messy" without giving at least
+>one technical reason for it is not going to get you any further. So let
+>me give you mine:
+>
+>I think it is not messy because one file contains all the EDAC code for
+>that system. Like every other system out there uses one EDAC driver.
+>Everything is nicely contained in one place, any communication between
+>the two memory controllers is done internally in that driver.
+>
+>Having two drivers would make that much more complicated. But hey, if
+>you want to make your life more complicated because it is not enough
+>complicated, feel free to do so. Just make sure you don't impose any
+>restrictions on the rest of the subsystem.
 
-							Thanx, Paul
+Here we are also considering reusability of the driver. Let's say if some other
+SOC contains Synopsys ddr controller then this driver can be reused. In this case,
+Having separate driver would be good. But as you said in your previous comment,
+We will talk about this later. 
 
+Thanks,
+Punnaiah
+>
+>> > -ENOPARSE for this sentence.
+>>
+>> I meant by this this scenario - please correct me if I am completely wrong
+>> because I am not playing with this subsystem. My expectation is that
+>> memory controller number should be same all the time.
+>>
+>> two memory controllers with the same edac driver.
+>>
+>> Normal calling sequence:
+>> X probe - number 0
+>> Y probe - number 1
+>>
+>> Different order/name (I think order is taken at the first place)
+>> in DTS should caused that X will have number 1 and Y number 0.
+>>
+>> Another scenario:
+>> two controllers and one with external gpio reset for example.
+>>
+>> X probe is called but gpio controller is not ready and gpio driver returns
+>> -EPROBE_DEFER then Y probe is called and get number 0. Then X probe is
+>called
+>> again and get number 1.
+>
+>Right, since you have a heterogeneous design, you'd need to account
+>for all that in your driver and deal with probing order. Like having a
+>way to ask a controller what kind of a controller it is and so on. I'm
+>afraid I don't know anything about your design to be of more help there.
+>
+>However, doing this in one <name>_edac.c file is almost trivial than
+>doing it with two separate drivers. Unless you don't need to do any
+>meaningful communication between the PS and PL. Then it doesn't matter.
+>
+>If I were you, I'd spend a more time on a proper design now so that all
+>my work later is easy. Adding two drivers just because it seems messy is
+>not a very good idea. What I would do is analyze all my use cases and
+>come up with a proper design then. But this is just me.
+>
+>HTH.
+>
+>--
+>Regards/Gruss,
+>    Boris.
+>
+>Sent from a fat crate under my desk. Formatting is fine.
+>--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
