@@ -1,158 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751479AbaGaPNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:13:15 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:64809 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041AbaGaPNM (ORCPT
+	id S1751880AbaGaPQm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:16:42 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:52919 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293AbaGaPQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:13:12 -0400
+	Thu, 31 Jul 2014 11:16:39 -0400
+Date: Thu, 31 Jul 2014 17:16:32 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v4 2/5] x86,entry: Only call user_exit if TIF_NOHZ
+Message-ID: <20140731151630.GA7842@localhost.localdomain>
+References: <cover.1406604806.git.luto@amacapital.net>
+ <7123b2489cc5d1d5abb7bcf1364ca729cab3e6ca.1406604806.git.luto@amacapital.net>
+ <20140729193232.GA8153@redhat.com>
+ <20140730164344.GA27954@localhost.localdomain>
+ <CALCETrUVaz3JFiNbyU=r3M-E9muHa1ffn7RX+_-4V_0U-hVaPw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140731032527.D2C5AC40A02@trevor.secretlab.ca>
-References: <C2D7FE5348E1B147BCA15975FBA230753C4B67CF@IN01WEMBXA.internal.synopsys.com>
- <CAL_JsqJ2q0RSvXQW03RqwwBi_TKQ7Zt6DsUbsUruzh5oqYi5Cg@mail.gmail.com>
- <C2D7FE5348E1B147BCA15975FBA230753C4B7DD5@IN01WEMBXA.internal.synopsys.com>
- <20140726165055.D3E64C43E0B@trevor.secretlab.ca> <CAL_JsqLR65PcLhoQR6VaQvrLLbPOR1tLx9oLEinYkkATSKxbKQ@mail.gmail.com>
- <20140731032527.D2C5AC40A02@trevor.secretlab.ca>
-From: Rob Herring <robherring2@gmail.com>
-Date: Thu, 31 Jul 2014 10:12:47 -0500
-Message-ID: <CAL_JsqL_sjp_31oJj5Nc4wh6+bo8Qqq4tdEiw9FLejJk+sgoVw@mail.gmail.com>
-Subject: Re: ARC fails to boot on linux-next of 20140711
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        Anton Kolesov <Anton.Kolesov@synopsys.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUVaz3JFiNbyU=r3M-E9muHa1ffn7RX+_-4V_0U-hVaPw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 10:25 PM, Grant Likely
-<grant.likely@secretlab.ca> wrote:
-> On Sat, 26 Jul 2014 15:10:28 -0500, Rob Herring <robherring2@gmail.com> wrote:
->> On Sat, Jul 26, 2014 at 11:50 AM, Grant Likely
->> <grant.likely@secretlab.ca> wrote:
->> > On Sat, 26 Jul 2014 06:52:36 +0000, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
->> >> Hi Rob,
->> >>
->> >> On Friday 25 July 2014 07:45 PM, Rob Herring wrote:
->> >> > On Fri, Jul 25, 2014 at 6:02 AM, Vineet Gupta
->> >> > <Vineet.Gupta1@synopsys.com> wrote:
->> >> >> > Hi Grant,
->> >> >> >
->> >> >> > linux-next has a series for arc_uart (via tty tree) which converts it to generic
->> >> >> > earlycon and specifies console via /chosen/stdout-path vs.  an explicit param in
->> >> >> > /chose/bootargs
->> >> >> >
->> >> >> > 2014-06-24 9da433c0a0b5 ARC: [arcfpga] stdout-path now suffices for earlycon/console
->> >> >> >
->> >> >> > This relied on prev commit of yours (from linux next of 20140711), which seem to
->> >> >> > have disappeared now.
->> >> >> >
->> >> >> > 2014-03-27 a9296cf2d0b6 of: Create of_console_check() for selecting a console
->> >> >> > specified in /chosen
->> >> >> > 2014-03-27 cfa9cacc5dd3 of: Enable console on serial ports specified by
->> >> >> > /chosen/stdout-path
->> >> >> >
->> >> >> > Is there a specific reason for dropping these patches (or perhaps a merge to be
->> >> >> > merged). I cherry-picked both but still doesn't work.
->> >> >> >
->> >> >> > Can you please advise next step forward, before I go off debugging with those
->> >> >> > patches in.
->> >> > There's an issue that if you have stdout-path and "earlycon" on the
->> >> > command line, the kernel will switch to tty0 and disable the earlycon.
->> >> >
->> >> > This is the "fix", but I don't like adding the DT dependency into generic code:
->> >> >
->> >> > @@ -2382,7 +2386,7 @@ void register_console(struct console *newcon)
->> >> >                 if (newcon->setup == NULL ||
->> >> >                     newcon->setup(newcon, NULL) == 0) {
->> >> >                         newcon->flags |= CON_ENABLED;
->> >> > -                       if (newcon->device) {
->> >> > +                       if (newcon->device  && !of_stdout) {
->> >> >                                 newcon->flags |= CON_CONSDEV;
->> >> >                                 preferred_console = 0;
->> >> >                         }
->> >>
->> >> The DT settings relevant for ARC, which enable generic-earlycon and
->> >> console-with-stdout-path are as follows
->> >>
->> >>         chosen {
->> >>                 bootargs = "earlycon";
->> >>                 stdout-path = &arcuart0;
->> >>         };
->> >>
->> >> ....
->> >>                 arcuart0: serial@c0fc1000 {
->> >>                         compatible = "snps,arc-uart";
->> >>
->> >> And it works w/o above hunk, provided the 2 patches from Grant exist in linux-next
->> >> which they don't at the moment. I'm pretty confused how the hunk above comes into
->> >> picture.
->> >>
->> >> And if not then I will have to get the ARC std-out patch reverted in tty-next as
->> >> it is broken.
->> >
->> > You need to revert it anyway, the dependency chain is broken. Just
->> > because something is in linux-next doesn't mean it will be merged.
->> > Dependencies must always be in the branch to which you commit.
->> >
->> > If that doesn't happen (like here) then bisecting is broken and the
->> > dependencies may not actually get merged.
->> >
->> > When this happens, what you're supposed to do is tell the maintainers
->> > what commits the patch depends on so that it can be applied to the
->> > correct tree. In this case I could take it through my devicetree branch
->> > that contains the console patches.
->> >
->> > If a patch depends on commits in several branches then it is a bit more
->> > complex. What we usually do is create a new branch that merges in each
->> > branch that is depended on, and then apply the commit on top of that.
->> >
->> > As for the console patches, I'm only going to be putting them back if I
->> > can devise a good fix for the earlycon duplication issue.
->>
->> There is also a simple work-around. You have to specify the console
->> when you use earlycon. For example, you can add "earlycon
->> console=ttyAMA0" instead of just earlycon. To summarize, this is the
->> state of combinations of console params:
->>
->> Working:
->> stdout-path
->> console=blah
->> stdout-path + console=blah
->> earlycon=blah
->>
->> Not working:
->> stdout-path + earlycon
->>
->> Also, it is a developer only feature which is new. You will be aware
->> of an issue because the earlycon starts output and then stops on
->> switching to tty0 versus complete silence which could be anything.
->
-> Fair enough. Okay, I'm going to put it back into linux-next. The proper
-> fix can come later.
->
->> There are other landmines in this area already. For example, setting
->> earlycon on ARM will break the boot because an ioremap is attempted
->> before paging_init. This is nothing new, but has always been the case
->> if the 8250 driver was enabled.
->
-> We should not allow earlycon to be selectable on ARM until this is
-> fixed. Can you do a patch for this?
+On Wed, Jul 30, 2014 at 10:23:34AM -0700, Andy Lutomirski wrote:
+> On Wed, Jul 30, 2014 at 9:43 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > On Tue, Jul 29, 2014 at 09:32:32PM +0200, Oleg Nesterov wrote:
+> >> On 07/28, Andy Lutomirski wrote:
+> >> >
+> >> > @@ -1449,7 +1449,12 @@ long syscall_trace_enter(struct pt_regs *regs)
+> >> >  {
+> >> >     long ret = 0;
+> >> >
+> >> > -   user_exit();
+> >> > +   /*
+> >> > +    * If TIF_NOHZ is set, we are required to call user_exit() before
+> >> > +    * doing anything that could touch RCU.
+> >> > +    */
+> >> > +   if (test_thread_flag(TIF_NOHZ))
+> >> > +           user_exit();
+> >>
+> >> Personally I still think this change just adds more confusion, but I leave
+> >> this to you and Frederic.
+> >>
+> >> It is not that "If TIF_NOHZ is set, we are required to call user_exit()", we
+> >> need to call user_exit() just because we enter the kernel. TIF_NOHZ is just
+> >> the implementation detail which triggers this slow path.
+> >>
+> >> At least it should be correct, unless I am confused even more than I think.
+> >
+> > Agreed, Perhaps the confusion is on the syscall_trace_enter() name which suggests
+> > this is only about tracing? syscall_slowpath_enter() could be an alternative.
+> > But that's still tracing in a general sense so...
+> 
+> At the end of the day, the syscall slowpath code calls a bunch of
+> functions depending on what TIF_XYZ flags are set.  As long as it's
+> structured like "if (TIF_A) do_a(); if (TIF_B) do_b();" or something
+> like that, it's comprehensible.  But once random functions with no
+> explicit flag checks or comments start showing up, it gets confusing.
 
-There is not a config option as it is always enabled when the console
-is enabled, and it is no different than many command line options that
-could break booting. More importantly, earlycon does work on ARM with
-semihosting since nothing needs to be mapped. And BTW, you can use
-semihosting with QEMU.
+Yeah that's a point. I don't mind much the TIF_NOHZ test if you like.
 
-Hopefully, we'll get fixmap support sorted out soon clearing this
-minefield. Part of fixmap support is needed for UEFI early ioremap and
-I think there's a few other things that could use it.
+> 
+> If it's indeed all-or-nothing, I could remove the check and add a
+> comment.  But please keep in mind that, currently, the slow path is
+> *slow*, and my patches only improve the entry case.  So enabling
+> context tracking on every task will hurt.
 
-Rob
+That's what we do anyway. I haven't found a safe way to enabled context tracking
+without tracking all CPUs.
+
+> 
+> --Andy
