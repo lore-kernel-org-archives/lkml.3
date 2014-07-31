@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaGaRHc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:07:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60744 "EHLO
+	id S1752808AbaGaRHo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:07:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60755 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaGaRH2 (ORCPT
+	with ESMTP id S1752104AbaGaRHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:07:28 -0400
-Date: Thu, 31 Jul 2014 10:07:16 -0700
+	Thu, 31 Jul 2014 13:07:41 -0400
+Date: Thu, 31 Jul 2014 10:07:28 -0700
 From: tip-bot for David Rientjes <tipbot@zytor.com>
-Message-ID: <tip-c460b5d34018d71fdeb8540620690883db3f959b@git.kernel.org>
+Message-ID: <tip-658ffd7e6f5ce62e15df99df5f9e181d76ffda8e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         tglx@linutronix.de, rientjes@google.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         tglx@linutronix.de, rientjes@google.com
-In-Reply-To: <alpine.DEB.2.02.1407302349390.17503@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1407302349390.17503@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1407302350160.17503@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1407302350160.17503@chino.kir.corp.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, apic: Remove mps_oem_check callback
-Git-Commit-ID: c460b5d34018d71fdeb8540620690883db3f959b
+Subject: [tip:x86/apic] x86, apic: Remove check_apicid_present callback
+Git-Commit-ID: 658ffd7e6f5ce62e15df99df5f9e181d76ffda8e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,213 +31,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c460b5d34018d71fdeb8540620690883db3f959b
-Gitweb:     http://git.kernel.org/tip/c460b5d34018d71fdeb8540620690883db3f959b
+Commit-ID:  658ffd7e6f5ce62e15df99df5f9e181d76ffda8e
+Gitweb:     http://git.kernel.org/tip/658ffd7e6f5ce62e15df99df5f9e181d76ffda8e
 Author:     David Rientjes <rientjes@google.com>
-AuthorDate: Wed, 30 Jul 2014 23:53:34 -0700
+AuthorDate: Wed, 30 Jul 2014 23:53:37 -0700
 Committer:  H. Peter Anvin <hpa@zytor.com>
 CommitDate: Thu, 31 Jul 2014 08:05:42 -0700
 
-x86, apic: Remove mps_oem_check callback
+x86, apic: Remove check_apicid_present callback
 
-Since commit b5660ba76b41 ("x86, platforms: Remove NUMAQ") removed NUMAQ,
-the mps_oem_check() apic callback has been obsolete.  Remove it.
-
-This allows generic_mps_oem_check() to be removed as well.
+The check_apicid_present() apic callback is never called, so remove it
+and functions that implement it.
 
 Signed-off-by: David Rientjes <rientjes@google.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1407302349390.17503@chino.kir.corp.google.com
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1407302350160.17503@chino.kir.corp.google.com
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/include/asm/apic.h           |  7 -------
- arch/x86/include/asm/mpspec.h         |  2 --
- arch/x86/kernel/apic/apic_flat_64.c   |  2 --
- arch/x86/kernel/apic/apic_noop.c      |  2 --
- arch/x86/kernel/apic/apic_numachip.c  |  1 -
- arch/x86/kernel/apic/bigsmp_32.c      |  1 -
- arch/x86/kernel/apic/probe_32.c       | 25 +------------------------
- arch/x86/kernel/apic/x2apic_cluster.c |  1 -
- arch/x86/kernel/apic/x2apic_phys.c    |  1 -
- arch/x86/kernel/apic/x2apic_uv_x.c    |  1 -
- arch/x86/kernel/mpparse.c             |  3 ---
- 11 files changed, 1 insertion(+), 45 deletions(-)
+ arch/x86/include/asm/apic.h           | 6 ------
+ arch/x86/kernel/apic/apic_flat_64.c   | 2 --
+ arch/x86/kernel/apic/apic_noop.c      | 6 ------
+ arch/x86/kernel/apic/apic_numachip.c  | 1 -
+ arch/x86/kernel/apic/bigsmp_32.c      | 6 ------
+ arch/x86/kernel/apic/probe_32.c       | 1 -
+ arch/x86/kernel/apic/x2apic_cluster.c | 1 -
+ arch/x86/kernel/apic/x2apic_phys.c    | 1 -
+ arch/x86/kernel/apic/x2apic_uv_x.c    | 1 -
+ 9 files changed, 25 deletions(-)
 
 diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index b8c1380..86d1550 100644
+index 86d1550..e1c0c2d 100644
 --- a/arch/x86/include/asm/apic.h
 +++ b/arch/x86/include/asm/apic.h
-@@ -309,13 +309,6 @@ struct apic {
- 	void (*enable_apic_mode)(void);
- 	int (*phys_pkg_id)(int cpuid_apic, int index_msb);
+@@ -292,7 +292,6 @@ struct apic {
  
--	/*
--	 * When one of the next two hooks returns 1 the apic
--	 * is switched to this. Essentially they are additional
--	 * probe functions:
--	 */
--	int (*mps_oem_check)(struct mpc_table *mpc, char *oem, char *productid);
--
- 	unsigned int (*get_apic_id)(unsigned long x);
- 	unsigned long (*set_apic_id)(unsigned int id);
- 	unsigned long apic_id_mask;
-diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-index 7bef40a..b07233b 100644
---- a/arch/x86/include/asm/mpspec.h
-+++ b/arch/x86/include/asm/mpspec.h
-@@ -150,6 +150,4 @@ static inline void physid_set_mask_of_physid(int physid, physid_mask_t *map)
+ 	int dest_logical;
+ 	unsigned long (*check_apicid_used)(physid_mask_t *map, int apicid);
+-	unsigned long (*check_apicid_present)(int apicid);
  
- extern physid_mask_t phys_cpu_present_map;
- 
--extern int generic_mps_oem_check(struct mpc_table *, char *, char *);
--
- #endif /* _ASM_X86_MPSPEC_H */
-diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
-index a790497..86c4203 100644
---- a/arch/x86/kernel/apic/apic_flat_64.c
-+++ b/arch/x86/kernel/apic/apic_flat_64.c
-@@ -182,7 +182,6 @@ static struct apic apic_flat =  {
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= flat_phys_pkg_id,
--	.mps_oem_check			= NULL,
- 
- 	.get_apic_id			= flat_get_apic_id,
- 	.set_apic_id			= set_apic_id,
-@@ -295,7 +294,6 @@ static struct apic apic_physflat =  {
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= flat_phys_pkg_id,
--	.mps_oem_check			= NULL,
- 
- 	.get_apic_id			= flat_get_apic_id,
- 	.set_apic_id			= set_apic_id,
-diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
-index f05b4f0..6b25735 100644
---- a/arch/x86/kernel/apic/apic_noop.c
-+++ b/arch/x86/kernel/apic/apic_noop.c
-@@ -152,8 +152,6 @@ struct apic apic_noop = {
- 
- 	.phys_pkg_id			= noop_phys_pkg_id,
- 
--	.mps_oem_check			= NULL,
--
- 	.get_apic_id			= noop_get_apic_id,
- 	.set_apic_id			= NULL,
- 	.apic_id_mask			= 0x0F << 24,
-diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index c0d9165..5f83500 100644
---- a/arch/x86/kernel/apic/apic_numachip.c
-+++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -231,7 +231,6 @@ static const struct apic apic_numachip __refconst = {
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= numachip_phys_pkg_id,
--	.mps_oem_check			= NULL,
- 
- 	.get_apic_id			= get_apic_id,
- 	.set_apic_id			= set_apic_id,
-diff --git a/arch/x86/kernel/apic/bigsmp_32.c b/arch/x86/kernel/apic/bigsmp_32.c
-index eb15916..90f6427 100644
---- a/arch/x86/kernel/apic/bigsmp_32.c
-+++ b/arch/x86/kernel/apic/bigsmp_32.c
-@@ -182,7 +182,6 @@ static struct apic apic_bigsmp = {
- 	.check_phys_apicid_present	= bigsmp_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= bigsmp_phys_pkg_id,
--	.mps_oem_check			= NULL,
- 
- 	.get_apic_id			= bigsmp_get_apic_id,
- 	.set_apic_id			= NULL,
-diff --git a/arch/x86/kernel/apic/probe_32.c b/arch/x86/kernel/apic/probe_32.c
-index 5b617a9..b4211f6 100644
---- a/arch/x86/kernel/apic/probe_32.c
-+++ b/arch/x86/kernel/apic/probe_32.c
-@@ -102,7 +102,6 @@ static struct apic apic_default = {
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= default_phys_pkg_id,
--	.mps_oem_check			= NULL,
- 
- 	.get_apic_id			= default_get_apic_id,
- 	.set_apic_id			= NULL,
-@@ -210,29 +209,7 @@ void __init generic_apic_probe(void)
- 	printk(KERN_INFO "Using APIC driver %s\n", apic->name);
+ 	void (*vector_allocation_domain)(int cpu, struct cpumask *retmask,
+ 					 const struct cpumask *mask);
+@@ -608,11 +607,6 @@ static inline unsigned long default_check_apicid_used(physid_mask_t *map, int ap
+ 	return physid_isset(apicid, *map);
  }
  
--/* These functions can switch the APIC even after the initial ->probe() */
--
--int __init
--generic_mps_oem_check(struct mpc_table *mpc, char *oem, char *productid)
+-static inline unsigned long default_check_apicid_present(int bit)
 -{
--	struct apic **drv;
--
--	for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
--		if (!((*drv)->mps_oem_check))
--			continue;
--		if (!(*drv)->mps_oem_check(mpc, oem, productid))
--			continue;
--
--		if (!cmdline_apic) {
--			apic = *drv;
--			printk(KERN_INFO "Switched to APIC driver `%s'.\n",
--			       apic->name);
--		}
--		return 1;
--	}
--	return 0;
+-	return physid_isset(bit, phys_cpu_present_map);
 -}
 -
-+/* This function can switch the APIC even after the initial ->probe() */
- int __init default_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+ static inline void default_ioapic_phys_id_map(physid_mask_t *phys_map, physid_mask_t *retmap)
  {
- 	struct apic **drv;
+ 	*retmap = *phys_map;
+diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
+index 86c4203..a8ed9ac 100644
+--- a/arch/x86/kernel/apic/apic_flat_64.c
++++ b/arch/x86/kernel/apic/apic_flat_64.c
+@@ -168,7 +168,6 @@ static struct apic apic_flat =  {
+ 	.disable_esr			= 0,
+ 	.dest_logical			= APIC_DEST_LOGICAL,
+ 	.check_apicid_used		= NULL,
+-	.check_apicid_present		= NULL,
+ 
+ 	.vector_allocation_domain	= flat_vector_allocation_domain,
+ 	.init_apic_ldr			= flat_init_apic_ldr,
+@@ -279,7 +278,6 @@ static struct apic apic_physflat =  {
+ 	.disable_esr			= 0,
+ 	.dest_logical			= 0,
+ 	.check_apicid_used		= NULL,
+-	.check_apicid_present		= NULL,
+ 
+ 	.vector_allocation_domain	= default_vector_allocation_domain,
+ 	/* not needed, but shouldn't hurt: */
+diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
+index 6b25735..8c165d9 100644
+--- a/arch/x86/kernel/apic/apic_noop.c
++++ b/arch/x86/kernel/apic/apic_noop.c
+@@ -94,11 +94,6 @@ static unsigned long noop_check_apicid_used(physid_mask_t *map, int apicid)
+ 	return physid_isset(apicid, *map);
+ }
+ 
+-static unsigned long noop_check_apicid_present(int bit)
+-{
+-	return physid_isset(bit, phys_cpu_present_map);
+-}
+-
+ static void noop_vector_allocation_domain(int cpu, struct cpumask *retmask,
+ 					  const struct cpumask *mask)
+ {
+@@ -134,7 +129,6 @@ struct apic apic_noop = {
+ 	.disable_esr			= 0,
+ 	.dest_logical			= APIC_DEST_LOGICAL,
+ 	.check_apicid_used		= noop_check_apicid_used,
+-	.check_apicid_present		= noop_check_apicid_present,
+ 
+ 	.vector_allocation_domain	= noop_vector_allocation_domain,
+ 	.init_apic_ldr			= noop_init_apic_ldr,
+diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
+index 5f83500..b49eb40 100644
+--- a/arch/x86/kernel/apic/apic_numachip.c
++++ b/arch/x86/kernel/apic/apic_numachip.c
+@@ -217,7 +217,6 @@ static const struct apic apic_numachip __refconst = {
+ 	.disable_esr			= 0,
+ 	.dest_logical			= 0,
+ 	.check_apicid_used		= NULL,
+-	.check_apicid_present		= NULL,
+ 
+ 	.vector_allocation_domain	= default_vector_allocation_domain,
+ 	.init_apic_ldr			= flat_init_apic_ldr,
+diff --git a/arch/x86/kernel/apic/bigsmp_32.c b/arch/x86/kernel/apic/bigsmp_32.c
+index 90f6427..163ad45 100644
+--- a/arch/x86/kernel/apic/bigsmp_32.c
++++ b/arch/x86/kernel/apic/bigsmp_32.c
+@@ -31,11 +31,6 @@ static unsigned long bigsmp_check_apicid_used(physid_mask_t *map, int apicid)
+ 	return 0;
+ }
+ 
+-static unsigned long bigsmp_check_apicid_present(int bit)
+-{
+-	return 1;
+-}
+-
+ static int bigsmp_early_logical_apicid(int cpu)
+ {
+ 	/* on bigsmp, logical apicid is the same as physical */
+@@ -168,7 +163,6 @@ static struct apic apic_bigsmp = {
+ 	.disable_esr			= 1,
+ 	.dest_logical			= 0,
+ 	.check_apicid_used		= bigsmp_check_apicid_used,
+-	.check_apicid_present		= bigsmp_check_apicid_present,
+ 
+ 	.vector_allocation_domain	= default_vector_allocation_domain,
+ 	.init_apic_ldr			= bigsmp_init_apic_ldr,
+diff --git a/arch/x86/kernel/apic/probe_32.c b/arch/x86/kernel/apic/probe_32.c
+index b4211f6..4d92ef8 100644
+--- a/arch/x86/kernel/apic/probe_32.c
++++ b/arch/x86/kernel/apic/probe_32.c
+@@ -88,7 +88,6 @@ static struct apic apic_default = {
+ 	.disable_esr			= 0,
+ 	.dest_logical			= APIC_DEST_LOGICAL,
+ 	.check_apicid_used		= default_check_apicid_used,
+-	.check_apicid_present		= default_check_apicid_present,
+ 
+ 	.vector_allocation_domain	= flat_vector_allocation_domain,
+ 	.init_apic_ldr			= default_init_apic_ldr,
 diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index d96cab1..7e4ac558 100644
+index 7e4ac558..d7bbe89 100644
 --- a/arch/x86/kernel/apic/x2apic_cluster.c
 +++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -263,7 +263,6 @@ static struct apic apic_x2apic_cluster = {
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= x2apic_phys_pkg_id,
--	.mps_oem_check			= NULL,
+@@ -249,7 +249,6 @@ static struct apic apic_x2apic_cluster = {
+ 	.disable_esr			= 0,
+ 	.dest_logical			= APIC_DEST_LOGICAL,
+ 	.check_apicid_used		= NULL,
+-	.check_apicid_present		= NULL,
  
- 	.get_apic_id			= x2apic_get_apic_id,
- 	.set_apic_id			= x2apic_set_apic_id,
+ 	.vector_allocation_domain	= cluster_vector_allocation_domain,
+ 	.init_apic_ldr			= init_x2apic_ldr,
 diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-index 73d0fee..01136e6 100644
+index 01136e6..e23bec9 100644
 --- a/arch/x86/kernel/apic/x2apic_phys.c
 +++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -117,7 +117,6 @@ static struct apic apic_x2apic_phys = {
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= x2apic_phys_pkg_id,
--	.mps_oem_check			= NULL,
+@@ -103,7 +103,6 @@ static struct apic apic_x2apic_phys = {
+ 	.disable_esr			= 0,
+ 	.dest_logical			= 0,
+ 	.check_apicid_used		= NULL,
+-	.check_apicid_present		= NULL,
  
- 	.get_apic_id			= x2apic_get_apic_id,
- 	.set_apic_id			= x2apic_set_apic_id,
+ 	.vector_allocation_domain	= default_vector_allocation_domain,
+ 	.init_apic_ldr			= init_x2apic_ldr,
 diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index cc5d40e..119c553 100644
+index 119c553..633732f 100644
 --- a/arch/x86/kernel/apic/x2apic_uv_x.c
 +++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -379,7 +379,6 @@ static struct apic __refdata apic_x2apic_uv_x = {
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= uv_phys_pkg_id,
--	.mps_oem_check			= NULL,
+@@ -365,7 +365,6 @@ static struct apic __refdata apic_x2apic_uv_x = {
+ 	.disable_esr			= 0,
+ 	.dest_logical			= APIC_DEST_LOGICAL,
+ 	.check_apicid_used		= NULL,
+-	.check_apicid_present		= NULL,
  
- 	.get_apic_id			= x2apic_get_apic_id,
- 	.set_apic_id			= set_apic_id,
-diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
-index fde86d2..2d2a237 100644
---- a/arch/x86/kernel/mpparse.c
-+++ b/arch/x86/kernel/mpparse.c
-@@ -216,9 +216,6 @@ static int __init smp_read_mpc(struct mpc_table *mpc, unsigned early)
- 	if (!smp_check_mpc(mpc, oem, str))
- 		return 0;
- 
--#ifdef CONFIG_X86_32
--	generic_mps_oem_check(mpc, oem, str);
--#endif
- 	/* Initialize the lapic mapping */
- 	if (!acpi_lapic)
- 		register_lapic_address(mpc->lapic);
+ 	.vector_allocation_domain	= default_vector_allocation_domain,
+ 	.init_apic_ldr			= uv_init_apic_ldr,
