@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752418AbaGaQKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:10:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36119 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752283AbaGaQKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:10:13 -0400
-From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
-To: linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v4 1/4] ARM: dts: Fix MMC pinctrl for exynos5250-snow
-Date: Thu, 31 Jul 2014 18:08:26 +0200
-Message-Id: <1406822910-6255-2-git-send-email-afaerber@suse.de>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1406822910-6255-1-git-send-email-afaerber@suse.de>
-References: <1406822910-6255-1-git-send-email-afaerber@suse.de>
+	id S1752630AbaGaQKf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:10:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59709 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093AbaGaQKb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:10:31 -0400
+Date: Thu, 31 Jul 2014 09:10:17 -0700
+From: tip-bot for Dave Hansen <tipbot@zytor.com>
+Message-ID: <tip-a23421f111bb256cdbf23dcfe15f35567ab88e98@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        riel@redhat.com, mgorman@suse.de, tglx@linutronix.de,
+        dave.hansen@linux.intel.com, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        riel@redhat.com, mgorman@suse.de, tglx@linutronix.de,
+        dave.hansen@linux.intel.com, hpa@linux.intel.com
+In-Reply-To: <20140731154058.E0F90408@viggo.jf.intel.com>
+References: <20140731154058.E0F90408@viggo.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86/mm: Unify remote INVLPG code
+Git-Commit-ID: a23421f111bb256cdbf23dcfe15f35567ab88e98
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pinctrl properties should be on the device directly and not on the
-slot sub-node.
+Commit-ID:  a23421f111bb256cdbf23dcfe15f35567ab88e98
+Gitweb:     http://git.kernel.org/tip/a23421f111bb256cdbf23dcfe15f35567ab88e98
+Author:     Dave Hansen <dave.hansen@linux.intel.com>
+AuthorDate: Thu, 31 Jul 2014 08:40:58 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 31 Jul 2014 08:48:51 -0700
 
-Reported-by: Doug Anderson <dianders@chromium.org>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>
-Signed-off-by: Andreas Färber <afaerber@suse.de>
+x86/mm: Unify remote INVLPG code
+
+There are currently three paths through the remote flush code:
+
+1. full invalidation
+2. single page invalidation using invlpg
+3. ranged invalidation using invlpg
+
+This takes 2 and 3 and combines them in to a single path by
+making the single-page one just be the start and end be start
+plus a single page.  This makes placement of our tracepoint easier.
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Link: http://lkml.kernel.org/r/20140731154058.E0F90408@viggo.jf.intel.com
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- v3 -> v4: Unchanged
+ arch/x86/mm/tlb.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index ae584d0..add5a0f 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -102,13 +102,13 @@ static void flush_tlb_func(void *info)
  
- v3: New (Doug Anderson)
- Redundant with Jaehoon Chung's general slot@0 deprecation,
- in case that hits the tree earlier.
-
- arch/arm/boot/dts/exynos5250-snow.dts | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-index f2b8c4116541..eb437f6afec1 100644
---- a/arch/arm/boot/dts/exynos5250-snow.dts
-+++ b/arch/arm/boot/dts/exynos5250-snow.dts
-@@ -240,10 +240,8 @@
- 	 */
- 	mmc@12230000 {
- 		status = "okay";
--		slot@0 {
--			pinctrl-names = "default";
--			pinctrl-0 = <&sd3_clk &sd3_cmd &sd3_bus4>;
--		};
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&sd3_clk &sd3_cmd &sd3_bus4>;
- 	};
+ 	if (f->flush_mm != this_cpu_read(cpu_tlbstate.active_mm))
+ 		return;
++	if (!f->flush_end)
++		f->flush_end = f->flush_start + PAGE_SIZE;
  
- 	i2c@12CD0000 {
--- 
-1.9.3
-
+ 	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
+ 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+ 		if (f->flush_end == TLB_FLUSH_ALL)
+ 			local_flush_tlb();
+-		else if (!f->flush_end)
+-			__flush_tlb_single(f->flush_start);
+ 		else {
+ 			unsigned long addr;
+ 			addr = f->flush_start;
