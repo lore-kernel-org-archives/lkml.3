@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381AbaGaVzm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 17:55:42 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:34539 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052AbaGaVzX (ORCPT
+	id S1753063AbaGaVzW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 17:55:22 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49854 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752239AbaGaVzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 17:55:23 -0400
+	Thu, 31 Jul 2014 17:55:17 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,88 +15,109 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v3 tip/core/rcu 9/9] documentation: Add verbiage on RCU-tasks stall warning messages
-Date: Thu, 31 Jul 2014 14:55:09 -0700
-Message-Id: <1406843709-23396-9-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v3 tip/core/rcu 5/9] rcutorture: Add torture tests for RCU-tasks
+Date: Thu, 31 Jul 2014 14:55:05 -0700
+Message-Id: <1406843709-23396-5-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140731215445.GA21933@linux.vnet.ibm.com>
  <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073121-9332-0000-0000-0000018F8835
+x-cbid: 14073121-1344-0000-0000-0000032CD3A6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit documents RCU-tasks stall warning messages and also describes
-when to use the new cond_resched_rcu_qs() API.
+This commit adds torture tests for RCU-tasks.  It also fixes a bug that
+would segfault for an RCU flavor lacking a callback-barrier function.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- Documentation/RCU/stallwarn.txt | 33 ++++++++++++++++++++++++---------
- 1 file changed, 24 insertions(+), 9 deletions(-)
+ include/linux/rcupdate.h |  1 +
+ kernel/rcu/rcutorture.c  | 40 +++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 40 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
-index 68fe3ad27015..ef5a2fd4ff70 100644
---- a/Documentation/RCU/stallwarn.txt
-+++ b/Documentation/RCU/stallwarn.txt
-@@ -56,8 +56,20 @@ RCU_STALL_RAT_DELAY
- 	two jiffies.  (This is a cpp macro, not a kernel configuration
- 	parameter.)
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 1f073af940a5..f9d314bbc7b6 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -55,6 +55,7 @@ enum rcutorture_type {
+ 	RCU_FLAVOR,
+ 	RCU_BH_FLAVOR,
+ 	RCU_SCHED_FLAVOR,
++	RCU_TASKS_FLAVOR,
+ 	SRCU_FLAVOR,
+ 	INVALID_RCU_FLAVOR
+ };
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index febe07062ac5..6d12ab6675bc 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -602,6 +602,42 @@ static struct rcu_torture_ops sched_ops = {
+ };
  
--When a CPU detects that it is stalling, it will print a message similar
--to the following:
-+rcupdate.rcu_task_stall_timeout
+ /*
++ * Definitions for RCU-tasks torture testing.
++ */
 +
-+	This boot/sysfs parameter controls the RCU-tasks stall warning
-+	interval.  A value of zero or less suppresses RCU-tasks stall
-+	warnings.  A positive value sets the stall-warning interval
-+	in jiffies.  An RCU-tasks stall warning starts wtih the line:
++static int tasks_torture_read_lock(void)
++{
++	return 0;
++}
 +
-+		INFO: rcu_tasks detected stalls on tasks:
++static void tasks_torture_read_unlock(int idx)
++{
++}
 +
-+	And continues with the output of sched_show_task() for each
-+	task stalling the current RCU-tasks grace period.
++static void rcu_tasks_torture_deferred_free(struct rcu_torture *p)
++{
++	call_rcu_tasks(&p->rtort_rcu, rcu_torture_cb);
++}
 +
-+For non-RCU-tasks flavors of RCU, when a CPU detects that it is stalling,
-+it will print a message similar to the following:
++static struct rcu_torture_ops tasks_ops = {
++	.ttype		= RCU_TASKS_FLAVOR,
++	.init		= rcu_sync_torture_init,
++	.readlock	= tasks_torture_read_lock,
++	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
++	.readunlock	= tasks_torture_read_unlock,
++	.completed	= rcu_no_completed,
++	.deferred_free	= rcu_tasks_torture_deferred_free,
++	.sync		= synchronize_rcu_tasks,
++	.exp_sync	= synchronize_rcu_tasks,
++	.call		= call_rcu_tasks,
++	.cb_barrier	= rcu_barrier_tasks,
++	.fqs		= NULL,
++	.stats		= NULL,
++	.irq_capable	= 1,
++	.name		= "tasks"
++};
++
++/*
+  * RCU torture priority-boost testing.  Runs one real-time thread per
+  * CPU for moderate bursts, repeatedly registering RCU callbacks and
+  * spinning waiting for them to be invoked.  If a given callback takes
+@@ -1295,7 +1331,8 @@ static int rcu_torture_barrier_cbs(void *arg)
+ 		if (atomic_dec_and_test(&barrier_cbs_count))
+ 			wake_up(&barrier_wq);
+ 	} while (!torture_must_stop());
+-	cur_ops->cb_barrier();
++	if (cur_ops->cb_barrier != NULL)
++		cur_ops->cb_barrier();
+ 	destroy_rcu_head_on_stack(&rcu);
+ 	torture_kthread_stopping("rcu_torture_barrier_cbs");
+ 	return 0;
+@@ -1534,6 +1571,7 @@ rcu_torture_init(void)
+ 	int firsterr = 0;
+ 	static struct rcu_torture_ops *torture_ops[] = {
+ 		&rcu_ops, &rcu_bh_ops, &rcu_busted_ops, &srcu_ops, &sched_ops,
++		&tasks_ops,
+ 	};
  
- INFO: rcu_sched_state detected stall on CPU 5 (t=2500 jiffies)
- 
-@@ -174,8 +186,12 @@ o	A CPU looping with preemption disabled.  This condition can
- o	A CPU looping with bottom halves disabled.  This condition can
- 	result in RCU-sched and RCU-bh stalls.
- 
--o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the kernel
--	without invoking schedule().
-+o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the
-+	kernel without invoking schedule().  Note that cond_resched()
-+	does not necessarily prevent RCU CPU stall warnings.  Therefore,
-+	if the looping in the kernel is really expected and desirable
-+	behavior, you might need to replace some of the cond_resched()
-+	calls with calls to cond_resched_rcu_qs().
- 
- o	A CPU-bound real-time task in a CONFIG_PREEMPT kernel, which might
- 	happen to preempt a low-priority task in the middle of an RCU
-@@ -208,11 +224,10 @@ o	A hardware failure.  This is quite unlikely, but has occurred
- 	This resulted in a series of RCU CPU stall warnings, eventually
- 	leading the realization that the CPU had failed.
- 
--The RCU, RCU-sched, and RCU-bh implementations have CPU stall warning.
--SRCU does not have its own CPU stall warnings, but its calls to
--synchronize_sched() will result in RCU-sched detecting RCU-sched-related
--CPU stalls.  Please note that RCU only detects CPU stalls when there is
--a grace period in progress.  No grace period, no CPU stall warnings.
-+The RCU, RCU-sched, RCU-bh, and RCU-tasks implementations have CPU stall
-+warning.  Note that SRCU does -not- have CPU stall warnings.  Please note
-+that RCU only detects CPU stalls when there is a grace period in progress.
-+No grace period, no CPU stall warnings.
- 
- To diagnose the cause of the stall, inspect the stack traces.
- The offending function will usually be near the top of the stack.
+ 	if (!torture_init_begin(torture_type, verbose, &rcutorture_runnable))
 -- 
 1.8.1.5
 
