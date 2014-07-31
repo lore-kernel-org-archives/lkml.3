@@ -1,87 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932124AbaGaDc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 23:32:58 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:44244 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755888AbaGaDc5 (ORCPT
+	id S932211AbaGaDeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 23:34:31 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:49146 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160AbaGaDe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 23:32:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <53D9B482.8070306@gmail.com>
-References: <CAPDOMVjJHbCwDVyKQ+Vuse7G76FLSLq69Ja4kmopDbjtEb_Zkw@mail.gmail.com>
-	<CA+WRLO9HdX=PDktUci2bQNM0Wp6DsjxiiWBNAxOtvitPqWDCAg@mail.gmail.com>
-	<CAPDOMVjxx0WXVXVrMLgO1FimHNrJTn0Dp14G9_dXhSrm32WyBQ@mail.gmail.com>
-	<53D9B482.8070306@gmail.com>
-Date: Wed, 30 Jul 2014 23:32:56 -0400
-Message-ID: <CAPDOMVi_HUQsoEF_XHdPHrQVmMNbje5_wxd0=Ev5j59qB22jag@mail.gmail.com>
-Subject: Re: Work Queue for btrfs compression writes
-From: Nick Krause <xerofoify@gmail.com>
-To: Austin S Hemmelgarn <ahferroin7@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 30 Jul 2014 23:34:28 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Kees Cook <keescook@chromium.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: [PATCH v4 net-next 1/5] net: filter: simplify socket charging
+Date: Wed, 30 Jul 2014 20:34:12 -0700
+Message-Id: <1406777656-27755-2-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1406777656-27755-1-git-send-email-ast@plumgrid.com>
+References: <1406777656-27755-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 11:14 PM, Austin S Hemmelgarn
-<ahferroin7@gmail.com> wrote:
-> On 07/30/2014 12:54 AM, Nick Krause wrote:
->> On Wed, Jul 30, 2014 at 12:37 AM, Gareth Pye <gareth@cerberos.id.au> wrote:
->>> You've been replied to politely, now listen and do or shut up.
->>>
->>>
->>> On Wed, Jul 30, 2014 at 1:54 PM, Nick Krause <xerofoify@gmail.com> wrote:
->>>>
->>>> Hey Guys ,
->>>> I am new to   reading  and writing  kernel code.I got interested in
->>>> writing code for btrfs as it seems to
->>>> need more work then other file systems and this seems other then
->>>> drivers, a good use of time on my part.
->>>> I interested in helping improving the compression of btrfs by using  a
->>>> set of threads using work queues like XFS
->>>> or reads and keeping the page cache after reading compressed blocks as
->>>> these seem to be a great way to improve
->>>> on  compression performance mostly with large partitions of compressed
->>>> data. I am not asking you to write the code
->>>> for me but as I am new a little guidance and help would be greatly
->>>> appreciated as this seems like too much work for just a newbie.
->>>> Thanks A lot,
->>>> Nick
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->>>
->>>
->>>
->>> --
->>> Gareth Pye
->>> Level 2 Judge, Melbourne, Australia
->>> Australian MTG Forum: mtgau.com
->>> gareth@cerberos.id.au - www.rockpaperdynamite.wordpress.com
->>> "Dear God, I would like to file a bug report"
->>
->> Gareth
->> I am asking for advice on not writing the code but can someone please
->> test this for me as I don't have many hard drives lying around. In addition
->> I am new to btrfs , so I would like to known if this is a good idea or should
->> I just drop it?
->> Nick
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> I would look into using usermode linux (linux built with ARCH=um) for at
-> least the initial debugging, it is marginally more efficient than
-> virtualization, doesn't need root privileges, and allows you to run the
-> kernel under GDB without needing separate hardware with a serial console
-> or PS/2 keyboard.
->
+attaching bpf program to a socket involves multiple socket memory arithmetic,
+since size of 'sk_filter' is changing when classic BPF is converted to eBPF.
+Also common path of program creation has to deal with two ways of freeing
+the memory.
 
-That's what I am thinking the only issue is I am going to start my
-reading on work queues first.
-Regards Nick
+Simplify the code by delaying socket charging until program is ready and
+its size is known
+
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ include/linux/filter.h |    2 +-
+ net/core/filter.c      |   87 ++++++++++++++++++++----------------------------
+ net/core/sock.c        |    9 +++--
+ 3 files changed, 45 insertions(+), 53 deletions(-)
+
+diff --git a/include/linux/filter.h b/include/linux/filter.h
+index 20dd50ef7271..00640edc166f 100644
+--- a/include/linux/filter.h
++++ b/include/linux/filter.h
+@@ -366,7 +366,7 @@ int sk_chk_filter(const struct sock_filter *filter, unsigned int flen);
+ int sk_get_filter(struct sock *sk, struct sock_filter __user *filter,
+ 		  unsigned int len);
+ 
+-void sk_filter_charge(struct sock *sk, struct sk_filter *fp);
++bool sk_filter_charge(struct sock *sk, struct sk_filter *fp);
+ void sk_filter_uncharge(struct sock *sk, struct sk_filter *fp);
+ 
+ u64 __bpf_call_base(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5);
+diff --git a/net/core/filter.c b/net/core/filter.c
+index 42c1944b0c63..5a6aeb1d40b8 100644
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -872,41 +872,30 @@ static void sk_filter_release(struct sk_filter *fp)
+ 
+ void sk_filter_uncharge(struct sock *sk, struct sk_filter *fp)
+ {
+-	atomic_sub(sk_filter_size(fp->len), &sk->sk_omem_alloc);
+-	sk_filter_release(fp);
+-}
++	u32 filter_size = sk_filter_size(fp->len);
+ 
+-void sk_filter_charge(struct sock *sk, struct sk_filter *fp)
+-{
+-	atomic_inc(&fp->refcnt);
+-	atomic_add(sk_filter_size(fp->len), &sk->sk_omem_alloc);
++	atomic_sub(filter_size, &sk->sk_omem_alloc);
++	sk_filter_release(fp);
+ }
+ 
+-static struct sk_filter *__sk_migrate_realloc(struct sk_filter *fp,
+-					      struct sock *sk,
+-					      unsigned int len)
++/* try to charge the socket memory if there is space available
++ * return true on success
++ */
++bool sk_filter_charge(struct sock *sk, struct sk_filter *fp)
+ {
+-	struct sk_filter *fp_new;
+-
+-	if (sk == NULL)
+-		return krealloc(fp, len, GFP_KERNEL);
+-
+-	fp_new = sock_kmalloc(sk, len, GFP_KERNEL);
+-	if (fp_new) {
+-		*fp_new = *fp;
+-		/* As we're keeping orig_prog in fp_new along,
+-		 * we need to make sure we're not evicting it
+-		 * from the old fp.
+-		 */
+-		fp->orig_prog = NULL;
+-		sk_filter_uncharge(sk, fp);
++	u32 filter_size = sk_filter_size(fp->len);
++
++	/* same check as in sock_kmalloc() */
++	if (filter_size <= sysctl_optmem_max &&
++	    atomic_read(&sk->sk_omem_alloc) + filter_size < sysctl_optmem_max) {
++		atomic_inc(&fp->refcnt);
++		atomic_add(filter_size, &sk->sk_omem_alloc);
++		return true;
+ 	}
+-
+-	return fp_new;
++	return false;
+ }
+ 
+-static struct sk_filter *__sk_migrate_filter(struct sk_filter *fp,
+-					     struct sock *sk)
++static struct sk_filter *__sk_migrate_filter(struct sk_filter *fp)
+ {
+ 	struct sock_filter *old_prog;
+ 	struct sk_filter *old_fp;
+@@ -938,7 +927,7 @@ static struct sk_filter *__sk_migrate_filter(struct sk_filter *fp,
+ 
+ 	/* Expand fp for appending the new filter representation. */
+ 	old_fp = fp;
+-	fp = __sk_migrate_realloc(old_fp, sk, sk_filter_size(new_len));
++	fp = krealloc(old_fp, sk_filter_size(new_len), GFP_KERNEL);
+ 	if (!fp) {
+ 		/* The old_fp is still around in case we couldn't
+ 		 * allocate new memory, so uncharge on that one.
+@@ -956,7 +945,7 @@ static struct sk_filter *__sk_migrate_filter(struct sk_filter *fp,
+ 		/* 2nd sk_convert_filter() can fail only if it fails
+ 		 * to allocate memory, remapping must succeed. Note,
+ 		 * that at this time old_fp has already been released
+-		 * by __sk_migrate_realloc().
++		 * by krealloc().
+ 		 */
+ 		goto out_err_free;
+ 
+@@ -968,16 +957,11 @@ static struct sk_filter *__sk_migrate_filter(struct sk_filter *fp,
+ out_err_free:
+ 	kfree(old_prog);
+ out_err:
+-	/* Rollback filter setup. */
+-	if (sk != NULL)
+-		sk_filter_uncharge(sk, fp);
+-	else
+-		kfree(fp);
++	__sk_filter_release(fp);
+ 	return ERR_PTR(err);
+ }
+ 
+-static struct sk_filter *__sk_prepare_filter(struct sk_filter *fp,
+-					     struct sock *sk)
++static struct sk_filter *__sk_prepare_filter(struct sk_filter *fp)
+ {
+ 	int err;
+ 
+@@ -986,10 +970,7 @@ static struct sk_filter *__sk_prepare_filter(struct sk_filter *fp,
+ 
+ 	err = sk_chk_filter(fp->insns, fp->len);
+ 	if (err) {
+-		if (sk != NULL)
+-			sk_filter_uncharge(sk, fp);
+-		else
+-			kfree(fp);
++		__sk_filter_release(fp);
+ 		return ERR_PTR(err);
+ 	}
+ 
+@@ -1002,7 +983,7 @@ static struct sk_filter *__sk_prepare_filter(struct sk_filter *fp,
+ 	 * internal BPF translation for the optimized interpreter.
+ 	 */
+ 	if (!fp->jited)
+-		fp = __sk_migrate_filter(fp, sk);
++		fp = __sk_migrate_filter(fp);
+ 
+ 	return fp;
+ }
+@@ -1041,10 +1022,10 @@ int sk_unattached_filter_create(struct sk_filter **pfp,
+ 	 */
+ 	fp->orig_prog = NULL;
+ 
+-	/* __sk_prepare_filter() already takes care of uncharging
++	/* __sk_prepare_filter() already takes care of freeing
+ 	 * memory in case something goes wrong.
+ 	 */
+-	fp = __sk_prepare_filter(fp, NULL);
++	fp = __sk_prepare_filter(fp);
+ 	if (IS_ERR(fp))
+ 		return PTR_ERR(fp);
+ 
+@@ -1083,31 +1064,37 @@ int sk_attach_filter(struct sock_fprog *fprog, struct sock *sk)
+ 	if (fprog->filter == NULL)
+ 		return -EINVAL;
+ 
+-	fp = sock_kmalloc(sk, sk_fsize, GFP_KERNEL);
++	fp = kmalloc(sk_fsize, GFP_KERNEL);
+ 	if (!fp)
+ 		return -ENOMEM;
+ 
+ 	if (copy_from_user(fp->insns, fprog->filter, fsize)) {
+-		sock_kfree_s(sk, fp, sk_fsize);
++		kfree(fp);
+ 		return -EFAULT;
+ 	}
+ 
+-	atomic_set(&fp->refcnt, 1);
+ 	fp->len = fprog->len;
+ 
+ 	err = sk_store_orig_filter(fp, fprog);
+ 	if (err) {
+-		sk_filter_uncharge(sk, fp);
++		kfree(fp);
+ 		return -ENOMEM;
+ 	}
+ 
+-	/* __sk_prepare_filter() already takes care of uncharging
++	/* __sk_prepare_filter() already takes care of freeing
+ 	 * memory in case something goes wrong.
+ 	 */
+-	fp = __sk_prepare_filter(fp, sk);
++	fp = __sk_prepare_filter(fp);
+ 	if (IS_ERR(fp))
+ 		return PTR_ERR(fp);
+ 
++	atomic_set(&fp->refcnt, 0);
++
++	if (!sk_filter_charge(sk, fp)) {
++		__sk_filter_release(fp);
++		return -ENOMEM;
++	}
++
+ 	old_fp = rcu_dereference_protected(sk->sk_filter,
+ 					   sock_owned_by_user(sk));
+ 	rcu_assign_pointer(sk->sk_filter, fp);
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 134291d73fcd..a741163568fa 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1474,6 +1474,7 @@ static void sk_update_clone(const struct sock *sk, struct sock *newsk)
+ struct sock *sk_clone_lock(const struct sock *sk, const gfp_t priority)
+ {
+ 	struct sock *newsk;
++	bool is_charged = true;
+ 
+ 	newsk = sk_prot_alloc(sk->sk_prot, priority, sk->sk_family);
+ 	if (newsk != NULL) {
+@@ -1518,9 +1519,13 @@ struct sock *sk_clone_lock(const struct sock *sk, const gfp_t priority)
+ 
+ 		filter = rcu_dereference_protected(newsk->sk_filter, 1);
+ 		if (filter != NULL)
+-			sk_filter_charge(newsk, filter);
++			/* though it's an empty new sock, the charging may fail
++			 * if sysctl_optmem_max was changed between creation of
++			 * original socket and cloning
++			 */
++			is_charged = sk_filter_charge(newsk, filter);
+ 
+-		if (unlikely(xfrm_sk_clone_policy(newsk))) {
++		if (unlikely(!is_charged || xfrm_sk_clone_policy(newsk))) {
+ 			/* It is still raw copy of parent, so invalidate
+ 			 * destructor and make plain sk_free() */
+ 			newsk->sk_destruct = NULL;
+-- 
+1.7.9.5
+
