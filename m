@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaGaQbn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:31:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48991 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaGaQbm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:31:42 -0400
-Message-ID: <53DA6F69.5050500@infradead.org>
-Date: Thu, 31 Jul 2014 09:31:37 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
+	id S1752140AbaGaQdb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:33:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48207 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750774AbaGaQda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:33:30 -0400
+Message-ID: <53DA6FBE.1020500@redhat.com>
+Date: Thu, 31 Jul 2014 18:33:02 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Arjun Sreedharan <arjun024@gmail.com>, rjw@rjwysocki.net
-CC: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        joe@perches.com
-Subject: Re: [PATCH] Replace faulty is_hex_digit() by isxdigit()
-References: <53D9895A.1030902@infradead.org> <1406797489-4296-1-git-send-email-arjun024@gmail.com>
-In-Reply-To: <1406797489-4296-1-git-send-email-arjun024@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>, Igor Mammedov <imammedo@redhat.com>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        mtosatti@redhat.com
+Subject: Re: [PATCH 1/2] x86: AMD: mark TSC unstable on APU family 15h models
+ 10h-1fh
+References: <1406800033-13404-1-git-send-email-imammedo@redhat.com> <1406800033-13404-2-git-send-email-imammedo@redhat.com> <20140731154747.GA7160@pd.tnic>
+In-Reply-To: <20140731154747.GA7160@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/14 02:04, Arjun Sreedharan wrote:
-> 0 is ascii for NULL. Hex digit matching should be from '0'.
-> Faulty version returns true for #,$,%,& etc.
+Il 31/07/2014 17:47, Borislav Petkov ha scritto:
+> On Thu, Jul 31, 2014 at 09:47:12AM +0000, Igor Mammedov wrote:
+>> Due to erratum #778 from
+>> "Revision Guide for AMD Family 15h Models 10h-1Fh Processors,
+>>  Publication # 48931, Issue Date: May 2013, Revision: 3.10"
+>>
+>> TSC on affected processor, a core may drift under certain conditions,
+>> which makes initially synchronized TSCs to become unsynchronized.
 > 
-> Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+> Is this something you're seeing on a real system? If so, how do you
+> trigger this?
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+http://thread.gmane.org/gmane.linux.kernel/1748516 says that Ingo's
+time-warp-test fails miserably on this machine.
 
-Thanks.
+(The test is at
+http://people.redhat.com/mingo/time-warp-test/time-warp-test.c)
 
-> ---
->  drivers/acpi/acpi_pnp.c | 8 ++------
->  1 file changed, 2 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
-> index 4ddb0dc..996fa19 100644
-> --- a/drivers/acpi/acpi_pnp.c
-> +++ b/drivers/acpi/acpi_pnp.c
-> @@ -12,6 +12,7 @@
->  
->  #include <linux/acpi.h>
->  #include <linux/module.h>
-> +#include <linux/ctype.h>
->  
->  static const struct acpi_device_id acpi_pnp_device_ids[] = {
->  	/* soc_button_array */
-> @@ -320,11 +321,6 @@ static const struct acpi_device_id acpi_pnp_device_ids[] = {
->  	{""},
->  };
->  
-> -static bool is_hex_digit(char c)
-> -{
-> -	return (c >= 0 && c <= '9') || (c >= 'A' && c <= 'F');
-> -}
-> -
->  static bool matching_id(char *idstr, char *list_id)
->  {
->  	int i;
-> @@ -335,7 +331,7 @@ static bool matching_id(char *idstr, char *list_id)
->  	for (i = 3; i < 7; i++) {
->  		char c = toupper(idstr[i]);
->  
-> -		if (!is_hex_digit(c)
-> +		if (!isxdigit(c)
->  		    || (list_id[i] != 'X' && c != toupper(list_id[i])))
->  			return false;
->  	}
-> 
-
-
--- 
-~Randy
+Paolo
