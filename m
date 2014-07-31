@@ -1,132 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaGaQ67 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:58:59 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:51002 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449AbaGaQ65 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:58:57 -0400
-Date: Thu, 31 Jul 2014 09:58:52 -0700
-From: josh@joshtriplett.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v2 tip/core/rcu 03/10] rcu: Add synchronous
- grace-period waiting for RCU-tasks
-Message-ID: <20140731165852.GD12697@cloud>
-References: <20140731003914.GA3872@linux.vnet.ibm.com>
- <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1406767182-4356-3-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1753234AbaGaRAa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:00:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61968 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751412AbaGaRA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 13:00:28 -0400
+Date: Thu, 31 Jul 2014 18:58:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v4 2/5] x86,entry: Only call user_exit if TIF_NOHZ
+Message-ID: <20140731165804.GB16800@redhat.com>
+References: <cover.1406604806.git.luto@amacapital.net> <7123b2489cc5d1d5abb7bcf1364ca729cab3e6ca.1406604806.git.luto@amacapital.net> <20140729193232.GA8153@redhat.com> <20140730164344.GA27954@localhost.localdomain> <CALCETrUVaz3JFiNbyU=r3M-E9muHa1ffn7RX+_-4V_0U-hVaPw@mail.gmail.com> <20140731151630.GA7842@localhost.localdomain> <20140731164246.GA15974@redhat.com> <20140731164918.GC7842@localhost.localdomain> <20140731165423.GA16800@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406767182-4356-3-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140731165423.GA16800@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 05:39:35PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> It turns out to be easier to add the synchronous grace-period waiting
-> functions to RCU-tasks than to work around their absense in rcutorture,
-> so this commit adds them.  The key point is that the existence of
-> call_rcu_tasks() means that rcutorture needs an rcu_barrier_tasks().
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On 07/31, Oleg Nesterov wrote:
+>
+> On 07/31, Frederic Weisbecker wrote:
+> >
+> > On Thu, Jul 31, 2014 at 06:42:46PM +0200, Oleg Nesterov wrote:
+> > >
+> > > And if we change this, then the code above becomes racy. The state of
+> > > TIF_XYZ can be changed right after the check. OK, it is racy anyway ;)
+> > > but still this adds more confusion.
+> >
+> > No because all running tasks have this flag set when context tracking is
+> > enabled. And context tracking can't be disabled on runtime.
+>
+> Yes, yes, please note that I said "if we change this".
 
-With rcu_barrier_tasks being a trivial wrapper, why not just let
-rcutorture call synchronize_rcu_tasks directly?
+And "it is racy anyway" connects to the problems we discuss in another
+thread.
 
->  include/linux/rcupdate.h |  2 ++
->  kernel/rcu/update.c      | 55 ++++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 57 insertions(+)
-> 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 3299ff98ad03..17c7e25c38be 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -216,6 +216,8 @@ void synchronize_sched(void);
->   * memory ordering guarantees.
->   */
->  void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
-> +void synchronize_rcu_tasks(void);
-> +void rcu_barrier_tasks(void);
->  
->  #ifdef CONFIG_PREEMPT_RCU
->  
-> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> index b92268647a01..c8d304dc6d8a 100644
-> --- a/kernel/rcu/update.c
-> +++ b/kernel/rcu/update.c
-> @@ -387,6 +387,61 @@ void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
->  }
->  EXPORT_SYMBOL_GPL(call_rcu_tasks);
->  
-> +/**
-> + * synchronize_rcu_tasks - wait until an rcu-tasks grace period has elapsed.
-> + *
-> + * Control will return to the caller some time after a full rcu-tasks
-> + * grace period has elapsed, in other words after all currently
-> + * executing rcu-tasks read-side critical sections have elapsed.  These
-> + * read-side critical sections are delimited by calls to schedule(),
-> + * cond_resched_rcu_qs(), idle execution, userspace execution, calls
-> + * to synchronize_rcu_tasks(), and (in theory, anyway) cond_resched().
-> + *
-> + * This is a very specialized primitive, intended only for a few uses in
-> + * tracing and other situations requiring manipulation of function
-> + * preambles and profiling hooks.  The synchronize_rcu_tasks() function
-> + * is not (yet) intended for heavy use from multiple CPUs.
-> + *
-> + * Note that this guarantee implies further memory-ordering guarantees.
-> + * On systems with more than one CPU, when synchronize_rcu_tasks() returns,
-> + * each CPU is guaranteed to have executed a full memory barrier since the
-> + * end of its last RCU-tasks read-side critical section whose beginning
-> + * preceded the call to synchronize_rcu_tasks().  In addition, each CPU
-> + * having an RCU-tasks read-side critical section that extends beyond
-> + * the return from synchronize_rcu_tasks() is guaranteed to have executed
-> + * a full memory barrier after the beginning of synchronize_rcu_tasks()
-> + * and before the beginning of that RCU-tasks read-side critical section.
-> + * Note that these guarantees include CPUs that are offline, idle, or
-> + * executing in user mode, as well as CPUs that are executing in the kernel.
-> + *
-> + * Furthermore, if CPU A invoked synchronize_rcu_tasks(), which returned
-> + * to its caller on CPU B, then both CPU A and CPU B are guaranteed
-> + * to have executed a full memory barrier during the execution of
-> + * synchronize_rcu_tasks() -- even if CPU A and CPU B are the same CPU
-> + * (but again only if the system has more than one CPU).
-> + */
-> +void synchronize_rcu_tasks(void)
-> +{
-> +	/* Complain if the scheduler has not started.  */
-> +	rcu_lockdep_assert(!rcu_scheduler_active,
-> +			   "synchronize_rcu_tasks called too soon");
-> +
-> +	/* Wait for the grace period. */
-> +	wait_rcu_gp(call_rcu_tasks);
-> +}
-> +
-> +/**
-> + * rcu_barrier_tasks - Wait for in-flight call_rcu_tasks() callbacks.
-> + *
-> + * Although the current implementation is guaranteed to wait, it is not
-> + * obligated to, for example, if there are no pending callbacks.
-> + */
-> +void rcu_barrier_tasks(void)
-> +{
-> +	/* There is only one callback queue, so this is easy.  ;-) */
-> +	synchronize_rcu_tasks();
-> +}
-> +
->  /* RCU-tasks kthread that detects grace periods and invokes callbacks. */
->  static int __noreturn rcu_tasks_kthread(void *arg)
->  {
-> -- 
-> 1.8.1.5
-> 
+Oleg.
+
