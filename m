@@ -1,99 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888AbaGaWW7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 18:22:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52389 "EHLO
+	id S1753268AbaGaWXN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 18:23:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52394 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaGaWW6 (ORCPT
+	with ESMTP id S1752904AbaGaWXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 18:22:58 -0400
-Date: Thu, 31 Jul 2014 15:22:55 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH v2 1/2] printk: Add function to return log buffer
- address and size
-Message-Id: <20140731152255.37e675870dfdf77d9dbaff70@linux-foundation.org>
-In-Reply-To: <20140731153447.27134.44225.stgit@hegdevasant.in.ibm.com>
-References: <20140731153447.27134.44225.stgit@hegdevasant.in.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Jul 2014 18:23:10 -0400
+Date: Thu, 31 Jul 2014 15:22:42 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: android: sync.c: fix missing blank line after
+ declaration
+Message-ID: <20140731222242.GA11122@kroah.com>
+References: <1406588626-6882-1-git-send-email-mopsfelder@gmail.com>
+ <20140731001758.GB31573@kroah.com>
+ <53DA2CBB.7070200@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53DA2CBB.7070200@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jul 2014 21:05:48 +0530 Vasant Hegde <hegdevasant@linux.vnet.ibm.com> wrote:
-
-> Platforms like IBM Power Systems supports service processor
-> assisted dump. It provides interface to add memory region to
-> be captured when system is crashed.
+On Thu, Jul 31, 2014 at 08:47:07AM -0300, Murilo Opsfelder Araujo wrote:
+> On 07/30/2014 09:17 PM, Greg KH wrote:
+> >Also doesn't apply, are you sure you are using the staging-next branch
+> >of staging.git on git.kernel.org?
 > 
-> During initialization/running we can add kernel memory region
-> to be collected.
+> I was using linux-next, not staging-next.  sync.c has no checkpatch.pl
+> warnings in staging-next.
 > 
-> Presently we don't have a way to get the log buffer base address
-> and size. This patch adds support to return log buffer address
-> and size.
-> 
-> ...
->
-> --- a/include/linux/printk.h
-> +++ b/include/linux/printk.h
-> @@ -10,6 +10,9 @@
->  extern const char linux_banner[];
->  extern const char linux_proc_banner[];
->  
-> +extern void *get_log_buf_addr(void);
-> +extern u32 get_log_buf_len(void);
-> +
->  static inline int printk_get_level(const char *buffer)
->  {
->  	if (buffer[0] == KERN_SOH_ASCII && buffer[1]) {
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index 13e839d..4049f7b 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -270,6 +270,18 @@ static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
->  static char *log_buf = __log_buf;
->  static u32 log_buf_len = __LOG_BUF_LEN;
->  
-> +/* Return log buffer address */
-> +void *get_log_buf_addr(void)
-> +{
-> +	return log_buf;
-> +}
-> +
-> +/* Return log buffer size */
-> +u32 get_log_buf_len(void)
-> +{
-> +	return log_buf_len;
-> +}
-> +
->  /* human readable text of the record */
->  static char *log_text(const struct printk_log *msg)
->  {
+> Sorry for the false alarm, guys.
 
-Looks OK to me, although I think log_buf_addr_get() and
-log_buf_len_get() would be better names.  The kernel uses some
-big-endian names and some little-endian-names and some middle-endian
-names.  It's all rather a mess.  These symbols are already big-endian
-(ie: decreasing significance):
+Ah, this is the fun thing where that code is being changed in two
+different trees.  This sometimes happens, sorry about that.  Wait for
+3.17-rc1 to be out before touching this code again, as that will have
+everything merged properly in one tree.
 
-	log_buf -> addr -> get
-	log_buf -> len -> get
+Sorry for the confusion.
 
-
-The world wouldn't end if we simply made log_buf and log_buf_len global
-symbols.  The pros and cons are all minor.
-
-It's probably better to make get_log_buf_addr() tell the truth and
-return a char *.
-
-
-Please include this in whatever tree carries "powerpc/powernv:
-Interface to register/unregister opal dump region".
-
+greg k-h
