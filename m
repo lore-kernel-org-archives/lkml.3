@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881AbaGaVCY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 17:02:24 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:54602 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375AbaGaVCV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 17:02:21 -0400
+	id S1752454AbaGaVE0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 17:04:26 -0400
+Received: from mga14.intel.com ([192.55.52.115]:28989 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750906AbaGaVEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 17:04:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="366430265"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: eranian@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf, x86: Handle extended offcore mask on Haswell
+References: <1406839689-23491-1-git-send-email-andi@firstfloor.org>
+Date: Thu, 31 Jul 2014 14:04:25 -0700
+In-Reply-To: <1406839689-23491-1-git-send-email-andi@firstfloor.org> (Andi
+	Kleen's message of "Thu, 31 Jul 2014 13:48:09 -0700")
+Message-ID: <87wqatp7dy.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140731194059.GA8681@salvia>
-References: <1406777656-27755-1-git-send-email-ast@plumgrid.com>
-	<1406777656-27755-6-git-send-email-ast@plumgrid.com>
-	<20140731194059.GA8681@salvia>
-Date: Thu, 31 Jul 2014 14:02:19 -0700
-Message-ID: <CAMEtUuy+iABzHagoono+CPB=Ex4Ew4vQBK65x1jDRC9_W9L7Dw@mail.gmail.com>
-Subject: Re: [PATCH v4 net-next 5/5] net: filter: split 'struct sk_filter'
- into socket and bpf parts
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        netfilter-devel <netfilter-devel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 12:40 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-> On Wed, Jul 30, 2014 at 08:34:16PM -0700, Alexei Starovoitov wrote:
->> clean up names related to socket filtering and bpf in the following way:
->> - everything that deals with sockets keeps 'sk_*' prefix
->> - everything that is pure BPF is changed to 'bpf_*' prefix
->>
->> split 'struct sk_filter' into
->> struct sk_filter {
->>       atomic_t        refcnt;
->>       struct rcu_head rcu;
->>       struct bpf_prog *prog;
->> };
->
-> I think you can use 'struct bpf_prog prog' instead so the entire
-> sk_filter remains in the same memory blob (as it is before this
-> patch).
->
-> You can add an inline function to retrieve the bpg prog from the
-> filter:
->
-> static inline struct bpf_prog *sk_filter_bpf(struct sk_filter *)
->
-> and use it whenever possible to fetch the bpf program. I'm suggesting
-> this because we can use the zero array size in the socket filtering
-> abstraction later on, if the function above is used, this just needs
-> one line in that function to be updated to fetch the program from the
-> placeholder.
+Andi Kleen <andi@firstfloor.org> writes:
 
-correct. It would speed up SK_RUN_FILTER macro a little and I've
-considered it, but decided to go with the pointer for two reasons:
-1.In sk_attach_filter() the bpf_prog is allocated, then reallocated
-as part of bpf_prepare_filter(). My patch #1 cleans up that part to
-avoid 'struct sock *' dependency, so all bpf_* functions work
-purely with bpf_prog... If bpf_prog is embedded inside sk_filter,
-bpf_prepare_filter would need to have a callback to reallocate
-the container struct and pass this callback through the chain
-of calls, which is ugly.
-2. having it as a pointer helps nft in the long run, since whole of
-bpf_prog doesn't stay around inside sk_filter when it's not used.
-So I think embedding pointer was a cleaner solution.
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> HSW-EP has a larger offcore mask than the client Haswell CPUs.
+> It is the same mask as on Sandy/IvyBridge-EP.
+
+Sorry I posted the wrong patch, not matching the description.
+Use the followon patch instead.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
