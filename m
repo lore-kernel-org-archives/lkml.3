@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428AbaGaGDQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 02:03:16 -0400
+	id S1756404AbaGaGDJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 02:03:09 -0400
 Received: from mga14.intel.com ([192.55.52.115]:1809 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756408AbaGaGDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 02:03:13 -0400
+	id S1756383AbaGaGDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 02:03:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,770,1400050800"; 
-   d="scan'208";a="569799995"
+   d="scan'208";a="569799966"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 17/31] perf tools: Add facility to export data in database-friendly way
-Date: Thu, 31 Jul 2014 09:01:00 +0300
-Message-Id: <1406786474-9306-18-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 15/31] perf tools: Add a thread stack for synthesizing call chains
+Date: Thu, 31 Jul 2014 09:00:58 +0300
+Message-Id: <1406786474-9306-16-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406786474-9306-1-git-send-email-adrian.hunter@intel.com>
 References: <1406786474-9306-1-git-send-email-adrian.hunter@intel.com>
@@ -27,76 +27,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces an abstraction for exporting sample
-data in a database-friendly way.  The abstraction does not
-implement the actual output.  A subsequent patch takes this
-facility into use for extending the script interface.
-
-The abstraction is needed because static data like symbols,
-dsos, comms etc need to be exported only once.  That means
-allocating them a unique identifier and recording it on each
-structure.  The member 'db_id' is used for that.  'db_id'
-is just a 64-bit sequence number.
-
-Exporting centres around the db_export__sample() function
-which exports the associated data structures if they have
-not yet been allocated a db_id.
+Add a thread stack for synthesizing call chains from call
+and return events.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/Makefile.perf    |   2 +
- tools/perf/util/comm.h      |   1 +
- tools/perf/util/db-export.c | 268 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/db-export.h |  86 ++++++++++++++
- tools/perf/util/dso.h       |   1 +
- tools/perf/util/evsel.h     |   1 +
- tools/perf/util/machine.h   |   1 +
- tools/perf/util/symbol.h    |   1 +
- tools/perf/util/thread.h    |   1 +
- 9 files changed, 362 insertions(+)
- create mode 100644 tools/perf/util/db-export.c
- create mode 100644 tools/perf/util/db-export.h
+ tools/perf/Makefile.perf       |   2 +
+ tools/perf/util/event.h        |  26 +++++++
+ tools/perf/util/thread-stack.c | 151 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/thread-stack.h |  32 +++++++++
+ tools/perf/util/thread.c       |   3 +
+ tools/perf/util/thread.h       |   3 +
+ 6 files changed, 217 insertions(+)
+ create mode 100644 tools/perf/util/thread-stack.c
+ create mode 100644 tools/perf/util/thread-stack.h
 
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index f4333b5..f7bb2b4 100644
+index 2240974..f4333b5 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -303,6 +303,7 @@ LIB_H += ui/ui.h
+@@ -302,6 +302,7 @@ LIB_H += ui/util.h
+ LIB_H += ui/ui.h
  LIB_H += util/data.h
  LIB_H += util/kvm-stat.h
- LIB_H += util/thread-stack.h
-+LIB_H += util/db-export.h
++LIB_H += util/thread-stack.h
  
  LIB_OBJS += $(OUTPUT)util/abspath.o
  LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -379,6 +380,7 @@ LIB_OBJS += $(OUTPUT)util/data.o
+@@ -377,6 +378,7 @@ LIB_OBJS += $(OUTPUT)util/srcline.o
+ LIB_OBJS += $(OUTPUT)util/data.o
  LIB_OBJS += $(OUTPUT)util/tsc.o
  LIB_OBJS += $(OUTPUT)util/cloexec.o
- LIB_OBJS += $(OUTPUT)util/thread-stack.o
-+LIB_OBJS += $(OUTPUT)util/db-export.o
++LIB_OBJS += $(OUTPUT)util/thread-stack.o
  
  LIB_OBJS += $(OUTPUT)ui/setup.o
  LIB_OBJS += $(OUTPUT)ui/helpline.o
-diff --git a/tools/perf/util/comm.h b/tools/perf/util/comm.h
-index 51c10ab..99e7021 100644
---- a/tools/perf/util/comm.h
-+++ b/tools/perf/util/comm.h
-@@ -10,6 +10,7 @@ struct comm_str;
- struct comm {
- 	struct comm_str *comm_str;
- 	u64 start;
-+	u64 db_id;
- 	struct list_head list;
- 	bool exec;
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 08c6ae0..b8e5d1a 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -143,6 +143,32 @@ struct branch_stack {
+ 	struct branch_entry	entries[0];
  };
-diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
+ 
++enum {
++	PERF_FLAG_BRANCH		= 1ULL << 0,
++	PERF_FLAG_CALL			= 1ULL << 1,
++	PERF_FLAG_RETURN		= 1ULL << 2,
++	PERF_FLAG_CONDITIONAL		= 1ULL << 3,
++	PERF_FLAG_SYSCALLRET		= 1ULL << 4,
++	PERF_FLAG_ASYNC			= 1ULL << 5,
++	PERF_FLAG_INTERRUPT		= 1ULL << 6,
++	PERF_FLAG_TX_ABORT		= 1ULL << 7,
++	PERF_FLAG_TRACE_BEGIN		= 1ULL << 8,
++	PERF_FLAG_TRACE_END		= 1ULL << 9,
++	PERF_FLAG_IN_TX			= 1ULL << 10,
++};
++
++#define PERF_BRANCH_MASK	(\
++	PERF_FLAG_BRANCH	|\
++	PERF_FLAG_CALL		|\
++	PERF_FLAG_RETURN	|\
++	PERF_FLAG_CONDITIONAL	|\
++	PERF_FLAG_SYSCALLRET	|\
++	PERF_FLAG_ASYNC		|\
++	PERF_FLAG_INTERRUPT	|\
++	PERF_FLAG_TX_ABORT	|\
++	PERF_FLAG_TRACE_BEGIN	|\
++	PERF_FLAG_TRACE_END)
++
+ struct perf_sample {
+ 	u64 ip;
+ 	u32 pid, tid;
+diff --git a/tools/perf/util/thread-stack.c b/tools/perf/util/thread-stack.c
 new file mode 100644
-index 0000000..53d0e75
+index 0000000..c1ca2a9
 --- /dev/null
-+++ b/tools/perf/util/db-export.c
-@@ -0,0 +1,268 @@
++++ b/tools/perf/util/thread-stack.c
+@@ -0,0 +1,151 @@
 +/*
-+ * db-export.c: Support for exporting data suitable for import to a database
++ * thread-stack.c: Synthesize a thread's stack using call / return events
 + * Copyright (c) 2014, Intel Corporation.
 + *
 + * This program is free software; you can redistribute it and/or modify it
@@ -110,267 +120,150 @@ index 0000000..53d0e75
 + *
 + */
 +
-+#include <errno.h>
-+
-+#include "evsel.h"
-+#include "machine.h"
 +#include "thread.h"
-+#include "comm.h"
-+#include "symbol.h"
 +#include "event.h"
-+#include "db-export.h"
++#include "util.h"
++#include "thread-stack.h"
 +
-+int db_export__init(struct db_export *dbe)
++#define STACK_GROWTH 4096
++
++struct thread_stack_entry {
++	u64 ret_addr;
++};
++
++struct thread_stack {
++	struct thread_stack_entry *stack;
++	size_t cnt;
++	size_t sz;
++	u64 trace_nr;
++};
++
++static void thread_stack__grow(struct thread_stack *ts)
 +{
-+	memset(dbe, 0, sizeof(struct db_export));
-+	return 0;
-+}
++	struct thread_stack_entry *new_stack;
++	size_t sz, new_sz;
 +
-+void db_export__exit(struct db_export *dbe __maybe_unused)
-+{
-+}
-+
-+int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel)
-+{
-+	if (evsel->db_id)
-+		return 0;
-+
-+	evsel->db_id = ++dbe->evsel_last_db_id;
-+
-+	if (dbe->export_evsel)
-+		return dbe->export_evsel(dbe, evsel);
-+
-+	return 0;
-+}
-+
-+int db_export__machine(struct db_export *dbe, struct machine *machine)
-+{
-+	if (machine->db_id)
-+		return 0;
-+
-+	machine->db_id = ++dbe->machine_last_db_id;
-+
-+	if (dbe->export_machine)
-+		return dbe->export_machine(dbe, machine);
-+
-+	return 0;
-+}
-+
-+int db_export__thread(struct db_export *dbe, struct thread *thread,
-+		      struct machine *machine, struct comm *comm)
-+{
-+	u64 main_thread_db_id = 0;
-+	int err;
-+
-+	if (thread->db_id)
-+		return 0;
-+
-+	thread->db_id = ++dbe->thread_last_db_id;
-+
-+	if (thread->pid_ != -1) {
-+		struct thread *main_thread;
-+
-+		if (thread->pid_ == thread->tid) {
-+			main_thread = thread;
-+		} else {
-+			main_thread = machine__findnew_thread(machine,
-+							      thread->pid_,
-+							      thread->pid_);
-+			if (!main_thread)
-+				return -ENOMEM;
-+			err = db_export__thread(dbe, main_thread, machine,
-+						comm);
-+			if (err)
-+				return err;
-+			if (comm) {
-+				err = db_export__comm_thread(dbe, comm, thread);
-+				if (err)
-+					return err;
-+			}
-+		}
-+		main_thread_db_id = main_thread->db_id;
++	new_sz = ts->sz + STACK_GROWTH;
++	sz = new_sz * sizeof(struct thread_stack_entry);
++	new_stack = realloc(ts->stack, sz);
++	if (new_stack) {
++		ts->stack = new_stack;
++		ts->sz = new_sz;
 +	}
-+
-+	if (dbe->export_thread)
-+		return dbe->export_thread(dbe, thread, main_thread_db_id,
-+					  machine);
-+
-+	return 0;
 +}
 +
-+int db_export__comm(struct db_export *dbe, struct comm *comm,
-+		    struct thread *main_thread)
++static struct thread_stack *thread_stack__new(void)
 +{
-+	int err;
++	struct thread_stack *ts;
 +
-+	if (comm->db_id)
-+		return 0;
-+
-+	comm->db_id = ++dbe->comm_last_db_id;
-+
-+	if (dbe->export_comm) {
-+		err = dbe->export_comm(dbe, comm);
-+		if (err)
-+			return err;
-+	}
-+
-+	return db_export__comm_thread(dbe, comm, main_thread);
-+}
-+
-+int db_export__comm_thread(struct db_export *dbe, struct comm *comm,
-+			   struct thread *thread)
-+{
-+	u64 db_id;
-+
-+	db_id = ++dbe->comm_thread_last_db_id;
-+
-+	if (dbe->export_comm_thread)
-+		return dbe->export_comm_thread(dbe, db_id, comm, thread);
-+
-+	return 0;
-+}
-+
-+int db_export__dso(struct db_export *dbe, struct dso *dso,
-+		   struct machine *machine)
-+{
-+	if (dso->db_id)
-+		return 0;
-+
-+	dso->db_id = ++dbe->dso_last_db_id;
-+
-+	if (dbe->export_dso)
-+		return dbe->export_dso(dbe, dso, machine);
-+
-+	return 0;
-+}
-+
-+int db_export__symbol(struct db_export *dbe, struct symbol *sym,
-+		      struct dso *dso)
-+{
-+	if (sym->db_id)
-+		return 0;
-+
-+	sym->db_id = ++dbe->symbol_last_db_id;
-+
-+	if (dbe->export_symbol)
-+		return dbe->export_symbol(dbe, sym, dso);
-+
-+	return 0;
-+}
-+
-+static struct thread *get_main_thread(struct machine *machine,
-+				      struct thread *thread)
-+{
-+	if (thread->pid_ == thread->tid)
-+		return thread;
-+
-+	if (thread->pid_ == -1)
++	ts = zalloc(sizeof(struct thread_stack));
++	if (!ts)
 +		return NULL;
 +
-+	return machine__find_thread(machine, thread->pid_, thread->pid_);
++	thread_stack__grow(ts);
++	if (!ts->stack) {
++		free(ts);
++		return NULL;
++	}
++
++	return ts;
 +}
 +
-+static int db_ids_from_al(struct db_export *dbe, struct addr_location *al,
-+			  u64 *dso_db_id, u64 *sym_db_id, u64 *offset)
++static void thread_stack__push(struct thread_stack *ts, u64 ret_addr)
 +{
-+	int err;
-+
-+	if (al->map) {
-+		struct dso *dso = al->map->dso;
-+
-+		err = db_export__dso(dbe, dso, al->machine);
-+		if (err)
-+			return err;
-+		*dso_db_id = dso->db_id;
-+
-+		if (!al->sym) {
-+			al->sym = symbol__new(al->addr, 0, 0, "unknown");
-+			if (al->sym)
-+				symbols__insert(&dso->symbols[al->map->type],
-+						al->sym);
-+		}
-+
-+		if (al->sym) {
-+			err = db_export__symbol(dbe, al->sym, dso);
-+			if (err)
-+				return err;
-+			*sym_db_id = al->sym->db_id;
-+			*offset = al->addr - al->sym->start;
-+		}
++	if (ts->cnt == ts->sz) {
++		thread_stack__grow(ts);
++		if (ts->cnt == ts->sz)
++			ts->cnt = 0;
 +	}
 +
-+	return 0;
++	ts->stack[ts->cnt++].ret_addr = ret_addr;
 +}
 +
-+int db_export__sample(struct db_export *dbe, union perf_event *event,
-+		      struct perf_sample *sample, struct perf_evsel *evsel,
-+		      struct thread *thread, struct addr_location *al)
++static void thread_stack__pop(struct thread_stack *ts, u64 ret_addr)
 +{
-+	struct export_sample es = {
-+		.event = event,
-+		.sample = sample,
-+		.evsel = evsel,
-+		.thread = thread,
-+		.al = al,
-+	};
-+	struct thread *main_thread;
-+	struct comm *comm = NULL;
-+	int err;
++	if (!ts->cnt)
++		return;
 +
-+	err = db_export__evsel(dbe, evsel);
-+	if (err)
-+		return err;
++	if (ts->stack[ts->cnt - 1].ret_addr == ret_addr) {
++		ts->cnt -= 1;
++	} else {
++		size_t i = ts->cnt - 1;
 +
-+	err = db_export__machine(dbe, al->machine);
-+	if (err)
-+		return err;
-+
-+	main_thread = get_main_thread(al->machine, thread);
-+	if (main_thread)
-+		comm = machine__thread_exec_comm(al->machine, main_thread);
-+
-+	err = db_export__thread(dbe, thread, al->machine, comm);
-+	if (err)
-+		return err;
-+
-+	if (comm) {
-+		err = db_export__comm(dbe, comm, main_thread);
-+		if (err)
-+			return err;
-+		es.comm_db_id = comm->db_id;
++		while (i--) {
++			if (ts->stack[i].ret_addr == ret_addr) {
++				ts->cnt = i;
++				return;
++			}
++		}
 +	}
-+
-+	es.db_id = ++dbe->sample_last_db_id;
-+
-+	err = db_ids_from_al(dbe, al, &es.dso_db_id, &es.sym_db_id, &es.offset);
-+	if (err)
-+		return err;
-+
-+	if ((evsel->attr.sample_type & PERF_SAMPLE_ADDR) &&
-+	    sample_addr_correlates_sym(&evsel->attr)) {
-+		struct addr_location addr_al;
-+
-+		perf_event__preprocess_sample_addr(event, sample, al->machine,
-+						   thread, &addr_al);
-+		err = db_ids_from_al(dbe, &addr_al, &es.addr_dso_db_id,
-+				     &es.addr_sym_db_id, &es.addr_offset);
-+		if (err)
-+			return err;
-+	}
-+
-+	if (dbe->export_sample)
-+		return dbe->export_sample(dbe, &es);
-+
-+	return 0;
 +}
-diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
++
++void thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
++			 u64 to_ip, u16 insn_len, u64 trace_nr)
++{
++	if (!thread)
++		return;
++
++	if (!thread->ts) {
++		thread->ts = thread_stack__new();
++		if (!thread->ts)
++			return;
++		thread->ts->trace_nr = trace_nr;
++	}
++
++	if (trace_nr != thread->ts->trace_nr) {
++		thread->ts->trace_nr = trace_nr;
++		thread->ts->cnt = 0;
++	}
++
++	if (flags & PERF_FLAG_CALL) {
++		u64 ret_addr;
++
++		if (!to_ip)
++			return;
++		ret_addr = from_ip + insn_len;
++		if (ret_addr == to_ip)
++			return; /* Zero-length calls are excluded */
++		thread_stack__push(thread->ts, ret_addr);
++	} else if (flags & PERF_FLAG_RETURN) {
++		if (!from_ip)
++			return;
++		thread_stack__pop(thread->ts, to_ip);
++	}
++}
++
++void thread_stack__free(struct thread *thread)
++{
++	if (thread->ts) {
++		zfree(&thread->ts->stack);
++		zfree(&thread->ts);
++	}
++}
++
++void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
++			  size_t sz, u64 ip)
++{
++	size_t i;
++
++	if (!thread || !thread->ts)
++		chain->nr = 1;
++	else
++		chain->nr = min(sz, thread->ts->cnt + 1);
++
++	chain->ips[0] = ip;
++
++	for (i = 1; i < chain->nr; i++)
++		chain->ips[i] = thread->ts->stack[thread->ts->cnt - i].ret_addr;
++}
+diff --git a/tools/perf/util/thread-stack.h b/tools/perf/util/thread-stack.h
 new file mode 100644
-index 0000000..b3643e8
+index 0000000..c0ba4cf
 --- /dev/null
-+++ b/tools/perf/util/db-export.h
-@@ -0,0 +1,86 @@
++++ b/tools/perf/util/thread-stack.h
+@@ -0,0 +1,32 @@
 +/*
-+ * db-export.h: Support for exporting data suitable for import to a database
++ * thread-stack.h: Synthesize a thread's stack using call / return events
 + * Copyright (c) 2014, Intel Corporation.
 + *
 + * This program is free software; you can redistribute it and/or modify it
@@ -384,137 +277,65 @@ index 0000000..b3643e8
 + *
 + */
 +
-+#ifndef __PERF_DB_EXPORT_H
-+#define __PERF_DB_EXPORT_H
++#ifndef __PERF_THREAD_STACK_H
++#define __PERF_THREAD_STACK_H
++
++#include <sys/types.h>
 +
 +#include <linux/types.h>
 +
-+struct perf_evsel;
-+struct machine;
 +struct thread;
-+struct comm;
-+struct dso;
-+struct perf_sample;
-+struct addr_location;
++struct ip_callchain;
 +
-+struct export_sample {
-+	union perf_event	*event;
-+	struct perf_sample	*sample;
-+	struct perf_evsel	*evsel;
-+	struct thread		*thread;
-+	struct addr_location	*al;
-+	u64			db_id;
-+	u64			comm_db_id;
-+	u64			dso_db_id;
-+	u64			sym_db_id;
-+	u64			offset; /* ip offset from symbol start */
-+	u64			addr_dso_db_id;
-+	u64			addr_sym_db_id;
-+	u64			addr_offset; /* addr offset from symbol start */
-+};
-+
-+struct db_export {
-+	int (*export_evsel)(struct db_export *dbe, struct perf_evsel *evsel);
-+	int (*export_machine)(struct db_export *dbe, struct machine *machine);
-+	int (*export_thread)(struct db_export *dbe, struct thread *thread,
-+			     u64 main_thread_db_id, struct machine *machine);
-+	int (*export_comm)(struct db_export *dbe, struct comm *comm);
-+	int (*export_comm_thread)(struct db_export *dbe, u64 db_id,
-+				  struct comm *comm, struct thread *thread);
-+	int (*export_dso)(struct db_export *dbe, struct dso *dso,
-+			  struct machine *machine);
-+	int (*export_symbol)(struct db_export *dbe, struct symbol *sym,
-+			     struct dso *dso);
-+	int (*export_sample)(struct db_export *dbe, struct export_sample *es);
-+	u64 evsel_last_db_id;
-+	u64 machine_last_db_id;
-+	u64 thread_last_db_id;
-+	u64 comm_last_db_id;
-+	u64 comm_thread_last_db_id;
-+	u64 dso_last_db_id;
-+	u64 symbol_last_db_id;
-+	u64 sample_last_db_id;
-+};
-+
-+int db_export__init(struct db_export *dbe);
-+void db_export__exit(struct db_export *dbe);
-+int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel);
-+int db_export__machine(struct db_export *dbe, struct machine *machine);
-+int db_export__thread(struct db_export *dbe, struct thread *thread,
-+		      struct machine *machine, struct comm *comm);
-+int db_export__comm(struct db_export *dbe, struct comm *comm,
-+		    struct thread *main_thread);
-+int db_export__comm_thread(struct db_export *dbe, struct comm *comm,
-+			   struct thread *thread);
-+int db_export__dso(struct db_export *dbe, struct dso *dso,
-+		   struct machine *machine);
-+int db_export__symbol(struct db_export *dbe, struct symbol *sym,
-+		      struct dso *dso);
-+int db_export__sample(struct db_export *dbe, union perf_event *event,
-+		      struct perf_sample *sample, struct perf_evsel *evsel,
-+		      struct thread *thread, struct addr_location *al);
++void thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
++			 u64 to_ip, u16 insn_len, u64 trace_nr);
++void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
++			  size_t sz, u64 ip);
++void thread_stack__free(struct thread *thread);
 +
 +#endif
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index 5e463c0..1c72a33 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -101,6 +101,7 @@ struct dso {
- 	enum dso_swap_type	needs_swap;
- 	enum dso_binary_type	symtab_type;
- 	enum dso_binary_type	binary_type;
-+	u64		 db_id;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
- 	u8		 has_srcline:1;
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index d46d28e..378e670 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -96,6 +96,7 @@ struct perf_evsel {
- 	int			sample_read;
- 	struct perf_evsel	*leader;
- 	char			*group_name;
-+	u64			db_id;
- };
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index a9df7f2..088c036 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -4,6 +4,7 @@
+ #include <string.h>
+ #include "session.h"
+ #include "thread.h"
++#include "thread-stack.h"
+ #include "util.h"
+ #include "debug.h"
+ #include "comm.h"
+@@ -61,6 +62,8 @@ void thread__delete(struct thread *thread)
+ {
+ 	struct comm *comm, *tmp;
  
- union u64_swap {
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 6a6bcc1..f385f23 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -39,6 +39,7 @@ struct machine {
- 	u64		  kernel_start;
- 	symbol_filter_t	  symbol_filter;
- 	pid_t		  *current_tid;
-+	u64		  db_id;
- };
- 
- static inline
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index e7295e9..51fb26b 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -71,6 +71,7 @@ struct symbol {
- 	struct rb_node	rb_node;
- 	u64		start;
- 	u64		end;
-+	u64		db_id;
- 	u16		namelen;
- 	u8		binding;
- 	bool		ignore;
++	thread_stack__free(thread);
++
+ 	if (thread->mg) {
+ 		map_groups__put(thread->mg);
+ 		thread->mg = NULL;
 diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index a057820..a3ebb21 100644
+index 8c75fa7..a057820 100644
 --- a/tools/perf/util/thread.h
 +++ b/tools/perf/util/thread.h
-@@ -25,6 +25,7 @@ struct thread {
- 	bool			dead; /* if set thread has exited */
- 	struct list_head	comm_list;
+@@ -8,6 +8,8 @@
+ #include "symbol.h"
+ #include <strlist.h>
+ 
++struct thread_stack;
++
+ struct thread {
+ 	union {
+ 		struct rb_node	 rb_node;
+@@ -25,6 +27,7 @@ struct thread {
  	int			comm_len;
-+	u64			db_id;
  
  	void			*priv;
- 	struct thread_stack	*ts;
++	struct thread_stack	*ts;
+ };
+ 
+ struct machine;
 -- 
 1.8.3.2
 
