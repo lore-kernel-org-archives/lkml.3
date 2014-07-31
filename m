@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaGaPQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:16:42 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:52919 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293AbaGaPQj (ORCPT
+	id S1751808AbaGaPTg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:19:36 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:55444 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255AbaGaPTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:16:39 -0400
-Date: Thu, 31 Jul 2014 17:16:32 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v4 2/5] x86,entry: Only call user_exit if TIF_NOHZ
-Message-ID: <20140731151630.GA7842@localhost.localdomain>
-References: <cover.1406604806.git.luto@amacapital.net>
- <7123b2489cc5d1d5abb7bcf1364ca729cab3e6ca.1406604806.git.luto@amacapital.net>
- <20140729193232.GA8153@redhat.com>
- <20140730164344.GA27954@localhost.localdomain>
- <CALCETrUVaz3JFiNbyU=r3M-E9muHa1ffn7RX+_-4V_0U-hVaPw@mail.gmail.com>
+	Thu, 31 Jul 2014 11:19:34 -0400
+Message-ID: <53DA5E7E.9010607@gmail.com>
+Date: Thu, 31 Jul 2014 17:19:26 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUVaz3JFiNbyU=r3M-E9muHa1ffn7RX+_-4V_0U-hVaPw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Humberto Naves <hsnaves@gmail.com>
+CC: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Thomas Abraham <ta.omasab@gmail.com>,
+        Andreas Farber <afaerber@suse.de>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: Re: [PATCHv2 5/5] clk: samsung: exynos5410: Added clocks DPLL, EPLL,
+ IPLL, and VPLL
+References: <1406805732-17372-1-git-send-email-hsnaves@gmail.com> <1406805732-17372-6-git-send-email-hsnaves@gmail.com> <53DA3F86.3020506@gmail.com> <CAEe5pB9Rj9rdzk-fjyNcdWyhQCfLtwxt+nAZdb4xuKDO9OpzUA@mail.gmail.com>
+In-Reply-To: <CAEe5pB9Rj9rdzk-fjyNcdWyhQCfLtwxt+nAZdb4xuKDO9OpzUA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 10:23:34AM -0700, Andy Lutomirski wrote:
-> On Wed, Jul 30, 2014 at 9:43 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > On Tue, Jul 29, 2014 at 09:32:32PM +0200, Oleg Nesterov wrote:
-> >> On 07/28, Andy Lutomirski wrote:
-> >> >
-> >> > @@ -1449,7 +1449,12 @@ long syscall_trace_enter(struct pt_regs *regs)
-> >> >  {
-> >> >     long ret = 0;
-> >> >
-> >> > -   user_exit();
-> >> > +   /*
-> >> > +    * If TIF_NOHZ is set, we are required to call user_exit() before
-> >> > +    * doing anything that could touch RCU.
-> >> > +    */
-> >> > +   if (test_thread_flag(TIF_NOHZ))
-> >> > +           user_exit();
-> >>
-> >> Personally I still think this change just adds more confusion, but I leave
-> >> this to you and Frederic.
-> >>
-> >> It is not that "If TIF_NOHZ is set, we are required to call user_exit()", we
-> >> need to call user_exit() just because we enter the kernel. TIF_NOHZ is just
-> >> the implementation detail which triggers this slow path.
-> >>
-> >> At least it should be correct, unless I am confused even more than I think.
-> >
-> > Agreed, Perhaps the confusion is on the syscall_trace_enter() name which suggests
-> > this is only about tracing? syscall_slowpath_enter() could be an alternative.
-> > But that's still tracing in a general sense so...
+On 31.07.2014 15:37, Humberto Naves wrote:
+> Hi Tomasz,
 > 
-> At the end of the day, the syscall slowpath code calls a bunch of
-> functions depending on what TIF_XYZ flags are set.  As long as it's
-> structured like "if (TIF_A) do_a(); if (TIF_B) do_b();" or something
-> like that, it's comprehensible.  But once random functions with no
-> explicit flag checks or comments start showing up, it gets confusing.
-
-Yeah that's a point. I don't mind much the TIF_NOHZ test if you like.
-
+> I remember checking these rates on my calculator. You might notice the
+> odd frequency of 45158401Hz (no pun intended) in the EPLL clock. This
+> particular clock frequency was giving me a big headache in a previous
+> project, since it was wrongly listed as 45158400. At first it seems
+> innocuous, but whenever I would ask for one of the child clocks to
+> change the rate, the driver would miscalculate the correct frequencies
+> and errors would propagate up and down the clock tree.
 > 
-> If it's indeed all-or-nothing, I could remove the check and add a
-> comment.  But please keep in mind that, currently, the slow path is
-> *slow*, and my patches only improve the entry case.  So enabling
-> context tracking on every task will hurt.
+> Anyway, I would double check these tables. And if you want, I can
+> write a separate patch for the rate table validation. I presume that
+> you would like to add a new field, such as default_base_freq, to the
+> structure samsung_pll_clock, and if that field is non-zero, you
+> perform the validation of the table in _samsung_clk_register_pll?
 
-That's what we do anyway. I haven't found a safe way to enabled context tracking
-without tracking all CPUs.
+I'm not sure I get the idea of the field you're suggesting. If I
+understand correctly, your intention would be to provide a default
+frequency if there is no table provided. I don't think there is a need
+for it, because current code can read back current settings from
+registers and calculate current rate.
 
-> 
-> --Andy
+As for the validation itself, one more thing that needs to be considered
+is that the rate table must be sorted.
+
+We once decided to rely on the fact that tables in SoC drivers have
+rates explicitly specified and are correctly sorted, but now I'm
+inclined to reconsider this, based on the fact that those rates often
+are already incorrectly calculated in vendor code or even datasheets,
+which are main information sources for patch authors.
+
+Before mainlining PLL drivers (which was quite some time ago), we had a
+bit different implementation in our internal tree, which did not use
+explicitly specified rates at all (they could have been considered just
+comments to improve table readability) and the _register_pll() function
+simply calculated rates for all entries creating new table for internal
+use of the PLL driver that was in addition explicitly sorted to make
+sure that the order is correct. This kind of implementation is what I
+would lean toward today.
+
+Best regards,
+Tomasz
