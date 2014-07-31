@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213AbaGaKBG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 06:01:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56043 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750969AbaGaKBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 06:01:03 -0400
-Date: Thu, 31 Jul 2014 12:01:00 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au,
-        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        Baoquan He <bhe@redhat.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] kexec-export-free_huge_page-to-vmcoreinfo-fix (was: Re:
- mmotm 2014-07-30-15-57 uploaded)
-Message-ID: <20140731100100.GD13561@dhcp22.suse.cz>
-References: <53d978aa.dtIIGjOqrXXmAm4e%akpm@linux-foundation.org>
- <20140731092452.GB13561@dhcp22.suse.cz>
+	id S1756290AbaGaKBO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 06:01:14 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:35945 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755951AbaGaKBF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 06:01:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140731092452.GB13561@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53DA1231.70309@suse.de>
+References: <1406728244-5105-1-git-send-email-afaerber@suse.de>
+	<1406728244-5105-5-git-send-email-afaerber@suse.de>
+	<53DA0BAA.8090000@suse.de>
+	<CAEC9eQNuPN+WiKGOtCosCwcR48MNawQL7dU4S8=dbA4eFXB_-w@mail.gmail.com>
+	<53DA1231.70309@suse.de>
+Date: Thu, 31 Jul 2014 15:31:04 +0530
+Message-ID: <CAEC9eQOfeW==+YhWbYT5zbCYtQ+poe5=NL2bcuL4GOjPrpQ5hg@mail.gmail.com>
+Subject: Re: [PATCH v3 4/4] ARM: dts: Add exynos5250-spring device tree
+From: Ajay kumar <ajaynumb@gmail.com>
+To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
+Cc: "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ajay Kumar <ajaykumar.rs@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 31-07-14 11:24:52, Michal Hocko wrote:
-> On Wed 30-07-14 15:58:50, Andrew Morton wrote:
-> > * kexec-export-free_huge_page-to-vmcoreinfo.patch
-> 
-> This one seems to be missing ifdef for CONFIG_HUGETLBFS
+On Thu, Jul 31, 2014 at 3:23 PM, Andreas Färber <afaerber@suse.de> wrote:
+> Hi,
+>
+> Am 31.07.2014 11:49, schrieb Ajay kumar:
+>> On Thu, Jul 31, 2014 at 2:56 PM, Andreas Färber <afaerber@suse.de> wrote:
+>>> Am 30.07.2014 15:50, schrieb Andreas Färber:
+>>>> diff --git a/arch/arm/boot/dts/exynos5250-spring.dts b/arch/arm/boot/dts/exynos5250-spring.dts
+>>>> new file mode 100644
+>>>> index 000000000000..bcca892bf2ff
+>>>> --- /dev/null
+>>>> +++ b/arch/arm/boot/dts/exynos5250-spring.dts
+>>> [...]
+>>>> +&pinctrl_0 {
+>>>> +     dp_hpd_gpio: dp-hpd-gpio {
+>>>> +             samsung,pins = "gpc3-0";
+>>>> +             samsung,pin-function = <1>;
+>>>
+>>> Not sure where this 1 came from... Both Ajay and my 3.8 DT have 0.
+>> Right, this should be 0.
+>>
+>>>> +             samsung,pin-pud = <3>;
+>>>> +             samsung,pin-drv = <0>;
+>>>> +     };
+>>>
+>>> Seeing that Ajay called this node dp-hdp, it should probably be an override?
+>> dp_hpd should be enough. I will keep the same name for peach boards.
+>> dp_hpd: dp-hpd {
+>> .
+>> .
+>> .
+>> };
+>
+> Apart from my own set of typos, I see that you proposed dp-hpd whereas
+> -pinctrl.dtsi has dp_hpd (dash vs. underscore). My question is, can we
+> override the pinctrl one instead of adding a new one, or do they need to
+> coexist?
+The one in exynos5250-pinctrl.dtsi will be used only for smdk5250/snow.
+For spring, you can override the same.
 
-Ohh, David has already posted the fix
-http://marc.info/?l=linux-mm&m=140676663218869
-
-> ---
-> From bcccb6696b89c700712421858b05dd89ea0d1ec5 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Thu, 31 Jul 2014 11:18:57 +0200
-> Subject: [PATCH] kexec-export-free_huge_page-to-vmcoreinfo-fix
-> MIME-Version: 1.0
-> Content-Type: text/plain; charset=UTF-8
-> Content-Transfer-Encoding: 8bit
-> 
-> free_huge_page is not defined for !CONFIG_HUGETLBFS. Fix the following
-> compilation error:
-> 
-> kernel/kexec.c: In function ‘crash_save_vmcoreinfo_init’:
-> kernel/kexec.c:1628:20: error: ‘free_huge_page’ undeclared (first use in this function)
->   VMCOREINFO_SYMBOL(free_huge_page);
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  kernel/kexec.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index a3ccf9d7174b..507614acf938 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -1625,7 +1625,9 @@ static int __init crash_save_vmcoreinfo_init(void)
->  #endif
->  	VMCOREINFO_NUMBER(PG_head_mask);
->  	VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
-> +#ifdef CONFIG_HUGETLBFS
->  	VMCOREINFO_SYMBOL(free_huge_page);
-> +#endif
->  
->  	arch_crash_save_vmcoreinfo();
->  	update_vmcoreinfo_note();
-> -- 
-> 2.0.1
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Michal Hocko
-SUSE Labs
+Ajay
