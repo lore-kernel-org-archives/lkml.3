@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607AbaGaRL6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:11:58 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:33171 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829AbaGaRLy (ORCPT
+	id S1753726AbaGaRMp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:12:45 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:40411 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223AbaGaRLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:11:54 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-35-53da78d84e79
+	Thu, 31 Jul 2014 13:11:50 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-46-53da78d47798
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Eduardo Valentin <eduardo.valentin@ti.com>
 Cc: Zhang Rui <rui.zhang@intel.com>,
@@ -17,82 +17,161 @@ Cc: Zhang Rui <rui.zhang@intel.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH v3 7/8] thermal: exynos: remove redundant pdata checks from
- exynos_tmu_control()
-Date: Thu, 31 Jul 2014 19:11:05 +0200
-Message-id: <1406826667-2289-8-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH v3 6/8] thermal: exynos: cache non_hw_trigger_levels in pdata
+Date: Thu, 31 Jul 2014 19:11:04 +0200
+Message-id: <1406826667-2289-7-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1406826667-2289-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1406826667-2289-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrILMWRmVeSWpSXmKPExsVy+t9jAd0bFbeCDR6/NLdouBpisXHGelaL
-	Nft/MlmcbXrDbnF51xw2i8+9RxgtZpzfx2Rx5vQlVosnD/vYLNbPeM3iwOWxeM9LJo8tV9tZ
-	PPq2rGL0OH5jO5PH501yAaxRXDYpqTmZZalF+nYJXBkzD9xlL9gkVHH8k2oD4xn+LkZODgkB
-	E4mFxy8xQdhiEhfurWfrYuTiEBJYxCjx9O4XZgini0niQ/MbRpAqNgEriYntq8BsEQE9iRsv
-	njCBFDELHGeS+Pn7PBtIQlggSeL/ypcsIDaLgKrEzRPTgGwODl4Bd4ndP0MhtilKdD+bAFbO
-	KeAhcaB9BpgtBFTyd9NJ1gmMvAsYGVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBAfcM+kd
-	jKsaLA4xCnAwKvHwOoTeChZiTSwrrsw9xCjBwawkwutSDhTiTUmsrEotyo8vKs1JLT7EKM3B
-	oiTOe7DVOlBIID2xJDU7NbUgtQgmy8TBKdXAaGiR5/VwncZlSWPzrt2ban84nfmpb/XkYoTn
-	48WKcR8bv0hdlS/pKPwXemueMhvbJHYRmbrdne8YPcVb31l2WSy8wCpQ/vBVmVHL5T7pxONs
-	qVI3NWYs33pWd42ddu+LX4/s9f2v739SOWNlhOWpRaeMPzrIOQvkce/esVD3zcErJ7m4thSZ
-	KLEUZyQaajEXFScCAPwUy4k0AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t9jAd0rFbeCDZqv61k0XA2x2DhjPavF
+	mv0/mSzONr1ht7i8aw6bxefeI4wWM87vY7I4c/oSq8WTh31sFutnvGZx4PJYvOclk8eWq+0s
+	Hn1bVjF6HL+xncnj8ya5ANYoLpuU1JzMstQifbsEroxl5y4xFtzSqtjaP421gXGOchcjJ4eE
+	gIlEV/cORghbTOLCvfVsXYxcHEICixgltn18BOV0MUmsf7KWCaSKTcBKYmL7KrAOEQE9iRsv
+	njCBFDELHGeS+Pn7PBtIQljAV6L36xOwIhYBVYmmx9vZQWxeAXeJ5pWr2CHWKUp0P5sAVs8p
+	4CFxoH0GmC0EVPN300nWCYy8CxgZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEB90zqR2M
+	KxssDjEKcDAq8fDOCL8VLMSaWFZcmXuIUYKDWUmE16UcKMSbklhZlVqUH19UmpNafIhRmoNF
+	SZz3QKt1oJBAemJJanZqakFqEUyWiYNTqoFxcb6gf8WvGbKLLIsXftrRIm6RYLh64QIpD8Ok
+	gKo53/sqtUN6TJ1DpDZxCczZlWyZsO8Hzz6xk4/eaSW/kX7CyrktOmThfUetz25qB9wXP/Vj
+	9mOt01IQWxqrw6H0t2uR9Bf3zb8mPFdQvVraEGhtvWFj30PVtunf8yZwyZyZJaq83FjbtEmJ
+	pTgj0VCLuag4EQAFTDrsNgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pdata->reference_voltage and pdata->gain are always defined
-to non-zero values so remove the redundant checks from
-exynos_tmu_control().
+Cache number of non-hardware trigger levels in a new pdata field
+(non_hw_trigger_levels) and convert code in exynos_tmu_initialize()
+accordingly.
 
 There should be no functional changes caused by this patch.
 
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Reviewed-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- drivers/thermal/samsung/exynos_tmu.c | 12 ++++--------
- drivers/thermal/samsung/exynos_tmu.h |  4 ++--
- 2 files changed, 6 insertions(+), 10 deletions(-)
+ drivers/thermal/samsung/exynos_tmu.c      | 16 +++-------------
+ drivers/thermal/samsung/exynos_tmu.h      |  2 ++
+ drivers/thermal/samsung/exynos_tmu_data.c |  6 ++++++
+ 3 files changed, 11 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 6bc8a20..122ae66 100644
+index aa4d4fd..6bc8a20 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -274,15 +274,11 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
- 	if (pdata->test_mux)
- 		con |= (pdata->test_mux << reg->test_mux_addr_shift);
+@@ -129,7 +129,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 	const struct exynos_tmu_registers *reg = pdata->registers;
+ 	unsigned int status, trim_info = 0, con;
+ 	unsigned int rising_threshold = 0, falling_threshold = 0;
+-	int ret = 0, threshold_code, i, trigger_levs = 0;
++	int ret = 0, threshold_code, i;
  
--	if (pdata->reference_voltage) {
--		con &= ~(reg->buf_vref_sel_mask << reg->buf_vref_sel_shift);
--		con |= pdata->reference_voltage << reg->buf_vref_sel_shift;
+ 	mutex_lock(&data->lock);
+ 	clk_enable(data->clk);
+@@ -187,15 +187,6 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 			(pdata->efuse_value >> reg->triminfo_85_shift) &
+ 			EXYNOS_TMU_TEMP_MASK;
+ 
+-	for (i = 0; i < pdata->max_trigger_level; i++) {
+-		if (!pdata->trigger_levels[i])
+-			continue;
+-
+-		/* Count trigger levels except the HW trip*/
+-		if (!(pdata->trigger_type[i] == HW_TRIP))
+-			trigger_levs++;
 -	}
-+	con &= ~(reg->buf_vref_sel_mask << reg->buf_vref_sel_shift);
-+	con |= pdata->reference_voltage << reg->buf_vref_sel_shift;
+-
+ 	rising_threshold = readl(data->base + reg->threshold_th0);
  
--	if (pdata->gain) {
--		con &= ~(reg->buf_slope_sel_mask << reg->buf_slope_sel_shift);
--		con |= (pdata->gain << reg->buf_slope_sel_shift);
--	}
-+	con &= ~(reg->buf_slope_sel_mask << reg->buf_slope_sel_shift);
-+	con |= (pdata->gain << reg->buf_slope_sel_shift);
+ 	if (data->soc == SOC_ARCH_EXYNOS4210) {
+@@ -203,15 +194,14 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 		threshold_code = temp_to_code(data, pdata->threshold);
+ 		writeb(threshold_code,
+ 			data->base + reg->threshold_temp);
+-		for (i = 0; i < trigger_levs; i++)
++		for (i = 0; i < pdata->non_hw_trigger_levels; i++)
+ 			writeb(pdata->trigger_levels[i], data->base +
+ 			reg->threshold_th0 + i * sizeof(reg->threshold_th0));
  
- 	if (pdata->noise_cancel_mode) {
- 		con &= ~(reg->therm_trip_mode_mask <<
+ 		writel(reg->intclr_rise_mask, data->base + reg->tmu_intclear);
+ 	} else {
+ 		/* Write temperature code for rising and falling threshold */
+-		for (i = 0;
+-		i < trigger_levs && i < EXYNOS_MAX_TRIGGER_PER_REG; i++) {
++		for (i = 0; i < pdata->non_hw_trigger_levels; i++) {
+ 			threshold_code = temp_to_code(data,
+ 						pdata->trigger_levels[i]);
+ 			rising_threshold &= ~(0xff << 8 * i);
 diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-index 5514d68..327c64f 100644
+index 789a8f7..5514d68 100644
 --- a/drivers/thermal/samsung/exynos_tmu.h
 +++ b/drivers/thermal/samsung/exynos_tmu.h
-@@ -201,10 +201,10 @@ struct exynos_tmu_registers {
+@@ -199,6 +199,7 @@ struct exynos_tmu_registers {
+  *	1 = enable trigger_level[] interrupt,
+  *	0 = disable trigger_level[] interrupt
   * @max_trigger_level: max trigger level supported by the TMU
-  * @non_hw_trigger_levels: number of defined non-hardware trigger levels
++ * @non_hw_trigger_levels: number of defined non-hardware trigger levels
   * @gain: gain of amplifier in the positive-TC generator block
-- *	0 <= gain <= 15
-+ *	0 < gain <= 15
+  *	0 <= gain <= 15
   * @reference_voltage: reference voltage of amplifier
-  *	in the positive-TC generator block
-- *	0 <= reference_voltage <= 31
-+ *	0 < reference_voltage <= 31
-  * @noise_cancel_mode: noise cancellation mode
-  *	000, 100, 101, 110 and 111 can be different modes
-  * @type: determines the type of SOC
+@@ -232,6 +233,7 @@ struct exynos_tmu_platform_data {
+ 	enum trigger_type trigger_type[MAX_TRIP_COUNT];
+ 	bool trigger_enable[MAX_TRIP_COUNT];
+ 	u8 max_trigger_level;
++	u8 non_hw_trigger_levels;
+ 	u8 gain;
+ 	u8 reference_voltage;
+ 	u8 noise_cancel_mode;
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+index 1d05bf8..9c81515 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.c
++++ b/drivers/thermal/samsung/exynos_tmu_data.c
+@@ -64,6 +64,7 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
+ 		.trigger_type[1] = THROTTLE_ACTIVE,
+ 		.trigger_type[2] = SW_TRIP,
+ 		.max_trigger_level = 4,
++		.non_hw_trigger_levels = 3,
+ 		.gain = 15,
+ 		.reference_voltage = 7,
+ 		.cal_type = TYPE_ONE_POINT_TRIMMING,
+@@ -140,6 +141,7 @@ static const struct exynos_tmu_registers exynos3250_tmu_registers = {
+ 	.trigger_type[2] = SW_TRIP, \
+ 	.trigger_type[3] = HW_TRIP, \
+ 	.max_trigger_level = 4, \
++	.non_hw_trigger_levels = 3, \
+ 	.gain = 8, \
+ 	.reference_voltage = 16, \
+ 	.noise_cancel_mode = 4, \
+@@ -230,6 +232,7 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+ 	.trigger_type[2] = SW_TRIP, \
+ 	.trigger_type[3] = HW_TRIP, \
+ 	.max_trigger_level = 4, \
++	.non_hw_trigger_levels = 3, \
+ 	.gain = 8, \
+ 	.reference_voltage = 16, \
+ 	.noise_cancel_mode = 4, \
+@@ -331,6 +334,7 @@ static const struct exynos_tmu_registers exynos5260_tmu_registers = {
+ 	.trigger_type[2] = SW_TRIP, \
+ 	.trigger_type[3] = HW_TRIP, \
+ 	.max_trigger_level = 4, \
++	.non_hw_trigger_levels = 3, \
+ 	.gain = 8, \
+ 	.reference_voltage = 16, \
+ 	.noise_cancel_mode = 4, \
+@@ -422,6 +426,7 @@ static const struct exynos_tmu_registers exynos5420_tmu_registers = {
+ 	.trigger_type[2] = SW_TRIP, \
+ 	.trigger_type[3] = HW_TRIP, \
+ 	.max_trigger_level = 4, \
++	.non_hw_trigger_levels = 3, \
+ 	.gain = 8, \
+ 	.reference_voltage = 16, \
+ 	.noise_cancel_mode = 4, \
+@@ -514,6 +519,7 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+ 	.trigger_type[0] = SW_TRIP, \
+ 	.trigger_type[4] = HW_TRIP, \
+ 	.max_trigger_level = 5, \
++	.non_hw_trigger_levels = 1, \
+ 	.gain = 5, \
+ 	.reference_voltage = 16, \
+ 	.noise_cancel_mode = 4, \
 -- 
 1.8.2.3
 
