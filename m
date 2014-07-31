@@ -1,934 +1,1093 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751312AbaGaTPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 15:15:10 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51919 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781AbaGaTPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 15:15:07 -0400
-From: Dan Murphy <dmurphy@ti.com>
-To: <linux-input@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <mark.rutland@arm.com>, <madcatxster@devoid-pointer.net>,
-        <simon@mungewell.org>, <elias.vds@gmail.com>,
-        <dmitry.torokhov@gmail.com>, Dan Murphy <dmurphy@ti.com>
-Subject: [PATCH v5] input: drv260x: Add TI drv260x haptics driver
-Date: Thu, 31 Jul 2014 14:14:49 -0500
-Message-ID: <1406834089-15095-1-git-send-email-dmurphy@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751381AbaGaTTO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 15:19:14 -0400
+Received: from aso-006-i453.relay.mailchannels.net ([23.91.64.134]:54541 "EHLO
+	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750802AbaGaTTM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 15:19:12 -0400
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-MC-Relay: Good
+X-MailChannels-SenderId: arvixe|x-authuser|przemo@firszt.eu
+X-MailChannels-Auth-Id: arvixe
+Message-ID: <1406834337.9693.2.camel@fedora-lan>
+Subject: Re: [PATCH v3 7/7] HID: remove hid-wacom Bluetooth driver
+From: Przemo Firszt <przemo@firszt.eu>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Date: Thu, 31 Jul 2014 20:18:57 +0100
+In-Reply-To: <1406659385-3256-8-git-send-email-benjamin.tissoires@redhat.com>
+References: <1406659385-3256-1-git-send-email-benjamin.tissoires@redhat.com>
+	 <1406659385-3256-8-git-send-email-benjamin.tissoires@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+X-AuthUser: przemo@firszt.eu
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the TI drv260x haptics/vibrator driver.
-This device uses the input force feedback
-to produce a wave form to driver an
-ERM or LRA actuator device.
+Hi Benjamin,
+Look like you pressed "y" when git send-email asked for charset:
 
-The initial driver supports the devices
-real time playback mode.  But the device
-has additional wave patterns in ROM.
+Content-Type: text/plain; charset=y
 
-This functionality will be added in
-future patchsets.
+It kills git am:
 
-Product data sheet is located here:
-http://www.ti.com/product/drv2605
+> fedora-lan:/home/przemo/sf/wacom-kernel
+> $ git am ../linux-next/\[PATCH_v3_*
+> Applying: Input - wacom: prepare the driver to include BT devices
+> Applying: Input - wacom: handle Graphire BT tablets in wacom.ko
+> Applying: Input - wacom: handle Intuos 4 BT in wacom.ko
+> Applying: Input - wacom: Check for bluetooth protocol while setting OLEDs
+> Applying: Input - wacom: Remove passing id for wacom_set_report
+> Applying: Input - wacom: add copyright note and bump version to 2.0
+> fatal: cannot convert from y to UTF-8
 
-Signed-off-by: Dan Murphy <dmurphy@ti.com>
----
+The rest of patches is OK, I'm testing them now.
+Regards,
+Przemo
 
-v5 - Move register defines to c file and rm header file, error check
-init in probe, fixed identation, remove empty labels in probe
-and just return on fail and removed the remove callback and function.
-Did not factor out the suspend into a stop function. - https://patchwork.kernel.org/patch/4649631/
-v4 - Convert regulator to devm, added error checking where required,
-updated bindings doc, moved dt parsing to separate call and made platform
-data the first data point, moved vibrator enable and mode programming from
-play entry to worker thread, added user check and input mutex in suspend/resume
-calls, moved platform data to individual file and into include platform-data directory,
-removed file names from file headers - https://patchwork.kernel.org/patch/4642221/
-v3 - Updated binding doc, changed to memless device, updated input alloc to
-devm, removed mutex locking, add sanity checks for mode and library - https://patchwork.kernel.org/patch/4635421/
-v2 - Fixed binding doc and patch headline - https://patchwork.kernel.org/patch/4619641/
+Dnia 2014-07-29, wto o godzinie 14:43 -0400, Benjamin Tissoires pisze:
+> Bluetooth Wacom tablets are now handled by the regular wacom.ko driver.
+> Remove the now useless hid-wacom driver.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+>  drivers/hid/Kconfig     |  10 +-
+>  drivers/hid/Makefile    |   3 +-
+>  drivers/hid/hid-wacom.c | 971 ------------------------------------------------
+>  3 files changed, 2 insertions(+), 982 deletions(-)
+>  delete mode 100644 drivers/hid/hid-wacom.c
+> 
+> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+> index b18bae6..354122b 100644
+> --- a/drivers/hid/Kconfig
+> +++ b/drivers/hid/Kconfig
+> @@ -762,21 +762,13 @@ config THRUSTMASTER_FF
+>  	  Rumble Force or Force Feedback Wheel.
+>  
+>  config HID_WACOM
+> -	tristate "Wacom Bluetooth devices support"
+> -	depends on HID
+> -	depends on LEDS_CLASS
+> -	select POWER_SUPPLY
+> -	---help---
+> -	Support for Wacom Graphire Bluetooth and Intuos4 WL tablets.
+> -
+> -config HID_USB_WACOM
+>  	tristate "Wacom Intuos/Graphire tablet support (USB)"
+>  	depends on HID
+>  	select POWER_SUPPLY
+>  	select NEW_LEDS
+>  	select LEDS_CLASS
+>  	help
+> -	  Say Y here if you want to use the USB version of the Wacom Intuos
+> +	  Say Y here if you want to use the USB or BT version of the Wacom Intuos
+>  	  or Graphire tablet.
+>  
+>  	  To compile this driver as a module, choose M here: the
+> diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+> index 19ba7c3..2d7e149 100644
+> --- a/drivers/hid/Makefile
+> +++ b/drivers/hid/Makefile
+> @@ -116,10 +116,9 @@ obj-$(CONFIG_HID_UCLOGIC)	+= hid-uclogic.o
+>  obj-$(CONFIG_HID_XINMO)		+= hid-xinmo.o
+>  obj-$(CONFIG_HID_ZEROPLUS)	+= hid-zpff.o
+>  obj-$(CONFIG_HID_ZYDACRON)	+= hid-zydacron.o
+> -obj-$(CONFIG_HID_WACOM)		+= hid-wacom.o
+>  
+>  wacom-objs			:= wacom_wac.o wacom_sys.o
+> -obj-$(CONFIG_HID_USB_WACOM)	+= wacom.o
+> +obj-$(CONFIG_HID_WACOM)		+= wacom.o
+>  obj-$(CONFIG_HID_WALTOP)	+= hid-waltop.o
+>  obj-$(CONFIG_HID_WIIMOTE)	+= hid-wiimote.o
+>  obj-$(CONFIG_HID_SENSOR_HUB)	+= hid-sensor-hub.o
+> diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
+> deleted file mode 100644
+> index db2d07d..0000000
+> --- a/drivers/hid/hid-wacom.c
+> +++ /dev/null
+> @@ -1,971 +0,0 @@
+> -/*
+> - *  Bluetooth Wacom Tablet support
+> - *
+> - *  Copyright (c) 1999 Andreas Gal
+> - *  Copyright (c) 2000-2005 Vojtech Pavlik <vojtech@suse.cz>
+> - *  Copyright (c) 2005 Michael Haboustak <mike-@cinci.rr.com> for Concept2, Inc
+> - *  Copyright (c) 2006-2007 Jiri Kosina
+> - *  Copyright (c) 2008 Jiri Slaby <jirislaby@gmail.com>
+> - *  Copyright (c) 2006 Andrew Zabolotny <zap@homelink.ru>
+> - *  Copyright (c) 2009 Bastien Nocera <hadess@hadess.net>
+> - *  Copyright (c) 2011 Przemysław Firszt <przemo@firszt.eu>
+> - */
+> -
+> -/*
+> - * This program is free software; you can redistribute it and/or modify it
+> - * under the terms of the GNU General Public License as published by the Free
+> - * Software Foundation; either version 2 of the License, or (at your option)
+> - * any later version.
+> - */
+> -
+> -#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> -
+> -#include <linux/device.h>
+> -#include <linux/hid.h>
+> -#include <linux/module.h>
+> -#include <linux/leds.h>
+> -#include <linux/slab.h>
+> -#include <linux/power_supply.h>
+> -
+> -#include "hid-ids.h"
+> -
+> -#define PAD_DEVICE_ID	0x0F
+> -
+> -#define WAC_CMD_LED_CONTROL     0x20
+> -#define WAC_CMD_ICON_START_STOP     0x21
+> -#define WAC_CMD_ICON_TRANSFER       0x26
+> -
+> -struct wacom_data {
+> -	__u16 tool;
+> -	__u16 butstate;
+> -	__u8 whlstate;
+> -	__u8 features;
+> -	__u32 id;
+> -	__u32 serial;
+> -	unsigned char high_speed;
+> -	__u8 battery_capacity;
+> -	__u8 power_raw;
+> -	__u8 ps_connected;
+> -	__u8 bat_charging;
+> -	struct power_supply battery;
+> -	struct power_supply ac;
+> -	__u8 led_selector;
+> -	struct led_classdev *leds[4];
+> -};
+> -
+> -/*percent of battery capacity for Graphire
+> -  8th value means AC online and show 100% capacity */
+> -static unsigned short batcap_gr[8] = { 1, 15, 25, 35, 50, 70, 100, 100 };
+> -/*percent of battery capacity for Intuos4 WL, AC has a separate bit*/
+> -static unsigned short batcap_i4[8] = { 1, 15, 30, 45, 60, 70, 85, 100 };
+> -
+> -static enum power_supply_property wacom_battery_props[] = {
+> -	POWER_SUPPLY_PROP_PRESENT,
+> -	POWER_SUPPLY_PROP_CAPACITY,
+> -	POWER_SUPPLY_PROP_SCOPE,
+> -	POWER_SUPPLY_PROP_STATUS,
+> -};
+> -
+> -static enum power_supply_property wacom_ac_props[] = {
+> -	POWER_SUPPLY_PROP_PRESENT,
+> -	POWER_SUPPLY_PROP_ONLINE,
+> -	POWER_SUPPLY_PROP_SCOPE,
+> -};
+> -
+> -static void wacom_scramble(__u8 *image)
+> -{
+> -	__u16 mask;
+> -	__u16 s1;
+> -	__u16 s2;
+> -	__u16 r1 ;
+> -	__u16 r2 ;
+> -	__u16 r;
+> -	__u8 buf[256];
+> -	int i, w, x, y, z;
+> -
+> -	for (x = 0; x < 32; x++) {
+> -		for (y = 0; y < 8; y++)
+> -			buf[(8 * x) + (7 - y)] = image[(8 * x) + y];
+> -	}
+> -
+> -	/* Change 76543210 into GECA6420 as required by Intuos4 WL
+> -	 *        HGFEDCBA      HFDB7531
+> -	 */
+> -	for (x = 0; x < 4; x++) {
+> -		for (y = 0; y < 4; y++) {
+> -			for (z = 0; z < 8; z++) {
+> -				mask = 0x0001;
+> -				r1 = 0;
+> -				r2 = 0;
+> -				i = (x << 6) + (y << 4) + z;
+> -				s1 = buf[i];
+> -				s2 = buf[i+8];
+> -				for (w = 0; w < 8; w++) {
+> -					r1 |= (s1 & mask);
+> -					r2 |= (s2 & mask);
+> -					s1 <<= 1;
+> -					s2 <<= 1;
+> -					mask <<= 2;
+> -				}
+> -				r = r1 | (r2 << 1);
+> -				i = (x << 6) + (y << 4) + (z << 1);
+> -				image[i] = 0xFF & r;
+> -				image[i+1] = (0xFF00 & r) >> 8;
+> -			}
+> -		}
+> -	}
+> -}
+> -
+> -static void wacom_set_image(struct hid_device *hdev, const char *image,
+> -						__u8 icon_no)
+> -{
+> -	__u8 rep_data[68];
+> -	__u8 p[256];
+> -	int ret, i, j;
+> -
+> -	for (i = 0; i < 256; i++)
+> -		p[i] = image[i];
+> -
+> -	rep_data[0] = WAC_CMD_ICON_START_STOP;
+> -	rep_data[1] = 0;
+> -	ret = hid_hw_raw_request(hdev, rep_data[0], rep_data, 2,
+> -				 HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
+> -	if (ret < 0)
+> -		goto err;
+> -
+> -	rep_data[0] = WAC_CMD_ICON_TRANSFER;
+> -	rep_data[1] = icon_no & 0x07;
+> -
+> -	wacom_scramble(p);
+> -
+> -	for (i = 0; i < 4; i++) {
+> -		for (j = 0; j < 64; j++)
+> -			rep_data[j + 3] = p[(i << 6) + j];
+> -
+> -		rep_data[2] = i;
+> -		ret = hid_hw_raw_request(hdev, rep_data[0], rep_data, 67,
+> -					HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
+> -	}
+> -
+> -	rep_data[0] = WAC_CMD_ICON_START_STOP;
+> -	rep_data[1] = 0;
+> -
+> -	ret = hid_hw_raw_request(hdev, rep_data[0], rep_data, 2,
+> -				 HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
+> -
+> -err:
+> -	return;
+> -}
+> -
+> -static void wacom_leds_set_brightness(struct led_classdev *led_dev,
+> -						enum led_brightness value)
+> -{
+> -	struct device *dev = led_dev->dev->parent;
+> -	struct hid_device *hdev;
+> -	struct wacom_data *wdata;
+> -	unsigned char *buf;
+> -	__u8 led = 0;
+> -	int i;
+> -
+> -	hdev = container_of(dev, struct hid_device, dev);
+> -	wdata = hid_get_drvdata(hdev);
+> -	for (i = 0; i < 4; ++i) {
+> -		if (wdata->leds[i] == led_dev)
+> -			wdata->led_selector = i;
+> -	}
+> -
+> -	led = wdata->led_selector | 0x04;
+> -	buf = kzalloc(9, GFP_KERNEL);
+> -	if (buf) {
+> -		buf[0] = WAC_CMD_LED_CONTROL;
+> -		buf[1] = led;
+> -		buf[2] = value >> 2;
+> -		buf[3] = value;
+> -		/* use fixed brightness for OLEDs */
+> -		buf[4] = 0x08;
+> -		hid_hw_raw_request(hdev, buf[0], buf, 9, HID_FEATURE_REPORT,
+> -				   HID_REQ_SET_REPORT);
+> -		kfree(buf);
+> -	}
+> -
+> -	return;
+> -}
+> -
+> -static enum led_brightness wacom_leds_get_brightness(struct led_classdev *led_dev)
+> -{
+> -	struct wacom_data *wdata;
+> -	struct device *dev = led_dev->dev->parent;
+> -	int value = 0;
+> -	int i;
+> -
+> -	wdata = hid_get_drvdata(container_of(dev, struct hid_device, dev));
+> -
+> -	for (i = 0; i < 4; ++i) {
+> -		if (wdata->leds[i] == led_dev) {
+> -			value = wdata->leds[i]->brightness;
+> -			break;
+> -		}
+> -	}
+> -
+> -	return value;
+> -}
+> -
+> -
+> -static int wacom_initialize_leds(struct hid_device *hdev)
+> -{
+> -	struct wacom_data *wdata = hid_get_drvdata(hdev);
+> -	struct led_classdev *led;
+> -	struct device *dev = &hdev->dev;
+> -	size_t namesz = strlen(dev_name(dev)) + 12;
+> -	char *name;
+> -	int i, ret;
+> -
+> -	wdata->led_selector = 0;
+> -
+> -	for (i = 0; i < 4; i++) {
+> -		led = kzalloc(sizeof(struct led_classdev) + namesz, GFP_KERNEL);
+> -		if (!led) {
+> -			hid_warn(hdev,
+> -				 "can't allocate memory for LED selector\n");
+> -			ret = -ENOMEM;
+> -			goto err;
+> -		}
+> -
+> -		name = (void *)&led[1];
+> -		snprintf(name, namesz, "%s:selector:%d", dev_name(dev), i);
+> -		led->name = name;
+> -		led->brightness = 0;
+> -		led->max_brightness = 127;
+> -		led->brightness_get = wacom_leds_get_brightness;
+> -		led->brightness_set = wacom_leds_set_brightness;
+> -
+> -		wdata->leds[i] = led;
+> -
+> -		ret = led_classdev_register(dev, wdata->leds[i]);
+> -
+> -		if (ret) {
+> -			wdata->leds[i] = NULL;
+> -			kfree(led);
+> -			hid_warn(hdev, "can't register LED\n");
+> -			goto err;
+> -		}
+> -	}
+> -
+> -err:
+> -	return ret;
+> -}
+> -
+> -static void wacom_destroy_leds(struct hid_device *hdev)
+> -{
+> -	struct wacom_data *wdata = hid_get_drvdata(hdev);
+> -	struct led_classdev *led;
+> -	int i;
+> -
+> -	for (i = 0; i < 4; ++i) {
+> -		if (wdata->leds[i]) {
+> -			led = wdata->leds[i];
+> -			wdata->leds[i] = NULL;
+> -			led_classdev_unregister(led);
+> -			kfree(led);
+> -		}
+> -	}
+> -
+> -}
+> -
+> -static int wacom_battery_get_property(struct power_supply *psy,
+> -				enum power_supply_property psp,
+> -				union power_supply_propval *val)
+> -{
+> -	struct wacom_data *wdata = container_of(psy,
+> -					struct wacom_data, battery);
+> -	int ret = 0;
+> -
+> -	switch (psp) {
+> -	case POWER_SUPPLY_PROP_PRESENT:
+> -		val->intval = 1;
+> -		break;
+> -	case POWER_SUPPLY_PROP_SCOPE:
+> -		val->intval = POWER_SUPPLY_SCOPE_DEVICE;
+> -		break;
+> -	case POWER_SUPPLY_PROP_CAPACITY:
+> -		val->intval = wdata->battery_capacity;
+> -		break;
+> -	case POWER_SUPPLY_PROP_STATUS:
+> -		if (wdata->bat_charging)
+> -			val->intval = POWER_SUPPLY_STATUS_CHARGING;
+> -		else
+> -			if (wdata->battery_capacity == 100 && wdata->ps_connected)
+> -				val->intval = POWER_SUPPLY_STATUS_FULL;
+> -			else
+> -				val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
+> -		break;
+> -	default:
+> -		ret = -EINVAL;
+> -		break;
+> -	}
+> -	return ret;
+> -}
+> -
+> -static int wacom_ac_get_property(struct power_supply *psy,
+> -				enum power_supply_property psp,
+> -				union power_supply_propval *val)
+> -{
+> -	struct wacom_data *wdata = container_of(psy, struct wacom_data, ac);
+> -	int ret = 0;
+> -
+> -	switch (psp) {
+> -	case POWER_SUPPLY_PROP_PRESENT:
+> -		/* fall through */
+> -	case POWER_SUPPLY_PROP_ONLINE:
+> -		val->intval = wdata->ps_connected;
+> -		break;
+> -	case POWER_SUPPLY_PROP_SCOPE:
+> -		val->intval = POWER_SUPPLY_SCOPE_DEVICE;
+> -		break;
+> -	default:
+> -		ret = -EINVAL;
+> -		break;
+> -	}
+> -	return ret;
+> -}
+> -
+> -static void wacom_set_features(struct hid_device *hdev, u8 speed)
+> -{
+> -	struct wacom_data *wdata = hid_get_drvdata(hdev);
+> -	int limit, ret;
+> -	__u8 rep_data[2];
+> -
+> -	switch (hdev->product) {
+> -	case USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH:
+> -		rep_data[0] = 0x03 ; rep_data[1] = 0x00;
+> -		limit = 3;
+> -		do {
+> -			ret = hid_hw_raw_request(hdev, rep_data[0], rep_data, 2,
+> -					HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
+> -		} while (ret < 0 && limit-- > 0);
+> -
+> -		if (ret >= 0) {
+> -			if (speed == 0)
+> -				rep_data[0] = 0x05;
+> -			else
+> -				rep_data[0] = 0x06;
+> -
+> -			rep_data[1] = 0x00;
+> -			limit = 3;
+> -			do {
+> -				ret = hid_hw_raw_request(hdev, rep_data[0],
+> -					rep_data, 2, HID_FEATURE_REPORT,
+> -					HID_REQ_SET_REPORT);
+> -			} while (ret < 0 && limit-- > 0);
+> -
+> -			if (ret >= 0) {
+> -				wdata->high_speed = speed;
+> -				return;
+> -			}
+> -		}
+> -
+> -		/*
+> -		 * Note that if the raw queries fail, it's not a hard failure
+> -		 * and it is safe to continue
+> -		 */
+> -		hid_warn(hdev, "failed to poke device, command %d, err %d\n",
+> -			 rep_data[0], ret);
+> -		break;
+> -	case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
+> -		if (speed == 1)
+> -			wdata->features &= ~0x20;
+> -		else
+> -			wdata->features |= 0x20;
+> -
+> -		rep_data[0] = 0x03;
+> -		rep_data[1] = wdata->features;
+> -
+> -		ret = hid_hw_raw_request(hdev, rep_data[0], rep_data, 2,
+> -				HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
+> -		if (ret >= 0)
+> -			wdata->high_speed = speed;
+> -		break;
+> -	}
+> -
+> -	return;
+> -}
+> -
+> -static ssize_t wacom_show_speed(struct device *dev,
+> -				struct device_attribute
+> -				*attr, char *buf)
+> -{
+> -	struct wacom_data *wdata = dev_get_drvdata(dev);
+> -
+> -	return snprintf(buf, PAGE_SIZE, "%i\n", wdata->high_speed);
+> -}
+> -
+> -static ssize_t wacom_store_speed(struct device *dev,
+> -				struct device_attribute *attr,
+> -				const char *buf, size_t count)
+> -{
+> -	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
+> -	int new_speed;
+> -
+> -	if (sscanf(buf, "%1d", &new_speed ) != 1)
+> -		return -EINVAL;
+> -
+> -	if (new_speed == 0 || new_speed == 1) {
+> -		wacom_set_features(hdev, new_speed);
+> -		return strnlen(buf, PAGE_SIZE);
+> -	} else
+> -		return -EINVAL;
+> -}
+> -
+> -static DEVICE_ATTR(speed, S_IRUGO | S_IWUSR | S_IWGRP,
+> -		wacom_show_speed, wacom_store_speed);
+> -
+> -#define WACOM_STORE(OLED_ID)						\
+> -static ssize_t wacom_oled##OLED_ID##_store(struct device *dev,		\
+> -				struct device_attribute *attr,		\
+> -				const char *buf, size_t count)		\
+> -{									\
+> -	struct hid_device *hdev = container_of(dev, struct hid_device,	\
+> -				dev);					\
+> -									\
+> -	if (count != 256)						\
+> -		return -EINVAL;						\
+> -									\
+> -	wacom_set_image(hdev, buf, OLED_ID);				\
+> -									\
+> -	return count;							\
+> -}									\
+> -									\
+> -static DEVICE_ATTR(oled##OLED_ID##_img, S_IWUSR | S_IWGRP, NULL,	\
+> -				wacom_oled##OLED_ID##_store)
+> -
+> -WACOM_STORE(0);
+> -WACOM_STORE(1);
+> -WACOM_STORE(2);
+> -WACOM_STORE(3);
+> -WACOM_STORE(4);
+> -WACOM_STORE(5);
+> -WACOM_STORE(6);
+> -WACOM_STORE(7);
+> -
+> -static int wacom_gr_parse_report(struct hid_device *hdev,
+> -			struct wacom_data *wdata,
+> -			struct input_dev *input, unsigned char *data)
+> -{
+> -	int tool, x, y, rw;
+> -
+> -	tool = 0;
+> -	/* Get X & Y positions */
+> -	x = le16_to_cpu(*(__le16 *) &data[2]);
+> -	y = le16_to_cpu(*(__le16 *) &data[4]);
+> -
+> -	/* Get current tool identifier */
+> -	if (data[1] & 0x90) { /* If pen is in the in/active area */
+> -		switch ((data[1] >> 5) & 3) {
+> -		case 0:	/* Pen */
+> -			tool = BTN_TOOL_PEN;
+> -			break;
+> -
+> -		case 1: /* Rubber */
+> -			tool = BTN_TOOL_RUBBER;
+> -			break;
+> -
+> -		case 2: /* Mouse with wheel */
+> -		case 3: /* Mouse without wheel */
+> -			tool = BTN_TOOL_MOUSE;
+> -			break;
+> -		}
+> -
+> -		/* Reset tool if out of active tablet area */
+> -		if (!(data[1] & 0x10))
+> -			tool = 0;
+> -	}
+> -
+> -	/* If tool changed, notify input subsystem */
+> -	if (wdata->tool != tool) {
+> -		if (wdata->tool) {
+> -			/* Completely reset old tool state */
+> -			if (wdata->tool == BTN_TOOL_MOUSE) {
+> -				input_report_key(input, BTN_LEFT, 0);
+> -				input_report_key(input, BTN_RIGHT, 0);
+> -				input_report_key(input, BTN_MIDDLE, 0);
+> -				input_report_abs(input, ABS_DISTANCE,
+> -					input_abs_get_max(input, ABS_DISTANCE));
+> -			} else {
+> -				input_report_key(input, BTN_TOUCH, 0);
+> -				input_report_key(input, BTN_STYLUS, 0);
+> -				input_report_key(input, BTN_STYLUS2, 0);
+> -				input_report_abs(input, ABS_PRESSURE, 0);
+> -			}
+> -			input_report_key(input, wdata->tool, 0);
+> -			input_sync(input);
+> -		}
+> -		wdata->tool = tool;
+> -		if (tool)
+> -			input_report_key(input, tool, 1);
+> -	}
+> -
+> -	if (tool) {
+> -		input_report_abs(input, ABS_X, x);
+> -		input_report_abs(input, ABS_Y, y);
+> -
+> -		switch ((data[1] >> 5) & 3) {
+> -		case 2: /* Mouse with wheel */
+> -			input_report_key(input, BTN_MIDDLE, data[1] & 0x04);
+> -			rw = (data[6] & 0x01) ? -1 :
+> -				(data[6] & 0x02) ? 1 : 0;
+> -			input_report_rel(input, REL_WHEEL, rw);
+> -			/* fall through */
+> -
+> -		case 3: /* Mouse without wheel */
+> -			input_report_key(input, BTN_LEFT, data[1] & 0x01);
+> -			input_report_key(input, BTN_RIGHT, data[1] & 0x02);
+> -			/* Compute distance between mouse and tablet */
+> -			rw = 44 - (data[6] >> 2);
+> -			if (rw < 0)
+> -				rw = 0;
+> -			else if (rw > 31)
+> -				rw = 31;
+> -			input_report_abs(input, ABS_DISTANCE, rw);
+> -			break;
+> -
+> -		default:
+> -			input_report_abs(input, ABS_PRESSURE,
+> -					data[6] | (((__u16) (data[1] & 0x08)) << 5));
+> -			input_report_key(input, BTN_TOUCH, data[1] & 0x01);
+> -			input_report_key(input, BTN_STYLUS, data[1] & 0x02);
+> -			input_report_key(input, BTN_STYLUS2, (tool == BTN_TOOL_PEN) && data[1] & 0x04);
+> -			break;
+> -		}
+> -
+> -		input_sync(input);
+> -	}
+> -
+> -	/* Report the state of the two buttons at the top of the tablet
+> -	 * as two extra fingerpad keys (buttons 4 & 5). */
+> -	rw = data[7] & 0x03;
+> -	if (rw != wdata->butstate) {
+> -		wdata->butstate = rw;
+> -		input_report_key(input, BTN_0, rw & 0x02);
+> -		input_report_key(input, BTN_1, rw & 0x01);
+> -		input_report_key(input, BTN_TOOL_FINGER, 0xf0);
+> -		input_event(input, EV_MSC, MSC_SERIAL, 0xf0);
+> -		input_sync(input);
+> -	}
+> -
+> -	/* Store current battery capacity and power supply state*/
+> -	rw = (data[7] >> 2 & 0x07);
+> -	if (rw != wdata->power_raw) {
+> -		wdata->power_raw = rw;
+> -		wdata->battery_capacity = batcap_gr[rw];
+> -		if (rw == 7)
+> -			wdata->ps_connected = 1;
+> -		else
+> -			wdata->ps_connected = 0;
+> -	}
+> -	return 1;
+> -}
+> -
+> -static void wacom_i4_parse_button_report(struct wacom_data *wdata,
+> -			struct input_dev *input, unsigned char *data)
+> -{
+> -	__u16 new_butstate;
+> -	__u8 new_whlstate;
+> -	__u8 sync = 0;
+> -
+> -	new_whlstate = data[1];
+> -	if (new_whlstate != wdata->whlstate) {
+> -		wdata->whlstate = new_whlstate;
+> -		if (new_whlstate & 0x80) {
+> -			input_report_key(input, BTN_TOUCH, 1);
+> -			input_report_abs(input, ABS_WHEEL, (new_whlstate & 0x7f));
+> -			input_report_key(input, BTN_TOOL_FINGER, 1);
+> -		} else {
+> -			input_report_key(input, BTN_TOUCH, 0);
+> -			input_report_abs(input, ABS_WHEEL, 0);
+> -			input_report_key(input, BTN_TOOL_FINGER, 0);
+> -		}
+> -		sync = 1;
+> -	}
+> -
+> -	new_butstate = (data[3] << 1) | (data[2] & 0x01);
+> -	if (new_butstate != wdata->butstate) {
+> -		wdata->butstate = new_butstate;
+> -		input_report_key(input, BTN_0, new_butstate & 0x001);
+> -		input_report_key(input, BTN_1, new_butstate & 0x002);
+> -		input_report_key(input, BTN_2, new_butstate & 0x004);
+> -		input_report_key(input, BTN_3, new_butstate & 0x008);
+> -		input_report_key(input, BTN_4, new_butstate & 0x010);
+> -		input_report_key(input, BTN_5, new_butstate & 0x020);
+> -		input_report_key(input, BTN_6, new_butstate & 0x040);
+> -		input_report_key(input, BTN_7, new_butstate & 0x080);
+> -		input_report_key(input, BTN_8, new_butstate & 0x100);
+> -		input_report_key(input, BTN_TOOL_FINGER, 1);
+> -		sync = 1;
+> -	}
+> -
+> -	if (sync) {
+> -		input_report_abs(input, ABS_MISC, PAD_DEVICE_ID);
+> -		input_event(input, EV_MSC, MSC_SERIAL, 0xffffffff);
+> -		input_sync(input);
+> -	}
+> -}
+> -
+> -static void wacom_i4_parse_pen_report(struct wacom_data *wdata,
+> -			struct input_dev *input, unsigned char *data)
+> -{
+> -	__u16 x, y, pressure;
+> -	__u8 distance;
+> -	__u8 tilt_x, tilt_y;
+> -
+> -	switch (data[1]) {
+> -	case 0x80: /* Out of proximity report */
+> -		input_report_key(input, BTN_TOUCH, 0);
+> -		input_report_abs(input, ABS_PRESSURE, 0);
+> -		input_report_key(input, BTN_STYLUS, 0);
+> -		input_report_key(input, BTN_STYLUS2, 0);
+> -		input_report_key(input, wdata->tool, 0);
+> -		input_report_abs(input, ABS_MISC, 0);
+> -		input_event(input, EV_MSC, MSC_SERIAL, wdata->serial);
+> -		wdata->tool = 0;
+> -		input_sync(input);
+> -		break;
+> -	case 0xC2: /* Tool report */
+> -		wdata->id = ((data[2] << 4) | (data[3] >> 4) |
+> -			((data[7] & 0x0f) << 20) |
+> -			((data[8] & 0xf0) << 12));
+> -		wdata->serial = ((data[3] & 0x0f) << 28) +
+> -				(data[4] << 20) + (data[5] << 12) +
+> -				(data[6] << 4) + (data[7] >> 4);
+> -
+> -		switch (wdata->id) {
+> -		case 0x100802:
+> -			wdata->tool = BTN_TOOL_PEN;
+> -			break;
+> -		case 0x10080A:
+> -			wdata->tool = BTN_TOOL_RUBBER;
+> -			break;
+> -		}
+> -		break;
+> -	default: /* Position/pressure report */
+> -		x = data[2] << 9 | data[3] << 1 | ((data[9] & 0x02) >> 1);
+> -		y = data[4] << 9 | data[5] << 1 | (data[9] & 0x01);
+> -		pressure = (data[6] << 3) | ((data[7] & 0xC0) >> 5)
+> -			| (data[1] & 0x01);
+> -		distance = (data[9] >> 2) & 0x3f;
+> -		tilt_x = ((data[7] << 1) & 0x7e) | (data[8] >> 7);
+> -		tilt_y = data[8] & 0x7f;
+> -
+> -		input_report_key(input, BTN_TOUCH, pressure > 1);
+> -
+> -		input_report_key(input, BTN_STYLUS, data[1] & 0x02);
+> -		input_report_key(input, BTN_STYLUS2, data[1] & 0x04);
+> -		input_report_key(input, wdata->tool, 1);
+> -		input_report_abs(input, ABS_X, x);
+> -		input_report_abs(input, ABS_Y, y);
+> -		input_report_abs(input, ABS_PRESSURE, pressure);
+> -		input_report_abs(input, ABS_DISTANCE, distance);
+> -		input_report_abs(input, ABS_TILT_X, tilt_x);
+> -		input_report_abs(input, ABS_TILT_Y, tilt_y);
+> -		input_report_abs(input, ABS_MISC, wdata->id);
+> -		input_event(input, EV_MSC, MSC_SERIAL, wdata->serial);
+> -		input_report_key(input, wdata->tool, 1);
+> -		input_sync(input);
+> -		break;
+> -	}
+> -
+> -	return;
+> -}
+> -
+> -static void wacom_i4_parse_report(struct hid_device *hdev,
+> -			struct wacom_data *wdata,
+> -			struct input_dev *input, unsigned char *data)
+> -{
+> -	switch (data[0]) {
+> -	case 0x00: /* Empty report */
+> -		break;
+> -	case 0x02: /* Pen report */
+> -		wacom_i4_parse_pen_report(wdata, input, data);
+> -		break;
+> -	case 0x03: /* Features Report */
+> -		wdata->features = data[2];
+> -		break;
+> -	case 0x0C: /* Button report */
+> -		wacom_i4_parse_button_report(wdata, input, data);
+> -		break;
+> -	default:
+> -		hid_err(hdev, "Unknown report: %d,%d\n", data[0], data[1]);
+> -		break;
+> -	}
+> -}
+> -
+> -static int wacom_raw_event(struct hid_device *hdev, struct hid_report *report,
+> -		u8 *raw_data, int size)
+> -{
+> -	struct wacom_data *wdata = hid_get_drvdata(hdev);
+> -	struct hid_input *hidinput;
+> -	struct input_dev *input;
+> -	unsigned char *data = (unsigned char *) raw_data;
+> -	int i;
+> -	__u8 power_raw;
+> -
+> -	if (!(hdev->claimed & HID_CLAIMED_INPUT))
+> -		return 0;
+> -
+> -	hidinput = list_entry(hdev->inputs.next, struct hid_input, list);
+> -	input = hidinput->input;
+> -
+> -	switch (hdev->product) {
+> -	case USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH:
+> -		if (data[0] == 0x03) {
+> -			return wacom_gr_parse_report(hdev, wdata, input, data);
+> -		} else {
+> -			hid_err(hdev, "Unknown report: %d,%d size:%d\n",
+> -					data[0], data[1], size);
+> -			return 0;
+> -		}
+> -		break;
+> -	case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
+> -		i = 1;
+> -
+> -		switch (data[0]) {
+> -		case 0x04:
+> -			wacom_i4_parse_report(hdev, wdata, input, data + i);
+> -			i += 10;
+> -			/* fall through */
+> -		case 0x03:
+> -			wacom_i4_parse_report(hdev, wdata, input, data + i);
+> -			i += 10;
+> -			wacom_i4_parse_report(hdev, wdata, input, data + i);
+> -			power_raw = data[i+10];
+> -			if (power_raw != wdata->power_raw) {
+> -				wdata->power_raw = power_raw;
+> -				wdata->battery_capacity = batcap_i4[power_raw & 0x07];
+> -				wdata->bat_charging = (power_raw & 0x08) ? 1 : 0;
+> -				wdata->ps_connected = (power_raw & 0x10) ? 1 : 0;
+> -			}
+> -
+> -			break;
+> -		default:
+> -			hid_err(hdev, "Unknown report: %d,%d size:%d\n",
+> -					data[0], data[1], size);
+> -			return 0;
+> -		}
+> -	}
+> -	return 1;
+> -}
+> -
+> -static int wacom_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+> -	struct hid_field *field, struct hid_usage *usage, unsigned long **bit,
+> -								int *max)
+> -{
+> -	struct input_dev *input = hi->input;
+> -
+> -	__set_bit(INPUT_PROP_POINTER, input->propbit);
+> -
+> -	/* Basics */
+> -	input->evbit[0] |= BIT(EV_KEY) | BIT(EV_ABS) | BIT(EV_REL);
+> -
+> -	__set_bit(REL_WHEEL, input->relbit);
+> -
+> -	__set_bit(BTN_TOOL_PEN, input->keybit);
+> -	__set_bit(BTN_TOUCH, input->keybit);
+> -	__set_bit(BTN_STYLUS, input->keybit);
+> -	__set_bit(BTN_STYLUS2, input->keybit);
+> -	__set_bit(BTN_LEFT, input->keybit);
+> -	__set_bit(BTN_RIGHT, input->keybit);
+> -	__set_bit(BTN_MIDDLE, input->keybit);
+> -
+> -	/* Pad */
+> -	input_set_capability(input, EV_MSC, MSC_SERIAL);
+> -
+> -	__set_bit(BTN_0, input->keybit);
+> -	__set_bit(BTN_1, input->keybit);
+> -	__set_bit(BTN_TOOL_FINGER, input->keybit);
+> -
+> -	/* Distance, rubber and mouse */
+> -	__set_bit(BTN_TOOL_RUBBER, input->keybit);
+> -	__set_bit(BTN_TOOL_MOUSE, input->keybit);
+> -
+> -	switch (hdev->product) {
+> -	case USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH:
+> -		input_set_abs_params(input, ABS_X, 0, 16704, 4, 0);
+> -		input_set_abs_params(input, ABS_Y, 0, 12064, 4, 0);
+> -		input_set_abs_params(input, ABS_PRESSURE, 0, 511, 0, 0);
+> -		input_set_abs_params(input, ABS_DISTANCE, 0, 32, 0, 0);
+> -		break;
+> -	case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
+> -		__set_bit(ABS_WHEEL, input->absbit);
+> -		__set_bit(ABS_MISC, input->absbit);
+> -		__set_bit(BTN_2, input->keybit);
+> -		__set_bit(BTN_3, input->keybit);
+> -		__set_bit(BTN_4, input->keybit);
+> -		__set_bit(BTN_5, input->keybit);
+> -		__set_bit(BTN_6, input->keybit);
+> -		__set_bit(BTN_7, input->keybit);
+> -		__set_bit(BTN_8, input->keybit);
+> -		input_set_abs_params(input, ABS_WHEEL, 0, 71, 0, 0);
+> -		input_set_abs_params(input, ABS_X, 0, 40640, 4, 0);
+> -		input_set_abs_params(input, ABS_Y, 0, 25400, 4, 0);
+> -		input_set_abs_params(input, ABS_PRESSURE, 0, 2047, 0, 0);
+> -		input_set_abs_params(input, ABS_DISTANCE, 0, 63, 0, 0);
+> -		input_set_abs_params(input, ABS_TILT_X, 0, 127, 0, 0);
+> -		input_set_abs_params(input, ABS_TILT_Y, 0, 127, 0, 0);
+> -		break;
+> -	}
+> -
+> -	return 0;
+> -}
+> -
+> -static int wacom_probe(struct hid_device *hdev,
+> -		const struct hid_device_id *id)
+> -{
+> -	struct wacom_data *wdata;
+> -	int ret;
+> -
+> -	wdata = kzalloc(sizeof(*wdata), GFP_KERNEL);
+> -	if (wdata == NULL) {
+> -		hid_err(hdev, "can't alloc wacom descriptor\n");
+> -		return -ENOMEM;
+> -	}
+> -
+> -	hid_set_drvdata(hdev, wdata);
+> -
+> -	/* Parse the HID report now */
+> -	ret = hid_parse(hdev);
+> -	if (ret) {
+> -		hid_err(hdev, "parse failed\n");
+> -		goto err_free;
+> -	}
+> -
+> -	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+> -	if (ret) {
+> -		hid_err(hdev, "hw start failed\n");
+> -		goto err_free;
+> -	}
+> -
+> -	ret = device_create_file(&hdev->dev, &dev_attr_speed);
+> -	if (ret)
+> -		hid_warn(hdev,
+> -			 "can't create sysfs speed attribute err: %d\n", ret);
+> -
+> -#define OLED_INIT(OLED_ID)						\
+> -	do {								\
+> -		ret = device_create_file(&hdev->dev,			\
+> -				&dev_attr_oled##OLED_ID##_img);		\
+> -		if (ret)						\
+> -			hid_warn(hdev,					\
+> -			 "can't create sysfs oled attribute, err: %d\n", ret);\
+> -	} while (0)
+> -
+> -OLED_INIT(0);
+> -OLED_INIT(1);
+> -OLED_INIT(2);
+> -OLED_INIT(3);
+> -OLED_INIT(4);
+> -OLED_INIT(5);
+> -OLED_INIT(6);
+> -OLED_INIT(7);
+> -
+> -	wdata->features = 0;
+> -	wacom_set_features(hdev, 1);
+> -
+> -	if (hdev->product == USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH) {
+> -		sprintf(hdev->name, "%s", "Wacom Intuos4 WL");
+> -		ret = wacom_initialize_leds(hdev);
+> -		if (ret)
+> -			hid_warn(hdev,
+> -				 "can't create led attribute, err: %d\n", ret);
+> -	}
+> -
+> -	wdata->battery.properties = wacom_battery_props;
+> -	wdata->battery.num_properties = ARRAY_SIZE(wacom_battery_props);
+> -	wdata->battery.get_property = wacom_battery_get_property;
+> -	wdata->battery.name = "wacom_battery";
+> -	wdata->battery.type = POWER_SUPPLY_TYPE_BATTERY;
+> -	wdata->battery.use_for_apm = 0;
+> -
+> -
+> -	ret = power_supply_register(&hdev->dev, &wdata->battery);
+> -	if (ret) {
+> -		hid_err(hdev, "can't create sysfs battery attribute, err: %d\n",
+> -			ret);
+> -		goto err_battery;
+> -	}
+> -
+> -	power_supply_powers(&wdata->battery, &hdev->dev);
+> -
+> -	wdata->ac.properties = wacom_ac_props;
+> -	wdata->ac.num_properties = ARRAY_SIZE(wacom_ac_props);
+> -	wdata->ac.get_property = wacom_ac_get_property;
+> -	wdata->ac.name = "wacom_ac";
+> -	wdata->ac.type = POWER_SUPPLY_TYPE_MAINS;
+> -	wdata->ac.use_for_apm = 0;
+> -
+> -	ret = power_supply_register(&hdev->dev, &wdata->ac);
+> -	if (ret) {
+> -		hid_err(hdev,
+> -			"can't create ac battery attribute, err: %d\n", ret);
+> -		goto err_ac;
+> -	}
+> -
+> -	power_supply_powers(&wdata->ac, &hdev->dev);
+> -	return 0;
+> -
+> -err_ac:
+> -	power_supply_unregister(&wdata->battery);
+> -err_battery:
+> -	wacom_destroy_leds(hdev);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled0_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled1_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled2_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled3_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled4_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled5_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled6_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled7_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_speed);
+> -	hid_hw_stop(hdev);
+> -err_free:
+> -	kfree(wdata);
+> -	return ret;
+> -}
+> -
+> -static void wacom_remove(struct hid_device *hdev)
+> -{
+> -	struct wacom_data *wdata = hid_get_drvdata(hdev);
+> -
+> -	wacom_destroy_leds(hdev);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled0_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled1_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled2_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled3_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled4_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled5_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled6_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_oled7_img);
+> -	device_remove_file(&hdev->dev, &dev_attr_speed);
+> -	hid_hw_stop(hdev);
+> -
+> -	power_supply_unregister(&wdata->battery);
+> -	power_supply_unregister(&wdata->ac);
+> -	kfree(hid_get_drvdata(hdev));
+> -}
+> -
+> -static const struct hid_device_id wacom_devices[] = {
+> -
+> -	{ }
+> -};
+> -MODULE_DEVICE_TABLE(hid, wacom_devices);
+> -
+> -static struct hid_driver wacom_driver = {
+> -	.name = "hid-wacom",
+> -	.id_table = wacom_devices,
+> -	.probe = wacom_probe,
+> -	.remove = wacom_remove,
+> -	.raw_event = wacom_raw_event,
+> -	.input_mapped = wacom_input_mapped,
+> -};
+> -module_hid_driver(wacom_driver);
+> -
+> -MODULE_DESCRIPTION("Driver for Wacom Graphire Bluetooth and Wacom Intuos4 WL");
+> -MODULE_LICENSE("GPL");
 
-
- .../devicetree/bindings/input/ti,drv260x.txt       |   50 ++
- drivers/input/misc/Kconfig                         |    9 +
- drivers/input/misc/Makefile                        |    1 +
- drivers/input/misc/drv260x.c                       |  697 ++++++++++++++++++++
- include/dt-bindings/input/ti-drv260x.h             |   35 +
- include/linux/platform_data/drv260x-pdata.h        |   29 +
- 6 files changed, 821 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/input/ti,drv260x.txt
- create mode 100644 drivers/input/misc/drv260x.c
- create mode 100644 include/dt-bindings/input/ti-drv260x.h
- create mode 100644 include/linux/platform_data/drv260x-pdata.h
-
-diff --git a/Documentation/devicetree/bindings/input/ti,drv260x.txt b/Documentation/devicetree/bindings/input/ti,drv260x.txt
-new file mode 100644
-index 0000000..8e6970d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/ti,drv260x.txt
-@@ -0,0 +1,50 @@
-+Texas Instruments - drv260x Haptics driver family
-+
-+The drv260x family serial control bus communicates through I2C protocols
-+
-+Required properties:
-+	- compatible - One of:
-+		"ti,drv2604" - DRV2604
-+		"ti,drv2605" - DRV2605
-+		"ti,drv2605l" - DRV2605L
-+	- reg -  I2C slave address
-+	- supply- Required supply regulators are:
-+		"vbat" - battery voltage
-+	- mode - Power up mode of the chip (defined in include/dt-bindings/input/ti-drv260x.h)
-+		DRV260X_LRA_MODE - Linear Resonance Actuator mode (Piezoelectric)
-+		DRV260X_LRA_NO_CAL_MODE - This is a LRA Mode but there is no calibration
-+				sequence during init.  And the device is configured for real
-+				time playback mode (RTP mode).
-+		DRV260X_ERM_MODE - Eccentric Rotating Mass mode (Rotary vibrator)
-+	- library-sel - These are ROM based waveforms pre-programmed into the IC.
-+				This should be set to set the library to use at power up.
-+				(defined in include/dt-bindings/input/ti-drv260x.h)
-+		DRV260X_LIB_A - Pre-programmed Library
-+		DRV260X_LIB_B - Pre-programmed Library
-+		DRV260X_LIB_C - Pre-programmed Library
-+		DRV260X_LIB_D - Pre-programmed Library
-+		DRV260X_LIB_E - Pre-programmed Library
-+		DRV260X_LIB_F - Pre-programmed Library
-+
-+Optional properties:
-+	- enable-gpio - gpio pin to enable/disable the device.
-+	- vib_rated_voltage - The rated voltage of the actuator in millivolts.
-+			  If this is not set then the value will be defaulted to
-+			  3.2 v.
-+	- vib_overdrive_voltage - The overdrive voltage of the actuator in millivolts.
-+			  If this is not set then the value will be defaulted to
-+			  3.2 v.
-+Example:
-+
-+drv2605l: drv2605l@5a {
-+		compatible = "ti,drv2605l";
-+		reg = <0x5a>;
-+		enable-gpio = <&gpio1 28 GPIO_ACTIVE_HIGH>;
-+		mode = <DRV260X_LRA_MODE>;
-+		library-sel = <DRV260X_LIB_SEL_DEFAULT>;
-+		vib-rated-voltage = <3200>;
-+		vib-overdriver-voltage = <3200>;
-+};
-+
-+For more product information please see the link below:
-+http://www.ti.com/product/drv2605
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 2ff4425..99f6762 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -676,4 +676,13 @@ config INPUT_SOC_BUTTON_ARRAY
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called soc_button_array.
- 
-+config INPUT_DRV260X_HAPTICS
-+	tristate "TI DRV260X haptics support"
-+	depends on INPUT && I2C
-+	help
-+	  Say Y to enable support for the TI DRV260X haptics driver.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called drv260x-haptics.
-+
- endif
-diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-index 4955ad3..d8ef3c7 100644
---- a/drivers/input/misc/Makefile
-+++ b/drivers/input/misc/Makefile
-@@ -64,3 +64,4 @@ obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
- obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
- obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
- obj-$(CONFIG_INPUT_IDEAPAD_SLIDEBAR)	+= ideapad_slidebar.o
-+obj-$(CONFIG_INPUT_DRV260X_HAPTICS)	+= drv260x.o
-diff --git a/drivers/input/misc/drv260x.c b/drivers/input/misc/drv260x.c
-new file mode 100644
-index 0000000..6ccdeff
---- /dev/null
-+++ b/drivers/input/misc/drv260x.c
-@@ -0,0 +1,697 @@
-+/*
-+ * DRV260X haptics driver family
-+ *
-+ * Author: Dan Murphy <dmurphy@ti.com>
-+ *
-+ * Copyright:   (C) 2014 Texas Instruments, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
-+
-+#include <linux/i2c.h>
-+#include <linux/input.h>
-+#include <linux/module.h>
-+#include <linux/of_gpio.h>
-+#include <linux/platform_device.h>
-+#include <linux/regmap.h>
-+#include <linux/slab.h>
-+#include <linux/delay.h>
-+#include <linux/regulator/consumer.h>
-+
-+#include <dt-bindings/input/ti-drv260x.h>
-+#include <linux/platform_data/drv260x-pdata.h>
-+
-+#define DRV260X_STATUS		0x0
-+#define DRV260X_MODE		0x1
-+#define DRV260X_RT_PB_IN	0x2
-+#define DRV260X_LIB_SEL		0x3
-+#define DRV260X_WV_SEQ_1	0x4
-+#define DRV260X_WV_SEQ_2	0x5
-+#define DRV260X_WV_SEQ_3	0x6
-+#define DRV260X_WV_SEQ_4	0x7
-+#define DRV260X_WV_SEQ_5	0x8
-+#define DRV260X_WV_SEQ_6	0x9
-+#define DRV260X_WV_SEQ_7	0xa
-+#define DRV260X_WV_SEQ_8	0xb
-+#define DRV260X_GO				0xc
-+#define DRV260X_OVERDRIVE_OFF	0xd
-+#define DRV260X_SUSTAIN_P_OFF	0xe
-+#define DRV260X_SUSTAIN_N_OFF	0xf
-+#define DRV260X_BRAKE_OFF		0x10
-+#define DRV260X_A_TO_V_CTRL		0x11
-+#define DRV260X_A_TO_V_MIN_INPUT	0x12
-+#define DRV260X_A_TO_V_MAX_INPUT	0x13
-+#define DRV260X_A_TO_V_MIN_OUT	0x14
-+#define DRV260X_A_TO_V_MAX_OUT	0x15
-+#define DRV260X_RATED_VOLT		0x16
-+#define DRV260X_OD_CLAMP_VOLT	0x17
-+#define DRV260X_CAL_COMP		0x18
-+#define DRV260X_CAL_BACK_EMF	0x19
-+#define DRV260X_FEEDBACK_CTRL	0x1a
-+#define DRV260X_CTRL1			0x1b
-+#define DRV260X_CTRL2			0x1c
-+#define DRV260X_CTRL3			0x1d
-+#define DRV260X_CTRL4			0x1e
-+#define DRV260X_CTRL5			0x1f
-+#define DRV260X_LRA_LOOP_PERIOD	0x20
-+#define DRV260X_VBAT_MON		0x21
-+#define DRV260X_LRA_RES_PERIOD	0x22
-+#define DRV260X_MAX_REG			0x23
-+
-+#define DRV260X_ALLOWED_R_BYTES	25
-+#define DRV260X_ALLOWED_W_BYTES	2
-+#define DRV260X_MAX_RW_RETRIES	5
-+#define DRV260X_I2C_RETRY_DELAY 10
-+
-+#define DRV260X_GO_BIT				0x01
-+
-+/* Library Selection */
-+#define DRV260X_LIB_SEL_MASK		0x07
-+#define DRV260X_LIB_SEL_RAM			0x0
-+#define DRV260X_LIB_SEL_OD			0x1
-+#define DRV260X_LIB_SEL_40_60		0x2
-+#define DRV260X_LIB_SEL_60_80		0x3
-+#define DRV260X_LIB_SEL_100_140		0x4
-+#define DRV260X_LIB_SEL_140_PLUS	0x5
-+
-+#define DRV260X_LIB_SEL_HIZ_MASK	0x10
-+#define DRV260X_LIB_SEL_HIZ_EN		0x01
-+#define DRV260X_LIB_SEL_HIZ_DIS		0
-+
-+/* Mode register */
-+#define DRV260X_STANDBY				(1 << 6)
-+#define DRV260X_STANDBY_MASK		0x40
-+#define DRV260X_INTERNAL_TRIGGER	0x00
-+#define DRV260X_EXT_TRIGGER_EDGE	0x01
-+#define DRV260X_EXT_TRIGGER_LEVEL	0x02
-+#define DRV260X_PWM_ANALOG_IN		0x03
-+#define DRV260X_AUDIOHAPTIC			0x04
-+#define DRV260X_RT_PLAYBACK			0x05
-+#define DRV260X_DIAGNOSTICS			0x06
-+#define DRV260X_AUTO_CAL			0x07
-+
-+/* Audio to Haptics Control */
-+#define DRV260X_AUDIO_HAPTICS_PEAK_10MS		(0 << 2)
-+#define DRV260X_AUDIO_HAPTICS_PEAK_20MS		(1 << 2)
-+#define DRV260X_AUDIO_HAPTICS_PEAK_30MS		(2 << 2)
-+#define DRV260X_AUDIO_HAPTICS_PEAK_40MS		(3 << 2)
-+
-+#define DRV260X_AUDIO_HAPTICS_FILTER_100HZ	0x00
-+#define DRV260X_AUDIO_HAPTICS_FILTER_125HZ	0x01
-+#define DRV260X_AUDIO_HAPTICS_FILTER_150HZ	0x02
-+#define DRV260X_AUDIO_HAPTICS_FILTER_200HZ	0x03
-+
-+/* Min/Max Input/Output Voltages */
-+#define DRV260X_AUDIO_HAPTICS_MIN_IN_VOLT	0x19
-+#define DRV260X_AUDIO_HAPTICS_MAX_IN_VOLT	0x64
-+#define DRV260X_AUDIO_HAPTICS_MIN_OUT_VOLT	0x19
-+#define DRV260X_AUDIO_HAPTICS_MAX_OUT_VOLT	0xFF
-+
-+/* Feedback register */
-+#define DRV260X_FB_REG_ERM_MODE			0x7f
-+#define DRV260X_FB_REG_LRA_MODE			(1 << 7)
-+
-+#define DRV260X_BRAKE_FACTOR_MASK	0x1f
-+#define DRV260X_BRAKE_FACTOR_2X		(1 << 0)
-+#define DRV260X_BRAKE_FACTOR_3X		(2 << 4)
-+#define DRV260X_BRAKE_FACTOR_4X		(3 << 4)
-+#define DRV260X_BRAKE_FACTOR_6X		(4 << 4)
-+#define DRV260X_BRAKE_FACTOR_8X		(5 << 4)
-+#define DRV260X_BRAKE_FACTOR_16		(6 << 4)
-+#define DRV260X_BRAKE_FACTOR_DIS	(7 << 4)
-+
-+#define DRV260X_LOOP_GAIN_LOW		0xf3
-+#define DRV260X_LOOP_GAIN_MED		(1 << 2)
-+#define DRV260X_LOOP_GAIN_HIGH		(2 << 2)
-+#define DRV260X_LOOP_GAIN_VERY_HIGH	(3 << 2)
-+
-+#define DRV260X_BEMF_GAIN_0			0xfc
-+#define DRV260X_BEMF_GAIN_1		(1 << 0)
-+#define DRV260X_BEMF_GAIN_2		(2 << 0)
-+#define DRV260X_BEMF_GAIN_3		(3 << 0)
-+
-+/* Control 1 register */
-+#define DRV260X_AC_CPLE_EN			(1 << 5)
-+#define DRV260X_STARTUP_BOOST		(1 << 7)
-+
-+/* Control 2 register */
-+
-+#define DRV260X_IDISS_TIME_45		0
-+#define DRV260X_IDISS_TIME_75		(1 << 0)
-+#define DRV260X_IDISS_TIME_150		(1 << 1)
-+#define DRV260X_IDISS_TIME_225		0x03
-+
-+#define DRV260X_BLANK_TIME_45	(0 << 2)
-+#define DRV260X_BLANK_TIME_75	(1 << 2)
-+#define DRV260X_BLANK_TIME_150	(2 << 2)
-+#define DRV260X_BLANK_TIME_225	(3 << 2)
-+
-+#define DRV260X_SAMP_TIME_150	(0 << 4)
-+#define DRV260X_SAMP_TIME_200	(1 << 4)
-+#define DRV260X_SAMP_TIME_250	(2 << 4)
-+#define DRV260X_SAMP_TIME_300	(3 << 4)
-+
-+#define DRV260X_BRAKE_STABILIZER	(1 << 6)
-+#define DRV260X_UNIDIR_IN			(0 << 7)
-+#define DRV260X_BIDIR_IN			(1 << 7)
-+
-+/* Control 3 Register */
-+#define DRV260X_LRA_OPEN_LOOP		(1 << 0)
-+#define DRV260X_ANANLOG_IN			(1 << 1)
-+#define DRV260X_LRA_DRV_MODE		(1 << 2)
-+#define DRV260X_RTP_UNSIGNED_DATA	(1 << 3)
-+#define DRV260X_SUPPLY_COMP_DIS		(1 << 4)
-+#define DRV260X_ERM_OPEN_LOOP		(1 << 5)
-+#define DRV260X_NG_THRESH_0			(0 << 6)
-+#define DRV260X_NG_THRESH_2			(1 << 6)
-+#define DRV260X_NG_THRESH_4			(2 << 6)
-+#define DRV260X_NG_THRESH_8			(3 << 6)
-+
-+/* Control 4 Register */
-+#define DRV260X_AUTOCAL_TIME_150MS		(0 << 4)
-+#define DRV260X_AUTOCAL_TIME_250MS		(1 << 4)
-+#define DRV260X_AUTOCAL_TIME_500MS		(2 << 4)
-+#define DRV260X_AUTOCAL_TIME_1000MS		(3 << 4)
-+
-+/**
-+ * struct drv260x_data -
-+ * @input_dev - Pointer to the input device
-+ * @client - Pointer to the I2C client
-+ * @regmap - Register map of the device
-+ * @work - Work item used to off load the enable/disable of the vibration
-+ * @enable_gpio - Pointer to the gpio used for enable/disabling
-+ * @regulator - Pointer to the regulator for the IC
-+ * @magnitude - Magnitude of the vibration event
-+ * @mode - The operating mode of the IC (LRA_NO_CAL, ERM or LRA)
-+ * @library - The vibration library to be used
-+ * @rated_voltage - The rated_voltage of the actuator
-+ * @overdriver_voltage - The over drive voltage of the actuator
-+**/
-+struct drv260x_data {
-+	struct input_dev *input_dev;
-+	struct i2c_client *client;
-+	struct regmap *regmap;
-+	struct work_struct work;
-+	struct gpio_desc *enable_gpio;
-+	struct regulator *regulator;
-+	u32 magnitude;
-+	u32 mode;
-+	u32 library;
-+	int rated_voltage;
-+	int overdrive_voltage;
-+};
-+
-+static struct reg_default drv260x_reg_defs[] = {
-+	{ DRV260X_STATUS, 0xe0 },
-+	{ DRV260X_MODE, 0x40 },
-+	{ DRV260X_RT_PB_IN, 0x00},
-+	{ DRV260X_LIB_SEL, 0x00},
-+	{ DRV260X_WV_SEQ_1, 0x01},
-+	{ DRV260X_WV_SEQ_2, 0x00},
-+	{ DRV260X_WV_SEQ_3, 0x00},
-+	{ DRV260X_WV_SEQ_4, 0x00},
-+	{ DRV260X_WV_SEQ_5, 0x00},
-+	{ DRV260X_WV_SEQ_6, 0x00},
-+	{ DRV260X_WV_SEQ_7, 0x00},
-+	{ DRV260X_WV_SEQ_8, 0x00},
-+	{ DRV260X_GO, 0x00},
-+	{ DRV260X_OVERDRIVE_OFF, 0x00},
-+	{ DRV260X_SUSTAIN_P_OFF, 0x00},
-+	{ DRV260X_SUSTAIN_N_OFF, 0x00},
-+	{ DRV260X_BRAKE_OFF	, 0x00},
-+	{ DRV260X_A_TO_V_CTRL	, 0x05},
-+	{ DRV260X_A_TO_V_MIN_INPUT, 0x19},
-+	{ DRV260X_A_TO_V_MAX_INPUT, 0xff},
-+	{ DRV260X_A_TO_V_MIN_OUT, 0x19},
-+	{ DRV260X_A_TO_V_MAX_OUT, 0xff},
-+	{ DRV260X_RATED_VOLT, 0x3e},
-+	{ DRV260X_OD_CLAMP_VOLT, 0x8c},
-+	{ DRV260X_CAL_COMP, 0x0c},
-+	{ DRV260X_CAL_BACK_EMF, 0x6c},
-+	{ DRV260X_FEEDBACK_CTRL, 0x36},
-+	{ DRV260X_CTRL1, 0x93},
-+	{ DRV260X_CTRL2, 0xfa},
-+	{ DRV260X_CTRL3, 0xa0},
-+	{ DRV260X_CTRL4, 0x20},
-+	{ DRV260X_CTRL5, 0x80},
-+	{ DRV260X_LRA_LOOP_PERIOD, 0x33},
-+	{ DRV260X_VBAT_MON, 0x00},
-+	{ DRV260X_LRA_RES_PERIOD, 0x00},
-+};
-+
-+/**
-+ * Rated and Overdriver Voltages:
-+ * Calculated using the formula r = v * 255 / 5.6
-+ * where r is what will be written to the register
-+ * and v is the rated or overdriver voltage of the actuator
-+ **/
-+#define DRV260X_DEF_RATED_VOLT		0x90
-+#define DRV260X_DEF_OD_CLAMP_VOLT	0x90
-+
-+static int drv260x_calculate_voltage(int voltage)
-+{
-+	return (voltage * 255 / 5600);
-+}
-+
-+static void drv260x_worker(struct work_struct *work)
-+{
-+	struct drv260x_data *haptics = container_of(work, struct drv260x_data, work);
-+	int ret;
-+
-+	gpiod_set_value(haptics->enable_gpio, 1);
-+	/* Data sheet says to wait 250us before trying to communicate */
-+	udelay(250);
-+
-+	ret = regmap_write(haptics->regmap, DRV260X_MODE, DRV260X_RT_PLAYBACK);
-+	if (ret != 0) {
-+		dev_err(&haptics->client->dev,
-+			"Failed to write set mode: %d\n", ret);
-+		return;
-+	}
-+
-+	ret = regmap_write(haptics->regmap, DRV260X_RT_PB_IN, haptics->magnitude);
-+	if (ret != 0) {
-+		dev_err(&haptics->client->dev,
-+			"Failed to set magnitude: %d\n", ret);
-+	}
-+}
-+
-+static int drv260x_haptics_play(struct input_dev *input, void *data,
-+				struct ff_effect *effect)
-+{
-+	struct drv260x_data *haptics = input_get_drvdata(input);
-+
-+	haptics->mode = DRV260X_LRA_NO_CAL_MODE;
-+	haptics->magnitude = 0;
-+
-+	if (effect->u.rumble.strong_magnitude ||
-+		effect->u.rumble.weak_magnitude) {
-+		if (effect->u.rumble.strong_magnitude > 0)
-+			haptics->magnitude = effect->u.rumble.strong_magnitude;
-+		else if	(effect->u.rumble.weak_magnitude > 0)
-+			haptics->magnitude = effect->u.rumble.weak_magnitude;
-+	}
-+
-+	schedule_work(&haptics->work);
-+
-+	return 0;
-+}
-+
-+static void drv260x_close(struct input_dev *input)
-+{
-+	struct drv260x_data *haptics = input_get_drvdata(input);
-+	int ret;
-+
-+	cancel_work_sync(&haptics->work);
-+
-+	ret = regmap_write(haptics->regmap, DRV260X_MODE, DRV260X_STANDBY);
-+	if (ret != 0) {
-+		dev_err(&haptics->client->dev,
-+			"Failed to write standby mode: %d\n", ret);
-+	}
-+
-+	gpiod_set_value(haptics->enable_gpio, 0);
-+}
-+
-+static const struct reg_default drv260x_lra_cal_regs[] = {
-+	{ DRV260X_MODE, DRV260X_AUTO_CAL },
-+	{ DRV260X_CTRL3, DRV260X_NG_THRESH_2},
-+	{ DRV260X_FEEDBACK_CTRL, DRV260X_FB_REG_LRA_MODE | DRV260X_BRAKE_FACTOR_4X | DRV260X_LOOP_GAIN_HIGH },
-+};
-+
-+static const struct reg_default drv260x_lra_init_regs[] = {
-+	{ DRV260X_MODE, DRV260X_RT_PLAYBACK},
-+	{ DRV260X_A_TO_V_CTRL, DRV260X_AUDIO_HAPTICS_PEAK_20MS | DRV260X_AUDIO_HAPTICS_FILTER_125HZ},
-+	{ DRV260X_A_TO_V_MIN_INPUT, DRV260X_AUDIO_HAPTICS_MIN_IN_VOLT },
-+	{ DRV260X_A_TO_V_MAX_INPUT, DRV260X_AUDIO_HAPTICS_MAX_IN_VOLT },
-+	{ DRV260X_A_TO_V_MIN_OUT, DRV260X_AUDIO_HAPTICS_MIN_OUT_VOLT },
-+	{ DRV260X_A_TO_V_MAX_OUT, DRV260X_AUDIO_HAPTICS_MAX_OUT_VOLT },
-+	{ DRV260X_FEEDBACK_CTRL, DRV260X_FB_REG_LRA_MODE | DRV260X_BRAKE_FACTOR_2X | DRV260X_LOOP_GAIN_MED | DRV260X_BEMF_GAIN_3 },
-+	{ DRV260X_CTRL1, DRV260X_STARTUP_BOOST },
-+	{ DRV260X_CTRL2, DRV260X_SAMP_TIME_250 },
-+	{ DRV260X_CTRL3, DRV260X_NG_THRESH_2 | DRV260X_ANANLOG_IN },
-+	{ DRV260X_CTRL4, DRV260X_AUTOCAL_TIME_500MS },
-+};
-+
-+static const struct reg_default drv260x_erm_cal_regs[] = {
-+	{ DRV260X_MODE, DRV260X_AUTO_CAL },
-+	{ DRV260X_A_TO_V_MIN_INPUT, DRV260X_AUDIO_HAPTICS_MIN_IN_VOLT },
-+	{ DRV260X_A_TO_V_MAX_INPUT, DRV260X_AUDIO_HAPTICS_MAX_IN_VOLT },
-+	{ DRV260X_A_TO_V_MIN_OUT, DRV260X_AUDIO_HAPTICS_MIN_OUT_VOLT },
-+	{ DRV260X_A_TO_V_MAX_OUT, DRV260X_AUDIO_HAPTICS_MAX_OUT_VOLT },
-+	{ DRV260X_FEEDBACK_CTRL, DRV260X_BRAKE_FACTOR_3X | DRV260X_LOOP_GAIN_MED | DRV260X_BEMF_GAIN_2 },
-+	{ DRV260X_CTRL1, DRV260X_STARTUP_BOOST },
-+	{ DRV260X_CTRL2, DRV260X_SAMP_TIME_250 | DRV260X_BLANK_TIME_75 | DRV260X_SAMP_TIME_250 | DRV260X_IDISS_TIME_75 },
-+	{ DRV260X_CTRL3, DRV260X_NG_THRESH_2 | DRV260X_ERM_OPEN_LOOP },
-+	{ DRV260X_CTRL4, DRV260X_AUTOCAL_TIME_500MS },
-+};
-+
-+static int drv260x_init(struct drv260x_data *haptics)
-+{
-+	int ret;
-+	unsigned int cal_buf;
-+
-+	ret = regmap_write(haptics->regmap,
-+			   DRV260X_RATED_VOLT, haptics->rated_voltage);
-+	if (ret != 0)
-+		goto write_failure;
-+
-+	ret = regmap_write(haptics->regmap,
-+			   DRV260X_OD_CLAMP_VOLT, haptics->overdrive_voltage);
-+	if (ret != 0)
-+		goto write_failure;
-+
-+	switch(haptics->mode) {
-+	case DRV260X_LRA_MODE:
-+		ret = regmap_register_patch(haptics->regmap,
-+					drv260x_lra_cal_regs,
-+					ARRAY_SIZE(drv260x_lra_cal_regs));
-+		if (ret != 0)
-+			goto write_failure;
-+		break;
-+	case DRV260X_ERM_MODE:
-+		ret = regmap_register_patch(haptics->regmap,
-+					drv260x_erm_cal_regs,
-+					ARRAY_SIZE(drv260x_erm_cal_regs));
-+		if (ret != 0)
-+			goto write_failure;
-+
-+		ret = regmap_update_bits(haptics->regmap, DRV260X_LIB_SEL,
-+					DRV260X_LIB_SEL_MASK,
-+					haptics->library);
-+		if (ret != 0)
-+			goto write_failure;
-+		break;
-+	default:
-+		ret = regmap_register_patch(haptics->regmap,
-+					drv260x_lra_init_regs,
-+					ARRAY_SIZE(drv260x_lra_init_regs));
-+		if (ret != 0)
-+			goto write_failure;
-+
-+		ret = regmap_update_bits(haptics->regmap, DRV260X_LIB_SEL,
-+					DRV260X_LIB_SEL_MASK,
-+					haptics->library);
-+		if (ret != 0)
-+			goto write_failure;
-+
-+		goto skip_go_bit;
-+		break;
-+	}
-+
-+	if (ret != 0) {
-+		dev_err(&haptics->client->dev,
-+			"Failed to write init registers: %d\n",
-+			ret);
-+		goto write_failure;
-+	}
-+
-+	ret = regmap_write(haptics->regmap, DRV260X_GO, DRV260X_GO_BIT);
-+	if (ret != 0)
-+		goto write_failure;
-+
-+	do {
-+		ret = regmap_read(haptics->regmap, DRV260X_GO, &cal_buf);
-+		if (ret != 0)
-+			goto write_failure;
-+	} while (cal_buf == DRV260X_GO_BIT || ret != 0);
-+
-+	return ret;
-+
-+write_failure:
-+	dev_err(&haptics->client->dev,
-+		"Failed to write init registers: %d\n",
-+		ret);
-+skip_go_bit:
-+	return ret;
-+}
-+
-+static const struct regmap_config drv260x_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+
-+	.max_register = DRV260X_MAX_REG,
-+	.reg_defaults = drv260x_reg_defs,
-+	.num_reg_defaults = ARRAY_SIZE(drv260x_reg_defs),
-+	.cache_type = REGCACHE_NONE,
-+};
-+
-+#ifdef CONFIG_OF
-+static int drv260x_parse_dt(struct device_node *dev_node,
-+				struct drv260x_data *haptics,
-+				struct device *dev)
-+{
-+	int ret;
-+	int voltage;
-+
-+	ret = of_property_read_u32(dev_node, "mode", &haptics->mode);
-+	if (ret < 0) {
-+		dev_err(dev, "%s: No entry for mode\n", __func__);
-+
-+		return ret;
-+	}
-+	ret = of_property_read_u32(dev_node, "library-sel",
-+				&haptics->library);
-+	if (ret < 0) {
-+		dev_err(dev, "%s: No entry for library selection\n",
-+			__func__);
-+
-+		return ret;
-+	}
-+	ret = of_property_read_u32(dev_node, "vib-rated-voltage",
-+				&voltage);
-+	if (!ret)
-+		haptics->rated_voltage = drv260x_calculate_voltage(voltage);
-+
-+
-+	ret = of_property_read_u32(dev_node, "vib-overdrive-voltage",
-+				&voltage);
-+	if (!ret)
-+		haptics->overdrive_voltage = drv260x_calculate_voltage(voltage);
-+
-+	return ret;
-+
-+}
-+#else
-+static inline int drv260x_parse_dt(struct device *dev)
-+{
-+	dev_err(dev, "no platform data defined\n");
-+
-+	return -EINVAL;
-+}
-+#endif
-+static int drv260x_probe(struct i2c_client *client,
-+			   const struct i2c_device_id *id)
-+{
-+	struct drv260x_data *haptics;
-+	struct device_node *np = client->dev.of_node;
-+	struct drv260x_platform_data *pdata = dev_get_platdata(&client->dev);
-+	int ret;
-+
-+	haptics = devm_kzalloc(&client->dev, sizeof(*haptics), GFP_KERNEL);
-+	if (!haptics)
-+		return -ENOMEM;
-+
-+	haptics->rated_voltage = DRV260X_DEF_OD_CLAMP_VOLT;
-+	haptics->rated_voltage = DRV260X_DEF_RATED_VOLT;
-+
-+	 if (pdata) {
-+		haptics->mode = pdata->mode;
-+		haptics->library = pdata->library_selection;
-+		if (pdata->vib_overdrive_voltage)
-+			haptics->overdrive_voltage = drv260x_calculate_voltage(pdata->vib_overdrive_voltage);
-+		if (pdata->vib_rated_voltage)
-+			haptics->rated_voltage = drv260x_calculate_voltage(pdata->vib_rated_voltage);
-+	} else if (np) {
-+		ret = drv260x_parse_dt(np, haptics, &client->dev);
-+		if (ret)
-+			return ret;
-+	} else {
-+		dev_err(&client->dev, "Platform data not set\n");
-+		return -ENODEV;
-+	}
-+
-+
-+	if (haptics->mode < DRV260X_LRA_MODE ||
-+	    haptics->mode > DRV260X_ERM_MODE) {
-+		dev_err(&client->dev,
-+			"Vibrator mode is invalid: %i\n",
-+			haptics->mode);
-+		return -EINVAL;
-+	}
-+	
-+	if (haptics->library < DRV260X_LIB_SEL_DEFAULT ||
-+	    haptics->library > DRV260X_LIB_F) {
-+		dev_err(&client->dev,
-+			"Library value is invalid: %i\n", haptics->library);
-+		return -EINVAL;
-+	}	
-+
-+	haptics->regulator = devm_regulator_get(&client->dev, "vbat");
-+	if (IS_ERR(haptics->regulator)) {
-+		ret = PTR_ERR(haptics->regulator);
-+		dev_err(&client->dev,
-+			"unable to get regulator, error: %d\n", ret);
-+		return ret;
-+	}
-+
-+	haptics->enable_gpio = devm_gpiod_get(&client->dev, "enable");
-+	if (IS_ERR(haptics->enable_gpio)) {
-+		ret = PTR_ERR(haptics->enable_gpio);
-+		if (ret != -ENOENT && ret != -ENOSYS)
-+			return ret;
-+		haptics->enable_gpio = NULL;
-+	} else {
-+		gpiod_direction_output(haptics->enable_gpio, 1);
-+	}
-+
-+	haptics->input_dev = devm_input_allocate_device(&client->dev);
-+	if (haptics->input_dev == NULL) {
-+		dev_err(&client->dev, "Failed to allocate input device\n");
-+		ret = -ENOMEM;
-+		return ret;
-+	}
-+
-+	haptics->input_dev->name = "drv260x:haptics";
-+	haptics->input_dev->dev.parent = client->dev.parent;
-+	haptics->input_dev->close = drv260x_close;
-+	input_set_drvdata(haptics->input_dev, haptics);
-+	input_set_capability(haptics->input_dev, EV_FF, FF_RUMBLE);
-+
-+	ret = input_ff_create_memless(haptics->input_dev, NULL,
-+				      drv260x_haptics_play);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "input_ff_create() failed: %d\n",
-+			ret);
-+		return ret;
-+	}
-+
-+	INIT_WORK(&haptics->work, drv260x_worker);
-+
-+	haptics->client = client;
-+	i2c_set_clientdata(client, haptics);
-+
-+	haptics->regmap = devm_regmap_init_i2c(client, &drv260x_regmap_config);
-+	if (IS_ERR(haptics->regmap)) {
-+		ret = PTR_ERR(haptics->regmap);
-+		dev_err(&client->dev, "Failed to allocate register map: %d\n",
-+			ret);
-+		return ret;
-+	}
-+
-+	ret = drv260x_init(haptics);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "Device init failed: %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = input_register_device(haptics->input_dev);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "couldn't register input device: %d\n",
-+			ret);
-+		return ret;
-+	}
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int drv260x_suspend(struct device *dev)
-+{
-+	struct drv260x_data *haptics = dev_get_drvdata(dev);
-+	int ret = 0;
-+
-+	mutex_lock(&haptics->input_dev->mutex);
-+
-+	if (haptics->input_dev->users) {
-+		ret = regmap_update_bits(haptics->regmap,
-+				   DRV260X_MODE,
-+				   DRV260X_STANDBY_MASK,
-+				   DRV260X_STANDBY);
-+		if (ret) {
-+			dev_err(dev, "Failed to set standby mode\n");
-+			goto out;
-+		}
-+
-+		gpiod_set_value(haptics->enable_gpio, 0);
-+
-+		ret = regulator_disable(haptics->regulator);
-+		if (ret)
-+			dev_err(dev, "Failed to disable regulator\n");
-+	}
-+out:
-+	mutex_unlock(&haptics->input_dev->mutex);
-+	return ret;
-+}
-+
-+static int drv260x_resume(struct device *dev)
-+{
-+	struct drv260x_data *haptics = dev_get_drvdata(dev);
-+	int ret = 0;
-+
-+	mutex_lock(&haptics->input_dev->mutex);
-+
-+	if (haptics->input_dev->users) {
-+		ret = regulator_enable(haptics->regulator);
-+		if (ret) {
-+			dev_err(dev, "Failed to enable regulator\n");
-+			goto out;
-+		}
-+		ret = regmap_update_bits(haptics->regmap,
-+				   DRV260X_MODE,
-+				   DRV260X_STANDBY_MASK, 0);
-+		if (ret) {
-+			dev_err(dev, "Failed to unset standby mode\n");
-+			goto out;
-+		}
-+
-+		gpiod_set_value(haptics->enable_gpio, 1);
-+	}
-+
-+out:
-+	mutex_unlock(&haptics->input_dev->mutex);
-+	return ret;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(drv260x_pm_ops, drv260x_suspend, drv260x_resume);
-+
-+static const struct i2c_device_id drv260x_id[] = {
-+	{ "drv2605l", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, drv260x_id);
-+
-+#if IS_ENABLED(CONFIG_OF)
-+static const struct of_device_id drv260x_of_match[] = {
-+	{ .compatible = "ti,drv2604", },
-+	{ .compatible = "ti,drv2604l", },
-+	{ .compatible = "ti,drv2605", },
-+	{ .compatible = "ti,drv2605l", },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, drv260x_of_match);
-+#endif
-+
-+static struct i2c_driver drv260x_driver = {
-+	.probe		= drv260x_probe,
-+	.driver		= {
-+		.name	= "drv260x-haptics",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(drv260x_of_match),
-+		.pm	= &drv260x_pm_ops,
-+	},
-+	.id_table = drv260x_id,
-+};
-+module_i2c_driver(drv260x_driver);
-+
-+MODULE_ALIAS("platform:drv260x-haptics");
-+MODULE_DESCRIPTION("TI DRV260x haptics driver");
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Dan Murphy <dmurphy@ti.com>");
-diff --git a/include/dt-bindings/input/ti-drv260x.h b/include/dt-bindings/input/ti-drv260x.h
-new file mode 100644
-index 0000000..be7f245
---- /dev/null
-+++ b/include/dt-bindings/input/ti-drv260x.h
-@@ -0,0 +1,35 @@
-+/*
-+ * DRV260X haptics driver family
-+ *
-+ * Author: Dan Murphy <dmurphy@ti.com>
-+ *
-+ * Copyright:   (C) 2014 Texas Instruments, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
-+
-+#ifndef _DT_BINDINGS_TI_DRV260X_H
-+#define _DT_BINDINGS_TI_DRV260X_H
-+
-+/* Calibration Types */
-+#define DRV260X_LRA_MODE		0x00
-+#define DRV260X_LRA_NO_CAL_MODE	0x01
-+#define DRV260X_ERM_MODE		0x02
-+
-+/* Library Selection */
-+#define DRV260X_LIB_SEL_DEFAULT		0x00
-+#define DRV260X_LIB_A				0x01
-+#define DRV260X_LIB_B				0x02
-+#define DRV260X_LIB_C				0x03
-+#define DRV260X_LIB_D				0x04
-+#define DRV260X_LIB_E				0x05
-+#define DRV260X_LIB_F				0x06
-+
-+#endif
-diff --git a/include/linux/platform_data/drv260x-pdata.h b/include/linux/platform_data/drv260x-pdata.h
-new file mode 100644
-index 0000000..4091a9b
---- /dev/null
-+++ b/include/linux/platform_data/drv260x-pdata.h
-@@ -0,0 +1,29 @@
-+/*
-+ * Platform data for DRV260X haptics driver family
-+ *
-+ * Author: Dan Murphy <dmurphy@ti.com>
-+ *
-+ * Copyright:   (C) 2014 Texas Instruments, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
-+
-+#ifndef _LINUX_DRV260X_PDATA_H
-+#define _LINUX_DRV260X_PDATA_H
-+
-+struct drv260x_platform_data {
-+	int enable_gpio;
-+	u32 library_selection;
-+	u32 mode;
-+	u32 vib_rated_voltage;
-+	u32 vib_overdrive_voltage;
-+};
-+
-+#endif
 -- 
-1.7.9.5
+Kind regards,
+Przemo Firszt
+
 
