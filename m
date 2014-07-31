@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324AbaHAIAO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 04:00:14 -0400
-Received: from smtp-out-145.synserver.de ([212.40.185.145]:1093 "EHLO
-	smtp-out-145.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703AbaHAIAM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 04:00:12 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 12499
-Message-ID: <53DB490A.5040709@metafoo.de>
-Date: Fri, 01 Aug 2014 10:00:10 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	id S1753783AbaHAIAe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 04:00:34 -0400
+Received: from mga14.intel.com ([192.55.52.115]:16190 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753459AbaHAIAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 04:00:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,778,1400050800"; 
+   d="scan'208";a="570360617"
+Date: Fri, 1 Aug 2014 07:58:25 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Aaron Lu <aaron.lu@intel.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org, jhladky@redhat.com,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1%
+ proc-vmstat.numa_hint_faults_local
+Message-ID: <20140731235825.GH28673@intel.com>
+References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>
+ <53D72FF5.90908@intel.com>
+ <20140729023940.37b6aebc@annuminas.surriel.com>
+ <20140731104241.GA9918@twins.programming.kicks-ass.net>
+ <20140801020330.GA30211@aaronlu.sh.intel.com>
+ <20140801072911.GE19379@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dmaengine@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        =?ISO-8859-1?Q?Antoine_T=E9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        laurent.pinchart@ideasonboard.com, ludovic.desroches@atmel.com,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
- dma controller API
-References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com> <20140730160607.GM8181@intel.com> <20140731074440.GY3952@lukather> <53DA3A48.8070900@metafoo.de> <20140731161331.GD3952@lukather> <53DA74B3.6060502@metafoo.de> <20140731173730.GH3952@lukather>
-In-Reply-To: <20140731173730.GH3952@lukather>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140801072911.GE19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2014 07:37 PM, Maxime Ripard wrote:
-> On Thu, Jul 31, 2014 at 06:54:11PM +0200, Lars-Peter Clausen wrote:
->> On 07/31/2014 06:13 PM, Maxime Ripard wrote:
->> [...]
->>>  From what you're saying, and judging from the drivers that already
->>> implement it, can't it be moved directly to the framework itself ?
->>>
->>
->> What exactly do you mean by moving it directly to the framework? The
->> slave_caps API is part of the DMAengine framework.
->
-> Not its implementation, which is defined by each and every driver,
-> while the behaviour of device_slave_caps is rather generic.
->
+On Fri, Aug 01, 2014 at 09:29:11AM +0200, Peter Zijlstra wrote:
+> On Fri, Aug 01, 2014 at 10:03:30AM +0800, Aaron Lu wrote:
+> > > > > ebe06187bf2aec1  a43455a1d572daf7b730fe12e  
+> > > > > ---------------  -------------------------  
+> > > > >      94500 ~ 3%    +115.6%     203711 ~ 6%  ivb42/hackbench/50%-threads-pipe
+> > > > >      67745 ~ 4%     +64.1%     111174 ~ 5%  lkp-snb01/hackbench/50%-threads-socket
+> > > > >     162245 ~ 3%     +94.1%     314885 ~ 6%  TOTAL proc-vmstat.numa_hint_faults_local
+> 
+> > It means, for commit ebe06187bf2aec1, the number for
+> > num_hint_local_faults is 94500 for ivb42 machine and 67745 for lkp-snb01
+> > machine. The 3%, 4% following that number means the deviation of the
+> > different runs to their average(we usually run it multiple times to
+> > phase out possible sharp values). We should probably remove that
+> > percentage, as they cause confusion if no detailed explanation and may
+> > not mean much to the commit author and others(if the deviation is big
+> > enough, we should simply drop that result).
+> 
+> Nah, variance is good, but the typical symbol would be +- or the fancy
+> ±.
+> 
+> ~ when used as a unary op means 'approx' or 'about' or 'same order'
+> ~ when used as a binary op means equivalence, a weaker equal, often in
+> the vein of the unary op meaning.
+> 
+> Also see: http://en.wikipedia.org/wiki/Tilde#Mathematics
+> 
+> So while I think having a measure of variance is good, I think you
+> picked entirely the wrong symbol.
 
-Do you mean something like adding a dma_slave_caps struct field to the DMA 
-channel that gets initialized when the channel is created and then remove 
-the callback? That makes some sense.
-
-I think the main reason why we use a callback right now is that in earlier 
-revisions of the API it was possible to pass a slave_config and the result 
-would be the capabilities of the DMA channel for this particular config. But 
-this was dropped before the final version was merged upstream.
-
-- Lars
+Or, maybe you can use σ (lower case sigma) to indicate stddev, :)
