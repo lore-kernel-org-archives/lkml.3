@@ -1,106 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbaGaNTW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 09:19:22 -0400
-Received: from [195.154.187.82] ([195.154.187.82]:54120 "EHLO ou.quest-ce.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859AbaGaNTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 09:19:21 -0400
-X-Greylist: delayed 1130 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Jul 2014 09:19:20 EDT
-Message-ID: <1406811619.4911.10.camel@localhost.localdomain>
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Nicholas Krause <xerofoify@gmail.com>,
-        Adrian Remonda <adrianremonda@gmail.com>,
-        Murilo Opsfelder Araujo <mopsfelder@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, daniel@ffwll.ch, waydi1@gmail.com,
-        sumit.semwal@linaro.org, maarten.lankhorst@canonical.com,
-        ydroneaud@opteya.com
-Date: Thu, 31 Jul 2014 15:00:19 +0200
-In-Reply-To: <1406587103-5784-1-git-send-email-mopsfelder@gmail.com>
-References: <1406587103-5784-1-git-send-email-mopsfelder@gmail.com>
-Organization: OPTEYA
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 37.161.115.126
-X-SA-Exim-Mail-From: ydroneaud@opteya.com
-Subject: Re: [PATCH] Staging: android: sw_sync.c: fix missing blank line
- after declaration
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on ou.quest-ce.net)
+	id S1751641AbaGaNUf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 09:20:35 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:44807 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaGaNUd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 09:20:33 -0400
+Message-ID: <53DA4298.5090900@gmail.com>
+Date: Thu, 31 Jul 2014 15:20:24 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Humberto Naves <hsnaves@gmail.com>
+CC: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Thomas Abraham <ta.omasab@gmail.com>,
+        Andreas Farber <afaerber@suse.de>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: Re: [PATCHv2 1/5] clk: samsung: exynos5410: Add NULL pointer checks
+ in clock init
+References: <1406805732-17372-1-git-send-email-hsnaves@gmail.com> <1406805732-17372-2-git-send-email-hsnaves@gmail.com> <53DA37EA.7010306@gmail.com> <CAEe5pB-FnkY8E9qPjy+6R5ausEEx-pO2wupWYZO8Lscb2BAwiw@mail.gmail.com>
+In-Reply-To: <CAEe5pB-FnkY8E9qPjy+6R5ausEEx-pO2wupWYZO8Lscb2BAwiw@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Le lundi 28 juillet 2014 à 19:38 -0300, Murilo Opsfelder Araujo a
-écrit :
-> Fix coding style issue.
+On 31.07.2014 15:13, Humberto Naves wrote:
+> Hi,
 > 
-> Signed-off-by: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+> I am bit confused by your response: first you mentioned that I should
+> remove the NULL check for variable np, but later on you suggested that
+> I should rearrange the conditional statement to avoid adding more
+> indentation.
 
-Is this some kind of game ?
+That was just a side note.
 
-The *same* patch was sent three times from three different email
-addresses:
+> My guess is that I should remove that if statement
+> altogether?
 
-  http://lkml.kernel.org/r/1406170403-4506-1-git-send-email-xerofoify@gmail.com
+Yes, that was my intention.
 
-    From: Nicholas Krause <xerofoify@gmail.com>
-    Date: Wed, 23 Jul 2014 22:53:23 -0400
-    Message-Id: <1406170403-4506-1-git-send-email-xerofoify@gmail.com>
-    Subject: [PATCH] staging: Add blank lines in sw_sync.c
-
-  http://lkml.kernel.org/r/1406581660-7863-1-git-send-email-adrianremonda@gmail.com
-
-    From: Adrian Remonda <adrianremonda@gmail.com>
-    Date: Mon, 28 Jul 2014 23:07:40 +0200
-    Message-Id: <1406581660-7863-1-git-send-email-adrianremonda@gmail.com>
-    Subject: [PATCH] Staging: android: Missing a blank line after declarations
-     in sw_sync.c This is a patch to the sw_sync.c file that fixes up a missing
-     a blank warning found by the checkpatch.pl tool
-
-  http://lkml.kernel.org/r/1406587103-5784-1-git-send-email-mopsfelder@gmail.com
-
-    From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
-    Date: Mon, 28 Jul 2014 19:38:23 -0300
-    Message-Id: <1406587103-5784-1-git-send-email-mopsfelder@gmail.com>
-    Subject: [PATCH] Staging: android: sw_sync.c: fix missing blank line after
-     declaration
-
-
-> ---
->  drivers/staging/android/sw_sync.c |    2 ++
->  1 file changed, 2 insertions(+)
 > 
-> diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
-> index a76db3f..863d4b1 100644
-> --- a/drivers/staging/android/sw_sync.c
-> +++ b/drivers/staging/android/sw_sync.c
-> @@ -97,6 +97,7 @@ static void sw_sync_pt_value_str(struct sync_pt *sync_pt,
->  				       char *str, int size)
->  {
->  	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
-> +
->  	snprintf(str, size, "%d", pt->value);
->  }
->  
-> @@ -156,6 +157,7 @@ static int sw_sync_open(struct inode *inode, struct file *file)
->  static int sw_sync_release(struct inode *inode, struct file *file)
->  {
->  	struct sw_sync_timeline *obj = file->private_data;
-> +
->  	sync_timeline_destroy(&obj->obj);
->  	return 0;
->  }
+> Regarding the ctx variable, should I still remove the NULL check? As
+> you said, in the near future samsung_clk_init() won't panic anymore,
+> and keeping the check in place won't hurt anybody.
 
-Regards.
+The rule of thumb for kernel patches is that we want a patch if we know
+that it is something we need. We don't know yet when and how (which
+error returning convention, NULL or ERR_PTR() or maybe something else?)
+samsung_clk_init() gets changed, so right now we shouldn't change its
+callers.
 
--- 
-Yann Droneaud
-OPTEYA
+Of course a patch changing samsung_clk_init() and all its callers in one
+go will be welcome.
 
+By the way, please avoid top posting. Here's a good read on Linux
+mailing lists netiquette: http://www.tux.org/lkml/#s3 .
 
+Best regards,
+Tomasz
+
+> 
+> Best,
+> Humberto
+> 
+> On Thu, Jul 31, 2014 at 2:34 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>> Hi Humberto,
+>>
+>> Please see my comments inline.
+>>
+>> On 31.07.2014 13:22, Humberto Silva Naves wrote:
+>>> Added NULL pointer checks for device_node input parameter and
+>>> for the samsung_clk_provider context returned by samsung_clk_init.
+>>> Even though the *current* samsung_clk_init function never returns
+>>> a NULL pointer, it is good to keep this check in place to avoid
+>>> possible problems in the future due to changes in implementation.
+>>> That way, we also improve the consistency of the code that performs
+>>> clock initialization across the different SoCs.
+>>>
+>>> Signed-off-by: Humberto Silva Naves <hsnaves@gmail.com>
+>>> ---
+>>>  drivers/clk/samsung/clk-exynos5410.c |   12 +++++++++---
+>>>  1 file changed, 9 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/drivers/clk/samsung/clk-exynos5410.c b/drivers/clk/samsung/clk-exynos5410.c
+>>> index 231475b..bf57c80 100644
+>>> --- a/drivers/clk/samsung/clk-exynos5410.c
+>>> +++ b/drivers/clk/samsung/clk-exynos5410.c
+>>> @@ -188,11 +188,17 @@ static void __init exynos5410_clk_init(struct device_node *np)
+>>>       struct samsung_clk_provider *ctx;
+>>>       void __iomem *reg_base;
+>>>
+>>> -     reg_base = of_iomap(np, 0);
+>>> -     if (!reg_base)
+>>> -             panic("%s: failed to map registers\n", __func__);
+>>> +     if (np) {
+>>
+>> Since all Exynos-based boards are always booted using DT, this function
+>> will never be called if there is no node for the clock controller and so
+>> there is no way this pointer can end up being NULL. I don't see a point
+>> in complicating this code with useless checks.
+>>
+>>> +             reg_base = of_iomap(np, 0);
+>>> +             if (!reg_base)
+>>> +                     panic("%s: failed to map registers\n", __func__);
+>>> +     } else {
+>>> +             panic("%s: unable to determine soc\n", __func__);
+>>> +     }
+>>
+>> As a side note, since panic() does not return, the code above could be
+>> changed to follow rest of checks in this function:
+>>
+>>         if (!np)
+>>                 panic("%s: unable to determine soc\n", __func__);
+>>
+>>         reg_base = of_iomap(np, 0);
+>>         ...
+>>
+>> leading to more readable code with less indentation and less changes to
+>> existing code.
+>>
+>>>
+>>>       ctx = samsung_clk_init(np, reg_base, CLK_NR_CLKS);
+>>> +     if (!ctx)
+>>> +             panic("%s: unable to allocate context.\n", __func__);
+>>
+>> samsung_clk_init() already panics on any error, although now as I think
+>> of it, it probably should be changed with a patch to just error out and
+>> let the caller handle the error. However callers don't need to be
+>> changed before this is done.
+>>
+>> Best regards,
+>> Tomasz
