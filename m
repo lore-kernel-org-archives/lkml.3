@@ -1,105 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319AbaGaKuY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 06:50:24 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56920 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751019AbaGaKuW (ORCPT
+	id S1752155AbaGaK6l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 06:58:41 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:39393 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbaGaK6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 06:50:22 -0400
-Date: Thu, 31 Jul 2014 11:50:17 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <Will.Deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        Varun Sethi <varun.sethi@freescale.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140731105017.GB22994@leverpostej>
-References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
- <20140730152646.GC20162@leverpostej>
- <CAOesGMi3zM1-cqmeGddJ69RNXx0ktFm_zXO_yq7N0EeA3HNrUQ@mail.gmail.com>
- <20140730181842.GG20162@leverpostej>
- <20140731100905.GA7458@ulmo>
+	Thu, 31 Jul 2014 06:58:39 -0400
+Message-ID: <53DA2110.8060000@linaro.org>
+Date: Thu, 31 Jul 2014 18:57:20 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140731100905.GA7458@ulmo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Olof Johansson <olof@lixom.net>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi-private@linaro.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH 10/19] ARM64 / ACPI: Get the enable method for SMP initialization
+ in ACPI way
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <1406206825-15590-11-git-send-email-hanjun.guo@linaro.org> <20140731065426.GA876@quad.lixom.net>
+In-Reply-To: <20140731065426.GA876@quad.lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 11:09:06AM +0100, Thierry Reding wrote:
-> On Wed, Jul 30, 2014 at 07:18:42PM +0100, Mark Rutland wrote:
-> [...]
-> > > >> +
-> > > >> +Multiple-master IOMMU with configurable DMA window:
-> > > >> +---------------------------------------------------
-> > > >> +
-> > > >> +     / {
-> > > >> +             #address-cells = <1>;
-> > > >> +             #size-cells = <1>;
-> > > >> +
-> > > >> +             iommu {
-> > > >> +                     /* master ID, address and length of DMA window */
-> > > >> +                     #iommu-cells = <4>;
-> > > >> +             };
-> > > >> +
-> > > >> +             master {
-> > > >> +                     /* master ID 42, 4 GiB DMA window starting at 0 */
-> > > >> +                     iommus = <&/iommu  42  0  0x1 0x0>;
-> > > >
-> > > > Is this that window is from the POV of the master, i.e. the master can
-> > > > address 0x0 to 0xffffffff when generating transactions, and these get
-> > > > translated somehow?
-> > > >
-> > > > Or is this the physical addresses to allocate to the master?
-> > > 
-> > > It needs to be clarified in the documentation, but as far as I know it
-> > > is the DMA address space that is used.
-> > 
-> > Ok. So that's pre-translation, from the POV of the master?
+On 2014-7-31 14:54, Olof Johansson wrote:
+> Hi,
 > 
-> Correct. It represents the window of the IOMMU's addressable I/O virtual
-> address space that should be assigned to this particular master.
+> On Thu, Jul 24, 2014 at 09:00:16PM +0800, Hanjun Guo wrote:
+>> +/*
+>> + * In ACPI mode, the cpu possible map was enumerated before SMP
+>> + * initialization when MADT table was parsed, so we can get the
+>> + * possible map here to initialize CPUs.
+>> + */
 > 
-> > If we don't have that knowledge about the master already (e.g. based on
-> > the compatible string), surely we always need that information in a
-> > given iommu-specifier format? Otherwise certain iommus won't be able to
-> > handle masters with limited addressing only due to limitations of their
-> > binding.
+> The DT smp init will warn if the kernel has been build with too low NR_CPUS.
+> Does the ACPI core already warn, or did that go missing with this separate code
+> path?
+
+ACPI code will warn, it is in PATCH 07/19,
+
++	if (enabled_cpus >=  NR_CPUS) {
++		pr_warn("NR_CPUS limit of %d reached, Processor %d/0x%llx ignored.\n",
++			NR_CPUS, total_cpus, mpidr);
++		return -EINVAL;
++	}
+
 > 
-> This is only used for what's often called a windowed IOMMU. Many IOMMUs
-> (non-windowed) typically allow only a complete address space to be
-> assigned to a master without additional control over subregions. So this
-> is really a property/capability of the IOMMU rather than the masters
-> themselves.
+>> +static void __init acpi_smp_init_cpus(void)
+>> +{
+>> +	int cpu;
+>> +
+>> +	for_each_possible_cpu(cpu) {
+>> +		if (cpu_acpi_read_ops(cpu) != 0)
+>> +			continue;
+>> +
+>> +		cpu_ops[cpu]->cpu_init(NULL, cpu);
+>> +	}
+>> +}
+>> +
+>> +void __init smp_init_cpus(void)
+>> +{
+>> +	if (acpi_disabled)
+>> +		of_smp_init_cpus();
+>> +	else
+>> +		acpi_smp_init_cpus();
+> 
+> I'm liking these deeply split code paths less and less every time I see
+> them. :(
+> 
+> I would prefer to set up shared state in separate functions, but keep the
+> control flow the same. Right now you're splitting it completely.
+> 
+> I.e. split data setup between the two, but do the loop calling cpu_init()
+> the same way. (Yes, that will require you to refactor the DT code path
+> a bit too...)
 
-I'm not sure I follow, but I'm happy to wait until we have the first
-windowed IOMMU using this binding. I'll try to get myself up to speed in
-the mean time.
+OK, I will dive into the code and figure out if I can fix that as you
+suggested, thanks for your comments :)
 
-> There are already other means to respect the addressing limitations of
-> masters. We typcially use a device's DMA mask for this, and it's natural
-> to reuse that for I/O virtual addresses since they will in fact take the
-> place of physical addresses for the master when translation is enabled.
-
-Ok, that covers my worry then.
-
-Cheers,
-Mark.
+Best Regards
+Hanjun
