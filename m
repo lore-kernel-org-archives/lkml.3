@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaGaUZY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:25:24 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:50540 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaGaUZW (ORCPT
+	id S1752618AbaGaUZv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:25:51 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49582 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541AbaGaUZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:25:22 -0400
-Date: Thu, 31 Jul 2014 13:25:20 -0700 (PDT)
-Message-Id: <20140731.132520.1889577477638334755.davem@davemloft.net>
-To: zoltan.kiss@citrix.com
-Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, wei.liu2@citrix.com, Ian.Campbell@citrix.com,
-        paul.durrant@citrix.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: [PATCH] xen-netfront: Fix handling packets on compound pages
- with skb_segment
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1406726730-17994-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1406726730-17994-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 31 Jul 2014 16:25:49 -0400
+Message-ID: <53DAA64B.6040203@codeaurora.org>
+Date: Thu, 31 Jul 2014 13:25:47 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        Todd Poynor <toddpoynor@google.com>,
+        "Srivatsa S . Bhat" <srivatsa@mit.edu>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v4 0/5] Simplify hotplug/suspend handling
+References: <1406250448-470-1-git-send-email-skannan@codeaurora.org> <1667655.2j1xLy7HXa@vostro.rjw.lan>
+In-Reply-To: <1667655.2j1xLy7HXa@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 31 Jul 2014 13:25:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-Date: Wed, 30 Jul 2014 14:25:30 +0100
+On 07/29/2014 05:29 PM, Rafael J. Wysocki wrote:
+> On Thursday, July 24, 2014 06:07:23 PM Saravana Kannan wrote:
+>> Series of patchs to simplify policy/sysfs/kobj/locking handling across
+>> suspend/resume
+>
+> I need someone to review this series for me.  Viresh or Srivatsa, preferably
+> both.
 
-> There is a long known problem with the netfront/netback interface: if the guest
-> tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 ring slots,
-> it gets dropped. The reason is that netback maps these slots to a frag in the
-> frags array, which is limited by size. Having so many slots can occur since
-> compound pages were introduced, as the ring protocol slice them up into
-> individual (non-compound) page aligned slots. The theoretical worst case
-> scenario looks like this (note, skbs are limited to 64 Kb here):
-> linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page boundary,
-> using 2 slots
-> first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are at the
-> end and the beginning of a page, therefore they use 3 * 15 = 45 slots
-> last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 = 4 slots
-> Although I don't think this 51 slots skb can really happen, we need a solution
-> which can deal with every scenario. In real life there is only a few slots
-> overdue, but usually it causes the TCP stream to be blocked, as the retry will
-> most likely have the same buffer layout.
-> This patch solves this problem by slicing up the skb itself with the help of
-> skb_segment, and calling xennet_start_xmit again on the resulting packets. It
-> also works with the theoretical worst case, where there is a 3 level recursion.
-> The good thing is that skb_segment only copies the header part, the frags will
-> be just referenced again.
-> 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Viresh/Srivatsa,
 
-This is a really scary change :-)
+Bump. Can you guys please review this?
 
-I definitely see some potential problem here.
+-Saravana
 
-First of all, even in cases where it might "work", such as TCP, you
-are modifying the data stream.  The sizes are changing, the packet
-counts are different, and all of this will have side effects such as
-potentially harming TCP performance.
 
-Secondly, for something like UDP you can't just split the packet up
-like this, or for any other datagram protocol for that matter.
-
-I know you're in a difficult situation, but I just can't see this
-being an acceptable approach to solving the problem right now.
-
-Where does the MAX_SKB_FRAGS + 1 limit really come from, the size of
-the TX queue?
-
-If you were to have a 64-slot TX queue, you ought to be able to handle
-this theoretical 51 slot SKB.
-
-And I don't think it's so theoretical, a carefully crafted sequence of
-sendfile() calls during a TCP_CORK sequence should be able to do it.
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
