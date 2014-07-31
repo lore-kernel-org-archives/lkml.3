@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696AbaGaUJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:09:53 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:39877 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945AbaGaUJu (ORCPT
+	id S1751995AbaGaUM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:12:59 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:39409 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750868AbaGaUM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:09:50 -0400
-X-CheckPoint: {53DAA28C-8-2100090A-C0000000}
-Message-ID: <53DAA28C.508@tilera.com>
-Date: Thu, 31 Jul 2014 16:09:48 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 31 Jul 2014 16:12:57 -0400
+Date: Thu, 31 Jul 2014 16:12:55 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Dmitry Torokhov <dtor@google.com>
+Subject: Re: [PATCH 1/3] irq / PM: New driver interface for wakeup interrupts
+In-Reply-To: <2140085.bSS0bVjyxJ@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1407311552530.885-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Chen Gang <gang.chen.5i5j@gmail.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Richard Weinberger <richard@nod.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <dmitry.torokhov@gmail.com>, <linux-iio@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, <teg@jklm.no>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>, <msalter@redhat.com>,
-        <linux-pwm@vger.kernel.org>, <devel@driverdev.osuosl.org>,
-        <linux-watchdog@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <knaack.h@gmx.de>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        <Mischa.Jonker@synopsys.com>, <jic23@kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <201407130545.23004.marex@denx.de> <53C7B365.4080000@gmail.com> <53C834EA.5030605@tilera.com> <5190668.jExaFa8pKn@wuerfel>
-In-Reply-To: <5190668.jExaFa8pKn@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.9.0.23]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/17/2014 5:05 PM, Arnd Bergmann wrote:
-> On Thursday 17 July 2014 16:41:14 Chris Metcalf wrote:
->> On 7/17/2014 7:28 AM, Chen Gang wrote:
->>> According to current source code, tile still has chance to choose
->>> NO_IOMEM, for me, welcome the tile's maintainer's ideas or suggestions.
->> I'm not really sure.  It's true that on tile, if you don't enable PCI
->> support there's no other I/O memory (or I/O port) space you can use.
->> We pretty much always enable PCI support in our kernel, though.  I'm
->> kind of surprised that other architectures don't also have the model
->> that IOMEM requires PCI, but perhaps most architectures just don't
->> encode that in the Kconfig file?
-> Only s390 as far as I know. Most architectures have integrated
-> peripherals that use MMIO without PCI.
+On Thu, 31 Jul 2014, Rafael J. Wysocki wrote:
 
-Yes, and tilegx has these too (quite a few of them).  The memory-mapped
-devices are accessed by specifying a shim x,y coordinate in the high bits
-of the physical address, in conjunction with an MMIO type in the TLB entry.
-Various tilegx drivers set up these kinds of mappings in the page table.
+> And before we enter the wakeup handling slippery slope, let me make a note
+> that this problem is bothering me quite a bit at the moment.  In my opinion
+> we need to address it somehow regardless of the wakeup issues and I'm not sure
+> if failing __setup_irq() when there's a mismatch (that is, there are existing
+> actions for the given irq_desc and their IRQF_NO_SUSPEND settings are not
+> consistent with the new one) is the right way to do that, because it may make
+> things behave a bit randomly (it will always fail the second guy, but that need
+> not be the one who's requested IRQF_NO_SUSPEND and it depends on the ordering
+> between them).
 
-The issue with ioremap() is that it takes a generic resource_size_t
-"physical address", and we don't have any general-purpose layer that maps
-particular PAs to shim coordinates, other than for TRIO (our PCI peripheral).
-Right now we just check the PCI root complexes that we have configured in
-the kernel, and if the pseudo physical address requested is in a range that
-we're associating with one of the root complexes, we will use the appropriate
-mapping against the appropriate TRIO shim to set up its x,y coordinate in
-the page table.
+Pardon me for sticking my nose into the middle of the conversation, but
+here's what it looks like to me:
 
-So it makes some kind of sense to condition HAS_IOMEM on PCI, even though
-naively it seems like it shouldn't be strictly related.
+The entire no_irq phase of suspend/resume is starting to seem like a
+mistake.  We should never have done it.  Alternatively, it might be
+okay to disable _all_ interrupts during the no_irq phase provided they
+are then _all_ enabled again before entering the sysdev and
+platform-specific parts of suspend (or the final freeze).
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+As I understand it, the idea behind the no_irq phase was to make life 
+easier for drivers.  They wouldn't have to worry about strange things 
+cropping up while they're in the middle of powering down their devices 
+or afterward.
+
+Well, guess what?  It turns out that they do have to worry about it
+after all.  Timers can still fire during suspend transitions, and if an
+IRQ line is shared with a wakeup source then it won't be disabled.
+
+The fact is, drivers should not rely on disabled interrupts to prevent
+untimely interrupt requests or wakeups.  They should configure their
+devices not to generate any interrupt requests at all, apart from
+wakeup requests.  And their interrupt handlers shouldn't mind being
+invoked for a shared IRQ, even after their devices are turned off.
+
+Any driver that leaves its device capable of generating non-wakeup
+interrupt requests during suspend, and relies on interrupts being
+globally disabled to avoid problems, is most likely broken.  Yes, it
+may be acceptable in cases where the IRQ line isn't shared, but it's
+still a bad design.
+
+Alan Stern
 
