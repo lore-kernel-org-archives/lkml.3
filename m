@@ -1,120 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333AbaGaKL1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 06:11:27 -0400
-Received: from frost.carfax.org.uk ([85.119.82.111]:41529 "EHLO
-	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881AbaGaKLZ (ORCPT
+	id S932376AbaGaKLt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 06:11:49 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:44201 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343AbaGaKLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 06:11:25 -0400
-Date: Thu, 31 Jul 2014 11:11:16 +0100
-From: Hugo Mills <hugo@carfax.org.uk>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: Dave Airlie <airlied@gmail.com>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>,
-        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
-	<linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Remove certain calls for releasing page cache
-Message-ID: <20140731101116.GN31950@carfax.org.uk>
-Mail-Followup-To: Hugo Mills <hugo@carfax.org.uk>,
-	Nick Krause <xerofoify@gmail.com>, Dave Airlie <airlied@gmail.com>,
-	Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-	"linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" <linux-btrfs@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <1406752954-26158-1-git-send-email-xerofoify@gmail.com>
- <CAPM=9ty2PhMdLykVX4c074Tdkyh0OO_jtfw-CAFHk8ANcZA4kQ@mail.gmail.com>
- <CAPDOMVgXChx5HST-jMEZmWDydWKe0Yv15pyTiPeOuQSVEjihFA@mail.gmail.com>
+	Thu, 31 Jul 2014 06:11:46 -0400
+Message-ID: <53DA165E.8040601@gmail.com>
+Date: Thu, 31 Jul 2014 13:11:42 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Zl+NncWK+U5aSfTo"
-Content-Disposition: inline
-In-Reply-To: <CAPDOMVgXChx5HST-jMEZmWDydWKe0Yv15pyTiPeOuQSVEjihFA@mail.gmail.com>
-X-GPG-Fingerprint: B25A 5A66 69D3 1E15 2DD8  0998 BF73 F4E5 65E7 4AC0
-X-GPG-Key: 65E74AC0
-X-Parrot: It is no more. It has joined the choir invisible.
-X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-frost.carfax.org.uk-Spam-Score: 0.0 (/)
+To: Matthew Wilcox <willy@linux.intel.com>
+CC: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 04/22] Change direct_access calling convention
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com> <b78b33d94b669a5fbd02e06f2493b43dd5d77698.1406058387.git.matthew.r.wilcox@intel.com> <53D9174C.7040906@gmail.com> <20140730194503.GQ6754@linux.intel.com>
+In-Reply-To: <20140730194503.GQ6754@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/30/2014 10:45 PM, Matthew Wilcox wrote:
+<>
+>> + 	if (sector & (PAGE_SECTORS-1))
+>> + 		return -EINVAL;
+> 
+> Mmm.  PAGE_SECTORS is private to brd (and also private to bcache!) at
+> this point.  We've got a real mess of defines of SECTOR_SIZE, SECTORSIZE,
+> SECTOR_SHIFT and so on, dotted throughout various random include files.
+> I am not the river to flush those Augean stables today.
+> 
+> I'll go with this, from the dcssblk driver:
+> 
+>         if (sector % (PAGE_SIZE / 512))
+>                 return -EINVAL;
+> 
 
---Zl+NncWK+U5aSfTo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sigh, right, sure I did not mean to make that fight. Works as well
 
-On Wed, Jul 30, 2014 at 10:05:16PM -0400, Nick Krause wrote:
-> On Wed, Jul 30, 2014 at 7:30 PM, Dave Airlie <airlied@gmail.com> wrote:
-> >> This patch removes the lines for releasing the page cache in certain
-> >> files as this may aid in perfomance with writes in the compression
-> >> rountines of btrfs. Please note that this patch has not been tested
-> >> on my own hardware due to no compression based btrfs volumes of my
-> >> own.
-> >>
-> >
-> > For all that is sacred, STOP.
-[snip]
-> > But if you want to work on the kernel, this isn't the way to do it, and
-> > nobody will ever take a patch from you seriously if you continue in this
-> > fashion.
-> >
-> > Dave.
-> Dave ,
-> Seems I need to have tested this code first.
+<>
+>> Style: Need a space between declaration and code (have you check-patch)
+> 
+> That's a bullshit check.  I don't know why it's in checkpatch.
+> 
 
-   You've said this before, having made exactly the same error (not
-testing a patch). Yet you do it again. You seem to be ignoring all the
-advice you've been given -- or at least not learning from it, and not
-learning from your experiences. Could you please, for half an hour or
-so, stop thinking about the immediate goal of getting a patch into the
-kernel, and take a short while to think about your process of
-learning. Look at all the advice you've had (from me, from Ted, from
-others), actually understand it, and consider all the things you need
-to do which *aren't* hacking up a lump of C. Actually learn these
-things -- have them in your mind all the time.
+I did not invent the rules. But I do respect them. I think the merit
+of sticking to some common style is much higher then any particular
+style choice. Though this particular one I do like, because of the
+C rule that forces all declarations before code, so it makes it easier
+on the maintenance. In any way Maintainers are suppose to run checkpatch
+before submission, some do ;-)
 
-   I would appreciate it if you could actually engage with someone
-(doesn't have to be me) about this -- why are you ignoring the advice?
-Is it because you don't understand it? Is it because you think you can
-cut corners? Is it because you're concetrating on the code so much that
-you're forgetting it?
+<>
+>>> +	if (size < 0)
+>>
+>> 	if(size < PAGE_SIZE), No?
+> 
+> No, absolutely not.  PAGE_SIZE is unsigned long, which (if I understand
+> my C integer promotions correctly) means that 'size' gets promoted to
+> an unsigned long, and we compare them unsigned, so errors will never be
+> caught by this check.
 
-   The main thing you're doing which is making people angry is not
-because you're submitting bad patches (although you are). It's because
-you're not listening to advice, and you're not apparently learning
-anything from the feedback you're given. Your behaviour is not
-changing over time, which makes you look like a waste of time to all
-those people trying to help you.
+Good point I agree that you need a cast ie.
 
-   Hugo.
+ 	if(size < (long)PAGE_SIZE)
 
--- 
-=== Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
-  PGP key: 65E74AC0 from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
-         --- That's not rain, that's a lake with slots in it ---         
+The reason I'm saying this is because of a bug I actually hit when
+playing with partitioning and fdisk, it came out that the last partition's
+size was not page aligned, and code that checked for (< 0) crashed because
+prd returned the last two sectors of the partition, since your API is sector
+based this can happen for you here, before you are memseting a PAGE_SIZE
+you need to test there is space, No? 
 
---Zl+NncWK+U5aSfTo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> 
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Thanks
+Boaz
 
-iQIVAwUBU9oWRFheFHXiqx3kAQLSBA/8D7Ys85PUoJsEHc8r5zxqgtOxE2qJzg3p
-vMc5KBu+7qQiBpqosQXPyOX3AkfeFDKeMIn0h2hSq0WPm4YRBOtwLpDm9q96nw1e
-OnJv7a7mEePEl4it8LN0zW9TvzhR7IYJRigRse734r3H+NX4Rcpx3y/AGBPjsVJQ
-33OspDUhi/40zS3RLb+3VTLJgxxp/XHyz/cKBJyJMb/IVQlzKaUZowVQgratjBGj
-69HtNBuHTUGnLlVaXQjiSp2ya/XK1QaOw7BNJM96U1braQ+muzW1OnAI7afSvYkk
-roCGu3N0gcTlPuG/N7/TOhTN/6VfZiCWrlTEfZxTUcTuQv2qgWsldrim739jO3YX
-2UCfNqm22Ivw/7CD3fojqsBQsvsvgdtKg8EPpsAJPZg/yksfBc4Kn/FsHVv5dU12
-ngvTxFahBYbDbh/HXMCyJeEy4W1Mra6cAsOkhhZXSJ64KsxPY1N/etkmMPOiBnaf
-/z4+W3uG/LfHlBGbR5ZPCt8UooCoK6fGhCIH7R7D9npxsqUF1dyznBAfaBUk2/Dm
-mOZ7KFhUcdeq6vE+ozKvKQShdjrmJOS7BKh4O677TMJB0AkdJnInyeWoJ2whlZe3
-Mvx9KySsdX98+7pmghDBC5BzygwtAVvEDTTXJ2oArnxoTp0eq4VUIFihs0G8WO+A
-xrMH4lSs7hU=
-=BLJY
------END PGP SIGNATURE-----
-
---Zl+NncWK+U5aSfTo--
