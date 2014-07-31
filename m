@@ -1,125 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855AbaGaLTv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 07:19:51 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:36617 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151AbaGaLTt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 07:19:49 -0400
-References: <1406309851-10628-1-git-send-email-adas@redhat.com> <CA2BF8AB-6F61-4856-8B0E-9D954BDEB243@dilger.ca> <193414027.14151264.1406551934098.JavaMail.zimbra@redhat.com> <7EBB0CF1-6564-4C63-8006-7DEEE8800A19@dilger.ca> <20140731044909.GR26465@dastard>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <20140731044909.GR26465@dastard>
-Content-Type: text/plain;
-	charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Message-Id: <351B218B-259B-4066-8E78-0B0EA05D087E@dilger.ca>
-Cc: Abhijith Das <adas@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "cluster-devel@redhat.com" <cluster-devel@redhat.com>
-X-Mailer: iPhone Mail (11D257)
-From: Andreas Dilger <adilger@dilger.ca>
-Subject: Re: [RFC PATCH 0/2] dirreadahead system call
-Date: Thu, 31 Jul 2014 13:19:45 +0200
-To: Dave Chinner <david@fromorbit.com>
+	id S1752233AbaGaLW1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 07:22:27 -0400
+Received: from asix.com.tw ([113.196.140.82]:22280 "EHLO freebsd2.asix.com.tw"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750859AbaGaLWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 07:22:25 -0400
+X-Greylist: delayed 910 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Jul 2014 07:22:23 EDT
+From: freddy@asix.com.tw
+To: davem@davemloft.net, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        louis@asix.com.tw
+Cc: Freddy Xin <freddy@asix.com.tw>
+Subject: [PATCH 1/1] AX88179_178A: Add ethtool ops for EEE support
+Date: Thu, 31 Jul 2014 19:06:35 +0800
+Message-Id: <1406804795-2754-1-git-send-email-freddy@asix.com.tw>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 31, 2014, at 6:49, Dave Chinner <david@fromorbit.com> wrote:
-> 
->> On Mon, Jul 28, 2014 at 03:19:31PM -0600, Andreas Dilger wrote:
->>> On Jul 28, 2014, at 6:52 AM, Abhijith Das <adas@redhat.com> wrote:
->>> OnJuly 26, 2014 12:27:19 AM "Andreas Dilger" <adilger@dilger.ca> wrote:
->>>> Is there a time when this doesn't get called to prefetch entries in
->>>> readdir() order?  It isn't clear to me what benefit there is of returning
->>>> the entries to userspace instead of just doing the statahead implicitly
->>>> in the kernel?
->>>> 
->>>> The Lustre client has had what we call "statahead" for a while,
->>>> and similar to regular file readahead it detects the sequential access
->>>> pattern for readdir() + stat() in readdir() order (taking into account if
->>>> ".*"
->>>> entries are being processed or not) and starts fetching the inode
->>>> attributes asynchronously with a worker thread.
->>> 
->>> Does this heuristic work well in practice? In the use case we were trying to
->>> address, a Samba server is aware beforehand if it is going to stat all the
->>> inodes in a directory.
->> 
->> Typically this works well for us, because this is done by the Lustre
->> client, so the statahead is hiding the network latency of the RPCs to
->> fetch attributes from the server.  I imagine the same could be seen with
->> GFS2. I don't know if this approach would help very much for local
->> filesystems because the latency is low.
->> 
->>>> This syscall might be more useful if userspace called readdir() to get
->>>> the dirents and then passed the kernel the list of inode numbers
->>>> to prefetch before starting on the stat() calls. That way, userspace
->>>> could generate an arbitrary list of inodes (e.g. names matching a
->>>> regexp) and the kernel doesn't need to guess if every inode is needed.
->>> 
->>> Were you thinking arbitrary inodes across the filesystem or just a subset
->>> from a directory? Arbitrary inodes may potentially throw up locking issues.
->> 
->> I was thinking about inodes returned from readdir(), but the syscall
->> would be much more useful if it could handle arbitrary inodes.
-> 
-> I'm not sure we can do that. The only way to safely identify a
-> specific inode in the filesystem from userspace is via a filehandle.
-> Plain inode numbers are susceptible to TOCTOU race conditions that
-> the kernel cannot resolve. Also, lookup by inode number bypasses
-> directory access permissions, so is not something we would expose
-> to arbitrary unprivileged users.
+From: Freddy Xin <freddy@asix.com.tw>
 
-None of these issues are relevant in the API that I'm thinking about. 
-The syscall just passes the list of inode numbers to be prefetched
-into kernel memory, and then stat() is used to actually get the data into
-userspace (or whatever other operation is to be done on them),
-so there is no danger if the wrong inode is prefetched.  If the inode
-number is bad the filesystem can just ignore it. 
+Add functions to support ethtool EEE manipulating, and the EEE
+is disabled in default setting to enhance the compatibility
+with certain switch.
 
->> There are always going to be race conditions even if limited to a
->> single directory (e.g. another client modifies the inode after calling
->> dirreadahead(), but before calling stat()) that need to be handled.
-> 
-> Unlink/realloc to a different directory with different access
-> permissions is the big issue.
-> 
->> I think there are a lot of benefits that could be had by the generic
->> syscall, possibly similar to what XFS is doing with the "bulkstat"
->> interfaces that Dave always mentions.  This would be much more so for
->> cases were you don't want to stat all of the entries in a directory.
-> 
-> Bulkstat is not really suited to this - it gets it's speed
-> specifically by avoiding directory traversal to find inodes. Hence
-> it is a root-only operation because it bypasses directory based
-> access restrictions and hence is really only useful for
-> full-filesystem traversal operations like backups, defragmentation,
-> etc.
+Signed-off-by: Freddy Xin <freddy@asix.com.tw>
+---
+ drivers/net/usb/ax88179_178a.c | 264 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 264 insertions(+)
 
-Maybe it was a mistake to mention bulkstat in this discussion. The
-stat() information would not actually be returned to memory in my
-proposal, just the inodes would be loaded into memory in bulk so
-that the later stat() (or unlink() or whatever) can go quickly.
+diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
+index 054e59c..be42757 100644
+--- a/drivers/net/usb/ax88179_178a.c
++++ b/drivers/net/usb/ax88179_178a.c
+@@ -23,6 +23,8 @@
+ #include <linux/usb.h>
+ #include <linux/crc32.h>
+ #include <linux/usb/usbnet.h>
++#include <uapi/linux/mdio.h>
++#include <linux/mdio.h>
+ 
+ #define AX88179_PHY_ID				0x03
+ #define AX_EEPROM_LEN				0x100
+@@ -170,8 +172,12 @@
+ #define GMII_PHY_PAGE_SELECT			0x1f
+ 	#define GMII_PHY_PGSEL_EXT	0x0007
+ 	#define GMII_PHY_PGSEL_PAGE0	0x0000
++	#define GMII_PHY_PGSEL_PAGE3	0x0003
++	#define GMII_PHY_PGSEL_PAGE5	0x0005
+ 
+ struct ax88179_data {
++	u8  eee_enabled;
++	u8  eee_active;
+ 	u16 rxctl;
+ 	u16 reserved;
+ };
+@@ -373,6 +379,60 @@ static void ax88179_mdio_write(struct net_device *netdev, int phy_id, int loc,
+ 	ax88179_write_cmd(dev, AX_ACCESS_PHY, phy_id, (__u16)loc, 2, &res);
+ }
+ 
++static inline int ax88179_phy_mmd_indirect(struct usbnet *dev, u16 prtad,
++					   u16 devad)
++{
++	u16 tmp16;
++	int ret;
++
++	tmp16 = devad;
++	ret = ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
++				MII_MMD_CTRL, 2, &tmp16);
++
++	tmp16 = prtad;
++	ret = ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
++				MII_MMD_DATA, 2, &tmp16);
++
++	tmp16 = devad | MII_MMD_CTRL_NOINCR;
++	ret = ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
++				MII_MMD_CTRL, 2, &tmp16);
++
++	return ret;
++}
++
++static int
++ax88179_phy_read_mmd_indirect(struct usbnet *dev, u16 prtad, u16 devad)
++{
++	int ret;
++	u16 tmp16;
++
++	ax88179_phy_mmd_indirect(dev, prtad, devad);
++
++	ret = ax88179_read_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
++			       MII_MMD_DATA, 2, &tmp16);
++	if (ret < 0)
++		return ret;
++
++	return tmp16;
++}
++
++static int
++ax88179_phy_write_mmd_indirect(struct usbnet *dev, u16 prtad, u16 devad,
++			       u16 data)
++{
++	int ret;
++
++	ax88179_phy_mmd_indirect(dev, prtad, devad);
++
++	ret = ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
++				MII_MMD_DATA, 2, &data);
++
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
+ static int ax88179_suspend(struct usb_interface *intf, pm_message_t message)
+ {
+ 	struct usbnet *dev = usb_get_intfdata(intf);
+@@ -572,6 +632,185 @@ static int ax88179_set_settings(struct net_device *net, struct ethtool_cmd *cmd)
+ 	return mii_ethtool_sset(&dev->mii, cmd);
+ }
+ 
++static int
++ax88179_ethtool_get_eee(struct usbnet *dev, struct ethtool_eee *data)
++{
++	int val;
++
++	/* Get Supported EEE */
++	val = ax88179_phy_read_mmd_indirect(dev, MDIO_PCS_EEE_ABLE,
++					    MDIO_MMD_PCS);
++	if (val < 0)
++		return val;
++	data->supported = mmd_eee_cap_to_ethtool_sup_t(val);
++
++	/* Get advertisement EEE */
++	val = ax88179_phy_read_mmd_indirect(dev, MDIO_AN_EEE_ADV,
++					    MDIO_MMD_AN);
++	if (val < 0)
++		return val;
++	data->advertised = mmd_eee_adv_to_ethtool_adv_t(val);
++
++	/* Get LP advertisement EEE */
++	val = ax88179_phy_read_mmd_indirect(dev, MDIO_AN_EEE_LPABLE,
++					    MDIO_MMD_AN);
++	if (val < 0)
++		return val;
++	data->lp_advertised = mmd_eee_adv_to_ethtool_adv_t(val);
++
++	return 0;
++}
++
++static int
++ax88179_ethtool_set_eee(struct usbnet *dev, struct ethtool_eee *data)
++{
++	u16 tmp16 = ethtool_adv_to_mmd_eee_adv_t(data->advertised);
++
++	return ax88179_phy_write_mmd_indirect(dev, MDIO_AN_EEE_ADV,
++					      MDIO_MMD_AN, tmp16);
++}
++
++static int ax88179_chk_eee(struct usbnet *dev)
++{
++	struct ethtool_cmd ecmd = { .cmd = ETHTOOL_GSET };
++	struct ax88179_data *priv = (struct ax88179_data *)dev->data;
++
++	mii_ethtool_gset(&dev->mii, &ecmd);
++
++	if (ecmd.duplex & DUPLEX_FULL) {
++		int eee_lp, eee_cap, eee_adv;
++		u32 lp, cap, adv, supported = 0;
++
++		eee_cap = ax88179_phy_read_mmd_indirect(dev,
++							MDIO_PCS_EEE_ABLE,
++							MDIO_MMD_PCS);
++		if (eee_cap < 0) {
++			priv->eee_active = 0;
++			return false;
++		}
++
++		cap = mmd_eee_cap_to_ethtool_sup_t(eee_cap);
++		if (!cap) {
++			priv->eee_active = 0;
++			return false;
++		}
++
++		eee_lp = ax88179_phy_read_mmd_indirect(dev,
++						       MDIO_AN_EEE_LPABLE,
++						       MDIO_MMD_AN);
++		if (eee_lp < 0) {
++			priv->eee_active = 0;
++			return false;
++		}
++
++		eee_adv = ax88179_phy_read_mmd_indirect(dev,
++							MDIO_AN_EEE_ADV,
++							MDIO_MMD_AN);
++
++		if (eee_adv < 0) {
++			priv->eee_active = 0;
++			return false;
++		}
++
++		adv = mmd_eee_adv_to_ethtool_adv_t(eee_adv);
++		lp = mmd_eee_adv_to_ethtool_adv_t(eee_lp);
++		supported = (ecmd.speed == SPEED_1000) ?
++			     SUPPORTED_1000baseT_Full :
++			     SUPPORTED_100baseT_Full;
++
++		if (!(lp & adv & supported)) {
++			priv->eee_active = 0;
++			return false;
++		}
++
++		priv->eee_active = 1;
++		return true;
++	}
++
++	priv->eee_active = 0;
++	return false;
++}
++
++static void ax88179_disable_eee(struct usbnet *dev)
++{
++	u16 tmp16;
++
++	tmp16 = GMII_PHY_PGSEL_PAGE3;
++	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
++			  GMII_PHY_PAGE_SELECT, 2, &tmp16);
++
++	tmp16 = 0x3246;
++	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
++			  MII_PHYADDR, 2, &tmp16);
++
++	tmp16 = GMII_PHY_PGSEL_PAGE0;
++	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
++			  GMII_PHY_PAGE_SELECT, 2, &tmp16);
++}
++
++static void ax88179_enable_eee(struct usbnet *dev)
++{
++	u16 tmp16;
++
++	tmp16 = GMII_PHY_PGSEL_PAGE3;
++	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
++			  GMII_PHY_PAGE_SELECT, 2, &tmp16);
++
++	tmp16 = 0x3247;
++	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
++			  MII_PHYADDR, 2, &tmp16);
++
++	tmp16 = GMII_PHY_PGSEL_PAGE5;
++	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
++			  GMII_PHY_PAGE_SELECT, 2, &tmp16);
++
++	tmp16 = 0x0680;
++	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
++			  MII_BMSR, 2, &tmp16);
++
++	tmp16 = GMII_PHY_PGSEL_PAGE0;
++	ax88179_write_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID,
++			  GMII_PHY_PAGE_SELECT, 2, &tmp16);
++}
++
++static int ax88179_get_eee(struct net_device *net, struct ethtool_eee *edata)
++{
++	struct usbnet *dev = netdev_priv(net);
++	struct ax88179_data *priv = (struct ax88179_data *)dev->data;
++
++	edata->eee_enabled = priv->eee_enabled;
++	edata->eee_active = priv->eee_active;
++
++	return ax88179_ethtool_get_eee(dev, edata);
++}
++
++static int ax88179_set_eee(struct net_device *net, struct ethtool_eee *edata)
++{
++	struct usbnet *dev = netdev_priv(net);
++	struct ax88179_data *priv = (struct ax88179_data *)dev->data;
++	int ret = -EOPNOTSUPP;
++
++	priv->eee_enabled = edata->eee_enabled;
++	if (!priv->eee_enabled) {
++		ax88179_disable_eee(dev);
++	} else {
++		priv->eee_enabled = ax88179_chk_eee(dev);
++		if (!priv->eee_enabled)
++			return -EOPNOTSUPP;
++
++		ax88179_enable_eee(dev);
++	}
++
++	ret = ax88179_ethtool_set_eee(dev, edata);
++	if (ret)
++		return ret;
++
++	mii_nway_restart(&dev->mii);
++
++	usbnet_link_change(dev, 0, 0);
++
++	return ret;
++}
+ 
+ static int ax88179_ioctl(struct net_device *net, struct ifreq *rq, int cmd)
+ {
+@@ -589,6 +828,8 @@ static const struct ethtool_ops ax88179_ethtool_ops = {
+ 	.get_eeprom		= ax88179_get_eeprom,
+ 	.get_settings		= ax88179_get_settings,
+ 	.set_settings		= ax88179_set_settings,
++	.get_eee		= ax88179_get_eee,
++	.set_eee		= ax88179_set_eee,
+ 	.nway_reset		= usbnet_nway_reset,
+ };
+ 
+@@ -980,6 +1221,7 @@ static int ax88179_bind(struct usbnet *dev, struct usb_interface *intf)
+ 	u16 *tmp16;
+ 	u8 *tmp;
+ 	struct ax88179_data *ax179_data = (struct ax88179_data *)dev->data;
++	struct ethtool_eee eee_data;
+ 
+ 	usbnet_get_endpoints(dev, intf);
+ 
+@@ -1062,6 +1304,15 @@ static int ax88179_bind(struct usbnet *dev, struct usb_interface *intf)
+ 
+ 	ax88179_led_setting(dev);
+ 
++	ax179_data->eee_enabled = 0;
++	ax179_data->eee_active = 0;
++
++	ax88179_disable_eee(dev);
++
++	ax88179_ethtool_get_eee(dev, &eee_data);
++	eee_data.advertised = 0;
++	ax88179_ethtool_set_eee(dev, &eee_data);
++
+ 	/* Restart autoneg */
+ 	mii_nway_restart(&dev->mii);
+ 
+@@ -1261,6 +1512,8 @@ static int ax88179_link_reset(struct usbnet *dev)
+ 	ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_MEDIUM_STATUS_MODE,
+ 			  2, 2, &mode);
+ 
++	ax179_data->eee_enabled = ax88179_chk_eee(dev);
++
+ 	netif_carrier_on(dev->net);
+ 
+ 	return 0;
+@@ -1271,6 +1524,8 @@ static int ax88179_reset(struct usbnet *dev)
+ 	u8 buf[5];
+ 	u16 *tmp16;
+ 	u8 *tmp;
++	struct ax88179_data *ax179_data = (struct ax88179_data *)dev->data;
++	struct ethtool_eee eee_data;
+ 
+ 	tmp16 = (u16 *)buf;
+ 	tmp = (u8 *)buf;
+@@ -1340,6 +1595,15 @@ static int ax88179_reset(struct usbnet *dev)
+ 
+ 	ax88179_led_setting(dev);
+ 
++	ax179_data->eee_enabled = 0;
++	ax179_data->eee_active = 0;
++
++	ax88179_disable_eee(dev);
++
++	ax88179_ethtool_get_eee(dev, &eee_data);
++	eee_data.advertised = 0;
++	ax88179_ethtool_set_eee(dev, &eee_data);
++
+ 	/* Restart autoneg */
+ 	mii_nway_restart(&dev->mii);
+ 
+-- 
+1.9.1
 
-Cheers, Andreas
-
-> Bulkstat output also contains enough information to construct a
-> valid file handle in userspace and so access to inodes found via
-> bulkstat can be gained via the XFS open-by-handle interfaces. Again,
-> this bypasses permissions checking and hence is a root-only
-> operation. It does, however, avoid TOCTOU races because the open-by-handle
-> will fail if the inode is unlinked and reallocated between the
-> bulkstat call and the open-by-handle as the generation number in the
-> handle will no longer match that of the inode.
-> 
-> Cheers,
-> 
-> Dave.
-> 
-> 
-> 
-> -- 
-> Dave Chinner
-> david@fromorbit.com
