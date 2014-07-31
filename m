@@ -1,86 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232AbaGaRhb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:37:31 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43794 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752986AbaGaRh3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:37:29 -0400
-Date: Thu, 31 Jul 2014 19:37:05 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jirka Hladky <jhladky@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, Aaron Lu <aaron.lu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1%
- proc-vmstat.numa_hint_faults_local
-Message-ID: <20140731173705.GC19379@twins.programming.kicks-ass.net>
-References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>
- <53D72FF5.90908@intel.com>
- <20140729023940.37b6aebc@annuminas.surriel.com>
- <20140731104241.GA9918@twins.programming.kicks-ass.net>
- <20140731155723.GY3588@twins.programming.kicks-ass.net>
- <53DA6BDA.8080000@redhat.com>
- <20140731162702.GZ19379@twins.programming.kicks-ass.net>
- <53DA7129.7020100@redhat.com>
+	id S1753023AbaGaRjG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:39:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38106 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751132AbaGaRjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 13:39:03 -0400
+Message-ID: <53DA7F2E.2030109@suse.de>
+Date: Thu, 31 Jul 2014 19:38:54 +0200
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0L8GnrW3Ijgkafis"
-Content-Disposition: inline
-In-Reply-To: <53DA7129.7020100@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Vincent Palatin <vpalatin@chromium.org>
+CC: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        ARM PORT <linux-arm-kernel@lists.infradead.org>,
+        "OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 4/4] ARM: dts: Add exynos5250-spring device tree
+References: <1406822910-6255-1-git-send-email-afaerber@suse.de> <1406822910-6255-5-git-send-email-afaerber@suse.de> <CAP_ceTz+KRJzF9XV=_aLE+6sV6d5GqCtQ_daKtpFJfCZQ1erpA@mail.gmail.com> <53DA7993.1000800@suse.de>
+In-Reply-To: <53DA7993.1000800@suse.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 31.07.2014 19:14, schrieb Andreas Färber:
+> Hi,
+> 
+> Am 31.07.2014 19:00, schrieb Vincent Palatin:
+>> Always a bit late to the game.
+>> One small comment inline.
+>>
+>> Reviewed-by: Vincent Palatin <vpalatin@chromium.org>
+> 
+> Thanks,
+> 
+>>
+>> On Thu, Jul 31, 2014 at 9:08 AM, Andreas Färber <afaerber@suse.de> wrote:
+>>> +       usb3_vbus_reg: regulator-usb3 {
+>>> +               compatible = "regulator-fixed";
+>>> +               regulator-name = "P5.0V_USB3CON";
+>>> +               regulator-min-microvolt = <5000000>;
+>>> +               regulator-max-microvolt = <5000000>;
+>>> +               gpio = <&gpe1 0 GPIO_ACTIVE_LOW>;
+>>> +               enable-active-high;
+>>> +       };
+>>
+>> GPE1_0 GPIO is the HSIC hub (SMSC 3503) reset# line (already defined
+>> below afaik).
+> 
+> Yes, that was a suggestion you made on v1.
+> 
+>> On this design there is no external USB3 port, so no VBUS reg/load
+>> switch for USB3.
+> 
+> Could you be a little clearer? Are you suggesting to drop the gpio
+> property?
 
---0L8GnrW3Ijgkafis
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Nah, doesn't work. Do we need a pinctrl on the usb-hub instead?
 
-On Thu, Jul 31, 2014 at 06:39:05PM +0200, Jirka Hladky wrote:
-> I'm doing 3 iterations (3 runs) to get some statistics. To speed up the test
-> significantly please do the run with 20 warehouses only
-> (or in general with #warehouses ==  number of nodes * number of PHYSICAL
-> cores)
+Andreas
 
-Yeah, went and did that for my 4 node machine, its got a ton more cores, but I
-matches the warehouses to it:
+> I just re-tested that without the regulator node plus the
+> vbus-supply below I don't get any USB2 (so maybe rename the regulator?).
+> 
+> Regards,
+> Andreas
+> 
+>>> +
+>>> +       usb@12110000 {
+>>> +               samsung,vbus-gpio = <&gpx1 1 GPIO_ACTIVE_HIGH>;
+>>> +       };
+>>> +
+>>> +       usb-hub {
+>>> +               compatible = "smsc,usb3503a";
+>>> +               reset-gpios = <&hsic_reset>;
+>>> +       };
+> [...]
+>>> +&usbdrd_phy {
+>>> +       vbus-supply = <&usb3_vbus_reg>;
+>>> +};
+>>> +
+>>> +#include "cros-ec-keyboard.dtsi"
+>>> --
+>>> 1.9.3
+> 
 
--a43455a1d57	tip/master
 
-979996.47	1144715.44
-876146		1098499.07
-1058974.18	1019499.38
-1055951.59	1139405.22
-970504.01	1099659.09
-
-988314.45	1100355.64	(avg)
-75059.546179565	50085.7473975167(stdev)
-
-So for 5 runs, tip/master (which includes the offending patch) wins hands down.
-
-Each run is 2 minutes.
-
---0L8GnrW3Ijgkafis
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT2n7BAAoJEHZH4aRLwOS6+o4P/3rmYTiWHHuXz9rouXN6v8Lx
-3oi5BctNHPr7oIiwJHxiaL5Ct3Ez4XS5XKP2ZFxo5+WE1s4B9/POUIIzrITl4HeC
-2/ruTz1ja415P2Arn+zmDvFhb0FS8mTglByBOc68DntZvnCZpICmpn6UIwHFkrDv
-VX8eW5tBd05Zq2gsbcdDmMrADLJPCKs7cpKRXNdXVNnt5FA0OtOvtSdqctjLsVHB
-/t6Pq2mfqXtlivQepHnPXzVTUI1sr1EzycePnM43NgKB+FuJguVCWmXpQLP7QrgH
-2Ecg6YYuPtCPKarRRS10foXmy1j1Ko+urFQ9RdrhUXVHJ0Zrp0Fb1vaB3pedEdDt
-u80kNf9AsKPIKW4LYq3FZq/nmabK0yrutc46ksLzlHg3hSC7n4o6e3fXgL68H8Lq
-gi/gp4tLXiA6cz/BaE5GlJ9bEKqujXwhZmGR9YzPN9CbeK/zxVHemGHu1xofVQih
-KzVszN71TH1B/gmJAio2fiAp2g6nILXzHnfcdKtgNgHrh6x7Bg2x7JZcbSEeDcIu
-YjEC9dn6Z+Z1VD8FKE8g3bBDoUNwrIjOn5rFwgqV0stGPUy2skPDa1twk6af6Tuu
-fTGQqef+Og86sJ8dcE3BstnrqBed11r/z2tHm7xttCRKqhbp0CMPmB03oDwLxMfu
-+xpkWxHF0EO31k35MB3z
-=iIoP
------END PGP SIGNATURE-----
-
---0L8GnrW3Ijgkafis--
+-- 
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
