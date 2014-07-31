@@ -1,170 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363AbaGaNuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 09:50:50 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40303 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310AbaGaNur (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 09:50:47 -0400
-Date: Thu, 31 Jul 2014 08:49:45 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Tero Kristo <t-kristo@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
-        Nishanth Menon <nm@ti.com>, dt list <devicetree@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        <jason@lakedaemon.net>, Kevin Hilman <khilman@deeprootsystems.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>, <tglx@linutronix.de>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 29/35] arm: omap: intc: switch over to linear irq domain
-Message-ID: <20140731134945.GB19512@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140729141522.GB17808@saruman.home>
- <20140729152052.GV29045@atomide.com>
- <20140729154057.GE17808@saruman.home>
- <20140729163345.GF17808@saruman.home>
- <20140730060420.GY29045@atomide.com>
- <20140730144059.GA7272@saruman.home>
- <CAGo_u6ou+MoKOE_tTTmjxyFNW=jTaN9vnTsHrxR6sQHsieJyLA@mail.gmail.com>
- <20140730162038.GH7272@saruman.home>
- <20140731062843.GA29045@atomide.com>
- <53D9F6D5.1080307@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="A6N2fC+uXW/VQSAv"
-Content-Disposition: inline
-In-Reply-To: <53D9F6D5.1080307@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751618AbaGaNsM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 09:48:12 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:57845 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750775AbaGaNsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 09:48:08 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: driverdev-devel@linuxdriverproject.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 01/18] staging: comedi: amplc_pci224: reformat some comments
+Date: Thu, 31 Jul 2014 14:47:38 +0100
+Message-Id: <1406814475-5923-2-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1406814475-5923-1-git-send-email-abbotti@mev.co.uk>
+References: <1406814475-5923-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---A6N2fC+uXW/VQSAv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Reformat comments to fit in with the preferred coding style, including
+the copyright and comedi driver description comments at the start of the
+file.  Also, remove a boiler-plate comment for the comedi device private
+data structure.
 
-Hi,
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+ drivers/staging/comedi/drivers/amplc_pci224.c | 214 +++++++++++++-------------
+ 1 file changed, 109 insertions(+), 105 deletions(-)
 
-On Thu, Jul 31, 2014 at 10:57:09AM +0300, Tero Kristo wrote:
-> On 07/31/2014 09:28 AM, Tony Lindgren wrote:
-> >* Felipe Balbi <balbi@ti.com> [140730 09:23]:
-> >>Hi,
-> >>
-> >>On Wed, Jul 30, 2014 at 10:45:41AM -0500, Nishanth Menon wrote:
-> >>>On Wed, Jul 30, 2014 at 9:40 AM, Felipe Balbi <balbi@ti.com> wrote:
-> >>>>HI,
-> >>>>
-> >>>>On Tue, Jul 29, 2014 at 11:04:21PM -0700, Tony Lindgren wrote:
-> >>>>>* Felipe Balbi <balbi@ti.com> [140729 09:36]:
-> >>>>>>Hi,
-> >>>>>>
-> >>>>>>On Tue, Jul 29, 2014 at 10:40:57AM -0500, Felipe Balbi wrote:
-> >>>>>>>On Tue, Jul 29, 2014 at 08:20:52AM -0700, Tony Lindgren wrote:
-> >>>>>>>>* Felipe Balbi <balbi@ti.com> [140729 07:18]:
-> >>>>>>>>>Hi,
-> >>>>>>>>>
-> >>>>>>>>>On Tue, Jul 29, 2014 at 05:14:25AM -0700, Tony Lindgren wrote:
-> >>>>>>>>>>* Felipe Balbi <balbi@ti.com> [140728 14:19]:
-> >>>>>>>>>>>now that we don't need to support legacy board-files,
-> >>>>>>>>>>>we can completely switch over to a linear irq domain
-> >>>>>>>>>>>and make use of irq_alloc_domain_generic_chips() to
-> >>>>>>>>>>>allocate all generic irq chips for us.
-> >>>>>>>>>>
-> >>>>>>>>>>This patch seems to somehow break off-idle for omap3
-> >>>>>>>>>>where it no longer wakes up.
-> >>>>>>>>>
-> >>>>>>>>>Sure your bisection is correct ? This patch just switches from l=
-egacy
-> >>>>>>>>>irq domain to linear irq domain.
-> >>>>>>>>
-> >>>>>>>>Yes, I tried it a few times. Just enabling
-> >>>>>>>>retention idle hangs too with this patch.
-> >>>>>>>>
-> >>>>>>>>Maybe it's omap3_prcm_irq_setup that relies on
-> >>>>>>>>11 + OMAP_INTC_START? There may be other such issues
-> >>>>>>>
-> >>>>>>>lol.
-> >>>>>>>
-> >>>>>>>OMAP4 has the same nonsense.
-> >>>>>>
-> >>>>>>made me think why (if) OMAP4 works with that same setup. Does wake =
-=66rom
-> >>>>>>OFF work with OMAP4 ?
-> >>>>>
-> >>>>>Not without similar changes, omap4+ has the same issue.. There's a R=
-FC
-> >>>>>series from Nishant to fix some of this, and Tero is moving the PRCM
-> >>>>>into a driver.
-> >>>>>
-> >>>>>>Anyway, here's a quick little hack to check if that's the reason fo=
-r the
-> >>>>>>regression:
-> >>>>>
-> >>>>>OK yeah that's along the same lines with Nishant's RFC series in thr=
-ead
-> >>>>>"[RFC PATCH 0/7] ARM: OMAP4+: PRM: minor cleanups and dt support of
-> >>>>>interrupts"
-> >>>>>
-> >>>>>FYI, it did not compile, needs to include linux/of_irq.h. But yes,
-> >>>>
-> >>>>I might have sent the wrong version as I had that same build error and
-> >>>>fixed it localy.
-> >>>>
-> >>>>>it fixes the regression for me, Also now the whole series works for
-> >>>>>me :)
-> >>>>
-> >>>>good to know.
-> >>>>
-> >>>>What do you want to do now ? Wait for PRCM to become a driver ? Wait =
-for
-> >>>>Nishanth's series to get accepted ? I guess the same thing could be d=
-one
-> >>>>for OMAP3 and AM33, then we would have a chance of having working wake
-> >>>>from idle with the new irqchip.
-> >>>
-> >>>I can repost the current series as it stands now once 17-rc1 comes out
-> >>>(without the build failure ofcourse).. if that helps to move it out of
-> >>>RFC status.
-> >>
-> >>That'd be great. It would be ever greater if you could add support for
-> >>OMAP3 on that too.
-> >
-> >Yeah sounds good to me. Tero, does that work OK for your PRCM changes?
->=20
-> Well, this set seems to break PM. suspend-resume on omap3-beagle just han=
-gs
-> after this set is applied. Works fine without it with 3.16-rc5 tag.
+diff --git a/drivers/staging/comedi/drivers/amplc_pci224.c b/drivers/staging/comedi/drivers/amplc_pci224.c
+index 45aba1f..72506bf 100644
+--- a/drivers/staging/comedi/drivers/amplc_pci224.c
++++ b/drivers/staging/comedi/drivers/amplc_pci224.c
+@@ -1,102 +1,103 @@
+ /*
+-    comedi/drivers/amplc_pci224.c
+-    Driver for Amplicon PCI224 and PCI234 AO boards.
+-
+-    Copyright (C) 2005 MEV Ltd. <http://www.mev.co.uk/>
+-
+-    COMEDI - Linux Control and Measurement Device Interface
+-    Copyright (C) 1998,2000 David A. Schleef <ds@schleef.org>
+-
+-    This program is free software; you can redistribute it and/or modify
+-    it under the terms of the GNU General Public License as published by
+-    the Free Software Foundation; either version 2 of the License, or
+-    (at your option) any later version.
++ * comedi/drivers/amplc_pci224.c
++ * Driver for Amplicon PCI224 and PCI234 AO boards.
++ *
++ * Copyright (C) 2005 MEV Ltd. <http://www.mev.co.uk/>
++ *
++ * COMEDI - Linux Control and Measurement Device Interface
++ * Copyright (C) 1998,2000 David A. Schleef <ds@schleef.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
+ 
+-    This program is distributed in the hope that it will be useful,
+-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-    GNU General Public License for more details.
+-*/
+ /*
+-Driver: amplc_pci224
+-Description: Amplicon PCI224, PCI234
+-Author: Ian Abbott <abbotti@mev.co.uk>
+-Devices: [Amplicon] PCI224 (amplc_pci224 or pci224),
+-  PCI234 (amplc_pci224 or pci234)
+-Updated: Wed, 22 Oct 2008 12:25:08 +0100
+-Status: works, but see caveats
+-
+-Supports:
+-
+-  - ao_insn read/write
+-  - ao_do_cmd mode with the following sources:
+-
+-    - start_src         TRIG_INT        TRIG_EXT
+-    - scan_begin_src    TRIG_TIMER      TRIG_EXT
+-    - convert_src       TRIG_NOW
+-    - scan_end_src      TRIG_COUNT
+-    - stop_src          TRIG_COUNT      TRIG_EXT        TRIG_NONE
+-
+-    The channel list must contain at least one channel with no repeated
+-    channels.  The scan end count must equal the number of channels in
+-    the channel list.
+-
+-    There is only one external trigger source so only one of start_src,
+-    scan_begin_src or stop_src may use TRIG_EXT.
+-
+-Configuration options - PCI224:
+-  [0] - PCI bus of device (optional).
+-  [1] - PCI slot of device (optional).
+-          If bus/slot is not specified, the first available PCI device
+-          will be used.
+-  [2] - Select available ranges according to jumper LK1.  All channels
+-        are set to the same range:
+-        0=Jumper position 1-2 (factory default), 4 software-selectable
+-          internal voltage references, giving 4 bipolar and 4 unipolar
+-          ranges:
+-            [-10V,+10V], [-5V,+5V], [-2.5V,+2.5V], [-1.25V,+1.25V],
+-            [0,+10V], [0,+5V], [0,+2.5V], [0,1.25V].
+-        1=Jumper position 2-3, 1 external voltage reference, giving
+-          1 bipolar and 1 unipolar range:
+-            [-Vext,+Vext], [0,+Vext].
+-
+-Configuration options - PCI234:
+-  [0] - PCI bus of device (optional).
+-  [1] - PCI slot of device (optional).
+-          If bus/slot is not specified, the first available PCI device
+-          will be used.
+-  [2] - Select internal or external voltage reference according to
+-        jumper LK1.  This affects all channels:
+-        0=Jumper position 1-2 (factory default), Vref=5V internal.
+-        1=Jumper position 2-3, Vref=Vext external.
+-  [3] - Select channel 0 range according to jumper LK2:
+-        0=Jumper position 2-3 (factory default), range [-2*Vref,+2*Vref]
+-          (10V bipolar when options[2]=0).
+-        1=Jumper position 1-2, range [-Vref,+Vref]
+-          (5V bipolar when options[2]=0).
+-  [4] - Select channel 1 range according to jumper LK3: cf. options[3].
+-  [5] - Select channel 2 range according to jumper LK4: cf. options[3].
+-  [6] - Select channel 3 range according to jumper LK5: cf. options[3].
+-
+-Passing a zero for an option is the same as leaving it unspecified.
+-
+-Caveats:
+-
+-  1) All channels on the PCI224 share the same range.  Any change to the
+-     range as a result of insn_write or a streaming command will affect
+-     the output voltages of all channels, including those not specified
+-     by the instruction or command.
+-
+-  2) For the analog output command,  the first scan may be triggered
+-     falsely at the start of acquisition.  This occurs when the DAC scan
+-     trigger source is switched from 'none' to 'timer' (scan_begin_src =
+-     TRIG_TIMER) or 'external' (scan_begin_src == TRIG_EXT) at the start
+-     of acquisition and the trigger source is at logic level 1 at the
+-     time of the switch.  This is very likely for TRIG_TIMER.  For
+-     TRIG_EXT, it depends on the state of the external line and whether
+-     the CR_INVERT flag has been set.  The remaining scans are triggered
+-     correctly.
+-*/
++ * Driver: amplc_pci224
++ * Description: Amplicon PCI224, PCI234
++ * Author: Ian Abbott <abbotti@mev.co.uk>
++ * Devices: [Amplicon] PCI224 (amplc_pci224 or pci224),
++ *   PCI234 (amplc_pci224 or pci234)
++ * Updated: Wed, 22 Oct 2008 12:25:08 +0100
++ * Status: works, but see caveats
++ *
++ * Supports:
++ *
++ *   - ao_insn read/write
++ *   - ao_do_cmd mode with the following sources:
++ *
++ *     - start_src         TRIG_INT        TRIG_EXT
++ *     - scan_begin_src    TRIG_TIMER      TRIG_EXT
++ *     - convert_src       TRIG_NOW
++ *     - scan_end_src      TRIG_COUNT
++ *     - stop_src          TRIG_COUNT      TRIG_EXT        TRIG_NONE
++ *
++ *     The channel list must contain at least one channel with no repeated
++ *     channels.  The scan end count must equal the number of channels in
++ *     the channel list.
++ *
++ *     There is only one external trigger source so only one of start_src,
++ *     scan_begin_src or stop_src may use TRIG_EXT.
++ *
++ * Configuration options - PCI224:
++ *   [0] - PCI bus of device (optional).
++ *   [1] - PCI slot of device (optional).
++ *           If bus/slot is not specified, the first available PCI device
++ *           will be used.
++ *   [2] - Select available ranges according to jumper LK1.  All channels
++ *         are set to the same range:
++ *         0=Jumper position 1-2 (factory default), 4 software-selectable
++ *           internal voltage references, giving 4 bipolar and 4 unipolar
++ *           ranges:
++ *             [-10V,+10V], [-5V,+5V], [-2.5V,+2.5V], [-1.25V,+1.25V],
++ *             [0,+10V], [0,+5V], [0,+2.5V], [0,1.25V].
++ *         1=Jumper position 2-3, 1 external voltage reference, giving
++ *           1 bipolar and 1 unipolar range:
++ *             [-Vext,+Vext], [0,+Vext].
++ *
++ * Configuration options - PCI234:
++ *   [0] - PCI bus of device (optional).
++ *   [1] - PCI slot of device (optional).
++ *           If bus/slot is not specified, the first available PCI device
++ *           will be used.
++ *   [2] - Select internal or external voltage reference according to
++ *         jumper LK1.  This affects all channels:
++ *         0=Jumper position 1-2 (factory default), Vref=5V internal.
++ *         1=Jumper position 2-3, Vref=Vext external.
++ *   [3] - Select channel 0 range according to jumper LK2:
++ *         0=Jumper position 2-3 (factory default), range [-2*Vref,+2*Vref]
++ *           (10V bipolar when options[2]=0).
++ *         1=Jumper position 1-2, range [-Vref,+Vref]
++ *           (5V bipolar when options[2]=0).
++ *   [4] - Select channel 1 range according to jumper LK3: cf. options[3].
++ *   [5] - Select channel 2 range according to jumper LK4: cf. options[3].
++ *   [6] - Select channel 3 range according to jumper LK5: cf. options[3].
++ *
++ * Passing a zero for an option is the same as leaving it unspecified.
++ *
++ * Caveats:
++ *
++ *   1) All channels on the PCI224 share the same range.  Any change to the
++ *      range as a result of insn_write or a streaming command will affect
++ *      the output voltages of all channels, including those not specified
++ *      by the instruction or command.
++ *
++ *   2) For the analog output command,  the first scan may be triggered
++ *      falsely at the start of acquisition.  This occurs when the DAC scan
++ *      trigger source is switched from 'none' to 'timer' (scan_begin_src =
++ *      TRIG_TIMER) or 'external' (scan_begin_src == TRIG_EXT) at the start
++ *      of acquisition and the trigger source is at logic level 1 at the
++ *      time of the switch.  This is very likely for TRIG_TIMER.  For
++ *      TRIG_EXT, it depends on the state of the external line and whether
++ *      the CR_INVERT flag has been set.  The remaining scans are triggered
++ *      correctly.
++ */
+ 
+ #include <linux/module.h>
+ #include <linux/pci.h>
+@@ -299,16 +300,20 @@ static const unsigned short hwrange_pci224_external[2] = {
+ 	PCI224_DACCON_POLAR_UNI,
+ };
+ 
+-/* The hardware selectable Vref*2 external range for PCI234
+- * (option[2] == 1, option[3+n] == 0). */
++/*
++ * The hardware selectable Vref*2 external range for PCI234
++ * (option[2] == 1, option[3+n] == 0).
++ */
+ static const struct comedi_lrange range_pci234_ext2 = {
+ 	1, {
+ 		RANGE_ext(-2, 2)
+ 	}
+ };
+ 
+-/* The hardware selectable Vref external range for PCI234
+- * (option[2] == 1, option[3+n] == 1). */
++/*
++ * The hardware selectable Vref external range for PCI234
++ * (option[2] == 1, option[3+n] == 1).
++ */
+ static const struct comedi_lrange range_pci234_ext = {
+ 	1, {
+ 		RANGE_ext(-1, 1)
+@@ -356,9 +361,6 @@ static const struct pci224_board pci224_boards[] = {
+ 	 },
+ };
+ 
+-/* this structure is for data unique to this hardware driver.  If
+-   several hardware drivers keep similar information in this structure,
+-   feel free to suggest moving the variable to the struct comedi_device struct.  */
+ struct pci224_private {
+ 	const unsigned short *hwrange;
+ 	unsigned long iobase1;
+@@ -428,8 +430,10 @@ pci224_ao_insn_write(struct comedi_device *dev, struct comedi_subdevice *s,
+ 	chan = CR_CHAN(insn->chanspec);
+ 	range = CR_RANGE(insn->chanspec);
+ 
+-	/* Writing a list of values to an AO channel is probably not
+-	 * very useful, but that's how the interface is defined. */
++	/*
++	 * Writing a list of values to an AO channel is probably not
++	 * very useful, but that's how the interface is defined.
++	 */
+ 	for (i = 0; i < insn->n; i++)
+ 		pci224_ao_set_data(dev, chan, range, data[i]);
+ 
+-- 
+2.0.0
 
-did you apply the quick little hack to prm3xxx.c ? prcm IRQ is hardcoded
-to 11, once we switch to a linear irq domain, irq_base may change.
-
---=20
-balbi
-
---A6N2fC+uXW/VQSAv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT2kl5AAoJEIaOsuA1yqREiZIP/3AjKM9gbUNdAQNAg+9LNVOn
-uXFbQ4ssgTGOlNzsAWY1QIG4Qz9H+rZA9JJEkl2phipZQkXFiGRuorHS/7dHwB8T
-AaR5XNSu0vBL3LlVCivx7rY38BKT3+b8SNuYNsrxMuXO3dlo7JgkoQFyf2bSV/eX
-HFBAeRRp4Dp/W9nTYa3k5ynoh+em2LThflyS8fZE4wM1F7pEypuBcoLs7Swq3w84
-cb3soHBkoVktgKJDsXi0x1rasm6jYPfNy43jAFosrNY8G6cq5/REdNx86bQKGMKh
-oBpV1vvJgTlcK+mo7pRwcHH7JcgzphA+aaIGaRBmauO1IMXsybxd2yi8aKuGVFaZ
-rnhLUMoTVHvvyKkXw8peAVtE8TFoTh+CiPIzYd8AbnCvF1z5BQDRJOAgs2ji9JBX
-Myj813XYANYw6XB604aue1D6MhtuMtqn9Vdz/+8I9Pon9UesXW95KwAhvu00/cKM
-uapz5my2nF/8+NcQSrwJ13jDE80OH6RtZadVfClDyevVAjXMw4cNS221zfuFb0tf
-xg7zsD141azp2hbiWMLT3a+lpYswxtT/oqLPxbNWAp9fssd6qC+pkn4gnptGcy67
-ZjgoCP4C646Edr2CCdyK0WBjeIGwoSu+KJNbsqfHMnWLeRsoKN/wtTH4jKN56FN4
-O9dRnS1yjjrLU+PyEPv9
-=MxKN
------END PGP SIGNATURE-----
-
---A6N2fC+uXW/VQSAv--
