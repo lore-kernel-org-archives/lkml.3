@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaGaVBe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 17:01:34 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54891 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751120AbaGaVBb (ORCPT
+	id S1752881AbaGaVCY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 17:02:24 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:54602 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375AbaGaVCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 17:01:31 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: Re: [PATCH] ACPI/Processor: Add CPU_STARTING_FROZEN check in the acpi_cpu_soft_notify()
-Date: Thu, 31 Jul 2014 23:20:04 +0200
-Message-ID: <1560513.OlLhy0HTTU@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1406798426-16483-1-git-send-email-tianyu.lan@intel.com>
-References: <1406798426-16483-1-git-send-email-tianyu.lan@intel.com>
+	Thu, 31 Jul 2014 17:02:21 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20140731194059.GA8681@salvia>
+References: <1406777656-27755-1-git-send-email-ast@plumgrid.com>
+	<1406777656-27755-6-git-send-email-ast@plumgrid.com>
+	<20140731194059.GA8681@salvia>
+Date: Thu, 31 Jul 2014 14:02:19 -0700
+Message-ID: <CAMEtUuy+iABzHagoono+CPB=Ex4Ew4vQBK65x1jDRC9_W9L7Dw@mail.gmail.com>
+Subject: Re: [PATCH v4 net-next 5/5] net: filter: split 'struct sk_filter'
+ into socket and bpf parts
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Kees Cook <keescook@chromium.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        netfilter-devel <netfilter-devel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 31, 2014 05:20:26 PM Lan Tianyu wrote:
-> The callback of CPU_STARTING event can't sleep and so acpi_cpu_soft_notify()
-> return directly when CPU_STARTING event is triggered. But cpu hotplug also
-> happens during S2RAM. The action will become CPU_STARTING_FROZEN. This
-> patch is to fix missing check the frozen event.
-> 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+On Thu, Jul 31, 2014 at 12:40 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> On Wed, Jul 30, 2014 at 08:34:16PM -0700, Alexei Starovoitov wrote:
+>> clean up names related to socket filtering and bpf in the following way:
+>> - everything that deals with sockets keeps 'sk_*' prefix
+>> - everything that is pure BPF is changed to 'bpf_*' prefix
+>>
+>> split 'struct sk_filter' into
+>> struct sk_filter {
+>>       atomic_t        refcnt;
+>>       struct rcu_head rcu;
+>>       struct bpf_prog *prog;
+>> };
+>
+> I think you can use 'struct bpf_prog prog' instead so the entire
+> sk_filter remains in the same memory blob (as it is before this
+> patch).
+>
+> You can add an inline function to retrieve the bpg prog from the
+> filter:
+>
+> static inline struct bpf_prog *sk_filter_bpf(struct sk_filter *)
+>
+> and use it whenever possible to fetch the bpf program. I'm suggesting
+> this because we can use the zero array size in the socket filtering
+> abstraction later on, if the function above is used, this just needs
+> one line in that function to be updated to fetch the program from the
+> placeholder.
 
-There is work to restructure the handling of CPU_TASKS_FROZEN under way
-and Chen Gong is driving it.  That's likely to conflict with the last
-two patches from you.  Can you pleaes coordinate with Gong?
-
-Rafael
-
-
-> ---
->  drivers/acpi/processor_driver.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-> index 4fcbd67..66e2249 100644
-> --- a/drivers/acpi/processor_driver.c
-> +++ b/drivers/acpi/processor_driver.c
-> @@ -125,7 +125,7 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
->  	 * CPU_STARTING and CPU_DYING must not sleep. Return here since
->  	 * acpi_bus_get_device() may sleep.
->  	 */
-> -	if (action == CPU_STARTING || action == CPU_DYING)
-> +	if ((action & ~CPU_TASKS_FROZEN) == CPU_STARTING || action == CPU_DYING)
->  		return NOTIFY_DONE;
->  
->  	if (!pr || acpi_bus_get_device(pr->handle, &device))
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+correct. It would speed up SK_RUN_FILTER macro a little and I've
+considered it, but decided to go with the pointer for two reasons:
+1.In sk_attach_filter() the bpf_prog is allocated, then reallocated
+as part of bpf_prepare_filter(). My patch #1 cleans up that part to
+avoid 'struct sock *' dependency, so all bpf_* functions work
+purely with bpf_prog... If bpf_prog is embedded inside sk_filter,
+bpf_prepare_filter would need to have a callback to reallocate
+the container struct and pass this callback through the chain
+of calls, which is ugly.
+2. having it as a pointer helps nft in the long run, since whole of
+bpf_prog doesn't stay around inside sk_filter when it's not used.
+So I think embedding pointer was a cleaner solution.
