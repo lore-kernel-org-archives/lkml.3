@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaGaPjf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:39:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58233 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751386AbaGaPjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:39:33 -0400
-Message-ID: <53DA62FB.7000108@redhat.com>
-Date: Thu, 31 Jul 2014 11:38:35 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752854AbaGaPj5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:39:57 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:43324 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaGaPj4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 11:39:56 -0400
 MIME-Version: 1.0
-To: Jerome Marchand <jmarchan@redhat.com>, linux-mm@kvack.org
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH 2/2] memcg, vmscan: Fix forced scan of anonymous pages
-References: <1406807385-5168-1-git-send-email-jmarchan@redhat.com> <1406807385-5168-3-git-send-email-jmarchan@redhat.com>
-In-Reply-To: <1406807385-5168-3-git-send-email-jmarchan@redhat.com>
+X-Originating-IP: [2620:0:1000:157d:781a:650a:7145:334d]
+In-Reply-To: <20140731103323.GL26853@arm.com>
+References: <1406764649-20326-1-git-send-email-behanw@converseincode.com>
+	<20140731103323.GL26853@arm.com>
+Date: Thu, 31 Jul 2014 08:39:55 -0700
+Message-ID: <CAOesGMiCiGwuGdOePPvE5WhZLRnG6qRvoJmBQHV4P9602Gy5DA@mail.gmail.com>
+Subject: Re: [PATCH 0/4] LLVMLinux: Patches to enable the kernel to be
+ compiled with clang/LLVM
+From: Olof Johansson <olof@lixom.net>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "behanw@converseincode.com" <behanw@converseincode.com>,
+        "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "k.khlebnikov@samsung.com" <k.khlebnikov@samsung.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "takahiro.akashi@linaro.org" <takahiro.akashi@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Thu, Jul 31, 2014 at 3:33 AM, Will Deacon <will.deacon@arm.com> wrote:
+> On Thu, Jul 31, 2014 at 12:57:25AM +0100, behanw@converseincode.com wrote:
+>> From: Behan Webster <behanw@converseincode.com>
+>>
+>> This patch set moves from using locally defined named registers to access the
+>> stack pointer to using a globally defined named register. This allows the code
+>> to work both with gcc and clang.
+>>
+>> The LLVMLinux project aims to fully build the Linux kernel using both gcc and
+>> clang (the C front end for the LLVM compiler infrastructure project).
+>>
+>> Behan Webster (4):
+>>   arm64: LLVMLinux: Add current_stack_pointer() for arm64
+>>   arm64: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
+>>   arm64: LLVMLinux: Calculate current_thread_info from
+>>     current_stack_pointer
+>>   arm64: LLVMLinux: Use current_stack_pointer in kernel/traps.c
+>
+> Once Andreas's comments have been addressed:
+>
+>   Acked-by: Will Deacon <will.deacon@arm.com>
+>
+> Please can you send a new series after the merge window?
 
-On 07/31/2014 07:49 AM, Jerome Marchand wrote:
-> When memory cgoups are enabled, the code that decides to force to
-> scan anonymous pages in get_scan_count() compares global values
-> (free, high_watermark) to a value that is restricted to a memory
-> cgroup (file). It make the code over-eager to force anon scan.
-> 
-> For instance, it will force anon scan when scanning a memcg that
-> is mainly populated by anonymous page, even when there is plenty of
-> file pages to get rid of in others memcgs, even when swappiness ==
-> 0. It breaks user's expectation about swappiness and hurts
-> performance.
-> 
-> This patch make sure that forced anon scan only happens when there
-> not enough file pages for the all zone, not just in one random
-> memcg.
-> 
-> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+Given that the ARM64 KVM guys are still actively breaking -next, and
+this is considerably smaller and lower risk than that, I think you can
+take it for 3.17?
 
-That fix is a lot smaller than I thought it would be. Nice.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
-
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJT2mL7AAoJEM553pKExN6DbzsH/ArKqWXYFfz7/hjADJXz85aK
-ygWdjpK18MbFeUMW3nL324j2567TXWpC2G7SgxSPjYnF/qvKjpoQHJk7WvisymjE
-p+5jGQAxzXgjlq0usGoFRrWUnR6vkdjTx0K8r6MO/asMLbvDBjkXvaURHdcV6fx4
-nUbkF/GRXGAGcnHOEks294w+8j8R50bugnX+IfmKo73eteNcMWU7Ga+b93kUmz3p
-4EE2PRpRKFWtpTAhpFlFI46gfu+e7I1Ziu2pzNUlYOP3P7t9pRS8YOI5JNOnyDfi
-lrbOXzoSqs6sbIlDd//A/p7u6Pzr+HnpbaxCrf9UCdNaMMqvb0gDQWv7221gI24=
-=BfHz
------END PGP SIGNATURE-----
+-Olof
