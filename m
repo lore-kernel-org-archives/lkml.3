@@ -1,58 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022AbaGaQ64 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:58:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60467 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752449AbaGaQ6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:58:54 -0400
-Message-ID: <53DA75C5.5010607@zytor.com>
-Date: Thu, 31 Jul 2014 09:58:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1753104AbaGaQ67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:58:59 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:51002 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449AbaGaQ65 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:58:57 -0400
+Date: Thu, 31 Jul 2014 09:58:52 -0700
+From: josh@joshtriplett.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v2 tip/core/rcu 03/10] rcu: Add synchronous
+ grace-period waiting for RCU-tasks
+Message-ID: <20140731165852.GD12697@cloud>
+References: <20140731003914.GA3872@linux.vnet.ibm.com>
+ <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1406767182-4356-3-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] [RESEND][v4] x86: rework tlb range flushing code
-References: <20140731154052.C7E7FBC1@viggo.jf.intel.com>
-In-Reply-To: <20140731154052.C7E7FBC1@viggo.jf.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406767182-4356-3-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2014 08:40 AM, Dave Hansen wrote:
-> x86 Maintainers,
+On Wed, Jul 30, 2014 at 05:39:35PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> I've sent this a couple of times and resolved all the feedback
-> I've received.  It has sign-offs from Mel and Rik.  Could this
-> get picked up in to the x86 tree, please?
+> It turns out to be easier to add the synchronous grace-period waiting
+> functions to RCU-tasks than to work around their absense in rcutorture,
+> so this commit adds them.  The key point is that the existence of
+> call_rcu_tasks() means that rcutorture needs an rcu_barrier_tasks().
 > 
-> Changes from v3:
->  * Include the patch I was using to gather detailed statistics
->    about the length of the ranged TLB flushes
->  * Fix some documentation typos
->  * Add a patch to rework the remote tlb flush code to plumb the
->    tracepoints in easier, and add missing tracepoints
->  * use __print_symbolic() for the human-readable tracepoint
->    descriptions
->  * change an int to bool in patch 1
->  * Specifically call out that we removed itlb vs. dtlb logic
-> 
-> Changes from v2:
->  * Added a brief comment above the ceiling tunable
->  * Updated the documentation to mention large pages and say
->    "individual flush" instead of invlpg in most cases.
-> 
-> I've run this through a variety of systems in the LKP harness,
-> as well as running it on my desktop for a few days.  I'm yet to
-> see an to see if any perfmance regressions (or gains) show up.
-> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Thanks for the resend.  Applied.
+With rcu_barrier_tasks being a trivial wrapper, why not just let
+rcutorture call synchronize_rcu_tasks directly?
 
-	-hpa
-
-
+>  include/linux/rcupdate.h |  2 ++
+>  kernel/rcu/update.c      | 55 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 57 insertions(+)
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 3299ff98ad03..17c7e25c38be 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -216,6 +216,8 @@ void synchronize_sched(void);
+>   * memory ordering guarantees.
+>   */
+>  void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
+> +void synchronize_rcu_tasks(void);
+> +void rcu_barrier_tasks(void);
+>  
+>  #ifdef CONFIG_PREEMPT_RCU
+>  
+> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+> index b92268647a01..c8d304dc6d8a 100644
+> --- a/kernel/rcu/update.c
+> +++ b/kernel/rcu/update.c
+> @@ -387,6 +387,61 @@ void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
+>  }
+>  EXPORT_SYMBOL_GPL(call_rcu_tasks);
+>  
+> +/**
+> + * synchronize_rcu_tasks - wait until an rcu-tasks grace period has elapsed.
+> + *
+> + * Control will return to the caller some time after a full rcu-tasks
+> + * grace period has elapsed, in other words after all currently
+> + * executing rcu-tasks read-side critical sections have elapsed.  These
+> + * read-side critical sections are delimited by calls to schedule(),
+> + * cond_resched_rcu_qs(), idle execution, userspace execution, calls
+> + * to synchronize_rcu_tasks(), and (in theory, anyway) cond_resched().
+> + *
+> + * This is a very specialized primitive, intended only for a few uses in
+> + * tracing and other situations requiring manipulation of function
+> + * preambles and profiling hooks.  The synchronize_rcu_tasks() function
+> + * is not (yet) intended for heavy use from multiple CPUs.
+> + *
+> + * Note that this guarantee implies further memory-ordering guarantees.
+> + * On systems with more than one CPU, when synchronize_rcu_tasks() returns,
+> + * each CPU is guaranteed to have executed a full memory barrier since the
+> + * end of its last RCU-tasks read-side critical section whose beginning
+> + * preceded the call to synchronize_rcu_tasks().  In addition, each CPU
+> + * having an RCU-tasks read-side critical section that extends beyond
+> + * the return from synchronize_rcu_tasks() is guaranteed to have executed
+> + * a full memory barrier after the beginning of synchronize_rcu_tasks()
+> + * and before the beginning of that RCU-tasks read-side critical section.
+> + * Note that these guarantees include CPUs that are offline, idle, or
+> + * executing in user mode, as well as CPUs that are executing in the kernel.
+> + *
+> + * Furthermore, if CPU A invoked synchronize_rcu_tasks(), which returned
+> + * to its caller on CPU B, then both CPU A and CPU B are guaranteed
+> + * to have executed a full memory barrier during the execution of
+> + * synchronize_rcu_tasks() -- even if CPU A and CPU B are the same CPU
+> + * (but again only if the system has more than one CPU).
+> + */
+> +void synchronize_rcu_tasks(void)
+> +{
+> +	/* Complain if the scheduler has not started.  */
+> +	rcu_lockdep_assert(!rcu_scheduler_active,
+> +			   "synchronize_rcu_tasks called too soon");
+> +
+> +	/* Wait for the grace period. */
+> +	wait_rcu_gp(call_rcu_tasks);
+> +}
+> +
+> +/**
+> + * rcu_barrier_tasks - Wait for in-flight call_rcu_tasks() callbacks.
+> + *
+> + * Although the current implementation is guaranteed to wait, it is not
+> + * obligated to, for example, if there are no pending callbacks.
+> + */
+> +void rcu_barrier_tasks(void)
+> +{
+> +	/* There is only one callback queue, so this is easy.  ;-) */
+> +	synchronize_rcu_tasks();
+> +}
+> +
+>  /* RCU-tasks kthread that detects grace periods and invokes callbacks. */
+>  static int __noreturn rcu_tasks_kthread(void *arg)
+>  {
+> -- 
+> 1.8.1.5
+> 
