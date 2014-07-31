@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaGaQ47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:56:59 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:47557 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997AbaGaQ44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:56:56 -0400
+	id S1752817AbaGaQ5c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:57:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60449 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751349AbaGaQ5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:57:30 -0400
+Message-ID: <53DA7550.40905@zytor.com>
+Date: Thu, 31 Jul 2014 09:56:48 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <20140723152649.GJ23210@lee--X1>
-References: <1406055250-29159-1-git-send-email-jaswinder.singh@linaro.org>
-	<1406055374-29275-1-git-send-email-jaswinder.singh@linaro.org>
-	<20140723085411.GG23210@lee--X1>
-	<CAJe_ZhfaLqgKb3oK-m5Rpae5+zeAEk9-DLFOovq4qjBgg64b-w@mail.gmail.com>
-	<20140723152649.GJ23210@lee--X1>
-Date: Thu, 31 Jul 2014 22:26:55 +0530
-Message-ID: <CAJe_ZhcOXyGO49sZUXnqCk9wm7WvQ01b76k7Wqxxi1S3qisDPA@mail.gmail.com>
-Subject: Re: [PATCHv9 2/4] mailbox: Introduce framework for mailbox
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Devicetree List <devicetree@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "ks.giri@samsung.com" <ks.giri@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ijc@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, robh@kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Matt Porter <mporter@linaro.org>,
-        Craig McGeachie <slapdau@yahoo.com.au>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Loic Pallardy <loic.pallardy@st.com>, "Anna, Suman" <s-anna@ti.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        Bjorn Andersson <bjorn@kryo.se>, Patch Tracking <patches@linaro.org>,
-        Tetsuya Takinishi <t.takinishi@jp.fujitsu.com>,
-        Mark Brown <broonie@linaro.org>, Kevin Hilman <khilman@linaro.org>,
-        Mollie Wu <mollie.wu@linaro.org>, Andy Green <andy.green@linaro.org>
+To: Andy Lutomirski <luto@amacapital.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+CC: Oleg Nesterov <oleg@redhat.com>, linux-arch <linux-arch@vger.kernel.org>,
+        X86 ML <x86@kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/5] x86: two-phase syscall tracing and seccomp fastpath
+References: <cover.1406604806.git.luto@amacapital.net> <20140729192056.GA6308@redhat.com> <CALCETrX6P7SJQdgc0gTM7FLdwyT_Ld1MWvkLYpTO_2xsvBC9sA@mail.gmail.com> <CALCETrXHF5YzPQDvnJs=mFNm2Ff_FekGu_Y8-JyMaWh2hctR7A@mail.gmail.com> <20140730165940.GB27954@localhost.localdomain> <CALCETrUafpWfnbfZzgu3qSGqyxcG0+6A=A1RE8g++=GrQKD93Q@mail.gmail.com>
+In-Reply-To: <CALCETrUafpWfnbfZzgu3qSGqyxcG0+6A=A1RE8g++=GrQKD93Q@mail.gmail.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 July 2014 20:56, Lee Jones <lee.jones@linaro.org> wrote:
-> On Wed, 23 Jul 2014, Jassi Brar wrote:
+On 07/30/2014 10:25 AM, Andy Lutomirski wrote:
+> 
+> And yet x86_64 has this code implemented in assembly even in the
+> slowpath.  Go figure.
+> 
 
->> >> +     if (chan->txdone_method == (TXDONE_BY_POLL | TXDONE_BY_ACK))
->> >> +             chan->txdone_method = TXDONE_BY_POLL;
->> >
->> > Unless you're leaving it there for clarity, you can drop the
->> > "TXDONE_BY_POLL |" from if().
->> >
->> We need to check for both.
->
-> What I'm trying to get at is; if it's already TXDONE_BY_POLL, there is no
-> need to set it to TXDONE_BY_POLL.
->
-In mbox_request_channel() we added the ACK flag, if POLL was set and
-now we need to revert that in mbox_free_channel().
+There is way too much assembly in entry_64.S probably because things
+have been grafted on, ahem, "organically".  It is darn nigh impossible
+to even remotely figure out what goes on in that file.
+
+	-hpa
 
 
-Thanks
-Jassi
