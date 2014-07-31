@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937AbaGaB5l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 21:57:41 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59907 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751028AbaGaB5j (ORCPT
+	id S1755962AbaGaB7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 21:59:20 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:44932 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654AbaGaB7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 21:57:39 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem to be held for duration of changing governors [v2]
-Date: Thu, 31 Jul 2014 04:16:13 +0200
-Message-ID: <3140593.vs3eOK6CdF@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53D99D80.8090905@codeaurora.org>
-References: <1406634362-811-1-git-send-email-prarit@redhat.com> <1816455.s1k7EgIPj9@vostro.rjw.lan> <53D99D80.8090905@codeaurora.org>
+	Wed, 30 Jul 2014 21:59:18 -0400
+Message-ID: <53D9A2F0.4040808@gmail.com>
+Date: Thu, 31 Jul 2014 09:59:12 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Cong Wang <cwang@twopensource.com>
+CC: "David S. Miller" <davem@davemloft.net>, Hong Zhiguo <honkiko@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        "Tao, Yue" <Yue.Tao@windriver.com>,
+        Alexandre Dietsch <alexandre.dietsch@windriver.com>,
+        zhuyj <zyjzyj2000@gmail.com>
+Subject: Re: ipv4: net namespace does not inherit network configurations
+References: <53D7697C.6020103@gmail.com> <CAHA+R7MC2gKeSWqR8pDDX26D-Th4BG1AveM+HseMMPjLBJuWDw@mail.gmail.com>
+In-Reply-To: <CAHA+R7MC2gKeSWqR8pDDX26D-Th4BG1AveM+HseMMPjLBJuWDw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 30, 2014 06:36:00 PM Saravana Kannan wrote:
-> On 07/30/2014 02:40 PM, Rafael J. Wysocki wrote:
-> > On Wednesday, July 30, 2014 10:18:25 AM Prarit Bhargava wrote:
-> >>
-> >> On 07/29/2014 08:03 PM, Rafael J. Wysocki wrote:
-> >>> On Tuesday, July 29, 2014 07:46:02 AM Prarit Bhargava wrote:
-> >
-> > [cut]
-> >
-> >>>> This patch effectively reverts commit 955ef483.
-> 
-> The issue reported in this patch is valid. We are seeing that internally 
-> too. I believe I reported it in another thread (within the past month).
-> 
-> However, the original patch fixes a real deadlock issue (I'm too tired 
-> to look it up now). We can revet the original, but it's going to bring 
-> back the original issue. I just want to make sure Prarit and Raphael 
-> realize this before proceeding.
-> 
-> I do have plans for a proper fix for the mainline (not stable branches), 
-> but plan to do that after the current set of suspend/hotplug patches go 
-> through. The fix would be easier to make after that.
-> 
-> >>>
-> >>> OK, I'm convinced by this.
-> >>>
-> >>> I suppose we should push it for -stable from 3.10 through 3.15.x, right?
-> >>
-> >> Rafael, I think that is a good idea.  I'm not sure what the protocol is for
-> >> adding stable@kernel.org though ...
-> >
-> > I'll take care of this, thanks!
-> >
-> 
-> But you aren't going to pull the in for the next release, right?
+On 07/30/2014 01:48 AM, Cong Wang wrote:
+> On Tue, Jul 29, 2014 at 2:29 AM, zhuyj <zyjzyj2000@gmail.com> wrote:
+>> Hi,all
+>>
+>> I did a test on kernel3.16 rc6:
+>>
+>> root@qemu1:~# echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
+>> root@qemu1:~# echo 1 > /proc/sys/net/ipv4/conf/all/forwarding
+>> root@qemu1:~# ip netns list
+>> root@qemu1:~# ip netns add fib1
+>> root@qemu1:~# ip netns exec fib1 bash
+>> root@qemu1:~# cat /proc/sys/net/ipv6/conf/all/forwarding
+>> 0
+>> root@qemu1:~# cat /proc/sys/net/ipv4/conf/all/forwarding
+>> 1
+>>
+>> The behavior of ipv4 and ipv6 is very inconsistent. I checked
+>> the kernel source code. I found that from this patch
+>> [ipv6: fix bad free of addrconf_init_net], the above difference
+>> appeared.
+>>
+>> Since a net namespace is independent to another. That is, there
+>> is no any relationship between the net namespaces. So the behavior
+>> of ipv4 is not correct.
+>>
+> Well, they are already independent, not shared, just that the initial
+> value is duplicated from init_net for IPv4.
+>
+> This change might break existing applications which rely on this
+> behavior, but given IPv6 change is almost the same, I think it's ok.
+>
+> BTW, you need to submit a patch as normal, instead of as an attachment.
+>
+OK. Thanks a lot.
 
-What do you mean?
-
-Rafael
-
+Zhu Yanjun
