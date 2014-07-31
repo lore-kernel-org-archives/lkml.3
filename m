@@ -1,216 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243AbaGaPgQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:36:16 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:41026 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293AbaGaPgN (ORCPT
+	id S1752601AbaGaPd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:33:58 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:56864 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003AbaGaPd4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:36:13 -0400
-Subject: [PATCH v2 2/2] powerpc/powernv: Interface to register/unregister
- opal dump region
-To: linux-kernel@vger.kernel.org
-From: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-Cc: linuxppc-dev@lists.ozlabs.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Thu, 31 Jul 2014 21:06:04 +0530
-Message-ID: <20140731153556.27134.11030.stgit@hegdevasant.in.ibm.com>
-In-Reply-To: <20140731153447.27134.44225.stgit@hegdevasant.in.ibm.com>
-References: <20140731153447.27134.44225.stgit@hegdevasant.in.ibm.com>
-User-Agent: StGit/0.16
+	Thu, 31 Jul 2014 11:33:56 -0400
+Subject: [PATCH 10/19] drm/radeon: add timeout argument to
+ radeon_fence_wait_seq
+To: airlied@linux.ie
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: thellstrom@vmware.com, nouveau@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        bskeggs@redhat.com, alexander.deucher@amd.com,
+        christian.koenig@amd.com
+Date: Thu, 31 Jul 2014 17:33:49 +0200
+Message-ID: <20140731153349.15061.6227.stgit@patser>
+In-Reply-To: <20140731153245.15061.63023.stgit@patser>
+References: <20140731153245.15061.63023.stgit@patser>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-x-cbid: 14073115-5816-0000-0000-000000424680
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PowerNV platform is capable of capturing host memory region when system
-crashes (because of host/firmware). We have new OPAL API to register/
-unregister memory region to be captured when system crashes.
+This makes it possible to wait for a specific amount of time,
+rather than wait until infinity.
 
-This patch adds support for new API. Also during boot time we register
-kernel log buffer and unregister before doing kexec.
-
-Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Reviewed-by: Christian König <deathsimple@vodafone.de>
 ---
- arch/powerpc/include/asm/opal.h                   |   15 +++++
- arch/powerpc/platforms/powernv/Makefile           |    2 -
- arch/powerpc/platforms/powernv/opal-dump-region.c |   64 +++++++++++++++++++++
- arch/powerpc/platforms/powernv/opal-wrappers.S    |    2 +
- arch/powerpc/platforms/powernv/opal.c             |    2 +
- arch/powerpc/platforms/powernv/setup.c            |    3 +
- 6 files changed, 87 insertions(+), 1 deletion(-)
- create mode 100644 arch/powerpc/platforms/powernv/opal-dump-region.c
+ drivers/gpu/drm/radeon/radeon_fence.c |   50 ++++++++++++++++++++-------------
+ 1 file changed, 30 insertions(+), 20 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/opal.h b/arch/powerpc/include/asm/opal.h
-index 0da1dbd..f9261d7 100644
---- a/arch/powerpc/include/asm/opal.h
-+++ b/arch/powerpc/include/asm/opal.h
-@@ -147,6 +147,8 @@ struct opal_sg_list {
- #define OPAL_SET_PARAM				90
- #define OPAL_DUMP_RESEND			91
- #define OPAL_DUMP_INFO2				94
-+#define OPAL_REGISTER_DUMP_REGION		101
-+#define OPAL_UNREGISTER_DUMP_REGION		102
- 
- #ifndef __ASSEMBLY__
- 
-@@ -860,6 +862,8 @@ int64_t opal_get_param(uint64_t token, uint32_t param_id, uint64_t buffer,
- int64_t opal_set_param(uint64_t token, uint32_t param_id, uint64_t buffer,
- 		uint64_t length);
- int64_t opal_sensor_read(uint32_t sensor_hndl, int token, __be32 *sensor_data);
-+int64_t opal_register_dump_region(uint32_t id, uint64_t start, uint64_t end);
-+int64_t opal_unregister_dump_region(uint32_t id);
- 
- /* Internal functions */
- extern int early_init_dt_scan_opal(unsigned long node, const char *uname,
-@@ -899,6 +903,8 @@ extern int opal_elog_init(void);
- extern void opal_platform_dump_init(void);
- extern void opal_sys_param_init(void);
- extern void opal_msglog_init(void);
-+extern void opal_dump_region_init(void);
-+extern void opal_dump_kexec_callback(void);
- 
- extern int opal_machine_check(struct pt_regs *regs);
- extern bool opal_mce_check_early_recovery(struct pt_regs *regs);
-@@ -912,6 +918,15 @@ struct opal_sg_list *opal_vmalloc_to_sg_list(void *vmalloc_addr,
- 					     unsigned long vmalloc_size);
- void opal_free_sg_list(struct opal_sg_list *sg);
- 
-+/*
-+ * Dump regions ids
-+ *   0x01 - 0x7F : OPAL
-+ *   0x80 - 0xFF : Kernel
-+ */
-+#define DUMP_REGION_HOST_START		0x80
-+#define DUMP_REGION_LOG_BUF		0x80
-+#define DUMP_REGION_HOST_END		0xFF
-+
- #endif /* __ASSEMBLY__ */
- 
- #endif /* __OPAL_H */
-diff --git a/arch/powerpc/platforms/powernv/Makefile b/arch/powerpc/platforms/powernv/Makefile
-index 4ad227d..e2819aa 100644
---- a/arch/powerpc/platforms/powernv/Makefile
-+++ b/arch/powerpc/platforms/powernv/Makefile
-@@ -1,7 +1,7 @@
- obj-y			+= setup.o opal-wrappers.o opal.o opal-async.o
- obj-y			+= opal-rtc.o opal-nvram.o opal-lpc.o opal-flash.o
- obj-y			+= rng.o opal-elog.o opal-dump.o opal-sysparam.o opal-sensor.o
--obj-y			+= opal-msglog.o
-+obj-y			+= opal-msglog.o opal-dump-region.o
- 
- obj-$(CONFIG_SMP)	+= smp.o subcore.o subcore-asm.o
- obj-$(CONFIG_PCI)	+= pci.o pci-p5ioc2.o pci-ioda.o
-diff --git a/arch/powerpc/platforms/powernv/opal-dump-region.c b/arch/powerpc/platforms/powernv/opal-dump-region.c
-new file mode 100644
-index 0000000..c3f1536
---- /dev/null
-+++ b/arch/powerpc/platforms/powernv/opal-dump-region.c
-@@ -0,0 +1,64 @@
-+/*
-+ * PowerNV OPAL dump memory region interface
-+ *
-+ * Copyright 2014 IBM Corp.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <linux/pagemap.h>
-+#include <linux/printk.h>
-+#include <asm/opal.h>
-+
-+/*
-+ * Pass kernel address range (start, size) that will be included in
-+ * system dump (collected by service processor whenever system crashes).
-+ *
-+ * @id		: Memory region ID (see opal.h)
-+ * @addr	: Start address
-+ * @size	: size in bytes
-+ */
-+static int add_dump_region_entry(uint32_t id, void *addr, uint64_t size)
-+{
-+	__be32 be_id = cpu_to_be32(id);
-+	__be64 be_addr = cpu_to_be64(__pa(addr));
-+	__be64 be_size = cpu_to_be64(size);
-+
-+	return opal_register_dump_region(be_id, be_addr, be_size);
-+}
-+
-+static int remove_dump_region_entry(uint32_t id)
-+{
-+	__be32 be_id = cpu_to_be32(id);
-+
-+	return opal_unregister_dump_region(be_id);
-+}
-+
-+/* This gets called just before kexec */
-+void opal_dump_kexec_callback(void)
-+{
-+	int rc;
-+
-+	rc = remove_dump_region_entry(DUMP_REGION_LOG_BUF);
-+	if (rc)
-+		pr_warn("DUMP: Failed to unregister kernel log buffer. "
-+			"rc = %d\n", rc);
-+}
-+
-+void __init opal_dump_region_init(void)
-+{
-+	void *addr;
-+	uint64_t size;
-+	int rc;
-+
-+	/* Register kernel log buffer */
-+	addr = get_log_buf_addr();
-+	size = get_log_buf_len();
-+	rc = add_dump_region_entry(DUMP_REGION_LOG_BUF, addr, size);
-+	if (rc)
-+		pr_warn("DUMP: Failed to register kernel log buffer. "
-+			"rc = %d\n", rc);
-+}
-diff --git a/arch/powerpc/platforms/powernv/opal-wrappers.S b/arch/powerpc/platforms/powernv/opal-wrappers.S
-index 4abbff2..0f016cb 100644
---- a/arch/powerpc/platforms/powernv/opal-wrappers.S
-+++ b/arch/powerpc/platforms/powernv/opal-wrappers.S
-@@ -146,3 +146,5 @@ OPAL_CALL(opal_sync_host_reboot,		OPAL_SYNC_HOST_REBOOT);
- OPAL_CALL(opal_sensor_read,			OPAL_SENSOR_READ);
- OPAL_CALL(opal_get_param,			OPAL_GET_PARAM);
- OPAL_CALL(opal_set_param,			OPAL_SET_PARAM);
-+OPAL_CALL(opal_register_dump_region,		OPAL_REGISTER_DUMP_REGION);
-+OPAL_CALL(opal_unregister_dump_region,		OPAL_UNREGISTER_DUMP_REGION);
-diff --git a/arch/powerpc/platforms/powernv/opal.c b/arch/powerpc/platforms/powernv/opal.c
-index 1999756..2834303 100644
---- a/arch/powerpc/platforms/powernv/opal.c
-+++ b/arch/powerpc/platforms/powernv/opal.c
-@@ -616,6 +616,8 @@ static int __init opal_init(void)
- 	/* Create "opal" kobject under /sys/firmware */
- 	rc = opal_sysfs_init();
- 	if (rc == 0) {
-+		/* Setup dump region interface */
-+		opal_dump_region_init();
- 		/* Setup error log interface */
- 		rc = opal_elog_init();
- 		/* Setup code update interface */
-diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
-index d9b88fa..644c9ba 100644
---- a/arch/powerpc/platforms/powernv/setup.c
-+++ b/arch/powerpc/platforms/powernv/setup.c
-@@ -184,6 +184,9 @@ static void pnv_shutdown(void)
- 	 * DMA'ing ops are complete (such as dump retrieval).
- 	 */
- 	opal_shutdown();
-+
-+	/* Unregister memory dump region */
-+	opal_dump_kexec_callback();
+diff --git a/drivers/gpu/drm/radeon/radeon_fence.c b/drivers/gpu/drm/radeon/radeon_fence.c
+index c055acc3a271..f79e0b34582b 100644
+--- a/drivers/gpu/drm/radeon/radeon_fence.c
++++ b/drivers/gpu/drm/radeon/radeon_fence.c
+@@ -318,22 +318,25 @@ static bool radeon_fence_any_seq_signaled(struct radeon_device *rdev, u64 *seq)
  }
  
- #ifdef CONFIG_KEXEC
+ /**
+- * radeon_fence_wait_seq - wait for a specific sequence numbers
++ * radeon_fence_wait_seq_timeout - wait for a specific sequence numbers
+  *
+  * @rdev: radeon device pointer
+  * @target_seq: sequence number(s) we want to wait for
+  * @intr: use interruptable sleep
++ * @timeout: maximum time to wait, or MAX_SCHEDULE_TIMEOUT for infinite wait
+  *
+  * Wait for the requested sequence number(s) to be written by any ring
+  * (all asics).  Sequnce number array is indexed by ring id.
+  * @intr selects whether to use interruptable (true) or non-interruptable
+  * (false) sleep when waiting for the sequence number.  Helper function
+  * for radeon_fence_wait_*().
+- * Returns 0 if the sequence number has passed, error for all other cases.
++ * Returns remaining time if the sequence number has passed, 0 when
++ * the wait timeout, or an error for all other cases.
+  * -EDEADLK is returned when a GPU lockup has been detected.
+  */
+-static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 *target_seq,
+-				 bool intr)
++static long radeon_fence_wait_seq_timeout(struct radeon_device *rdev,
++					  u64 *target_seq, bool intr,
++					  long timeout)
+ {
+ 	uint64_t last_seq[RADEON_NUM_RINGS];
+ 	bool signaled;
+@@ -355,11 +358,11 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 *target_seq,
+ 		if (intr) {
+ 			r = wait_event_interruptible_timeout(rdev->fence_queue, (
+ 				(signaled = radeon_fence_any_seq_signaled(rdev, target_seq))
+-				 || rdev->needs_reset), MAX_SCHEDULE_TIMEOUT);
++				 || rdev->needs_reset), timeout);
+ 		} else {
+ 			r = wait_event_timeout(rdev->fence_queue, (
+ 				(signaled = radeon_fence_any_seq_signaled(rdev, target_seq))
+-				 || rdev->needs_reset), MAX_SCHEDULE_TIMEOUT);
++				 || rdev->needs_reset), timeout);
+ 		}
+ 
+ 		for (i = 0; i < RADEON_NUM_RINGS; ++i) {
+@@ -370,20 +373,22 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 *target_seq,
+ 			trace_radeon_fence_wait_end(rdev->ddev, i, target_seq[i]);
+ 		}
+ 
+-		if (r < 0)
++		if (r <= 0)
+ 			return r;
+ 
+ 		if (rdev->needs_reset)
+ 			return -EDEADLK;
++
++		timeout = r;
+ 	}
+-	return 0;
++	return timeout;
+ }
+ 
+ /**
+  * radeon_fence_wait - wait for a fence to signal
+  *
+  * @fence: radeon fence object
+- * @intr: use interruptable sleep
++ * @intr: use interruptible sleep
+  *
+  * Wait for the requested fence to signal (all asics).
+  * @intr selects whether to use interruptable (true) or non-interruptable
+@@ -393,7 +398,7 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 *target_seq,
+ int radeon_fence_wait(struct radeon_fence *fence, bool intr)
+ {
+ 	uint64_t seq[RADEON_NUM_RINGS] = {};
+-	int r;
++	long r;
+ 
+ 	if (fence == NULL) {
+ 		WARN(1, "Querying an invalid fence : %p !\n", fence);
+@@ -404,9 +409,10 @@ int radeon_fence_wait(struct radeon_fence *fence, bool intr)
+ 	if (seq[fence->ring] == RADEON_FENCE_SIGNALED_SEQ)
+ 		return 0;
+ 
+-	r = radeon_fence_wait_seq(fence->rdev, seq, intr);
+-	if (r)
++	r = radeon_fence_wait_seq_timeout(fence->rdev, seq, intr, MAX_SCHEDULE_TIMEOUT);
++	if (r < 0) {
+ 		return r;
++	}
+ 
+ 	fence->seq = RADEON_FENCE_SIGNALED_SEQ;
+ 	return 0;
+@@ -431,7 +437,7 @@ int radeon_fence_wait_any(struct radeon_device *rdev,
+ {
+ 	uint64_t seq[RADEON_NUM_RINGS];
+ 	unsigned i, num_rings = 0;
+-	int r;
++	long r;
+ 
+ 	for (i = 0; i < RADEON_NUM_RINGS; ++i) {
+ 		seq[i] = 0;
+@@ -452,8 +458,8 @@ int radeon_fence_wait_any(struct radeon_device *rdev,
+ 	if (num_rings == 0)
+ 		return -ENOENT;
+ 
+-	r = radeon_fence_wait_seq(rdev, seq, intr);
+-	if (r) {
++	r = radeon_fence_wait_seq_timeout(rdev, seq, intr, MAX_SCHEDULE_TIMEOUT);
++	if (r < 0) {
+ 		return r;
+ 	}
+ 	return 0;
+@@ -472,6 +478,7 @@ int radeon_fence_wait_any(struct radeon_device *rdev,
+ int radeon_fence_wait_next(struct radeon_device *rdev, int ring)
+ {
+ 	uint64_t seq[RADEON_NUM_RINGS] = {};
++	long r;
+ 
+ 	seq[ring] = atomic64_read(&rdev->fence_drv[ring].last_seq) + 1ULL;
+ 	if (seq[ring] >= rdev->fence_drv[ring].sync_seq[ring]) {
+@@ -479,7 +486,10 @@ int radeon_fence_wait_next(struct radeon_device *rdev, int ring)
+ 		   already the last emited fence */
+ 		return -ENOENT;
+ 	}
+-	return radeon_fence_wait_seq(rdev, seq, false);
++	r = radeon_fence_wait_seq_timeout(rdev, seq, false, MAX_SCHEDULE_TIMEOUT);
++	if (r < 0)
++		return r;
++	return 0;
+ }
+ 
+ /**
+@@ -495,18 +505,18 @@ int radeon_fence_wait_next(struct radeon_device *rdev, int ring)
+ int radeon_fence_wait_empty(struct radeon_device *rdev, int ring)
+ {
+ 	uint64_t seq[RADEON_NUM_RINGS] = {};
+-	int r;
++	long r;
+ 
+ 	seq[ring] = rdev->fence_drv[ring].sync_seq[ring];
+ 	if (!seq[ring])
+ 		return 0;
+ 
+-	r = radeon_fence_wait_seq(rdev, seq, false);
+-	if (r) {
++	r = radeon_fence_wait_seq_timeout(rdev, seq, false, MAX_SCHEDULE_TIMEOUT);
++	if (r < 0) {
+ 		if (r == -EDEADLK)
+ 			return -EDEADLK;
+ 
+-		dev_err(rdev->dev, "error waiting for ring[%d] to become idle (%d)\n",
++		dev_err(rdev->dev, "error waiting for ring[%d] to become idle (%ld)\n",
+ 			ring, r);
+ 	}
+ 	return 0;
 
