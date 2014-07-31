@@ -1,169 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932297AbaGaGxx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 02:53:53 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:35704 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932279AbaGaGxu (ORCPT
+	id S932351AbaGaGyI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 02:54:08 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:64294 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932279AbaGaGx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 02:53:50 -0400
-Date: Wed, 30 Jul 2014 23:53:47 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-cc: Grant Likely <grant.likely@linaro.org>, Andi Kleen <ak@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Tony Luck <tony.luck@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Len Brown <len.brown@intel.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: [patch 8/9] x86, apic: Remove setup_portio_remap callback
-In-Reply-To: <alpine.DEB.2.02.1407302346450.17503@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1407302351480.17503@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1407302346450.17503@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 31 Jul 2014 02:53:59 -0400
+Date: Wed, 30 Jul 2014 23:54:26 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi-private@linaro.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH 10/19] ARM64 / ACPI: Get the enable method for SMP
+ initialization in ACPI way
+Message-ID: <20140731065426.GA876@quad.lixom.net>
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
+ <1406206825-15590-11-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406206825-15590-11-git-send-email-hanjun.guo@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit b5660ba76b41 ("x86, platforms: Remove NUMAQ") removed NUMAQ,
-the setup_portio_remap() apic callback has been obsolete.  Remove it.
+Hi,
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/x86/include/asm/apic.h           | 1 -
- arch/x86/kernel/apic/apic_flat_64.c   | 2 --
- arch/x86/kernel/apic/apic_noop.c      | 1 -
- arch/x86/kernel/apic/apic_numachip.c  | 1 -
- arch/x86/kernel/apic/bigsmp_32.c      | 1 -
- arch/x86/kernel/apic/probe_32.c       | 1 -
- arch/x86/kernel/apic/x2apic_cluster.c | 1 -
- arch/x86/kernel/apic/x2apic_phys.c    | 1 -
- arch/x86/kernel/apic/x2apic_uv_x.c    | 1 -
- arch/x86/kernel/smpboot.c             | 4 ----
- 10 files changed, 14 deletions(-)
+On Thu, Jul 24, 2014 at 09:00:16PM +0800, Hanjun Guo wrote:
+> +/*
+> + * In ACPI mode, the cpu possible map was enumerated before SMP
+> + * initialization when MADT table was parsed, so we can get the
+> + * possible map here to initialize CPUs.
+> + */
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -302,7 +302,6 @@ struct apic {
- 	void (*setup_apic_routing)(void);
- 	int (*cpu_present_to_apicid)(int mps_cpu);
- 	void (*apicid_to_cpu_present)(int phys_apicid, physid_mask_t *retmap);
--	void (*setup_portio_remap)(void);
- 	int (*check_phys_apicid_present)(int phys_apicid);
- 	void (*enable_apic_mode)(void);
- 	int (*phys_pkg_id)(int cpuid_apic, int index_msb);
-diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
---- a/arch/x86/kernel/apic/apic_flat_64.c
-+++ b/arch/x86/kernel/apic/apic_flat_64.c
-@@ -176,7 +176,6 @@ static struct apic apic_flat =  {
- 	.setup_apic_routing		= NULL,
- 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
- 	.apicid_to_cpu_present		= NULL,
--	.setup_portio_remap		= NULL,
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= flat_phys_pkg_id,
-@@ -286,7 +285,6 @@ static struct apic apic_physflat =  {
- 	.setup_apic_routing		= NULL,
- 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
- 	.apicid_to_cpu_present		= NULL,
--	.setup_portio_remap		= NULL,
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= flat_phys_pkg_id,
-diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
---- a/arch/x86/kernel/apic/apic_noop.c
-+++ b/arch/x86/kernel/apic/apic_noop.c
-@@ -134,7 +134,6 @@ struct apic apic_noop = {
- 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
- 	.apicid_to_cpu_present		= physid_set_mask_of_physid,
- 
--	.setup_portio_remap		= NULL,
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 
-diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
---- a/arch/x86/kernel/apic/apic_numachip.c
-+++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -225,7 +225,6 @@ static const struct apic apic_numachip __refconst = {
- 	.setup_apic_routing		= NULL,
- 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
- 	.apicid_to_cpu_present		= NULL,
--	.setup_portio_remap		= NULL,
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= numachip_phys_pkg_id,
-diff --git a/arch/x86/kernel/apic/bigsmp_32.c b/arch/x86/kernel/apic/bigsmp_32.c
---- a/arch/x86/kernel/apic/bigsmp_32.c
-+++ b/arch/x86/kernel/apic/bigsmp_32.c
-@@ -171,7 +171,6 @@ static struct apic apic_bigsmp = {
- 	.setup_apic_routing		= bigsmp_setup_apic_routing,
- 	.cpu_present_to_apicid		= bigsmp_cpu_present_to_apicid,
- 	.apicid_to_cpu_present		= physid_set_mask_of_physid,
--	.setup_portio_remap		= NULL,
- 	.check_phys_apicid_present	= bigsmp_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= bigsmp_phys_pkg_id,
-diff --git a/arch/x86/kernel/apic/probe_32.c b/arch/x86/kernel/apic/probe_32.c
---- a/arch/x86/kernel/apic/probe_32.c
-+++ b/arch/x86/kernel/apic/probe_32.c
-@@ -96,7 +96,6 @@ static struct apic apic_default = {
- 	.setup_apic_routing		= setup_apic_flat_routing,
- 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
- 	.apicid_to_cpu_present		= physid_set_mask_of_physid,
--	.setup_portio_remap		= NULL,
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= default_phys_pkg_id,
-diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
---- a/arch/x86/kernel/apic/x2apic_cluster.c
-+++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -257,7 +257,6 @@ static struct apic apic_x2apic_cluster = {
- 	.setup_apic_routing		= NULL,
- 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
- 	.apicid_to_cpu_present		= NULL,
--	.setup_portio_remap		= NULL,
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= x2apic_phys_pkg_id,
-diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -111,7 +111,6 @@ static struct apic apic_x2apic_phys = {
- 	.setup_apic_routing		= NULL,
- 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
- 	.apicid_to_cpu_present		= NULL,
--	.setup_portio_remap		= NULL,
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= x2apic_phys_pkg_id,
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -373,7 +373,6 @@ static struct apic __refdata apic_x2apic_uv_x = {
- 	.setup_apic_routing		= NULL,
- 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
- 	.apicid_to_cpu_present		= NULL,
--	.setup_portio_remap		= NULL,
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
- 	.phys_pkg_id			= uv_phys_pkg_id,
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1139,10 +1139,6 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
- 		enable_IO_APIC();
- 
- 	bsp_end_local_APIC_setup();
--
--	if (apic->setup_portio_remap)
--		apic->setup_portio_remap();
--
- 	smpboot_setup_io_apic();
- 	/*
- 	 * Set up local APIC timer on boot CPU.
+The DT smp init will warn if the kernel has been build with too low NR_CPUS.
+Does the ACPI core already warn, or did that go missing with this separate code
+path?
+
+> +static void __init acpi_smp_init_cpus(void)
+> +{
+> +	int cpu;
+> +
+> +	for_each_possible_cpu(cpu) {
+> +		if (cpu_acpi_read_ops(cpu) != 0)
+> +			continue;
+> +
+> +		cpu_ops[cpu]->cpu_init(NULL, cpu);
+> +	}
+> +}
+> +
+> +void __init smp_init_cpus(void)
+> +{
+> +	if (acpi_disabled)
+> +		of_smp_init_cpus();
+> +	else
+> +		acpi_smp_init_cpus();
+
+I'm liking these deeply split code paths less and less every time I see
+them. :(
+
+I would prefer to set up shared state in separate functions, but keep the
+control flow the same. Right now you're splitting it completely.
+
+I.e. split data setup between the two, but do the loop calling cpu_init()
+the same way. (Yes, that will require you to refactor the DT code path
+a bit too...)
+
+
+-Olof
