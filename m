@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068AbaGaQpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:45:53 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:42342 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300AbaGaQpu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:45:50 -0400
+	id S1753013AbaGaQpw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:45:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46884 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751292AbaGaQpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:45:49 -0400
+Date: Thu, 31 Jul 2014 18:42:46 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v4 2/5] x86,entry: Only call user_exit if TIF_NOHZ
+Message-ID: <20140731164246.GA15974@redhat.com>
+References: <cover.1406604806.git.luto@amacapital.net> <7123b2489cc5d1d5abb7bcf1364ca729cab3e6ca.1406604806.git.luto@amacapital.net> <20140729193232.GA8153@redhat.com> <20140730164344.GA27954@localhost.localdomain> <CALCETrUVaz3JFiNbyU=r3M-E9muHa1ffn7RX+_-4V_0U-hVaPw@mail.gmail.com> <20140731151630.GA7842@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <20140731163805.GK11610@cbox>
-References: <1404914112-7298-1-git-send-email-alex.bennee@linaro.org>
- <20140731143538.GI11610@cbox> <87mwbpimgz.fsf@linaro.org> <20140731163805.GK11610@cbox>
-From: Peter Maydell <peter.maydell@linaro.org>
-Date: Thu, 31 Jul 2014 17:45:28 +0100
-Message-ID: <CAFEAcA91efUg3MVpLScNBkxZSEgDP0zNnmxxr055fAz5=vDCoA@mail.gmail.com>
-Subject: Re: [PATCH] arm64: KVM: export current vcpu->pause state via pseudo regs
-To: Christoffer Dall <christoffer.dall@linaro.org>
-Cc: =?UTF-8?B?QWxleCBCZW5uw6ll?= <alex.bennee@linaro.org>,
-        kvm-devel <kvm@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        arm-mail-list <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140731151630.GA7842@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 July 2014 17:38, Christoffer Dall <christoffer.dall@linaro.org> wrote:
->> > If we are not complaining when setting the pause value to false if it
->> > was true before, then we probably also need to wake up the thread in
->> > case this is called from another thread, right?
->> >
->> > or perhaps we should just return an error if you're trying to un-pause a
->> > CPU through this interface, hmmmm.
->>
->> Wouldn't it be an error to mess with any register when the system is not
->> in a quiescent state? I was assuming that the wake state is dealt with
->> when the run loop finally restarts.
->>
+On 07/31, Frederic Weisbecker wrote:
 >
-> The ABI doesn't really define it as an error (the ABI doesn't enforce
-> anything right now) so the question is, does it ever make sense to clear
-> the pause flag through this ioctl?  If not, I think we should just err
-> on the side of caution and specify in the docs that this is not
-> supported and return an error.
+> On Wed, Jul 30, 2014 at 10:23:34AM -0700, Andy Lutomirski wrote:
+> >
+> > At the end of the day, the syscall slowpath code calls a bunch of
+> > functions depending on what TIF_XYZ flags are set.  As long as it's
+> > structured like "if (TIF_A) do_a(); if (TIF_B) do_b();" or something
+> > like that, it's comprehensible.  But once random functions with no
+> > explicit flag checks or comments start showing up, it gets confusing.
+>
+> Yeah that's a point. I don't mind much the TIF_NOHZ test if you like.
 
-Consider the case where the reset state of the system is
-"CPU 0 running, CPUs 1..N stopped", and we're doing an
-incoming migration to a state where all CPUs are running.
-In that case we'll be using this ioctl to clear the pause flag,
-right? (We'll also obviously need to set the PC and other
-register state correctly before resuming the guest.)
+And in my opinion
 
-thanks
--- PMM
+	if (work & TIF_XYZ)
+		user_exit();
+
+looks even more confusing. Because, once again, TIF_XYZ is not the
+reason to call user_exit().
+
+Not to mention this adds a minor performance penalty.
+
+> > If it's indeed all-or-nothing, I could remove the check and add a
+> > comment.  But please keep in mind that, currently, the slow path is
+> > *slow*, and my patches only improve the entry case.  So enabling
+> > context tracking on every task will hurt.
+>
+> That's what we do anyway. I haven't found a safe way to enabled context tracking
+> without tracking all CPUs.
+
+And if we change this, then the code above becomes racy. The state of
+TIF_XYZ can be changed right after the check. OK, it is racy anyway ;)
+but still this adds more confusion.
+
+I feel that TIF_XYZ must die. But yes, yes, I know that it is very simple
+to say this. And no, so far I do not know how we can improve this all.
+
+
+But again, again, I won't insist. Just another "can't resist" email,
+please ignore.
+
+Oleg.
+
