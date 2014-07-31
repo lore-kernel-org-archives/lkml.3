@@ -1,184 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbaGaLlk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 07:41:40 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:46304 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716AbaGaLkP (ORCPT
+	id S1751232AbaGaLnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 07:43:00 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:62233 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711AbaGaLm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 07:40:15 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v4 RESEND 1/6] clk: Add temporary mapping to the existing API
-Date: Thu, 31 Jul 2014 13:39:35 +0200
-Message-Id: <1406806779-26939-2-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1406806779-26939-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1406806779-26939-1-git-send-email-tomeu.vizoso@collabora.com>
+	Thu, 31 Jul 2014 07:42:58 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC] pwm-backlight: Allow backlight to remain disabled on boot
+Date: Thu, 31 Jul 2014 13:42:50 +0200
+Message-Id: <1406806970-12561-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To preserve git-bisectability, add aliases from the future provider API to the
-existing public API.
+From: Thierry Reding <treding@nvidia.com>
 
-Also includes clk-provider.h and clk-dev.h in a few places so the right
-functions are defined.
+The default for backlight devices is to be enabled immediately when
+registering with the backlight core. This can be useful for setups that
+use a simple framebuffer device and where the backlight cannot otherwise
+be hooked up to the panel.
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+However, when dealing with more complex setups, such as those of recent
+ARM SoCs, this can be problematic. Since the backlight is usually setup
+separately from the display controller, the probe order is not usually
+deterministic. That can lead to situations where the backlight will be
+powered up and the panel will show an uninitialized framebuffer.
 
+Furthermore, subsystems such as DRM have advanced functionality to set
+the power mode of a panel. In order to allow such setups to power up the
+panel at exactly the right moment, a way is needed to prevent the
+backlight core from powering the backlight up automatically when it is
+registered.
+
+This commit introduces a new boot_off field in the platform data (and
+also implements getting the same information from device tree). When set
+the initial backlight power mode will be set to "off".
+
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
+I've been meaning to send this for a while but was always holding back
+because of the indoctrination that this type of configuration shouldn't
+be part of device tree. However this issue was recently raised again in
+the context of power up sequences for display panels. As described above
+the issue is that panel datasheets recommend that the backlight attached
+to a panel be turned on at the very last step to avoid visual glitches
+during the panel's power up sequence. With the current implementation it
+is typical for the backlight to be probed before the display panel. That
+has, in many cases, the side-effect of enabling the backlight, therefore
+making the screen content visible before it's actually initialized.
 
-v4:	* Add more clk-provider.h includes to clk implementations
-	* Add mapping for clk_provider_round_rate
----
- arch/arm/mach-omap2/display.c                 |  1 +
- arch/arm/mach-omap2/omap_device.c             |  1 +
- arch/arm/plat-orion/common.c                  |  1 +
- drivers/clk/berlin/bg2.c                      |  1 +
- drivers/clk/berlin/bg2q.c                     |  1 +
- drivers/clk/clkdev.c                          |  1 +
- drivers/media/platform/exynos4-is/media-dev.c |  1 +
- include/linux/clk-provider.h                  | 23 +++++++++++++++++++++++
- include/linux/clk/zynq.h                      |  1 +
- 9 files changed, 31 insertions(+)
+Some panels come up with random garbage when uninitialized, others show
+all white. With some luck the panel will be all black and users won't
+really notice.
 
-diff --git a/arch/arm/mach-omap2/display.c b/arch/arm/mach-omap2/display.c
-index bf852d7..0f9e479 100644
---- a/arch/arm/mach-omap2/display.c
-+++ b/arch/arm/mach-omap2/display.c
-@@ -21,6 +21,7 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/clk.h>
-+#include <linux/clk-provider.h>
- #include <linux/err.h>
- #include <linux/delay.h>
- #include <linux/of.h>
-diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
-index 01ef59d..fbe8cf0 100644
---- a/arch/arm/mach-omap2/omap_device.c
-+++ b/arch/arm/mach-omap2/omap_device.c
-@@ -32,6 +32,7 @@
- #include <linux/io.h>
- #include <linux/clk.h>
- #include <linux/clkdev.h>
-+#include <linux/clk-provider.h>
- #include <linux/pm_runtime.h>
- #include <linux/of.h>
- #include <linux/notifier.h>
-diff --git a/arch/arm/plat-orion/common.c b/arch/arm/plat-orion/common.c
-index 3ec6e8e..961b593 100644
---- a/arch/arm/plat-orion/common.c
-+++ b/arch/arm/plat-orion/common.c
-@@ -15,6 +15,7 @@
- #include <linux/serial_8250.h>
- #include <linux/ata_platform.h>
- #include <linux/clk.h>
-+#include <linux/clk-provider.h>
- #include <linux/clkdev.h>
- #include <linux/mv643xx_eth.h>
- #include <linux/mv643xx_i2c.h>
-diff --git a/drivers/clk/berlin/bg2.c b/drivers/clk/berlin/bg2.c
-index 515fb13..4c81e09 100644
---- a/drivers/clk/berlin/bg2.c
-+++ b/drivers/clk/berlin/bg2.c
-@@ -19,6 +19,7 @@
+This patch is an attempt to enable boards to override the default of
+turning on the backlight for the pwm-backlight driver. I'm not sure if
+there was a specific reason to turn on the backlight by default when
+this driver was initially written, but the fact is that since it has
+pretty much always been like this we can't really go and change the
+default, otherwise a lot of people may end up with no backlight and no
+clue as to how to enable it. So the only reasonable thing we can do is
+to keep the old behaviour and give new boards a way to override it if
+they know that some other part of the stack will enable it at the right
+moment.
+
+ .../devicetree/bindings/video/backlight/pwm-backlight.txt         | 1 +
+ drivers/video/backlight/pwm_bl.c                                  | 8 ++++++++
+ include/linux/pwm_backlight.h                                     | 2 ++
+ 3 files changed, 11 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+index 764db86d441a..65e001a1733d 100644
+--- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
++++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+@@ -17,6 +17,7 @@ Optional properties:
+                "pwms" property (see PWM binding[0])
+   - enable-gpios: contains a single GPIO specifier for the GPIO which enables
+                   and disables the backlight (see GPIO binding[1])
++  - backlight-boot-off: keep the backlight disabled on boot
  
- #include <linux/clk.h>
- #include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
- #include <linux/kernel.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-diff --git a/drivers/clk/berlin/bg2q.c b/drivers/clk/berlin/bg2q.c
-index 21784e4..748da9b 100644
---- a/drivers/clk/berlin/bg2q.c
-+++ b/drivers/clk/berlin/bg2q.c
-@@ -19,6 +19,7 @@
+ [0]: Documentation/devicetree/bindings/pwm/pwm.txt
+ [1]: Documentation/devicetree/bindings/gpio/gpio.txt
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index d7a3d13e72ec..62adfc9d37a7 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -173,6 +173,8 @@ static int pwm_backlight_parse_dt(struct device *dev,
+ 		data->max_brightness--;
+ 	}
  
- #include <linux/clk.h>
- #include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
- #include <linux/kernel.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index f890b90..000c1ae 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -18,6 +18,7 @@
- #include <linux/string.h>
- #include <linux/mutex.h>
- #include <linux/clk.h>
-+#include <linux/clk-provider.h>
- #include <linux/clkdev.h>
- #include <linux/of.h>
- 
-diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
-index 344718d..2620c48 100644
---- a/drivers/media/platform/exynos4-is/media-dev.c
-+++ b/drivers/media/platform/exynos4-is/media-dev.c
-@@ -13,6 +13,7 @@
- #include <linux/bug.h>
- #include <linux/clk.h>
- #include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
- #include <linux/device.h>
- #include <linux/errno.h>
- #include <linux/i2c.h>
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 0c287db..8e4a58d 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -16,6 +16,29 @@
- 
- #ifdef CONFIG_COMMON_CLK
- 
-+/* Temporarily map the to-be-added API to the old API, just so stuff compiles */
-+#define clk_core			clk
++	data->boot_off = of_property_read_bool(node, "backlight-boot-off");
 +
-+#define __clk_create_clk
-+
-+#define clk_provider_get		clk_get
-+#define clk_provider_get_sys		clk_get_sys
-+#define devm_clk_provider_get		devm_clk_get
-+#define of_clk_provider_get		of_clk_get
-+#define of_clk_provider_get_by_name	of_clk_get_by_name
-+
-+#define clk_provider_set_rate		clk_set_rate
-+#define clk_provider_get_rate		clk_get_rate
-+#define clk_provider_round_rate		clk_round_rate
-+#define clk_provider_set_parent		clk_set_parent
-+#define clk_provider_get_parent		clk_get_parent
-+#define clk_provider_prepare		clk_prepare
-+#define clk_provider_unprepare		clk_unprepare
-+#define clk_provider_enable		clk_enable
-+#define clk_provider_disable		clk_disable
-+#define clk_provider_prepare_enable	clk_prepare_enable
-+#define clk_provider_disable_unprepare	clk_unprepare
-+
- /*
-  * flags used across common struct clk.  these flags should only affect the
-  * top-level framework.  custom flags for dealing with hardware specifics
-diff --git a/include/linux/clk/zynq.h b/include/linux/clk/zynq.h
-index 7a5633b..a990a59 100644
---- a/include/linux/clk/zynq.h
-+++ b/include/linux/clk/zynq.h
-@@ -21,6 +21,7 @@
- #define __LINUX_CLK_ZYNQ_H_
+ 	return 0;
+ }
  
- #include <linux/spinlock.h>
-+#include <linux/clk-provider.h>
+@@ -317,6 +319,12 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 	}
  
- void zynq_clock_init(void);
+ 	bl->props.brightness = data->dft_brightness;
++
++	if (data->boot_off)
++		bl->props.power = FB_BLANK_POWERDOWN;
++	else
++		bl->props.power = FB_BLANK_UNBLANK;
++
+ 	backlight_update_status(bl);
  
+ 	platform_set_drvdata(pdev, bl);
+diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
+index efdd9227a49c..1fc14989da4a 100644
+--- a/include/linux/pwm_backlight.h
++++ b/include/linux/pwm_backlight.h
+@@ -15,6 +15,8 @@ struct platform_pwm_backlight_data {
+ 	unsigned int *levels;
+ 	/* TODO remove once all users are switched to gpiod_* API */
+ 	int enable_gpio;
++	bool boot_off;
++
+ 	int (*init)(struct device *dev);
+ 	int (*notify)(struct device *dev, int brightness);
+ 	void (*notify_after)(struct device *dev, int brightness);
 -- 
-1.9.3
+2.0.3
 
