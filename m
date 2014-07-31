@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146AbaGaFrs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 01:47:48 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:61095 "EHLO
+	id S1754063AbaGaFrq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 01:47:46 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:61084 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaGaFro (ORCPT
+	with ESMTP id S1751262AbaGaFro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Jul 2014 01:47:44 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/8] perf tools: Left-align output contents
-Date: Thu, 31 Jul 2014 14:47:35 +0900
-Message-Id: <1406785662-5534-2-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 7/8] perf tools: Fix column alignment when headers aren't shown on TUI
+Date: Thu, 31 Jul 2014 14:47:41 +0900
+Message-Id: <1406785662-5534-8-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1406785662-5534-1-git-send-email-namhyung@kernel.org>
 References: <1406785662-5534-1-git-send-email-namhyung@kernel.org>
@@ -25,56 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now perf left-aligns column headers but the contents does not.  It
-should have same alignment.  This requires a change in pid sort key -
-it consists of two part (pid and comm).  As length of comm can be vary
-it'd be better to change the order of them.
+If user sets ui.show-headers config option to false, it didn't
+calculate default column width so it broke the alignment.  This is
+because it does the calculation just before showing headers.
 
-Thanks to Jiri Olsa for pointing this out.
+Move it to the beginning of the hist browser so that it can be called
+regardless of the config option.
 
+Reported-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/sort.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ tools/perf/ui/browsers/hists.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 14e5a039bc45..eda9ee836cee 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -70,12 +70,12 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
- 				       size_t size, unsigned int width)
- {
- 	const char *comm = thread__comm_str(he->thread);
--	return repsep_snprintf(bf, size, "%*s:%5d", width - 6,
--			       comm ?: "", he->thread->tid);
-+	return repsep_snprintf(bf, size, "%5d:%-*s", he->thread->tid,
-+			       width - 6, comm ?: "");
- }
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index e07d4e848d5c..045c1e16ac59 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -850,9 +850,6 @@ static int hists__scnprintf_headers(char *buf, size_t size, struct hists *hists)
+ 		if (perf_hpp__should_skip(fmt))
+ 			continue;
  
- struct sort_entry sort_thread = {
--	.se_header	= "Command:  Pid",
-+	.se_header	= "  Pid:Command",
- 	.se_cmp		= sort__thread_cmp,
- 	.se_snprintf	= hist_entry__thread_snprintf,
- 	.se_width_idx	= HISTC_THREAD,
-@@ -106,7 +106,7 @@ sort__comm_sort(struct hist_entry *left, struct hist_entry *right)
- static int hist_entry__comm_snprintf(struct hist_entry *he, char *bf,
- 				     size_t size, unsigned int width)
- {
--	return repsep_snprintf(bf, size, "%*s", width, comm__str(he->comm));
-+	return repsep_snprintf(bf, size, "%-*s", width, comm__str(he->comm));
- }
+-		/* We need to ensure length of the columns header. */
+-		perf_hpp__reset_width(fmt, hists);
+-
+ 		ret = fmt->header(fmt, &dummy_hpp, hists_to_evsel(hists));
+ 		if (advance_hpp_check(&dummy_hpp, ret))
+ 			break;
+@@ -1501,6 +1498,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 	char buf[64];
+ 	char script_opt[64];
+ 	int delay_secs = hbt ? hbt->refresh : 0;
++	struct perf_hpp_fmt *fmt;
  
- struct sort_entry sort_comm = {
-@@ -305,7 +305,7 @@ static int hist_entry__srcline_snprintf(struct hist_entry *he, char *bf,
- 					size_t size,
- 					unsigned int width __maybe_unused)
- {
--	return repsep_snprintf(bf, size, "%s", he->srcline);
-+	return repsep_snprintf(bf, size, "%-s", he->srcline);
- }
+ #define HIST_BROWSER_HELP_COMMON					\
+ 	"h/?/F1        Show this window\n"				\
+@@ -1550,6 +1548,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
  
- struct sort_entry sort_srcline = {
+ 	memset(options, 0, sizeof(options));
+ 
++	perf_hpp__for_each_format(fmt)
++		perf_hpp__reset_width(fmt, hists);
++
+ 	if (symbol_conf.col_width_list_str)
+ 		perf_hpp__set_user_width(symbol_conf.col_width_list_str);
+ 
 -- 
 2.0.0
 
