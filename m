@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358AbaGaOJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 10:09:56 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40523 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876AbaGaOJz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 10:09:55 -0400
-Date: Thu, 31 Jul 2014 15:07:53 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>, Michael Welling <mwelling@ieee.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Joe Schultz <jschultz@xes-inc.com>, Ingo Molnar <mingo@elte.hu>,
-        Doug Anderson <dianders@chromium.org>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] serial/8250: Add support for RS485 IOCTLs
-Message-ID: <20140731150753.3f12fc2f@alan.etchedpixels.co.uk>
-In-Reply-To: <1406651242-20689-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1406651242-20689-1-git-send-email-ricardo.ribalda@gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1751495AbaGaONI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 10:13:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46934 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750853AbaGaONG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 10:13:06 -0400
+Subject: [PATCH] PKCS#7: issuer and subject are mandatory fields in the ASN.1
+From: David Howells <dhowells@redhat.com>
+To: dan.carpenter@oracle.com
+Cc: keyrings@linux-nfs.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dhowells@redhat.com,
+        linux-security-module@vger.kernel.org, vgoyal@redhat.com
+Date: Thu, 31 Jul 2014 15:11:03 +0100
+Message-ID: <20140731141103.16348.91901.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch allow the users of the 8250 infrastructure to define a
-> handler for RS485 configration.
+issuer and subject are mandatory fields in the ASN.1 and so their existence
+needn't be tested for.  They are guaranteed to end up with an empty string if
+the name material has nothing we can use (see x509_fabricate_name()).
 
-This feels to me like the right code in the wrong place.
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+ crypto/asymmetric_keys/pkcs7_verify.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index 51ff36f3a913..c62cf8006e1f 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -190,14 +190,12 @@ static int pkcs7_verify_sig_chain(struct pkcs7_message *pkcs7,
+ 		if (ret < 0)
+ 			return ret;
  
-> If no handler is defined the 8250 driver will work as usual.
-
-Is there any reasons we can't have uart_ops.rs485_config and the RS485
-ioctl logic in the serial_core, or even push rs485_get/put into the tty
-ioctl handler and tty ops so it's not duplicated everywhere ?
+-		if (x509->issuer)
+-			pr_debug("- issuer %s\n", x509->issuer);
++		pr_debug("- issuer %s\n", x509->issuer);
+ 		if (x509->authority)
+ 			pr_debug("- authkeyid %s\n", x509->authority);
  
-> +	switch (cmd) {
-> +	case TIOCSRS485:
-> +		if (copy_from_user(&rs485_config, (void __user *)arg,
-> +				   sizeof(rs485_config)))
-> +			return -EFAULT;
-> +
-> +		ret = up->rs485_config(up, &rs485_config);
-> +		if (ret)
-> +			return ret;
-> +
-> +		memcpy(&up->rs485, &rs485_config, sizeof(rs485_config));
-> +
-> +		return 0;
-> +	case TIOCGRS485:
-> +		if (copy_to_user((void __user *)arg, &up->rs485,
-> +				 sizeof(up->rs485)))
-> +			return -EFAULT;
-> +		return 0;
+ 		if (!x509->authority ||
+-		    (x509->subject &&
+-		     strcmp(x509->subject, x509->issuer) == 0)) {
++		    strcmp(x509->subject, x509->issuer) == 0) {
+ 			/* If there's no authority certificate specified, then
+ 			 * the certificate must be self-signed and is the root
+ 			 * of the chain.  Likewise if the cert is its own
 
-Possibly your mutex needs to cover parallel get an set, but then again
-anyone doing that may well deserve what they get 8)
-
-Alan
