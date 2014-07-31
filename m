@@ -1,121 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432AbaGaKoa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 06:44:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:60670 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755166AbaGaKo2 (ORCPT
+	id S1751584AbaGaKrA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 06:47:00 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:50088 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764AbaGaKq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 06:44:28 -0400
-Date: Thu, 31 Jul 2014 12:44:24 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: Re: [PATCH 1/3] irq / PM: New driver interface for wakeup
- interrupts
-In-Reply-To: <2084079.fEC1AulnFk@vostro.rjw.lan>
-Message-ID: <alpine.DEB.2.10.1407311230420.4997@nanos>
-References: <20140724212620.GO3935@laptop> <alpine.DEB.2.10.1407302350260.4170@nanos> <alpine.DEB.2.10.1407310137510.4997@nanos> <2084079.fEC1AulnFk@vostro.rjw.lan>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 31 Jul 2014 06:46:58 -0400
+Date: Thu, 31 Jul 2014 12:46:49 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        Varun Sethi <varun.sethi@freescale.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140731104648.GD7458@ulmo>
+References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
+ <20140730152646.GC20162@leverpostej>
+ <20140731083923.GA31218@ulmo>
+ <20140731092241.GA21850@leverpostej>
+ <20140731101807.GB7458@ulmo>
+ <20140731102351.GJ9809@8bytes.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TD8GDToEDw0WLGOL"
+Content-Disposition: inline
+In-Reply-To: <20140731102351.GJ9809@8bytes.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jul 2014, Rafael J. Wysocki wrote:
 
-> On Thursday, July 31, 2014 02:12:11 AM Thomas Gleixner wrote:
-> > On Thu, 31 Jul 2014, Thomas Gleixner wrote:
-> > > On Wed, 30 Jul 2014, Rafael J. Wysocki wrote:
-> > > Before this code changes in any way I want to see:
-> > > 
-> > >  1) a description of the existing semantics and their background
-> 
-> On that one, the meaning of IRQF_NO_SUSPEND is quite simple to me.
-> 
-> If it is set (for the first irqaction in a given irq_desc)
-> suspend_device_irqs() will leave that IRQ alone (that is, will not
-> disable it and will not mark it as IRQS_SUSPENDED).
-> 
-> As a result, if an interrupt for that irq_desc happens after
-> suspend_device_irqs(), the interrupt handlers from all of its irqactions
-> will be invoked.
-> 
-> So this basically means "ignore that IRQ" to suspend_device_irqs() and
-> that's its *only* meaning.
-> 
-> It's primary users are timers, per-CPU IRQs, ACPI SCI, via-pmu, Xen.
-> There also is a bunch of drivers that use it for wakeup stuff, but they
-> shouldn't in my opinion.
+--TD8GDToEDw0WLGOL
+Content-Type: multipart/mixed; boundary="k4f25fnPtRuIRUb3"
+Content-Disposition: inline
 
-Indeed.
 
-> The background I'm aware of was primarily timers (we wanted to be able
-> to msleep() during PCI PM transitions in the noirq phases of system suspend
-> and resume among other things), and we want per-CPU stuff to work all the
-> time too.  ACPI uses it for signaling various types of events (including
-> battery and thermal) that need to be handled all the time.  I'm not sure
-> why Xen needs it exactly, but that seems to be IPI-related.
+--k4f25fnPtRuIRUb3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So none of these interrupts is used to abort suspend or wakeup. They
-are kept functional because they are required for the suspend/resume
-transitions itself.
+On Thu, Jul 31, 2014 at 12:23:51PM +0200, Joerg Roedel wrote:
+> On Thu, Jul 31, 2014 at 12:18:08PM +0200, Thierry Reding wrote:
+> > It looks like this hasn't been applied yet, so I can send out a v5
+> > shortly with the requested changes addressed.
+>=20
+> Yes, please send a v5 with the requested changes and all Reviewed-bys
+> and Acked-bys this got so far. I'll take it into my tree then if nobody
+> else objects.
 
-What's this PCIe PME handler doing? Is it required functionality for
-the suspend/resume path or is it a wakeup/abort mechanism.
+I just sent out v5, although I trimmed the Cc list a little since it was
+growing somewhat long. But I've kept everyone that gave feedback on v4
+as well as the lists.
 
-> The current handling of IRQF_NO_SUSPEND has a problem vs shared interrupts
-> which I've tried to address by https://patchwork.kernel.org/patch/4643871/
-> and which is described in the changelog of that patch.  Unfortunately, some
-> existing users pass IRQF_SHARED along with IRQF_NO_SUSPEND which is the main
-> motivation for that.  Many of them use it for wakeup purposes, but for one
-> example (that doesn't use it for wakeup only) the ACPI SCI is shareable by
-> design.
+For reference I've attached the diff since v4.
 
-So many of them use it for wakeup purposes. Why so and how is that
-supposed to work?
+Thierry
 
-The mechanism for wakeup sources is:
+--k4f25fnPtRuIRUb3
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: inline; filename="v5.patch"
+Content-Transfer-Encoding: quoted-printable
 
-    1) Lazy disable the interrupt
+diff --git a/Documentation/devicetree/bindings/iommu/iommu.txt b/Documentat=
+ion/devicetree/bindings/iommu/iommu.txt
+index 464a81eaaf61..5a8b4624defc 100644
+--- a/Documentation/devicetree/bindings/iommu/iommu.txt
++++ b/Documentation/devicetree/bindings/iommu/iommu.txt
+@@ -82,7 +82,9 @@ device's parent node it will be ignored. An exception to =
+this rule is if the
+ referenced IOMMU is disabled, in which case the "dma-ranges" property of t=
+he
+ parent shall take effect. Note that merely disabling a device tree node do=
+es
+ not guarantee that the IOMMU is really disabled since the hardware may not
+-have a means to turn off translation.
++have a means to turn off translation. But it is invalid in such cases to
++disable the IOMMU's device tree node in the first place because it would
++prevent any driver from properly setting up the translations.
+=20
+=20
+ Notes:
+@@ -108,7 +110,7 @@ Single-master IOMMU:
+ 	};
+=20
+ 	master {
+-		iommus =3D <&/iommu>;
++		iommus =3D <&{/iommu}>;
+ 	};
+=20
+ Multiple-master IOMMU with fixed associations:
+@@ -117,8 +119,12 @@ Multiple-master IOMMU with fixed associations:
+ 	/* multiple-master IOMMU */
+ 	iommu {
+ 		/*
+-		 * Masters are statically associated with this IOMMU and
+-		 * address translation is always enabled.
++		 * Masters are statically associated with this IOMMU and share
++		 * the same address translations because the IOMMU does not
++		 * have sufficient information to distinguish between masters.
++		 *
++		 * Consequently address translation is always on or off for
++		 * all masters at any given point in time.
+ 		 */
+ 		#iommu-cells =3D <0>;
+ 	};
+@@ -126,13 +132,13 @@ Multiple-master IOMMU with fixed associations:
+ 	/* static association with IOMMU */
+ 	master@1 {
+ 		reg =3D <1>;
+-		iommus =3D <&/iommu>;
++		iommus =3D <&{/iommu}>;
+ 	};
+=20
+ 	/* static association with IOMMU */
+ 	master@2 {
+ 		reg =3D <2>;
+-		iommus =3D <&/iommu>;
++		iommus =3D <&{/iommu}>;
+ 	};
+=20
+ Multiple-master IOMMU:
+@@ -145,28 +151,32 @@ Multiple-master IOMMU:
+=20
+ 	master@1 {
+ 		/* device has master ID 42 in the IOMMU */
+-		iommus =3D <&/iommu 42>;
++		iommus =3D <&{/iommu} 42>;
+ 	};
+=20
+ 	master@2 {
+ 		/* device has master IDs 23 and 24 in the IOMMU */
+-		iommus =3D <&/iommu 23>, <&/iommu 24>;
++		iommus =3D <&{/iommu} 23>, <&{/iommu} 24>;
+ 	};
+=20
+ Multiple-master IOMMU with configurable DMA window:
+ ---------------------------------------------------
+=20
+ 	/ {
+-		#address-cells =3D <1>;
+-		#size-cells =3D <1>;
+-
+ 		iommu {
+-			/* master ID, address and length of DMA window */
++			/*
++			 * One cell for the master ID and one cell for the
++			 * address of the DMA window. The length of the DMA
++			 * window is encoded in two cells.
++			 *
++			 * The DMA window is the range addressable by the
++			 * master (i.e. the I/O virtual address space).
++			 */
+ 			#iommu-cells =3D <4>;
+ 		};
+=20
+ 		master {
+ 			/* master ID 42, 4 GiB DMA window starting at 0 */
+-			iommus =3D <&/iommu  42  0  0x1 0x0>;
++			iommus =3D <&{/iommu}  42  0  0x1 0x0>;
+ 		};
+ 	};
 
-    2) Do the transition into suspend with interrupts enabled
+--k4f25fnPtRuIRUb3--
 
-    3) Check whether one of the wakeup sources has triggered. If yes,
-       abort. Otherwise suspend.
+--TD8GDToEDw0WLGOL
+Content-Type: application/pgp-signature
 
-The ones marked IRQF_NO_SUSPEND are not part of the above scheme,
-because they are not checked. So they use different mechanisms to
-abort the suspend?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-> > Aside of that I want to see a coherent explanation why a shared MSI
-> > interrupt makes any sense at all.
-> > 
-> > 25:  1 <....> 0   PCI-MSI-edge      aerdrv, PCIe PME
-> >
-> > AFAICT, that's the primary reason why you insist to support wakeup
-> > sources on shared irq lines. And to be honest, it's utter bullshit.
-> 
-> No, this isn't the primary reason.
-> 
-> Here's /proc/interrupts from my MSI Wind system and, as you can see,
-> PCIe PME are (a) not MSI and (b) shared with some interesting things
-> (USB, WiFi and the GPU).
+iQIcBAEBAgAGBQJT2h6YAAoJEN0jrNd/PrOh3BAQAJAKR+XNFHRo+WvVzVJvBVpQ
+U7YOyRt4wRsZ1bq+a4AEUWShFDqHb3GE/z/vgKP1sIUeVZ5jant39yhcdowYr1Hf
+83d9HlYscpS4ynKQKR1+iJIrjxlpdTjseZQDE8Hfa1S8Zs7tTGcG/BPf5aAUsv7i
+XmVHcNDdUwdpwFXTzjnxzb6BEsCdrsEIJJW9OrKzCsLRTxc/sZ06zLeBS4iA+J86
+uOChenrEVOHf9zWXcezTsyxi1KJfkNXnJ3Ex4Fq0AMZd0ZVN5IFYa/58RVgSefN8
+1Q56/7b2dj3ZEh/GoW+CEJS+xOBKwUt10VSNmHwR0kMe9S8ouyWJ61vzPCZsx27Z
+a8Cg+K0f0v4wfMN02RsV4uokPNhytSIEzUVUveV9y4e4D12TD+0BpwgeKlOu6lGg
+AgoEUaV0Az1kMFJs07ZRedDYWIHjg7oMCrMpAZfxuIau8iSiPGJRnTYKLS6NXtOP
+NU2DA5lHC+rzl0JktJyVfJX11qfrn9bLMxL/9R0SI4Qu9q6dEJU58LwO8WX99lBK
+YQ6JMb0FISUeS3KOka5BoQmF5eMeTGTwyQF+rj3nMCJBGZDzbZ5xn3ShqokIFbRo
+NZc8SJjiFPp/hGMiZ7tLcfeqMxBx+wtIo1khvtt3viiY1jtYwJ6VWwPtl//spqvK
+8Ff5HOk/U+Vuu8RzH7Gg
+=3sBi
+-----END PGP SIGNATURE-----
 
->  16:       5217          0   IO-APIC-fasteoi   PCIe PME, uhci_hcd:usb4, i915
->  17:      13964          0   IO-APIC-fasteoi   PCIe PME, rtl818x_pci
-
-So the obvious question is: WHY are they not using MSI?
-
-Just because MSI fucked up the MSI configuration of the device or is
-there any sane explanation for it?
- 
-Thanks,
-
-	tglx
+--TD8GDToEDw0WLGOL--
