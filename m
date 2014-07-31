@@ -1,138 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779AbaGaL5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 07:57:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9724 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470AbaGaL5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 07:57:03 -0400
-Message-ID: <53DA2EFA.9060602@redhat.com>
-Date: Thu, 31 Jul 2014 13:56:42 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751850AbaGaL6N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 07:58:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47398 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaGaL6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 07:58:11 -0400
+Date: Thu, 31 Jul 2014 13:57:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ilya Dryomov <ilya.dryomov@inktank.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        ceph-devel@vger.kernel.org, davidlohr@hp.com, jason.low2@hp.com
+Subject: Re: [PATCH] locking/mutexes: Revert "locking/mutexes: Add extra
+ reschedule point"
+Message-ID: <20140731115759.GS19379@twins.programming.kicks-ass.net>
+References: <1406801797-20139-1-git-send-email-ilya.dryomov@inktank.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, kvm@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        x86@kernel.org
-CC: Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, bsd@redhat.com,
-        Andrew Honig <ahonig@google.com>
-Subject: Re: [PATCH v5 5/5] x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR
- if available
-References: <cover.1406177531.git.luto@amacapital.net> <3aa0b464e9aba9609de4d4118e4be7526f6dbab9.1406177531.git.luto@amacapital.net>
-In-Reply-To: <3aa0b464e9aba9609de4d4118e4be7526f6dbab9.1406177531.git.luto@amacapital.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yILFoTi2Ujy0ZZ8L"
+Content-Disposition: inline
+In-Reply-To: <1406801797-20139-1-git-send-email-ilya.dryomov@inktank.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 24/07/2014 06:57, Andy Lutomirski ha scritto:
-> It's considerably better than any of the alternatives on KVM.
-> 
-> Rather than reinventing all of the cpu feature query code, this fixes
-> native_cpuid to work in PIC objects.
-> 
-> I haven't combined it with boot/cpuflags.c's cpuid implementation:
-> including asm/processor.h from boot/cpuflags.c results in a flood of
-> unrelated errors, and fixing it might be messy.
-> 
-> Reviewed-by: Kees Cook <keescook@chromium.org>
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/boot/compressed/aslr.c  | 27 +++++++++++++++++++++++++++
->  arch/x86/include/asm/processor.h | 21 ++++++++++++++++++---
->  2 files changed, 45 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-> index fc6091a..8583f0e 100644
-> --- a/arch/x86/boot/compressed/aslr.c
-> +++ b/arch/x86/boot/compressed/aslr.c
-> @@ -5,6 +5,8 @@
->  #include <asm/archrandom.h>
->  #include <asm/e820.h>
->  
-> +#include <uapi/asm/kvm_para.h>
-> +
->  #include <generated/compile.h>
->  #include <linux/module.h>
->  #include <linux/uts.h>
-> @@ -15,6 +17,22 @@
->  static const char build_str[] = UTS_RELEASE " (" LINUX_COMPILE_BY "@"
->  		LINUX_COMPILE_HOST ") (" LINUX_COMPILER ") " UTS_VERSION;
->  
-> +static bool kvm_para_has_feature(unsigned int feature)
-> +{
-> +	u32 kvm_base;
-> +	u32 features;
-> +
-> +	if (!has_cpuflag(X86_FEATURE_HYPERVISOR))
-> +		return false;
-> +
-> +	kvm_base = hypervisor_cpuid_base("KVMKVMKVM\0\0\0", KVM_CPUID_FEATURES);
-> +	if (!kvm_base)
-> +		return false;
-> +
-> +	features = cpuid_eax(kvm_base | KVM_CPUID_FEATURES);
-> +	return features & (1UL << feature);
-> +}
-> +
->  #define I8254_PORT_CONTROL	0x43
->  #define I8254_PORT_COUNTER0	0x40
->  #define I8254_CMD_READBACK	0xC0
-> @@ -81,6 +99,15 @@ static unsigned long get_random_long(void)
->  		}
->  	}
->  
-> +	if (kvm_para_has_feature(KVM_FEATURE_GET_RNG_SEED)) {
-> +		u64 seed;
-> +
-> +		debug_putstr(" MSR_KVM_GET_RNG_SEED");
-> +		rdmsrl(MSR_KVM_GET_RNG_SEED, seed);
-> +		random ^= (unsigned long)seed;
-> +		use_i8254 = false;
-> +	}
-> +
->  	if (has_cpuflag(X86_FEATURE_TSC)) {
->  		debug_putstr(" RDTSC");
->  		rdtscll(raw);
-> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-> index a4ea023..6096f3c 100644
-> --- a/arch/x86/include/asm/processor.h
-> +++ b/arch/x86/include/asm/processor.h
-> @@ -189,10 +189,25 @@ static inline int have_cpuid_p(void)
->  static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
->  				unsigned int *ecx, unsigned int *edx)
->  {
-> -	/* ecx is often an input as well as an output. */
-> -	asm volatile("cpuid"
-> +	/*
-> +	 * This function can be used from the boot code, so it needs
-> +	 * to avoid using EBX in constraints in PIC mode.
-> +	 *
-> +	 * ecx is often an input as well as an output.
-> +	 */
-> +	asm volatile(".ifnc %%ebx,%1 ; .ifnc %%rbx,%1           \n\t"
-> +		     "movl  %%ebx,%1                            \n\t"
-> +		     ".endif ; .endif                           \n\t"
-> +		     "cpuid					\n\t"
-> +		     ".ifnc %%ebx,%1 ; .ifnc %%rbx,%1           \n\t"
-> +		     "xchgl %%ebx,%1                            \n\t"
-> +		     ".endif ; .endif"
->  	    : "=a" (*eax),
-> -	      "=b" (*ebx),
-> +#if defined(__i386__) && defined(__PIC__)
-> +	      "=r" (*ebx),	/* gcc won't let us use ebx */
-> +#else
-> +	      "=b" (*ebx),	/* ebx is okay */
-> +#endif
->  	      "=c" (*ecx),
->  	      "=d" (*edx)
->  	    : "0" (*eax), "2" (*ecx)
-> 
 
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+--yILFoTi2Ujy0ZZ8L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, Jul 31, 2014 at 02:16:37PM +0400, Ilya Dryomov wrote:
+> This reverts commit 34c6bc2c919a55e5ad4e698510a2f35ee13ab900.
+>=20
+> This commit can lead to deadlocks by way of what at a high level
+> appears to look like a missing wakeup on mutex_unlock() when
+> CONFIG_MUTEX_SPIN_ON_OWNER is set, which is how most distributions ship
+> their kernels.  In particular, it causes reproducible deadlocks in
+> libceph/rbd code under higher than moderate loads with the evidence
+> actually pointing to the bowels of mutex_lock().
+>=20
+> kernel/locking/mutex.c, __mutex_lock_common():
+> 476         osq_unlock(&lock->osq);
+> 477 slowpath:
+> 478         /*
+> 479          * If we fell out of the spin path because of need_resched(),
+> 480          * reschedule now, before we try-lock the mutex. This avoids =
+getting
+> 481          * scheduled out right after we obtained the mutex.
+> 482          */
+> 483         if (need_resched())
+> 484                 schedule_preempt_disabled(); <-- never returns
+> 485 #endif
+> 486         spin_lock_mutex(&lock->wait_lock, flags);
+>=20
+> We started bumping into deadlocks in QA the day our branch has been
+> rebased onto 3.15 (the release this commit went in) but then as part of
+> debugging effort I enabled all locking debug options, which also
+> disabled CONFIG_MUTEX_SPIN_ON_OWNER and made everything disappear,
+> which is why it hasn't been looked into until now.  Revert makes the
+> problem go away, confirmed by our users.
+
+This doesn't make sense and you fail to explain how this can possibly
+deadlock.
+
+--yILFoTi2Ujy0ZZ8L
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT2i9HAAoJEHZH4aRLwOS6ORgP/3X4oTHF/0PDDxTJd45u7zXS
+CvFdbG9jv6hcE8/4eMR4vjFoQABw6rOWXeJUBLF7faoSaAVTs1rhW149rxmV4+nA
+OWMHqZXTH9A8cLeYdcfW1BQbRAeMEJPsUrvJqQmul84WkKr4YjobBC64LqKoJQ1K
+cQZTzyOeXqNM5sTRs9MqoVlGEoR7r1s/OPunEgiyq53d3oXSWpr7lDt2oIi0roJq
+YYZNONCJy4GrHz/iKcxzpwZI31EiCeH0T5uxisTz1D1AqoqJkLx+8sLqseaf8yQC
+Uf/waDxeOQYvcB7WZ+4Wrj/+is2A3ikx4BxRzt2d9QDA4DdUxIX+BH2ZJM0w9UZh
+z3uI5J2yNztEaK3RKFfmoEFjpPBv6VzkSc+SLxYKT9Ec/WwfhxuxXwHn2znsUb4D
+Dsy4E/e3T2rcaFFZWHdAcshwPYH9Bw1O8muY+g0+vYVifWQn44q6UKNi5kHgUmii
+obYHK7ID5BP7YKldLJMkkaHamte+mY1c597QuA5pWdIdatmSuOpE7jNcsimO/e8K
+WM0j/9YXfeU/QjW4rp7Toyn+ePxtsEl4q/pSD1D8psOMtoOlq9tLZ6NhDaFN52gv
+Bq2UFNDD4eYa5BCSH2uSEXRmCsxxaGv7M539qnC2G0HXl45K53jT33+KGtM7hEAs
+BhgQS7m3rZBRLosEHtpZ
+=OEt/
+-----END PGP SIGNATURE-----
+
+--yILFoTi2Ujy0ZZ8L--
