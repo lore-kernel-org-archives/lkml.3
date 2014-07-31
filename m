@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355AbaGaQTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:19:00 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:58509 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255AbaGaQS6 (ORCPT
+	id S1752543AbaGaQTN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:19:13 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:44551 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428AbaGaQTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:18:58 -0400
+	Thu, 31 Jul 2014 12:19:10 -0400
+Date: Thu, 31 Jul 2014 09:19:02 -0700
+From: josh@joshtriplett.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v2 tip/core/rcu 0/10] RCU-tasks implementation
+Message-ID: <20140731161902.GA12697@cloud>
+References: <20140731003914.GA3872@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20140731150753.3f12fc2f@alan.etchedpixels.co.uk>
-References: <1406651242-20689-1-git-send-email-ricardo.ribalda@gmail.com> <20140731150753.3f12fc2f@alan.etchedpixels.co.uk>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Thu, 31 Jul 2014 18:13:10 +0200
-Message-ID: <CAPybu_3-Ve2cy3e8Az521cT_v0zfeNnnCoB_hy83=L17pUi9GA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] serial/8250: Add support for RS485 IOCTLs
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>, Michael Welling <mwelling@ieee.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Joe Schultz <jschultz@xes-inc.com>, Ingo Molnar <mingo@elte.hu>,
-        Doug Anderson <dianders@chromium.org>, linux-serial@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140731003914.GA3872@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alan
+On Wed, Jul 30, 2014 at 05:39:14PM -0700, Paul E. McKenney wrote:
+> This series provides a prototype of an RCU-tasks implementation, which has
+> been requested to assist with tramopoline removal.  This flavor of RCU
+> is task-based rather than CPU-based, and has voluntary context switch,
+> usermode execution, and the idle loops as its only quiescent states.
+> This selection of quiescent states ensures that at the end of a grace
+> period, there will no longer be any tasks depending on a trampoline that
+> was removed before the beginning of that grace period.  This works because
+> such trampolines do not contain function calls, do not contain voluntary
+> context switches, do not switch to usermode, and do not switch to idle.
 
-> Is there any reasons we can't have uart_ops.rs485_config and the RS485
-> ioctl logic in the serial_core, or even push rs485_get/put into the tty
-> ioctl handler and tty ops so it's not duplicated everywhere ?
+I'm concerned about the amount of system overhead this introduces.
+Polling for holdout tasks seems quite excessive.  If I understand the
+intended use case correctly, the users of this will want to free
+relatively small amounts of memory; thus, waiting a while to do so seems
+fine, especially if the system isn't under any particular memory
+pressure.
 
-What about a step by step approach. First we add this code to the
-8250_core, and then I remove all the specific driver
-TIOCSRS485 handling and manage it through serial_core.c
+Thus, rather than polling, could you simply flag the holdout
+tasks, telling the scheduler "hey, next time you don't have anything
+better to do..."?  Then don't bother with them again unless the system
+runs low on memory and asks you to free some.  (And mandate that you can
+only use this to free memory rather than for any other purpose.)
 
-Right now these are the drivers using it:
+Also, ideally this should remain entirely optional; nothing in the core
+kernel should depend on it.
 
-drivers/tty/serial/8250/8250_core.c:    case TIOCSRS485:
-drivers/tty/serial/atmel_serial.c:      case TIOCSRS485:
-drivers/tty/serial/crisv10.c:   case TIOCSRS485:
-drivers/tty/serial/max310x.c:   case TIOCSRS485:
-drivers/tty/serial/mcf.c:       case TIOCSRS485: {
-drivers/tty/serial/omap-serial.c:       case TIOCSRS485:
-rivers/tty/serial/sc16is7xx.c: case TIOCSRS485:
-
-Regards!
-
-
-
--- 
-Ricardo Ribalda
+- Josh Triplett
