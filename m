@@ -1,85 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448AbaGaQsX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:48:23 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:42183 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaGaQsV (ORCPT
+	id S1752770AbaGaQtN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:49:13 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:37436 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859AbaGaQtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:48:21 -0400
+	Thu, 31 Jul 2014 12:49:11 -0400
+Date: Thu, 31 Jul 2014 09:49:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: josh@joshtriplett.org, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, tglx@linutronix.de,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com
+Subject: Re: [PATCH v2 tip/core/rcu 0/10] RCU-tasks implementation
+Message-ID: <20140731164904.GU11241@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140731003914.GA3872@linux.vnet.ibm.com>
+ <20140731161902.GA12697@cloud>
+ <20140731163012.GA19379@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <20140731101116.GN31950@carfax.org.uk>
-References: <1406752954-26158-1-git-send-email-xerofoify@gmail.com>
-	<CAPM=9ty2PhMdLykVX4c074Tdkyh0OO_jtfw-CAFHk8ANcZA4kQ@mail.gmail.com>
-	<CAPDOMVgXChx5HST-jMEZmWDydWKe0Yv15pyTiPeOuQSVEjihFA@mail.gmail.com>
-	<20140731101116.GN31950@carfax.org.uk>
-Date: Thu, 31 Jul 2014 12:48:20 -0400
-Message-ID: <CAPDOMVjOTCwkesj3KQE54Lxg8tPptTn-X-ZCsU-X4h1RCjYf+Q@mail.gmail.com>
-Subject: Re: [PATCH] Remove certain calls for releasing page cache
-From: Nick Krause <xerofoify@gmail.com>
-To: Hugo Mills <hugo@carfax.org.uk>, Nick Krause <xerofoify@gmail.com>,
-        Dave Airlie <airlied@gmail.com>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>,
-        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
-	<linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140731163012.GA19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14073116-0928-0000-0000-000003C1FFE5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 6:11 AM, Hugo Mills <hugo@carfax.org.uk> wrote:
-> On Wed, Jul 30, 2014 at 10:05:16PM -0400, Nick Krause wrote:
->> On Wed, Jul 30, 2014 at 7:30 PM, Dave Airlie <airlied@gmail.com> wrote:
->> >> This patch removes the lines for releasing the page cache in certain
->> >> files as this may aid in perfomance with writes in the compression
->> >> rountines of btrfs. Please note that this patch has not been tested
->> >> on my own hardware due to no compression based btrfs volumes of my
->> >> own.
->> >>
->> >
->> > For all that is sacred, STOP.
-> [snip]
->> > But if you want to work on the kernel, this isn't the way to do it, and
->> > nobody will ever take a patch from you seriously if you continue in this
->> > fashion.
->> >
->> > Dave.
->> Dave ,
->> Seems I need to have tested this code first.
->
->    You've said this before, having made exactly the same error (not
-> testing a patch). Yet you do it again. You seem to be ignoring all the
-> advice you've been given -- or at least not learning from it, and not
-> learning from your experiences. Could you please, for half an hour or
-> so, stop thinking about the immediate goal of getting a patch into the
-> kernel, and take a short while to think about your process of
-> learning. Look at all the advice you've had (from me, from Ted, from
-> others), actually understand it, and consider all the things you need
-> to do which *aren't* hacking up a lump of C. Actually learn these
-> things -- have them in your mind all the time.
->
->    I would appreciate it if you could actually engage with someone
-> (doesn't have to be me) about this -- why are you ignoring the advice?
-> Is it because you don't understand it? Is it because you think you can
-> cut corners? Is it because you're concetrating on the code so much that
-> you're forgetting it?
->
->    The main thing you're doing which is making people angry is not
-> because you're submitting bad patches (although you are). It's because
-> you're not listening to advice, and you're not apparently learning
-> anything from the feedback you're given. Your behaviour is not
-> changing over time, which makes you look like a waste of time to all
-> those people trying to help you.
->
->    Hugo.
->
-> --
-> === Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
->   PGP key: 65E74AC0 from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
->          --- That's not rain, that's a lake with slots in it ---
+On Thu, Jul 31, 2014 at 06:30:12PM +0200, Peter Zijlstra wrote:
+> On Thu, Jul 31, 2014 at 09:19:02AM -0700, josh@joshtriplett.org wrote:
+> > Also, ideally this should remain entirely optional; nothing in the core
+> > kernel should depend on it.
+> 
+> I suspect Steve wants it for ftrace :-)
 
-Hugo,
-That makes sense seems I need to listen better and test my code first, which is
-bad in any environment.
-Regards Nick
+This is my guess as well.  ;-)
+
+Steven should be back next week, and perhaps we will learn more then.
+
+							Thanx, Paul
+
