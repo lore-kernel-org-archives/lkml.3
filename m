@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034AbaGaCgl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 22:36:41 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:46173 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755505AbaGaCgj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 22:36:39 -0400
-Date: Wed, 30 Jul 2014 19:36:35 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Matt Porter <mporter@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, Gregory Fong <gregory.0xf0@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Marc Carino <marc.ceeeee@gmail.com>
-Subject: Re: [PATCH v8 01/11] ARM: brcmstb: add infrastructure for ARM-based
- Broadcom STB SoCs
-Message-ID: <20140731023635.GN3711@ld-irv-0074>
-References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
- <1405976886-27807-2-git-send-email-computersforpeace@gmail.com>
- <20140730092635.GI30282@n2100.arm.linux.org.uk>
+	id S1756060AbaGaCkV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 22:40:21 -0400
+Received: from mga11.intel.com ([192.55.52.93]:5591 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754477AbaGaCkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jul 2014 22:40:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,769,1400050800"; 
+   d="scan'208";a="569752071"
+Date: Thu, 31 Jul 2014 10:40:14 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-fsdevel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [delayed_fput] BUG: unable to handle kernel paging request at
+ ffff8800122a0ad0
+Message-ID: <20140731024014.GA10184@localhost>
+References: <20140730035541.GD16537@localhost>
+ <20140730111521.GB759@infradead.org>
+ <alpine.DEB.2.02.1407301550140.26018@chino.kir.corp.google.com>
+ <CAADnVQ+OwgG-RJQ7QwfW2qrvpV9XYySckTbNmcacW7K0KxQqvA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140730092635.GI30282@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAADnVQ+OwgG-RJQ7QwfW2qrvpV9XYySckTbNmcacW7K0KxQqvA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
-
-On Wed, Jul 30, 2014 at 10:26:35AM +0100, Russell King wrote:
-> On Mon, Jul 21, 2014 at 02:07:56PM -0700, Brian Norris wrote:
-> > +static DEFINE_SPINLOCK(boot_lock);
-> > +
-> > +static void brcmstb_secondary_init(unsigned int cpu)
-> > +{
-> > +	/*
-> > +	 * Synchronise with the boot thread.
-> > +	 */
-> > +	spin_lock(&boot_lock);
-> > +	spin_unlock(&boot_lock);
-> > +}
-> > +
-> > +static int brcmstb_boot_secondary(unsigned int cpu, struct task_struct *idle)
-> > +{
-> > +	/*
-> > +	 * set synchronisation state between this boot processor
-> > +	 * and the secondary one
-> > +	 */
-> > +	spin_lock(&boot_lock);
-> > +
-> > +	/* Bring up power to the core if necessary */
-> > +	if (brcmstb_cpu_get_power_state(cpu) == 0)
-> > +		brcmstb_cpu_power_on(cpu);
-> > +
-> > +	brcmstb_cpu_boot(cpu);
-> > +
-> > +	/*
-> > +	 * now the secondary core is starting up let it run its
-> > +	 * calibrations, then wait for it to finish
-> > +	 */
-> > +	spin_unlock(&boot_lock);
+On Wed, Jul 30, 2014 at 04:00:58PM -0700, Alexei Starovoitov wrote:
+> On Wed, Jul 30, 2014 at 3:51 PM, David Rientjes <rientjes@google.com> wrote:
+> > On Wed, 30 Jul 2014, Christoph Hellwig wrote:
+> >
+> >> On Wed, Jul 30, 2014 at 11:55:41AM +0800, Fengguang Wu wrote:
+> >> > Greetings,
+> >> >
+> >> > 0day kernel testing robot got the below dmesg and the first bad commit is
+> >>
+> >> How does this manage to trip over a 2 year old commit now?
 > 
-> I've just read through this code (because it caused my allmodconfig to
-> break) and spotted this.
+> may be because all kernels are built with gcc 4.8.2 ?
+> Fengguang, did you recently switch to new compiler?
+> I think all older builds were with 4.6.3
 
-Sorry about the allmodconfig problems. I never compile-tested with ARMv6
-enabled. This look OK?
+Alexei, I've been using gcc 4.8.2 for 4 months.
 
-diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
-index f3665121729b..5ce82b4ba931 100644
---- a/arch/arm/mach-bcm/Makefile
-+++ b/arch/arm/mach-bcm/Makefile
-@@ -32,6 +32,7 @@ obj-$(CONFIG_ARCH_BCM2835)	+= board_bcm2835.o
- obj-$(CONFIG_ARCH_BCM_5301X)	+= bcm_5301x.o
- 
- ifeq ($(CONFIG_ARCH_BRCMSTB),y)
-+CFLAGS_platsmp-brcmstb.o	+= -march=armv7-a
- obj-y				+= brcmstb.o
- obj-$(CONFIG_SMP)		+= headsmp-brcmstb.o platsmp-brcmstb.o
- endif
+Maybe it's because I test new randconfigs every day. And the problem
+may only show up with very specific kernel config?
 
-> What function does boot_lock perform here?  Please, don't quote the
-> comments (I know where the comments came from) but what I want to hear
-> is your comments about why you decided to retain this.
+Thanks,
+Fengguang
 
-You might glean a little more from my response to Rob, but I'm not sure
-there was a good reason for retaining this. We do need to be sure the
-CPU is fully powered online before bringing it out of reset, but the
-spinlock seems overkill AFAICT.
-
-Brian
+> > I think there's something weird going on with the testing of CONFIG_SLOB,
+> > same as http://permalink.gmane.org/gmane.linux.kernel/1759314 that
+> > identified a harmless commit that only initializes a field of
+> > struct mm_struct and then ended up exploded in slob freeing.
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
