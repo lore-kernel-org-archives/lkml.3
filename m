@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787AbaGaOYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 10:24:08 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:52796 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153AbaGaOYG (ORCPT
+	id S1751878AbaGaOY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 10:24:29 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:42434 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808AbaGaOY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 10:24:06 -0400
-Message-ID: <53DA5183.9000305@gmail.com>
-Date: Thu, 31 Jul 2014 08:24:03 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 31 Jul 2014 10:24:27 -0400
+Message-ID: <53DA519A.4090905@cogentembedded.com>
+Date: Thu, 31 Jul 2014 18:24:26 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Jiri Olsa <jolsa@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: Re: [PATCH/RFC] KVM: perf/stat: Properly show submicrosecond times
-References: <1406805231-10675-1-git-send-email-borntraeger@de.ibm.com> <1406805231-10675-2-git-send-email-borntraeger@de.ibm.com>
-In-Reply-To: <1406805231-10675-2-git-send-email-borntraeger@de.ibm.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, nsekhar@ti.com, robh+dt@kernel.org
+CC: devicetree@vger.kernel.org, davinci-linux-open-source@linux.davincidsp.com,
+        linux@arm.linux.org.uk, pawel.moll@arm.com,
+        khilman@deeprootsystems.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 5/6] ARM: DTS: da850-evm: Add node for tlv320aic3106 codec
+References: <1406801934-23334-1-git-send-email-peter.ujfalusi@ti.com> <1406801934-23334-6-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1406801934-23334-6-git-send-email-peter.ujfalusi@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/31/14, 5:13 AM, Christian Borntraeger wrote:
-> For lots of exits the min time (and sometimes max) is 0 or 1. Lets
-> increase the accurancy similar to what the average field alread does.
+Hello.
 
-Seems reasonable to me.
+On 07/31/2014 02:18 PM, Peter Ujfalusi wrote:
 
-Acked-by: David Ahern <dsahern@gmail.com>
+> The board uses aic3106 for audio.
 
-
->
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Cc: Jiri Olsa <jolsa@kernel.org>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
->
-> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 > ---
->   tools/perf/builtin-kvm.c | 8 ++++----
->   1 file changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-> index 43367eb..fe92dfd 100644
-> --- a/tools/perf/builtin-kvm.c
-> +++ b/tools/perf/builtin-kvm.c
-> @@ -592,8 +592,8 @@ static void print_result(struct perf_kvm_stat *kvm)
->   	pr_info("%9s ", "Samples%");
->
->   	pr_info("%9s ", "Time%");
-> -	pr_info("%10s ", "Min Time");
-> -	pr_info("%10s ", "Max Time");
-> +	pr_info("%11s ", "Min Time");
-> +	pr_info("%11s ", "Max Time");
->   	pr_info("%16s ", "Avg time");
->   	pr_info("\n\n");
->
-> @@ -610,8 +610,8 @@ static void print_result(struct perf_kvm_stat *kvm)
->   		pr_info("%10llu ", (unsigned long long)ecount);
->   		pr_info("%8.2f%% ", (double)ecount / kvm->total_count * 100);
->   		pr_info("%8.2f%% ", (double)etime / kvm->total_time * 100);
-> -		pr_info("%8" PRIu64 "us ", min / 1000);
-> -		pr_info("%8" PRIu64 "us ", max / 1000);
-> +		pr_info("%9.2fus ", (double)min / 1e3);
-> +		pr_info("%9.2fus ", (double)max / 1e3);
->   		pr_info("%9.2fus ( +-%7.2f%% )", (double)etime / ecount/1e3,
->   			kvm_event_rel_stddev(vcpu, event));
->   		pr_info("\n");
->
+>   arch/arm/boot/dts/da850-evm.dts | 14 ++++++++++++++
+>   1 file changed, 14 insertions(+)
+
+> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+> index 09118c72e83f..b9ef2be0b145 100644
+> --- a/arch/arm/boot/dts/da850-evm.dts
+> +++ b/arch/arm/boot/dts/da850-evm.dts
+> @@ -51,6 +51,20 @@
+>   			tps: tps@48 {
+>   				reg = <0x48>;
+>   			};
+> +			tlv320aic3106: tlv320aic3106@1b {
+
+    The "reg" property is <0x18>, why the unit-address part of a name is 
+different? Also, the ePAPR standard [1] says:
+
+The name of a node should be somewhat generic, reflecting the function of the 
+device and not its precise programming model.
+
+> +				#sound-dai-cells = <0>;
+> +				compatible = "ti,tlv320aic3106";
+> +				reg = <0x18>;
+> +				status = "okay";
+> +
+> +				/* Regulators */
+> +				IOVDD-supply = <&vdcdc2_reg>;
+> +				/* Derived from VBAT: Baseboard 3.3V / 1.8V */
+> +				AVDD-supply = <&vbat>;
+> +				DRVDD-supply = <&vbat>;
+> +				DVDD-supply = <&vbat>;
+> +			};
+> +
+
+[1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
+
+WBR, Sergei
 
