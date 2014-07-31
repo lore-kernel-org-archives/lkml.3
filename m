@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632AbaGaUwG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:52:06 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:50257 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbaGaUwD (ORCPT
+	id S1752965AbaGaUwK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:52:10 -0400
+Received: from mail-pa0-f67.google.com ([209.85.220.67]:44905 "EHLO
+	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353AbaGaUwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:52:03 -0400
+	Thu, 31 Jul 2014 16:52:06 -0400
 From: Kever Yang <kever.yang@gmail.com>
 X-Google-Original-From: Kever Yang <kever.yang@rock-chips.com>
 To: Paul Zimmerman <paulz@synopsys.com>
@@ -14,57 +14,71 @@ Cc: dianders@chromium.org, heiko@sntech.de, olof@lixom.net,
         sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
         xjq@rock-chips.com, wulf@rock-chips.com, lyz@rock-chips.com,
         hj@rock-chips.com, huangtao@rock-chips.com,
-        Kever Yang <kever.yang@rock-chips.com>, devicetree@vger.kernel.org,
-        Matt Porter <mporter@linaro.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        linux-usb@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 0/5] Patches to add support for Rockchip dwc2 controller
-Date: Thu, 31 Jul 2014 13:51:41 -0700
-Message-Id: <1406839906-14633-1-git-send-email-kever.yang@rock-chips.com>
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 3/5] ARM: dts: add rk3288 dwc2 controller support
+Date: Thu, 31 Jul 2014 13:51:44 -0700
+Message-Id: <1406839906-14633-4-git-send-email-kever.yang@rock-chips.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1406839906-14633-1-git-send-email-kever.yang@rock-chips.com>
+References: <1406839906-14633-1-git-send-email-kever.yang@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches to add support for dwc2 controller found in
-Rockchip processors rk3066, rk3188 and rk3288,
-and enable dts for rk3288 evb.
+rk3288 has two kind of usb controller, this add the dwc2 controller
+for otg and host1.
+
+Controller can works with usb PHY default setting and Vbus on.
+
+Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+---
 
 Changes in v3:
 - Moved out of pin control and sort by base address
-- EHCI and HSIC move new for version 3.
-- Rebase
 
 Changes in v2:
-- Split out dr_mode and rk3288 bindings.
-- add compatible "snps,dwc2" bingding info
-- set most parameters as driver auto-detect
 - change the node name from 'dwc2' to 'usb'
-- evb patch added in version 2
 
-Doug Anderson (1):
-  ARM: dts: Fix the sort ordering of EHCI and HSIC in rk3288.dtsi
+ arch/arm/boot/dts/rk3288.dtsi |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-Kever Yang (4):
-  Documentation: dt-bindings: add dt binding info for Rockchip dwc2
-  usb: dwc2: add compatible data for rockchip soc
-  ARM: dts: add rk3288 dwc2 controller support
-  ARM: dts: Enable USB otg and host1(dwc) on rk3288-evb
-
- Documentation/devicetree/bindings/usb/dwc2.txt |    3 ++
- arch/arm/boot/dts/rk3288-evb.dtsi              |    6 +++
- arch/arm/boot/dts/rk3288.dtsi                  |   61 ++++++++++++++++--------
- drivers/usb/dwc2/platform.c                    |   29 +++++++++++
- 4 files changed, 78 insertions(+), 21 deletions(-)
-
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index ab8a611..a5607a1 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -205,6 +205,26 @@
+ 		status = "disabled";
+ 	};
+ 
++	usb_host1: usb@ff540000 {
++		compatible = "rockchip,rk3288-usb", "rockchip,rk3066-usb",
++				"snps,dwc2";
++		reg = <0xff540000 0x40000>;
++		interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru HCLK_USBHOST1>;
++		clock-names = "otg";
++		status = "disabled";
++	};
++
++	usb_otg: usb@ff580000 {
++		compatible = "rockchip,rk3288-usb", "rockchip,rk3066-usb",
++				"snps,dwc2";
++		reg = <0xff580000 0x40000>;
++		interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru HCLK_OTG0>;
++		clock-names = "otg";
++		status = "disabled";
++	};
++
+ 	uart2: serial@ff690000 {
+ 		compatible = "rockchip,rk3288-uart", "snps,dw-apb-uart";
+ 		reg = <0xff690000 0x100>;
 -- 
 1.7.9.5
 
