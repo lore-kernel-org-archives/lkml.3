@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350AbaGaJNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 05:13:45 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55410 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932253AbaGaJNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 05:13:43 -0400
-Date: Thu, 31 Jul 2014 11:13:34 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
-        paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
-        hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
-        linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
-        davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
-        cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
-        JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
-        rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
-        mhocko@suse.cz, david@fromorbit.com
-Subject: Re: [RFC PATCH v1 13/70] x86, x2apic_cluster: _FROZEN Cleanup
-Message-ID: <20140731091334.GA20890@pd.tnic>
-References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
- <1406080786-3938-14-git-send-email-gong.chen@linux.intel.com>
- <20140723203628.GJ21707@pd.tnic>
- <20140730062415.GA5100@gchen.bj.intel.com>
- <20140730084852.GA10213@pd.tnic>
- <20140731075234.GA26585@gchen.bj.intel.com>
+	id S1756249AbaGaJUT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 05:20:19 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:47031 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756098AbaGaJUR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 05:20:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140731075234.GA26585@gchen.bj.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <3335238.KGDcEM6DjH@sigyn>
+References: <3335238.KGDcEM6DjH@sigyn>
+Date: Thu, 31 Jul 2014 11:20:15 +0200
+Message-ID: <CADbOyBQJjnOGfGJ4wwrtX=70V4-rkf_G8_8zP_eTdfD1y-8FYw@mail.gmail.com>
+Subject: Re: PATCH hid: Implement mode switching on Logitech gaming wheels
+ accordingly to the documentation
+From: Elias Vanderstuyft <elias.vds@gmail.com>
+To: =?UTF-8?B?TWljaGFsIE1hbMO9?= <madcatxster@devoid-pointer.net>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Edwin Velds <edwin@velds.nl>,
+        "simon@mungewell.org" <simon@mungewell.org>,
+        Roland Bosa <rbosa@logitech.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 03:52:34AM -0400, Chen, Gong wrote:
-> I'm silly. You are right. I will use your patch directly(I should do
-> it at the beginning :-)).
+On Wed, Jul 30, 2014 at 12:10 PM, Michal Malý
+<madcatxster@devoid-pointer.net> wrote:
+> Implement mode switching on Logitech gaming wheels accordingly to the documentation
+>
+> Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 
-I think it is still ok that we talked about this, it can easily be
-gotten wrong.
+Tested all lg4ff_switch_force_mode
+modes (0, 1, 2, 3, default), on both:
+- MOMO (Black) : PID 0xCA03
+- Formula Vibration : PID 0xCA04
 
--- 
-Regards/Gruss,
-    Boris.
+Behaviour didn't deviate from normal, which is as expected because
+these devices don't use the native versus compatibility mode,
+according to the documentation.
+So I consider this patch successful for these devices:
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Tested-by: Elias Vanderstuyft <elias.vds@gmail.com>
+
+Elias
