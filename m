@@ -1,48 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257AbaGaWpn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 18:45:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52520 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712AbaGaWpl (ORCPT
+	id S1752698AbaGaWts (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 18:49:48 -0400
+Received: from mail-oa0-f73.google.com ([209.85.219.73]:34087 "EHLO
+	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663AbaGaWtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 18:45:41 -0400
-Date: Thu, 31 Jul 2014 15:45:40 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chintan Pandya <cpandya@codeaurora.org>
-Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v2] mm: BUG when __kmap_atomic_idx equals KM_TYPE_NR
-Message-Id: <20140731154540.441ab79ff32ae5c10f64bcbd@linux-foundation.org>
-In-Reply-To: <53DA0C5A.3010409@codeaurora.org>
-References: <1406787871-2951-1-git-send-email-cpandya@codeaurora.org>
-	<alpine.DEB.2.02.1407310001360.18238@chino.kir.corp.google.com>
-	<53DA0C5A.3010409@codeaurora.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Jul 2014 18:49:47 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: heiko@sntech.de, Paul Zimmerman <paulz@synopsys.com>,
+        kever.yang@rock-chips.com
+Cc: olof@lixom.net, Sonny Rao <sonnyrao@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 4/5] ARM: dts: Fix the sort ordering of EHCI and HSIC in rk3288.dtsi
+Date: Thu, 31 Jul 2014 15:49:35 -0700
+Message-Id: <1406846976-23127-4-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jul 2014 14:58:58 +0530 Chintan Pandya <cpandya@codeaurora.org> wrote:
+The EHCI and HSIC device tree nodes were added in the wrong place.
+Fix them.
 
-> >
-> > I think Andrew's comment earlier was referring to the changelog only and
-> > not the patch, which looked correct.
-> 
-> I think Andrew asked for a BUG case details also to justify the 
-> overhead. But we have never encountered that BUG case. Present patch is 
-> only logical fix to the code. However, in the fast path, if such 
-> overhead is allowed, I can move BUG_ON out of any debug configs. 
-> Otherwise, as per Andrew's suggestion, I will convert DEBUG_HIGHMEM into 
-> DEBUG_VM which is used more frequently.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+---
+Changes in v4:
+- Based on the proper patch
 
-The v1 patch added a small amount of overhead to kmap_atomic() for what
-is evidently a very small benefit.
+Changes in v3:
+- EHCI and HSIC move new for version 3.
 
-Yes, I suggest we remove CONFIG_DEBUG_HIGHMEM from the kernel entirely
-and switch all CONFIG_DEBUG_HIGHMEM sites to use CONFIG_DEBUG_VM.  That way
-the BUG_ON which you believe is useful will be tested by more people
-more often.
+ arch/arm/boot/dts/rk3288.dtsi | 41 ++++++++++++++++++++---------------------
+ 1 file changed, 20 insertions(+), 21 deletions(-)
+
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index 9713054..49c99f2 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -156,6 +156,17 @@
+ 		status = "disabled";
+ 	};
+ 
++	usb_host0_ehci: usb@ff500000 {
++		compatible = "generic-ehci";
++		reg = <0xff500000 0x100>;
++		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru HCLK_USBHOST0>;
++		clock-names = "usbhost";
++		status = "disabled";
++	};
++
++	/* NOTE: ohci@ff520000 doesn't actually work on hardware */
++
+ 	usb_host1: usb@ff540000 {
+ 		compatible = "rockchip,rk3288-usb", "rockchip,rk3066-usb",
+ 				"snps,dwc2";
+@@ -176,6 +187,15 @@
+ 		status = "disabled";
+ 	};
+ 
++	usb_hsic: usb@ff5c0000 {
++		compatible = "generic-ehci";
++		reg = <0xff5c0000 0x100>;
++		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru HCLK_HSIC>;
++		clock-names = "usbhost";
++		status = "disabled";
++	};
++
+ 	uart2: serial@ff690000 {
+ 		compatible = "rockchip,rk3288-uart", "snps,dw-apb-uart";
+ 		reg = <0xff690000 0x100>;
+@@ -270,27 +290,6 @@
+ 		interrupts = <GIC_SPI 111 IRQ_TYPE_LEVEL_HIGH>;
+ 		status = "disabled";
+ 	};
+-
+-	usb_host0_ehci: usb@ff500000 {
+-		compatible = "generic-ehci";
+-		reg = <0xff500000 0x100>;
+-		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+-		clocks = <&cru HCLK_USBHOST0>;
+-		clock-names = "usbhost";
+-		status = "disabled";
+-	};
+-
+-	/* NOTE: ohci@ff520000 doesn't actually work on hardware */
+-
+-	usb_hsic: usb@ff5c0000 {
+-		compatible = "generic-ehci";
+-		reg = <0xff5c0000 0x100>;
+-		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
+-		clocks = <&cru HCLK_HSIC>;
+-		clock-names = "usbhost";
+-		status = "disabled";
+-	};
+-
+ 	gic: interrupt-controller@ffc01000 {
+ 		compatible = "arm,gic-400";
+ 		interrupt-controller;
+-- 
+2.0.0.526.g5318336
+
