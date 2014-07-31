@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393AbaGaTxh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 15:53:37 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38232 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709AbaGaTxf (ORCPT
+	id S1751983AbaGaTxx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 15:53:53 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39966 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597AbaGaTxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 15:53:35 -0400
-Date: Thu, 31 Jul 2014 20:53:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <nicoleotsuka@gmail.com>
-Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org, b42378@freescale.com,
-        b02247@freescale.com, festevam@gmail.com
-Message-ID: <20140731195323.GU17528@sirena.org.uk>
-References: <1406630319-5302-1-git-send-email-nicoleotsuka@gmail.com>
+	Thu, 31 Jul 2014 15:53:52 -0400
+Message-ID: <53DA9ED2.5000003@wwwdotorg.org>
+Date: Thu, 31 Jul 2014 13:53:54 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PrI1xm21m7BS25/2"
-Content-Disposition: inline
-In-Reply-To: <1406630319-5302-1-git-send-email-nicoleotsuka@gmail.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] ASoC: wm8962: Let CODEC driver enable and disable its
- own MCLK
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: Mikko Perttunen <mperttunen@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 8/8] clk: tegra: Add EMC clock driver
+References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com> <1405088313-20048-9-git-send-email-mperttunen@nvidia.com> <53CE97F2.80300@wwwdotorg.org> <53D75FA7.1030300@nvidia.com> <20140729201939.4627.79710@quantum> <53D81CD4.5010307@wwwdotorg.org> <20140730093456.GA29590@ulmo> <20140731190659.4463.92139@quantum>
+In-Reply-To: <20140731190659.4463.92139@quantum>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/31/2014 01:06 PM, Mike Turquette wrote:
+> Quoting Thierry Reding (2014-07-30 02:34:57)
+>> On Tue, Jul 29, 2014 at 04:14:44PM -0600, Stephen Warren wrote:
+>>> On 07/29/2014 02:19 PM, Mike Turquette wrote:
+>>>> Quoting Mikko Perttunen (2014-07-29 01:47:35)
+>>>>> On 22/07/14 19:57, Stephen Warren wrote:
+>>>>>> On 07/11/2014 08:18 AM, Mikko Perttunen wrote:
+>>>>>>> +static int emc_debug_rate_set(void *data, u64 rate)
+>>>>>>> +{
+>>>>>>> +    struct tegra_emc *tegra = data;
+>>>>>>> +
+>>>>>>> +    return clk_set_rate(tegra->hw.clk, rate);
+>>>>>>> +}
+>>>>>>> +
+>>>>>>> +DEFINE_SIMPLE_ATTRIBUTE(emc_debug_rate_fops, emc_debug_rate_get,
+>>>>>>> +                    emc_debug_rate_set, "%lld\n");
+>>>>>>
+>>>>>> I think the rate can already be obtained through
+>>>>>> ...debug/clock/clock_summary. I'm not sure about changing the rate, but
+>>>>>> shouldn't that be a feature of the common clock core, not individual
+>>>>>> drivers?
+>>>>>
+>>>>> The core doesn't allow writing to the rate debugfs files, so this is the
+>>>>> only way to trigger an EMC clock change for now. I agree that the core
+>>>>> might be a better place. I don't know if there are any philosophical
+>>>>> objections to that. I'd like to keep this in until a possible core
+>>>>> feature addition. Mike, any comments?
+>>>>
+>>>> Yes, there is a philosophical rejection to exposing rate-change knobs to
+>>>> userspace through debugfs. These can and will ship in real products
+>>>> (typically Android) with lots of nasty userspace hacks, and also
+>>>> represent pretty dangerous things to expose to userspace. I have always
+>>>> maintained that such knobs should remain out of tree or, with the advent
+>>>> of the custom debugfs entries, should be burden of the clock drivers.
+>>>
+>>> That argument seems a bit inconsistent.
+>>>
+>>> I can see the argument to disallow code that lets user-space fiddle with
+>>> clocks. However, if that argument holds, then surely it must apply to either
+>>> the clock core *or* a clock driver; the end effect of allowing the code in
+>
+> Stephen,
+>
+> You meant to say, "it must apply to both the clock core and a clock
+> driver"? I agree.
 
---PrI1xm21m7BS25/2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sure; s/either/both/ in what I said.
 
-On Tue, Jul 29, 2014 at 06:38:39PM +0800, Nicolin Chen wrote:
-> snd_soc_open() will trigger pm_runtime resume() which will then enable
-> the regulator and initialization. So we should make sure the MCLK is
-> enabled before this resume().
+>>> either place is that people will be able to implement the user-space hacks
+>>> you want to avoid. Yet, if we allow the code because it's a useful debug
+>>> tool, then surely it should be in the clock core so we don't implement it
+>>> redundantly in each clock driver.
+>
+> I don't want it anywhere to be honest. Read-only debugfs stuff is great
+> and I'm happy to merge it. I have repeatedly NAK'd any attempt to get
+> the userspace rate-change stuff merged into the core.
+>
+> Recently we have the ability to assign custom debugfs entries that are
+> specific to the clock driver. I'm trying to find the right balance
+> between giving the clock driver authors the right amount of autonomy to
+> implement what they need while trying to keep the crazy out of the
+> kernel. Maybe in this case I should stick to my guns and NAK this patch.
 
-Applied, thanks.  However the clock should really be being enabled in
-the probe() as well so that runtime PM can then disable it - the current
-probe() gets this wrong for the regulators though so this is fine for
-now.
-
---PrI1xm21m7BS25/2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT2p6wAAoJELSic+t+oim9vUwP/1Xkqvm5jyNp/6cs/V2qsyVI
-ZV0oZqZUphGb8hf3e56eKJJdFEImrKMleY2Uqr/c71OpXrFXqcMpVZ5hNabt0EfE
-WUY9PSnfAMWA9UGGdlY/ZWmBkfHaJplKDebyM327mFQ1eykp0emqG7tkBByzbqfg
-iO96j5cs1k2b0ugS7tBErDZ1SwL5USbCy9SWmisIWdgdjjJH3c/vhKSDnHM+g3kw
-At/KpDq4zRVTgAx/ZqwBmgbJNEmylu/FZGZ/5GbfNPqdMFwYmeJbz/GTRM8sKJF1
-b1DDOREVjomQQ0G5vDMXIVhD4+JllW9r8ODV3YPSSYupM50F78XE6OHqr3oyo8WC
-fWykn/jS0wGUaX+jXWMywgoBtvh1B7xGqNxraJmTji4scxmtkkbxEfM4ZANwLdD0
-WTQ7IOx6aro0e6Tty+dZnZ00xss1qtbWZ5m4hotGW0bPBzoKm3NFkRDnjX/eJdNh
-TmWiRzfU+nqGKfQy2a7WpvJypmxphFmQvJ7mXkE5Ls3IR0HU2fPewIqtU6Mj5yMa
-i+8hpWJXSDIDpdQ1n2Rge/QydoeZSvtGlLwrWyZ+geAllLG3K96Rhk9K1d/LFxFt
-qbTQUB2/ymbeVlViIwSaovf3D4It5WgVqIlLVS33avhSoHAZfiaO0ZAVDQisaE1A
-T/TAcv455MyW+qUrRXhM
-=Powt
------END PGP SIGNATURE-----
-
---PrI1xm21m7BS25/2--
+If someone implements the same thing in some downstream/product kernel, 
+and it can't be upstreamed, I'd argue they should still do that in the 
+clock core rather than individual clock drivers, since they'll probably 
+want the feature for multiple clocks. I don't think  the per-clock 
+debugfs hook is useful in this case, although I can certainly imagine 
+other read-only per-clock debug files could be useful.
