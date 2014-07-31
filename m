@@ -1,77 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808AbaGaPTg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:19:36 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:55444 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255AbaGaPTe (ORCPT
+	id S1751555AbaGaPUf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:20:35 -0400
+Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:44891
+	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbaGaPUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:19:34 -0400
-Message-ID: <53DA5E7E.9010607@gmail.com>
-Date: Thu, 31 Jul 2014 17:19:26 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 31 Jul 2014 11:20:33 -0400
+References: <1404914112-7298-1-git-send-email-alex.bennee@linaro.org> <20140731143538.GI11610@cbox>
+From: Alex =?utf-8?Q?Benn=C3=A9e?= <alex.bennee@linaro.org>
+To: Christoffer Dall <christoffer.dall@linaro.org>
+Cc: kvmarm@lists.cs.columbia.edu, linux-arm-kernel@lists.infradead.org,
+        kvm@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Gleb Natapov <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64: KVM: export current vcpu->pause state via pseudo regs
+Date: Thu, 31 Jul 2014 16:14:51 +0100
+In-reply-to: <20140731143538.GI11610@cbox>
+Message-ID: <87mwbpimgz.fsf@linaro.org>
 MIME-Version: 1.0
-To: Humberto Naves <hsnaves@gmail.com>
-CC: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Thomas Abraham <ta.omasab@gmail.com>,
-        Andreas Farber <afaerber@suse.de>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: Re: [PATCHv2 5/5] clk: samsung: exynos5410: Added clocks DPLL, EPLL,
- IPLL, and VPLL
-References: <1406805732-17372-1-git-send-email-hsnaves@gmail.com> <1406805732-17372-6-git-send-email-hsnaves@gmail.com> <53DA3F86.3020506@gmail.com> <CAEe5pB9Rj9rdzk-fjyNcdWyhQCfLtwxt+nAZdb4xuKDO9OpzUA@mail.gmail.com>
-In-Reply-To: <CAEe5pB9Rj9rdzk-fjyNcdWyhQCfLtwxt+nAZdb4xuKDO9OpzUA@mail.gmail.com>
-X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 127.0.0.1
+X-SA-Exim-Mail-From: alex.bennee@linaro.org
+X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.07.2014 15:37, Humberto Naves wrote:
-> Hi Tomasz,
-> 
-> I remember checking these rates on my calculator. You might notice the
-> odd frequency of 45158401Hz (no pun intended) in the EPLL clock. This
-> particular clock frequency was giving me a big headache in a previous
-> project, since it was wrongly listed as 45158400. At first it seems
-> innocuous, but whenever I would ask for one of the child clocks to
-> change the rate, the driver would miscalculate the correct frequencies
-> and errors would propagate up and down the clock tree.
-> 
-> Anyway, I would double check these tables. And if you want, I can
-> write a separate patch for the rate table validation. I presume that
-> you would like to add a new field, such as default_base_freq, to the
-> structure samsung_pll_clock, and if that field is non-zero, you
-> perform the validation of the table in _samsung_clk_register_pll?
 
-I'm not sure I get the idea of the field you're suggesting. If I
-understand correctly, your intention would be to provide a default
-frequency if there is no table provided. I don't think there is a need
-for it, because current code can read back current settings from
-registers and calculate current rate.
+Christoffer Dall writes:
 
-As for the validation itself, one more thing that needs to be considered
-is that the rate table must be sorted.
+> On Wed, Jul 09, 2014 at 02:55:12PM +0100, Alex Bennée wrote:
+>> To cleanly restore an SMP VM we need to ensure that the current pause
+>> state of each vcpu is correctly recorded. Things could get confused if
+>> the CPU starts running after migration restore completes when it was
+>> paused before it state was captured.
+>> 
+<snip>
+>> +/* Power state (PSCI), not real registers */
+>> +#define KVM_REG_ARM_PSCI		(0x0014 << KVM_REG_ARM_COPROC_SHIFT)
+>> +#define KVM_REG_ARM_PSCI_REG(n) \
+>> +	(KVM_REG_ARM64 | KVM_REG_SIZE_U64 | KVM_REG_ARM_PSCI | \
+>> +         (n & ~KVM_REG_ARM_COPROC_MASK))
+>
+> I don't understand this mask, why isn't this
+>             (n & 0xffff))
 
-We once decided to rely on the fact that tables in SoC drivers have
-rates explicitly specified and are correctly sorted, but now I'm
-inclined to reconsider this, based on the fact that those rates often
-are already incorrectly calculated in vendor code or even datasheets,
-which are main information sources for patch authors.
+I was trying to use the existing masks, but of course if anyone changes
+that it would be an ABI change so probably not worth it.
 
-Before mainlining PLL drivers (which was quite some time ago), we had a
-bit different implementation in our internal tree, which did not use
-explicitly specified rates at all (they could have been considered just
-comments to improve table readability) and the _register_pll() function
-simply calculated rates for all entries creating new table for internal
-use of the PLL driver that was in addition explicitly sorted to make
-sure that the order is correct. This kind of implementation is what I
-would lean toward today.
+>
+>> +#define KVM_REG_ARM_PSCI_STATE          KVM_REG_ARM_PSCI_REG(0)
+>> +#define NUM_KVM_PSCI_REGS               1
+>> +
+>
+> you're missing updates to Documentation/virtual/kvm/api.txt here.
 
-Best regards,
-Tomasz
+Will add.
+
+>>  /* Device Control API: ARM VGIC */
+>>  #define KVM_DEV_ARM_VGIC_GRP_ADDR	0
+>>  #define KVM_DEV_ARM_VGIC_GRP_DIST_REGS	1
+>> diff --git a/arch/arm64/kvm/guest.c b/arch/arm64/kvm/guest.c
+>> index 205f0d8..31d6439 100644
+>> --- a/arch/arm64/kvm/guest.c
+>> +++ b/arch/arm64/kvm/guest.c
+>> @@ -189,6 +189,54 @@ static int get_timer_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
+>>  }
+>>  
+>>  /**
+>> + * PSCI State
+>> + *
+>> + * These are not real registers as they do not actually exist in the
+>> + * hardware but represent the current power state of the vCPU
+>
+> full stop
+>
+>> + */
+>> +
+>> +static bool is_psci_reg(u64 index)
+>> +{
+>> +	switch (index) {
+>> +	case KVM_REG_ARM_PSCI_STATE:
+>> +		return true;
+>> +	}
+>> +	return false;
+>> +}
+>> +
+>> +static int copy_psci_indices(struct kvm_vcpu *vcpu, u64 __user *uindices)
+>> +{
+>> +	if (put_user(KVM_REG_ARM_PSCI_STATE, uindices))
+>> +		return -EFAULT;
+>> +	return 0;
+>> +}
+>> +
+>> +static int set_psci_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
+>> +{
+>> +	void __user *uaddr = (void __user *)(long)reg->addr;
+>> +	u64 val;
+>> +	int ret;
+>> +
+>> +	ret = copy_from_user(&val, uaddr, KVM_REG_SIZE(reg->id));
+>> +	if (ret != 0)
+>> +		return ret;
+>> +
+>> +        vcpu->arch.pause = (val & 0x1) ? false : true;
+>
+> tabs
+
+Hmmm, apparently the GNU Emacs "linux" style doesn't actually enforce
+that. Who knew? I'll beat the editor into submission.
+
+> I really need the documentation of the ABI, why is bit[0] == 1 not
+> paused?
+
+I figured 1 == running, but I can switch it round if you want to to map
+directly to the .pause flag.
+
+> If we are not complaining when setting the pause value to false if it
+> was true before, then we probably also need to wake up the thread in
+> case this is called from another thread, right?
+>
+> or perhaps we should just return an error if you're trying to un-pause a
+> CPU through this interface, hmmmm.
+
+Wouldn't it be an error to mess with any register when the system is not
+in a quiescent state? I was assuming that the wake state is dealt with
+when the run loop finally restarts. 
+
+<snip>
+>
+> please check for use of tabs versus spaces, checkpatch.pl should
+> complain.
+>
+> Can you add the 32-bit counterpart as part of this patch?
+
+Same patch? Sure.
+>
+> Thanks,
+> -Christoffer
+
+-- 
+Alex Bennée
