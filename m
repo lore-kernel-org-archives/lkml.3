@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298AbaGaDfw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 23:35:52 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:47517 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193AbaGaDea (ORCPT
+	id S932181AbaGaDe3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 23:34:29 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:39161 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932135AbaGaDe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 23:34:30 -0400
+	Wed, 30 Jul 2014 23:34:26 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Daniel Borkmann <dborkman@redhat.com>,
@@ -14,92 +14,82 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         Pablo Neira Ayuso <pablo@netfilter.org>,
         Kees Cook <keescook@chromium.org>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: [PATCH v4 net-next 2/5] net: filter: rename sk_filter_proglen -> bpf_classic_proglen
-Date: Wed, 30 Jul 2014 20:34:13 -0700
-Message-Id: <1406777656-27755-3-git-send-email-ast@plumgrid.com>
+Subject: [PATCH v4 net-next 0/5] net: filter: split sk_filter into socket and bpf, cleanup names
+Date: Wed, 30 Jul 2014 20:34:11 -0700
+Message-Id: <1406777656-27755-1-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1406777656-27755-1-git-send-email-ast@plumgrid.com>
-References: <1406777656-27755-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-trivial rename to better match semantics of macro
+The main goal of the series is to split 'struct sk_filter' into socket and
+bpf parts and cleanup names in the following way:
+- everything that deals with sockets keeps 'sk_*' prefix
+- everything that is pure BPF is changed to 'bpf_*' prefix
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- include/linux/filter.h |    3 +--
- net/core/filter.c      |    8 ++++----
- net/core/sock_diag.c   |    2 +-
- 3 files changed, 6 insertions(+), 7 deletions(-)
+split 'struct sk_filter' into
+struct sk_filter {
+	atomic_t        refcnt;
+	struct rcu_head rcu;
+	struct bpf_prog *prog;
+};
+and
+struct bpf_prog {
+        u32                     jited:1,
+                                len:31;
+        struct sock_fprog_kern  *orig_prog;
+        unsigned int            (*bpf_func)(const struct sk_buff *skb,
+                                            const struct bpf_insn *filter);
+        union {
+                struct sock_filter      insns[0];
+                struct bpf_insn         insnsi[0];
+                struct work_struct      work;
+        };
+};
+so that 'struct bpf_prog' can be used independent of sockets and cleans up
+'unattached' bpf use cases:
+isdn, ppp, team, seccomp, ptp, xt_bpf, cls_bpf, test_bpf
+which don't need refcnt/rcu fields.
 
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index 00640edc166f..3769341a745d 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -344,8 +344,7 @@ static inline unsigned int sk_filter_size(unsigned int proglen)
- 		   offsetof(struct sk_filter, insns[proglen]));
- }
- 
--#define sk_filter_proglen(fprog)			\
--		(fprog->len * sizeof(fprog->filter[0]))
-+#define bpf_classic_proglen(fprog) (fprog->len * sizeof(fprog->filter[0]))
- 
- int sk_filter(struct sock *sk, struct sk_buff *skb);
- 
-diff --git a/net/core/filter.c b/net/core/filter.c
-index 5a6aeb1d40b8..d6cb287e4f59 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -813,7 +813,7 @@ EXPORT_SYMBOL(sk_chk_filter);
- static int sk_store_orig_filter(struct sk_filter *fp,
- 				const struct sock_fprog *fprog)
- {
--	unsigned int fsize = sk_filter_proglen(fprog);
-+	unsigned int fsize = bpf_classic_proglen(fprog);
- 	struct sock_fprog_kern *fkprog;
- 
- 	fp->orig_prog = kmalloc(sizeof(*fkprog), GFP_KERNEL);
-@@ -1001,7 +1001,7 @@ static struct sk_filter *__sk_prepare_filter(struct sk_filter *fp)
- int sk_unattached_filter_create(struct sk_filter **pfp,
- 				struct sock_fprog_kern *fprog)
- {
--	unsigned int fsize = sk_filter_proglen(fprog);
-+	unsigned int fsize = bpf_classic_proglen(fprog);
- 	struct sk_filter *fp;
- 
- 	/* Make sure new filter is there and in the right amounts. */
-@@ -1053,7 +1053,7 @@ EXPORT_SYMBOL_GPL(sk_unattached_filter_destroy);
- int sk_attach_filter(struct sock_fprog *fprog, struct sock *sk)
- {
- 	struct sk_filter *fp, *old_fp;
--	unsigned int fsize = sk_filter_proglen(fprog);
-+	unsigned int fsize = bpf_classic_proglen(fprog);
- 	unsigned int sk_fsize = sk_filter_size(fprog->len);
- 	int err;
- 
-@@ -1154,7 +1154,7 @@ int sk_get_filter(struct sock *sk, struct sock_filter __user *ubuf,
- 		goto out;
- 
- 	ret = -EFAULT;
--	if (copy_to_user(ubuf, fprog->filter, sk_filter_proglen(fprog)))
-+	if (copy_to_user(ubuf, fprog->filter, bpf_classic_proglen(fprog)))
- 		goto out;
- 
- 	/* Instead of bytes, the API requests to return the number
-diff --git a/net/core/sock_diag.c b/net/core/sock_diag.c
-index a4216a4c9572..57d922320c59 100644
---- a/net/core/sock_diag.c
-+++ b/net/core/sock_diag.c
-@@ -69,7 +69,7 @@ int sock_diag_put_filterinfo(bool may_report_filterinfo, struct sock *sk,
- 		goto out;
- 
- 	fprog = filter->orig_prog;
--	flen = sk_filter_proglen(fprog);
-+	flen = bpf_classic_proglen(fprog);
- 
- 	attr = nla_reserve(skb, attrtype, flen);
- 	if (attr == NULL) {
+It's a follow up to the rcu cleanup started by Pablo in
+commit 34c5bd66e5 ("net: filter: don't release unattached filter through call_rcu()")
+
+Patch 1 - cleans up socket memory charging and makes it possible for functions
+  sk(bpf)_migrate_filter(), sk(bpf)_prepare_filter() to be socket independent
+Patches 2-4 - trivial renames
+Patch 5 - sk_filter split and renames of related sk_*() functions
+
+Alexei Starovoitov (5):
+  net: filter: simplify socket charging
+  net: filter: rename sk_filter_proglen -> bpf_classic_proglen
+  net: filter: rename sk_chk_filter() -> bpf_check_classic()
+  net: filter: rename sk_convert_filter() -> bpf_convert_filter()
+  net: filter: split 'struct sk_filter' into socket and bpf parts
+
+ Documentation/networking/filter.txt      |   12 +-
+ arch/arm/net/bpf_jit_32.c                |    8 +-
+ arch/mips/net/bpf_jit.c                  |    8 +-
+ arch/powerpc/net/bpf_jit_comp.c          |    8 +-
+ arch/s390/net/bpf_jit_comp.c             |    4 +-
+ arch/sparc/net/bpf_jit_comp.c            |    4 +-
+ arch/x86/net/bpf_jit_comp.c              |   14 +--
+ drivers/isdn/i4l/isdn_ppp.c              |   26 ++---
+ drivers/net/ppp/ppp_generic.c            |   28 ++---
+ drivers/net/team/team_mode_loadbalance.c |   14 +--
+ include/linux/filter.h                   |   51 +++++----
+ include/linux/isdn_ppp.h                 |    4 +-
+ include/uapi/linux/netfilter/xt_bpf.h    |    4 +-
+ kernel/bpf/core.c                        |   34 +++---
+ kernel/seccomp.c                         |   18 +--
+ lib/test_bpf.c                           |   24 ++--
+ net/core/filter.c                        |  183 +++++++++++++++---------------
+ net/core/ptp_classifier.c                |    6 +-
+ net/core/sock.c                          |    9 +-
+ net/core/sock_diag.c                     |    4 +-
+ net/netfilter/xt_bpf.c                   |    6 +-
+ net/sched/cls_bpf.c                      |   12 +-
+ 22 files changed, 243 insertions(+), 238 deletions(-)
+
 -- 
 1.7.9.5
 
