@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378AbaGaKaV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 06:30:21 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:33006 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904AbaGaKaT (ORCPT
+	id S1756303AbaGaKbU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 06:31:20 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:40003 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518AbaGaKbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 06:30:19 -0400
-Subject: [PATCH v2 1/2] printk: Add function to return log buffer address
- and size
-To: linux-kernel@vger.kernel.org
-From: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-Cc: linuxppc-dev@lists.ozlabs.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Thu, 31 Jul 2014 16:00:06 +0530
-Message-ID: <20140731102920.27954.25076.stgit@hegdevasant.in.ibm.com>
-User-Agent: StGit/0.16
+	Thu, 31 Jul 2014 06:31:18 -0400
+Date: Thu, 31 Jul 2014 11:31:10 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srihari Vijayaraghavan <linux.bug.reporting@gmail.com>
+Subject: Re: [PATCH] efi-bgrt: Add error handling; inform the user when
+ ignoring the BGRT
+Message-ID: <20140731103110.GC15082@console-pimps.org>
+References: <20140730192331.GA23730@jtriplet-mobl1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073110-3568-0000-0000-000005FEB28C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140730192331.GA23730@jtriplet-mobl1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platforms like IBM Power Systems supports service processor
-assisted dump. It provides interface to add memory region to
-be captured when system is crashed.
+On Wed, 30 Jul, at 12:23:32PM, Josh Triplett wrote:
+> Gracefully handle failures to allocate memory for the image, which might
+> be arbitrarily large.
+> 
+> efi_bgrt_init can fail in various ways as well, usually because the
+> BIOS-provided BGRT structure does not match expectations.  Add
+> appropriate error messages rather than failing silently.
+> 
+> Reported-by: Srihari Vijayaraghavan
 
-During initialization/running we can add kernel memory region
-to be collected.
+This could really do with an email address appending.
 
-Presently we don't have a way to get the log buffer base address
-and size. This patch adds support to return log buffer address
-and size.
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81321
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> ---
+>  arch/x86/platform/efi/efi-bgrt.c | 36 ++++++++++++++++++++++++++++++------
+>  1 file changed, 30 insertions(+), 6 deletions(-)
 
+[...]
 
-Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
----
-  Next patch extends arch specific code to add log buffer to platform
-dump.
+> @@ -61,14 +81,18 @@ void __init efi_bgrt_init(void)
+>  		early_iounmap(image, sizeof(bmp_header));
+>  	bgrt_image_size = bmp_header.size;
+>  
+> -	bgrt_image = kmalloc(bgrt_image_size, GFP_KERNEL);
+> -	if (!bgrt_image)
+> +	bgrt_image = kmalloc(bgrt_image_size, GFP_KERNEL | __GFP_NOWARN);
+> +	if (!bgrt_image) {
+> +		pr_err("Ignoring BGRT: failed to allocate memory for image (wanted %zu bytes)\n",
+> +		       bgrt_image_size);
+>  		return;
 
--Vasant
+I'm not sure that using __GFP_NOWARN is the right thing to do here. If
+for some reason we can't handle the BGRT image we should include checks
+in the BGRT code, rather than relying on the page-allocation machinery
+to save us.
 
- include/linux/printk.h |    3 +++
- kernel/printk/printk.c |   12 ++++++++++++
- 2 files changed, 15 insertions(+)
+Let's just use an explicit limit on the size of the BGRT image we're
+willing to handle.
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 319ff7e..aae82c4 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -10,6 +10,9 @@
- extern const char linux_banner[];
- extern const char linux_proc_banner[];
- 
-+extern void *get_log_buf_addr(void);
-+extern u32 get_log_buf_len(void);
-+
- static inline int printk_get_level(const char *buffer)
- {
- 	if (buffer[0] == KERN_SOH_ASCII && buffer[1]) {
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 13e839d..4049f7b 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -270,6 +270,18 @@ static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
- static char *log_buf = __log_buf;
- static u32 log_buf_len = __LOG_BUF_LEN;
- 
-+/* Return log buffer address */
-+void *get_log_buf_addr(void)
-+{
-+	return log_buf;
-+}
-+
-+/* Return log buffer size */
-+u32 get_log_buf_len(void)
-+{
-+	return log_buf_len;
-+}
-+
- /* human readable text of the record */
- static char *log_text(const struct printk_log *msg)
- {
+Either way, this hunk shouldn't be mixed in with the improved error
+logging changes, it needs to be a separate patch.
 
+-- 
+Matt Fleming, Intel Open Source Technology Center
