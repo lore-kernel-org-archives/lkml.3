@@ -1,54 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750896AbaGaEAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 00:00:07 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:45864 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756150AbaGaEAD (ORCPT
+	id S1751225AbaGaED5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 00:03:57 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:36859 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711AbaGaEDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 00:00:03 -0400
+	Thu, 31 Jul 2014 00:03:55 -0400
+Date: Thu, 31 Jul 2014 13:02:30 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, markh@compro.net
+Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com
+Subject: [PATCH V2] staging: dgap: introduce dgap_cleanup_nodes()
+Message-ID: <20140731040230.GA26206@devel.8.8.4.4>
 MIME-Version: 1.0
-In-Reply-To: <1406766558-8156-2-git-send-email-kever.yang@rock-chips.com>
-References: <1406766558-8156-1-git-send-email-kever.yang@rock-chips.com>
-	<1406766558-8156-2-git-send-email-kever.yang@rock-chips.com>
-Date: Wed, 30 Jul 2014 21:00:02 -0700
-X-Google-Sender-Auth: dQ8gcrEmd6vbtVSwaGhsGK7p-OI
-Message-ID: <CAD=FV=V7h1=RkUwT9TmVaNgPLVLSp6fObCMkFqzQHMmOU35K1w@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] Documentation: dt-bindings: add dt binding info
- for dwc2 dr_mode
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Paul Zimmerman <paulz@synopsys.com>, Heiko Stuebner <heiko@sntech.de>,
-        linux-arm-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Porter <mporter@linaro.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
+When a configration file is parsed with dgap_parsefile(),
+makes nodes for saving configrations for board.
 
-On Wed, Jul 30, 2014 at 5:29 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> Indicate that the generic dr_mode binding should be used for dwc2.
->
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
->
-> Changes in v2:
-> - Split out dr_mode and rk3288 bindings.
->
->  Documentation/devicetree/bindings/usb/dwc2.txt |    2 ++
->  1 file changed, 2 insertions(+)
+Making a node will allocate node memory and strings for saving
+configrations with kstrdup().
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+So these are freed when dgap is unloaded or failed to initialize.
+
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+V2: Do not need to free for NULLNODE.
+
+I have been too busy to solve this issue, sorry for late.
+
+Mark, Can you test this patch? I try to make simple module which is
+testing dgap_parsefile() and dgap_cleanup_nodes().
+
+There was a problem in freeing NULLNODE so if node is NULLNODE,
+just bypass and get next one.
+
+ drivers/staging/dgap/dgap.c |   52 +++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 52 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index 06c55cb..ac12e99 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -201,6 +201,7 @@ static int dgap_test_fep(struct board_t *brd);
+ static int dgap_tty_register_ports(struct board_t *brd);
+ static int dgap_firmware_load(struct pci_dev *pdev, int card_type,
+ 			      struct board_t *brd);
++static void dgap_cleanup_nodes(void);
+ 
+ static void dgap_cleanup_module(void);
+ 
+@@ -619,6 +620,7 @@ unregister_tty:
+ free_flipbuf:
+ 	dgap_free_flipbuf(brd);
+ cleanup_brd:
++	dgap_cleanup_nodes();
+ 	dgap_release_remap(brd);
+ 	kfree(brd);
+ 
+@@ -659,6 +661,8 @@ static void dgap_cleanup_module(void)
+ 		dgap_cleanup_board(dgap_board[i]);
+ 	}
+ 
++	dgap_cleanup_nodes();
++
+ 	if (dgap_numboards)
+ 		pci_unregister_driver(&dgap_driver);
+ }
+@@ -6323,6 +6327,54 @@ static void dgap_remove_tty_sysfs(struct device *c)
+ 	sysfs_remove_group(&c->kobj, &dgap_tty_attribute_group);
+ }
+ 
++static void dgap_cleanup_nodes(void)
++{
++	struct cnode *p;
++
++	p = &dgap_head;
++
++	while (p) {
++		struct cnode *tmp = p->next;
++
++		if (p->type == NULLNODE) {
++			p = tmp;
++			continue;
++		}
++
++		switch (p->type) {
++		case BNODE:
++			kfree(p->u.board.portstr);
++			kfree(p->u.board.addrstr);
++			kfree(p->u.board.pcibusstr);
++			kfree(p->u.board.pcislotstr);
++			kfree(p->u.board.method);
++			break;
++		case CNODE:
++			kfree(p->u.conc.id);
++			kfree(p->u.conc.connect);
++			break;
++		case MNODE:
++			kfree(p->u.module.id);
++			break;
++		case TNODE:
++			kfree(p->u.ttyname);
++			break;
++		case CUNODE:
++			kfree(p->u.cuname);
++			break;
++		case LNODE:
++			kfree(p->u.line.cable);
++			break;
++		case PNODE:
++			kfree(p->u.printname);
++			break;
++		}
++
++		kfree(p->u.board.status);
++		kfree(p);
++		p = tmp;
++	}
++}
+ /*
+  * Parse a configuration file read into memory as a string.
+  */
+-- 
+1.7.1
+
