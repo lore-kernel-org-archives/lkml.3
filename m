@@ -1,80 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539AbaGaXvR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 19:51:17 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:58557 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153AbaGaXvP convert rfc822-to-8bit (ORCPT
+	id S1752697AbaGaXxN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 19:53:13 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:51194 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751132AbaGaXxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 19:51:15 -0400
+	Thu, 31 Jul 2014 19:53:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AksIAPzV2lN5LKl0PGdsb2JhbABRCoMNgSmCJ4UIqBIBAQEDBp8ThW4BgQcXBQEBAQE4NoQEAQU6HCMQCAMOCgkMGQ8FJQMHGhMeiCPLIxcYhWSIdFwHCoRBBZdLhCiYMisvgQUk
+Date: Fri, 1 Aug 2014 09:53:06 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Abhijith Das <adas@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>
+Subject: Re: [RFC PATCH 0/2] dirreadahead system call
+Message-ID: <20140731235306.GR20518@dastard>
+References: <1406309851-10628-1-git-send-email-adas@redhat.com>
+ <CA2BF8AB-6F61-4856-8B0E-9D954BDEB243@dilger.ca>
+ <193414027.14151264.1406551934098.JavaMail.zimbra@redhat.com>
+ <7EBB0CF1-6564-4C63-8006-7DEEE8800A19@dilger.ca>
+ <20140731044909.GR26465@dastard>
+ <351B218B-259B-4066-8E78-0B0EA05D087E@dilger.ca>
 MIME-Version: 1.0
-X-Originating-IP: [95.21.61.92]
-In-Reply-To: <1406755767-5910-1-git-send-email-afaerber@suse.de>
-References: <1406755767-5910-1-git-send-email-afaerber@suse.de>
-Date: Fri, 1 Aug 2014 01:51:13 +0200
-Message-ID: <CABxcv==gNo84M7uFK04MiJp=Wn-n3uS4xH3QzxMNoKuOirH0VQ@mail.gmail.com>
-Subject: Re: [PATCH v3] Documentation: devicetree: Fix tps65090 typos in example
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
-Cc: Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <351B218B-259B-4066-8E78-0B0EA05D087E@dilger.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andreas,
+On Thu, Jul 31, 2014 at 01:19:45PM +0200, Andreas Dilger wrote:
+> On Jul 31, 2014, at 6:49, Dave Chinner <david@fromorbit.com> wrote:
+> > 
+> >> On Mon, Jul 28, 2014 at 03:19:31PM -0600, Andreas Dilger wrote:
+> >>> On Jul 28, 2014, at 6:52 AM, Abhijith Das <adas@redhat.com> wrote:
+> >>> OnJuly 26, 2014 12:27:19 AM "Andreas Dilger" <adilger@dilger.ca> wrote:
+> >>>> Is there a time when this doesn't get called to prefetch entries in
+> >>>> readdir() order?  It isn't clear to me what benefit there is of returning
+> >>>> the entries to userspace instead of just doing the statahead implicitly
+> >>>> in the kernel?
+> >>>> 
+> >>>> The Lustre client has had what we call "statahead" for a while,
+> >>>> and similar to regular file readahead it detects the sequential access
+> >>>> pattern for readdir() + stat() in readdir() order (taking into account if
+> >>>> ".*"
+> >>>> entries are being processed or not) and starts fetching the inode
+> >>>> attributes asynchronously with a worker thread.
+> >>> 
+> >>> Does this heuristic work well in practice? In the use case we were trying to
+> >>> address, a Samba server is aware beforehand if it is going to stat all the
+> >>> inodes in a directory.
+> >> 
+> >> Typically this works well for us, because this is done by the Lustre
+> >> client, so the statahead is hiding the network latency of the RPCs to
+> >> fetch attributes from the server.  I imagine the same could be seen with
+> >> GFS2. I don't know if this approach would help very much for local
+> >> filesystems because the latency is low.
+> >> 
+> >>>> This syscall might be more useful if userspace called readdir() to get
+> >>>> the dirents and then passed the kernel the list of inode numbers
+> >>>> to prefetch before starting on the stat() calls. That way, userspace
+> >>>> could generate an arbitrary list of inodes (e.g. names matching a
+> >>>> regexp) and the kernel doesn't need to guess if every inode is needed.
+> >>> 
+> >>> Were you thinking arbitrary inodes across the filesystem or just a subset
+> >>> from a directory? Arbitrary inodes may potentially throw up locking issues.
+> >> 
+> >> I was thinking about inodes returned from readdir(), but the syscall
+> >> would be much more useful if it could handle arbitrary inodes.
+> > 
+> > I'm not sure we can do that. The only way to safely identify a
+> > specific inode in the filesystem from userspace is via a filehandle.
+> > Plain inode numbers are susceptible to TOCTOU race conditions that
+> > the kernel cannot resolve. Also, lookup by inode number bypasses
+> > directory access permissions, so is not something we would expose
+> > to arbitrary unprivileged users.
+> 
+> None of these issues are relevant in the API that I'm thinking about. 
+> The syscall just passes the list of inode numbers to be prefetched
+> into kernel memory, and then stat() is used to actually get the data into
+> userspace (or whatever other operation is to be done on them),
+> so there is no danger if the wrong inode is prefetched.  If the inode
+> number is bad the filesystem can just ignore it. 
 
-On Wed, Jul 30, 2014 at 11:29 PM, Andreas Färber <afaerber@suse.de> wrote:
-> Specification and existing device trees use vsys-l{1,2}-supply,
-> not vsys_l{1,2}-supply. Fix the example to match the specification.
->
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
-> Acked-by: Mark Rutland <mark.rutland@arm.com>
-> Fixes: 21d2202158e9 ("mfd: tps65090: add DT support for tps65090")
-> Signed-off-by: Andreas Färber <afaerber@suse.de>
-> ---
->  v2 -> v3:
->  * Added Fixes header
->  * + regulator and mfd maintainers
->
->  v1 -> v2:
->  * More verbose commit message (requested by Mark Rutland)
->
->  Documentation/devicetree/bindings/regulator/tps65090.txt | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/regulator/tps65090.txt b/Documentation/devicetree/bindings/regulator/tps65090.txt
-> index 340980239ea9..ca69f5e3040c 100644
-> --- a/Documentation/devicetree/bindings/regulator/tps65090.txt
-> +++ b/Documentation/devicetree/bindings/regulator/tps65090.txt
-> @@ -45,8 +45,8 @@ Example:
->                 infet5-supply = <&some_reg>;
->                 infet6-supply = <&some_reg>;
->                 infet7-supply = <&some_reg>;
-> -               vsys_l1-supply = <&some_reg>;
-> -               vsys_l2-supply = <&some_reg>;
-> +               vsys-l1-supply = <&some_reg>;
-> +               vsys-l2-supply = <&some_reg>;
->
+Which means the filesystem has to treat the inode number as
+potentially hostile. i.e. it can not be trusted to be correct and so
+must take slow paths to validate the inode numbers. This adds
+*significant* overhead to the readahead path for some filesystems:
+readahead is only a win if it is low cost.
 
-True, these also matches the .supply_name used when registering the
-LDO[1-2] regulators in the tps65090 driver. So clearly the example was
-wrong while the property specification is correct.
+For example, on XFS every untrusted inode number lookup requires an
+inode btree lookup to validate the inode is actually valid on disk
+and that is it allocated and has references. That lookup serialises
+against inode allocation/freeing as well as other lookups. In
+comparison, when using a trusted inode number from a directory
+lookup within the kernel, we only need to do a couple of shift and
+mask operations to convert it to a disk address and we are good to
+go.
 
-Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+i.e. the difference is at least 5 orders of magnitude higher CPU usage
+for an "inode number readahead" syscall versus a "directory
+readahead" syscall, it has significant serialisation issues and it
+can stall other modification/lookups going on at the same time.
+That's *horrible behaviour* for a speculative readahead operation,
+but because the inodenumbers are untrusted, we can't avoid it.
 
-Best regards,
-Javier
+So, again, it's way more overhead than userspace just calling
+stat() asycnhronously on many files at once as readdir/gentdents
+returns dirents from the kernel to speed up cache population.
+
+That's my main issue with this patchset - it's implementing
+something in kernelspace that can *easily* be done generically in
+userspace without introducing all sorts of nasty corner cases that
+we have to handle in the kernel. We only add functionality to the kernel if there's a
+compelling reason to do it in kernelspace, and right now I just
+don't see any numbers that justify adding readdir+stat() readahead
+or inode number based cache population in kernelspace.
+
+Before we add *any* syscall for directory readahead, we need
+comparison numbers against doing the dumb multithreaded
+userspace readahead of stat() calls. If userspace can do this as
+fast as the kernel can....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
