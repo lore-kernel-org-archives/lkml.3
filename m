@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118AbaGaEGj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 00:06:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49027 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751493AbaGaEGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 00:06:38 -0400
-Date: Thu, 31 Jul 2014 14:06:27 +1000
-From: NeilBrown <neilb@suse.de>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Ian Kent <raven@themaw.net>, autofs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC] autofs: the documentation I wanted to read
-Message-ID: <20140731140627.5c5bfb06@notabene.brown>
-In-Reply-To: <53D93B5A.1040707@infradead.org>
-References: <20140729120017.53590fad@notabene.brown>
-	<53D93B5A.1040707@infradead.org>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1751077AbaGaEOx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 00:14:53 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:62062 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766AbaGaEOv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 00:14:51 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/VY2gxxN+burVxzaGlvESzde"; protocol="application/pgp-signature"
+In-Reply-To: <CAPM=9txGAA3sanpjYBgAuk0BynZRP56SRBfL_Rd88oDzBKHZ_g@mail.gmail.com>
+References: <1406752954-26158-1-git-send-email-xerofoify@gmail.com>
+	<CAPM=9ty2PhMdLykVX4c074Tdkyh0OO_jtfw-CAFHk8ANcZA4kQ@mail.gmail.com>
+	<CAPDOMVgXChx5HST-jMEZmWDydWKe0Yv15pyTiPeOuQSVEjihFA@mail.gmail.com>
+	<CAPM=9txGAA3sanpjYBgAuk0BynZRP56SRBfL_Rd88oDzBKHZ_g@mail.gmail.com>
+Date: Thu, 31 Jul 2014 00:14:50 -0400
+Message-ID: <CAPDOMVgM+E1XxsFvhAYWzHo7HCFqp6sO6Y53_m2am-fno6m_AQ@mail.gmail.com>
+Subject: Re: [PATCH] Remove certain calls for releasing page cache
+From: Nick Krause <xerofoify@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
+	<linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/VY2gxxN+burVxzaGlvESzde
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 30, 2014 at 11:57 PM, Dave Airlie <airlied@gmail.com> wrote:
+> On 31 July 2014 12:05, Nick Krause <xerofoify@gmail.com> wrote:
+>> On Wed, Jul 30, 2014 at 7:30 PM, Dave Airlie <airlied@gmail.com> wrote:
+>>>> This patch removes the lines for releasing the page cache in certain
+>>>> files as this may aid in perfomance with writes in the compression
+>>>> rountines of btrfs. Please note that this patch has not been tested
+>>>> on my own hardware due to no compression based btrfs volumes of my
+>>>> own.
+>>>>
+>>>
+>>> For all that is sacred, STOP.
+>>>
+>>> Go and do something else, you are wasting people's valuable time,
+>>>
+>>> Don't send any patches you haven't tested ever. If you aren't capable
+>>> of setting up a VM to run compressed btrfs volumes in, what makes you
+>>> think you can patch the code.
+>>>
+>>> This isn't how you learn to be a kernel developer by wasting other
+>>> kernel developers time, if you can't work out why releasing the page cache
+>>> is necessary then don't send the patch until you have spent the time
+>>> understanding what the page cache is.
+>>>
+>>> I know you'll just ignore this, and keep on trucking just like you ignored
+>>> the other messages from Stephen before.
+>>>
+>>> But if you want to work on the kernel, this isn't the way to do it, and
+>>> nobody will ever take a patch from you seriously if you continue in this
+>>> fashion.
+>>>
+>>> Dave.
+>> Dave ,
+>> Seems I need to have tested this code first.
+>> Regards Nick
+>
+>
+> No you needed to do a lot more, these one line replies from you are
+> quite stupid,
+>
+> You are quite deliberately missing the point of people trying to help you,
+>
+> Dave.
 
-On Wed, 30 Jul 2014 11:37:14 -0700 Randy Dunlap <rdunlap@infradead.org> wro=
-te:
-
-> On 07/28/14 19:00, NeilBrown wrote:
-
-> > +Directories further down the tree depend on the *max_proto* mount
->=20
->                                                     max_proto or maxproto=
-?  or either?
-> check/fix other places also.
-
-The mount option is "maxproto", the internal variable name is
-"max_proto" :-)
-=20
->=20
-> Thanks.  Nice job.
->=20
-
-Thanks so much for all those improvements - I really appreciate it.
-They'll all be in the next posting.
-
-Thanks,
-NeilBrown
-
---Sig_/VY2gxxN+burVxzaGlvESzde
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU9nAxDnsnt1WYoG5AQKMhg//R3YlNTvX9wlsVrQ3f+8CVy6U1/Y9W/7j
-u1VzyrRfeBTQFjxDWJfM0CqZuSCOR2Of7jPtVtJxVKkFz1fu+ig+9cRaFHfVjWNb
-87QxEktDbgFEWDQFLPQ5tBqn5+88M5Y1ZKIz5MWq+5b0vqS0QPhXZUlWK9WOM9Kc
-bSf+y2g2UUgaTuG+Z4qnqbjnG3X2nOY3aPHB7/chpMoQ1E0ifRaTHe0c8XvyxRf6
-2fjzTNS5WZek8THiL9IdcgEUNhCciys7RpAOXhFGn2Kq9cyDRMMdr3MPRIzAxhA6
-5rqM8hnPUUfuIDpA3t2Erjh+vZrnRoFyyfG1tg5idiqplyHtPwoHopHFpsT1KaIh
-RWJP5fMui49in6l39B7UW0j9f/QXy+8ZxtngvxZy8EX1N4XWaLQnA06lLhY2seJ+
-cfHcLKZ0pOzVlG4xnhrlVkJ80FpNWWbBa+uBMOpK5k4/hspC/ZLY3vjkXDuiPjgQ
-3VkcQx58AKaD21poZs6gDw5IudY7Bg2Ybib/6Eo/V5npBat3MD6NmQiu5ul/SqVX
-iNNFSFsu2OrQdvyFEv3eUrHBEuN/LZRpra+cEiKqNkG3HPlC7mWB4GUIex8qOvjZ
-sVQqVTdOcVOhTRoWO4RVDMtj+cpE/70Ds+u664+yr2eTKP+6lkJcKafKv7zoIKhf
-gncrODesEjw=
-=GTGW
------END PGP SIGNATURE-----
-
---Sig_/VY2gxxN+burVxzaGlvESzde--
+Honestly ,
+I understand and thanks for the help a lot. I am wondering if some one
+can give me
+a pointer on where to download the git repos for the btrfs user spaces
+tools as it
+seems on the btrfs tools on the wiki.
+Regards Nick
