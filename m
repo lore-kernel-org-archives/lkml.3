@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374AbaGaJ3G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 05:29:06 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49272 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756098AbaGaJ3E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 05:29:04 -0400
-Message-ID: <53DA0C5A.3010409@codeaurora.org>
-Date: Thu, 31 Jul 2014 14:58:58 +0530
-From: Chintan Pandya <cpandya@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	id S932418AbaGaJcs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 05:32:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55435 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932277AbaGaJcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 05:32:47 -0400
+Date: Thu, 31 Jul 2014 10:32:41 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [LKP] [mm] b72fd1470c9: -41.7%
+ perf-profile.cpu-cycles.get_page_from_freelist.__alloc_pages_nodemask.alloc_pages_current.__page_cache_alloc.pagecache_get_page
+Message-ID: <20140731093241.GQ10819@suse.de>
+References: <20140731055035.GB19742@aaronlu.sh.intel.com>
+ <20140731084832.GP10819@suse.de>
+ <20140731090130.GB23367@aaronlu.sh.intel.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v2] mm: BUG when __kmap_atomic_idx equals KM_TYPE_NR
-References: <1406787871-2951-1-git-send-email-cpandya@codeaurora.org> <alpine.DEB.2.02.1407310001360.18238@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1407310001360.18238@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140731090130.GB23367@aaronlu.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2014 12:32 PM, David Rientjes wrote:
-> On Thu, 31 Jul 2014, Chintan Pandya wrote:
->
->> __kmap_atomic_idx is per_cpu variable. Each CPU can
->> use KM_TYPE_NR entries from FIXMAP i.e. from 0 to
->> KM_TYPE_NR - 1. Allowing __kmap_atomic_idx to over-
->> shoot to KM_TYPE_NR can mess up with next CPU's 0th
->> entry which is a bug. Hence BUG_ON if
->> __kmap_atomic_idx>= KM_TYPE_NR.
->>
->
-> This appears to be a completely different patch, not a v2.  Why is this
-> check only done for CONFIG_DEBUG_HIGHMEM?
+On Thu, Jul 31, 2014 at 05:01:30PM +0800, Aaron Lu wrote:
+> On Thu, Jul 31, 2014 at 09:48:32AM +0100, Mel Gorman wrote:
+> > On Thu, Jul 31, 2014 at 01:50:35PM +0800, Aaron Lu wrote:
+> > > FYI, we noticed the below changes on
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
+> > > commit b72fd1470c9735f53485d089aa918dc327a86077 ("mm: rearrange zone fields into read-only, page alloc, statistics and page reclaim lines")
+> > > 
+> > > test case: lkp-st02/dd-write/5m-11HDD-JBOD-cfq-xfs-10dd
+> > > 
+> > > e28c951ff01a805  b72fd1470c9735f53485d089a  
+> > > ---------------  -------------------------  
+> > >       1.06 ~ 6%     -41.7%       0.62 ~ 3%  TOTAL perf-profile.cpu-cycles.get_page_from_freelist.__alloc_pages_nodemask.alloc_pages_current.__page_cache_alloc.pagecache_get_page
+> > >       1.34 ~ 2%     -19.8%       1.07 ~ 2%  TOTAL perf-profile.cpu-cycles.__block_write_begin.xfs_vm_write_begin.generic_perform_write.xfs_file_buffered_aio_write.xfs_file_write_iter
+> > >       1.19 ~ 5%     -12.1%       1.05 ~ 4%  TOTAL perf-profile.cpu-cycles.copy_from_user_atomic_iovec.iov_iter_copy_from_user_atomic.generic_perform_write.xfs_file_buffered_aio_write.xfs_file_write_iter
+> > >       2.78 ~ 1%     -16.3%       2.32 ~ 4%  TOTAL perf-profile.cpu-cycles.__clear_user.read_zero.read_zero.vfs_read.sys_read
+> > >   2.96e+09 ~ 4%      -5.2%  2.806e+09 ~ 0%  TOTAL perf-stat.cache-misses
+> > >   3.86e+12 ~ 5%      -5.2%  3.658e+12 ~ 1%  TOTAL perf-stat.ref-cycles
+> > > 
+> > > Legend:
+> > > 	~XX%    - stddev percent
+> > > 	[+-]XX% - change percent
+> > > 
+> > 
+> > I'm not exactly sure what I'm reading here. I think it is reporting on cpu
+> > cycles and cache misses used in various kernel functions. It's not clear what
+> > the units are but it looks like percentages of overall cycles spent in the
+> > reported functions. That may or may not be good depending on whether there
+> > is a higher cost elsewhere pushing the percentages down but that detail
+> > is not in the report. It looks like this is reporting that fewer clock
+> > cycles are being spent and incurring fewer cache misses. What is the problem?
+> 
+> LKP does not report problems only, it will also report commits that make
+> things better :-)
+> 
+> From the perf-stat.cache-misses, I think it is indicating your commit
+> does something for good.
+> 
 
-I agree that this check could have been there even without 
-CONFIG_DEBUG_HIGHMEM for stability reasons.
-
->
-> I think Andrew's comment earlier was referring to the changelog only and
-> not the patch, which looked correct.
-
-I think Andrew asked for a BUG case details also to justify the 
-overhead. But we have never encountered that BUG case. Present patch is 
-only logical fix to the code. However, in the fast path, if such 
-overhead is allowed, I can move BUG_ON out of any debug configs. 
-Otherwise, as per Andrew's suggestion, I will convert DEBUG_HIGHMEM into 
-DEBUG_VM which is used more frequently.
-
->
->> Signed-off-by: Chintan Pandya<cpandya@codeaurora.org>
->> ---
->> Changes:
->>
-
-
+Hooray! Thanks for the good news :D
 
 -- 
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
-member of the Code Aurora Forum, hosted by The Linux Foundation
+Mel Gorman
+SUSE Labs
