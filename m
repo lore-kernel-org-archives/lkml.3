@@ -1,166 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385AbaGaQiK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:38:10 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:63065 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292AbaGaQiI (ORCPT
+	id S1752523AbaGaQi2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:38:28 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:41203 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436AbaGaQiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:38:08 -0400
-Date: Thu, 31 Jul 2014 18:38:05 +0200
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Alex =?iso-8859-1?Q?Benn=E9e?= <alex.bennee@linaro.org>
-Cc: kvmarm@lists.cs.columbia.edu, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: KVM: export current vcpu->pause state via pseudo
- regs
-Message-ID: <20140731163805.GK11610@cbox>
-References: <1404914112-7298-1-git-send-email-alex.bennee@linaro.org>
- <20140731143538.GI11610@cbox>
- <87mwbpimgz.fsf@linaro.org>
+	Thu, 31 Jul 2014 12:38:25 -0400
+Date: Thu, 31 Jul 2014 09:38:19 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140731163819.GS11241@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140728225556.GA19493@linux.vnet.ibm.com>
+ <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140729081416.GR20603@laptop.programming.kicks-ass.net>
+ <20140729172304.GA16073@linux.vnet.ibm.com>
+ <20140729173332.GM3935@laptop>
+ <20140729180656.GY11241@linux.vnet.ibm.com>
+ <1406726619.5889.17.camel@marge.simpson.net>
+ <20140730142311.GJ11241@linux.vnet.ibm.com>
+ <1406792228.6348.22.camel@marge.simpson.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87mwbpimgz.fsf@linaro.org>
+In-Reply-To: <1406792228.6348.22.camel@marge.simpson.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14073116-1542-0000-0000-000003AC31BC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 04:14:51PM +0100, Alex Bennée wrote:
+On Thu, Jul 31, 2014 at 09:37:08AM +0200, Mike Galbraith wrote:
+> On Wed, 2014-07-30 at 07:23 -0700, Paul E. McKenney wrote:
 > 
-> Christoffer Dall writes:
+> > So the delta accounting is much of the pain.  Hmmm...
 > 
-> > On Wed, Jul 09, 2014 at 02:55:12PM +0100, Alex Bennée wrote:
-> >> To cleanly restore an SMP VM we need to ensure that the current pause
-> >> state of each vcpu is correctly recorded. Things could get confused if
-> >> the CPU starts running after migration restore completes when it was
-> >> paused before it state was captured.
-> >> 
-> <snip>
-> >> +/* Power state (PSCI), not real registers */
-> >> +#define KVM_REG_ARM_PSCI		(0x0014 << KVM_REG_ARM_COPROC_SHIFT)
-> >> +#define KVM_REG_ARM_PSCI_REG(n) \
-> >> +	(KVM_REG_ARM64 | KVM_REG_SIZE_U64 | KVM_REG_ARM_PSCI | \
-> >> +         (n & ~KVM_REG_ARM_COPROC_MASK))
-> >
-> > I don't understand this mask, why isn't this
-> >             (n & 0xffff))
+> (overhead picture was incomplete, just fixing that...) 
+
+Thank you again!!!
+
+And I have to ask...
+
+Does building with CONFIG_NO_HZ_FULL_SYSIDLE=y slow things down even more?
+If so, that would give me a rough idea of the cost of RCU's dyntick-idle
+handling.
+
+							Thanx, Paul
+
+> executive summary:
+> nohz_full=NA cpu=3      604.2 KHz  1.000
+> nohz_full=3, cpu=3      303.5 KHz   .502
+> nohz_full=3, cpu=2      460.4 KHz   .761
 > 
-> I was trying to use the existing masks, but of course if anyone changes
-> that it would be an ABI change so probably not worth it.
+> boring details:
+>     nohz_full=NA, pipe-test cpu=3           nohz_full=3, pipe-test cpu=3               nohz_full=3, pipe-test cpu=2
+>     10.45%   __schedule                     8.74%   native_sched_clock                 9.22%   __schedule
+>     10.03%   system_call                    5.63%   __schedule                         5.29%   system_call
+>      4.86%   _raw_spin_lock_irqsave         4.75%   _raw_spin_lock                     4.79%   context_tracking_user_exit
+>      4.51%   __switch_to                    4.35%   reschedule_interrupt               3.81%   _raw_spin_lock_irqsave
+>      4.31%   copy_user_generic_string       3.91%   _raw_spin_unlock_irqrestore        3.57%   __switch_to
+>      3.50%   pipe_read                      3.35%   system_call                        3.45%   copy_user_generic_string
+>      3.02%   pipe_write                     2.73%   context_tracking_user_exit         2.90%   context_tracking_user_enter
+>      2.76%   mutex_lock                     2.30%   _raw_spin_lock_irqsave             2.86%   pipe_read
+>      2.30%   native_sched_clock             2.08%   context_tracking_user_enter        2.33%   mutex_lock
+>      2.27%   copy_page_to_iter_iovec        1.94%   __switch_to                        2.14%   pipe_write
+>      2.16%   mutex_unlock                   1.88%   copy_user_generic_string           1.89%   copy_page_to_iter_iovec
+>      2.15%   _raw_spin_unlock_irqrestore    1.80%   account_system_time                1.88%   tracesys
+>      1.86%   copy_page_from_iter_iovec      1.77%   rcu_eqs_enter_common.isra.42       1.78%   native_sched_clock
+>      1.85%   vfs_write                      1.60%   pipe_read                          1.70%   mutex_unlock
+>      1.67%   new_sync_read                  1.58%   pipe_write                         1.68%   _raw_spin_unlock_irqrestore
+>      1.61%   new_sync_write                 1.39%   mutex_lock                         1.67%   int_check_syscall_exit_work
+>      1.49%   vfs_read                       1.37%   enqueue_task_fair                  1.54%   __context_tracking_task_switch
+>      1.47%   fsnotify                       1.25%   rcu_eqs_exit_common.isra.43        1.39%   copy_page_from_iter_iovec
+>      1.43%   __fget_light                   1.14%   get_vtime_delta                    1.38%   new_sync_read
+>      1.36%   enqueue_task_fair              1.11%   flat_send_IPI_mask                 1.38%   __tick_nohz_task_switch
+>      1.28%   finish_task_switch             1.07%   tracesys                           1.37%   syscall_trace_leave
+>      1.26%   dequeue_task_fair              1.03%   dequeue_task_fair                  1.35%   vfs_write
+>      1.25%   __sb_start_write               1.01%   copy_page_to_iter_iovec            1.34%   new_sync_write
+>      1.22%   _raw_spin_lock_irq             1.01%   int_check_syscall_exit_work        1.31%   int_ret_from_sys_call
+>      1.20%   try_to_wake_up                 0.97%   vfs_write                          1.30%   enqueue_task_fair
+>      1.16%   update_curr                    0.94%   __context_tracking_task_switch     1.23%   fsnotify
+>      1.05%   __fsnotify_parent              0.93%   mutex_unlock                       1.22%   finish_task_switch
+>      1.03%   pick_next_task_fair            0.88%   copy_page_from_iter_iovec          1.14%   vfs_read
+>      1.02%   sys_write                      0.87%   new_sync_write                     1.12%   _raw_spin_lock_irq
+>      1.01%   sys_read                       0.86%   __fget_light                       1.08%   dequeue_task_fair
+>      1.00%   __wake_up_sync_key             0.85%   __sb_start_write                   1.06%   sys_read
+>      0.93%   __wake_up_common               0.85%   int_ret_from_sys_call              1.04%   int_with_check
+>      0.92%   copy_page_to_iter              0.83%   syscall_trace_leave                1.02%   update_curr
+>      0.90%   check_preempt_wakeup           0.78%   new_sync_read                      0.99%   syscall_trace_enter
+>      0.90%   __srcu_read_lock               0.78%   account_user_time                  0.96%   __fget_light
+>      0.89%   put_prev_task_fair             0.76%   update_curr                        0.93%   __sb_start_write
+>      0.88%   copy_page_from_iter            0.74%   fsnotify                           0.89%   copy_page_to_iter
+>      0.82%   __sb_end_write                 0.73%   try_to_wake_up                     0.87%   try_to_wake_up
+>      0.76%   __percpu_counter_add           0.71%   finish_task_switch                 0.86%   check_preempt_wakeup
+>      0.74%   prepare_to_wait                0.70%   _raw_spin_lock_irq                 0.86%   sys_write
+>      0.72%   touch_atime                    0.69%   __wake_up_sync_key                 0.83%   __fsnotify_parent
+>      0.71%   pipe_wait                      0.69%   __tick_nohz_task_switch            0.81%   __wake_up_sync_key
+> 
 > 
 
-the KVM_REG_ARM_COPROC_MASK is part of the uapi IIRC, so that's not the
-issue, but that mask doesn't cover all the upper bits, so it feels weird
-to use that to me.
-
-> >
-> >> +#define KVM_REG_ARM_PSCI_STATE          KVM_REG_ARM_PSCI_REG(0)
-> >> +#define NUM_KVM_PSCI_REGS               1
-> >> +
-> >
-> > you're missing updates to Documentation/virtual/kvm/api.txt here.
-> 
-> Will add.
-> 
-> >>  /* Device Control API: ARM VGIC */
-> >>  #define KVM_DEV_ARM_VGIC_GRP_ADDR	0
-> >>  #define KVM_DEV_ARM_VGIC_GRP_DIST_REGS	1
-> >> diff --git a/arch/arm64/kvm/guest.c b/arch/arm64/kvm/guest.c
-> >> index 205f0d8..31d6439 100644
-> >> --- a/arch/arm64/kvm/guest.c
-> >> +++ b/arch/arm64/kvm/guest.c
-> >> @@ -189,6 +189,54 @@ static int get_timer_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
-> >>  }
-> >>  
-> >>  /**
-> >> + * PSCI State
-> >> + *
-> >> + * These are not real registers as they do not actually exist in the
-> >> + * hardware but represent the current power state of the vCPU
-> >
-> > full stop
-> >
-> >> + */
-> >> +
-> >> +static bool is_psci_reg(u64 index)
-> >> +{
-> >> +	switch (index) {
-> >> +	case KVM_REG_ARM_PSCI_STATE:
-> >> +		return true;
-> >> +	}
-> >> +	return false;
-> >> +}
-> >> +
-> >> +static int copy_psci_indices(struct kvm_vcpu *vcpu, u64 __user *uindices)
-> >> +{
-> >> +	if (put_user(KVM_REG_ARM_PSCI_STATE, uindices))
-> >> +		return -EFAULT;
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +static int set_psci_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
-> >> +{
-> >> +	void __user *uaddr = (void __user *)(long)reg->addr;
-> >> +	u64 val;
-> >> +	int ret;
-> >> +
-> >> +	ret = copy_from_user(&val, uaddr, KVM_REG_SIZE(reg->id));
-> >> +	if (ret != 0)
-> >> +		return ret;
-> >> +
-> >> +        vcpu->arch.pause = (val & 0x1) ? false : true;
-> >
-> > tabs
-> 
-> Hmmm, apparently the GNU Emacs "linux" style doesn't actually enforce
-> that. Who knew? I'll beat the editor into submission.
-> 
-> > I really need the documentation of the ABI, why is bit[0] == 1 not
-> > paused?
-> 
-> I figured 1 == running, but I can switch it round if you want to to map
-> directly to the .pause flag.
-> 
-
-don't care very deeply, just want something to describe it clearly.
-
-> > If we are not complaining when setting the pause value to false if it
-> > was true before, then we probably also need to wake up the thread in
-> > case this is called from another thread, right?
-> >
-> > or perhaps we should just return an error if you're trying to un-pause a
-> > CPU through this interface, hmmmm.
-> 
-> Wouldn't it be an error to mess with any register when the system is not
-> in a quiescent state? I was assuming that the wake state is dealt with
-> when the run loop finally restarts. 
-> 
-
-The ABI doesn't really define it as an error (the ABI doesn't enforce
-anything right now) so the question is, does it ever make sense to clear
-the pause flag through this ioctl?  If not, I think we should just err
-on the side of caution and specify in the docs that this is not
-supported and return an error.
-
-
-> <snip>
-> >
-> > please check for use of tabs versus spaces, checkpatch.pl should
-> > complain.
-> >
-> > Can you add the 32-bit counterpart as part of this patch?
-> 
-> Same patch? Sure.
-
-really up to you if you want to split it up into two patches, but I
-think it's small enough that you can just create one patch.
-
-Thanks,
--Christoffer
