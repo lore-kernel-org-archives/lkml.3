@@ -1,88 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050AbaGaHoD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 03:44:03 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:39178 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968AbaGaHoA (ORCPT
+	id S1756202AbaGaHoQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 03:44:16 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:59298 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968AbaGaHoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 03:44:00 -0400
-Date: Thu, 31 Jul 2014 00:43:58 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Aleksei Besogonov <alex.besogonov@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: Soft lockups during reading /proc/PID/smaps
-In-Reply-To: <loom.20140731T091947-310@post.gmane.org>
-Message-ID: <alpine.DEB.2.02.1407310041500.20816@chino.kir.corp.google.com>
-References: <loom.20140731T091947-310@post.gmane.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 31 Jul 2014 03:44:10 -0400
+Date: Thu, 31 Jul 2014 10:43:57 +0300
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2014-07-31
+Message-ID: <20140731074357.GA26071@t440s.lan>
+Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jul 2014, Aleksei Besogonov wrote:
 
-> I'm getting weird soft lockups while reading smaps on loaded systems with
-> some background cgroups usage. This issue can be reproduced with the most
-> recent kernel.
-> 
-> Here's the stack trace:
-> [ 1748.312052] BUG: soft lockup - CPU#6 stuck for 23s! [python2.7:1857]
-> [ 1748.312052] Modules linked in: xfs xt_addrtype xt_conntrack
-> iptable_filter ipt_MASQUERADE iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4
-> nf_nat_ipv4 nf_nat nf_conntrack ip_tables x_tables bridge stp llc
-> dm_thin_pool dm_persistent_data dm_bio_prison dm_bufio libcrc32c nfsd
-> auth_rpcgss nfs_acl nfs lockd sunrpc fscache dm_crypt psmouse serio_raw
-> ppdev parport_pc i2c_piix4 parport xen_fbfront fb_sys_fops syscopyarea
-> sysfillrect sysimgblt mac_hid isofs raid10 raid456 async_memcpy
-> async_raid6_recov async_pq async_xor async_tx xor raid6_pq raid1 raid0
-> multipath linear crct10dif_pclmul crc32_pclmul ghash_clmulni_intel
-> aesni_intel aes_x86_64 lrw gf128mul glue_helper ablk_helper cryptd floppy
-> [ 1748.312052] CPU: 6 PID: 1857 Comm: python2.7 Not tainted
-> 3.15.5-031505-generic #201407091543
+--vkogqOf2sHV7VnPd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This isn't the most recent kernel, we're at 3.16-rc7 now, but I don't 
-think there are any changes that would prevent this.
+Hi John,
 
-> [ 1748.312052] Hardware name: Xen HVM domU, BIOS 4.2.amazon 01/24/2014
-> [ 1748.312052] task: ffff8800eab41930 ti: ffff8803b9a94000 task.ti:
-> ffff8803b9a94000
-> [ 1748.312052] RIP: 0010:[<ffffffff81013111>]  [<ffffffff81013111>]
-> KSTK_ESP+0x11/0x40
-> [ 1748.312052] RSP: 0018:ffff8803b9a97c68  EFLAGS: 00000287
-> [ 1748.312052] RAX: 0000000000000000 RBX: ffff8803b60de3aa RCX: 00007f49ec000000
-> [ 1748.312052] RDX: 0000000000000001 RSI: ffff8800eba1c730 RDI: ffff880399434b90
-> [ 1748.312052] RBP: ffff8803b9a97c68 R08: 000000000000000a R09: 000000000000fffe
-> [ 1748.312052] R10: 0000000000000000 R11: 0000000000000007 R12: 0000000000000001
-> [ 1748.312052] R13: ffff8803b7a74108 R14: 00007f49ec021000 R15: ffff8803b9a9ffff
-> [ 1748.312052] FS:  00007fcc9562b740(0000) GS:ffff8803cfcc0000(0000)
-> knlGS:0000000000000000
-> [ 1748.312052] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [ 1748.312052] CR2: 00007fcc955ed180 CR3: 00000003b97a5000 CR4: 00000000001406e0
-> [ 1748.312052] Stack:
-> [ 1748.312052]  ffff8803b9a97ca8 ffffffff8117bcc9 ffff8803b9a97df8
-> ffff880399435030
-> [ 1748.312052]  ffff88003684d000 ffff8800eba1c730 0000000000000000
-> ffff8803b5dfc980
-> [ 1748.312052]  ffff8803b9a97d38 ffffffff81236612 ffff88030000002d
-> 00007f4900000070
-> [ 1748.312052] Call Trace:
-> [ 1748.312052]  [<ffffffff8117bcc9>] vm_is_stack+0x59/0xe0
-> [ 1748.312052]  [<ffffffff81236612>] show_map_vma+0x212/0x280
-> [ 1748.312052]  [<ffffffff81236805>] show_smap+0x85/0x250
-> [ 1748.312052]  [<ffffffff81237bc0>] ? smaps_pte_entry.isra.21+0x220/0x220
-> [ 1748.312052]  [<ffffffff81236a03>] show_pid_smap+0x13/0x20
-> [ 1748.312052]  [<ffffffff811f6016>] seq_read+0x256/0x3e0
-> [ 1748.312052]  [<ffffffff811d30e1>] vfs_read+0xb1/0x180
-> [ 1748.312052]  [<ffffffff811d335f>] SyS_read+0x4f/0xb0
-> [ 1748.312052]  [<ffffffff8178527f>] tracesys+0xe1/0xe6
+Here's one more (hopefully last) pull request for 3.17.
 
-The while_each_thread() in vm_is_stack() looks suspicious since the task 
-isn't current and rcu won't protect the iteration, and we also don't hold 
-sighand lock or a readlock on tasklist_lock.
+We've got:
 
-I think Oleg will know how to proceed, cc'd.
+- 6lowpan fixes/cleanups
+- A couple crash fixes, one for the Marvell HCI driver and another in LE SMP.
+- Fix for an incorrect connected state check
+- Fix for the bondable requirement during pairing (an issue which had
+  crept in because of using "pairable" when in fact the actual meaning
+  was "bondable" (these have different meanings in Bluetooth)
+
+Let me know if there are any issues. Thanks.
+
+Johan
+
+---
+The following changes since commit 568ba389be505f505b7fbeedb9ab4ece27603fc9:
+
+  brcmfmac: Fix OOB interrupt not working for BCM43362 (2014-07-29 10:32:57 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+
+for you to fetch changes up to 8500d791c458ccbbb3e2d3fa9a0320ffd5729069:
+
+  Bluetooth: Fix crash in the Marvell driver initialization codepath (2014-07-31 01:07:28 +0200)
+
+----------------------------------------------------------------
+Alexander Aring (7):
+      6lowpan: iphc: rename hc06_ptr pointer to hc_ptr
+      6lowpan: iphc: use sizeof in udp uncompression
+      6lowpan: iphc: cleanup use of lowpan_fetch_skb
+      6lowpan: iphc: cleanup use of lowpan_push_hc_data
+      6lowpan: iphc: use ipv6 api to check address scope
+      6lowpan: iphc: remove check on null
+      6lowpan: remove unused LOWPAN_FRAG_SIZE define
+
+Anatol Pomozov (1):
+      Bluetooth: Fix crash in the Marvell driver initialization codepath
+
+Johan Hedberg (5):
+      Bluetooth: Fix SMP context tracking leading to a kernel crash
+      Bluetooth: Fix check for connected state when pairing
+      Bluetooth: Rename HCI_PAIRABLE to HCI_BONDABLE
+      Bluetooth: Rename pairable mgmt setting to bondable
+      Bluetooth: Always use non-bonding requirement when not bondable
+
+Marcel Holtmann (6):
+      6lowpan: iphc: Fix block comments to match networking style
+      6lowpan: iphc: Fix issues with alignment matching open parenthesis
+      6lowpan: iphc: Fix missing blank line after variable declarations
+      6lowpan: iphc: Fix missing braces for if statement
+      6lowpan: iphc: Fix parenthesis alignments which off-by-one
+      Bluetooth: Fix sparse warning from HID new leds handling
+
+Varka Bhadram (2):
+      6lowpan: remove unused macros
+      6lowpan: remove unused function
+
+ drivers/bluetooth/btmrvl_main.c |   5 +
+ include/net/6lowpan.h           |  50 ------
+ include/net/bluetooth/hci.h     |   2 +-
+ include/net/bluetooth/mgmt.h    |   4 +-
+ net/6lowpan/iphc.c              | 295 +++++++++++++++++-------------------
+ net/bluetooth/hci_core.c        |   4 +-
+ net/bluetooth/hci_event.c       |  15 +-
+ net/bluetooth/hidp/core.c       |   2 +-
+ net/bluetooth/mgmt.c            |  24 +--
+ net/bluetooth/smp.c             |  17 ++-
+ 10 files changed, 185 insertions(+), 233 deletions(-)
+
+
+--vkogqOf2sHV7VnPd
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT2fO9AAoJECQj9vv5qNQS3e0P/1GLtWm1uJBLJXMm5VlpkT2t
+tq1aQoOMvFFx6XRwyD6ZKzQ28QyB4sIg580NTU+DQYt47eO4Bru+Gu1Bd7KzWX8p
+qBQNx9+W8CQUfEXG8RwkO0xJQ1P6hezLUYJOs1fFpTS6x9cpP6bQWK8sK/jB8SWB
+nyC5+uei3nFVpH4jMZtNxD1xv9O+LUxPalmA9OZIXk5DOPlZmjK4uilKwSYAmR1T
+DtFqQd3J8VOyxFoXjXK4+cp6l4Zz/YZ7bohI2YhaHw2gDU5Jf0joRxqqRutoboLA
+29CIJtblq21DSME2NTfb5/3iZ/0Gnlf76LV8TWgrN5WTfgiAgNErSigGsaygfGpz
+GnFZm42CbH74GlQ4Y5fQkdeXJ1bAAOraSgBpMBvCBmZI6ClTaHbOl+vEeLayltJd
+8UlJL9dOlummDvzpVcOPurzsnAAqA/WqWr3766KlgGqTmRLtlZZzgvcvyAkUdK2k
+LRfMguoPFbNDePVtmQQGUUl8WLldV4z29g+f14Us57o5niiyO3Fsp4dyMrbcku0d
+Bz39u5+iKT7Yi62D4U2h01Po/4LPhwT9U9hANtmj729/dIJWLbBUPuxbw7sCt7Ft
+hGCCls/6DvDwDkio+kCdJifol0+aSfJHRZhXdlTfmllGY04x5U8GL4IN2xz2kOd4
+SvKRMQ/h7bKCFWdWbSP/
+=1mbE
+-----END PGP SIGNATURE-----
+
+--vkogqOf2sHV7VnPd--
