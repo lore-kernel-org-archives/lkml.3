@@ -1,72 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418AbaGaJcs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 05:32:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55435 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932277AbaGaJcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 05:32:47 -0400
-Date: Thu, 31 Jul 2014 10:32:41 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: Re: [LKP] [mm] b72fd1470c9: -41.7%
- perf-profile.cpu-cycles.get_page_from_freelist.__alloc_pages_nodemask.alloc_pages_current.__page_cache_alloc.pagecache_get_page
-Message-ID: <20140731093241.GQ10819@suse.de>
-References: <20140731055035.GB19742@aaronlu.sh.intel.com>
- <20140731084832.GP10819@suse.de>
- <20140731090130.GB23367@aaronlu.sh.intel.com>
+	id S932439AbaGaJdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 05:33:35 -0400
+Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:34887
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932277AbaGaJdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 05:33:31 -0400
+Date: Thu, 31 Jul 2014 11:33:18 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140731090130.GB23367@aaronlu.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Punnaiah Choudary Kalluri <punnaia@xilinx.com>,
+        Borislav Petkov <bp@alien8.de>
+CC: "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Punnaiah Choudary <kpc528@gmail.com>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        Srikanth Vemula <svemula@xilinx.com>
+Subject: Re: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr ecc
+ controller
+References: <03CA77BA8AF6F1469AEDFBDA1322A7B74821CC98@XAP-PVEXMBX01.xlnx.xilinx.com>
+In-Reply-To: <03CA77BA8AF6F1469AEDFBDA1322A7B74821CC98@XAP-PVEXMBX01.xlnx.xilinx.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+Message-ID: <70b38686-5049-42a9-af87-b762b91e201e@BN1BFFO11FD018.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(51704005)(189002)(199002)(24454002)(164054003)(377454003)(479174003)(13464003)(79102001)(33646002)(81542001)(64126003)(95666004)(104016003)(20776003)(47776003)(107046002)(92726001)(83322001)(85306003)(19580405001)(21056001)(50466002)(92566001)(19580395003)(106466001)(77982001)(4396001)(50986999)(80022001)(64706001)(23676002)(65956001)(74316001)(46102001)(76176999)(76482001)(81342001)(102836001)(83506001)(31696002)(1496007)(70736001)(99396002)(86362001)(74502001)(83072002)(87936001)(85852003)(54356999)(74662001)(31966008)(6806004)(44976005)(65826006)(107986001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB064;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0289B6431E
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 05:01:30PM +0800, Aaron Lu wrote:
-> On Thu, Jul 31, 2014 at 09:48:32AM +0100, Mel Gorman wrote:
-> > On Thu, Jul 31, 2014 at 01:50:35PM +0800, Aaron Lu wrote:
-> > > FYI, we noticed the below changes on
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
-> > > commit b72fd1470c9735f53485d089aa918dc327a86077 ("mm: rearrange zone fields into read-only, page alloc, statistics and page reclaim lines")
-> > > 
-> > > test case: lkp-st02/dd-write/5m-11HDD-JBOD-cfq-xfs-10dd
-> > > 
-> > > e28c951ff01a805  b72fd1470c9735f53485d089a  
-> > > ---------------  -------------------------  
-> > >       1.06 ~ 6%     -41.7%       0.62 ~ 3%  TOTAL perf-profile.cpu-cycles.get_page_from_freelist.__alloc_pages_nodemask.alloc_pages_current.__page_cache_alloc.pagecache_get_page
-> > >       1.34 ~ 2%     -19.8%       1.07 ~ 2%  TOTAL perf-profile.cpu-cycles.__block_write_begin.xfs_vm_write_begin.generic_perform_write.xfs_file_buffered_aio_write.xfs_file_write_iter
-> > >       1.19 ~ 5%     -12.1%       1.05 ~ 4%  TOTAL perf-profile.cpu-cycles.copy_from_user_atomic_iovec.iov_iter_copy_from_user_atomic.generic_perform_write.xfs_file_buffered_aio_write.xfs_file_write_iter
-> > >       2.78 ~ 1%     -16.3%       2.32 ~ 4%  TOTAL perf-profile.cpu-cycles.__clear_user.read_zero.read_zero.vfs_read.sys_read
-> > >   2.96e+09 ~ 4%      -5.2%  2.806e+09 ~ 0%  TOTAL perf-stat.cache-misses
-> > >   3.86e+12 ~ 5%      -5.2%  3.658e+12 ~ 1%  TOTAL perf-stat.ref-cycles
-> > > 
-> > > Legend:
-> > > 	~XX%    - stddev percent
-> > > 	[+-]XX% - change percent
-> > > 
-> > 
-> > I'm not exactly sure what I'm reading here. I think it is reporting on cpu
-> > cycles and cache misses used in various kernel functions. It's not clear what
-> > the units are but it looks like percentages of overall cycles spent in the
-> > reported functions. That may or may not be good depending on whether there
-> > is a higher cost elsewhere pushing the percentages down but that detail
-> > is not in the report. It looks like this is reporting that fewer clock
-> > cycles are being spent and incurring fewer cache misses. What is the problem?
+On 07/30/2014 05:41 PM, Punnaiah Choudary Kalluri wrote:
+> Hi Boris,
 > 
-> LKP does not report problems only, it will also report commits that make
-> things better :-)
+>> -----Original Message-----
+>> From: Borislav Petkov [mailto:bp@alien8.de]
+>> Sent: Monday, July 28, 2014 11:32 PM
+>> To: Punnaiah Choudary Kalluri
+>> Cc: Punnaiah Choudary Kalluri; dougthompson@xmission.com;
+>> robh+dt@kernel.org; pawel.moll@arm.com; Michal Simek;
+>> mark.rutland@arm.com; ijc+devicetree@hellion.org.uk; Kumar Gala; Rob
+>> Landley; devicetree@vger.kernel.org; linux-doc@vger.kernel.org; linux-
+>> edac@vger.kernel.org; linux-kernel@vger.kernel.org; linux-arm-
+>> kernel@lists.infradead.org; Punnaiah Choudary; Anirudha Sarangi; Srikanth
+>> Vemula
+>> Subject: Re: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr
+>> ecc controller
+>>
+>> On Mon, Jul 28, 2014 at 10:53:26PM +0530, punnaiah choudary kalluri wrote:
+>>> I can agree with you that we can use shorter names.But ZYNQ has
+>>> programmable logic next to processing system where one can add soft
+>>> memory controller in the same system and may use different driver. So,
+>>> the edac driver for zynq may include multiple drivers for different
+>>> memory controllers in the same file. In this case it is difficult to
+>>> maintain generic macros as you suggested above.
+>>
+>> So?
+>>
+>> You can still shorten them a bit - the current names are awfully long.
+>> SYNPS_DDRC_ECC_ is too much information, for example. We know it is DDR
+>> and we know it is about ECC. So do SYNPS and ZYNQ or OTHER or whatever
+>> you wanna call it prefix and then the rest. I.e.,
+>>
+>>    SYNPS_<reg>_<bits*>
+>>    ZYNQ_<reg>_bits*>
+>>
+>> You can even use single letter prefixes like S_ and Z_ and add a comment
+>> explaining what those mean. Still much more readable than the long
+>> repeating prefixes currently.
 > 
-> From the perf-stat.cache-misses, I think it is indicating your commit
-> does something for good.
+> Ok.
+>>
+>>> Also the current edac framework for edac memory controllers is
+>>> expecting the mc_num from the driver while allocating the memory
+>>> controller instance using the edac_mc_alloc function. This requirement
+>>> mandates that if the system contains two different memory controllers
+>>> then the corresponding edac drivers should be in single file.
+>>
+>> So you're telling me that you want one edac driver for *two* memory
+>> controllers which can be present on a single system *at* *the* *same*
+>> *time*? Is that it?
 > 
+> Yes.
+>>
+>> How exactly is that topology supposed to look like, work, etc, etc? What
+>> kind of error reporting do you imagine you want to do with EDAC?
+> 
+> Zynq (All programmable SOC) contains a dual core ARM cortex A9 based processing
+> System(PS) and Xilinx programmable logic(PL) in a single device.
+> 
+> Assume the application is a broadcast camera. The design for this system use PS as
+> Control plane and use PL as data plane for processing the video data. So, the design 
+> may have two different memory controllers one in PS and another one in PL.   
+> PS is running with Linux OS and PL doesn't have the OS and it is  controlled by the 
+> OS running on PS.
+>  Now the requirement is to develop a monitoring system for all the hardware failures 
+> Including ddr ecc errors. Since the broadcast camera involves more data processing and
+> DDR memory access, there is a high probability of getting ddr ecc errors over the period.
+> So, the user should be intimated with these errors when they occur and if the error rate
+>  is high, then the user can consider the preventive methods. Without this error reporting
+> mechanism it is difficult to debug the issues like memory corruption, kernel oops which
+>  may occur due to ddr ecc failures.
+> 
+> Since, the memory controllers are different, it need two edac drivers for reporting the ecc 
+> errors and also maintaining the statistics of that particular memory controller. With the current
+> framework, there is a chance that both the drivers get mc_num as zero and malfunction. 
+> Assume the code for the two drivers looks like below
+> 
+> Driver 1:
+> 	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
+> 			    sizeof(struct  ctrl1_drvdata));
+> 
+> Driver 2:
+> 	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
+> 			    sizeof(struct ctrl2_drvdata));
+> 
+> Issue:
+>   Since driver is providing the mc_num to framework, now there is chance that only one device active as
+>  both the drivers claiming the same number.
+> 
+> Solution 1:
+>  Keep two drivers in single file and use static global variable for tracking the mc_num. This solution looks
+> good but the drivers may not be generic as these driver would be in a zynq_edac.c file. So others may not
+> reuse these drivers
+> static int mc_num = 0;
+> 
+> Driver 1:
+> 	mci = edac_mc_alloc(mc_num, ARRAY_SIZE(layers), layers,
+> 			    sizeof(struct  ctrl1_drvdata));
+>               mc_num++;
+> 
+> Driver 2:
+> 	mci = edac_mc_alloc(mc_num, ARRAY_SIZE(layers), layers,
+> 			    sizeof(struct ctrl2_drvdata));
+>                  mc_num++;
+> 
+> Solution 2:
+>   Let the framework assign the mc_num to the edac driver
+> 
+>      mc_num = edac_mc_get_id(); /* returns the next available mci slot */
+>      mci = edac_mc_alloc(mc_num,...);
+> 
+> 
+> In my opinion solution 2  looks neat and it eliminates the dependency on tracking
+>  the mc_num.
 
-Hooray! Thanks for the good news :D
+Isn't there also 3rd option which is provide mc_num via DTS?
 
--- 
-Mel Gorman
-SUSE Labs
+Thanks,
+Michal
+
