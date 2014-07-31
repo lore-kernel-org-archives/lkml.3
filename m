@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932376AbaGaKLt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 06:11:49 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:44201 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932343AbaGaKLq (ORCPT
+	id S932396AbaGaKMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 06:12:24 -0400
+Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:43543
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750969AbaGaKMW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 06:11:46 -0400
-Message-ID: <53DA165E.8040601@gmail.com>
-Date: Thu, 31 Jul 2014 13:11:42 +0300
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Thu, 31 Jul 2014 06:12:22 -0400
+From: Dexuan Cui <decui@microsoft.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "dan.carpenter@oracle.com" <dan.carpenter@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH v3] video: hyperv: hyperv_fb: refresh the VM screen by
+ force on VM panic
+Thread-Topic: [PATCH v3] video: hyperv: hyperv_fb: refresh the VM screen by
+ force on VM panic
+Thread-Index: AQHPrAHsLR3FR7YCb0qbISFqmZOZ7pu58uTA
+Date: Thu, 31 Jul 2014 10:11:41 +0000
+Message-ID: <EE124450C0AAF944A40DD71E61F878C98F6F78@SINEX14MBXC417.southpacific.corp.microsoft.com>
+References: <1404875063-27424-1-git-send-email-decui@microsoft.com>
+ <53D90008.4060908@ti.com>
+In-Reply-To: <53D90008.4060908@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.3.92]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Matthew Wilcox <willy@linux.intel.com>
-CC: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 04/22] Change direct_access calling convention
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com> <b78b33d94b669a5fbd02e06f2493b43dd5d77698.1406058387.git.matthew.r.wilcox@intel.com> <53D9174C.7040906@gmail.com> <20140730194503.GQ6754@linux.intel.com>
-In-Reply-To: <20140730194503.GQ6754@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(51704005)(199002)(13464003)(377454003)(164054003)(189002)(77982001)(4396001)(81156004)(46102001)(106466001)(47776003)(87936001)(20776003)(77096002)(6806004)(80022001)(76482001)(46406003)(83322001)(81542001)(19580405001)(31966008)(23726002)(68736004)(81342001)(85806002)(97736001)(55846006)(19580395003)(106116001)(95666004)(21056001)(16796002)(2656002)(97756001)(86612001)(74662001)(33656002)(54356999)(84676001)(92566001)(99396002)(50466002)(64706001)(74502001)(79102001)(85306003)(69596002)(110136001)(26826002)(76176999)(86362001)(50986999)(83072002)(107046002)(44976005)(92726001)(85852003);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB248;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Forefront-PRVS: 0289B6431E
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=decui@microsoft.com; 
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2014 10:45 PM, Matthew Wilcox wrote:
-<>
->> + 	if (sector & (PAGE_SECTORS-1))
->> + 		return -EINVAL;
+> -----Original Message-----
+> From: Tomi Valkeinen [mailto:tomi.valkeinen@ti.com]
+> Sent: Wednesday, July 30, 2014 22:24 PM
+> > +static struct fb_info *hvfb_info;
 > 
-> Mmm.  PAGE_SECTORS is private to brd (and also private to bcache!) at
-> this point.  We've got a real mess of defines of SECTOR_SIZE, SECTORSIZE,
-> SECTOR_SHIFT and so on, dotted throughout various random include files.
-> I am not the river to flush those Augean stables today.
+> Static variables like these are usually a no-no. This prevents you from
+> having multiple device instances.
+I agree.
+
+> >  static uint screen_width = HVFB_WIDTH;
+> >  static uint screen_height = HVFB_HEIGHT;
+> >  static uint screen_depth;
+> >  static uint screen_fb_size;
+> >
+> > +/* If true, the VSC notifies the VSP on every framebuffer change */
+> > +static bool synchronous_fb;
+> > +
 > 
-> I'll go with this, from the dcssblk driver:
+> Same comment here.
 > 
->         if (sector % (PAGE_SIZE / 512))
->                 return -EINVAL;
-> 
+> However, if (and only if) the driver is already designed to work only
+> with single device instance, then this patch is probably ok. But even
+IMO the host should only provide at most 1 synthetic video device to a VM. :-)
 
-Sigh, right, sure I did not mean to make that fight. Works as well
+> then, I'd prefer this to be handled without static variables so that the
+> driver could eventually be changed to support multiple device instances.
 
-<>
->> Style: Need a space between declaration and code (have you check-patch)
-> 
-> That's a bullshit check.  I don't know why it's in checkpatch.
-> 
+Hi Tomi,
+Maybe we can remove these static stuff:
++static struct fb_info *hvfb_info;
++static struct notifier_block hvfb_panic_nb = {
++	.notifier_call = hvfb_on_panic,
++};
+by kmalloc()-ing  a new struct:
+struct hv_fb_panic_nb {
+        struct fb_info *hvfb_info;
+        struct notifier_block nb;
+}
+?
+I think in hvfb_on_panic() we should be able to get the
+hvfb_info pointer by
+hvfb_info = container_of(nb, struct hv_fb_panic_nb, nb).
 
-I did not invent the rules. But I do respect them. I think the merit
-of sticking to some common style is much higher then any particular
-style choice. Though this particular one I do like, because of the
-C rule that forces all declarations before code, so it makes it easier
-on the maintenance. In any way Maintainers are suppose to run checkpatch
-before submission, some do ;-)
+If you like that or have a better idea, please let me know so
+I can make a new patch.
 
-<>
->>> +	if (size < 0)
->>
->> 	if(size < PAGE_SIZE), No?
-> 
-> No, absolutely not.  PAGE_SIZE is unsigned long, which (if I understand
-> my C integer promotions correctly) means that 'size' gets promoted to
-> an unsigned long, and we compare them unsigned, so errors will never be
-> caught by this check.
-
-Good point I agree that you need a cast ie.
-
- 	if(size < (long)PAGE_SIZE)
-
-The reason I'm saying this is because of a bug I actually hit when
-playing with partitioning and fdisk, it came out that the last partition's
-size was not page aligned, and code that checked for (< 0) crashed because
-prd returned the last two sectors of the partition, since your API is sector
-based this can happen for you here, before you are memseting a PAGE_SIZE
-you need to test there is space, No? 
-
-> 
-> 
-
-Thanks
-Boaz
-
+Thanks,
+-- Dexuan
