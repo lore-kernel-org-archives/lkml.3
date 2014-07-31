@@ -1,458 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527AbaGaRyd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:54:33 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:48638 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889AbaGaRyb (ORCPT
+	id S1752501AbaGaR51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:57:27 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:57848 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153AbaGaR50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:54:31 -0400
-Date: Thu, 31 Jul 2014 10:54:27 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, "Gupta, Pekon\"" <pekon@ti.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-mtd@lists.infradead.org, devicetree@vger.kernel.org,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>
-Subject: Re: [PATCH] mtd: nand: stm_nand_bch: add new driver
-Message-ID: <20140731175427.GO3711@ld-irv-0074>
-References: <1401268805-26043-1-git-send-email-lee.jones@linaro.org>
- <20140703002237.GM3599@ld-irv-0074>
- <20140731164709.GK9030@lee--X1>
+	Thu, 31 Jul 2014 13:57:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140731164709.GK9030@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140731023233.GA1259@localhost>
+References: <20140730040008.GF16537@localhost>
+	<CABPqkBRcCVjohrYGCo0XuiAAaSGscLnjsgttvGB7EkdxgX1t5w@mail.gmail.com>
+	<20140730055333.GA29881@localhost>
+	<CABPqkBR-==vga4ZsaiLPB2SAGJvd4=BJ3ArkSuSDYexSQC+w+Q@mail.gmail.com>
+	<20140731023233.GA1259@localhost>
+Date: Thu, 31 Jul 2014 19:57:25 +0200
+Message-ID: <CABPqkBQ5WagvWLa4ojLAZB2fgBUa53YstBsmLS6JqVzjZ2aEaQ@mail.gmail.com>
+Subject: Re: [perf/x86/RAPL] BUG: unable to handle kernel NULL pointer
+ dereference at 00000028
+From: Stephane Eranian <eranian@google.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, LKML <linux-kernel@vger.kernel.org>,
+        Venkatesh Srinivas <venkateshs@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 05:47:09PM +0100, Lee Jones wrote:
-> Finally getting round to this ...
+On Thu, Jul 31, 2014 at 4:32 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Hi Stephane,
+>
+> On Wed, Jul 30, 2014 at 07:56:11PM +0200, Stephane Eranian wrote:
+>> On Wed, Jul 30, 2014 at 7:53 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+>> > On Wed, Jul 30, 2014 at 06:45:58AM +0200, Stephane Eranian wrote:
+>> >> On Wed, Jul 30, 2014 at 6:00 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+>> >> > Greetings,
+>> >> >
+>> >> > 0day kernel testing robot got the below dmesg and the first bad commit is
+>> >> >
+>> >> Is this booting a guest kernel or native?
+>> >
+>> > It's a guest kernel.
+>> >
+>> >> What is the  host CPU?
+>> >
+>> > The host CPU is E5-2680, Sandy Bridge-EP.
+>> >
+>> I thought this problem had already be mentioned a while back.
+>>
+>> See https://lkml.org/lkml/2014/3/6/685
+>> And https://lkml.org/lkml/2014/4/23/512
+>>
+>> So what you are telling here is that those two fixes never made it or
+>> that you are
+>> running an older kernel.
+>
+> I just checked linux-next and find that the bug in rapl_pmu_init() has
+> been fixed. linux-next happen to have the same "BUG: unable to handle
+> kernel NULL pointer dereference" message but at another function
+> validate_chain().. Attached is the dmesg in linux-next.
+>
+> Sorry for the noise!
+>
+Is it fixed with the two patches I referred you to?
 
-Sounds like me :)
-
-> On Wed, 02 Jul 2014, Brian Norris wrote:
-> > On Wed, May 28, 2014 at 10:20:05AM +0100, Lee Jones wrote:
-> > > This is a squashed version of the submission to avoid re-sending the
-> > > entire set over and over, essentially clogging up the MLs.
-> > 
-> > Thanks. I think I'd prefer to accept your driver in a form like this
-> > too.
-> 
-> You mean squashed?  I'd _really_ like _not_ to do that.
-
-Any particular reason? Just to bump your patch count? ;) A half-finished
-driver is not really bisectable.
-
-> We've spoken
-> about this in reasonable depth before.  I agreed to squash it for this
-> review to keep the submissions nice and light, but we did have an
-> agreement that once accepted the final delivery could be via
-> pull-request.  I'd really like it if you honoured that.
-
-I don't recall the part about final delivery, but that's what happens
-via informal and unlogged communication like IRC, I guess. As I recall,
-I just mentioned that you could link people to your git history if you
-felt it was still useful.
-
-Anyway, as long as the review process is sane (1 new driver = small
-number of patches), then I don't particularly mind how the final
-delivery comes.
-
-> I can pull the vendor specific (rather than
-> legacy :) ) BBT handling out and protect it with a CONFIG option.
-
-A CONFIG option perhaps; but you also might need to specify what
-'nand-on-flash-bbt' means in your DT. Personally, I'd prefer that
-'nand-on-flash-bbt' refers only to one of the BBT's found in nand_bbt.c.
-Maybe you could extend nand-on-flash-bbt to have a value, like:
-
-	nand-on-flash-bbt = "ST";
-
-Just a thought. I don't know if this is overdesign, or proper DT safety
-(the whole "DT as ABI" thing is tricky, especially when dealing with
-softer things like this).
-
-> > >  Documentation/devicetree/bindings/mtd/stm-nand.txt |   87 +
-> > 
-> > See:
-> > 
-> >   Documentation/devicetree/bindings/submitting-patches.txt
-> 
-> This file doesn't exist.  What are you referencing?
-
-commit 2a9330010bea5982a5c6593824bc036bf62d67b7
-Author: Jason Cooper <jason@lakedaemon.net>
-Date:   Tue Dec 17 16:59:40 2013 +0000
-
-    dt/bindings: submitting patches and ABI documents
-
-> > You're missing devicetree@vger.kernel.org on CC, and the binding doc
-> > needs a separate patch. (Sorry if I confused this one earlier.)
-> 
-> The binding document will certainly be a separate patch.  This patch
-> is the 'everything squashed' version which was requested.
-
-I was only referring to the driver. For the DT guys' sake, you should
-still follow their rules for patch review.
-
-> > >  arch/arm/boot/dts/stih41x-b2020.dtsi               |   40 +
-> > 
-> > This will need refreshed and sent as a separate patch, to go through the
-> > appropriate ARM tree.
-> 
-> As above.
-
-OK, if you're really planning to send a final git pull request, you'll
-need to have this in a separate branch for them to take, then.
-
-...
-> > > diff --git a/Documentation/devicetree/bindings/mtd/stm-nand.txt b/Documentation/devicetree/bindings/mtd/stm-nand.txt
-> > > new file mode 100644
-> > > index 0000000..d957f49
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/mtd/stm-nand.txt
-> > > @@ -0,0 +1,87 @@
-> > > +STM BCH NAND Support
-> > > +--------------------
-> > > +
-> > > +Required properties:
-> > > +
-> > > +- compatible		: Should be "st,nand-bch"
-> > > +- reg			: Should contain register's location and length
-> > > +- reg-names		: "nand_mem" - NAND Controller register map
-> > > +			  "nand_dma" - BCH Controller DMA configuration map
-> > > +- interrupts		: Interrupt number
-> > > +- interrupt-names	: "nand_irq" - NAND Controller IRQ
-> > > +- st,nand-banks		: Subnode representing one or more "banks" of NAND
-> > > +			  Flash, connected to an STM NAND Controller (see
-> > > +			  description below).
-> > > +- nand-ecc-strength	: Generic NAND property (See mtd/nand.txt)
-> > > +			  Options are; 0, 18, 30 or 0xFF (AUTO)
-> > 
-> > What is 0xFF (AUTO)?
-
-Could you answer this one? IIRC, 0xff (AUTO) could easily be replaced by
-language that "If nand-ecc-strength is not present", software is free to
-auto-select the ECC strength. That removes this non-intuitive special
-value.
-
-Also, nand-ecc-strength should probably be paired with
-nand-ecc-step-size, otherwise it doesn't really have any meaning.
-
-...
-> > > +Example:
-> > > +
-...
-> > > +	nand_banks: nand-banks {
-> > > +		bank0 {
-...
-> > > +			partitions {
-...
-> > > +				partition@0{
-> > > +					label = "NAND Flash 1";
-> > 
-> > Do you really want spaces in your partition names?
-> 
-> No clue to be honest.  What are the known ramifications?
-
-I thought it might give issues with the /proc/mtd columns, but actually,
-the format there is quoted, so the columns will still be unambiguous.
-
-It also could make things a little more difficult with boot cmdline
-parameters, for instance if you want to specify a partition for UBI to
-attach to:
-
-  ubi.mtd="NAND Flash 1"
-
-This will probably work OK (haven't tested it), but I can imagine some
-boot environments in which getting the quoting right is more difficult.
-
-> > > +					reg = <0x00000000 0x00800000>;
-> > > +				};
-> > > +				partition@800000{
-> > > +					label = "NAND Flash 2";
-> > > +					reg = <0x00800000 0x0F800000>;
-> > > +				};
-> > > +			};
-> > > +		};
-> > > +	};
-...
-
-> > > diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
-> > > new file mode 100644
-> > > index 0000000..5ad78ce
-> > > --- /dev/null
-> > > +++ b/drivers/mtd/nand/stm_nand_bch.c
-> > > @@ -0,0 +1,2415 @@
-...
-> > > +/*
-> > > + * ONFI NAND Timing Mode Specifications
-> > > + *
-> > > + * Note, 'tR' field (maximum page read time) is extracted from the ONFI
-> > > + * parameter page during device probe.
-> > > + */
-> > > +const struct nand_sdr_timings st_nand_onfi_timing_specs[] = {
-> > 
-> > Did you ever take a look at Boris Brezillon's timing patch series? He
-> > hasn't submitted an update recently, but it was looking good:
-> > 
-> >   http://article.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/7976
-> > 
-> > Perhaps you could even modify/test/resubmit it (it's got a GPL Sign-off,
-> > after all!). I'd prefer not to stick this stuff in your driver.
-> 
-> Not yet.  Will do that now.
-
-FYI, some of the ONFI stubs are queued for 3.17, see l2-mtd.git
-drivers/mtd/nand/nand_timings.c. There's also some discussion of adding
-helpers that could reduce these to a more useful set of timings (e.g.,
-some timings used by a NAND controller may actually be a composite of
-two or more of the nand_sdr_timings fields).
-
-> > > +	/*
-> > > +	 * ONFI Timing Mode '0' (supported on all ONFI compliant devices)
-> > > +	 */
-> > > +	[0] = {
-> > > +		.tCLS_min	= 50,
-> > > +		.tCS_min	= 70,
-> > > +		.tALS_min	= 50,
-> > > +		.tDS_min	= 40,
-> > > +		.tWP_min	= 50,
-> > > +		.tCLH_min	= 20,
-> > > +		.tCH_min	= 20,
-> > > +		.tALH_min	= 20,
-> > > +		.tDH_min	= 20,
-> > > +		.tWB_max	= 200,
-> > > +		.tWH_min	= 30,
-> > > +		.tWC_min	= 100,
-> > > +		.tRP_min	= 50,
-> > > +		.tREH_min	= 30,
-> > > +		.tRC_min	= 100,
-> > > +		.tREA_max	= 40,
-> > > +		.tRHOH_min	= 0,
-> > > +		.tCEA_max	= 100,
-> > > +		.tCOH_min	= 0,
-> > > +		.tCHZ_max	= 100,
-> > > +	},
-...
-> > (Related: Coverity caught a whole bunch of these type of bugs in the MTD
-> > test modules. I have fixes queued up that I meant to test and submit
-> > soon.)
-> 
-> I will attempt to play around with Coverity.
-
-Good luck :) Coverity isn't always the easiest to get running
-individually. You might have better luck (once your stuff is merged)
-checking out the free service offered for open source projects through
-github. There's a project instance set up for mainline:
-
-  https://scan.coverity.com/projects/128?tab=overview
-
-> > > +/*
-> > > + * Detect an erased page, tolerating and correcting up to a specified number of
-> > > + * bits at '0'.  (For many devices, it is now deemed within spec for an erased
-> > > + * page to include a number of bits at '0', either as a result of read-disturb
-> > > + * behaviour or 'stuck-at-zero' failures.)  Returns the number of corrected
-> > > + * bits, or a '-1' if we have exceeded the maximum number of bits at '0' (likely
-> > > + * to be a genuine uncorrectable ECC error).  In the latter case, the data must
-> > > + * be returned unmodified, in accordance with the MTD API.
-> > > + */
-> > > +static int check_erased_page(uint8_t *data, uint32_t page_size, int max_zeros)
-> > 
-> > Another "check erased page" implementation? Sigh... it would be nice if
-> > we could agree on a common implementation to share. My last attempt was
-> > unsuccessful, since some drivers have some very odd requirements.
-> > 
-> > > +{
-> > > +	uint8_t *b = data;
-> > > +	int zeros = 0;
-> > > +	int i;
-> > > +
-> > > +	for (i = 0; i < page_size; i++) {
-> > > +		zeros += hweight8(~*b++);
-> > > +		if (zeros > max_zeros)
-> > > +			return -1;
-> > > +	}
-> > > +
-> > > +	if (zeros)
-> > > +		memset(data, 0xff, page_size);
-> > 
-> > It seems like you're not considering the spare area at all. What if this
-> > is a mostly-blank page, with ECC data, but most of the bitflips are in
-> > the spare area? Then you will "correct" this page to all 0xFF, not
-> > noticing that this was really not a blank page at all.
-> 
-> I could really use Angus' advice on this one.  Although, I fear he may
-> have disappeared into the cosmos.  If I remember correctly (I'm
-> getting rusty on this now), this controller doesn't allow access to
-> the spare area easily.  I think it's all handled automatically
-> i.e. without intervention.
-
-That's tough. It's pretty hard to support NAND without *any* access to
-spare area.
-
-> > > +
-> > > +	return zeros;
-> > > +}
-> > > +
-...
-> > > +static int bch_read(struct mtd_info *mtd, struct nand_chip *chip,
-> > > +			 uint8_t *buf, int oob_required, int page)
-> > > +{
-> > > +	struct nandi_controller *nandi = chip->priv;
-> > > +	uint32_t page_size = mtd->writesize;
-> > > +	loff_t offs = page * page_size;
-> > 
-> > 32-bit overflow
-> 
-> Okay, will cast to loff_t.
-> 
-> > > +	bool bounce = false;
-> > > +	uint8_t *p;
-> > > +	int ret;
-> > > +
-> > > +	if (((unsigned int)buf & (NANDI_BCH_DMA_ALIGNMENT - 1)) ||
-> > > +	    (!virt_addr_valid(buf))) /* vmalloc'd buffer! */
-> > > +		bounce = true;
-> > > +
-> > > +	p = bounce ? nandi->page_buf : buf;
-> > 
-> > It looks like you're reimplementing NAND_USE_BOUNCE_BUFFER. Can you try
-> > using that flag? (You may need to extend it to account for your DMA
-> > alignment, too.)
-> 
-> This didn't exist when I submitted.
-
-I understand the difficulty. Given a long enough time between patch
-revision submissions, there's almost always *something* new.
-
-> I'll see what it's trying to do.
-> 
-> > > +
-> > > +	ret = bch_read_page(nandi, offs, p);
-> > > +
-> > > +	if (bounce)
-> > > +		memcpy(buf, p, page_size);
-> > > +
-> > > +	return ret;
-> > > +}
-> > > +
-...
-> > > +static int bch_block_markbad(struct mtd_info *mtd, loff_t offs)
-> > > +{
-> > > +	struct nand_chip *chip = mtd->priv;
-> > > +	struct nandi_controller *nandi = chip->priv;
-> > > +
-> > > +	uint32_t block;
-> > > +	int ret;
-> > > +
-> > > +	/* Is block already considered bad? (will also catch invalid offsets) */
-> > > +	ret = mtd_block_isbad(mtd, offs);
-> > 
-> > You're violating some of the layering here; the low-level driver
-> > probably shouldn't be calling the high-level mtd_*() APIs.
-> 
-> I'll try to figure out a way to keep the low-level code, low level.
-
-I was actually second-guessing my statement above after I wrote it.
-You'll notice that nand_bbt uses mtd_read() and mtd_read_oob().
-
-But then, this is all moot, because I'm pretty sure this check is
-redundant. Note in nand_block_markbad():
-
-	ret = nand_block_isbad(mtd, ofs);
-	if (ret) {
-		/* If it was bad already, return success and do nothing */
-		if (ret > 0)
-			return 0;
-
-So I think you can drop any bad block check within bch_block_markbad().
-
-> > On a similar
-> > note, I'm not 100% confident that the nand_base/nand_bbt separation is
-> > written cleanly enough for easy maintenance of your nand_base + ST BBT
-> > code in parallel. I might need a second look at that, and I think
-> > modularizing your BBT code to a separate file could help ease this a
-> > little.
-> 
-> I have moved all of the BBT code out, but actually have no intention
-> of using them separately, as the vendor specific code is believed to
-> be more robust.
-
-That may be the case, and that's actually all the more reason to
-separate it cleanly; robustness features can be borrowed to nand_bbt
-more easily, or other drivers might even use your BBT as-is.
-
-> > > +	if (ret < 0)
-> > > +		return ret;
-> > > +	if (ret == 1)
-> > > +		return 0;
-> > > +
-> > > +	/* Mark bad */
-> > > +	block = offs >> chip->phys_erase_shift;
-> > > +	bbt_set_block_mark(nandi->info.bbt_info.bbt, block, BBT_MARK_BAD_WEAR);
-> > > +
-> > > +	/* Update BBTs, incrementing bbt_vers */
-> > > +	ret = bch_update_bbts(nandi, &nandi->info.bbt_info,
-> > > +			      NAND_IBBT_UPDATE_BOTH,
-> > > +			      nandi->info.bbt_info.bbt_vers[0] + 1);
-> > > +
-> > > +	return ret;
-> > > +}
-...
-> > > +#ifdef CONFIG_PM
-> > 
-> > Should this be CONFIG_PM_SLEEP?
-> > 
-> > > +static int stm_nand_bch_suspend(struct device *dev)
-> > > +{
-> > > +	struct nandi_controller *nandi = dev_get_drvdata(dev);
-> > > +
-> > > +	nandi_clk_disable(nandi);
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +static int stm_nand_bch_resume(struct device *dev)
-> > > +{
-> > > +	struct nandi_controller *nandi = dev_get_drvdata(dev);
-> > > +
-> > > +	nandi_clk_enable(nandi);
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +static int stm_nand_bch_restore(struct device *dev)
-> > > +{
-> > > +	struct nandi_controller *nandi = dev_get_drvdata(dev);
-> > > +	struct stm_plat_nand_bch_data *pdata = dev->platform_data;
-> > > +	struct stm_nand_bank_data *bank = pdata->bank;
-> > > +
-> > > +	nandi_init_controller(nandi, bank->csn);
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +static const struct dev_pm_ops stm_nand_bch_pm_ops = {
-> > > +	.suspend = stm_nand_bch_suspend,
-> > > +	.resume = stm_nand_bch_resume,
-> > > +	.restore = stm_nand_bch_restore,
-> > > +};
-> > > +#else
-> > > +static const struct dev_pm_ops stm_nand_bch_pm_ops;
-> > 
-> > I think this might as well be:
-> > 
-> > #define stm_nand_bch_pm_ops	NULL
-> 
-> Actually, I think it's all better written with SET_SYSTEM_SLEEP_PM_OPS()
-
-Or even better, SIMPLE_DEV_PM_OPS().
-
-> > > +#endif
-...
-
-Brian
+> Thanks,
+> Fengguang
+>
+>> >> > git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git master
+>> >> > commit 4788e5b4b2338f85fa42a712a182d8afd65d7c58
+>> >> > Author:     Stephane Eranian <eranian@google.com>
+>> >> > AuthorDate: Tue Nov 12 17:58:50 2013 +0100
+>> >> > Commit:     Ingo Molnar <mingo@kernel.org>
+>> >> > CommitDate: Wed Nov 27 11:16:40 2013 +0100
+>> >> >
+>> >> >     perf/x86: Add Intel RAPL PMU support
+>> >> >
+>> >> >     This patch adds a new uncore PMU to expose the Intel
+>> >> >     RAPL energy consumption counters. Up to 3 counters,
+>> >> >     each counting a particular RAPL event are exposed.
+>> >> >
+>> >> >     The RAPL counters are available on Intel SandyBridge,
+>> >> >     IvyBridge, Haswell. The server skus add a 3rd counter.
+>> >> >
+>> >> >     The following events are available and exposed in sysfs:
+>> >> >
+>> >> >       - power/energy-cores: power consumption of all cores on socket
+>> >> >       - power/energy-pkg: power consumption of all cores + LLc cache
+>> >> >       - power/energy-dram: power consumption of DRAM (servers only)
+>> >> >
+>> >> >     For each event both the unit (Joules) and scale (2^-32 J)
+>> >> >     is exposed in sysfs for use by perf stat and other tools.
+>> >> >     The files are:
+>> >> >
+>> >> >         /sys/devices/power/events/energy-*.unit
+>> >> >         /sys/devices/power/events/energy-*.scale
+>> >> >
+>> >> >     The RAPL PMU is uncore by nature and is implemented such
+>> >> >     that it only works in system-wide mode. Measuring only
+>> >> >     one CPU per socket is sufficient. The /sys/devices/power/cpumask
+>> >> >     file can be used by tools to figure out which CPUs to monitor
+>> >> >     by default. For instance, on a 2-socket system, 2 CPUs
+>> >> >     (one on each socket) will be shown.
+>> >> >
+>> >> >     All the counters measure in the same unit (exposed via sysfs).
+>> >> >     The perf_events API exposes all RAPL counters as 64-bit integers
+>> >> >     counting in unit of 1/2^32 Joules (about 0.23 nJ). User level tools
+>> >> >     must convert the counts by multiplying them by 2^-32 to obtain
+>> >> >     Joules. The reason for this is that the kernel avoids
+>> >> >     doing floating point math whenever possible because it is
+>> >> >     expensive (user floating-point state must be saved). The method
+>> >> >     used avoids kernel floating-point usage. There is no loss of
+>> >> >     precision. Thanks to PeterZ for suggesting this approach.
+>> >> >
+>> >> >     To convert the raw count in Watt:
+>> >> >        W = C * 2.3 / (1e10 * time)
+>> >> >     or ldexp(C, -32).
+>> >> >
+>> >> >     RAPL PMU is a new standalone PMU which registers with the
+>> >> >     perf_event core subsystem. The PMU type (attr->type) is
+>> >> >     dynamically allocated and is available from /sys/device/power/type.
+>> >> >
+>> >> >     Sampling is not supported by the RAPL PMU. There is no
+>> >> >     privilege level filtering either.
+>> >> >
+>> >> >     Signed-off-by: Stephane Eranian <eranian@google.com>
+>> >> >     Reviewed-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+>> >> >     Reviewed-by: Andi Kleen <ak@linux.intel.com>
+>> >> >     Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>> >> >     Cc: acme@redhat.com
+>> >> >     Cc: jolsa@redhat.com
+>> >> >     Cc: zheng.z.yan@intel.com
+>> >> >     Cc: bp@alien8.de
+>> >> >     Link: http://lkml.kernel.org/r/1384275531-10892-4-git-send-email-eranian@google.com
+>> >> >     Signed-off-by: Ingo Molnar <mingo@kernel.org>
+>> >> >
+>> >> > +-----------------------------------------------------------+------------+------------+---------------+
+>> >> > |                                                           | 410136f5dd | 4788e5b4b2 | next-20140724 |
+>> >> > +-----------------------------------------------------------+------------+------------+---------------+
+>> >> > | boot_successes                                            | 1000       | 751        | 78            |
+>> >> > | boot_failures                                             | 0          | 149        | 3             |
+>> >> > | BUG:unable_to_handle_kernel_NULL_pointer_dereference      | 0          | 132        | 2             |
+>> >> > | Oops                                                      | 0          | 132        | 2             |
+>> >> > | EIP_is_at_rapl_pmu_init                                   | 0          | 132        |               |
+>> >> > | Kernel_panic-not_syncing:Attempted_to_kill_init_exitcode= | 0          | 132        | 2             |
+>> >> > | backtrace:rapl_pmu_init                                   | 0          | 132        |               |
+>> >> > | backtrace:kernel_init_freeable                            | 0          | 132        | 2             |
+>> >> > | BUG:kernel_boot_hang                                      | 0          | 17         | 1             |
+>> >> > | EIP_is_at_validate_chain                                  | 0          | 0          | 2             |
+>> >> > | backtrace:free_reserved_area                              | 0          | 0          | 2             |
+>> >> > | backtrace:free_init_pages                                 | 0          | 0          | 2             |
+>> >> > | backtrace:populate_rootfs                                 | 0          | 0          | 2             |
+>> >> > +-----------------------------------------------------------+------------+------------+---------------+
+>> >> >
+>> >> > [    0.613305] PCI: CLS 0 bytes, default 64
+>> >> > [    0.614699] Unpacking initramfs...
+>> >> > [    0.732188] Freeing initrd memory: 3276K (d3cbd000 - d3ff0000)
+>> >> > [    0.733895] BUG: unable to handle kernel NULL pointer dereference at 00000028
+>> >> > [    0.735603] IP: [<c09b20cb>] rapl_pmu_init+0x11e/0x139
+>> >> > [    0.736012] *pdpt = 0000000000000000 *pde = f000ff53f000ff53
+>> >> > [    0.736012] Oops: 0000 [#1] PREEMPT
+>> >> > [    0.736012] Modules linked in:
+>> >> > [    0.736012] CPU: 0 PID: 1 Comm: swapper Not tainted 3.12.0-05711-g4788e5b #11
+>> >> > [    0.736012] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+>> >> > [    0.736012] task: d244c020 ti: d244e000 task.ti: d244e000
+>> >> > [    0.736012] EIP: 0060:[<c09b20cb>] EFLAGS: 00010202 CPU: 0
+>> >> > [    0.736012] EIP is at rapl_pmu_init+0x11e/0x139
+>> >> > [    0.736012] EAX: 00000000 EBX: 00000000 ECX: 00000000 EDX: 00000001
+>> >> > [    0.736012] ESI: c09b1fad EDI: 000000cc EBP: d244ff00 ESP: d244fef0
+>> >> > [    0.736012]  DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+>> >> > [    0.736012] CR0: 80050033 CR2: 00000028 CR3: 00a16000 CR4: 000406b0
+>> >> > [    0.736012] Stack:
+>> >> > [    0.736012]  c04ddabe 00000000 00000002 00000000 d244ff74 c0200477 c0251b16 d244ff2c
+>> >> > [    0.736012]  c025467d d3ff63cb d244ff34 c02410cb d3ff63cb d244ff00 c09aa512 c080d71c
+>> >> > [    0.736012]  000000cc d244ff74 c02412d5 c0829fe0 00000286 c023b6d8 00000246 00060006
+>> >> > [    0.736012] Call Trace:
+>> >> > [    0.736012]  [<c04ddabe>] ? register_syscore_ops+0x32/0x35
+>> >> > [    0.736012]  [<c0200477>] do_one_initcall+0xdf/0x138
+>> >> > [    0.736012]  [<c0251b16>] ? lock_release_holdtime.part.20+0x93/0xf8
+>> >> > [    0.736012]  [<c025467d>] ? trace_hardirqs_on_caller+0xeb/0x1ad
+>> >> > [    0.736012]  [<c02410cb>] ? parameq+0x13/0x5e
+>> >> > [    0.736012]  [<c09aa512>] ? repair_env_string+0x12/0x51
+>> >> > [    0.736012]  [<c02412d5>] ? parse_args+0x1bf/0x2f8
+>> >> > [    0.736012]  [<c023b6d8>] ? __usermodehelper_set_disable_depth+0x3e/0x44
+>> >> > [    0.736012]  [<c09aab46>] kernel_init_freeable+0xde/0x178
+>> >> > [    0.736012]  [<c09aa500>] ? do_early_param+0x78/0x78
+>> >> > [    0.736012]  [<c064bd10>] kernel_init+0xb/0xed
+>> >> > [    0.736012]  [<c0249199>] ? schedule_tail+0xc/0x3a
+>> >> > [    0.736012]  [<c0659637>] ret_from_kernel_thread+0x1b/0x28
+>> >> > [    0.736012]  [<c064bd05>] ? rest_init+0xb5/0xb5
+>> >> > [    0.736012] Code: 99 87 ff 89 5c 24 04 c7 04 24 90 bf 76 c0 e8 dd e9 c9 ff 83 c8 ff eb 28 a1 44 bc a1 c0 f3 0f b8 c0 90 89 44 24 08 a1 80 73 82 c0 <8b> 40 28 89 44 24 04 c7 04 24 d4 bf 76 c0 e8 b2 e9 c9 ff 31 c0
+>> >> > [    0.736012] EIP: [<c09b20cb>] rapl_pmu_init+0x11e/0x139 SS:ESP 0068:d244fef0
+>> >> > [    0.736012] CR2: 0000000000000028
+>> >> > [    0.736012] ---[ end trace 0a81712c9fb36a0a ]---
+>> >> > [    0.736012] swapper (1) used greatest stack depth: 5800 bytes left
+>> >> >
+>> >> > git bisect start v3.14 v3.13 --
+>> >> > git bisect  bad 09df7c4c8097ca4a11393b1edd4997d786daad52  # 16:18      0-      3  x86: Remove CONFIG_X86_OOSTORE
+>> >> > git bisect  bad 15c81026204da897a05424c79263aea861a782cc  # 16:24      2-      5  Merge branch 'x86-x32-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+>> >> > git bisect  bad a0fa1dd3cdbccec9597fe53b6177a9aa6e20f2f8  # 16:33      0-     15  Merge branch 'sched-core-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+>> >> > git bisect good edde1fb8c41d0db7c8ce17fb32886da2e389b0cc  # 17:48    900+      0  Merge tag 'localmodconfig-v3.14' of git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-kconfig
+>> >> > git bisect good a693c46e14c9fdadbcd68ddfa94a4f72495531a9  # 17:55    900+      0  Merge branch 'core-rcu-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+>> >> > git bisect good 2cc3f16cad1561c6fc551aefff559e53726efc8b  # 18:12    900+      0  Merge branch 'irq-core-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+>> >> > git bisect  bad 9326657abe1a83ed4b4f396b923ca1217fd50cba  # 18:21      9-      2  Merge branch 'perf-core-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+>> >> > git bisect  bad 7bb73553e2490ac6667387ee723e0faa61e9d999  # 18:38      0-      1  tools lib traceevent: Get rid of die() in reparent_op_arg()
+>> >> > git bisect  bad 3d7c0144491bd8c21d53b43032274a85efdfe434  # 18:41     11-      4  perf tools: Add build and install plugins targets
+>> >> > git bisect  bad ba1ddf42f3c3af111d3adee277534f73c1ef6a9b  # 18:43      0-     15  perf script: Print mmap[2] events also
+>> >> > git bisect  bad a8b4c7014cadfdacd4e1f4c963128593be6f20de  # 18:49      0-      2  perf completion: Rename file to reflect zsh support
+>> >> > git bisect  bad 4788e5b4b2338f85fa42a712a182d8afd65d7c58  # 18:53      0-      1  perf/x86: Add Intel RAPL PMU support
+>> >> > git bisect good c912dae60ae6f659455f239298110adc67a5f3e9  # 19:33    900+     14  uprobes: Cleanup !CONFIG_UPROBES decls, unexport xol_area
+>> >> > git bisect good 09897d78dbc3a544426f2272b5601c62922ccab9  # 19:44    900+      0  Merge branch 'uprobes/core' of git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc into perf/core
+>> >> > git bisect good 410136f5dd96b6013fe6d1011b523b1c247e1ccb  # 19:52    900+      0  tools/perf/stat: Add event unit and scale support
+>> >> > # first bad commit: [4788e5b4b2338f85fa42a712a182d8afd65d7c58] perf/x86: Add Intel RAPL PMU support
+>> >> > git bisect good 410136f5dd96b6013fe6d1011b523b1c247e1ccb  # 19:56   1000+      0  tools/perf/stat: Add event unit and scale support
+>> >> > git bisect  bad 1a58d9909611972fd1c081bb04a9f7dc2571e612  # 19:58      0-      3  Add linux-next specific files for 20140724
+>> >> > git bisect  bad 82e13c71bc655b6dc7110da4e164079dadb44892  # 20:07    448-     10  Merge branch 'for-3.16' of git://linux-nfs.org/~bfields/linux
+>> >> > git bisect  bad 5a7439efd1c5c416f768fc550048ca130cf4bf99  # 20:14      2-      6  Add linux-next specific files for 20140725
+>> >> >
+>> >> >
+>> >> > This script may reproduce the error.
+>> >> >
+>> >> > ----------------------------------------------------------------------------
+>> >> > #!/bin/bash
+>> >> >
+>> >> > kernel=$1
+>> >> > initrd=yocto-minimal-i386.cgz
+>> >> >
+>> >> > wget --no-clobber https://github.com/fengguang/reproduce-kernel-bug/blob/master/initrd/$initrd
+>> >> >
+>> >> > kvm=(
+>> >> >         qemu-system-x86_64
+>> >> >         -enable-kvm
+>> >> >         -cpu Haswell,+smep,+smap
+>> >> >         -kernel $kernel
+>> >> >         -initrd $initrd
+>> >> >         -m 320
+>> >> >         -smp 1
+>> >> >         -net nic,vlan=1,model=e1000
+>> >> >         -net user,vlan=1
+>> >> >         -boot order=nc
+>> >> >         -no-reboot
+>> >> >         -watchdog i6300esb
+>> >> >         -rtc base=localtime
+>> >> >         -serial stdio
+>> >> >         -display none
+>> >> >         -monitor null
+>> >> > )
+>> >> >
+>> >> > append=(
+>> >> >         hung_task_panic=1
+>> >> >         earlyprintk=ttyS0,115200
+>> >> >         debug
+>> >> >         apic=debug
+>> >> >         sysrq_always_enabled
+>> >> >         rcupdate.rcu_cpu_stall_timeout=100
+>> >> >         panic=10
+>> >> >         softlockup_panic=1
+>> >> >         nmi_watchdog=panic
+>> >> >         prompt_ramdisk=0
+>> >> >         console=ttyS0,115200
+>> >> >         console=tty0
+>> >> >         vga=normal
+>> >> >         root=/dev/ram0
+>> >> >         rw
+>> >> >         drbd.minor_count=8
+>> >> > )
+>> >> >
+>> >> > "${kvm[@]}" --append "${append[*]}"
+>> >> > ----------------------------------------------------------------------------
+>> >> >
+>> >> > Thanks,
+>> >> > Fengguang
+>> >> >
+>> >> > _______________________________________________
+>> >> > LKP mailing list
+>> >> > LKP@linux.intel.com
+>> >> >
