@@ -1,188 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461AbaGaL4x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 07:56:53 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:36931 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753AbaGaL4v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 07:56:51 -0400
-Date: Thu, 31 Jul 2014 13:56:45 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Ajay Kumar <ajaykumar.rs@samsung.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] pwm-backlight: Allow backlight to remain disabled on boot
-Message-ID: <20140731115644.GB12627@ulmo>
-References: <1406806970-12561-1-git-send-email-thierry.reding@gmail.com>
+	id S1751538AbaGaL5F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 07:57:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63827 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952AbaGaL5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 07:57:00 -0400
+Message-ID: <53DA2EFB.5050406@redhat.com>
+Date: Thu, 31 Jul 2014 13:56:43 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="61jdw2sOBCFtR2d/"
-Content-Disposition: inline
-In-Reply-To: <1406806970-12561-1-git-send-email-thierry.reding@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andy Lutomirski <luto@amacapital.net>, kvm@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        x86@kernel.org
+CC: Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, bsd@redhat.com,
+        Andrew Honig <ahonig@google.com>
+Subject: Re: [PATCH v5 4/5] x86,random,kvm: Use KVM_GET_RNG_SEED in arch_get_rng_seed
+References: <cover.1406177531.git.luto@amacapital.net> <e43e49f9ca4a9696f9c72e16182266593bbc1379.1406177531.git.luto@amacapital.net>
+In-Reply-To: <e43e49f9ca4a9696f9c72e16182266593bbc1379.1406177531.git.luto@amacapital.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---61jdw2sOBCFtR2d/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Cc'ing Ajay (who raised this on a different thread recently), therefore
-quoting all of the original email.
-
-Thierry
-
-On Thu, Jul 31, 2014 at 01:42:50PM +0200, Thierry Reding wrote:
-> From: Thierry Reding <treding@nvidia.com>
->=20
-> The default for backlight devices is to be enabled immediately when
-> registering with the backlight core. This can be useful for setups that
-> use a simple framebuffer device and where the backlight cannot otherwise
-> be hooked up to the panel.
->=20
-> However, when dealing with more complex setups, such as those of recent
-> ARM SoCs, this can be problematic. Since the backlight is usually setup
-> separately from the display controller, the probe order is not usually
-> deterministic. That can lead to situations where the backlight will be
-> powered up and the panel will show an uninitialized framebuffer.
->=20
-> Furthermore, subsystems such as DRM have advanced functionality to set
-> the power mode of a panel. In order to allow such setups to power up the
-> panel at exactly the right moment, a way is needed to prevent the
-> backlight core from powering the backlight up automatically when it is
-> registered.
->=20
-> This commit introduces a new boot_off field in the platform data (and
-> also implements getting the same information from device tree). When set
-> the initial backlight power mode will be set to "off".
->=20
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
+Il 24/07/2014 06:57, Andy Lutomirski ha scritto:
+> This is a straightforward implementation: for each bit of internal
+> RNG state, request one bit from KVM_GET_RNG_SEED.  This is done even
+> if RDSEED/RDRAND worked, since KVM_GET_RNG_SEED is likely to provide
+> cryptographically secure output even if the CPU's RNG is weak or
+> compromised.
+> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 > ---
-> I've been meaning to send this for a while but was always holding back
-> because of the indoctrination that this type of configuration shouldn't
-> be part of device tree. However this issue was recently raised again in
-> the context of power up sequences for display panels. As described above
-> the issue is that panel datasheets recommend that the backlight attached
-> to a panel be turned on at the very last step to avoid visual glitches
-> during the panel's power up sequence. With the current implementation it
-> is typical for the backlight to be probed before the display panel. That
-> has, in many cases, the side-effect of enabling the backlight, therefore
-> making the screen content visible before it's actually initialized.
->=20
-> Some panels come up with random garbage when uninitialized, others show
-> all white. With some luck the panel will be all black and users won't
-> really notice.
->=20
-> This patch is an attempt to enable boards to override the default of
-> turning on the backlight for the pwm-backlight driver. I'm not sure if
-> there was a specific reason to turn on the backlight by default when
-> this driver was initially written, but the fact is that since it has
-> pretty much always been like this we can't really go and change the
-> default, otherwise a lot of people may end up with no backlight and no
-> clue as to how to enable it. So the only reasonable thing we can do is
-> to keep the old behaviour and give new boards a way to override it if
-> they know that some other part of the stack will enable it at the right
-> moment.
->=20
->  .../devicetree/bindings/video/backlight/pwm-backlight.txt         | 1 +
->  drivers/video/backlight/pwm_bl.c                                  | 8 ++=
-++++++
->  include/linux/pwm_backlight.h                                     | 2 ++
->  3 files changed, 11 insertions(+)
->=20
-> diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backli=
-ght.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.t=
-xt
-> index 764db86d441a..65e001a1733d 100644
-> --- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-> +++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-> @@ -17,6 +17,7 @@ Optional properties:
->                 "pwms" property (see PWM binding[0])
->    - enable-gpios: contains a single GPIO specifier for the GPIO which en=
-ables
->                    and disables the backlight (see GPIO binding[1])
-> +  - backlight-boot-off: keep the backlight disabled on boot
-> =20
->  [0]: Documentation/devicetree/bindings/pwm/pwm.txt
->  [1]: Documentation/devicetree/bindings/gpio/gpio.txt
-> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/p=
-wm_bl.c
-> index d7a3d13e72ec..62adfc9d37a7 100644
-> --- a/drivers/video/backlight/pwm_bl.c
-> +++ b/drivers/video/backlight/pwm_bl.c
-> @@ -173,6 +173,8 @@ static int pwm_backlight_parse_dt(struct device *dev,
->  		data->max_brightness--;
->  	}
-> =20
-> +	data->boot_off =3D of_property_read_bool(node, "backlight-boot-off");
+>  arch/x86/Kconfig                 |  4 ++++
+>  arch/x86/include/asm/kvm_guest.h |  9 +++++++++
+>  arch/x86/kernel/archrandom.c     | 25 ++++++++++++++++++++++++-
+>  arch/x86/kernel/kvm.c            | 10 ++++++++++
+>  4 files changed, 47 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index a8f749e..adfa09c 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -593,6 +593,7 @@ config KVM_GUEST
+>  	bool "KVM Guest support (including kvmclock)"
+>  	depends on PARAVIRT
+>  	select PARAVIRT_CLOCK
+> +	select ARCH_RANDOM
+>  	default y
+>  	---help---
+>  	  This option enables various optimizations for running under the KVM
+> @@ -1507,6 +1508,9 @@ config ARCH_RANDOM
+>  	  If supported, this is a high bandwidth, cryptographically
+>  	  secure hardware random number generator.
+>  
+> +	  This also enables paravirt RNGs such as KVM's if the relevant
+> +	  PV guest support is enabled.
 > +
->  	return 0;
+>  config X86_SMAP
+>  	def_bool y
+>  	prompt "Supervisor Mode Access Prevention" if EXPERT
+> diff --git a/arch/x86/include/asm/kvm_guest.h b/arch/x86/include/asm/kvm_guest.h
+> index a92b176..8c4dbd5 100644
+> --- a/arch/x86/include/asm/kvm_guest.h
+> +++ b/arch/x86/include/asm/kvm_guest.h
+> @@ -3,4 +3,13 @@
+>  
+>  int kvm_setup_vsyscall_timeinfo(void);
+>  
+> +#if defined(CONFIG_KVM_GUEST) && defined(CONFIG_ARCH_RANDOM)
+> +extern bool kvm_get_rng_seed(u64 *rv);
+> +#else
+> +static inline bool kvm_get_rng_seed(u64 *rv)
+> +{
+> +	return false;
+> +}
+> +#endif
+> +
+>  #endif /* _ASM_X86_KVM_GUEST_H */
+> diff --git a/arch/x86/kernel/archrandom.c b/arch/x86/kernel/archrandom.c
+> index 47d13b0..8c8d021 100644
+> --- a/arch/x86/kernel/archrandom.c
+> +++ b/arch/x86/kernel/archrandom.c
+> @@ -15,6 +15,7 @@
+>   */
+>  
+>  #include <asm/archrandom.h>
+> +#include <asm/kvm_guest.h>
+>  
+>  void arch_get_rng_seed(void *ctx,
+>  		       void (*seed)(void *ctx, u32 data),
+> @@ -22,7 +23,7 @@ void arch_get_rng_seed(void *ctx,
+>  		       const char *log_prefix)
+>  {
+>  	int i;
+> -	int rdseed_bits = 0, rdrand_bits = 0;
+> +	int rdseed_bits = 0, rdrand_bits = 0, kvm_bits = 0;
+>  	char buf[128] = "";
+>  	char *msgptr = buf;
+>  
+> @@ -42,10 +43,32 @@ void arch_get_rng_seed(void *ctx,
+>  #endif
+>  	}
+>  
+> +	/*
+> +	 * Use KVM_GET_RNG_SEED regardless of whether the CPU RNG
+> +	 * worked, since it incorporates entropy unavailable to the CPU,
+> +	 * and we shouldn't trust the hardware RNG more than we need to.
+> +	 * We request enough bits for the entire internal RNG state,
+> +	 * because there's no good reason not to.
+> +	 */
+> +	for (i = 0; i < bits_per_source; i += 64) {
+> +		u64 rv;
+> +
+> +		if (kvm_get_rng_seed(&rv)) {
+> +			seed(ctx, (u32)rv);
+> +			seed(ctx, (u32)(rv >> 32));
+> +			kvm_bits += 8 * sizeof(rv);
+> +		} else {
+> +			break;	/* If it fails once, it will keep failing. */
+> +		}
+> +	}
+> +
+>  	if (rdseed_bits)
+>  		msgptr += sprintf(msgptr, ", %d bits from RDSEED", rdseed_bits);
+>  	if (rdrand_bits)
+>  		msgptr += sprintf(msgptr, ", %d bits from RDRAND", rdrand_bits);
+> +	if (kvm_bits)
+> +		msgptr += sprintf(msgptr, ", %d bits from KVM_GET_RNG_BITS",
+> +				  kvm_bits);
+>  	if (buf[0])
+>  		pr_info("%s with %s\n", log_prefix, buf + 2);
 >  }
-> =20
-> @@ -317,6 +319,12 @@ static int pwm_backlight_probe(struct platform_devic=
-e *pdev)
->  	}
-> =20
->  	bl->props.brightness =3D data->dft_brightness;
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index 3dd8e2c..bd8783a 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -416,6 +416,16 @@ void kvm_disable_steal_time(void)
+>  	wrmsr(MSR_KVM_STEAL_TIME, 0, 0);
+>  }
+>  
+> +bool kvm_get_rng_seed(u64 *v)
+> +{
+> +	/*
+> +	 * Allow migration from a hypervisor with the GET_RNG_SEED
+> +	 * feature to a hypervisor without it.
+> +	 */
+> +	return (kvm_para_has_feature(KVM_FEATURE_GET_RNG_SEED) &&
+> +		rdmsrl_safe(MSR_KVM_GET_RNG_SEED, v) == 0);
+> +}
 > +
-> +	if (data->boot_off)
-> +		bl->props.power =3D FB_BLANK_POWERDOWN;
-> +	else
-> +		bl->props.power =3D FB_BLANK_UNBLANK;
-> +
->  	backlight_update_status(bl);
-> =20
->  	platform_set_drvdata(pdev, bl);
-> diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
-> index efdd9227a49c..1fc14989da4a 100644
-> --- a/include/linux/pwm_backlight.h
-> +++ b/include/linux/pwm_backlight.h
-> @@ -15,6 +15,8 @@ struct platform_pwm_backlight_data {
->  	unsigned int *levels;
->  	/* TODO remove once all users are switched to gpiod_* API */
->  	int enable_gpio;
-> +	bool boot_off;
-> +
->  	int (*init)(struct device *dev);
->  	int (*notify)(struct device *dev, int brightness);
->  	void (*notify_after)(struct device *dev, int brightness);
-> --=20
-> 2.0.3
->=20
+>  #ifdef CONFIG_SMP
+>  static void __init kvm_smp_prepare_boot_cpu(void)
+>  {
+> 
 
---61jdw2sOBCFtR2d/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT2i78AAoJEN0jrNd/PrOhMIkQAIIV8vrSJSNDQKLZEGVyLLai
-VFdhQgVBLvZmlpD+SFcQAvBclxARKtRmNa2DfSnpZO+ggiQvHKKulkeorKFHq3/x
-8ro1BzID5CtaKSpfD4PqhLaFIZ5r54WT4ho8I7XcoMINVPNQnTAomlFGVW+DFF2M
-CpRiUhptGfjyfXw0ftdFcOuUKt56DIxlVyK7Kvw8jh0RGAB0IMFBpOtsYUBiit1F
-z7IZmeayiijAjSMBEOhlUQ7AUqSyhnirvvZsqVCACxjfM83rmemW8RDxgNfY3GrS
-hiB9wde7MDlLXkcb4DPZyEvzgb0L1fhII/IrjUAO3yz02dILnAJXIVRbMecOPNI9
-UDw+HL9INwZO//RoF4X1N7ZK9BAC7Sp0r5tYIyqX4xC+juvPEcj7YPkYhiCotbrj
-WQ9fkh+IZF5mF+wTbFACFpOvLndzTZlaAhpfR/PC2ub8PpHroxwhL5jPOeXt+s0J
-nmTqI7TStDWgnJvWkid/AU0oBLTRkIyHHAgPxF7ooOvUYiZ03MHqAlKxuUY9qHgm
-T1+CHuNMo36Q7PyXlWeEDSDl2IOa1E9pfzxO8DXVDDfEjcDvkNOsO3FkVlPa9iTz
-i31CR2Ow16XIS3Xum96gxOzuNlx3CniWKHicHm7v6GcZYPRF6vA3yL53sQhVN1sP
-c/3yQXBA9s8BF88n2gak
-=/I5A
------END PGP SIGNATURE-----
-
---61jdw2sOBCFtR2d/--
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
