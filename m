@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027AbaGaGxV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 02:53:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45693 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755522AbaGaGxU (ORCPT
+	id S932140AbaGaGx1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 02:53:27 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:49296 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756059AbaGaGxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 02:53:20 -0400
-Date: Thu, 31 Jul 2014 08:53:08 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, mingo@kernel.org, jason.low2@hp.com,
-        aswin@hp.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -tip v2 6/7] locking: Move docs into
- Documentation/locking/
-Message-ID: <20140731065308.GL19379@twins.programming.kicks-ass.net>
-References: <1406752916-3341-1-git-send-email-davidlohr@hp.com>
- <1406752916-3341-6-git-send-email-davidlohr@hp.com>
- <53D95D68.1000402@infradead.org>
+	Thu, 31 Jul 2014 02:53:24 -0400
+Date: Wed, 30 Jul 2014 23:53:21 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+cc: Grant Likely <grant.likely@linaro.org>, Andi Kleen <ak@linux.intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Tony Luck <tony.luck@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Len Brown <len.brown@intel.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: [GIT PULL] x86, apic: Cleanups of obsoleted code
+Message-ID: <alpine.DEB.2.02.1407302346450.17503@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EpkyL+bqoEXyQ6vo"
-Content-Disposition: inline
-In-Reply-To: <53D95D68.1000402@infradead.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Ingo, Peter, and Thomas,
 
---EpkyL+bqoEXyQ6vo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Please pull from:
 
-On Wed, Jul 30, 2014 at 02:02:32PM -0700, Randy Dunlap wrote:
-> On 07/30/14 13:41, Davidlohr Bueso wrote:
-> > Specifically:
-> >   Documentation/locking/lockdep-design.txt
-> >   Documentation/locking/lockstat.txt
-> >   Documentation/locking/mutex-design.txt
-> >   Documentation/locking/rt-mutex-design.txt
-> >   Documentation/locking/rt-mutex.txt
-> >   Documentation/locking/spinlocks.txt
-> >   Documentation/locking/ww-mutex-design.txt
-> >=20
-> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
->=20
-> Did you read and use Documentation/SubmittingPatches?  see:
+  git://git.kernel.org/pub/scm/linux/kernel/git/rientjes/linux.git x86/apic
 
-Not in the last few years, covert changes to that file are likely to be
-missed by everybody already doing kernel work for a living.
+  # HEAD: c11645f83e72cbfcf1841a3a821123f3254b9922 x86, apic: Remove enable_apic_mode callback
 
-> Please use "git diff -M --stat --summary" to generate the diffstat:
-> the -M enables rename detection, and the summary enables a summary of
-> new/deleted or renamed files.
+or apply individually.  This branch is based on x86/apic.
 
-Pretty pointless as I'll pull the lot through quilt, which will destroy
-any such niceties.
+Now that I've removed the summit and es7000 subarchitectures, and Peter
+was able to remove NUMAQ, quite a bit of obsoleted code has been left
+behind.
 
---EpkyL+bqoEXyQ6vo
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT2efPAAoJEHZH4aRLwOS6NpAP/jFXN2mlMrtsNmIxNsLoySOX
-g1x2Flm+FOgL/TZ6b1Ng/UZL1zvjD7r2feGa6H0FFi7Qf24ufd6/qabHbXkswdzU
-3RDhEiR6v4W4rQWatI00WfAl+AtyjzcLR55ngcM2G2SLWXgJTR4TxsdUFdtzd8t6
-t4EcX5DD2sM1MDUirH5mGezu8irrX0rUc5UclVhuYpDN0ihWY4AQkdx5xZwIBskm
-kGdh/rIwcPUTrP3Ln1W6SnDjPcvrCaFUz22zBpLvAjqLxyEcDlwUPJ5rTtNtsgu+
-PSWaSZFUe+wrsDVYesPzqbloRbTILtqwvqhMudd6KAgkpIr0t/fSnJx7jUtAleoN
-PWywinbFCekAqiK8d/frAYHqgr6spm7ENypgPAaq5I4nW5/sIXoRCKu+USrcBD6H
-slHbBJaW+o1dyUXh5q5r1G+e/2KlRN5sjOgR3vY4I+LXN3yEfJS2GsWMd6SaCTEz
-ZCm72PTGbn8gg1D365RGFzIHMmCThQyoOdwRRdX2TRQukKtscXEmF3JydS2IximT
-zVNgFv7a2SCleiG7WRBB0Aqzhew3A9hNXE4MZ/R+kO7tRS39CGcR9p0CpL+Rhfrt
-UHEduG2apqVp+uZXEWSJKgISxKcw2QWZoShpyVyj2cBhcHzQvd5TO47cnRsHcfSr
-lh5W7+GQ1+jTyJ9mYxQx
-=1LLN
------END PGP SIGNATURE-----
-
---EpkyL+bqoEXyQ6vo--
+This cleans up the obsoleted code and generalizes the implementation.
+---
+ arch/x86/include/asm/apic.h           | 34 +++--------------------------
+ arch/x86/include/asm/mpspec.h         |  2 --
+ arch/x86/include/asm/smpboot_hooks.h  | 10 ++++-----
+ arch/x86/kernel/apic/apic.c           | 13 -----------
+ arch/x86/kernel/apic/apic_flat_64.c   | 16 --------------
+ arch/x86/kernel/apic/apic_noop.c      | 23 +------------------
+ arch/x86/kernel/apic/apic_numachip.c  |  8 -------
+ arch/x86/kernel/apic/bigsmp_32.c      | 14 ------------
+ arch/x86/kernel/apic/io_apic.c        | 16 --------------
+ arch/x86/kernel/apic/probe_32.c       | 33 +---------------------------
+ arch/x86/kernel/apic/x2apic_cluster.c |  8 -------
+ arch/x86/kernel/apic/x2apic_phys.c    |  8 -------
+ arch/x86/kernel/apic/x2apic_uv_x.c    |  8 -------
+ arch/x86/kernel/mpparse.c             |  3 ---
+ arch/x86/kernel/smpboot.c             |  8 -------
+ 15 files changed, 10 insertions(+), 194 deletions(-)
