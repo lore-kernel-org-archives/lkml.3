@@ -1,83 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765AbaGaPw0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:52:26 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:54781 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbaGaPwZ (ORCPT
+	id S1751498AbaGaP4x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:56:53 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:57558 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292AbaGaP4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:52:25 -0400
+	Thu, 31 Jul 2014 11:56:51 -0400
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:781a:650a:7145:334d]
-In-Reply-To: <20140731154803.GB26853@arm.com>
-References: <1406764649-20326-1-git-send-email-behanw@converseincode.com>
-	<20140731103323.GL26853@arm.com>
-	<CAOesGMiCiGwuGdOePPvE5WhZLRnG6qRvoJmBQHV4P9602Gy5DA@mail.gmail.com>
-	<20140731154803.GB26853@arm.com>
-Date: Thu, 31 Jul 2014 08:52:21 -0700
-Message-ID: <CAOesGMjyYJCdJfFN7z8adUjHjaUh=7TgKvmUuf_pDZaHeskWpw@mail.gmail.com>
-Subject: Re: [PATCH 0/4] LLVMLinux: Patches to enable the kernel to be
- compiled with clang/LLVM
-From: Olof Johansson <olof@lixom.net>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "behanw@converseincode.com" <behanw@converseincode.com>,
-        "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "k.khlebnikov@samsung.com" <k.khlebnikov@samsung.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "takahiro.akashi@linaro.org" <takahiro.akashi@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+In-Reply-To: <1406674412.24026.1.camel@fedora-lan>
+References: <1406659385-3256-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1406659385-3256-5-git-send-email-benjamin.tissoires@redhat.com>
+	<1406674412.24026.1.camel@fedora-lan>
+Date: Thu, 31 Jul 2014 08:56:49 -0700
+Message-ID: <CAF8JNhK1R3mzfJA2OZwZv3-KwqpFBkOjDmzM1JkZW_Wix+Ww8g@mail.gmail.com>
+Subject: Re: [PATCH v3 4/7] Input - wacom: Check for bluetooth protocol while
+ setting OLEDs
+From: Ping Cheng <pinglinux@gmail.com>
+To: Przemo Firszt <przemo@firszt.eu>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Jason Gerecke <killertofu@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>
+        linux-input <linux-input@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 8:48 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Thu, Jul 31, 2014 at 04:39:55PM +0100, Olof Johansson wrote:
->> On Thu, Jul 31, 2014 at 3:33 AM, Will Deacon <will.deacon@arm.com> wrote:
->> > On Thu, Jul 31, 2014 at 12:57:25AM +0100, behanw@converseincode.com wrote:
->> >> From: Behan Webster <behanw@converseincode.com>
->> >>
->> >> This patch set moves from using locally defined named registers to access the
->> >> stack pointer to using a globally defined named register. This allows the code
->> >> to work both with gcc and clang.
->> >>
->> >> The LLVMLinux project aims to fully build the Linux kernel using both gcc and
->> >> clang (the C front end for the LLVM compiler infrastructure project).
->> >>
->> >> Behan Webster (4):
->> >>   arm64: LLVMLinux: Add current_stack_pointer() for arm64
->> >>   arm64: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
->> >>   arm64: LLVMLinux: Calculate current_thread_info from
->> >>     current_stack_pointer
->> >>   arm64: LLVMLinux: Use current_stack_pointer in kernel/traps.c
->> >
->> > Once Andreas's comments have been addressed:
->> >
->> >   Acked-by: Will Deacon <will.deacon@arm.com>
->> >
->> > Please can you send a new series after the merge window?
+On Tue, Jul 29, 2014 at 3:53 PM, Przemo Firszt <przemo@firszt.eu> wrote:
+> Dnia 2014-07-29, wto o godzinie 14:43 -0400, Benjamin Tissoires pisze:
+>> Bluetooth Intuos 4 use 1-bit definition while the USB ones use a 4-bits
+>> definition. This changes the size of the raw image we receive, and thus
+>> the kernel will only accept 1-bit images for Bluetooth and 4-bits for
+>> USB.
 >>
->> Given that the ARM64 KVM guys are still actively breaking -next, and
->> this is considerably smaller and lower risk than that, I think you can
->> take it for 3.17?
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> ---
+>>  drivers/hid/wacom_sys.c | 29 +++++++++++++++++++++--------
+>>  1 file changed, 21 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
+>> index f5c9c56..a12cd9c 100644
+>> --- a/drivers/hid/wacom_sys.c
+>> +++ b/drivers/hid/wacom_sys.c
+>> @@ -20,6 +20,7 @@
+>>  #define WAC_CMD_LED_CONTROL  0x20
+>>  #define WAC_CMD_ICON_START   0x21
+>>  #define WAC_CMD_ICON_XFER    0x23
+>> +#define WAC_CMD_ICON_BT_XFER 0x26
+>>  #define WAC_CMD_RETRIES              10
+>>
+>>  static int wacom_get_report(struct hid_device *hdev, u8 type, u8 id,
+>> @@ -526,12 +527,14 @@ static int wacom_led_control(struct wacom *wacom)
+>>       return retval;
+>>  }
+>>
+>> -static int wacom_led_putimage(struct wacom *wacom, int button_id, const void *img)
+>> +static int wacom_led_putimage(struct wacom *wacom, int button_id, u8 xfer_id,
+>> +             const unsigned len, const void *img)
+>>  {
+>>       unsigned char *buf;
+>>       int i, retval;
+>> +     const unsigned chunk_len = len / 4; /* 4 chunks are needed to be sent */
+>>
+>> -     buf = kzalloc(259, GFP_KERNEL);
+>> +     buf = kzalloc(chunk_len + 3 , GFP_KERNEL);
+>>       if (!buf)
+>>               return -ENOMEM;
+>>
+>> @@ -543,15 +546,15 @@ static int wacom_led_putimage(struct wacom *wacom, int button_id, const void *im
+>>       if (retval < 0)
+>>               goto out;
+>>
+>> -     buf[0] = WAC_CMD_ICON_XFER;
+>> +     buf[0] = xfer_id;
+>>       buf[1] = button_id & 0x07;
+>>       for (i = 0; i < 4; i++) {
+>>               buf[2] = i;
+>> -             memcpy(buf + 3, img + i * 256, 256);
+>> +             memcpy(buf + 3, img + i * chunk_len, chunk_len);
+>>
+>>               retval = wacom_set_report(wacom->hdev, HID_FEATURE_REPORT,
+>> -                                       WAC_CMD_ICON_XFER,
+>> -                                       buf, 259, WAC_CMD_RETRIES);
+>> +                                       xfer_id, buf, chunk_len + 3,
+>> +                                       WAC_CMD_RETRIES);
+>>               if (retval < 0)
+>>                       break;
+>>       }
+>> @@ -652,13 +655,23 @@ static ssize_t wacom_button_image_store(struct device *dev, int button_id,
+>>       struct hid_device *hdev = container_of(dev, struct hid_device, dev);
+>>       struct wacom *wacom = hid_get_drvdata(hdev);
+>>       int err;
+>> +     unsigned len;
+>> +     u8 xfer_id;
+>>
+>> -     if (count != 1024)
+>> +     if (hdev->bus == BUS_BLUETOOTH) {
+>> +             len = 256;
+>> +             xfer_id = WAC_CMD_ICON_BT_XFER;
+>> +     } else {
+>> +             len = 1024;
+>> +             xfer_id = WAC_CMD_ICON_XFER;
+>> +     }
+>> +
+>> +     if (count != len)
+>>               return -EINVAL;
+>>
+>>       mutex_lock(&wacom->lock);
+>>
+>> -     err = wacom_led_putimage(wacom, button_id, buf);
+>> +     err = wacom_led_putimage(wacom, button_id, xfer_id, len, buf);
+>>
+>>       mutex_unlock(&wacom->lock);
 >
-> Hey, those breakages are in the kvm tree not the arm64 tree! I'd really
-> rather wait on these as I don't see the rush to get them in for 3.17 and
-> it's not beyond the realms of possibility that they could cause problems
-> for a particular version of GCC (at the very least, I'd need to re-run
-> all the testing I've been doing).
+> Signed-off-by: Przemo Firszt <przemo@firszt.eu>
 
+Reviewed-by: Ping Cheng <pingc@wacom.com>
 
-Yeah, it was somewhat tongue in cheek that made not have made it
-across the wire.
+> I'll test the whole series tomorrow.
 
-3.18 is fine with me too even though I find the concerns to be quite unlikely.
+I'd like to see Przemo's Tested-by tag here as well. Przemo, are you
+done with your testing?
 
+Thank you Przemo and Benjamin for your effort in making this
+transition smooth and successful. We, at Wacom, are very grateful to
+be part of this great community.
 
--Olof
+Cheers,
+
+Ping
