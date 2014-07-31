@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422AbaGaLeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 07:34:00 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:55423 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300AbaGaLd6 (ORCPT
+	id S1751244AbaGaLfF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 07:35:05 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:41531 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbaGaLfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 07:33:58 -0400
-Date: Thu, 31 Jul 2014 13:33:51 +0200
-From: Robert Richter <rric@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        Robert Richter <rrichter@cavium.com>, devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder
- SoC
-Message-ID: <20140731113351.GR4703@rric.localhost>
-References: <1406732794-20920-1-git-send-email-rric@kernel.org>
- <1406732794-20920-3-git-send-email-rric@kernel.org>
- <201407311224.14097.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201407311224.14097.arnd@arndb.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 31 Jul 2014 07:35:03 -0400
+From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, joe@perches.com, dan.carpenter@oracle.com,
+        Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+Subject: [PATCH v2] Staging: android: timed_gpio.c: improved logic of gpio_get_time()
+Date: Thu, 31 Jul 2014 08:34:11 -0300
+Message-Id: <1406806451-8210-1-git-send-email-mopsfelder@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20140731082521.GM4856@mwanda>
+References: <20140731082521.GM4856@mwanda>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.07.14 12:24:13, Arnd Bergmann wrote:
-> On Wednesday 30 July 2014, Robert Richter wrote:
-> > +/*
-> > + * Cavium Thunder DTS file
-> > + *
-> > + * Copyright (C) 2013, Cavium Inc.
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License as
-> > + * published by the Free Software Foundation; either version 2 of
-> > + * the License, or (at your option) any later version.
-> > + */
-> 
-> I think it makes sense to use a permissive license for these files here,
-> since board vendors may want to include a copy of the binary in their
-> firmware, which isn't necessarily GPL compatible.
-> 
-> What is Cavium's interest in making this GPL?
+This patch improves the logic of gpio_get_time() and, thereafter,
+makes checkpatch.pl happy.
 
-See my response to Rob's mail on this.
+Signed-off-by: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+---
 
--Robert
+Thanks for reviweing my patch, Dan.  I think I got the proper way
+without using option --scissors in git-am.
+
+What about this new commit message?
+
+ drivers/staging/android/timed_gpio.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/android/timed_gpio.c b/drivers/staging/android/timed_gpio.c
+index 180c209..8fa4758 100644
+--- a/drivers/staging/android/timed_gpio.c
++++ b/drivers/staging/android/timed_gpio.c
+@@ -45,16 +45,17 @@ static enum hrtimer_restart gpio_timer_func(struct hrtimer *timer)
+
+ static int gpio_get_time(struct timed_output_dev *dev)
+ {
+-	struct timed_gpio_data	*data =
+-		container_of(dev, struct timed_gpio_data, dev);
++	struct timed_gpio_data *data;
++	struct timeval t;
+
+-	if (hrtimer_active(&data->timer)) {
+-		ktime_t r = hrtimer_get_remaining(&data->timer);
+-		struct timeval t = ktime_to_timeval(r);
++	data = container_of(dev, struct timed_gpio_data, dev);
+
+-		return t.tv_sec * 1000 + t.tv_usec / 1000;
+-	} else
++	if (!hrtimer_active(&data->timer))
+ 		return 0;
++
++	t = ktime_to_timeval(hrtimer_get_remaining(&data->timer));
++
++	return t.tv_sec * 1000 + t.tv_usec / 1000;
+ }
+
+ static void gpio_enable(struct timed_output_dev *dev, int value)
+--
+1.7.10.4
