@@ -1,136 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411AbaGaKmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 06:42:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46524 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932225AbaGaKmy (ORCPT
+	id S932432AbaGaKoa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 06:44:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60670 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755166AbaGaKo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 06:42:54 -0400
-Date: Thu, 31 Jul 2014 12:42:41 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Aaron Lu <aaron.lu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org, jhladky@redhat.com
-Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1%
- proc-vmstat.numa_hint_faults_local
-Message-ID: <20140731104241.GA9918@twins.programming.kicks-ass.net>
-References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>
- <53D72FF5.90908@intel.com>
- <20140729023940.37b6aebc@annuminas.surriel.com>
+	Thu, 31 Jul 2014 06:44:28 -0400
+Date: Thu, 31 Jul 2014 12:44:24 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Dmitry Torokhov <dtor@google.com>
+Subject: Re: [PATCH 1/3] irq / PM: New driver interface for wakeup
+ interrupts
+In-Reply-To: <2084079.fEC1AulnFk@vostro.rjw.lan>
+Message-ID: <alpine.DEB.2.10.1407311230420.4997@nanos>
+References: <20140724212620.GO3935@laptop> <alpine.DEB.2.10.1407302350260.4170@nanos> <alpine.DEB.2.10.1407310137510.4997@nanos> <2084079.fEC1AulnFk@vostro.rjw.lan>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z7TGvjQjjVo70d0G"
-Content-Disposition: inline
-In-Reply-To: <20140729023940.37b6aebc@annuminas.surriel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 31 Jul 2014, Rafael J. Wysocki wrote:
 
---z7TGvjQjjVo70d0G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Thursday, July 31, 2014 02:12:11 AM Thomas Gleixner wrote:
+> > On Thu, 31 Jul 2014, Thomas Gleixner wrote:
+> > > On Wed, 30 Jul 2014, Rafael J. Wysocki wrote:
+> > > Before this code changes in any way I want to see:
+> > > 
+> > >  1) a description of the existing semantics and their background
+> 
+> On that one, the meaning of IRQF_NO_SUSPEND is quite simple to me.
+> 
+> If it is set (for the first irqaction in a given irq_desc)
+> suspend_device_irqs() will leave that IRQ alone (that is, will not
+> disable it and will not mark it as IRQS_SUSPENDED).
+> 
+> As a result, if an interrupt for that irq_desc happens after
+> suspend_device_irqs(), the interrupt handlers from all of its irqactions
+> will be invoked.
+> 
+> So this basically means "ignore that IRQ" to suspend_device_irqs() and
+> that's its *only* meaning.
+> 
+> It's primary users are timers, per-CPU IRQs, ACPI SCI, via-pmu, Xen.
+> There also is a bunch of drivers that use it for wakeup stuff, but they
+> shouldn't in my opinion.
 
-On Tue, Jul 29, 2014 at 02:39:40AM -0400, Rik van Riel wrote:
-> On Tue, 29 Jul 2014 13:24:05 +0800
-> Aaron Lu <aaron.lu@intel.com> wrote:
->=20
-> > FYI, we noticed the below changes on
-> >=20
-> > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
-> > commit a43455a1d572daf7b730fe12eb747d1e17411365 ("sched/numa: Ensure ta=
-sk_numa_migrate() checks the preferred node")
-> >=20
-> > ebe06187bf2aec1  a43455a1d572daf7b730fe12e =20
-> > ---------------  ------------------------- =20
-> >      94500 ~ 3%    +115.6%     203711 ~ 6%  ivb42/hackbench/50%-threads=
--pipe
-> >      67745 ~ 4%     +64.1%     111174 ~ 5%  lkp-snb01/hackbench/50%-thr=
-eads-socket
-> >     162245 ~ 3%     +94.1%     314885 ~ 6%  TOTAL proc-vmstat.numa_hint=
-_faults_local
->=20
-> Hi Aaron,
->=20
-> Jirka Hladky has reported a regression with that changeset as
-> well, and I have already spent some time debugging the issue.
+Indeed.
 
-So assuming those numbers above are the difference in
-numa_hint_local_faults, the report is actually a significant
-_improvement_, not a regression.
+> The background I'm aware of was primarily timers (we wanted to be able
+> to msleep() during PCI PM transitions in the noirq phases of system suspend
+> and resume among other things), and we want per-CPU stuff to work all the
+> time too.  ACPI uses it for signaling various types of events (including
+> battery and thermal) that need to be handled all the time.  I'm not sure
+> why Xen needs it exactly, but that seems to be IPI-related.
 
-On my IVB-EP I get similar numbers; using:
+So none of these interrupts is used to abort suspend or wakeup. They
+are kept functional because they are required for the suspend/resume
+transitions itself.
 
-  PRE=3D`grep numa_hint_faults_local /proc/vmstat | cut -d' ' -f2`
-  perf bench sched messaging -g 24 -t -p -l 60000
-  POST=3D`grep numa_hint_faults_local /proc/vmstat | cut -d' ' -f2`
-  echo $((POST-PRE))
+What's this PCIe PME handler doing? Is it required functionality for
+the suspend/resume path or is it a wakeup/abort mechanism.
 
+> The current handling of IRQF_NO_SUSPEND has a problem vs shared interrupts
+> which I've tried to address by https://patchwork.kernel.org/patch/4643871/
+> and which is described in the changelog of that patch.  Unfortunately, some
+> existing users pass IRQF_SHARED along with IRQF_NO_SUSPEND which is the main
+> motivation for that.  Many of them use it for wakeup purposes, but for one
+> example (that doesn't use it for wakeup only) the ACPI SCI is shareable by
+> design.
 
-tip/mater+origin/master		tip/master+origin/master-a43455a1d57
+So many of them use it for wakeup purposes. Why so and how is that
+supposed to work?
 
-local	total                   local	total
-faults  time                    faults  time
+The mechanism for wakeup sources is:
 
-19971	51.384                  10104	50.838
-17193	50.564                  9116	50.208
-13435	49.057                  8332	51.344
-23794	50.795                  9954	51.364
-20255	49.463                  9598	51.258
+    1) Lazy disable the interrupt
 
-18929.6	50.2526                 9420.8	51.0024
-3863.61	0.96                    717.78	0.49
+    2) Do the transition into suspend with interrupts enabled
 
-So that patch improves both local faults and runtime. Its good (even
-though for the runtime we're still inside stdev overlap, so ideally I'd
-do more runs).
+    3) Check whether one of the wakeup sources has triggered. If yes,
+       abort. Otherwise suspend.
 
+The ones marked IRQF_NO_SUSPEND are not part of the above scheme,
+because they are not checked. So they use different mechanisms to
+abort the suspend?
 
-Now I also did a run with the proposed patch, NUMA_SCALE/8 variant, and
-that slightly reduces both again:
+> > Aside of that I want to see a coherent explanation why a shared MSI
+> > interrupt makes any sense at all.
+> > 
+> > 25:  1 <....> 0   PCI-MSI-edge      aerdrv, PCIe PME
+> >
+> > AFAICT, that's the primary reason why you insist to support wakeup
+> > sources on shared irq lines. And to be honest, it's utter bullshit.
+> 
+> No, this isn't the primary reason.
+> 
+> Here's /proc/interrupts from my MSI Wind system and, as you can see,
+> PCIe PME are (a) not MSI and (b) shared with some interesting things
+> (USB, WiFi and the GPU).
 
-tip/master+origin/master+patch
+>  16:       5217          0   IO-APIC-fasteoi   PCIe PME, uhci_hcd:usb4, i915
+>  17:      13964          0   IO-APIC-fasteoi   PCIe PME, rtl818x_pci
 
-local	total
-faults  time
+So the obvious question is: WHY are they not using MSI?
 
-21296	50.541
-12771	50.54
-13872	52.224
-23352	50.85
-16516	50.705
+Just because MSI fucked up the MSI configuration of the device or is
+there any sane explanation for it?
+ 
+Thanks,
 
-17561.4	50.972
-4613.32	0.71
-
-So for hackbench a43455a1d57 is good and the proposed patch is making
-things worse.
-
-Let me see if I can still find my SPECjbb2005 copy to see what that
-does.
-
---z7TGvjQjjVo70d0G
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT2h2hAAoJEHZH4aRLwOS6hhcP/iprgNEBLe+wyPjge+1gyRx4
-LVEhFOzev0+0CkZCXYVVzo8jO+xMPR9hIwN4F9FTth+e5TyWxRYXwmX/3VWUNg9f
-GfqVURRMhO393JbssPhuHeQkNJ7bWIBowEZnRFw6A3w9rwlu0UQqpFwFLfkhbeH3
-PeswLVv+uitBqVG2Edp/DlR/eFV9dXdJmfzYvR6rSOL9yevLdfr/wvsDyr6zgODz
-p2zN9azho/j7mt5trHsTAUdXny+7lhya9+23zVLw8JuXtFWTjvbAtpDcbCCOFpwZ
-MpGXogXN6uoRbA48aamidg8J+51W+K/w5xHSShC0KZ1o2hGLjI/rDxYeKtKFSWid
-ZcaqKz+Tu1ljBCgvHATR2sVFvIBB8z+p1yo7rCjZ0SUHFESIkJ+VsAzNoRCEEfdF
-y19fsWCAk/VSinKJaaJAY55l88tvHHNvI214nOPWH8EHGfD09VJK9yWH/WAXg60A
-h9i7CyljqsJYtVv6DeTncFoQIv5mZsGwQSzART5z/+YCOcsmzGnhHJFnlqcMAidH
-0JojTCHTj5XnRbLVO7CiH8X9Ny18/BIi6q1tM1fuPK1h7Ec6VM/jOy5MDVNmEQYl
-B0HPOLGkeAP6l+22m24rhtbdmaaFLsqXRGEDK/5LIBax0+2yRWhjavtIwKTtoLlW
-L9t5WM9bPZ7ANBfBNMen
-=7Dk0
------END PGP SIGNATURE-----
-
---z7TGvjQjjVo70d0G--
+	tglx
