@@ -1,117 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaGaUYr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:24:47 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49478 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826AbaGaUYp (ORCPT
+	id S1752134AbaGaUZY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:25:24 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:50540 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868AbaGaUZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:24:45 -0400
-Message-ID: <53DAA60B.6040802@codeaurora.org>
-Date: Thu, 31 Jul 2014 13:24:43 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
- to be held for duration of changing governors [v2]
-References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com>
-In-Reply-To: <53DA8A41.2030601@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Thu, 31 Jul 2014 16:25:22 -0400
+Date: Thu, 31 Jul 2014 13:25:20 -0700 (PDT)
+Message-Id: <20140731.132520.1889577477638334755.davem@davemloft.net>
+To: zoltan.kiss@citrix.com
+Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, wei.liu2@citrix.com, Ian.Campbell@citrix.com,
+        paul.durrant@citrix.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Subject: Re: [PATCH] xen-netfront: Fix handling packets on compound pages
+ with skb_segment
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1406726730-17994-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1406726730-17994-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 31 Jul 2014 13:25:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2014 11:26 AM, Prarit Bhargava wrote:
->
->
-> On 07/31/2014 02:38 PM, Rafael J. Wysocki wrote:
->> On Thursday, July 31, 2014 01:57:29 PM Prarit Bhargava wrote:
->>>
->>> On 07/31/2014 12:36 PM, Rafael J. Wysocki wrote:
->>>> On Thursday, July 31, 2014 06:23:18 AM Prarit Bhargava wrote:
->>>>>
->>>>> On 07/30/2014 10:16 PM, Rafael J. Wysocki wrote:
->>>>>> On Wednesday, July 30, 2014 06:36:00 PM Saravana Kannan wrote:
->>>>>>> On 07/30/2014 02:40 PM, Rafael J. Wysocki wrote:
->>>>>>>> On Wednesday, July 30, 2014 10:18:25 AM Prarit Bhargava wrote:
->>>>>>>>>
->>>>>>>>> On 07/29/2014 08:03 PM, Rafael J. Wysocki wrote:
->>>>>>>>>> On Tuesday, July 29, 2014 07:46:02 AM Prarit Bhargava wrote:
->>>>>>>>
->>>>>>>> [cut]
->>>>>>>>
->>>>>>>>>>> This patch effectively reverts commit 955ef483.
->>>>>>>
->>>>>>> The issue reported in this patch is valid. We are seeing that internally
->>>>>>> too. I believe I reported it in another thread (within the past month).
->>>>>>>
->>>>>>> However, the original patch fixes a real deadlock issue (I'm too tired
->>>>>>> to look it up now). We can revet the original, but it's going to bring
->>>>>>> back the original issue. I just want to make sure Prarit and Raphael
->>>>>>> realize this before proceeding.
->>>>>>>
->>>>>>> I do have plans for a proper fix for the mainline (not stable branches),
->>>>>>> but plan to do that after the current set of suspend/hotplug patches go
->>>>>>> through. The fix would be easier to make after that.
->>>>>>>
->>>>>>>>>>
->>>>>>>>>> OK, I'm convinced by this.
->>>>>>>>>>
->>>>>>>>>> I suppose we should push it for -stable from 3.10 through 3.15.x, right?
->>>>>>>>>
->>>>>>>>> Rafael, I think that is a good idea.  I'm not sure what the protocol is for
->>>>>>>>> adding stable@kernel.org though ...
->>>>>
->>>>> Rafael, let me (again) re-write the patch description.  I think Saravana has
->>>>> raised an important issue that I have not clearly identified why it is safe to
->>>>> remove this code in my patch description.  Also, I want to clearly identify the
->>>>> appropriate -stable releases to push this out to.
->>>>>
->>>>> I'll submit a [v3] later today or tomorrow.
->>>>
->>>> In any case that's too late for 3.16 final, unless there's an -rc8.
->>>>
->>>> Thanks for doing that work!
->>>
->>> Ugh ... I tried this (yet another) large system and hit another panic :(.
->>>
->>> I'm investigating now, and I'm hoping this is just something "new".
->>
->> Well, I've applied your patch as is and I can push it to Linus.
->>
->> However, if you want to update the changelog, I'll not do that, but in that
->> case the patch will have to wait for the next week.
->
-> Rafael, please let it wait for next week.  I _need_ to make sure this is correct
-> and I'd rather not pushed something half-done.
->
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+Date: Wed, 30 Jul 2014 14:25:30 +0100
 
-Prarit,
+> There is a long known problem with the netfront/netback interface: if the guest
+> tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 ring slots,
+> it gets dropped. The reason is that netback maps these slots to a frag in the
+> frags array, which is limited by size. Having so many slots can occur since
+> compound pages were introduced, as the ring protocol slice them up into
+> individual (non-compound) page aligned slots. The theoretical worst case
+> scenario looks like this (note, skbs are limited to 64 Kb here):
+> linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page boundary,
+> using 2 slots
+> first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are at the
+> end and the beginning of a page, therefore they use 3 * 15 = 45 slots
+> last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 = 4 slots
+> Although I don't think this 51 slots skb can really happen, we need a solution
+> which can deal with every scenario. In real life there is only a few slots
+> overdue, but usually it causes the TCP stream to be blocked, as the retry will
+> most likely have the same buffer layout.
+> This patch solves this problem by slicing up the skb itself with the help of
+> skb_segment, and calling xennet_start_xmit again on the resulting packets. It
+> also works with the theoretical worst case, where there is a 3 level recursion.
+> The good thing is that skb_segment only copies the header part, the frags will
+> be just referenced again.
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 
-I'm not an expert on sysfs locking, but I would think the specific sysfs 
-lock would depend on the file/attribute group. So, can you please try to 
-hotplug a core in/out (to trigger the POLICY_EXIT) and then read a sysfs 
-file exported by the governor? scaling_governor doesn't cut it since 
-that file is not removed on policy exit event to governor. If it's 
-ondemand, try reading/write it's sampling rate file.
+This is a really scary change :-)
 
-The main problem here is upon POLICY_EXIT to the governor, the governor 
-tries to remove its sysfs file. So, if you have the policy lock held 
-while sending POLICY_EXIT to the governor, you'll cause the:
-lock policy
-lock sysfs
+I definitely see some potential problem here.
 
-But trying to read the same file would cause:
-lock sysfs
-lock policy
+First of all, even in cases where it might "work", such as TCP, you
+are modifying the data stream.  The sizes are changing, the packet
+counts are different, and all of this will have side effects such as
+potentially harming TCP performance.
 
--Saravana
+Secondly, for something like UDP you can't just split the packet up
+like this, or for any other datagram protocol for that matter.
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+I know you're in a difficult situation, but I just can't see this
+being an acceptable approach to solving the problem right now.
+
+Where does the MAX_SKB_FRAGS + 1 limit really come from, the size of
+the TX queue?
+
+If you were to have a 64-slot TX queue, you ought to be able to handle
+this theoretical 51 slot SKB.
+
+And I don't think it's so theoretical, a carefully crafted sequence of
+sendfile() calls during a TCP_CORK sequence should be able to do it.
