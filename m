@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaGaQ42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:56:28 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:48434 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaGaQ41 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:56:27 -0400
-Date: Thu, 31 Jul 2014 09:56:20 -0700
-From: josh@joshtriplett.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v2 tip/core/rcu 04/10] rcu: Export RCU-tasks APIs to
- GPL modules
-Message-ID: <20140731165620.GC12697@cloud>
-References: <20140731003914.GA3872@linux.vnet.ibm.com>
- <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1406767182-4356-4-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1752594AbaGaQ4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:56:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46533 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752518AbaGaQ4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:56:43 -0400
+Date: Thu, 31 Jul 2014 18:54:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v4 2/5] x86,entry: Only call user_exit if TIF_NOHZ
+Message-ID: <20140731165423.GA16800@redhat.com>
+References: <cover.1406604806.git.luto@amacapital.net> <7123b2489cc5d1d5abb7bcf1364ca729cab3e6ca.1406604806.git.luto@amacapital.net> <20140729193232.GA8153@redhat.com> <20140730164344.GA27954@localhost.localdomain> <CALCETrUVaz3JFiNbyU=r3M-E9muHa1ffn7RX+_-4V_0U-hVaPw@mail.gmail.com> <20140731151630.GA7842@localhost.localdomain> <20140731164246.GA15974@redhat.com> <20140731164918.GC7842@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406767182-4356-4-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140731164918.GC7842@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 05:39:36PM -0700, Paul E. McKenney wrote:
-> From: Steven Rostedt <rostedt@goodmis.org>
-> 
-> This commit exports the RCU-tasks APIs, call_rcu_tasks(),
-> synchronize_rcu_tasks(), and rcu_barrier_tasks(), to GPL-licensed
-> kernel modules.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On 07/31, Frederic Weisbecker wrote:
+>
+> On Thu, Jul 31, 2014 at 06:42:46PM +0200, Oleg Nesterov wrote:
+> > On 07/31, Frederic Weisbecker wrote:
+> > >
+> > > On Wed, Jul 30, 2014 at 10:23:34AM -0700, Andy Lutomirski wrote:
+> > > >
+> > > > At the end of the day, the syscall slowpath code calls a bunch of
+> > > > functions depending on what TIF_XYZ flags are set.  As long as it's
+> > > > structured like "if (TIF_A) do_a(); if (TIF_B) do_b();" or something
+> > > > like that, it's comprehensible.  But once random functions with no
+> > > > explicit flag checks or comments start showing up, it gets confusing.
+> > >
+> > > Yeah that's a point. I don't mind much the TIF_NOHZ test if you like.
+> >
+> > And in my opinion
+> >
+> > 	if (work & TIF_XYZ)
+> > 		user_exit();
+> >
+> > looks even more confusing. Because, once again, TIF_XYZ is not the
+> > reason to call user_exit().
+> >
+> > Not to mention this adds a minor performance penalty.
+>
+> That's a point too! You guys both convinced me! ;-)
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Very nice, now I know that you can agree with 2 opposite opinions at
+the same time ;)
 
-Should this remain a separate patch, or go into the patch that creates
-these APIs?
+> > > > If it's indeed all-or-nothing, I could remove the check and add a
+> > > > comment.  But please keep in mind that, currently, the slow path is
+> > > > *slow*, and my patches only improve the entry case.  So enabling
+> > > > context tracking on every task will hurt.
+> > >
+> > > That's what we do anyway. I haven't found a safe way to enabled context tracking
+> > > without tracking all CPUs.
+> >
+> > And if we change this, then the code above becomes racy. The state of
+> > TIF_XYZ can be changed right after the check. OK, it is racy anyway ;)
+> > but still this adds more confusion.
+>
+> No because all running tasks have this flag set when context tracking is
+> enabled. And context tracking can't be disabled on runtime.
 
->  kernel/rcu/update.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> index c8d304dc6d8a..1bfc07ed854e 100644
-> --- a/kernel/rcu/update.c
-> +++ b/kernel/rcu/update.c
-> @@ -429,6 +429,7 @@ void synchronize_rcu_tasks(void)
->  	/* Wait for the grace period. */
->  	wait_rcu_gp(call_rcu_tasks);
->  }
-> +EXPORT_SYMBOL_GPL(synchronize_rcu_tasks);
->  
->  /**
->   * rcu_barrier_tasks - Wait for in-flight call_rcu_tasks() callbacks.
-> @@ -441,6 +442,7 @@ void rcu_barrier_tasks(void)
->  	/* There is only one callback queue, so this is easy.  ;-) */
->  	synchronize_rcu_tasks();
->  }
-> +EXPORT_SYMBOL_GPL(rcu_barrier_tasks);
->  
->  /* RCU-tasks kthread that detects grace periods and invokes callbacks. */
->  static int __noreturn rcu_tasks_kthread(void *arg)
-> -- 
-> 1.8.1.5
-> 
+Yes, yes, please note that I said "if we change this".
+
+Oleg.
+
