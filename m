@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669AbaGaVbn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 17:31:43 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:39823 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712AbaGaVbk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 17:31:40 -0400
+	id S1753043AbaGaVcv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 17:32:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32898 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752145AbaGaVcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 17:32:50 -0400
+Message-ID: <53DAB5F3.9040609@redhat.com>
+Date: Thu, 31 Jul 2014 23:32:35 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Date: Thu, 31 Jul 2014 23:31:39 +0200
-X-Google-Sender-Auth: epX3wZBdv9qS7LeMbBgLBQTwims
-Message-ID: <CAJZ5v0jNqU12myfkpkODPnOTKpfRPcJYbS6GyKr+Rbq-fU_67g@mail.gmail.com>
-Subject: [GIT PULL] ACPI PNP fix for v3.16-rc6
-From: "Rafael J. Wysocki" <rafael@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Jeroen Hofstee <dasuboot@myspectrum.nl>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>, u-boot@lists.denx.de
+CC: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [U-Boot] [PATCH] kconfig: Fix compiler warning in menu.c
+References: <1406816503-31963-1-git-send-email-hdegoede@redhat.com> <53DAA2A0.3050205@myspectrum.nl>
+In-Reply-To: <53DAA2A0.3050205@myspectrum.nl>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-Please pull from
+On 07/31/2014 10:10 PM, Jeroen Hofstee wrote:
+> Hello Hans,
+> 
+> On 31-07-14 16:21, Hans de Goede wrote:
+>> This fixes the following compiler warning:
+>>
+>> In file included from scripts/kconfig/zconf.tab.c:2537:0:
+>> scripts/kconfig/menu.c: In function ‘get_symbol_str’:
+>> scripts/kconfig/menu.c:590:18: warning: ‘jump’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>>       jump->offset = strlen(r->s);
+>>                    ^
+>> In file included from scripts/kconfig/zconf.tab.c:2537:0:
+>> scripts/kconfig/menu.c:551:19: note: ‘jump’ was declared here
+>>    struct jump_key *jump;
+>>
+>> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+>> ---
+>>   scripts/kconfig/menu.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+>> index a26cc5d..584e0fc 100644
+>> --- a/scripts/kconfig/menu.c
+>> +++ b/scripts/kconfig/menu.c
+>> @@ -548,7 +548,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
+>>   {
+>>       int i, j;
+>>       struct menu *submenu[8], *menu, *location = NULL;
+>> -    struct jump_key *jump;
+>> +    struct jump_key *jump = NULL;
+>>         str_printf(r, _("Prompt: %s\n"), _(prop->text));
+>>       menu = prop->menu->parent;
+> 
+> just curious, which compiler is this? Since it is a false positive.
+> (and it could know)
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
- pm+acpi-3.16-rc8
+[hans@shalem u-boot]$ rpm -q gcc
+gcc-4.9.1-2.fc21.1.x86_64
 
-to receive an ACPI PNP fix for v3.16-rc8 (if there is -rc8
-or for the final v3.16 otherwise) with top-most commit
-b6328a07bd6b3d31b64f85864fe74f3b08c010ca
+Regards,
 
- ACPI / PNP: Fix acpi_pnp_match()
-
-on top of commit 64aa90f26c06e1cb2aacfb98a7d0eccfbd6c1a91
-
- Linux 3.16-rc7
-
-That's just one commit that fixes a problem causing PNP devices
-to be associated with wrong ACPI device objects sometimes during
-device enumeration due to an incorrect check in a matching function.
-That problem was uncovered by the ACPI device enumeration rework
-in 3.14.
-
-Thanks!
-
-
----------------
-
-Rafael J. Wysocki (1):
-      ACPI / PNP: Fix acpi_pnp_match()
-
----------------
-
- drivers/pnp/pnpacpi/core.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Hans
