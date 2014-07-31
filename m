@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751077AbaGaEOx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 00:14:53 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:62062 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766AbaGaEOv (ORCPT
+	id S1751588AbaGaEQb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 00:16:31 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:43673 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043AbaGaEQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 00:14:51 -0400
+	Thu, 31 Jul 2014 00:16:29 -0400
+From: behanw@converseincode.com
+To: mmarek@suse.cz
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org, Behan Webster <behanw@converseincode.com>,
+        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
+        Mark Charlebois <charlebm@gmail.com>, bp@alien8.de
+Subject: [PATCH v2] kbuild, LLVMLinux: Supress warnings unless W=1-3
+Date: Wed, 30 Jul 2014 21:16:21 -0700
+Message-Id: <1406780181-7973-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <53D8ED5D.8070604@suse.cz>
+References: <53D8ED5D.8070604@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CAPM=9txGAA3sanpjYBgAuk0BynZRP56SRBfL_Rd88oDzBKHZ_g@mail.gmail.com>
-References: <1406752954-26158-1-git-send-email-xerofoify@gmail.com>
-	<CAPM=9ty2PhMdLykVX4c074Tdkyh0OO_jtfw-CAFHk8ANcZA4kQ@mail.gmail.com>
-	<CAPDOMVgXChx5HST-jMEZmWDydWKe0Yv15pyTiPeOuQSVEjihFA@mail.gmail.com>
-	<CAPM=9txGAA3sanpjYBgAuk0BynZRP56SRBfL_Rd88oDzBKHZ_g@mail.gmail.com>
-Date: Thu, 31 Jul 2014 00:14:50 -0400
-Message-ID: <CAPDOMVgM+E1XxsFvhAYWzHo7HCFqp6sO6Y53_m2am-fno6m_AQ@mail.gmail.com>
-Subject: Re: [PATCH] Remove certain calls for releasing page cache
-From: Nick Krause <xerofoify@gmail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
-	<linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 11:57 PM, Dave Airlie <airlied@gmail.com> wrote:
-> On 31 July 2014 12:05, Nick Krause <xerofoify@gmail.com> wrote:
->> On Wed, Jul 30, 2014 at 7:30 PM, Dave Airlie <airlied@gmail.com> wrote:
->>>> This patch removes the lines for releasing the page cache in certain
->>>> files as this may aid in perfomance with writes in the compression
->>>> rountines of btrfs. Please note that this patch has not been tested
->>>> on my own hardware due to no compression based btrfs volumes of my
->>>> own.
->>>>
->>>
->>> For all that is sacred, STOP.
->>>
->>> Go and do something else, you are wasting people's valuable time,
->>>
->>> Don't send any patches you haven't tested ever. If you aren't capable
->>> of setting up a VM to run compressed btrfs volumes in, what makes you
->>> think you can patch the code.
->>>
->>> This isn't how you learn to be a kernel developer by wasting other
->>> kernel developers time, if you can't work out why releasing the page cache
->>> is necessary then don't send the patch until you have spent the time
->>> understanding what the page cache is.
->>>
->>> I know you'll just ignore this, and keep on trucking just like you ignored
->>> the other messages from Stephen before.
->>>
->>> But if you want to work on the kernel, this isn't the way to do it, and
->>> nobody will ever take a patch from you seriously if you continue in this
->>> fashion.
->>>
->>> Dave.
->> Dave ,
->> Seems I need to have tested this code first.
->> Regards Nick
->
->
-> No you needed to do a lot more, these one line replies from you are
-> quite stupid,
->
-> You are quite deliberately missing the point of people trying to help you,
->
-> Dave.
+From: Behan Webster <behanw@converseincode.com>
 
-Honestly ,
-I understand and thanks for the help a lot. I am wondering if some one
-can give me
-a pointer on where to download the git repos for the btrfs user spaces
-tools as it
-seems on the btrfs tools on the wiki.
-Regards Nick
+clang has more warnings enabled by default. Turn them off unless W is set.
+This patch fixes a logic bug where warnings in clang were disabled when W was set.
+
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+Cc: mmarek@suse.cz
+Cc: bp@alien8.de
+---
+ Makefile                   |  1 +
+ scripts/Makefile.extrawarn | 22 ++++++++++++----------
+ 2 files changed, 13 insertions(+), 10 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index f6a7794..f343e17 100644
+--- a/Makefile
++++ b/Makefile
+@@ -668,6 +668,7 @@ KBUILD_CFLAGS += $(call cc-disable-warning, tautological-compare)
+ # source of a reference will be _MergedGlobals and not on of the whitelisted names.
+ # See modpost pattern 2
+ KBUILD_CFLAGS += $(call cc-option, -mno-global-merge,)
++KBUILD_CFLAGS += $(call cc-option, -fcatch-undefined-behavior)
+ else
+ 
+ # This warning generated too much noise in a regular build.
+diff --git a/scripts/Makefile.extrawarn b/scripts/Makefile.extrawarn
+index 6564350..b5b0751 100644
+--- a/scripts/Makefile.extrawarn
++++ b/scripts/Makefile.extrawarn
+@@ -26,16 +26,6 @@ warning-1 += $(call cc-option, -Wmissing-include-dirs)
+ warning-1 += $(call cc-option, -Wunused-but-set-variable)
+ warning-1 += $(call cc-disable-warning, missing-field-initializers)
+ 
+-# Clang
+-warning-1 += $(call cc-disable-warning, initializer-overrides)
+-warning-1 += $(call cc-disable-warning, unused-value)
+-warning-1 += $(call cc-disable-warning, format)
+-warning-1 += $(call cc-disable-warning, unknown-warning-option)
+-warning-1 += $(call cc-disable-warning, sign-compare)
+-warning-1 += $(call cc-disable-warning, format-zero-length)
+-warning-1 += $(call cc-disable-warning, uninitialized)
+-warning-1 += $(call cc-option, -fcatch-undefined-behavior)
+-
+ warning-2 := -Waggregate-return
+ warning-2 += -Wcast-align
+ warning-2 += -Wdisabled-optimization
+@@ -55,6 +45,18 @@ warning-3 += -Wswitch-default
+ warning-3 += $(call cc-option, -Wpacked-bitfield-compat)
+ warning-3 += $(call cc-option, -Wvla)
+ 
++ifeq ($(COMPILER),clang)
++ifndef $(W)
++KBUILD_CFLAGS += $(call cc-disable-warning, initializer-overrides)
++KBUILD_CFLAGS += $(call cc-disable-warning, unused-value)
++KBUILD_CFLAGS += $(call cc-disable-warning, format)
++KBUILD_CFLAGS += $(call cc-disable-warning, unknown-warning-option)
++KBUILD_CFLAGS += $(call cc-disable-warning, sign-compare)
++KBUILD_CFLAGS += $(call cc-disable-warning, format-zero-length)
++KBUILD_CFLAGS += $(call cc-disable-warning, uninitialized)
++endif
++endif
++
+ warning := $(warning-$(findstring 1, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
+ warning += $(warning-$(findstring 2, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
+ warning += $(warning-$(findstring 3, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
+-- 
+1.9.1
+
