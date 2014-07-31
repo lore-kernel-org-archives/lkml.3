@@ -1,110 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577AbaGaQK0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:10:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59699 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283AbaGaQKT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:10:19 -0400
-Date: Thu, 31 Jul 2014 09:10:05 -0700
-From: tip-bot for Dave Hansen <tipbot@zytor.com>
-Message-ID: <tip-9dfa6dee5355f200cf19528ca7c678ef4007cec5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        riel@redhat.com, mgorman@suse.de, tglx@linutronix.de,
-        dave.hansen@linux.intel.com, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        riel@redhat.com, mgorman@suse.de, tglx@linutronix.de,
-        dave.hansen@linux.intel.com, hpa@linux.intel.com
-In-Reply-To: <20140731154056.FF763B76@viggo.jf.intel.com>
-References: <20140731154056.FF763B76@viggo.jf.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86/mm: Fix missed global TLB flush stat
-Git-Commit-ID: 9dfa6dee5355f200cf19528ca7c678ef4007cec5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752418AbaGaQKS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:10:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36119 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752283AbaGaQKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:10:13 -0400
+From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v4 1/4] ARM: dts: Fix MMC pinctrl for exynos5250-snow
+Date: Thu, 31 Jul 2014 18:08:26 +0200
+Message-Id: <1406822910-6255-2-git-send-email-afaerber@suse.de>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1406822910-6255-1-git-send-email-afaerber@suse.de>
+References: <1406822910-6255-1-git-send-email-afaerber@suse.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9dfa6dee5355f200cf19528ca7c678ef4007cec5
-Gitweb:     http://git.kernel.org/tip/9dfa6dee5355f200cf19528ca7c678ef4007cec5
-Author:     Dave Hansen <dave.hansen@linux.intel.com>
-AuthorDate: Thu, 31 Jul 2014 08:40:56 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 31 Jul 2014 08:48:50 -0700
+The pinctrl properties should be on the device directly and not on the
+slot sub-node.
 
-x86/mm: Fix missed global TLB flush stat
-
-If we take the
-
-	if (end == TLB_FLUSH_ALL || vmflag & VM_HUGETLB) {
-		local_flush_tlb();
-		goto out;
-	}
-
-path out of flush_tlb_mm_range(), we will have flushed the tlb,
-but not incremented NR_TLB_LOCAL_FLUSH_ALL.  This unifies the
-way out of the function so that we always take a single path when
-doing a full tlb flush.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Link: http://lkml.kernel.org/r/20140731154056.FF763B76@viggo.jf.intel.com
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reported-by: Doug Anderson <dianders@chromium.org>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>
+Signed-off-by: Andreas Färber <afaerber@suse.de>
 ---
- arch/x86/mm/tlb.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ v3 -> v4: Unchanged
+ 
+ v3: New (Doug Anderson)
+ Redundant with Jaehoon Chung's general slot@0 deprecation,
+ in case that hits the tree earlier.
 
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index dff6dde..ae584d0 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -164,8 +164,9 @@ unsigned long tlb_single_page_flush_ceiling = 1;
- void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
- 				unsigned long end, unsigned long vmflag)
- {
--	int need_flush_others_all = 1;
- 	unsigned long addr;
-+	/* do a global flush by default */
-+	unsigned long base_pages_to_flush = TLB_FLUSH_ALL;
+ arch/arm/boot/dts/exynos5250-snow.dts | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+index f2b8c4116541..eb437f6afec1 100644
+--- a/arch/arm/boot/dts/exynos5250-snow.dts
++++ b/arch/arm/boot/dts/exynos5250-snow.dts
+@@ -240,10 +240,8 @@
+ 	 */
+ 	mmc@12230000 {
+ 		status = "okay";
+-		slot@0 {
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&sd3_clk &sd3_cmd &sd3_bus4>;
+-		};
++		pinctrl-names = "default";
++		pinctrl-0 = <&sd3_clk &sd3_cmd &sd3_bus4>;
+ 	};
  
- 	preempt_disable();
- 	if (current->active_mm != mm)
-@@ -176,16 +177,14 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
- 		goto out;
- 	}
- 
--	if (end == TLB_FLUSH_ALL || vmflag & VM_HUGETLB) {
--		local_flush_tlb();
--		goto out;
--	}
-+	if ((end != TLB_FLUSH_ALL) && !(vmflag & VM_HUGETLB))
-+		base_pages_to_flush = (end - start) >> PAGE_SHIFT;
- 
--	if ((end - start) > tlb_single_page_flush_ceiling * PAGE_SIZE) {
-+	if (base_pages_to_flush > tlb_single_page_flush_ceiling) {
-+		base_pages_to_flush = TLB_FLUSH_ALL;
- 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
- 		local_flush_tlb();
- 	} else {
--		need_flush_others_all = 0;
- 		/* flush range by one by one 'invlpg' */
- 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
- 			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
-@@ -193,7 +192,7 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
- 		}
- 	}
- out:
--	if (need_flush_others_all) {
-+	if (base_pages_to_flush == TLB_FLUSH_ALL) {
- 		start = 0UL;
- 		end = TLB_FLUSH_ALL;
- 	}
+ 	i2c@12CD0000 {
+-- 
+1.9.3
+
