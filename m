@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122AbaGaGlb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 02:41:31 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:50071 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755392AbaGaGl2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 02:41:28 -0400
-From: Harini Katakam <harinik@xilinx.com>
-To: wim@iguana.be, grant.likely@linaro.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net
-Cc: michals@xilinx.com, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, harinikatakamlinux@gmail.com,
-        svemula@xilinx.com, anirudh@xilinx.com,
-        Harini Katakam <harinik@xilinx.com>
-Subject: [PATCH v4 2/2] devicetree: Add Cadence WDT devicetree bindings documentation
-Date: Thu, 31 Jul 2014 12:10:55 +0530
-Message-Id: <1406788855-19074-2-git-send-email-harinik@xilinx.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1406788855-19074-1-git-send-email-harinik@xilinx.com>
-References: <1406788855-19074-1-git-send-email-harinik@xilinx.com>
+	id S1755817AbaGaGnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 02:43:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46491 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751117AbaGaGnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 02:43:21 -0400
+Date: Thu, 31 Jul 2014 02:42:54 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org, jhladky@redhat.com
+Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1%
+ proc-vmstat.numa_hint_faults_local
+Message-ID: <20140731024254.3dad1156@annuminas.surriel.com>
+In-Reply-To: <20140731050454.GA9386@aaronlu.sh.intel.com>
+References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>
+	<53D72FF5.90908@intel.com>
+	<20140729023940.37b6aebc@annuminas.surriel.com>
+	<20140729081712.GS20603@laptop.programming.kicks-ass.net>
+	<20140729160437.4561742f@annuminas.surriel.com>
+	<20140730021425.GA25023@aaronlu.sh.intel.com>
+	<53D9003F.3050900@redhat.com>
+	<20140731050454.GA9386@aaronlu.sh.intel.com>
+Organization: Red Hat, Inc.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add cadence-wdt bindings documentation.
+On Thu, 31 Jul 2014 13:04:54 +0800
+Aaron Lu <aaron.lu@intel.com> wrote:
 
-Signed-off-by: Harini Katakam <harinik@xilinx.com>
----
+> On Wed, Jul 30, 2014 at 10:25:03AM -0400, Rik van Riel wrote:
+> > On 07/29/2014 10:14 PM, Aaron Lu wrote:
 
-v4 changes:
-- Change name of property "reset" to "reset-on-timeout".
-- Use cdns compatible string in example.
-- Improve description of clocks and interrupts.
+> > >> +#define NUMA_SCALE 1024
+> > >> +#define NUMA_MOVE_THRESH (5 * NUMA_SCALE / 100)
+> > 
+> > It would be good to see if changing NUMA_MOVE_THRESH to
+> > (NUMA_SCALE / 8) does the trick.
 
-v3 changes:
-- Change reset property type and improve description.
-- Improve description of clocks and interrupts.
-- Use watchdog@ in the example.
-- Use only cdns compatible string for now.
+FWIW, running with NUMA_MOVE_THRESH set to (NUMA_SCALE / 8)
+seems to resolve the SPECjbb2005 threshold on my system.
 
-v2:
-No changes
+I will run some more sanity tests later today...
 
----
- .../devicetree/bindings/watchdog/cadence-wdt.txt   |   24 ++++++++++++++++++++
- 1 file changed, 24 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
-
-diff --git a/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt b/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
-new file mode 100644
-index 0000000..c3a36ee
---- /dev/null
-+++ b/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
-@@ -0,0 +1,24 @@
-+Zynq Watchdog Device Tree Bindings
-+-------------------------------------------
-+
-+Required properties:
-+- compatible		: Should be "cdns,wdt-r1p2".
-+- clocks		: This is pclk (APB clock).
-+- interrupts		: This is wd_irq - watchdog timeout interrupt.
-+- interrupt-parent	: Must be core interrupt controller.
-+
-+Optional properties
-+- reset-on-timeout	: If this property exists, then a reset is done
-+			  when watchdog times out.
-+- timeout-sec		: Watchdog timeout value (in seconds).
-+
-+Example:
-+	watchdog@f8005000 {
-+		compatible = "cdns,wdt-r1p2";
-+		clocks = <&clkc 45>;
-+		interrupt-parent = <&intc>;
-+		interrupts = <0 9 1>;
-+		reg = <0xf8005000 0x1000>;
-+		reset-on-timeout;
-+		timeout-sec = <10>;
-+	};
 -- 
-1.7.9.5
-
+All rights reversed.
