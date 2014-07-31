@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933AbaGaF51 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 01:57:27 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:49930 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885AbaGaF5Z (ORCPT
+	id S1755349AbaGaGBo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 02:01:44 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:46361 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaGaGBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 01:57:25 -0400
+	Thu, 31 Jul 2014 02:01:43 -0400
+Date: Wed, 30 Jul 2014 23:01:38 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Pramod Gurav <pramod.gurav.etc@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Lejun Zhu <lejun.zhu@linux.intel.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Subject: Re: [PATCH] input: ads7846: Release resources on failure for clean
+ exit
+Message-ID: <20140731060138.GB4844@core.coreip.homeip.net>
+References: <1406699677-1347-1-git-send-email-pramod.gurav.etc@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140730221127.GF10213@pd.tnic>
-References: <20140730164701.GA19604@pd.tnic>
-	<20140730211937.GA14864@jig.fritz.box>
-	<20140730212814.GA15010@jig.fritz.box>
-	<20140730221127.GF10213@pd.tnic>
-Date: Thu, 31 Jul 2014 07:57:22 +0200
-Message-ID: <CA+rthh-Hi+1iqAQigcQ9WBkmUYDjpUEEHnaKHkECwtVjJgO4vw@mail.gmail.com>
-Subject: Re: [PATCH] x86, crypto: Check if gas supports CRC32
-From: Mathias Krause <minipli@googlemail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: x86-ml <x86@kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406699677-1347-1-git-send-email-pramod.gurav.etc@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 July 2014 00:11, Borislav Petkov <bp@alien8.de> wrote:
->
-> On Wed, Jul 30, 2014 at 11:28:14PM +0200, Mathias Krause wrote:
-> > Gah, CONFIG_AS_CRC32 gets defined as a preprocessor symbol only so
-> > cannot be used in makefiles. So crc32c-pcl-intel-asm_64.S needs a
-> > "#ifdef CONFIG_AS_CRC32" guard and still be compiled for CONFIG_64BIT,
-> > as it is now. It'll be an empty object for older binutils versions not
-> > supporting the crc32 instruction.
->
-> Yeah, that makes it all even simpler, thanks!
->
-> We're still b0rked though:
->
-> arch/x86/crypto/crct10dif-pcl-asm_64.S: Assembler messages:
-> arch/x86/crypto/crct10dif-pcl-asm_64.S:147: Error: no such instruction: `pclmulqdq $0x0,%xmm10,%xmm0'
-> arch/x86/crypto/crct10dif-pcl-asm_64.S:148: Error: no such instruction: `pclmulqdq $0x11,%xmm10,%xmm8'
-> arch/x86/crypto/crct10dif-pcl-asm_64.S:149: Error: no such instruction: `pclmulqdq $0x0,%xmm10,%xmm1'
-> ...
->
-> and need checking for more instructions. I'll play with this more
-> tomorrow.
->
+On Wed, Jul 30, 2014 at 11:24:37AM +0530, Pramod Gurav wrote:
+> From: Pramod Gurav <pramod.gurav@smartplayin.com>
+> 
+> Input device must be released(input_free_device) when ads7846_probe_dt
+> fails. This fixes the same by releasing resources on failure.
+> 
+> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> CC: Lejun Zhu <lejun.zhu@linux.intel.com>
+> CC: Sachin Kamat <sachin.kamat@linaro.org>
+> 
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 
-You probably can reuse the AVX test for this -- either the
-CONFIG_AS_AVX preprocessor one or the $(avx_supported) make one, local
-to arch/x86/crypto/Makefile.
-Even though the CLMUL feature has not much to with AVX (it has a
-dedicated CPUID feature bit), support for it in binutils was added
-together with AVX support, see
-https://sourceware.org/git/?p=binutils-gdb.git;a=commit;h=c0f3af977b0f28a0dc5a620110b8dcf9d8286f84
+Applied, thank you.
 
-Regards,
-Mathias
+> ---
+>  drivers/input/touchscreen/ads7846.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/input/touchscreen/ads7846.c b/drivers/input/touchscreen/ads7846.c
+> index da201b8..e57ba52 100644
+> --- a/drivers/input/touchscreen/ads7846.c
+> +++ b/drivers/input/touchscreen/ads7846.c
+> @@ -1302,8 +1302,10 @@ static int ads7846_probe(struct spi_device *spi)
+>  	pdata = dev_get_platdata(&spi->dev);
+>  	if (!pdata) {
+>  		pdata = ads7846_probe_dt(&spi->dev);
+> -		if (IS_ERR(pdata))
+> -			return PTR_ERR(pdata);
+> +		if (IS_ERR(pdata)) {
+> +			err = PTR_ERR(pdata);
+> +			goto err_free_mem;
+> +		}
+>  	}
+>  
+>  	ts->model = pdata->model ? : 7846;
+> -- 
+> 1.7.9.5
+> 
 
-> Good night :-)
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+-- 
+Dmitry
