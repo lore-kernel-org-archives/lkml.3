@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447AbaGaV0s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 17:26:48 -0400
-Received: from mail-pa0-f67.google.com ([209.85.220.67]:59329 "EHLO
-	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370AbaGaV0p (ORCPT
+	id S1753514AbaGaV0w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 17:26:52 -0400
+Received: from mail-pa0-f66.google.com ([209.85.220.66]:53012 "EHLO
+	mail-pa0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756AbaGaV0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 17:26:45 -0400
+	Thu, 31 Jul 2014 17:26:49 -0400
 From: Kever Yang <kever.yang@rock-chips.com>
 To: Paul Zimmerman <paulz@synopsys.com>, heiko@sntech.de
 Cc: dianders@chromium.org, olof@lixom.net, sonnyrao@chromium.org,
         addy.ke@rock-chips.com, cf@rock-chips.com, xjq@rock-chips.com,
         wulf@rock-chips.com, lyz@rock-chips.com, hj@rock-chips.com,
         huangtao@rock-chips.com, Kever Yang <kever.yang@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [REPOST PATCH v3 2/5] usb: dwc2: add compatible data for rockchip soc
-Date: Thu, 31 Jul 2014 14:26:22 -0700
-Message-Id: <1406841985-15790-3-git-send-email-kever.yang@rock-chips.com>
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [REPOST PATCH v3 4/5] ARM: dts: Fix the sort ordering of EHCI and HSIC in rk3288.dtsi
+Date: Thu, 31 Jul 2014 14:26:24 -0700
+Message-Id: <1406841985-15790-5-git-send-email-kever.yang@rock-chips.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1406841985-15790-1-git-send-email-kever.yang@rock-chips.com>
 References: <1406841985-15790-1-git-send-email-kever.yang@rock-chips.com>
@@ -25,67 +29,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add compatible data for dwc2 controller found on
-rk3066, rk3188 and rk3288 processors from rockchip.
+From: Doug Anderson <dianders@chromium.org>
 
+The EHCI and HSIC device tree nodes were added in the wrong place.
+Fix them.
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
 Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-Acked-by: Paul Zimmerman <paulz@synopsys.com>
 ---
 
-Changes in v3: None
-Changes in v2:
-- set most parameters as driver auto-detect
+Changes in v3:
+- EHCI and HSIC move new for version 3.
 
- drivers/usb/dwc2/platform.c |   29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+Changes in v2: None
 
-diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
-index a10e7a3..b533a0d 100644
---- a/drivers/usb/dwc2/platform.c
-+++ b/drivers/usb/dwc2/platform.c
-@@ -75,6 +75,34 @@ static const struct dwc2_core_params params_bcm2835 = {
- 	.uframe_sched			= 0,
- };
+ arch/arm/boot/dts/rk3288.dtsi |   41 ++++++++++++++++++++---------------------
+ 1 file changed, 20 insertions(+), 21 deletions(-)
+
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index a5607a1..673dee3 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -205,6 +205,17 @@
+ 		status = "disabled";
+ 	};
  
-+static const struct dwc2_core_params params_rk3066 = {
-+	.otg_cap			= 2,	/* non-HNP/non-SRP */
-+	.otg_ver			= -1,
-+	.dma_enable			= -1,
-+	.dma_desc_enable		= 0,
-+	.speed				= -1,
-+	.enable_dynamic_fifo		= 1,
-+	.en_multiple_tx_fifo		= -1,
-+	.host_rx_fifo_size		= 520,	/* 520 DWORDs */
-+	.host_nperio_tx_fifo_size	= 128,	/* 128 DWORDs */
-+	.host_perio_tx_fifo_size	= 256,	/* 256 DWORDs */
-+	.max_transfer_size		= -1,
-+	.max_packet_count		= -1,
-+	.host_channels			= -1,
-+	.phy_type			= -1,
-+	.phy_utmi_width			= -1,
-+	.phy_ulpi_ddr			= -1,
-+	.phy_ulpi_ext_vbus		= -1,
-+	.i2c_enable			= -1,
-+	.ulpi_fs_ls			= -1,
-+	.host_support_fs_ls_low_power	= -1,
-+	.host_ls_low_power_phy_clk	= -1,
-+	.ts_dline			= -1,
-+	.reload_ctl			= -1,
-+	.ahbcfg				= 0x7, /* INCR16 */
-+	.uframe_sched			= -1,
-+};
++	usb_host0_ehci: ehci@ff500000 {
++		compatible = "generic-ehci";
++		reg = <0xff500000 0x100>;
++		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru HCLK_USBHOST0>;
++		clock-names = "usbhost";
++		status = "disabled";
++	};
 +
- /**
-  * dwc2_driver_remove() - Called when the DWC_otg core is unregistered with the
-  * DWC_otg driver
-@@ -97,6 +125,7 @@ static int dwc2_driver_remove(struct platform_device *dev)
++	/* NOTE: ohci@ff520000 doesn't actually work on hardware */
++
+ 	usb_host1: usb@ff540000 {
+ 		compatible = "rockchip,rk3288-usb", "rockchip,rk3066-usb",
+ 				"snps,dwc2";
+@@ -225,6 +236,15 @@
+ 		status = "disabled";
+ 	};
  
- static const struct of_device_id dwc2_of_match_table[] = {
- 	{ .compatible = "brcm,bcm2835-usb", .data = &params_bcm2835 },
-+	{ .compatible = "rockchip,rk3066-usb", .data = &params_rk3066 },
- 	{ .compatible = "snps,dwc2", .data = NULL },
- 	{},
- };
++	usb_hsic: ehci@ff5c0000 {
++		compatible = "generic-ehci";
++		reg = <0xff5c0000 0x100>;
++		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru HCLK_HSIC>;
++		clock-names = "usbhost";
++		status = "disabled";
++	};
++
+ 	uart2: serial@ff690000 {
+ 		compatible = "rockchip,rk3288-uart", "snps,dw-apb-uart";
+ 		reg = <0xff690000 0x100>;
+@@ -319,27 +339,6 @@
+ 		interrupts = <GIC_SPI 111 IRQ_TYPE_LEVEL_HIGH>;
+ 		status = "disabled";
+ 	};
+-
+-	usb_host0_ehci: ehci@ff500000 {
+-		compatible = "generic-ehci";
+-		reg = <0xff500000 0x100>;
+-		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+-		clocks = <&cru HCLK_USBHOST0>;
+-		clock-names = "usbhost";
+-		status = "disabled";
+-	};
+-
+-	/* NOTE: ohci@ff520000 doesn't actually work on hardware */
+-
+-	usb_hsic: ehci@ff5c0000 {
+-		compatible = "generic-ehci";
+-		reg = <0xff5c0000 0x100>;
+-		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
+-		clocks = <&cru HCLK_HSIC>;
+-		clock-names = "usbhost";
+-		status = "disabled";
+-	};
+-
+ 	gic: interrupt-controller@ffc01000 {
+ 		compatible = "arm,gic-400";
+ 		interrupt-controller;
 -- 
 1.7.9.5
 
