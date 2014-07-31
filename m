@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194AbaGaQff (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:35:35 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:59057 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaGaQfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:35:33 -0400
-Date: Thu, 31 Jul 2014 18:35:24 +0200
-From: Robert Richter <rric@kernel.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        Robert Richter <rrichter@cavium.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder
- SoC
-Message-ID: <20140731163524.GT4703@rric.localhost>
-References: <1406732794-20920-1-git-send-email-rric@kernel.org>
- <1406732794-20920-3-git-send-email-rric@kernel.org>
- <20140730154626.GD20162@leverpostej>
- <CAL_JsqLJ_W34XTF2aMOW9z+Gq4oxbrX1RztyJN8Mi0OFPeNxfg@mail.gmail.com>
- <20140731123443.GS4703@rric.localhost>
- <CAL_JsqKgfjV4sEZOWuH4YcMjeOA_yNDvZLv_jTi_Sb=27cOD3g@mail.gmail.com>
+	id S1752305AbaGaQf5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:35:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42831 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752234AbaGaQfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:35:54 -0400
+Date: Thu, 31 Jul 2014 12:35:46 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: device-mapper development <dm-devel@redhat.com>
+cc: Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        linux-mm@kvack.org, Dave Chinner <dchinner@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [dm-devel] [PATCH] dm bufio: fully initialize shrinker
+In-Reply-To: <1406822839-2423-1-git-send-email-gthelen@google.com>
+Message-ID: <alpine.LRH.2.02.1407311235130.1571@file01.intranet.prod.int.rdu2.redhat.com>
+References: <1406822839-2423-1-git-send-email-gthelen@google.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqKgfjV4sEZOWuH4YcMjeOA_yNDvZLv_jTi_Sb=27cOD3g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.07.14 10:22:19, Rob Herring wrote:
-> On Thu, Jul 31, 2014 at 7:34 AM, Robert Richter <rric@kernel.org> wrote:
-> > On 30.07.14 11:37:38, Rob Herring wrote:
-> >> On Wed, Jul 30, 2014 at 10:46 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> >> > On Wed, Jul 30, 2014 at 04:06:31PM +0100, Robert Richter wrote:
-> >> >> From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-> >
-> >> >> +/ {
-> >> >> +     model = "Cavium ThunderX CN88XX Family";
-> >> >> +     compatible = "cavium,thunder-88xx";
-> >> >
-> >> > Please don't use wildcards in compatible strings. Give this an absolute
-> >> > name, and override as necessary.
-> >
-> > The naming 88xx refers to the processor family and arn't actually
-> > wildcards. In the future we might need another dts file for 87xx, but
-> > so far all SoCs of 88xx family should use the same dts files. In this
-> > sense the naming is very specific.
-> 
-> Yes, but each implementation can have its own errata. You might not
-> need to distinguish them now, but you could in the future.
-> 
-> However, if the family is really all the same die and different parts
-> are just marketing, then the name is fine. Or if you can easily probe
-> the exact part and revision it's probably fine.
 
-Yes, this relates to the same soc.
+On Thu, 31 Jul 2014, Greg Thelen wrote:
 
+> 1d3d4437eae1 ("vmscan: per-node deferred work") added a flags field to
+> struct shrinker assuming that all shrinkers were zero filled.  The dm
+> bufio shrinker is not zero filled, which leaves arbitrary kmalloc() data
+> in flags.  So far the only defined flags bit is SHRINKER_NUMA_AWARE.
+> But there are proposed patches which add other bits to shrinker.flags
+> (e.g. memcg awareness).
 > 
-> >
-> >
-> >> >> +     cpus {
-> >> >> +             #address-cells = <2>;
-> >> >> +             #size-cells = <0>;
-> >> >> +
-> >> >> +             cpu@000 {
-> >> >> +                     device_type = "cpu";
-> >> >> +                     compatible = "cavium,thunder", "arm,armv8";
-> >> >> +                     reg = <0x0 0x000>;
-> >> >> +                     enable-method = "psci";
-> >> >> +             };
-> >> >
-> >> > Just to check: both the SoC and CPU are called thunder?
-> >
-> > The soc is called thunder-88xx, the cpu thunder. E.g. an 87xx soc will
-> > have the same core in which is thunder.
+> Rather than simply initializing the shrinker, this patch uses kzalloc()
+> when allocating the dm_bufio_client to ensure that the embedded shrinker
+> and any other similar structures are zeroed.
 > 
-> And the next version of the core would be called something else?
-> thunder-v2? lightning? As long as they are distinguishable they should
-> be fine.
+> This fixes theoretical over aggressive shrinking of dm bufio objects.
+> If the uninitialized dm_bufio_client.shrinker.flags contains
+> SHRINKER_NUMA_AWARE then shrink_slab() would call the dm shrinker for
+> each numa node rather than just once.  This has been broken since 3.12.
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
 
-Same here, the name relates to the same core.
+Acked-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: stable@vger.kernel.org	#v3.12
 
--Robert
+> ---
+>  drivers/md/dm-bufio.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+> index 4e84095833db..d724459860d9 100644
+> --- a/drivers/md/dm-bufio.c
+> +++ b/drivers/md/dm-bufio.c
+> @@ -1541,7 +1541,7 @@ struct dm_bufio_client *dm_bufio_client_create(struct block_device *bdev, unsign
+>  	BUG_ON(block_size < 1 << SECTOR_SHIFT ||
+>  	       (block_size & (block_size - 1)));
+>  
+> -	c = kmalloc(sizeof(*c), GFP_KERNEL);
+> +	c = kzalloc(sizeof(*c), GFP_KERNEL);
+>  	if (!c) {
+>  		r = -ENOMEM;
+>  		goto bad_client;
+> -- 
+> 2.0.0.526.g5318336
+> 
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
+> 
