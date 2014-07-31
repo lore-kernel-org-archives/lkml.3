@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548AbaGaP1M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:27:12 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58056 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751041AbaGaP1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:27:11 -0400
-Date: Thu, 31 Jul 2014 11:26:59 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch 2/3] mm, oom: remove unnecessary check for NULL zonelist
-Message-ID: <20140731152659.GB9952@cmpxchg.org>
-References: <alpine.DEB.2.02.1407231814110.22326@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1407231815090.22326@chino.kir.corp.google.com>
+	id S1751852AbaGaP2n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:28:43 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:45990 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaGaP2m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 11:28:42 -0400
+Message-ID: <53DA60A5.1030304@gmail.com>
+Date: Thu, 31 Jul 2014 18:28:37 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1407231815090.22326@chino.kir.corp.google.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+CC: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 04/22] Change direct_access calling convention
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com> <b78b33d94b669a5fbd02e06f2493b43dd5d77698.1406058387.git.matthew.r.wilcox@intel.com> <53D9174C.7040906@gmail.com> <20140730194503.GQ6754@linux.intel.com> <53DA165E.8040601@gmail.com> <20140731141315.GT6754@linux.intel.com>
+In-Reply-To: <20140731141315.GT6754@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 06:16:32PM -0700, David Rientjes wrote:
-> If the pagefault handler is modified to pass a non-NULL zonelist then an 
-> unnecessary check for a NULL zonelist in constrained_alloc() can be removed.
->
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->  mm/oom_kill.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+On 07/31/2014 05:13 PM, Matthew Wilcox wrote:
+> On Thu, Jul 31, 2014 at 01:11:42PM +0300, Boaz Harrosh wrote:
+>>>>> +	if (size < 0)
+>>>>
+>>>> 	if(size < PAGE_SIZE), No?
+>>>
+>>> No, absolutely not.  PAGE_SIZE is unsigned long, which (if I understand
+>>> my C integer promotions correctly) means that 'size' gets promoted to
+>>> an unsigned long, and we compare them unsigned, so errors will never be
+>>> caught by this check.
+>>
+>> Good point I agree that you need a cast ie.
+>>
+>>  	if(size < (long)PAGE_SIZE)
+>>
+>> The reason I'm saying this is because of a bug I actually hit when
+>> playing with partitioning and fdisk, it came out that the last partition's
+>> size was not page aligned, and code that checked for (< 0) crashed because
+>> prd returned the last two sectors of the partition, since your API is sector
+>> based this can happen for you here, before you are memseting a PAGE_SIZE
+>> you need to test there is space, No? 
 > 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -208,8 +208,6 @@ static enum oom_constraint constrained_alloc(struct zonelist *zonelist,
->  	/* Default to all available memory */
->  	*totalpages = totalram_pages + total_swap_pages;
->  
-> -	if (!zonelist)
-> -		return CONSTRAINT_NONE;
->  	/*
->  	 * Reach here only when __GFP_NOFAIL is used. So, we should avoid
->  	 * to kill current.We have to random task kill in this case.
-> @@ -696,7 +694,7 @@ void pagefault_out_of_memory(void)
->  
->  	zonelist = node_zonelist(first_memory_node, GFP_KERNEL);
->  	if (try_set_zonelist_oom(zonelist, GFP_KERNEL)) {
-> -		out_of_memory(NULL, 0, 0, NULL, false);
-> +		out_of_memory(zonelist, 0, 0, NULL, false);
+> Not in ext2/ext4.  It requires block size == PAGE_SIZE, so it's never
+> going to request the last partial block in a partition.
+> 
 
-out_of_memory() wants the zonelist that was used during allocation,
-not just the random first node's zonelist that's simply picked to
-serialize page fault OOM kills system-wide.
+OK cool. then.
 
-This would even change how panic_on_oom behaves for page fault OOMs
-(in a completely unpredictable way) if we get CONSTRAINED_CPUSET.
+Matthew what is your opinion about this, do we need to push for removal
+of the partition dead code which never worked for brd, or we need to push
+for fixing and implementing new partition support for brd?
 
-This change makes no sense to me.
+Also another thing I saw is that if we leave the flag 
+	GENHD_FL_SUPPRESS_PARTITION_INFO
+
+then mount -U UUID stops to work, regardless of partitions or not,
+this is because Kernel will not put us on /proc/patitions.
+I'll submit another patch to remove it.
+
+BTW I hit another funny bug where the partition beginning was not
+4K aligned apparently fdisk lets you do this if the total size is small
+enough  (like 4096 which is default for brd) so I ended up with accessing
+sec zero, the supper-block, failing because of the alignment check at
+direct_access().
+Do you know of any API that brd/prd can do to not let fdisk do this?
+I'm looking at it right now I just thought it is worth asking.
+
+Thanks for everything
+Boaz
+
