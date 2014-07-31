@@ -1,316 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280AbaGaIjh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 04:39:37 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:34180 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073AbaGaIjb (ORCPT
+	id S1756190AbaGaIna (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 04:43:30 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:58559 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756062AbaGaIn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 04:39:31 -0400
-Date: Thu, 31 Jul 2014 10:39:25 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <Will.Deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        Varun Sethi <varun.sethi@freescale.com>,
+	Thu, 31 Jul 2014 04:43:27 -0400
+Date: Thu, 31 Jul 2014 09:43:15 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Matt Porter <mporter@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
+        Gregory Fong <gregory.0xf0@gmail.com>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140731083923.GA31218@ulmo>
-References: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
- <20140730152646.GC20162@leverpostej>
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 01/11] ARM: brcmstb: add infrastructure for
+	ARM-based Broadcom STB SoCs
+Message-ID: <20140731084315.GJ30282@n2100.arm.linux.org.uk>
+References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com> <1405976886-27807-2-git-send-email-computersforpeace@gmail.com> <CAL_Jsq+Nbk7m9KXhG+Chdpvurp75RrvhFR2oE_LGxV444GSe9Q@mail.gmail.com> <20140731022320.GM3711@ld-irv-0074>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140730152646.GC20162@leverpostej>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140731022320.GM3711@ld-irv-0074>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 30, 2014 at 07:23:20PM -0700, Brian Norris wrote:
+> Hi Rob,
+> 
+> I appreciate your comments, but where were many of these 5 months ago on
+> the first 7 revisions? :)
+> 
+> On a practical note: v9 is already queued for 3.17. Should I send
+> patches for the 3.17 cycle (or later) to fixup some of these issues? Or
+> would you recommend pulling the patches out of Matt Porter's tree now,
+> and reintroducing for 3.18? (I would be much happier with the first.)
+> 
+> I do note that we at least need to fix allmodconfig ASAP; I'll reply to
+> Russell on that one.
+> 
+> On Wed, Jul 30, 2014 at 12:09:48PM -0500, Rob Herring wrote:
+> > On Mon, Jul 21, 2014 at 4:07 PM, Brian Norris <computersforpeace@gmail.com> wrote:
+> > > +
+> > > +       per_cpu_sw_state_wr(cpu, 1);
+> > 
+> > The kernel already tracks the state.
+> 
+> Yes, but it doesn't synchronize cpu_die() and cpu_kill(). But I see you
+> objected below.
 
---n8g4imXOkfNTN/H1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Err.
 
-On Wed, Jul 30, 2014 at 04:26:47PM +0100, Mark Rutland wrote:
-> Hi Thierry,
->=20
-> This looks sane to me.
->=20
-> I just have a few questions below which are hopefully simple/stupid.
->=20
-> On Fri, Jul 04, 2014 at 04:29:17PM +0100, Thierry Reding wrote:
-> > From: Thierry Reding <treding@nvidia.com>
-> >=20
-> > This commit introduces a generic device tree binding for IOMMU devices.
-> > Only a very minimal subset is described here, but it is enough to cover
-> > the requirements of both the Exynos System MMU and Tegra SMMU as
-> > discussed here:
-> >=20
-> >     https://lkml.org/lkml/2014/4/27/346
-> >=20
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> > ---
-> > Changes in v4:
-> > - clarify that disabling an IOMMU DT node may not disable translation
-> > - be more explicit that examples are only examples
-> > - add multi-ID master example
-> >=20
-> > Changes in v3:
-> > - use #iommu-cells instead of #address-cells/#size-cells
-> > - drop optional iommu-names property
-> >=20
-> > Changes in v2:
-> > - add notes about "dma-ranges" property (drop note from commit message)
-> > - document priorities of "iommus" property vs. "dma-ranges" property
-> > - drop #iommu-cells in favour of #address-cells and #size-cells
-> > - remove multiple-master device example
-> >=20
-> >  Documentation/devicetree/bindings/iommu/iommu.txt | 172 ++++++++++++++=
-++++++++
-> >  1 file changed, 172 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/iommu/iommu.txt
-> >=20
-> > diff --git a/Documentation/devicetree/bindings/iommu/iommu.txt b/Docume=
-ntation/devicetree/bindings/iommu/iommu.txt
-> > new file mode 100644
-> > index 000000000000..464a81eaaf61
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/iommu/iommu.txt
-> > @@ -0,0 +1,172 @@
-> > +This document describes the generic device tree binding for IOMMUs and=
- their
-> > +master(s).
-> > +
-> > +
-> > +IOMMU device node:
-> > +=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> > +
-> > +An IOMMU can provide the following services:
-> > +
-> > +* Remap address space to allow devices to access physical memory range=
-s that
-> > +  they otherwise wouldn't be capable of accessing.
-> > +
-> > +  Example: 32-bit DMA to 64-bit physical addresses
-> > +
-> > +* Implement scatter-gather at page level granularity so that the devic=
-e does
-> > +  not have to.
-> > +
-> > +* Provide system protection against "rogue" DMA by forcing all accesse=
-s to go
-> > +  through the IOMMU and faulting when encountering accesses to unmapped
-> > +  address regions.
-> > +
-> > +* Provide address space isolation between multiple contexts.
-> > +
-> > +  Example: Virtualization
-> > +
-> > +Device nodes compatible with this binding represent hardware with some=
- of the
-> > +above capabilities.
-> > +
-> > +IOMMUs can be single-master or multiple-master. Single-master IOMMU de=
-vices
-> > +typically have a fixed association to the master device, whereas multi=
-ple-
-> > +master IOMMU devices can translate accesses from more than one master.
-> > +
-> > +The device tree node of the IOMMU device's parent bus must contain a v=
-alid
-> > +"dma-ranges" property that describes how the physical address space of=
- the
-> > +IOMMU maps to memory. An empty "dma-ranges" property means that there =
-is a
-> > +1:1 mapping from IOMMU to memory.
-> > +
-> > +Required properties:
-> > +--------------------
-> > +- #iommu-cells: The number of cells in an IOMMU specifier needed to en=
-code an
-> > +  address.
-> > +
-> > +The meaning of the IOMMU specifier is defined by the device tree bindi=
-ng of
-> > +the specific IOMMU. Below are a few examples of typical use-cases:
-> > +
-> > +- #iommu-cells =3D <0>: Single master IOMMU devices are not configurab=
-le and
-> > +  therefore no additional information needs to be encoded in the speci=
-fier.
-> > +  This may also apply to multiple master IOMMU devices that do not all=
-ow the
-> > +  association of masters to be configured. Note that an IOMMU can by d=
-esign
-> > +  be multi-master yet only expose a single master in a given configura=
-tion.
-> > +  In such cases the number of cells will usually be 1 as in the next c=
-ase.
-> > +- #iommu-cells =3D <1>: Multiple master IOMMU devices may need to be c=
-onfigured
-> > +  in order to enable translation for a given master. In such cases the=
- single
-> > +  address cell corresponds to the master device's ID. In some cases mo=
-re than
-> > +  one cell can be required to represent a single master ID.
-> > +- #iommu-cells =3D <4>: Some IOMMU devices allow the DMA window for ma=
-sters to
-> > +  be configured. The first cell of the address in this may contain the=
- master
-> > +  device's ID for example, while the second cell could contain the sta=
-rt of
-> > +  the DMA window for the given device. The length of the DMA window is=
- given
-> > +  by the third and fourth cells.
-> > +
-> > +Note that these are merely examples and real-world use-cases may use d=
-ifferent
-> > +definitions to represent their individual needs. Always refer to the s=
-pecific
-> > +IOMMU binding for the exact meaning of the cells that make up the spec=
-ifier.
-> > +
-> > +
-> > +IOMMU master node:
-> > +=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> > +
-> > +Devices that access memory through an IOMMU are called masters. A devi=
-ce can
-> > +have multiple master interfaces (to one or more IOMMU devices).
-> > +
-> > +Required properties:
-> > +--------------------
-> > +- iommus: A list of phandle and IOMMU specifier pairs that describe th=
-e IOMMU
-> > +  master interfaces of the device. One entry in the list describes one=
- master
-> > +  interface of the device.
-> > +
-> > +When an "iommus" property is specified in a device tree node, the IOMM=
-U will
-> > +be used for address translation. If a "dma-ranges" property exists in =
-the
-> > +device's parent node it will be ignored. An exception to this rule is =
-if the
-> > +referenced IOMMU is disabled, in which case the "dma-ranges" property =
-of the
-> > +parent shall take effect. Note that merely disabling a device tree nod=
-e does
-> > +not guarantee that the IOMMU is really disabled since the hardware may=
- not
-> > +have a means to turn off translation.
-> > +
-> > +
-> > +Notes:
-> > +=3D=3D=3D=3D=3D=3D
-> > +
-> > +One possible extension to the above is to use an "iommus" property alo=
-ng with
-> > +a "dma-ranges" property in a bus device node (such as PCI host bridges=
-). This
-> > +can be useful to describe how children on the bus relate to the IOMMU =
-if they
-> > +are not explicitly listed in the device tree (e.g. PCI devices). Howev=
-er, the
-> > +requirements of that use-case haven't been fully determined yet. Imple=
-menting
-> > +this is therefore not recommended without further discussion and exten=
-sion of
-> > +this binding.
-> > +
-> > +
-> > +Examples:
-> > +=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> > +
-> > +Single-master IOMMU:
-> > +--------------------
-> > +
-> > +	iommu {
-> > +		#iommu-cells =3D <0>;
-> > +	};
-> > +
-> > +	master {
-> > +		iommus =3D <&/iommu>;
->=20
-> Nit: this should be iommus =3D <&{/iommu}>, or it's not valid dts syntax.
+static DECLARE_COMPLETION(cpu_died);
 
-Done.
+/*
+ * called on the thread which is asking for a CPU to be shutdown -
+ * waits until shutdown has completed, or it is timed out.
+ */
+void __cpu_die(unsigned int cpu)
+{
+        if (!wait_for_completion_timeout(&cpu_died, msecs_to_jiffies(5000))) {
+                pr_err("CPU%u: cpu didn't die\n", cpu);
+                return;
+        }
+        printk(KERN_NOTICE "CPU%u: shutdown\n", cpu);
+...
+        if (!platform_cpu_kill(cpu))
+                printk("CPU%u: unable to kill\n", cpu);
+}
 
-> > +	};
-> > +
-> > +Multiple-master IOMMU with fixed associations:
-> > +----------------------------------------------
-> > +
-> > +	/* multiple-master IOMMU */
-> > +	iommu {
-> > +		/*
-> > +		 * Masters are statically associated with this IOMMU and
-> > +		 * address translation is always enabled.
-> > +		 */
-> > +		#iommu-cells =3D <0>;
->=20
-> I don't follow why translation being always enabled is relevant to the
-> example; that would seem to be independent from the binding.
->=20
-> Surely the key point is that with no way to distinguish devices, they
-> presumably share the same translations?
+void __ref cpu_die(void)
+{
+...
+        /*
+         * Tell __cpu_die() that this CPU is now safe to dispose of.  Once
+         * this returns, power and/or clocks can be removed at any point
+         * from this CPU and its cache by platform_cpu_kill().
+         */
+        complete(&cpu_died);
 
-Both aspects are important I think. For #iommu-cells =3D <0> there is no
-way for the IOMMU driver to know how to enable translation for a given
-device. So it must be either always on or always off.
+There _is_ synchronisation between these two.  Your cpu_kill() function
+will not be called until we have flushed all data from the dying CPU's
+cache.  That's the best we can do, because if we cause the dying CPU to
+exit the coherency domain, any kind of locking or completion will no
+longer work (neither will your state tracking solution because the L1
+caches will no longer snoop.)
 
-I guess one could say that this is implicit if all masters share the
-same translations. And I guess translations don't always have to be on
-or off technically. Let me try to rephrase this:
+> Hmm, I'm pretty sure the synchronization is required for our B15 core.
+> If we yank the power before the core has properly quiesced, the whole
+> CPU complex will lock up. (Similar story for the power-up while loop you
+> complained about above.)
 
-		/*
-		 * Masters are statically associated with this IOMMU and share
-		 * the same address translations because the IOMMU does not
-		 * have sufficient information to distinguish between masters.
-		 *
-		 * Consequently address translation is always on or off for
-		 * all masters at any given point in time.
-		 */
+If you need to ensure that the power isn't turned off too soon, how about
+using a delayed work queue to do the power-off of the CPU (remembering to
+cancel the delayed work queue when powering the CPU back up.)
 
-Does that sound better?
-
-Thierry
-
---n8g4imXOkfNTN/H1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT2gC7AAoJEN0jrNd/PrOhHRwP/jmPWuU4FOmLtSPMOIWBF1/p
-yZepQOa+zlEfICdVMyM1VTMgrYFCFjFdB1lhc2NAEgcyN3i3E6s7tp+IWmpZKlIz
-54b2rIimsNA3arFYnyKlfDGo5C4RrSE58RQTrGk5USFbOQf1Ma0pweus5xihvQE1
-S+0rU/HBAAYw1rpveWU2AYCxcRuSvhU8B24FaQE0NjDR9YSsdinGXzjlKV5g1ZTz
-alPK/jNLSMwkFbtUQui5C8t/s/Sw0dNFNipVbynSW4uVUGPbCmIXDeMnSsIAXRdn
-JZeCXJoHxr4/3QqgtqOk+LoPHAU0VWpBTzxxEF0IgDLziryz4yFyUbsAm7/tzRXe
-iBdesuzXLLMX1td0Ev0tENr98Q+XOQkjCfUeWGbC691sNyPlSb4NuQxCHgTJ/p96
-GoFSLjm4xgjGeCI3W5P3askRm+7CxlTgBDLm6U4wRWAfo9waPlE1vpPytFSXprUt
-VYNN6xHNp0tmlWmOeSbta2PpbuqBx6I9NMXS70FWbV3uOnV2WqM2nETHrQwkTe4D
-fHV8q1LH81FV0EoZwXS3GhXPD7j6r/q082eoYUwqe7m8IMCizhE2/Cph9O0lgHpj
-aSSMK2DUHzdiOEh8V2uT6Z1+d1MErWP+Tb1VMCgC0CHNR82yAIjGbJ5MxBu7tLE7
-cIH0TH01mjptG9i62enm
-=bfvD
------END PGP SIGNATURE-----
-
---n8g4imXOkfNTN/H1--
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
