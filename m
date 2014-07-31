@@ -1,53 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134AbaGaWlz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 18:41:55 -0400
-Received: from smtprelay0234.hostedemail.com ([216.40.44.234]:47230 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750906AbaGaWly (ORCPT
+	id S1753039AbaGaWnb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 18:43:31 -0400
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:50423 "EHLO
+	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490AbaGaWna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 18:41:54 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:960:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3872:4321:5007:7652:10004:10400:10848:11232:11658:11914:12517:12519:12555:12740:13069:13071:13311:13357:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: shop53_4a76653af7e17
-X-Filterd-Recvd-Size: 1751
-Message-ID: <1406846509.9953.6.camel@joe-AO725>
-Subject: Re: [PATCH 0/8] staging: iio: accel: multiple coding style fixes
-From: Joe Perches <joe@perches.com>
-To: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
-Cc: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        jic23@kernel.org
-Date: Thu, 31 Jul 2014 15:41:49 -0700
-In-Reply-To: <1406846098-19866-1-git-send-email-mopsfelder@gmail.com>
-References: <1406846098-19866-1-git-send-email-mopsfelder@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Jul 2014 18:43:30 -0400
+From: Peter Feiner <pfeiner@google.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Peter Feiner <pfeiner@google.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] mm: softdirty: respect VM_SOFTDIRTY in PTE holes
+Date: Thu, 31 Jul 2014 18:43:25 -0400
+Message-Id: <1406846605-12176-1-git-send-email-pfeiner@google.com>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-31 at 19:34 -0300, Murilo Opsfelder Araujo wrote:
-> The following patches fix (almost) all warnings reported by
-> checkpatch.pl.
-> 
-> Murilo Opsfelder Araujo (8):
->   staging: iio: accel: adis16203_core.c: fix coding style
->   staging: iio: accel: adis16201_core.c: fix coding style
->   staging: iio: accel: adis16204_core.c: fix coding style
->   staging: iio: accel: adis16209_core.c: fix coding style
->   staging: iio: accel: adis16240_core.c: fix coding style
->   staging: iio: accel: lis3l02dq_core.c: fix coding style
->   staging: iio: accel: lis3l02dq_ring.c: fix coding style
->   staging: iio: accel: sca3000_core.c: fix coding style
+After a VMA is created with the VM_SOFTDIRTY flag set,
+/proc/pid/pagemap should report that the VMA's virtual pages are
+soft-dirty until VM_SOFTDIRTY is cleared (i.e., by the next write of
+"4" to /proc/pid/clear_refs). However, pagemap ignores the
+VM_SOFTDIRTY flag for virtual addresses that fall in PTE holes (i.e.,
+virtual addresses that don't have a PMD, PUD, or PGD allocated yet).
 
-Hi.
+To observe this bug, use mmap to create a VMA large enough such that
+there's a good chance that the VMA will occupy an unused PMD, then
+test the soft-dirty bit on its pages. In practice, I found that a VMA
+that covered a PMD's worth of address space was big enough.
 
-Next time it might be better to use patch subjects like
+This patch adds the necessary VMA lookup to the PTE hole callback in
+/proc/pid/pagemap's page walk and sets soft-dirty according to the
+VMAs' VM_SOFTDIRTY flag.
 
-staging: <subsystem> Add blank lines between declarations and code
+Signed-off-by: Peter Feiner <pfeiner@google.com>
+---
+ fs/proc/task_mmu.c | 27 +++++++++++++++++++++------
+ 1 file changed, 21 insertions(+), 6 deletions(-)
 
-because "fix coding style" really isn't very descriptive.
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index cfa63ee..dfc791c 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -925,15 +925,30 @@ static int pagemap_pte_hole(unsigned long start, unsigned long end,
+ 				struct mm_walk *walk)
+ {
+ 	struct pagemapread *pm = walk->private;
+-	unsigned long addr;
++	unsigned long addr = start;
+ 	int err = 0;
+-	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
+ 
+-	for (addr = start; addr < end; addr += PAGE_SIZE) {
+-		err = add_to_pagemap(addr, &pme, pm);
+-		if (err)
+-			break;
++	while (addr < end) {
++		struct vm_area_struct *vma = find_vma(walk->mm, addr);
++		pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
++		unsigned long vm_end;
++
++		if (!vma) {
++			vm_end = end;
++		} else {
++			vm_end = min(end, vma->vm_end);
++			if (vma->vm_flags & VM_SOFTDIRTY)
++				pme.pme |= PM_STATUS2(pm->v2, __PM_SOFT_DIRTY);
++		}
++
++		for (; addr < vm_end; addr += PAGE_SIZE) {
++			err = add_to_pagemap(addr, &pme, pm);
++			if (err)
++				goto out;
++		}
+ 	}
++
++out:
+ 	return err;
+ }
+ 
+-- 
+2.0.0.526.g5318336
 
