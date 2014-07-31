@@ -1,177 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155AbaGaGCW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 02:02:22 -0400
-Received: from regular1.263xmail.com ([211.150.99.132]:35290 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaGaGCT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 02:02:19 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <f4f8b948cdbc44c892accfab57a95588>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Addy Ke <addy.ke@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
-        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
-        heiko@sntech.de, olof@lixom.net, dianders@chromium.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        zhenfu.fang@rock-chips.com, cf@rock-chips.com, lintao@rock-chips.com,
-        chenfen@rock-chips.com, zyf@rock-chips.com, xjq@rock-chips.com,
-        huangtao@rock-chips.com, zyw@rock-chips.com, yzq@rock-chips.com,
-        hj@rock-chips.com, kever.yang@rock-chips.com, zhangqing@rock-chips.com,
-        hl@rock-chips.com, Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH] mmc: dw_mmc: add support for RK3288
-Date: Thu, 31 Jul 2014 14:01:38 +0800
-Message-Id: <1406786498-3935-1-git-send-email-addy.ke@rock-chips.com>
+	id S1756230AbaGaGCd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 02:02:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:44617 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751837AbaGaGCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 02:02:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,770,1400050800"; 
+   d="scan'208";a="569799705"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 03/31] perf tools: Fix missing label symbols
+Date: Thu, 31 Jul 2014 09:00:46 +0300
+Message-Id: <1406786474-9306-4-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1404963109-3906-1-git-send-email-addy.ke@rock-chips.com>
-References: <1404963109-3906-1-git-send-email-addy.ke@rock-chips.com>
+In-Reply-To: <1406786474-9306-1-git-send-email-adrian.hunter@intel.com>
+References: <1406786474-9306-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch focuses on clock setting for RK3288 mmc controller.
+label symbols are missing because elf_sec__is_a() fails
+to find the section because the section strings do not
+match the section headers because the sections headers
+are from the 'runtime' object and the sections strings
+are from the 'symbol source' object.
 
-In RK3288 mmc controller, CLKDIV register can only be set 0 or 1,
-and if DDR 8bit mode, CLKDIV register must be set 1.
+Fix by getting the section strings from the 'runtime'
+object so that they match the section headers.
 
-Reported-by Doug Anderson <dianders@chromium.org>
-Suggested-by: Jaehoon Chung <jh80.chung@samsung.com>
-Suggested-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
-changes since v1:
-- dw_mci_rk3288_setup_clock: do not call clk_get_rate(), just use the
-  host->bus_hz which is already called by dw_mmc.c, suggested by Jaehoon Chung
+ tools/perf/util/symbol-elf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-changes since v2:
-- merge from ChromiumOS tree, fix up clock settting bug, 
-  which cause DDR50 mode for emmc not to work, reported by Doug Anderson
-- remove MMC_TIMING_UHS_DDR50 condition, because on RK3288 only emmc can work
-  in 8bit mode, suggested by Doug Anderson
-
- .../devicetree/bindings/mmc/rockchip-dw-mshc.txt   |  6 ++-
- drivers/mmc/host/dw_mmc-pltfm.c                    | 56 +++++++++++++++++++++-
- 2 files changed, 58 insertions(+), 4 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
-index c559f3f..c327c2d 100644
---- a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
-+++ b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
-@@ -10,12 +10,14 @@ extensions to the Synopsys Designware Mobile Storage Host Controller.
- Required Properties:
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index d753499..ec0b8ea 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -736,7 +736,7 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 	if (symstrs == NULL)
+ 		goto out_elf_end;
  
- * compatible: should be
--	- "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following
-+	- "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following,
-+							before RK3288
-+	- "rockchip,rk3288-dw-mshc": for Rockchip RK3288
+-	sec_strndx = elf_getscn(elf, ehdr.e_shstrndx);
++	sec_strndx = elf_getscn(runtime_ss->elf, runtime_ss->ehdr.e_shstrndx);
+ 	if (sec_strndx == NULL)
+ 		goto out_elf_end;
  
- Example:
- 
- 	rkdwmmc0@12200000 {
--		compatible = "rockchip,rk2928-dw-mshc";
-+		compatible = "rockchip,rk3288-dw-mshc";
- 		reg = <0x12200000 0x1000>;
- 		interrupts = <0 75 0>;
- 		#address-cells = <1>;
-diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
-index d4a47a9..b547f7a 100644
---- a/drivers/mmc/host/dw_mmc-pltfm.c
-+++ b/drivers/mmc/host/dw_mmc-pltfm.c
-@@ -21,17 +21,67 @@
- #include <linux/mmc/mmc.h>
- #include <linux/mmc/dw_mmc.h>
- #include <linux/of.h>
-+#include <linux/clk.h>
- 
- #include "dw_mmc.h"
- #include "dw_mmc-pltfm.h"
- 
-+#define RK3288_CLKGEN_DIV	2
-+
- static void dw_mci_pltfm_prepare_command(struct dw_mci *host, u32 *cmdr)
- {
- 	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
- }
- 
--static const struct dw_mci_drv_data rockchip_drv_data = {
-+static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
-+{
-+	host->bus_hz /= RK3288_CLKGEN_DIV;
-+
-+	return 0;
-+}
-+
-+static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
-+{
-+	int ret;
-+	unsigned int cclkin;
-+	u32 bus_hz;
-+
-+	/*
-+	 * cclkin: source clock of mmc controller.
-+	 * bus_hz: card interface clock generated by CLKGEN.
-+	 * bus_hz = cclkin / RK3288_CLKGEN_DIV;
-+	 * ios->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
-+	 *
-+	 * Note: div can only be 0 or 1
-+	 *       if DDR50 8bit mode(only emmc work in 8bit mode),
-+	 *       div must be set 1
-+	 */
-+	if ((ios->bus_width == MMC_BUS_WIDTH_8) &&
-+	    (ios->timing == MMC_TIMING_MMC_DDR52))
-+		cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
-+	else
-+		cclkin = ios->clock * RK3288_CLKGEN_DIV;
-+
-+	ret = clk_set_rate(host->ciu_clk, cclkin);
-+	if (ret)
-+		dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
-+
-+	bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
-+	if (bus_hz != host->bus_hz) {
-+		host->bus_hz = bus_hz;
-+		/* force dw_mci_setup_bus() */
-+		host->current_speed = 0;
-+	}
-+}
-+
-+static const struct dw_mci_drv_data rk2928_drv_data = {
-+	.prepare_command	= dw_mci_pltfm_prepare_command,
-+};
-+
-+static const struct dw_mci_drv_data rk3288_drv_data = {
- 	.prepare_command	= dw_mci_pltfm_prepare_command,
-+	.set_ios	= dw_mci_rk3288_set_ios,
-+	.setup_clock	= dw_mci_rk3288_setup_clock,
- };
- 
- static const struct dw_mci_drv_data socfpga_drv_data = {
-@@ -95,7 +145,9 @@ EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
- static const struct of_device_id dw_mci_pltfm_match[] = {
- 	{ .compatible = "snps,dw-mshc", },
- 	{ .compatible = "rockchip,rk2928-dw-mshc",
--		.data = &rockchip_drv_data },
-+		.data = &rk2928_drv_data },
-+	{ .compatible = "rockchip,rk3288-dw-mshc",
-+		.data = &rk3288_drv_data },
- 	{ .compatible = "altr,socfpga-dw-mshc",
- 		.data = &socfpga_drv_data },
- 	{},
 -- 
 1.8.3.2
-
 
