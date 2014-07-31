@@ -1,156 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588AbaGaRUF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:20:05 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:41256 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbaGaRUD (ORCPT
+	id S1753348AbaGaRU1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:20:27 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:34103 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752527AbaGaRUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:20:03 -0400
-Message-ID: <53DA7ABF.8000406@gmail.com>
-Date: Thu, 31 Jul 2014 10:19:59 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 31 Jul 2014 13:20:24 -0400
+Date: Thu, 31 Jul 2014 19:20:18 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Oleg Nesterov <oleg@redhat.com>,
+        linux-arch <linux-arch@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/5] x86: two-phase syscall tracing and seccomp
+ fastpath
+Message-ID: <20140731172017.GF7842@localhost.localdomain>
+References: <cover.1406604806.git.luto@amacapital.net>
+ <20140729192056.GA6308@redhat.com>
+ <CALCETrX6P7SJQdgc0gTM7FLdwyT_Ld1MWvkLYpTO_2xsvBC9sA@mail.gmail.com>
+ <CALCETrXHF5YzPQDvnJs=mFNm2Ff_FekGu_Y8-JyMaWh2hctR7A@mail.gmail.com>
+ <20140730165940.GB27954@localhost.localdomain>
+ <CALCETrUafpWfnbfZzgu3qSGqyxcG0+6A=A1RE8g++=GrQKD93Q@mail.gmail.com>
+ <53DA7550.40905@zytor.com>
 MIME-Version: 1.0
-To: Himangi Saraogi <himangi774@gmail.com>
-CC: Luka Perkov <luka@openwrt.org>, Russell King <rmk+kernel@arm.linux.org.uk>,
-        David Daney <david.daney@cavium.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] netdev: octeon_mgmt: Use devm_ioremap_resource
-References: <20140731070653.GA3759@himangi-Dell>
-In-Reply-To: <20140731070653.GA3759@himangi-Dell>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53DA7550.40905@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2014 12:06 AM, Himangi Saraogi wrote:
-> This patch introduces the use of devm_ioremap_resource instead of
-> devm_request_mem_region and devm_ioremap. The error handling on the
-> platform_get_resource is done way with. The size and start fields in the
-> octeon_mgmt are no longer needed. So they are removed and there
-> initialization skipped. Also, error handling is added on the values
-> returned by devm_ioremap_resource.
->
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> ---
-> Not compile tested.
+On Thu, Jul 31, 2014 at 09:56:48AM -0700, H. Peter Anvin wrote:
+> On 07/30/2014 10:25 AM, Andy Lutomirski wrote:
+> > 
+> > And yet x86_64 has this code implemented in assembly even in the
+> > slowpath.  Go figure.
+> > 
+> 
+> There is way too much assembly in entry_64.S probably because things
+> have been grafted on, ahem, "organically".  It is darn nigh impossible
+> to even remotely figure out what goes on in that file.
 
-There are compilers available for systems with this device:
-
-
-ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.9.0/x86_64-gcc-4.9.0-nolibc_mips64-linux.tar.xz
-
-Could you try to at least see if it compiles?
-
-David Daney
-
-
->   drivers/net/ethernet/octeon/octeon_mgmt.c | 64 +++++++------------------------
->   1 file changed, 13 insertions(+), 51 deletions(-)
->
-> diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
-> index 979c698..5d61a26 100644
-> --- a/drivers/net/ethernet/octeon/octeon_mgmt.c
-> +++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
-> @@ -148,12 +148,6 @@ struct octeon_mgmt {
->   	struct tasklet_struct tx_clean_tasklet;
->   	struct phy_device *phydev;
->   	struct device_node *phy_np;
-> -	resource_size_t mix_phys;
-> -	resource_size_t mix_size;
-> -	resource_size_t agl_phys;
-> -	resource_size_t agl_size;
-> -	resource_size_t agl_prt_ctl_phys;
-> -	resource_size_t agl_prt_ctl_size;
->   };
->
->   static void octeon_mgmt_set_rx_irq(struct octeon_mgmt *p, int enable)
-> @@ -1418,6 +1412,7 @@ static int octeon_mgmt_probe(struct platform_device *pdev)
->   	struct resource *res_agl_prt_ctl;
->   	int len;
->   	int result;
-> +	void *ret;
->
->   	netdev = alloc_etherdev(sizeof(struct octeon_mgmt));
->   	if (netdev == NULL)
-> @@ -1452,62 +1447,29 @@ static int octeon_mgmt_probe(struct platform_device *pdev)
->   	p->irq = result;
->
->   	res_mix = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (res_mix == NULL) {
-> -		dev_err(&pdev->dev, "no 'reg' resource\n");
-> -		result = -ENXIO;
-> +	ret = devm_ioremap_resource(&pdev->dev, res_mix);
-> +	if (IS_ERR(ret)) {
-> +		result = PTR_ERR(ret);
->   		goto err;
->   	}
-> +	p->mix = (u64)ret;
->
->   	res_agl = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> -	if (res_agl == NULL) {
-> -		dev_err(&pdev->dev, "no 'reg' resource\n");
-> -		result = -ENXIO;
-> +	ret = devm_ioremap_resource(&pdev->dev, res_agl);
-> +	if (IS_ERR(ret)) {
-> +		result = PTR_ERR(ret);
->   		goto err;
->   	}
-> +	p->agl = (u64)ret;
->
->   	res_agl_prt_ctl = platform_get_resource(pdev, IORESOURCE_MEM, 3);
-> -	if (res_agl_prt_ctl == NULL) {
-> -		dev_err(&pdev->dev, "no 'reg' resource\n");
-> -		result = -ENXIO;
-> -		goto err;
-> -	}
-> -
-> -	p->mix_phys = res_mix->start;
-> -	p->mix_size = resource_size(res_mix);
-> -	p->agl_phys = res_agl->start;
-> -	p->agl_size = resource_size(res_agl);
-> -	p->agl_prt_ctl_phys = res_agl_prt_ctl->start;
-> -	p->agl_prt_ctl_size = resource_size(res_agl_prt_ctl);
-> -
-> -
-> -	if (!devm_request_mem_region(&pdev->dev, p->mix_phys, p->mix_size,
-> -				     res_mix->name)) {
-> -		dev_err(&pdev->dev, "request_mem_region (%s) failed\n",
-> -			res_mix->name);
-> -		result = -ENXIO;
-> -		goto err;
-> -	}
-> -
-> -	if (!devm_request_mem_region(&pdev->dev, p->agl_phys, p->agl_size,
-> -				     res_agl->name)) {
-> -		result = -ENXIO;
-> -		dev_err(&pdev->dev, "request_mem_region (%s) failed\n",
-> -			res_agl->name);
-> -		goto err;
-> -	}
-> -
-> -	if (!devm_request_mem_region(&pdev->dev, p->agl_prt_ctl_phys,
-> -				     p->agl_prt_ctl_size, res_agl_prt_ctl->name)) {
-> -		result = -ENXIO;
-> -		dev_err(&pdev->dev, "request_mem_region (%s) failed\n",
-> -			res_agl_prt_ctl->name);
-> +	ret = devm_ioremap_resource(&pdev->dev, res_agl_prt_ctl);
-> +	if (IS_ERR(ret)) {
-> +		result = PTR_ERR(ret);
->   		goto err;
->   	}
-> +	p->agl_prt_ctl = (u64)ret;
->
-> -	p->mix = (u64)devm_ioremap(&pdev->dev, p->mix_phys, p->mix_size);
-> -	p->agl = (u64)devm_ioremap(&pdev->dev, p->agl_phys, p->agl_size);
-> -	p->agl_prt_ctl = (u64)devm_ioremap(&pdev->dev, p->agl_prt_ctl_phys,
-> -					   p->agl_prt_ctl_size);
->   	spin_lock_init(&p->lock);
->
->   	skb_queue_head_init(&p->tx_list);
->
-
+Always warn your family and give them an estimate return hour before opening that file.
