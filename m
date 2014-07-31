@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633AbaGaRHS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:07:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60732 "EHLO
+	id S1752755AbaGaRHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:07:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60744 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973AbaGaRHP (ORCPT
+	with ESMTP id S1750911AbaGaRH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:07:15 -0400
-Date: Thu, 31 Jul 2014 10:07:03 -0700
+	Thu, 31 Jul 2014 13:07:28 -0400
+Date: Thu, 31 Jul 2014 10:07:16 -0700
 From: tip-bot for David Rientjes <tipbot@zytor.com>
-Message-ID: <tip-300eddf967920d35affa75db77c50c0fa493446a@git.kernel.org>
+Message-ID: <tip-c460b5d34018d71fdeb8540620690883db3f959b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         tglx@linutronix.de, rientjes@google.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         tglx@linutronix.de, rientjes@google.com
-In-Reply-To: <alpine.DEB.2.02.1407302349040.17503@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1407302349040.17503@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1407302349390.17503@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1407302349390.17503@chino.kir.corp.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, apic:
-  Remove smp_callin_clear_local_apic callback
-Git-Commit-ID: 300eddf967920d35affa75db77c50c0fa493446a
+Subject: [tip:x86/apic] x86, apic: Remove mps_oem_check callback
+Git-Commit-ID: c460b5d34018d71fdeb8540620690883db3f959b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,163 +31,213 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  300eddf967920d35affa75db77c50c0fa493446a
-Gitweb:     http://git.kernel.org/tip/300eddf967920d35affa75db77c50c0fa493446a
+Commit-ID:  c460b5d34018d71fdeb8540620690883db3f959b
+Gitweb:     http://git.kernel.org/tip/c460b5d34018d71fdeb8540620690883db3f959b
 Author:     David Rientjes <rientjes@google.com>
-AuthorDate: Wed, 30 Jul 2014 23:53:30 -0700
+AuthorDate: Wed, 30 Jul 2014 23:53:34 -0700
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 31 Jul 2014 08:05:41 -0700
+CommitDate: Thu, 31 Jul 2014 08:05:42 -0700
 
-x86, apic: Remove smp_callin_clear_local_apic callback
+x86, apic: Remove mps_oem_check callback
 
 Since commit b5660ba76b41 ("x86, platforms: Remove NUMAQ") removed NUMAQ,
-the smp_callin_clear_local_apic() apic callback has been obsolete.
-Remove it.
+the mps_oem_check() apic callback has been obsolete.  Remove it.
+
+This allows generic_mps_oem_check() to be removed as well.
 
 Signed-off-by: David Rientjes <rientjes@google.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1407302349040.17503@chino.kir.corp.google.com
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1407302349390.17503@chino.kir.corp.google.com
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/include/asm/apic.h           | 1 -
- arch/x86/kernel/apic/apic_flat_64.c   | 2 --
- arch/x86/kernel/apic/apic_noop.c      | 1 -
- arch/x86/kernel/apic/apic_numachip.c  | 1 -
- arch/x86/kernel/apic/bigsmp_32.c      | 1 -
- arch/x86/kernel/apic/probe_32.c       | 1 -
- arch/x86/kernel/apic/x2apic_cluster.c | 1 -
- arch/x86/kernel/apic/x2apic_phys.c    | 1 -
- arch/x86/kernel/apic/x2apic_uv_x.c    | 1 -
- arch/x86/kernel/smpboot.c             | 4 ----
- 10 files changed, 14 deletions(-)
+ arch/x86/include/asm/apic.h           |  7 -------
+ arch/x86/include/asm/mpspec.h         |  2 --
+ arch/x86/kernel/apic/apic_flat_64.c   |  2 --
+ arch/x86/kernel/apic/apic_noop.c      |  2 --
+ arch/x86/kernel/apic/apic_numachip.c  |  1 -
+ arch/x86/kernel/apic/bigsmp_32.c      |  1 -
+ arch/x86/kernel/apic/probe_32.c       | 25 +------------------------
+ arch/x86/kernel/apic/x2apic_cluster.c |  1 -
+ arch/x86/kernel/apic/x2apic_phys.c    |  1 -
+ arch/x86/kernel/apic/x2apic_uv_x.c    |  1 -
+ arch/x86/kernel/mpparse.c             |  3 ---
+ 11 files changed, 1 insertion(+), 45 deletions(-)
 
 diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 2201c26..b8c1380 100644
+index b8c1380..86d1550 100644
 --- a/arch/x86/include/asm/apic.h
 +++ b/arch/x86/include/asm/apic.h
-@@ -336,7 +336,6 @@ struct apic {
- 	int (*wakeup_secondary_cpu)(int apicid, unsigned long start_eip);
+@@ -309,13 +309,6 @@ struct apic {
+ 	void (*enable_apic_mode)(void);
+ 	int (*phys_pkg_id)(int cpuid_apic, int index_msb);
  
- 	bool wait_for_init_deassert;
--	void (*smp_callin_clear_local_apic)(void);
- 	void (*inquire_remote_apic)(int apicid);
+-	/*
+-	 * When one of the next two hooks returns 1 the apic
+-	 * is switched to this. Essentially they are additional
+-	 * probe functions:
+-	 */
+-	int (*mps_oem_check)(struct mpc_table *mpc, char *oem, char *productid);
+-
+ 	unsigned int (*get_apic_id)(unsigned long x);
+ 	unsigned long (*set_apic_id)(unsigned int id);
+ 	unsigned long apic_id_mask;
+diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
+index 7bef40a..b07233b 100644
+--- a/arch/x86/include/asm/mpspec.h
++++ b/arch/x86/include/asm/mpspec.h
+@@ -150,6 +150,4 @@ static inline void physid_set_mask_of_physid(int physid, physid_mask_t *map)
  
- 	/* apic ops */
+ extern physid_mask_t phys_cpu_present_map;
+ 
+-extern int generic_mps_oem_check(struct mpc_table *, char *, char *);
+-
+ #endif /* _ASM_X86_MPSPEC_H */
 diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
-index 7d56b65..a790497 100644
+index a790497..86c4203 100644
 --- a/arch/x86/kernel/apic/apic_flat_64.c
 +++ b/arch/x86/kernel/apic/apic_flat_64.c
-@@ -197,7 +197,6 @@ static struct apic apic_flat =  {
- 	.send_IPI_self			= apic_send_IPI_self,
+@@ -182,7 +182,6 @@ static struct apic apic_flat =  {
+ 	.check_phys_apicid_present	= default_check_phys_apicid_present,
+ 	.enable_apic_mode		= NULL,
+ 	.phys_pkg_id			= flat_phys_pkg_id,
+-	.mps_oem_check			= NULL,
  
- 	.wait_for_init_deassert		= false,
--	.smp_callin_clear_local_apic	= NULL,
- 	.inquire_remote_apic		= default_inquire_remote_apic,
+ 	.get_apic_id			= flat_get_apic_id,
+ 	.set_apic_id			= set_apic_id,
+@@ -295,7 +294,6 @@ static struct apic apic_physflat =  {
+ 	.check_phys_apicid_present	= default_check_phys_apicid_present,
+ 	.enable_apic_mode		= NULL,
+ 	.phys_pkg_id			= flat_phys_pkg_id,
+-	.mps_oem_check			= NULL,
  
- 	.read				= native_apic_mem_read,
-@@ -311,7 +310,6 @@ static struct apic apic_physflat =  {
- 	.send_IPI_self			= apic_send_IPI_self,
- 
- 	.wait_for_init_deassert		= false,
--	.smp_callin_clear_local_apic	= NULL,
- 	.inquire_remote_apic		= default_inquire_remote_apic,
- 
- 	.read				= native_apic_mem_read,
+ 	.get_apic_id			= flat_get_apic_id,
+ 	.set_apic_id			= set_apic_id,
 diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
-index c638efa..f05b4f0 100644
+index f05b4f0..6b25735 100644
 --- a/arch/x86/kernel/apic/apic_noop.c
 +++ b/arch/x86/kernel/apic/apic_noop.c
-@@ -169,7 +169,6 @@ struct apic apic_noop = {
- 	.wakeup_secondary_cpu		= noop_wakeup_secondary_cpu,
+@@ -152,8 +152,6 @@ struct apic apic_noop = {
  
- 	.wait_for_init_deassert		= false,
--	.smp_callin_clear_local_apic	= NULL,
- 	.inquire_remote_apic		= NULL,
+ 	.phys_pkg_id			= noop_phys_pkg_id,
  
- 	.read				= noop_apic_read,
+-	.mps_oem_check			= NULL,
+-
+ 	.get_apic_id			= noop_get_apic_id,
+ 	.set_apic_id			= NULL,
+ 	.apic_id_mask			= 0x0F << 24,
 diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index c32f882..c0d9165 100644
+index c0d9165..5f83500 100644
 --- a/arch/x86/kernel/apic/apic_numachip.c
 +++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -247,7 +247,6 @@ static const struct apic apic_numachip __refconst = {
+@@ -231,7 +231,6 @@ static const struct apic apic_numachip __refconst = {
+ 	.check_phys_apicid_present	= default_check_phys_apicid_present,
+ 	.enable_apic_mode		= NULL,
+ 	.phys_pkg_id			= numachip_phys_pkg_id,
+-	.mps_oem_check			= NULL,
  
- 	.wakeup_secondary_cpu		= numachip_wakeup_secondary,
- 	.wait_for_init_deassert		= false,
--	.smp_callin_clear_local_apic	= NULL,
- 	.inquire_remote_apic		= NULL, /* REMRD not supported */
- 
- 	.read				= native_apic_mem_read,
+ 	.get_apic_id			= get_apic_id,
+ 	.set_apic_id			= set_apic_id,
 diff --git a/arch/x86/kernel/apic/bigsmp_32.c b/arch/x86/kernel/apic/bigsmp_32.c
-index 74ffd3e..eb15916 100644
+index eb15916..90f6427 100644
 --- a/arch/x86/kernel/apic/bigsmp_32.c
 +++ b/arch/x86/kernel/apic/bigsmp_32.c
-@@ -197,7 +197,6 @@ static struct apic apic_bigsmp = {
- 	.send_IPI_self			= default_send_IPI_self,
+@@ -182,7 +182,6 @@ static struct apic apic_bigsmp = {
+ 	.check_phys_apicid_present	= bigsmp_check_phys_apicid_present,
+ 	.enable_apic_mode		= NULL,
+ 	.phys_pkg_id			= bigsmp_phys_pkg_id,
+-	.mps_oem_check			= NULL,
  
- 	.wait_for_init_deassert		= true,
--	.smp_callin_clear_local_apic	= NULL,
- 	.inquire_remote_apic		= default_inquire_remote_apic,
- 
- 	.read				= native_apic_mem_read,
+ 	.get_apic_id			= bigsmp_get_apic_id,
+ 	.set_apic_id			= NULL,
 diff --git a/arch/x86/kernel/apic/probe_32.c b/arch/x86/kernel/apic/probe_32.c
-index 64248c7..5b617a9 100644
+index 5b617a9..b4211f6 100644
 --- a/arch/x86/kernel/apic/probe_32.c
 +++ b/arch/x86/kernel/apic/probe_32.c
-@@ -117,7 +117,6 @@ static struct apic apic_default = {
- 	.send_IPI_self			= default_send_IPI_self,
+@@ -102,7 +102,6 @@ static struct apic apic_default = {
+ 	.check_phys_apicid_present	= default_check_phys_apicid_present,
+ 	.enable_apic_mode		= NULL,
+ 	.phys_pkg_id			= default_phys_pkg_id,
+-	.mps_oem_check			= NULL,
  
- 	.wait_for_init_deassert		= true,
--	.smp_callin_clear_local_apic	= NULL,
- 	.inquire_remote_apic		= default_inquire_remote_apic,
+ 	.get_apic_id			= default_get_apic_id,
+ 	.set_apic_id			= NULL,
+@@ -210,29 +209,7 @@ void __init generic_apic_probe(void)
+ 	printk(KERN_INFO "Using APIC driver %s\n", apic->name);
+ }
  
- 	.read				= native_apic_mem_read,
+-/* These functions can switch the APIC even after the initial ->probe() */
+-
+-int __init
+-generic_mps_oem_check(struct mpc_table *mpc, char *oem, char *productid)
+-{
+-	struct apic **drv;
+-
+-	for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
+-		if (!((*drv)->mps_oem_check))
+-			continue;
+-		if (!(*drv)->mps_oem_check(mpc, oem, productid))
+-			continue;
+-
+-		if (!cmdline_apic) {
+-			apic = *drv;
+-			printk(KERN_INFO "Switched to APIC driver `%s'.\n",
+-			       apic->name);
+-		}
+-		return 1;
+-	}
+-	return 0;
+-}
+-
++/* This function can switch the APIC even after the initial ->probe() */
+ int __init default_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+ {
+ 	struct apic **drv;
 diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index 8b3200c..d96cab1 100644
+index d96cab1..7e4ac558 100644
 --- a/arch/x86/kernel/apic/x2apic_cluster.c
 +++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -278,7 +278,6 @@ static struct apic apic_x2apic_cluster = {
- 	.send_IPI_self			= x2apic_send_IPI_self,
+@@ -263,7 +263,6 @@ static struct apic apic_x2apic_cluster = {
+ 	.check_phys_apicid_present	= default_check_phys_apicid_present,
+ 	.enable_apic_mode		= NULL,
+ 	.phys_pkg_id			= x2apic_phys_pkg_id,
+-	.mps_oem_check			= NULL,
  
- 	.wait_for_init_deassert		= false,
--	.smp_callin_clear_local_apic	= NULL,
- 	.inquire_remote_apic		= NULL,
- 
- 	.read				= native_apic_msr_read,
+ 	.get_apic_id			= x2apic_get_apic_id,
+ 	.set_apic_id			= x2apic_set_apic_id,
 diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-index 14c1891..73d0fee 100644
+index 73d0fee..01136e6 100644
 --- a/arch/x86/kernel/apic/x2apic_phys.c
 +++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -132,7 +132,6 @@ static struct apic apic_x2apic_phys = {
- 	.send_IPI_self			= x2apic_send_IPI_self,
+@@ -117,7 +117,6 @@ static struct apic apic_x2apic_phys = {
+ 	.check_phys_apicid_present	= default_check_phys_apicid_present,
+ 	.enable_apic_mode		= NULL,
+ 	.phys_pkg_id			= x2apic_phys_pkg_id,
+-	.mps_oem_check			= NULL,
  
- 	.wait_for_init_deassert		= false,
--	.smp_callin_clear_local_apic	= NULL,
- 	.inquire_remote_apic		= NULL,
- 
- 	.read				= native_apic_msr_read,
+ 	.get_apic_id			= x2apic_get_apic_id,
+ 	.set_apic_id			= x2apic_set_apic_id,
 diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index 58f0988..cc5d40e 100644
+index cc5d40e..119c553 100644
 --- a/arch/x86/kernel/apic/x2apic_uv_x.c
 +++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -395,7 +395,6 @@ static struct apic __refdata apic_x2apic_uv_x = {
+@@ -379,7 +379,6 @@ static struct apic __refdata apic_x2apic_uv_x = {
+ 	.check_phys_apicid_present	= default_check_phys_apicid_present,
+ 	.enable_apic_mode		= NULL,
+ 	.phys_pkg_id			= uv_phys_pkg_id,
+-	.mps_oem_check			= NULL,
  
- 	.wakeup_secondary_cpu		= uv_wakeup_secondary,
- 	.wait_for_init_deassert		= false,
--	.smp_callin_clear_local_apic	= NULL,
- 	.inquire_remote_apic		= NULL,
+ 	.get_apic_id			= x2apic_get_apic_id,
+ 	.set_apic_id			= set_apic_id,
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index fde86d2..2d2a237 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -216,9 +216,6 @@ static int __init smp_read_mpc(struct mpc_table *mpc, unsigned early)
+ 	if (!smp_check_mpc(mpc, oem, str))
+ 		return 0;
  
- 	.read				= native_apic_msr_read,
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 5492798..f0f3b19 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -168,10 +168,6 @@ static void smp_callin(void)
- 	 * CPU, first the APIC. (this is probably redundant on most
- 	 * boards)
- 	 */
--
--	pr_debug("CALLIN, before setup_local_APIC()\n");
--	if (apic->smp_callin_clear_local_apic)
--		apic->smp_callin_clear_local_apic();
- 	setup_local_APIC();
- 	end_local_APIC_setup();
- 
+-#ifdef CONFIG_X86_32
+-	generic_mps_oem_check(mpc, oem, str);
+-#endif
+ 	/* Initialize the lapic mapping */
+ 	if (!acpi_lapic)
+ 		register_lapic_address(mpc->lapic);
