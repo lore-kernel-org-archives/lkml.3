@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaGaUM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:12:59 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:39409 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750868AbaGaUM5 (ORCPT
+	id S1751631AbaGaUQN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:16:13 -0400
+Received: from orange.myspectrum.nl ([149.210.134.247]:50621 "EHLO
+	orange.myspectrum.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806AbaGaUQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:12:57 -0400
-Date: Thu, 31 Jul 2014 16:12:55 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: Re: [PATCH 1/3] irq / PM: New driver interface for wakeup interrupts
-In-Reply-To: <2140085.bSS0bVjyxJ@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1407311552530.885-100000@iolanthe.rowland.org>
+	Thu, 31 Jul 2014 16:16:10 -0400
+X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Jul 2014 16:16:10 EDT
+Message-ID: <53DAA2A0.3050205@myspectrum.nl>
+Date: Thu, 31 Jul 2014 22:10:08 +0200
+From: Jeroen Hofstee <dasuboot@myspectrum.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Hans de Goede <hdegoede@redhat.com>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>, u-boot@lists.denx.de
+CC: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [U-Boot] [PATCH] kconfig: Fix compiler warning in menu.c
+References: <1406816503-31963-1-git-send-email-hdegoede@redhat.com>
+In-Reply-To: <1406816503-31963-1-git-send-email-hdegoede@redhat.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jul 2014, Rafael J. Wysocki wrote:
+Hello Hans,
 
-> And before we enter the wakeup handling slippery slope, let me make a note
-> that this problem is bothering me quite a bit at the moment.  In my opinion
-> we need to address it somehow regardless of the wakeup issues and I'm not sure
-> if failing __setup_irq() when there's a mismatch (that is, there are existing
-> actions for the given irq_desc and their IRQF_NO_SUSPEND settings are not
-> consistent with the new one) is the right way to do that, because it may make
-> things behave a bit randomly (it will always fail the second guy, but that need
-> not be the one who's requested IRQF_NO_SUSPEND and it depends on the ordering
-> between them).
+On 31-07-14 16:21, Hans de Goede wrote:
+> This fixes the following compiler warning:
+>
+> In file included from scripts/kconfig/zconf.tab.c:2537:0:
+> scripts/kconfig/menu.c: In function ‘get_symbol_str’:
+> scripts/kconfig/menu.c:590:18: warning: ‘jump’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>       jump->offset = strlen(r->s);
+>                    ^
+> In file included from scripts/kconfig/zconf.tab.c:2537:0:
+> scripts/kconfig/menu.c:551:19: note: ‘jump’ was declared here
+>    struct jump_key *jump;
+>
+> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+> ---
+>   scripts/kconfig/menu.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+> index a26cc5d..584e0fc 100644
+> --- a/scripts/kconfig/menu.c
+> +++ b/scripts/kconfig/menu.c
+> @@ -548,7 +548,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
+>   {
+>   	int i, j;
+>   	struct menu *submenu[8], *menu, *location = NULL;
+> -	struct jump_key *jump;
+> +	struct jump_key *jump = NULL;
+>   
+>   	str_printf(r, _("Prompt: %s\n"), _(prop->text));
+>   	menu = prop->menu->parent;
 
-Pardon me for sticking my nose into the middle of the conversation, but
-here's what it looks like to me:
+just curious, which compiler is this? Since it is a false positive.
+(and it could know)
 
-The entire no_irq phase of suspend/resume is starting to seem like a
-mistake.  We should never have done it.  Alternatively, it might be
-okay to disable _all_ interrupts during the no_irq phase provided they
-are then _all_ enabled again before entering the sysdev and
-platform-specific parts of suspend (or the final freeze).
-
-As I understand it, the idea behind the no_irq phase was to make life 
-easier for drivers.  They wouldn't have to worry about strange things 
-cropping up while they're in the middle of powering down their devices 
-or afterward.
-
-Well, guess what?  It turns out that they do have to worry about it
-after all.  Timers can still fire during suspend transitions, and if an
-IRQ line is shared with a wakeup source then it won't be disabled.
-
-The fact is, drivers should not rely on disabled interrupts to prevent
-untimely interrupt requests or wakeups.  They should configure their
-devices not to generate any interrupt requests at all, apart from
-wakeup requests.  And their interrupt handlers shouldn't mind being
-invoked for a shared IRQ, even after their devices are turned off.
-
-Any driver that leaves its device capable of generating non-wakeup
-interrupt requests during suspend, and relies on interrupts being
-globally disabled to avoid problems, is most likely broken.  Yes, it
-may be acceptable in cases where the IRQ line isn't shared, but it's
-still a bad design.
-
-Alan Stern
-
+Regards,
+Jeroen
