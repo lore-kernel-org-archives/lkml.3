@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809AbaGaQSP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:18:15 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63164 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750774AbaGaQSO (ORCPT
+	id S1752191AbaGaQS3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:18:29 -0400
+Received: from mail-oa0-f74.google.com ([209.85.219.74]:34044 "EHLO
+	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912AbaGaQS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:18:14 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem to be held for duration of changing governors [v2]
-Date: Thu, 31 Jul 2014 18:36:47 +0200
-Message-ID: <2066166.pXm4lKLOID@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53DA1916.4090806@redhat.com>
-References: <1406634362-811-1-git-send-email-prarit@redhat.com> <3140593.vs3eOK6CdF@vostro.rjw.lan> <53DA1916.4090806@redhat.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Thu, 31 Jul 2014 12:18:28 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Doug Anderson <dianders@chromium.org>,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 3/4] ARM: dts: Take the mmc slot node out of rk3288-evb
+Date: Thu, 31 Jul 2014 09:13:19 -0700
+Message-Id: <1406823200-20911-4-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1406823200-20911-1-git-send-email-dianders@chromium.org>
+References: <1406823200-20911-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 31, 2014 06:23:18 AM Prarit Bhargava wrote:
-> 
-> On 07/30/2014 10:16 PM, Rafael J. Wysocki wrote:
-> > On Wednesday, July 30, 2014 06:36:00 PM Saravana Kannan wrote:
-> >> On 07/30/2014 02:40 PM, Rafael J. Wysocki wrote:
-> >>> On Wednesday, July 30, 2014 10:18:25 AM Prarit Bhargava wrote:
-> >>>>
-> >>>> On 07/29/2014 08:03 PM, Rafael J. Wysocki wrote:
-> >>>>> On Tuesday, July 29, 2014 07:46:02 AM Prarit Bhargava wrote:
-> >>>
-> >>> [cut]
-> >>>
-> >>>>>> This patch effectively reverts commit 955ef483.
-> >>
-> >> The issue reported in this patch is valid. We are seeing that internally 
-> >> too. I believe I reported it in another thread (within the past month).
-> >>
-> >> However, the original patch fixes a real deadlock issue (I'm too tired 
-> >> to look it up now). We can revet the original, but it's going to bring 
-> >> back the original issue. I just want to make sure Prarit and Raphael 
-> >> realize this before proceeding.
-> >>
-> >> I do have plans for a proper fix for the mainline (not stable branches), 
-> >> but plan to do that after the current set of suspend/hotplug patches go 
-> >> through. The fix would be easier to make after that.
-> >>
-> >>>>>
-> >>>>> OK, I'm convinced by this.
-> >>>>>
-> >>>>> I suppose we should push it for -stable from 3.10 through 3.15.x, right?
-> >>>>
-> >>>> Rafael, I think that is a good idea.  I'm not sure what the protocol is for
-> >>>> adding stable@kernel.org though ...
-> 
-> Rafael, let me (again) re-write the patch description.  I think Saravana has
-> raised an important issue that I have not clearly identified why it is safe to
-> remove this code in my patch description.  Also, I want to clearly identify the
-> appropriate -stable releases to push this out to.
-> 
-> I'll submit a [v3] later today or tomorrow.
+In Jaehoon's (mmc: dw_mmc: Slot quirk "disable-wp" is deprecated) the
+slot node is no longer used.  Remove it.
 
-In any case that's too late for 3.16 final, unless there's an -rc8.
+Note that if Jaehoon's patch lands before my (ARM: dts: Enable emmc
+and sdmmc on the rk3288-evb boards) then this could be squashed into
+the later.
 
-Thanks for doing that work!
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+Changes in v2:
+- Refer to the new title of Jaehoon's patch
 
-Rafael
+ arch/arm/boot/dts/rk3288-evb.dtsi | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
+index ec580fa..b69008f 100644
+--- a/arch/arm/boot/dts/rk3288-evb.dtsi
++++ b/arch/arm/boot/dts/rk3288-evb.dtsi
+@@ -41,17 +41,13 @@
+ 	broken-cd;
+ 	bus-width = <8>;
+ 	cap-mmc-highspeed;
++	disable-wp;
+ 	mmc-ddr-1_8v;
+ 	non-removable;
+ 	num-slots = <1>;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&emmc_clk &emmc_cmd &emmc_pwr &emmc_bus8>;
+ 	status = "okay";
+-
+-	slot@0 {
+-		reg = <0>;
+-		disable-wp;
+-	};
+ };
+ 
+ &sdmmc {
+@@ -59,15 +55,11 @@
+ 	cap-mmc-highspeed;
+ 	cap-sd-highspeed;
+ 	card-detect-delay = <200>;
++	disable-wp;			/* wp not hooked up */
+ 	num-slots = <1>;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_cd &sdmmc_bus4>;
+ 	status = "okay";
+-
+-	slot@0 {
+-		reg = <0>;
+-		disable-wp;		/* wp not hooked up */
+-	};
+ };
+ 
+ &i2c0 {
+-- 
+2.0.0.526.g5318336
 
