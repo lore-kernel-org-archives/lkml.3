@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751328AbaGaMhb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 08:37:31 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:51393 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaGaMh3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 08:37:29 -0400
+	id S1751134AbaGaMmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 08:42:10 -0400
+Received: from ozlabs.org ([103.22.144.67]:49737 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750853AbaGaMmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 08:42:08 -0400
+Date: Thu, 31 Jul 2014 22:41:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Christoffer Dall <christofferdall@christofferdall.dk>
+Cc: Marc Zyngier <marc.zyngier@arm.com>, linux-next@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: linux-next: manual merge of the kvm-arm tree with Linus' tree
+Message-ID: <20140731224156.103007e3@canb.auug.org.au>
+In-Reply-To: <20140731221752.4f563ced@canb.auug.org.au>
+References: <20140731163004.474501fb@canb.auug.org.au>
+	<CAEDV+gJ1oSPzgZMO=kdFDNPnzy-EOHGuLxHqTB8KO6d_8yPrxQ@mail.gmail.com>
+	<20140731221752.4f563ced@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140731115759.GS19379@twins.programming.kicks-ass.net>
-References: <1406801797-20139-1-git-send-email-ilya.dryomov@inktank.com>
-	<20140731115759.GS19379@twins.programming.kicks-ass.net>
-Date: Thu, 31 Jul 2014 16:37:29 +0400
-Message-ID: <CALFYKtBGQpxaZ0EFXbdvuEHeDeASeU-7XxQ_1a6ZDM=aJS651w@mail.gmail.com>
-Subject: Re: [PATCH] locking/mutexes: Revert "locking/mutexes: Add extra
- reschedule point"
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Ceph Development <ceph-devel@vger.kernel.org>, davidlohr@hp.com,
-        jason.low2@hp.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/hrkbjwDZY3Nq6HTaGJ1UMg7"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 3:57 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Jul 31, 2014 at 02:16:37PM +0400, Ilya Dryomov wrote:
->> This reverts commit 34c6bc2c919a55e5ad4e698510a2f35ee13ab900.
->>
->> This commit can lead to deadlocks by way of what at a high level
->> appears to look like a missing wakeup on mutex_unlock() when
->> CONFIG_MUTEX_SPIN_ON_OWNER is set, which is how most distributions ship
->> their kernels.  In particular, it causes reproducible deadlocks in
->> libceph/rbd code under higher than moderate loads with the evidence
->> actually pointing to the bowels of mutex_lock().
->>
->> kernel/locking/mutex.c, __mutex_lock_common():
->> 476         osq_unlock(&lock->osq);
->> 477 slowpath:
->> 478         /*
->> 479          * If we fell out of the spin path because of need_resched(),
->> 480          * reschedule now, before we try-lock the mutex. This avoids getting
->> 481          * scheduled out right after we obtained the mutex.
->> 482          */
->> 483         if (need_resched())
->> 484                 schedule_preempt_disabled(); <-- never returns
->> 485 #endif
->> 486         spin_lock_mutex(&lock->wait_lock, flags);
->>
->> We started bumping into deadlocks in QA the day our branch has been
->> rebased onto 3.15 (the release this commit went in) but then as part of
->> debugging effort I enabled all locking debug options, which also
->> disabled CONFIG_MUTEX_SPIN_ON_OWNER and made everything disappear,
->> which is why it hasn't been looked into until now.  Revert makes the
->> problem go away, confirmed by our users.
+--Sig_/hrkbjwDZY3Nq6HTaGJ1UMg7
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+Hi all,
+
+On Thu, 31 Jul 2014 22:17:52 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
 >
-> This doesn't make sense and you fail to explain how this can possibly
-> deadlock.
+> Just send me a patch relative to today's linux-next (or merge
+> 338eeb9b8318) and I will add it when I merge the kvm-arm tree on
+> Monday.  And don't forget to tell Linus :-)
+  ^^^^^^
 
-This didn't make sense to me at first too, and I'll be happy to be
-proven wrong, but we can reproduce this with rbd very reliably under
-higher than usual load, and the revert makes it go away.  What we are
-seeing in the rbd scenario is the following.
+Actually, "tomorrow".  I forgot what day it is :-)
 
-Suppose foo needs mutexes A and B, bar needs mutex B.  foo acquires
-A and then wants to acquire B, but B is held by bar.  foo spins
-a little and ends up calling schedule_preempt_disabled() on line 484
-above, but that call never returns, even though a hundred usecs later
-bar releases B.  foo ends up stuck in mutex_lock() indefinitely, but
-still holds A and everybody else who needs A gets behind A.  Given that
-this A happens to be a central libceph mutex all rbd activity halts.
-Deadlock may not be the best term for this, but never returning from
-mutex_lock(&B) even though B has been unlocked is *a* problem.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-This obviously doesn't happen every time schedule_preempt_disabled() on
-line 484 is called, so there must be some sort of race here.  I'll send
-along the actual rbd stack traces shortly.
+--Sig_/hrkbjwDZY3Nq6HTaGJ1UMg7
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-                Ilya
+iQIcBAEBCAAGBQJT2jmbAAoJEMDTa8Ir7ZwVP+8QAJX8BuyYY1O8jh4n0klOV3yP
+1YhoYExyZCqfa88dANqqHZ1wFKDaB7L4opvzp60/Ceew5tfrpNCojy1ARVTuI+Tr
+5DUOV5sL0jy+kC7Uf2Wdvgdz1dnO/SwspeKh1+PwktVmZwrwpBMwtMuAvGt5lbc2
+LkrFexdjq7A3BtStb5iVfzE5NBY73q1yw2kHb9mpEwZMv4yypY+q0KfKlN0fQANE
+/CCHjGcACQQPEcAT9N5w7WQSIIgayaM2QkwV1uVgQN76oZIr15r8YGtqZ7l3hyI2
+rDuFVjd3hbCAZMYiyoWlAO/W9sIwC4g+crNa40s7j4DudKTeNqhYkYXCaJlsSvNP
+o2XcTKK9n7tqyWsIaAUNSHVlTsUWYBDlPQjx91hDsq8je/AxfAXjoYmuVrXzrddo
+gb92yGd8BUR9gwa7Qt/R+ANviwuMnVQk7WYQ08sqMncJcnQAOsDNASLXzilmkXeY
+XDK6h1kUV9Lt6bdSxEr00MkvguWgKEskuP1EgdtmNc6fJnG2tXrncVSaMDmHei9x
+ApRrYy+c+3p+pGzY4HloLgm90OwkxBpFIocxq4K0JDNWruEhIS8y+slkv9w5R01B
+oIs+0MtrGKxZYlgKCKQppANNtI/VRu2YjgqPJ+VFGl9xOFX5q4kuKMDCDYbg7Bx3
+e8gx7zyyJJxebTRFpPFR
+=9JQj
+-----END PGP SIGNATURE-----
+
+--Sig_/hrkbjwDZY3Nq6HTaGJ1UMg7--
