@@ -1,149 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800AbaGaLdJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 07:33:09 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57502 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750710AbaGaLdG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 07:33:06 -0400
-Date: Thu, 31 Jul 2014 12:33:01 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Ganapatrao Kulkarni <gpkulkarni@gmail.com>
-Cc: Robert Richter <rric@kernel.org>,
+	id S1751551AbaGaLdb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 07:33:31 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49443 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750806AbaGaLd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 07:33:28 -0400
+Date: Thu, 31 Jul 2014 13:33:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
+Cc: "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        Michal Simek <michals@xilinx.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robert Richter <rrichter@cavium.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        leif.lindholm@linaro.org
-Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder
- SoC
-Message-ID: <20140731113301.GE22994@leverpostej>
-References: <1406732794-20920-1-git-send-email-rric@kernel.org>
- <1406732794-20920-3-git-send-email-rric@kernel.org>
- <20140730154626.GD20162@leverpostej>
- <CAFpQJXWKybVUxpHg8MVrVMjLj3swuxLGo_9r1tL+gZ4hxUHTzQ@mail.gmail.com>
- <20140731095336.GB21850@leverpostej>
- <CAFpQJXUtP=v7FSLd3_OU7FG3w=pKYy2ihTQULA_DPEacsSu0Og@mail.gmail.com>
+        Punnaiah Choudary <kpc528@gmail.com>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        Srikanth Vemula <svemula@xilinx.com>
+Subject: Re: [RFC PATCH v3] edac: synps: Added EDAC support for zynq ddr ecc
+ controller
+Message-ID: <20140731113324.GB4375@pd.tnic>
+References: <9dc2a947-d2ab-4f00-8ed3-d2499cb6fdfd@BN1BFFO11FD002.protection.gbl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFpQJXUtP=v7FSLd3_OU7FG3w=pKYy2ihTQULA_DPEacsSu0Og@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <9dc2a947-d2ab-4f00-8ed3-d2499cb6fdfd@BN1BFFO11FD002.protection.gbl>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please send plain text rather than HTML email; this is becoming painful
-to reply to.
-
-On Thu, Jul 31, 2014 at 12:12:33PM +0100, Ganapatrao Kulkarni wrote:
->    On Thu, Jul 31, 2014 at 3:23 PM, Mark Rutland <[1]mark.rutland@arm.com>
->    wrote:
+On Wed, Jul 30, 2014 at 03:41:47PM +0000, Punnaiah Choudary Kalluri wrote:
+> >So you're telling me that you want one edac driver for *two* memory
+> >controllers which can be present on a single system *at* *the* *same*
+> >*time*? Is that it?
 > 
->      On Thu, Jul 31, 2014 at 09:41:10AM +0100, Ganapatrao Kulkarni wrote:
->      >    On Wed, Jul 30, 2014 at 9:16 PM, Mark Rutland
->      <[1][2]mark.rutland@arm.com>
->      >    wrote:
->      >
->      >      Hi,
->      >      On Wed, Jul 30, 2014 at 04:06:31PM +0100, Robert Richter wrote:
->      >      > From: Radha Mohan Chintakuntla <[2][3]rchintakuntla@cavium.com>
->      >      >
->      >      > Add initial device tree nodes for Cavium Thunder SoCs with
->      support of
->      >      > 48 cores and gicv3. The dts file requires further changes, esp.
->      for
->      >      > pci, gicv3-its and smmu. This changes will be added later
->      together
->      >      > with the device drivers.
->      >      >
->      >      > Signed-off-by: Radha Mohan Chintakuntla
->      <[3][4]rchintakuntla@cavium.com>
->      >      > Signed-off-by: Robert Richter <[4][5]rrichter@cavium.com>
->      >      > ---
->      >      >  arch/arm64/boot/dts/Makefile         |   1 +
->      >      >  arch/arm64/boot/dts/thunder-88xx.dts | 387
->      >      +++++++++++++++++++++++++++++++++++
->      >      >  2 files changed, 388 insertions(+)
->      >      >  create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
->      >      >
->      >      > diff --git a/arch/arm64/boot/dts/Makefile
->      >      b/arch/arm64/boot/dts/Makefile
->      >      > index c52bdb051f66..f8001a62029c 100644
->      >      > --- a/arch/arm64/boot/dts/Makefile
->      >      > +++ b/arch/arm64/boot/dts/Makefile
->      >      > @@ -1,3 +1,4 @@
->      >      > +dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
->      >      >  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb
->      foundation-v8.dtb
->      >      >  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
->      >      >
->      >      > diff --git a/arch/arm64/boot/dts/thunder-88xx.dts
->      >      b/arch/arm64/boot/dts/thunder-88xx.dts
->      >      > new file mode 100644
->      >      > index 000000000000..4cf20ac9138b
->      >      > --- /dev/null
->      >      > +++ b/arch/arm64/boot/dts/thunder-88xx.dts
->      >      > @@ -0,0 +1,387 @@
->      >      > +/*
->      >      > + * Cavium Thunder DTS file
->      >      > + *
->      >      > + * Copyright (C) 2013, Cavium Inc.
->      >      > + *
->      >      > + * This program is free software; you can redistribute it
->      and/or
->      >      > + * modify it under the terms of the GNU General Public License
->      as
->      >      > + * published by the Free Software Foundation; either version 2
->      of
->      >      > + * the License, or (at your option) any later version.
->      >      > + */
->      >      > +/dts-v1/;
->      >      > +
->      >      > +/* Reserving first 12MB of DDR for firmware */
->      >      > +/memreserve/ 0x00000000 0x00c00000;
->      >
->      >      What exactly is this memreserve intended to protect at runtime?
->      >      Yes, this 12 MB is reserved for ATF and UEFI boot and run-time
->      services.
+> Yes.
+
+Oh, this'll be fun. :-P
+
+> >
+> >How exactly is that topology supposed to look like, work, etc, etc? What
+> >kind of error reporting do you imagine you want to do with EDAC?
 > 
->      If booted as an EFI application Linux will use the UEFI memory map.
->      Anything UEFI needs to have kept around will be marked as such, so
->      there's no need to memreserve that.
+> Zynq (All programmable SOC) contains a dual core ARM cortex A9 based processing
+> System(PS) and Xilinx programmable logic(PL) in a single device.
 > 
->    We are loading ATF and UEFI from flash(which is not XIP) within 12MB of
->    DDR.
->     I dont see UEFI stub freeing RAM address where UEFI  image is loaded.
+> Assume the application is a broadcast camera. The design for this system use PS as
+> Control plane and use PL as data plane for processing the video data. So, the design 
+> may have two different memory controllers one in PS and another one in PL.   
+> PS is running with Linux OS and PL doesn't have the OS and it is  controlled by the 
+> OS running on PS.
 
-Therefore we don't need the memreserve, then?
+Ok.
 
->      I was under the impression that the ARM Trusted Firmware didn't need
->      anything resident on the non-secure side, so I don't see why that needs
->      a memreserve -- Linux should not be able to address anything it has
->      resident.
+>  Now the requirement is to develop a monitoring system for all the
+> hardware failures Including ddr ecc errors. Since the broadcast camera
+> involves more data processing and DDR memory access, there is a high
+> probability of getting ddr ecc errors over the period.
+
+So you're saying the camera has memory with ECC? People really pay
+attention on getting error free video frames? :-)
+
+Or this is just an example? You're saying the PL will need ECC for some
+applications?
+
+> So, the user should be intimated with these errors when they occur and if the error rate
+>  is high, then the user can consider the preventive methods. Without this error reporting
+> mechanism it is difficult to debug the issues like memory corruption, kernel oops which
+>  may occur due to ddr ecc failures.
 > 
->    We mark RAM used by ATF as secure-RAM, however we don't support
->    secure/non-secure address aliasing.
->    i.e, a DRAM address that can be referenced from both a secure PA and a
->    non-secure PA is not allowed.
+> Since, the memory controllers are different, it need two edac drivers for reporting the ecc 
+> errors and also maintaining the statistics of that particular memory controller. With the current
+> framework, there is a chance that both the drivers get mc_num as zero and malfunction. 
+> Assume the code for the two drivers looks like below
+> 
+> Driver 1:
+> 	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
+> 			    sizeof(struct  ctrl1_drvdata));
+> 
+> Driver 2:
+> 	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
+> 			    sizeof(struct ctrl2_drvdata));
+> 
+> Issue:
+>   Since driver is providing the mc_num to framework, now there is chance that only one device active as
+>  both the drivers claiming the same number.
+> 
+> Solution 1:
+>  Keep two drivers in single file and use static global variable for tracking the mc_num. This solution looks
+> good but the drivers may not be generic as these driver would be in a zynq_edac.c file. So others may not
+> reuse these drivers
 
-What exactly do you mean by "not allowed"?
+Ok, I think I know what you mean. And this architecture works just fine.
+On x86 we have one EDAC instance per memory controller so on a multinode
+machine with multiple memory controllers, we do edac_mc_alloc() per
+memory controller.
 
-If Linux maps that memory, what happens?
+For examples, see amd64_edac::init_one_instance() and sb_edac should
+have this too. So you basically have a local array of instances which
+you allocate and setup.
 
-What if Linux tried to read or write to it?
+If someone wants to reuse the driver, then we can talk about this later,
+when the time comes.
 
-If Linux should not map that memory, it should not be described in the
-memory map to begin with.
+For now I think you should put both PS and PL stuff in one file,
+zynq_edac or so.
 
-Thanks,
-Mark.
+Any issues with this design?
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
