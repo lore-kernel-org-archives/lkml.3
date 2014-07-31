@@ -1,108 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190AbaGaIna (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 04:43:30 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:58559 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756062AbaGaIn1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 04:43:27 -0400
-Date: Thu, 31 Jul 2014 09:43:15 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Matt Porter <mporter@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
-        Gregory Fong <gregory.0xf0@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 01/11] ARM: brcmstb: add infrastructure for
-	ARM-based Broadcom STB SoCs
-Message-ID: <20140731084315.GJ30282@n2100.arm.linux.org.uk>
-References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com> <1405976886-27807-2-git-send-email-computersforpeace@gmail.com> <CAL_Jsq+Nbk7m9KXhG+Chdpvurp75RrvhFR2oE_LGxV444GSe9Q@mail.gmail.com> <20140731022320.GM3711@ld-irv-0074>
+	id S932279AbaGaIsH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 04:48:07 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:41060 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932247AbaGaIsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 04:48:04 -0400
+Message-ID: <53DA02C0.2050606@mm-sol.com>
+Date: Thu, 31 Jul 2014 11:48:00 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140731022320.GM3711@ld-irv-0074>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: David Collins <collinsd@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v3 1/4] mfd: pm8xxx-spmi: add support for Qualcomm SPMI
+ PMICs
+References: <1406205921-7452-1-git-send-email-svarbanov@mm-sol.com> <1406205921-7452-2-git-send-email-svarbanov@mm-sol.com> <53D8182A.5050204@codeaurora.org>
+In-Reply-To: <53D8182A.5050204@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 07:23:20PM -0700, Brian Norris wrote:
-> Hi Rob,
+Hi David,
+
+Thanks for the comments!
+
+On 07/30/2014 12:54 AM, David Collins wrote:
+> On 07/24/2014 05:45 AM, Stanimir Varbanov wrote:
+>> From: Josh Cartwright <joshc@codeaurora.org>
+>>
+>> The Qualcomm SPMI PMIC chips are components used with the
+>> Snapdragon 800 series SoC family.  This driver exists
+>> largely as a glue mfd component, it exists to be an owner
+>> of an SPMI regmap for children devices described in
+>> device tree.
+>>
+>> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+>> Acked-by: Lee Jones <lee.jones@linaro.org>
+>> ---
+>>  drivers/mfd/Kconfig       |   16 +++++++++++
+>>  drivers/mfd/Makefile      |    1 +
+>>  drivers/mfd/pm8xxx-spmi.c |   65 +++++++++++++++++++++++++++++++++++++++++++++
 > 
-> I appreciate your comments, but where were many of these 5 months ago on
-> the first 7 revisions? :)
+> Would it be possible to rename this driver: qcom-spmi-pmic.c?  The driver
+> will be supporting several PMICs that do not fit the pm8xxx naming scheme.
+>  One of which is even specified in the compatible list of this driver
+> (pma8084).  There is presently downstream support for the following PMICs:
+> PM8019, PM8110, PM8226, PM8841, PM8916, PM8941, PM8994, PMA8084, PMD9635,
+> PMI8962, and PMI8994 [1].  Four of these do not fit the "PM8XXX" template.
+
+I haven't strong opinion on the file names. The qcom prefix is the one
+which annoying me. If you look at /drivers/mfd the company name prefixes
+are very few.
+
+The *compatible* strings are the important thing here. So If MFD
+maintainer is fine with this name I'm fine too.
+
 > 
-> On a practical note: v9 is already queued for 3.17. Should I send
-> patches for the 3.17 cycle (or later) to fixup some of these issues? Or
-> would you recommend pulling the patches out of Matt Porter's tree now,
-> and reintroducing for 3.18? (I would be much happier with the first.)
+> If we can agree on changing the file name for the driver, then all other
+> instances of "pm8xxx" would need to be renamed in this patch series (e.g.
+> config options, function names, struct names, DT binding documentation, etc.)
 > 
-> I do note that we at least need to fix allmodconfig ASAP; I'll reply to
-> Russell on that one.
+> It would probably be good to rename pm8xxx-ssbi.c to qcom-ssbi-pmic.c as
+> well in order to maintain consistency.
 > 
-> On Wed, Jul 30, 2014 at 12:09:48PM -0500, Rob Herring wrote:
-> > On Mon, Jul 21, 2014 at 4:07 PM, Brian Norris <computersforpeace@gmail.com> wrote:
-> > > +
-> > > +       per_cpu_sw_state_wr(cpu, 1);
-> > 
-> > The kernel already tracks the state.
+> (...)
+>> +static const struct regmap_config pm8xxx_regmap_config = {
+>> +	.reg_bits	= 16,
+>> +	.val_bits	= 8,
+>> +	.max_register	= 0xffff,
 > 
-> Yes, but it doesn't synchronize cpu_die() and cpu_kill(). But I see you
-> objected below.
+> Can you please add the following line here?
+> 
+> 	.fast_io	= true;
+> 
+> This will cause a spinlock to be held during SPMI transactions instead of
+> a mutex lock.  This is needed because several downstream peripheral
+> drivers need to make SPMI read and write calls from atomic context.  I
+> have commented on this point in a previous thread with specific examples [2].
 
-Err.
+OK, I understand the need of atomic context, but pmic_arb_read_cmd() and
+pmic_arb_write_cmd() functions use raw_spin_lock_irqsave already. Isn't
+those locks enough?
 
-static DECLARE_COMPLETION(cpu_died);
+> 
+>> +};
+> 
+> (...)
+>> +static const struct of_device_id pm8xxx_id_table[] = {
+>> +	{ .compatible = "qcom,pm8941" },
+>> +	{ .compatible = "qcom,pm8841" },
+>> +	{ .compatible = "qcom,pma8084" },
+> 
+> Would it be possible to add a generic compatible string as well?  Perhaps
+> something like "qcom,spmi-pmic" could be used.  This driver is not doing
+> anything with the PMIC specific compatible strings.  The generic
+> compatible string could be specified in device tree in conjunction a PMIC
+> specific string that is not present in this list.  That way, this driver
+> file would not need to be touched as new PMIC chips are introduced unless
+> some weird workaround is needed.  In that case, the PMIC specific
+> compatible string could be added to the list along with whatever special
+> function is needed to handle it.
 
-/*
- * called on the thread which is asking for a CPU to be shutdown -
- * waits until shutdown has completed, or it is timed out.
- */
-void __cpu_die(unsigned int cpu)
-{
-        if (!wait_for_completion_timeout(&cpu_died, msecs_to_jiffies(5000))) {
-                pr_err("CPU%u: cpu didn't die\n", cpu);
-                return;
-        }
-        printk(KERN_NOTICE "CPU%u: shutdown\n", cpu);
-...
-        if (!platform_cpu_kill(cpu))
-                printk("CPU%u: unable to kill\n", cpu);
-}
-
-void __ref cpu_die(void)
-{
-...
-        /*
-         * Tell __cpu_die() that this CPU is now safe to dispose of.  Once
-         * this returns, power and/or clocks can be removed at any point
-         * from this CPU and its cache by platform_cpu_kill().
-         */
-        complete(&cpu_died);
-
-There _is_ synchronisation between these two.  Your cpu_kill() function
-will not be called until we have flushed all data from the dying CPU's
-cache.  That's the best we can do, because if we cause the dying CPU to
-exit the coherency domain, any kind of locking or completion will no
-longer work (neither will your state tracking solution because the L1
-caches will no longer snoop.)
-
-> Hmm, I'm pretty sure the synchronization is required for our B15 core.
-> If we yank the power before the core has properly quiesced, the whole
-> CPU complex will lock up. (Similar story for the power-up while loop you
-> complained about above.)
-
-If you need to ensure that the power isn't turned off too soon, how about
-using a delayed work queue to do the power-off of the CPU (remembering to
-cancel the delayed work queue when powering the CPU back up.)
+OK, I'm fine with this suggestion.
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+regards,
+Stan
