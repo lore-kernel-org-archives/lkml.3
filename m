@@ -1,97 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaGaS0V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 14:26:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2314 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066AbaGaS0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 14:26:19 -0400
-Message-ID: <53DA8A41.2030601@redhat.com>
-Date: Thu, 31 Jul 2014 14:26:09 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1752521AbaGaS1g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 14:27:36 -0400
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:48129 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153AbaGaS1e convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 14:27:34 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Kever Yang <kever.yang@gmail.com>
+CC: "dianders@chromium.org" <dianders@chromium.org>,
+        "heiko@sntech.de" <heiko@sntech.de>, "olof@lixom.net" <olof@lixom.net>,
+        "sonnyrao@chromium.org" <sonnyrao@chromium.org>,
+        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
+        "cf@rock-chips.com" <cf@rock-chips.com>,
+        "xjq@rock-chips.com" <xjq@rock-chips.com>,
+        "wulf@rock-chips.com" <wulf@rock-chips.com>,
+        "lyz@rock-chips.com" <lyz@rock-chips.com>,
+        "hj@rock-chips.com" <hj@rock-chips.com>,
+        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2 2/4] usb: dwc2: add compatible data for rockchip soc
+Thread-Topic: [PATCH v2 2/4] usb: dwc2: add compatible data for rockchip soc
+Thread-Index: AQHPrHg1av/iig1Xn0mlifqp97n/PZu6gAxA
+Date: Thu, 31 Jul 2014 18:24:59 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844C33F1@US01WEMBX2.internal.synopsys.com>
+References: <1406780999-17798-1-git-send-email-kever.yang@rock-chips.com>
+ <1406780999-17798-3-git-send-email-kever.yang@rock-chips.com>
+In-Reply-To: <1406780999-17798-3-git-send-email-kever.yang@rock-chips.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.241]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
- to be held for duration of changing governors [v2]
-References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan>
-In-Reply-To: <1917362.abr2Y4p7vh@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 07/31/2014 02:38 PM, Rafael J. Wysocki wrote:
-> On Thursday, July 31, 2014 01:57:29 PM Prarit Bhargava wrote:
->>
->> On 07/31/2014 12:36 PM, Rafael J. Wysocki wrote:
->>> On Thursday, July 31, 2014 06:23:18 AM Prarit Bhargava wrote:
->>>>
->>>> On 07/30/2014 10:16 PM, Rafael J. Wysocki wrote:
->>>>> On Wednesday, July 30, 2014 06:36:00 PM Saravana Kannan wrote:
->>>>>> On 07/30/2014 02:40 PM, Rafael J. Wysocki wrote:
->>>>>>> On Wednesday, July 30, 2014 10:18:25 AM Prarit Bhargava wrote:
->>>>>>>>
->>>>>>>> On 07/29/2014 08:03 PM, Rafael J. Wysocki wrote:
->>>>>>>>> On Tuesday, July 29, 2014 07:46:02 AM Prarit Bhargava wrote:
->>>>>>>
->>>>>>> [cut]
->>>>>>>
->>>>>>>>>> This patch effectively reverts commit 955ef483.
->>>>>>
->>>>>> The issue reported in this patch is valid. We are seeing that internally 
->>>>>> too. I believe I reported it in another thread (within the past month).
->>>>>>
->>>>>> However, the original patch fixes a real deadlock issue (I'm too tired 
->>>>>> to look it up now). We can revet the original, but it's going to bring 
->>>>>> back the original issue. I just want to make sure Prarit and Raphael 
->>>>>> realize this before proceeding.
->>>>>>
->>>>>> I do have plans for a proper fix for the mainline (not stable branches), 
->>>>>> but plan to do that after the current set of suspend/hotplug patches go 
->>>>>> through. The fix would be easier to make after that.
->>>>>>
->>>>>>>>>
->>>>>>>>> OK, I'm convinced by this.
->>>>>>>>>
->>>>>>>>> I suppose we should push it for -stable from 3.10 through 3.15.x, right?
->>>>>>>>
->>>>>>>> Rafael, I think that is a good idea.  I'm not sure what the protocol is for
->>>>>>>> adding stable@kernel.org though ...
->>>>
->>>> Rafael, let me (again) re-write the patch description.  I think Saravana has
->>>> raised an important issue that I have not clearly identified why it is safe to
->>>> remove this code in my patch description.  Also, I want to clearly identify the
->>>> appropriate -stable releases to push this out to.
->>>>
->>>> I'll submit a [v3] later today or tomorrow.
->>>
->>> In any case that's too late for 3.16 final, unless there's an -rc8.
->>>
->>> Thanks for doing that work!
->>
->> Ugh ... I tried this (yet another) large system and hit another panic :(.
->>
->> I'm investigating now, and I'm hoping this is just something "new".
+> From: Kever Yang [mailto:kever.yang@gmail.com]
+> Sent: Wednesday, July 30, 2014 9:30 PM
 > 
-> Well, I've applied your patch as is and I can push it to Linus.
+> This patch add compatible data for dwc2 controller found on
+> rk3066, rk3188 and rk3288 processors from rockchip.
 > 
-> However, if you want to update the changelog, I'll not do that, but in that
-> case the patch will have to wait for the next week.
-
-Rafael, please let it wait for next week.  I _need_ to make sure this is correct
-and I'd rather not pushed something half-done.
-
-Thanks,
-
-P.
-
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> ---
 > 
-> Rafael
+> Changes in v2:
+> - set most parameters as driver auto-detect
 > 
+>  drivers/usb/dwc2/platform.c |   29 +++++++++++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
+> 
+> diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
+> index 5f0c4bb..5e610dd 100644
+> --- a/drivers/usb/dwc2/platform.c
+> +++ b/drivers/usb/dwc2/platform.c
+> @@ -77,6 +77,34 @@ static const struct dwc2_core_params params_bcm2835 = {
+>  	.uframe_sched			= 0,
+>  };
+> 
+> +static const struct dwc2_core_params params_rk3066 = {
+> +	.otg_cap			= 2,	/* non-HNP/non-SRP */
+> +	.otg_ver			= -1,
+> +	.dma_enable			= -1,
+> +	.dma_desc_enable		= 0,
+> +	.speed				= -1,
+> +	.enable_dynamic_fifo		= 1,
+> +	.en_multiple_tx_fifo		= -1,
+> +	.host_rx_fifo_size		= 520,	/* 520 DWORDs */
+> +	.host_nperio_tx_fifo_size	= 128,	/* 128 DWORDs */
+> +	.host_perio_tx_fifo_size	= 256,	/* 256 DWORDs */
+> +	.max_transfer_size		= -1,
+> +	.max_packet_count		= -1,
+> +	.host_channels			= -1,
+> +	.phy_type			= -1,
+> +	.phy_utmi_width			= -1,
+> +	.phy_ulpi_ddr			= -1,
+> +	.phy_ulpi_ext_vbus		= -1,
+> +	.i2c_enable			= -1,
+> +	.ulpi_fs_ls			= -1,
+> +	.host_support_fs_ls_low_power	= -1,
+> +	.host_ls_low_power_phy_clk	= -1,
+> +	.ts_dline			= -1,
+> +	.reload_ctl			= -1,
+> +	.ahbcfg				= 0x7, /* INCR16 */
+> +	.uframe_sched			= -1,
+> +};
+> +
+>  /**
+>   * dwc2_driver_remove() - Called when the DWC_otg core is unregistered with the
+>   * DWC_otg driver
+> @@ -99,6 +127,7 @@ static int dwc2_driver_remove(struct platform_device *dev)
+> 
+>  static const struct of_device_id dwc2_of_match_table[] = {
+>  	{ .compatible = "brcm,bcm2835-usb", .data = &params_bcm2835 },
+> +	{ .compatible = "rockchip,rk3066-usb", .data = &params_rk3066 },
+>  	{ .compatible = "snps,dwc2", .data = NULL },
+>  	{},
+>  };
+> --
+
+Acked-by: Paul Zimmerman <paulz@synopsys.com>
+
