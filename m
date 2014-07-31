@@ -1,62 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038AbaGaRYr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:24:47 -0400
-Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:57278
-	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752762AbaGaRYp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:24:45 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] staging: comedi: ii_pci20kc: request and ioremap memory
-Thread-Topic: [PATCH] staging: comedi: ii_pci20kc: request and ioremap memory
-Thread-Index: AQHPrM/Lh77rXd0Jgk+WiL9JzOaH3pu6aT5A
-Date: Thu, 31 Jul 2014 17:24:44 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F2E536@P3PWEX4MB008.ex4.secureserver.net>
-References: <1406818647-10107-1-git-send-email-abbotti@mev.co.uk>
-In-Reply-To: <1406818647-10107-1-git-send-email-abbotti@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752064AbaGaR3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:29:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25373 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750973AbaGaR3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 13:29:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,773,1400050800"; 
+   d="scan'208";a="581806376"
+Subject: [PATCH v6 0/6] crypto: SHA1 multibuffer implementation
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        "David S.Miller" <davem@davemloft.net>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Cc: Chandramouli Narayanan <mouli@linux.intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tadeusz Struk <tadeusz.struk@intel.com>, tkhai@yandex.ru,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <cover.1406798062.git.tim.c.chen@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 Jul 2014 10:29:44 -0700
+Message-ID: <1406827784.2970.947.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 31, 2014 7:57 AM, Ian Abbott wrote:
-> The "ii_pci20kc" module is a comedi driver for Intelligent Instruments
-> PCI-20001C carrier board and modules.  Despite the name, this is
-> actually an ISA board and uses 1K of ISA memory space (below 1M) for the
-> main board plus up to three modules.  The address is set by hardware
-> jumpers.
->
-> When the board is attached to Comedi via the `COMEDI_DEVCONFIG` ioctl
-> and the driver's legacy "attach" handler, the base address is passed in.
-> The driver currently uses that address as-is, which is a bad idea.  It
-> doesn't even reserve the memory region.
->
-> Fix that by sanity checking the passed in address, reserving the memory
-> region and ioremapping it.
->
-> Replace the current "detach" handler `comedi_legacy_detach()` with a new
-> handler `ii20k_detach()` which unmaps the memory and releases the
-> region.
->
-> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-> ---
->  drivers/staging/comedi/drivers/ii_pci20kc.c | 32 ++++++++++++++++++++++++++---
->  1 file changed, 29 insertions(+), 3 deletions(-)
+Herbert,
 
-Thanks for fixing this!
+I've updated the patches from v5 with the multi-buffer infrastructure
+patch contained within the same patch and some patch subject 
+and comments clean up per Peter's feedback.
+ 
+Please note also that a separate bug fix to the crypto scatter gather list walk
+for the null string needs to be incorporated, which I encountered during
+my testing: http://marc.info/?l=linux-crypto-vger&m=140503429412699&w=2
 
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+In this patch series, we introduce the multi-buffer crypto algorithm on
+x86_64 and apply it to SHA1 hash computation.  The multi-buffer technique
+takes advantage of the 8 data lanes in the AVX2 registers and allows
+computation to be performed on data from multiple jobs in parallel.
+This allows us to parallelize computations when data inter-dependency in
+a single crypto job prevents us to fully parallelize our computations.
+The algorithm can be extended to other hashing and encryption schemes
+in the future.
+
+On multi-buffer SHA1 computation with AVX2, we saw throughput increase
+up to 2.2x over the existing x86_64 single buffer AVX2 algorithm.
+
+The multi-buffer crypto algorithm is described in the following paper:
+Processing Multiple Buffers in Parallel to Increase Performance on
+Intel® Architecture Processors
+http://www.intel.com/content/www/us/en/communications/communications-ia-multi-buffer-paper.html
+
+The outline of the algorithm is sketched below:
+Any driver requesting the crypto service will place an async crypto
+request on the workqueue.  The multi-buffer crypto daemon will pull
+request from work queue and put each request in an empty data lane
+for multi-buffer crypto computation.  When all the empty lanes are
+filled, computation will commence on the jobs in parallel and the job
+with the shortest remaining buffer will get completed and be returned.
+To prevent prolonged stall when there is no new jobs arriving, we will
+opportunitsticlly flush partially completed crypto jobs after a maximum
+allowable delay, or we have exhausted crypto jobs in queue, and the cpu
+does not have other tasks and cpu will become idle otherwise.
+
+To accommodate the fragmented nature of scatter-gather, we will keep
+submitting the next scatter-buffer fragment for a job for multi-buffer
+computation until a job is completed and no more buffer fragments remain.
+At that time we will pull a new job to fill the now empty data slot.
+We call a get_completed_job function to check whether there are other
+jobs that have been completed when we job when we have no new job arrival
+to prevent extraneous delay in returning any completed jobs.
+
+The multi-buffer algorithm should be used for cases where crypto jobs
+submissions are at a reasonable high rate.  For low crypto job submission
+rate, this algorithm will not be beneficial. The reason is at low rate,
+we do not fill out the data lanes before flushing the jobs instead of
+processing them with all the data lanes full.  We will miss the benefit
+of parallel computation, and adding delay to the processing of the crypto
+job at the same time.  Some tuning of the maximum latency parameter may
+be needed to get the best performance.
+
+Note that the tcrypt SHA1 speed test, we wait for a previous job to
+be completed before submitting a new job.  Hence this is not a valid
+test for multi-buffer algorithm as it requires multiple outstanding jobs
+submitted to fill the all data lanes to be effective (i.e. 8 outstanding
+jobs for the AVX2 case).
+
+Feedbacks and testings will be most welcomed.
+
+Tim Chen
+
+Change log:
+
+v6
+1. Merge opportunitistic flush patch into the infrastructure patch
+2. Code comments clean up
+3. Reword patch titles 
+
+v5
+1. Flush the job from the crypto daemon if the crypto daemon has no
+other jobs to process and no other tasks are running on the cpu.
+2. Change implementation of the idle flush so we do not hook into
+the idle notifier. 
+https://lkml.org/lkml/2014/7/22/746
+
+v4
+1. Move the early flush of jobs when cpu becomes idle to crypto thread.
+2. Move shash_ahash_mcryptd_digest to mcryptd.c 
+http://www.gossamer-threads.com/lists/linux/kernel/1964734
+
+v3
+1. Add notifier to multi-buffer algorithm to flush job when the cpu
+goes to idle to take advantage of available cpu cycles. 
+2. Clean up of error messages.
+http://marc.info/?l=linux-crypto-vger&m=140252063401632&w=2
+
+v2
+1. Change the sha1 crypto walk to use the new crypto_ahash_walk
+interface for proper kmap.
+2. Drop the hack that map buffer in crypto_hash_walk without kmap_atomic
+as the new crypto_ahash_walk interface is merged.
+3. Reorganize some
+of the mcryptd hash interface code from ahash.c to mcryptd.c
+http://marc.info/?l=linux-crypto-vger&m=140088627927559&w=2
+
+v1
+refer to: http://www.spinics.net/lists/linux-crypto/msg10993.html
+
+
+Tim Chen (6):
+  sched: Add function single_task_running to let a task check if it is
+    the only task running on a cpu
+  crypto: multibuffer crypto infrastructure
+  crypto: SHA1 multibuffer algorithm data structures
+  crypto: SHA1 multibuffer submit and flush routines for AVX2
+  crypto: SHA1 multibuffer crypto computation (x8 AVX2)
+  crypto: SHA1 multibuffer job manager and glue code
+
+ arch/x86/crypto/Makefile                         |   2 +
+ arch/x86/crypto/sha-mb/Makefile                  |  11 +
+ arch/x86/crypto/sha-mb/sha1_mb.c                 | 935 +++++++++++++++++++++++
+ arch/x86/crypto/sha-mb/sha1_mb_mgr_datastruct.S  | 287 +++++++
+ arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S  | 327 ++++++++
+ arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c   |  64 ++
+ arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S | 228 ++++++
+ arch/x86/crypto/sha-mb/sha1_x8_avx2.S            | 472 ++++++++++++
+ arch/x86/crypto/sha-mb/sha_mb_ctx.h              | 136 ++++
+ arch/x86/crypto/sha-mb/sha_mb_mgr.h              | 110 +++
+ crypto/Kconfig                                   |  30 +
+ crypto/Makefile                                  |   1 +
+ crypto/mcryptd.c                                 | 705 +++++++++++++++++
+ include/crypto/internal/hash.h                   |   9 +
+ include/crypto/mcryptd.h                         | 112 +++
+ include/linux/sched.h                            |   1 +
+ kernel/sched/core.c                              |  12 +
+ 17 files changed, 3442 insertions(+)
+ create mode 100644 arch/x86/crypto/sha-mb/Makefile
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb.c
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_datastruct.S
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_x8_avx2.S
+ create mode 100644 arch/x86/crypto/sha-mb/sha_mb_ctx.h
+ create mode 100644 arch/x86/crypto/sha-mb/sha_mb_mgr.h
+ create mode 100644 crypto/mcryptd.c
+ create mode 100644 include/crypto/mcryptd.h
+
+-- 
+1.7.11.7
+
 
