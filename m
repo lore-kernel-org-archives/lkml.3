@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020AbaGaAkw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 20:40:52 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:50606 "EHLO
+	id S1756198AbaGaAlU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 20:41:20 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:50595 "EHLO
 	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756039AbaGaAjy (ORCPT
+	with ESMTP id S1756108AbaGaAjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 20:39:54 -0400
+	Wed, 30 Jul 2014 20:39:52 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,298 +15,108 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v2 tip/core/rcu 10/10] rcu: Make RCU-tasks track exiting tasks
-Date: Wed, 30 Jul 2014 17:39:42 -0700
-Message-Id: <1406767182-4356-10-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v2 tip/core/rcu 05/10] rcutorture: Add torture tests for RCU-tasks
+Date: Wed, 30 Jul 2014 17:39:37 -0700
+Message-Id: <1406767182-4356-5-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140731003914.GA3872@linux.vnet.ibm.com>
  <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073100-0928-0000-0000-000003C70761
+x-cbid: 14073100-0928-0000-0000-000003C7074F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit adds synchronization with exiting tasks, so that RCU-tasks
-avoids waiting on tasks that no longer exist.
+This commit adds torture tests for RCU-tasks.  It also fixes a bug that
+would segfault for an RCU flavor lacking a callback-barrier function.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/init_task.h |   6 +-
- include/linux/rcupdate.h  |   8 +++
- include/linux/sched.h     |   7 ++-
- kernel/exit.c             |   1 +
- kernel/rcu/update.c       | 155 +++++++++++++++++++++++++++++++++++-----------
- 5 files changed, 138 insertions(+), 39 deletions(-)
+ include/linux/rcupdate.h |  1 +
+ kernel/rcu/rcutorture.c  | 40 +++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 40 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 78715ea7c30c..26322200937d 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -127,8 +127,10 @@ extern struct group_info init_groups;
- #ifdef CONFIG_TASKS_RCU
- #define INIT_TASK_RCU_TASKS(tsk)					\
- 	.rcu_tasks_holdout = false,					\
--	.rcu_tasks_holdout_list =					\
--		LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),
-+	.rcu_tasks_holdout_list.prev = LIST_POISON2,			\
-+	.rcu_tasks_lock = __SPIN_LOCK_UNLOCKED(tsk.rcu_tasks_lock),	\
-+	.rcu_tasks_exiting = 0,						\
-+	.rcu_tasks_exit_wq = NULL,
- #else
- #define INIT_TASK_RCU_TASKS(tsk)
- #endif
 diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index ecb2198849e0..0805a74f88ca 100644
+index 17c7e25c38be..ecb2198849e0 100644
 --- a/include/linux/rcupdate.h
 +++ b/include/linux/rcupdate.h
-@@ -292,6 +292,14 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
- 					 struct task_struct *next) { }
- #endif /* CONFIG_RCU_USER_QS */
+@@ -55,6 +55,7 @@ enum rcutorture_type {
+ 	RCU_FLAVOR,
+ 	RCU_BH_FLAVOR,
+ 	RCU_SCHED_FLAVOR,
++	RCU_TASKS_FLAVOR,
+ 	SRCU_FLAVOR,
+ 	INVALID_RCU_FLAVOR
+ };
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index febe07062ac5..6d12ab6675bc 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -602,6 +602,42 @@ static struct rcu_torture_ops sched_ops = {
+ };
  
-+#ifdef CONFIG_TASKS_RCU
-+void exit_rcu_tasks(void);
-+#else /* #ifdef CONFIG_TASKS_RCU */
-+static inline void exit_rcu_tasks(void)
-+{
-+}
-+#endif /* #else #ifdef CONFIG_TASKS_RCU */
-+
- /**
-  * RCU_NONIDLE - Indicate idle-loop code that needs RCU readers
-  * @a: Code that RCU needs to pay attention to.
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 3cf124389ec7..8c02508c9e47 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1277,6 +1277,9 @@ struct task_struct {
- 	unsigned long rcu_tasks_nvcsw;
- 	int rcu_tasks_holdout;
- 	struct list_head rcu_tasks_holdout_list;
-+	spinlock_t rcu_tasks_lock;
-+	int rcu_tasks_exiting;
-+	wait_queue_head_t *rcu_tasks_exit_wq;
- #endif /* #ifdef CONFIG_TASKS_RCU */
- 
- #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
-@@ -2020,7 +2023,9 @@ static inline void rcu_copy_process(struct task_struct *p)
- #endif /* #ifdef CONFIG_PREEMPT_RCU */
- #ifdef CONFIG_TASKS_RCU
- 	p->rcu_tasks_holdout = false;
--	INIT_LIST_HEAD(&p->rcu_tasks_holdout_list);
-+	p->rcu_tasks_holdout_list.prev = LIST_POISON2;
-+	spin_lock_init(&p->rcu_tasks_lock);
-+	p->rcu_tasks_exit_wq = NULL;
- #endif /* #ifdef CONFIG_TASKS_RCU */
- }
- 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index e5c4668f1799..b50b1afc4092 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -805,6 +805,7 @@ void do_exit(long code)
- 		put_page(tsk->task_frag.page);
- 
- 	validate_creds_for_do_exit(tsk);
-+	exit_rcu_tasks();
- 
- 	check_stack_usage();
- 	preempt_disable();
-diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index 030494690c93..9d2cf41f3161 100644
---- a/kernel/rcu/update.c
-+++ b/kernel/rcu/update.c
-@@ -453,15 +453,103 @@ void rcu_barrier_tasks(void)
- }
- EXPORT_SYMBOL_GPL(rcu_barrier_tasks);
- 
-+/*
-+ * Note a RCU-tasks quiescent state, which might require interacting
-+ * with an exiting task.
+ /*
++ * Definitions for RCU-tasks torture testing.
 + */
-+static void rcu_tasks_note_qs(struct task_struct *t)
++
++static int tasks_torture_read_lock(void)
 +{
-+	spin_lock(&t->rcu_tasks_lock);
-+	list_del_rcu(&t->rcu_tasks_holdout_list);
-+	t->rcu_tasks_holdout = 0;
-+	if (t->rcu_tasks_exit_wq)
-+		wake_up(t->rcu_tasks_exit_wq);
-+	spin_unlock(&t->rcu_tasks_lock);
++	return 0;
 +}
++
++static void tasks_torture_read_unlock(int idx)
++{
++}
++
++static void rcu_tasks_torture_deferred_free(struct rcu_torture *p)
++{
++	call_rcu_tasks(&p->rtort_rcu, rcu_torture_cb);
++}
++
++static struct rcu_torture_ops tasks_ops = {
++	.ttype		= RCU_TASKS_FLAVOR,
++	.init		= rcu_sync_torture_init,
++	.readlock	= tasks_torture_read_lock,
++	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
++	.readunlock	= tasks_torture_read_unlock,
++	.completed	= rcu_no_completed,
++	.deferred_free	= rcu_tasks_torture_deferred_free,
++	.sync		= synchronize_rcu_tasks,
++	.exp_sync	= synchronize_rcu_tasks,
++	.call		= call_rcu_tasks,
++	.cb_barrier	= rcu_barrier_tasks,
++	.fqs		= NULL,
++	.stats		= NULL,
++	.irq_capable	= 1,
++	.name		= "tasks"
++};
 +
 +/*
-+ * Build the list of tasks that must be waited on for this RCU-tasks
-+ * grace period.  Note that we must wait for pre-existing exiting tasks
-+ * to finish exiting in order to avoid the ABA problem.
-+ */
-+static void rcu_tasks_build_list(void)
-+{
-+	struct task_struct *g, *t;
-+	int n_exiting = 0;
-+
-+	/*
-+	 * Wait for all pre-existing t->on_rq transitions to complete.
-+	 * Invoking synchronize_sched() suffices because all t->on_rq
-+	 * transitions occur with interrupts disabled.
-+	 */
-+	synchronize_sched();
-+
-+	/*
-+	 * Scan the task list under RCU protection, accumulating
-+	 * tasks that are currently running or preempted that are
-+	 * not also in the process of exiting.
-+	 */
-+	rcu_read_lock();
-+	for_each_process_thread(g, t) {
-+		/* Acquire this thread's lock to synchronize with exit. */
-+		spin_lock(&t->rcu_tasks_lock);
-+		/* Assume that we must wait for this task. */
-+		t->rcu_tasks_nvcsw = ACCESS_ONCE(t->nvcsw);
-+		ACCESS_ONCE(t->rcu_tasks_holdout) = 1;
-+		if (t->rcu_tasks_exiting) {
-+			/*
-+			 * Task is exiting, so don't add to list.  Instead,
-+			 * set up to wait for its exiting to complete.
-+			 */
-+			n_exiting++;
-+			t->rcu_tasks_exiting = 1; /* Task already exiting. */
-+			spin_unlock(&t->rcu_tasks_lock);
-+			goto next_thread;
-+		}
-+
-+		spin_unlock(&t->rcu_tasks_lock);
-+		smp_mb();  /* Order ->rcu_tasks_holdout store before "if". */
-+		if (t == current || !ACCESS_ONCE(t->on_rq) || is_idle_task(t))
-+			smp_store_release(&t->rcu_tasks_holdout, 0);
-+		else
-+			list_add_tail_rcu(&t->rcu_tasks_holdout_list,
-+					  &rcu_tasks_holdouts);
-+next_thread:;
-+	}
-+	rcu_read_unlock();
-+
-+	/*
-+	 * OK, we have our candidate list of threads.  Now wait for
-+	 * the threads that were in the process of exiting to finish
-+	 * doing so.
-+	 */
-+	while (n_exiting) {
-+		n_exiting = 0;
-+		rcu_read_lock();
-+		for_each_process_thread(g, t) {
-+			int am_exiting = ACCESS_ONCE(t->rcu_tasks_exiting);
-+
-+			if (am_exiting == 1 &&
-+			    ACCESS_ONCE(t->rcu_tasks_holdout)) {
-+				n_exiting++; /* Started exit before GP. */
-+			} else if (am_exiting == 2) {
-+				/* Holdout exited after GP, dequeue & wake. */
-+				rcu_tasks_note_qs(t);
-+			}
-+		}
-+		rcu_read_unlock();
-+		schedule_timeout_interruptible(HZ / 10);
-+	}
-+}
-+
- /* See if tasks are still holding out, complain if so. */
- static void check_holdout_task(struct task_struct *t,
- 			       bool needreport, bool *firstreport)
- {
- 	if (!smp_load_acquire(&t->rcu_tasks_holdout) ||
--	    t->rcu_tasks_nvcsw != ACCESS_ONCE(t->nvcsw)) {
--		ACCESS_ONCE(t->rcu_tasks_holdout) = 0;
--		/* @@@ need to check for usermode on CPU. */
--		list_del_rcu(&t->rcu_tasks_holdout_list);
-+	    t->rcu_tasks_nvcsw != ACCESS_ONCE(t->nvcsw) ||
-+	    !ACCESS_ONCE(t->on_rq)) {
-+		rcu_tasks_note_qs(t);
- 		return;
- 	}
- 	if (!needreport)
-@@ -477,7 +565,7 @@ static void check_holdout_task(struct task_struct *t,
- static int __noreturn rcu_tasks_kthread(void *arg)
- {
- 	unsigned long flags;
--	struct task_struct *g, *t;
-+	struct task_struct *t;
- 	unsigned long lastreport;
- 	struct rcu_head *list;
- 	struct rcu_head *next;
-@@ -513,38 +601,10 @@ static int __noreturn rcu_tasks_kthread(void *arg)
+  * RCU torture priority-boost testing.  Runs one real-time thread per
+  * CPU for moderate bursts, repeatedly registering RCU callbacks and
+  * spinning waiting for them to be invoked.  If a given callback takes
+@@ -1295,7 +1331,8 @@ static int rcu_torture_barrier_cbs(void *arg)
+ 		if (atomic_dec_and_test(&barrier_cbs_count))
+ 			wake_up(&barrier_wq);
+ 	} while (!torture_must_stop());
+-	cur_ops->cb_barrier();
++	if (cur_ops->cb_barrier != NULL)
++		cur_ops->cb_barrier();
+ 	destroy_rcu_head_on_stack(&rcu);
+ 	torture_kthread_stopping("rcu_torture_barrier_cbs");
+ 	return 0;
+@@ -1534,6 +1571,7 @@ rcu_torture_init(void)
+ 	int firsterr = 0;
+ 	static struct rcu_torture_ops *torture_ops[] = {
+ 		&rcu_ops, &rcu_bh_ops, &rcu_busted_ops, &srcu_ops, &sched_ops,
++		&tasks_ops,
+ 	};
  
- 		/*
- 		 * There were callbacks, so we need to wait for an
--		 * RCU-tasks grace period.  Start off by scanning
--		 * the task list for tasks that are not already
--		 * voluntarily blocked.  Mark these tasks and make
--		 * a list of them in rcu_tasks_holdouts.
--		 */
--		rcu_read_lock();
--		for_each_process_thread(g, t) {
--			if (t != current && ACCESS_ONCE(t->on_rq) &&
--			    !is_idle_task(t)) {
--				t->rcu_tasks_nvcsw = ACCESS_ONCE(t->nvcsw);
--				t->rcu_tasks_holdout = 1;
--				list_add(&t->rcu_tasks_holdout_list,
--					 &rcu_tasks_holdouts);
--			}
--		}
--		rcu_read_unlock();
--
--		/*
--		 * The "t != current" and "!is_idle_task()" comparisons
--		 * above are stable, but the "t->on_rq" value could
--		 * change at any time, and is generally unordered.
--		 * Therefore, we need some ordering.  The trick is
--		 * that t->on_rq is updated with a runqueue lock held,
--		 * and thus with interrupts disabled.  So the following
--		 * synchronize_sched() provides the needed ordering by:
--		 * (1) Waiting for all interrupts-disabled code sections
--		 * to complete and (2) The synchronize_sched() ordering
--		 * guarantees, which provide for a memory barrier on each
--		 * CPU since the completion of its last read-side critical
--		 * section, including interrupt-disabled code sections.
-+		 * RCU-tasks grace period.  Go build the list of
-+		 * tasks that must be waited for.
- 		 */
--		synchronize_sched();
-+		rcu_tasks_build_list();
- 
- 		/*
- 		 * Each pass through the following loop scans the list
-@@ -608,4 +668,27 @@ static int __init rcu_spawn_tasks_kthread(void)
- }
- early_initcall(rcu_spawn_tasks_kthread);
- 
-+/*
-+ * RCU-tasks hook for exiting tasks.  This hook prevents the current
-+ * task from being added to the RCU-tasks list, and also ensures that
-+ * any future RCU-tasks grace period will wait for the current task
-+ * to finish exiting.
-+ */
-+void exit_rcu_tasks(void)
-+{
-+	int exitcode;
-+	struct task_struct *t = current;
-+	DECLARE_WAIT_QUEUE_HEAD(wq);
-+
-+	spin_lock(&t->rcu_tasks_lock);
-+	exitcode = t->rcu_tasks_holdout + 1;
-+	t->rcu_tasks_exiting = exitcode;
-+	if (exitcode)
-+		t->rcu_tasks_exit_wq = &wq;
-+	spin_unlock(&t->rcu_tasks_lock);
-+	wait_event(wq,
-+		   ACCESS_ONCE(t->rcu_tasks_holdout_list.prev) == LIST_POISON2);
-+	t->rcu_tasks_exit_wq = NULL;
-+}
-+
- #endif /* #ifdef CONFIG_TASKS_RCU */
+ 	if (!torture_init_begin(torture_type, verbose, &rcutorture_runnable))
 -- 
 1.8.1.5
 
