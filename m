@@ -1,67 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755AbaGaRbb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:31:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59880 "EHLO mx1.redhat.com"
+	id S1754055AbaGaRb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:31:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25471 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802AbaGaRai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:30:38 -0400
-Date: Thu, 31 Jul 2014 19:27:52 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v2 tip/core/rcu 01/10] rcu: Add call_rcu_tasks()
-Message-ID: <20140731172752.GA17632@redhat.com>
-References: <20140731003914.GA3872@linux.vnet.ibm.com> <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com> <53D9F084.7000706@cn.fujitsu.com> <20140731160924.GR11241@linux.vnet.ibm.com> <20140731163138.GA15228@redhat.com> <20140731170232.GW11241@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140731170232.GW11241@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751999AbaGaRaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 13:30:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,773,1400050800"; 
+   d="scan'208";a="551942875"
+From: kan.liang@intel.com
+To: peterz@infradead.org
+Cc: andi@firstfloor.org, alexander.shishkin@linux.intel.com,
+        linux-kernel@vger.kernel.org, Kan Liang <kan.liang@intel.com>
+Subject: [PATCH 2/3] x86 perf: Protect LBR msrs accessing against potential #GP
+Date: Thu, 31 Jul 2014 02:41:02 -0700
+Message-Id: <1406799663-18192-2-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1406799663-18192-1-git-send-email-kan.liang@intel.com>
+References: <1406799663-18192-1-git-send-email-kan.liang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31, Paul E. McKenney wrote:
->
-> On Thu, Jul 31, 2014 at 06:31:38PM +0200, Oleg Nesterov wrote:
->
-> > But can't we avoid get_task_struct()? This can pin a lot of task_struct's.
-> > Can't we just add list_del_rcu(holdout_list) into __unhash_process() ?
->
-> If I add the list_del_rcu() there, then I am back to a concurrent list,
-> which I would like to avoid.  Don't get me wrong, it was fun playing with
-> the list-locked stuff, but best to avoid it if we can.
+From: Kan Liang <kan.liang@intel.com>
 
-OK,
+Intel PT will take over LBR hardware. If RTIT_CTL.TraceEn=1, any attempt to
+read or write the LBR or LER MSRs, including LBR_TOS, will result in a #GP.
+Intel PT can be enabled/disabled at runtime by hardware/BIOS, so it's better
+LBR MSRs can be protected at runtime.
 
-> The nice thing about using get_task_struct to lock
-> them down is that -only- the task_struct itself is locked down -- the
-> task can be reaped and so on.
+The {rd,wr}msrl_goto can protect LBR accessing against the potential #GP.
+Furthermore, it will not impact the "fast" path's performance.
 
-I understand. but otoh it would be nice to not pin this memory if the
-task was already (auto)reaped.
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 35 ++++++++++++++++++++++++------
+ 1 file changed, 28 insertions(+), 7 deletions(-)
 
-And afaics the number of pinned task_struct's is not bounded. In theory
-it is not even limited by, say, PID_MAX_LIMIT. A thread can exit and reap
-itself right after get_task_struct() but create another running thread
-which can be noticed by rcu_tasks_kthread() too.
-
-> > We only need to ensure that list_add() above can't race with that list_del(),
-> > perhaps we can tolerate lock_task_sighand() ?
->
-> I am worried about a task that does a voluntary context switch, then exits.
-> This could results in rcu_tasks_kthread() and __unhash_process() both
-> wanting to dequeue at the same time, right?
-
-Oh yes, I was very wrong. And we do not want to abuse tasklist_lock...
-
-OK, let me try to read the patch first.
-
-Oleg.
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 9dd2459..ec82e0e 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -157,7 +157,11 @@ static void intel_pmu_lbr_reset_32(void)
+ 	int i;
+ 
+ 	for (i = 0; i < x86_pmu.lbr_nr; i++)
+-		wrmsrl(x86_pmu.lbr_from + i, 0);
++		wrmsrl_goto(x86_pmu.lbr_from + i, 0ULL, wrmsr_fail);
++	return;
++
++wrmsr_fail:
++	; /* TODO: error path, but do nothing currently. */
+ }
+ 
+ static void intel_pmu_lbr_reset_64(void)
+@@ -165,9 +169,13 @@ static void intel_pmu_lbr_reset_64(void)
+ 	int i;
+ 
+ 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
+-		wrmsrl(x86_pmu.lbr_from + i, 0);
+-		wrmsrl(x86_pmu.lbr_to   + i, 0);
++		wrmsrl_goto(x86_pmu.lbr_from + i, 0ULL, wrmsr_fail);
++		wrmsrl_goto(x86_pmu.lbr_to   + i, 0ULL, wrmsr_fail);
+ 	}
++	return;
++
++wrmsr_fail:
++	; /* TODO: error path, but do nothing currently. */
+ }
+ 
+ void intel_pmu_lbr_reset(void)
+@@ -241,9 +249,13 @@ static inline u64 intel_pmu_lbr_tos(void)
+ {
+ 	u64 tos;
+ 
+-	rdmsrl(x86_pmu.lbr_tos, tos);
++	rdmsrl_goto(x86_pmu.lbr_tos, tos, rdmsr_fail);
+ 
+ 	return tos;
++
++rdmsr_fail:
++	/* TODO: error path, but do nothing currently. */
++	return 0;
+ }
+ 
+ static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
+@@ -262,7 +274,8 @@ static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
+ 			u64     lbr;
+ 		} msr_lastbranch;
+ 
+-		rdmsrl(x86_pmu.lbr_from + lbr_idx, msr_lastbranch.lbr);
++		rdmsrl_goto(x86_pmu.lbr_from + lbr_idx,
++				msr_lastbranch.lbr, rdmsr_fail);
+ 
+ 		cpuc->lbr_entries[i].from	= msr_lastbranch.from;
+ 		cpuc->lbr_entries[i].to		= msr_lastbranch.to;
+@@ -271,6 +284,10 @@ static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
+ 		cpuc->lbr_entries[i].reserved	= 0;
+ 	}
+ 	cpuc->lbr_stack.nr = i;
++	return;
++
++rdmsr_fail:
++	; /* TODO: error path, but do nothing currently. */
+ }
+ 
+ /*
+@@ -292,8 +309,8 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
+ 		int skip = 0;
+ 		int lbr_flags = lbr_desc[lbr_format];
+ 
+-		rdmsrl(x86_pmu.lbr_from + lbr_idx, from);
+-		rdmsrl(x86_pmu.lbr_to   + lbr_idx, to);
++		rdmsrl_goto(x86_pmu.lbr_from + lbr_idx, from, rdmsr_fail);
++		rdmsrl_goto(x86_pmu.lbr_to   + lbr_idx, to, rdmsr_fail);
+ 
+ 		if (lbr_flags & LBR_EIP_FLAGS) {
+ 			mis = !!(from & LBR_FROM_FLAG_MISPRED);
+@@ -328,6 +345,10 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
+ 		out++;
+ 	}
+ 	cpuc->lbr_stack.nr = out;
++	return;
++
++rdmsr_fail:
++	; /* TODO: error path, but do nothing currently. */
+ }
+ 
+ void intel_pmu_lbr_read(void)
+-- 
+1.8.3.1
 
