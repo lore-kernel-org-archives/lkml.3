@@ -1,58 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045AbaG3X6h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jul 2014 19:58:37 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:58123 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755510AbaG3X5s (ORCPT
+	id S1754265AbaGaABX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jul 2014 20:01:23 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:39920 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058AbaGaABV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jul 2014 19:57:48 -0400
-From: behanw@converseincode.com
-To: ard.biesheuvel@linaro.org, catalin.marinas@arm.com,
-        k.khlebnikov@samsung.com, olof@lixom.net, peterz@infradead.org,
-        takahiro.akashi@linaro.org, tglx@linutronix.de, will.deacon@arm.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, dwmw2@infradead.org,
-        Behan Webster <behanw@converseincode.com>,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: [PATCH 2/4] arm64: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
-Date: Wed, 30 Jul 2014 16:57:27 -0700
-Message-Id: <1406764649-20326-3-git-send-email-behanw@converseincode.com>
+	Wed, 30 Jul 2014 20:01:21 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        David Miller <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        Rajkumar Manoharan <rmanohar@qti.qualcomm.com>,
+        <netdev@vger.kernel.org>,
+        QCA ath9k Development <ath9k-devel@qca.qualcomm.com>,
+        linux-next@vger.kernel.org
+Subject: [RFC][PATCH] wireless: ath9k: Convert from timespecs to ktime_t
+Date: Wed, 30 Jul 2014 17:01:05 -0700
+Message-Id: <1406764865-26860-1-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406764649-20326-1-git-send-email-behanw@converseincode.com>
-References: <1406764649-20326-1-git-send-email-behanw@converseincode.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Behan Webster <behanw@converseincode.com>
+Convert from using timespecs to ktime_t for internal timekeeping
+needs. This simplifies the logic and avoids extra math required to
+convert from timespec to usecs.
 
-Use the global current_stack_pointer to get the value of the stack pointer.
-This change supports being able to compile the kernel with both gcc and clang.
-
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-Reviewed-by: Jan-Simon M??ller <dl9pf@gmx.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: Felix Fietkau <nbd@openwrt.org>
+Cc: Rajkumar Manoharan <rmanohar@qti.qualcomm.com>
+Cc: <netdev@vger.kernel.org>
+Cc: QCA ath9k Development <ath9k-devel@qca.qualcomm.com>
+Cc: linux-next@vger.kernel.org
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- arch/arm64/kernel/stacktrace.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/arm64/kernel/stacktrace.c b/arch/arm64/kernel/stacktrace.c
-index 55437ba..407991b 100644
---- a/arch/arm64/kernel/stacktrace.c
-+++ b/arch/arm64/kernel/stacktrace.c
-@@ -111,10 +111,9 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 		frame.sp = thread_saved_sp(tsk);
- 		frame.pc = thread_saved_pc(tsk);
- 	} else {
--		register unsigned long current_sp asm("sp");
- 		data.no_sched_functions = 0;
- 		frame.fp = (unsigned long)__builtin_frame_address(0);
--		frame.sp = current_sp;
-+		frame.sp = current_stack_pointer;
- 		frame.pc = (unsigned long)save_stack_trace_tsk;
+Thomas made an earlier version of this patch which I queued, 
+but it collided badly in -next with the timestamping rework in
+ath9k code. So this is my swing at fixing it up again.
+
+Compile tested only. Would apprecate feedback and review.
+
+ drivers/net/wireless/ath/ath9k/ath9k.h   |  2 +-
+ drivers/net/wireless/ath/ath9k/channel.c | 18 +++++++++---------
+ drivers/net/wireless/ath/ath9k/hw.c      | 19 +++++++------------
+ drivers/net/wireless/ath/ath9k/hw.h      |  2 +-
+ drivers/net/wireless/ath/ath9k/main.c    |  2 +-
+ 5 files changed, 19 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/ath9k.h b/drivers/net/wireless/ath/ath9k/ath9k.h
+index 7fc13a8..5553c0f 100644
+--- a/drivers/net/wireless/ath/ath9k/ath9k.h
++++ b/drivers/net/wireless/ath/ath9k/ath9k.h
+@@ -335,7 +335,7 @@ struct ath_chanctx {
+ 
+ 	struct ath_beacon_config beacon;
+ 	struct ath9k_hw_cal_data caldata;
+-	struct timespec tsf_ts;
++	ktime_t tsf_kt;
+ 	u64 tsf_val;
+ 	u32 last_beacon;
+ 
+diff --git a/drivers/net/wireless/ath/ath9k/channel.c b/drivers/net/wireless/ath/ath9k/channel.c
+index ba214eb..2b37f8d 100644
+--- a/drivers/net/wireless/ath/ath9k/channel.c
++++ b/drivers/net/wireless/ath/ath9k/channel.c
+@@ -228,9 +228,9 @@ static bool ath_chanctx_defer_switch(struct ath_softc *sc)
+ 
+ static void ath_chanctx_set_next(struct ath_softc *sc, bool force)
+ {
+-	struct timespec ts;
+ 	bool measure_time = false;
+ 	bool send_ps = false;
++	ktime_t now;
+ 
+ 	spin_lock_bh(&sc->chan_lock);
+ 	if (!sc->next_chan) {
+@@ -248,7 +248,7 @@ static void ath_chanctx_set_next(struct ath_softc *sc, bool force)
+ 		spin_unlock_bh(&sc->chan_lock);
+ 
+ 		if (sc->next_chan == &sc->offchannel.chan) {
+-			getrawmonotonic(&ts);
++			now = ktime_get_raw();
+ 			measure_time = true;
+ 		}
+ 		__ath9k_flush(sc->hw, ~0, true);
+@@ -260,7 +260,7 @@ static void ath_chanctx_set_next(struct ath_softc *sc, bool force)
+ 		spin_lock_bh(&sc->chan_lock);
+ 
+ 		if (sc->cur_chan != &sc->offchannel.chan) {
+-			getrawmonotonic(&sc->cur_chan->tsf_ts);
++			sc->cur_chan->tsf_kt = ktime_get_raw();
+ 			sc->cur_chan->tsf_val = ath9k_hw_gettsf64(sc->sc_ah);
+ 		}
+ 	}
+@@ -279,7 +279,7 @@ static void ath_chanctx_set_next(struct ath_softc *sc, bool force)
+ 		ath_set_channel(sc);
+ 		if (measure_time)
+ 			sc->sched.channel_switch_time =
+-				ath9k_hw_get_tsf_offset(&ts, NULL);
++				ath9k_hw_get_tsf_offset(&now, NULL);
+ 	}
+ 	if (send_ps)
+ 		ath_chanctx_send_ps_frame(sc, false);
+@@ -440,8 +440,8 @@ ath_chanctx_get_next(struct ath_softc *sc, struct ath_chanctx *ctx)
+ static void ath_chanctx_adjust_tbtt_delta(struct ath_softc *sc)
+ {
+ 	struct ath_chanctx *prev, *cur;
+-	struct timespec ts;
+ 	u32 cur_tsf, prev_tsf, beacon_int;
++	ktime_t now;
+ 	s32 offset;
+ 
+ 	beacon_int = TU_TO_USEC(sc->cur_chan->beacon.beacon_interval);
+@@ -449,12 +449,12 @@ static void ath_chanctx_adjust_tbtt_delta(struct ath_softc *sc)
+ 	cur = sc->cur_chan;
+ 	prev = ath_chanctx_get_next(sc, cur);
+ 
+-	getrawmonotonic(&ts);
++	now = ktime_get_raw();
+ 	cur_tsf = (u32) cur->tsf_val +
+-		  ath9k_hw_get_tsf_offset(&cur->tsf_ts, &ts);
++		  ath9k_hw_get_tsf_offset(&cur->tsf_kt, &now);
+ 
+ 	prev_tsf = prev->last_beacon - (u32) prev->tsf_val + cur_tsf;
+-	prev_tsf -= ath9k_hw_get_tsf_offset(&prev->tsf_ts, &ts);
++	prev_tsf -= ath9k_hw_get_tsf_offset(&prev->tsf_kt, &now);
+ 
+ 	/* Adjust the TSF time of the AP chanctx to keep its beacons
+ 	 * at half beacon interval offset relative to the STA chanctx.
+@@ -614,7 +614,7 @@ void ath_chanctx_event(struct ath_softc *sc, struct ieee80211_vif *vif,
+ 		 */
+ 		tsf_time = sc->sched.switch_start_time;
+ 		tsf_time -= (u32) sc->cur_chan->tsf_val +
+-			ath9k_hw_get_tsf_offset(&sc->cur_chan->tsf_ts, NULL);
++			ath9k_hw_get_tsf_offset(&sc->cur_chan->tsf_kt, NULL);
+ 		tsf_time += ath9k_hw_gettsf32(ah);
+ 
+ 
+diff --git a/drivers/net/wireless/ath/ath9k/hw.c b/drivers/net/wireless/ath/ath9k/hw.c
+index fd0158f..d15f48e 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -1731,19 +1731,14 @@ fail:
+ 	return -EINVAL;
+ }
+ 
+-u32 ath9k_hw_get_tsf_offset(struct timespec *last, struct timespec *cur)
++u32 ath9k_hw_get_tsf_offset(ktime_t *last, ktime_t *cur)
+ {
+-	struct timespec ts;
+ 	s64 usec;
+ 
+-	if (!cur) {
+-		getrawmonotonic(&ts);
+-		cur = &ts;
+-	}
+-
+-	usec = cur->tv_sec * 1000000ULL + cur->tv_nsec / 1000;
+-	usec -= last->tv_sec * 1000000ULL + last->tv_nsec / 1000;
++	if (!cur)
++		*cur = ktime_get_raw();
+ 
++	usec = ktime_to_us(ktime_sub(*cur, *last));
+ 	return (u32) usec;
+ }
+ EXPORT_SYMBOL(ath9k_hw_get_tsf_offset);
+@@ -1752,7 +1747,7 @@ int ath9k_hw_reset(struct ath_hw *ah, struct ath9k_channel *chan,
+ 		   struct ath9k_hw_cal_data *caldata, bool fastcc)
+ {
+ 	struct ath_common *common = ath9k_hw_common(ah);
+-	struct timespec ts;
++	ktime_t now;
+ 	u32 saveLedState;
+ 	u32 saveDefAntenna;
+ 	u32 macStaId1;
+@@ -1801,7 +1796,7 @@ int ath9k_hw_reset(struct ath_hw *ah, struct ath9k_channel *chan,
+ 
+ 	/* Save TSF before chip reset, a cold reset clears it */
+ 	tsf = ath9k_hw_gettsf64(ah);
+-	getrawmonotonic(&ts);
++	now = ktime_get_raw();
+ 
+ 	saveLedState = REG_READ(ah, AR_CFG_LED) &
+ 		(AR_CFG_LED_ASSOC_CTL | AR_CFG_LED_MODE_SEL |
+@@ -1834,7 +1829,7 @@ int ath9k_hw_reset(struct ath_hw *ah, struct ath9k_channel *chan,
  	}
  
+ 	/* Restore TSF */
+-	ath9k_hw_settsf64(ah, tsf + ath9k_hw_get_tsf_offset(&ts, NULL));
++	ath9k_hw_settsf64(ah, tsf + ath9k_hw_get_tsf_offset(&now, NULL));
+ 
+ 	if (AR_SREV_9280_20_OR_LATER(ah))
+ 		REG_SET_BIT(ah, AR_GPIO_INPUT_EN_VAL, AR_GPIO_JTAG_DISABLE);
+diff --git a/drivers/net/wireless/ath/ath9k/hw.h b/drivers/net/wireless/ath/ath9k/hw.h
+index 51b4ebe..a57b4e2 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.h
++++ b/drivers/net/wireless/ath/ath9k/hw.h
+@@ -1000,7 +1000,7 @@ u32 ath9k_hw_gettsf32(struct ath_hw *ah);
+ u64 ath9k_hw_gettsf64(struct ath_hw *ah);
+ void ath9k_hw_settsf64(struct ath_hw *ah, u64 tsf64);
+ void ath9k_hw_reset_tsf(struct ath_hw *ah);
+-u32 ath9k_hw_get_tsf_offset(struct timespec *last, struct timespec *cur);
++u32 ath9k_hw_get_tsf_offset(ktime_t *last, ktime_t *cur);
+ void ath9k_hw_set_tsfadjust(struct ath_hw *ah, bool set);
+ void ath9k_hw_init_global_settings(struct ath_hw *ah);
+ u32 ar9003_get_pll_sqsum_dvc(struct ath_hw *ah);
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index e6ac8d2..e47dbd3 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -241,7 +241,7 @@ static bool ath_complete_reset(struct ath_softc *sc, bool start)
+ 		if (sc->cur_chan->tsf_val) {
+ 			u32 offset;
+ 
+-			offset = ath9k_hw_get_tsf_offset(&sc->cur_chan->tsf_ts,
++			offset = ath9k_hw_get_tsf_offset(&sc->cur_chan->tsf_kt,
+ 							 NULL);
+ 			ath9k_hw_settsf64(ah, sc->cur_chan->tsf_val + offset);
+ 		}
 -- 
 1.9.1
 
