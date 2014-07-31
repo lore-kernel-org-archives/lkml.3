@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618AbaGaUZv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:25:51 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49582 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541AbaGaUZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:25:49 -0400
-Message-ID: <53DAA64B.6040203@codeaurora.org>
-Date: Thu, 31 Jul 2014 13:25:47 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1752654AbaGaU2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:28:16 -0400
+Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:34320
+	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750836AbaGaU2O convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 16:28:14 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 00/18] staging: comedi: amplc_pci224: remove legacy stuff
+Thread-Topic: [PATCH 00/18] staging: comedi: amplc_pci224: remove legacy
+ stuff
+Thread-Index: AQHPrMYV/m/cwd3ou0+rOyO4MPyZo5u6oc2g
+Date: Thu, 31 Jul 2014 20:28:04 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F33D7B@P3PWEX4MB002.ex4.secureserver.net>
+References: <1406814475-5923-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1406814475-5923-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        Todd Poynor <toddpoynor@google.com>,
-        "Srivatsa S . Bhat" <srivatsa@mit.edu>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v4 0/5] Simplify hotplug/suspend handling
-References: <1406250448-470-1-git-send-email-skannan@codeaurora.org> <1667655.2j1xLy7HXa@vostro.rjw.lan>
-In-Reply-To: <1667655.2j1xLy7HXa@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2014 05:29 PM, Rafael J. Wysocki wrote:
-> On Thursday, July 24, 2014 06:07:23 PM Saravana Kannan wrote:
->> Series of patchs to simplify policy/sysfs/kobj/locking handling across
->> suspend/resume
+On Thursday, July 31, 2014 6:48 AM, Ian Abbott wrote:
+> The "amplc_pci224" driver retains a "legacy" attach mechanism via the
+> `COMEDI_DEVCONFIG` ioctl and the comedi driver "attach" hook, but
+> usually attaches PCI devices automatically via the comedi driver's
+> "auto_attach" hook.  The legacy mechanism is only retained so that
+> options can be passed via the ioctl to indicate how some hardware
+> jumpers are set on the boards, which is used to set up the range tables.
+> That's no use if the PCI device is attached automatically as the range
+> tables will be set up according to the factory default jumper positions.
 >
-> I need someone to review this series for me.  Viresh or Srivatsa, preferably
-> both.
+> Change the range tables to include all possible ranges, regardless of
+> jumper positions.  Then there is no need to have options to control
+> setting up the range tables and the "legacy" attach mechanism can be
+> removed.
+>
+> Also, tidy the code up a bit.
 
-Viresh/Srivatsa,
+Looks good.
 
-Bump. Can you guys please review this?
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
--Saravana
+Side note:
 
+Now that the manual attach has been removed, you could also remove
+the board information from the comedi_driver declaration.
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Regards,
+Hartley
+
