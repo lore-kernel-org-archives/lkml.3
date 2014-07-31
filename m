@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751234AbaGaMob (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 08:44:31 -0400
-Received: from admin.compro.net ([12.186.155.30]:62193 "HELO mx2.compro.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750768AbaGaMoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 08:44:30 -0400
-X-BYPSHEADER: 905412
-X-SMScore: -200
-Message-ID: <53DA3A2D.90403@compro.net>
-Date: Thu, 31 Jul 2014 08:44:29 -0400
-From: Mark Hounschell <markh@compro.net>
-Reply-To: markh@compro.net
-Organization: Compro Computer Svcs.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751325AbaGaMpA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 08:45:00 -0400
+Received: from smtp-out-062.synserver.de ([212.40.185.62]:1058 "EHLO
+	smtp-out-057.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751255AbaGaMo7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 08:44:59 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 7330
+Message-ID: <53DA3A48.8070900@metafoo.de>
+Date: Thu, 31 Jul 2014 14:44:56 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
 MIME-Version: 1.0
-To: Daeseok Youn <daeseok.youn@gmail.com>, lidza.louina@gmail.com
-CC: gregkh@linuxfoundation.org, driverdev-devel@linuxdriverproject.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        dan.carpenter@oracle.com
-Subject: Re: [PATCH V2] staging: dgap: introduce dgap_cleanup_nodes()
-References: <166070137.57941.1406779444750.JavaMail.root@mx2.compro.net>
-In-Reply-To: <166070137.57941.1406779444750.JavaMail.root@mx2.compro.net>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Vinod Koul <vinod.koul@intel.com>
+CC: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        =?ISO-8859-1?Q?Antoine_T=E9nart?= <antoine@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris Brezillon <boris@free-electrons.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        laurent.pinchart@ideasonboard.com, ludovic.desroches@atmel.com,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
+ dma controller API
+References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com> <20140730160607.GM8181@intel.com> <20140731074440.GY3952@lukather>
+In-Reply-To: <20140731074440.GY3952@lukather>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2014 12:02 AM, Daeseok Youn wrote:
-> When a configration file is parsed with dgap_parsefile(),
-> makes nodes for saving configrations for board.
->
-> Making a node will allocate node memory and strings for saving
-> configrations with kstrdup().
->
-> So these are freed when dgap is unloaded or failed to initialize.
->
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-> ---
-> V2: Do not need to free for NULLNODE.
->
-> I have been too busy to solve this issue, sorry for late.
->
-> Mark, Can you test this patch? I try to make simple module which is
-> testing dgap_parsefile() and dgap_cleanup_nodes().
->
+On 07/31/2014 09:44 AM, Maxime Ripard wrote:
+[...]
+>    - Having to set device_slave_caps or not?
 
-I'll be happy to, but I can't do it until Monday. I'm not where the 
-hardware is until then.
+Yes. This should in my opinion be mandatory for new drivers. One of the 
+issues with the DMAengine API is that it is really hard to write generic 
+drivers that do not already know about the capabilities of the DMA 
+controller. E.g. if you have a peripheral that is used on SoC A it assumes 
+that the DMA controller it is connected to has the capabilities of the DMA 
+controller in SoC A. If the same peripheral is now used on SoC B with a DMA 
+controller with different capabilities this often ends up with ugly ifdefery 
+in the peripheral driver. The peripheral driver shouldn't have to know which 
+specific DMA controller it is connected to (It's a bit as if a GPIO consumer 
+needed to know which GPIO controller is connected to). We got away with the 
+current approach since there is not that much diversity in the mixing of 
+peripherals and DMA controllers (each vendor pretty has their own DMA 
+controller which it uses for their own peripherals). But with more recent 
+code consolidation we are on a path to generic DMA support within subsystem 
+frameworks (there is generic DMA support for audio, there is generic DMA 
+support for SPI and I also have a (currently) out of tree patch for generic 
+DMA support for IIO). Also these generic drivers need to be able to discover 
+the capabilities of the DMA controller to be able to make the right decisions.
 
-Regards
-Mark
-
+- Lars
