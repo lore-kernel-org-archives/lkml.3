@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922AbaGaQt2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:49:28 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:56367 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650AbaGaQtZ (ORCPT
+	id S1752701AbaGaQuJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:50:09 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:58837 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaGaQuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:49:25 -0400
-Date: Thu, 31 Jul 2014 18:49:20 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v4 2/5] x86,entry: Only call user_exit if TIF_NOHZ
-Message-ID: <20140731164918.GC7842@localhost.localdomain>
-References: <cover.1406604806.git.luto@amacapital.net>
- <7123b2489cc5d1d5abb7bcf1364ca729cab3e6ca.1406604806.git.luto@amacapital.net>
- <20140729193232.GA8153@redhat.com>
- <20140730164344.GA27954@localhost.localdomain>
- <CALCETrUVaz3JFiNbyU=r3M-E9muHa1ffn7RX+_-4V_0U-hVaPw@mail.gmail.com>
- <20140731151630.GA7842@localhost.localdomain>
- <20140731164246.GA15974@redhat.com>
+	Thu, 31 Jul 2014 12:50:06 -0400
+Date: Thu, 31 Jul 2014 18:50:06 +0200
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Peter Maydell <peter.maydell@linaro.org>
+Cc: Alex =?iso-8859-1?Q?Benn=E9e?= <alex.bennee@linaro.org>,
+        kvm-devel <kvm@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        arm-mail-list <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm64: KVM: export current vcpu->pause state via pseudo
+ regs
+Message-ID: <20140731165006.GL11610@cbox>
+References: <1404914112-7298-1-git-send-email-alex.bennee@linaro.org>
+ <20140731143538.GI11610@cbox>
+ <87mwbpimgz.fsf@linaro.org>
+ <20140731163805.GK11610@cbox>
+ <CAFEAcA91efUg3MVpLScNBkxZSEgDP0zNnmxxr055fAz5=vDCoA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140731164246.GA15974@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAFEAcA91efUg3MVpLScNBkxZSEgDP0zNnmxxr055fAz5=vDCoA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 06:42:46PM +0200, Oleg Nesterov wrote:
-> On 07/31, Frederic Weisbecker wrote:
+On Thu, Jul 31, 2014 at 05:45:28PM +0100, Peter Maydell wrote:
+> On 31 July 2014 17:38, Christoffer Dall <christoffer.dall@linaro.org> wrote:
+> >> > If we are not complaining when setting the pause value to false if it
+> >> > was true before, then we probably also need to wake up the thread in
+> >> > case this is called from another thread, right?
+> >> >
+> >> > or perhaps we should just return an error if you're trying to un-pause a
+> >> > CPU through this interface, hmmmm.
+> >>
+> >> Wouldn't it be an error to mess with any register when the system is not
+> >> in a quiescent state? I was assuming that the wake state is dealt with
+> >> when the run loop finally restarts.
+> >>
 > >
-> > On Wed, Jul 30, 2014 at 10:23:34AM -0700, Andy Lutomirski wrote:
-> > >
-> > > At the end of the day, the syscall slowpath code calls a bunch of
-> > > functions depending on what TIF_XYZ flags are set.  As long as it's
-> > > structured like "if (TIF_A) do_a(); if (TIF_B) do_b();" or something
-> > > like that, it's comprehensible.  But once random functions with no
-> > > explicit flag checks or comments start showing up, it gets confusing.
-> >
-> > Yeah that's a point. I don't mind much the TIF_NOHZ test if you like.
+> > The ABI doesn't really define it as an error (the ABI doesn't enforce
+> > anything right now) so the question is, does it ever make sense to clear
+> > the pause flag through this ioctl?  If not, I think we should just err
+> > on the side of caution and specify in the docs that this is not
+> > supported and return an error.
 > 
-> And in my opinion
+> Consider the case where the reset state of the system is
+> "CPU 0 running, CPUs 1..N stopped", and we're doing an
+> incoming migration to a state where all CPUs are running.
+> In that case we'll be using this ioctl to clear the pause flag,
+> right? (We'll also obviously need to set the PC and other
+> register state correctly before resuming the guest.)
 > 
-> 	if (work & TIF_XYZ)
-> 		user_exit();
-> 
-> looks even more confusing. Because, once again, TIF_XYZ is not the
-> reason to call user_exit().
-> 
-> Not to mention this adds a minor performance penalty.
+Doh, you're right, I somehow had it in my mind that when you send the
+thread a signal, the pause flag would be cleared, but that goes against
+the whole idea of a CPU being turned off for KVM.
 
-That's a point too! You guys both convinced me! ;-)
+But wouldn't we then have to also wake up the thread when clearing the
+pause flag?  It feels strange that the ioctl can clear the pause flag,
+but keep the thread on a wake-queue, and then userspace has to send the
+thread a signal of some sort to wake it up?
 
-> 
-> > > If it's indeed all-or-nothing, I could remove the check and add a
-> > > comment.  But please keep in mind that, currently, the slow path is
-> > > *slow*, and my patches only improve the entry case.  So enabling
-> > > context tracking on every task will hurt.
-> >
-> > That's what we do anyway. I haven't found a safe way to enabled context tracking
-> > without tracking all CPUs.
-> 
-> And if we change this, then the code above becomes racy. The state of
-> TIF_XYZ can be changed right after the check. OK, it is racy anyway ;)
-> but still this adds more confusion.
-
-No because all running tasks have this flag set when context tracking is
-enabled. And context tracking can't be disabled on runtime.
+-Christoffer
