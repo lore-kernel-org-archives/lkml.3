@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727AbaGaV5E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 17:57:04 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:38902 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522AbaGaVzR (ORCPT
+	id S1753641AbaGaV5D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 17:57:03 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:34493 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561AbaGaVzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Jul 2014 17:55:17 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -15,85 +15,53 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v3 tip/core/rcu 8/9] rcu: Improve RCU-tasks energy efficiency
-Date: Thu, 31 Jul 2014 14:55:08 -0700
-Message-Id: <1406843709-23396-8-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v3 tip/core/rcu 4/9] rcu: Export RCU-tasks APIs to GPL modules
+Date: Thu, 31 Jul 2014 14:55:04 -0700
+Message-Id: <1406843709-23396-4-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140731215445.GA21933@linux.vnet.ibm.com>
  <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073121-0928-0000-0000-000003C3C959
+x-cbid: 14073121-9332-0000-0000-0000018F8817
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-The current RCU-tasks implementation uses strict polling to detect
-callback arrivals.  This works quite well, but is not so good for
-energy efficiency.  This commit therefore replaces the strict polling
-with a wait queue.
+This commit exports the RCU-tasks APIs, call_rcu_tasks(),
+synchronize_rcu_tasks(), and rcu_barrier_tasks(), to GPL-licensed
+kernel modules.
 
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/rcu/update.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ kernel/rcu/update.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index e940b86af4e8..f14a79d0d6de 100644
+index fe866848a063..b7694019e952 100644
 --- a/kernel/rcu/update.c
 +++ b/kernel/rcu/update.c
-@@ -371,6 +371,7 @@ static LIST_HEAD(rcu_tasks_holdouts);
- /* Global list of callbacks and associated lock. */
- static struct rcu_head *rcu_tasks_cbs_head;
- static struct rcu_head **rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
-+static DECLARE_WAIT_QUEUE_HEAD(rcu_tasks_cbs_wq);
- static DEFINE_RAW_SPINLOCK(rcu_tasks_cbs_lock);
- 
- /* Control stall timeouts.  Disable with <= 0, otherwise jiffies till stall. */
-@@ -381,13 +382,17 @@ module_param(rcu_task_stall_timeout, int, 0644);
- void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
- {
- 	unsigned long flags;
-+	bool needwake;
- 
- 	rhp->next = NULL;
- 	rhp->func = func;
- 	raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
-+	needwake = !rcu_tasks_cbs_head;
- 	*rcu_tasks_cbs_tail = rhp;
- 	rcu_tasks_cbs_tail = &rhp->next;
- 	raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
-+	if (needwake)
-+		wake_up(&rcu_tasks_cbs_wq);
+@@ -429,6 +429,7 @@ void synchronize_rcu_tasks(void)
+ 	/* Wait for the grace period. */
+ 	wait_rcu_gp(call_rcu_tasks);
  }
- EXPORT_SYMBOL_GPL(call_rcu_tasks);
++EXPORT_SYMBOL_GPL(synchronize_rcu_tasks);
  
-@@ -498,8 +503,12 @@ static int __noreturn rcu_tasks_kthread(void *arg)
- 
- 		/* If there were none, wait a bit and start over. */
- 		if (!list) {
--			schedule_timeout_interruptible(HZ);
--			flush_signals(current);
-+			wait_event_interruptible(rcu_tasks_cbs_wq,
-+						 rcu_tasks_cbs_head);
-+			if (!rcu_tasks_cbs_head) {
-+				flush_signals(current);
-+				schedule_timeout_interruptible(HZ/10);
-+			}
- 			continue;
- 		}
- 
-@@ -591,6 +600,7 @@ static int __noreturn rcu_tasks_kthread(void *arg)
- 			list = next;
- 			cond_resched();
- 		}
-+		schedule_timeout_uninterruptible(HZ/10);
- 	}
+ /**
+  * rcu_barrier_tasks - Wait for in-flight call_rcu_tasks() callbacks.
+@@ -441,6 +442,7 @@ void rcu_barrier_tasks(void)
+ 	/* There is only one callback queue, so this is easy.  ;-) */
+ 	synchronize_rcu_tasks();
  }
++EXPORT_SYMBOL_GPL(rcu_barrier_tasks);
  
+ /* RCU-tasks kthread that detects grace periods and invokes callbacks. */
+ static int __noreturn rcu_tasks_kthread(void *arg)
 -- 
 1.8.1.5
 
