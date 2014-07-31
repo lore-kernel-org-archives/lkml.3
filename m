@@ -1,133 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694AbaGaRW6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:22:58 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:46436 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425AbaGaRWz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:22:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <1404863367-20413-1-git-send-email-vpalatin@chromium.org>
-References: <CAP_ceTxk=OE3UVhNKk+WV7EG3E9Z0cOH4tZBU210Awa15OOjgw@mail.gmail.com>
- <1404863367-20413-1-git-send-email-vpalatin@chromium.org>
-From: Vincent Palatin <vpalatin@chromium.org>
-Date: Thu, 31 Jul 2014 10:22:34 -0700
-X-Google-Sender-Auth: 3IoJoWrHE2SrLxRt4o1i68AaS_M
-Message-ID: <CAP_ceTwPCfNQvacs3p5M0nnJr060uLJOx=ieb5jx6rCxAEXmSA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] [media] V4L: Add camera pan/tilt speed controls
-To: Hans de Goede <hdegoede@redhat.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Olof Johansson <olofj@chromium.org>,
-        Pawel Osciak <posciak@chromium.org>, Zach Kuznia <zork@chromium.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Vincent Palatin <vpalatin@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753796AbaGaRXp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:23:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11686 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752945AbaGaRXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 13:23:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,773,1400050800"; 
+   d="scan'208";a="551935823"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
+        mingo@kernel.org, peterz@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 9/9] tools, perf: Add asprintf replacement
+Date: Thu, 31 Jul 2014 10:17:09 -0700
+Message-Id: <1406827029-7991-10-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1406827029-7991-1-git-send-email-andi@firstfloor.org>
+References: <1406827029-7991-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping ...
-Any opinion on adding those new controls ? since re-using the existing
-relative ones was seen as too twisted.
+From: Andi Kleen <ak@linux.intel.com>
 
-Thanks,
+asprintf corrupts memory on some older glibc versions.
+Provide a replacement. This fixes various segfaults
+with --branch-history on older Fedoras.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Makefile.perf    |  1 +
+ tools/perf/builtin-report.c |  3 ++-
+ tools/perf/util/asprintf.c  | 28 ++++++++++++++++++++++++++++
+ 3 files changed, 31 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/util/asprintf.c
+
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 2240974..9a6f2a6 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -374,6 +374,7 @@ LIB_OBJS += $(OUTPUT)util/vdso.o
+ LIB_OBJS += $(OUTPUT)util/stat.o
+ LIB_OBJS += $(OUTPUT)util/record.o
+ LIB_OBJS += $(OUTPUT)util/srcline.o
++LIB_OBJS += $(OUTPUT)util/asprintf.o
+ LIB_OBJS += $(OUTPUT)util/data.o
+ LIB_OBJS += $(OUTPUT)util/tsc.o
+ LIB_OBJS += $(OUTPUT)util/cloexec.o
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index c2dc8f27..2f1ac37 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -742,7 +742,8 @@ repeat:
+ 		callchain_param.branch_callstack = 1;
+ 		callchain_param.key = CCKEY_ADDRESS;
+ 		symbol_conf.use_callchain = true;
+-		callchain_register_param(&callchain_param);
++		if (callchain_register_param(&callchain_param) < 0)
++			pr_err("Cannot register callchain parameters");
+ 		if (sort_order == default_sort_order)
+ 			sort_order = "srcline,symbol,dso";
+ 		branch_mode = 0;
+diff --git a/tools/perf/util/asprintf.c b/tools/perf/util/asprintf.c
+new file mode 100644
+index 0000000..9aafaca
+--- /dev/null
++++ b/tools/perf/util/asprintf.c
+@@ -0,0 +1,28 @@
++/* Replacement for asprintf as it's buggy in older glibc versions */
++#include <stdio.h>
++#include <stdarg.h>
++#include <stdlib.h>
++#include <string.h>
++
++int vasprintf(char **str, const char *fmt, va_list ap)
++{
++	char buf[1024];
++	int len = vsnprintf(buf, sizeof buf, fmt, ap);
++
++	*str = malloc(len + 1);
++	if (!*str)
++		return -1;
++	strcpy(*str, buf);
++	return len;
++}
++
++int asprintf(char **str, const char *fmt, ...)
++{
++	va_list ap;
++	int ret;
++
++	va_start(ap, fmt);
++	ret = vasprintf(str, fmt, ap);
++	va_end(ap);
++	return ret;
++}
 -- 
-Vincent
+1.9.3
 
-
-On Tue, Jul 8, 2014 at 4:49 PM, Vincent Palatin <vpalatin@chromium.org> wrote:
-> The V4L2_CID_PAN_SPEED and V4L2_CID_TILT_SPEED controls allow to move the
-> camera by setting its rotation speed around its axis.
->
-> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-> ---
->  Documentation/DocBook/media/v4l/compat.xml   | 10 ++++++++++
->  Documentation/DocBook/media/v4l/controls.xml | 21 +++++++++++++++++++++
->  drivers/media/v4l2-core/v4l2-ctrls.c         |  2 ++
->  include/uapi/linux/v4l2-controls.h           |  2 ++
->  4 files changed, 35 insertions(+)
->
-> diff --git a/Documentation/DocBook/media/v4l/compat.xml b/Documentation/DocBook/media/v4l/compat.xml
-> index eee6f0f..21910e9 100644
-> --- a/Documentation/DocBook/media/v4l/compat.xml
-> +++ b/Documentation/DocBook/media/v4l/compat.xml
-> @@ -2545,6 +2545,16 @@ fields changed from _s32 to _u32.
->        </orderedlist>
->      </section>
->
-> +    <section>
-> +      <title>V4L2 in Linux 3.17</title>
-> +      <orderedlist>
-> +       <listitem>
-> +         <para>Added <constant>V4L2_CID_PAN_SPEED</constant> and
-> + <constant>V4L2_CID_TILT_SPEED</constant> camera controls.</para>
-> +       </listitem>
-> +      </orderedlist>
-> +    </section>
-> +
->      <section id="other">
->        <title>Relation of V4L2 to other Linux multimedia APIs</title>
->
-> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-> index 47198ee..cdf97f0 100644
-> --- a/Documentation/DocBook/media/v4l/controls.xml
-> +++ b/Documentation/DocBook/media/v4l/controls.xml
-> @@ -3914,6 +3914,27 @@ by exposure, white balance or focus controls.</entry>
->           </row>
->           <row><entry></entry></row>
->
-> +         <row>
-> +           <entry spanname="id"><constant>V4L2_CID_PAN_SPEED</constant>&nbsp;</entry>
-> +           <entry>integer</entry>
-> +         </row><row><entry spanname="descr">This control turns the
-> +camera horizontally at the specific speed. The unit is undefined. A
-> +positive value moves the camera to the right (clockwise when viewed
-> +from above), a negative value to the left. A value of zero does not
-> +cause or stop the motion.</entry>
-> +         </row>
-> +         <row><entry></entry></row>
-> +
-> +         <row>
-> +           <entry spanname="id"><constant>V4L2_CID_TILT_SPEED</constant>&nbsp;</entry>
-> +           <entry>integer</entry>
-> +         </row><row><entry spanname="descr">This control turns the
-> +camera vertically at the specified speed. The unit is undefined. A
-> +positive value moves the camera up, a negative value down. A value of
-> +zero does not cause or stop the motion.</entry>
-> +         </row>
-> +         <row><entry></entry></row>
-> +
->         </tbody>
->        </tgroup>
->      </table>
-> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-> index 55c6832..57ddaf4 100644
-> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
-> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-> @@ -787,6 +787,8 @@ const char *v4l2_ctrl_get_name(u32 id)
->         case V4L2_CID_AUTO_FOCUS_STOP:          return "Auto Focus, Stop";
->         case V4L2_CID_AUTO_FOCUS_STATUS:        return "Auto Focus, Status";
->         case V4L2_CID_AUTO_FOCUS_RANGE:         return "Auto Focus, Range";
-> +       case V4L2_CID_PAN_SPEED:                return "Pan, Speed";
-> +       case V4L2_CID_TILT_SPEED:               return "Tilt, Speed";
->
->         /* FM Radio Modulator control */
->         /* Keep the order of the 'case's the same as in videodev2.h! */
-> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
-> index 2ac5597..5576044 100644
-> --- a/include/uapi/linux/v4l2-controls.h
-> +++ b/include/uapi/linux/v4l2-controls.h
-> @@ -745,6 +745,8 @@ enum v4l2_auto_focus_range {
->         V4L2_AUTO_FOCUS_RANGE_INFINITY          = 3,
->  };
->
-> +#define V4L2_CID_PAN_SPEED                     (V4L2_CID_CAMERA_CLASS_BASE+32)
-> +#define V4L2_CID_TILT_SPEED                    (V4L2_CID_CAMERA_CLASS_BASE+33)
->
->  /* FM Modulator class control IDs */
->
-> --
-> 2.0.0.526.g5318336
->
