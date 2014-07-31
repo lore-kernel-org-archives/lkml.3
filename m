@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaGaRSR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:18:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:9031 "EHLO mga03.intel.com"
+	id S1753623AbaGaRSi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:18:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41542 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753056AbaGaRRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:17:47 -0400
+	id S1751715AbaGaRRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 13:17:17 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,773,1400050800"; 
-   d="scan'208";a="463663350"
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="366318854"
 From: Andi Kleen <andi@firstfloor.org>
 To: jolsa@redhat.com
 Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
         mingo@kernel.org, peterz@infradead.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 6/9] perf, tools: Fix srcline sort key output to use width
-Date: Thu, 31 Jul 2014 10:17:06 -0700
-Message-Id: <1406827029-7991-7-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 3/9] perf, tools: Enable printing the srcline in the history
+Date: Thu, 31 Jul 2014 10:17:03 -0700
+Message-Id: <1406827029-7991-4-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1406827029-7991-1-git-send-email-andi@firstfloor.org>
 References: <1406827029-7991-1-git-send-email-andi@firstfloor.org>
@@ -26,28 +26,253 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-The srcline sort output ignored the width, which caused
-various problems with displaying srcline in the tui
-browser. Just cut it off at width.
+For lbr-as-callgraph we need to see the line number in the history,
+because many LBR entries can be in a single function, and just
+showing the same function name many times is not useful.
 
+When the history code is configured to sort by address, also try to
+resolve the address to a file:srcline and display this in the browser.
+If that doesn't work still display the address.
+
+This can be also useful without LBRs for understanding which call in a large
+function (or in which inlined function) called something else.
+
+Contains fixes from Namhyung Kim
+
+v2: Refactor code into common function
+v3: Fix GTK build
+v4: Rebase
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/util/sort.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/ui/browsers/hists.c | 17 -----------------
+ tools/perf/ui/gtk/hists.c      | 11 +----------
+ tools/perf/ui/stdio/hist.c     | 23 +++++++++--------------
+ tools/perf/util/callchain.c    | 29 +++++++++++++++++++++++++++++
+ tools/perf/util/callchain.h    |  4 ++++
+ tools/perf/util/machine.c      |  2 +-
+ tools/perf/util/srcline.c      |  6 ++++--
+ 7 files changed, 48 insertions(+), 44 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 14e5a03..58b4a92 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -305,7 +305,7 @@ static int hist_entry__srcline_snprintf(struct hist_entry *he, char *bf,
- 					size_t size,
- 					unsigned int width __maybe_unused)
- {
--	return repsep_snprintf(bf, size, "%s", he->srcline);
-+	return repsep_snprintf(bf, size, "%.*s", width, he->srcline);
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index a94b11f..534022f 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -457,23 +457,6 @@ out:
+ 	return key;
  }
  
- struct sort_entry sort_srcline = {
+-static char *callchain_list__sym_name(struct callchain_list *cl,
+-				      char *bf, size_t bfsize, bool show_dso)
+-{
+-	int printed;
+-
+-	if (cl->ms.sym)
+-		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
+-	else
+-		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
+-
+-	if (show_dso)
+-		scnprintf(bf + printed, bfsize - printed, " %s",
+-			  cl->ms.map ? cl->ms.map->dso->short_name : "unknown");
+-
+-	return bf;
+-}
+-
+ #define LEVEL_OFFSET_STEP 3
+ 
+ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *browser,
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 6ca60e4..a21b77e 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -87,15 +87,6 @@ void perf_gtk__init_hpp(void)
+ 				perf_gtk__hpp_color_overhead_acc;
+ }
+ 
+-static void callchain_list__sym_name(struct callchain_list *cl,
+-				     char *bf, size_t bfsize)
+-{
+-	if (cl->ms.sym)
+-		scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
+-	else
+-		scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
+-}
+-
+ static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
+ 				    GtkTreeIter *parent, int col, u64 total)
+ {
+@@ -126,7 +117,7 @@ static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
+ 			scnprintf(buf, sizeof(buf), "%5.2f%%", percent);
+ 			gtk_tree_store_set(store, &iter, 0, buf, -1);
+ 
+-			callchain_list__sym_name(chain, buf, sizeof(buf));
++			callchain_list__sym_name(chain, buf, sizeof(buf), false);
+ 			gtk_tree_store_set(store, &iter, col, buf, -1);
+ 
+ 			if (need_new_parent) {
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 40af0ac..886c409 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -41,6 +41,7 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
+ {
+ 	int i;
+ 	size_t ret = 0;
++	char bf[1024];
+ 
+ 	ret += callchain__fprintf_left_margin(fp, left_margin);
+ 	for (i = 0; i < depth; i++) {
+@@ -56,11 +57,8 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
+ 		} else
+ 			ret += fprintf(fp, "%s", "          ");
+ 	}
+-	if (chain->ms.sym)
+-		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
+-	else
+-		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
+-
++	fputs(callchain_list__sym_name(chain, bf, sizeof(bf), false), fp);
++	fputc('\n', fp);
+ 	return ret;
+ }
+ 
+@@ -168,6 +166,7 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+ 	struct rb_node *node;
+ 	int i = 0;
+ 	int ret = 0;
++	char bf[1024];
+ 
+ 	/*
+ 	 * If have one single callchain root, don't bother printing
+@@ -196,10 +195,8 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+ 			} else
+ 				ret += callchain__fprintf_left_margin(fp, left_margin);
+ 
+-			if (chain->ms.sym)
+-				ret += fprintf(fp, " %s\n", chain->ms.sym->name);
+-			else
+-				ret += fprintf(fp, " %p\n", (void *)(long)chain->ip);
++			ret += fprintf(fp, "%s\n", callchain_list__sym_name(chain, bf, sizeof(bf),
++							false));
+ 
+ 			if (++entries_printed == callchain_param.print_limit)
+ 				break;
+@@ -219,6 +216,7 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
+ {
+ 	struct callchain_list *chain;
+ 	size_t ret = 0;
++	char bf[1024];
+ 
+ 	if (!node)
+ 		return 0;
+@@ -229,11 +227,8 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
+ 	list_for_each_entry(chain, &node->val, list) {
+ 		if (chain->ip >= PERF_CONTEXT_MAX)
+ 			continue;
+-		if (chain->ms.sym)
+-			ret += fprintf(fp, "                %s\n", chain->ms.sym->name);
+-		else
+-			ret += fprintf(fp, "                %p\n",
+-					(void *)(long)chain->ip);
++		ret += fprintf(fp, "                %s\n", callchain_list__sym_name(chain,
++					bf, sizeof(bf), false));
+ 	}
+ 
+ 	return ret;
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 64599b7..8e75b35 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -679,3 +679,32 @@ int fill_callchain_info(struct addr_location *al, struct callchain_cursor_node *
+ out:
+ 	return 1;
+ }
++
++char *callchain_list__sym_name(struct callchain_list *cl,
++			       char *bf, size_t bfsize, bool show_dso)
++{
++	int printed;
++
++	if (cl->ms.sym) {
++		if (callchain_param.key == CCKEY_ADDRESS &&
++		    cl->ms.map && !cl->srcline)
++			cl->srcline = get_srcline(cl->ms.map->dso,
++						  map__rip_2objdump(cl->ms.map,
++								    cl->ip));
++		if (cl->srcline)
++			printed = scnprintf(bf, bfsize, "%s %s",
++					cl->ms.sym->name, cl->srcline);
++		else
++			printed = scnprintf(bf, bfsize, "%s",
++					    cl->ms.sym->name);
++	} else
++		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
++
++	if (show_dso)
++		scnprintf(bf + printed, bfsize - printed, " %s",
++			  cl->ms.map ?
++			  cl->ms.map->dso->short_name :
++			  "unknown");
++
++	return bf;
++}
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 7a1788a..7e27bf1 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -66,6 +66,7 @@ struct callchain_param {
+ struct callchain_list {
+ 	u64			ip;
+ 	struct map_symbol	ms;
++	char		       *srcline;
+ 	struct list_head	list;
+ };
+ 
+@@ -190,4 +191,7 @@ static inline int arch_skip_callchain_idx(struct machine *machine __maybe_unused
+ }
+ #endif
+ 
++char *callchain_list__sym_name(struct callchain_list *cl,
++			       char *bf, size_t bfsize, bool show_dso);
++
+ #endif	/* __PERF_CALLCHAIN_H */
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index e90122e..6060b5e 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1357,7 +1357,7 @@ static int add_callchain_ip(struct machine *machine,
+ 			return -EINVAL;
+ 	}
+ 
+-	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
++	return callchain_cursor_append(&callchain_cursor, al.addr, al.map, al.sym);
+ }
+ 
+ #define CHASHSZ 127
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index f3e4bc5..c6a7cdc 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -258,7 +258,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
+ 	const char *dso_name;
+ 
+ 	if (!dso->has_srcline)
+-		return SRCLINE_UNKNOWN;
++		goto out;
+ 
+ 	if (dso->symsrc_filename)
+ 		dso_name = dso->symsrc_filename;
+@@ -289,7 +289,9 @@ out:
+ 		dso->has_srcline = 0;
+ 		dso__free_a2l(dso);
+ 	}
+-	return SRCLINE_UNKNOWN;
++	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
++		return SRCLINE_UNKNOWN;
++	return srcline;
+ }
+ 
+ void free_srcline(char *srcline)
 -- 
 1.9.3
 
