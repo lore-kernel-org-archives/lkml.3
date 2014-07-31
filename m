@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813AbaGaUuI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 16:50:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39011 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751656AbaGaUuG (ORCPT
+	id S1752632AbaGaUwG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 16:52:06 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:50257 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaGaUwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 16:50:06 -0400
-Date: Thu, 31 Jul 2014 19:37:30 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dmaengine@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        laurent.pinchart@ideasonboard.com, ludovic.desroches@atmel.com,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
- dma controller API
-Message-ID: <20140731173730.GH3952@lukather>
-References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com>
- <20140730160607.GM8181@intel.com>
- <20140731074440.GY3952@lukather>
- <53DA3A48.8070900@metafoo.de>
- <20140731161331.GD3952@lukather>
- <53DA74B3.6060502@metafoo.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Xp2nimoPFnvF0aLh"
-Content-Disposition: inline
-In-Reply-To: <53DA74B3.6060502@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 31 Jul 2014 16:52:03 -0400
+From: Kever Yang <kever.yang@gmail.com>
+X-Google-Original-From: Kever Yang <kever.yang@rock-chips.com>
+To: Paul Zimmerman <paulz@synopsys.com>
+Cc: dianders@chromium.org, heiko@sntech.de, olof@lixom.net,
+        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
+        xjq@rock-chips.com, wulf@rock-chips.com, lyz@rock-chips.com,
+        hj@rock-chips.com, huangtao@rock-chips.com,
+        Kever Yang <kever.yang@rock-chips.com>, devicetree@vger.kernel.org,
+        Matt Porter <mporter@linaro.org>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        linux-usb@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 0/5] Patches to add support for Rockchip dwc2 controller
+Date: Thu, 31 Jul 2014 13:51:41 -0700
+Message-Id: <1406839906-14633-1-git-send-email-kever.yang@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+These patches to add support for dwc2 controller found in
+Rockchip processors rk3066, rk3188 and rk3288,
+and enable dts for rk3288 evb.
 
---Xp2nimoPFnvF0aLh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Changes in v3:
+- Moved out of pin control and sort by base address
+- EHCI and HSIC move new for version 3.
+- Rebase
 
-On Thu, Jul 31, 2014 at 06:54:11PM +0200, Lars-Peter Clausen wrote:
-> On 07/31/2014 06:13 PM, Maxime Ripard wrote:
-> [...]
-> > From what you're saying, and judging from the drivers that already
-> >implement it, can't it be moved directly to the framework itself ?
-> >
->=20
-> What exactly do you mean by moving it directly to the framework? The
-> slave_caps API is part of the DMAengine framework.
+Changes in v2:
+- Split out dr_mode and rk3288 bindings.
+- add compatible "snps,dwc2" bingding info
+- set most parameters as driver auto-detect
+- change the node name from 'dwc2' to 'usb'
+- evb patch added in version 2
 
-Not its implementation, which is defined by each and every driver,
-while the behaviour of device_slave_caps is rather generic.
+Doug Anderson (1):
+  ARM: dts: Fix the sort ordering of EHCI and HSIC in rk3288.dtsi
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Kever Yang (4):
+  Documentation: dt-bindings: add dt binding info for Rockchip dwc2
+  usb: dwc2: add compatible data for rockchip soc
+  ARM: dts: add rk3288 dwc2 controller support
+  ARM: dts: Enable USB otg and host1(dwc) on rk3288-evb
 
---Xp2nimoPFnvF0aLh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ Documentation/devicetree/bindings/usb/dwc2.txt |    3 ++
+ arch/arm/boot/dts/rk3288-evb.dtsi              |    6 +++
+ arch/arm/boot/dts/rk3288.dtsi                  |   61 ++++++++++++++++--------
+ drivers/usb/dwc2/platform.c                    |   29 +++++++++++
+ 4 files changed, 78 insertions(+), 21 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+-- 
+1.7.9.5
 
-iQIcBAEBAgAGBQJT2n7aAAoJEBx+YmzsjxAglmsP/RPWmmHFfHtnkMHr46IyMl4D
-UZUG6BRHG561DQnnINsH5Sjhw+ZIXR9//Ein9AHkVTmQ8f9yvD4uFtHBv/BDlbiF
-eW9MSM7JbjD+mDMW/k7yJkKNUVFm1WVl9ijrMJFoLZzY2PTGFCx2qBohn1LIIbnn
-oWum+Gw86WTbH8+Rxjl4o6eHt45DQjArF8MCfazbSrK62O6UnIGgmRr4swtbDqoz
-JykAJjwNcCCz3sHTK940rrbNPq2yF8WwE/h1xzBaYf6s3rWBu+RUV53s+mp/fV0H
-hKVkUENsTyDsrr10F/uRWP9hhghALg1sbSqgnSQjniS3pzLK1UBCpArAq/rAGcaH
-QOQLVB/CpFLLGWb6E+fJm3bN68Qprdfjc48iK5PSp+5DbeiDyIU5WIdNQkMRwbUK
-MA99jItE/Jlc0kBMf6Ff5l/9CbJPPJOpOkOXEDTv9eHKigKBTkQ6a+1/YmhWQ/u1
-Fd+MWjpH/jS3HaeC56DkV8TywVI0m+huHQ68tjgTBuBcBcCxgmw8UXjgoE2MxMjX
-lSuzBPtaZLfFsbkRzt43F8DPb7bZR0RbpxSH+2vg5eLkrwMnYoiOkOtNbPtVoAUi
-TWo9d1uQys5ugti57dulJWwQU7H0J+N0jZeGVVXVrxTHxKRBw4IK4c8hn3Dyoz4T
-AMRubG4n5icLnHkDYw9Q
-=NIGH
------END PGP SIGNATURE-----
-
---Xp2nimoPFnvF0aLh--
