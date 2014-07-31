@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbaGaPeH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 11:34:07 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:56890 "EHLO
+	id S1752723AbaGaPeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 11:34:13 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:56895 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041AbaGaPeE (ORCPT
+	with ESMTP id S1751796AbaGaPeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 11:34:04 -0400
-Subject: [PATCH 11/19] drm/radeon: use common fence implementation for fences,
- v2
+	Thu, 31 Jul 2014 11:34:06 -0400
+Subject: [PATCH 12/19] drm/qxl: rework to new fence interface
 To: airlied@linux.ie
 From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 Cc: thellstrom@vmware.com, nouveau@lists.freedesktop.org,
         linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         bskeggs@redhat.com, alexander.deucher@amd.com,
         christian.koenig@amd.com
-Date: Thu, 31 Jul 2014 17:33:55 +0200
-Message-ID: <20140731153355.15061.3119.stgit@patser>
+Date: Thu, 31 Jul 2014 17:34:01 +0200
+Message-ID: <20140731153401.15061.24966.stgit@patser>
 In-Reply-To: <20140731153245.15061.63023.stgit@patser>
 References: <20140731153245.15061.63023.stgit@patser>
 User-Agent: StGit/0.15
@@ -27,586 +26,700 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v1:
-- Kill the sw interrupt dance, add and use
-  radeon_irq_kms_sw_irq_get_delayed instead.
-- Change custom wait function, lockdep complained about it.
-  Holding exclusive_lock in the wait function might cause deadlocks.
-  Instead do all the processing in .enable_signaling, and wait
-  on the global fence_queue to pick up gpu resets.
-- Process all fences in radeon_gpu_reset after reset to close a race
-  with the trylock in enable_signaling.
+Final driver! \o/
+
+This is not a proper dma_fence because the hardware may never signal
+anything, so don't use dma-buf with qxl, ever.
 
 Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon.h         |   18 +-
- drivers/gpu/drm/radeon/radeon_device.c  |   22 ++-
- drivers/gpu/drm/radeon/radeon_fence.c   |  263 +++++++++++++++++++++++++++----
- drivers/gpu/drm/radeon/radeon_irq_kms.c |   43 +++++
- 4 files changed, 293 insertions(+), 53 deletions(-)
+ drivers/gpu/drm/qxl/Makefile      |    2 
+ drivers/gpu/drm/qxl/qxl_cmd.c     |    5 -
+ drivers/gpu/drm/qxl/qxl_debugfs.c |   12 ++-
+ drivers/gpu/drm/qxl/qxl_drv.h     |   22 ++---
+ drivers/gpu/drm/qxl/qxl_fence.c   |   87 -------------------
+ drivers/gpu/drm/qxl/qxl_kms.c     |    2 
+ drivers/gpu/drm/qxl/qxl_object.c  |    2 
+ drivers/gpu/drm/qxl/qxl_release.c |  166 ++++++++++++++++++++++++++++++++-----
+ drivers/gpu/drm/qxl/qxl_ttm.c     |   97 ++++++++++++----------
+ 9 files changed, 220 insertions(+), 175 deletions(-)
+ delete mode 100644 drivers/gpu/drm/qxl/qxl_fence.c
 
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index b01d88fc10cb..599bb28e4104 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -64,6 +64,7 @@
- #include <linux/wait.h>
- #include <linux/list.h>
- #include <linux/kref.h>
-+#include <linux/fence.h>
+diff --git a/drivers/gpu/drm/qxl/Makefile b/drivers/gpu/drm/qxl/Makefile
+index ea046ba691d2..ac0d74852e11 100644
+--- a/drivers/gpu/drm/qxl/Makefile
++++ b/drivers/gpu/drm/qxl/Makefile
+@@ -4,6 +4,6 @@
  
- #include <ttm/ttm_bo_api.h>
- #include <ttm/ttm_bo_driver.h>
-@@ -116,9 +117,6 @@ extern int radeon_deep_color;
- #define RADEONFB_CONN_LIMIT			4
- #define RADEON_BIOS_NUM_SCRATCH			8
+ ccflags-y := -Iinclude/drm
  
--/* fence seq are set to this number when signaled */
--#define RADEON_FENCE_SIGNALED_SEQ		0LL
--
- /* internal ring indices */
- /* r1xx+ has gfx CP ring */
- #define RADEON_RING_TYPE_GFX_INDEX		0
-@@ -352,12 +350,15 @@ struct radeon_fence_driver {
- };
+-qxl-y := qxl_drv.o qxl_kms.o qxl_display.o qxl_ttm.o qxl_fb.o qxl_object.o qxl_gem.o qxl_cmd.o qxl_image.o qxl_draw.o qxl_debugfs.o qxl_irq.o qxl_dumb.o qxl_ioctl.o qxl_fence.o qxl_release.o
++qxl-y := qxl_drv.o qxl_kms.o qxl_display.o qxl_ttm.o qxl_fb.o qxl_object.o qxl_gem.o qxl_cmd.o qxl_image.o qxl_draw.o qxl_debugfs.o qxl_irq.o qxl_dumb.o qxl_ioctl.o qxl_release.o
  
- struct radeon_fence {
-+	struct fence base;
-+
- 	struct radeon_device		*rdev;
--	struct kref			kref;
- 	/* protected by radeon_fence.lock */
- 	uint64_t			seq;
- 	/* RB, DMA, etc. */
- 	unsigned			ring;
-+
-+	wait_queue_t fence_wake;
- };
+ obj-$(CONFIG_DRM_QXL)+= qxl.o
+diff --git a/drivers/gpu/drm/qxl/qxl_cmd.c b/drivers/gpu/drm/qxl/qxl_cmd.c
+index 45fad7b45486..97823644d347 100644
+--- a/drivers/gpu/drm/qxl/qxl_cmd.c
++++ b/drivers/gpu/drm/qxl/qxl_cmd.c
+@@ -620,11 +620,6 @@ static int qxl_reap_surf(struct qxl_device *qdev, struct qxl_bo *surf, bool stal
+ 	if (ret == -EBUSY)
+ 		return -EBUSY;
  
- int radeon_fence_driver_start_ring(struct radeon_device *rdev, int ring);
-@@ -769,6 +770,7 @@ struct radeon_irq {
- int radeon_irq_kms_init(struct radeon_device *rdev);
- void radeon_irq_kms_fini(struct radeon_device *rdev);
- void radeon_irq_kms_sw_irq_get(struct radeon_device *rdev, int ring);
-+void radeon_irq_kms_sw_irq_get_delayed(struct radeon_device *rdev, int ring);
- void radeon_irq_kms_sw_irq_put(struct radeon_device *rdev, int ring);
- void radeon_irq_kms_pflip_irq_get(struct radeon_device *rdev, int crtc);
- void radeon_irq_kms_pflip_irq_put(struct radeon_device *rdev, int crtc);
-@@ -2276,6 +2278,7 @@ struct radeon_device {
- 	struct radeon_mman		mman;
- 	struct radeon_fence_driver	fence_drv[RADEON_NUM_RINGS];
- 	wait_queue_head_t		fence_queue;
-+	unsigned			fence_context;
- 	struct mutex			ring_lock;
- 	struct radeon_ring		ring[RADEON_NUM_RINGS];
- 	bool				ib_pool_ready;
-@@ -2314,6 +2317,8 @@ struct radeon_device {
- 	struct work_struct hotplug_work;
- 	struct work_struct audio_work;
- 	struct work_struct reset_work;
-+	struct work_struct delayed_irq_work;
-+
- 	int num_crtc; /* number of crtcs */
- 	struct mutex dc_hw_i2c_mutex; /* display controller hw i2c mutex */
- 	bool has_uvd;
-@@ -2366,11 +2371,6 @@ u32 cik_mm_rdoorbell(struct radeon_device *rdev, u32 index);
- void cik_mm_wdoorbell(struct radeon_device *rdev, u32 index, u32 v);
- 
- /*
-- * Cast helper
-- */
--#define to_radeon_fence(p) ((struct radeon_fence *)(p))
--
--/*
-  * Registers read & write functions.
-  */
- #define RREG8(reg) readb((rdev->rmmio) + (reg))
-diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-index 21efd32d07ee..dbf3a8bc91d2 100644
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -1213,6 +1213,7 @@ int radeon_device_init(struct radeon_device *rdev,
- 	for (i = 0; i < RADEON_NUM_RINGS; i++) {
- 		rdev->ring[i].idx = i;
- 	}
-+	rdev->fence_context = fence_context_alloc(RADEON_NUM_RINGS);
- 
- 	DRM_INFO("initializing kernel modesetting (%s 0x%04X:0x%04X 0x%04X:0x%04X).\n",
- 		radeon_family_name[rdev->family], pdev->vendor, pdev->device,
-@@ -1622,15 +1623,13 @@ int radeon_gpu_reset(struct radeon_device *rdev)
- 
- 	bool saved = false;
- 
--	int i, r;
-+	int i, r = 0;
- 	int resched;
- 
- 	down_write(&rdev->exclusive_lock);
- 
--	if (!rdev->needs_reset) {
--		up_write(&rdev->exclusive_lock);
--		return 0;
+-	if (surf->fence.num_active_releases > 0 && stall == false) {
+-		qxl_bo_unreserve(surf);
+-		return -EBUSY;
 -	}
-+	if (!rdev->needs_reset)
-+		goto out;
+-
+ 	if (stall)
+ 		mutex_unlock(&qdev->surf_evict_mutex);
  
- 	rdev->needs_reset = false;
+diff --git a/drivers/gpu/drm/qxl/qxl_debugfs.c b/drivers/gpu/drm/qxl/qxl_debugfs.c
+index c3c2bbdc6674..0d144e0646d6 100644
+--- a/drivers/gpu/drm/qxl/qxl_debugfs.c
++++ b/drivers/gpu/drm/qxl/qxl_debugfs.c
+@@ -57,11 +57,21 @@ qxl_debugfs_buffers_info(struct seq_file *m, void *data)
+ 	struct qxl_device *qdev = node->minor->dev->dev_private;
+ 	struct qxl_bo *bo;
  
-@@ -1697,7 +1696,18 @@ retry:
- 		dev_info(rdev->dev, "GPU reset failed\n");
++	spin_lock(&qdev->release_lock);
+ 	list_for_each_entry(bo, &qdev->gem.objects, list) {
++		struct reservation_object_list *fobj;
++		int rel;
++
++		rcu_read_lock();
++		fobj = rcu_dereference(bo->tbo.resv->fence);
++		rel = fobj ? fobj->shared_count : 0;
++		rcu_read_unlock();
++
+ 		seq_printf(m, "size %ld, pc %d, sync obj %p, num releases %d\n",
+ 			   (unsigned long)bo->gem_base.size, bo->pin_count,
+-			   bo->tbo.sync_obj, bo->fence.num_active_releases);
++			   bo->tbo.sync_obj, rel);
  	}
- 
--	up_write(&rdev->exclusive_lock);
-+out:
-+	/*
-+	 * force all waiters to recheck, some may have been
-+	 * added while the exclusive_lock was unavailable
-+	 */
-+	downgrade_write(&rdev->exclusive_lock);
-+	for (i = 0; i < RADEON_NUM_RINGS; ++i) {
-+		if (rdev->ring[i].ready)
-+			radeon_fence_process(rdev, i);
-+	}
-+	wake_up_all(&rdev->fence_queue);
-+	up_read(&rdev->exclusive_lock);
- 	return r;
- }
- 
-diff --git a/drivers/gpu/drm/radeon/radeon_fence.c b/drivers/gpu/drm/radeon/radeon_fence.c
-index f79e0b34582b..8ca56ca70503 100644
---- a/drivers/gpu/drm/radeon/radeon_fence.c
-+++ b/drivers/gpu/drm/radeon/radeon_fence.c
-@@ -39,6 +39,15 @@
- #include "radeon.h"
- #include "radeon_trace.h"
- 
-+static const struct fence_ops radeon_fence_ops;
-+
-+#define to_radeon_fence(p) \
-+	({								\
-+		struct radeon_fence *__f;				\
-+		__f = container_of((p), struct radeon_fence, base);	\
-+		__f->base.ops == &radeon_fence_ops ? __f : NULL;	\
-+	})
-+
- /*
-  * Fences
-  * Fences mark an event in the GPUs pipeline and are used
-@@ -111,20 +120,82 @@ int radeon_fence_emit(struct radeon_device *rdev,
- 		      struct radeon_fence **fence,
- 		      int ring)
- {
-+	u64 seq = ++rdev->fence_drv[ring].sync_seq[ring];
-+
- 	/* we are protected by the ring emission mutex */
- 	*fence = kmalloc(sizeof(struct radeon_fence), GFP_KERNEL);
- 	if ((*fence) == NULL) {
- 		return -ENOMEM;
- 	}
--	kref_init(&((*fence)->kref));
--	(*fence)->rdev = rdev;
--	(*fence)->seq = ++rdev->fence_drv[ring].sync_seq[ring];
- 	(*fence)->ring = ring;
-+	fence_init(&(*fence)->base, &radeon_fence_ops,
-+		   &rdev->fence_queue.lock, rdev->fence_context + ring, seq);
-+	(*fence)->rdev = rdev;
-+	(*fence)->seq = seq;
- 	radeon_fence_ring_emit(rdev, ring, *fence);
- 	trace_radeon_fence_emit(rdev->ddev, ring, (*fence)->seq);
++	spin_unlock(&qdev->release_lock);
  	return 0;
  }
  
-+/**
-+ * __radeon_fence_read_seq - Returns the current fence value without updating
-+ *
-+ * @rdev: radeon_device pointer
-+ * @ring: ring index to return the seqno of
-+ */
-+static uint64_t __radeon_fence_read_seq(struct radeon_device *rdev, int ring)
-+{
-+	uint64_t last_seq = atomic64_read(&rdev->fence_drv[ring].last_seq);
-+	uint64_t last_emitted = rdev->fence_drv[ring].sync_seq[ring];
-+	uint64_t seq = radeon_fence_read(rdev, ring);
-+
-+	seq = radeon_fence_read(rdev, ring);
-+	seq |= last_seq & 0xffffffff00000000LL;
-+	if (seq < last_seq) {
-+		seq &= 0xffffffff;
-+		seq |= last_emitted & 0xffffffff00000000LL;
-+	}
-+	return seq;
-+}
-+
-+/**
-+ * radeon_fence_check_signaled - callback from fence_queue
-+ *
-+ * this function is called with fence_queue lock held, which is also used
-+ * for the fence locking itself, so unlocked variants are used for
-+ * fence_signal, and remove_wait_queue.
-+ */
-+static int radeon_fence_check_signaled(wait_queue_t *wait, unsigned mode, int flags, void *key)
-+{
-+	struct radeon_fence *fence;
-+	u64 seq;
-+
-+	fence = container_of(wait, struct radeon_fence, fence_wake);
-+
-+	/*
-+	 * We cannot use radeon_fence_process here because we're already
-+	 * in the waitqueue, in a call from wake_up_all.
-+	 *
-+	 * Because the current ring might not have been updated, call
-+	 * __radeon_fence_read_seq here to check without updating.
-+	 */
-+	seq = __radeon_fence_read_seq(fence->rdev, fence->ring);
-+	if (seq >= fence->seq) {
-+		int ret = fence_signal_locked(&fence->base);
-+
-+		if (!ret)
-+			FENCE_TRACE(&fence->base, "signaled from irq context\n");
-+		else
-+			FENCE_TRACE(&fence->base, "was already signaled\n");
-+
-+		radeon_irq_kms_sw_irq_put(fence->rdev, fence->ring);
-+		__remove_wait_queue(&fence->rdev->fence_queue, &fence->fence_wake);
-+		fence_put(&fence->base);
-+	} else
-+		FENCE_TRACE(&fence->base, "pending\n");
-+	return 0;
-+}
-+
- static bool __radeon_fence_process(struct radeon_device *rdev, int ring)
- {
- 	uint64_t seq, last_seq, last_emitted;
-@@ -230,21 +301,6 @@ void radeon_fence_process(struct radeon_device *rdev, int ring)
- }
+diff --git a/drivers/gpu/drm/qxl/qxl_drv.h b/drivers/gpu/drm/qxl/qxl_drv.h
+index 36ed40ba773f..d547cbdebeb4 100644
+--- a/drivers/gpu/drm/qxl/qxl_drv.h
++++ b/drivers/gpu/drm/qxl/qxl_drv.h
+@@ -31,6 +31,7 @@
+  * Definitions taken from spice-protocol, plus kernel driver specific bits.
+  */
  
- /**
-- * radeon_fence_destroy - destroy a fence
-- *
-- * @kref: fence kref
-- *
-- * Frees the fence object (all asics).
-- */
--static void radeon_fence_destroy(struct kref *kref)
--{
--	struct radeon_fence *fence;
++#include <linux/fence.h>
+ #include <linux/workqueue.h>
+ #include <linux/firmware.h>
+ #include <linux/platform_device.h>
+@@ -95,13 +96,6 @@ enum {
+ 	QXL_INTERRUPT_IO_CMD |\
+ 	QXL_INTERRUPT_CLIENT_MONITORS_CONFIG)
+ 
+-struct qxl_fence {
+-	struct qxl_device *qdev;
+-	uint32_t num_active_releases;
+-	uint32_t *release_ids;
+-	struct radix_tree_root tree;
+-};
 -
--	fence = container_of(kref, struct radeon_fence, kref);
--	kfree(fence);
+ struct qxl_bo {
+ 	/* Protected by gem.mutex */
+ 	struct list_head		list;
+@@ -113,13 +107,13 @@ struct qxl_bo {
+ 	unsigned			pin_count;
+ 	void				*kptr;
+ 	int                             type;
++
+ 	/* Constant after initialization */
+ 	struct drm_gem_object		gem_base;
+ 	bool is_primary; /* is this now a primary surface */
+ 	bool hw_surf_alloc;
+ 	struct qxl_surface surf;
+ 	uint32_t surface_id;
+-	struct qxl_fence fence; /* per bo fence  - list of releases */
+ 	struct qxl_release *surf_create;
+ };
+ #define gem_to_qxl_bo(gobj) container_of((gobj), struct qxl_bo, gem_base)
+@@ -191,6 +185,8 @@ enum {
+  * spice-protocol/qxl_dev.h */
+ #define QXL_MAX_RES 96
+ struct qxl_release {
++	struct fence base;
++
+ 	int id;
+ 	int type;
+ 	uint32_t release_offset;
+@@ -284,7 +280,11 @@ struct qxl_device {
+ 	uint8_t		slot_gen_bits;
+ 	uint64_t	va_slot_mask;
+ 
++	/* XXX: when rcu becomes available, release_lock can be killed */
++	spinlock_t	release_lock;
++	spinlock_t	fence_lock;
+ 	struct idr	release_idr;
++	uint32_t	release_seqno;
+ 	spinlock_t release_idr_lock;
+ 	struct mutex	async_io_mutex;
+ 	unsigned int last_sent_io_cmd;
+@@ -561,10 +561,4 @@ qxl_surface_lookup(struct drm_device *dev, int surface_id);
+ void qxl_surface_evict(struct qxl_device *qdev, struct qxl_bo *surf, bool freeing);
+ int qxl_update_surface(struct qxl_device *qdev, struct qxl_bo *surf);
+ 
+-/* qxl_fence.c */
+-void qxl_fence_add_release_locked(struct qxl_fence *qfence, uint32_t rel_id);
+-int qxl_fence_remove_release(struct qxl_fence *qfence, uint32_t rel_id);
+-int qxl_fence_init(struct qxl_device *qdev, struct qxl_fence *qfence);
+-void qxl_fence_fini(struct qxl_fence *qfence);
+-
+ #endif
+diff --git a/drivers/gpu/drm/qxl/qxl_fence.c b/drivers/gpu/drm/qxl/qxl_fence.c
+deleted file mode 100644
+index c7248418117d..000000000000
+--- a/drivers/gpu/drm/qxl/qxl_fence.c
++++ /dev/null
+@@ -1,87 +0,0 @@
+-/*
+- * Copyright 2013 Red Hat Inc.
+- *
+- * Permission is hereby granted, free of charge, to any person obtaining a
+- * copy of this software and associated documentation files (the "Software"),
+- * to deal in the Software without restriction, including without limitation
+- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+- * and/or sell copies of the Software, and to permit persons to whom the
+- * Software is furnished to do so, subject to the following conditions:
+- *
+- * The above copyright notice and this permission notice shall be included in
+- * all copies or substantial portions of the Software.
+- *
+- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+- * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
+- * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+- * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+- * OTHER DEALINGS IN THE SOFTWARE.
+- *
+- * Authors: Dave Airlie
+- *          Alon Levy
+- */
+-
+-
+-#include "qxl_drv.h"
+-
+-/* QXL fencing-
+-
+-   When we submit operations to the GPU we pass a release reference to the GPU
+-   with them, the release reference is then added to the release ring when
+-   the GPU is finished with that particular operation and has removed it from
+-   its tree.
+-
+-   So we have can have multiple outstanding non linear fences per object.
+-
+-   From a TTM POV we only care if the object has any outstanding releases on
+-   it.
+-
+-   we wait until all outstanding releases are processeed.
+-
+-   sync object is just a list of release ids that represent that fence on
+-   that buffer.
+-
+-   we just add new releases onto the sync object attached to the object.
+-
+-   This currently uses a radix tree to store the list of release ids.
+-
+-   For some reason every so often qxl hw fails to release, things go wrong.
+-*/
+-/* must be called with the fence lock held */
+-void qxl_fence_add_release_locked(struct qxl_fence *qfence, uint32_t rel_id)
+-{
+-	radix_tree_insert(&qfence->tree, rel_id, qfence);
+-	qfence->num_active_releases++;
 -}
 -
--/**
-  * radeon_fence_seq_signaled - check if a fence sequence number has signaled
-  *
-  * @rdev: radeon device pointer
-@@ -272,6 +328,73 @@ static bool radeon_fence_seq_signaled(struct radeon_device *rdev,
- 	return false;
- }
+-int qxl_fence_remove_release(struct qxl_fence *qfence, uint32_t rel_id)
+-{
+-	void *ret;
+-	int retval = 0;
+-
+-	ret = radix_tree_delete(&qfence->tree, rel_id);
+-	if (ret == qfence)
+-		qfence->num_active_releases--;
+-	else {
+-		DRM_DEBUG("didn't find fence in radix tree for %d\n", rel_id);
+-		retval = -ENOENT;
+-	}
+-	return retval;
+-}
+-
+-
+-int qxl_fence_init(struct qxl_device *qdev, struct qxl_fence *qfence)
+-{
+-	qfence->qdev = qdev;
+-	qfence->num_active_releases = 0;
+-	INIT_RADIX_TREE(&qfence->tree, GFP_ATOMIC);
+-	return 0;
+-}
+-
+-void qxl_fence_fini(struct qxl_fence *qfence)
+-{
+-	kfree(qfence->release_ids);
+-	qfence->num_active_releases = 0;
+-}
+diff --git a/drivers/gpu/drm/qxl/qxl_kms.c b/drivers/gpu/drm/qxl/qxl_kms.c
+index fd88eb4a3f79..a9e7c30e92c5 100644
+--- a/drivers/gpu/drm/qxl/qxl_kms.c
++++ b/drivers/gpu/drm/qxl/qxl_kms.c
+@@ -223,6 +223,8 @@ static int qxl_device_init(struct qxl_device *qdev,
  
-+static bool __radeon_fence_signaled(struct fence *f)
+ 	idr_init(&qdev->release_idr);
+ 	spin_lock_init(&qdev->release_idr_lock);
++	spin_lock_init(&qdev->release_lock);
++	spin_lock_init(&qdev->fence_lock);
+ 
+ 	idr_init(&qdev->surf_id_idr);
+ 	spin_lock_init(&qdev->surf_id_idr_lock);
+diff --git a/drivers/gpu/drm/qxl/qxl_object.c b/drivers/gpu/drm/qxl/qxl_object.c
+index b95f144f0b49..9981962451d7 100644
+--- a/drivers/gpu/drm/qxl/qxl_object.c
++++ b/drivers/gpu/drm/qxl/qxl_object.c
+@@ -36,7 +36,6 @@ static void qxl_ttm_bo_destroy(struct ttm_buffer_object *tbo)
+ 	qdev = (struct qxl_device *)bo->gem_base.dev->dev_private;
+ 
+ 	qxl_surface_evict(qdev, bo, false);
+-	qxl_fence_fini(&bo->fence);
+ 	mutex_lock(&qdev->gem.mutex);
+ 	list_del_init(&bo->list);
+ 	mutex_unlock(&qdev->gem.mutex);
+@@ -99,7 +98,6 @@ int qxl_bo_create(struct qxl_device *qdev,
+ 	bo->type = domain;
+ 	bo->pin_count = pinned ? 1 : 0;
+ 	bo->surface_id = 0;
+-	qxl_fence_init(qdev, &bo->fence);
+ 	INIT_LIST_HEAD(&bo->list);
+ 
+ 	if (surf)
+diff --git a/drivers/gpu/drm/qxl/qxl_release.c b/drivers/gpu/drm/qxl/qxl_release.c
+index 4045ba873ab8..9731d2540a40 100644
+--- a/drivers/gpu/drm/qxl/qxl_release.c
++++ b/drivers/gpu/drm/qxl/qxl_release.c
+@@ -21,6 +21,7 @@
+  */
+ #include "qxl_drv.h"
+ #include "qxl_object.h"
++#include <trace/events/fence.h>
+ 
+ /*
+  * drawable cmd cache - allocate a bunch of VRAM pages, suballocate
+@@ -39,6 +40,88 @@
+ static const int release_size_per_bo[] = { RELEASE_SIZE, SURFACE_RELEASE_SIZE, RELEASE_SIZE };
+ static const int releases_per_bo[] = { RELEASES_PER_BO, SURFACE_RELEASES_PER_BO, RELEASES_PER_BO };
+ 
++static const char *qxl_get_driver_name(struct fence *fence)
 +{
-+	struct radeon_fence *fence = to_radeon_fence(f);
-+	struct radeon_device *rdev = fence->rdev;
-+	unsigned ring = fence->ring;
-+	u64 seq = fence->seq;
-+
-+	if (atomic64_read(&rdev->fence_drv[ring].last_seq) >= seq) {
-+		return true;
-+	}
-+
-+	if (down_read_trylock(&rdev->exclusive_lock)) {
-+		radeon_fence_process(rdev, ring);
-+		up_read(&rdev->exclusive_lock);
-+
-+		if (atomic64_read(&rdev->fence_drv[ring].last_seq) >= seq) {
-+			return true;
-+		}
-+	}
-+	return false;
++	return "qxl";
 +}
 +
-+/**
-+ * radeon_fence_enable_signaling - enable signalling on fence
-+ * @fence: fence
-+ *
-+ * This function is called with fence_queue lock held, and adds a callback
-+ * to fence_queue that checks if this fence is signaled, and if so it
-+ * signals the fence and removes itself.
-+ */
-+static bool radeon_fence_enable_signaling(struct fence *f)
++static const char *qxl_get_timeline_name(struct fence *fence)
 +{
-+	struct radeon_fence *fence = to_radeon_fence(f);
-+	struct radeon_device *rdev = fence->rdev;
++	return "release";
++}
 +
-+	if (atomic64_read(&rdev->fence_drv[fence->ring].last_seq) >= fence->seq ||
-+	    !rdev->ddev->irq_enabled)
-+		return false;
-+
-+	if (down_read_trylock(&rdev->exclusive_lock)) {
-+		radeon_irq_kms_sw_irq_get(rdev, fence->ring);
-+
-+		if (__radeon_fence_process(rdev, fence->ring))
-+			wake_up_all_locked(&rdev->fence_queue);
-+
-+		/* did fence get signaled after we enabled the sw irq? */
-+		if (atomic64_read(&rdev->fence_drv[fence->ring].last_seq) >= fence->seq) {
-+			radeon_irq_kms_sw_irq_put(rdev, fence->ring);
-+			up_read(&rdev->exclusive_lock);
-+			return false;
-+		}
-+
-+		up_read(&rdev->exclusive_lock);
-+	} else
-+		/* we're probably in a lockup, lets not fiddle too much */
-+		radeon_irq_kms_sw_irq_get_delayed(rdev, fence->ring);
-+
-+	fence->fence_wake.flags = 0;
-+	fence->fence_wake.private = NULL;
-+	fence->fence_wake.func = radeon_fence_check_signaled;
-+	__add_wait_queue(&rdev->fence_queue, &fence->fence_wake);
-+	fence_get(f);
-+
-+	FENCE_TRACE(&fence->base, "armed on ring %i!\n", fence->ring);
++static bool qxl_nop_signaling(struct fence *fence)
++{
++	/* fences are always automatically signaled, so just pretend we did this.. */
 +	return true;
 +}
 +
- /**
-  * radeon_fence_signaled - check if a fence has signaled
-  *
-@@ -285,11 +408,13 @@ bool radeon_fence_signaled(struct radeon_fence *fence)
- 	if (!fence) {
- 		return true;
- 	}
--	if (fence->seq == RADEON_FENCE_SIGNALED_SEQ) {
--		return true;
--	}
-+
- 	if (radeon_fence_seq_signaled(fence->rdev, fence->seq, fence->ring)) {
--		fence->seq = RADEON_FENCE_SIGNALED_SEQ;
-+		int ret;
-+
-+		ret = fence_signal(&fence->base);
-+		if (!ret)
-+			FENCE_TRACE(&fence->base, "signaled from radeon_fence_signaled\n");
- 		return true;
- 	}
- 	return false;
-@@ -400,21 +525,18 @@ int radeon_fence_wait(struct radeon_fence *fence, bool intr)
- 	uint64_t seq[RADEON_NUM_RINGS] = {};
- 	long r;
- 
--	if (fence == NULL) {
--		WARN(1, "Querying an invalid fence : %p !\n", fence);
--		return -EINVAL;
--	}
--
--	seq[fence->ring] = fence->seq;
--	if (seq[fence->ring] == RADEON_FENCE_SIGNALED_SEQ)
-+	if (test_bit(FENCE_FLAG_SIGNALED_BIT, &fence->base.flags))
- 		return 0;
- 
-+	seq[fence->ring] = fence->seq;
- 	r = radeon_fence_wait_seq_timeout(fence->rdev, seq, intr, MAX_SCHEDULE_TIMEOUT);
- 	if (r < 0) {
- 		return r;
- 	}
- 
--	fence->seq = RADEON_FENCE_SIGNALED_SEQ;
-+	r = fence_signal(&fence->base);
-+	if (!r)
-+		FENCE_TRACE(&fence->base, "signaled from fence_wait\n");
- 	return 0;
- }
- 
-@@ -446,12 +568,13 @@ int radeon_fence_wait_any(struct radeon_device *rdev,
- 			continue;
- 		}
- 
-+		if (test_bit(FENCE_FLAG_SIGNALED_BIT, &fences[i]->base.flags)) {
-+			/* already signaled */
-+			return 0;
-+		}
-+
- 		seq[i] = fences[i]->seq;
- 		++num_rings;
--
--		/* test if something was allready signaled */
--		if (seq[i] == RADEON_FENCE_SIGNALED_SEQ)
--			return 0;
- 	}
- 
- 	/* nothing to wait for ? */
-@@ -532,7 +655,7 @@ int radeon_fence_wait_empty(struct radeon_device *rdev, int ring)
-  */
- struct radeon_fence *radeon_fence_ref(struct radeon_fence *fence)
- {
--	kref_get(&fence->kref);
-+	fence_get(&fence->base);
- 	return fence;
- }
- 
-@@ -548,9 +671,8 @@ void radeon_fence_unref(struct radeon_fence **fence)
- 	struct radeon_fence *tmp = *fence;
- 
- 	*fence = NULL;
--	if (tmp) {
--		kref_put(&tmp->kref, radeon_fence_destroy);
--	}
-+	if (tmp)
-+		fence_put(&tmp->base);
- }
- 
- /**
-@@ -855,6 +977,7 @@ static int radeon_debugfs_gpu_reset(struct seq_file *m, void *data)
- 	down_read(&rdev->exclusive_lock);
- 	seq_printf(m, "%d\n", rdev->needs_reset);
- 	rdev->needs_reset = true;
-+	wake_up_all(&rdev->fence_queue);
- 	up_read(&rdev->exclusive_lock);
- 
- 	return 0;
-@@ -874,3 +997,67 @@ int radeon_debugfs_fence_init(struct radeon_device *rdev)
- 	return 0;
- #endif
- }
-+
-+static const char *radeon_fence_get_driver_name(struct fence *fence)
++static long qxl_fence_wait(struct fence *fence, bool intr, signed long timeout)
 +{
-+	return "radeon";
++	struct qxl_device *qdev;
++	struct qxl_release *release;
++	int count = 0, sc = 0;
++	bool have_drawable_releases;
++	unsigned long cur, end = jiffies + timeout;
++
++	qdev = container_of(fence->lock, struct qxl_device, release_lock);
++	release = container_of(fence, struct qxl_release, base);
++	have_drawable_releases = release->type == QXL_RELEASE_DRAWABLE;
++
++retry:
++	sc++;
++
++	if (fence_is_signaled_locked(fence))
++		goto signaled;
++
++	qxl_io_notify_oom(qdev);
++
++	for (count = 0; count < 11; count++) {
++		if (!qxl_queue_garbage_collect(qdev, true))
++			break;
++
++		if (fence_is_signaled_locked(fence))
++			goto signaled;
++	}
++
++	if (fence_is_signaled_locked(fence))
++		goto signaled;
++
++	if (have_drawable_releases || sc < 4) {
++		if (sc > 2)
++			/* back off */
++			usleep_range(500, 1000);
++
++		if (time_after(jiffies, end))
++			return 0;
++
++		if (have_drawable_releases && sc > 300) {
++			FENCE_WARN(fence, "failed to wait on release %d "
++					  "after spincount %d\n",
++					  fence->context & ~0xf0000000, sc);
++			goto signaled;
++		}
++		goto retry;
++	}
++	/*
++	 * yeah, original sync_obj_wait gave up after 3 spins when
++	 * have_drawable_releases is not set.
++	 */
++
++signaled:
++	cur = jiffies;
++	if (time_after(cur, end))
++		return 0;
++	return end - cur;
 +}
 +
-+static const char *radeon_fence_get_timeline_name(struct fence *f)
++static const struct fence_ops qxl_fence_ops = {
++	.get_driver_name = qxl_get_driver_name,
++	.get_timeline_name = qxl_get_timeline_name,
++	.enable_signaling = qxl_nop_signaling,
++	.wait = qxl_fence_wait,
++};
++
+ static uint64_t
+ qxl_release_alloc(struct qxl_device *qdev, int type,
+ 		  struct qxl_release **ret)
+@@ -46,13 +129,13 @@ qxl_release_alloc(struct qxl_device *qdev, int type,
+ 	struct qxl_release *release;
+ 	int handle;
+ 	size_t size = sizeof(*release);
+-	int idr_ret;
+ 
+ 	release = kmalloc(size, GFP_KERNEL);
+ 	if (!release) {
+ 		DRM_ERROR("Out of memory\n");
+ 		return 0;
+ 	}
++	release->base.ops = NULL;
+ 	release->type = type;
+ 	release->release_offset = 0;
+ 	release->surface_release_id = 0;
+@@ -60,44 +143,59 @@ qxl_release_alloc(struct qxl_device *qdev, int type,
+ 
+ 	idr_preload(GFP_KERNEL);
+ 	spin_lock(&qdev->release_idr_lock);
+-	idr_ret = idr_alloc(&qdev->release_idr, release, 1, 0, GFP_NOWAIT);
++	handle = idr_alloc(&qdev->release_idr, release, 1, 0, GFP_NOWAIT);
++	release->base.seqno = ++qdev->release_seqno;
+ 	spin_unlock(&qdev->release_idr_lock);
+ 	idr_preload_end();
+-	handle = idr_ret;
+-	if (idr_ret < 0)
+-		goto release_fail;
++	if (handle < 0) {
++		kfree(release);
++		*ret = NULL;
++		return handle;
++	}
+ 	*ret = release;
+ 	QXL_INFO(qdev, "allocated release %lld\n", handle);
+ 	release->id = handle;
+-release_fail:
+-
+ 	return handle;
+ }
+ 
++static void
++qxl_release_free_list(struct qxl_release *release)
 +{
-+	struct radeon_fence *fence = to_radeon_fence(f);
-+	switch (fence->ring) {
-+	case RADEON_RING_TYPE_GFX_INDEX: return "radeon.gfx";
-+	case CAYMAN_RING_TYPE_CP1_INDEX: return "radeon.cp1";
-+	case CAYMAN_RING_TYPE_CP2_INDEX: return "radeon.cp2";
-+	case R600_RING_TYPE_DMA_INDEX: return "radeon.dma";
-+	case CAYMAN_RING_TYPE_DMA1_INDEX: return "radeon.dma1";
-+	case R600_RING_TYPE_UVD_INDEX: return "radeon.uvd";
-+	case TN_RING_TYPE_VCE1_INDEX: return "radeon.vce1";
-+	case TN_RING_TYPE_VCE2_INDEX: return "radeon.vce2";
-+	default: WARN_ON_ONCE(1); return "radeon.unk";
++	while (!list_empty(&release->bos)) {
++		struct ttm_validate_buffer *entry;
++
++		entry = container_of(release->bos.next,
++				     struct ttm_validate_buffer, head);
++
++		list_del(&entry->head);
++		kfree(entry);
 +	}
 +}
 +
-+static signed long __radeon_fence_default_wait(struct fence *f, bool intr,
-+					       signed long timeout)
-+{
-+	struct radeon_fence *fence = to_radeon_fence(f);
-+	struct radeon_device *rdev = fence->rdev;
-+	bool signaled;
+ void
+ qxl_release_free(struct qxl_device *qdev,
+ 		 struct qxl_release *release)
+ {
+-	struct qxl_bo_list *entry, *tmp;
+ 	QXL_INFO(qdev, "release %d, type %d\n", release->id,
+ 		 release->type);
+ 
+ 	if (release->surface_release_id)
+ 		qxl_surface_id_dealloc(qdev, release->surface_release_id);
+ 
+-	list_for_each_entry_safe(entry, tmp, &release->bos, tv.head) {
+-		struct qxl_bo *bo = to_qxl_bo(entry->tv.bo);
+-		QXL_INFO(qdev, "release %llx\n",
+-			drm_vma_node_offset_addr(&entry->tv.bo->vma_node)
+-						- DRM_FILE_OFFSET);
+-		qxl_fence_remove_release(&bo->fence, release->id);
+-		qxl_bo_unref(&bo);
+-		kfree(entry);
+-	}
+ 	spin_lock(&qdev->release_idr_lock);
+ 	idr_remove(&qdev->release_idr, release->id);
+ 	spin_unlock(&qdev->release_idr_lock);
+-	kfree(release);
 +
-+	fence_enable_sw_signaling(&fence->base);
++	if (release->base.ops) {
++		WARN_ON(list_empty(&release->bos));
++		qxl_release_free_list(release);
++
++		fence_signal(&release->base);
++		fence_put(&release->base);
++	} else {
++		qxl_release_free_list(release);
++		kfree(release);
++	}
+ }
+ 
+ static int qxl_release_bo_alloc(struct qxl_device *qdev,
+@@ -142,6 +240,10 @@ static int qxl_release_validate_bo(struct qxl_bo *bo)
+ 			return ret;
+ 	}
+ 
++	ret = reservation_object_reserve_shared(bo->tbo.resv);
++	if (ret)
++		return ret;
++
+ 	/* allocate a surface for reserved + validated buffers */
+ 	ret = qxl_bo_check_id(bo->gem_base.dev->dev_private, bo);
+ 	if (ret)
+@@ -199,6 +301,8 @@ int qxl_alloc_surface_release_reserved(struct qxl_device *qdev,
+ 
+ 		/* stash the release after the create command */
+ 		idr_ret = qxl_release_alloc(qdev, QXL_RELEASE_SURFACE_CMD, release);
++		if (idr_ret < 0)
++			return idr_ret;
+ 		bo = qxl_bo_ref(to_qxl_bo(entry->tv.bo));
+ 
+ 		(*release)->release_offset = create_rel->release_offset + 64;
+@@ -239,6 +343,11 @@ int qxl_alloc_release_reserved(struct qxl_device *qdev, unsigned long size,
+ 	}
+ 
+ 	idr_ret = qxl_release_alloc(qdev, type, release);
++	if (idr_ret < 0) {
++		if (rbo)
++			*rbo = NULL;
++		return idr_ret;
++	}
+ 
+ 	mutex_lock(&qdev->release_mutex);
+ 	if (qdev->current_release_bo_offset[cur_idx] + 1 >= releases_per_bo[cur_idx]) {
+@@ -319,12 +428,13 @@ void qxl_release_unmap(struct qxl_device *qdev,
+ 
+ void qxl_release_fence_buffer_objects(struct qxl_release *release)
+ {
+-	struct ttm_validate_buffer *entry;
+ 	struct ttm_buffer_object *bo;
+ 	struct ttm_bo_global *glob;
+ 	struct ttm_bo_device *bdev;
+ 	struct ttm_bo_driver *driver;
+ 	struct qxl_bo *qbo;
++	struct ttm_validate_buffer *entry;
++	struct qxl_device *qdev;
+ 
+ 	/* if only one object on the release its the release itself
+ 	   since these objects are pinned no need to reserve */
+@@ -333,23 +443,35 @@ void qxl_release_fence_buffer_objects(struct qxl_release *release)
+ 
+ 	bo = list_first_entry(&release->bos, struct ttm_validate_buffer, head)->bo;
+ 	bdev = bo->bdev;
++	qdev = container_of(bdev, struct qxl_device, mman.bdev);
 +
 +	/*
-+	 * This function has to return -EDEADLK, but cannot hold
-+	 * exclusive_lock during the wait because some callers
-+	 * may already hold it. This means checking needs_reset without
-+	 * lock, and not fiddling with any gpu internals.
-+	 *
-+	 * The callback installed with fence_enable_sw_signaling will
-+	 * run before our wait_event_*timeout call, so we will see
-+	 * both the signaled fence and the changes to needs_reset.
++	 * Since we never really allocated a context and we don't want to conflict,
++	 * set the highest bits. This will break if we really allow exporting of dma-bufs.
 +	 */
++	fence_init(&release->base, &qxl_fence_ops, &qdev->release_lock,
++		   release->id | 0xf0000000, release->base.seqno);
++	trace_fence_emit(&release->base);
 +
-+	if (intr)
-+		timeout = wait_event_interruptible_timeout(rdev->fence_queue,
-+							   ((signaled = (test_bit(FENCE_FLAG_SIGNALED_BIT, &fence->base.flags))) || rdev->needs_reset),
-+							   timeout);
-+	else
-+		timeout = wait_event_timeout(rdev->fence_queue,
-+					     ((signaled = (test_bit(FENCE_FLAG_SIGNALED_BIT, &fence->base.flags))) || rdev->needs_reset),
-+					     timeout);
-+
-+	if (timeout > 0 && !signaled)
-+		return -EDEADLK;
-+	return timeout;
-+}
-+
-+static const struct fence_ops radeon_fence_ops = {
-+	.get_driver_name = radeon_fence_get_driver_name,
-+	.get_timeline_name = radeon_fence_get_timeline_name,
-+	.enable_signaling = radeon_fence_enable_signaling,
-+	.signaled = __radeon_fence_signaled,
-+	.wait = __radeon_fence_default_wait,
-+	.release = NULL,
-+};
-diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-index 16807afab362..41310cec61a6 100644
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -254,6 +254,25 @@ static bool radeon_msi_ok(struct radeon_device *rdev)
- 	return true;
- }
+ 	driver = bdev->driver;
+ 	glob = bo->glob;
  
-+static void radeon_delayed_irq_set(struct work_struct *work)
-+{
-+	struct radeon_device *rdev;
-+	unsigned long irqflags;
-+
-+	rdev = container_of(work, struct radeon_device, delayed_irq_work);
-+
-+	down_read(&rdev->exclusive_lock);
-+
-+	spin_lock_irqsave(&rdev->irq.lock, irqflags);
-+	radeon_irq_set(rdev);
-+	spin_unlock_irqrestore(&rdev->irq.lock, irqflags);
-+
-+	/* force all waiters to recheck */
-+	wake_up_all(&rdev->fence_queue);
-+
-+	up_read(&rdev->exclusive_lock);
-+}
-+
- /**
-  * radeon_irq_kms_init - init driver interrupt info
-  *
-@@ -285,6 +304,7 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
- 	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
- 	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
- 	INIT_WORK(&rdev->reset_work, radeon_irq_reset_work_func);
-+	INIT_WORK(&rdev->delayed_irq_work, radeon_delayed_irq_set);
+ 	spin_lock(&glob->lru_lock);
++	/* acquire release_lock to protect bo->resv->fence and its contents */
++	spin_lock(&qdev->release_lock);
  
- 	rdev->irq.installed = true;
- 	r = drm_irq_install(rdev->ddev, rdev->ddev->pdev->irq);
-@@ -313,6 +333,7 @@ void radeon_irq_kms_fini(struct radeon_device *rdev)
- 		rdev->irq.installed = false;
- 		if (rdev->msi_enabled)
- 			pci_disable_msi(rdev->pdev);
-+		cancel_work_sync(&rdev->delayed_irq_work);
- 		flush_work(&rdev->hotplug_work);
+ 	list_for_each_entry(entry, &release->bos, head) {
+ 		bo = entry->bo;
+ 		qbo = to_qxl_bo(bo);
+ 
+ 		if (!entry->bo->sync_obj)
+-			entry->bo->sync_obj = &qbo->fence;
+-
+-		qxl_fence_add_release_locked(&qbo->fence, release->id);
++			entry->bo->sync_obj = qbo;
+ 
++		reservation_object_add_shared_fence(bo->resv, &release->base);
+ 		ttm_bo_add_to_lru(bo);
+ 		__ttm_bo_unreserve(bo);
  	}
++	spin_unlock(&qdev->release_lock);
+ 	spin_unlock(&glob->lru_lock);
+ 	ww_acquire_fini(&release->ticket);
  }
-@@ -342,6 +363,28 @@ void radeon_irq_kms_sw_irq_get(struct radeon_device *rdev, int ring)
+diff --git a/drivers/gpu/drm/qxl/qxl_ttm.c b/drivers/gpu/drm/qxl/qxl_ttm.c
+index 71a1baeac14e..6230251fa5b0 100644
+--- a/drivers/gpu/drm/qxl/qxl_ttm.c
++++ b/drivers/gpu/drm/qxl/qxl_ttm.c
+@@ -355,67 +355,67 @@ static int qxl_bo_move(struct ttm_buffer_object *bo,
+ 	return ttm_bo_move_memcpy(bo, evict, no_wait_gpu, new_mem);
  }
  
- /**
-+ * radeon_irq_kms_sw_irq_get_delayed - enable software interrupt
-+ *
-+ * @rdev: radeon device pointer
-+ * @ring: ring whose interrupt you want to enable
-+ *
-+ * Enables the software interrupt for a specific ring (all asics).
-+ * The software interrupt is generally used to signal a fence on
-+ * a particular ring.
-+ *
-+ * This function can be used without exclusive_lock grabbed,
-+ * and will schedule later work for irqs to be set when needed.
-+ */
-+void radeon_irq_kms_sw_irq_get_delayed(struct radeon_device *rdev, int ring)
-+{
-+	if (!rdev->ddev->irq_enabled)
-+		return;
++static bool qxl_sync_obj_signaled(void *sync_obj);
+ 
+ static int qxl_sync_obj_wait(void *sync_obj,
+ 			     bool lazy, bool interruptible)
+ {
+-	struct qxl_fence *qfence = (struct qxl_fence *)sync_obj;
+-	int count = 0, sc = 0;
+-	struct qxl_bo *bo = container_of(qfence, struct qxl_bo, fence);
+-
+-	if (qfence->num_active_releases == 0)
+-		return 0;
++	struct qxl_bo *bo = (struct qxl_bo *)sync_obj;
++	struct qxl_device *qdev = bo->gem_base.dev->dev_private;
++	struct reservation_object_list *fobj;
++	int count = 0, sc = 0, num_release = 0;
++	bool have_drawable_releases;
+ 
+ retry:
+ 	if (sc == 0) {
+ 		if (bo->type == QXL_GEM_DOMAIN_SURFACE)
+-			qxl_update_surface(qfence->qdev, bo);
++			qxl_update_surface(qdev, bo);
+ 	} else if (sc >= 1) {
+-		qxl_io_notify_oom(qfence->qdev);
++		qxl_io_notify_oom(qdev);
+ 	}
+ 
+ 	sc++;
+ 
+ 	for (count = 0; count < 10; count++) {
+-		bool ret;
+-		ret = qxl_queue_garbage_collect(qfence->qdev, true);
+-		if (ret == false)
+-			break;
+-
+-		if (qfence->num_active_releases == 0)
++		if (qxl_sync_obj_signaled(sync_obj))
+ 			return 0;
 +
-+	if (atomic_inc_return(&rdev->irq.ring_int[ring]) == 1)
-+		schedule_work(&rdev->delayed_irq_work);
-+}
++		if (!qxl_queue_garbage_collect(qdev, true))
++			break;
+ 	}
+ 
+-	if (qfence->num_active_releases) {
+-		bool have_drawable_releases = false;
+-		void **slot;
+-		struct radix_tree_iter iter;
+-		int release_id;
++	have_drawable_releases = false;
++	num_release = 0;
+ 
+-		radix_tree_for_each_slot(slot, &qfence->tree, &iter, 0) {
+-			struct qxl_release *release;
++	spin_lock(&qdev->release_lock);
++	fobj = bo->tbo.resv->fence;
++	for (count = 0; fobj && count < fobj->shared_count; count++) {
++		struct qxl_release *release;
+ 
+-			release_id = iter.index;
+-			release = qxl_release_from_id_locked(qfence->qdev, release_id);
+-			if (release == NULL)
+-				continue;
++		release = container_of(fobj->shared[count],
++				       struct qxl_release, base);
+ 
+-			if (release->type == QXL_RELEASE_DRAWABLE)
+-				have_drawable_releases = true;
+-		}
++		if (fence_is_signaled(&release->base))
++			continue;
 +
-+/**
-  * radeon_irq_kms_sw_irq_put - disable software interrupt
-  *
-  * @rdev: radeon device pointer
++		num_release++;
++
++		if (release->type == QXL_RELEASE_DRAWABLE)
++			have_drawable_releases = true;
++	}
++	spin_unlock(&qdev->release_lock);
++
++	qxl_queue_garbage_collect(qdev, true);
+ 
+-		qxl_queue_garbage_collect(qfence->qdev, true);
+-
+-		if (have_drawable_releases || sc < 4) {
+-			if (sc > 2)
+-				/* back off */
+-				usleep_range(500, 1000);
+-			if (have_drawable_releases && sc > 300) {
+-				WARN(1, "sync obj %d still has outstanding releases %d %d %d %ld %d\n", sc, bo->surface_id, bo->is_primary, bo->pin_count, (unsigned long)bo->gem_base.size, qfence->num_active_releases);
+-				return -EBUSY;
+-			}
+-			goto retry;
++	if (have_drawable_releases || sc < 4) {
++		if (sc > 2)
++			/* back off */
++			usleep_range(500, 1000);
++		if (have_drawable_releases && sc > 300) {
++			WARN(1, "sync obj %d still has outstanding releases %d %d %d %ld %d\n", sc, bo->surface_id, bo->is_primary, bo->pin_count, (unsigned long)bo->gem_base.size, num_release);
++			return -EBUSY;
+ 		}
++		goto retry;
+ 	}
+ 	return 0;
+ }
+@@ -437,8 +437,21 @@ static void *qxl_sync_obj_ref(void *sync_obj)
+ 
+ static bool qxl_sync_obj_signaled(void *sync_obj)
+ {
+-	struct qxl_fence *qfence = (struct qxl_fence *)sync_obj;
+-	return (qfence->num_active_releases == 0);
++	struct qxl_bo *qbo = (struct qxl_bo *)sync_obj;
++	struct qxl_device *qdev = qbo->gem_base.dev->dev_private;
++	struct reservation_object_list *fobj;
++	bool ret = true;
++	unsigned i;
++
++	spin_lock(&qdev->release_lock);
++	fobj = qbo->tbo.resv->fence;
++	for (i = 0; fobj && i < fobj->shared_count; ++i) {
++		ret = fence_is_signaled(fobj->shared[i]);
++		if (!ret)
++			break;
++	}
++	spin_unlock(&qdev->release_lock);
++	return ret;
+ }
+ 
+ static void qxl_bo_move_notify(struct ttm_buffer_object *bo,
+@@ -475,8 +488,6 @@ static struct ttm_bo_driver qxl_bo_driver = {
+ 	.move_notify = &qxl_bo_move_notify,
+ };
+ 
+-
+-
+ int qxl_ttm_init(struct qxl_device *qdev)
+ {
+ 	int r;
 
