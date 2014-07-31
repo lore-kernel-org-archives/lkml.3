@@ -1,111 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523AbaGaQi2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 12:38:28 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:41203 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436AbaGaQiZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 12:38:25 -0400
-Date: Thu, 31 Jul 2014 09:38:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140731163819.GS11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140728225556.GA19493@linux.vnet.ibm.com>
- <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140729081416.GR20603@laptop.programming.kicks-ass.net>
- <20140729172304.GA16073@linux.vnet.ibm.com>
- <20140729173332.GM3935@laptop>
- <20140729180656.GY11241@linux.vnet.ibm.com>
- <1406726619.5889.17.camel@marge.simpson.net>
- <20140730142311.GJ11241@linux.vnet.ibm.com>
- <1406792228.6348.22.camel@marge.simpson.net>
+	id S1752310AbaGaQjc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 12:39:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52431 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750774AbaGaQjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 12:39:31 -0400
+Message-ID: <53DA7129.7020100@redhat.com>
+Date: Thu, 31 Jul 2014 18:39:05 +0200
+From: Jirka Hladky <jhladky@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406792228.6348.22.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073116-1542-0000-0000-000003AC31BC
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Rik van Riel <riel@redhat.com>, Aaron Lu <aaron.lu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1% proc-vmstat.numa_hint_faults_local
+References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com> <53D72FF5.90908@intel.com> <20140729023940.37b6aebc@annuminas.surriel.com> <20140731104241.GA9918@twins.programming.kicks-ass.net> <20140731155723.GY3588@twins.programming.kicks-ass.net> <53DA6BDA.8080000@redhat.com> <20140731162702.GZ19379@twins.programming.kicks-ass.net>
+In-Reply-To: <20140731162702.GZ19379@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 09:37:08AM +0200, Mike Galbraith wrote:
-> On Wed, 2014-07-30 at 07:23 -0700, Paul E. McKenney wrote:
-> 
-> > So the delta accounting is much of the pain.  Hmmm...
-> 
-> (overhead picture was incomplete, just fixing that...) 
+On 07/31/2014 06:27 PM, Peter Zijlstra wrote:
+> On Thu, Jul 31, 2014 at 06:16:26PM +0200, Jirka Hladky wrote:
+>> On 07/31/2014 05:57 PM, Peter Zijlstra wrote:
+>>> On Thu, Jul 31, 2014 at 12:42:41PM +0200, Peter Zijlstra wrote:
+>>>> On Tue, Jul 29, 2014 at 02:39:40AM -0400, Rik van Riel wrote:
+>>>>> On Tue, 29 Jul 2014 13:24:05 +0800
+>>>>> Aaron Lu <aaron.lu@intel.com> wrote:
+>>>>>
+>>>>>> FYI, we noticed the below changes on
+>>>>>>
+>>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
+>>>>>> commit a43455a1d572daf7b730fe12eb747d1e17411365 ("sched/numa: Ensure task_numa_migrate() checks the preferred node")
+>>>>>>
+>>>>>> ebe06187bf2aec1  a43455a1d572daf7b730fe12e
+>>>>>> ---------------  -------------------------
+>>>>>>       94500 ~ 3%    +115.6%     203711 ~ 6%  ivb42/hackbench/50%-threads-pipe
+>>>>>>       67745 ~ 4%     +64.1%     111174 ~ 5%  lkp-snb01/hackbench/50%-threads-socket
+>>>>>>      162245 ~ 3%     +94.1%     314885 ~ 6%  TOTAL proc-vmstat.numa_hint_faults_local
+>>>>> Hi Aaron,
+>>>>>
+>>>>> Jirka Hladky has reported a regression with that changeset as
+>>>>> well, and I have already spent some time debugging the issue.
+>>>> Let me see if I can still find my SPECjbb2005 copy to see what that
+>>>> does.
+>>> Jirka, what kind of setup were you seeing SPECjbb regressions?
+>>>
+>>> I'm not seeing any on 2 sockets with a single SPECjbb instance, I'll go
+>>> check one instance per socket now.
+>>>
+>>>
+>> Peter, I'm seeing regressions for
+>>
+>> SINGLE SPECjbb instance for number of warehouses being the same as total
+>> number of cores in the box.
+>>
+>> Example: 4 NUMA node box, each CPU has 6 cores => biggest regression is for
+>> 24 warehouses.
+> IVB-EP: 2 node, 10 cores, 2 thread per core:
+>
+> tip/master+origin/master:
+>
+>       Warehouses               Thrput
+>                4               196781
+>                8               358064
+>               12               511318
+>               16               589251
+>               20               656123
+>               24               710789
+>               28               765426
+>               32               787059
+>               36               777899
+>             * 40               748568
+>                                      
+> Throughput      18258
+>
+>       Warehouses               Thrput
+>                4               201598
+>                8               363470
+>               12               512968
+>               16               584289
+>               20               605299
+>               24               720142
+>               28               776066
+>               32               791263
+>               36               776965
+>             * 40               760572
+>                                      
+> Throughput      18551
+>
+>
+> tip/master+origin/master-a43455a1d57
+>
+>                     SPEC scores
+>       Warehouses               Thrput
+>                4               198667
+>                8               362481
+>               12               503344
+>               16               582602
+>               20               647688
+>               24               731639
+>               28               786135
+>               32               794124
+>               36               774567
+>             * 40               757559
+>                                      
+> Throughput      18477
+>
+>
+> Given that there's fairly large variance between the two runs with the
+> commit in, I'm not sure I can say there's a problem here.
+>
+> The one run without the patch is more or less between the two runs with
+> the patch.
+>
+> And doing this many runs takes ages, so I'm not tempted to either make
+> the runs longer or do more of them.
+>
+> Lemme try on a 4 node box though, who knows.
 
-Thank you again!!!
+IVB-EP: 2 node, 10 cores, 2 thread per core
+=> on such system, I run only 20 warenhouses as maximum. (number of 
+nodes * number of PHYSICAL cores)
 
-And I have to ask...
+The kernels you have tested shows following results:
+656123/605299/647688
 
-Does building with CONFIG_NO_HZ_FULL_SYSIDLE=y slow things down even more?
-If so, that would give me a rough idea of the cost of RCU's dyntick-idle
-handling.
 
-							Thanx, Paul
+I'm doing 3 iterations (3 runs) to get some statistics. To speed up the 
+test significantly please do the run with 20 warehouses only
+(or in general with #warehouses ==  number of nodes * number of PHYSICAL 
+cores)
 
-> executive summary:
-> nohz_full=NA cpu=3      604.2 KHz  1.000
-> nohz_full=3, cpu=3      303.5 KHz   .502
-> nohz_full=3, cpu=2      460.4 KHz   .761
-> 
-> boring details:
->     nohz_full=NA, pipe-test cpu=3           nohz_full=3, pipe-test cpu=3               nohz_full=3, pipe-test cpu=2
->     10.45%   __schedule                     8.74%   native_sched_clock                 9.22%   __schedule
->     10.03%   system_call                    5.63%   __schedule                         5.29%   system_call
->      4.86%   _raw_spin_lock_irqsave         4.75%   _raw_spin_lock                     4.79%   context_tracking_user_exit
->      4.51%   __switch_to                    4.35%   reschedule_interrupt               3.81%   _raw_spin_lock_irqsave
->      4.31%   copy_user_generic_string       3.91%   _raw_spin_unlock_irqrestore        3.57%   __switch_to
->      3.50%   pipe_read                      3.35%   system_call                        3.45%   copy_user_generic_string
->      3.02%   pipe_write                     2.73%   context_tracking_user_exit         2.90%   context_tracking_user_enter
->      2.76%   mutex_lock                     2.30%   _raw_spin_lock_irqsave             2.86%   pipe_read
->      2.30%   native_sched_clock             2.08%   context_tracking_user_enter        2.33%   mutex_lock
->      2.27%   copy_page_to_iter_iovec        1.94%   __switch_to                        2.14%   pipe_write
->      2.16%   mutex_unlock                   1.88%   copy_user_generic_string           1.89%   copy_page_to_iter_iovec
->      2.15%   _raw_spin_unlock_irqrestore    1.80%   account_system_time                1.88%   tracesys
->      1.86%   copy_page_from_iter_iovec      1.77%   rcu_eqs_enter_common.isra.42       1.78%   native_sched_clock
->      1.85%   vfs_write                      1.60%   pipe_read                          1.70%   mutex_unlock
->      1.67%   new_sync_read                  1.58%   pipe_write                         1.68%   _raw_spin_unlock_irqrestore
->      1.61%   new_sync_write                 1.39%   mutex_lock                         1.67%   int_check_syscall_exit_work
->      1.49%   vfs_read                       1.37%   enqueue_task_fair                  1.54%   __context_tracking_task_switch
->      1.47%   fsnotify                       1.25%   rcu_eqs_exit_common.isra.43        1.39%   copy_page_from_iter_iovec
->      1.43%   __fget_light                   1.14%   get_vtime_delta                    1.38%   new_sync_read
->      1.36%   enqueue_task_fair              1.11%   flat_send_IPI_mask                 1.38%   __tick_nohz_task_switch
->      1.28%   finish_task_switch             1.07%   tracesys                           1.37%   syscall_trace_leave
->      1.26%   dequeue_task_fair              1.03%   dequeue_task_fair                  1.35%   vfs_write
->      1.25%   __sb_start_write               1.01%   copy_page_to_iter_iovec            1.34%   new_sync_write
->      1.22%   _raw_spin_lock_irq             1.01%   int_check_syscall_exit_work        1.31%   int_ret_from_sys_call
->      1.20%   try_to_wake_up                 0.97%   vfs_write                          1.30%   enqueue_task_fair
->      1.16%   update_curr                    0.94%   __context_tracking_task_switch     1.23%   fsnotify
->      1.05%   __fsnotify_parent              0.93%   mutex_unlock                       1.22%   finish_task_switch
->      1.03%   pick_next_task_fair            0.88%   copy_page_from_iter_iovec          1.14%   vfs_read
->      1.02%   sys_write                      0.87%   new_sync_write                     1.12%   _raw_spin_lock_irq
->      1.01%   sys_read                       0.86%   __fget_light                       1.08%   dequeue_task_fair
->      1.00%   __wake_up_sync_key             0.85%   __sb_start_write                   1.06%   sys_read
->      0.93%   __wake_up_common               0.85%   int_ret_from_sys_call              1.04%   int_with_check
->      0.92%   copy_page_to_iter              0.83%   syscall_trace_leave                1.02%   update_curr
->      0.90%   check_preempt_wakeup           0.78%   new_sync_read                      0.99%   syscall_trace_enter
->      0.90%   __srcu_read_lock               0.78%   account_user_time                  0.96%   __fget_light
->      0.89%   put_prev_task_fair             0.76%   update_curr                        0.93%   __sb_start_write
->      0.88%   copy_page_from_iter            0.74%   fsnotify                           0.89%   copy_page_to_iter
->      0.82%   __sb_end_write                 0.73%   try_to_wake_up                     0.87%   try_to_wake_up
->      0.76%   __percpu_counter_add           0.71%   finish_task_switch                 0.86%   check_preempt_wakeup
->      0.74%   prepare_to_wait                0.70%   _raw_spin_lock_irq                 0.86%   sys_write
->      0.72%   touch_atime                    0.69%   __wake_up_sync_key                 0.83%   __fsnotify_parent
->      0.71%   pipe_wait                      0.69%   __tick_nohz_task_switch            0.81%   __wake_up_sync_key
-> 
-> 
-
+Jirka
