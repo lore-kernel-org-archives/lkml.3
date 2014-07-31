@@ -1,143 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751209AbaGaNMU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 09:12:20 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:44603 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaGaNMS (ORCPT
+	id S1751384AbaGaNNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 09:13:45 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:36876 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaGaNNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 09:12:18 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-17-53da40b0674d
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH 1/2] f2fs: add tracepoint for f2fs_direct_IO
-Date: Thu, 31 Jul 2014 21:11:22 +0800
-Message-id: <017201cfacc1$0b3a7600$21af6200$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Content-language: zh-cn
-Thread-index: Ac+swACRhHMMl5icTpKB6FKlDw/zUg==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t9jQd0NDreCDSad17K4tq+RyeLJ+lnM
-	FpcWuVvs2XuSxeLyrjlsDqwem1Z1snnsXvCZyaNvyypGj8+b5AJYorhsUlJzMstSi/TtErgy
-	Vh9uYy94JFKxfvUz9gbGewJdjJwcEgImEkc2zGKHsMUkLtxbz9bFyMUhJDCdUWLSkeUsEM4P
-	Romtb5azgVSxCahILO/4zwRiiwh4SUzaf4IFxGYWyJS41zSDGcQWFnCT2NX0gBXEZhFQlfj8
-	5xTQBg4OXgFLiS2ny0HCvAKCEj8m34Nq1ZJYv/M4E4QtL7F5zVtmiIMUJHacfc0IEReX2Hjk
-	FgvIGBEBPYmN12QnMArMQjJpFpJJs5BMmoWkewEjyypG0dSC5ILipPRcI73ixNzi0rx0veT8
-	3E2M4NB+Jr2DcVWDxSFGAQ5GJR7eHyY3g4VYE8uKK3MPMUpwMCuJ8EZZ3goW4k1JrKxKLcqP
-	LyrNSS0+xCjNwaIkznuw1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwLhVRWqnuMW9Ps83l75Jmdyb
-	FjBbXu9ke8hONbVfHXxTDnk8Wige8bVSazv7qsBmliKGZdGH6gXDTh9qFY94U9B0mvl/+l+5
-	RUvzfQrlzx8OW7XGaktLfuVR1z1K8m937r5Yu1Fnu1o1s02/3iFZHcHSq92XBXy+fLwYwjCr
-	I7ffSj6JIadXXomlOCPRUIu5qDgRAA+8QlZpAgAA
+	Thu, 31 Jul 2014 09:13:44 -0400
+Date: Thu, 31 Jul 2014 15:13:31 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ilya Dryomov <ilya.dryomov@inktank.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Ceph Development <ceph-devel@vger.kernel.org>, davidlohr@hp.com,
+        jason.low2@hp.com
+Subject: Re: [PATCH] locking/mutexes: Revert "locking/mutexes: Add extra
+ reschedule point"
+Message-ID: <20140731131331.GT19379@twins.programming.kicks-ass.net>
+References: <1406801797-20139-1-git-send-email-ilya.dryomov@inktank.com>
+ <20140731115759.GS19379@twins.programming.kicks-ass.net>
+ <CALFYKtBGQpxaZ0EFXbdvuEHeDeASeU-7XxQ_1a6ZDM=aJS651w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sBjycZIcBwEtFqBK"
+Content-Disposition: inline
+In-Reply-To: <CALFYKtBGQpxaZ0EFXbdvuEHeDeASeU-7XxQ_1a6ZDM=aJS651w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a tracepoint for f2fs_direct_IO.
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+--sBjycZIcBwEtFqBK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, Jul 31, 2014 at 04:37:29PM +0400, Ilya Dryomov wrote:
+
+> This didn't make sense to me at first too, and I'll be happy to be
+> proven wrong, but we can reproduce this with rbd very reliably under
+> higher than usual load, and the revert makes it go away.  What we are
+> seeing in the rbd scenario is the following.
+
+This is drivers/block/rbd.c ? I can find but a single mutex_lock() in
+there.
+
+> Suppose foo needs mutexes A and B, bar needs mutex B.  foo acquires
+> A and then wants to acquire B, but B is held by bar.  foo spins
+> a little and ends up calling schedule_preempt_disabled() on line 484
+> above, but that call never returns, even though a hundred usecs later
+> bar releases B.  foo ends up stuck in mutex_lock() indefinitely, but
+> still holds A and everybody else who needs A gets behind A.  Given that
+> this A happens to be a central libceph mutex all rbd activity halts.
+> Deadlock may not be the best term for this, but never returning from
+> mutex_lock(&B) even though B has been unlocked is *a* problem.
+>=20
+> This obviously doesn't happen every time schedule_preempt_disabled() on
+> line 484 is called, so there must be some sort of race here.  I'll send
+> along the actual rbd stack traces shortly.
+
+Smells like maybe current->state !=3D TASK_RUNNING, does the below
+trigger?
+
+If so, you've wrecked something in whatever...
+
 ---
- fs/f2fs/data.c              |  5 ++++
- include/trace/events/f2fs.h | 63 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 68 insertions(+)
+ kernel/locking/mutex.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index ec3c886..03313099 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -1086,9 +1086,14 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb,
- 	/* clear fsync mark to recover these blocks */
- 	fsync_mark_clear(F2FS_SB(inode->i_sb), inode->i_ino);
- 
-+	trace_f2fs_direct_IO_enter(inode, offset, count, rw);
+diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+index ae712b25e492..3d726fdaa764 100644
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -473,8 +473,12 @@ __mutex_lock_common(struct mutex *lock, long state, un=
+signed int subclass,
+ 	 * reschedule now, before we try-lock the mutex. This avoids getting
+ 	 * scheduled out right after we obtained the mutex.
+ 	 */
+-	if (need_resched())
++	if (need_resched()) {
++		if (WARN_ON_ONCE(current->state !=3D TASK_RUNNING))
++			__set_current_state(TASK_RUNNING);
 +
- 	err = blockdev_direct_IO(rw, iocb, inode, iter, offset, get_data_block);
- 	if (err < 0 && (rw & WRITE))
- 		f2fs_write_failed(mapping, offset + count);
-+
-+	trace_f2fs_direct_IO_exit(inode, offset, count, rw, err);
-+
- 	return err;
- }
- 
-diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
-index 7d2e70e..d06d443 100644
---- a/include/trace/events/f2fs.h
-+++ b/include/trace/events/f2fs.h
-@@ -587,6 +587,69 @@ TRACE_EVENT(f2fs_fallocate,
- 		__entry->ret)
- );
- 
-+TRACE_EVENT(f2fs_direct_IO_enter,
-+
-+	TP_PROTO(struct inode *inode, loff_t offset, unsigned long len, int rw),
-+
-+	TP_ARGS(inode, offset, len, rw),
-+
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(ino_t,	ino)
-+		__field(loff_t,	pos)
-+		__field(unsigned long,	len)
-+		__field(int,	rw)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	= inode->i_sb->s_dev;
-+		__entry->ino	= inode->i_ino;
-+		__entry->pos	= offset;
-+		__entry->len	= len;
-+		__entry->rw	= rw;
-+	),
-+
-+	TP_printk("dev = (%d,%d), ino = %lu pos = %lld len = %lu rw = %d",
-+		show_dev_ino(__entry),
-+		__entry->pos,
-+		__entry->len,
-+		__entry->rw)
-+);
-+
-+TRACE_EVENT(f2fs_direct_IO_exit,
-+
-+	TP_PROTO(struct inode *inode, loff_t offset, unsigned long len,
-+		 int rw, int ret),
-+
-+	TP_ARGS(inode, offset, len, rw, ret),
-+
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(ino_t,	ino)
-+		__field(loff_t,	pos)
-+		__field(unsigned long,	len)
-+		__field(int,	rw)
-+		__field(int,	ret)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	= inode->i_sb->s_dev;
-+		__entry->ino	= inode->i_ino;
-+		__entry->pos	= offset;
-+		__entry->len	= len;
-+		__entry->rw	= rw;
-+		__entry->ret	= ret;
-+	),
-+
-+	TP_printk("dev = (%d,%d), ino = %lu pos = %lld len = %lu "
-+		"rw = %d ret = %d",
-+		show_dev_ino(__entry),
-+		__entry->pos,
-+		__entry->len,
-+		__entry->rw,
-+		__entry->ret)
-+);
-+
- TRACE_EVENT(f2fs_reserve_new_block,
- 
- 	TP_PROTO(struct inode *inode, nid_t nid, unsigned int ofs_in_node),
--- 
-2.0.1.474.g72c7794
+ 		schedule_preempt_disabled();
++	}
+ #endif
+ 	spin_lock_mutex(&lock->wait_lock, flags);
+=20
 
+--sBjycZIcBwEtFqBK
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT2kD6AAoJEHZH4aRLwOS6WoEQAIdDHtilwraCEWm0I+ftpltP
+uxRXHS86sgZOzeRqtMR+ZDtqSVnjhsWTdZ/zTvBrFPq9ZANmNLa8OiuxNsiNVgyW
+Nmh8YKSi2aFW4dyXWs9GCo6U/PWA0S5+WFVaUEj7yptY3XkKMYR4qUh/RFPi07/c
+hkjsIQib0d4l9aBr1/OYsdX9s+rZnUtsfzTtnq428JmDnJ1DamxqRZINpIHE5N8l
+ejHQ2AtVgftQIheBcn3yXYyArL663JVVVlr/JmpAZAr0hbMs+VcGq5go9wUoQZM2
+Yjdyp7d/bXwlsrD9gaZW9uH0xy8raUEHoDLCxYDk46Ibh7yk1w7sK+4wsSrdcQZF
+OMC9llNJ6hWJEXE0Dn8KuAFzyJ7Z81/OMrY8x1Ee3PHLs+qo5jF/CWk4qV6roI0Y
+7HZ+k37nmBUiacJeFoWZiAcLCl09AwNk7/6NpgKSJoPdGWgSWPPwpVs3KE+y5UqP
+zlhV6OdBneFPtPRKiqG3BBXdyQ1pga58MAaIUwIMwghZUox2PkJbchCudxBapISf
+C0s8x56IqLegx+77RNyHa2Yc++tM98LXkQ1XtBAUSjgOyoR3h3QnMPAgWPhmnTCt
+vfn/2C8ZhwHsguJi8Q4TmUUOj8y0Ahlqh77BFUwyG9vAwnax0q6dKTjHRc1biTQ+
+34nQao01b5qz/HByMQCf
+=X6jY
+-----END PGP SIGNATURE-----
+
+--sBjycZIcBwEtFqBK--
