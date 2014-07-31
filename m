@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288AbaGaSeP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 14:34:15 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:33125 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222AbaGaSeO (ORCPT
+	id S1752338AbaGaSi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 14:38:26 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:57445 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859AbaGaSiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 14:34:14 -0400
-Date: Thu, 31 Jul 2014 11:34:03 -0700
+	Thu, 31 Jul 2014 14:38:25 -0400
+Date: Thu, 31 Jul 2014 11:38:16 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: josh@joshtriplett.org
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
@@ -16,133 +16,107 @@ Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
         oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v2 tip/core/rcu 03/10] rcu: Add synchronous grace-period
- waiting for RCU-tasks
-Message-ID: <20140731183403.GZ11241@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 tip/core/rcu 0/10] RCU-tasks implementation
+Message-ID: <20140731183816.GA11241@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <20140731003914.GA3872@linux.vnet.ibm.com>
- <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1406767182-4356-3-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140731165852.GD12697@cloud>
+ <20140731161902.GA12697@cloud>
+ <20140731165843.GV11241@linux.vnet.ibm.com>
+ <20140731172024.GF12697@cloud>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140731165852.GD12697@cloud>
+In-Reply-To: <20140731172024.GF12697@cloud>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073118-6688-0000-0000-000003AF2444
+x-cbid: 14073118-9332-0000-0000-0000018F0C08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 09:58:52AM -0700, josh@joshtriplett.org wrote:
-> On Wed, Jul 30, 2014 at 05:39:35PM -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Thu, Jul 31, 2014 at 10:20:24AM -0700, josh@joshtriplett.org wrote:
+> On Thu, Jul 31, 2014 at 09:58:43AM -0700, Paul E. McKenney wrote:
+> > On Thu, Jul 31, 2014 at 09:19:02AM -0700, josh@joshtriplett.org wrote:
+> > > On Wed, Jul 30, 2014 at 05:39:14PM -0700, Paul E. McKenney wrote:
+> > > > This series provides a prototype of an RCU-tasks implementation, which has
+> > > > been requested to assist with tramopoline removal.  This flavor of RCU
+> > > > is task-based rather than CPU-based, and has voluntary context switch,
+> > > > usermode execution, and the idle loops as its only quiescent states.
+> > > > This selection of quiescent states ensures that at the end of a grace
+> > > > period, there will no longer be any tasks depending on a trampoline that
+> > > > was removed before the beginning of that grace period.  This works because
+> > > > such trampolines do not contain function calls, do not contain voluntary
+> > > > context switches, do not switch to usermode, and do not switch to idle.
+> > > 
+> > > I'm concerned about the amount of system overhead this introduces.
+> > > Polling for holdout tasks seems quite excessive.  If I understand the
+> > > intended use case correctly, the users of this will want to free
+> > > relatively small amounts of memory; thus, waiting a while to do so seems
+> > > fine, especially if the system isn't under any particular memory
+> > > pressure.
+> > > 
+> > > Thus, rather than polling, could you simply flag the holdout
+> > > tasks, telling the scheduler "hey, next time you don't have anything
+> > > better to do..."?  Then don't bother with them again unless the system
+> > > runs low on memory and asks you to free some.  (And mandate that you can
+> > > only use this to free memory rather than for any other purpose.)
 > > 
-> > It turns out to be easier to add the synchronous grace-period waiting
-> > functions to RCU-tasks than to work around their absense in rcutorture,
-> > so this commit adds them.  The key point is that the existence of
-> > call_rcu_tasks() means that rcutorture needs an rcu_barrier_tasks().
+> > One of the many of my alternative suggestions that Steven rejected was
+> > to simply leak the memory.  ;-)
 > > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > But from what I can see, if we simply flag the holdout tasks, we
+> > either are also holding onto the task_struct structures, re-introducing
+> > concurrency to the list of holdout tasks, or requiring that the eventual
+> > scan for holdout tasks scan the entire task list.  Neither of these seems
+> > particularly appetizing to me.
+> > 
+> > The nice thing about Lai Jiangshan's suggestion is that it allows the
+> > scan of the holdout list to be done completely unsynchronized, which
+> > allows pauses during the scan, thus allowing the loop to check for
+> > competing work on that CPU.  This should get almost all the effect
+> > of indefinite delay without the indefinite delay (at least in the
+> > common case).
+> > 
+> > Or am I missing something here?
 > 
-> With rcu_barrier_tasks being a trivial wrapper, why not just let
-> rcutorture call synchronize_rcu_tasks directly?
+> If you only allow a single outstanding set of callbacks at a time, you
+> could have a single flag stored in the task, combined with a count
+> stored with the set of callbacks.  Each time one of the holdout tasks
+> comes up, clear the flag and decrement the count.  If and only if you
+> get asked to free up memory, start poking the scheduler to bring up
+> those tasks.  When the count hits 0, free the memory.
+> 
+> The set of trampolines won't change often, and presumably only changes
+> in response to user-driven requests to trace or stop tracing things.
+> So, if you have to wait for the existing set of callbacks to go away
+> before adding more, that seems fine.  And you could then ditch polling
+> entirely.
 
-I considered that, but took the rcu_barrier_tasks() approach so that
-should anyone ever use call_rcu_tasks() from a module, they have the
-rcu_barrier_tasks() call to use at module-exit time.
+If I understand what you are suggesting, this requires hooks in the
+scheduler.  I used to have hooks in the scheduler, but I dropped them in
+favor of polling the voluntary context-switch count in response to Peter
+Zijlstra's concerns about adding overhead to the scheduler's fastpaths.
 
-But I don't feel all that strongly about it.
+Therefore, although the flags are sometimes cleared externally from the
+scheduling-clock interrupt (for usermode execution), it is quite possible
+that a given task might never have its flag cleared asynchronously.
+
+Another approach might be to poll more slowly or to make the polling
+evict itself if it detects that this CPU has something else to do.
+Would either or both of these help?
+
+> > > Also, ideally this should remain entirely optional; nothing in the core
+> > > kernel should depend on it.
+> > 
+> > Agreed, the CONFIG_TASKS_RCU is not likely to disappear anytime soon.
+> > I therefore do not see RCU-tasks as an obstacle to kernel tinification.
+> > I also would also guess that you might complain if someone does try to
+> > use if from the tinified core of the Linux kernel.  ;-)
+> 
+> Yes. :)
+
+Very good!  ;-) ;-) ;-)
 
 							Thanx, Paul
-
-> >  include/linux/rcupdate.h |  2 ++
-> >  kernel/rcu/update.c      | 55 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 57 insertions(+)
-> > 
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index 3299ff98ad03..17c7e25c38be 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -216,6 +216,8 @@ void synchronize_sched(void);
-> >   * memory ordering guarantees.
-> >   */
-> >  void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
-> > +void synchronize_rcu_tasks(void);
-> > +void rcu_barrier_tasks(void);
-> >  
-> >  #ifdef CONFIG_PREEMPT_RCU
-> >  
-> > diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> > index b92268647a01..c8d304dc6d8a 100644
-> > --- a/kernel/rcu/update.c
-> > +++ b/kernel/rcu/update.c
-> > @@ -387,6 +387,61 @@ void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
-> >  }
-> >  EXPORT_SYMBOL_GPL(call_rcu_tasks);
-> >  
-> > +/**
-> > + * synchronize_rcu_tasks - wait until an rcu-tasks grace period has elapsed.
-> > + *
-> > + * Control will return to the caller some time after a full rcu-tasks
-> > + * grace period has elapsed, in other words after all currently
-> > + * executing rcu-tasks read-side critical sections have elapsed.  These
-> > + * read-side critical sections are delimited by calls to schedule(),
-> > + * cond_resched_rcu_qs(), idle execution, userspace execution, calls
-> > + * to synchronize_rcu_tasks(), and (in theory, anyway) cond_resched().
-> > + *
-> > + * This is a very specialized primitive, intended only for a few uses in
-> > + * tracing and other situations requiring manipulation of function
-> > + * preambles and profiling hooks.  The synchronize_rcu_tasks() function
-> > + * is not (yet) intended for heavy use from multiple CPUs.
-> > + *
-> > + * Note that this guarantee implies further memory-ordering guarantees.
-> > + * On systems with more than one CPU, when synchronize_rcu_tasks() returns,
-> > + * each CPU is guaranteed to have executed a full memory barrier since the
-> > + * end of its last RCU-tasks read-side critical section whose beginning
-> > + * preceded the call to synchronize_rcu_tasks().  In addition, each CPU
-> > + * having an RCU-tasks read-side critical section that extends beyond
-> > + * the return from synchronize_rcu_tasks() is guaranteed to have executed
-> > + * a full memory barrier after the beginning of synchronize_rcu_tasks()
-> > + * and before the beginning of that RCU-tasks read-side critical section.
-> > + * Note that these guarantees include CPUs that are offline, idle, or
-> > + * executing in user mode, as well as CPUs that are executing in the kernel.
-> > + *
-> > + * Furthermore, if CPU A invoked synchronize_rcu_tasks(), which returned
-> > + * to its caller on CPU B, then both CPU A and CPU B are guaranteed
-> > + * to have executed a full memory barrier during the execution of
-> > + * synchronize_rcu_tasks() -- even if CPU A and CPU B are the same CPU
-> > + * (but again only if the system has more than one CPU).
-> > + */
-> > +void synchronize_rcu_tasks(void)
-> > +{
-> > +	/* Complain if the scheduler has not started.  */
-> > +	rcu_lockdep_assert(!rcu_scheduler_active,
-> > +			   "synchronize_rcu_tasks called too soon");
-> > +
-> > +	/* Wait for the grace period. */
-> > +	wait_rcu_gp(call_rcu_tasks);
-> > +}
-> > +
-> > +/**
-> > + * rcu_barrier_tasks - Wait for in-flight call_rcu_tasks() callbacks.
-> > + *
-> > + * Although the current implementation is guaranteed to wait, it is not
-> > + * obligated to, for example, if there are no pending callbacks.
-> > + */
-> > +void rcu_barrier_tasks(void)
-> > +{
-> > +	/* There is only one callback queue, so this is easy.  ;-) */
-> > +	synchronize_rcu_tasks();
-> > +}
-> > +
-> >  /* RCU-tasks kthread that detects grace periods and invokes callbacks. */
-> >  static int __noreturn rcu_tasks_kthread(void *arg)
-> >  {
-> > -- 
-> > 1.8.1.5
-> > 
-> 
 
