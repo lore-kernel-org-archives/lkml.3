@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912AbaGaW3x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 18:29:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52405 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaGaW3v (ORCPT
+	id S1752522AbaGaWgA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 18:36:00 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:38727 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945AbaGaWf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 18:29:51 -0400
-Date: Thu, 31 Jul 2014 15:29:23 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        "Tenoutit, Faouaz" <faouaz.tenoutit@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2 V2] USB: Use ACPI device information
-Message-ID: <20140731222923.GB9025@kroah.com>
-References: <56D4B9BFEADA5948B14547D2A81CE2C0284660F3@HASMSX106.ger.corp.intel.com>
- <140713857.5QYWLe1hHM@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <140713857.5QYWLe1hHM@vostro.rjw.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 31 Jul 2014 18:35:59 -0400
+From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+To: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, jic23@kernel.org,
+        Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+Subject: [PATCH 0/8] staging: iio: accel: multiple coding style fixes
+Date: Thu, 31 Jul 2014 19:34:50 -0300
+Message-Id: <1406846098-19866-1-git-send-email-mopsfelder@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 12:37:49AM +0200, Rafael J. Wysocki wrote:
-> On Wednesday, July 09, 2014 04:42:38 PM Tenoutit, Faouaz wrote:
-> > From: Faouaz TENOUTIT <faouaz.tenoutit@intel.com>
-> > 
-> > Use ACPI device pld information instead of calling
-> > acpi_get_physical_device_location.
-> > 
-> > Signed-off-by: Faouaz TENOUTIT <faouaz.tenoutit@intel.com>
-> > Acked-by: Samuel Ortiz <samuel.ortiz@intel.com>
-> 
-> Greg, Alan, any objections agains this?
+The following patches fix (almost) all warnings reported by
+checkpatch.pl.
 
-Deleting USB acpi code?  Never an objection from me :)
+Murilo Opsfelder Araujo (8):
+  staging: iio: accel: adis16203_core.c: fix coding style
+  staging: iio: accel: adis16201_core.c: fix coding style
+  staging: iio: accel: adis16204_core.c: fix coding style
+  staging: iio: accel: adis16209_core.c: fix coding style
+  staging: iio: accel: adis16240_core.c: fix coding style
+  staging: iio: accel: lis3l02dq_core.c: fix coding style
+  staging: iio: accel: lis3l02dq_ring.c: fix coding style
+  staging: iio: accel: sca3000_core.c: fix coding style
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ drivers/staging/iio/accel/adis16201_core.c |    5 +++--
+ drivers/staging/iio/accel/adis16203_core.c |    2 ++
+ drivers/staging/iio/accel/adis16204_core.c |    1 +
+ drivers/staging/iio/accel/adis16209_core.c |    1 +
+ drivers/staging/iio/accel/adis16240_core.c |    1 +
+ drivers/staging/iio/accel/lis3l02dq_core.c |    4 ++++
+ drivers/staging/iio/accel/lis3l02dq_ring.c |    1 +
+ drivers/staging/iio/accel/sca3000_core.c   |    4 +++-
+ 8 files changed, 16 insertions(+), 3 deletions(-)
 
+--
+1.7.10.4
