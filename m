@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466AbaGaRCs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:02:48 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:50281 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaGaRCr (ORCPT
+	id S1752292AbaGaREy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:04:54 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:48651 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003AbaGaREw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:02:47 -0400
-Date: Thu, 31 Jul 2014 10:02:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v2 tip/core/rcu 01/10] rcu: Add call_rcu_tasks()
-Message-ID: <20140731170232.GW11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140731003914.GA3872@linux.vnet.ibm.com>
- <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <53D9F084.7000706@cn.fujitsu.com>
- <20140731160924.GR11241@linux.vnet.ibm.com>
- <20140731163138.GA15228@redhat.com>
+	Thu, 31 Jul 2014 13:04:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140731163138.GA15228@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14073117-9332-0000-0000-0000018EC837
+In-Reply-To: <53DA7583.2030504@redhat.com>
+References: <1404914112-7298-1-git-send-email-alex.bennee@linaro.org> <53DA7583.2030504@redhat.com>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Thu, 31 Jul 2014 18:04:30 +0100
+Message-ID: <CAFEAcA9cT617t8JqOXtuO-wQ5xg5T3Sw_DUHB1fpPD6g3SSNaQ@mail.gmail.com>
+Subject: Re: [PATCH] arm64: KVM: export current vcpu->pause state via pseudo regs
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: =?UTF-8?B?QWxleCBCZW5uw6ll?= <alex.bennee@linaro.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
+        kvm-devel <kvm@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Gleb Natapov <gleb@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 06:31:38PM +0200, Oleg Nesterov wrote:
-> Again, sorry, I didn't read the patches yet, just noticed your discussion...
-> 
-> On 07/31, Paul E. McKenney wrote:
-> >
-> > On Thu, Jul 31, 2014 at 03:30:12PM +0800, Lai Jiangshan wrote:
-> >
-> > > > +				t->rcu_tasks_nvcsw = ACCESS_ONCE(t->nvcsw);
-> > > > +				t->rcu_tasks_holdout = 1;
-> > > > +				list_add(&t->rcu_tasks_holdout_list,
-> > > > +					 &rcu_tasks_holdouts);
-> > >
-> > > I think get_task_struct() is needed here to avoid the task disappears.
-> >
-> > Hmmm...  Let's see...
-> >
-> > Looks like get_task_struct() does a blind atomic increment of ->usage.
-> > And put_task_struct() does an atomic_dec_and_test().  So one question
-> > is "what prevents us from doing get_task_struct() after the final
-> > put_task_struct() has pushed ->usage down to zero?"
-> >
-> > Hopefully there is a grace period in there somewhere, otherwise it will
-> > be necessary to take the task-list lock, which I would like to avoid.
-> >
-> > Looks like the call_rcu() of delayed_put_task_struct() in release_task()
-> > might be doing this.
-> 
-> Yes, exactly, so get_task_struct() is always fine as long as task_struct
-> itself is protected by RCU.
-> 
-> But can't we avoid get_task_struct()? This can pin a lot of task_struct's.
-> Can't we just add list_del_rcu(holdout_list) into __unhash_process() ?
+On 31 July 2014 17:57, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> Il 09/07/2014 15:55, Alex Bennée ha scritto:
+>> To cleanly restore an SMP VM we need to ensure that the current pause
+>> state of each vcpu is correctly recorded. Things could get confused if
+>> the CPU starts running after migration restore completes when it was
+>> paused before it state was captured.
+>>
+>> I've done this by exposing a register (currently only 1 bit used) via
+>> the GET/SET_ONE_REG logic to pass the state between KVM and the VM
+>> controller (e.g. QEMU).
+>>
+>> Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
+>> ---
+>>  arch/arm64/include/uapi/asm/kvm.h |  8 +++++
+>>  arch/arm64/kvm/guest.c            | 61 ++++++++++++++++++++++++++++++++++++++-
+>>  2 files changed, 68 insertions(+), 1 deletion(-)
+>
+> Since it's a pseudo register anyway, would it make sense to use the
+> existing KVM_GET/SET_MP_STATE ioctl interface?
 
-If I add the list_del_rcu() there, then I am back to a concurrent list,
-which I would like to avoid.  Don't get me wrong, it was fun playing with
-the list-locked stuff, but best to avoid it if we can.
+That appears to be an x86-specific thing relating to
+IRQ chips.
 
-Also, the current implementation implicitly locks down the task_structs
-via the exit path.  The nice thing about using get_task_struct to lock
-them down is that -only- the task_struct itself is locked down -- the
-task can be reaped and so on.  In contrast, the current exit_rcu_tasks()
-approach delays the semantic exit instead of just hanging onto the
-underlying task_struct a bit longer.
+> How is this represented within QEMU in TCG mode?
 
-> We only need to ensure that list_add() above can't race with that list_del(),
-> perhaps we can tolerate lock_task_sighand() ?
+We don't implement it in TCG yet; Rob Herring has posted
+patches but they had a few minor issues (didn't compile
+on non-Linux hosts). The answer will be 'in a "bool powered_off"
+flag in struct ARMCPU'.
 
-I am worried about a task that does a voluntary context switch, then exits.
-This could results in rcu_tasks_kthread() and __unhash_process() both
-wanting to dequeue at the same time, right?
+> Also, how is KVM/ARM
+> representing (and passing to QEMU) the halted state of the
+> VCPU?
 
-							Thanx, Paul
+We don't. In ARM the equivalent of x86 HLT (which is
+WFI, wait-for-interrupt) is allowed to resume at any time.
+So we don't need to care about saving and restoring
+whether we were sat in a WFI at point of migration.
 
+thanks
+-- PMM
