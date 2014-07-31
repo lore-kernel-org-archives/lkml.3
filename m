@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595AbaGaRKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 13:10:21 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56703 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715AbaGaRKT (ORCPT
+	id S1752688AbaGaRLa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 13:11:30 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:33127 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaGaRL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 13:10:19 -0400
-Date: Thu, 31 Jul 2014 10:10:17 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, suruchi <suruchi.a.kadu@intel.com>,
-        ak <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "hubert.nueckel" <hubert.nueckel@intel.com>,
-        beth.marsh-prime@intel.com, "doug.nelson" <doug.nelson@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [Regression 3.16-rc kernel] -55% reduction in throughput for
- OLTP benchmark
-Message-ID: <20140731171017.GA16455@infradead.org>
-References: <1406584299.2970.924.camel@schen9-DESK>
- <20140729141908.GA4464@infradead.org>
- <1406651702.2970.927.camel@schen9-DESK>
- <20140729164951.GA23863@infradead.org>
- <1406678232.2970.943.camel@schen9-DESK>
- <20140730001248.GA32367@infradead.org>
- <1406823230.2970.946.camel@schen9-DESK>
- <CA+55aFzqKyM9_-KZsyABNFZcU3ECPCCFfyHmBrBiDzK3q02gLw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzqKyM9_-KZsyABNFZcU3ECPCCFfyHmBrBiDzK3q02gLw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 31 Jul 2014 13:11:28 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-2c-53da78bdbdcd
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
+Subject: [PATCH v3 0/8] thermal: exynos: various cleanups
+Date: Thu, 31 Jul 2014 19:10:58 +0200
+Message-id: <1406826667-2289-1-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkluLIzCtJLcpLzFFi42I5/e+xgO7eilvBBt/u2Fg0XA2x2DhjPavF
+	mv0/mSzONr1ht7i8aw6bxefeI4wWM87vY7I4c/oSq8WTh31sFutnvGZx4PJYvOclk8eWq+0s
+	Hn1bVjF6HL+xncnj8ya5ANYoLpuU1JzMstQifbsEroxVc88yFxwRrFi8qI+5gXETXxcjB4eE
+	gInEoi96XYycQKaYxIV769m6GLk4hAQWMUrse/qUGSQhJNDFJDFjoiWIzSZgJTGxfRUjiC0i
+	oCdx48UTJpAGZoHjTBI/f59nA0kIC1hKvDnyG8xmEVCVWHaqDWwQr4C7xMdXh1kgtilKdD+b
+	wDaBkXsBI8MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOAAeia1g3Flg8UhRgEORiUe3hnh
+	t4KFWBPLiitzDzFKcDArifC6lAOFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5otQ4UEkhPLEnN
+	Tk0tSC2CyTJxcEo1MHa1SpxY4/an5+aqb7m88eYF2erq2n/vd5gYZXVVvr5s2/cwf3qdFHO7
+	dn8Hh2drgNVOoQd7zkWG1TfxKlXueaC7dc7JV7dsgvm+zl/8trD0b5hS57lov7+3eVMtd3cE
+	fj7pKRBzmU9RzvtB6WsHPR4PT76jzo8mfJs+W+GPzmEvzZgbChMclFiKMxINtZiLihMBprSZ
+	CxwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 10:07:55AM -0700, Linus Torvalds wrote:
-> > Tested-by: Tim Chen <tim.c.chen@linux.intel.com>
-> > Tested-by: Suruchi Kadu <suruchi.a.kadu@intel.com>
-> 
-> Ok, good, patch looks fine. Christoph, do you have a commit message for it?
+Hi,
 
-I have it queued in the vfs tree in for-next, although only with Tim's
-tested-by tag, not Suruchis:
+This patch series contains various cleanups for EXYNOS thermal
+driver.  Overall it decreases driver's LOC by 9%.  It is based
+on next-20140731 kernel.  It should not cause any functionality
+changes.
 
-http://git.infradead.org/users/hch/vfs.git/commitdiff/d0c9ddc0a2c3036f1ab06ddf19151d5d57cad279
+Changes since v2 (https://lkml.org/lkml/2014/6/17/436):
+- synced patches against next-20140731
+- dropped patch "thermal: exynos: remove dead code for
+  TYPE_TWO_POINT_TRIMMING calibration" (newly added Exynos3250
+  SoC support uses TYPE_TWO_POINT_TRIMMING calibration)
+- updated patch description for patch #2
+- dropped Reviewed-by from Amit from patch #8 (due to changed
+  scope of the patch)
 
-I was going to prepare a pull request with just that patch for you later
-today or early tomorrow.
+Changes since v1 (https://lkml.org/lkml/2014/5/5/194):
+- synced patches against next-20140617
+- merged patch "thermal: exynos: remove unused defines" into
+  "thermal: exynos: remove unused struct exynos_tmu_registers
+  entries" one (per request from Eduardo)
+- improved patch descriptions for patches #1-5
+- fixed documentation for pdata->gain and pdata->reference_voltage
+- added Reviewed-by from Amit to patches #6, #7 and #10
+- added missing Acked-by from Kyungmin Park
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
+
+Bartlomiej Zolnierkiewicz (8):
+  thermal: exynos: remove unused struct exynos_tmu_registers entries
+  thermal: exynos: remove dead code for HW_MODE calibration
+  thermal: exynos: remove redundant pdata checks from
+    exynos_tmu_initialize()
+  thermal: exynos: remove redundant threshold_code checks from
+    exynos_tmu_initialize()
+  thermal: exynos: simplify temp_to_code() and code_to_temp()
+  thermal: exynos: cache non_hw_trigger_levels in pdata
+  thermal: exynos: remove redundant pdata checks from
+    exynos_tmu_control()
+  thermal: exynos: remove identical values from exynos*_tmu_registers
+    structures
+
+ drivers/thermal/samsung/exynos_thermal_common.h |   1 -
+ drivers/thermal/samsung/exynos_tmu.c            | 126 +++++-------------------
+ drivers/thermal/samsung/exynos_tmu.h            |  74 +-------------
+ drivers/thermal/samsung/exynos_tmu_data.c       |  56 ++---------
+ drivers/thermal/samsung/exynos_tmu_data.h       |  31 +-----
+ 5 files changed, 35 insertions(+), 253 deletions(-)
+
+-- 
+1.8.2.3
 
