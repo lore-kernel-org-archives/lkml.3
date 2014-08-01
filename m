@@ -1,63 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235AbaHAMLm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 08:11:42 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:51567 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750876AbaHAMLl (ORCPT
+	id S1754948AbaHAMPV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 08:15:21 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:63921 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008AbaHAMPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 08:11:41 -0400
-Message-ID: <1406895098.2110.10.camel@x220>
-Subject: Re: [PATCH] staging: rtl8723au: Fix static symbol sparse warning
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Miguel Oliveira <cmroliv@gmail.com>
-Cc: Larry.Finger@lwfinger.net, Jes.Sorensen@redhat.com,
-        gregkh@linuxfoundation.org, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Fri, 01 Aug 2014 14:11:38 +0200
-In-Reply-To: <1406898387-13987-1-git-send-email-cmroliv@gmail.com>
-References: <1406898387-13987-1-git-send-email-cmroliv@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Aug 2014 12:11:38.0686 (UTC) FILETIME=[BF2DA5E0:01CFAD81]
-X-RcptDomain: vger.kernel.org
+	Fri, 1 Aug 2014 08:15:18 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Tejun Heo <tj@kernel.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-pci@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] resource: Add device-managed request/release_resource()
+Date: Fri,  1 Aug 2014 14:15:10 +0200
+Message-Id: <1406895311-18869-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-08-01 at 14:06 +0100, Miguel Oliveira wrote:
-> Fix sparse warning:
-> drivers/staging/rtl8723au/core/rtw_efuse.c:579:5: warning: symbol 'efuse_GetCurrentSize23a' was not declared. Should it be static?
-> 
-> Signed-off-by: Miguel Oliveira <cmroliv@gmail.com>
-> ---
->  drivers/staging/rtl8723au/include/rtw_efuse.h |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/staging/rtl8723au/include/rtw_efuse.h b/drivers/staging/rtl8723au/include/rtw_efuse.h
-> index 07bdc34..304cc71 100644
-> --- a/drivers/staging/rtl8723au/include/rtw_efuse.h
-> +++ b/drivers/staging/rtl8723au/include/rtw_efuse.h
-> @@ -82,6 +82,7 @@ struct pg_pkt_struct {
->  /*------------------------Export global variable----------------------------*/
->  
->  u16	efuse_GetMaxSize23a(struct rtw_adapter *padapter);
-> +int	efuse_GetCurrentSize23a(struct rtw_adapter *padapter, u16 *size);
->  int	rtw_efuse_access23a(struct rtw_adapter *padapter, u8 bRead, u16 start_addr, u16 cnts, u8 *data);
->  int	rtw_efuse_map_read23a(struct rtw_adapter *padapter, u16 addr, u16 cnts, u8 *data);
->  u8	rtw_efuse_map_write(struct rtw_adapter *padapter, u16 addr, u16 cnts, u8 *data);
+From: Thierry Reding <treding@nvidia.com>
 
-This function is never used in current linux-next. So I think it might
-as well be dropped.
+Provide device-managed implementations of the request_resource() and
+release_resource() functions. Upon failure to request a resource, the
+new devm_request_resource() function will output an error message for
+consistent error reporting.
 
-Note there's also Efuse_GetCurrentSize23a (with an uppercase 'E'). It's
-used just once. You could probably submit another patch to remove that
-from rtw_efuse.h and make it static in rtw_efuse.c The comment above
-that function needs and update too, but maybe it's also OK to drop that
-comment.
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+Changes in v2:
+- use more natural flow for error handling
+- don't needlessly check for NULL pointers
 
+ Documentation/driver-model/devres.txt |  2 +
+ include/linux/ioport.h                |  5 +++
+ kernel/resource.c                     | 70 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 77 insertions(+)
 
-Paul Bolle
+diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+index d14710b04439..befc3fe12ba6 100644
+--- a/Documentation/driver-model/devres.txt
++++ b/Documentation/driver-model/devres.txt
+@@ -264,8 +264,10 @@ IIO
+ IO region
+   devm_release_mem_region()
+   devm_release_region()
++  devm_release_resource()
+   devm_request_mem_region()
+   devm_request_region()
++  devm_request_resource()
+ 
+ IOMAP
+   devm_ioport_map()
+diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+index 142ec544167c..2c5250222278 100644
+--- a/include/linux/ioport.h
++++ b/include/linux/ioport.h
+@@ -215,6 +215,11 @@ static inline int __deprecated check_region(resource_size_t s,
+ 
+ /* Wrappers for managed devices */
+ struct device;
++
++extern int devm_request_resource(struct device *dev, struct resource *root,
++				 struct resource *new);
++extern void devm_release_resource(struct device *dev, struct resource *new);
++
+ #define devm_request_region(dev,start,n,name) \
+ 	__devm_request_region(dev, &ioport_resource, (start), (n), (name))
+ #define devm_request_mem_region(dev,start,n,name) \
+diff --git a/kernel/resource.c b/kernel/resource.c
+index da14b8d09296..ca24f19f9d18 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -1248,6 +1248,76 @@ int release_mem_region_adjustable(struct resource *parent,
+ /*
+  * Managed region resource
+  */
++static void devm_resource_release(struct device *dev, void *ptr)
++{
++	struct resource **r = ptr;
++
++	release_resource(*r);
++}
++
++/**
++ * devm_request_resource() - request and reserve an I/O or memory resource
++ * @dev: device for which to request the resource
++ * @root: root of the resource tree from which to request the resource
++ * @new: descriptor of the resource to request
++ *
++ * This is a device-managed version of request_resource(). There is usually
++ * no need to release resources requested by this function explicitly since
++ * that will be taken care of when the device is unbound from its driver.
++ * If for some reason the resource needs to be released explicitly, because
++ * of ordering issues for example, drivers must call devm_release_resource()
++ * rather than the regular release_resource().
++ *
++ * When a conflict is detected between any existing resources and the newly
++ * requested resource, an error message will be printed.
++ *
++ * Returns 0 on success or a negative error code on failure.
++ */
++int devm_request_resource(struct device *dev, struct resource *root,
++			  struct resource *new)
++{
++	struct resource *conflict, **ptr;
++
++	ptr = devres_alloc(devm_resource_release, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr)
++		return -ENOMEM;
++
++	*ptr = new;
++
++	conflict = request_resource_conflict(root, new);
++	if (conflict) {
++		dev_err(dev, "resource collision: %pR conflicts with %s %pR\n",
++			new, conflict->name, conflict);
++		devres_free(ptr);
++		return -EBUSY;
++	}
++
++	devres_add(dev, ptr);
++	return 0;
++}
++EXPORT_SYMBOL(devm_request_resource);
++
++static int devm_resource_match(struct device *dev, void *res, void *data)
++{
++	struct resource **ptr = res;
++
++	return *ptr == data;
++}
++
++/**
++ * devm_release_resource() - release a previously requested resource
++ * @dev: device for which to release the resource
++ * @new: descriptor of the resource to release
++ *
++ * Releases a resource previously requested using devm_request_resource().
++ */
++void devm_release_resource(struct device *dev, struct resource *new)
++{
++	WARN_ON(devres_release(dev, devm_resource_release, devm_resource_match,
++			       new));
++}
++EXPORT_SYMBOL(devm_release_resource);
++
+ struct region_devres {
+ 	struct resource *parent;
+ 	resource_size_t start;
+-- 
+2.0.3
 
