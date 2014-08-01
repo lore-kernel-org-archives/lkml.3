@@ -1,73 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673AbaHAOLH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:11:07 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56512 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750738AbaHAOLF (ORCPT
+	id S1754469AbaHAOLy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 10:11:54 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:45373 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332AbaHAOLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:11:05 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: Re: [PATCH 1/3] irq / PM: New driver interface for wakeup interruptsn
-Date: Fri, 01 Aug 2014 16:29:40 +0200
-Message-ID: <3855585.ek3PTQLkmN@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.10.1408011533580.4997@nanos>
-References: <20140724212620.GO3935@laptop> <19816559.O6O5RjzKM1@vostro.rjw.lan> <alpine.DEB.2.10.1408011533580.4997@nanos>
+	Fri, 1 Aug 2014 10:11:52 -0400
+Date: Fri, 1 Aug 2014 16:11:47 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Antoine =?utf-8?Q?T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ata: libahci: Make host flags unsigned long
+Message-ID: <20140801141146.GB1913@ulmo.nvidia.com>
+References: <1406893181-24764-1-git-send-email-thierry.reding@gmail.com>
+ <20140801125206.GB21624@htj.dyndns.org>
+ <20140801140121.GB373@ulmo.nvidia.com>
+ <20140801140928.GE21624@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1UWUbFP1cBYEclgG"
+Content-Disposition: inline
+In-Reply-To: <20140801140928.GE21624@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 01, 2014 03:43:21 PM Thomas Gleixner wrote:
-> On Fri, 1 Aug 2014, Rafael J. Wysocki wrote:
-> > OK, I guess "IRQ_HANDLED from a wakeup interrupt" may be interpreted as
-> > IRQ_HANDLED_PMWAKE.  On the other hand, if that's going to be handled in
-> > handle_irq_event_percpu(), then using a special return code would save us
-> > a brach for IRQ_HANDLED interrupts.  We could convert it to IRQ_HANDLED
-> > immediately then.
-> 
-> We can handle it at the end of the function by calling
-> note_interrupt() unconditionally do the following there:
-> 
->       if (suspended) {
->       	 if (ret == IRQ_NONE) {
-> 	    if (shared)
-> 	       yell_and_abort_or_resume();
->          } else {
-> 	    abort_or_resume();
->          }
->       }
->       if (noirqdebug)
->       	 return;
 
-I see.
+--1UWUbFP1cBYEclgG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > OK, I'll take a stab at the IRQF_SHARED thing if you don't mind.
-> 
-> Definitely not :)
-> 
-> > Here's my current understanding of what can be done for IRQF_NO_SUSPEND.
-> > 
-> > In suspend_device_irqs():
-> > 
-> > (1) If all actions in the list have the same setting (eg. IRQF_NO_SUSPEND unset),
-> >     keep the current behavior.
-> > (2) If the actions have different settings:
-> >     - Actions with IRQF_NO_SUSPEND set are not modified.
-> >     - Actions with IRQF_NO_SUSPEND unset are switched over to a stub handler.
-> >     - IRQS_SUSPEND_MODE (new flag) is set for the IRQ.
-> 
-> Can we please do that in setup_irq() and let the shared ones always
-> run through the stub? That keeps suspend/resume_device_irqs() simple.
+On Fri, Aug 01, 2014 at 10:09:28AM -0400, Tejun Heo wrote:
+> Hello,
+>=20
+> On Fri, Aug 01, 2014 at 04:01:23PM +0200, Thierry Reding wrote:
+> > I think there's just one occurrence. Turning the flags into an unsigned
+> > long seems like a much more natural thing to do, though Besides it being
+> > what many other parts of the kernel use for flags it gives us natural
+> > alignment within struct ahci_host_priv. The structure currently looks
+> > like this:
+> >=20
+> > 	struct ahci_host_priv {
+> > 		unsigned int flags;
+> > 		u32 force_port_map;
+> > 		u32 mask_port_map;
+> >=20
+> > 		void __iomem *mmio;
+> > 		...
+> > 	};
+> >=20
+> > On 64-bit that unsigned int will be 32-bit and cause additional padding
+> > to be inserted between mask_port_map and mmio to align the 64-bit
+> > pointer.
+> >=20
+> > It's not like the alignment is that *hugely* important, but it's still,
+> > you know, pretty.
+>=20
+> I don't get how that's pretty.  Sure, that space is consumed by
+> something on 64bit archs but the extra space consumed can't be
+> utilized unless we're gonna change how we use flags depending on the
+> bitness of the architecture.  You're saying that rather than leaving
+> unused space as unused it's better to commit that space to a variable
+> which can't make use of that extra space anyway.  What if we later
+> wanna add another int there?  Do we make that int a long too or modify
+> the complete unrelated ->flags back to int?
+>=20
+> Prettiness is a good thing but code fundamentally should match what
+> the underlying requirement dictates it to.  We sure have to trade that
+> off too at times when the benefit gained is worthwhile, but I
+> completely fail to see how this feel-good packed prettiness is
+> anything worthwhile.
+>=20
+> In general, please don't do things like this in the kernel.  Use ulong
+> for flags iff it's necessary (atomic bitops).
 
-OK
+Oh well, as you wish, then.
 
-Rafael
+Thierry
 
+--1UWUbFP1cBYEclgG
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT26AiAAoJEN0jrNd/PrOhJwMQAJkgsS8Q3z0MBWWz9ClXQg2S
+XFvWTkIwryPGbhksplF9SSt1InQfhfvENgVt0duWAtoF/L839FofpnCINjUz0vTR
+DPOL0LnDsdXqjGGCk5kisDgBSjb3g/nPpq7lJN3Th5L4rFWP0okOXq1geuWV0/H2
+l4CjtJPGNT2QYYblYF4CFXju1AltHxouUG5IpwteU6qiL249Rkpv2cSlkRfy5jCM
+GQVSjyqBfsj7Z+K7UNuHMPkxnjZZxIXw1fbxE4ZgszfUUehtwAy+FUskLAqZFYUE
+Ck1nLFNVNQsivHs7NFyX5YCdYQUHVZX9yWyplb9324Snaq9Dw8zGRE/VsuJoR6gS
+LcjieJ2DAErYAz0xDqv6U8/jPR8o3Nv7/lNYowH/Q6LsvX7dOEIZVtWoPZ6bUXeV
+V7vItNxYbPfL+7Ru2CaRTNBokrpWohDbQla4BxDFRncQB28LAUXLeI/UY4RZ0bu/
+yvGvKgzXIhnkvRG4WLIiox58fT9B3rmeCmRB+ChmuSWWxJ2zTG7YVrXbtC1CciYS
+Vavr7wnjSJQDAMSSTaJCPi8JAmryIfWJvjpTH27VAYTaQjDCTjs4/UYRSD+tRifw
+y8mqcVLlpq46BSNdjbmatc/6v6ifD7msun7U9Qewi56RKL6LhxoAxgkEydsTmPTm
+bpznJYP+0M0/5lRADLOV
+=Kc43
+-----END PGP SIGNATURE-----
+
+--1UWUbFP1cBYEclgG--
