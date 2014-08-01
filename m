@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100AbaHAWYg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 18:24:36 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:52861 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620AbaHAWYe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 18:24:34 -0400
+	id S1756100AbaHAWdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 18:33:44 -0400
+Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:29277
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754620AbaHAWdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 18:33:42 -0400
+From: <atull@opensource.altera.com>
+To: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
+        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <pavel@denx.de>, <broonie@kernel.org>,
+        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <delicious.quinoa@gmail.com>,
+        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>,
+        Alan Tull <atull@opensource.altera.com>
+Subject: [PATCH 0/3] Yet another stab at a fpga framework
+Date: Fri, 1 Aug 2014 17:28:35 -0500
+Message-ID: <1406932118-13885-1-git-send-email-atull@opensource.altera.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20140801192300.GB16085@kroah.com>
-References: <CADYu30_FciG_aTTV4DFNdy+CdRChMYQ7pAGZGambE1F9s=ofYQ@mail.gmail.com>
-	<20140801192300.GB16085@kroah.com>
-Date: Sat, 2 Aug 2014 03:54:32 +0530
-Message-ID: <CADYu30_o7rzERKEDe=eZiONp6n1ktMWPydMnXQjDeLrDFQh+vg@mail.gmail.com>
-Subject: Re: [Question: Drivers/base/core.c] Why dev->init_name = NULL in
- device_add function ?
-From: Aniroop Mathur <aniroop.mathur@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BN1PR02CA0025.namprd02.prod.outlook.com (10.141.56.25) To
+ DM2PR03MB317.namprd03.prod.outlook.com (10.141.54.15)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 029097202E
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(189002)(199002)(93916002)(77982001)(66066001)(50986999)(62966002)(87976001)(87286001)(92566001)(69596002)(102836001)(48376002)(50466002)(85852003)(80022001)(86362001)(20776003)(101416001)(76482001)(81542001)(21056001)(53416004)(81156004)(4396001)(99396002)(50226001)(77096002)(229853001)(74502001)(19580395003)(19580405001)(42186005)(77156001)(88136002)(89996001)(86152002)(107046002)(81342001)(33646002)(106356001)(2201001)(92726001)(64706001)(95666004)(79102001)(104166001)(74662001)(47776003)(31966008)(83322001)(46102001)(105586002)(83072002)(85306004)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB317;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 2, 2014 at 12:53 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Aug 01, 2014 at 10:43:23PM +0530, Aniroop Mathur wrote:
->> Dear Mr. Greg Kroah-Hartman and Linux Community,
->> Greetings of the day !! :)
->>
->> I am Aniroop Mathur working on Linux Kernel for last two years.
->> I am stuck at one point and could not find the solution over internet.
->> I posted on linuxquestions.org too.
->> So I need your help and suggestion for it.
->>
->> Can you please help in answering my query as below:
->>
->> =====================================================
->> In function device_add of /drivers/base/core.c file, it is mentioned:
->> /*
->> * for statically allocated devices, which should all be converted
->> * some day, we need to initialize the name. We prevent reading back
->> * the name, and force the use of dev_name()
->> */
->> if (dev->init_name) {
->> dev_set_name(dev, "%s", dev->init_name);
->> dev->init_name = NULL;
->> }
->>
->>
->> Except forcing the use of dev_name to read device name,
->> Is there any other reason to make init_name as NULL ?
->
-> Why would you want init_name to not be NULL?
->
+From: Alan Tull <atull@opensource.altera.com>
 
-Currently in kernel, we cannot set name of event node.
+[resend with fixed email settings]
 
-If dev->init_name is not set as NULL in device_add(),
-then I can easily set name of event node in evdev_dev.c
-file as below:
+The idea of the framework is to provide consistent ways of
+programming raw images into FPGA's.
 
-if(dev->init_name) {
-      sprintf(dev->init_name, "event_%s", dev->init_name);
-}
-error = device_add(&evdev->dev);
+Programming from device tree overlays is supported.
 
-And in some input device driver code, I will use like below:
-dev->init_name = "accelerometer";
-input_register_device(dev);
+The core (fpga-mgr.c) does not include a userspace interface
+and just exports kernel functions.
 
-So, overall output will be
-/dev/input/event<x> --> /dev/input/event_accelerometer
-sys/class/input/input<x> --> sys/class/input/accelerometer
+This approach separates the core from the interfaces.
 
-In short, input and event node names are set just by
-adding one line, which i found quite efficient.
-There is other way also to set name of event node but
-it involves using extra variable and little more code,
-So I am looking for best solution possible. :)
+Each interface can be enabled or disabled in the defconfig.
+In some production contexts, interfaces that might be used
+during development can be disabled.
 
->> And if it is not made NULL, is there any problem or side-effect ?
->
-> Yes, people would start to use it thinking it was the real name of the
-> device, when it might not be.
->
+The core exports kernel functions to:
+  * write the fpga from a buffer or using the firmware layer
+  * get fpga status
+  * find a particular fpga manager from a device tree phandle
+  * register/unregister lower level fpga drivers.
 
-As the name itself nicely suggests, it is just a initial name.
-It may not be the final name as developer can change the name
-using dev_set_name. Also dev_name api is available to get
-final/current name of the device.
+The bus allows us to:
+  * program fpga from a device tree overlay using firmware.
+  * automatically reload firmware and reprogram fpga during resume.
 
-Thanks and Regards,
-Aniroop Mathur
+The sysfs interface:
+  * read only, get the name and status of fpga manager.
+
+I have a configfs interface patch which I haven't included,
+adds configfs as a separate file.
+
+TODO:
+  * Enable bridges after fpga programming, disable during suspend
+
+Alan Tull (3):
+  fpga manager framework core
+  fpga bus driver
+  fpga sysfs interface
+
+ drivers/Kconfig          |    2 +
+ drivers/Makefile         |    1 +
+ drivers/fpga/Kconfig     |   27 +++
+ drivers/fpga/Makefile    |   12 ++
+ drivers/fpga/bus.c       |  145 ++++++++++++++++
+ drivers/fpga/fpga-mgr.c  |  431 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/fpga/sysfs.c     |   69 ++++++++
+ include/linux/fpga-mgr.h |  137 +++++++++++++++
+ 8 files changed, 824 insertions(+)
+ create mode 100644 drivers/fpga/Kconfig
+ create mode 100644 drivers/fpga/Makefile
+ create mode 100644 drivers/fpga/bus.c
+ create mode 100644 drivers/fpga/fpga-mgr.c
+ create mode 100644 drivers/fpga/sysfs.c
+ create mode 100644 include/linux/fpga-mgr.h
+
+-- 
+1.7.9.5
+
