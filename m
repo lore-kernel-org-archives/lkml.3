@@ -1,120 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401AbaHANee (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:34:34 -0400
-Received: from mga14.intel.com ([192.55.52.115]:23501 "EHLO mga14.intel.com"
+	id S932296AbaHANey (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:34:54 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52889 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755556AbaHAN1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 09:27:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,780,1400050800"; 
-   d="scan'208";a="570461684"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v9 05/22] Introduce IS_DAX(inode)
-Date: Fri,  1 Aug 2014 09:27:21 -0400
-Message-Id: <d5d9388fd9eb1391831be284d86edf670c1eef1e.1406897885.git.willy@linux.intel.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
-References: <cover.1406897885.git.willy@linux.intel.com>
-In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
-References: <cover.1406897885.git.willy@linux.intel.com>
+	id S1756425AbaHANew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 09:34:52 -0400
+Message-ID: <53DB9751.6030508@ti.com>
+Date: Fri, 1 Aug 2014 16:34:09 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>, <nsekhar@ti.com>,
+        <robh+dt@kernel.org>
+CC: <devicetree@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux@arm.linux.org.uk>, <pawel.moll@arm.com>,
+        <khilman@deeprootsystems.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 5/6] ARM: DTS: da850-evm: Add node for tlv320aic3106 codec
+References: <1406801934-23334-1-git-send-email-peter.ujfalusi@ti.com> <1406801934-23334-6-git-send-email-peter.ujfalusi@ti.com> <53DA519A.4090905@cogentembedded.com> <53DB240F.2030908@ti.com> <53DB8CEA.9010902@cogentembedded.com> <53DB8FE1.5010207@ti.com> <53DB9292.7080008@cogentembedded.com>
+In-Reply-To: <53DB9292.7080008@cogentembedded.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use an inode flag to tag inodes which should avoid using the page cache.
-Convert ext2 to use it instead of mapping_is_xip().
+Hi,
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
----
- fs/ext2/inode.c    | 9 ++++++---
- fs/ext2/xip.h      | 2 --
- include/linux/fs.h | 6 ++++++
- 3 files changed, 12 insertions(+), 5 deletions(-)
+On 08/01/2014 04:13 PM, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 08/01/2014 05:02 PM, Peter Ujfalusi wrote:
+> 
+>>>     I do. We should follow the standard consistently. Why not call the node
+>>> "sound-codec"?
+> 
+>> Well, there is _zero_ cases when the audio codec node is named as
+>> "sound-codec" in linux-next but we have wmXXXX, tlvXXXX, twlXXXX, maxXXXX etc.
+> 
+>    Which only means people don't read the standard (which is referred to on
+> http://www.devicetree.org/Device_Tree_Usage, that says the same).
+> 
+>> Yeah, there are few DTS files which have codec as node name.
+>> So, no, I'm not going to change the node name from tlv320aic3106.
+> 
+>    So you prefer following the bad examples to following the standard?
 
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 36d35c3..0cb0448 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -731,7 +731,7 @@ static int ext2_get_blocks(struct inode *inode,
- 		goto cleanup;
- 	}
- 
--	if (ext2_use_xip(inode->i_sb)) {
-+	if (IS_DAX(inode)) {
- 		/*
- 		 * we need to clear the block
- 		 */
-@@ -1201,7 +1201,7 @@ static int ext2_setsize(struct inode *inode, loff_t newsize)
- 
- 	inode_dio_wait(inode);
- 
--	if (mapping_is_xip(inode->i_mapping))
-+	if (IS_DAX(inode))
- 		error = xip_truncate_page(inode->i_mapping, newsize);
- 	else if (test_opt(inode->i_sb, NOBH))
- 		error = nobh_truncate_page(inode->i_mapping,
-@@ -1273,7 +1273,8 @@ void ext2_set_inode_flags(struct inode *inode)
- {
- 	unsigned int flags = EXT2_I(inode)->i_flags;
- 
--	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
-+	inode->i_flags &= ~(S_SYNC | S_APPEND | S_IMMUTABLE | S_NOATIME |
-+				S_DIRSYNC | S_DAX);
- 	if (flags & EXT2_SYNC_FL)
- 		inode->i_flags |= S_SYNC;
- 	if (flags & EXT2_APPEND_FL)
-@@ -1284,6 +1285,8 @@ void ext2_set_inode_flags(struct inode *inode)
- 		inode->i_flags |= S_NOATIME;
- 	if (flags & EXT2_DIRSYNC_FL)
- 		inode->i_flags |= S_DIRSYNC;
-+	if (test_opt(inode->i_sb, XIP))
-+		inode->i_flags |= S_DAX;
- }
- 
- /* Propagate flags from i_flags to EXT2_I(inode)->i_flags */
-diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
-index 18b34d2..29be737 100644
---- a/fs/ext2/xip.h
-+++ b/fs/ext2/xip.h
-@@ -16,9 +16,7 @@ static inline int ext2_use_xip (struct super_block *sb)
- }
- int ext2_get_xip_mem(struct address_space *, pgoff_t, int,
- 				void **, unsigned long *);
--#define mapping_is_xip(map) unlikely(map->a_ops->get_xip_mem)
- #else
--#define mapping_is_xip(map)			0
- #define ext2_xip_verify_sb(sb)			do { } while (0)
- #define ext2_use_xip(sb)			0
- #define ext2_clear_xip_target(inode, chain)	0
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index e11d60c..a94e5d7 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1579,6 +1579,7 @@ struct super_operations {
- #define S_IMA		1024	/* Inode has an associated IMA struct */
- #define S_AUTOMOUNT	2048	/* Automount/referral quasi-directory */
- #define S_NOSEC		4096	/* no suid or xattr security attributes */
-+#define S_DAX		8192	/* Direct Access, avoiding the page cache */
- 
- /*
-  * Note that nosuid etc flags are inode-specific: setting some file-system
-@@ -1616,6 +1617,11 @@ struct super_operations {
- #define IS_IMA(inode)		((inode)->i_flags & S_IMA)
- #define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
- #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
-+#ifdef CONFIG_FS_XIP
-+#define IS_DAX(inode)		((inode)->i_flags & S_DAX)
-+#else
-+#define IS_DAX(inode)		0
-+#endif
- 
- /*
-  * Inode state bits.  Protected by inode->i_lock
+those bad examples are in the tree and they did went through the review
+process (arch, DT and probably alsa). But it is interesting that we do not
+have a single correct node name for audio codecs (probably for other types also).
+
+> Well, "the Moor has done his duty, the Moor can go"...
+
+Let's ask the DT maintainers what should be the correct approach and someone
+should go through all the existing DT files and clean them up? People usually
+start reading the code for examples before the standard...
+
 -- 
-2.0.1
-
+Péter
