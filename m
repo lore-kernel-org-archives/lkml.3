@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781AbaHAOao (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:30:44 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:48416 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbaHAOam (ORCPT
+	id S1754206AbaHAObH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 10:31:07 -0400
+Received: from mx1.scotdoyle.com ([23.226.141.211]:41186 "EHLO
+	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886AbaHAObG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:30:42 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ata: libahci: Silence compiler warning on 64-bit
-Date: Fri,  1 Aug 2014 16:30:37 +0200
-Message-Id: <1406903437-13995-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.3
+	Fri, 1 Aug 2014 10:31:06 -0400
+X-Greylist: delayed 612 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Aug 2014 10:31:05 EDT
+Date: Fri, 1 Aug 2014 14:18:52 +0000 (UTC)
+From: Scot Doyle <lkml14@scotdoyle.com>
+To: Oliver Neukum <oneukum@suse.de>
+cc: Scot Doyle <lkml14@scotdoyle.com>, Olof Johansson <olof@lixom.net>,
+        Benson Leung <bleung@chromium.org>, gene.chen@intel.com,
+        moch@chromium.org, Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] platform/chrome: chromeos_laptop - Add Haswell
+ Chromebooks
+In-Reply-To: <1406898530.29543.42.camel@linux-fkkt.site>
+Message-ID: <alpine.DEB.2.11.1408011417150.4379@localhost>
+References: <1401835464-15267-1-git-send-email-bleung@chromium.org>  <CAOesGMiNhNavOMhBWcH_sEbNHxJ4OM3wjVt4qeK=aZFeVVxT_g@mail.gmail.com>  <CANLzEksDfdb+RBtv8Kwe0KWpi23Nf7FS3-w+kXJXqV4n5XP=WQ@mail.gmail.com>  <alpine.DEB.2.02.1407010040410.29513@scotdoyle.com>
+  <CAOesGMieZtmyr2+eLnY7COgPCkU=sXABd35SckbZE+OMaCBO4g@mail.gmail.com>  <alpine.DEB.2.02.1407101349230.11676@scotdoyle.com> <1406898530.29543.42.camel@linux-fkkt.site>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On Fri, 1 Aug 2014, Oliver Neukum wrote:
+> On Thu, 2014-07-10 at 14:11 +0100, Scot Doyle wrote:
+>> Hi Olof,
+>>
+>> Have these been applied? If not, where should I watch for them?
+>
+> Hi,
+>
+> could you tell me from which tree I could get these patches?
+>
+> 	Regards
+> 		Oliver
 
-Commit 725c7b570fda (ata: libahci_platform: move port_map parameters
-into the AHCI structure) moves flags into the struct ahci_host_priv's
-.flags field, which causes compiler warnings on 64-bit builds when that
-value is cast to a void * pointer. Cast to an unsigned long so that the
-subsequent cast to a pointer doesn't produce a warning.
-
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
-Changes in v2:
-- cast unsigned int to unsigned long to avoid the compiler warning and
-  keep the flags field's type as-is
-
- drivers/ata/libahci_platform.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
-index a60b8cd40198..5b92c290e6c6 100644
---- a/drivers/ata/libahci_platform.c
-+++ b/drivers/ata/libahci_platform.c
-@@ -426,7 +426,7 @@ int ahci_platform_init_host(struct platform_device *pdev,
- 	}
- 
- 	/* prepare host */
--	pi.private_data = (void *)hpriv->flags;
-+	pi.private_data = (void *)(unsigned long)hpriv->flags;
- 
- 	ahci_save_initial_config(dev, hpriv);
- 
--- 
-2.0.3
-
+Sure, they're in chrome-platform's for-next branch:
+https://git.kernel.org/cgit/linux/kernel/git/olof/chrome-platform.git/log/drivers/platform/chrome?h=for-next
