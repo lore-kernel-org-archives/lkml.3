@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638AbaHASJW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 14:09:22 -0400
-Received: from smtp-out-166.synserver.de ([212.40.185.166]:1035 "EHLO
-	smtp-out-166.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694AbaHASJT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 14:09:19 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 16285
-Message-ID: <53DBD7CD.3030103@metafoo.de>
-Date: Fri, 01 Aug 2014 20:09:17 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        =?ISO-8859-1?Q?Antoine_T=E9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        laurent.pinchart@ideasonboard.com, ludovic.desroches@atmel.com,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
- dma controller API
-References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com> <20140730160607.GM8181@intel.com> <20140731074440.GY3952@lukather> <53DA3A48.8070900@metafoo.de> <20140731161331.GD3952@lukather> <53DA74B3.6060502@metafoo.de> <20140731173730.GH3952@lukather> <53DB490A.5040709@metafoo.de> <20140801085707.GI3952@lukather> <20140801171551.GG8181@intel.com>
-In-Reply-To: <20140801171551.GG8181@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755873AbaHASM6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 14:12:58 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:52677 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754827AbaHASMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 14:12:55 -0400
+From: Richard Yao <ryao@gentoo.org>
+To: kernel@gentoo.org
+Cc: mthode@mthode.org, michael@fds-team.de, drobbins@funtoo.org,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/1] vfs: Respect MS_RDONLY at bind mount creation
+Date: Fri,  1 Aug 2014 14:12:24 -0400
+Message-Id: <1406916744-6634-2-git-send-email-ryao@gentoo.org>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1406916744-6634-1-git-send-email-ryao@gentoo.org>
+References: <1406916744-6634-1-git-send-email-ryao@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2014 07:15 PM, Vinod Koul wrote:
-> On Fri, Aug 01, 2014 at 10:57:07AM +0200, Maxime Ripard wrote:
->> On Fri, Aug 01, 2014 at 10:00:10AM +0200, Lars-Peter Clausen wrote:
->>> On 07/31/2014 07:37 PM, Maxime Ripard wrote:
->>>> On Thu, Jul 31, 2014 at 06:54:11PM +0200, Lars-Peter Clausen wrote:
->>>>> On 07/31/2014 06:13 PM, Maxime Ripard wrote:
->>>>> [...]
->>>>>>  From what you're saying, and judging from the drivers that already
->>>>>> implement it, can't it be moved directly to the framework itself ?
->>>>>>
->>>>>
->>>>> What exactly do you mean by moving it directly to the framework? The
->>>>> slave_caps API is part of the DMAengine framework.
->>>>
->>>> Not its implementation, which is defined by each and every driver,
->>>> while the behaviour of device_slave_caps is rather generic.
->>>>
->>>
->>> Do you mean something like adding a dma_slave_caps struct field to
->>> the DMA channel that gets initialized when the channel is created
->>> and then remove the callback? That makes some sense.
->>
->> I was rather thinking into something like:
->>    - Splitting device_control into independant functions
-> I like this part :)
+`mount -o bind,ro ...` suffers from a silent failure where the readonly
+flag is ignored. The bind mount will be created rw whenever the target
+is rw. Users typically workaround this by remounting readonly, but that
+does not work when you want to define readonly bind mounts in fstab.
+This is a major annoyance when dealing with recursive bind mounts
+because the userland mount command does not expose the option to
+recursively remount a subtree as readonly.
 
-I started working on this a while ago by splitting out the slave_config 
-functionality into its own callback. Haven't managed to finalize it since it 
-wasn't really top priority.
+Signed-off-by: Richard Yao <ryao@gentoo.org>
+---
+ fs/namespace.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-- Lars
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 182bc41..0d23525 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1827,11 +1827,12 @@ static bool has_locked_children(struct mount *mnt, struct dentry *dentry)
+  * do loopback mount.
+  */
+ static int do_loopback(struct path *path, const char *old_name,
+-				int recurse)
++				unsigned long flags)
+ {
+ 	struct path old_path;
+-	struct mount *mnt = NULL, *old, *parent;
++	struct mount *mnt = NULL, *old, *parent, *m;
+ 	struct mountpoint *mp;
++	int recurse = flags & MS_REC;
+ 	int err;
+ 	if (!old_name || !*old_name)
+ 		return -EINVAL;
+@@ -1871,6 +1872,10 @@ static int do_loopback(struct path *path, const char *old_name,
+ 		goto out2;
+ 	}
+ 
++	if (flags & MS_RDONLY)
++		for (m = mnt; m; m = (recurse ? next_mnt(m, mnt) : NULL))
++			mnt_make_readonly(m);
++
+ 	mnt->mnt.mnt_flags &= ~MNT_LOCKED;
+ 
+ 	err = graft_tree(mnt, parent, mp);
+@@ -2444,7 +2449,8 @@ long do_mount(const char *dev_name, const char *dir_name,
+ 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
+ 				    data_page);
+ 	else if (flags & MS_BIND)
+-		retval = do_loopback(&path, dev_name, flags & MS_REC);
++		retval = do_loopback(&path, dev_name, flags & (MS_REC |
++							       MS_RDONLY));
+ 	else if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
+ 		retval = do_change_type(&path, flags);
+ 	else if (flags & MS_MOVE)
+-- 
+1.8.5.5
 
