@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456AbaHAMrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 08:47:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54017 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754323AbaHAMri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 08:47:38 -0400
-Date: Fri, 1 Aug 2014 14:47:34 +0200
-From: Jan Kara <jack@suse.cz>
-To: NeilBrown <neilb@suse.de>
-Cc: Ben Greear <greearb@candelatech.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: Killing process in D state on mount to dead NFS server. (when
- process is in fsync)
-Message-ID: <20140801124734.GB5431@quack.suse.cz>
-References: <53DA8443.407@candelatech.com>
- <20140801064217.01852788@notabene.brown>
- <53DAB307.2000206@candelatech.com>
- <20140801075053.2120cb33@notabene.brown>
+	id S1755318AbaHAMtr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 08:49:47 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:41012 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754796AbaHAMtp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 08:49:45 -0400
+Message-ID: <53DB8CEA.9010902@cogentembedded.com>
+Date: Fri, 01 Aug 2014 16:49:46 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140801075053.2120cb33@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, nsekhar@ti.com, robh+dt@kernel.org
+CC: devicetree@vger.kernel.org, davinci-linux-open-source@linux.davincidsp.com,
+        linux@arm.linux.org.uk, pawel.moll@arm.com,
+        khilman@deeprootsystems.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 5/6] ARM: DTS: da850-evm: Add node for tlv320aic3106 codec
+References: <1406801934-23334-1-git-send-email-peter.ujfalusi@ti.com> <1406801934-23334-6-git-send-email-peter.ujfalusi@ti.com> <53DA519A.4090905@cogentembedded.com> <53DB240F.2030908@ti.com>
+In-Reply-To: <53DB240F.2030908@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 01-08-14 07:50:53, NeilBrown wrote:
-> On Thu, 31 Jul 2014 14:20:07 -0700 Ben Greear <greearb@candelatech.com> wrote:
-> > -----BEGIN PGP SIGNED MESSAGE-----
-> > Hash: SHA1
-> > 
-> > On 07/31/2014 01:42 PM, NeilBrown wrote:
-> > > On Thu, 31 Jul 2014 11:00:35 -0700 Ben Greear <greearb@candelatech.com> wrote:
-> > > 
-> > >> So, this has been asked all over the interweb for years and years, but the best answer I can find is to reboot the system or create a fake NFS server
-> > >> somewhere with the same IP as the gone-away NFS server.
-> > >> 
-> > >> The problem is:
-> > >> 
-> > >> I have some mounts to an NFS server that no longer exists (crashed/powered down).
-> > >> 
-> > >> I have some processes stuck trying to write to files open on these mounts.
-> > >> 
-> > >> I want to kill the process and unmount.
-> > >> 
-> > >> umount -l will make the mount go a way, sort of.  But process is still hung. umount -f complains: umount2:  Device or resource busy umount.nfs: /mnt/foo:
-> > >> device is busy
-> > >> 
-> > >> kill -9 does not work on process.
-> > > 
-> > > Kill -1 should work (since about 2.6.25 or so).
-> > 
-> > That is -[ONE], right?  Assuming so, it did not work for me.
-> 
-> No, it was "-9" .... sorry, I really shouldn't be let out without my proof
-> reader.
-> 
-> However the 'stack' is sufficient to see what is going on.
-> 
-> The problem is that it is blocked inside the "VM" well away from NFS and
-> there is no way for NFS to say "give up and go home".
-> 
-> I'd suggest that is a bug.   I cannot see any justification for fsync to not
-> be killable.
-> It wouldn't be too hard to create a patch to make it so.
-> It would be a little harder to examine all call paths and create a
-> convincing case that the patch was safe.
-> It might be herculean task to convince others that it was the right thing
-> to do.... so let's start with that one.
-> 
-> Hi Linux-mm and fs-devel people.  What do people think of making "fsync" and
-> variants "KILLABLE" ??
-  Sounds useful to me and I don't see how it could break some
-application...
+Hello.
 
-								Honza
+On 01-08-2014 9:22, Peter Ujfalusi wrote:
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>>> The board uses aic3106 for audio.
+
+>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>>> ---
+>>>    arch/arm/boot/dts/da850-evm.dts | 14 ++++++++++++++
+>>>    1 file changed, 14 insertions(+)
+
+>>> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+>>> index 09118c72e83f..b9ef2be0b145 100644
+>>> --- a/arch/arm/boot/dts/da850-evm.dts
+>>> +++ b/arch/arm/boot/dts/da850-evm.dts
+>>> @@ -51,6 +51,20 @@
+>>>                tps: tps@48 {
+>>>                    reg = <0x48>;
+>>>                };
+>>> +            tlv320aic3106: tlv320aic3106@1b {
+
+[...]
+
+>> Also, the ePAPR standard [1] says:
+
+>> The name of a node should be somewhat generic, reflecting the function of the
+>> device and not its precise programming model.
+
+> True. This is why the node for the audio support is named as 'sound'. For the
+> components, like in this case I do not see issue to call the audio codec with
+> it's name.
+
+    I do. We should follow the standard consistently. Why not call the node 
+"sound-codec"?
+
+WBR, Sergei
+
