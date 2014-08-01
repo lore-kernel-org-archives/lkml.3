@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724AbaHATnn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 15:43:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48167 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751602AbaHATnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 15:43:41 -0400
-Message-ID: <53DBEDE7.90400@redhat.com>
-Date: Fri, 01 Aug 2014 15:43:35 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Saravana Kannan <skannan@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
- to be held for duration of changing governors [v2]
-References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org> <53DAA749.5080506@redhat.com> <53DAA95B.2040505@codeaurora.org> <53DAB038.3050007@redhat.com> <53DABFA6.6090503@codeaurora.org> <53DACA26.1000908@redhat.com> <53DAE592.2030909@codeaurora.org> <53DB6B81.6050400@redhat.com> <53DBCBE8.6010809@codeaurora.org> <53DBE764.8050109@redhat.com> <53DBEC27.7050803@codeaurora.org>
-In-Reply-To: <53DBEC27.7050803@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756039AbaHATpZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 15:45:25 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:32938 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602AbaHATpX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 15:45:23 -0400
+From: "Devin J. Pohly" <djpohly@gmail.com>
+X-Google-Original-From: "Devin J. Pohly" <djpohly+linux@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Devin J. Pohly" <djpohly+linux@gmail.com>
+Subject: [PATCH 1/1] kbuild: use $(srctree) to locate config headers from external modules
+Date: Fri,  1 Aug 2014 15:47:23 -0400
+Message-Id: <1406922443-22770-1-git-send-email-djpohly+linux@gmail.com>
+X-Mailer: git-send-email 2.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When making modules_install for an out-of-tree module, the current
+directory is $(KBUILD_OUTPUT), and the Makefile recipe which verifies
+the existence of files in include/config is unable to find them using a
+relative path.  This leads to a spurious and puzzling "Kernel
+configuration is invalid" warning when no configuration is actually
+needed.
 
+Since the file check is done in a recipe with `test -e' rather than as a
+target or include, the usual search paths provided by VPATH and -I are
+not consulted, so an explicit path is needed in this case.
 
-On 08/01/2014 03:36 PM, Stephen Boyd wrote:
-> On 08/01/14 12:15, Prarit Bhargava wrote:
->>
->> On 08/01/2014 01:18 PM, Stephen Boyd wrote:
->>> On 08/01/14 03:27, Prarit Bhargava wrote:
->>>> Can you send me the test and the trace of the deadlock?  I'm not creating it with:
->>>>
->>> This was with conservative as the default, and switching to ondemand
->>>
->>> # cd /sys/devices/system/cpu/cpu2/cpufreq
->>> # ls
->>> affected_cpus                  scaling_available_governors
->>> conservative                   scaling_cur_freq
->>> cpuinfo_cur_freq               scaling_driver
->>> cpuinfo_max_freq               scaling_governor
->>> cpuinfo_min_freq               scaling_max_freq
->>> cpuinfo_transition_latency     scaling_min_freq
->>> related_cpus                   scaling_setspeed
->>> scaling_available_frequencies  stats
->>> # cat conservative/down_threshold
->>> 20
->>> # echo ondemand > scaling_governor
->> Thanks Stephen,
->>
->> There's obviously a difference in our .configs.  I have a global conservative
->> directory, ie) /sys/devices/system/cpu/cpufreq/conservative instead of a per-cpu
->> governor file.
->>
->> ie) what are your .config options for CPUFREQ?
->>
->> Mine are:
->>
->> #
->> # CPU Frequency scaling
->> #
->> CONFIG_CPU_FREQ=y
->> CONFIG_CPU_FREQ_GOV_COMMON=y
->> CONFIG_CPU_FREQ_STAT=m
->> CONFIG_CPU_FREQ_STAT_DETAILS=y
->> # CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE is not set
->> # CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE is not set
->> # CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND is not set
->> CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE=y
->> CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
->> CONFIG_CPU_FREQ_GOV_POWERSAVE=y
->> CONFIG_CPU_FREQ_GOV_USERSPACE=y
->> CONFIG_CPU_FREQ_GOV_ONDEMAND=y
->> CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
->>
->> Is there some other config option I have to set?
-> 
-> I have the same options. The difference is that my driver has a governor
-> per policy. That's set with the CPUFREQ_HAVE_GOVERNOR_PER_POLICY flag.
-> If I remove that flag I can't trigger the lockdep splat anymore with
-> this sequence and your patch.
+Signed-off-by: Devin J. Pohly <djpohly+linux@gmail.com>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I see -- so you're seeing this on arm then?  If so, let me know so I can reserve
-one to work on :)
+diff --git a/Makefile b/Makefile
+index f6a7794..60c14a2 100644
+--- a/Makefile
++++ b/Makefile
+@@ -590,7 +590,7 @@ else
+ PHONY += include/config/auto.conf
+ 
+ include/config/auto.conf:
+-	$(Q)test -e include/generated/autoconf.h -a -e $@ || (		\
++	$(Q)test -e $(srctree)/include/generated/autoconf.h -a -e $(srctree)/$@ || (		\
+ 	echo >&2;							\
+ 	echo >&2 "  ERROR: Kernel configuration is invalid.";		\
+ 	echo >&2 "         include/generated/autoconf.h or $@ are missing.";\
+-- 
+2.0.3
 
-Thanks!
-
-P.
-> 
