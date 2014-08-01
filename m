@@ -1,118 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103AbaHANRO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:17:14 -0400
-Received: from mga03.intel.com ([143.182.124.21]:53292 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754881AbaHANRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 09:17:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,780,1400050800"; 
-   d="asc'?scan'208";a="463977998"
-Message-ID: <1406899019.11706.9.camel@intelbox>
-Subject: Re: [Intel-gfx] [BUG?] 3.16-rc6 ... at
- drivers/gpu/drm/i915/intel_pm.c:5997 intel_display_power_put+0x12d/0x160()
-From: Imre Deak <imre.deak@intel.com>
-Reply-To: imre.deak@intel.com
-To: Ian Kumlien <ian.kumlien@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        intel-gfx@lists.freedesktop.org
-Date: Fri, 01 Aug 2014 16:16:59 +0300
-In-Reply-To: <1406843268.6143.1.camel@gmail.com>
-References: <1406158393.13064.1.camel@gmail.com>
-	 <1406280517.17325.3.camel@intelbox> <1406753579.31042.1.camel@gmail.com>
-	 <1406806772.18327.14.camel@intelbox> <1406843268.6143.1.camel@gmail.com>
-Organization: Intel
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-xPYLAU7Ac22dt/rbrQug"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S932137AbaHANR0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:17:26 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:58592 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881AbaHANRY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 09:17:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [RFC PATCH 00/11] Refactor MSI to support Non-PCI device
+Date: Fri, 1 Aug 2014 15:16:26 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Paul.Mundt@huawei.com, Marc Zyngier <marc.zyngier@arm.com>,
+        linux-pci@vger.kernel.org,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        virtualization@lists.linux-foundation.org,
+        Xinwei Hu <huxinwei@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
+        "Bjorn Helgaas" <bhelgaas@google.com>, Wuyun <wuyun.wu@huawei.com>
+References: <1406344128-27055-1-git-send-email-wangyijing@huawei.com> <53D89502.60506@linux.intel.com> <53D89CA1.7000501@huawei.com>
+In-Reply-To: <53D89CA1.7000501@huawei.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201408011516.26253.arnd@arndb.de>
+X-Provags-ID: V02:K0:7H9iywbwAK6pklTnzxZ0UQUY9kyqxb7fyiTMt9bMgQX
+ pZJLIIFdRx+XfKXpPwm0NjUAyf30ozvx6al3AyelFrtBptRhEf
+ BJ44W1tzBZUEpVUgKcdZ+J/8ksy+Q+aXpfolMhOrjLi7a+68Lx
+ jXV2NAH+ydzlebIt5tGclhYWVcFHOQaqAAQGloRTjTaGj9P+dE
+ rEPD6tvTXKVm+rkUnLHwtY5giU1kgwaZzha2nb4AtFlvj+G1r4
+ RRU/E3uypS97vN4fgF/OJfadKGb16N2kqF3SXmtp4BGBCUSOfg
+ tC1z7zfKCkW4I0PVTjTkrI7WRTsqwF8BgnmPU0d7u4ff0EbQI5
+ SGHXxt8z+0cATdkbXVVP0EY7TIKtrD/3+wEw9tknZ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 30 July 2014, Yijing Wang wrote:
+> >>>
+> >>> The other part I'm not completely sure about is how you want to
+> >>> have MSIs map into normal IRQ descriptors. At the moment, all
+> >>> MSI users are based on IRQ numbers, but this has known scalability problems.
+> >>
+> >> Hmmm, I still use the IRQ number to map the MSIs to IRQ description.
+> >> I'm sorry, I don't understand you meaning.
+> >> What are the scalability problems you mentioned ?
+> > We have soft limitation of nr_irqs or hard limitation NR_IRQS,
+> > we couldn't allocate as much irq number as we need in some cases,
+> > such as to support MSI-x.
+> 
+> Oh, yes, this is a potential issue. Gerry, thanks for you explanation. :)
 
---=-xPYLAU7Ac22dt/rbrQug
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This should no longer be an issue, as arm64 uses CONFIG_SPARSE_IRQ
+and the number of interrupts is not limited in any form.
 
-On Thu, 2014-07-31 at 23:47 +0200, Ian Kumlien wrote:
-> On tor, 2014-07-31 at 14:39 +0300, Imre Deak wrote:
-> > On Wed, 2014-07-30 at 22:52 +0200, Ian Kumlien wrote:
-> > > Sorry for the delay, it's been damned hot - vacation is over and
-> > > overtime has been all the rage at work...
-> >=20
-> > No problem, thanks for the feedback.
-> >=20
-> > > On fre, 2014-07-25 at 12:28 +0300, Imre Deak wrote:
-> > > > On Thu, 2014-07-24 at 01:33 +0200, Ian Kumlien wrote:
-> > > > > Try four, now including CC lists for the intel driver...
-> > > >=20
-> > > > Could you give a try to the 2 patches at:
-> > > > https://patchwork.kernel.org/patch/4437061/
-> > >=20
-> > > Didn't quite get that it was two separate patches at first, but when =
-i
-> > > did i also spotted a v2 of the patch set.
-> > >=20
-> > > I applied:
-> > > https://patchwork.kernel.org/patch/4648961/
-> > > https://patchwork.kernel.org/patch/4648951/
-> > >=20
-> > > On to 3.16-rc7 (there was some fuzz but it applied fine)
-> > >=20
-> > > I didn't see any OOPS:es (didn't scroll around too much) but otoh the
-> > > screen never turned off? (it's one of those silly mac things, the app=
-le
-> > > is still lit) and the machine doesn't "suspend/sleep" anymore.
-> > >=20
-> > > AFAIR it does, after some coaxing, on the unpatched kernel (ie, not t=
-he
-> > > first time but the second time i turn down the lid, i tried three tim=
-es
-> > > and play:ed with brightness as i assume you can see in the log)
-> >=20
-> > Hm, I can't see how these patches could prevent system suspend. Also
-> > according to the dmesg you sent suspend didn't even start, so I guess
-> > you're seeing a separate issue. Maybe the lid notification isn't
-> > properly handled, but I can't really help tracking that down.
->=20
-> It works without the drm.debug=3D14 so it might be something else...=20
->=20
-> > In any case to reproduce the particular bug in question (or see if the
-> > fix works) you need to get the machine to suspend/resume somehow. One
-> > way is to 'echo mem > /sys/power/state' as root and resume by pressing
-> > power button or similar; could you still try this, again sending the
-> > dmesg?
->=20
-> You'll find it attached ;)
+My point was more that the device driver should not need to care about
+the interrupt number: it gets made up on the spot when the MSI is
+needed, and then it is only used to request the IRQ. This can be
+simplified into one interface at the device driver level, even though
+the internal still use numbers somewhere. If we ever remove IRQ numbers
+from the driver API, this part doesn't need to get touched again.
 
-Ok, I see the trace of suspend/resume now, but the bug has vanished.. I
-can't see the WARN backtrace in your original report, nor the debug
-message from the above fix, that would indicate that it had fixed
-anything ("VDD left on by BIOS, adjusting state tracking"). So I'm a bit
-lost, I would need a full dmesg with either the WARN or this debug
-message.
-
---Imre
-
-
---=-xPYLAU7Ac22dt/rbrQug
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQEcBAABAgAGBQJT25NLAAoJEORIIAnNuWDFdnkIAPQY1gLS1qJshY4TSz+c8uz5
-VXp5KZ9hgFWPjdwGdmivOn27M6htKX76C72E5+cYHwCqjCPnfCRR4S82AIppJxlg
-deOk6sGP8HYH/Yn5krxcTKwZW3fjO8v9fZzRCPcIZdur+2W0uXHUkxUQZA0WHAn+
-v2vwoxsI4maHjfiuNv7GJE1AtrVxL66bla6c2A3XjU6mI8yhxhUocewmr70aiibP
-nA9atSi8+TCCloC9DsYTvPuYqKD5E7B5TcdfgTT6FQUxaBZrjeZikbZj+Ib43lJp
-BRW1gs4YPPmLrcCXo/g/RJRK2b2uoZvC9kL7K5h+tbWcGF8rcbzIxvJ9xcKyMvA=
-=fp4u
------END PGP SIGNATURE-----
-
---=-xPYLAU7Ac22dt/rbrQug--
-
+	Arnd
