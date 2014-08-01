@@ -1,112 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910AbaHATxr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 15:53:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11300 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754141AbaHATxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 15:53:46 -0400
-Date: Fri, 1 Aug 2014 15:53:38 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Peter Feiner <pfeiner@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: softdirty: respect VM_SOFTDIRTY in PTE holes
-Message-ID: <20140801195338.GA29508@nhori.bos.redhat.com>
-References: <1406846605-12176-1-git-send-email-pfeiner@google.com>
+	id S1756046AbaHATy4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 15:54:56 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35658 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460AbaHATyy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 15:54:54 -0400
+Message-ID: <53DBF08C.3020703@codeaurora.org>
+Date: Fri, 01 Aug 2014 12:54:52 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406846605-12176-1-git-send-email-pfeiner@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Prarit Bhargava <prarit@redhat.com>
+CC: Saravana Kannan <skannan@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
+ to be held for duration of changing governors [v2]
+References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org> <53DAA749.5080506@redhat.com> <53DAA95B.2040505@codeaurora.org> <53DAB038.3050007@redhat.com> <53DABFA6.6090503@codeaurora.org> <53DACA26.1000908@redhat.com> <53DAE592.2030909@codeaurora.org> <53DB6B81.6050400@redhat.com> <53DBCBE8.6010809@codeaurora.org> <53DBE764.8050109@redhat.com> <53DBEC27.7050803@codeaurora.org> <53DBEDE7.90400@redhat.com>
+In-Reply-To: <53DBEDE7.90400@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 06:43:25PM -0400, Peter Feiner wrote:
-> After a VMA is created with the VM_SOFTDIRTY flag set,
-> /proc/pid/pagemap should report that the VMA's virtual pages are
-> soft-dirty until VM_SOFTDIRTY is cleared (i.e., by the next write of
-> "4" to /proc/pid/clear_refs). However, pagemap ignores the
-> VM_SOFTDIRTY flag for virtual addresses that fall in PTE holes (i.e.,
-> virtual addresses that don't have a PMD, PUD, or PGD allocated yet).
-> 
-> To observe this bug, use mmap to create a VMA large enough such that
-> there's a good chance that the VMA will occupy an unused PMD, then
-> test the soft-dirty bit on its pages. In practice, I found that a VMA
-> that covered a PMD's worth of address space was big enough.
-> 
-> This patch adds the necessary VMA lookup to the PTE hole callback in
-> /proc/pid/pagemap's page walk and sets soft-dirty according to the
-> VMAs' VM_SOFTDIRTY flag.
-> 
-> Signed-off-by: Peter Feiner <pfeiner@google.com>
+On 08/01/14 12:43, Prarit Bhargava wrote:
+>
+> On 08/01/2014 03:36 PM, Stephen Boyd wrote:
+>> On 08/01/14 12:15, Prarit Bhargava wrote:
+>>> On 08/01/2014 01:18 PM, Stephen Boyd wrote:
+>>>> On 08/01/14 03:27, Prarit Bhargava wrote:
+>>>>> Can you send me the test and the trace of the deadlock?  I'm not creating it with:
+>>>>>
+>>>> This was with conservative as the default, and switching to ondemand
+>>>>
+>>>> # cd /sys/devices/system/cpu/cpu2/cpufreq
+>>>> # ls
+>>>> affected_cpus                  scaling_available_governors
+>>>> conservative                   scaling_cur_freq
+>>>> cpuinfo_cur_freq               scaling_driver
+>>>> cpuinfo_max_freq               scaling_governor
+>>>> cpuinfo_min_freq               scaling_max_freq
+>>>> cpuinfo_transition_latency     scaling_min_freq
+>>>> related_cpus                   scaling_setspeed
+>>>> scaling_available_frequencies  stats
+>>>> # cat conservative/down_threshold
+>>>> 20
+>>>> # echo ondemand > scaling_governor
+>>> Thanks Stephen,
+>>>
+>>> There's obviously a difference in our .configs.  I have a global conservative
+>>> directory, ie) /sys/devices/system/cpu/cpufreq/conservative instead of a per-cpu
+>>> governor file.
+>>>
+>>> ie) what are your .config options for CPUFREQ?
+>>>
+>>> Mine are:
+>>>
+>>> #
+>>> # CPU Frequency scaling
+>>> #
+>>> CONFIG_CPU_FREQ=y
+>>> CONFIG_CPU_FREQ_GOV_COMMON=y
+>>> CONFIG_CPU_FREQ_STAT=m
+>>> CONFIG_CPU_FREQ_STAT_DETAILS=y
+>>> # CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE is not set
+>>> # CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE is not set
+>>> # CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND is not set
+>>> CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE=y
+>>> CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+>>> CONFIG_CPU_FREQ_GOV_POWERSAVE=y
+>>> CONFIG_CPU_FREQ_GOV_USERSPACE=y
+>>> CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+>>> CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
+>>>
+>>> Is there some other config option I have to set?
+>> I have the same options. The difference is that my driver has a governor
+>> per policy. That's set with the CPUFREQ_HAVE_GOVERNOR_PER_POLICY flag.
+>> If I remove that flag I can't trigger the lockdep splat anymore with
+>> this sequence and your patch.
+> I see -- so you're seeing this on arm then?  If so, let me know so I can reserve
+> one to work on :)
+>
 
-It's unfortunate that we have to do this kind of vma boundary calculation
-inside pagemap_pte_hole, which comes from poor vma handling in mm/pagewalk.c.
-Recently I'm trying to solve this (I posted ver.6 patchset today) and if
-that's merged, your problem should be implicitly fixed.
+I only have ARM to test on. You can set this flag in your cpufreq driver
+if you have independently scaling CPU frequencies, so it isn't
+necessarily an ARM thing.
 
-But anyway if Andrew decided to merge your patch in first, it's OK for me.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Acked-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-
-Thanks,
-Naoya Horiguchi
-
-> ---
->  fs/proc/task_mmu.c | 27 +++++++++++++++++++++------
->  1 file changed, 21 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index cfa63ee..dfc791c 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -925,15 +925,30 @@ static int pagemap_pte_hole(unsigned long start, unsigned long end,
->  				struct mm_walk *walk)
->  {
->  	struct pagemapread *pm = walk->private;
-> -	unsigned long addr;
-> +	unsigned long addr = start;
->  	int err = 0;
-> -	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
->  
-> -	for (addr = start; addr < end; addr += PAGE_SIZE) {
-> -		err = add_to_pagemap(addr, &pme, pm);
-> -		if (err)
-> -			break;
-> +	while (addr < end) {
-> +		struct vm_area_struct *vma = find_vma(walk->mm, addr);
-> +		pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
-> +		unsigned long vm_end;
-> +
-> +		if (!vma) {
-> +			vm_end = end;
-> +		} else {
-> +			vm_end = min(end, vma->vm_end);
-> +			if (vma->vm_flags & VM_SOFTDIRTY)
-> +				pme.pme |= PM_STATUS2(pm->v2, __PM_SOFT_DIRTY);
-> +		}
-> +
-> +		for (; addr < vm_end; addr += PAGE_SIZE) {
-> +			err = add_to_pagemap(addr, &pme, pm);
-> +			if (err)
-> +				goto out;
-> +		}
->  	}
-> +
-> +out:
->  	return err;
->  }
->  
-> -- 
-> 2.0.0.526.g5318336
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
