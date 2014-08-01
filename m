@@ -1,65 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142AbaHACqq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 22:46:46 -0400
-Received: from exprod5og105.obsmtp.com ([64.18.0.180]:57918 "HELO
-	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752102AbaHACpE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 22:45:04 -0400
-From: Feng Kan <fkan@apm.com>
-To: linux@roeck-us.net, dbaryshkov@gmail.com, catalin.marinas@arm.com,
-        dwmw2@infradead.org, arnd@arndb.de, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@apm.com
-Cc: Feng Kan <fkan@apm.com>
-Subject: [PATCH V9 2/6] Documentation: power: reset: Add documentation for generic SYSCON reboot driver
-Date: Thu, 31 Jul 2014 19:45:53 -0700
-Message-Id: <1406861157-29169-3-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406861157-29169-1-git-send-email-fkan@apm.com>
-References: <1406861157-29169-1-git-send-email-fkan@apm.com>
+	id S1753185AbaHACyE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 22:54:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:64450 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751072AbaHACyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 22:54:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,776,1400050800"; 
+   d="scan'208";a="570274523"
+Message-ID: <53DB00C2.2040500@intel.com>
+Date: Fri, 01 Aug 2014 10:51:46 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Chen, Gong" <gong.chen@linux.intel.com>
+Subject: Re: [PATCH] ACPI/Processor: Add CPU_STARTING_FROZEN check in the
+ acpi_cpu_soft_notify()
+References: <1406798426-16483-1-git-send-email-tianyu.lan@intel.com> <1560513.OlLhy0HTTU@vostro.rjw.lan>
+In-Reply-To: <1560513.OlLhy0HTTU@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add documentation for generic SYSCON reboot driver.
+On 2014年08月01日 05:20, Rafael J. Wysocki wrote:
+> On Thursday, July 31, 2014 05:20:26 PM Lan Tianyu wrote:
+>> The callback of CPU_STARTING event can't sleep and so acpi_cpu_soft_notify()
+>> return directly when CPU_STARTING event is triggered. But cpu hotplug also
+>> happens during S2RAM. The action will become CPU_STARTING_FROZEN. This
+>> patch is to fix missing check the frozen event.
+>>
+>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> 
+> There is work to restructure the handling of CPU_TASKS_FROZEN under way
+> and Chen Gong is driving it.  That's likely to conflict with the last
+> two patches from you.  Can you please coordinate with Gong?
 
-Signed-off-by: Feng Kan <fkan@apm.com>
----
- .../bindings/power/reset/syscon-reboot.txt         | 23 ++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+Hi Rafael:
 
-diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
-new file mode 100644
-index 0000000..1190631
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
-@@ -0,0 +1,23 @@
-+Generic SYSCON mapped register reset driver
-+
-+This is a generic reset driver using syscon to map the reset register.
-+The reset is generally performed with a write to the reset register
-+defined by the register map pointed by syscon reference plus the offset
-+with the mask defined in the reboot node.
-+
-+Required properties:
-+- compatible: should contain "syscon-reboot"
-+- regmap: this is phandle to the register map node
-+- offset: offset in the register map for the reboot register (in bytes)
-+- mask: the reset value written to the reboot register (32 bit access)
-+
-+Default will be little endian mode, 32 bit access only.
-+
-+Examples:
-+
-+	reboot {
-+	   compatible = "syscon-reboot";
-+	   regmap = <&regmapnode>;
-+	   offset = <0x0>;
-+	   mask = <0x1>;
-+	};
+Thanks for reminder. I just checked Chen Gong's patchset "Gloabl CPU
+Hot-plug flag _FROZEN Clean up". There is no conflict between our
+patches. Gong's patch is to remove the following macro.
+
+CPU_ONLINE_FROZEN
+CPU_UP_PREPARE_FROZEN
+CPU_UP_CANCELED_FROZEN
+CPU_DOWN_PREPARE_FROZEN
+CPU_DOWN_FAILED_FROZEN
+CPU_DEAD_FROZEN
+CPU_DYING_FROZEN
+CPU_STARTING_FROZEN
+
+CPU_TASKS_FROZEN is still available and the CPU events during S2RAM
+are still (CPU_xxx | CPU_TASKS_FROZEN).
+
+BTW, this is a bug fix from my opinion and it should be backported to
+stable tree.
+
+> 
+> Rafael
+> 
+> 
+>> ---
+>>  drivers/acpi/processor_driver.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+>> index 4fcbd67..66e2249 100644
+>> --- a/drivers/acpi/processor_driver.c
+>> +++ b/drivers/acpi/processor_driver.c
+>> @@ -125,7 +125,7 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
+>>  	 * CPU_STARTING and CPU_DYING must not sleep. Return here since
+>>  	 * acpi_bus_get_device() may sleep.
+>>  	 */
+>> -	if (action == CPU_STARTING || action == CPU_DYING)
+>> +	if ((action & ~CPU_TASKS_FROZEN) == CPU_STARTING || action == CPU_DYING)
+>>  		return NOTIFY_DONE;
+>>  
+>>  	if (!pr || acpi_bus_get_device(pr->handle, &device))
+>>
+> 
+
+
 -- 
-1.9.1
-
+Best regards
+Tianyu Lan
