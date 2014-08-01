@@ -1,386 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867AbaHABLP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 21:11:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44099 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750977AbaHABLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 21:11:13 -0400
-Date: Fri, 1 Aug 2014 11:10:55 +1000
-From: NeilBrown <neilb@suse.de>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: akpm@linux-foundation.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christopher Li <sparse@chrisli.org>, Ingo Molnar <mingo@redhat.com>,
-        Jeff Layton <jlayton@poochiereds.net>, Michal Marek <mmarek@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-api@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        linux-sparse@vger.kernel.org
-Subject: Re: [PATCH 2/5] raid: Require designated initialization of
- structures
-Message-ID: <20140801111055.59419950@notabene.brown>
-In-Reply-To: <1d468224409ef2bf46874f817d19389ac5d1b26d.1406850006.git.josh@joshtriplett.org>
-References: <3130b0553b15518e3bef6d14c80280beed0f5ff9.1406850006.git.josh@joshtriplett.org>
-	<1d468224409ef2bf46874f817d19389ac5d1b26d.1406850006.git.josh@joshtriplett.org>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1752897AbaHABNS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 21:13:18 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55387 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751120AbaHABNR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 21:13:17 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jie Yang <yang.jie@intel.com>
+Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
+        andriy.shevchenko@linux.intel.com, liam.r.girdwood@intel.com,
+        vinod.koul@intel.com, mengdong.lin@intel.com
+Subject: Re: [PATCH v2] ACPI / LPSS: add lpss device for Wildcat Point PCH
+Date: Fri, 01 Aug 2014 03:31:51 +0200
+Message-ID: <11756414.44Jc0GixIr@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1406855195-14275-1-git-send-email-yang.jie@intel.com>
+References: <1406855195-14275-1-git-send-email-yang.jie@intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/M7cuTxQ/DXhWJ+vQv/kDnyh"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/M7cuTxQ/DXhWJ+vQv/kDnyh
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Friday, August 01, 2014 09:06:35 AM Jie Yang wrote:
+> INT3438 is the ADSP device on Wildcat Point platform
+> with 2 DW DMA engines built In. The DMA engines are
+> used for DSP FW loading and audio data transferring.
+> These DMA engine probing need the clock, without it,
+> probing may failed and can't go forward.
+> 
+> Add lpss device "INT3438" for Wildcat Point PCH, to
+> provide clock for its ADSP DMA engine probing.
+> 
+> Signed-off-by: Jie Yang <yang.jie@intel.com>
 
-On Thu, 31 Jul 2014 16:47:35 -0700 Josh Triplett <josh@joshtriplett.org>
-wrote:
-
-> Mark raid6_calls and other structures containing function pointers with
-> __designated_init.  Fix implementations in lib/raid6/ to use designated
-> initializers; this also simplifies those initializers using the default
-> initialization of fields to 0.
->=20
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-
-Looks like an excellent idea!
-Feel free to forward this upstream on my behalf, or remind me once the first
-patch is in -next, and I'll take this one myself - whichever you prefer.
-
- Acked-by: NeilBrown <neilb@suse.de>
-
-Thanks,
-NeilBrown
+Looks good, queued up for 3.17, thanks!
 
 > ---
->  include/linux/raid/pq.h    |  4 ++--
->  include/linux/raid/xor.h   |  2 +-
->  include/linux/raid_class.h |  2 +-
->  lib/raid6/altivec.uc       |  7 +++----
->  lib/raid6/avx2.c           | 24 ++++++++++++------------
->  lib/raid6/int.uc           |  6 ++----
->  lib/raid6/mmx.c            | 14 ++++++--------
->  lib/raid6/neon.c           |  7 +++----
->  lib/raid6/sse1.c           | 16 ++++++++--------
->  lib/raid6/sse2.c           | 24 ++++++++++++------------
->  lib/raid6/tilegx.uc        |  6 ++----
->  11 files changed, 52 insertions(+), 60 deletions(-)
->=20
-> diff --git a/include/linux/raid/pq.h b/include/linux/raid/pq.h
-> index 73069cb..2147bff 100644
-> --- a/include/linux/raid/pq.h
-> +++ b/include/linux/raid/pq.h
-> @@ -75,7 +75,7 @@ struct raid6_calls {
->  	int  (*valid)(void);	/* Returns 1 if this routine set is usable */
->  	const char *name;	/* Name of this routine set */
->  	int prefer;		/* Has special performance attribute */
-> -};
-> +} __designated_init;
-> =20
->  /* Selected algorithm */
->  extern struct raid6_calls raid6_call;
-> @@ -109,7 +109,7 @@ struct raid6_recov_calls {
->  	int  (*valid)(void);
->  	const char *name;
->  	int priority;
-> -};
-> +} __designated_init;
-> =20
->  extern const struct raid6_recov_calls raid6_recov_intx1;
->  extern const struct raid6_recov_calls raid6_recov_ssse3;
-> diff --git a/include/linux/raid/xor.h b/include/linux/raid/xor.h
-> index 5a21095..c7df59f 100644
-> --- a/include/linux/raid/xor.h
-> +++ b/include/linux/raid/xor.h
-> @@ -17,6 +17,6 @@ struct xor_block_template {
->  		     unsigned long *, unsigned long *);
->  	void (*do_5)(unsigned long, unsigned long *, unsigned long *,
->  		     unsigned long *, unsigned long *, unsigned long *);
-> -};
-> +} __designated_init;
-> =20
->  #endif
-> diff --git a/include/linux/raid_class.h b/include/linux/raid_class.h
-> index 31e1ff6..603af94 100644
-> --- a/include/linux/raid_class.h
-> +++ b/include/linux/raid_class.h
-> @@ -16,7 +16,7 @@ struct raid_function_template {
->  	int (*is_raid)(struct device *);
->  	void (*get_resync)(struct device *);
->  	void (*get_state)(struct device *);
-> -};
-> +} __designated_init;
-> =20
->  enum raid_state {
->  	RAID_STATE_UNKNOWN =3D 0,
-> diff --git a/lib/raid6/altivec.uc b/lib/raid6/altivec.uc
-> index 7cc12b5..4ff138c 100644
-> --- a/lib/raid6/altivec.uc
-> +++ b/lib/raid6/altivec.uc
-> @@ -118,10 +118,9 @@ int raid6_have_altivec(void)
->  #endif
-> =20
->  const struct raid6_calls raid6_altivec$# =3D {
-> -	raid6_altivec$#_gen_syndrome,
-> -	raid6_have_altivec,
-> -	"altivecx$#",
-> -	0
-> +	.gen_syndrome =3D raid6_altivec$#_gen_syndrome,
-> +	.valid =3D raid6_have_altivec,
-> +	.name =3D "altivecx$#",
->  };
-> =20
->  #endif /* CONFIG_ALTIVEC */
-> diff --git a/lib/raid6/avx2.c b/lib/raid6/avx2.c
-> index bc3b1dd..e56fa06 100644
-> --- a/lib/raid6/avx2.c
-> +++ b/lib/raid6/avx2.c
-> @@ -88,10 +88,10 @@ static void raid6_avx21_gen_syndrome(int disks, size_=
-t bytes, void **ptrs)
+>  drivers/acpi/acpi_lpss.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+> index 9cb65b0..ce06149 100644
+> --- a/drivers/acpi/acpi_lpss.c
+> +++ b/drivers/acpi/acpi_lpss.c
+> @@ -113,6 +113,14 @@ static void lpss_i2c_setup(struct lpss_private_data *pdata)
+>  	writel(val, pdata->mmio_base + offset);
 >  }
-> =20
->  const struct raid6_calls raid6_avx2x1 =3D {
-> -	raid6_avx21_gen_syndrome,
-> -	raid6_have_avx2,
-> -	"avx2x1",
-> -	1			/* Has cache hints */
-> +	.gen_syndrome =3D raid6_avx21_gen_syndrome,
-> +	.valid =3D raid6_have_avx2,
-> +	.name =3D "avx2x1",
-> +	.prefer =3D 1,		/* Has cache hints */
+>  
+> +static struct lpss_device_desc wpt_dev_desc = {
+> +	.clk_required = true,
+> +	.prv_offset = 0x800,
+> +	.ltr_required = true,
+> +	.clk_divider = true,
+> +	.clk_gate = true,
+> +};
+> +
+>  static struct lpss_device_desc lpt_dev_desc = {
+>  	.clk_required = true,
+>  	.prv_offset = 0x800,
+> @@ -226,6 +234,8 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
+>  	{ "INT3436", LPSS_ADDR(lpt_sdio_dev_desc) },
+>  	{ "INT3437", },
+>  
+> +	{ "INT3438", LPSS_ADDR(wpt_dev_desc) },
+> +
+>  	{ }
 >  };
-> =20
->  /*
-> @@ -149,10 +149,10 @@ static void raid6_avx22_gen_syndrome(int disks, siz=
-e_t bytes, void **ptrs)
->  }
-> =20
->  const struct raid6_calls raid6_avx2x2 =3D {
-> -	raid6_avx22_gen_syndrome,
-> -	raid6_have_avx2,
-> -	"avx2x2",
-> -	1			/* Has cache hints */
-> +	.gen_syndrome =3D raid6_avx22_gen_syndrome,
-> +	.valid =3D raid6_have_avx2,
-> +	.name =3D "avx2x2",
-> +	.prefer =3D 1,		/* Has cache hints */
->  };
-> =20
->  #ifdef CONFIG_X86_64
-> @@ -241,10 +241,10 @@ static void raid6_avx24_gen_syndrome(int disks, siz=
-e_t bytes, void **ptrs)
->  }
-> =20
->  const struct raid6_calls raid6_avx2x4 =3D {
-> -	raid6_avx24_gen_syndrome,
-> -	raid6_have_avx2,
-> -	"avx2x4",
-> -	1			/* Has cache hints */
-> +	.gen_syndrome =3D raid6_avx24_gen_syndrome,
-> +	.valid =3D raid6_have_avx2,
-> +	.name =3D "avx2x4",
-> +	.prefer =3D 1,		/* Has cache hints */
->  };
->  #endif
-> =20
-> diff --git a/lib/raid6/int.uc b/lib/raid6/int.uc
-> index 5b50f8d..35ad01a 100644
-> --- a/lib/raid6/int.uc
-> +++ b/lib/raid6/int.uc
-> @@ -108,10 +108,8 @@ static void raid6_int$#_gen_syndrome(int disks, size=
-_t bytes, void **ptrs)
->  }
-> =20
->  const struct raid6_calls raid6_intx$# =3D {
-> -	raid6_int$#_gen_syndrome,
-> -	NULL,		/* always valid */
-> -	"int" NSTRING "x$#",
-> -	0
-> +	.gen_syndrome =3D raid6_int$#_gen_syndrome,
-> +	.name =3D "int" NSTRING "x$#",
->  };
-> =20
->  #endif
-> diff --git a/lib/raid6/mmx.c b/lib/raid6/mmx.c
-> index 590c71c..cdd7d02 100644
-> --- a/lib/raid6/mmx.c
-> +++ b/lib/raid6/mmx.c
-> @@ -75,10 +75,9 @@ static void raid6_mmx1_gen_syndrome(int disks, size_t =
-bytes, void **ptrs)
->  }
-> =20
->  const struct raid6_calls raid6_mmxx1 =3D {
-> -	raid6_mmx1_gen_syndrome,
-> -	raid6_have_mmx,
-> -	"mmxx1",
-> -	0
-> +	.gen_syndrome =3D raid6_mmx1_gen_syndrome,
-> +	.valid =3D raid6_have_mmx,
-> +	.name =3D "mmxx1",
->  };
-> =20
->  /*
-> @@ -133,10 +132,9 @@ static void raid6_mmx2_gen_syndrome(int disks, size_=
-t bytes, void **ptrs)
->  }
-> =20
->  const struct raid6_calls raid6_mmxx2 =3D {
-> -	raid6_mmx2_gen_syndrome,
-> -	raid6_have_mmx,
-> -	"mmxx2",
-> -	0
-> +	.gen_syndrome =3D raid6_mmx2_gen_syndrome,
-> +	.valid =3D raid6_have_mmx,
-> +	.name =3D "mmxx2",
->  };
-> =20
->  #endif
-> diff --git a/lib/raid6/neon.c b/lib/raid6/neon.c
-> index 36ad470..99100dd 100644
-> --- a/lib/raid6/neon.c
-> +++ b/lib/raid6/neon.c
-> @@ -41,10 +41,9 @@
->  		kernel_neon_end();					\
->  	}								\
->  	struct raid6_calls const raid6_neonx ## _n =3D {			\
-> -		raid6_neon ## _n ## _gen_syndrome,			\
-> -		raid6_have_neon,					\
-> -		"neonx" #_n,						\
-> -		0							\
-> +		.gen_syndrome =3D raid6_neon ## _n ## _gen_syndrome,	\
-> +		.valid =3D raid6_have_neon,				\
-> +		.name =3D "neonx" #_n,					\
->  	}
-> =20
->  static int raid6_have_neon(void)
-> diff --git a/lib/raid6/sse1.c b/lib/raid6/sse1.c
-> index f762971..a9de46e 100644
-> --- a/lib/raid6/sse1.c
-> +++ b/lib/raid6/sse1.c
-> @@ -91,10 +91,10 @@ static void raid6_sse11_gen_syndrome(int disks, size_=
-t bytes, void **ptrs)
->  }
-> =20
->  const struct raid6_calls raid6_sse1x1 =3D {
-> -	raid6_sse11_gen_syndrome,
-> -	raid6_have_sse1_or_mmxext,
-> -	"sse1x1",
-> -	1			/* Has cache hints */
-> +	.gen_syndrome =3D raid6_sse11_gen_syndrome,
-> +	.valid =3D raid6_have_sse1_or_mmxext,
-> +	.name =3D "sse1x1",
-> +	.prefer =3D 1,		/* Has cache hints */
->  };
-> =20
->  /*
-> @@ -153,10 +153,10 @@ static void raid6_sse12_gen_syndrome(int disks, siz=
-e_t bytes, void **ptrs)
->  }
-> =20
->  const struct raid6_calls raid6_sse1x2 =3D {
-> -	raid6_sse12_gen_syndrome,
-> -	raid6_have_sse1_or_mmxext,
-> -	"sse1x2",
-> -	1			/* Has cache hints */
-> +	.gen_syndrome =3D raid6_sse12_gen_syndrome,
-> +	.valid =3D raid6_have_sse1_or_mmxext,
-> +	.name =3D "sse1x2",
-> +	.prefer =3D 1,		/* Has cache hints */
->  };
-> =20
->  #endif
-> diff --git a/lib/raid6/sse2.c b/lib/raid6/sse2.c
-> index 85b82c8..cd262518aa 100644
-> --- a/lib/raid6/sse2.c
-> +++ b/lib/raid6/sse2.c
-> @@ -89,10 +89,10 @@ static void raid6_sse21_gen_syndrome(int disks, size_=
-t bytes, void **ptrs)
->  }
-> =20
->  const struct raid6_calls raid6_sse2x1 =3D {
-> -	raid6_sse21_gen_syndrome,
-> -	raid6_have_sse2,
-> -	"sse2x1",
-> -	1			/* Has cache hints */
-> +	.gen_syndrome =3D raid6_sse21_gen_syndrome,
-> +	.valid =3D raid6_have_sse2,
-> +	.name =3D "sse2x1",
-> +	.prefer =3D 1,		/* Has cache hints */
->  };
-> =20
->  /*
-> @@ -151,10 +151,10 @@ static void raid6_sse22_gen_syndrome(int disks, siz=
-e_t bytes, void **ptrs)
->  }
-> =20
->  const struct raid6_calls raid6_sse2x2 =3D {
-> -	raid6_sse22_gen_syndrome,
-> -	raid6_have_sse2,
-> -	"sse2x2",
-> -	1			/* Has cache hints */
-> +	.gen_syndrome =3D raid6_sse22_gen_syndrome,
-> +	.valid =3D raid6_have_sse2,
-> +	.name =3D "sse2x2",
-> +	.prefer =3D 1,		/* Has cache hints */
->  };
-> =20
->  #ifdef CONFIG_X86_64
-> @@ -249,10 +249,10 @@ static void raid6_sse24_gen_syndrome(int disks, siz=
-e_t bytes, void **ptrs)
->  }
-> =20
->  const struct raid6_calls raid6_sse2x4 =3D {
-> -	raid6_sse24_gen_syndrome,
-> -	raid6_have_sse2,
-> -	"sse2x4",
-> -	1			/* Has cache hints */
-> +	.gen_syndrome =3D raid6_sse24_gen_syndrome,
-> +	.valid =3D raid6_have_sse2,
-> +	.name =3D "sse2x4",
-> +	.prefer =3D 1,		/* Has cache hints */
->  };
-> =20
->  #endif /* CONFIG_X86_64 */
-> diff --git a/lib/raid6/tilegx.uc b/lib/raid6/tilegx.uc
-> index e7c2945..3077722 100644
-> --- a/lib/raid6/tilegx.uc
-> +++ b/lib/raid6/tilegx.uc
-> @@ -79,8 +79,6 @@ void raid6_tilegx$#_gen_syndrome(int disks, size_t byte=
-s, void **ptrs)
->  }
-> =20
->  const struct raid6_calls raid6_tilegx$# =3D {
-> -	raid6_tilegx$#_gen_syndrome,
-> -	NULL,
-> -	"tilegx$#",
-> -	0
-> +	.gen_syndrome =3D raid6_tilegx$#_gen_syndrome,
-> +	.name =3D "tilegx$#",
->  };
+>  
+> 
 
-
---Sig_/M7cuTxQ/DXhWJ+vQv/kDnyh
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU9rpHznsnt1WYoG5AQKbPA/+OcPpQdH7YF9IW003H72axTgVavamvgQT
-SvQCGc3EBeBlErW+49TBvvRadNe81X4Qz4SKhFZxcC5S2QJU/bETohcm/72Zm5HX
-H79y1yWD2CIxYPOlPGCas0lLMY16w75vTQ/e7pTgk/ItNd5oRWaxvMNGoKhVk+e6
-cmhtAO44uN1+J6pf5dsSnAi9tBXcE1PqvyOwodkguoY52SrY8hRPeICokrkPfInt
-/2hB43PmTfKfYsGl6RwxIMGmQ31V8AzyZ6nkVzMzszw9DzKls+xDCYfteSp6KgtZ
-5G04FeF7h/LKXo9llPgu/VwPcmR+5Si55N+KoQehyi+XuV4yTQYzE0LfhPf18PZg
-5iBssYeGketzAWg54/aB9ZIpjfPmUA8diWjrIw0azUOoarutoKw9QUkA3pkJJndb
-X4t+nwDZQy3xOcx/vPL7gWeHylapugyOSjZBHD9SE/Xa9ZsvRcI2RemFzoqdPsyK
-6+GY+MP6zyEnXp85Y2Ry1paJkdy/cAf8XVPrcBi1GNziDeZHJxt6qYtQ5oMjkzZd
-/Fb6Kx7xN+qoyMkcZijtsJgZWgQk/EzsoeoR+aD5Zqz29HIprQUfWmGBcZ1/aIpw
-PJeWm8VI9l4DYXun/5j0oB7BZB8DQbM9KGFDZfpndWdeCrrAZe5Uu4K4uX/otG5N
-N5qXmEZVyO0=
-=XH/S
------END PGP SIGNATURE-----
-
---Sig_/M7cuTxQ/DXhWJ+vQv/kDnyh--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
