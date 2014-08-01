@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270AbaHAUYU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 16:24:20 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:58657 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215AbaHAUYP convert rfc822-to-8bit (ORCPT
+	id S932320AbaHAUYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 16:24:47 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59528 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932273AbaHAUYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 16:24:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <1406868897-26874-4-git-send-email-afaerber@suse.de>
-References: <1406868897-26874-1-git-send-email-afaerber@suse.de>
-	<1406868897-26874-4-git-send-email-afaerber@suse.de>
-Date: Fri, 1 Aug 2014 13:24:12 -0700
-X-Google-Sender-Auth: ewKxyLL1pDtE-ckolQs0MhkbdvM
-Message-ID: <CAD=FV=W2XJzv4NpB=27AFjX94VkH8dYXxAPBL58ntXL2WvRCoQ@mail.gmail.com>
-Subject: Re: [PATCH v5 03/10] ARM: dts: Clean up exynos5250-snow
-From: Doug Anderson <dianders@chromium.org>
-To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomasz Figa <t.figa@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 1 Aug 2014 16:24:45 -0400
+Message-ID: <1406924674.2654.19.camel@jarvis>
+Subject: Re: [PATCH] Save command pool address of Scsi_Host
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: jgross@suse.com, linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 02 Aug 2014 00:24:34 +0400
+In-Reply-To: <20140801120301.GA27198@infradead.org>
+References: <1406874425-3528-1-git-send-email-jgross@suse.com>
+	 <20140801120301.GA27198@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas,
+On Fri, 2014-08-01 at 05:03 -0700, Christoph Hellwig wrote:
+> On Fri, Aug 01, 2014 at 08:27:05AM +0200, jgross@suse.com wrote:
+> > From: Juergen Gross <jgross@suse.com>
+> > 
+> > If a scsi host driver specifies .cmd_len in it's scsi_host_template, a driver's
+> > private command pool is needed. scsi_find_host_cmd_pool() will locate it, but
+> > scsi_alloc_host_cmd_pool() isn't saving the pool address in the host template.
+> > 
+> > This will result in an access error when the host is removed.
+> > 
+> > Avoid the problem by saving the address of a new allocated command pool where
+> > it is expected.
+> > 
+> > Signed-off-by: Juergen Gross <jgross@suse.com>
+> 
+> Looks good, but minor nitpick below:
+> 
+> > +	if (shost->hostt->cmd_size)
+> > +		shost->hostt->cmd_pool = pool;
+> > +
+> 
+> 
+> We already have a local hostt variable for the host template in this
+> function, please use it.
 
-On Thu, Jul 31, 2014 at 9:54 PM, Andreas Färber <afaerber@suse.de> wrote:
-> Use the new style of referencing inherited nodes and use symbolic names.
-> Reorder one pinctrl node in GPIO order.
->
-> Goal is the alignment of all exynos5250 based device trees for comparison.
->
-> Suggested-by: Doug Anderson <dianders@chromium.org>
-> Signed-off-by: Andreas Färber <afaerber@suse.de>
-> ---
->  v4 -> v5:
->  * Introduced labels to consistently use new referencing style (Tomasz)
->  * Use IRQ_TYPE_* constants
->  * Use some more GPIO_ACTIVE_*
->
->  v3 -> v4: Unchanged
->
->  v3: New (Doug Anderson)
->
->  arch/arm/boot/dts/exynos5250-snow.dts | 291 +++++++++++++++++-----------------
->  arch/arm/boot/dts/exynos5250.dtsi     |  20 +--
+Wait, that's not right at all.  There looks to be a thinko in the
+command pool handling code.  We have both a cmd_pool in the host
+structure and in the host template structure, but there's confusion
+about which one we're supposed to be using.
 
-As much as possible it's nice to touch the main exynos dtsi file and
-specific board files in different patches.  Among other things it
-makes backporting the patch and resolving merge conflicts easier (if
-someone doesn't care about snow they could just pick up the main dtsi,
-for instance).
+The origin of confusion seems to be the reference counting in the pool
+itself ... you want the same pool for all hosts, since they can only
+have one cmd_size, but you want it created on first host use and
+destroyed again on the last one.
 
-I'm not a total stickler and I'd love to see this land quickly to
-avoid conflicts, though...
+If you take this patch, a host that attached, detaches and then attaches
+a host will panic because it will use a freed pool structure.
+
+This whole mess is created by the attempt to refcount the pools.  What's
+wrong with simply creating the pool at init time and deleting it again
+at module removal ... that way no refcounting and no bogus problems like
+this (and we can delete the cmd_pool from the host).  The restriction
+this would give is that cmd_size can only be set in the template, but
+that seems to be the only safe use anyway, since any driver trying to
+vary this in its host add routines will get unexpected results.
+
+James
 
 
-> +&sd3_clk {
-> +       samsung,pin-drv = <0>;
-> +};
-> +
-> +&sd3_cmd {
-> +       samsung,pin-pud = <3>;
-> +       samsung,pin-drv = <0>;
-> +};
-> +
-> +&sd3_bus4 {
-
-Itty bitty bitty nit that "bus" sorts alphabetically above "clk".  ;)
-Maybe Kukjin would be willing to sort these when he applies?
-
-
-Thank you for all your hard work on this one.  Things look MUCH MUCH
-nicer!  I did a pretty thorough review of your changes and it all
-looks good.
-
-Reviewed-by: Doug Anderson <dianders@chromium.org>
