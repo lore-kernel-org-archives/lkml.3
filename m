@@ -1,52 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949AbaHAIXJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 04:23:09 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:27953 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753511AbaHAIXG (ORCPT
+	id S1753126AbaHAIYw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 04:24:52 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:60458 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaHAIYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 04:23:06 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/UychB0mfOsw3aQEXyvUZA
-Date: Fri, 1 Aug 2014 01:21:41 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Jeremy Vial <jvial@adeneo-embedded.com>
-Cc: linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/2] Manage OMAP34xx ES3.1.2 rev to resume from suspend
-Message-ID: <20140801082140.GA26699@atomide.com>
-References: <1406812234-23163-1-git-send-email-jvial@adeneo-embedded.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406812234-23163-1-git-send-email-jvial@adeneo-embedded.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 1 Aug 2014 04:24:49 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH] perf script: Fix possible memory leaks
+Date: Fri,  1 Aug 2014 17:24:46 +0900
+Message-Id: <1406881486-5789-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jeremy Vial <jvial@adeneo-embedded.com> [140731 06:16]:
-> Hi,
-> 
-> My kernel crashed when my OMAP34xx ES3.1.2 leave suspend mode. The first
-> patch seems to solve the issue, and the second one corrects Linux kernel
-> coding style problems.
-> 
-> Jeremy Vial (2):
->   ARM: OMAP3: Fix choice of omap3_restore_es function in OMAP34XX
->     rev3.1.2 case.
->   ARM: OMAP3: Fix coding style problems in
->     arch/arm/mach-omap2/control.c
-> 
->  arch/arm/mach-omap2/control.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+Some paths in perf script don't call perf_session__delete() after
+creating a new session.
 
-Thanks applying these fixes for the merge window. I've tagged
-the first patch also for stable.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-script.c | 31 ++++++++++++++++++-------------
+ 1 file changed, 18 insertions(+), 13 deletions(-)
 
-Regards,
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index f57035b89c15..df0f84d7e825 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -1476,7 +1476,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	struct perf_session *session;
+ 	char *script_path = NULL;
+ 	const char **__argv;
+-	int i, j, err;
++	int i, j, err = 0;
+ 	struct perf_script script = {
+ 		.tool = {
+ 			.sample		 = process_sample_event,
+@@ -1730,14 +1730,15 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (header || header_only) {
+ 		perf_session__fprintf_info(session, stdout, show_full_info);
+ 		if (header_only)
+-			return 0;
++			goto out_delete;
+ 	}
+ 
+ 	script.session = session;
+ 
+ 	if (cpu_list) {
+-		if (perf_session__cpu_bitmap(session, cpu_list, cpu_bitmap))
+-			return -1;
++		err = perf_session__cpu_bitmap(session, cpu_list, cpu_bitmap);
++		if (err < 0)
++			goto out_delete;
+ 	}
+ 
+ 	if (!no_callchain)
+@@ -1752,53 +1753,57 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		if (output_set_by_user()) {
+ 			fprintf(stderr,
+ 				"custom fields not supported for generated scripts");
+-			return -1;
++			err = -EINVAL;
++			goto out_delete;
+ 		}
+ 
+ 		input = open(file.path, O_RDONLY);	/* input_name */
+ 		if (input < 0) {
+ 			perror("failed to open file");
+-			return -1;
++			err = -errno;
++			goto out_delete;
+ 		}
+ 
+ 		err = fstat(input, &perf_stat);
+ 		if (err < 0) {
+ 			perror("failed to stat file");
+-			return -1;
++			goto out_delete;
+ 		}
+ 
+ 		if (!perf_stat.st_size) {
+ 			fprintf(stderr, "zero-sized file, nothing to do!\n");
+-			return 0;
++			goto out_delete;
+ 		}
+ 
+ 		scripting_ops = script_spec__lookup(generate_script_lang);
+ 		if (!scripting_ops) {
+ 			fprintf(stderr, "invalid language specifier");
+-			return -1;
++			err = -ENOENT;
++			goto out_delete;
+ 		}
+ 
+ 		err = scripting_ops->generate_script(session->tevent.pevent,
+ 						     "perf-script");
+-		goto out;
++		goto out_delete;
+ 	}
+ 
+ 	if (script_name) {
+ 		err = scripting_ops->start_script(script_name, argc, argv);
+ 		if (err)
+-			goto out;
++			goto out_delete;
+ 		pr_debug("perf script started with script %s\n\n", script_name);
+ 	}
+ 
+ 
+ 	err = perf_session__check_output_opt(session);
+ 	if (err < 0)
+-		goto out;
++		goto out_delete;
+ 
+ 	err = __cmd_script(&script);
+ 
+-	perf_session__delete(session);
+ 	cleanup_scripting();
++out_delete:
++	perf_session__delete(session);
+ out:
+ 	return err;
+ }
+-- 
+2.0.0
 
-Tony
