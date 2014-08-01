@@ -1,95 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782AbaHAOBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:01:32 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:54495 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911AbaHAOB3 (ORCPT
+	id S1754612AbaHAOBO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 10:01:14 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33342 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754427AbaHAOBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:01:29 -0400
-Date: Fri, 1 Aug 2014 16:01:23 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Antoine =?utf-8?Q?T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ata: libahci: Make host flags unsigned long
-Message-ID: <20140801140121.GB373@ulmo.nvidia.com>
-References: <1406893181-24764-1-git-send-email-thierry.reding@gmail.com>
- <20140801125206.GB21624@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FkmkrVfFsRoUs1wW"
-Content-Disposition: inline
-In-Reply-To: <20140801125206.GB21624@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 1 Aug 2014 10:01:11 -0400
+From: Goffredo Baroncelli <kreijack@gmail.com>
+X-Google-Original-From: Goffredo Baroncelli <kreijack@inwind.it>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: "\"" <jdelvare@suse.de>, "\"" <linux-kernel@vger.kernel.org>,
+        "\"" <bryan@whatroute.net>
+Subject: [PATCH][v2] therm_windtunnel doesn't work properly on PowerMac G4
+Date: Fri,  1 Aug 2014 14:00:46 +0000
+Message-Id: <1406901650-20841-1-git-send-email-kreijack@inwind.it>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---FkmkrVfFsRoUs1wW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi All,
 
-On Fri, Aug 01, 2014 at 08:52:06AM -0400, Tejun Heo wrote:
-> On Fri, Aug 01, 2014 at 01:39:41PM +0200, Thierry Reding wrote:
-> > From: Thierry Reding <treding@nvidia.com>
-> >=20
-> > Commit 725c7b570fda (ata: libahci_platform: move port_map parameters
-> > into the AHCI structure) moves flags into the struct ahci_host_priv's
-> > .flags field, which causes compiler warnings on 64-bit builds when that
-> > value is cast to a void * pointer. Rather than adding additional casting
-> > to silence the warning, turn the flags field into a unsigned long.
->=20
-> Unless we're talking about a lot of places where such casting is
-> necessary, I'd actually prefer to keep the flags uint and use explicit
-> casting.  How many are we talking about?
+On a PowerMac G4 I noticed that between the kernel v3.2 and v3.14 I lost
+the fan management.
 
-I think there's just one occurrence. Turning the flags into an unsigned
-long seems like a much more natural thing to do, though Besides it being
-what many other parts of the kernel use for flags it gives us natural
-alignment within struct ahci_host_priv. The structure currently looks
-like this:
+I found on internet other references to this kind of problem [2]
 
-	struct ahci_host_priv {
-		unsigned int flags;
-		u32 force_port_map;
-		u32 mask_port_map;
 
-		void __iomem *mmio;
-		...
-	};
+**How reproduce:
+- booting with the kernel 3.2, the fan is "quite" silent.
+The module therm_windtunnel is loaded and in the log there are  
+lines like:
 
-On 64-bit that unsigned int will be 32-bit and cause additional padding
-to be inserted between mask_port_map and mmio to align the 64-bit
-pointer.
+	[ 1342.614956] CPU-temp: 58.7 C, Case: 33.7 C,  Fan: 5 (tuned +0)
+	[ 1390.637793] CPU-temp: 58.6 C, Case: 33.6 C,  Fan: 5
 
-It's not like the alignment is that *hugely* important, but it's still,
-you know, pretty.
+I had also access to the temperature via the sysfs files:
+/sys/devices/temperature/case_temperature  
+/sys/devices/temperature/cpu_temperature
 
-Thierry
 
---FkmkrVfFsRoUs1wW
-Content-Type: application/pgp-signature
+- booting with the kernel 3.14, the fan is very loud. The module 
+therm_windtunnel is not loaded. In the log there aren't any message
+related to the temperature. The sysfs entries don't exist.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAEBAgAGBQJT252xAAoJEN0jrNd/PrOhpIEP/0vUilXCfVDocsj35CZaO4P0
-qdDHuTnBoDiUZt/cpDPg8O9LbcGhOgQPVuXtJio7bWb17MutQC1Ptz7knDB2ZsC5
-Vx/SKMREGNPEtlB8bban1PnASx62RkTZConp4xcIGIn9lvBvXNlFXROCERyPBwH2
-I1OKx6hZMF5nczPdm825qA3IF85IXvkM00k51Sa6Nou6Bgfyrz7HAHO38GySImqR
-YntwO1fjQxVdZ3NrXkSBaKD3g9AWMVCKMICvLjdUPcd4zz8BxM0+SHA7x/jrYzZJ
-b1hFDVlUN3Vhp4vS68VXSB8CnY2FJPZcxkpuxxY1n3bteBwIQvhra7rvQ1m02ne5
-QvmQsiMX66EERn13ILChyXTRqQQjaOMlgGoIfVXU+UbIVXDM3Rctzt6x3TK2efFf
-n5Tg6ndWHxfQ0Oak0//sx65IpIHIvOjdUvy2l7qB5aBXORrKPoMTr046YuOHWmWw
-0V7EkuoPS2xH0IvsVT+H5s0o45ouIQ3sjZ3L9RAC/ki616W3ttS63FWCNi+RvrZi
-fgrYjhOWvIGbO4gJ3kUNxTZEnnwYNPZRzS7PkwdT9tYzImxDgbnjHgkfH3cwHaWY
-q4igi14LCKTcw5SG5zXRgjb2kXl+EnY0dLjC5t0O8s+qsmmRYQv4tgYh66TYoKlj
-94vFzUse8wBzOqv4YoTX
-=nhnL
------END PGP SIGNATURE-----
+** Analysis 
+In these Apple machines the module i2c-powermac requires the
+i2c drivers provided by the module therm_windtunnel.
 
---FkmkrVfFsRoUs1wW--
+Between the kernel v3.2 and v3.14 [1] some patches changed the 
+driver name requested by the i2c-powermac module, 
+so the therm_windtunnel modules is not instantiated anymore.
+
+
+** Proposed solution
+In the following emails I sent you 4 patches to solve this 
+problem (tested on my PowerMac G4)
+
+1) change the driver name
+	therm_ds1775 -> MAC,ds1775
+        therm_adm1030 -> MAC,adm1030
+so the i2c driver are instantiated by i2c-powermac
+
+2) remove the (unused) method do_attach from the i2c-driver
+3) add a parameter to the therm_windtunnel module 
+to control the kernel log message 
+4) export the fan speed via sysfs
+
+The patch 1) solve the problem. The patch 2) is a small cleanup.
+The patch 3) allow a better control of the log in dmesg.
+The patch 4) is copyied from the Bryan Christianson's patch (see
+debian bug #741663)
+
+Could you be so kindly to apply these patches ?
+
+PS:
+I am not LKML subscriber, so please put me in CC in case of reply.
+
+BR
+G.Baroncelli
+
+Changelog:
+v0: 2014/07/30
+	- first issue
+v1: 2014/08/01
+	- protect with a mutex the check before starting the fan 
+	  daemon (to protect from parallel drivers instantation)
+	- reduce the number of module parameters to 1 as suggested by 
+          Jean Delvare
+	- export the fan speed via sysfs
+
+[1] I think that the guilty commit is 
+commit 81e5d8646ff6bf323dddcf172aa3cef84468fa12
+Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date:   Wed Apr 18 22:16:42 2012 +0000
+
+    i2c/powermac: Register i2c devices from device-tree
+    
+    This causes i2c-powermac to register i2c devices exposed in the
+    device-tree, enabling new-style probing of devices.
+    
+    Note that we prefix the IDs with "MAC," in order to prevent the
+    generic drivers from matching. This is done on purpose as we only
+    want drivers specifically tested/designed to operate on powermacs
+    to match.
+    
+    This removes the special case we had for the AMS driver, and updates
+    the driver's match table instead.
+    
+    Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+
+[2] There is the debian bug #741663 which highlight the same problem. In
+the bug discussion there is a patch like the my ones.
+
+See also
+https://lists.ozlabs.org/pipermail/linuxppc-dev/2012-July/099561.html
+
+
+
+
+
