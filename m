@@ -1,138 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199AbaHAUxK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 16:53:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:57668 "EHLO mga01.intel.com"
+	id S932116AbaHAUyk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 16:54:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60359 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754825AbaHAUxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 16:53:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,782,1400050800"; 
-   d="scan'208";a="578901042"
-Message-ID: <1406926386.3198.6.camel@rzwisler-mobl1.amr.corp.intel.com>
-Subject: Re: [PATCH v9 00/22] Support ext4 on NV-DIMMs
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-To: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Boaz Harrosh <openosd@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 01 Aug 2014 14:53:06 -0600
-In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
-References: <cover.1406897885.git.willy@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755933AbaHAUyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 16:54:38 -0400
+Message-ID: <53DBFE8A.7020505@suse.de>
+Date: Fri, 01 Aug 2014 22:54:34 +0200
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>
+CC: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tomasz Figa <t.figa@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 05/10] ARM: dts: Move dp_hpd from exynos5250 into smdk5250
+ and snow
+References: <1406868897-26874-1-git-send-email-afaerber@suse.de>	<1406868897-26874-6-git-send-email-afaerber@suse.de> <CAD=FV=WhocoyQ=rU7dU1EPM-PAQq06gg9HhamSOm+BgMDeM8NA@mail.gmail.com>
+In-Reply-To: <CAD=FV=WhocoyQ=rU7dU1EPM-PAQq06gg9HhamSOm+BgMDeM8NA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-08-01 at 09:27 -0400, Matthew Wilcox wrote:
-> From: Matthew Wilcox <willy@linux.intel.com>
-> 
-> One of the primary uses for NV-DIMMs is to expose them as a block device
-> and use a filesystem to store files on the NV-DIMM.  While that works,
-> it currently wastes memory and CPU time buffering the files in the page
-> cache.  We have support in ext2 for bypassing the page cache, but it
-> has some races which are unfixable in the current design.  This series
-> of patches rewrite the underlying support, and add support for direct
-> access to ext4.
-> 
-> This iteration of the patchset rebases to 3.16-rc7 and makes substantial
-> changes based on feedback from Jan Kara, Boaz Harrosh and Kirill Shutemov:
-> 
->  - Fixes a double-unlock on i_mmap_mutex
->  - Switch the order of calling delete_from_page_cache() and
->    unmap_mapping_range() to match the truncate path
->  - Make dax_mkwrite a macro (Kirill)
->  - Drop vm_replace_mixed(); instead call unmap_mapping_range() before calling
->    vm_insert_mixed() (Kirill)
->  - Avoid lock inversion between i_mmap_mutex and transaction start (Jan)
->  - Move alignment & length checks into bdev_direct_access() (Boaz)
->  - Fix bugs in COW code; unfortunately this means reintroducing the knowledge
->    that the i_mmap_mutex protects PFNs to the core MM code.
-> 
-> Jan Kara (1):
->   ext4: Avoid lock inversion between i_mmap_mutex and transaction start
-> 
-> Matthew Wilcox (20):
->   axonram: Fix bug in direct_access
->   Change direct_access calling convention
->   Fix XIP fault vs truncate race
->   Allow page fault handlers to perform the COW
->   Introduce IS_DAX(inode)
->   Add copy_to_iter(), copy_from_iter() and iov_iter_zero()
->   Replace XIP read and write with DAX I/O
->   Replace ext2_clear_xip_target with dax_clear_blocks
->   Replace the XIP page fault handler with the DAX page fault handler
->   Replace xip_truncate_page with dax_truncate_page
->   Replace XIP documentation with DAX documentation
->   Remove get_xip_mem
->   ext2: Remove ext2_xip_verify_sb()
->   ext2: Remove ext2_use_xip
->   ext2: Remove xip.c and xip.h
->   Remove CONFIG_EXT2_FS_XIP and rename CONFIG_FS_XIP to CONFIG_FS_DAX
->   ext2: Remove ext2_aops_xip
->   Get rid of most mentions of XIP in ext2
->   xip: Add xip_zero_page_range
->   brd: Rename XIP to DAX
-> 
-> Ross Zwisler (1):
->   ext4: Add DAX functionality
-> 
->  Documentation/filesystems/Locking  |   3 -
->  Documentation/filesystems/dax.txt  |  91 +++++++
->  Documentation/filesystems/ext4.txt |   2 +
->  Documentation/filesystems/xip.txt  |  68 ------
->  arch/powerpc/sysdev/axonram.c      |  19 +-
->  drivers/block/Kconfig              |  13 +-
->  drivers/block/brd.c                |  26 +-
->  drivers/s390/block/dcssblk.c       |  21 +-
->  fs/Kconfig                         |  21 +-
->  fs/Makefile                        |   1 +
->  fs/block_dev.c                     |  34 +++
->  fs/dax.c                           | 476 ++++++++++++++++++++++++++++++++++++
->  fs/exofs/inode.c                   |   1 -
->  fs/ext2/Kconfig                    |  11 -
->  fs/ext2/Makefile                   |   1 -
->  fs/ext2/ext2.h                     |  10 +-
->  fs/ext2/file.c                     |  45 +++-
->  fs/ext2/inode.c                    |  38 +--
->  fs/ext2/namei.c                    |  13 +-
->  fs/ext2/super.c                    |  53 ++--
->  fs/ext2/xip.c                      |  91 -------
->  fs/ext2/xip.h                      |  26 --
->  fs/ext4/ext4.h                     |   6 +
->  fs/ext4/file.c                     |  53 +++-
->  fs/ext4/indirect.c                 |  18 +-
->  fs/ext4/inode.c                    |  65 +++--
->  fs/ext4/namei.c                    |  10 +-
->  fs/ext4/super.c                    |  39 ++-
->  fs/open.c                          |   5 +-
->  include/linux/blkdev.h             |   6 +-
->  include/linux/fs.h                 |  49 +++-
->  include/linux/mm.h                 |   1 +
->  include/linux/uio.h                |   3 +
->  mm/Makefile                        |   1 -
->  mm/fadvise.c                       |   6 +-
->  mm/filemap.c                       |   6 +-
->  mm/filemap_xip.c                   | 483 -------------------------------------
->  mm/iov_iter.c                      | 237 ++++++++++++++++--
->  mm/madvise.c                       |   2 +-
->  mm/memory.c                        |  33 ++-
->  40 files changed, 1206 insertions(+), 881 deletions(-)
->  create mode 100644 Documentation/filesystems/dax.txt
->  delete mode 100644 Documentation/filesystems/xip.txt
->  create mode 100644 fs/dax.c
->  delete mode 100644 fs/ext2/xip.c
->  delete mode 100644 fs/ext2/xip.h
->  delete mode 100644 mm/filemap_xip.c
+Doug,
 
-I've updated the master branch of PRD's GitHub repo
-(https://github.com/01org/prd) so that it is Linus's tip + DAX v9 + PRD.
+Am 01.08.2014 22:33, schrieb Doug Anderson:
+> On Thu, Jul 31, 2014 at 9:54 PM, Andreas Färber <afaerber@suse.de> wrote:
+>> Spring uses a different GPIO, so this is not a generic SoC piece.
+>>
+>> Suggested-by: Tomasz Figa <t.figa@samsung.com>
+>> Signed-off-by: Andreas Färber <afaerber@suse.de>
+>> ---
+>>  v5: New (Tomasz Figa)
+>>  Frees dp_hpd for Spring.
+>>
+>>  arch/arm/boot/dts/exynos5250-pinctrl.dtsi | 7 -------
+>>  arch/arm/boot/dts/exynos5250-smdk5250.dts | 9 +++++++++
+>>  arch/arm/boot/dts/exynos5250-snow.dts     | 7 +++++++
+>>  3 files changed, 16 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
+>> index 886cfca044ac..ed0e5230514b 100644
+>> --- a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
+>> +++ b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
+>> @@ -581,13 +581,6 @@
+>>                         samsung,pin-pud = <0>;
+>>                         samsung,pin-drv = <0>;
+>>                 };
+>> -
+>> -               dp_hpd: dp_hpd {
+>> -                       samsung,pins = "gpx0-7";
+>> -                       samsung,pin-function = <3>;
+>> -                       samsung,pin-pud = <0>;
+>> -                       samsung,pin-drv = <0>;
+>> -               };
+>>         };
+>>
+>>         pinctrl@13400000 {
+>> diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+>> index aaa055ac0fe3..5d30fe1dcda4 100644
+>> --- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
+>> +++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+>> @@ -414,3 +414,12 @@
+>>                 };
+>>         };
+>>  };
+>> +
+>> +&pinctrl_0 {
+>> +       dp_hpd: dp_hpd {
+>> +               samsung,pins = "gpx0-7";
+>> +               samsung,pin-function = <3>;
+>> +               samsung,pin-pud = <0>;
+>> +               samsung,pin-drv = <0>;
+>> +       };
+>> +};
+>> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+>> index c4b0c73c736d..a9a2f2743794 100644
+>> --- a/arch/arm/boot/dts/exynos5250-snow.dts
+>> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
+>> @@ -547,6 +547,13 @@
+>>  };
+>>
+>>  &pinctrl_0 {
+>> +       dp_hpd: dp_hpd {
+>> +               samsung,pins = "gpx0-7";
+>> +               samsung,pin-function = <3>;
+>> +               samsung,pin-pud = <0>;
+>> +               samsung,pin-drv = <0>;
+>> +       };
+>> +
+> 
+> NAK.  dp_hpd is a generic SoC piece.  Pin function 0 and 1 are GPIOs.
+> Pin function 3 is special function.  This pin _is_ the hot plug detect
+> pin for display port.  When it's set as special function 3 it goes
+> straight into the hot plug logic of the display port controller.
+> 
+> Spring may have had its reasons to detect hot plug events on a GPIO
+> instead of using this pin, but that doesn't make this pin any less the
+> "hot plug pin".
 
-I've also added a patch to PRD to enable dynamic allocation of partition
-numbers.
+Please advise how to handle it then: Should there be two different
+pinctrl entries (if so, how should it be named?), or should spring
+override the generic entry? As I reported, 3.8 has only one dp-hpd
+pinctrl entry, so I dropped the dp-hpd-gpio naming.
 
-- Ross
+Andreas
 
-
+-- 
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
