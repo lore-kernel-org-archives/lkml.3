@@ -1,51 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188AbaHAIZH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 04:25:07 -0400
-Received: from mail-bl2lp0204.outbound.protection.outlook.com ([207.46.163.204]:26971
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754085AbaHAIY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 04:24:59 -0400
-Message-ID: <53DB4EC3.3080507@freescale.com>
-Date: Fri, 1 Aug 2014 11:24:35 +0300
-From: Cristian Stoica <cristian.stoica@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754281AbaHAIZj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 04:25:39 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:42358 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084AbaHAIZF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 04:25:05 -0400
+Message-ID: <53DB4EC3.3050205@gmail.com>
+Date: Fri, 01 Aug 2014 16:24:35 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, <herbert@gondor.apana.org.au>,
-        <linux-crypto@vger.kernel.org>
-CC: <davem@davemloft.net>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Add TLS record layer encryption module
-References: <1406626353-23309-1-git-send-email-cristian.stoica@freescale.com>
- <53DAA031.30405@amacapital.net>
-In-Reply-To: <53DAA031.30405@amacapital.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(51704005)(97736001)(21056001)(23756003)(50986999)(54356999)(86362001)(102836001)(80316001)(79102001)(85852003)(104016003)(65816999)(76176999)(33656002)(26826002)(85306004)(74662001)(31966008)(92726001)(84676001)(4396001)(81542001)(81156004)(69596002)(81342001)(83506001)(99396002)(76482001)(92566001)(36756003)(107046002)(83072002)(87936001)(44976005)(6806004)(77982001)(106466001)(74502001)(64706001)(65956001)(2201001)(50466002)(64126003)(87266999)(47776003)(83322001)(95666004)(80022001)(20776003)(105606002)(68736004)(65806001)(59896001)(46102001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB562;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 029097202E
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=cristian.stoica@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] KVM: nVMX: fix acknowledge interrupt on exit when
+ APICv is in use
+References: <1406880793-16854-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1406880793-16854-1-git-send-email-wanpeng.li@linux.intel.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> This set of patches introduces support for TLS 1.0 record layer
->> encryption/decryption with a corresponding algorithm called
->> tls10(hmac(<hash>),cbc(<cipher>)).
->>
->> Similarly to authenc.c on which it is based, this module mixes the base
->> algorithms in software to produce an algorithm that does record layer
->> encryption and decryption for TLS1.0.
->> Any combination of hw and sw base algorithms is possible, but the purpose
->> is to take advantage of hardware acceleration for TLS record layer offloading
->> when hardware acceleration is present.
-> 
-> What is this used for?  AF_ALG?  I find it hard to believe that the
-> kernel will ever want to use this internally.
+Please ignore this duplicate one.
+ÓÚ 14-8-1 ÏÂÎç4:13, Wanpeng Li Ð´µÀ:
+> After commit 77b0f5d (KVM: nVMX: Ack and write vector info to intr_info
+> if L1 asks us to), "Acknowledge interrupt on exit" behavior can be
+> emulated. To do so, KVM will ask the APIC for the interrupt vector if
+> during a nested vmexit if VM_EXIT_ACK_INTR_ON_EXIT is set.  With APICv,
+> kvm_get_apic_interrupt would return -1 and give the following WARNING:
+>
+> Call Trace:
+>  [<ffffffff81493563>] dump_stack+0x49/0x5e
+>  [<ffffffff8103f0eb>] warn_slowpath_common+0x7c/0x96
+>  [<ffffffffa059709a>] ? nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
+>  [<ffffffff8103f11a>] warn_slowpath_null+0x15/0x17
+>  [<ffffffffa059709a>] nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
+>  [<ffffffffa0594295>] ? nested_vmx_exit_handled+0x6a/0x39e [kvm_intel]
+>  [<ffffffffa0537931>] ? kvm_apic_has_interrupt+0x80/0xd5 [kvm]
+>  [<ffffffffa05972ec>] vmx_check_nested_events+0xc3/0xd3 [kvm_intel]
+>  [<ffffffffa051ebe9>] inject_pending_event+0xd0/0x16e [kvm]
+>  [<ffffffffa051efa0>] vcpu_enter_guest+0x319/0x704 [kvm]
+>
+> If enabling APIC-v, all interrupts to L1 are delivered through APIC-v.
+> But when L2 is running, external interrupt will casue L1 vmexit with
+> reason external interrupt. Then L1 will pick up the interrupt through
+> vmcs12. when L1 ack the interrupt, since the APIC-v is enabled when
+> L1 is running, so APIC-v hardware still will do vEOI updating. The problem
+> is that the interrupt is delivered not through APIC-v hardware, this means
+> SVI/RVI/vPPR are not setting, but hardware required them when doing vEOI
+> updating. The solution is that, when L1 tried to pick up the interrupt
+> from vmcs12, then hypervisor will help to update the SVI/RVI/vPPR to make
+> sure the following vEOI updating and vPPR updating corrently.
+>     
+> Also, since interrupt is delivered through vmcs12, so APIC-v hardware will
+> not cleare vIRR and hypervisor need to clear it before L1 running.
+>
+> Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
+> Suggested-by: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+>  arch/x86/kvm/lapic.c | 18 ++++++++++++++++++
+>  arch/x86/kvm/lapic.h |  1 +
+>  arch/x86/kvm/vmx.c   | 10 ++++++++++
+>  3 files changed, 29 insertions(+)
+>
+> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+> index 3855103..06942b9 100644
+> --- a/arch/x86/kvm/lapic.c
+> +++ b/arch/x86/kvm/lapic.c
+> @@ -534,6 +534,24 @@ static void apic_set_tpr(struct kvm_lapic *apic, u32 tpr)
+>  	apic_update_ppr(apic);
+>  }
+>  
+> +int kvm_lapic_ack_apicv(struct kvm_vcpu *vcpu)
+> +{
+> +	struct kvm_lapic *apic = vcpu->arch.apic;
+> +	int vec;
+> +
+> +	vec = kvm_apic_has_interrupt(vcpu);
+> +
+> +	if (vec == -1)
+> +		return vec;
+> +
+> +	apic_set_vector(vec, apic->regs + APIC_ISR);
+> +	apic_update_ppr(apic);
+> +	apic_clear_vector(vec, apic->regs + APIC_IRR);
+> +
+> +	return vec;
+> +}
+> +EXPORT_SYMBOL_GPL(kvm_lapic_ack_apicv);
+> +
+>  int kvm_apic_match_physical_addr(struct kvm_lapic *apic, u16 dest)
+>  {
+>  	return dest == 0xff || kvm_apic_id(apic) == dest;
+> diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
+> index 6a11845..ead1392 100644
+> --- a/arch/x86/kvm/lapic.h
+> +++ b/arch/x86/kvm/lapic.h
+> @@ -169,5 +169,6 @@ static inline bool kvm_apic_has_events(struct kvm_vcpu *vcpu)
+>  }
+>  
+>  bool kvm_apic_pending_eoi(struct kvm_vcpu *vcpu, int vector);
+> +int kvm_lapic_ack_apicv(struct kvm_vcpu *vcpu);
+>  
+>  #endif
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index b8122b3..c604f3c 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -8766,6 +8766,16 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
+>  	if ((exit_reason == EXIT_REASON_EXTERNAL_INTERRUPT)
+>  	    && nested_exit_intr_ack_set(vcpu)) {
+>  		int irq = kvm_cpu_get_interrupt(vcpu);
+> +
+> +		if (irq < 0 && kvm_apic_vid_enabled(vcpu->kvm)) {
+> +			irq = kvm_lapic_ack_apicv(vcpu);
+> +			if (irq >= 0) {
+> +				vmx_hwapic_isr_update(vcpu->kvm, irq);
+> +				/* try to update RVI */
+> +				kvm_make_request(KVM_REQ_EVENT, vcpu);
+> +			}
+> +		}
+> +
+>  		WARN_ON(irq < 0);
+>  		vmcs12->vm_exit_intr_info = irq |
+>  			INTR_INFO_VALID_MASK | INTR_TYPE_EXT_INTR;
 
-Yes, AF_ALG is what we have in mind.
-
-Cristian S.
