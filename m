@@ -1,130 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880AbaHAOij (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:38:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27053 "EHLO mx1.redhat.com"
+	id S1754931AbaHAOja (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 10:39:30 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56732 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751602AbaHAOih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:38:37 -0400
-Message-ID: <53DBA647.5050702@redhat.com>
-Date: Fri, 01 Aug 2014 16:37:59 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751624AbaHAOj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 10:39:28 -0400
+Date: Fri, 1 Aug 2014 16:39:22 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
+Subject: Re: [PATCH] x86, irq: Keep IRQ assignment for PCI devices during
+ suspend/hibernation, bisected
+Message-ID: <20140801143922.GB5406@pd.tnic>
+References: <20140730175836.GC10213@pd.tnic>
+ <1406766807-5745-1-git-send-email-jiang.liu@linux.intel.com>
+ <20140731103941.GA4375@pd.tnic>
+ <53DA70AB.9010906@linux.intel.com>
+ <20140731165648.GG4375@pd.tnic>
+ <20140801105618.GA3857@nazgul.tnic>
+ <53DB87AB.1000900@linux.intel.com>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Oleg Nesterov <oleg@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-doc@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux390@de.ibm.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [PATCH 3/5] mm, shmem: Add shmem_vma() helper
-References: <1406036632-26552-1-git-send-email-jmarchan@redhat.com> <1406036632-26552-4-git-send-email-jmarchan@redhat.com> <alpine.LSU.2.11.1407312202040.3912@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1407312202040.3912@eggly.anvils>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="2cQbduG131xhmjaDiKFBGTpv3g0eo95pU"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53DB87AB.1000900@linux.intel.com>
+rom: Borislav Petkov <bp@alien8.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---2cQbduG131xhmjaDiKFBGTpv3g0eo95pU
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, Aug 01, 2014 at 08:27:23PM +0800, Jiang Liu wrote:
+> 	The above commit may cause failure of suspend/hiberrnation.
+> The reason is:
+> 1) With recent changers, we dynamically allocate irq number for IOAPIC
+>    pins.
+> 2) The allocated irq will be released when suspending/hibernating.
+> 	pci_disable_device()->pcibios_disable_irq()
+> 3) When resuming, a different irq may be assigned to the PCI device.
+> 	pci_enable_device()->pcibios_enable_irq()
+> 4) Now the hardware will deliver interrupt to the new allocated irq
+>    but the interrupt handler is still registered on old irq, so it
+>    breaks the driver and causes failure of hibernation.
+> 
+> The patch sent out by me is to fix this issue by keeping the allocated
+> irq when suspend/hibernate. And seems it works as expected.
+> 
+> But I still don't know why it causes IOMMU related warnings as:
+> AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009
+> address=0x0000000000000000 flags=0x0000]
 
-On 08/01/2014 07:03 AM, Hugh Dickins wrote:
-> On Tue, 22 Jul 2014, Jerome Marchand wrote:
->=20
->> Add a simple helper to check if a vm area belongs to shmem.
->>
->> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
->> ---
->>  include/linux/mm.h | 6 ++++++
->>  mm/shmem.c         | 8 ++++++++
->>  2 files changed, 14 insertions(+)
->>
->> diff --git a/include/linux/mm.h b/include/linux/mm.h
->> index 34099fa..04a58d1 100644
->> --- a/include/linux/mm.h
->> +++ b/include/linux/mm.h
->> @@ -1074,11 +1074,17 @@ int shmem_zero_setup(struct vm_area_struct *);=
+Well, the devices in those change during my test runs. Once it was
+00:13.0, once this, once the GPU. This box has IOMMU so it might be
+related to that somehow.
 
->> =20
->>  extern int shmem_locate(struct vm_area_struct *vma, pgoff_t pgoff, in=
-t *count);
->>  bool shmem_mapping(struct address_space *mapping);
->> +bool shmem_vma(struct vm_area_struct *vma);
->> +
->>  #else
->>  static inline bool shmem_mapping(struct address_space *mapping)
->>  {
->>  	return false;
->>  }
->> +static inline bool shmem_vma(struct vm_area_struct *vma)
->> +{
->> +	return false;
->> +}
->>  #endif
->=20
-> I would prefer include/linux/shmem_fs.h for this (and one of us clean
-> up where the declarations of shmem_zero_setup and shmem_mapping live).
->=20
-> But if 4/5 goes away, then there will only be one user of shmem_vma(),
-> so in that case better just declare it (using shmem_mapping()) there
-> in task_mmu.c in the smaps patch.
->=20
->> =20
->>  extern int can_do_mlock(void);
->> diff --git a/mm/shmem.c b/mm/shmem.c
->> index 8aa4892..7d16227 100644
->> --- a/mm/shmem.c
->> +++ b/mm/shmem.c
->> @@ -1483,6 +1483,14 @@ bool shmem_mapping(struct address_space *mappin=
-g)
->>  	return mapping->backing_dev_info =3D=3D &shmem_backing_dev_info;
->>  }
->> =20
->> +bool shmem_vma(struct vm_area_struct *vma)
->> +{
->> +	return (vma->vm_file &&
->> +		vma->vm_file->f_dentry->d_inode->i_mapping->backing_dev_info
->> +		=3D=3D &shmem_backing_dev_info);
->> +
->=20
-> I agree with Oleg,
-> 	vma->vm_file && shmem_mapping(file_inode(vma->vm_file)->i_mapping);
-> would be better,
+I could try to disable the IOMMU and see whether it still triggers. That
+could tell us something.
 
-Will do.
+-- 
+Regards/Gruss,
+    Boris.
 
-Jerome
-
->=20
-> Hugh
->=20
-
-
-
---2cQbduG131xhmjaDiKFBGTpv3g0eo95pU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBAgAGBQJT26ZHAAoJEHTzHJCtsuoCTC0IALkb4dhI485soQTr3b5iNHMQ
-9xW0ifj0MHPAF6EC0e/+ZUkYfY3ltXuHzJ/I9qkGNQHOpNS7qUOQ9LXrSH3phS72
-kpOiq6LameOjqbyHIFYLWtDgwCNB4CogzulaWIEGiuPDnxtl0jUxhzKpZ3T+s+31
-DVshjrbhJqorgz+NBqchYIcLNlMohzGP7n5ZUGYvozVK7QFfVhrVwT3nzP1612Ux
-D05tDL5cdRwMpCLf+wLbkZyHVfOTzwvkjymCl1LU/NNMuDGHWCB9FRhloHKTRHau
-FEuuP3WqH1sN3axr4wwrTdSxq5qF5Noy/UWoCdjOiIr8KzzJ0541K0RthN0FCzQ=
-=b1sL
------END PGP SIGNATURE-----
-
---2cQbduG131xhmjaDiKFBGTpv3g0eo95pU--
+Sent from a fat crate under my desk. Formatting is fine.
+--
