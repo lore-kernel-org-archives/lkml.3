@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038AbaHASdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 14:33:00 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:57864 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755759AbaHASc7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 14:32:59 -0400
-Date: Fri, 1 Aug 2014 11:32:51 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
- waiting for RCU-tasks
-Message-ID: <20140801183251.GJ4784@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140731215445.GA21933@linux.vnet.ibm.com>
- <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1406843709-23396-3-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140801150926.GA845@redhat.com>
+	id S1755986AbaHASff (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 14:35:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51081 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755550AbaHASfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 14:35:34 -0400
+Message-ID: <53DBDDE1.5070805@zytor.com>
+Date: Fri, 01 Aug 2014 11:35:13 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140801150926.GA845@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080118-7164-0000-0000-000003883CCA
+To: Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org
+CC: Oleg Nesterov <oleg@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH 4/5] x86: entry_64.S: always allocate complete "struct
+ pt_regs"
+References: <1406904498-21647-1-git-send-email-dvlasenk@redhat.com> <1406904498-21647-4-git-send-email-dvlasenk@redhat.com>
+In-Reply-To: <1406904498-21647-4-git-send-email-dvlasenk@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 05:09:26PM +0200, Oleg Nesterov wrote:
-> On 07/31, Paul E. McKenney wrote:
-> >
-> > +void synchronize_rcu_tasks(void)
-> > +{
-> > +	/* Complain if the scheduler has not started.  */
-> > +	rcu_lockdep_assert(!rcu_scheduler_active,
-> > +			   "synchronize_rcu_tasks called too soon");
-> > +
-> > +	/* Wait for the grace period. */
-> > +	wait_rcu_gp(call_rcu_tasks);
-> > +}
+On 08/01/2014 07:48 AM, Denys Vlasenko wrote:
 > 
-> Btw, what about CONFIG_PREEMPT=n ?
+> Patch was run-tested: 64-bit executables, 32-bit executables,
+> strace works.
 > 
-> I mean, can't synchronize_rcu_tasks() be synchronize_sched() in this
-> case?
 
-Excellent point, indeed it can!
+Could you please try to see if there is a measurable change in the
+latency of a trivial syscall?
 
-And if I do it right, it will make CONFIG_TASKS_RCU=y safe for kernel
-tinification.  ;-)
+	-hpa
 
-							Thanx, Paul
 
