@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104AbaHABhp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 21:37:45 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:31475 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750907AbaHABho (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 21:37:44 -0400
-X-IronPort-AV: E=Sophos;i="5.04,240,1406563200"; 
-   d="scan'208";a="34043618"
-Message-ID: <53DAEFB5.7060501@cn.fujitsu.com>
-Date: Fri, 1 Aug 2014 09:39:01 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Chris Metcalf <cmetcalf@tilera.com>
-CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@gentwo.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Khalid Aziz <khalid.aziz@oracle.com>, <linux-mm@kvack.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>
-Subject: Re: [PATCH] swap: remove the struct cpumask has_work
-References: <1406777421-12830-3-git-send-email-laijs@cn.fujitsu.com> <20140731115137.GA20244@dhcp22.suse.cz> <53DA6A2F.100@tilera.com>
-In-Reply-To: <53DA6A2F.100@tilera.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+	id S1752579AbaHABtX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 21:49:23 -0400
+Received: from plane.gmane.org ([80.91.229.3]:58079 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750907AbaHABtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 21:49:22 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Duncan <1i5t5.duncan@cox.net>
+Subject: Re: [PATCH] Add support to check for FALLOC_FL_COLLAPSE_RANGE  and
+ FALLOC_FL_ZERO_RANGE crap modes
+Date: Fri, 1 Aug 2014 01:49:08 +0000 (UTC)
+Message-ID: <pan$5cc93$d335db32$6c6335c1$bc0930b9@cox.net>
+References: <1406829213-4759-1-git-send-email-xerofoify@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: ip68-231-22-224.ph.ph.cox.net
+User-Agent: Pan/0.140 (Chocolate Salty Balls; GIT d447f7c
+ /m/p/portage/src/egit-src/pan2)
+Cc: linux-btrfs@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2014 12:09 AM, Chris Metcalf wrote:
-> On 7/31/2014 7:51 AM, Michal Hocko wrote:
->> On Thu 31-07-14 11:30:19, Lai Jiangshan wrote:
->>> It is suggested that cpumask_var_t and alloc_cpumask_var() should be used
->>> instead of struct cpumask.  But I don't want to add this complicity nor
->>> leave this unwelcome "static struct cpumask has_work;", so I just remove
->>> it and use flush_work() to perform on all online drain_work.  flush_work()
->>> performs very quickly on initialized but unused work item, thus we don't
->>> need the struct cpumask has_work for performance.
->> Why? Just because there is general recommendation for using
->> cpumask_var_t rather than cpumask?
->>
->> In this particular case cpumask shouldn't matter much as it is static.
->> Your code will work as well, but I do not see any strong reason to
->> change it just to get rid of cpumask which is not on stack.
-> 
-> The code uses for_each_cpu with a cpumask to avoid waking cpus that don't
-> need to do work.  This is important for the nohz_full type functionality,
-> power efficiency, etc.  So, nack for this change.
-> 
+Nicholas Krause posted on Thu, 31 Jul 2014 13:53:33 -0400 as excerpted:
 
-flush_work() on initialized but unused work item just disables irq and
-fetches work->data to test and restores irq and return.
+> This adds checks for the stated modes as if they are crap we will return
+> error not supported.
+> 
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>  fs/btrfs/file.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c index 1f2b99c..599495a
+> 100644 --- a/fs/btrfs/file.c +++ b/fs/btrfs/file.c @@ -2490,7 +2490,8 @@
+> static long btrfs_fallocate(struct file *file, int mode,
+>  	alloc_end = round_up(offset + len, blocksize);
+>  
+>  	/* Make sure we aren't being give some crap mode */
+> -	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
+> +	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE| +
+> FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE))
+>  		return -EOPNOTSUPP;
+>  
+>  	if (mode & FALLOC_FL_PUNCH_HOLE)
 
-the struct cpumask has_work is just premature optimization.
+Is the supporting code already there?
+
+You're removing the EOPNOTSUPP errors, but the code doesn't add the 
+support, just removes the errors in the check for it, yet your comment 
+doesn't point out that the support is actually already there with a 
+pointer to either the commit adding it or the functions supporting it, as 
+it should if that's true and the implementing patch simply forgot to 
+remove those checks.
+
+-- 
+Duncan - List replies preferred.   No HTML msgs.
+"Every nonfree program has a lord, a master --
+and if you use the program, he is your master."  Richard Stallman
+
