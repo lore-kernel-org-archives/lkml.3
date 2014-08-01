@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658AbaHALSY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 07:18:24 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:44246 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008AbaHALSX (ORCPT
+	id S1754810AbaHALYH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 07:24:07 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:63369 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753814AbaHALYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 07:18:23 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: tj@kernel.org, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, nasa4836@gmail.com,
-        Jianyu Zhan <Jianyu.Zhan@emc.com>
-Subject: [PATCH RFC] sysfs: fix the race of "parent deleted before child added"
-Date: Fri,  1 Aug 2014 19:18:12 +0800
-Message-Id: <1406891892-10992-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0
+	Fri, 1 Aug 2014 07:24:05 -0400
+Date: Fri, 1 Aug 2014 12:23:56 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        David Collins <collinsd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v3 1/4] mfd: pm8xxx-spmi: add support for Qualcomm SPMI
+ PMICs
+Message-ID: <20140801112356.GP9030@lee--X1>
+References: <1406205921-7452-1-git-send-email-svarbanov@mm-sol.com>
+ <1406205921-7452-2-git-send-email-svarbanov@mm-sol.com>
+ <53D8182A.5050204@codeaurora.org>
+ <53DA02C0.2050606@mm-sol.com>
+ <53DB5061.8080403@mm-sol.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53DB5061.8080403@mm-sol.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jianyu Zhan <Jianyu.Zhan@emc.com>
+On Fri, 01 Aug 2014, Stanimir Varbanov wrote:
+> On 07/31/2014 11:48 AM, Stanimir Varbanov wrote:
+> > On 07/30/2014 12:54 AM, David Collins wrote:
+> >> On 07/24/2014 05:45 AM, Stanimir Varbanov wrote:
+> >>> From: Josh Cartwright <joshc@codeaurora.org>
+> >>>
+> >>> The Qualcomm SPMI PMIC chips are components used with the
+> >>> Snapdragon 800 series SoC family.  This driver exists
+> >>> largely as a glue mfd component, it exists to be an owner
+> >>> of an SPMI regmap for children devices described in
+> >>> device tree.
+> >>>
+> >>> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> >>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> >>> Acked-by: Lee Jones <lee.jones@linaro.org>
+> >>> ---
+> >>>  drivers/mfd/Kconfig       |   16 +++++++++++
+> >>>  drivers/mfd/Makefile      |    1 +
+> >>>  drivers/mfd/pm8xxx-spmi.c |   65 +++++++++++++++++++++++++++++++++++++++++++++
+> >>
+> >> Would it be possible to rename this driver: qcom-spmi-pmic.c?  The driver
+> >> will be supporting several PMICs that do not fit the pm8xxx naming scheme.
+> >>  One of which is even specified in the compatible list of this driver
+> >> (pma8084).  There is presently downstream support for the following PMICs:
+> >> PM8019, PM8110, PM8226, PM8841, PM8916, PM8941, PM8994, PMA8084, PMD9635,
+> >> PMI8962, and PMI8994 [1].  Four of these do not fit the "PM8XXX" template.
+> > 
+> > I haven't strong opinion on the file names. The qcom prefix is the one
+> > which annoying me. If you look at /drivers/mfd the company name prefixes
+> > are very few.
+> > 
+> > The *compatible* strings are the important thing here. So If MFD
+> > maintainer is fine with this name I'm fine too.
+> 
+> Lee, are you OK with suggested names qcom-spmi-pmic and qcom-ssbi-pmic?
 
-I've met such a race conditon the same as what commit 3a198886
-("sysfs: handle 'parent deleted before child added'") tackled.
+Sounds fine to me.
 
-The senario got triggered under a torturing test of quick disk
-removal and plugging.
-
-The forementioned commit 3a198886 didn't really fix this race,
-it just narrows down the racy window.
-
-A proper fix for this is to pin the parent kernfs_node on the
-dir_entry creation point (sysfs_create_dir_ns), and to de-pin the parent
-on the dir_entry deletion point(sysfs_remove_dir).
-
-Though Tejun has added a comment in sysfs_remove_dir to warn such a
-race and leave the option to upper layer. But wrt correct logic point,
-I think it is good to add such pin behavior.
-
-Note. another commit 26ea12de("kobject: grab an extra reference on kobject->sd
-to allow duplicate deletes") also adds such a pin at the kobject layer.
-But this commit tackles different issue - it pins an entry(not its parent)
-after its creation, to allow duplicate deletions.
-
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- fs/sysfs/dir.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 0b45ff4..0ac82cd 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -49,7 +49,12 @@ int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
- 	else
- 		parent = sysfs_root_kn;
- 
--	if (!parent)
-+	/*
-+	 * We might race with the parent node removal.
-+	 * To avoid such race and for logic correctness,
-+	 * we pin the parent node here.
-+	 */
-+	if (!sysfs_get(parent))
- 		return -ENOENT;
- 
- 	kn = kernfs_create_dir_ns(parent, kobject_name(kobj),
-@@ -94,6 +99,10 @@ void sysfs_remove_dir(struct kobject *kobj)
- 
- 	if (kn) {
- 		WARN_ON_ONCE(kernfs_type(kn) != KERNFS_DIR);
-+		/*
-+		 * Drop our pin on parent
-+		 */
-+		sysfs_put(kn->parent);
- 		kernfs_remove(kn);
- 	}
- }
 -- 
-2.0.1.472.g6f92e5f
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
