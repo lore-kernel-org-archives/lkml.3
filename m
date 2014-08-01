@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783AbaHAMeQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 08:34:16 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42504 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755671AbaHAMd4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 08:33:56 -0400
-Date: Fri, 1 Aug 2014 05:33:52 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Ching Huang <ching2048@areca.com.tw>
-Cc: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1.3 6/18] arcmsr: precise checking adapter ID
-Message-ID: <20140801123352.GA30397@infradead.org>
-References: <1406882870.10378.55.camel@Centos6.3-64>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406882870.10378.55.camel@Centos6.3-64>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1755632AbaHAMdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 08:33:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12292 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754874AbaHAMdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 08:33:41 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 1/3] perf: Do not allow to create kernel events without handler
+Date: Fri,  1 Aug 2014 14:33:00 +0200
+Message-Id: <1406896382-18404-2-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1406896382-18404-1-git-send-email-jolsa@kernel.org>
+References: <1406896382-18404-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -static void arcmsr_define_adapter_type(struct AdapterControlBlock *acb)
-> +static bool arcmsr_define_adapter_type(struct AdapterControlBlock *acb)
->  {
->  	struct pci_dev *pdev = acb->pdev;
->  	u16 dev_id;
-> +
->  	pci_read_config_word(pdev, PCI_DEVICE_ID, &dev_id);
->  	acb->dev_id = dev_id;
+Force kernel events to specify the handler, because
+there's no use for kernel perf event without it.
 
-This is already available through pdev->device.
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ kernel/events/core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-
->  		acb->adapter_type = ACB_ADAPTER_TYPE_C;
-
-Just store the adapter type in the pci_device_id private data field,
-that way you enumerate the type in the same place the ids are added
-and you'll never miss adding them to a switch value.
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1cf24b3e42ec..75c4ff8d1590 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7355,6 +7355,9 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
+ 	struct perf_event *event;
+ 	int err;
+ 
++	if (WARN_ON(!overflow_handler))
++		return NULL;
++
+ 	/*
+ 	 * Get the target context (task or percpu):
+ 	 */
+-- 
+1.8.3.1
 
