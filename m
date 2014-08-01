@@ -1,130 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505AbaHAOxg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:53:36 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:32904 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751887AbaHAOxf (ORCPT
+	id S1754523AbaHAO5G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 10:57:06 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55593 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaHAO5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:53:35 -0400
-Date: Fri, 1 Aug 2014 15:53:26 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dmaengine@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        laurent.pinchart@ideasonboard.com, ludovic.desroches@atmel.com,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
-	dma controller API
-Message-ID: <20140801145325.GR30282@n2100.arm.linux.org.uk>
-References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com> <20140730160607.GM8181@intel.com> <20140731074440.GY3952@lukather> <20140731132223.GK30282@n2100.arm.linux.org.uk> <20140731164152.GF3952@lukather>
+	Fri, 1 Aug 2014 10:57:04 -0400
+Date: Fri, 1 Aug 2014 16:56:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 1/3] perf: Do not allow to create kernel events without
+ handler
+Message-ID: <20140801145637.GB9918@twins.programming.kicks-ass.net>
+References: <1406896382-18404-1-git-send-email-jolsa@kernel.org>
+ <1406896382-18404-2-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kZ4UZC+XGJOY4cNK"
 Content-Disposition: inline
-In-Reply-To: <20140731164152.GF3952@lukather>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1406896382-18404-2-git-send-email-jolsa@kernel.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 06:41:52PM +0200, Maxime Ripard wrote:
-> You prove my point then. Vinod asks for GFP_NOWAIT in his
-> reviews. Even though it doesn't change anything relative to the
-> atomicity of the operations, the policy is still not the same.
 
-The difference between GFP_NOWAIT and GFP_ATOMIC is whether the emergency
-pool can be used.  If you want DMA prepare functions to fail when there
-is memory pressure, and you can guarantee that all drivers using the DMA
-engine API will properly fall back to some other method, then I suppose
-using GFP_NOWAIT is reasonable.  GFP_ATOMIC just provides additional
-protection.
+--kZ4UZC+XGJOY4cNK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > >   - That might just be my experience, but judging from previous
-> > >     commits, DMA_PRIVATE is completely obscure, and we just set it
-> > >     because it was making it work, without knowing what it was
-> > >     supposed to do.
-> > 
-> > DMA_PRIVATE means that the channel is unavailable for async-tx operations
-> > - in other words, it's slave-only.  Setting it before registration results
-> > in the private-use count being incremented, disabling the DMA_PRIVATE
-> > manipulation in the channel request/release APIs (requested channels are
-> > unavailable for async-tx operations, which is why that flag is also set
-> > there.)
-> > 
-> > To put it another way, if a DMA engine driver only provides slave DMA
-> > support, it must set DMA_PRIVATE to mark the channel unavailable for
-> > async-tx operations.  If a DMA engine drivers channels can also be used
-> > for async-tx operations, then it should leave the flag clear.
-> 
-> What about channels that can be both used for slave operations and
-> async-tx (like memcpy) ?
+On Fri, Aug 01, 2014 at 02:33:00PM +0200, Jiri Olsa wrote:
+> Force kernel events to specify the handler, because
+> there's no use for kernel perf event without it.
+>=20
 
-Then you don't set DMA_PRIVATE when the DMA engine driver registers with
-the core.  That then allows the DMA engine core to manage the flag,
-setting it when the channel is allocated for slave usage.
+I think I found a reason; although there is currently no such user, the
+simple counting events, they don't have overflow handlers at all.
 
-One important point here is that async_tx does not have the idea of
-channel allocation - a channel which is registered into the DMA engine
-core without DMA_PRIVATE set is a candidate for use by the async_tx
-API.
+I think I did on once, but never merged that code because it was a quick
+dev hack to create nice changelog numbers etc..
 
-> Hence why we should document as much as possible then, to spread the
-> knowledge and avoid it being lost when someone disappears or isn't
-> available anymore.
-> 
-> (And hopefully reduce the number of "errors" that might be done by
-> submitters, hence reducing the number of review iterations, lessening
-> the maintainers load)
+/me goes dig... found it:
 
-The bigger issue in the longer run is being able to maintain and improve
-the DMA engine implementations and API.  One of the blockers to that is
-properly understanding all the async_tx API stuff, something which even
-I have been unable to do despite knowing a fair amount about DMA engine
-itself.
 
-Where I fall down is the exact meaning of the ACK stuff, how the chaining
-is supposed to work, how the dependency between two DMA channels are
-handled.
+---
+ include/linux/perf_event.h |    1=20
+ kernel/events/core.c       |   22 +++++++-
+ kernel/sched/clock.c       |  118 ++++++++++++++++++++++++++++++++++++++++=
++++++
+ 3 files changed, 138 insertions(+), 3 deletions(-)
 
-This is why I was unable to resolve DMA engine's multiple mapping of the
-same DMA buffers, which has caused problems for ARM.
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -561,6 +561,7 @@ extern void perf_pmu_migrate_context(str
+ 				int src_cpu, int dst_cpu);
+ extern u64 perf_event_read_value(struct perf_event *event,
+ 				 u64 *enabled, u64 *running);
++extern u64 perf_event_read(struct perf_event *event);
+=20
+=20
+ struct perf_sample_data {
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2973,15 +2973,31 @@ static inline u64 perf_event_count(struc
+ 	return local64_read(&event->count) + atomic64_read(&event->child_count);
+ }
+=20
+-static u64 perf_event_read(struct perf_event *event)
++u64 perf_event_read(struct perf_event *event)
+ {
+ 	/*
+ 	 * If event is enabled and currently active on a CPU, update the
+ 	 * value in the event structure:
+ 	 */
+ 	if (event->state =3D=3D PERF_EVENT_STATE_ACTIVE) {
+-		smp_call_function_single(event->oncpu,
+-					 __perf_event_read, event, 1);
++		/*
++		 * If the event is for the current task, its guaranteed that we
++		 * never need the cross cpu call, and therefore can allow this
++		 * to be called with IRQs disabled.
++		 *
++		 * Avoids the warning otherwise generated by
++		 * smp_call_function_single().
++		 */
++		if (event->ctx->task =3D=3D current) {
++			unsigned long flags;
++
++			local_irq_save(flags);
++			__perf_event_read(event);
++			local_irq_restore(flags);
++		} else {
++			smp_call_function_single(event->oncpu,
++					__perf_event_read, event, 1);
++		}
+ 	} else if (event->state =3D=3D PERF_EVENT_STATE_INACTIVE) {
+ 		struct perf_event_context *ctx =3D event->ctx;
+ 		unsigned long flags;
+--- a/kernel/sched/clock.c
++++ b/kernel/sched/clock.c
+@@ -387,3 +387,121 @@ u64 local_clock(void)
+=20
+ EXPORT_SYMBOL_GPL(cpu_clock);
+ EXPORT_SYMBOL_GPL(local_clock);
++
++#include <linux/perf_event.h>
++
++static char sched_clock_cache[12*1024*1024]; /* 12M l3 cache */
++static struct perf_event *__sched_clock_cycles;
++
++static __init u64 sched_clock_cycles(void)
++{
++	return perf_event_read(__sched_clock_cycles);
++}
++
++static __init noinline void sched_clock_wipe_cache(void)
++{
++	int i;
++
++	for (i =3D 0; i < sizeof(sched_clock_cache); i++)
++		ACCESS_ONCE(sched_clock_cache[i]) =3D 0;
++}
++
++static __always_inline u64 cache_cold_clock(u64 (*clock)(void))
++{
++	u64 cycles;
++
++	local_irq_disable();
++	sched_clock_wipe_cache();
++	cycles =3D sched_clock_cycles();
++	(void)clock();
++	cycles =3D sched_clock_cycles() - cycles;
++	local_irq_enable();
++
++	return cycles;
++}
++
++static __init void do_bench(void)
++{
++	u64 cycles;
++	u64 tmp;
++	int i;
++
++	printk("sched_clock_stable: %d\n", sched_clock_stable);
++
++	cycles =3D 0;
++	for (i =3D 0; i < 1000; i++)
++		cycles +=3D cache_cold_clock(&sched_clock);
++
++	printk("(cold) sched_clock: %lu\n", cycles);
++
++	cycles =3D 0;
++	for (i =3D 0; i < 1000; i++)
++		cycles +=3D cache_cold_clock(&local_clock);
++
++	printk("(cold) local_clock: %lu\n", cycles);
++
++	local_irq_disable();
++	ACCESS_ONCE(tmp) =3D sched_clock();
++
++	cycles =3D sched_clock_cycles();
++
++	for (i =3D 0; i < 1000; i++)
++		ACCESS_ONCE(tmp) =3D sched_clock();
++
++	cycles =3D sched_clock_cycles() - cycles;
++	local_irq_enable();
++
++	printk("(warm) sched_clock: %lu\n", cycles);
++
++	local_irq_disable();
++	ACCESS_ONCE(tmp) =3D local_clock();
++
++	cycles =3D sched_clock_cycles();
++
++	for (i =3D 0; i < 1000; i++)
++		ACCESS_ONCE(tmp) =3D local_clock();
++
++	cycles =3D sched_clock_cycles() - cycles;
++	local_irq_enable();
++
++	printk("(warm) local_clock: %lu\n", cycles);
++
++	local_irq_disable();
++	rdtscll(ACCESS_ONCE(tmp));
++
++	cycles =3D sched_clock_cycles();
++
++	for (i =3D 0; i < 1000; i++)
++		rdtscll(ACCESS_ONCE(tmp));
++
++	cycles =3D sched_clock_cycles() - cycles;
++	local_irq_enable();
++
++	printk("(warm) rdtsc: %lu\n", cycles);
++}
++
++static __init int sched_clock_bench(void)
++{
++	struct perf_event_attr perf_attr =3D {
++		.type =3D PERF_TYPE_HARDWARE,
++		.config =3D PERF_COUNT_HW_CPU_CYCLES,
++		.size =3D sizeof(struct perf_event_attr),
++		.pinned =3D 1,
++	};
++
++	__sched_clock_cycles =3D perf_event_create_kernel_counter(&perf_attr, -1,=
+ current, NULL, NULL);
++
++	sched_clock_stable =3D 1;
++	do_bench();
++
++	sched_clock_stable =3D 0;
++	do_bench();
++
++	sched_clock_stable =3D 1;
++
++	perf_event_release_kernel(__sched_clock_cycles);
++
++	return 0;
++}
++
++late_initcall(sched_clock_bench);
 
-I've discussed this point in the past with Dan, making the point that
-each DMA engine driver should not be that concerned about things like
-descriptor list management, cookies, dependent transfers, but we seem
-to be ultimately doomed to re-implementing much of that infrastructure
-in every single DMA engine driver that comes along.
+--kZ4UZC+XGJOY4cNK
+Content-Type: application/pgp-signature
 
-Each DMA engine driver which gets accepted into mainline makes this
-problem worse - it's another driver which does something slightly
-differently that if we were to ever clean this stuff up, would need
-to be fixed.  This remains my biggest concern with the DMA engine
-code today, and I'm one of the few people who have put effort into
-trying to sort that out.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> > Drivers should have no reason what so ever to be touching the cookie
-> > directly anymore.
-> 
-> Ok, thanks a lot for this!
+iQIcBAEBAgAGBQJT26qlAAoJEHZH4aRLwOS6+v4QAJbxKvYcXVPPp9P+8jszLvlx
+IRY6pP0KmYpOvAP8F89GrxGQWYjWuZVl9+a9RVgqruawR4Z/2WWQRNAr6QstoQ8X
+3jij5BGKxHMQwxrxOaEK8Q9YcIlQFMrI0tmAgJjPs6wh66EqLrWFd9ZE+1UHFUuN
+r2ue1ffFaa0fb/5HOE5x5MbjZnCiD9fGmFZ1yk6BwqjJK6e1bpENNOcvB1ivDiex
+MG5CYCkDrn0pAePe2ggh559ZZeqISEdFvozhmub600Apnr+Hixufd2QrJiCCN554
+RkmsqKWISrQVk+D3lnFFUtAr8VZP9yLhLZ9Qf0RerAtTfkQuuNLtfIvFYD80XO1w
+e1TgAWMit5qGYuuC8uYbiEduHB0FBry75fX7W3UztZaaJrAixp0vMvQYPLJqZw7R
+3JFYOPSxdh7I+6+O6HEQz+goCJe1DCvDoeWlccgIjhTnYiBS8do4Xcjpo0e0tclX
+SVjoABz+XZI32ClW630VyHhnYDdnim78b035bJsJ7nR5MECix0X60/IvyVGnNMdC
+Tuy/Wy0tj8IO9541sgK7c+B4ApH3wiAKvwkO7E8XMzagTmlHaKectafnLcfryKS7
+XeM1aexyiFW2uPAE52J7SJMD3zR7XXFLPgKIuAV5Hi264JRGxWwN1SPElKdgCZri
+PcgBtozGpHrq4Q8ZWozy
+=hDfW
+-----END PGP SIGNATURE-----
 
-I notice that drivers/dma/sirf-dma.c directly touches it and the
-completed cookie as well:
-
-drivers/dma/sirf-dma.c: dma_cookie_t last_cookie = 0;
-drivers/dma/sirf-dma.c:                         last_cookie = desc->cookie;
-drivers/dma/sirf-dma.c:                 schan->chan.completed_cookie = last_cookie;
-
-That's something which should be fixed.  I haven't looked too hard
-because it's not something I want to get involved with again right
-now.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+--kZ4UZC+XGJOY4cNK--
