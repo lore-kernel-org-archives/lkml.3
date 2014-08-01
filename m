@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755560AbaHAR3P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 13:29:15 -0400
-Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:27169
+	id S1755769AbaHAR3n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 13:29:43 -0400
+Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:18925
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751694AbaHAR3N convert rfc822-to-8bit (ORCPT
+	id S1750851AbaHAR3l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 13:29:13 -0400
+	Fri, 1 Aug 2014 13:29:41 -0400
 From: KY Srinivasan <kys@microsoft.com>
 To: Dexuan Cui <decui@microsoft.com>,
         "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "jkosina@suse.cz" <jkosina@suse.cz>,
         "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "driverdev-devel@linuxdriverproject.org" 
@@ -20,13 +20,13 @@ To: Dexuan Cui <decui@microsoft.com>,
         "apw@canonical.com" <apw@canonical.com>,
         "jasowang@redhat.com" <jasowang@redhat.com>
 CC: Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH] Input: hyperv-keyboard: register as a wakeup source
-Thread-Topic: [PATCH] Input: hyperv-keyboard: register as a wakeup source
-Thread-Index: AQHPrYw4YZKzhZE33kO/L7f+c6WZR5u8AKwA
-Date: Fri, 1 Aug 2014 17:29:09 +0000
-Message-ID: <0c4b13461c5c44c5a7ebaa3d215e1875@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <1406903304-7256-1-git-send-email-decui@microsoft.com>
-In-Reply-To: <1406903304-7256-1-git-send-email-decui@microsoft.com>
+Subject: RE: [PATCH] HID: hyperv: register as a wakeup source
+Thread-Topic: [PATCH] HID: hyperv: register as a wakeup source
+Thread-Index: AQHPrYv64sO6oVKNGEuPE0s1MI+FW5u8AS2Q
+Date: Fri, 1 Aug 2014 17:29:38 +0000
+Message-ID: <2e66fa7690584834b26b0069063e85e0@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1406903201-7210-1-git-send-email-decui@microsoft.com>
+In-Reply-To: <1406903201-7210-1-git-send-email-decui@microsoft.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -47,69 +47,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 > -----Original Message-----
 > From: Dexuan Cui [mailto:decui@microsoft.com]
-> Sent: Friday, August 1, 2014 7:28 AM
-> To: gregkh@linuxfoundation.org; dmitry.torokhov@gmail.com; linux-
+> Sent: Friday, August 1, 2014 7:27 AM
+> To: gregkh@linuxfoundation.org; jkosina@suse.cz; linux-
 > input@vger.kernel.org; linux-kernel@vger.kernel.org; driverdev-
 > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
 > jasowang@redhat.com
 > Cc: KY Srinivasan; Haiyang Zhang
-> Subject: [PATCH] Input: hyperv-keyboard: register as a wakeup source
+> Subject: [PATCH] HID: hyperv: register as a wakeup source
 > 
-> With this patch, we can press a key to wake up the VM after the VM
+> With this patch, we can move the mouse to wake up the VM after the VM
 > executes "echo freeze > /sys/power/state".
 > 
 > This addresses part of https://bugzilla.redhat.com/show_bug.cgi?id=1086100
 > 
 > Cc: K. Y. Srinivasan <kys@microsoft.com>
-Thanks Dexuan.
-
+> Signed-off-by: Dexuan Cui <decui@microsoft.com>
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
-> Signed-off-by: Dexuan Cui <decui@microsoft.com>
 > ---
->  drivers/input/serio/hyperv-keyboard.c | 13 +++++++++++++
->  1 file changed, 13 insertions(+)
+>  drivers/hid/hid-hyperv.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
 > 
-> diff --git a/drivers/input/serio/hyperv-keyboard.c
-> b/drivers/input/serio/hyperv-keyboard.c
-> index 6132619..e74e5d6 100644
-> --- a/drivers/input/serio/hyperv-keyboard.c
-> +++ b/drivers/input/serio/hyperv-keyboard.c
-> @@ -170,6 +170,15 @@ static void hv_kbd_on_receive(struct hv_device
-> *hv_dev,
->  			serio_interrupt(kbd_dev->hv_serio, scan_code, 0);
->  		}
->  		spin_unlock_irqrestore(&kbd_dev->lock, flags);
+> diff --git a/drivers/hid/hid-hyperv.c b/drivers/hid/hid-hyperv.c index
+> f52dbcb..31fad64 100644
+> --- a/drivers/hid/hid-hyperv.c
+> +++ b/drivers/hid/hid-hyperv.c
+> @@ -308,6 +308,9 @@ static void mousevsc_on_receive(struct hv_device
+> *device,
+>  		memcpy(input_dev->input_buf, input_report->buffer, len);
+>  		hid_input_report(input_dev->hid_device,
+> HID_INPUT_REPORT,
+>  				 input_dev->input_buf, len, 1);
 > +
-> +		/*
-> +		 * Only trigger a wakeup on key down, otherwise
-> +		 * "echo freeze > /sys/power/state" can't really enter the
-> +		 * state because the Enter-UP can trigger a wakeup at once.
-> +		 */
-> +		if (!(info & IS_BREAK))
-> +			pm_wakeup_event(&hv_dev->device, 0);
+> +		pm_wakeup_event(&input_dev->device->device, 0);
 > +
 >  		break;
-> 
 >  	default:
-> @@ -376,6 +385,9 @@ static int hv_kbd_probe(struct hv_device *hv_dev,
->  		goto err_close_vmbus;
+>  		pr_err("unsupported hid msg type - type %d len %d", @@ -
+> 549,6 +552,8 @@ static int mousevsc_probe(struct hv_device *device,
+>  		goto probe_err2;
+>  	}
 > 
->  	serio_register_port(kbd_dev->hv_serio);
+> +	device_init_wakeup(&device->device, true);
 > +
-> +	device_init_wakeup(&hv_dev->device, true);
-> +
->  	return 0;
+>  	input_dev->connected = true;
+>  	input_dev->init_complete = true;
 > 
->  err_close_vmbus:
-> @@ -390,6 +402,7 @@ static int hv_kbd_remove(struct hv_device *hv_dev)
-> {
->  	struct hv_kbd_dev *kbd_dev = hv_get_drvdata(hv_dev);
+> @@ -571,6 +576,7 @@ static int mousevsc_remove(struct hv_device *dev)  {
+>  	struct mousevsc_dev *input_dev = hv_get_drvdata(dev);
 > 
-> +	device_init_wakeup(&hv_dev->device, false);
->  	serio_unregister_port(kbd_dev->hv_serio);
->  	vmbus_close(hv_dev->channel);
->  	kfree(kbd_dev);
+> +	device_init_wakeup(&dev->device, false);
+>  	vmbus_close(dev->channel);
+>  	hid_hw_stop(input_dev->hid_device);
+>  	hid_destroy_device(input_dev->hid_device);
 > --
 > 1.9.1
 
