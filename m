@@ -1,117 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545AbaHARZB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 13:25:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:5926 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851AbaHARY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 13:24:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,780,1400050800"; 
-   d="asc'?scan'208";a="552444145"
-Date: Fri, 1 Aug 2014 22:45:52 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        laurent.pinchart@ideasonboard.com, ludovic.desroches@atmel.com,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
- dma controller API
-Message-ID: <20140801171551.GG8181@intel.com>
-References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com>
- <20140730160607.GM8181@intel.com>
- <20140731074440.GY3952@lukather>
- <53DA3A48.8070900@metafoo.de>
- <20140731161331.GD3952@lukather>
- <53DA74B3.6060502@metafoo.de>
- <20140731173730.GH3952@lukather>
- <53DB490A.5040709@metafoo.de>
- <20140801085707.GI3952@lukather>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="X+8siUETKMkW99st"
-Content-Disposition: inline
-In-Reply-To: <20140801085707.GI3952@lukather>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755668AbaHARZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 13:25:26 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:44343 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751624AbaHARZV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 13:25:21 -0400
+Message-ID: <1406913924.22529.51.camel@hornet>
+Subject: Re: [PATCH 4/5] [SCSI] Do not use platform_bus as a parent
+From: Pawel Moll <pawel.moll@arm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "paul@pwsan.com" <paul@pwsan.com>, Arnd Bergmann <arnd@arndb.de>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Date: Fri, 01 Aug 2014 18:25:24 +0100
+In-Reply-To: <20140727150720.GC1723@kroah.com>
+References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>
+	 <1406298233-27876-4-git-send-email-pawel.moll@arm.com>
+	 <1406299616.1789.13.camel@jarvis.lan> <20140726201150.GA21870@kroah.com>
+	 <1406433177.11069.3.camel@jarvis> <20140727150720.GC1723@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2014-07-27 at 16:07 +0100, Greg Kroah-Hartman wrote:
+> Ah, ok, it's a scsi core thing, not a driver core thing, that's less
+> confusing now.  For a "fallback" of a platform device, if you switch the
+> lines around you should be fine, something like this patch perhaps:
+> 
+> diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
+> index 3cbb57a8b846..d8d3b294f5bc 100644
+> --- a/drivers/scsi/hosts.c
+> +++ b/drivers/scsi/hosts.c
+> @@ -218,16 +218,16 @@ int scsi_add_host_with_dma(struct Scsi_Host *shost, struct device *dev,
+>  		goto fail;
+>  
+>  	if (!shost->shost_gendev.parent)
+> -		shost->shost_gendev.parent = dev ? dev : &platform_bus;
+> -	if (!dma_dev)
+> -		dma_dev = shost->shost_gendev.parent;
+> -
+> -	shost->dma_dev = dma_dev;
+> +		shost->shost_gendev.parent = dev;
+>  
+>  	error = device_add(&shost->shost_gendev);
+>  	if (error)
+>  		goto out;
+>  
+> +	if (!dma_dev)
+> +		dma_dev = shost->shost_gendev.parent;
+> +	shost->dma_dev = dma_dev;
+> +
+>  	pm_runtime_set_active(&shost->shost_gendev);
+>  	pm_runtime_enable(&shost->shost_gendev);
+>  	device_enable_async_suspend(&shost->shost_gendev);
 
---X+8siUETKMkW99st
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+But this will still make shost->dma_dev == NULL in the cases James
+quoted:
 
-On Fri, Aug 01, 2014 at 10:57:07AM +0200, Maxime Ripard wrote:
-> On Fri, Aug 01, 2014 at 10:00:10AM +0200, Lars-Peter Clausen wrote:
-> > On 07/31/2014 07:37 PM, Maxime Ripard wrote:
-> > >On Thu, Jul 31, 2014 at 06:54:11PM +0200, Lars-Peter Clausen wrote:
-> > >>On 07/31/2014 06:13 PM, Maxime Ripard wrote:
-> > >>[...]
-> > >>> From what you're saying, and judging from the drivers that already
-> > >>>implement it, can't it be moved directly to the framework itself ?
-> > >>>
-> > >>
-> > >>What exactly do you mean by moving it directly to the framework? The
-> > >>slave_caps API is part of the DMAengine framework.
-> > >
-> > >Not its implementation, which is defined by each and every driver,
-> > >while the behaviour of device_slave_caps is rather generic.
-> > >
-> >=20
-> > Do you mean something like adding a dma_slave_caps struct field to
-> > the DMA channel that gets initialized when the channel is created
-> > and then remove the callback? That makes some sense.
->=20
-> I was rather thinking into something like:
->   - Splitting device_control into independant functions
-I like this part :)
+On Fri, 2014-07-25 at 15:46 +0100, James Bottomley wrote:
+> Yes, for DMA purposes, the parent cannot now be NULL; we'll get a panic
+> in the DMA transfers if it is.  A lot of the legacy ISA device on x86
+> and I thought some ARM SOC devices don't pass in the parent device, so
+> we hang them off a known parent.
+> 
+> You can grep for it; these are the devices that will begin to panic if
+> you apply this patch:
+> 
+> arch/ia64/hp/sim/simscsi.c:     error = scsi_add_host(host, NULL);
+> drivers/scsi/a2091.c:   error = scsi_add_host(instance, NULL);
+> drivers/scsi/a3000.c:   error = scsi_add_host(instance, NULL);
+> drivers/scsi/aha152x.c: if( scsi_add_host(shpnt, NULL) ) {
+> drivers/scsi/gdth.c:    error = scsi_add_host(shp, NULL);
+> drivers/scsi/gdth.c:    error = scsi_add_host(shp, NULL);
+> drivers/scsi/gvp11.c:   error = scsi_add_host(instance, NULL);
+> drivers/scsi/imm.c:     err = scsi_add_host(host, NULL);
+> drivers/scsi/pcmcia/fdomain_stub.c:    if (scsi_add_host(host, NULL))
+> drivers/scsi/pcmcia/nsp_cs.c:   ret = scsi_add_host (host, NULL);
+> drivers/scsi/pcmcia/qlogic_stub.c:      if (scsi_add_host(shost, NULL))
+> drivers/scsi/pcmcia/sym53c500_cs.c:     if (scsi_add_host(host, NULL))
+> drivers/scsi/ppa.c:     err = scsi_add_host(host, NULL);
+> drivers/scsi/qlogicfas.c:       if (scsi_add_host(hreg, NULL))
+> drivers/scsi/scsi_module.c:             error = scsi_add_host(shost, NULL);
+> drivers/scsi/sgiwd93.c: err = scsi_add_host(host, NULL);
 
->   - Then, knowing if you support pause/resume/terminate is trivial:
->     either you implement the callback, or you don't
->   - Putting the supported width and direction into fields of struct
->     dma_device, which can eventually be used by the framework to
->     filter out invalid configurations before calling the relevant
->     callbacks
-thats is a good idea
->   - That would then be trivial to get from the framework, without
->     calling any callback
-Yes please
+Maybe the DMA API should be coping with NULL device? It seems to handle
+it in a half of the methods and fails in the other half...
 
---=20
-~Vinod
+Pawel
 
---X+8siUETKMkW99st
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT28tHAAoJEHwUBw8lI4NHtJwP/0iNkXarMvsXF+r5nQAG5w2s
-7veZbqGR2Rh55QQZ8Ncv9z2lQXhCe4ss9bMLzcWX+nVBbqnx78QjA8C5QzDMlxVG
-FOM+v+NtTpyTdx7l1/B78YLQyj2hKeLirEUz1SAEgn/+uaxMeKpMFoUvoWWFGE5t
-BWuyDnTHhtiZqsptUQ1Y9/MD0E2eXpKkhGcnvjOqmI0/PdGbfea8jPD6BDeoWZRg
-GWVKl+G83rPW9C1fjrqwi89fXzCKJHztncqiFd9E4RtucrR9NQuccqZ9+yN/EU69
-He0Ywlao4zlqnGUlwItuuG/la/Tw6vNBAwJoOUb3+AuEXeoxA6YzAH0WdVOJ9gJk
-7ykDkI21rifrmvQqv6SC7SvmnE5fRzComa2qGOGpz8GZkGSe5BZ8aYFyM8pfpcAv
-FFfrTvJhu/pQ8lPM4Jl9hoAYCQ2N2S0Y2oRZBAk9vsSskh2tO98s3YSCTUoKIpEw
-i6NY/RHuqzKxruoGJVwM59L5zFwkuuGNb0vEbHa7Hz9gGBMdJal4sC259b2AMwq6
-wStfEHOMbjHb1KNWknS9IAwBd1yknC3QHbUCgayaeGGbqXki2UCC4kxkIgeakN55
-yfzTCj1iYwehT0n7j+oIuh1CU3R6cxyojL9ASepy1l2l0WczfdARwRk4RdsniHSM
-eijE3o8jCGdhEc3JAaeN
-=ipMn
------END PGP SIGNATURE-----
-
---X+8siUETKMkW99st--
