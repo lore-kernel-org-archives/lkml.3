@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602AbaHAHom (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 03:44:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51105 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbaHAHol (ORCPT
+	id S1753197AbaHAHtK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 03:49:10 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:57931 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388AbaHAHtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 03:44:41 -0400
-Date: Fri, 1 Aug 2014 09:44:30 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: kan.liang@intel.com
-Cc: andi@firstfloor.org, alexander.shishkin@linux.intel.com,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/3] x86 perf: Protect LBR msrs accessing against
- potential #GP
-Message-ID: <20140801074430.GB3588@twins.programming.kicks-ass.net>
-References: <1406799663-18192-1-git-send-email-kan.liang@intel.com>
- <1406799663-18192-2-git-send-email-kan.liang@intel.com>
- <20140801073825.GG19379@twins.programming.kicks-ass.net>
+	Fri, 1 Aug 2014 03:49:08 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xr11uZXTBybZk4CB"
-Content-Disposition: inline
-In-Reply-To: <20140801073825.GG19379@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAEJHKkV+DztXiJtPc41m=f1vJG26AoWGd+dinCQhJ77bVY=D0Q@mail.gmail.com>
+References: <CAEJHKkV+DztXiJtPc41m=f1vJG26AoWGd+dinCQhJ77bVY=D0Q@mail.gmail.com>
+Date: Fri, 1 Aug 2014 07:49:07 +0000
+Message-ID: <CAEJHKkXps6w_TjUw3wvGjWRxCoexz54QFdk8H-z0Be3wryeKyQ@mail.gmail.com>
+Subject: tvtuner pixelview B1000
+From: basteon <basteon@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+hello.
 
---xr11uZXTBybZk4CB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I have pixelview B1000 card and this card won't work with assigned
+modules cx8800, cx8802.
 
-On Fri, Aug 01, 2014 at 09:38:25AM +0200, Peter Zijlstra wrote:
-> On Thu, Jul 31, 2014 at 02:41:02AM -0700, kan.liang@intel.com wrote:
-> > From: Kan Liang <kan.liang@intel.com>
-> >=20
-> > Intel PT will take over LBR hardware. If RTIT_CTL.TraceEn=3D1, any atte=
-mpt to
-> > read or write the LBR or LER MSRs, including LBR_TOS, will result in a =
-#GP.
-> > Intel PT can be enabled/disabled at runtime by hardware/BIOS, so it's b=
-etter
-> > LBR MSRs can be protected at runtime.
-> >=20
-> > The {rd,wr}msrl_goto can protect LBR accessing against the potential #G=
-P.
-> > Furthermore, it will not impact the "fast" path's performance.
->=20
-> NAK!
->=20
-> I already said this isn't going to ever happen.
->=20
-> Both PT and LBR are arbitrated through the kernel, therefore we can (and
-> must) deny PT when there's existing LBR usage and vice versa.
->=20
-> We will not hijack resources like this full stop end of story.
->=20
-> Fuck hardware/BIOS, they should _NOT_ be touching this.
->=20
-> The 3 people in the world with access to an x86 hardware debugger had
-> better be competent and know WTF they're doing and the BIOS can just
-> piss off right now, they should not be touching this _EVER_.
+May be I'm use wrong modules or cardid prefix:
+1554:4952, board: PixelView [card=3...
 
-I yelled at BIOS engineers over their PMU usage and $vendor added a BIOS
-knob to disable that, I'll yell at BIOS engineers again, just give me
-their number.
+# /usr/bin/tvtime-scanner
+Reading configuration from /etc/tvtime/tvtime.xml
+Scanning using TV standard NTSC.
+Scanning from  44.00 MHz to 958.00 MHz.
+MHz:  - No signal
 
-Really, say NO already.
+===============================
+01:06.0 Multimedia video controller: Conexant Systems, Inc.
+CX23880/1/2/3 PCI Video and Audio Decoder (rev 05)
+	Subsystem: PROLINK Microsystems Corp Device 4952
+	Flags: bus master, medium devsel, latency 32, IRQ 10
+	Memory at fd000000 (32-bit, non-prefetchable) [size=16M]
+	Capabilities: [44] Vital Product Data
+	Capabilities: [4c] Power Management version 2
+	Kernel modules: cx8800
 
---xr11uZXTBybZk4CB
-Content-Type: application/pgp-signature
+01:06.1 Multimedia controller: Conexant Systems, Inc. CX23880/1/2/3
+PCI Video and Audio Decoder [Audio Port] (rev 05)
+	Subsystem: PROLINK Microsystems Corp Device 4952
+	Flags: bus master, medium devsel, latency 32, IRQ 10
+	Memory at fc000000 (32-bit, non-prefetchable) [size=16M]
+	Capabilities: [4c] Power Management version 2
+	Kernel modules: cx88-alsa
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+01:06.2 Multimedia controller: Conexant Systems, Inc. CX23880/1/2/3
+PCI Video and Audio Decoder [MPEG Port] (rev 05)
+	Subsystem: PROLINK Microsystems Corp Device 4952
+	Flags: bus master, medium devsel, latency 32, IRQ 10
+	Memory at fb000000 (32-bit, non-prefetchable) [size=16M]
+	Capabilities: [4c] Power Management version 2
+	Kernel modules: cx8802
 
-iQIcBAEBAgAGBQJT20VeAAoJEHZH4aRLwOS6dCUQAKbWsF7Gi02iRTU8RCXpaN7K
-eOPg/TEVivdH0hZRKQWJ625o4cyHwi2A6lVsCWkXH/O4ibTmxnU/6iiJMTBQOhi3
-awwezSfuiwzKJvKsJpzDuIbXMbg/yeEssGOFCmu+WC6O69P8lvXm7zy+jdJdiWrV
-ecWKh1ry7e+WXinCbhjcmUS5YtdzpK0ZgNP8191pIyUe0MYbIdnm9kiCCqjXHMEo
-BP/QlgSLsMs5NInJh84B2KEdWKhqE0UHw61n+y8yJBgIJ2QX+xWJFbHYTel3qzVu
-epas7Z1ofFVnEbnwAwXYYhH4Z2bmSVQ/sW23b1ZSgCu3E45F6bZTYnQdZE6yVkkg
-Rr4f+1ZZqoF5OxLKPZbMbuQ+d+vw+CB3GMnrxMAZVOtyupubFJF1ANeTNnVCXmN6
-PJhxgD0DcZppdhf3Wg8dga4BGDePzAwVfmX4O6qH5eSY6yOJRkfLLWZn0LaLLZo9
-uAzhqAA+4aRbumWsG5sOlWlg3Q16G8902nbJBHXNLEil5/mhrYlvJbmRrmFE31Ru
-frHScUlQVBF3ttTuSQCwScqmaKHomrFbL6Zh9sdQszQE2vGO5D/CvEtzcALmikrA
-X06lG4w2aoasYMQwmNcykJfuyFfAD97rlEUaRmQBedGmWuIE79xHu/B0IazbpIN0
-OBji7PmeRCTkqfT4PL1N
-=fi88
------END PGP SIGNATURE-----
-
---xr11uZXTBybZk4CB--
+===============================
+[18334.495349] Linux video capture interface: v2.00
+[18334.603004] IR NEC protocol handler initialized
+[18334.614074] cx88/2: cx2388x MPEG-TS Driver Manager version 0.0.8 loaded
+[18334.618258] cx88[0]: subsystem: 1554:4952, board: PixelView
+[card=3,autodetected], frontend(s): 0
+[18334.618263] cx88[0]: TV tuner type 5, Radio tuner type -1
+[18334.628915] IR RC5(x) protocol handler initialized
+[18334.660809] IR RC6 protocol handler initialized
+[18334.687047] IR JVC protocol handler initialized
+[18334.714899] IR Sony protocol handler initialized
+[18334.754031] lirc_dev: IR Remote Control driver registered, major 252
+[18334.764669] IR LIRC bridge handler initialized
+[18334.850358] cx88[0]/2: cx2388x 8802 Driver Manager
+[18343.108212] cx88/0: cx2388x v4l2 driver version 0.0.8 loaded
+[18343.108317] cx8800 0000:01:06.0: PCI INT A -> GSI 20 (level, low) -> IRQ 20
+[18343.112467] cx88[0]: subsystem: 1554:4952, board: PixelView
+[card=3,autodetected], frontend(s): 0
+[18343.112473] cx88[0]: TV tuner type 5, Radio tuner type -1
+[18343.312410] cx88[0]/0: found at 0000:01:06.0, rev: 5, irq: 20,
+latency: 32, mmio: 0xfd000000
+[18343.316831] cx88[0]/0: registered device video0 [v4l2]
+[18343.326623] cx88[0]/0: registered device vbi0
+[18343.333136] cx88[0]/0: registered device radio0
