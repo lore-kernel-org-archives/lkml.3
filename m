@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776AbaHAPUG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 11:20:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11413 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754084AbaHAPUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 11:20:03 -0400
-Date: Fri, 1 Aug 2014 17:19:20 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 1/3] perf: Do not allow to create kernel events without
- handler
-Message-ID: <20140801151920.GA1186@krava.brq.redhat.com>
-References: <1406896382-18404-1-git-send-email-jolsa@kernel.org>
- <1406896382-18404-2-git-send-email-jolsa@kernel.org>
- <20140801145637.GB9918@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140801145637.GB9918@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753429AbaHAPYP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 11:24:15 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:58722 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaHAPYN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 11:24:13 -0400
+From: Miguel Oliveira <cmroliv@gmail.com>
+To: Larry.Finger@lwfinger.net, Jes.Sorensen@redhat.com,
+        gregkh@linuxfoundation.org, linux-wireless@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        cmroliv@gmail.com
+Subject: [PATCH] staging: rtl8723au: Fix static symbol sparse warning
+Date: Fri,  1 Aug 2014 17:54:39 +0100
+Message-Id: <1406912079-3115-1-git-send-email-cmroliv@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <53DBA840.6050804@lwfinger.net>
+References: <53DBA840.6050804@lwfinger.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 04:56:37PM +0200, Peter Zijlstra wrote:
-> On Fri, Aug 01, 2014 at 02:33:00PM +0200, Jiri Olsa wrote:
-> > Force kernel events to specify the handler, because
-> > there's no use for kernel perf event without it.
-> > 
-> 
-> I think I found a reason; although there is currently no such user, the
-> simple counting events, they don't have overflow handlers at all.
+Fix sparse warning:
+drivers/staging/rtl8723au/core/rtw_efuse.c:579:5: warning: symbol 'efuse_GetCurrentSize23a' was not declared. Should it be static?
+by removing efuse_GetCurrentSize23a since its never used
 
-ah right.. ok 
+Signed-off-by: Miguel Oliveira <cmroliv@gmail.com>
+---
+ drivers/staging/rtl8723au/core/rtw_efuse.c |   25 -------------------------
+ 1 file changed, 25 deletions(-)
 
-jirka
+diff --git a/drivers/staging/rtl8723au/core/rtw_efuse.c b/drivers/staging/rtl8723au/core/rtw_efuse.c
+index 345bff8..fe092c5 100644
+--- a/drivers/staging/rtl8723au/core/rtw_efuse.c
++++ b/drivers/staging/rtl8723au/core/rtw_efuse.c
+@@ -100,22 +100,6 @@ static void Efuse_PowerSwitch(struct rtw_adapter *padapter,
+ 	}
+ }
+ 
+-/*-----------------------------------------------------------------------------
+- * Function:	efuse_GetCurrentSize23a
+- *
+- * Overview:	Get current efuse size!!!
+- *
+- * Input:       NONE
+- *
+- * Output:      NONE
+- *
+- * Return:      NONE
+- *
+- * Revised History:
+- * When			Who		Remark
+- * 11/16/2008	MHC		Create Version 0.
+- *
+- *---------------------------------------------------------------------------*/
+ u16
+ Efuse_GetCurrentSize23a(struct rtw_adapter *pAdapter, u8 efuseType)
+ {
+@@ -576,15 +560,6 @@ u16 efuse_GetMaxSize23a(struct rtw_adapter *padapter)
+ 	return max_size;
+ }
+ /*  */
+-int efuse_GetCurrentSize23a(struct rtw_adapter *padapter, u16 *size)
+-{
+-	Efuse_PowerSwitch(padapter, false, true);
+-	*size = Efuse_GetCurrentSize23a(padapter, EFUSE_WIFI);
+-	Efuse_PowerSwitch(padapter, false, false);
+-
+-	return _SUCCESS;
+-}
+-/*  */
+ int rtw_efuse_map_read23a(struct rtw_adapter *padapter,
+ 			  u16 addr, u16 cnts, u8 *data)
+ {
+-- 
+1.7.10.4
+
