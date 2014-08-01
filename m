@@ -1,148 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387AbaHACLQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 22:11:16 -0400
-Received: from mx5-phx2.redhat.com ([209.132.183.37]:43029 "EHLO
-	mx5-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756AbaHACLO (ORCPT
+	id S1753510AbaHACL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 22:11:27 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:55693 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887AbaHACLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 22:11:14 -0400
-Date: Thu, 31 Jul 2014 22:11:05 -0400 (EDT)
-From: Abhijith Das <adas@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andreas Dilger <adilger@dilger.ca>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        cluster-devel@redhat.com
-Message-ID: <776040625.354492.1406859065504.JavaMail.zimbra@redhat.com>
-In-Reply-To: <20140731235306.GR20518@dastard>
-References: <1406309851-10628-1-git-send-email-adas@redhat.com> <CA2BF8AB-6F61-4856-8B0E-9D954BDEB243@dilger.ca> <193414027.14151264.1406551934098.JavaMail.zimbra@redhat.com> <7EBB0CF1-6564-4C63-8006-7DEEE8800A19@dilger.ca> <20140731044909.GR26465@dastard> <351B218B-259B-4066-8E78-0B0EA05D087E@dilger.ca> <20140731235306.GR20518@dastard>
-Subject: Re: [RFC PATCH 0/2] dirreadahead system call
+	Thu, 31 Jul 2014 22:11:25 -0400
+Date: Thu, 31 Jul 2014 19:11:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140801021118.GK11241@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140731215445.GA21933@linux.vnet.ibm.com>
+ <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <53DAEDF9.2030503@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.6]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - GC36 (Linux)/8.0.6_GA_5922)
-Thread-Topic: dirreadahead system call
-Thread-Index: jJBvpG+Bd8S9mG8MsnCK00u4nNJZQQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53DAEDF9.2030503@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080102-3532-0000-0000-00000388974F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------ Original Message -----
-> From: "Dave Chinner" <david@fromorbit.com>
-> To: "Andreas Dilger" <adilger@dilger.ca>
-> Cc: "Abhijith Das" <adas@redhat.com>, "LKML" <linux-kernel@vger.kernel.org>, "linux-fsdevel"
-> <linux-fsdevel@vger.kernel.org>, cluster-devel@redhat.com
-> Sent: Thursday, July 31, 2014 6:53:06 PM
-> Subject: Re: [RFC PATCH 0/2] dirreadahead system call
-> 
-> On Thu, Jul 31, 2014 at 01:19:45PM +0200, Andreas Dilger wrote:
-> > On Jul 31, 2014, at 6:49, Dave Chinner <david@fromorbit.com> wrote:
-> > > 
-> > >> On Mon, Jul 28, 2014 at 03:19:31PM -0600, Andreas Dilger wrote:
-> > >>> On Jul 28, 2014, at 6:52 AM, Abhijith Das <adas@redhat.com> wrote:
-> > >>> OnJuly 26, 2014 12:27:19 AM "Andreas Dilger" <adilger@dilger.ca> wrote:
-> > >>>> Is there a time when this doesn't get called to prefetch entries in
-> > >>>> readdir() order?  It isn't clear to me what benefit there is of
-> > >>>> returning
-> > >>>> the entries to userspace instead of just doing the statahead
-> > >>>> implicitly
-> > >>>> in the kernel?
-> > >>>> 
-> > >>>> The Lustre client has had what we call "statahead" for a while,
-> > >>>> and similar to regular file readahead it detects the sequential access
-> > >>>> pattern for readdir() + stat() in readdir() order (taking into account
-> > >>>> if
-> > >>>> ".*"
-> > >>>> entries are being processed or not) and starts fetching the inode
-> > >>>> attributes asynchronously with a worker thread.
-> > >>> 
-> > >>> Does this heuristic work well in practice? In the use case we were
-> > >>> trying to
-> > >>> address, a Samba server is aware beforehand if it is going to stat all
-> > >>> the
-> > >>> inodes in a directory.
-> > >> 
-> > >> Typically this works well for us, because this is done by the Lustre
-> > >> client, so the statahead is hiding the network latency of the RPCs to
-> > >> fetch attributes from the server.  I imagine the same could be seen with
-> > >> GFS2. I don't know if this approach would help very much for local
-> > >> filesystems because the latency is low.
-> > >> 
-> > >>>> This syscall might be more useful if userspace called readdir() to get
-> > >>>> the dirents and then passed the kernel the list of inode numbers
-> > >>>> to prefetch before starting on the stat() calls. That way, userspace
-> > >>>> could generate an arbitrary list of inodes (e.g. names matching a
-> > >>>> regexp) and the kernel doesn't need to guess if every inode is needed.
-> > >>> 
-> > >>> Were you thinking arbitrary inodes across the filesystem or just a
-> > >>> subset
-> > >>> from a directory? Arbitrary inodes may potentially throw up locking
-> > >>> issues.
-> > >> 
-> > >> I was thinking about inodes returned from readdir(), but the syscall
-> > >> would be much more useful if it could handle arbitrary inodes.
-> > > 
-> > > I'm not sure we can do that. The only way to safely identify a
-> > > specific inode in the filesystem from userspace is via a filehandle.
-> > > Plain inode numbers are susceptible to TOCTOU race conditions that
-> > > the kernel cannot resolve. Also, lookup by inode number bypasses
-> > > directory access permissions, so is not something we would expose
-> > > to arbitrary unprivileged users.
+On Fri, Aug 01, 2014 at 09:31:37AM +0800, Lai Jiangshan wrote:
+> On 08/01/2014 05:55 AM, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > > 
-> > None of these issues are relevant in the API that I'm thinking about.
-> > The syscall just passes the list of inode numbers to be prefetched
-> > into kernel memory, and then stat() is used to actually get the data into
-> > userspace (or whatever other operation is to be done on them),
-> > so there is no danger if the wrong inode is prefetched.  If the inode
-> > number is bad the filesystem can just ignore it.
+> > This commit adds a new RCU-tasks flavor of RCU, which provides
+> > call_rcu_tasks().  This RCU flavor's quiescent states are voluntary
+> > context switch (not preemption!), userspace execution, and the idle loop.
+> > Note that unlike other RCU flavors, these quiescent states occur in tasks,
+> > not necessarily CPUs.  Includes fixes from Steven Rostedt.
+> > 
+> > This RCU flavor is assumed to have very infrequent latency-tolerate
+> > updaters.  This assumption permits significant simplifications, including
+> > a single global callback list protected by a single global lock, along
+> > with a single linked list containing all tasks that have not yet passed
+> > through a quiescent state.  If experience shows this assumption to be
+> > incorrect, the required additional complexity will be added.
+> > 
+> > Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  include/linux/init_task.h |   9 +++
+> >  include/linux/rcupdate.h  |  36 ++++++++++
+> >  include/linux/sched.h     |  23 ++++---
+> >  init/Kconfig              |  10 +++
+> >  kernel/rcu/tiny.c         |   2 +
+> >  kernel/rcu/tree.c         |   2 +
+> >  kernel/rcu/update.c       | 171 ++++++++++++++++++++++++++++++++++++++++++++++
+> >  7 files changed, 242 insertions(+), 11 deletions(-)
+> > 
+> > diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+> > index 6df7f9fe0d01..78715ea7c30c 100644
+> > --- a/include/linux/init_task.h
+> > +++ b/include/linux/init_task.h
+> > @@ -124,6 +124,14 @@ extern struct group_info init_groups;
+> >  #else
+> >  #define INIT_TASK_RCU_PREEMPT(tsk)
+> >  #endif
+> > +#ifdef CONFIG_TASKS_RCU
+> > +#define INIT_TASK_RCU_TASKS(tsk)					\
+> > +	.rcu_tasks_holdout = false,					\
+> > +	.rcu_tasks_holdout_list =					\
+> > +		LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),
+> > +#else
+> > +#define INIT_TASK_RCU_TASKS(tsk)
+> > +#endif
+> >  
+> >  extern struct cred init_cred;
+> >  
+> > @@ -231,6 +239,7 @@ extern struct task_group root_task_group;
+> >  	INIT_FTRACE_GRAPH						\
+> >  	INIT_TRACE_RECURSION						\
+> >  	INIT_TASK_RCU_PREEMPT(tsk)					\
+> > +	INIT_TASK_RCU_TASKS(tsk)					\
+> >  	INIT_CPUSET_SEQ(tsk)						\
+> >  	INIT_RT_MUTEXES(tsk)						\
+> >  	INIT_VTIME(tsk)							\
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index 6a94cc8b1ca0..829efc99df3e 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -197,6 +197,26 @@ void call_rcu_sched(struct rcu_head *head,
+> >  
+> >  void synchronize_sched(void);
+> >  
+> > +/**
+> > + * call_rcu_tasks() - Queue an RCU for invocation task-based grace period
+> > + * @head: structure to be used for queueing the RCU updates.
+> > + * @func: actual callback function to be invoked after the grace period
+> > + *
+> > + * The callback function will be invoked some time after a full grace
+> > + * period elapses, in other words after all currently executing RCU
+> > + * read-side critical sections have completed. call_rcu_tasks() assumes
+> > + * that the read-side critical sections end at a voluntary context
+> > + * switch (not a preemption!), entry into idle, or transition to usermode
+> > + * execution.  As such, there are no read-side primitives analogous to
+> > + * rcu_read_lock() and rcu_read_unlock() because this primitive is intended
+> > + * to determine that all tasks have passed through a safe state, not so
+> > + * much for data-strcuture synchronization.
+> > + *
+> > + * See the description of call_rcu() for more detailed information on
+> > + * memory ordering guarantees.
+> > + */
+> > +void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
+> > +
+> >  #ifdef CONFIG_PREEMPT_RCU
+> >  
+> >  void __rcu_read_lock(void);
+> > @@ -294,6 +314,22 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
+> >  		rcu_irq_exit(); \
+> >  	} while (0)
+> >  
+> > +/*
+> > + * Note a voluntary context switch for RCU-tasks benefit.  This is a
+> > + * macro rather than an inline function to avoid #include hell.
+> > + */
+> > +#ifdef CONFIG_TASKS_RCU
+> > +#define rcu_note_voluntary_context_switch(t) \
+> > +	do { \
+> > +		preempt_disable(); /* Exclude synchronize_sched(); */ \
+> > +		if (ACCESS_ONCE((t)->rcu_tasks_holdout)) \
+> > +			ACCESS_ONCE((t)->rcu_tasks_holdout) = 0; \
+> > +		preempt_enable(); \
 > 
-> Which means the filesystem has to treat the inode number as
-> potentially hostile. i.e. it can not be trusted to be correct and so
-> must take slow paths to validate the inode numbers. This adds
-> *significant* overhead to the readahead path for some filesystems:
-> readahead is only a win if it is low cost.
-> 
-> For example, on XFS every untrusted inode number lookup requires an
-> inode btree lookup to validate the inode is actually valid on disk
-> and that is it allocated and has references. That lookup serialises
-> against inode allocation/freeing as well as other lookups. In
-> comparison, when using a trusted inode number from a directory
-> lookup within the kernel, we only need to do a couple of shift and
-> mask operations to convert it to a disk address and we are good to
-> go.
-> 
-> i.e. the difference is at least 5 orders of magnitude higher CPU usage
-> for an "inode number readahead" syscall versus a "directory
-> readahead" syscall, it has significant serialisation issues and it
-> can stall other modification/lookups going on at the same time.
-> That's *horrible behaviour* for a speculative readahead operation,
-> but because the inodenumbers are untrusted, we can't avoid it.
-> 
-> So, again, it's way more overhead than userspace just calling
-> stat() asycnhronously on many files at once as readdir/gentdents
-> returns dirents from the kernel to speed up cache population.
-> 
-> That's my main issue with this patchset - it's implementing
-> something in kernelspace that can *easily* be done generically in
-> userspace without introducing all sorts of nasty corner cases that
-> we have to handle in the kernel. We only add functionality to the kernel if
-> there's a
-> compelling reason to do it in kernelspace, and right now I just
-> don't see any numbers that justify adding readdir+stat() readahead
-> or inode number based cache population in kernelspace.
-> 
-> Before we add *any* syscall for directory readahead, we need
-> comparison numbers against doing the dumb multithreaded
-> userspace readahead of stat() calls. If userspace can do this as
-> fast as the kernel can....
-> 
+> Why the preempt_disable() is needed here? The comments in rcu_tasks_kthread()
+> can't persuade me.  Maybe it could be removed?
 
-This was next on my to-do list to see how an all-userspace solution compares
-with doing this in the kernel. I'll post some results as soon as I can find
-some time to play with this stuff again.
+The synchronize_sched() near the end of the main loop in rcu_tasks_thread()
+might well have obsoleted this, will take a closer look.
 
-Cheers!
---Abhi
+							Thanx, Paul
+
