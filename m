@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237AbaHAJ5I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 05:57:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50859 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750783AbaHAJ5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 05:57:05 -0400
-Date: Fri, 1 Aug 2014 11:57:00 +0200
-From: Jan Kara <jack@suse.cz>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: Jan Kara <jack@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
-        Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH 0/2] new API to allocate buffer-cache for superblock in
- non-movable area
-Message-ID: <20140801095700.GB27281@quack.suse.cz>
-References: <20140722073005.GT3935@laptop>
- <20140722093838.GA22331@quack.suse.cz>
- <53D8A258.7010904@lge.com>
- <20140730101143.GB19205@quack.suse.cz>
- <53D985C0.3070300@lge.com>
- <20140731000355.GB25362@quack.suse.cz>
- <53D98FBB.6060700@lge.com>
- <20140731122114.GA5240@quack.suse.cz>
- <53DADA2F.1020404@lge.com>
- <53DAE820.7050508@lge.com>
+	id S1754422AbaHAJ7p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 05:59:45 -0400
+Received: from blu004-omc2s30.hotmail.com ([65.55.111.105]:63438 "EHLO
+	BLU004-OMC2S30.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750831AbaHAJ7n convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 05:59:43 -0400
+X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Aug 2014 05:59:43 EDT
+X-TMN: [on+MhUhFEcJL1EkiA1z4fWUa6pLeJvUL]
+X-Originating-Email: [yuhongbao_386@hotmail.com]
+Message-ID: <BLU177-W18D4117284A1222D08D213C3E70@phx.gbl>
+From: Yuhong Bao <yuhongbao_386@hotmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        "jerry.hoemann@hp.com" <jerry.hoemann@hp.com>
+CC: "rob@landley.net" <rob@landley.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "penberg@kernel.org" <penberg@kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>
+Subject: RE: [PATCH 0/3] Early use of boot service memory
+Date: Fri, 1 Aug 2014 02:54:34 -0700
+Importance: Normal
+In-Reply-To: <528413DE.1090203@zytor.com>
+References: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com>
+ <d73ccce9-6a0d-4470-bda3-f0c6eb96b5e4@email.android.com>
+ <20131113224503.GB25344@anatevka.fc.hp.com> <52840206.5020006@zytor.com>
+ <20131113235708.GC25344@anatevka.fc.hp.com>,<528413DE.1090203@zytor.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53DAE820.7050508@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 01 Aug 2014 09:54:34.0703 (UTC) FILETIME=[994D6DF0:01CFAD6E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 01-08-14 10:06:40, Gioh Kim wrote:
-> Function path is like followings:
-> 
-> [   97.868304] [<8011a750>] (drop_buffers+0xfc/0x168) from [<8011bc64>] (try_to_free_buffers+0x50/0xbc)
-> [   97.877457] [<8011bc64>] (try_to_free_buffers+0x50/0xbc) from [<80121e40>] (blkdev_releasepage+0x38/0x48)
-> [   97.887093] [<80121e40>] (blkdev_releasepage+0x38/0x48) from [<800add8c>] (try_to_release_page+0x40/0x5c)
-> [   97.896728] [<800add8c>] (try_to_release_page+0x40/0x5c) from [<800bd9bc>] (shrink_page_list+0x508/0x8a4)
-> [   97.906334] [<800bd9bc>] (shrink_page_list+0x508/0x8a4) from [<800bde5c>] (reclaim_clean_pages_from_list+0x104/0x148)
-> [   97.917017] [<800bde5c>] (reclaim_clean_pages_from_list+0x104/0x148) from [<800b5dec>] (alloc_contig_range+0x114/0x2dc)
-> [   97.927856] [<800b5dec>] (alloc_contig_range+0x114/0x2dc) from [<802f6c04>] (dma_alloc_from_contiguous+0x8c/0x14c)
-> [   97.938264] [<802f6c04>] (dma_alloc_from_contiguous+0x8c/0x14c) from [<80017b6c>] (__alloc_from_contiguous+0x34/0xc0)
-> [   97.948926] [<80017b6c>] (__alloc_from_contiguous+0x34/0xc0) from [<80017d40>] (__dma_alloc+0xc4/0x2a0)
-> [   97.958362] [<80017d40>] (__dma_alloc+0xc4/0x2a0) from [<8001803c>] (arm_dma_alloc+0x80/0x98)
-> [   97.966916] [<8001803c>] (arm_dma_alloc+0x80/0x98) from [<7f6ea188>] (cma_test_probe+0xe0/0x1f0 [drv])
-  OK, this makes more sense to me. But also as Joonsoo Kim pointed out
-even if we go into the migration path, we will end up calling
-try_to_free_buffers() because blkdev pages are one of those which use
-fallback_migrate_page() as their ->migratepage callback.
+>> I think i can go to a date based black list, that removes the manual
+>> step. System running firmware before certain date assumes we need
+>> to do the work around. If firmware is newer than that date, we don't
+>> use the workaround. Blacklist overrides and allows current behavior
+>> for new firmware that is subsequently found to be broken and for
+>> which we can't convenience the manufacturer to fix.
+>>
+>
+> No, we can't, at least not for now. We are continually finding new
+> platforms with the bug.
 
-Now regarding your quest to make all pages in the movable zone really
-movable - you are going to have hard time to achieve that for blkdev pages.
-E.g. when a metadata buffer is part of a running transaction, it will be
-pinned in memory until that transaction commits which easily takes seconds.
-And for busy metadata buffer there's no guarantee that after that
-transaction commits the buffer isn't already part of the newly started
-transaction. So these buffers may be effectively unmovable while someone
-writes to the filesystem.
+What about now?
 
-So the quiestion really is how hard guarantee do you need that a page in
-movable zone is really movable. Or better in what timeframe should it be
-movable? It may be possible to make e.g. migratepage callback for ext4
-blkdev pages which will handle migration of pages that are just idly
-sitting in a journal waiting to be committed. That may be reasonably doable
-although it won't be perfect. Or we may just decide it's not worth the
-bother and allocate all blkdev pages from unmovable zone...
-
-								Honza
-
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+ot, but this is a fun read:
+http://download.lenovo.com/ibmdl/pub/pc/pccbbs/thinkcentre_bios/9sjy81usa.txt
+Notice the reference to "redhat 6.3"! 		 	   		  
