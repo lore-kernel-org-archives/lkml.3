@@ -1,79 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727AbaHAKX7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 06:23:59 -0400
-Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:55721
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753793AbaHAKX5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 06:23:57 -0400
-From: Dexuan Cui <decui@microsoft.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "dan.carpenter@oracle.com" <dan.carpenter@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH v3] video: hyperv: hyperv_fb: refresh the VM screen by
- force on VM panic
-Thread-Topic: [PATCH v3] video: hyperv: hyperv_fb: refresh the VM screen by
- force on VM panic
-Thread-Index: AQHPrAHsLR3FR7YCb0qbISFqmZOZ7pu58uTAgAA+b4CAAUM8cA==
-Date: Fri, 1 Aug 2014 10:22:53 +0000
-Message-ID: <EE124450C0AAF944A40DD71E61F878C98FBD6A@SINEX14MBXC417.southpacific.corp.microsoft.com>
-References: <1404875063-27424-1-git-send-email-decui@microsoft.com>
- <53D90008.4060908@ti.com>
- <EE124450C0AAF944A40DD71E61F878C98F6F78@SINEX14MBXC417.southpacific.corp.microsoft.com>
- <53DA46C3.9080905@ti.com>
-In-Reply-To: <53DA46C3.9080905@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.3.92]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754763AbaHAKYs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 06:24:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59523 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752946AbaHAKYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 06:24:46 -0400
+Message-ID: <53DB6AE6.3040703@redhat.com>
+Date: Fri, 01 Aug 2014 06:24:38 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(51704005)(13464003)(189002)(199002)(377454003)(164054003)(83072002)(74662001)(86362001)(97756001)(92726001)(92566001)(50466002)(44976005)(19580395003)(86612001)(81542001)(6806004)(20776003)(47776003)(16796002)(31966008)(74502001)(46406003)(81342001)(83322001)(55846006)(46102001)(77982001)(21056001)(107046002)(26826002)(69596002)(2656002)(84676001)(106466001)(76176999)(81156004)(64706001)(110136001)(106116001)(99396002)(97736001)(85806002)(85852003)(23726002)(19580405001)(87936001)(4396001)(95666004)(68736004)(54356999)(33656002)(50986999)(80022001)(76482001)(79102001)(93886004)(77096002)(85306004);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB247;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Forefront-PRVS: 029097202E
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=decui@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+To: Saravana Kannan <skannan@codeaurora.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
+ to be held for duration of changing governors [v2]
+References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org> <53DAA749.5080506@redhat.com> <53DAA95B.2040505@codeaurora.org> <53DAB038.3050007@redhat.com> <53DABFA6.6090503@codeaurora.org> <53DACA26.1000908@redhat.com> <53DAE592.2030909@codeaurora.org>
+In-Reply-To: <53DAE592.2030909@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Tomi Valkeinen [mailto:tomi.valkeinen@ti.com]
-> Sent: Thursday, July 31, 2014 21:38 PM
-> > I think in hvfb_on_panic() we should be able to get the
-> > hvfb_info pointer by
-> > hvfb_info = container_of(nb, struct hv_fb_panic_nb, nb).
-> >
-> > If you like that or have a better idea, please let me know so
-> > I can make a new patch.
+
+
+On 07/31/2014 08:55 PM, Saravana Kannan wrote:
+> On 07/31/2014 03:58 PM, Prarit Bhargava wrote:
+>>
+>>
+>> On 07/31/2014 06:13 PM, Saravana Kannan wrote:
+>>> On 07/31/2014 02:08 PM, Prarit Bhargava wrote:
+>>>>
+>>>>
+>>>> On 07/31/2014 04:38 PM, Saravana Kannan wrote:
+>>>>> On 07/31/2014 01:30 PM, Prarit Bhargava wrote:
+>>>>>>
+>>>>>>
+>>>>>> On 07/31/2014 04:24 PM, Saravana Kannan wrote:
+>>>>>>>
+>>>>>>> Prarit,
+>>>>>>>
+>>>>>>> I'm not an expert on sysfs locking, but I would think the specific sysfs
+>>>>>>> lock
+>>>>>>> would depend on the file/attribute group. So, can you please try to
+>>>>>>> hotplug a
+>>>>>>> core in/out (to trigger the POLICY_EXIT) and then read a sysfs file
+>>>>>>> exported by
+>>>>>>> the governor? scaling_governor doesn't cut it since that file is not
+>>>>>>> removed on
+>>>>>>> policy exit event to governor. If it's ondemand, try reading/write it's
+>>>>>>> sampling
+>>>>>>> rate file.
+>>>>>>
+>>>>>> Thanks Saravana -- will do.  I will get back to you shortly on this.
+>>>>>>
+>>>>>
+>>>>> Thanks. Btw, in case you weren't already aware of it. You'll have to hoplug
+>>>>> out
+>>>>> all the CPUs in a cluster to trigger a POLICY_EXIT for that cluster/policy.
+>>>>
+>>>> Yep -- the affected_cpus file should show all the cpus in the policy IIRC.  One
+>>>> of the systems I have has 1 cpu/policy and has 48 threads so the POLICY_EXIT is
+>>>> called.
+>>>>
+>>>> I'll put something like
+>>>>
+>>>> while [1];
+>>>> do
+>>>> echo ondemand > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor
+>>>> cat /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate
+>>>> echo 20000 > /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate
+>>>> cat /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate
+>>>> echo 0 > /sys/devices/system/cpu/cpu1/online
+>>>> sleep 1
+>>>> echo 1 > /sys/devices/system/cpu/cpu1/online
+>>>> sleep 1
+>>>> done
+>>>>
+>>>
+>>> The actual race can only happen with 2 threads. I'm just trying to trigger a
+>>> lockdep warning here.
+>>
+>> I ran the above in two separate terminals with cpuset -c 0 and cpuset -c 1 to
+>> multi-thread it all.  No deadlock or LOCKDEP trace after about 1/2 hour, so I
+>> think we're in the clear on that concern.
+>>
 > 
-> Or maybe you can add the notifier_block and the synchronous_fb to
-> hvfb_par? From the notifier_block pointer you could then get hvfp_par,
-> and from there hvfb_info.
->  Tomi
+> I wasn't convinced. So, I took some help from Stephen to test it.
+> 
+> It's been a while, so I didn't remember the original issue clearly when I gave
+> you some test suggestions. Now that I looked at the code more closely, I have a
+> proper way to reproduce the original issue.
+> 
+> Nack for this patch for 2 reasons:
+> 1. You seem to have accidentally removed a GOV_STOP in your patch. We definitely
+> can't do that. This broke changing governors and that's why your patch didn't
+> cause any issues. Because all your governor echos were failing.
 
-Hi Tomi,
-Thanks a lot for the suggestion! It's better.
-I'll send out a v4 patch for your review.
+Yes, I mentioned that yesterday in the thread.
 
-Thanks,
--- Dexuan
+> 2. When we fixed that and actually tried a proper test (not the one I gave you),
+> we reproduced the original issue.
+> 
+> To reproduce original issue:
+> Preconditions:
+> * lockdep is enabled
+> * governor per policy is enabled
 
+Okay.  I have that ...
+
+> 
+> Steps:
+> 1. Set governor to ondemand.
+> 2. Cat one of the ondemand sysfs files.
+> 3. Change governor to conservative.
+> 
+> When you do that, there's an AB, BA dead lock issue with one thread trying to
+> cat a governor sysfs file and another thread trying to change governors.
+
+Okay, I'm going to try this too...
+
+P.
+
+> 
+> -Saravana
+> 
