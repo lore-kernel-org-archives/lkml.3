@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964AbaHAOIz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:08:55 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:34880 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaHAOIy (ORCPT
+	id S1753942AbaHAOJe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 10:09:34 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:51878 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783AbaHAOJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:08:54 -0400
-Message-ID: <53DB9F77.6000102@cogentembedded.com>
-Date: Fri, 01 Aug 2014 18:08:55 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 1 Aug 2014 10:09:32 -0400
+Date: Fri, 1 Aug 2014 10:09:28 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ata: libahci: Make host flags unsigned long
+Message-ID: <20140801140928.GE21624@htj.dyndns.org>
+References: <1406893181-24764-1-git-send-email-thierry.reding@gmail.com>
+ <20140801125206.GB21624@htj.dyndns.org>
+ <20140801140121.GB373@ulmo.nvidia.com>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: dmaengine@vger.kernel.org, Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] dma: at_hdmac: fix invalid remaining bytes detection
-References: <1406887406-10567-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1406887406-10567-1-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140801140121.GB373@ulmo.nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hello,
 
-On 08/01/2014 02:03 PM, Alexandre Belloni wrote:
+On Fri, Aug 01, 2014 at 04:01:23PM +0200, Thierry Reding wrote:
+> I think there's just one occurrence. Turning the flags into an unsigned
+> long seems like a much more natural thing to do, though Besides it being
+> what many other parts of the kernel use for flags it gives us natural
+> alignment within struct ahci_host_priv. The structure currently looks
+> like this:
+> 
+> 	struct ahci_host_priv {
+> 		unsigned int flags;
+> 		u32 force_port_map;
+> 		u32 mask_port_map;
+> 
+> 		void __iomem *mmio;
+> 		...
+> 	};
+> 
+> On 64-bit that unsigned int will be 32-bit and cause additional padding
+> to be inserted between mask_port_map and mmio to align the 64-bit
+> pointer.
+> 
+> It's not like the alignment is that *hugely* important, but it's still,
+> you know, pretty.
 
-> Found using smatch:
-> drivers/dma/at_hdmac.c:299 atc_get_bytes_left() warn: unsigned
-> 'atchan->remain_desc' is never less than zero.
+I don't get how that's pretty.  Sure, that space is consumed by
+something on 64bit archs but the extra space consumed can't be
+utilized unless we're gonna change how we use flags depending on the
+bitness of the architecture.  You're saying that rather than leaving
+unused space as unused it's better to commit that space to a variable
+which can't make use of that extra space anyway.  What if we later
+wanna add another int there?  Do we make that int a long too or modify
+the complete unrelated ->flags back to int?
 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->   drivers/dma/at_hdmac.c | 12 +++++++-----
->   1 file changed, 7 insertions(+), 5 deletions(-)
+Prettiness is a good thing but code fundamentally should match what
+the underlying requirement dictates it to.  We sure have to trade that
+off too at times when the benefit gained is worthwhile, but I
+completely fail to see how this feel-good packed prettiness is
+anything worthwhile.
 
-> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-> index c13a3bb0f594..9ec84ee2fa25 100644
-> --- a/drivers/dma/at_hdmac.c
-> +++ b/drivers/dma/at_hdmac.c
-> @@ -294,14 +294,16 @@ static int atc_get_bytes_left(struct dma_chan *chan)
->   			ret = -EINVAL;
->   			goto out;
->   		}
-> -		atchan->remain_desc -= (desc_cur->lli.ctrla & ATC_BTSIZE_MAX)
-> -						<< (desc_first->tx_width);
-> -		if (atchan->remain_desc < 0) {
-> +
-> +		count = (desc_cur->lli.ctrla & ATC_BTSIZE_MAX)
-> +			<< (desc_first->tx_width);
+In general, please don't do things like this in the kernel.  Use ulong
+for flags iff it's necessary (atomic bitops).
 
-    Parens not needed here.
+Thanks.
 
-[...]
-
-WBR, Sergei
-
+-- 
+tejun
