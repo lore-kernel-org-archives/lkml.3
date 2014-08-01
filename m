@@ -1,167 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073AbaHAQFc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 12:05:32 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:14085 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754615AbaHAQF1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 12:05:27 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        "jason\@lakedaemon.net" <jason@lakedaemon.net>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "tglx\@linutronix.de" <tglx@linutronix.de>,
-        "Harish.Kasiviswanathan\@amd.com" <Harish.Kasiviswanathan@amd.com>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci\@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc\@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 3/4 V3] irqchip: gic: Add supports for ARM GICv2m MSI(-X)
-In-Reply-To: <53DBB562.5020003@amd.com> (Suravee Suthikulanit's message of
-	"Fri, 1 Aug 2014 16:42:26 +0100")
-Organization: ARM Ltd
-References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
-	<1404947104-21345-4-git-send-email-suravee.suthikulpanit@amd.com>
-	<87zjfqj3mc.fsf@approximate.cambridge.arm.com>
-	<53DBB562.5020003@amd.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Fri, 01 Aug 2014 17:05:14 +0100
-Message-ID: <87silggpqd.fsf@approximate.cambridge.arm.com>
+	id S1755238AbaHAQGD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 12:06:03 -0400
+Received: from mail.us.es ([193.147.175.20]:43238 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754966AbaHAQGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 12:06:00 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus3 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.4/19253. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-102.8/7.5):. 
+ Processed in 1.908051 secs); 01 Aug 2014 16:05:58 -0000
+X-Spam-ASN: AS12715 213.179.96.0/19
+X-Envelope-From: pneira@us.es
+Date: Fri, 1 Aug 2014 18:06:12 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Kees Cook <keescook@chromium.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        netfilter-devel <netfilter-devel@vger.kernel.org>
+Subject: Re: [PATCH v4 net-next 5/5] net: filter: split 'struct sk_filter'
+ into socket and bpf parts
+Message-ID: <20140801160612.GA4679@salvia>
+References: <1406777656-27755-1-git-send-email-ast@plumgrid.com>
+ <1406777656-27755-6-git-send-email-ast@plumgrid.com>
+ <20140731194059.GA8681@salvia>
+ <CAMEtUuy+iABzHagoono+CPB=Ex4Ew4vQBK65x1jDRC9_W9L7Dw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMEtUuy+iABzHagoono+CPB=Ex4Ew4vQBK65x1jDRC9_W9L7Dw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01 2014 at  4:42:26 pm BST, Suravee Suthikulanit <suravee.suthikulpanit@amd.com> wrote:
-> On 7/30/2014 9:57 AM, Marc Zyngier wrote:
->> On Thu, Jul 10 2014 at 12:05:03 am BST, "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com> wrote:
->>
->> Hi Suravee,
->>
->>> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
->>>
->  >> ......
->  >>
->>> -  first region is the GIC distributor register base and size. The 2nd region is
->>> -  the GIC cpu interface register base and size.
->>> +- reg : Specifies base physical address(s) and size of the GIC register frames.
->>> +
->>> +  Region | Description
->>> +  Index  |
->>> +  -------------------------------------------------------------------
->>> +     0   | GIC distributor register base and size
->>> +     1   | GIC cpu interface register base and size
->>> +     2   | VGIC interface control register base and size (Optional)
->>> +     3   | VGIC CPU interface register base and size (Optional)
->>> +     4   | GICv2m MSI interface register base and size (Optional)
->>
->> Given that the v2m block is somehow bolted on the side of a standard
->> GICv2, I'd rather see it as a subnode of the main GIC.
->>
->> Then you could directly call into the v2m layer to initialize it,
->> instead of the odd "reverse probing" you're using here...
->
-> [Suravee] IIUC, you don't think we should introduce the "gic-400-v2m" 
-> compatible ID. Instead, you want to see something like:
->
->      gic @ 0x00f00000 {
->          .....
->          v2m {
->              msi-controller;
->              reg = < .... >; /* v2m reg frame */
->          }
->      }
->
-> If so, I can change this.
+On Thu, Jul 31, 2014 at 02:02:19PM -0700, Alexei Starovoitov wrote:
+> On Thu, Jul 31, 2014 at 12:40 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> > On Wed, Jul 30, 2014 at 08:34:16PM -0700, Alexei Starovoitov wrote:
+> >> clean up names related to socket filtering and bpf in the following way:
+> >> - everything that deals with sockets keeps 'sk_*' prefix
+> >> - everything that is pure BPF is changed to 'bpf_*' prefix
+> >>
+> >> split 'struct sk_filter' into
+> >> struct sk_filter {
+> >>       atomic_t        refcnt;
+> >>       struct rcu_head rcu;
+> >>       struct bpf_prog *prog;
+> >> };
+> >
+> > I think you can use 'struct bpf_prog prog' instead so the entire
+> > sk_filter remains in the same memory blob (as it is before this
+> > patch).
+> >
+> > You can add an inline function to retrieve the bpg prog from the
+> > filter:
+> >
+> > static inline struct bpf_prog *sk_filter_bpf(struct sk_filter *)
+> >
+> > and use it whenever possible to fetch the bpf program. I'm suggesting
+> > this because we can use the zero array size in the socket filtering
+> > abstraction later on, if the function above is used, this just needs
+> > one line in that function to be updated to fetch the program from the
+> > placeholder.
+> 
+> correct. It would speed up SK_RUN_FILTER macro a little and I've
+> considered it, but decided to go with the pointer for two reasons:
+> 1.In sk_attach_filter() the bpf_prog is allocated, then reallocated
+> as part of bpf_prepare_filter(). My patch #1 cleans up that part to
+> avoid 'struct sock *' dependency, so all bpf_* functions work
+> purely with bpf_prog... If bpf_prog is embedded inside sk_filter,
+> bpf_prepare_filter would need to have a callback to reallocate
+> the container struct and pass this callback through the chain
+> of calls, which is ugly
 
-Yes, something like that indeed.
+I think you can allocate the sk_filter once you get the final bpf
+program, then you can memcpy() it. This adds some extra overhead in
+the sk_attach_filter(), but that path is executed from user context
+and it's also a rare operation (only once to attach the filter). It's
+still not going to be a beauty, but IMO it's worth to focus on getting
+that little speed up in the packet path at the cost of adding some
+overhead on the socket attach path.
 
->
->
->>> +
->>> +static int __init
->>> +gicv2m_msi_init(struct device_node *node, struct v2m_data *v2m)
->>> +{
->>> +       unsigned int val;
->>> +
->>> +       if (of_address_to_resource(node, GIC_OF_MSIV2M_RANGE_INDEX,
->>> +                                  &v2m->res)) {
->>> +               pr_err("GICv2m: Failed locate GICv2m MSI register frame\n");
->>> +               return -EINVAL;
->>> +       }
->>> +
->>> +       v2m->base = of_iomap(node, GIC_OF_MSIV2M_RANGE_INDEX);
->>> +       if (!v2m->base) {
->>> +               pr_err("GICv2m: Failed to map GIC MSI registers\n");
->>> +               return -EINVAL;
->>> +       }
->>> +
->>> +       val = readl_relaxed(v2m->base + V2M_MSI_TYPER);
->>> +       if (!val) {
->>> +               pr_warn("GICv2m: Failed to read V2M_MSI_TYPER register\n");
->>> +               return -EINVAL;
->>> +       }
->>> +
->>> +       v2m->spi_start = (val >> V2M_MSI_TYPER_BASE_SHIFT) &
->>> +                               V2M_MSI_TYPER_BASE_MASK;
->>> +       v2m->nr_spis = val & V2M_MSI_TYPER_NUM_MASK;
->>> +       if ((v2m->spi_start < V2M_MIN_SPI) || (v2m->nr_spis >= V2M_MAX_SPI)) {
->>> +                       pr_err("GICv2m: Invalid MSI_TYPER (%#x)\n", val);
->>> +                       return -EINVAL;
->>> +       }
->>> +
->>> +       v2m->bm = kzalloc(sizeof(long) * BITS_TO_LONGS(v2m->nr_spis),
->>> +                         GFP_KERNEL);
->>> +       if (!v2m->bm) {
->>> +               pr_err("GICv2m: Failed to allocate MSI bitmap\n");
->>> +               return -ENOMEM;
->>> +       }
->>> +
->>> +       spin_lock_init(&v2m->msi_cnt_lock);
->>> +
->>> +       pr_info("GICv2m: SPI range [%d:%d]\n",
->>> +               v2m->spi_start, (v2m->spi_start + v2m->nr_spis));
->>> +
->>> +       return 0;
->>> +}
->>
->> This function is assuming that you will only see one single MSI frame
->> here. Is there any chance that there would be more than one in a system?
->>
->
-> [Suravee] If I would imagine such SOC, where there are multiple MSI 
-> frames (hence multiple msi-controllers), can we currently support this 
-> with the current msichip interface?  Currently, each PCI RC connects to 
-> an "interrupt-parrent", which is also an MSI controller. We would need 
-> to have a way for PCI RC to specify which of the msichips within an 
-> interrupt-controller it wants to use.
+> 2. having it as a pointer helps nft in the long run, since whole of
+> bpf_prog doesn't stay around inside sk_filter when it's not used.
 
-Not necessarly multiple MSI controllers. As far as I can see, a v2m MSI
-frame describes a range of SPIs, and I can perfectly imagine a system
-where someone would have a number of these, each capable of generating a
-number of SPIs. It becomes interesting when you have non-contiguous SPI
-ranges... ;-)
+If you put into place the inline wrapper function that I'm proposing
+above and you use it instead of fp->bpf_prog, I think there should be
+not interference:
 
-> Currently, I am not aware if there is a GIC w/ multiple MSI frames. 
-> Could you check if there is such product for ARM GICs?
-
-I can, but it is unlikely I'll be able to find about what people outside
-of ARM are doing. They usually only get in touch when they've screwed
-something up.. ;-)
-
-Anyway, maybe we just don't need to address this at this point in
-time. Adding a comment to that effect would probably be enough, and give
-a hint to anyone building such a configuration.
-
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny.
+static inline struct bpf_prog *sk_filter_bpf(struct sk_filter *sk)
+{
+-       return &sk->bpf_prog;
++       return (struct bpf_prog *)sk->data;
+}
