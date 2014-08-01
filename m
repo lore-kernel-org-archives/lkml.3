@@ -1,191 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221AbaHACma (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 22:42:30 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:25195 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553AbaHACm3 (ORCPT
+	id S1753421AbaHACpF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 22:45:05 -0400
+Received: from exprod5og109.obsmtp.com ([64.18.0.188]:53573 "HELO
+	exprod5og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751663AbaHACpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 22:42:29 -0400
-From: Kefeng Wang <wangkefeng.wang@huawei.com>
-To: Russell King <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <guohanjun@huawei.com>, Kefeng Wang <wangkefeng.wang@huawei.com>
-Subject: [PATCH] ARM: l2x0: fix build warning without CONFIG_OF
-Date: Fri, 1 Aug 2014 10:42:00 +0800
-Message-ID: <1406860920-23520-1-git-send-email-wangkefeng.wang@huawei.com>
-X-Mailer: git-send-email 1.8.3.msysgit.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.177.21.224]
-X-CFilter-Loop: Reflected
+	Thu, 31 Jul 2014 22:45:01 -0400
+From: Feng Kan <fkan@apm.com>
+To: linux@roeck-us.net, dbaryshkov@gmail.com, catalin.marinas@arm.com,
+        dwmw2@infradead.org, arnd@arndb.de, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        patches@apm.com
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH V9 0/6] Add X-Gene platform reboot mechanism
+Date: Thu, 31 Jul 2014 19:45:51 -0700
+Message-Id: <1406861157-29169-1-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit cf9ea8f13(ARM: l2c: remove obsolete l2x0 ops for non-OF init)
-remove some obsolete l2x0 ops, the rest of ops: l2x0_cache_sync,
-l2x0_cache_sync, l2x0_disable only use under OF enable, so move them
-into OF part, or "defined but not used" warning occurs.
+Enable reboot driver for the X-Gene platform. Add generic syscon reboot
+driver.
 
-Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
----
- arch/arm/mm/cache-l2x0.c | 134 +++++++++++++++++++++++------------------------
- 1 file changed, 67 insertions(+), 67 deletions(-)
+V9 Change:
+	- rebase on Guenter Roeck's V5 reset handler patch set. This 
+	  allows for a generic reset to be call rather than the arm
+	  specific reset handler.
 
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 7c3fb41..77e57b0 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -135,73 +135,6 @@ static void l2c_disable(void)
- 	dsb(st);
- }
- 
--#ifdef CONFIG_CACHE_PL310
--static inline void cache_wait(void __iomem *reg, unsigned long mask)
--{
--	/* cache operations by line are atomic on PL310 */
--}
--#else
--#define cache_wait	l2c_wait_mask
--#endif
--
--static inline void cache_sync(void)
--{
--	void __iomem *base = l2x0_base;
--
--	writel_relaxed(0, base + sync_reg_offset);
--	cache_wait(base + L2X0_CACHE_SYNC, 1);
--}
--
--#if defined(CONFIG_PL310_ERRATA_588369) || defined(CONFIG_PL310_ERRATA_727915)
--static inline void debug_writel(unsigned long val)
--{
--	l2c_set_debug(l2x0_base, val);
--}
--#else
--/* Optimised out for non-errata case */
--static inline void debug_writel(unsigned long val)
--{
--}
--#endif
--
--static void l2x0_cache_sync(void)
--{
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&l2x0_lock, flags);
--	cache_sync();
--	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
--}
--
--static void __l2x0_flush_all(void)
--{
--	debug_writel(0x03);
--	__l2c_op_way(l2x0_base + L2X0_CLEAN_INV_WAY);
--	cache_sync();
--	debug_writel(0x00);
--}
--
--static void l2x0_flush_all(void)
--{
--	unsigned long flags;
--
--	/* clean all ways */
--	raw_spin_lock_irqsave(&l2x0_lock, flags);
--	__l2x0_flush_all();
--	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
--}
--
--static void l2x0_disable(void)
--{
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&l2x0_lock, flags);
--	__l2x0_flush_all();
--	l2c_write_sec(0, l2x0_base, L2X0_CTRL);
--	dsb(st);
--	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
--}
--
- static void l2c_save(void __iomem *base)
- {
- 	l2x0_saved_regs.aux_ctrl = readl_relaxed(l2x0_base + L2X0_AUX_CTRL);
-@@ -945,6 +878,73 @@ static int l2_wt_override;
-  * pass it though the device tree */
- static u32 cache_id_part_number_from_dt;
- 
-+#ifdef CONFIG_CACHE_PL310
-+static inline void cache_wait(void __iomem *reg, unsigned long mask)
-+{
-+	/* cache operations by line are atomic on PL310 */
-+}
-+#else
-+#define cache_wait	l2c_wait_mask
-+#endif
-+
-+static inline void cache_sync(void)
-+{
-+	void __iomem *base = l2x0_base;
-+
-+	writel_relaxed(0, base + sync_reg_offset);
-+	cache_wait(base + L2X0_CACHE_SYNC, 1);
-+}
-+
-+#if defined(CONFIG_PL310_ERRATA_588369) || defined(CONFIG_PL310_ERRATA_727915)
-+static inline void debug_writel(unsigned long val)
-+{
-+	l2c_set_debug(l2x0_base, val);
-+}
-+#else
-+/* Optimised out for non-errata case */
-+static inline void debug_writel(unsigned long val)
-+{
-+}
-+#endif
-+
-+static void l2x0_cache_sync(void)
-+{
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&l2x0_lock, flags);
-+	cache_sync();
-+	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
-+}
-+
-+static void __l2x0_flush_all(void)
-+{
-+	debug_writel(0x03);
-+	__l2c_op_way(l2x0_base + L2X0_CLEAN_INV_WAY);
-+	cache_sync();
-+	debug_writel(0x00);
-+}
-+
-+static void l2x0_flush_all(void)
-+{
-+	unsigned long flags;
-+
-+	/* clean all ways */
-+	raw_spin_lock_irqsave(&l2x0_lock, flags);
-+	__l2x0_flush_all();
-+	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
-+}
-+
-+static void l2x0_disable(void)
-+{
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&l2x0_lock, flags);
-+	__l2x0_flush_all();
-+	l2c_write_sec(0, l2x0_base, L2X0_CTRL);
-+	dsb(st);
-+	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
-+}
-+
- static void __init l2x0_of_parse(const struct device_node *np,
- 				 u32 *aux_val, u32 *aux_mask)
- {
+V8 Change:
+	- change Kconfig to depend on ARM || ARM64 || COMPILE_TEST
+
+V7 Change:
+	- Seem V3 on, the patches were not making in to the mailinglist.
+	- Fix build error produced by other ARCH while including this
+	  driver. Set to depend on arm64 ARCH for now.
+
+V6 Change:
+	- Add documentation for scu node.
+
+V5 Change:
+	- Documentation update, endian and access size.
+
+V4 Change:
+	- Remove old X-Gene reboot driver
+	- Add generic syscon reboot driver
+	- Add DTS and Kconfig for X-Gene reboot using syscon method
+
+V3 Change:
+	- Remove the reboot driver's use of acpi resource patch.
+	- Change the reboot driver to use syscon to parse out 
+	  system clock register. Remove the old method of getting
+	  register from the reboot driver directly.
+	- Remove documentation since its now simple.
+
+V2 Change:
+	- Add support for using ACPI resource.
+
+
+Feng Kan (6):
+  power: reset: Add generic SYSCON register mapped reset
+  Documentation: power: reset: Add documentation for generic SYSCON
+    reboot driver
+  Documentation: arm64: add SCU dts binding documentation to linux
+    kernel
+  arm64: dts: Add X-Gene reboot driver dts node
+  arm64: Select reboot driver for X-Gene platform
+  power: reset: Remove X-Gene reboot driver
+
+ Documentation/devicetree/bindings/arm/apm/scu.txt  |  17 ++++
+ .../bindings/power/reset/syscon-reboot.txt         |  23 +++++
+ arch/arm64/Kconfig                                 |   2 +
+ arch/arm64/boot/dts/apm-storm.dtsi                 |  12 +++
+ drivers/power/reset/Kconfig                        |  12 +--
+ drivers/power/reset/Makefile                       |   2 +-
+ drivers/power/reset/syscon-reboot.c                |  98 ++++++++++++++++++++
+ drivers/power/reset/xgene-reboot.c                 | 103 ---------------------
+ 8 files changed, 158 insertions(+), 111 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/apm/scu.txt
+ create mode 100644 Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+ create mode 100644 drivers/power/reset/syscon-reboot.c
+ delete mode 100644 drivers/power/reset/xgene-reboot.c
+
 -- 
-1.7.12.4
-
+1.9.1
 
