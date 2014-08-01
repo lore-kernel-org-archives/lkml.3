@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069AbaHAQTR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 12:19:17 -0400
-Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:41319
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1755265AbaHAQTl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 12:19:41 -0400
+Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:42711
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750886AbaHAQTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 12:19:16 -0400
-Date: Fri, 1 Aug 2014 18:18:39 +0200
-From: Robert Richter <robert.richter@caviumnetworks.com>
-To: Olof Johansson <olof@lixom.net>
-CC: Robert Richter <rric@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	id S1754842AbaHAQTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 12:19:38 -0400
+X-WSS-ID: 0N9MYOF-08-IPK-02
+X-M-MSG: 
+Message-ID: <53DBBE06.5040307@amd.com>
+Date: Fri, 1 Aug 2014 11:19:18 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: Mark Rutland <Mark.Rutland@arm.com>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder
- SoC
-Message-ID: <20140801161839.GE4703@rric.localhost>
-References: <1406732794-20920-1-git-send-email-rric@kernel.org>
- <1406732794-20920-3-git-send-email-rric@kernel.org>
- <CAOesGMh9KkdKB_ytJ7CCbkPW7dHTX91NdfDMsMNfbmOBVOJ8PQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAOesGMh9KkdKB_ytJ7CCbkPW7dHTX91NdfDMsMNfbmOBVOJ8PQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [78.53.84.104]
-X-ClientProxiedBy: DB4PR01CA014.eurprd01.prod.exchangelabs.com (10.242.152.44)
- To SN2PR0701MB814.namprd07.prod.outlook.com (25.160.16.148)
+Subject: Re: [PATCH 4/4 V3] irqchip: gicv2m: Add support for multiple MSI
+ for ARM64 GICv2m
+References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1404947104-21345-5-git-send-email-suravee.suthikulpanit@amd.com>
+ <87vbqej2rj.fsf@approximate.cambridge.arm.com> <53DBA603.9030509@amd.com>
+ <53DBA986.90705@arm.com>
+In-Reply-To: <53DBA986.90705@arm.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(189002)(199002)(51704005)(24454002)(164054003)(479174003)(377454003)(92566001)(80022001)(65806001)(65956001)(92726001)(4396001)(97736001)(36756003)(93886004)(85306004)(64706001)(106466001)(81342001)(47776003)(46102001)(110136001)(20776003)(107046002)(83072002)(105586002)(87936001)(23746002)(64126003)(85852003)(59896001)(77982001)(83506001)(101416001)(76482001)(76176999)(87266999)(50986999)(65816999)(102836001)(81542001)(54356999)(33656002)(99396002)(86362001)(21056001)(74502001)(50466002)(74662001)(68736004)(31966008)(83322001)(95666004)(80316001)(84676001)(79102001)(44976005);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR02MB047;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
 X-Forefront-PRVS: 029097202E
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6069001)(6009001)(24454002)(189002)(51704005)(199002)(377454003)(4396001)(64706001)(46102001)(76506005)(77982001)(106356001)(50466002)(110136001)(76482001)(42186005)(85306004)(83072002)(105586002)(81342001)(50986999)(19580405001)(74662001)(92566001)(81542001)(87976001)(83506001)(19580395003)(31966008)(107046002)(20776003)(79102001)(66066001)(46406003)(21056001)(99396002)(54356999)(101416001)(80022001)(23726002)(95666004)(86362001)(77096002)(85852003)(76176999)(97756001)(92726001)(47776003)(102836001)(83322001)(74502001)(33656002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR0701MB814;H:rric.localhost;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-X-OriginatorOrg: caviumnetworks.com
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof,
+On 8/1/2014 9:51 AM, Marc Zyngier wrote:
+> Hi Suravee,
+>
+> On 01/08/14 15:36, Suravee Suthikulanit wrote:
+>> On 7/30/2014 10:16 AM, Marc Zyngier wrote:
+>>> Why do we need this complexity at all? Is there any case where we'd want
+>>> to limit ourselves to a single vector for MSI?
+>>
+>> I think the ARM64 GICv2m should not be the limitation for the devices
+>> multiple MSI if there is no real hardware/design limitation.
+>>
+>>> arm64 is a new enough architecture so that we can expect all interrupt controllers to cope
+>>> with that.
+>>
+>> I am not sure if I understand this comment.
+>>
+>> We are not forcing all interrupt controllers for ARM64 to handle
+>> multi-MSI.  They have the option to support if multi-MSI if they want
+>> to. I just think that we should not put the architectural limit here.
+>
+> Let me be clearer: I think we should put the burden of *not* handling
+> multi-MSI on interrupt controllers. Here, you're making the
+> architectural default to be "I don't support multi-MSI", hence having to
+> override global vectors and such for well behaved MSI controllers like
+> GICv2m and GICv3 ITS.
+>
+> Let's only support multi-MSI for the time being. If someone comes up
+> with a silly old MSI controller that can't deal with it, we'll address
+> the issue at that problem.
+>
+> Thanks,
+>
+> 	M.
+>
 
-On 30.07.14 11:14:23, Olof Johansson wrote:
-> On Wed, Jul 30, 2014 at 8:06 AM, Robert Richter <rric@kernel.org> wrote:
-> > From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-> >
-> > Add initial device tree nodes for Cavium Thunder SoCs with support of
-> > 48 cores and gicv3. The dts file requires further changes, esp. for
-> > pci, gicv3-its and smmu. This changes will be added later together
-> > with the device drivers.
-> >
-> > Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-> > Signed-off-by: Robert Richter <rrichter@cavium.com>
-> > ---
-> >  arch/arm64/boot/dts/Makefile         |   1 +
-> >  arch/arm64/boot/dts/thunder-88xx.dts | 387 +++++++++++++++++++++++++++++++++++
-> >  2 files changed, 388 insertions(+)
-> >  create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
-> >
-> > diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
-> > index c52bdb051f66..f8001a62029c 100644
-> > --- a/arch/arm64/boot/dts/Makefile
-> > +++ b/arch/arm64/boot/dts/Makefile
-> > @@ -1,3 +1,4 @@
-> > +dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
-> >  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
-> >  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
-> 
-> Oh, and:
-> 
-> Let's fix the mistake we made on 32-bit here (that we can't undo
-> unless we move all dts files now, which is too much churn), and put
-> each SoC vendor in its own subdirectory.
-> 
-> So, please add a arch/arm64/boot/dts/cavium/ directory, add a Makefile
-> and the dts there.
-> 
-> We should move vexpress under arm/   and xgene under apm/ too.
+Ok, I'm fine with that. Thanks for clarification.
 
-I well take a look at this.
+Suravee
 
--Robert
