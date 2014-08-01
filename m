@@ -1,76 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbaHACJh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 22:09:37 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:39568 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaHACJg (ORCPT
+	id S1753387AbaHACLQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 22:11:16 -0400
+Received: from mx5-phx2.redhat.com ([209.132.183.37]:43029 "EHLO
+	mx5-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756AbaHACLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 22:09:36 -0400
-Date: Thu, 31 Jul 2014 19:09:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com
-Subject: Re: [PATCH v2 tip/core/rcu 01/10] rcu: Add call_rcu_tasks()
-Message-ID: <20140801020928.GJ11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140731003914.GA3872@linux.vnet.ibm.com>
- <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <53D9F084.7000706@cn.fujitsu.com>
- <20140731160924.GR11241@linux.vnet.ibm.com>
- <53DAE512.5030302@cn.fujitsu.com>
+	Thu, 31 Jul 2014 22:11:14 -0400
+Date: Thu, 31 Jul 2014 22:11:05 -0400 (EDT)
+From: Abhijith Das <adas@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andreas Dilger <adilger@dilger.ca>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        cluster-devel@redhat.com
+Message-ID: <776040625.354492.1406859065504.JavaMail.zimbra@redhat.com>
+In-Reply-To: <20140731235306.GR20518@dastard>
+References: <1406309851-10628-1-git-send-email-adas@redhat.com> <CA2BF8AB-6F61-4856-8B0E-9D954BDEB243@dilger.ca> <193414027.14151264.1406551934098.JavaMail.zimbra@redhat.com> <7EBB0CF1-6564-4C63-8006-7DEEE8800A19@dilger.ca> <20140731044909.GR26465@dastard> <351B218B-259B-4066-8E78-0B0EA05D087E@dilger.ca> <20140731235306.GR20518@dastard>
+Subject: Re: [RFC PATCH 0/2] dirreadahead system call
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53DAE512.5030302@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080102-9332-0000-0000-0000018FFFBB
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.6]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - GC36 (Linux)/8.0.6_GA_5922)
+Thread-Topic: dirreadahead system call
+Thread-Index: jJBvpG+Bd8S9mG8MsnCK00u4nNJZQQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 08:53:38AM +0800, Lai Jiangshan wrote:
-> On 08/01/2014 12:09 AM, Paul E. McKenney wrote:
+
+
+----- Original Message -----
+> From: "Dave Chinner" <david@fromorbit.com>
+> To: "Andreas Dilger" <adilger@dilger.ca>
+> Cc: "Abhijith Das" <adas@redhat.com>, "LKML" <linux-kernel@vger.kernel.org>, "linux-fsdevel"
+> <linux-fsdevel@vger.kernel.org>, cluster-devel@redhat.com
+> Sent: Thursday, July 31, 2014 6:53:06 PM
+> Subject: Re: [RFC PATCH 0/2] dirreadahead system call
 > 
+> On Thu, Jul 31, 2014 at 01:19:45PM +0200, Andreas Dilger wrote:
+> > On Jul 31, 2014, at 6:49, Dave Chinner <david@fromorbit.com> wrote:
+> > > 
+> > >> On Mon, Jul 28, 2014 at 03:19:31PM -0600, Andreas Dilger wrote:
+> > >>> On Jul 28, 2014, at 6:52 AM, Abhijith Das <adas@redhat.com> wrote:
+> > >>> OnJuly 26, 2014 12:27:19 AM "Andreas Dilger" <adilger@dilger.ca> wrote:
+> > >>>> Is there a time when this doesn't get called to prefetch entries in
+> > >>>> readdir() order?  It isn't clear to me what benefit there is of
+> > >>>> returning
+> > >>>> the entries to userspace instead of just doing the statahead
+> > >>>> implicitly
+> > >>>> in the kernel?
+> > >>>> 
+> > >>>> The Lustre client has had what we call "statahead" for a while,
+> > >>>> and similar to regular file readahead it detects the sequential access
+> > >>>> pattern for readdir() + stat() in readdir() order (taking into account
+> > >>>> if
+> > >>>> ".*"
+> > >>>> entries are being processed or not) and starts fetching the inode
+> > >>>> attributes asynchronously with a worker thread.
+> > >>> 
+> > >>> Does this heuristic work well in practice? In the use case we were
+> > >>> trying to
+> > >>> address, a Samba server is aware beforehand if it is going to stat all
+> > >>> the
+> > >>> inodes in a directory.
+> > >> 
+> > >> Typically this works well for us, because this is done by the Lustre
+> > >> client, so the statahead is hiding the network latency of the RPCs to
+> > >> fetch attributes from the server.  I imagine the same could be seen with
+> > >> GFS2. I don't know if this approach would help very much for local
+> > >> filesystems because the latency is low.
+> > >> 
+> > >>>> This syscall might be more useful if userspace called readdir() to get
+> > >>>> the dirents and then passed the kernel the list of inode numbers
+> > >>>> to prefetch before starting on the stat() calls. That way, userspace
+> > >>>> could generate an arbitrary list of inodes (e.g. names matching a
+> > >>>> regexp) and the kernel doesn't need to guess if every inode is needed.
+> > >>> 
+> > >>> Were you thinking arbitrary inodes across the filesystem or just a
+> > >>> subset
+> > >>> from a directory? Arbitrary inodes may potentially throw up locking
+> > >>> issues.
+> > >> 
+> > >> I was thinking about inodes returned from readdir(), but the syscall
+> > >> would be much more useful if it could handle arbitrary inodes.
+> > > 
+> > > I'm not sure we can do that. The only way to safely identify a
+> > > specific inode in the filesystem from userspace is via a filehandle.
+> > > Plain inode numbers are susceptible to TOCTOU race conditions that
+> > > the kernel cannot resolve. Also, lookup by inode number bypasses
+> > > directory access permissions, so is not something we would expose
+> > > to arbitrary unprivileged users.
 > > 
-> >>> +		/*
-> >>> +		 * There were callbacks, so we need to wait for an
-> >>> +		 * RCU-tasks grace period.  Start off by scanning
-> >>> +		 * the task list for tasks that are not already
-> >>> +		 * voluntarily blocked.  Mark these tasks and make
-> >>> +		 * a list of them in rcu_tasks_holdouts.
-> >>> +		 */
-> >>> +		rcu_read_lock();
-> >>> +		for_each_process_thread(g, t) {
-> >>> +			if (t != current && ACCESS_ONCE(t->on_rq) &&
-> >>> +			    !is_idle_task(t)) {
-> >>
-> >> What happen when the trampoline is on the idle task?
-> >>
-> >> I think we need to use schedule_on_each_cpu() to replace one of
-> >> the synchronize_sched() in this function. (or other stuff which can
-> >> cause real schedule for *ALL* online CPUs).
-> > 
-> > Well, that is one of the questions in the 0/10 cover letter.  If it turns
-> > out to be necessary to worry about idle-task trampolines, it should be
-> > possible to avoid hammering all idle CPUs in the common case.  Though maybe
-> > battery-powered devices won't need RCU-tasks.
+> > None of these issues are relevant in the API that I'm thinking about.
+> > The syscall just passes the list of inode numbers to be prefetched
+> > into kernel memory, and then stat() is used to actually get the data into
+> > userspace (or whatever other operation is to be done on them),
+> > so there is no danger if the wrong inode is prefetched.  If the inode
+> > number is bad the filesystem can just ignore it.
 > 
-> trampolines on NO_HZ idle CPU can be arbitrary long, (example, SMI happens
-> inside the trampoline).  So only the real schedule on idle CPU is reliable
-> to me.
+> Which means the filesystem has to treat the inode number as
+> potentially hostile. i.e. it can not be trusted to be correct and so
+> must take slow paths to validate the inode numbers. This adds
+> *significant* overhead to the readahead path for some filesystems:
+> readahead is only a win if it is low cost.
+> 
+> For example, on XFS every untrusted inode number lookup requires an
+> inode btree lookup to validate the inode is actually valid on disk
+> and that is it allocated and has references. That lookup serialises
+> against inode allocation/freeing as well as other lookups. In
+> comparison, when using a trusted inode number from a directory
+> lookup within the kernel, we only need to do a couple of shift and
+> mask operations to convert it to a disk address and we are good to
+> go.
+> 
+> i.e. the difference is at least 5 orders of magnitude higher CPU usage
+> for an "inode number readahead" syscall versus a "directory
+> readahead" syscall, it has significant serialisation issues and it
+> can stall other modification/lookups going on at the same time.
+> That's *horrible behaviour* for a speculative readahead operation,
+> but because the inodenumbers are untrusted, we can't avoid it.
+> 
+> So, again, it's way more overhead than userspace just calling
+> stat() asycnhronously on many files at once as readdir/gentdents
+> returns dirents from the kernel to speed up cache population.
+> 
+> That's my main issue with this patchset - it's implementing
+> something in kernelspace that can *easily* be done generically in
+> userspace without introducing all sorts of nasty corner cases that
+> we have to handle in the kernel. We only add functionality to the kernel if
+> there's a
+> compelling reason to do it in kernelspace, and right now I just
+> don't see any numbers that justify adding readdir+stat() readahead
+> or inode number based cache population in kernelspace.
+> 
+> Before we add *any* syscall for directory readahead, we need
+> comparison numbers against doing the dumb multithreaded
+> userspace readahead of stat() calls. If userspace can do this as
+> fast as the kernel can....
+> 
 
-You might well be right, but first let's see if Steven needs this to
-work in the idle task to begin with.  If he doesn't, then there is no
-point in worrying about it.  If he does, I bet I can come up with a
-trick or two.  ;-)
+This was next on my to-do list to see how an all-userspace solution compares
+with doing this in the kernel. I'll post some results as soon as I can find
+some time to play with this stuff again.
 
-							Thanx, Paul
-
+Cheers!
+--Abhi
