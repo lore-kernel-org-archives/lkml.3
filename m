@@ -1,105 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668AbaHARZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 13:25:26 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:44343 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751624AbaHARZV (ORCPT
+	id S1755795AbaHAR1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 13:27:16 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:64725 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571AbaHAR1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 13:25:21 -0400
-Message-ID: <1406913924.22529.51.camel@hornet>
-Subject: Re: [PATCH 4/5] [SCSI] Do not use platform_bus as a parent
-From: Pawel Moll <pawel.moll@arm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "paul@pwsan.com" <paul@pwsan.com>, Arnd Bergmann <arnd@arndb.de>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Date: Fri, 01 Aug 2014 18:25:24 +0100
-In-Reply-To: <20140727150720.GC1723@kroah.com>
-References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>
-	 <1406298233-27876-4-git-send-email-pawel.moll@arm.com>
-	 <1406299616.1789.13.camel@jarvis.lan> <20140726201150.GA21870@kroah.com>
-	 <1406433177.11069.3.camel@jarvis> <20140727150720.GC1723@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Aug 2014 13:27:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140801123225.GA6728@localhost>
+References: <20140730140235.GA13959@localhost>
+	<20140801123225.GA6728@localhost>
+Date: Fri, 1 Aug 2014 10:27:13 -0700
+Message-ID: <CAM_iQpVz_UsFfyv2kjDbgt=KgSQHS8G6mEmjM63rvFnTFjDmoQ@mail.gmail.com>
+Subject: Re: [cxgb4i] INFO: suspicious RCU usage. ]
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Anish Bhatt <anish@chelsio.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Lu, Aaron" <aaron.lu@intel.com>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-07-27 at 16:07 +0100, Greg Kroah-Hartman wrote:
-> Ah, ok, it's a scsi core thing, not a driver core thing, that's less
-> confusing now.  For a "fallback" of a platform device, if you switch the
-> lines around you should be fine, something like this patch perhaps:
-> 
-> diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
-> index 3cbb57a8b846..d8d3b294f5bc 100644
-> --- a/drivers/scsi/hosts.c
-> +++ b/drivers/scsi/hosts.c
-> @@ -218,16 +218,16 @@ int scsi_add_host_with_dma(struct Scsi_Host *shost, struct device *dev,
->  		goto fail;
->  
->  	if (!shost->shost_gendev.parent)
-> -		shost->shost_gendev.parent = dev ? dev : &platform_bus;
-> -	if (!dma_dev)
-> -		dma_dev = shost->shost_gendev.parent;
-> -
-> -	shost->dma_dev = dma_dev;
-> +		shost->shost_gendev.parent = dev;
->  
->  	error = device_add(&shost->shost_gendev);
->  	if (error)
->  		goto out;
->  
-> +	if (!dma_dev)
-> +		dma_dev = shost->shost_gendev.parent;
-> +	shost->dma_dev = dma_dev;
-> +
->  	pm_runtime_set_active(&shost->shost_gendev);
->  	pm_runtime_enable(&shost->shost_gendev);
->  	device_enable_async_suspend(&shost->shost_gendev);
+On Fri, Aug 1, 2014 at 5:32 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Hi Anish,
+>
+> FYI, here is one more bug message for
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
+> commit 759a0cc5a3e1bc2cc48fa3c0b91bdcad8b8f87d6 ("cxgb4i: Add ipv6 code to driver, call into libcxgbi ipv6 api")
+>
 
-But this will still make shost->dma_dev == NULL in the cases James
-quoted:
-
-On Fri, 2014-07-25 at 15:46 +0100, James Bottomley wrote:
-> Yes, for DMA purposes, the parent cannot now be NULL; we'll get a panic
-> in the DMA transfers if it is.  A lot of the legacy ISA device on x86
-> and I thought some ARM SOC devices don't pass in the parent device, so
-> we hang them off a known parent.
-> 
-> You can grep for it; these are the devices that will begin to panic if
-> you apply this patch:
-> 
-> arch/ia64/hp/sim/simscsi.c:     error = scsi_add_host(host, NULL);
-> drivers/scsi/a2091.c:   error = scsi_add_host(instance, NULL);
-> drivers/scsi/a3000.c:   error = scsi_add_host(instance, NULL);
-> drivers/scsi/aha152x.c: if( scsi_add_host(shpnt, NULL) ) {
-> drivers/scsi/gdth.c:    error = scsi_add_host(shp, NULL);
-> drivers/scsi/gdth.c:    error = scsi_add_host(shp, NULL);
-> drivers/scsi/gvp11.c:   error = scsi_add_host(instance, NULL);
-> drivers/scsi/imm.c:     err = scsi_add_host(host, NULL);
-> drivers/scsi/pcmcia/fdomain_stub.c:    if (scsi_add_host(host, NULL))
-> drivers/scsi/pcmcia/nsp_cs.c:   ret = scsi_add_host (host, NULL);
-> drivers/scsi/pcmcia/qlogic_stub.c:      if (scsi_add_host(shost, NULL))
-> drivers/scsi/pcmcia/sym53c500_cs.c:     if (scsi_add_host(host, NULL))
-> drivers/scsi/ppa.c:     err = scsi_add_host(host, NULL);
-> drivers/scsi/qlogicfas.c:       if (scsi_add_host(hreg, NULL))
-> drivers/scsi/scsi_module.c:             error = scsi_add_host(shost, NULL);
-> drivers/scsi/sgiwd93.c: err = scsi_add_host(host, NULL);
-
-Maybe the DMA API should be coping with NULL device? It seems to handle
-it in a half of the methods and fails in the other half...
-
-Pawel
-
+I don't see the point of holding rcu read lock in cxgbi_inet6addr_handler(),
+I think we can just remove it.
