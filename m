@@ -1,218 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173AbaHACQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 22:16:56 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:44347 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388AbaHACQz (ORCPT
+	id S1753342AbaHACVS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 22:21:18 -0400
+Received: from mx6-phx2.redhat.com ([209.132.183.39]:60018 "EHLO
+	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553AbaHACVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 22:16:55 -0400
-Message-ID: <53DAF88C.50008@linux.vnet.ibm.com>
-Date: Fri, 01 Aug 2014 10:16:44 +0800
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Thu, 31 Jul 2014 22:21:16 -0400
+Date: Thu, 31 Jul 2014 22:21:14 -0400 (EDT)
+From: Abhijith Das <adas@redhat.com>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        cluster-devel@redhat.com
+Message-ID: <801205433.377924.1406859674954.JavaMail.zimbra@redhat.com>
+In-Reply-To: <20140731131805.5280c697@notabene.brown>
+References: <1406309851-10628-1-git-send-email-adas@redhat.com> <20140731131805.5280c697@notabene.brown>
+Subject: Re: [RFC PATCH 0/2] dirreadahead system call
 MIME-Version: 1.0
-To: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        james.smart@emulex.com, JBottomley@parallels.com
-Subject: Re: [PATCH] lpfc: Avoid to disable pci_dev twice
-References: <1405578751-14164-1-git-send-email-qiudayu@linux.vnet.ibm.com>
-In-Reply-To: <1405578751-14164-1-git-send-email-qiudayu@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080102-2674-0000-0000-000001325B1D
+X-Originating-IP: [10.5.82.6]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - GC36 (Linux)/8.0.6_GA_5922)
+Thread-Topic: dirreadahead system call
+Thread-Index: sMeIo9DUQWF/2mDt6wV0W5niYZpO/A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 02:32 PM, Mike Qiu wrote:
 
 
-Hi, all
+----- Original Message -----
+> From: "NeilBrown" <neilb@suse.de>
+> To: "Abhi Das" <adas@redhat.com>
+> Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, cluster-devel@redhat.com
+> Sent: Wednesday, July 30, 2014 10:18:05 PM
+> Subject: Re: [RFC PATCH 0/2] dirreadahead system call
+> 
+> On Fri, 25 Jul 2014 12:37:29 -0500 Abhi Das <adas@redhat.com> wrote:
+> 
+> > This system call takes 3 arguments:
+> > fd      - file descriptor of the directory being readahead
+> > *offset - offset in dir from which to resume. This is updated
+> >           as we move along in the directory
+> > count   - The max number of entries to readahead
+> > 
+> > The syscall is supposed to read upto 'count' entries starting at
+> > '*offset' and cache the inodes corresponding to those entries. It
+> > returns a negative error code or a positive number indicating
+> > the number of inodes it has issued readaheads for. It also
+> > updates the '*offset' value so that repeated calls to dirreadahead
+> > can resume at the right location. Returns 0 when there are no more
+> > entries left.
+> 
+> Hi Abhi,
+> 
+>  I like the idea of enhanced read-ahead on a directory.
+>  It isn't clear to me why you have included these particular fields in the
+>  interface though.
+> 
+>  - why have an 'offset'?  Why not just use the current offset of the
+>    directory 'fd'?
 
-How about this patch ?
+The idea was that we didn't want a syscall like readahead mucking with the
+file pointer as the same fd might be used to do getdents().
 
-Any idea ?
+>  - Why have a count?  How would a program choose what count to give?
 
-> In IBM Power servers, when hardware error occurs during probe
-> state, EEH subsystem will call driver's error_detected interface,
-> which will call pci_disable_device(). But driver's probe function also
-> call pci_disable_device() in this situation.
->
-> So pci_dev will be disabled twice:
->
-> Device lpfc disabling already-disabled device
-> ------------[ cut here ]------------
-> WARNING: at drivers/pci/pci.c:1407
-> CPU: 0 PID: 8744 Comm: kworker/0:0 Tainted: G        W    3.10.42-2002.pkvm2_1_1.6.ppc64 #1
-> Workqueue: events .work_for_cpu_fn
-> task: c00000274e3f5400 ti: c0000027d3958000 task.ti: c0000027d3958000
-> NIP: c000000000471b8c LR: c000000000471b88 CTR: c00000000043ebe0
-> REGS: c0000027d395b650 TRAP: 0700   Tainted: G        W     (3.10.42-2002.pkvm2_1_1.6.ppc64)
-> MSR: 9000000100029032 <SF,HV,EE,ME,IR,DR,RI>  CR: 28b52b44  XER: 20000000
-> CFAR: c000000000879ab8 SOFTE: 1
-> ...
-> NIP .pci_disable_device+0xcc/0xe0
-> LR  .pci_disable_device+0xc8/0xe0
-> Call Trace:
-> .pci_disable_device+0xc8/0xe0 (unreliable)
-> .lpfc_disable_pci_dev+0x50/0x80 [lpfc]
-> .lpfc_pci_probe_one+0x870/0x21a0 [lpfc]
-> .local_pci_probe+0x68/0xb0
-> .work_for_cpu_fn+0x38/0x60
-> .process_one_work+0x1a4/0x4d0
-> .worker_thread+0x37c/0x490
-> .kthread+0xf0/0x100
-> .ret_from_kernel_thread+0x5c/0x80
->
-> Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-> ---
->   drivers/scsi/lpfc/lpfc.h      |  1 +
->   drivers/scsi/lpfc/lpfc_init.c | 59 +++++++++++++++++++++++++++++++++++++++----
->   2 files changed, 55 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/scsi/lpfc/lpfc.h b/drivers/scsi/lpfc/lpfc.h
-> index 434e903..0c7bad9 100644
-> --- a/drivers/scsi/lpfc/lpfc.h
-> +++ b/drivers/scsi/lpfc/lpfc.h
-> @@ -813,6 +813,7 @@ struct lpfc_hba {
->   #define VPD_MASK            0xf         /* mask for any vpd data */
->
->   	uint8_t soft_wwn_enable;
-> +	uint8_t probe_done;
->
->   	struct timer_list fcp_poll_timer;
->   	struct timer_list eratt_poll;
-> diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-> index 06f9a5b..c2e67ae 100644
-> --- a/drivers/scsi/lpfc/lpfc_init.c
-> +++ b/drivers/scsi/lpfc/lpfc_init.c
-> @@ -9519,6 +9519,9 @@ lpfc_pci_probe_one_s3(struct pci_dev *pdev, const struct pci_device_id *pid)
->   		}
->   	}
->
-> +	/* Set the probe flag */
-> +	phba->probe_done = 1;
-> +
->   	/* Perform post initialization setup */
->   	lpfc_post_init_setup(phba);
->
-> @@ -9795,6 +9798,9 @@ lpfc_sli_prep_dev_for_recover(struct lpfc_hba *phba)
->   static void
->   lpfc_sli_prep_dev_for_reset(struct lpfc_hba *phba)
->   {
-> +	if (phba)
-> +		return;
-> +
->   	lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
->   			"2710 PCI channel disable preparing for reset\n");
->
-> @@ -9812,7 +9818,8 @@ lpfc_sli_prep_dev_for_reset(struct lpfc_hba *phba)
->
->   	/* Disable interrupt and pci device */
->   	lpfc_sli_disable_intr(phba);
-> -	pci_disable_device(phba->pcidev);
-> +	if (phba->probe_done && phba->pcidev)
-> +		pci_disable_device(phba->pcidev);
->   }
->
->   /**
-> @@ -10282,6 +10289,9 @@ lpfc_pci_probe_one_s4(struct pci_dev *pdev, const struct pci_device_id *pid)
->   		goto out_disable_intr;
->   	}
->
-> +	/* Set probe_done flag */
-> +	phba->probe_done = 1;
-> +
->   	/* Log the current active interrupt mode */
->   	phba->intr_mode = intr_mode;
->   	lpfc_log_intr_mode(phba, intr_mode);
-> @@ -10544,6 +10554,9 @@ lpfc_sli4_prep_dev_for_recover(struct lpfc_hba *phba)
->   static void
->   lpfc_sli4_prep_dev_for_reset(struct lpfc_hba *phba)
->   {
-> +	if (!phba)
-> +		return;
-> +
->   	lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
->   			"2826 PCI channel disable preparing for reset\n");
->
-> @@ -10562,7 +10575,9 @@ lpfc_sli4_prep_dev_for_reset(struct lpfc_hba *phba)
->   	/* Disable interrupt and pci device */
->   	lpfc_sli4_disable_intr(phba);
->   	lpfc_sli4_queue_destroy(phba);
-> -	pci_disable_device(phba->pcidev);
-> +
-> +	if (phba->probe_done && phba->pcidev)
-> +		pci_disable_device(phba->pcidev);
->   }
->
->   /**
-> @@ -10893,9 +10908,21 @@ static pci_ers_result_t
->   lpfc_io_error_detected(struct pci_dev *pdev, pci_channel_state_t state)
->   {
->   	struct Scsi_Host *shost = pci_get_drvdata(pdev);
-> -	struct lpfc_hba *phba = ((struct lpfc_vport *)shost->hostdata)->phba;
-> +	struct lpfc_hba *phba;
->   	pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
->
-> +	if (!shost)
-> +		/* Run here means it may during probe state and
-> +		 * Scsi_Host has not been created and We can do nothing
-> +		 * in this state so call for hotplug*/
-> +		return PCI_ERS_RESULT_NONE;
-> +
-> +	phba = ((struct lpfc_vport *)shost->hostdata)->phba;
-> +
-> +	if (!phba || !phba->probe_done)
-> +		/* Run here means it may during probe state */
-> +		return PCI_ERS_RESULT_NONE;
-> +
->   	switch (phba->pci_dev_grp) {
->   	case LPFC_PCI_DEV_LP:
->   		rc = lpfc_io_error_detected_s3(pdev, state);
-> @@ -10930,9 +10957,20 @@ static pci_ers_result_t
->   lpfc_io_slot_reset(struct pci_dev *pdev)
->   {
->   	struct Scsi_Host *shost = pci_get_drvdata(pdev);
-> -	struct lpfc_hba *phba = ((struct lpfc_vport *)shost->hostdata)->phba;
-> +	struct lpfc_hba *phba;
->   	pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
->
-> +	if (!shost)
-> +		/* Run here means it may during probe state and
-> +		 * Scsi_Host has not been created */
-> +		return PCI_ERS_RESULT_NONE;
-> +
-> +	phba = ((struct lpfc_vport *)shost->hostdata)->phba;
-> +
-> +	if (!phba || !phba->probe_done)
-> +		/* Run here means it may during probe state */
-> +		return PCI_ERS_RESULT_NONE;
-> +
->   	switch (phba->pci_dev_grp) {
->   	case LPFC_PCI_DEV_LP:
->   		rc = lpfc_io_slot_reset_s3(pdev);
-> @@ -10963,7 +11001,18 @@ static void
->   lpfc_io_resume(struct pci_dev *pdev)
->   {
->   	struct Scsi_Host *shost = pci_get_drvdata(pdev);
-> -	struct lpfc_hba *phba = ((struct lpfc_vport *)shost->hostdata)->phba;
-> +	struct lpfc_hba *phba;
-> +
-> +	if (!shost)
-> +		/* Run here means it may during probe state and
-> +		 * Scsi_Host has not been created */
-> +		return;
-> +
-> +	phba = ((struct lpfc_vport *)shost->hostdata)->phba;
-> +
-> +	if (!phba || !phba->probe_done)
-> +		/* Run here means it may during probe state */
-> +		return;
->
->   	switch (phba->pci_dev_grp) {
->   	case LPFC_PCI_DEV_LP:
+If a program knows that it's only going to work on a subset of files at a time,
+it can use the count value to only readahead a small number of inodes at once
+instead of reading ahead the entire directory.
 
+That said, this interface is not set in stone and we are exploring ways to inform
+the kernel of the inodes we are interested in reading ahead.
+
+> 
+>  Maybe you imagine using 'getdents' first to get a list of names, then
+>  selectively calling 'dirreadahead'  on the offsets of the names you are
+>  interested it?  That would be racy as names can be added and removed which
+>  might change offsets.  So maybe you have another reason?
+> 
+>  I would like to suggest an alternate interface (I love playing the API
+>  game....).
+> 
+>  1/ Add a flag to 'fstatat'  AT_EXPECT_MORE.
+>     If the pathname does not contain a '/', then the 'dirfd' is marked
+>     to indicate that stat information for all names returned by getdents will
+>     be wanted.  The filesystem can choose to optimise that however it sees
+>     fit.
+> 
+>  2/ Add a flag to 'fstatat'  AT_NONBLOCK.
+>     This tells the filesystem that you want this information, so if it can
+>     return it immediately it should, and if not it should start pulling it
+>     into cache.  Possibly this should be two flags: AT_NONBLOCK just avoids
+>     any IO, and AT_ASYNC instigates IO even if NONBLOCK is set.
+> 
+>  Then an "ls -l" could use AT_EXPECT_MORE and then just stat each name.
+>  An "ls -l *.c", might avoid AT_EXPECT_MORE, but would use AT_NONBLOCK
+>  against all names, then try again with all the names that returned
+>  EWOULDBLOCK the first time.
+> 
+> 
+>  I would really like to see the 'xstat' syscall too, but there is no point
+>  having both "xstat" and "fxstat".  Follow the model of "fstatat" and provide
+>  just "fxstatat" which can do both.
+>  With fxstatat, AT_EXPECT_MORE would tell the dirfd exactly which attributes
+>  would be wanted so it can fetch only that which is desired.
+> 
+>  I'm not very keen on the xgetdents idea of including name information and
+>  stat information into the one syscall - I would prefer getdents and xstat be
+>  kept separate.  Of course if a genuine performance cost of the separate can
+>  be demonstrated, I could well change my mind.
+> 
+>  It does, however, have the advantage that the kernel doesn't need to worry
+>  about how long read-ahead data needs to be kept, and the application doesn't
+>  need to worry about how soon to retry an fstatat which failed with
+>  EWOULDBLOCK.
+> 
+> Thanks for raising this issue again.  I hope it gets fixed one day...
+> 
+> NeilBrown
+> 
