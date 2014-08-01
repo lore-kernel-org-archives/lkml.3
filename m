@@ -1,99 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238AbaHAQGD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 12:06:03 -0400
-Received: from mail.us.es ([193.147.175.20]:43238 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754966AbaHAQGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 12:06:00 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus3 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.4/19253. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-102.8/7.5):. 
- Processed in 1.908051 secs); 01 Aug 2014 16:05:58 -0000
-X-Spam-ASN: AS12715 213.179.96.0/19
-X-Envelope-From: pneira@us.es
-Date: Fri, 1 Aug 2014 18:06:12 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        netfilter-devel <netfilter-devel@vger.kernel.org>
-Subject: Re: [PATCH v4 net-next 5/5] net: filter: split 'struct sk_filter'
- into socket and bpf parts
-Message-ID: <20140801160612.GA4679@salvia>
-References: <1406777656-27755-1-git-send-email-ast@plumgrid.com>
- <1406777656-27755-6-git-send-email-ast@plumgrid.com>
- <20140731194059.GA8681@salvia>
- <CAMEtUuy+iABzHagoono+CPB=Ex4Ew4vQBK65x1jDRC9_W9L7Dw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMEtUuy+iABzHagoono+CPB=Ex4Ew4vQBK65x1jDRC9_W9L7Dw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755320AbaHAQGl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 12:06:41 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:38419 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755250AbaHAQGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 12:06:39 -0400
+From: Jeff Harris <jefftharris@gmail.com>
+X-Google-Original-From: Jeff Harris <jharris@westell.com>
+To: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: Jeff Harris <jharris@westell.com>
+Subject: [PATCH] jffs2: Re-enable write-buffering after filesystem sync
+Date: Fri,  1 Aug 2014 12:06:12 -0400
+Message-Id: <1406909172-7219-1-git-send-email-jharris@westell.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 02:02:19PM -0700, Alexei Starovoitov wrote:
-> On Thu, Jul 31, 2014 at 12:40 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-> > On Wed, Jul 30, 2014 at 08:34:16PM -0700, Alexei Starovoitov wrote:
-> >> clean up names related to socket filtering and bpf in the following way:
-> >> - everything that deals with sockets keeps 'sk_*' prefix
-> >> - everything that is pure BPF is changed to 'bpf_*' prefix
-> >>
-> >> split 'struct sk_filter' into
-> >> struct sk_filter {
-> >>       atomic_t        refcnt;
-> >>       struct rcu_head rcu;
-> >>       struct bpf_prog *prog;
-> >> };
-> >
-> > I think you can use 'struct bpf_prog prog' instead so the entire
-> > sk_filter remains in the same memory blob (as it is before this
-> > patch).
-> >
-> > You can add an inline function to retrieve the bpg prog from the
-> > filter:
-> >
-> > static inline struct bpf_prog *sk_filter_bpf(struct sk_filter *)
-> >
-> > and use it whenever possible to fetch the bpf program. I'm suggesting
-> > this because we can use the zero array size in the socket filtering
-> > abstraction later on, if the function above is used, this just needs
-> > one line in that function to be updated to fetch the program from the
-> > placeholder.
-> 
-> correct. It would speed up SK_RUN_FILTER macro a little and I've
-> considered it, but decided to go with the pointer for two reasons:
-> 1.In sk_attach_filter() the bpf_prog is allocated, then reallocated
-> as part of bpf_prepare_filter(). My patch #1 cleans up that part to
-> avoid 'struct sock *' dependency, so all bpf_* functions work
-> purely with bpf_prog... If bpf_prog is embedded inside sk_filter,
-> bpf_prepare_filter would need to have a callback to reallocate
-> the container struct and pass this callback through the chain
-> of calls, which is ugly
+A JFFS2 filesystem sync cancels the write buffering dirty work and performs
+the flush manually.  However, the flag which indicates that the work is active
+is not reset.  Thus, if a sync happens while the work is pending, the flag
+will never be reset resulting in future work never being started.  The flag is
+now reset under the appropriate lock along with the timer cancellation.
 
-I think you can allocate the sk_filter once you get the final bpf
-program, then you can memcpy() it. This adds some extra overhead in
-the sk_attach_filter(), but that path is executed from user context
-and it's also a rare operation (only once to attach the filter). It's
-still not going to be a beauty, but IMO it's worth to focus on getting
-that little speed up in the packet path at the cost of adding some
-overhead on the socket attach path.
+Tested on 3.13.6.
 
-> 2. having it as a pointer helps nft in the long run, since whole of
-> bpf_prog doesn't stay around inside sk_filter when it's not used.
+Signed-off-by: Jeff Harris <jharris@westell.com>
+---
+ fs/jffs2/super.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-If you put into place the inline wrapper function that I'm proposing
-above and you use it instead of fp->bpf_prog, I think there should be
-not interference:
+diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
+index 0918f0e..263136b 100644
+--- a/fs/jffs2/super.c
++++ b/fs/jffs2/super.c
+@@ -101,7 +101,10 @@ static int jffs2_sync_fs(struct super_block *sb, int wait)
+ 	struct jffs2_sb_info *c = JFFS2_SB_INFO(sb);
+ 
+ #ifdef CONFIG_JFFS2_FS_WRITEBUFFER
++	spin_lock(&c->wbuf_dwork_lock);
+ 	cancel_delayed_work_sync(&c->wbuf_dwork);
++	c->wbuf_queued = 0;
++	spin_lock(&c->wbuf_dwork_lock);
+ #endif
+ 
+ 	mutex_lock(&c->alloc_sem);
+-- 
+1.7.9.5
 
-static inline struct bpf_prog *sk_filter_bpf(struct sk_filter *sk)
-{
--       return &sk->bpf_prog;
-+       return (struct bpf_prog *)sk->data;
-}
