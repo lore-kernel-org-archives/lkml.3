@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076AbaHAUPo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 16:15:44 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57479 "EHLO mail.kernel.org"
+	id S1756260AbaHAUTS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 16:19:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60017 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751460AbaHAUPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 16:15:42 -0400
-Date: Fri, 1 Aug 2014 17:15:38 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Minchan Kim <minchan@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/2] perf tools: Ensure --symfs ends with '/'
-Message-ID: <20140801201538.GA13375@kernel.org>
-References: <1406251908-8195-1-git-send-email-namhyung@kernel.org>
- <20140729050246.GC22707@bbox>
- <20140729123305.GO7831@kernel.org>
- <87ppgnhge3.fsf@sejong.aot.lge.com>
- <20140730151932.GS7831@kernel.org>
- <20140730205521.GU7831@kernel.org>
- <87ha1ygnn3.fsf@sejong.aot.lge.com>
- <20140731122621.GV7831@kernel.org>
- <87d2clgkv9.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87d2clgkv9.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755978AbaHAUTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 16:19:14 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Jerome Marchand <jmarchan@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: [PATCH -mm v6 10/13] arch/powerpc/mm/subpage-prot.c: use walk->vma and walk_page_vma()
+Date: Fri,  1 Aug 2014 15:20:46 -0400
+Message-Id: <1406920849-25908-11-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1406920849-25908-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1406920849-25908-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Aug 01, 2014 at 08:38:02AM +0900, Namhyung Kim escreveu:
-> Hi Arnaldo,
-> 
-> On Thu, 31 Jul 2014 09:26:21 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Thu, Jul 31, 2014 at 01:25:52PM +0900, Namhyung Kim escreveu:
-> >> Are you still against my approach - adding '/' at the end of the symfs
-> >> string itself?  It seems that mine is simpler and shorter.
+We don't have to use mm_walk->private to pass vma to the callback function
+because of mm_walk->vma. And walk_page_vma() is useful if we walk over a
+single vma.
 
-> > Yes, I am.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ arch/powerpc/mm/subpage-prot.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-> > We are not just concatenating two strings, we are joining two path
-> > components.
+diff --git mmotm-2014-07-30-15-57.orig/arch/powerpc/mm/subpage-prot.c mmotm-2014-07-30-15-57/arch/powerpc/mm/subpage-prot.c
+index 6c0b1f5f8d2c..fa9fb5b4c66c 100644
+--- mmotm-2014-07-30-15-57.orig/arch/powerpc/mm/subpage-prot.c
++++ mmotm-2014-07-30-15-57/arch/powerpc/mm/subpage-prot.c
+@@ -134,7 +134,7 @@ static void subpage_prot_clear(unsigned long addr, unsigned long len)
+ static int subpage_walk_pmd_entry(pmd_t *pmd, unsigned long addr,
+ 				  unsigned long end, struct mm_walk *walk)
+ {
+-	struct vm_area_struct *vma = walk->private;
++	struct vm_area_struct *vma = walk->vma;
+ 	split_huge_page_pmd(vma, addr, pmd);
+ 	return 0;
+ }
+@@ -163,9 +163,7 @@ static void subpage_mark_vma_nohuge(struct mm_struct *mm, unsigned long addr,
+ 		if (vma->vm_start >= (addr + len))
+ 			break;
+ 		vma->vm_flags |= VM_NOHUGEPAGE;
+-		subpage_proto_walk.private = vma;
+-		walk_page_range(vma->vm_start, vma->vm_end,
+-				&subpage_proto_walk);
++		walk_page_vma(vma, &subpage_proto_walk);
+ 		vma = vma->vm_next;
+ 	}
+ }
+-- 
+1.9.3
 
-> > I think it is more clear and elegant to do it as python os.path.join()
-> > does.
-
-> Then I think you also need to care about trailing and leading '/' in the
-> components so that, say, joining '/home/' and '/namhyung/' can result in
-> '/home/namhyung/' not '/home///namhyung/'.
-
-Well, "/home/namhyung/" is the same as "/home///namhyung/" for POSIX:
-http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap03.html#tag_03_266
-
-So, when we can easily avoid it, no use to have a sequence of slashes,
-but otherwise it is harmless.
- 
-> Btw, it seems like python's os.path.join() just use latter if it's an
-> absolute path.
-> 
->   $ python
->   Python 2.7.3 (default, Jul 24 2012, 10:05:38) 
->   [GCC 4.7.0 20120507 (Red Hat 4.7.0-5)] on linux2
->   Type "help", "copyright", "credits" or "license" for more information.
->   >>> import os.path
->   >>> os.path.join('/home/', '/namhyung/')
->   '/namhyung/'
-
-Interesting, wonder what is the rationale for that or if this is a bug.
-
-- Arnaldo
