@@ -1,217 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786AbaHAN2B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:28:01 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54888 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755737AbaHAN17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 09:27:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,780,1400050800"; 
-   d="scan'208";a="463980735"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <willy@linux.intel.com>
-Subject: [PATCH v9 11/22] Replace XIP documentation with DAX documentation
-Date: Fri,  1 Aug 2014 09:27:27 -0400
-Message-Id: <e887fc06ba6a044aa7e0158d87d272e6969776e2.1406897885.git.willy@linux.intel.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
-References: <cover.1406897885.git.willy@linux.intel.com>
-In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
-References: <cover.1406897885.git.willy@linux.intel.com>
+	id S1755862AbaHAN2N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:28:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52532 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755142AbaHAN2H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 09:28:07 -0400
+Date: Fri, 1 Aug 2014 15:27:54 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ilya Dryomov <ilya.dryomov@inktank.com>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Ceph Development <ceph-devel@vger.kernel.org>, davidlohr@hp.com,
+        jason.low2@hp.com, axboe@kernel.dk
+Subject: Re: [PATCH] locking/mutexes: Revert "locking/mutexes: Add extra
+ reschedule point"
+Message-ID: <20140801132754.GI19379@twins.programming.kicks-ass.net>
+References: <1406801797-20139-1-git-send-email-ilya.dryomov@inktank.com>
+ <20140731115759.GS19379@twins.programming.kicks-ass.net>
+ <CALFYKtBGQpxaZ0EFXbdvuEHeDeASeU-7XxQ_1a6ZDM=aJS651w@mail.gmail.com>
+ <20140731131331.GT19379@twins.programming.kicks-ass.net>
+ <1406817052.17194.12.camel@marge.simpson.net>
+ <20140731143946.GV19379@twins.programming.kicks-ass.net>
+ <CALFYKtBnK4uaq-37O3gWVQLuQZ9Vrs8oNhdvcUWEPqgpge-pdw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="A+T5WEFzCOyLMBDV"
+Content-Disposition: inline
+In-Reply-To: <CALFYKtBnK4uaq-37O3gWVQLuQZ9Vrs8oNhdvcUWEPqgpge-pdw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Wilcox <willy@linux.intel.com>
 
-Based on the original XIP documentation, this documents the current
-state of affairs, and includes instructions on how users can enable DAX
-if their devices and kernel support it.
+--A+T5WEFzCOyLMBDV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
-Reviewed-by: Randy Dunlap <rdunlap@infradead.org>
----
- Documentation/filesystems/dax.txt | 89 +++++++++++++++++++++++++++++++++++++++
- Documentation/filesystems/xip.txt | 71 -------------------------------
- 2 files changed, 89 insertions(+), 71 deletions(-)
- create mode 100644 Documentation/filesystems/dax.txt
- delete mode 100644 Documentation/filesystems/xip.txt
+On Fri, Aug 01, 2014 at 04:56:27PM +0400, Ilya Dryomov wrote:
+> I'm going to fix up rbd_request_fn(), but I want to make sure
+> I understand this in full.
+>=20
+> - Previously the danger of calling blocking primitives on the way to
+>   schedule(), i.e. with task->state !=3D TASK_RUNNING, was that if the
+>   blocking primitive was indeed to block the task state would be set
+>   back to TASK_RUNNING and the schedule() that that task was on the way
+>   to wouldn't have any effect.  Your "Add extra reschedule point" patch
+>   essentially made calling mutex_lock() and probably others much more
+>   wrong that it used to be, because mutex_lock() may now reschedule
+>   when the task is not on the mutex wait queue.
 
-diff --git a/Documentation/filesystems/dax.txt b/Documentation/filesystems/dax.txt
-new file mode 100644
-index 0000000..6441766
---- /dev/null
-+++ b/Documentation/filesystems/dax.txt
-@@ -0,0 +1,89 @@
-+Direct Access for files
-+-----------------------
-+
-+Motivation
-+----------
-+
-+The page cache is usually used to buffer reads and writes to files.
-+It is also used to provide the pages which are mapped into userspace
-+by a call to mmap.
-+
-+For block devices that are memory-like, the page cache pages would be
-+unnecessary copies of the original storage.  The DAX code removes the
-+extra copy by performing reads and writes directly to the storage device.
-+For file mappings, the storage device is mapped directly into userspace.
-+
-+
-+Usage
-+-----
-+
-+If you have a block device which supports DAX, you can make a filesystem
-+on it as usual.  When mounting it, use the -o dax option manually
-+or add 'dax' to the options in /etc/fstab.
-+
-+
-+Implementation Tips for Block Driver Writers
-+--------------------------------------------
-+
-+To support DAX in your block driver, implement the 'direct_access'
-+block device operation.  It is used to translate the sector number
-+(expressed in units of 512-byte sectors) to a page frame number (pfn)
-+that identifies the physical page for the memory.  It also returns a
-+kernel virtual address that can be used to access the memory.
-+
-+The direct_access method takes a 'size' parameter that indicates the
-+number of bytes being requested.  The function should return the number
-+of bytes that it can provide, although it must not exceed the number of
-+bytes requested.  It may also return a negative errno if an error occurs.
-+
-+In order to support this method, the storage must be byte-accessible by
-+the CPU at all times.  If your device uses paging techniques to expose
-+a large amount of memory through a smaller window, then you cannot
-+implement direct_access.  Equally, if your device can occasionally
-+stall the CPU for an extended period, you should also not attempt to
-+implement direct_access.
-+
-+These block devices may be used for inspiration:
-+- axonram: Axon DDR2 device driver
-+- brd: RAM backed block device driver
-+- dcssblk: s390 dcss block device driver
-+
-+
-+Implementation Tips for Filesystem Writers
-+------------------------------------------
-+
-+Filesystem support consists of
-+- adding support to mark inodes as being DAX by setting the S_DAX flag in
-+  i_flags
-+- implementing the direct_IO address space operation, and calling
-+  dax_do_io() instead of blockdev_direct_IO() if S_DAX is set
-+- implementing an mmap file operation for DAX files which sets the
-+  VM_MIXEDMAP flag on the VMA, and setting the vm_ops to include handlers
-+  for fault and page_mkwrite (which should probably call dax_fault() and
-+  dax_mkwrite(), passing the appropriate get_block() callback)
-+- calling dax_truncate_page() instead of block_truncate_page() for DAX files
-+- ensuring that there is sufficient locking between reads, writes,
-+  truncates and page faults
-+
-+The get_block() callback passed to the DAX functions may return
-+uninitialised extents.  If it does, it must ensure that simultaneous
-+calls to get_block() (for example by a page-fault racing with a read()
-+or a write()) work correctly.
-+
-+These filesystems may be used for inspiration:
-+- ext2: the second extended filesystem, see Documentation/filesystems/ext2.txt
-+
-+
-+Shortcomings
-+------------
-+
-+Even if the kernel or its modules are stored on a filesystem that supports
-+DAX on a block device that supports DAX, they will still be copied into RAM.
-+
-+Calling get_user_pages() on a range of user memory that has been mmaped
-+from a DAX file will fail as there are no 'struct page' to describe
-+those pages.  This problem is being worked on.  That means that O_DIRECT
-+reads/writes to those memory ranges from a non-DAX file will fail (note
-+that O_DIRECT reads/writes _of a DAX file_ do work, it is the memory
-+that is being accessed that is key here).  Other things that will not
-+work include RDMA, sendfile() and splice().
-diff --git a/Documentation/filesystems/xip.txt b/Documentation/filesystems/xip.txt
-deleted file mode 100644
-index b62eabf..0000000
---- a/Documentation/filesystems/xip.txt
-+++ /dev/null
-@@ -1,71 +0,0 @@
--Execute-in-place for file mappings
------------------------------------
--
--Motivation
------------
--File mappings are performed by mapping page cache pages to userspace. In
--addition, read&write type file operations also transfer data from/to the page
--cache.
--
--For memory backed storage devices that use the block device interface, the page
--cache pages are in fact copies of the original storage. Various approaches
--exist to work around the need for an extra copy. The ramdisk driver for example
--does read the data into the page cache, keeps a reference, and discards the
--original data behind later on.
--
--Execute-in-place solves this issue the other way around: instead of keeping
--data in the page cache, the need to have a page cache copy is eliminated
--completely. With execute-in-place, read&write type operations are performed
--directly from/to the memory backed storage device. For file mappings, the
--storage device itself is mapped directly into userspace.
--
--This implementation was initially written for shared memory segments between
--different virtual machines on s390 hardware to allow multiple machines to
--share the same binaries and libraries.
--
--Implementation
----------------
--Execute-in-place is implemented in three steps: block device operation,
--address space operation, and file operations.
--
--A block device operation named direct_access is used to translate the
--block device sector number to a page frame number (pfn) that identifies
--the physical page for the memory.  It also returns a kernel virtual
--address that can be used to access the memory.
--
--The direct_access method takes a 'size' parameter that indicates the
--number of bytes being requested.  The function should return the number
--of bytes that it can provide, although it must not exceed the number of
--bytes requested.  It may also return a negative errno if an error occurs.
--
--The block device operation is optional, these block devices support it as of
--today:
--- dcssblk: s390 dcss block device driver
--
--An address space operation named get_xip_mem is used to retrieve references
--to a page frame number and a kernel address. To obtain these values a reference
--to an address_space is provided. This function assigns values to the kmem and
--pfn parameters. The third argument indicates whether the function should allocate
--blocks if needed.
--
--This address space operation is mutually exclusive with readpage&writepage that
--do page cache read/write operations.
--The following filesystems support it as of today:
--- ext2: the second extended filesystem, see Documentation/filesystems/ext2.txt
--
--A set of file operations that do utilize get_xip_page can be found in
--mm/filemap_xip.c . The following file operation implementations are provided:
--- aio_read/aio_write
--- readv/writev
--- sendfile
--
--The generic file operations do_sync_read/do_sync_write can be used to implement
--classic synchronous IO calls.
--
--Shortcomings
--------------
--This implementation is limited to storage devices that are cpu addressable at
--all times (no highmem or such). It works well on rom/ram, but enhancements are
--needed to make it work with flash in read+write mode.
--Putting the Linux kernel and/or its modules on a xip filesystem does not mean
--they are not copied.
--- 
-2.0.1
+Right and in general we cannot allow spurious wakeups (although we try
+very hard to deal with them in generic code, which is why things more or
+less worked).
 
+But if you do a patch that 'randomly' ignores ->state on schedule (I did
+one) stuff comes apart _real_ quick.
+
+Therefore you should very much not destroy ->state on the way to
+schedule.
+
+> - There is nothing wrong with releasing queue_lock and reenabling IRQs
+>   in rbd_request_fn() as long as it doesn't block and I remember to
+>   disable IRQs and take queue_lock back on return.
+
+Releasing queue_lock might be ok, dunno about the blk locking, however
+reenabling IRQs it is actually wrong as per blk_flush_plug_list() since
+that uses local_irq_save()/restore() which means it can be called from
+contexts which cannot deal with enabling IRQs, and then your
+->request_fn() goes and does that.
+
+Now maybe blk_flush_plug_list() is overly paranoid and it could use
+local_irq_disable()/enable() instead, I don't know. But until it does, a
+request_fn() should never reenable IRQs.
+
+> I'm asking because rbd_request_fn() is probably not the only broken in
+> this way code path.  I poked around and found read_events() in aio.c,
+> it seems to have been written with the "danger" assumption that
+> I outlined above and there is even a comment to it.
+
+I'm fairly sure there's more broken stuff, I didn't dare looking.
+
+> Does that above make sense or am I missing something?
+
+I think that's about it.
+
+--A+T5WEFzCOyLMBDV
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT25XVAAoJEHZH4aRLwOS61KMQAIo3FviIJ4d185zcr9AsjjnR
+oMmIWdR58eQ+s1wNHdP7hkKDojR86iymfhTCJ+nQGkxKCgKQWcxZPcU+ZemM0hE0
+gn22sFVwrb42UK3Mxf3C3Jws7igyp3EuwAIM5e8mImnxAKAcJe879Cdo/OignvyT
+lMySPr2ZGcMsSHbXSJ1MF/5sPZjq9SYM0go1NVu4ekMoyvB/AnlRkfJQxQ+ZytLT
+tzBRNQ3uJTMuGGwVdUgddQlQdr/YxzfoffJwsSO8eKpQohX/xC4mL+d0fQ6nMTj/
+EYZmZFOjrKsOmqoNiuTOZFqvkG9XGKvXV8PUmPZ7skGsy+J1jSZHZOBNU1adVU0h
+5RkMLu26FyCKVQyoqNh4QFk53V4ESGC4GxMl79ze4w1aAgFx4KnRTMeQMaKtF38u
+tWXmgV+Xlb8DOX97IPZLPCVwAtSa1ZuOoffAyw6KvtnqiyGRxXSY0gTokCyM44RV
+3aohRTFKXWpjMr6/Cta52vhqC5d8ToCvj17IEvLxgK9OaHMibBm3B7iL1zP3ud8r
+hSYzQJ/DWGmQyERaNkU6bCkYofeSFa+igvYNyownyKj77x7KALepatDtalzl11g4
+N08ugyt0pJYkd3Vbj2xF5iipzQaAvoNhLdEHv4IThqKZBt1XErmwsXGxzPBysmBO
+s2xWBTFa05gcNke016QL
+=/6at
+-----END PGP SIGNATURE-----
+
+--A+T5WEFzCOyLMBDV--
