@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039AbaHATpZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 15:45:25 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:32938 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602AbaHATpX (ORCPT
+	id S1756063AbaHATrF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 15:47:05 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:40582 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754141AbaHATrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 15:45:23 -0400
-From: "Devin J. Pohly" <djpohly@gmail.com>
-X-Google-Original-From: "Devin J. Pohly" <djpohly+linux@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Devin J. Pohly" <djpohly+linux@gmail.com>
-Subject: [PATCH 1/1] kbuild: use $(srctree) to locate config headers from external modules
-Date: Fri,  1 Aug 2014 15:47:23 -0400
-Message-Id: <1406922443-22770-1-git-send-email-djpohly+linux@gmail.com>
-X-Mailer: git-send-email 2.0.3
+	Fri, 1 Aug 2014 15:47:02 -0400
+Date: Fri, 1 Aug 2014 15:46:57 -0400
+From: Matt Porter <mporter@linaro.org>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Marc Carino <marc.ceeeee@gmail.com>,
+        Gregory Fong <gregory.0xf0@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 01/11] ARM: brcmstb: add infrastructure for ARM-based
+ Broadcom STB SoCs
+Message-ID: <20140801194657.GJ2593@beef>
+References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
+ <1405976886-27807-2-git-send-email-computersforpeace@gmail.com>
+ <CAL_Jsq+Nbk7m9KXhG+Chdpvurp75RrvhFR2oE_LGxV444GSe9Q@mail.gmail.com>
+ <20140731022320.GM3711@ld-irv-0074>
+ <CAL_Jsq+47YtqWwOkxYDzaEOG-+oouvpXvmGaX+Wh3wQ+BNAx_w@mail.gmail.com>
+ <CAGVrzcaEV81BW+a--QgQSHiLb6UQDFsP3cqQxGwV206MRx4gXw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGVrzcaEV81BW+a--QgQSHiLb6UQDFsP3cqQxGwV206MRx4gXw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When making modules_install for an out-of-tree module, the current
-directory is $(KBUILD_OUTPUT), and the Makefile recipe which verifies
-the existence of files in include/config is unable to find them using a
-relative path.  This leads to a spurious and puzzling "Kernel
-configuration is invalid" warning when no configuration is actually
-needed.
+On Fri, Aug 01, 2014 at 12:29:11PM -0700, Florian Fainelli wrote:
+> Hello,
+> 
+> 2014-08-01 7:33 GMT-07:00 Rob Herring <robherring2@gmail.com>:
+> > On Wed, Jul 30, 2014 at 9:23 PM, Brian Norris
+> > <computersforpeace@gmail.com> wrote:
+> >> Hi Rob,
+> >>
+> >> I appreciate your comments, but where were many of these 5 months ago on
+> >> the first 7 revisions? :)
+> >
+> > Sorry, but that is the nature of upstreaming. But given some of the
+> > issues, it is obvious the reviews were not sufficient.
+> >
+> >> On a practical note: v9 is already queued for 3.17. Should I send
+> >> patches for the 3.17 cycle (or later) to fixup some of these issues? Or
+> >> would you recommend pulling the patches out of Matt Porter's tree now,
+> >> and reintroducing for 3.18? (I would be much happier with the first.)
+> >
+> > Things can always be un-queued. I guess that's Matt's and arm-soc's decision.
+> 
+> Does that mean we should get all those patches un-queued, because that
+> specific patch adding SMP support that needs to be reworked, or does
+> that mean that if we drop this specific patch we are good with the
+> remainder of the patch series?
 
-Since the file check is done in a recipe with `test -e' rather than as a
-target or include, the usual search paths provided by VPATH and -I are
-not consulted, so an explicit path is needed in this case.
+Well, keep in mind that there's no specific patch adding SMP support.
+The patch here contains *all* of the actual code that goes through
+mach-bcm. The rest will go through Russell.
 
-Signed-off-by: Devin J. Pohly <djpohly+linux@gmail.com>
----
- Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Given what was missed, if we drop just this patch, we're left with just
+the DT, Kconfig, and MAINTAINERS changes. It doesn't seem like there's
+time to fix the problems now. It might be better to drop the whole
+series from arm-soc since it won't be functional in 3.17 if we drop
+just this patch. I'd like to see what Arnd and Olof think. I think
+there's value in leaving all the DT bits for 3.17.
 
-diff --git a/Makefile b/Makefile
-index f6a7794..60c14a2 100644
---- a/Makefile
-+++ b/Makefile
-@@ -590,7 +590,7 @@ else
- PHONY += include/config/auto.conf
- 
- include/config/auto.conf:
--	$(Q)test -e include/generated/autoconf.h -a -e $@ || (		\
-+	$(Q)test -e $(srctree)/include/generated/autoconf.h -a -e $(srctree)/$@ || (		\
- 	echo >&2;							\
- 	echo >&2 "  ERROR: Kernel configuration is invalid.";		\
- 	echo >&2 "         include/generated/autoconf.h or $@ are missing.";\
--- 
-2.0.3
-
+-Matt
