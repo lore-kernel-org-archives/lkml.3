@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755903AbaHAUo6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 16:44:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60273 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754697AbaHAUo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 16:44:56 -0400
-Message-ID: <53DBFC42.6030205@suse.de>
-Date: Fri, 01 Aug 2014 22:44:50 +0200
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomasz Figa <t.figa@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 03/10] ARM: dts: Clean up exynos5250-snow
-References: <1406868897-26874-1-git-send-email-afaerber@suse.de>	<1406868897-26874-4-git-send-email-afaerber@suse.de> <CAD=FV=W2XJzv4NpB=27AFjX94VkH8dYXxAPBL58ntXL2WvRCoQ@mail.gmail.com>
-In-Reply-To: <CAD=FV=W2XJzv4NpB=27AFjX94VkH8dYXxAPBL58ntXL2WvRCoQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S932210AbaHAUpf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 16:45:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37084 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756097AbaHAUpc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 16:45:32 -0400
+Date: Fri, 1 Aug 2014 13:45:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christopher Li <sparse@chrisli.org>, Ingo Molnar <mingo@redhat.com>,
+        Jeff Layton <jlayton@poochiereds.net>, Michal Marek <mmarek@suse.cz>,
+        Neil Brown <neilb@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, linux-sparse@vger.kernel.org
+Subject: Re: [PATCH 1/5] Add __designated_init, wrapping
+ __attribute__((designated_init))
+Message-Id: <20140801134529.40b46e92a48d9bf0c0abc139@linux-foundation.org>
+In-Reply-To: <3130b0553b15518e3bef6d14c80280beed0f5ff9.1406850006.git.josh@joshtriplett.org>
+References: <3130b0553b15518e3bef6d14c80280beed0f5ff9.1406850006.git.josh@joshtriplett.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 01.08.2014 22:24, schrieb Doug Anderson:
-> Andreas,
-> 
-> On Thu, Jul 31, 2014 at 9:54 PM, Andreas Färber <afaerber@suse.de> wrote:
->> Use the new style of referencing inherited nodes and use symbolic names.
->> Reorder one pinctrl node in GPIO order.
->>
->> Goal is the alignment of all exynos5250 based device trees for comparison.
->>
->> Suggested-by: Doug Anderson <dianders@chromium.org>
->> Signed-off-by: Andreas Färber <afaerber@suse.de>
->> ---
->>  v4 -> v5:
->>  * Introduced labels to consistently use new referencing style (Tomasz)
->>  * Use IRQ_TYPE_* constants
->>  * Use some more GPIO_ACTIVE_*
->>
->>  v3 -> v4: Unchanged
->>
->>  v3: New (Doug Anderson)
->>
->>  arch/arm/boot/dts/exynos5250-snow.dts | 291 +++++++++++++++++-----------------
->>  arch/arm/boot/dts/exynos5250.dtsi     |  20 +--
-> 
-> As much as possible it's nice to touch the main exynos dtsi file and
-> specific board files in different patches.  Among other things it
-> makes backporting the patch and resolving merge conflicts easier (if
-> someone doesn't care about snow they could just pick up the main dtsi,
-> for instance).
-> 
-> I'm not a total stickler and I'd love to see this land quickly to
-> avoid conflicts, though...
-> 
-> 
->> +&sd3_clk {
->> +       samsung,pin-drv = <0>;
->> +};
->> +
->> +&sd3_cmd {
->> +       samsung,pin-pud = <3>;
->> +       samsung,pin-drv = <0>;
->> +};
->> +
->> +&sd3_bus4 {
-> 
-> Itty bitty bitty nit that "bus" sorts alphabetically above "clk".  ;)
+On Thu, 31 Jul 2014 16:47:23 -0700 Josh Triplett <josh@joshtriplett.org> wrote:
 
-True. I guess I just reused the original order from within pinctrl.
-
-> Maybe Kukjin would be willing to sort these when he applies?
->
->
-> Thank you for all your hard work on this one.  Things look MUCH MUCH
-> nicer!  I did a pretty thorough review of your changes and it all
-> looks good.
+> GCC 4.10 and newer, and Sparse, supports
+> __attribute__((designated_init)), which marks a structure as requiring
+> a designated initializer rather than a positional one.  This helps
+> reduce churn and errors when used with _ops structures and similar
+> structures designed for future extension.
 > 
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
+> Add a wrapper __designated_init, which turns into
+> __attribute__((designated_init)) for Sparse or sufficiently new GCC.
+> Enable the corresponding warning as an error.
+> 
+> The following semantic patch can help mark structures containing
+> function pointers as requiring designated initializers:
+> 
+> @@
+> identifier I, f;
+> type T;
+> @@
+> 
+> struct I {
+> 	...
+> 	T (*f)(...);
+> 	...
+> }
+> + __designated_init
 
-I need to respin anyway for a .dtsi label, so I can factor this out
-while at it.
+hm, dunno about this.
 
-Patches 1-2 could meanwhile already be applied by Kukjin.
+I think that the kernel should always use designated initializers
+everywhere.  Perhaps there are a few special cases where positional
+initializers provide a superior result but I'm not sure where those
+might be.
 
-Thanks,
-Andreas
+In which case what we should do is to teach sparse to warn about
+positional initializers then go fix them all up (lol).  After that
+process is complete, this __designated_init tag would be just noise.
 
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+To support this perhaps a sparse tag would be needed which says
+"positional initializers are OK here".  This way we're adding the
+annotation to the exceptional cases, not to the common cases.
+
+
