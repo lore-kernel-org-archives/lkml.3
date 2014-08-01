@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112AbaHAIRN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 04:17:13 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:42331 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736AbaHAIRH (ORCPT
+	id S1753949AbaHAIXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 04:23:09 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:27953 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753511AbaHAIXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 04:17:07 -0400
-Date: Fri, 1 Aug 2014 09:17:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Devicetree List <devicetree@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "ks.giri@samsung.com" <ks.giri@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ijc@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, robh@kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Matt Porter <mporter@linaro.org>,
-        Craig McGeachie <slapdau@yahoo.com.au>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Loic Pallardy <loic.pallardy@st.com>, "Anna, Suman" <s-anna@ti.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        Bjorn Andersson <bjorn@kryo.se>, Patch Tracking <patches@linaro.org>,
-        Tetsuya Takinishi <t.takinishi@jp.fujitsu.com>,
-        Mark Brown <broonie@linaro.org>, Kevin Hilman <khilman@linaro.org>,
-        Mollie Wu <mollie.wu@linaro.org>, Andy Green <andy.green@linaro.org>
-Subject: Re: [PATCHv9 2/4] mailbox: Introduce framework for mailbox
-Message-ID: <20140801081700.GM9030@lee--X1>
-References: <1406055250-29159-1-git-send-email-jaswinder.singh@linaro.org>
- <1406055374-29275-1-git-send-email-jaswinder.singh@linaro.org>
- <20140723085411.GG23210@lee--X1>
- <CAJe_ZhfaLqgKb3oK-m5Rpae5+zeAEk9-DLFOovq4qjBgg64b-w@mail.gmail.com>
- <20140723152649.GJ23210@lee--X1>
- <CAJe_ZhcOXyGO49sZUXnqCk9wm7WvQ01b76k7Wqxxi1S3qisDPA@mail.gmail.com>
+	Fri, 1 Aug 2014 04:23:06 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/UychB0mfOsw3aQEXyvUZA
+Date: Fri, 1 Aug 2014 01:21:41 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Jeremy Vial <jvial@adeneo-embedded.com>
+Cc: linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/2] Manage OMAP34xx ES3.1.2 rev to resume from suspend
+Message-ID: <20140801082140.GA26699@atomide.com>
+References: <1406812234-23163-1-git-send-email-jvial@adeneo-embedded.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJe_ZhcOXyGO49sZUXnqCk9wm7WvQ01b76k7Wqxxi1S3qisDPA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1406812234-23163-1-git-send-email-jvial@adeneo-embedded.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jul 2014, Jassi Brar wrote:
-
-> On 23 July 2014 20:56, Lee Jones <lee.jones@linaro.org> wrote:
-> > On Wed, 23 Jul 2014, Jassi Brar wrote:
+* Jeremy Vial <jvial@adeneo-embedded.com> [140731 06:16]:
+> Hi,
 > 
-> >> >> +     if (chan->txdone_method == (TXDONE_BY_POLL | TXDONE_BY_ACK))
-> >> >> +             chan->txdone_method = TXDONE_BY_POLL;
-> >> >
-> >> > Unless you're leaving it there for clarity, you can drop the
-> >> > "TXDONE_BY_POLL |" from if().
-> >> >
-> >> We need to check for both.
-> >
-> > What I'm trying to get at is; if it's already TXDONE_BY_POLL, there is no
-> > need to set it to TXDONE_BY_POLL.
-> >
-> In mbox_request_channel() we added the ACK flag, if POLL was set and
-> now we need to revert that in mbox_free_channel().
+> My kernel crashed when my OMAP34xx ES3.1.2 leave suspend mode. The first
+> patch seems to solve the issue, and the second one corrects Linux kernel
+> coding style problems.
+> 
+> Jeremy Vial (2):
+>   ARM: OMAP3: Fix choice of omap3_restore_es function in OMAP34XX
+>     rev3.1.2 case.
+>   ARM: OMAP3: Fix coding style problems in
+>     arch/arm/mach-omap2/control.c
+> 
+>  arch/arm/mach-omap2/control.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 
-Okay, I see what you're doing.  Thanks for the clarification.
+Thanks applying these fixes for the merge window. I've tagged
+the first patch also for stable.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards,
+
+Tony
