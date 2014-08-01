@@ -1,126 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435AbaHAI1r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 04:27:47 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:61569 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341AbaHAI1o (ORCPT
+	id S1754575AbaHAI2Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 04:28:24 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:56522 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754521AbaHAI2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 04:27:44 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Fri, 1 Aug 2014 17:34:46 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Gioh Kim <gioh.kim@lge.com>, Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH 0/2] new API to allocate buffer-cache for superblock in
- non-movable area
-Message-ID: <20140801083446.GA2613@js1304-P5Q-DELUXE>
-References: <53CDF437.4090306@lge.com>
- <20140722073005.GT3935@laptop>
- <20140722093838.GA22331@quack.suse.cz>
- <53D8A258.7010904@lge.com>
- <20140730101143.GB19205@quack.suse.cz>
- <53D985C0.3070300@lge.com>
- <20140731000355.GB25362@quack.suse.cz>
- <53D98FBB.6060700@lge.com>
- <20140731122114.GA5240@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140731122114.GA5240@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 1 Aug 2014 04:28:22 -0400
+Subject: [PATCH v1.3 1/18] arcmsr: Revised interrupt service routine relate
+ function to fix bug
+From: Ching Huang <ching2048@areca.com.tw>
+To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Aug 2014 16:28:12 +0800
+Message-ID: <1406881692.10378.34.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 02:21:14PM +0200, Jan Kara wrote:
-> On Thu 31-07-14 09:37:15, Gioh Kim wrote:
-> > 
-> > 
-> > 2014-07-31 오전 9:03, Jan Kara 쓴 글:
-> > >On Thu 31-07-14 08:54:40, Gioh Kim wrote:
-> > >>2014-07-30 오후 7:11, Jan Kara 쓴 글:
-> > >>>On Wed 30-07-14 16:44:24, Gioh Kim wrote:
-> > >>>>2014-07-22 오후 6:38, Jan Kara 쓴 글:
-> > >>>>>On Tue 22-07-14 09:30:05, Peter Zijlstra wrote:
-> > >>>>>>On Tue, Jul 22, 2014 at 02:18:47PM +0900, Gioh Kim wrote:
-> > >>>>>>>Hello,
-> > >>>>>>>
-> > >>>>>>>This patch try to solve problem that a long-lasting page cache of
-> > >>>>>>>ext4 superblock disturbs page migration.
-> > >>>>>>>
-> > >>>>>>>I've been testing CMA feature on my ARM-based platform
-> > >>>>>>>and found some pages for page caches cannot be migrated.
-> > >>>>>>>Some of them are page caches of superblock of ext4 filesystem.
-> > >>>>>>>
-> > >>>>>>>Current ext4 reads superblock with sb_bread(). sb_bread() allocates page
-> > >>>>>>>from movable area. But the problem is that ext4 hold the page until
-> > >>>>>>>it is unmounted. If root filesystem is ext4 the page cannot be migrated forever.
-> > >>>>>>>
-> > >>>>>>>I introduce a new API for allocating page from non-movable area.
-> > >>>>>>>It is useful for ext4 and others that want to hold page cache for a long time.
-> > >>>>>>
-> > >>>>>>There's no word on why you can't teach ext4 to still migrate that page.
-> > >>>>>>For all I know it might be impossible, but at least mention why.
-> > >>>>
-> > >>>>I am very sorry for lacking of details.
-> > >>>>
-> > >>>>In ext4_fill_super() the buffer-head of superblock is stored in sbi->s_sbh.
-> > >>>>The page belongs to the buffer-head is allocated from movable area.
-> > >>>>To migrate the page the buffer-head should be released via brelse().
-> > >>>>But brelse() is not called until unmount.
-> > >>>   Hum, I don't see where in the code do we check buffer_head use count. Can
-> > >>>you please point me? Thanks.
-> > >>
-> > >>Filesystem code does not check buffer_head use count.  sb_bread() returns
-> > >>the buffer_head that is included in bh_lru and has non-zero use count.
-> > >>You can see the bh_lru code in buffer.c: __find_get_clock() and
-> > >>lookup_bh_lru().  bh_lru_install() inserts the buffer_head into the
-> > >>bh_lru().  It first calls get_bh() to increase the use count and insert
-> > >>bh into the lru array.
-> > >>
-> > >>The buffer_head use count is non-zero until brelse() is called.
-> > >   So I probably didn't phrase the question precisely enough. What I was
-> > >asking about is where exactly *migration* code checks buffer use count?
-> > >Because as I'm looking at buffer_migrate_page() we lock the buffers on a
-> > >migrated page but we don't look at buffer use counts... So it seems to me
-> > >that migration of a page with buffers should succeed even if buffer head
-> > >has an elevated use count. Now I think that it *should* check the buffer
-> > >use counts (it is dangerous to migrate buffers someone holds reference to)
-> > >but I just cannot find that place. Or does CMA use some other migration
-> > >function for buffer pages than buffer_migrate_page()?
-> > 
-> > CMA allocation function is cma_alloc().
-> > Function flow is alloc_contig_range() -> __alloc_contig_migrate_range() -> migrate_pages -> unmap_and_move
-> > -> __unmap_and_move -> try_to_free_buffers -> drop_buffers -> buffer_busy.
-> > 
-> > The buffer_busy() is checking b_count.
-> > If buffer is busy buffer-cache cannot be removed.
-> > So the page that includes buffer_head and the page that is refered by
-> > buffer_head are not movable.
-> > 
-> > Is this what you need?
->   Yes, this is what I was asking about. Thanks! But as I'm looking into
-> __unmap_and_move() it calls try_to_free_buffers() only if page->mapping ==
-> NULL. As the comment before that test states, this can happen only for swap
-> cache (not our case) or for pagecache pages that were truncated and not yet
-> fully cleaned up. But superblock page cannot really be truncated. So I
-> somewhat doubt you can hit the above path for a page holding superblock...
 
-Hello,
+This patch rewrite the interrupt service routine relate function to fix command timeout when controller has very 
+heavy loading.
 
-Although page->mapping != NULL, mapping->a_ops->migratepage could be
-NULL. This is the case of block_device. See def_blk_aops in
-fs/block_dev.c. In this case, fallback_migrate_page() is called and
-then try_to_release_page() and try_to_free_buffers() would be called.
+Signed-off-by: Ching<ching2048@areca.com.tw>
+---
 
-Thanks.
+diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+--- a/drivers/scsi/arcmsr/arcmsr.h	2014-07-30 10:33:02.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 16:02:46.000000000 +0800
+@@ -51,7 +51,7 @@ struct device_attribute;
+ #else
+ 	#define ARCMSR_MAX_FREECCB_NUM	320
+ #endif
+-#define ARCMSR_DRIVER_VERSION		     "Driver Version 1.20.00.15 2010/08/05"
++#define ARCMSR_DRIVER_VERSION		"v1.30.00.04-20140428"
+ #define ARCMSR_SCSI_INITIATOR_ID						255
+ #define ARCMSR_MAX_XFER_SECTORS							512
+ #define ARCMSR_MAX_XFER_SECTORS_B						4096
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-07-30 10:32:28.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-01 11:02:44.000000000 +0800
+@@ -1441,14 +1441,15 @@ static void arcmsr_hba_doorbell_isr(stru
+ 	uint32_t outbound_doorbell;
+ 	struct MessageUnit_A __iomem *reg = acb->pmuA;
+ 	outbound_doorbell = readl(&reg->outbound_doorbell);
+-	writel(outbound_doorbell, &reg->outbound_doorbell);
+-	if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK) {
+-		arcmsr_iop2drv_data_wrote_handle(acb);
+-	}
+-
+-	if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_READ_OK) {
+-		arcmsr_iop2drv_data_read_handle(acb);
+-	}
++	do {
++		writel(outbound_doorbell, &reg->outbound_doorbell);
++		if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK)
++			arcmsr_iop2drv_data_wrote_handle(acb);
++		if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_READ_OK)
++			arcmsr_iop2drv_data_read_handle(acb);
++		outbound_doorbell = readl(&reg->outbound_doorbell);
++	} while (outbound_doorbell & (ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK
++		| ARCMSR_OUTBOUND_IOP331_DATA_READ_OK));
+ }
+ static void arcmsr_hbc_doorbell_isr(struct AdapterControlBlock *pACB)
+ {
+@@ -1462,17 +1463,19 @@ static void arcmsr_hbc_doorbell_isr(stru
+ 	*******************************************************************
+ 	*/
+ 	outbound_doorbell = readl(&reg->outbound_doorbell);
+-	writel(outbound_doorbell, &reg->outbound_doorbell_clear);/*clear interrupt*/
+-	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK) {
+-		arcmsr_iop2drv_data_wrote_handle(pACB);
+-	}
+-	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK) {
+-		arcmsr_iop2drv_data_read_handle(pACB);
+-	}
+-	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE) {
+-		arcmsr_hbc_message_isr(pACB);    /* messenger of "driver to iop commands" */
+-	}
+-	return;
++	do {
++		writel(outbound_doorbell, &reg->outbound_doorbell_clear);
++		readl(&reg->outbound_doorbell_clear);
++		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK)
++			arcmsr_iop2drv_data_wrote_handle(pACB);
++		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK)
++			arcmsr_iop2drv_data_read_handle(pACB);
++		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE)
++			arcmsr_hbc_message_isr(pACB);
++		outbound_doorbell = readl(&reg->outbound_doorbell);
++	} while (outbound_doorbell & (ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK
++		| ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK
++		| ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE));
+ }
+ static void arcmsr_hba_postqueue_isr(struct AdapterControlBlock *acb)
+ {
+@@ -1521,21 +1524,22 @@ static void arcmsr_hbc_postqueue_isr(str
+ 	/* areca cdb command done */
+ 	/* Use correct offset and size for syncing */
+ 
+-	while (readl(&phbcmu->host_int_status) &
+-	ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR){
+-	/* check if command done with no error*/
+-	flag_ccb = readl(&phbcmu->outbound_queueport_low);
+-	ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);/*frame must be 32 bytes aligned*/
+-	arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + ccb_cdb_phy);
+-	ccb = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
+-	error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1) ? true : false;
+-	/* check if command done with no error */
+-	arcmsr_drain_donequeue(acb, ccb, error);
+-	if (throttling == ARCMSR_HBC_ISR_THROTTLING_LEVEL) {
+-		writel(ARCMSR_HBCMU_DRV2IOP_POSTQUEUE_THROTTLING, &phbcmu->inbound_doorbell);
+-		break;
+-	}
+-	throttling++;
++	while ((flag_ccb = readl(&phbcmu->outbound_queueport_low)) != 0xFFFFFFFF) {
++		ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);
++		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset
++			+ ccb_cdb_phy);
++		ccb = container_of(arcmsr_cdb, struct CommandControlBlock,
++			arcmsr_cdb);
++		error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1)
++			? true : false;
++		/* check if command done with no error */
++		arcmsr_drain_donequeue(acb, ccb, error);
++		throttling++;
++		if (throttling == ARCMSR_HBC_ISR_THROTTLING_LEVEL) {
++			writel(ARCMSR_HBCMU_DRV2IOP_POSTQUEUE_THROTTLING,
++				&phbcmu->inbound_doorbell);
++			throttling = 0;
++		}
+ 	}
+ }
+ /*
+@@ -1584,21 +1588,22 @@ static int arcmsr_handle_hba_isr(struct 
+ 	struct MessageUnit_A __iomem *reg = acb->pmuA;
+ 	outbound_intstatus = readl(&reg->outbound_intstatus) &
+ 		acb->outbound_int_enable;
+-	if (!(outbound_intstatus & ARCMSR_MU_OUTBOUND_HANDLE_INT))	{
+-		return 1;
+-	}
+-	writel(outbound_intstatus, &reg->outbound_intstatus);
+-	if (outbound_intstatus & ARCMSR_MU_OUTBOUND_DOORBELL_INT)	{
+-		arcmsr_hba_doorbell_isr(acb);
+-	}
+-	if (outbound_intstatus & ARCMSR_MU_OUTBOUND_POSTQUEUE_INT) {
+-		arcmsr_hba_postqueue_isr(acb);
+-	}
+-	if(outbound_intstatus & ARCMSR_MU_OUTBOUND_MESSAGE0_INT) 	{
+-		/* messenger of "driver to iop commands" */
+-		arcmsr_hba_message_isr(acb);
+-	}
+-	return 0;
++	if (!(outbound_intstatus & ARCMSR_MU_OUTBOUND_HANDLE_INT))
++		return IRQ_NONE;
++	do {
++		writel(outbound_intstatus, &reg->outbound_intstatus);
++		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_DOORBELL_INT)
++			arcmsr_hba_doorbell_isr(acb);
++		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_POSTQUEUE_INT)
++			arcmsr_hba_postqueue_isr(acb);
++		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_MESSAGE0_INT)
++			arcmsr_hba_message_isr(acb);
++		outbound_intstatus = readl(&reg->outbound_intstatus) &
++			acb->outbound_int_enable;
++	} while (outbound_intstatus & (ARCMSR_MU_OUTBOUND_DOORBELL_INT
++		| ARCMSR_MU_OUTBOUND_POSTQUEUE_INT
++		| ARCMSR_MU_OUTBOUND_MESSAGE0_INT));
++	return IRQ_HANDLED;
+ }
+ 
+ static int arcmsr_handle_hbb_isr(struct AdapterControlBlock *acb)
+@@ -1608,27 +1613,25 @@ static int arcmsr_handle_hbb_isr(struct 
+ 	outbound_doorbell = readl(reg->iop2drv_doorbell) &
+ 				acb->outbound_int_enable;
+ 	if (!outbound_doorbell)
+-		return 1;
+-
+-	writel(~outbound_doorbell, reg->iop2drv_doorbell);
+-	/*in case the last action of doorbell interrupt clearance is cached,
+-	this action can push HW to write down the clear bit*/
+-	readl(reg->iop2drv_doorbell);
+-	writel(ARCMSR_DRV2IOP_END_OF_INTERRUPT, reg->drv2iop_doorbell);
+-	if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_WRITE_OK) {
+-		arcmsr_iop2drv_data_wrote_handle(acb);
+-	}
+-	if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_READ_OK) {
+-		arcmsr_iop2drv_data_read_handle(acb);
+-	}
+-	if (outbound_doorbell & ARCMSR_IOP2DRV_CDB_DONE) {
+-		arcmsr_hbb_postqueue_isr(acb);
+-	}
+-	if(outbound_doorbell & ARCMSR_IOP2DRV_MESSAGE_CMD_DONE) {
+-		/* messenger of "driver to iop commands" */
+-		arcmsr_hbb_message_isr(acb);
+-	}
+-	return 0;
++		return IRQ_NONE;
++	do {
++		writel(~outbound_doorbell, reg->iop2drv_doorbell);
++		writel(ARCMSR_DRV2IOP_END_OF_INTERRUPT, reg->drv2iop_doorbell);
++		if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_WRITE_OK)
++			arcmsr_iop2drv_data_wrote_handle(acb);
++		if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_READ_OK)
++			arcmsr_iop2drv_data_read_handle(acb);
++		if (outbound_doorbell & ARCMSR_IOP2DRV_CDB_DONE)
++			arcmsr_hbb_postqueue_isr(acb);
++		if (outbound_doorbell & ARCMSR_IOP2DRV_MESSAGE_CMD_DONE)
++			arcmsr_hbb_message_isr(acb);
++		outbound_doorbell = readl(reg->iop2drv_doorbell) &
++			acb->outbound_int_enable;
++	} while (outbound_doorbell & (ARCMSR_IOP2DRV_DATA_WRITE_OK
++		| ARCMSR_IOP2DRV_DATA_READ_OK
++		| ARCMSR_IOP2DRV_CDB_DONE
++		| ARCMSR_IOP2DRV_MESSAGE_CMD_DONE));
++	return IRQ_HANDLED;
+ }
+ 
+ static int arcmsr_handle_hbc_isr(struct AdapterControlBlock *pACB)
+@@ -1640,44 +1643,37 @@ static int arcmsr_handle_hbc_isr(struct 
+ 	**   check outbound intstatus
+ 	*********************************************
+ 	*/
+-	host_interrupt_status = readl(&phbcmu->host_int_status);
+-	if (!host_interrupt_status) {
+-		/*it must be share irq*/
+-		return 1;
+-	}
+-	/* MU ioctl transfer doorbell interrupts*/
+-	if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR) {
+-		arcmsr_hbc_doorbell_isr(pACB);   /* messenger of "ioctl message read write" */
+-	}
+-	/* MU post queue interrupts*/
+-	if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR) {
+-		arcmsr_hbc_postqueue_isr(pACB);  /* messenger of "scsi commands" */
+-	}
+-	return 0;
++	host_interrupt_status = readl(&phbcmu->host_int_status) &
++		(ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR |
++		ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR);
++	if (!host_interrupt_status)
++		return IRQ_NONE;
++	do {
++		if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR)
++			arcmsr_hbc_doorbell_isr(pACB);
++		/* MU post queue interrupts*/
++		if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR)
++			arcmsr_hbc_postqueue_isr(pACB);
++		host_interrupt_status = readl(&phbcmu->host_int_status);
++	} while (host_interrupt_status & (ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR |
++		ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR));
++	return IRQ_HANDLED;
+ }
+ static irqreturn_t arcmsr_interrupt(struct AdapterControlBlock *acb)
+ {
+ 	switch (acb->adapter_type) {
+-	case ACB_ADAPTER_TYPE_A: {
+-		if (arcmsr_handle_hba_isr(acb)) {
+-			return IRQ_NONE;
+-		}
+-		}
++	case ACB_ADAPTER_TYPE_A:
++		return arcmsr_handle_hba_isr(acb);
+ 		break;
+-
+-	case ACB_ADAPTER_TYPE_B: {
+-		if (arcmsr_handle_hbb_isr(acb)) {
+-			return IRQ_NONE;
+-		}
+-		}
++	case ACB_ADAPTER_TYPE_B:
++		return arcmsr_handle_hbb_isr(acb);
+ 		break;
+-	 case ACB_ADAPTER_TYPE_C: {
+-		if (arcmsr_handle_hbc_isr(acb)) {
+-			return IRQ_NONE;
+-		}
+-		}
++	case ACB_ADAPTER_TYPE_C:
++		return arcmsr_handle_hbc_isr(acb);
++		break;
++	default:
++		return IRQ_NONE;
+ 	}
+-	return IRQ_HANDLED;
+ }
+ 
+ static void arcmsr_iop_parking(struct AdapterControlBlock *acb)
+
+
