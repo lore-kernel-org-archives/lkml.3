@@ -1,564 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaHAFra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 01:47:30 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:52095 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753680AbaHAFr2 (ORCPT
+	id S1753378AbaHAFzD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 01:55:03 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:49957 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaHAFzB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 01:47:28 -0400
-X-Sasl-enc: mBdIxvacB+1fQ+yC9nm9Y6vCLdaqDyqcj6ORcwo1C7aK 1406872046
-Message-ID: <1406872036.24270.7.camel@perseus.fritz.box>
-Subject: Re: [PATCH/RFC] autofs: the documentation I wanted to read
-From: Ian Kent <raven@themaw.net>
-To: NeilBrown <neilb@suse.de>
-Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 01 Aug 2014 13:47:16 +0800
-In-Reply-To: <20140729120017.53590fad@notabene.brown>
-References: <20140729120017.53590fad@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Aug 2014 01:55:01 -0400
+References: <1406309851-10628-1-git-send-email-adas@redhat.com> <CA2BF8AB-6F61-4856-8B0E-9D954BDEB243@dilger.ca> <193414027.14151264.1406551934098.JavaMail.zimbra@redhat.com> <7EBB0CF1-6564-4C63-8006-7DEEE8800A19@dilger.ca> <20140731044909.GR26465@dastard> <351B218B-259B-4066-8E78-0B0EA05D087E@dilger.ca> <20140731235306.GR20518@dastard>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <20140731235306.GR20518@dastard>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6DD09269-A8D4-4464-9E82-4B2EA665FA96@dilger.ca>
+Cc: Abhijith Das <adas@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "cluster-devel@redhat.com" <cluster-devel@redhat.com>
+X-Mailer: iPhone Mail (11D257)
+From: Andreas Dilger <adilger@dilger.ca>
+Subject: Re: [RFC PATCH 0/2] dirreadahead system call
+Date: Fri, 1 Aug 2014 07:54:56 +0200
+To: Dave Chinner <david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-29 at 12:00 +1000, NeilBrown wrote:
+On Aug 1, 2014, at 1:53, Dave Chinner <david@fromorbit.com> wrote:
+> On Thu, Jul 31, 2014 at 01:19:45PM +0200, Andreas Dilger wrote:
+>> None of these issues are relevant in the API that I'm thinking about. 
+>> The syscall just passes the list of inode numbers to be prefetched
+>> into kernel memory, and then stat() is used to actually get the data into
+>> userspace (or whatever other operation is to be done on them),
+>> so there is no danger if the wrong inode is prefetched.  If the inode
+>> number is bad the filesystem can just ignore it.
 > 
-> This documents autofs from the perspective of what the module actually
-> supports rather than how automount is expected to use it.
-> It is based mostly on code review and very little on testing so it
-> may be inaccurate in some places.
+> Which means the filesystem has to treat the inode number as
+> potentially hostile. i.e. it can not be trusted to be correct and so
+> must take slow paths to validate the inode numbers. This adds
+> *significant* overhead to the readahead path for some filesystems:
+> readahead is only a win if it is low cost.
 > 
-> The document assumes the functionality added by the RCU-walk patches
-> that I posted recently.
+> For example, on XFS every untrusted inode number lookup requires an
+> inode btree lookup to validate the inode is actually valid on disk
+> and that is it allocated and has references. That lookup serialises
+> against inode allocation/freeing as well as other lookups. In
+> comparison, when using a trusted inode number from a directory
+> lookup within the kernel, we only need to do a couple of shift and
+> mask operations to convert it to a disk address and we are good to
+> go.
 > 
-> It is formatted using "markdown" and works best with Markdown.pl
-> (markdown_py doesn't like some constructs).
-> 
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
-Acked-by: Ian Kent <raven@themaw.net>
+> i.e. the difference is at least 5 orders of magnitude higher CPU usage
+> for an "inode number readahead" syscall versus a "directory
+> readahead" syscall, it has significant serialisation issues and it
+> can stall other modification/lookups going on at the same time.
+> That's *horrible behaviour* for a speculative readahead operation,
+> but because the inodenumbers are untrusted, we can't avoid it.
 
-There are a couple of places that might need more work but it's better
-to have this now and to work with it in future than to hold it up. 
+For ext4 this is virtually free. The same needs to happen for any
+inode number from NFS so it can't be that bad. 
 
-Especially since I can't quite nail down what it was that didn't quite
-sound right when reading it.
+Also, since this API would be prefetching inodes in bulk it
+could presumably optimize this to some extent. 
 
-Excellent job Neil, thanks very much.
-Ian
+> So, again, it's way more overhead than userspace just calling
+> stat() asycnhronously on many files at once as readdir/gentdents
+> returns dirents from the kernel to speed up cache population.
 
-> 
-> diff --git a/Documentation/filesystems/autofs4.txt b/Documentation/filesystems/autofs4.txt
-> new file mode 100644
-> index 000000000000..45f67c83d713
-> --- /dev/null
-> +++ b/Documentation/filesystems/autofs4.txt
-> @@ -0,0 +1,503 @@
-> +<head>
-> +<style> p { max-width:50em} ol, ul {max-width: 40em}</style>
-> +</head>
-> +
-> +autofs - how it works
-> +=====================
-> +
-> +Purpose
-> +-------
-> +
-> +The goal of autofs is to provide on-demand mounting and race free
-> +automatic unmounting of various other filesystems.  This provides two
-> +key advantages:
-> +
-> +1. There is no need to delay boot until all filesystems that
-> +   might be needed are mounted.  Processes that try to access those
-> +   slow filesystems might be delayed but other processes can
-> +   continue freely.  This is particularly important for
-> +   network filesystems (e.g. NFS) or filesystems stored on
-> +   media with a media-changing robot.
-> +
-> +2. The names and locations of filesystems can be stored in
-> +   a remote database and can change at any time.  The content
-> +   in that data base at the time of access will be used to provide
-> +   a target for the access.  The interpretation of names in the
-> +   filesystem can even be programatic rather than database-backed,
-> +   allowing wildcards for example, and can vary based on the user who
-> +   first accessed a name.
-> +
-> +Context
-> +-------
-> +
-> +The "autofs4" filesystem module is only one part of an autofs system.
-> +There also needs to be a user-space program which looks up names
-> +and mounts filesystems.  This will often be the "automount" program,
-> +though other tools including "systemd" can make use of "autofs4".
-> +This document describes only the kernel module and the interactions
-> +required with any user-space program.  Subsequent text refers to this
-> +as the "automount daemon" or simply "the daemon".
-> +
-> +"autofs4" is a Linux kernel module with provides the "autofs"
-> +filesystem type.  Several "autofs" filesystems can be mounted and they
-> +can each be managed separately, or all managed by the same daemon.
-> +
-> +Content
-> +-------
-> +
-> +An autofs filesystem can contain 3 sorts of objects: directories,
-> +symbolic links and mount traps.  Mount traps are directories with
-> +extra properties as described in the next section.
-> +
-> +Objects can only be created by the automount daemon: symlinks are
-> +created with a regular `symlink` systemcall, while directories and
-> +mount traps are created with `mkdir`.  The determination of whether a
-> +directory should be a mount trap or not is quite _ad hoc_, largely for
-> +historical reasons, and is determined in part the
-> +*direct*/*indirect*/*offset* mount options, and the *maxproto* mount option.
-> +
-> +If neither the *direct* or *offset* mount options are given (so the
-> +mount is considered to be *indirect*), then the root directory is
-> +always a regular directory, otherwise it is a mount trap when it is
-> +empty and a regular directory when not empty.  Note that *direct* and
-> +*offset* are treated identically so a concise summary is that the root
-> +directory is a mount trap only if the filesystem is mounted *direct*
-> +and the root is empty.
-> +
-> +Directories created in the root directory are mount traps only if the
-> +filesystem is mounted  *indirect* and they are empty.
-> +
-> +Directories further down the tree depend on the *max_proto* mount
-> +option and particularly whether it is less than five or not.
-> +When *max_proto* is five, no directories further down the
-> +tree are ever mount traps, they are always regular directories.  When
-> +the *max_proto* is four (or three), these directories are mount traps
-> +precisely when they are empty.
-> +
-> +So: non-empty (i.e. non-leaf) directories are never mount traps. Empty
-> +directories are sometimes mount traps, and sometimes not depending on
-> +where in the tree they are (root, top level, or lower) the *maxproto*,
-> +and whether the mount was *indirect* or not.
-> +
-> +Mount Traps
-> +---------------
-> +
-> +A core element of the implementation of autofs is the Mount Traps
-> +which are provided by the Linux VFS.  Any directory provided by a
-> +filesystem can be designated as a trap.  This involves two separate
-> +features that work together to allow autofs to do its job.
-> +
-> +**DCACHE_NEED_AUTOMOUNT**
-> +
-> +If a dentry has the DCACHE_NEED_AUTOMOUNT flag set (which gets set if
-> +the inode has S_AUTOMOUNT set, or can be set directly) then it is
-> +(potentially) a mount trap.  Any access to this directory beyond a
-> +"`stat`" will (normally) cause the `d_op->d_automount()` dentry operation
-> +to be called. The task of this method is to find the filesystem that
-> +should be mounted on the directory and to return it.  The VFS is
-> +responsibly for actually mounting the root of this filesystem on the
-> +directory.
-> +
-> +autofs doesn't find the filesystem itself but sends a message to the
-> +automount daemon asking it to find and mount the filesystem.  The
-> +autofs `d_automount` method then waits for the daemon to report that
-> +everything is ready.  It will then return "`NULL`" indicating that the
-> +mount has already happened.  The VFS doesn't try to mount anything but
-> +follows down the mount that is already there.
-> +
-> +This functionality is sufficient for some users of mount traps such
-> +as NFS which creates traps so that mountpoints on the server can be
-> +reflected on the client.  However it is not sufficient for autofs.  As
-> +mounting onto a directory is considered to be "beyond a `stat`", the
-> +automount daemon would not be able to mount a filesystem on the 'trap'
-> +directory without some way to avoid getting caught in the trap.  For
-> +that purpose there is another flag.
-> +
-> +**DCACHE_MANAGE_TRANSIT**
-> +
-> +If a dentry has DCACHE_MANAGE_TRANSIT set then two very different but
-> +related behaviors are invoked, both using the `d_op->d_manage()`
-> +dentry operation.
-> +
-> +Firstly, before checking to see if any filesystem is mounted on the
-> +directory, d_manage() will be called with the `rcu_walk` parameter set
-> +to `false`.  It may return one of three things:
-> +
-> +-  A return value of zero indicates that there is nothing special
-> +   about this dentry and normal checks for mounts and automounts
-> +   should proceed.
-> +
-> +   autofs normally returns zero, but first waits for any
-> +   expiry (automatic unmounting of the mounted filesystem) to
-> +   complete.  This avoids races.
-> +
-> +-  A return value of `-EISDIR` tells the VFS to ignore any mounts
-> +   on the directory and to not consider calling `->d_automount()`.
-> +   This effectively disables the **DCACHE_NEED_AUTOMOUNT** flag
-> +   causing the directory not be a mount trap after all.
-> +
-> +   autofs returns this if it detects that the process performing the
-> +   lookup is the automount daemon and that the mount has been
-> +   requested but has not yet completed.  How it determines this is
-> +   discussed later.  This allows the automount daemon not to get
-> +   caught in the mount trap.
-> +
-> +   There is a subtlety here.  It is possibly that a second autofs
-> +   filesystem can be mounted below the first and for both of them to
-> +   be managed by the same daemon.  For the daemon to be able to mount
-> +   something on the second it must be able to "walk" down past the
-> +   first.  This means that d_manage cannot *always* return -EISDIR for
-> +   the automount daemon.  It must only return it when a mount has
-> +   been requested, but has not yet completed.
-> +
-> +   `d_manage` also returns `-EISDIR` if the dentry shouldn't be a
-> +   mount trap, either because it is a symbolic link or because it is
-> +   not empty.
-> +
-> +-  Any other negative value is treated as an error and returned
-> +   to the caller.
-> +
-> +   autofs can return
-> +
-> +   - -ENOENT if the automount daemon failed to mount anything,
-> +   - -ENOMEM if it ran out of memory,
-> +   - -EINTR if a signal arrived while waiting for expiry to
-> +     complete
-> +   - or any other error sent down by the automount daemon.
-> +
-> +
-> +The second use case only occurs during an "RCU-walk" and so `rcu_walk`
-> +will be set.
-> +
-> +An RCU-walk is a fast and light weight process for walking down a
-> +filename path (i.e. it is like running on tip-toes).  RCU-walk cannot
-> +cope with all situations so when it finds a difficulty it falls back
-> +to "REF-walk", which is slower but more robust.
-> +
-> +RCU-walk will never call `->d_automount`, the filesystems must already
-> +be mounted or RCU-walk cannot handle the path.
-> +To determine if a mount-trap is safe for RCU-walk mode it calls
-> +`->d_manage()` with `rcu_walk` set to `true`.
-> +
-> +In this case `d_manage()` must avoid blocking and should avoid taking
-> +spinlocks if at all possible.  Its sole purpose is to determine if it
-> +would be safe to follow down into any mounted directory and the only
-> +reason that it might not be is if an expiry of the mount is
-> +underway.
-> +
-> +In the `rcu_walk` case, `d_manage()` cannot return -EISDIR to tell the
-> +VFS that this is a directory that doesn't require d_automount.  If
-> +`rcu_walk` sees a dentry with DCACHE_NEED_AUTOMOUNT set but nothing
-> +mounted, it *will* fall back to REF-walk.  `d_manage()` cannot make the
-> +VFS remain in RCU-walk mode, but can only tell it to get out of
-> +RCU-walk mode by returning `-ECHILD`.
-> +
-> +So `d_manage()`, when called with `rcu_walk` set, should either return
-> +-ECHILD if there is any reason to believe it is unsafe to end the
-> +mounted filesystem, and otherwise should return 0.
-> +
-> +autofs will return `-ECHILD` if an expiry of the filesystem has been
-> +initiated or is being considered, otherwise it returns 0.
-> +
-> +
-> +Mountpoint expiry
-> +-----------------
-> +
-> +The VFS has a mechansim for automatically expiring unused mounts,
-> +much as it can expire any unused dentry information from the dcache.
-> +This is guided by the MNT_SHRINKABLE flag.  This  only applies to
-> +mounts that were created by `d_automount()` returning a filesystem to be
-> +mounted.  As autofs doesn't return such a filesystem be leaves the
-> +mounting to the automount daemon, it must involve the automount daemon
-> +in unmounting as well.  This also means that autofs has more control
-> +of expiry.
-> +
-> +The VFS also supports "expiry" of mounts using the MNT_EXPIRE flag to
-> +the `umount` systemcall.  Unmounting with MNT_EXPIRE will fail unless
-> +a previous attempt had been made, and the filesystem was been inactive
-> +and untouched since that previous attempt.  autofs4 does not depend on
-> +this but has its own internal tracking of whether filesystems were
-> +recently used.  This allows individual names in the autofs directory
-> +to expire separately.
-> +
-> +With version 4 of the protocol, the automount daemon can try to
-> +unmount any filesystems mounted on the autofs filesystem or remove any
-> +symbolic links or empty directories any time it likes.  If the unmount
-> +or removal is successful the filesystem will be returned to the state
-> +it was before the mount or creation, so that any access of the name
-> +will trigger normal auto-mount processing.  In particlar, `rmdir` and
-> +`unlink` do not leave negative entries in the dcache as a normal
-> +filesystem would, so an attempt to access a recently-removed object is
-> +passed to autofs for handling.
-> +
-> +With version 5, this is not safe except for unmounting from top-level
-> +directories.  As lower-level directories are never mount traps, other
-> +processes will see an empty directory as soon as the filesystem is
-> +unmounted.  So it is generally safest to use the autofs expiry
-> +protocol described below.
-> +
-> +Normally the daemon only wants to remove entries which haven't been
-> +used for a while.  For this purpose autofs maintains a "`last_used`"
-> +time stamp on each directory or symlink.  For symlinks it genuinely
-> +does record the last time the symlink was "used" or followed to find
-> +out where it points to.  For directories the field is a slight
-> +misnomer.  It actually records the last time that autofs checked if
-> +the directory or one of its descendents was busy and found that it
-> +was.  This is just as useful and doesn't require updating the field so
-> +often.
-> +
-> +The daemon is able to ask autofs if anything is due to be expired,
-> +using an `ioctl` as discussed later.  For a *direct* mount, autofs
-> +considers if the entire mount-tree can be unmounted or not.  For an
-> +*indirect* mount, autofs considers each of the names in the top level
-> +directory to determine if any of those can be unmounted and cleaned
-> +up.
-> +
-> +There is an option with indirect mounts to consider each of the leaves
-> +that has been mounted on instead of considering the top-level names.
-> +This is intended for compatability with version 4 of autofs and should
-> +be considered as deprecated.
-> +
-> +When autofs considers a directory it checks the `last_used` time and
-> +compares it with the "timeout" value set when the filesystem was
-> +mounted, though this check is ignored in some cases. It also checks if
-> +the directory or anything below it is in use.  For symbolic links,
-> +only the `last_used` time is ever considered.
-> +
-> +If both appear to support expiring the directory or symlink, an action
-> +is taken.
-> +
-> +There are two ways to ask autofs to consider expiry.  The first is to
-> +use the **AUTOFS_IOC_EXPIRE** ioctl.  This only works for indirect
-> +mounts.  If it finds something in the root directory to expire it will
-> +return the name of that thing.  Once a name has been returned the
-> +automount daemon needs to unmount any filesystems mounted below the
-> +name normally.  As described above, this is unsafe for non-toplevel
-> +mounts in a version-5 autofs.  For this reason the current `automountd`
-> +does not use this ioctl.
-> +
-> +The second mechanism uses either the **AUTOFS_DEV_IOCTL_EXPIRE_CMD** or
-> +the **AUTOFS_IOC_EXPIRE_MULTI** ioctl.  This will work for both direct and
-> +indirect mounts.  If it selects an object to expire, it will notify
-> +the daemon using the notification mechanism described below.  This
-> +will block until the daemon acknowledges the expiry notification.
-> +This implies that the "`EXPIRE`" ioctl must be sent from a different
-> +thread than the one which handles notification.
-> +
-> +While the ioctl is blocking, the entry is marked as "expiring" and
-> +`d_manage` will block until the daemon affirms that the unmount has
-> +completed (together with removing any directories that might have been
-> +necessary), or has been aborted.
-> +
-> +Communicating with autofs: detecting the daemon
-> +-----------------------------------------------
-> +
-> +There are several forms of communication between the automount daemon
-> +and the filesystem.  As we have already seen, the daemon can create and
-> +remove directories and symlinks using normal filesystem operations.
-> +autofs knows whether a process requesting some operation is the daemon
-> +or not based on it's process-group id number (see getpgid(1)).
-> +
-> +When an autofs filesystem it mounted the pgid of the mounting
-> +processes is recorded unless that "pgrp=" option is given, in which
-> +case that number is recorded instead.  Any request arriving from a
-> +process in that process group is considered to come from the daemon.
-> +If the daemon ever has to be stopped and restarted a new pgid can be
-> +provided through an ioctl as will be described below.
-> +
-> +Communicating with autofs: the event pipe
-> +-----------------------------------------
-> +
-> +When an autofs filesystem is mounted, the 'write' end of a pipe must
-> +be passed using the 'fd=' mount option.  autofs will write
-> +notification messages to this pipe for the daemon to respond to.
-> +For version 5, the format of the message is:
-> +
-> +	struct autofs_v5_packet {
-> +		int proto_version;		/* Protocol version */
-> +		int type;			/* Type of packet */
-> +		autofs_wqt_t wait_queue_token;
-> +		__u32 dev;
-> +		__u64 ino;
-> +		__u32 uid;
-> +		__u32 gid;
-> +		__u32 pid;
-> +		__u32 tgid;
-> +		__u32 len;
-> +		char name[NAME_MAX+1];
-> +	};
-> +
-> +where the type is one of
-> +
-> +	autofs_ptype_missing_indirect
-> +	autofs_ptype_expire_indirect
-> +	autofs_ptype_missing_direct
-> +	autofs_ptype_expire_direct
-> +
-> +so messages can indicate that a name is missing (something tried to
-> +access it but it isn't there) or that it has been selected for expiry.
-> +
-> +The pipe will be set to "packet mode" (equivalent to passing
-> +`O_DIRECT`) to _pipe2(2)_ so that a read from the pipe will return at
-> +most one packet, and any unread portion of a packet will be discarded.
-> +
-> +The `wait_queue_token` is a unique number which can identify a
-> +particular request to be acknowledged.  When a message is sent over
-> +the pipe the affected dentry is marked as either "active" or
-> +"expiring" and other accesses to it block until the messages is
-> +acknowledged using one of the ioctls below and the relevant
-> +`wait_queue_token`.
-> +
-> +Communicating with autofs: root directory ioctls
-> +------------------------------------------------
-> +
-> +The root directory of an autofs filesystem will respond to a number of
-> +ioctls.   The process issuing the ioctl must have the CAP_SYS_ADMIN
-> +capability, or must be the automount daemon.
-> +
-> +The available ioctl commands are:
-> +
-> +- **AUTOFS_IOC_READY**: a notification has been handled.  The argument
-> +    to the ioctl command is the "wait_queue_token" number
-> +    corresponding to the notification being acknowledged.
-> +- **AUTOFS_IOC_FAIL**: similar to above, but indicates failure with
-> +    the error code `ENOENT`.
-> +- **AUTOFS_IOC_CATATONIC**: Causes the autofs to enter "catatonic"
-> +    mode meaning that it stops sending notifications to the daemon.
-> +    This mode is also entered if a write to the pipe fails.
-> +- **AUTOFS_IOC_PROTOVER**:  This returns the protocol version in use.
-> +- **AUTOFS_IOC_PROTOSUBVER**: Returns the protocol sub-version which
-> +    is really a version number for the implementation.  It is
-> +    currently 2.
-> +- **AUTOFS_IOC_SETTIMEOUT**:  This passes a pointer to an unsigned
-> +    long.  The value is used to set the timeout for expiry, and
-> +    the current timeout value is stored back through the pointer.
-> +- **AUTOFS_IOC_ASKUMOUNT**:  Returns, in the pointed-to `int`, 1 if
-> +    the filesystem could be unmounted.  This is only a hint as
-> +    the situation could change at any instant.  This call can be
-> +    use to avoid a more expensive full unmount attempt.
-> +- **AUTOFS_IOC_EXPIRE**: as described above, this asks if there is
-> +    anything suitable to expire.  A pointer to a packet:
-> +
-> +        struct autofs_packet_expire_multi {
-> +        	int proto_version;              /* Protocol version */
-> +        	int type;                       /* Type of packet */
-> +        	autofs_wqt_t wait_queue_token;
-> +        	int len;
-> +        	char name[NAME_MAX+1];
-> +        };
-> +
-> +     is required.  This is filled in with the name of something
-> +     that can be unmounted or removed.  If nothing can be expired,
-> +     `errno` is set to `EAGAIN`.  Even though a `wait_queue_token`
-> +     is present in the structure, not "wait queue" is established
-> +     and no acknowledgment is needed.
-> +- **AUTOFS_IOC_EXPIRE_MULTI**:  This is similar to
-> +     **AUTOFS_IOC_EXPIRE** except that it causes notification to be
-> +     sent to the daemon, and it blocks until the daemon acknowledges.
-> +     The argument is an integer which can contain two different flags.
-> +
-> +     **AUTOFS_EXP_IMMEDIATE** causes `last_used` time to be ignored
-> +     and objects are expired if the are not in use.
-> +
-> +     **AUTOFS_EXP_LEAVES** will select a leaf rather than a top-level
-> +     name to expire.  This is only safe when *maxproto* is 4.
-> +
-> +Communicating with autofs: char-device ioctls
-> +---------------------------------------------
-> +
-> +It is not always possible to open the root of an autofs filesystem,
-> +particularly a *direct* mounted filesystem.  If the automount daemon
-> +is restarted there is no way for it to regain control of existing
-> +mounts using any of the above communication channels.  To address this
-> +need there is a "miscellaneous" character device (major 10, minor 235)
-> +which can be used to communicate directly with the autofs filesystem.
-> +It requires CAP_SYS_ADMIN for access.
-> +
-> +The `ioctl`s that can be used on this device a described in a separate
-> +document `autofs4-mount-control.txt`, and are summarized briefly here.
-> +Each ioctl is passed a pointer to an `autofs_dev_ioctl` structure:
-> +
-> +	struct autofs_dev_ioctl {
-> +		__u32 ver_major;
-> +		__u32 ver_minor;
-> +		__u32 size;             /* total size of data passed in
-> +		                         * including this struct */
-> +		__s32 ioctlfd;          /* automount command fd */
-> +
-> +		__u32 arg1;             /* Command parameters */
-> +		__u32 arg2;
-> +
-> +		char path[0];
-> +	};
-> +
-> +For the **OPEN_MOUNT** and **IS_MOUNTPOINT** commands, the target
-> +filesystem is identified by the `path`.  All other commands identify
-> +the filesystem by the `ioctlfd` which is a file descriptor open on the
-> +root, and which can be returned by **OPEN_MOUNT**.
-> +
-> +The `ver_major` and `ver_minor` are in/out parameters which check that
-> +the requested version is supported, and report the maximum version
-> +that the kernel module can support.
-> +
-> +Commands are:
-> +
-> +- **AUTOFS_DEV_IOCTL_VERSION_CMD**: does nothing, except validate and
-> +    set version numbers.
-> +- **AUTOFS_DEV_IOCTL_OPENMOUNT_CMD**: return an open file descriptor
-> +    on the root of an autofs filesystem.  The filesystem is identified
-> +    by name a device number, which is stored in `arg1`.  Device
-> +    numbers for existing filesystems can be found in
-> +    `/proc/self/mountinfo`.
-> +- **AUTOFS_DEV_IOCTL_CLOSEMOUNT_CMD**: same as `close(ioctlfd)`.
-> +- **AUTOFS_DEV_IOCTL_SETPIPEFD_CMD**: if the  filesystem is in
-> +    catatonic mode, this can provide the write end of a new pipe
-> +    in `arg1` to re-establish communication with a daemon.  The
-> +    process group of the calling process is used to identify the
-> +    daemon.
-> +- **AUTOFS_DEV_IOCTL_REQUESTER_CMD**: `path` should be a
-> +    name within the filesystem that as been auto-mounted on.
-> +    arg1 is the dev number of the underlying autofs.  On successful
-> +    return, `arg1` and `arg2` will be the UID and GID of the process
-> +    which triggered that mount.
-> +
-> +- **AUTOFS_DEV_IOCTL_ISMOUNTPOINT_CMD**: Check if path is a
-> +    mountpoint of a particular type - see separate documentation for
-> +    details.
-> +
-> +- **AUTOFS_DEV_IOCTL_PROTOVER_CMD**:
-> +- **AUTOFS_DEV_IOCTL_PROTOSUBVER_CMD**:
-> +- **AUTOFS_DEV_IOCTL_READY_CMD**:
-> +- **AUTOFS_DEV_IOCTL_FAIL_CMD**:
-> +- **AUTOFS_DEV_IOCTL_CATATONIC_CMD**:
-> +- **AUTOFS_DEV_IOCTL_TIMEOUT_CMD**:
-> +- **AUTOFS_DEV_IOCTL_EXPIRE_CMD**:
-> +- **AUTOFS_DEV_IOCTL_ASKUMOUNT_CMD**:  These all have the same
-> +    function as the similarly named **AUTOFS_IOC** ioctls, except
-> +    that **FAIL** can be given an explicit error number in `arg1`
-> +    instead of assuming `ENOENT`, and this **EXPIRE** command
-> +    corresponds to **AUTOFS_IOC_EXPIRE_MULTI**.
-> +
-> +Catatonic mode
-> +--------------
-> +
-> +As mentioned, an autofs mount can enter "catatonic" mode.  This
-> +happens if a write to the notification pipe fails, or if it is
-> +explicitly requested by an `ioctl`.
-> +
-> +When entering catatonic mode, the pipe is closed and any pending
-> +notifications are acknowledged with the error `ENOENT`.
-> +
-> +Once in catatonic mode attempts to access non-existing names will
-> +result in `ENOENT` while attempts to access existing directories will
-> +be treated in the same way is if they came from the daemon, so mount
-> +traps will not fire.
-> +
-> +When the filesystem is mounted a _uid_ and _gid_ can be given which
-> +set the ownership of directories and symbolic links.  When the
-> +filesystem is in catatonic mode, any process with a matching UID can
-> +create directories or symlink in the root directory, but not in other
-> +directories.
-> +
-> +Catatonic mode can only be left via the
-> +**AUTOFS_DEV_IOCTL_OPENMOUNT_CMD** ioctl on the `/dev/autofs`.
+To me this seems like saying it is just as fast to submit hundreds of
+256-byte random reads for a file as it is for large linear reads with
+readahead.  Yes, it is possible for the kernel to optimize the random
+read workload to some extent, but not as easily as getting reads
+in order in the first place. 
 
+> That's my main issue with this patchset - it's implementing
+> something in kernelspace that can *easily* be done generically in
+> userspace without introducing all sorts of nasty corner cases that
+> we have to handle in the kernel. We only add functionality to the kernel if there's a
+> compelling reason to do it in kernelspace, and right now I just
+> don't see any numbers that justify adding readdir+stat() readahead
+> or inode number based cache population in kernelspace.
 
+The original patch showed there was definitely a significant win with
+the prefetch case over the single threaded readdir+stat. There is
+also something to be said for keeping complexity out of applications.
+Sure it is possible for apps to get good performance from AIO,
+but very few do so because of complexity. 
+
+> Before we add *any* syscall for directory readahead, we need
+> comparison numbers against doing the dumb multithreaded
+> userspace readahead of stat() calls. If userspace can do this as
+> fast as the kernel can....
+
+I'd be interested to see this also, but my prediction is that this will not
+deliver the kind of improvements you are expecting. 
+
+Cheers, Andreas
