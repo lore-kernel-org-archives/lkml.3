@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429AbaHAOvu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:51:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52943 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754623AbaHAOvt (ORCPT
+	id S1755533AbaHAOv5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 10:51:57 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:33128 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754623AbaHAOvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:51:49 -0400
-Date: Fri, 1 Aug 2014 15:51:45 +0100
-From: Thomas Graf <tgraf@suug.ch>
-To: Patrick McHardy <kaber@trash.net>
-Cc: Nikolay Aleksandrov <nikolay@redhat.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
-        challa@noironetworks.com, walpole@cs.pdx.edu, dev@openvswitch.org,
-        tklauser@distanz.ch, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH net-next 3/3] nftables: Convert nft_hash to use generic
- rhashtable
-Message-ID: <20140801145145.GE7331@casper.infradead.org>
-References: <cover.1406891028.git.tgraf@suug.ch>
- <bd4d9fa542072358cb0bd77e493ec5785a1d9666.1406891028.git.tgraf@suug.ch>
- <53DB864B.2070205@redhat.com>
- <20140801134901.GD7331@casper.infradead.org>
- <0d77fb6a-4465-432f-9d6a-b1c1497a780b@email.android.com>
+	Fri, 1 Aug 2014 10:51:53 -0400
+Message-ID: <53DBA986.90705@arm.com>
+Date: Fri, 01 Aug 2014 15:51:50 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0d77fb6a-4465-432f-9d6a-b1c1497a780b@email.android.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+CC: Mark Rutland <Mark.Rutland@arm.com>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 4/4 V3] irqchip: gicv2m: Add support for multiple MSI
+ for ARM64 GICv2m
+References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com> <1404947104-21345-5-git-send-email-suravee.suthikulpanit@amd.com> <87vbqej2rj.fsf@approximate.cambridge.arm.com> <53DBA603.9030509@amd.com>
+In-Reply-To: <53DBA603.9030509@amd.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/14 at 03:12pm, Patrick McHardy wrote:
-> On 1. August 2014 14:49:01 GMT+01:00, Thomas Graf <tgraf@suug.ch> wrote:
-> >On 08/01/14 at 02:21pm, Nikolay Aleksandrov wrote:
-> >> Sorry for the late response but I just got around to check the 3rd
-> >patch now,
-> >> so my question about this fragment is: before nft_hash_remove() would
-> >free the
-> >> element after removal, but after this change I don't see where and
-> >when the
-> >> removed element would get freed ?
-> >
-> >You are right. Looking at this closer we were leaking references even
-> >before the change because it would not call nft_data_uninit() to
-> >release
-> >the data objects. So it should really just call
-> >nft_hash_elem_destroy().
+Hi Suravee,
+
+On 01/08/14 15:36, Suravee Suthikulanit wrote:
+> On 7/30/2014 10:16 AM, Marc Zyngier wrote:
+>> Why do we need this complexity at all? Is there any case where we'd want
+>> to limit ourselves to a single vector for MSI?
 > 
-> No, the data uninit is performed by the set core. Just freeing it is fine.
+> I think the ARM64 GICv2m should not be the limitation for the devices 
+> multiple MSI if there is no real hardware/design limitation.
+> 
+>> arm64 is a new enough architecture so that we can expect all interrupt controllers to cope
+>> with that.
+> 
+> I am not sure if I understand this comment.
+> 
+> We are not forcing all interrupt controllers for ARM64 to handle 
+> multi-MSI.  They have the option to support if multi-MSI if they want 
+> to. I just think that we should not put the architectural limit here.
 
-OK, I can see the uninit on the data in nft_del_setelem() for maps
-prior to the actual commit. The location is slightly unexpected since
-the element is still findable in the hash table at that point.
+Let me be clearer: I think we should put the burden of *not* handling
+multi-MSI on interrupt controllers. Here, you're making the
+architectural default to be "I don't support multi-MSI", hence having to
+override global vectors and such for well behaved MSI controllers like
+GICv2m and GICv3 ITS.
 
-I'll wait a short while to see if there is more feedback and resubmit
-afterwards.
+Let's only support multi-MSI for the time being. If someone comes up
+with a silly old MSI controller that can't deal with it, we'll address
+the issue at that problem.
+
+Thanks,
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
