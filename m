@@ -1,98 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304AbaHAUcF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 16:32:05 -0400
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:36070 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754818AbaHAUcD (ORCPT
+	id S1756256AbaHAUd1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 16:33:27 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:50490 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755979AbaHAUdY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 16:32:03 -0400
-X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Aug 2014 16:32:03 EDT
+	Fri, 1 Aug 2014 16:33:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140801131049.e94e0e6daec0180ac0236f68@linux-foundation.org>
-References: <1406317427-10215-1-git-send-email-jcmvbkbc@gmail.com>
-	<1406317427-10215-2-git-send-email-jcmvbkbc@gmail.com>
-	<20140801131049.e94e0e6daec0180ac0236f68@linux-foundation.org>
-Date: Sat, 2 Aug 2014 00:24:43 +0400
-Message-ID: <CAMo8BfLN0reEuE2u50Dkv4kyVmq0QMPJdQ4mR5RsQRX4HQFkVA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] mm/highmem: make kmap cache coloring aware
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "Linux/MIPS Mailing List" <linux-mips@linux-mips.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
-        Steven Hill <Steven.Hill@imgtec.com>
+In-Reply-To: <1406868897-26874-6-git-send-email-afaerber@suse.de>
+References: <1406868897-26874-1-git-send-email-afaerber@suse.de>
+	<1406868897-26874-6-git-send-email-afaerber@suse.de>
+Date: Fri, 1 Aug 2014 13:33:23 -0700
+X-Google-Sender-Auth: 2j8iuo4QzTxhPDxYe9LupQmV4JM
+Message-ID: <CAD=FV=WhocoyQ=rU7dU1EPM-PAQq06gg9HhamSOm+BgMDeM8NA@mail.gmail.com>
+Subject: Re: [PATCH v5 05/10] ARM: dts: Move dp_hpd from exynos5250 into
+ smdk5250 and snow
+From: Doug Anderson <dianders@chromium.org>
+To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tomasz Figa <t.figa@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        open list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 2, 2014 at 12:10 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Fri, 25 Jul 2014 23:43:46 +0400 Max Filippov <jcmvbkbc@gmail.com> wrote:
+Andreas,
+
+On Thu, Jul 31, 2014 at 9:54 PM, Andreas Färber <afaerber@suse.de> wrote:
+> Spring uses a different GPIO, so this is not a generic SoC piece.
 >
->> VIPT cache with way size larger than MMU page size may suffer from
->> aliasing problem: a single physical address accessed via different
->> virtual addresses may end up in multiple locations in the cache.
->> Virtual mappings of a physical address that always get cached in
->> different cache locations are said to have different colors.
->> L1 caching hardware usually doesn't handle this situation leaving it
->> up to software. Software must avoid this situation as it leads to
->> data corruption.
->>
->> One way to handle this is to flush and invalidate data cache every time
->> page mapping changes color. The other way is to always map physical page
->> at a virtual address with the same color. Low memory pages already have
->> this property. Giving architecture a way to control color of high memory
->> page mapping allows reusing of existing low memory cache alias handling
->> code.
->>
->> Provide hooks that allow architectures with aliasing cache to align
->> mapping address of high pages according to their color. Such architectures
->> may enforce similar coloring of low- and high-memory page mappings and
->> reuse existing cache management functions to support highmem.
->>
->> This code is based on the implementation of similar feature for MIPS by
->> Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>.
->>
+> Suggested-by: Tomasz Figa <t.figa@samsung.com>
+> Signed-off-by: Andreas Färber <afaerber@suse.de>
+> ---
+>  v5: New (Tomasz Figa)
+>  Frees dp_hpd for Spring.
 >
-> It's worth mentioning that xtensa needs this.
+>  arch/arm/boot/dts/exynos5250-pinctrl.dtsi | 7 -------
+>  arch/arm/boot/dts/exynos5250-smdk5250.dts | 9 +++++++++
+>  arch/arm/boot/dts/exynos5250-snow.dts     | 7 +++++++
+>  3 files changed, 16 insertions(+), 7 deletions(-)
 >
-> What is (still) missing from these changelogs is a clear description of
-> the end-user visible effects.  Does it fix some bug?  If so what?  Is
-> it a performace optimisation?  If so how much?  This info is the
-> top-line reason for the patchset and should be presented as such.
-
-Ok, let me try again.
-
->> --- a/mm/highmem.c
->> +++ b/mm/highmem.c
->> @@ -28,6 +28,9 @@
->>  #include <linux/highmem.h>
->>  #include <linux/kgdb.h>
->>  #include <asm/tlbflush.h>
->> +#ifdef CONFIG_HIGHMEM
->> +#include <asm/highmem.h>
->> +#endif
+> diff --git a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
+> index 886cfca044ac..ed0e5230514b 100644
+> --- a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
+> +++ b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
+> @@ -581,13 +581,6 @@
+>                         samsung,pin-pud = <0>;
+>                         samsung,pin-drv = <0>;
+>                 };
+> -
+> -               dp_hpd: dp_hpd {
+> -                       samsung,pins = "gpx0-7";
+> -                       samsung,pin-function = <3>;
+> -                       samsung,pin-pud = <0>;
+> -                       samsung,pin-drv = <0>;
+> -               };
+>         };
 >
-> Should be unneeded - the linux/highmem.h inclusion already did this.
+>         pinctrl@13400000 {
+> diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+> index aaa055ac0fe3..5d30fe1dcda4 100644
+> --- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
+> +++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+> @@ -414,3 +414,12 @@
+>                 };
+>         };
+>  };
+> +
+> +&pinctrl_0 {
+> +       dp_hpd: dp_hpd {
+> +               samsung,pins = "gpx0-7";
+> +               samsung,pin-function = <3>;
+> +               samsung,pin-pud = <0>;
+> +               samsung,pin-drv = <0>;
+> +       };
+> +};
+> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+> index c4b0c73c736d..a9a2f2743794 100644
+> --- a/arch/arm/boot/dts/exynos5250-snow.dts
+> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
+> @@ -547,6 +547,13 @@
+>  };
+>
+>  &pinctrl_0 {
+> +       dp_hpd: dp_hpd {
+> +               samsung,pins = "gpx0-7";
+> +               samsung,pin-function = <3>;
+> +               samsung,pin-pud = <0>;
+> +               samsung,pin-drv = <0>;
+> +       };
+> +
 
-Ok, I'll drop it.
+NAK.  dp_hpd is a generic SoC piece.  Pin function 0 and 1 are GPIOs.
+Pin function 3 is special function.  This pin _is_ the hot plug detect
+pin for display port.  When it's set as special function 3 it goes
+straight into the hot plug logic of the display port controller.
 
-> Apart from that it all looks OK to me.  I'm assuming this is 3.17-rc1
-> material, but I am unsure because of the missing end-user-impact info.
-> If it's needed in earlier kernels then we can tag it for -stable
-> backporting but again, the -stable team (ie: Greg) will want so see the
-> justification for that backport.
+Spring may have had its reasons to detect hot plug events on a GPIO
+instead of using this pin, but that doesn't make this pin any less the
+"hot plug pin".
 
-It's not a fix, for xtensa it's a part of a new feature, so no need
-for backporting.
-
--- 
-Thanks.
--- Max
+-Doug
