@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093AbaHAAw2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 20:52:28 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:36786 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750907AbaHAAw1 (ORCPT
+	id S1752823AbaHAAzt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 20:55:49 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:37404 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752102AbaHAAzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 20:52:27 -0400
-X-IronPort-AV: E=Sophos;i="5.04,239,1406563200"; 
-   d="scan'208";a="34041992"
-Message-ID: <53DAE512.5030302@cn.fujitsu.com>
-Date: Fri, 1 Aug 2014 08:53:38 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Thu, 31 Jul 2014 20:55:47 -0400
+Message-ID: <53DAE592.2030909@codeaurora.org>
+Date: Thu, 31 Jul 2014 17:55:46 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: <paulmck@linux.vnet.ibm.com>
-CC: <linux-kernel@vger.kernel.org>, <mingo@kernel.org>, <dipankar@in.ibm.com>,
-        <akpm@linux-foundation.org>, <mathieu.desnoyers@efficios.com>,
-        <josh@joshtriplett.org>, <tglx@linutronix.de>, <peterz@infradead.org>,
-        <rostedt@goodmis.org>, <dhowells@redhat.com>, <edumazet@google.com>,
-        <dvhart@linux.intel.com>, <fweisbec@gmail.com>, <oleg@redhat.com>,
-        <bobby.prani@gmail.com>
-Subject: Re: [PATCH v2 tip/core/rcu 01/10] rcu: Add call_rcu_tasks()
-References: <20140731003914.GA3872@linux.vnet.ibm.com> <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com> <53D9F084.7000706@cn.fujitsu.com> <20140731160924.GR11241@linux.vnet.ibm.com>
-In-Reply-To: <20140731160924.GR11241@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Prarit Bhargava <prarit@redhat.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
+ to be held for duration of changing governors [v2]
+References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org> <53DAA749.5080506@redhat.com> <53DAA95B.2040505@codeaurora.org> <53DAB038.3050007@redhat.com> <53DABFA6.6090503@codeaurora.org> <53DACA26.1000908@redhat.com>
+In-Reply-To: <53DACA26.1000908@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2014 12:09 AM, Paul E. McKenney wrote:
-
-> 
->>> +		/*
->>> +		 * There were callbacks, so we need to wait for an
->>> +		 * RCU-tasks grace period.  Start off by scanning
->>> +		 * the task list for tasks that are not already
->>> +		 * voluntarily blocked.  Mark these tasks and make
->>> +		 * a list of them in rcu_tasks_holdouts.
->>> +		 */
->>> +		rcu_read_lock();
->>> +		for_each_process_thread(g, t) {
->>> +			if (t != current && ACCESS_ONCE(t->on_rq) &&
->>> +			    !is_idle_task(t)) {
+On 07/31/2014 03:58 PM, Prarit Bhargava wrote:
+>
+>
+> On 07/31/2014 06:13 PM, Saravana Kannan wrote:
+>> On 07/31/2014 02:08 PM, Prarit Bhargava wrote:
+>>>
+>>>
+>>> On 07/31/2014 04:38 PM, Saravana Kannan wrote:
+>>>> On 07/31/2014 01:30 PM, Prarit Bhargava wrote:
+>>>>>
+>>>>>
+>>>>> On 07/31/2014 04:24 PM, Saravana Kannan wrote:
+>>>>>>
+>>>>>> Prarit,
+>>>>>>
+>>>>>> I'm not an expert on sysfs locking, but I would think the specific sysfs lock
+>>>>>> would depend on the file/attribute group. So, can you please try to hotplug a
+>>>>>> core in/out (to trigger the POLICY_EXIT) and then read a sysfs file
+>>>>>> exported by
+>>>>>> the governor? scaling_governor doesn't cut it since that file is not
+>>>>>> removed on
+>>>>>> policy exit event to governor. If it's ondemand, try reading/write it's
+>>>>>> sampling
+>>>>>> rate file.
+>>>>>
+>>>>> Thanks Saravana -- will do.  I will get back to you shortly on this.
+>>>>>
+>>>>
+>>>> Thanks. Btw, in case you weren't already aware of it. You'll have to hoplug out
+>>>> all the CPUs in a cluster to trigger a POLICY_EXIT for that cluster/policy.
+>>>
+>>> Yep -- the affected_cpus file should show all the cpus in the policy IIRC.  One
+>>> of the systems I have has 1 cpu/policy and has 48 threads so the POLICY_EXIT is
+>>> called.
+>>>
+>>> I'll put something like
+>>>
+>>> while [1];
+>>> do
+>>> echo ondemand > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor
+>>> cat /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate
+>>> echo 20000 > /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate
+>>> cat /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate
+>>> echo 0 > /sys/devices/system/cpu/cpu1/online
+>>> sleep 1
+>>> echo 1 > /sys/devices/system/cpu/cpu1/online
+>>> sleep 1
+>>> done
+>>>
 >>
->> What happen when the trampoline is on the idle task?
->>
->> I think we need to use schedule_on_each_cpu() to replace one of
->> the synchronize_sched() in this function. (or other stuff which can
->> cause real schedule for *ALL* online CPUs).
-> 
-> Well, that is one of the questions in the 0/10 cover letter.  If it turns
-> out to be necessary to worry about idle-task trampolines, it should be
-> possible to avoid hammering all idle CPUs in the common case.  Though maybe
-> battery-powered devices won't need RCU-tasks.
-> 
+>> The actual race can only happen with 2 threads. I'm just trying to trigger a
+>> lockdep warning here.
+>
+> I ran the above in two separate terminals with cpuset -c 0 and cpuset -c 1 to
+> multi-thread it all.  No deadlock or LOCKDEP trace after about 1/2 hour, so I
+> think we're in the clear on that concern.
+>
 
-trampolines on NO_HZ idle CPU can be arbitrary long, (example, SMI happens
-inside the trampoline).  So only the real schedule on idle CPU is reliable
-to me.
+I wasn't convinced. So, I took some help from Stephen to test it.
+
+It's been a while, so I didn't remember the original issue clearly when 
+I gave you some test suggestions. Now that I looked at the code more 
+closely, I have a proper way to reproduce the original issue.
+
+Nack for this patch for 2 reasons:
+1. You seem to have accidentally removed a GOV_STOP in your patch. We 
+definitely can't do that. This broke changing governors and that's why 
+your patch didn't cause any issues. Because all your governor echos were 
+failing.
+2. When we fixed that and actually tried a proper test (not the one I 
+gave you), we reproduced the original issue.
+
+To reproduce original issue:
+Preconditions:
+* lockdep is enabled
+* governor per policy is enabled
+
+Steps:
+1. Set governor to ondemand.
+2. Cat one of the ondemand sysfs files.
+3. Change governor to conservative.
+
+When you do that, there's an AB, BA dead lock issue with one thread 
+trying to cat a governor sysfs file and another thread trying to change 
+governors.
+
+-Saravana
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
