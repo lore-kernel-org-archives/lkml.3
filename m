@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaHAAkw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 20:40:52 -0400
-Received: from smtprelay0162.hostedemail.com ([216.40.44.162]:40811 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750907AbaHAAkv (ORCPT
+	id S1752485AbaHAAok (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 20:44:40 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:54187 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081AbaHAAoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 20:40:51 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3865:3867:3870:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:8985:9025:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13069:13311:13357:13972:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rake99_5e8e918372207
-X-Filterd-Recvd-Size: 1421
-Message-ID: <1406853648.9953.14.camel@joe-AO725>
-Subject: Re: [PATCH v2 1/2] printk: Add function to return log buffer
- address and size
-From: Joe Perches <joe@perches.com>
+	Thu, 31 Jul 2014 20:44:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140731150328.d2b57d5f6d7aafa33f5ad979@linux-foundation.org>
+References: <20140718200804.GG13012@htj.dyndns.org>
+	<20140731150328.d2b57d5f6d7aafa33f5ad979@linux-foundation.org>
+Date: Thu, 31 Jul 2014 20:44:38 -0400
+X-Google-Sender-Auth: LD4J_z8SaAPInCZ9tf42FNJ2kck
+Message-ID: <CAOS58YOVv2xcRzwtAUrs7ZobhNLML6ZpLpUEZj+NoqOhR02KCA@mail.gmail.com>
+Subject: Re: [PATCH percpu/for-3.17 1/2] percpu: implement percpu_pool
+From: Tejun Heo <tj@kernel.org>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Thu, 31 Jul 2014 17:40:48 -0700
-In-Reply-To: <20140731152255.37e675870dfdf77d9dbaff70@linux-foundation.org>
-References: <20140731153447.27134.44225.stgit@hegdevasant.in.ibm.com>
-	 <20140731152255.37e675870dfdf77d9dbaff70@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Vivek Goyal <vgoyal@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-31 at 15:22 -0700, Andrew Morton wrote:
+Hello, Andrew.
 
-> Please include this in whatever tree carries "powerpc/powernv:
-> Interface to register/unregister opal dump region".
+On Thu, Jul 31, 2014 at 6:03 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> I don't think we should add facilities such as this.  Because if we do,
+> people will use them and thereby make the kernel less reliable, for
+> obvious reasons.
+>
+> It would be better to leave the nasty hack localized within
+> blk-throttle.c and hope that someone finds a way of fixing it.
 
-At some point, I'd like to redo the patch series
-that breaks up printk.c into more manageable blocks.
+The thing is we need similar facilities in the IO path in other places
+too. They share exactly the same characteristics - opportunistic
+percpu allocations during IO which are expected to fail from time to
+time and they will all implement fallback behavior on allocation
+failures. I'm not sure how this makes the kernel less reliable. This
+conceptually isn't different from atomic allocations which we also use
+in a similar way. If you're worried that people might use this
+assuming that it won't fail, an obvious solution is adding a failure
+injection for debugging, but really except for being a bit ghetto,
+this is just the atomic allocation for percpu areas.
 
-https://lkml.org/lkml/2012/10/17/41
+Thanks.
 
-Any suggestion for timing?
-
+-- 
+tejun
