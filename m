@@ -1,253 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523AbaHAO5G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:57:06 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55593 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaHAO5E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:57:04 -0400
-Date: Fri, 1 Aug 2014 16:56:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 1/3] perf: Do not allow to create kernel events without
- handler
-Message-ID: <20140801145637.GB9918@twins.programming.kicks-ass.net>
-References: <1406896382-18404-1-git-send-email-jolsa@kernel.org>
- <1406896382-18404-2-git-send-email-jolsa@kernel.org>
+	id S1753954AbaHAO6I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 10:58:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2956 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754571AbaHAO6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 10:58:05 -0400
+Message-ID: <53DBA976.8030103@redhat.com>
+Date: Fri, 01 Aug 2014 16:51:34 +0200
+From: Nikolay Aleksandrov <nikolay@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kZ4UZC+XGJOY4cNK"
-Content-Disposition: inline
-In-Reply-To: <1406896382-18404-2-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Thomas Graf <tgraf@suug.ch>, davem@davemloft.net, netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, kaber@trash.net, paulmck@linux.vnet.ibm.com,
+        josh@joshtriplett.org, challa@noironetworks.com, walpole@cs.pdx.edu,
+        dev@openvswitch.org, tklauser@distanz.ch,
+        netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH net-next 2/3] netlink: Convert netlink_lookup() to use
+ RCU protected hash table
+References: <cover.1406891028.git.tgraf@suug.ch> <72a64dfee4f20f2ca596df26f3e4ae543cf4c068.1406891028.git.tgraf@suug.ch>
+In-Reply-To: <72a64dfee4f20f2ca596df26f3e4ae543cf4c068.1406891028.git.tgraf@suug.ch>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/01/2014 01:58 PM, Thomas Graf wrote:
+> Heavy Netlink users such as Open vSwitch spend a considerable amount of
+> time in netlink_lookup() due to the read-lock on nl_table_lock. Use of
+> RCU relieves the lock contention.
+> 
+> Makes use of the new resizable hash table to avoid locking on the
+> lookup.
+> 
+> The hash table will grow if entries exceeds 75% of table size up to a
+> total table size of 64K. It will automatically shrink if usage falls
+> below 50%.
+> 
+> Also splits nl_table_lock into a separate spinlock to protect hash table
+> mutations. This avoids a possible deadlock when the hash table growing
+> waits on RCU readers to complete via synchronize_rcu() while readers
+> holding RCU read lock are waiting on the nl_table_lock() to be released
+> to lock the table for broadcasting.
+> 
+> Before:
+>    9.16%  kpktgend_0  [openvswitch]      [k] masked_flow_lookup
+>    6.42%  kpktgend_0  [pktgen]           [k] mod_cur_headers
+>    6.26%  kpktgend_0  [pktgen]           [k] pktgen_thread_worker
+>    6.23%  kpktgend_0  [kernel.kallsyms]  [k] memset
+>    4.79%  kpktgend_0  [kernel.kallsyms]  [k] netlink_lookup
+>    4.37%  kpktgend_0  [kernel.kallsyms]  [k] memcpy
+>    3.60%  kpktgend_0  [openvswitch]      [k] ovs_flow_extract
+>    2.69%  kpktgend_0  [kernel.kallsyms]  [k] jhash2
+> 
+> After:
+>   15.26%  kpktgend_0  [openvswitch]      [k] masked_flow_lookup
+>    8.12%  kpktgend_0  [pktgen]           [k] pktgen_thread_worker
+>    7.92%  kpktgend_0  [pktgen]           [k] mod_cur_headers
+>    5.11%  kpktgend_0  [kernel.kallsyms]  [k] memset
+>    4.11%  kpktgend_0  [openvswitch]      [k] ovs_flow_extract
+>    4.06%  kpktgend_0  [kernel.kallsyms]  [k] _raw_spin_lock
+>    3.90%  kpktgend_0  [kernel.kallsyms]  [k] jhash2
+>    [...]
+>    0.67%  kpktgend_0  [kernel.kallsyms]  [k] netlink_lookup
+> 
+> Signed-off-by: Thomas Graf <tgraf@suug.ch>
+> ---
 
---kZ4UZC+XGJOY4cNK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hmm, in both the rhashtable_insert() and rhashtable_remove() calls in the
+netlink code you're using GFP_ATOMIC flags but if rhashtable_expand/shring gets
+called even though the allocation will be with GFP_ATOMIC, they still call
+synchronize_rcu() which may block. Now I'm not familiar with the netlink code,
+but I think that in general the flags are useless for GFP_ATOMIC because of the
+calls to synchronize_rcu() in expand/shrink which can block anyway.
+Just a thought, I may be missing something of course.
 
-On Fri, Aug 01, 2014 at 02:33:00PM +0200, Jiri Olsa wrote:
-> Force kernel events to specify the handler, because
-> there's no use for kernel perf event without it.
->=20
-
-I think I found a reason; although there is currently no such user, the
-simple counting events, they don't have overflow handlers at all.
-
-I think I did on once, but never merged that code because it was a quick
-dev hack to create nice changelog numbers etc..
-
-/me goes dig... found it:
-
-
----
- include/linux/perf_event.h |    1=20
- kernel/events/core.c       |   22 +++++++-
- kernel/sched/clock.c       |  118 ++++++++++++++++++++++++++++++++++++++++=
-+++++
- 3 files changed, 138 insertions(+), 3 deletions(-)
-
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -561,6 +561,7 @@ extern void perf_pmu_migrate_context(str
- 				int src_cpu, int dst_cpu);
- extern u64 perf_event_read_value(struct perf_event *event,
- 				 u64 *enabled, u64 *running);
-+extern u64 perf_event_read(struct perf_event *event);
-=20
-=20
- struct perf_sample_data {
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2973,15 +2973,31 @@ static inline u64 perf_event_count(struc
- 	return local64_read(&event->count) + atomic64_read(&event->child_count);
- }
-=20
--static u64 perf_event_read(struct perf_event *event)
-+u64 perf_event_read(struct perf_event *event)
- {
- 	/*
- 	 * If event is enabled and currently active on a CPU, update the
- 	 * value in the event structure:
- 	 */
- 	if (event->state =3D=3D PERF_EVENT_STATE_ACTIVE) {
--		smp_call_function_single(event->oncpu,
--					 __perf_event_read, event, 1);
-+		/*
-+		 * If the event is for the current task, its guaranteed that we
-+		 * never need the cross cpu call, and therefore can allow this
-+		 * to be called with IRQs disabled.
-+		 *
-+		 * Avoids the warning otherwise generated by
-+		 * smp_call_function_single().
-+		 */
-+		if (event->ctx->task =3D=3D current) {
-+			unsigned long flags;
-+
-+			local_irq_save(flags);
-+			__perf_event_read(event);
-+			local_irq_restore(flags);
-+		} else {
-+			smp_call_function_single(event->oncpu,
-+					__perf_event_read, event, 1);
-+		}
- 	} else if (event->state =3D=3D PERF_EVENT_STATE_INACTIVE) {
- 		struct perf_event_context *ctx =3D event->ctx;
- 		unsigned long flags;
---- a/kernel/sched/clock.c
-+++ b/kernel/sched/clock.c
-@@ -387,3 +387,121 @@ u64 local_clock(void)
-=20
- EXPORT_SYMBOL_GPL(cpu_clock);
- EXPORT_SYMBOL_GPL(local_clock);
-+
-+#include <linux/perf_event.h>
-+
-+static char sched_clock_cache[12*1024*1024]; /* 12M l3 cache */
-+static struct perf_event *__sched_clock_cycles;
-+
-+static __init u64 sched_clock_cycles(void)
-+{
-+	return perf_event_read(__sched_clock_cycles);
-+}
-+
-+static __init noinline void sched_clock_wipe_cache(void)
-+{
-+	int i;
-+
-+	for (i =3D 0; i < sizeof(sched_clock_cache); i++)
-+		ACCESS_ONCE(sched_clock_cache[i]) =3D 0;
-+}
-+
-+static __always_inline u64 cache_cold_clock(u64 (*clock)(void))
-+{
-+	u64 cycles;
-+
-+	local_irq_disable();
-+	sched_clock_wipe_cache();
-+	cycles =3D sched_clock_cycles();
-+	(void)clock();
-+	cycles =3D sched_clock_cycles() - cycles;
-+	local_irq_enable();
-+
-+	return cycles;
-+}
-+
-+static __init void do_bench(void)
-+{
-+	u64 cycles;
-+	u64 tmp;
-+	int i;
-+
-+	printk("sched_clock_stable: %d\n", sched_clock_stable);
-+
-+	cycles =3D 0;
-+	for (i =3D 0; i < 1000; i++)
-+		cycles +=3D cache_cold_clock(&sched_clock);
-+
-+	printk("(cold) sched_clock: %lu\n", cycles);
-+
-+	cycles =3D 0;
-+	for (i =3D 0; i < 1000; i++)
-+		cycles +=3D cache_cold_clock(&local_clock);
-+
-+	printk("(cold) local_clock: %lu\n", cycles);
-+
-+	local_irq_disable();
-+	ACCESS_ONCE(tmp) =3D sched_clock();
-+
-+	cycles =3D sched_clock_cycles();
-+
-+	for (i =3D 0; i < 1000; i++)
-+		ACCESS_ONCE(tmp) =3D sched_clock();
-+
-+	cycles =3D sched_clock_cycles() - cycles;
-+	local_irq_enable();
-+
-+	printk("(warm) sched_clock: %lu\n", cycles);
-+
-+	local_irq_disable();
-+	ACCESS_ONCE(tmp) =3D local_clock();
-+
-+	cycles =3D sched_clock_cycles();
-+
-+	for (i =3D 0; i < 1000; i++)
-+		ACCESS_ONCE(tmp) =3D local_clock();
-+
-+	cycles =3D sched_clock_cycles() - cycles;
-+	local_irq_enable();
-+
-+	printk("(warm) local_clock: %lu\n", cycles);
-+
-+	local_irq_disable();
-+	rdtscll(ACCESS_ONCE(tmp));
-+
-+	cycles =3D sched_clock_cycles();
-+
-+	for (i =3D 0; i < 1000; i++)
-+		rdtscll(ACCESS_ONCE(tmp));
-+
-+	cycles =3D sched_clock_cycles() - cycles;
-+	local_irq_enable();
-+
-+	printk("(warm) rdtsc: %lu\n", cycles);
-+}
-+
-+static __init int sched_clock_bench(void)
-+{
-+	struct perf_event_attr perf_attr =3D {
-+		.type =3D PERF_TYPE_HARDWARE,
-+		.config =3D PERF_COUNT_HW_CPU_CYCLES,
-+		.size =3D sizeof(struct perf_event_attr),
-+		.pinned =3D 1,
-+	};
-+
-+	__sched_clock_cycles =3D perf_event_create_kernel_counter(&perf_attr, -1,=
- current, NULL, NULL);
-+
-+	sched_clock_stable =3D 1;
-+	do_bench();
-+
-+	sched_clock_stable =3D 0;
-+	do_bench();
-+
-+	sched_clock_stable =3D 1;
-+
-+	perf_event_release_kernel(__sched_clock_cycles);
-+
-+	return 0;
-+}
-+
-+late_initcall(sched_clock_bench);
-
---kZ4UZC+XGJOY4cNK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT26qlAAoJEHZH4aRLwOS6+v4QAJbxKvYcXVPPp9P+8jszLvlx
-IRY6pP0KmYpOvAP8F89GrxGQWYjWuZVl9+a9RVgqruawR4Z/2WWQRNAr6QstoQ8X
-3jij5BGKxHMQwxrxOaEK8Q9YcIlQFMrI0tmAgJjPs6wh66EqLrWFd9ZE+1UHFUuN
-r2ue1ffFaa0fb/5HOE5x5MbjZnCiD9fGmFZ1yk6BwqjJK6e1bpENNOcvB1ivDiex
-MG5CYCkDrn0pAePe2ggh559ZZeqISEdFvozhmub600Apnr+Hixufd2QrJiCCN554
-RkmsqKWISrQVk+D3lnFFUtAr8VZP9yLhLZ9Qf0RerAtTfkQuuNLtfIvFYD80XO1w
-e1TgAWMit5qGYuuC8uYbiEduHB0FBry75fX7W3UztZaaJrAixp0vMvQYPLJqZw7R
-3JFYOPSxdh7I+6+O6HEQz+goCJe1DCvDoeWlccgIjhTnYiBS8do4Xcjpo0e0tclX
-SVjoABz+XZI32ClW630VyHhnYDdnim78b035bJsJ7nR5MECix0X60/IvyVGnNMdC
-Tuy/Wy0tj8IO9541sgK7c+B4ApH3wiAKvwkO7E8XMzagTmlHaKectafnLcfryKS7
-XeM1aexyiFW2uPAE52J7SJMD3zR7XXFLPgKIuAV5Hi264JRGxWwN1SPElKdgCZri
-PcgBtozGpHrq4Q8ZWozy
-=hDfW
------END PGP SIGNATURE-----
-
---kZ4UZC+XGJOY4cNK--
+Nik
