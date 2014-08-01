@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118AbaHAQLW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 12:11:22 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:37981 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008AbaHAQLT (ORCPT
+	id S1755401AbaHAQML (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 12:12:11 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:38300 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754714AbaHAQMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 12:11:19 -0400
-Date: Fri, 1 Aug 2014 21:41:15 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Kalle Valo <kvalo@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] ath6kl: convert a driver to use module_usb_driver()
-Message-ID: <20140801161115.GA13979@himangi-Dell>
+	Fri, 1 Aug 2014 12:12:09 -0400
+X-Originating-IP: 50.43.15.134
+Date: Fri, 1 Aug 2014 09:11:54 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srihari Vijayaraghavan <linux.bug.reporting@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH] efi-bgrt: Add error handling; inform the user when
+ ignoring the BGRT
+Message-ID: <20140801161154.GA1258@thin>
+References: <20140730192331.GA23730@jtriplet-mobl1>
+ <20140731103110.GC15082@console-pimps.org>
+ <20140731161133.GA12663@cloud>
+ <20140801091949.GD15082@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140801091949.GD15082@console-pimps.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This converts a driver in drivers/net/* to use the
-module_usb_driver() macro which makes the code smaller and a
-bit simpler.
+On Fri, Aug 01, 2014 at 10:19:49AM +0100, Matt Fleming wrote:
+> (Including akpm, the __GFP_NOWARN police)
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/net/wireless/ath/ath6kl/usb.c | 21 +--------------------
- 1 file changed, 1 insertion(+), 20 deletions(-)
+Andrew suggested __GFP_NOWARN here in the first place.
 
-diff --git a/drivers/net/wireless/ath/ath6kl/usb.c b/drivers/net/wireless/ath/ath6kl/usb.c
-index c443258..a6a5e40 100644
---- a/drivers/net/wireless/ath/ath6kl/usb.c
-+++ b/drivers/net/wireless/ath/ath6kl/usb.c
-@@ -1229,26 +1229,7 @@ static struct usb_driver ath6kl_usb_driver = {
- 	.disable_hub_initiated_lpm = 1,
- };
- 
--static int ath6kl_usb_init(void)
--{
--	int ret;
--
--	ret = usb_register(&ath6kl_usb_driver);
--	if (ret) {
--		ath6kl_err("usb registration failed: %d\n", ret);
--		return ret;
--	}
--
--	return 0;
--}
--
--static void ath6kl_usb_exit(void)
--{
--	usb_deregister(&ath6kl_usb_driver);
--}
--
--module_init(ath6kl_usb_init);
--module_exit(ath6kl_usb_exit);
-+module_usb_driver(ath6kl_usb_driver);
- 
- MODULE_AUTHOR("Atheros Communications, Inc.");
- MODULE_DESCRIPTION("Driver support for Atheros AR600x USB devices");
--- 
-1.9.1
+> On Thu, 31 Jul, at 09:11:33AM, Josh Triplett wrote:
+> > 
+> > I started to add an explicit limit, but any reasonable limit (large
+> > enough for modern screens) would be large enough that there's still a
+> > non-trivial possibility of allocation failure.  And I think it makes
+> > sense for BGRT image allocation to be non-fatal and minimally noisy
+> > (just a single-line error, not a scary-looking allocation warning),
+> > considering the highly optional and cosmetic nature of BGRT.  So, I
+> > believe __GFP_NOWARN makes sense.
+> 
+> Yes, I agree that we don't want to trigger the page allocator warning,
+> but I don't agree that passing __GFP_NOWARN is OK, which is why I'm
+> advocating some size limit checks.
+> 
+> We need to distinguish between "Your BGRT image size is huge, and
+> assumed buggy" and "Your BGRT looks valid, but we ran out of memory".
+> 
+> We've already got enough problems with the EFI code because we silently
+> paper over bugs, and using the page allocator's failure path as a way to
+> check for buggy BGRT images just doesn't make any sense to me at all.
+> 
+> If we get the limit wrong, it's not the end of the world, we can change
+> it later, but it's a safe bet that if the firmware engineers start
+> seeing "BGRT is buggy" in the kernel log they're going to start a
+> dialogue with us.
 
+The original bug report was about an allocation failure for a fairly
+reasonable BGRT size.  We can certainly prohibit absurdly huge ones (for
+instance, bigger than the maximum likely screen resolution times 4 bytes
+per pixel), but allocation failures may well occur for smaller sizes,
+and I don't think we want to spew a massive warning for that either.
+
+- Josh Triplett
