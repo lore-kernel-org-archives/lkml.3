@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670AbaHASch (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 14:32:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60090 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851AbaHAScg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 14:32:36 -0400
-Date: Fri, 1 Aug 2014 20:30:42 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH 4/5] x86: entry_64.S: always allocate complete "struct
-	pt_regs"
-Message-ID: <20140801183042.GA10420@redhat.com>
-References: <1406904498-21647-1-git-send-email-dvlasenk@redhat.com> <1406904498-21647-4-git-send-email-dvlasenk@redhat.com>
+	id S1756038AbaHASdA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 14:33:00 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:57864 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755759AbaHASc7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 14:32:59 -0400
+Date: Fri, 1 Aug 2014 11:32:51 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
+ waiting for RCU-tasks
+Message-ID: <20140801183251.GJ4784@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140731215445.GA21933@linux.vnet.ibm.com>
+ <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1406843709-23396-3-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140801150926.GA845@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406904498-21647-4-git-send-email-dvlasenk@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140801150926.GA845@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080118-7164-0000-0000-000003883CCA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01, Denys Vlasenko wrote:
->
-> This patch changes code to always allocate a complete "struct pt_regs".
-> The saving of registers is still done lazily.
+On Fri, Aug 01, 2014 at 05:09:26PM +0200, Oleg Nesterov wrote:
+> On 07/31, Paul E. McKenney wrote:
+> >
+> > +void synchronize_rcu_tasks(void)
+> > +{
+> > +	/* Complain if the scheduler has not started.  */
+> > +	rcu_lockdep_assert(!rcu_scheduler_active,
+> > +			   "synchronize_rcu_tasks called too soon");
+> > +
+> > +	/* Wait for the grace period. */
+> > +	wait_rcu_gp(call_rcu_tasks);
+> > +}
+> 
+> Btw, what about CONFIG_PREEMPT=n ?
+> 
+> I mean, can't synchronize_rcu_tasks() be synchronize_sched() in this
+> case?
 
-I obviously like this change very much. Unfortunately I can only ack the
-intent ;)
+Excellent point, indeed it can!
 
-I really hope that maintainers will take a closer look.
+And if I do it right, it will make CONFIG_TASKS_RCU=y safe for kernel
+tinification.  ;-)
 
-Oleg.
+							Thanx, Paul
 
