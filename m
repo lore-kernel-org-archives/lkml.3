@@ -1,191 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649AbaHAT3y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 15:29:54 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:37335 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754684AbaHAT3w (ORCPT
+	id S1755752AbaHATgL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 15:36:11 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35185 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460AbaHATgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 15:29:52 -0400
+	Fri, 1 Aug 2014 15:36:10 -0400
+Message-ID: <53DBEC27.7050803@codeaurora.org>
+Date: Fri, 01 Aug 2014 12:36:07 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <CAL_Jsq+47YtqWwOkxYDzaEOG-+oouvpXvmGaX+Wh3wQ+BNAx_w@mail.gmail.com>
-References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
- <1405976886-27807-2-git-send-email-computersforpeace@gmail.com>
- <CAL_Jsq+Nbk7m9KXhG+Chdpvurp75RrvhFR2oE_LGxV444GSe9Q@mail.gmail.com>
- <20140731022320.GM3711@ld-irv-0074> <CAL_Jsq+47YtqWwOkxYDzaEOG-+oouvpXvmGaX+Wh3wQ+BNAx_w@mail.gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Fri, 1 Aug 2014 12:29:11 -0700
-Message-ID: <CAGVrzcaEV81BW+a--QgQSHiLb6UQDFsP3cqQxGwV206MRx4gXw@mail.gmail.com>
-Subject: Re: [PATCH v8 01/11] ARM: brcmstb: add infrastructure for ARM-based
- Broadcom STB SoCs
-To: Rob Herring <robherring2@gmail.com>
-Cc: Brian Norris <computersforpeace@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Matt Porter <mporter@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
-        Gregory Fong <gregory.0xf0@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+To: Prarit Bhargava <prarit@redhat.com>
+CC: Saravana Kannan <skannan@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
+ to be held for duration of changing governors [v2]
+References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org> <53DAA749.5080506@redhat.com> <53DAA95B.2040505@codeaurora.org> <53DAB038.3050007@redhat.com> <53DABFA6.6090503@codeaurora.org> <53DACA26.1000908@redhat.com> <53DAE592.2030909@codeaurora.org> <53DB6B81.6050400@redhat.com> <53DBCBE8.6010809@codeaurora.org> <53DBE764.8050109@redhat.com>
+In-Reply-To: <53DBE764.8050109@redhat.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-2014-08-01 7:33 GMT-07:00 Rob Herring <robherring2@gmail.com>:
-> On Wed, Jul 30, 2014 at 9:23 PM, Brian Norris
-> <computersforpeace@gmail.com> wrote:
->> Hi Rob,
->>
->> I appreciate your comments, but where were many of these 5 months ago on
->> the first 7 revisions? :)
+On 08/01/14 12:15, Prarit Bhargava wrote:
 >
-> Sorry, but that is the nature of upstreaming. But given some of the
-> issues, it is obvious the reviews were not sufficient.
->
->> On a practical note: v9 is already queued for 3.17. Should I send
->> patches for the 3.17 cycle (or later) to fixup some of these issues? Or
->> would you recommend pulling the patches out of Matt Porter's tree now,
->> and reintroducing for 3.18? (I would be much happier with the first.)
->
-> Things can always be un-queued. I guess that's Matt's and arm-soc's decision.
-
-Does that mean we should get all those patches un-queued, because that
-specific patch adding SMP support that needs to be reworked, or does
-that mean that if we drop this specific patch we are good with the
-remainder of the patch series?
-
->
->>> > +static const char *brcmstb_match[] __initconst = {
->>> > +       "brcm,bcm7445",
->>> > +       "brcm,brcmstb",
->>> > +       NULL
->>> > +};
->>> > +
->>> > +DT_MACHINE_START(BRCMSTB, "Broadcom STB (Flattened Device Tree)")
->>> > +       .dt_compat      = brcmstb_match,
->>> > +MACHINE_END
+> On 08/01/2014 01:18 PM, Stephen Boyd wrote:
+>> On 08/01/14 03:27, Prarit Bhargava wrote:
+>>> Can you send me the test and the trace of the deadlock?  I'm not creating it with:
 >>>
->>> Do you plan to add more here? Otherwise you don't need this file.
+>> This was with conservative as the default, and switching to ondemand
 >>
->> Probably eventually, but not yet (there's out-of-tree stuff that hasn't
->> been integrated); should we drop the file until it's needed?
+>> # cd /sys/devices/system/cpu/cpu2/cpufreq
+>> # ls
+>> affected_cpus                  scaling_available_governors
+>> conservative                   scaling_cur_freq
+>> cpuinfo_cur_freq               scaling_driver
+>> cpuinfo_max_freq               scaling_governor
+>> cpuinfo_min_freq               scaling_max_freq
+>> cpuinfo_transition_latency     scaling_min_freq
+>> related_cpus                   scaling_setspeed
+>> scaling_available_frequencies  stats
+>> # cat conservative/down_threshold
+>> 20
+>> # echo ondemand > scaling_governor
+> Thanks Stephen,
 >
-> I would say yes if you re-spin the patches.
+> There's obviously a difference in our .configs.  I have a global conservative
+> directory, ie) /sys/devices/system/cpu/cpufreq/conservative instead of a per-cpu
+> governor file.
 >
->>> > +ENTRY(brcmstb_secondary_startup)
->>> > +        /*
->>> > +         * Ensure CPU is in a sane state by disabling all IRQs and switching
->>> > +         * into SVC mode.
->>> > +         */
->>> > +        setmode        PSR_I_BIT | PSR_F_BIT | SVC_MODE, r0
->>> > +
->>> > +        bl      v7_invalidate_l1
->>>
->>> This should be in your boot code. That is part of the documented entry
->>> requirements.
->>
->> By "documented" are you referring to the ARM TRM? Wouldn't any "boot
->> code" requirements only apply to CPU0? Linux prepares the non-boot CPUs
->> for SMP, as you see here.
->>
->>> Also, if you are coming straight from reset, there is
->>> other setup probably missing.
->>
->> Like what?
+> ie) what are your .config options for CPUFREQ?
 >
-> Errata work-arounds, performance bits, etc. I don't recall exactly
-> which ones are per core vs. global. I assume this is an A9, but cores
-> with virt extensions would also need to drop to non-secure mode.
+> Mine are:
+>
+> #
+> # CPU Frequency scaling
+> #
+> CONFIG_CPU_FREQ=y
+> CONFIG_CPU_FREQ_GOV_COMMON=y
+> CONFIG_CPU_FREQ_STAT=m
+> CONFIG_CPU_FREQ_STAT_DETAILS=y
+> # CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE is not set
+> # CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE is not set
+> # CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND is not set
+> CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE=y
+> CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+> CONFIG_CPU_FREQ_GOV_POWERSAVE=y
+> CONFIG_CPU_FREQ_GOV_USERSPACE=y
+> CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+> CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
+>
+> Is there some other config option I have to set?
 
-This is a Brahma B15 CPU, maybe we should have mentioned that again in
-this specific patch. The only ARM erratum we are affected (as of
-today) is 798181, and it requires a one-time initialization.
+I have the same options. The difference is that my driver has a governor
+per policy. That's set with the CPUFREQ_HAVE_GOVERNOR_PER_POLICY flag.
+If I remove that flag I can't trigger the lockdep splat anymore with
+this sequence and your patch.
 
->
-> Also, your entry (and many of the custom entry points) would not work
-> for big endian kernels. You may not care, but there's really no reason
-> why it should not work.
-
-I don't think we want to support big-endian kernels at all, although I
-can't see a good way to enforce that restriction.
-
->
->>> > +       per_cpu(per_cpu_sw_state, cpu) = val;
->>> > +       dmb();
->>> > +       sync_cache_w(SHIFT_PERCPU_PTR(&per_cpu_sw_state, per_cpu_offset(cpu)));
->>> > +       dsb_sev();
->>>
->>> Barriers need to be documented why they are needed.
->>
->> (NB: I see approximately 3 total existing cases where there is a comment
->> near a dsb()/dsb_sev().)
->>
->> This was actually adapted from the mcpm code, and
->
-> Why? Blindly copying other implementations seems to be a common issue here...
->
->> (1) I think the dmb() is in the wrong place (it should be the first
->>     thing in this function);
->> (2) the SEV is unnecessary (we don't use WFE; just a cache-invalidated
->>     polling loop); and
->> (3) the DSB is also unnecessary, since sync_cache_w() handles its own
->>     barriers.
->>
->> Plus, we should probably add some comments to describe what's going on
->> here. (Follow-up patch?)
->
-> I'm not sure you need the state variable at all. You appear to be able
-> to fully control power on and off of the cores, so you should not need
-> any spin loops or synchronization.
->
->>> > +static int brcmstb_cpu_kill(u32 cpu)
->>> > +{
->>> > +       u32 tmp;
->>> > +
->>> > +       pr_info("SMP: Powering down CPU%d...\n", cpu);
->>> > +
->>> > +       while (per_cpu_sw_state_rd(cpu))
->>> > +               ;
->>>
->>> I don't think this is necessary. You don't need to synchronize die and
->>> kill. Look at other implementations that actually power down the core
->>> (vs. just wfi).
->>
->> Hmm, I'm pretty sure the synchronization is required for our B15 core.
->> If we yank the power before the core has properly quiesced, the whole
->> CPU complex will lock up. (Similar story for the power-up while loop you
->> complained about above.)
->
-> That is true for every SMP system which is why it is done in the core
-> code as Russell pointed out.
->
->>> > +static void brcmstb_secondary_init(unsigned int cpu)
->>> > +{
->>> > +       /*
->>> > +        * Synchronise with the boot thread.
->>> > +        */
->>> > +       spin_lock(&boot_lock);
->>> > +       spin_unlock(&boot_lock);
->>>
->>> I suggest you read previous discussions on attempts to make this
->>> common before replying to Russell.
->>
->> Can you point me to this discussion? linux-arm-kernel is a big and noisy
->> world...
->
-> Here's a recent example:
->
-> http://www.spinics.net/lists/arm-kernel/msg318585.html
->
->> BTW, I'm not sure the boot_lock is actually necessary at all for us; it
->> was just borrowed from one of the other mach-*'s. The synchronization we
->> need is done in the while loops above.
->
-> The blindly copying code without knowing what it does problem...
 -- 
-Florian
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
