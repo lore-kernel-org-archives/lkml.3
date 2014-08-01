@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968AbaHAEIc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 00:08:32 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:47621 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703AbaHAEIa (ORCPT
+	id S1752206AbaHAEME (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 00:12:04 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:48713 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745AbaHAEMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 00:08:30 -0400
-From: behanw@converseincode.com
-To: mmarek@suse.cz
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, Behan Webster <behanw@converseincode.com>,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Mark Charlebois <charlebm@gmail.com>, bp@alien8.de
-Subject: [PATCH v3] kbuild, LLVMLinux: Supress warnings unless W=1-3
-Date: Thu, 31 Jul 2014 21:08:25 -0700
-Message-Id: <1406866105-24980-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <53DAAB35.8080206@suse.cz>
-References: <53DAAB35.8080206@suse.cz>
+	Fri, 1 Aug 2014 00:12:02 -0400
+Message-ID: <53DB138F.7070709@converseincode.com>
+Date: Thu, 31 Jul 2014 21:11:59 -0700
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Will Deacon <will.deacon@arm.com>
+CC: "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "k.khlebnikov@samsung.com" <k.khlebnikov@samsung.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "takahiro.akashi@linaro.org" <takahiro.akashi@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Subject: Re: [PATCH 0/4] LLVMLinux: Patches to enable the kernel to be compiled
+ with clang/LLVM
+References: <1406764649-20326-1-git-send-email-behanw@converseincode.com> <20140731103323.GL26853@arm.com>
+In-Reply-To: <20140731103323.GL26853@arm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Behan Webster <behanw@converseincode.com>
+On 07/31/14 03:33, Will Deacon wrote:
+> On Thu, Jul 31, 2014 at 12:57:25AM +0100, behanw@converseincode.com wrote:
+>> From: Behan Webster <behanw@converseincode.com>
+>>
+>> This patch set moves from using locally defined named registers to access the
+>> stack pointer to using a globally defined named register. This allows the code
+>> to work both with gcc and clang.
+>>
+>> The LLVMLinux project aims to fully build the Linux kernel using both gcc and
+>> clang (the C front end for the LLVM compiler infrastructure project).
+>>
+>> Behan Webster (4):
+>>    arm64: LLVMLinux: Add current_stack_pointer() for arm64
+>>    arm64: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
+>>    arm64: LLVMLinux: Calculate current_thread_info from
+>>      current_stack_pointer
+>>    arm64: LLVMLinux: Use current_stack_pointer in kernel/traps.c
+> Once Andreas's comments have been addressed:
+>
+>    Acked-by: Will Deacon <will.deacon@arm.com>
+>
+> Please can you send a new series after the merge window?
+Pity. I was hoping to get it in this merge window.
 
-clang has more warnings enabled by default. Turn them off unless W is set.
-This patch fixes a logic bug where warnings in clang were disabled when W was set.
+However, will resubmit for 3.18.
 
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-Cc: mmarek@suse.cz
-Cc: bp@alien8.de
----
- Makefile                   |  1 +
- scripts/Makefile.extrawarn | 22 ++++++++++++----------
- 2 files changed, 13 insertions(+), 10 deletions(-)
+Thanks,
 
-diff --git a/Makefile b/Makefile
-index f6a7794..f343e17 100644
---- a/Makefile
-+++ b/Makefile
-@@ -668,6 +668,7 @@ KBUILD_CFLAGS += $(call cc-disable-warning, tautological-compare)
- # source of a reference will be _MergedGlobals and not on of the whitelisted names.
- # See modpost pattern 2
- KBUILD_CFLAGS += $(call cc-option, -mno-global-merge,)
-+KBUILD_CFLAGS += $(call cc-option, -fcatch-undefined-behavior)
- else
- 
- # This warning generated too much noise in a regular build.
-diff --git a/scripts/Makefile.extrawarn b/scripts/Makefile.extrawarn
-index 6564350..4315d34 100644
---- a/scripts/Makefile.extrawarn
-+++ b/scripts/Makefile.extrawarn
-@@ -26,16 +26,6 @@ warning-1 += $(call cc-option, -Wmissing-include-dirs)
- warning-1 += $(call cc-option, -Wunused-but-set-variable)
- warning-1 += $(call cc-disable-warning, missing-field-initializers)
- 
--# Clang
--warning-1 += $(call cc-disable-warning, initializer-overrides)
--warning-1 += $(call cc-disable-warning, unused-value)
--warning-1 += $(call cc-disable-warning, format)
--warning-1 += $(call cc-disable-warning, unknown-warning-option)
--warning-1 += $(call cc-disable-warning, sign-compare)
--warning-1 += $(call cc-disable-warning, format-zero-length)
--warning-1 += $(call cc-disable-warning, uninitialized)
--warning-1 += $(call cc-option, -fcatch-undefined-behavior)
--
- warning-2 := -Waggregate-return
- warning-2 += -Wcast-align
- warning-2 += -Wdisabled-optimization
-@@ -64,4 +54,16 @@ ifeq ("$(strip $(warning))","")
- endif
- 
- KBUILD_CFLAGS += $(warning)
-+else
-+
-+ifeq ($(COMPILER),clang)
-+KBUILD_CFLAGS += $(call cc-disable-warning, initializer-overrides)
-+KBUILD_CFLAGS += $(call cc-disable-warning, unused-value)
-+KBUILD_CFLAGS += $(call cc-disable-warning, format)
-+KBUILD_CFLAGS += $(call cc-disable-warning, unknown-warning-option)
-+KBUILD_CFLAGS += $(call cc-disable-warning, sign-compare)
-+KBUILD_CFLAGS += $(call cc-disable-warning, format-zero-length)
-+KBUILD_CFLAGS += $(call cc-disable-warning, uninitialized)
- endif
-+endif
-+
+Behan
+
 -- 
-1.9.1
+Behan Webster
+behanw@converseincode.com
 
