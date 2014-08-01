@@ -1,50 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971AbaHALZe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 07:25:34 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37387 "EHLO comal.ext.ti.com"
+	id S1754734AbaHALcY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 07:32:24 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6844 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754155AbaHALZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 07:25:33 -0400
-Message-ID: <53DB7910.1010808@ti.com>
-Date: Fri, 1 Aug 2014 14:25:04 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751963AbaHALcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 07:32:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,779,1400050800"; 
+   d="scan'208";a="578705293"
+Message-ID: <53DB7AC3.3030207@intel.com>
+Date: Fri, 01 Aug 2014 14:32:19 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>, <arm@kernel.org>
-CC: <tony@atomide.com>, <kishon@ti.com>, <balbi@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [REBASED PATCH] ARM: multi_v7_defconfig: Enable TI PIPE3 PHY driver
-References: <1406540737-9493-1-git-send-email-rogerq@ti.com> <1406625328-26112-1-git-send-email-rogerq@ti.com> <20140730195242.GF18384@quad.lixom.net>
-In-Reply-To: <20140730195242.GF18384@quad.lixom.net>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH] perf script: Fix possible memory leaks
+References: <1406881486-5789-1-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1406881486-5789-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roger Quadros <rogerq@ti.com>
+On 1/08/2014 11:24 a.m., Namhyung Kim wrote:
+> Some paths in perf script don't call perf_session__delete() after
+> creating a new session.
+>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>   tools/perf/builtin-script.c | 31 ++++++++++++++++++-------------
+>   1 file changed, 18 insertions(+), 13 deletions(-)
+>
+> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+> index f57035b89c15..df0f84d7e825 100644
+> --- a/tools/perf/builtin-script.c
+> +++ b/tools/perf/builtin-script.c
+> @@ -1476,7 +1476,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+>   	struct perf_session *session;
+>   	char *script_path = NULL;
+>   	const char **__argv;
+> -	int i, j, err;
+> +	int i, j, err = 0;
+>   	struct perf_script script = {
+>   		.tool = {
+>   			.sample		 = process_sample_event,
+> @@ -1730,14 +1730,15 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+>   	if (header || header_only) {
+>   		perf_session__fprintf_info(session, stdout, show_full_info);
+>   		if (header_only)
+> -			return 0;
+> +			goto out_delete;
+>   	}
+>
+>   	script.session = session;
+>
+>   	if (cpu_list) {
+> -		if (perf_session__cpu_bitmap(session, cpu_list, cpu_bitmap))
+> -			return -1;
+> +		err = perf_session__cpu_bitmap(session, cpu_list, cpu_bitmap);
+> +		if (err < 0)
+> +			goto out_delete;
+>   	}
+>
+>   	if (!no_callchain)
+> @@ -1752,53 +1753,57 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+>   		if (output_set_by_user()) {
+>   			fprintf(stderr,
+>   				"custom fields not supported for generated scripts");
+> -			return -1;
+> +			err = -EINVAL;
+> +			goto out_delete;
+>   		}
+>
+>   		input = open(file.path, O_RDONLY);	/* input_name */
+>   		if (input < 0) {
+>   			perror("failed to open file");
+> -			return -1;
+> +			err = -errno;
+> +			goto out_delete;
+>   		}
+>
+>   		err = fstat(input, &perf_stat);
+>   		if (err < 0) {
+>   			perror("failed to stat file");
+> -			return -1;
+> +			goto out_delete;
+>   		}
+>
+>   		if (!perf_stat.st_size) {
+>   			fprintf(stderr, "zero-sized file, nothing to do!\n");
+> -			return 0;
+> +			goto out_delete;
+>   		}
+>
+>   		scripting_ops = script_spec__lookup(generate_script_lang);
+>   		if (!scripting_ops) {
+>   			fprintf(stderr, "invalid language specifier");
+> -			return -1;
+> +			err = -ENOENT;
+> +			goto out_delete;
+>   		}
+>
+>   		err = scripting_ops->generate_script(session->tevent.pevent,
+>   						     "perf-script");
+> -		goto out;
+> +		goto out_delete;
+>   	}
+>
+>   	if (script_name) {
+>   		err = scripting_ops->start_script(script_name, argc, argv);
+>   		if (err)
+> -			goto out;
+> +			goto out_delete;
+>   		pr_debug("perf script started with script %s\n\n", script_name);
+>   	}
+>
+>
+>   	err = perf_session__check_output_opt(session);
+>   	if (err < 0)
+> -		goto out;
+> +		goto out_delete;
+>
+>   	err = __cmd_script(&script);
+>
+> -	perf_session__delete(session);
+>   	cleanup_scripting();
+> +out_delete:
+> +	perf_session__delete(session);
 
-This driver is needed by SATA, PCIe and USB modules on TI SoCs.
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
----
- arch/arm/configs/multi_v7_defconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 8403b9c..18fb2aa 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -383,6 +383,7 @@ CONFIG_PWM=y
- CONFIG_PWM_TEGRA=y
- CONFIG_PWM_VT8500=y
- CONFIG_OMAP_USB2=y
-+CONFIG_TI_PIPE3=y
- CONFIG_PHY_MIPHY365X=y
- CONFIG_PHY_SUN4I_USB=y
- CONFIG_EXT4_FS=y
--- 
-1.8.3.2
-
+Some of the db-export scripting I do relies on the session
+being deleted before the script is stopped.  I would prefer
+the original order i.e. perf_session__delete() then
+cleanup_scripting()
