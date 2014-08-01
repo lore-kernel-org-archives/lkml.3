@@ -1,170 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755084AbaHAP5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 11:57:18 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50898 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaHAP5O (ORCPT
+	id S1754553AbaHAQEq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 12:04:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53346 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736AbaHAQEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 11:57:14 -0400
-From: Dan Murphy <dmurphy@ti.com>
-To: <alsa-devel@alsa-project.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-sound@vger.kernel.org>,
-        <broonie@kernel.org>, Dan Murphy <dmurphy@ti.com>
-Subject: [PATCH v2] ASoC: tas2552: Add DAPM calls for amp and PLL
-Date: Fri, 1 Aug 2014 10:57:04 -0500
-Message-ID: <1406908624-15290-1-git-send-email-dmurphy@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 1 Aug 2014 12:04:44 -0400
+Date: Fri, 1 Aug 2014 18:04:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Gioh Kim <gioh.kim@lge.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
+        Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH 0/2] new API to allocate buffer-cache for superblock in
+ non-movable area
+Message-ID: <20140801160415.GD9918@twins.programming.kicks-ass.net>
+References: <20140730101143.GB19205@quack.suse.cz>
+ <53D985C0.3070300@lge.com>
+ <20140731000355.GB25362@quack.suse.cz>
+ <53D98FBB.6060700@lge.com>
+ <20140731122114.GA5240@quack.suse.cz>
+ <53DADA2F.1020404@lge.com>
+ <53DAE820.7050508@lge.com>
+ <20140801095700.GB27281@quack.suse.cz>
+ <20140801133618.GJ19379@twins.programming.kicks-ass.net>
+ <20140801152459.GA7525@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qqF1XwZUdAkx0x+N"
+Content-Disposition: inline
+In-Reply-To: <20140801152459.GA7525@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add DAPM calls to enable/disable the Class D amp.
-Also add a DAPM call to turn off the PLL upon
-the stream completing.
 
-Signed-off-by: Dan Murphy <dmurphy@ti.com>
----
+--qqF1XwZUdAkx0x+N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-v2 - Added proper audio routing map for ClassD and PLL enable/disable - https://patchwork.kernel.org/patch/4586831/
+On Fri, Aug 01, 2014 at 05:24:59PM +0200, Jan Kara wrote:
 
- sound/soc/codecs/tas2552.c |   68 +++++++++++++++++++++++++++++++-------------
- 1 file changed, 48 insertions(+), 20 deletions(-)
+>   OK, makes sense. But then if there's heavy IO going on, anything that h=
+as
+> IO pending on it is pinned and IO completion can easily take something
+> close to a second or more. So meeting subsecond deadlines may be tough ev=
+en
+> for ordinary data pages under heavy load, even more so for metadata where
+> there are further constraints. OTOH phones aren't usually IO bound so in
+> practice it needn't be so bad ;).=20
 
-diff --git a/sound/soc/codecs/tas2552.c b/sound/soc/codecs/tas2552.c
-index 23b3296..1ed57a7 100644
---- a/sound/soc/codecs/tas2552.c
-+++ b/sound/soc/codecs/tas2552.c
-@@ -78,6 +78,43 @@ struct tas2552_data {
- 	unsigned int mclk;
- };
- 
-+/* Input mux controls */
-+static const char *tas2552_input_texts[] = {
-+	"Digital", "Analog"
-+};
-+
-+static SOC_ENUM_SINGLE_DECL(tas2552_input_mux_enum, TAS2552_CFG_3, 7,
-+			    tas2552_input_texts);
-+
-+static const struct snd_kcontrol_new tas2552_input_mux_control[] = {
-+	SOC_DAPM_ENUM("Input selection", tas2552_input_mux_enum)
-+};
-+
-+static const struct snd_soc_dapm_widget tas2552_dapm_widgets[] =
-+{
-+	SND_SOC_DAPM_INPUT("IN"),
-+
-+	/* MUX Controls */
-+	SND_SOC_DAPM_MUX("Input selection", SND_SOC_NOPM, 0, 0,
-+				tas2552_input_mux_control),
-+
-+	SND_SOC_DAPM_AIF_IN("DAC IN", "DAC Playback", 0, SND_SOC_NOPM, 0, 0),
-+	SND_SOC_DAPM_DAC("DAC", NULL, SND_SOC_NOPM, 0, 0),
-+	SND_SOC_DAPM_OUT_DRV("ClassD", TAS2552_CFG_2, 7, 0, NULL, 0),
-+	SND_SOC_DAPM_SUPPLY("PLL", TAS2552_CFG_2, 3, 0, NULL, 0),
-+
-+	SND_SOC_DAPM_OUTPUT("OUT")
-+};
-+
-+static const struct snd_soc_dapm_route tas2552_audio_map[] = {
-+	{"DAC", NULL, "DAC IN"},
-+	{"Input selection", "Digital", "DAC"},
-+	{"Input selection", "Analog", "IN"},
-+	{"ClassD", NULL, "Input selection"},
-+	{"OUT", NULL, "ClassD"},
-+	{"ClassD", NULL, "PLL"},
-+};
-+
- static void tas2552_sw_shutdown(struct tas2552_data *tas_data, int sw_shutdown)
- {
- 	u8 cfg1_reg;
-@@ -101,10 +138,6 @@ static int tas2552_hw_params(struct snd_pcm_substream *substream,
- 	int d;
- 	u8 p, j;
- 
--	/* Turn on Class D amplifier */
--	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN_MASK,
--						TAS2552_CLASSD_EN);
--
- 	if (!tas2552->mclk)
- 		return -EINVAL;
- 
-@@ -147,9 +180,6 @@ static int tas2552_hw_params(struct snd_pcm_substream *substream,
- 
- 	}
- 
--	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_PLL_ENABLE,
--						TAS2552_PLL_ENABLE);
--
- 	return 0;
- }
- 
-@@ -269,19 +299,10 @@ static const struct dev_pm_ops tas2552_pm = {
- 			   NULL)
- };
- 
--static void tas2552_shutdown(struct snd_pcm_substream *substream,
--			   struct snd_soc_dai *dai)
--{
--	struct snd_soc_codec *codec = dai->codec;
--
--	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_PLL_ENABLE, 0);
--}
--
- static struct snd_soc_dai_ops tas2552_speaker_dai_ops = {
- 	.hw_params	= tas2552_hw_params,
- 	.set_sysclk	= tas2552_set_dai_sysclk,
- 	.set_fmt	= tas2552_set_dai_fmt,
--	.shutdown	= tas2552_shutdown,
- 	.digital_mute = tas2552_mute,
- };
- 
-@@ -294,7 +315,7 @@ static struct snd_soc_dai_driver tas2552_dai[] = {
- 	{
- 		.name = "tas2552-amplifier",
- 		.playback = {
--			.stream_name = "Speaker",
-+			.stream_name = "Playback",
- 			.channels_min = 2,
- 			.channels_max = 2,
- 			.rates = SNDRV_PCM_RATE_8000_192000,
-@@ -312,6 +333,7 @@ static DECLARE_TLV_DB_SCALE(dac_tlv, -7, 100, 24);
- static const struct snd_kcontrol_new tas2552_snd_controls[] = {
- 	SOC_SINGLE_TLV("Speaker Driver Playback Volume",
- 			 TAS2552_PGA_GAIN, 0, 0x1f, 1, dac_tlv),
-+	SOC_DAPM_SINGLE("Playback AMP", SND_SOC_NOPM, 0, 1, 0),
- };
- 
- static const struct reg_default tas2552_init_regs[] = {
-@@ -321,6 +343,7 @@ static const struct reg_default tas2552_init_regs[] = {
- static int tas2552_codec_probe(struct snd_soc_codec *codec)
- {
- 	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
-+	struct snd_soc_dapm_context *dapm = &codec->dapm;
- 	int ret;
- 
- 	tas2552->codec = codec;
-@@ -362,9 +385,14 @@ static int tas2552_codec_probe(struct snd_soc_codec *codec)
- 		goto patch_fail;
- 	}
- 
--	snd_soc_write(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN |
--				  TAS2552_BOOST_EN | TAS2552_APT_EN |
--				  TAS2552_LIM_EN);
-+	snd_soc_write(codec, TAS2552_CFG_2, TAS2552_BOOST_EN |
-+				  TAS2552_APT_EN | TAS2552_LIM_EN);
-+
-+	snd_soc_dapm_new_controls(dapm, tas2552_dapm_widgets,
-+				ARRAY_SIZE(tas2552_dapm_widgets));
-+	snd_soc_dapm_add_routes(dapm, tas2552_audio_map,
-+				ARRAY_SIZE(tas2552_audio_map));
-+
- 	return 0;
- 
- patch_fail:
--- 
-1.7.9.5
+Yeah, typically phones are not IO bound :-)
 
+> So if it is sub-second unless someone
+> loads the storage, then that sounds doable even for metadata. But we'll
+> need to attach ->migratepage callback to blkdev pages and at least in ext4
+> case teach it how to move pages tracked by the journal.
+
+Right, making it possible at all if of course much prefered over not
+possible, regardless of timeliness :-)
+
+> > Sadly its not only mobile devices that excel in crappy hardware, there's
+> > plenty desktop stuff that could use this too, like some of the v4l
+> > devices iirc.
+>   Yeah, but in such usecases the guarantees we can offer for completion of
+> migration are even more vague :(.
+
+Yeah, lets start by making it possible, after that we can maybe look at
+making it better, who knows.
+
+--qqF1XwZUdAkx0x+N
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT27p/AAoJEHZH4aRLwOS6PNAP/iVWD5KPtksZmG02fnnp7cz1
+mMgKeKBIzYXGVSKIH2uRDnzsAYpTXpV1ZZNTrT55K83pDSEZpHRc3zhAh8UqyWnH
+7TP78reCgATaQdA6mO4hEt7I9UuFg3MCaxNFxAKkh4p6A+l9Dk4RcDJCFwFSWdAo
+S88SnAePEIiLa0W9MCmeq5SesAjXPgKYInUvSEV7xNL+QKVTY9CWIp8WPaTBGZPE
+bwq9P6EOsWUgLL2yz8kvvyNx9vQG1/JbDYDoNLeh+n6P7lFW01rX1HlApnKh2m7L
+UtEv6KA0RBDhefMbx1N0R5mjExAbVLeAWtM86RHYp+ttSKnluoXnmEwbRXx8cjzp
+SiMQzJFxduFhl5Qh2j2YfZzbAloqDVVQhDjn2zwIIq3eQ9XMywBHJpuDrMuj641p
+Mlnb60ZxrUBsIk0igucGPcWlHXu1Yngrw6sUYtoXlVU2WE9E367ZqXk0qcNQO3Ap
+fnqtaFzujt74tKG/UHcqU8iv+kLTTDE67U9oikFL3QzVp6HHG9bkhbzvL3h1bSKy
+y8wHEolW1gvzy56T1za7lfQLlQq+3a+lhsxN8S6hqCSxUVX27yWu8J7/CVsFey/3
+4ZKhg7gvO80zCn/mkou657Eud5KZcBPs5aoPDumhzMNZC2u8VLhfpp6lKIlt5Toq
+T5AdnrNclICuKWukhQjH
+=Pwjj
+-----END PGP SIGNATURE-----
+
+--qqF1XwZUdAkx0x+N--
