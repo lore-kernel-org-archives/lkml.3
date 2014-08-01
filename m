@@ -1,113 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862AbaHAN2N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:28:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52532 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755142AbaHAN2H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 09:28:07 -0400
-Date: Fri, 1 Aug 2014 15:27:54 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ilya Dryomov <ilya.dryomov@inktank.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Ceph Development <ceph-devel@vger.kernel.org>, davidlohr@hp.com,
-        jason.low2@hp.com, axboe@kernel.dk
-Subject: Re: [PATCH] locking/mutexes: Revert "locking/mutexes: Add extra
- reschedule point"
-Message-ID: <20140801132754.GI19379@twins.programming.kicks-ass.net>
-References: <1406801797-20139-1-git-send-email-ilya.dryomov@inktank.com>
- <20140731115759.GS19379@twins.programming.kicks-ass.net>
- <CALFYKtBGQpxaZ0EFXbdvuEHeDeASeU-7XxQ_1a6ZDM=aJS651w@mail.gmail.com>
- <20140731131331.GT19379@twins.programming.kicks-ass.net>
- <1406817052.17194.12.camel@marge.simpson.net>
- <20140731143946.GV19379@twins.programming.kicks-ass.net>
- <CALFYKtBnK4uaq-37O3gWVQLuQZ9Vrs8oNhdvcUWEPqgpge-pdw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="A+T5WEFzCOyLMBDV"
-Content-Disposition: inline
-In-Reply-To: <CALFYKtBnK4uaq-37O3gWVQLuQZ9Vrs8oNhdvcUWEPqgpge-pdw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1755741AbaHAN16 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:27:58 -0400
+Received: from mga14.intel.com ([192.55.52.115]:23515 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755614AbaHAN1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 09:27:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,780,1400050800"; 
+   d="scan'208";a="570461694"
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
+To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
+Subject: [PATCH v9 12/22] Remove get_xip_mem
+Date: Fri,  1 Aug 2014 09:27:28 -0400
+Message-Id: <9be3142e373f4ba38a08f938dcef65aa44603a3c.1406897885.git.willy@linux.intel.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
+References: <cover.1406897885.git.willy@linux.intel.com>
+In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
+References: <cover.1406897885.git.willy@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+All callers of get_xip_mem() are now gone.  Remove checks for it,
+initialisers of it, documentation of it and the only implementation of it.
+Also remove mm/filemap_xip.c as it is now empty.
 
---A+T5WEFzCOyLMBDV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+---
+ Documentation/filesystems/Locking |  3 ---
+ fs/exofs/inode.c                  |  1 -
+ fs/ext2/inode.c                   |  1 -
+ fs/ext2/xip.c                     | 45 ---------------------------------------
+ fs/ext2/xip.h                     |  3 ---
+ fs/open.c                         |  5 +----
+ include/linux/fs.h                |  2 --
+ mm/Makefile                       |  1 -
+ mm/fadvise.c                      |  6 ++++--
+ mm/filemap_xip.c                  | 23 --------------------
+ mm/madvise.c                      |  2 +-
+ 11 files changed, 6 insertions(+), 86 deletions(-)
+ delete mode 100644 mm/filemap_xip.c
 
-On Fri, Aug 01, 2014 at 04:56:27PM +0400, Ilya Dryomov wrote:
-> I'm going to fix up rbd_request_fn(), but I want to make sure
-> I understand this in full.
->=20
-> - Previously the danger of calling blocking primitives on the way to
->   schedule(), i.e. with task->state !=3D TASK_RUNNING, was that if the
->   blocking primitive was indeed to block the task state would be set
->   back to TASK_RUNNING and the schedule() that that task was on the way
->   to wouldn't have any effect.  Your "Add extra reschedule point" patch
->   essentially made calling mutex_lock() and probably others much more
->   wrong that it used to be, because mutex_lock() may now reschedule
->   when the task is not on the mutex wait queue.
+diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+index b18dd17..958cf45 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -197,8 +197,6 @@ prototypes:
+ 	int (*releasepage) (struct page *, int);
+ 	void (*freepage)(struct page *);
+ 	int (*direct_IO)(int, struct kiocb *, struct iov_iter *iter, loff_t offset);
+-	int (*get_xip_mem)(struct address_space *, pgoff_t, int, void **,
+-				unsigned long *);
+ 	int (*migratepage)(struct address_space *, struct page *, struct page *);
+ 	int (*launder_page)(struct page *);
+ 	int (*is_partially_uptodate)(struct page *, unsigned long, unsigned long);
+@@ -223,7 +221,6 @@ invalidatepage:		yes
+ releasepage:		yes
+ freepage:		yes
+ direct_IO:
+-get_xip_mem:					maybe
+ migratepage:		yes (both)
+ launder_page:		yes
+ is_partially_uptodate:	yes
+diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
+index 3f9cafd..c408a53 100644
+--- a/fs/exofs/inode.c
++++ b/fs/exofs/inode.c
+@@ -985,7 +985,6 @@ const struct address_space_operations exofs_aops = {
+ 	.direct_IO	= exofs_direct_IO,
+ 
+ 	/* With these NULL has special meaning or default is not exported */
+-	.get_xip_mem	= NULL,
+ 	.migratepage	= NULL,
+ 	.launder_page	= NULL,
+ 	.is_partially_uptodate = NULL,
+diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+index 5ac0a34..59d6c7d 100644
+--- a/fs/ext2/inode.c
++++ b/fs/ext2/inode.c
+@@ -894,7 +894,6 @@ const struct address_space_operations ext2_aops = {
+ 
+ const struct address_space_operations ext2_aops_xip = {
+ 	.bmap			= ext2_bmap,
+-	.get_xip_mem		= ext2_get_xip_mem,
+ 	.direct_IO		= ext2_direct_IO,
+ };
+ 
+diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
+index 8cfca3a..132d4da 100644
+--- a/fs/ext2/xip.c
++++ b/fs/ext2/xip.c
+@@ -13,35 +13,6 @@
+ #include "ext2.h"
+ #include "xip.h"
+ 
+-static inline long __inode_direct_access(struct inode *inode, sector_t block,
+-				void **kaddr, unsigned long *pfn, long size)
+-{
+-	struct block_device *bdev = inode->i_sb->s_bdev;
+-	sector_t sector = block * (PAGE_SIZE / 512);
+-	return bdev_direct_access(bdev, sector, kaddr, pfn, size);
+-}
+-
+-static inline int
+-__ext2_get_block(struct inode *inode, pgoff_t pgoff, int create,
+-		   sector_t *result)
+-{
+-	struct buffer_head tmp;
+-	int rc;
+-
+-	memset(&tmp, 0, sizeof(struct buffer_head));
+-	tmp.b_size = 1 << inode->i_blkbits;
+-	rc = ext2_get_block(inode, pgoff, &tmp, create);
+-	*result = tmp.b_blocknr;
+-
+-	/* did we get a sparse block (hole in the file)? */
+-	if (!tmp.b_blocknr && !rc) {
+-		BUG_ON(create);
+-		rc = -ENODATA;
+-	}
+-
+-	return rc;
+-}
+-
+ void ext2_xip_verify_sb(struct super_block *sb)
+ {
+ 	struct ext2_sb_info *sbi = EXT2_SB(sb);
+@@ -54,19 +25,3 @@ void ext2_xip_verify_sb(struct super_block *sb)
+ 			     "not supported by bdev");
+ 	}
+ }
+-
+-int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+-				void **kmem, unsigned long *pfn)
+-{
+-	long rc;
+-	sector_t block;
+-
+-	/* first, retrieve the sector number */
+-	rc = __ext2_get_block(mapping->host, pgoff, create, &block);
+-	if (rc)
+-		return rc;
+-
+-	/* retrieve address of the target data */
+-	rc = __inode_direct_access(mapping->host, block, kmem, pfn, PAGE_SIZE);
+-	return (rc < 0) ? rc : 0;
+-}
+diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
+index b2592f2..e7b9f0a 100644
+--- a/fs/ext2/xip.h
++++ b/fs/ext2/xip.h
+@@ -12,10 +12,7 @@ static inline int ext2_use_xip (struct super_block *sb)
+ 	struct ext2_sb_info *sbi = EXT2_SB(sb);
+ 	return (sbi->s_mount_opt & EXT2_MOUNT_XIP);
+ }
+-int ext2_get_xip_mem(struct address_space *, pgoff_t, int,
+-				void **, unsigned long *);
+ #else
+ #define ext2_xip_verify_sb(sb)			do { } while (0)
+ #define ext2_use_xip(sb)			0
+-#define ext2_get_xip_mem			NULL
+ #endif
+diff --git a/fs/open.c b/fs/open.c
+index 36662d0..1a9f0d6 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -656,11 +656,8 @@ int open_check_o_direct(struct file *f)
+ {
+ 	/* NB: we're sure to have correct a_ops only after f_op->open */
+ 	if (f->f_flags & O_DIRECT) {
+-		if (!f->f_mapping->a_ops ||
+-		    ((!f->f_mapping->a_ops->direct_IO) &&
+-		    (!f->f_mapping->a_ops->get_xip_mem))) {
++		if (!f->f_mapping->a_ops || !f->f_mapping->a_ops->direct_IO)
+ 			return -EINVAL;
+-		}
+ 	}
+ 	return 0;
+ }
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 0cdb57b..67edd2c 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -349,8 +349,6 @@ struct address_space_operations {
+ 	int (*releasepage) (struct page *, gfp_t);
+ 	void (*freepage)(struct page *);
+ 	ssize_t (*direct_IO)(int, struct kiocb *, struct iov_iter *iter, loff_t offset);
+-	int (*get_xip_mem)(struct address_space *, pgoff_t, int,
+-						void **, unsigned long *);
+ 	/*
+ 	 * migrate the contents of a page to the specified target. If
+ 	 * migrate_mode is MIGRATE_ASYNC, it must not block.
+diff --git a/mm/Makefile b/mm/Makefile
+index 4064f3e..34d1598 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -47,7 +47,6 @@ obj-$(CONFIG_SLUB) += slub.o
+ obj-$(CONFIG_KMEMCHECK) += kmemcheck.o
+ obj-$(CONFIG_FAILSLAB) += failslab.o
+ obj-$(CONFIG_MEMORY_HOTPLUG) += memory_hotplug.o
+-obj-$(CONFIG_FS_XIP) += filemap_xip.o
+ obj-$(CONFIG_MIGRATION) += migrate.o
+ obj-$(CONFIG_QUICKLIST) += quicklist.o
+ obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += huge_memory.o
+diff --git a/mm/fadvise.c b/mm/fadvise.c
+index 3bcfd81..1f1925f 100644
+--- a/mm/fadvise.c
++++ b/mm/fadvise.c
+@@ -28,6 +28,7 @@
+ SYSCALL_DEFINE4(fadvise64_64, int, fd, loff_t, offset, loff_t, len, int, advice)
+ {
+ 	struct fd f = fdget(fd);
++	struct inode *inode;
+ 	struct address_space *mapping;
+ 	struct backing_dev_info *bdi;
+ 	loff_t endbyte;			/* inclusive */
+@@ -39,7 +40,8 @@ SYSCALL_DEFINE4(fadvise64_64, int, fd, loff_t, offset, loff_t, len, int, advice)
+ 	if (!f.file)
+ 		return -EBADF;
+ 
+-	if (S_ISFIFO(file_inode(f.file)->i_mode)) {
++	inode = file_inode(f.file);
++	if (S_ISFIFO(inode->i_mode)) {
+ 		ret = -ESPIPE;
+ 		goto out;
+ 	}
+@@ -50,7 +52,7 @@ SYSCALL_DEFINE4(fadvise64_64, int, fd, loff_t, offset, loff_t, len, int, advice)
+ 		goto out;
+ 	}
+ 
+-	if (mapping->a_ops->get_xip_mem) {
++	if (IS_DAX(inode)) {
+ 		switch (advice) {
+ 		case POSIX_FADV_NORMAL:
+ 		case POSIX_FADV_RANDOM:
+diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
+deleted file mode 100644
+index 6316578..0000000
+--- a/mm/filemap_xip.c
++++ /dev/null
+@@ -1,23 +0,0 @@
+-/*
+- *	linux/mm/filemap_xip.c
+- *
+- * Copyright (C) 2005 IBM Corporation
+- * Author: Carsten Otte <cotte@de.ibm.com>
+- *
+- * derived from linux/mm/filemap.c - Copyright (C) Linus Torvalds
+- *
+- */
+-
+-#include <linux/fs.h>
+-#include <linux/pagemap.h>
+-#include <linux/export.h>
+-#include <linux/uio.h>
+-#include <linux/rmap.h>
+-#include <linux/mmu_notifier.h>
+-#include <linux/sched.h>
+-#include <linux/seqlock.h>
+-#include <linux/mutex.h>
+-#include <linux/gfp.h>
+-#include <asm/tlbflush.h>
+-#include <asm/io.h>
+-
+diff --git a/mm/madvise.c b/mm/madvise.c
+index a402f8f..dee5dff 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -236,7 +236,7 @@ static long madvise_willneed(struct vm_area_struct *vma,
+ 	if (!file)
+ 		return -EBADF;
+ 
+-	if (file->f_mapping->a_ops->get_xip_mem) {
++	if (IS_DAX(file_inode(file))) {
+ 		/* no bad return value, but ignore advice */
+ 		return 0;
+ 	}
+-- 
+2.0.1
 
-Right and in general we cannot allow spurious wakeups (although we try
-very hard to deal with them in generic code, which is why things more or
-less worked).
-
-But if you do a patch that 'randomly' ignores ->state on schedule (I did
-one) stuff comes apart _real_ quick.
-
-Therefore you should very much not destroy ->state on the way to
-schedule.
-
-> - There is nothing wrong with releasing queue_lock and reenabling IRQs
->   in rbd_request_fn() as long as it doesn't block and I remember to
->   disable IRQs and take queue_lock back on return.
-
-Releasing queue_lock might be ok, dunno about the blk locking, however
-reenabling IRQs it is actually wrong as per blk_flush_plug_list() since
-that uses local_irq_save()/restore() which means it can be called from
-contexts which cannot deal with enabling IRQs, and then your
-->request_fn() goes and does that.
-
-Now maybe blk_flush_plug_list() is overly paranoid and it could use
-local_irq_disable()/enable() instead, I don't know. But until it does, a
-request_fn() should never reenable IRQs.
-
-> I'm asking because rbd_request_fn() is probably not the only broken in
-> this way code path.  I poked around and found read_events() in aio.c,
-> it seems to have been written with the "danger" assumption that
-> I outlined above and there is even a comment to it.
-
-I'm fairly sure there's more broken stuff, I didn't dare looking.
-
-> Does that above make sense or am I missing something?
-
-I think that's about it.
-
---A+T5WEFzCOyLMBDV
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT25XVAAoJEHZH4aRLwOS61KMQAIo3FviIJ4d185zcr9AsjjnR
-oMmIWdR58eQ+s1wNHdP7hkKDojR86iymfhTCJ+nQGkxKCgKQWcxZPcU+ZemM0hE0
-gn22sFVwrb42UK3Mxf3C3Jws7igyp3EuwAIM5e8mImnxAKAcJe879Cdo/OignvyT
-lMySPr2ZGcMsSHbXSJ1MF/5sPZjq9SYM0go1NVu4ekMoyvB/AnlRkfJQxQ+ZytLT
-tzBRNQ3uJTMuGGwVdUgddQlQdr/YxzfoffJwsSO8eKpQohX/xC4mL+d0fQ6nMTj/
-EYZmZFOjrKsOmqoNiuTOZFqvkG9XGKvXV8PUmPZ7skGsy+J1jSZHZOBNU1adVU0h
-5RkMLu26FyCKVQyoqNh4QFk53V4ESGC4GxMl79ze4w1aAgFx4KnRTMeQMaKtF38u
-tWXmgV+Xlb8DOX97IPZLPCVwAtSa1ZuOoffAyw6KvtnqiyGRxXSY0gTokCyM44RV
-3aohRTFKXWpjMr6/Cta52vhqC5d8ToCvj17IEvLxgK9OaHMibBm3B7iL1zP3ud8r
-hSYzQJ/DWGmQyERaNkU6bCkYofeSFa+igvYNyownyKj77x7KALepatDtalzl11g4
-N08ugyt0pJYkd3Vbj2xF5iipzQaAvoNhLdEHv4IThqKZBt1XErmwsXGxzPBysmBO
-s2xWBTFa05gcNke016QL
-=/6at
------END PGP SIGNATURE-----
-
---A+T5WEFzCOyLMBDV--
