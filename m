@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657AbaHARyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 13:54:15 -0400
-Received: from mblankhorst.nl ([141.105.120.124]:56647 "EHLO mblankhorst.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751858AbaHARyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 13:54:14 -0400
-X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Aug 2014 13:54:14 EDT
-Message-ID: <53DBD269.80807@canonical.com>
-Date: Fri, 01 Aug 2014 19:46:17 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755706AbaHARzn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 13:55:43 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:37297 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaHARzm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 13:55:42 -0400
+Date: Fri, 1 Aug 2014 19:55:28 +0200
+From: Fabio Falzoi <fabio.falzoi84@gmail.com>
+To: micky <micky_ching@realsil.com.cn>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, joe@perches.com,
+        dan.carpenter@oracle.com, wei_wang@realsil.com.cn
+Subject: Re: [PATCH v5 3/4] Staging: rts5208: Use dev_dbg and %*ph
+ specifierto dump memory
+Message-ID: <20140801175526.GA19125@PippoloLaptop>
+References: <1406672155-13187-1-git-send-email-fabio.falzoi84@gmail.com>
+ <1406672155-13187-4-git-send-email-fabio.falzoi84@gmail.com>
+ <53D84FE3.9040709@realsil.com.cn>
 MIME-Version: 1.0
-To: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>,
-        airlied@linux.ie
-CC: thellstrom@vmware.com, nouveau@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        bskeggs@redhat.com, alexander.deucher@amd.com
-Subject: Re: [PATCH 09/19] drm/radeon: handle lockup in delayed work, v2
-References: <20140731153245.15061.63023.stgit@patser> <20140731153342.15061.54264.stgit@patser> <53DBC1EC.1010001@amd.com>
-In-Reply-To: <53DBC1EC.1010001@amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53D84FE3.9040709@realsil.com.cn>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 01-08-14 18:35, Christian König wrote:
-> Am 31.07.2014 um 17:33 schrieb Maarten Lankhorst:
->> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->> ---
->> V1 had a nasty bug breaking gpu lockup recovery. The fix is not
->> allowing radeon_fence_driver_check_lockup to take exclusive_lock,
->> and kill it during lockup recovery instead.
+On Wed, Jul 30, 2014 at 09:52:35AM +0800, micky wrote:
+> Documentation/printk-formats.txt
 > 
-> That looks like the delayed work starts running as soon as we submit a fence, and not when it's needed for waiting.
+> Raw buffer as a hex string:
+> 	%*ph	00 01 02  ...  3f
+> 	%*phC	00:01:02: ... :3f
+> 	%*phD	00-01-02- ... -3f
+> 	%*phN	000102 ... 3f
 > 
-> Since it's a backup for failing IRQs I would rather put it into radeon_irq_kms.c and start/stop it when the IRQs are started/stoped.
+> 	For printing a small buffers (up to 64 bytes long) as a hex string with
+> 	certain separator. For the larger buffers consider to use
+> 	print_hex_dump().
+> 
+> 
+> Since we can't make sure the cnt value, it is not good use "%*ph",
+> because it must make cnt <= 64.
 
-The delayed work is not just for failing irq's, it's also the handler that's used to detect lockups, which is why I trigger after processing fences, and reset the timer after processing.
+> dw_len * 4  <= 64 ?
 
-Specifically what happened was this scenario:
+Hi Micky,
 
-- lock up occurs
-- write lock taken by gpu_reset
-- delayed work runs, tries to acquire read lock, blocks
-- gpu_reset tries to cancel delayed work synchronously
-- has to wait for delayed work to finish -> deadlock
+I think that in these two cases we can rely on print_hex_dump_bytes that
+doesn't have the dev_dbg limit on buffer size.
+Let me know what you think about it. If you agree, I can send a new version 
+for patches 3/4 and 4/4, since the first two have already been merged in the
+linux-next tree by Greg.
 
-~Maarten
+Regards,
+Fabio
