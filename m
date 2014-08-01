@@ -1,111 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458AbaHAN1J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:27:09 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:58864 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750716AbaHAN1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 09:27:07 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: Re: [PATCH 1/3] irq / PM: New driver interface for wakeup interruptsn
-Date: Fri, 01 Aug 2014 15:45:41 +0200
-Message-ID: <19816559.O6O5RjzKM1@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.10.1408010217090.4997@nanos>
-References: <20140724212620.GO3935@laptop> <1624300.2IhdzCt5pu@vostro.rjw.lan> <alpine.DEB.2.10.1408010217090.4997@nanos>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755786AbaHAN2B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:28:01 -0400
+Received: from mga03.intel.com ([143.182.124.21]:54888 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755737AbaHAN17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 09:27:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,780,1400050800"; 
+   d="scan'208";a="463980735"
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
+To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Cc: Matthew Wilcox <willy@linux.intel.com>
+Subject: [PATCH v9 11/22] Replace XIP documentation with DAX documentation
+Date: Fri,  1 Aug 2014 09:27:27 -0400
+Message-Id: <e887fc06ba6a044aa7e0158d87d272e6969776e2.1406897885.git.willy@linux.intel.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
+References: <cover.1406897885.git.willy@linux.intel.com>
+In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
+References: <cover.1406897885.git.willy@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 01, 2014 11:40:55 AM Thomas Gleixner wrote:
-> On Fri, 1 Aug 2014, Rafael J. Wysocki wrote:
-> > On Friday, August 01, 2014 12:16:23 AM Thomas Gleixner wrote:
+From: Matthew Wilcox <willy@linux.intel.com>
 
-[cut]
+Based on the original XIP documentation, this documents the current
+state of affairs, and includes instructions on how users can enable DAX
+if their devices and kernel support it.
 
-> > > > And now there's one more piece of it which is suspend-to-idle (aka "freeze").
-> > > > That doesn't go all the way to syscore_suspend(), but basically stops after
-> > > > finishing the "noirq" phase of suspending devices.  Then, it idles the CPUs
-> > > > and waits for interrupts that will take them out of idle.  Only some of those
-> > > > interrupts are wakeup events, so it only resumes when __pm_wakeup_event() or
-> > > > __pm_relax() is called in the process of handling the interrupts.
-> > > >
-> > > > Of course, it could be implemented differently, but that was the simplest
-> > > > way to do that.  It still can be changed, but I'd really like it not to have
-> > > > to go through all of the disabling nonboot CPUs and sysfore_suspend(), because
-> > > > that simply isn't necessary (and it avoids a metric ton of problems with CPU
-> > > > offline/online).  And of course, it has to work on x86 too.
-> > > 
-> > > Right. So one thing which would make the situation more clear is that
-> > > the interrupt handler needs to tell the core code about this by
-> > > returning something like IRQ_HANDLED_PMWAKE and the core kicks the
-> > > suspend-to-idle logic back to life. I'm not sure whether the extra
-> > > return value is actually necessary, we might even map it to
-> > > IRQ_HANDLED in the core as we know that we are in the suspend
-> > > state.
-> > 
-> > I'm not sure I'm following you here.  Do you mean that upon receiving
-> > IRQ_HANDLED_PMWAKE from an interrupt handler the core will know that
-> > this was a wakeup event and will trigger a resume from suspend-to-idle?
-> 
-> Correct. Whether we need the extra return code is debatable. But yes,
-> we want to talk to the PM/suspend/resume thing at core level instead
-> of letting drivers use random interfaces which happen to be exported
-> for one reason or the other, but definitely not for the purpose of
-> random driver.
+Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
+Reviewed-by: Randy Dunlap <rdunlap@infradead.org>
+---
+ Documentation/filesystems/dax.txt | 89 +++++++++++++++++++++++++++++++++++++++
+ Documentation/filesystems/xip.txt | 71 -------------------------------
+ 2 files changed, 89 insertions(+), 71 deletions(-)
+ create mode 100644 Documentation/filesystems/dax.txt
+ delete mode 100644 Documentation/filesystems/xip.txt
 
-OK, I guess "IRQ_HANDLED from a wakeup interrupt" may be interpreted as
-IRQ_HANDLED_PMWAKE.  On the other hand, if that's going to be handled in
-handle_irq_event_percpu(), then using a special return code would save us
-a brach for IRQ_HANDLED interrupts.  We could convert it to IRQ_HANDLED
-immediately then.
-
-[cut]
-
-> > I'm not sure about the ordering, though.  It would be good to have a working
-> > replacement for the IRQF_NO_SUSPEND things that we'll be removing in 1, for
-> > example.  So since we need to do 3) IRQF_SHARED for both IRQF_NO_SUSPEND and
-> > wakeup, as you said, would it be practical to start with that one?
-> 
-> The numbering was not meant as ordering, it was just to seperate the
-> various issues which we need to look at.
-
-OK, I'll take a stab at the IRQF_SHARED thing if you don't mind.
-
-Here's my current understanding of what can be done for IRQF_NO_SUSPEND.
-
-In suspend_device_irqs():
-
-(1) If all actions in the list have the same setting (eg. IRQF_NO_SUSPEND unset),
-    keep the current behavior.
-(2) If the actions have different settings:
-    - Actions with IRQF_NO_SUSPEND set are not modified.
-    - Actions with IRQF_NO_SUSPEND unset are switched over to a stub handler.
-    - IRQS_SUSPEND_MODE (new flag) is set for the IRQ.
-
-In note_interrupt():
-
-  If action_ret is IRQ_NONE and IRQS_SUSPEND_MODE is set for the IRQ, disable the
-  IRQ, set IRQS_SUSPENDED for it and call system_wakeup(BAD_INTERRUPT) (that will
-  abort suspend if still in progress or break the suspend-to-idle loop).
-
-In resume_device_irqs():
-
-(1) If IRQS_SUSPEND_MODE is set, switch over actions with IRQF_NO_SUSPEND unset
-    to their original handlers and clear the flag.  Fall through.
-(2) If IRQS_SUSPENDED is set, clear the flag and enable the interrupt.
-
-The stub handler only needs to return IRQ_NONE unconditionally in that case.
-
-Does that make sense?
-
-Rafael
+diff --git a/Documentation/filesystems/dax.txt b/Documentation/filesystems/dax.txt
+new file mode 100644
+index 0000000..6441766
+--- /dev/null
++++ b/Documentation/filesystems/dax.txt
+@@ -0,0 +1,89 @@
++Direct Access for files
++-----------------------
++
++Motivation
++----------
++
++The page cache is usually used to buffer reads and writes to files.
++It is also used to provide the pages which are mapped into userspace
++by a call to mmap.
++
++For block devices that are memory-like, the page cache pages would be
++unnecessary copies of the original storage.  The DAX code removes the
++extra copy by performing reads and writes directly to the storage device.
++For file mappings, the storage device is mapped directly into userspace.
++
++
++Usage
++-----
++
++If you have a block device which supports DAX, you can make a filesystem
++on it as usual.  When mounting it, use the -o dax option manually
++or add 'dax' to the options in /etc/fstab.
++
++
++Implementation Tips for Block Driver Writers
++--------------------------------------------
++
++To support DAX in your block driver, implement the 'direct_access'
++block device operation.  It is used to translate the sector number
++(expressed in units of 512-byte sectors) to a page frame number (pfn)
++that identifies the physical page for the memory.  It also returns a
++kernel virtual address that can be used to access the memory.
++
++The direct_access method takes a 'size' parameter that indicates the
++number of bytes being requested.  The function should return the number
++of bytes that it can provide, although it must not exceed the number of
++bytes requested.  It may also return a negative errno if an error occurs.
++
++In order to support this method, the storage must be byte-accessible by
++the CPU at all times.  If your device uses paging techniques to expose
++a large amount of memory through a smaller window, then you cannot
++implement direct_access.  Equally, if your device can occasionally
++stall the CPU for an extended period, you should also not attempt to
++implement direct_access.
++
++These block devices may be used for inspiration:
++- axonram: Axon DDR2 device driver
++- brd: RAM backed block device driver
++- dcssblk: s390 dcss block device driver
++
++
++Implementation Tips for Filesystem Writers
++------------------------------------------
++
++Filesystem support consists of
++- adding support to mark inodes as being DAX by setting the S_DAX flag in
++  i_flags
++- implementing the direct_IO address space operation, and calling
++  dax_do_io() instead of blockdev_direct_IO() if S_DAX is set
++- implementing an mmap file operation for DAX files which sets the
++  VM_MIXEDMAP flag on the VMA, and setting the vm_ops to include handlers
++  for fault and page_mkwrite (which should probably call dax_fault() and
++  dax_mkwrite(), passing the appropriate get_block() callback)
++- calling dax_truncate_page() instead of block_truncate_page() for DAX files
++- ensuring that there is sufficient locking between reads, writes,
++  truncates and page faults
++
++The get_block() callback passed to the DAX functions may return
++uninitialised extents.  If it does, it must ensure that simultaneous
++calls to get_block() (for example by a page-fault racing with a read()
++or a write()) work correctly.
++
++These filesystems may be used for inspiration:
++- ext2: the second extended filesystem, see Documentation/filesystems/ext2.txt
++
++
++Shortcomings
++------------
++
++Even if the kernel or its modules are stored on a filesystem that supports
++DAX on a block device that supports DAX, they will still be copied into RAM.
++
++Calling get_user_pages() on a range of user memory that has been mmaped
++from a DAX file will fail as there are no 'struct page' to describe
++those pages.  This problem is being worked on.  That means that O_DIRECT
++reads/writes to those memory ranges from a non-DAX file will fail (note
++that O_DIRECT reads/writes _of a DAX file_ do work, it is the memory
++that is being accessed that is key here).  Other things that will not
++work include RDMA, sendfile() and splice().
+diff --git a/Documentation/filesystems/xip.txt b/Documentation/filesystems/xip.txt
+deleted file mode 100644
+index b62eabf..0000000
+--- a/Documentation/filesystems/xip.txt
++++ /dev/null
+@@ -1,71 +0,0 @@
+-Execute-in-place for file mappings
+-----------------------------------
+-
+-Motivation
+-----------
+-File mappings are performed by mapping page cache pages to userspace. In
+-addition, read&write type file operations also transfer data from/to the page
+-cache.
+-
+-For memory backed storage devices that use the block device interface, the page
+-cache pages are in fact copies of the original storage. Various approaches
+-exist to work around the need for an extra copy. The ramdisk driver for example
+-does read the data into the page cache, keeps a reference, and discards the
+-original data behind later on.
+-
+-Execute-in-place solves this issue the other way around: instead of keeping
+-data in the page cache, the need to have a page cache copy is eliminated
+-completely. With execute-in-place, read&write type operations are performed
+-directly from/to the memory backed storage device. For file mappings, the
+-storage device itself is mapped directly into userspace.
+-
+-This implementation was initially written for shared memory segments between
+-different virtual machines on s390 hardware to allow multiple machines to
+-share the same binaries and libraries.
+-
+-Implementation
+---------------
+-Execute-in-place is implemented in three steps: block device operation,
+-address space operation, and file operations.
+-
+-A block device operation named direct_access is used to translate the
+-block device sector number to a page frame number (pfn) that identifies
+-the physical page for the memory.  It also returns a kernel virtual
+-address that can be used to access the memory.
+-
+-The direct_access method takes a 'size' parameter that indicates the
+-number of bytes being requested.  The function should return the number
+-of bytes that it can provide, although it must not exceed the number of
+-bytes requested.  It may also return a negative errno if an error occurs.
+-
+-The block device operation is optional, these block devices support it as of
+-today:
+-- dcssblk: s390 dcss block device driver
+-
+-An address space operation named get_xip_mem is used to retrieve references
+-to a page frame number and a kernel address. To obtain these values a reference
+-to an address_space is provided. This function assigns values to the kmem and
+-pfn parameters. The third argument indicates whether the function should allocate
+-blocks if needed.
+-
+-This address space operation is mutually exclusive with readpage&writepage that
+-do page cache read/write operations.
+-The following filesystems support it as of today:
+-- ext2: the second extended filesystem, see Documentation/filesystems/ext2.txt
+-
+-A set of file operations that do utilize get_xip_page can be found in
+-mm/filemap_xip.c . The following file operation implementations are provided:
+-- aio_read/aio_write
+-- readv/writev
+-- sendfile
+-
+-The generic file operations do_sync_read/do_sync_write can be used to implement
+-classic synchronous IO calls.
+-
+-Shortcomings
+-------------
+-This implementation is limited to storage devices that are cpu addressable at
+-all times (no highmem or such). It works well on rom/ram, but enhancements are
+-needed to make it work with flash in read+write mode.
+-Putting the Linux kernel and/or its modules on a xip filesystem does not mean
+-they are not copied.
+-- 
+2.0.1
 
