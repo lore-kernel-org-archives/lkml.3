@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485AbaHAAok (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 20:44:40 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:54187 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081AbaHAAoj (ORCPT
+	id S1752093AbaHAAw2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 20:52:28 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:36786 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750907AbaHAAw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 20:44:39 -0400
+	Thu, 31 Jul 2014 20:52:27 -0400
+X-IronPort-AV: E=Sophos;i="5.04,239,1406563200"; 
+   d="scan'208";a="34041992"
+Message-ID: <53DAE512.5030302@cn.fujitsu.com>
+Date: Fri, 1 Aug 2014 08:53:38 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <20140731150328.d2b57d5f6d7aafa33f5ad979@linux-foundation.org>
-References: <20140718200804.GG13012@htj.dyndns.org>
-	<20140731150328.d2b57d5f6d7aafa33f5ad979@linux-foundation.org>
-Date: Thu, 31 Jul 2014 20:44:38 -0400
-X-Google-Sender-Auth: LD4J_z8SaAPInCZ9tf42FNJ2kck
-Message-ID: <CAOS58YOVv2xcRzwtAUrs7ZobhNLML6ZpLpUEZj+NoqOhR02KCA@mail.gmail.com>
-Subject: Re: [PATCH percpu/for-3.17 1/2] percpu: implement percpu_pool
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Vivek Goyal <vgoyal@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: <paulmck@linux.vnet.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, <mingo@kernel.org>, <dipankar@in.ibm.com>,
+        <akpm@linux-foundation.org>, <mathieu.desnoyers@efficios.com>,
+        <josh@joshtriplett.org>, <tglx@linutronix.de>, <peterz@infradead.org>,
+        <rostedt@goodmis.org>, <dhowells@redhat.com>, <edumazet@google.com>,
+        <dvhart@linux.intel.com>, <fweisbec@gmail.com>, <oleg@redhat.com>,
+        <bobby.prani@gmail.com>
+Subject: Re: [PATCH v2 tip/core/rcu 01/10] rcu: Add call_rcu_tasks()
+References: <20140731003914.GA3872@linux.vnet.ibm.com> <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com> <53D9F084.7000706@cn.fujitsu.com> <20140731160924.GR11241@linux.vnet.ibm.com>
+In-Reply-To: <20140731160924.GR11241@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrew.
+On 08/01/2014 12:09 AM, Paul E. McKenney wrote:
 
-On Thu, Jul 31, 2014 at 6:03 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> I don't think we should add facilities such as this.  Because if we do,
-> people will use them and thereby make the kernel less reliable, for
-> obvious reasons.
->
-> It would be better to leave the nasty hack localized within
-> blk-throttle.c and hope that someone finds a way of fixing it.
+> 
+>>> +		/*
+>>> +		 * There were callbacks, so we need to wait for an
+>>> +		 * RCU-tasks grace period.  Start off by scanning
+>>> +		 * the task list for tasks that are not already
+>>> +		 * voluntarily blocked.  Mark these tasks and make
+>>> +		 * a list of them in rcu_tasks_holdouts.
+>>> +		 */
+>>> +		rcu_read_lock();
+>>> +		for_each_process_thread(g, t) {
+>>> +			if (t != current && ACCESS_ONCE(t->on_rq) &&
+>>> +			    !is_idle_task(t)) {
+>>
+>> What happen when the trampoline is on the idle task?
+>>
+>> I think we need to use schedule_on_each_cpu() to replace one of
+>> the synchronize_sched() in this function. (or other stuff which can
+>> cause real schedule for *ALL* online CPUs).
+> 
+> Well, that is one of the questions in the 0/10 cover letter.  If it turns
+> out to be necessary to worry about idle-task trampolines, it should be
+> possible to avoid hammering all idle CPUs in the common case.  Though maybe
+> battery-powered devices won't need RCU-tasks.
+> 
 
-The thing is we need similar facilities in the IO path in other places
-too. They share exactly the same characteristics - opportunistic
-percpu allocations during IO which are expected to fail from time to
-time and they will all implement fallback behavior on allocation
-failures. I'm not sure how this makes the kernel less reliable. This
-conceptually isn't different from atomic allocations which we also use
-in a similar way. If you're worried that people might use this
-assuming that it won't fail, an obvious solution is adding a failure
-injection for debugging, but really except for being a bit ghetto,
-this is just the atomic allocation for percpu areas.
-
-Thanks.
-
--- 
-tejun
+trampolines on NO_HZ idle CPU can be arbitrary long, (example, SMI happens
+inside the trampoline).  So only the real schedule on idle CPU is reliable
+to me.
