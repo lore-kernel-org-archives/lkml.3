@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349AbaHAPwO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 11:52:14 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:40277 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaHAPwN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 11:52:13 -0400
-Date: Fri, 1 Aug 2014 08:52:08 -0700
-From: Matt Wilson <msw@linux.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Matt Rushton <mvrushton@gmail.com>, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, msw@amazon.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Matt Rushton <mrushton@amazon.com>
-Subject: Re: [PATCH v2 2/2] xen/setup: Remap Xen Identity Mapped RAM
-Message-ID: <20140801155206.GA13865@u109add4315675089e695.ant.amazon.com>
-References: <1405814495-10868-1-git-send-email-mrushton@amazon.com>
- <1405814495-10868-2-git-send-email-mrushton@amazon.com>
- <53DA805D.4020300@citrix.com>
- <53DBA9AC.8000302@citrix.com>
+	id S1754794AbaHAPzv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 11:55:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62008 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751008AbaHAPzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 11:55:50 -0400
+Date: Fri, 1 Aug 2014 17:53:10 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v2 tip/core/rcu 01/10] rcu: Add call_rcu_tasks()
+Message-ID: <20140801155310.GA2945@redhat.com>
+References: <20140731003914.GA3872@linux.vnet.ibm.com> <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53DBA9AC.8000302@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1406767182-4356-1-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 03:52:28PM +0100, David Vrabel wrote:
-> On 31/07/14 18:43, David Vrabel wrote:
-> > On 20/07/14 01:01, Matt Rushton wrote:
-> >> Instead of ballooning up and down dom0 memory this remaps the existing mfns
-> >> that were replaced by the identity map. The reason for this is that the
-> >> existing implementation ballooned memory up and and down which caused dom0
-> >> to have discontiguous pages. In some cases this resulted in the use of bounce
-> >> buffers which reduced network I/O performance significantly. This change will
-> >> honor the existing order of the pages with the exception of some boundary
-> >> conditions.
-> >>
-> >> To do this we need to update both the Linux p2m table and the Xen m2p table.
-> >> Particular care must be taken when updating the p2m table since it's important
-> >> to limit table memory consumption and reuse the existing leaf pages which get
-> >> freed when an entire leaf page is set to the identity map. To implement this,
-> >> mapping updates are grouped into blocks with table entries getting cached
-> >> temporarily and then released.
-> >>
-> >> On my test system before:
-> >> Total pages: 2105014
-> >> Total contiguous: 1640635
-> >>
-> >> After:
-> >> Total pages: 2105014
-> >> Total contiguous: 2098904
-> > 
-> > Applied to devel/for-linus-3.17
-> 
-> Unfortunately, this produces too many WARNINGs on some boxes or
-> with certain configurations.
+On 07/30, Paul E. McKenney wrote:
+>
+> +		rcu_read_lock();
+> +		for_each_process_thread(g, t) {
+> +			if (t != current && ACCESS_ONCE(t->on_rq) &&
+> +			    !is_idle_task(t)) {
+> +				t->rcu_tasks_nvcsw = ACCESS_ONCE(t->nvcsw);
+> +				t->rcu_tasks_holdout = 1;
+> +				list_add(&t->rcu_tasks_holdout_list,
+> +					 &rcu_tasks_holdouts);
+> +			}
+> +		}
+> +		rcu_read_unlock();
 
-Hi David,
+Wait, unless I missed something this can't work...
 
-Do you have more information about the systems or configurations that
-showed a problem?
+The problem is, once the exiting task passes exit_notify() it can
+be removed from rcu lists.
 
---msw
+Now suppose that (say) proc_exit_connector() has a probe, and this
+task has jumped into trampoline and it was preempted there.
+
+No?
+
+Oleg.
+
