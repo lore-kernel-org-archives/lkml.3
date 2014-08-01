@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174AbaHAMVg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 08:21:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52393 "EHLO mx1.redhat.com"
+	id S1755313AbaHAMWE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 08:22:04 -0400
+Received: from imap.thunk.org ([74.207.234.97]:40104 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754881AbaHAMVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 08:21:35 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: <xen-devel@lists.xenproject.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Andrew Jones <drjones@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 0/4] xen/pvhvm: fix shared_info and pirq issues with kexec
-References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
-	<53D64F07.1070106@citrix.com>
-Date: Fri, 01 Aug 2014 14:21:20 +0200
-In-Reply-To: <53D64F07.1070106@citrix.com> (David Vrabel's message of "Mon, 28
-	Jul 2014 14:24:23 +0100")
-Message-ID: <87k36s9z9b.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1755220AbaHAMWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 08:22:00 -0400
+Date: Fri, 1 Aug 2014 08:21:54 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Hugo Mills <hugo@carfax.org.uk>, Nicholas Krause <xerofoify@gmail.com>,
+        clm@fb.com, jbacik@fb.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add support to check for FALLOC_FL_COLLAPSE_RANGE  and
+ FALLOC_FL_ZERO_RANGE crap modes
+Message-ID: <20140801122154.GA15110@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Hugo Mills <hugo@carfax.org.uk>,
+	Nicholas Krause <xerofoify@gmail.com>, clm@fb.com, jbacik@fb.com,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1406829213-4759-1-git-send-email-xerofoify@gmail.com>
+ <20140731190910.GP31950@carfax.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140731190910.GP31950@carfax.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Vrabel <david.vrabel@citrix.com> writes:
+On Thu, Jul 31, 2014 at 08:09:10PM +0100, Hugo Mills wrote:
+> On Thu, Jul 31, 2014 at 01:53:33PM -0400, Nicholas Krause wrote:
+> > This adds checks for the stated modes as if they are crap we will return error
+> > not supported.
+> 
+>    You've just enabled two options, but you haven't actually
+> implemented the code behind it. I would tell you *NOT* to do anything
+> else on this work until you can answer the question: What happens if
+> you apply this patch, create a large file called "foo.txt", and then a
+> userspace program executes the following code?
+> 
+> int fd = open("foo.txt", O_RDWR);
+> fallocate(fd, FALLOCATE_FL_COLLAPSE_RANGE, 50, 50);
+> 
+>    Try it on a btrfs filesystem, both with and without your patch.
+> Also try it on an ext4 filesystem.
+> 
+>    Once you've done all of that, reply to this mail and tell me what
+> the problem is with this patch. You need to make two answers: what are
+> the technical problems with the patch? What errors have you made in
+> the development process?
 
-> On 15/07/14 14:40, Vitaly Kuznetsov wrote:
->> With this patch series I'm trying to address several issues with kexec on pvhvm:
->> - shared_info issue (1st patch, just sending Olaf's work with Konrad's fix)
->> - create specific pvhvm shutdown handler for kexec (2nd patch)
->> - GSI PIRQ issue (3rd patch, I'm pretty confident that it does the right thing)
->> - MSI PIRQ issue (4th patch, and I'm not sure it doesn't break anything -> RFC)
->> 
->> This patch series can be tested on single vCPU guest. We still have SMP issues with
->> pvhvm guests and kexec which require additional fixes.
->
-> In addition to the fixes for multi-VCPU guests, what else remains?
->
+There are also the conceptual failures.  Before you do anything else,
+you need to be able to answer the question, "what do you think the
+flags FALLOC_FL_COLLAPSE_RANGE and FALLOC_FL_ZERO_RANGE are supposed
+to do?"  What are the possible appropriate things for btrfs to do if
+it sees these flags?  (Hint: there is more than one correct answer,
+and its current choice is one of them.  What is the other one?)
 
-I'm aware of grants and ballooned out pages.
+Nick, the fact that you call these modes "crap" is a hint that you
+have a fundamental lack of understanding --- and before you waste more
+of kernel developers' time, you need to get that understanding first,
+for any bit of code that you propose to "improve".
 
-> What's the plan for handling granted pages?
->
+This is why I suggested that you work on userspace testing scripts
+first.  It's pretty clear you are (a) incredibly sloppy, and (b)
+lacking conceptual understanding of a lot of technical details, and
+(c) even worse, aren't letting this lack of understanding stop you
+from posting patches.  As a result you are adding negative value to
+whatever project or subsystem you try to attach yourself to --- you're
+not helping.
 
-(if I got the design right) we have two issues:
+						- Ted
 
-1) Pages we grant access to other domains. We have the list so we can
-try doing gnttab_end_foreign_access for all unmapped grants but there is
-nothing we can do with mapped ones from guest. We can either assume that
-all such usages are short-term and try waiting for them to finish or we
-need to do something like force-unmap from hypervisor side.
+P.S.   As a further hint, change the above code to read:
 
-2) Pages we mapped from other domains. There is no easy way to collect
-all grant handles from different places in kernel atm so I can see two
-possible solutions:
-- we keep track of all handles with new kernel structure in guest and
-unmap them all on kexec/kdump.
-- we introduce new GNTTABOP_reset which does something similar to
-gnttab_release_mappings().
+	int fd = open("foo.txt", O_RDWR);
+	if (fallocate(fd, FALLOCATE_FL_COLLAPSE_RANGE, 4096, 8192) < 0)
+		perror("fallocate");
 
-There is nothing we need to do with transferred grants (and I don't see
-transfer usages in kernel).
+And then run "filefrag -vs foo.txt" before and after running the above
+code fragment and then try something like this:
 
-Please correct me if I'm wrong.
+     cp /usr/share/dict/words foo.txt
+     filefrag -vs foo.txt
+     ls -l foo.txt
+     /tmp/fallocate-test-prog
+     filefrag -vs foo.txt
+     ls -l foo.txt
+     diff /usr/share/dict/words foo.txt
 
-> I don't think we want to accept a partial solution unless the known
-> non-working configurations fail fast on kexec load.
-
-*I think* we can leave ballooned out pages out of scope for now.
-
-Thanks,
-
->
-> David
-
--- 
-  Vitaly
+Try doing this on an ext4 or xfs system and a btrfs file system.
