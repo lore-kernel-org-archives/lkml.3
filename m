@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718AbaHAEoa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 00:44:30 -0400
-Received: from ozlabs.org ([103.22.144.67]:41753 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770AbaHAEo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 00:44:29 -0400
-Date: Fri, 1 Aug 2014 14:44:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark D Rustad <mark.d.rustad@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: linux-next: manual merge of the kvm tree with the ftrace tree
-Message-ID: <20140801144420.4ba1c011@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/aI.ALIqRkdhyln5l74Pl+kf"; protocol="application/pgp-signature"
+	id S1752742AbaHAExr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 00:53:47 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:54132 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864AbaHAExp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 00:53:45 -0400
+Date: Thu, 31 Jul 2014 21:53:44 -0700 (PDT)
+Message-Id: <20140731.215344.1226846407150746376.davem@davemloft.net>
+To: zoltan.kiss@citrix.com
+Cc: wei.liu2@citrix.com, Ian.Campbell@citrix.com, david.vrabel@citrix.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xenproject.org
+Subject: Re: [PATCH] xen-netback: Turn off the carrier if the guest is not
+ able to receive
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1406749849-4356-2-git-send-email-zoltan.kiss@citrix.com>
+References: <1406749849-4356-1-git-send-email-zoltan.kiss@citrix.com>
+	<1406749849-4356-2-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 31 Jul 2014 21:53:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/aI.ALIqRkdhyln5l74Pl+kf
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+Date: Wed, 30 Jul 2014 20:50:49 +0100
 
-Hi all,
+> Currently when the guest is not able to receive more packets, qdisc layer starts
+> a timer, and when it goes off, qdisc is started again to deliver a packet again.
+> This is a very slow way to drain the queues, consumes unnecessary resources and
+> slows down other guests shutdown.
+> This patch change the behaviour by turning the carrier off when that timer
+> fires, so all the packets are freed up which were stucked waiting for that vif.
+> Instead of the rx_queue_purge bool it uses the VIF_STATUS_RX_PURGE_EVENT bit to
+> signal the thread that either the timout happened or an RX interrupt arrived, so
+> the thread can check what it should do. It also disables NAPI, so the guest
+> can't transmit, but leaves the interrupts on, so it can resurrect.
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 
-Today's linux-next merge of the kvm tree got a conflict in
-arch/x86/kvm/mmutrace.h between commit 7b039cb4c5a9 ("tracing: Add
-trace_seq_buffer_ptr() helper function") from the ftrace tree and
-commit 42cbc04fd3b5 ("x86/kvm: Resolve shadow warnings in macro
-expansion") from the kvm tree.
+When posting a multi-part patch set, number your patches and have a header
+"[PATCH 0/N] " posting which describes at a high level what the patch
+series is doing, and why.
 
-I fixed it up (I dropped the ftrace tree's change to this file) and can
-carry the fix as necessary (no action is required).
+> +				for (i = 0; i < num_queues; ++i) {
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Please use the more canonical "i++" increment.
 
---Sig_/aI.ALIqRkdhyln5l74Pl+kf
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT2xspAAoJEMDTa8Ir7ZwVuHUQAJHLisz/E4W5cB5J0Dp2t8L9
-1VDbmS+03rEjVqurjkla9AwueDaAbIM4DlEqhzbqLbC17LNxx2jcAGA7d8Rdv27L
-xD5VQeY/6Ab4mxVgr4RMZlaMQ79z9XIlNbep9nKfHM006eBPHpD++yGlcpuOdTsD
-sxYZ2Ui8GgjTAAF3xj6x+kDcuXG3C7Dl1zWFyBVmpe24f9ZbI4ntAzSXpq0bC+Py
-BYIhpYBnDefhCdhN7/EMMGUFBkKy78mywNYthIKlT4uLas1FBF0ppC2kgVq+zFnR
-NzlVuAfGcZ6cpbwQO/WicyZ5dIPF5AC2FqsbaRT6vxSa7msndP0EQZpGprcWzprd
-OpvsAJ5OnDQPZIjyfvSvaGyNN7eYIGQO9YCTjTNQYHGdq+ubObF3RT9r1y5JgEhu
-IKWdPDgJStAJnOsIB++wK15rCGi+qx+YgIegDOrOYTlL4uCSKo+dsxk9Yo2revWV
-BchM81C/BXHzrbaLn6OFUhnL82/7V/8w+m6iEjvDcxsKw97GekyJviuAqtbIuEoU
-UJmReVWB3UQElqImWc4IuqxTFV7RuVF45M2MJutAmqbokf5VYgivtqvcU52JHEW7
-oniyEoFsVukD/7nZrGn/Ct2Ftx4q1CW/PqCgK04K+h4lgI3xAfNbFuhJeDPrYw0L
-zvQ7kZSMQOp5Cup6zqPk
-=kMUJ
------END PGP SIGNATURE-----
-
---Sig_/aI.ALIqRkdhyln5l74Pl+kf--
+Thanks.
