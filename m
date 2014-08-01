@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755754AbaHAR2Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 13:28:24 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:45610 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864AbaHAR2X (ORCPT
+	id S1755560AbaHAR3P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 13:29:15 -0400
+Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:27169
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751694AbaHAR3N convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 13:28:23 -0400
-Date: Fri, 1 Aug 2014 19:28:19 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@gentwo.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Khalid Aziz <khalid.aziz@oracle.com>, linux-mm@kvack.org,
-        Gilad Ben-Yossef <gilad@benyossef.com>
-Subject: Re: [PATCH] swap: remove the struct cpumask has_work
-Message-ID: <20140801172818.GD13134@localhost.localdomain>
-References: <1406777421-12830-3-git-send-email-laijs@cn.fujitsu.com>
- <20140731115137.GA20244@dhcp22.suse.cz>
- <53DA6A2F.100@tilera.com>
- <53DAEFB5.7060501@cn.fujitsu.com>
- <53DBCB55.3050302@tilera.com>
+	Fri, 1 Aug 2014 13:29:13 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Dexuan Cui <decui@microsoft.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+CC: Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH] Input: hyperv-keyboard: register as a wakeup source
+Thread-Topic: [PATCH] Input: hyperv-keyboard: register as a wakeup source
+Thread-Index: AQHPrYw4YZKzhZE33kO/L7f+c6WZR5u8AKwA
+Date: Fri, 1 Aug 2014 17:29:09 +0000
+Message-ID: <0c4b13461c5c44c5a7ebaa3d215e1875@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1406903304-7256-1-git-send-email-decui@microsoft.com>
+In-Reply-To: <1406903304-7256-1-git-send-email-decui@microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e8:ee31::2]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 029097202E
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(51704005)(13464003)(189002)(199002)(85852003)(87936001)(83072002)(2656002)(80022001)(4396001)(1511001)(92566001)(105586002)(106356001)(106116001)(95666004)(99286002)(2201001)(33646002)(107046002)(50986999)(54356999)(99396002)(81542001)(46102001)(83322001)(85306004)(19580395003)(21056001)(76176999)(81342001)(19580405001)(86362001)(101416001)(74662001)(74502001)(31966008)(76482001)(74316001)(79102001)(76576001)(77982001)(15975445006)(64706001)(77096002)(20776003)(24736002)(3826002)(108616003);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0710;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53DBCB55.3050302@tilera.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 01:16:05PM -0400, Chris Metcalf wrote:
-> On 7/31/2014 9:39 PM, Lai Jiangshan wrote:
-> >On 08/01/2014 12:09 AM, Chris Metcalf wrote:
-> >>On 7/31/2014 7:51 AM, Michal Hocko wrote:
-> >>>On Thu 31-07-14 11:30:19, Lai Jiangshan wrote:
-> >>>>It is suggested that cpumask_var_t and alloc_cpumask_var() should be used
-> >>>>instead of struct cpumask.  But I don't want to add this complicity nor
-> >>>>leave this unwelcome "static struct cpumask has_work;", so I just remove
-> >>>>it and use flush_work() to perform on all online drain_work.  flush_work()
-> >>>>performs very quickly on initialized but unused work item, thus we don't
-> >>>>need the struct cpumask has_work for performance.
-> >>>Why? Just because there is general recommendation for using
-> >>>cpumask_var_t rather than cpumask?
-> >>>
-> >>>In this particular case cpumask shouldn't matter much as it is static.
-> >>>Your code will work as well, but I do not see any strong reason to
-> >>>change it just to get rid of cpumask which is not on stack.
-> >>The code uses for_each_cpu with a cpumask to avoid waking cpus that don't
-> >>need to do work.  This is important for the nohz_full type functionality,
-> >>power efficiency, etc.  So, nack for this change.
-> >>
-> >flush_work() on initialized but unused work item just disables irq and
-> >fetches work->data to test and restores irq and return.
-> >
-> >the struct cpumask has_work is just premature optimization.
+
+
+> -----Original Message-----
+> From: Dexuan Cui [mailto:decui@microsoft.com]
+> Sent: Friday, August 1, 2014 7:28 AM
+> To: gregkh@linuxfoundation.org; dmitry.torokhov@gmail.com; linux-
+> input@vger.kernel.org; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com
+> Cc: KY Srinivasan; Haiyang Zhang
+> Subject: [PATCH] Input: hyperv-keyboard: register as a wakeup source
 > 
-> Yes, I see your point.  I was mistakenly thinking that your patch resulted
-> in calling schedule_work() on all the online cpus.
+> With this patch, we can press a key to wake up the VM after the VM
+> executes "echo freeze > /sys/power/state".
 > 
-> Given that, I think your suggestion is reasonable, though like Michal,
-> I'm not sure it necessarily rises to the level of it being worth changing the
-> code at this point.  Regardless, I withdraw my nack, and you can add my
-> Reviewed-by: Chris Metcalf <cmetcalf@tilera.com> if the change is taken.
+> This addresses part of https://bugzilla.redhat.com/show_bug.cgi?id=1086100
+> 
+> Cc: K. Y. Srinivasan <kys@microsoft.com>
+Thanks Dexuan.
 
-Thing is: static struct cpumask can potentially reserve a bit of memory.
-For NR_CPUS=1024 for example it should be 1024 / sizeof(byte) = 128 bytes. It's no
-big deal but as I can see sometimes people complaining about the size of the
-kernel... Also think about the cacheline it takes.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
-I mean if the patch really has no side effect in performance, it's probably good to
-take.
+> Signed-off-by: Dexuan Cui <decui@microsoft.com>
+> ---
+>  drivers/input/serio/hyperv-keyboard.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+> 
+> diff --git a/drivers/input/serio/hyperv-keyboard.c
+> b/drivers/input/serio/hyperv-keyboard.c
+> index 6132619..e74e5d6 100644
+> --- a/drivers/input/serio/hyperv-keyboard.c
+> +++ b/drivers/input/serio/hyperv-keyboard.c
+> @@ -170,6 +170,15 @@ static void hv_kbd_on_receive(struct hv_device
+> *hv_dev,
+>  			serio_interrupt(kbd_dev->hv_serio, scan_code, 0);
+>  		}
+>  		spin_unlock_irqrestore(&kbd_dev->lock, flags);
+> +
+> +		/*
+> +		 * Only trigger a wakeup on key down, otherwise
+> +		 * "echo freeze > /sys/power/state" can't really enter the
+> +		 * state because the Enter-UP can trigger a wakeup at once.
+> +		 */
+> +		if (!(info & IS_BREAK))
+> +			pm_wakeup_event(&hv_dev->device, 0);
+> +
+>  		break;
+> 
+>  	default:
+> @@ -376,6 +385,9 @@ static int hv_kbd_probe(struct hv_device *hv_dev,
+>  		goto err_close_vmbus;
+> 
+>  	serio_register_port(kbd_dev->hv_serio);
+> +
+> +	device_init_wakeup(&hv_dev->device, true);
+> +
+>  	return 0;
+> 
+>  err_close_vmbus:
+> @@ -390,6 +402,7 @@ static int hv_kbd_remove(struct hv_device *hv_dev)
+> {
+>  	struct hv_kbd_dev *kbd_dev = hv_get_drvdata(hv_dev);
+> 
+> +	device_init_wakeup(&hv_dev->device, false);
+>  	serio_unregister_port(kbd_dev->hv_serio);
+>  	vmbus_close(hv_dev->channel);
+>  	kfree(kbd_dev);
+> --
+> 1.9.1
 
-But I'm not sure it's free of such. It's still an iteration on all online CPUs,
-even though a noop, with a high number of CPUs it can be undesired. It depends
-what's the usual proportion of has_work CPUs against online?
-
-If most online CPUs are to be found there, we can ignore that but otherwise...
