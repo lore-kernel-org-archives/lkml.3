@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136AbaHAFKO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 01:10:14 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47350 "EHLO comal.ext.ti.com"
+	id S1752580AbaHAFVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 01:21:53 -0400
+Received: from ozlabs.org ([103.22.144.67]:53793 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751829AbaHAFKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 01:10:12 -0400
-Message-ID: <53DB210B.5010204@ti.com>
-Date: Fri, 1 Aug 2014 08:09:31 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1750770AbaHAFVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 01:21:51 -0400
+Date: Fri, 1 Aug 2014 15:21:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Christoffer Dall <cdall@cs.columbia.edu>
+Cc: Marc Zyngier <marc.zyngier@arm.com>,
+        Christoffer Dall <christofferdall@christofferdall.dk>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: linux-next: manual merge of the kvm-arm tree with Linus' tree
+Message-ID: <20140801152141.15d028c1@canb.auug.org.au>
+In-Reply-To: <20140731142347.GB589@cbox>
+References: <20140731163004.474501fb@canb.auug.org.au>
+	<CAEDV+gJ1oSPzgZMO=kdFDNPnzy-EOHGuLxHqTB8KO6d_8yPrxQ@mail.gmail.com>
+	<87mwbpiv0z.fsf@approximate.cambridge.arm.com>
+	<20140731142347.GB589@cbox>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>, <nsekhar@ti.com>,
-        <robh+dt@kernel.org>
-CC: <devicetree@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux@arm.linux.org.uk>, <pawel.moll@arm.com>,
-        <khilman@deeprootsystems.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/6] ARM: DTS: da850: Add node for edma0
-References: <1406801934-23334-1-git-send-email-peter.ujfalusi@ti.com> <1406801934-23334-3-git-send-email-peter.ujfalusi@ti.com> <53DA5230.1050200@cogentembedded.com>
-In-Reply-To: <53DA5230.1050200@cogentembedded.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/=g8B=AAE41pOt58oODPQxwr"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2014 05:26 PM, Sergei Shtylyov wrote:
-> On 07/31/2014 02:18 PM, Peter Ujfalusi wrote:
-> 
->> Add DT node for edma0.
-> 
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->> ---
->>   arch/arm/boot/dts/da850.dtsi | 6 ++++++
->>   1 file changed, 6 insertions(+)
-> 
->> diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
->> index b695548dbb4e..41ce4e8bf227 100644
->> --- a/arch/arm/boot/dts/da850.dtsi
->> +++ b/arch/arm/boot/dts/da850.dtsi
->> @@ -150,6 +150,12 @@
->>               };
->>
->>           };
->> +        edma0: edma@01c00000 {
->> +            compatible = "ti,edma3";
->> +            reg =    <0x0 0x10000>;
-> 
->    Why the mismatch between the unit-address part of the node name and the
-> "reg" property?
+--Sig_/=g8B=AAE41pOt58oODPQxwr
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-For some reason the whole da850 uses offset from 0x01c00000 for the SoC IPs.
-The nodes are under 'soc' and that has the ranges attribute.
-I do not really like this either.
+Hi Christoffer,
 
-> 
->> +            interrupts = <11 13 12>;
->> +            #dma-cells = <1>;
->> +        };
-> 
-> WBR, Sergei
-> 
+On Thu, 31 Jul 2014 16:23:47 +0200 Christoffer Dall <cdall@cs.columbia.edu>=
+ wrote:
+>
+> Stephen, did you pick up the resolution provided by Marc for the gicv2
+> fix patch so that it applies to tomorrow's next/kvmarm merge?
 
--- 
-Péter
+Yes, I have.  You will need to produce the same for Linus eventually,
+or do the merge yourself as I suggested.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/=g8B=AAE41pOt58oODPQxwr
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT2yPsAAoJEMDTa8Ir7ZwVQ30P/3eD/3MZBY7NTzcFVRSy8knr
+JVta4BccjTrO2yOgsyPvNjnLA1DjuMiQCW3C9KyaP2AVbMl+TLBQ+t+25gP0qiSZ
+B+pESo3YGJP8S4xNY8sg32f9DZWqBViOmmX+xTDSrXRKuEoUjouNtRZWd8uGVz8a
+2R0KhhQqt1vhhQXokvZ7scWATXUaK+7jH3Ajxnsa4nhawdKKKRRlIbGvKju9/KEM
+xhV2R+wqCblDaiRmiai2bOaZpoPf3+BKvg3Pv4g6d1YTHQN+hxper21GBRYlJpnd
+VUqqvub7hG+gQvo40JoiXbT3JZriSEeaYwDU525196vq5H3uUe1eiiLoocQnqV8L
+2DUCC+2iK149cu0fnMST8y+ZuVBPLaYRABCSa1X1/P+u8N7+3KaGEEbD6/4u4r+k
+O8IkG2x2IzgZdxYAIth3c1Cz3tVEBWgV4usaNQdbCfqhdfH+9IvfVLolR/CZK24D
+CWveQKMrjcY8v75xTZPS6Daw0IL61tnGlVAsj5TwLCntMaXLDaBiOZmAfHc+J3re
+wWFyPnHd5o8GDSy0gAc8rPWr2c/spyg8VgIMWMtrhxMz7+WkDultyWw4V5e9Yabr
+YAm9IFEUJldtYw6zG24WWa80AA5Pos9SlfMN+Lx0vpnLPbenwCdvOAXhGM9T7GIv
+c+EMdVtuYZN820l0OSqd
+=XOml
+-----END PGP SIGNATURE-----
+
+--Sig_/=g8B=AAE41pOt58oODPQxwr--
