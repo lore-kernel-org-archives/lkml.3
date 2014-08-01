@@ -1,221 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010AbaHAN2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:28:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54903 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755614AbaHAN17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 09:27:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,780,1400050800"; 
-   d="scan'208";a="463980751"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v9 18/22] Get rid of most mentions of XIP in ext2
-Date: Fri,  1 Aug 2014 09:27:34 -0400
-Message-Id: <1e85876650168318ca4715ac70126052a485ff1a.1406897885.git.willy@linux.intel.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
-References: <cover.1406897885.git.willy@linux.intel.com>
-In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
-References: <cover.1406897885.git.willy@linux.intel.com>
+	id S932104AbaHAN2l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:28:41 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:47334 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755883AbaHAN2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 09:28:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <1406899019.11706.9.camel@intelbox>
+References: <1406158393.13064.1.camel@gmail.com> <1406280517.17325.3.camel@intelbox>
+ <1406753579.31042.1.camel@gmail.com> <1406806772.18327.14.camel@intelbox>
+ <1406843268.6143.1.camel@gmail.com> <1406899019.11706.9.camel@intelbox>
+From: Ian Kumlien <ian.kumlien@gmail.com>
+Date: Fri, 1 Aug 2014 15:28:16 +0200
+Message-ID: <CAA85sZu7PB0hH7mS+ojnnqEK+VALa=9Zc4N2nOYoxpD+q4jtOg@mail.gmail.com>
+Subject: Re: [Intel-gfx] [BUG?] 3.16-rc6 ... at drivers/gpu/drm/i915/intel_pm.c:5997
+ intel_display_power_put+0x12d/0x160()
+To: imre.deak@intel.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        intel-gfx@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To help people transition, accept the 'xip' mount option (and report it
-in /proc/mounts), but print a message encouraging people to switch over
-to the 'dax' option.
----
- fs/ext2/ext2.h  | 13 +++++++------
- fs/ext2/file.c  |  2 +-
- fs/ext2/inode.c |  6 +++---
- fs/ext2/namei.c |  8 ++++----
- fs/ext2/super.c | 25 ++++++++++++++++---------
- 5 files changed, 31 insertions(+), 23 deletions(-)
+On Fri, Aug 1, 2014 at 3:16 PM, Imre Deak <imre.deak@intel.com> wrote:
 
-diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
-index b8b1c11..46133a0 100644
---- a/fs/ext2/ext2.h
-+++ b/fs/ext2/ext2.h
-@@ -380,14 +380,15 @@ struct ext2_inode {
- #define EXT2_MOUNT_NO_UID32		0x000200  /* Disable 32-bit UIDs */
- #define EXT2_MOUNT_XATTR_USER		0x004000  /* Extended user attributes */
- #define EXT2_MOUNT_POSIX_ACL		0x008000  /* POSIX Access Control Lists */
--#ifdef CONFIG_FS_DAX
--#define EXT2_MOUNT_XIP			0x010000  /* Execute in place */
--#else
--#define EXT2_MOUNT_XIP			0
--#endif
-+#define EXT2_MOUNT_XIP			0x010000  /* Obsolete, use DAX */
- #define EXT2_MOUNT_USRQUOTA		0x020000  /* user quota */
- #define EXT2_MOUNT_GRPQUOTA		0x040000  /* group quota */
- #define EXT2_MOUNT_RESERVATION		0x080000  /* Preallocation */
-+#ifdef CONFIG_FS_DAX
-+#define EXT2_MOUNT_DAX			0x100000  /* Direct Access */
-+#else
-+#define EXT2_MOUNT_DAX			0
-+#endif
- 
- 
- #define clear_opt(o, opt)		o &= ~EXT2_MOUNT_##opt
-@@ -789,7 +790,7 @@ extern int ext2_fsync(struct file *file, loff_t start, loff_t end,
- 		      int datasync);
- extern const struct inode_operations ext2_file_inode_operations;
- extern const struct file_operations ext2_file_operations;
--extern const struct file_operations ext2_xip_file_operations;
-+extern const struct file_operations ext2_dax_file_operations;
- 
- /* inode.c */
- extern const struct address_space_operations ext2_aops;
-diff --git a/fs/ext2/file.c b/fs/ext2/file.c
-index 46b333d..5b8cab5 100644
---- a/fs/ext2/file.c
-+++ b/fs/ext2/file.c
-@@ -110,7 +110,7 @@ const struct file_operations ext2_file_operations = {
- };
- 
- #ifdef CONFIG_FS_DAX
--const struct file_operations ext2_xip_file_operations = {
-+const struct file_operations ext2_dax_file_operations = {
- 	.llseek		= generic_file_llseek,
- 	.read		= new_sync_read,
- 	.write		= new_sync_write,
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 034fd42..6434bc0 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -1286,7 +1286,7 @@ void ext2_set_inode_flags(struct inode *inode)
- 		inode->i_flags |= S_NOATIME;
- 	if (flags & EXT2_DIRSYNC_FL)
- 		inode->i_flags |= S_DIRSYNC;
--	if (test_opt(inode->i_sb, XIP))
-+	if (test_opt(inode->i_sb, DAX))
- 		inode->i_flags |= S_DAX;
- }
- 
-@@ -1388,9 +1388,9 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
- 
- 	if (S_ISREG(inode->i_mode)) {
- 		inode->i_op = &ext2_file_inode_operations;
--		if (test_opt(inode->i_sb, XIP)) {
-+		if (test_opt(inode->i_sb, DAX)) {
- 			inode->i_mapping->a_ops = &ext2_aops;
--			inode->i_fop = &ext2_xip_file_operations;
-+			inode->i_fop = &ext2_dax_file_operations;
- 		} else if (test_opt(inode->i_sb, NOBH)) {
- 			inode->i_mapping->a_ops = &ext2_nobh_aops;
- 			inode->i_fop = &ext2_file_operations;
-diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
-index 0db888c..148f6e3 100644
---- a/fs/ext2/namei.c
-+++ b/fs/ext2/namei.c
-@@ -104,9 +104,9 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
- 		return PTR_ERR(inode);
- 
- 	inode->i_op = &ext2_file_inode_operations;
--	if (test_opt(inode->i_sb, XIP)) {
-+	if (test_opt(inode->i_sb, DAX)) {
- 		inode->i_mapping->a_ops = &ext2_aops;
--		inode->i_fop = &ext2_xip_file_operations;
-+		inode->i_fop = &ext2_dax_file_operations;
- 	} else if (test_opt(inode->i_sb, NOBH)) {
- 		inode->i_mapping->a_ops = &ext2_nobh_aops;
- 		inode->i_fop = &ext2_file_operations;
-@@ -125,9 +125,9 @@ static int ext2_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
- 		return PTR_ERR(inode);
- 
- 	inode->i_op = &ext2_file_inode_operations;
--	if (test_opt(inode->i_sb, XIP)) {
-+	if (test_opt(inode->i_sb, DAX)) {
- 		inode->i_mapping->a_ops = &ext2_aops;
--		inode->i_fop = &ext2_xip_file_operations;
-+		inode->i_fop = &ext2_dax_file_operations;
- 	} else if (test_opt(inode->i_sb, NOBH)) {
- 		inode->i_mapping->a_ops = &ext2_nobh_aops;
- 		inode->i_fop = &ext2_file_operations;
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index 2b58c48..29633627 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -290,6 +290,8 @@ static int ext2_show_options(struct seq_file *seq, struct dentry *root)
- #ifdef CONFIG_FS_DAX
- 	if (sbi->s_mount_opt & EXT2_MOUNT_XIP)
- 		seq_puts(seq, ",xip");
-+	if (sbi->s_mount_opt & EXT2_MOUNT_DAX)
-+		seq_puts(seq, ",dax");
- #endif
- 
- 	if (!test_opt(sb, RESERVATION))
-@@ -393,7 +395,7 @@ enum {
- 	Opt_resgid, Opt_resuid, Opt_sb, Opt_err_cont, Opt_err_panic,
- 	Opt_err_ro, Opt_nouid32, Opt_nocheck, Opt_debug,
- 	Opt_oldalloc, Opt_orlov, Opt_nobh, Opt_user_xattr, Opt_nouser_xattr,
--	Opt_acl, Opt_noacl, Opt_xip, Opt_ignore, Opt_err, Opt_quota,
-+	Opt_acl, Opt_noacl, Opt_xip, Opt_dax, Opt_ignore, Opt_err, Opt_quota,
- 	Opt_usrquota, Opt_grpquota, Opt_reservation, Opt_noreservation
- };
- 
-@@ -422,6 +424,7 @@ static const match_table_t tokens = {
- 	{Opt_acl, "acl"},
- 	{Opt_noacl, "noacl"},
- 	{Opt_xip, "xip"},
-+	{Opt_dax, "dax"},
- 	{Opt_grpquota, "grpquota"},
- 	{Opt_ignore, "noquota"},
- 	{Opt_quota, "quota"},
-@@ -549,10 +552,14 @@ static int parse_options(char *options, struct super_block *sb)
- 			break;
- #endif
- 		case Opt_xip:
-+			ext2_msg(sb, KERN_INFO, "use dax instead of xip");
-+			set_opt(sbi->s_mount_opt, XIP);
-+			/* Fall through */
-+		case Opt_dax:
- #ifdef CONFIG_FS_DAX
--			set_opt (sbi->s_mount_opt, XIP);
-+			set_opt(sbi->s_mount_opt, DAX);
- #else
--			ext2_msg(sb, KERN_INFO, "xip option not supported");
-+			ext2_msg(sb, KERN_INFO, "dax option not supported");
- #endif
- 			break;
- 
-@@ -896,15 +903,15 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	blocksize = BLOCK_SIZE << le32_to_cpu(sbi->s_es->s_log_block_size);
- 
--	if (sbi->s_mount_opt & EXT2_MOUNT_XIP) {
-+	if (sbi->s_mount_opt & EXT2_MOUNT_DAX) {
- 		if (blocksize != PAGE_SIZE) {
- 			ext2_msg(sb, KERN_ERR,
--					"error: unsupported blocksize for xip");
-+					"error: unsupported blocksize for dax");
- 			goto failed_mount;
- 		}
- 		if (!sb->s_bdev->bd_disk->fops->direct_access) {
- 			ext2_msg(sb, KERN_ERR,
--					"error: device does not support xip");
-+					"error: device does not support dax");
- 			goto failed_mount;
- 		}
- 	}
-@@ -1276,10 +1283,10 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data)
- 		((sbi->s_mount_opt & EXT2_MOUNT_POSIX_ACL) ? MS_POSIXACL : 0);
- 
- 	es = sbi->s_es;
--	if ((sbi->s_mount_opt ^ old_opts.s_mount_opt) & EXT2_MOUNT_XIP) {
-+	if ((sbi->s_mount_opt ^ old_opts.s_mount_opt) & EXT2_MOUNT_DAX) {
- 		ext2_msg(sb, KERN_WARNING, "warning: refusing change of "
--			 "xip flag with busy inodes while remounting");
--		sbi->s_mount_opt ^= EXT2_MOUNT_XIP;
-+			 "dax flag with busy inodes while remounting");
-+		sbi->s_mount_opt ^= EXT2_MOUNT_DAX;
- 	}
- 	if ((*flags & MS_RDONLY) == (sb->s_flags & MS_RDONLY)) {
- 		spin_unlock(&sbi->s_lock);
--- 
-2.0.1
+[--8<--]
 
+> Ok, I see the trace of suspend/resume now, but the bug has vanished.. I
+> can't see the WARN backtrace in your original report, nor the debug
+> message from the above fix, that would indicate that it had fixed
+> anything ("VDD left on by BIOS, adjusting state tracking"). So I'm a bit
+> lost, I would need a full dmesg with either the WARN or this debug
+> message.
+
+Well the bug seemed to be a unbalanced _put _get thing.
+
+At least that's the impression i got when reading the code, so what i
+did, which is part of the original patch, is to make sure that the
+_put happens so that the "mode" isn't '0' and thus triggers a warn_on.
+
+What we can say is that due to the patch you sent these are now
+balanced in that code...
+
+Actually reading the patches again i can't see how that happened, esp
+without the debug message... I think I'll have to play some more with
+this and get back to you when $clue has increased by at least one....
+=)
