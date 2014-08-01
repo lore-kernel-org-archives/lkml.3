@@ -1,78 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800AbaHARsf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 13:48:35 -0400
-Received: from sauhun.de ([89.238.76.85]:38356 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204AbaHARsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 13:48:33 -0400
-Date: Fri, 1 Aug 2014 19:48:30 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Patrice Chotard <patrice.chotard@st.com>, kernel@stlinux.com
-Subject: Re: [PATCH v2] drivers: i2c: i2c-st: Update i2c timings
-Message-ID: <20140801174830.GC3277@katana>
-References: <1406130247-19197-1-git-send-email-maxime.coquelin@st.com>
+	id S1755298AbaHARvt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 13:51:49 -0400
+Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:29821
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751204AbaHARvr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 13:51:47 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 1/1] Drivers: net-next: hyperv: Increase the size of the
+ sendbuf region
+Thread-Topic: [PATCH 1/1] Drivers: net-next: hyperv: Increase the size of the
+ sendbuf region
+Thread-Index: AQHPrFcl/pZ15J3jR0S9Ym/gWYDpuJu7MfeAgADTGUA=
+Date: Fri, 1 Aug 2014 17:51:44 +0000
+Message-ID: <e19aea30a421423090ba63db9ff8e0af@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1406770549-29982-1-git-send-email-kys@microsoft.com>
+ <20140731.215907.860867918938148695.davem@davemloft.net>
+In-Reply-To: <20140731.215907.860867918938148695.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e8:ee31::2]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 029097202E
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(51704005)(13464003)(199002)(189002)(106116001)(106356001)(85306004)(79102001)(19580405001)(83322001)(64706001)(105586002)(33646002)(110136001)(19580395003)(80022001)(20776003)(77096002)(107046002)(50986999)(99286002)(81342001)(99396002)(76176999)(95666004)(92566001)(31966008)(101416001)(4396001)(54356999)(74502001)(81542001)(74662001)(74316001)(86362001)(76576001)(87936001)(2656002)(77982001)(76482001)(46102001)(83072002)(85852003)(21056001)(24736002)(3826002)(108616003);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0709;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hOcCNbCCxyk/YU74"
-Content-Disposition: inline
-In-Reply-To: <1406130247-19197-1-git-send-email-maxime.coquelin@st.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---hOcCNbCCxyk/YU74
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jul 23, 2014 at 05:44:07PM +0200, Maxime COQUELIN wrote:
-> The i2c timing values specified in the driver are the minimun values defi=
-ned
-> in the I2C specifications.
-> The I2C specification does not specify any default or maximum values.
->=20
-> Some I2C devices are out of spec, such as the HDMI link of the Toshiba 19=
-AV600
-> TV, and might not work properly with minimum values.
->=20
-> This patch adds a 10% margin on all the timings in both Normal and Fast m=
-odes.
->=20
-> Trial and error method have been used to find the minimum margin necessar=
-y to
-> have the out-of-spec device working, and a security margin has been added.
->=20
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Thursday, July 31, 2014 9:59 PM
+> To: KY Srinivasan
+> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com
+> Subject: Re: [PATCH 1/1] Drivers: net-next: hyperv: Increase the size of the
+> sendbuf region
+> 
+> From: "K. Y. Srinivasan" <kys@microsoft.com>
+> Date: Wed, 30 Jul 2014 18:35:49 -0700
+> 
+> > For forwarding scenarios, it will be useful to allocate larger
+> > sendbuf. Make the necessary adjustments to permit this.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> 
+> This needs more information.
+> 
+> You're increasing the size by 16 times, 1MB --> 16MB, thus less cache locality.
+> 
+> You're also now using vmalloc() memory, thus more TLB misses and
+> thrashing.
+> 
+> This must have a negative impact on performance, and you have to test for
+> that and quantify it when making a change as serious as this one.
+> 
+> You also haven't gone into detail as to why forwarding scenerios require
+> more buffer space, than say thousands of local sockets sending bulk TCP
+> data.
 
-Applied to for-next, thanks!
+David,
 
+Intel did some benchmarking on our network throughput when Linux on Hyper-V was used as a gateway.
+This fix gave us almost a 1 Gbps additional throughput on about 5Gbps base throughput we had prior to
+Increasing the sendbuf size. The sendbuf mechanism is a copy based transport that we have which is clearly
+more optimal than the copy-free page flipping mechanism (for small packets). In the forwarding scenario, we deal
+only with MTU sized packets, and increasing the size of the senbuf area gave us the additional performance.
 
---hOcCNbCCxyk/YU74
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+For what it is worth, Windows guests on Hyper-V, I am told use similar sendbuf size as well.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+The exact value of sendbuf I think is less important than the fact that it needs to be larger than what Linux can
+allocate as physically contiguous memory. Thus the change over to allocating via vmalloc(). As you know we currently
+allocate 16MB receive buffer and we use vmalloc there for allocation. Also the low level channel code has already been
+modified to deal with physically dis-contiguous memory in the ringbuffer setup.
 
-iQIcBAEBAgAGBQJT29LuAAoJEBQN5MwUoCm2yBIQALXNAFBm8alftzfUqqSoXQnu
-SQtn2gQejdYZs+xxr59jSDP75cmXWEV8iPYBMZxToT5oGq/7Bsy6IzDTu7Js+hQ/
-o9lhSwvC9PS0i9CyFDD54ZTAjGAl2E9nWKXppOnIzj47b/6S2PgG8LqP833SZa1p
-CFVBABLqtJiF7ejoQbM85bCorlRQYu1PVYsgpPcb+TJVtOO2Vet+CsFq8amzHH6Y
-3NxMtyiWQ1rweBG6LNmxMMIPvbcfvJuBHTEYUIrUJEo6uwZS4RXUAifqWv3xtNR9
-UbEiRL7Cn3SEP5UxkJhnR8lZ2iwlv6eLrL0Q4Bv4oL5PoZbuguCcbkTnww791r7/
-B5oCFN11Nj/87pPSkCZ9nuRwbZ9GHtBWMihaEIaCf12zXGwKiGJQ0EBslvfr7r8X
-Fwvm4iczq8xfTzhL2dGV0m7dA9sHGihYfAZC9e5vFJlysE5ZvGC5vUG2E9uzv3JD
-yGCRTjBGT+Tw4UFaNqXIIOnyouGlMt278XsOypOyGjJA7VrGmfFjtTOphAcJm14e
-mvmt3czVdlVnOK5Q28Cn+Rd1BU3bdmou7xLhYd+aFLSHmO8wJnQlXxhSEXt+g3n/
-qLrr5hfma+tbjHCx46z8MUd73VGMf3nR4m7BugwEXQj4v/8N7Koh69gzCJjyu3QQ
-CqoPI+hCIbpVBAsXxxcy
-=jQjo
------END PGP SIGNATURE-----
+Again based on experimentation Intel did, they say there was some improvement in throughput as the sendbuf size was
+Increased up to 16MB and there was no effect on throughput beyond 16MB. Thus I chose 16MB here.
 
---hOcCNbCCxyk/YU74--
+Increasing the sendbuf value makes a material difference in small packet handling. Let me know what I should do to
+make this patch acceptable.
+
+Regards,
+
+K. Y
+
+ 
+> 
+> I'm not applying this, it needs a lot more work.
