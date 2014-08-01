@@ -1,232 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172AbaHAMJQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 08:09:16 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:56134 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497AbaHAMJL (ORCPT
+	id S1755061AbaHAMJO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 08:09:14 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:32992 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620AbaHAMJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Aug 2014 08:09:11 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] clk: tegra: Implement memory-controller clock
-Date: Fri,  1 Aug 2014 14:09:05 +0200
-Message-Id: <1406894945-32069-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.3
+Message-ID: <53DB8375.7090503@gmail.com>
+Date: Fri, 01 Aug 2014 05:09:25 -0700
+From: Rajat Jain <rajatxjain@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Guenter Roeck <groeck@juniper.net>,
+        Rajat Jain <rajatjain@juniper.net>
+Subject: PCI/x86 CPU Hangs: Need to enable CRS Software Visibility (Configuration
+ Request Retry Status)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
 
-The memory controller clock runs either at half or the same frequency as
-the EMC clock.
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+Hello,
+
+I'm using an Intel Haswell CPU (/proc/cpu at the end of mail). I have a PCIe endpoint (a PLX 8713 NT bridge) that will take a long time to initialize itself after a reset. In accordance with the PCIe spec, the device responds with the CRS when the kernel tries to enumerate the endpoint, trying to indicate that the device is not yet ready.
+[Ref: PCIe spec V3.0, pg119, pg127 for "Configuration Request Retry Status") 
+
+This results in a CPU hang because the CPU root port goes into an endless cycle of retries, as the CRS Software Visibility is not enabled:
+[Ref commit ad7edfe "[PCI] Do not enable CRS Software Visibility by default" by Linus]
+
+The problem goes away if I enable the CRS software visibility and I see that the kernel moves on after timing out on that device:
+pci 0000:30:00.0 id reading try 50 times with interval 20 ms to get ffff0001
+
+Thus in a nutshell I want to enable the CRS Software visibility flag for my platform. From the commit log of the above commit, I'm trying to understand what would be the best way to do it. When the commit log says we should use white list for systems for which CRS should be enabled, and introduce something like pcibios_enable_crs(), do we mean something like this (suggestive patch only)?
+
 ---
-Changes in v2:
-- split registration into a separate function that can be reused for all
-  SoC generations, but pass in the name and parent parameters for
-  clarity as well as the register address (in case it ever changes) and
-  the EMC spin-lock since it isn't globally available
+ arch/x86/pci/common.c |   18 ++++++++++++++++++
+ drivers/pci/pci.c     |    5 +++++
+ drivers/pci/probe.c   |    2 ++
+ include/linux/pci.h   |    1 +
+ 4 files changed, 26 insertions(+)
 
- drivers/clk/tegra/clk-divider.c          | 13 +++++++++++++
- drivers/clk/tegra/clk-tegra114.c         |  7 ++++++-
- drivers/clk/tegra/clk-tegra124.c         |  7 ++++++-
- drivers/clk/tegra/clk-tegra20.c          |  8 +++++++-
- drivers/clk/tegra/clk-tegra30.c          |  7 ++++++-
- drivers/clk/tegra/clk.h                  |  2 ++
- include/dt-bindings/clock/tegra114-car.h |  2 +-
- include/dt-bindings/clock/tegra124-car.h |  2 +-
- include/dt-bindings/clock/tegra20-car.h  |  2 +-
- 9 files changed, 43 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/clk/tegra/clk-divider.c b/drivers/clk/tegra/clk-divider.c
-index 290f9c1a3749..84e1b3c1fb2a 100644
---- a/drivers/clk/tegra/clk-divider.c
-+++ b/drivers/clk/tegra/clk-divider.c
-@@ -185,3 +185,16 @@ struct clk *tegra_clk_register_divider(const char *name,
- 
- 	return clk;
+diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+index 81ec592..81b961d 100644
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -634,6 +634,24 @@ char * __init pcibios_setup(char *str)
+ 	return str;
  }
-+
-+static const struct clk_div_table mc_div_table[] = {
-+	{ .val = 0, .div = 2 },
-+	{ .val = 1, .div = 1 },
-+	{ .val = 0, .div = 0 },
+ 
++static const struct pci_device_id crs_whitelist[] = {
++	{ PCI_VDEVICE(INTEL, 0x2f00), },
++	{ PCI_VDEVICE(INTEL, 0x2f02), },
++	{ },
 +};
 +
-+struct clk *tegra_clk_register_mc(const char *name, const char *parent_name,
-+				  void __iomem *reg, spinlock_t *lock)
++void pcibios_enable_crs(struct pci_dev *dev)
 +{
-+	return clk_register_divider_table(NULL, "mc", "emc_mux", 0, reg,
-+					  16, 1, 0, mc_div_table, lock);
++	if (!pci_is_pcie(dev) ||
++	    pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT)
++		return;
++
++	/* Enable CRS Software visibility only for whitelisted systems */
++	if (pci_match_id(crs_whitelist, dev))
++		pcie_capability_set_word(dev, PCI_EXP_RTCTL,
++					 PCI_EXP_RTCTL_CRSSVE);
 +}
-diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-index f760f31d05c4..0b03d2cf7264 100644
---- a/drivers/clk/tegra/clk-tegra114.c
-+++ b/drivers/clk/tegra/clk-tegra114.c
-@@ -173,6 +173,7 @@ static DEFINE_SPINLOCK(pll_d_lock);
- static DEFINE_SPINLOCK(pll_d2_lock);
- static DEFINE_SPINLOCK(pll_u_lock);
- static DEFINE_SPINLOCK(pll_re_lock);
-+static DEFINE_SPINLOCK(emc_lock);
- 
- static struct div_nmp pllxc_nmp = {
- 	.divm_shift = 0,
-@@ -1228,7 +1229,11 @@ static __init void tegra114_periph_clk_init(void __iomem *clk_base,
- 			       ARRAY_SIZE(mux_pllmcp_clkm),
- 			       CLK_SET_RATE_NO_REPARENT,
- 			       clk_base + CLK_SOURCE_EMC,
--			       29, 3, 0, NULL);
-+			       29, 3, 0, &emc_lock);
 +
-+	clk = tegra_clk_register_mc("mc", "emc_mux", clk_base + CLK_SOURCE_EMC,
-+				    &emc_lock);
-+	clks[TEGRA114_CLK_MC] = clk;
+ unsigned int pcibios_assign_all_busses(void)
+ {
+ 	return (pci_probe & PCI_ASSIGN_ALL_BUSSES) ? 1 : 0;
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 3387c5e..982e8b1 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2685,6 +2685,11 @@ char * __weak __init pcibios_setup(char *str)
+ 	return str;
+ }
  
- 	for (i = 0; i < ARRAY_SIZE(tegra_periph_clk_list); i++) {
- 		data = &tegra_periph_clk_list[i];
-diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
-index 3acd42f1ad55..b04fb2fb4689 100644
---- a/drivers/clk/tegra/clk-tegra124.c
-+++ b/drivers/clk/tegra/clk-tegra124.c
-@@ -132,6 +132,7 @@ static DEFINE_SPINLOCK(pll_d2_lock);
- static DEFINE_SPINLOCK(pll_e_lock);
- static DEFINE_SPINLOCK(pll_re_lock);
- static DEFINE_SPINLOCK(pll_u_lock);
-+static DEFINE_SPINLOCK(emc_lock);
- 
- /* possible OSC frequencies in Hz */
- static unsigned long tegra124_input_freq[] = {
-@@ -1132,7 +1133,11 @@ static __init void tegra124_periph_clk_init(void __iomem *clk_base,
- 	clk = clk_register_mux(NULL, "emc_mux", mux_pllmcp_clkm,
- 			       ARRAY_SIZE(mux_pllmcp_clkm), 0,
- 			       clk_base + CLK_SOURCE_EMC,
--			       29, 3, 0, NULL);
-+			       29, 3, 0, &emc_lock);
++void __weak pcibios_enable_crs(struct pci_dev *dev)
++{
++	/* Do nothing by default, and let platforms decide for themselves */
++}
 +
-+	clk = tegra_clk_register_mc("mc", "emc_mux", clk_base + CLK_SOURCE_EMC,
-+				    &emc_lock);
-+	clks[TEGRA124_CLK_MC] = clk;
+ /**
+  * pcibios_set_master - enable PCI bus-mastering for device dev
+  * @dev: the PCI device to enable
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 1aa058e..a4c50f7 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -801,6 +801,8 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
+ 	pci_write_config_word(dev, PCI_BRIDGE_CONTROL,
+ 			      bctl & ~PCI_BRIDGE_CTL_MASTER_ABORT);
  
- 	/* cml0 */
- 	clk = clk_register_gate(NULL, "cml0", "pll_e", 0, clk_base + PLLE_AUX,
-diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
-index dace2b1b5ae6..41272dcc9e22 100644
---- a/drivers/clk/tegra/clk-tegra20.c
-+++ b/drivers/clk/tegra/clk-tegra20.c
-@@ -140,6 +140,8 @@ static struct cpu_clk_suspend_context {
- static void __iomem *clk_base;
- static void __iomem *pmc_base;
- 
-+static DEFINE_SPINLOCK(emc_lock);
++	pcibios_enable_crs(dev);
 +
- #define TEGRA_INIT_DATA_MUX(_name, _parents, _offset,	\
- 			    _clk_num, _gate_flags, _clk_id)	\
- 	TEGRA_INIT_DATA(_name, NULL, NULL, _parents, _offset,	\
-@@ -819,11 +821,15 @@ static void __init tegra20_periph_clk_init(void)
- 			       ARRAY_SIZE(mux_pllmcp_clkm),
- 			       CLK_SET_RATE_NO_REPARENT,
- 			       clk_base + CLK_SOURCE_EMC,
--			       30, 2, 0, NULL);
-+			       30, 2, 0, &emc_lock);
- 	clk = tegra_clk_register_periph_gate("emc", "emc_mux", 0, clk_base, 0,
- 				    57, periph_clk_enb_refcnt);
- 	clks[TEGRA20_CLK_EMC] = clk;
+ 	if ((secondary || subordinate) && !pcibios_assign_all_busses() &&
+ 	    !is_cardbus && !broken) {
+ 		unsigned int cmax;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index dbe746f..8ac0b31 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -723,6 +723,7 @@ void pcibios_fixup_bus(struct pci_bus *);
+ int __must_check pcibios_enable_device(struct pci_dev *, int mask);
+ /* Architecture-specific versions may override this (weak) */
+ char *pcibios_setup(char *str);
++void pcibios_enable_crs(struct pci_dev *dev);
  
-+	clk = tegra_clk_register_mc("mc", "emc_mux", clk_base + CLK_SOURCE_EMC,
-+				    &emc_lock);
-+	clks[TEGRA20_CLK_MC] = clk;
-+
- 	/* dsi */
- 	clk = tegra_clk_register_periph_gate("dsi", "pll_d", 0, clk_base, 0,
- 				    48, periph_clk_enb_refcnt);
-diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
-index 5bbacd01094f..4b9d8bd3d0bf 100644
---- a/drivers/clk/tegra/clk-tegra30.c
-+++ b/drivers/clk/tegra/clk-tegra30.c
-@@ -177,6 +177,7 @@ static unsigned long input_freq;
- 
- static DEFINE_SPINLOCK(cml_lock);
- static DEFINE_SPINLOCK(pll_d_lock);
-+static DEFINE_SPINLOCK(emc_lock);
- 
- #define TEGRA_INIT_DATA_MUX(_name, _parents, _offset,	\
- 			    _clk_num, _gate_flags, _clk_id)	\
-@@ -1157,11 +1158,15 @@ static void __init tegra30_periph_clk_init(void)
- 			       ARRAY_SIZE(mux_pllmcp_clkm),
- 			       CLK_SET_RATE_NO_REPARENT,
- 			       clk_base + CLK_SOURCE_EMC,
--			       30, 2, 0, NULL);
-+			       30, 2, 0, &emc_lock);
- 	clk = tegra_clk_register_periph_gate("emc", "emc_mux", 0, clk_base, 0,
- 				    57, periph_clk_enb_refcnt);
- 	clks[TEGRA30_CLK_EMC] = clk;
- 
-+	clk = tegra_clk_register_mc("mc", "emc_mux", clk_base + CLK_SOURCE_EMC,
-+				    &emc_lock);
-+	clks[TEGRA30_CLK_MC] = clk;
-+
- 	/* cml0 */
- 	clk = clk_register_gate(NULL, "cml0", "pll_e", 0, clk_base + PLLE_AUX,
- 				0, 0, &cml_lock);
-diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index 16ec8d6bb87f..4e458aa8d45c 100644
---- a/drivers/clk/tegra/clk.h
-+++ b/drivers/clk/tegra/clk.h
-@@ -86,6 +86,8 @@ struct clk *tegra_clk_register_divider(const char *name,
- 		const char *parent_name, void __iomem *reg,
- 		unsigned long flags, u8 clk_divider_flags, u8 shift, u8 width,
- 		u8 frac_width, spinlock_t *lock);
-+struct clk *tegra_clk_register_mc(const char *name, const char *parent_name,
-+				  void __iomem *reg, spinlock_t *lock);
- 
- /*
-  * Tegra PLL:
-diff --git a/include/dt-bindings/clock/tegra114-car.h b/include/dt-bindings/clock/tegra114-car.h
-index fc12621fb432..534c03f8ad72 100644
---- a/include/dt-bindings/clock/tegra114-car.h
-+++ b/include/dt-bindings/clock/tegra114-car.h
-@@ -49,7 +49,7 @@
- #define TEGRA114_CLK_I2S0 30
- /* 31 */
- 
--/* 32 */
-+#define TEGRA114_CLK_MC 32
- /* 33 */
- #define TEGRA114_CLK_APBDMA 34
- /* 35 */
-diff --git a/include/dt-bindings/clock/tegra124-car.h b/include/dt-bindings/clock/tegra124-car.h
-index 8a4c5892890f..a75b9b8f0d5d 100644
---- a/include/dt-bindings/clock/tegra124-car.h
-+++ b/include/dt-bindings/clock/tegra124-car.h
-@@ -48,7 +48,7 @@
- #define TEGRA124_CLK_I2S0 30
- /* 31 */
- 
--/* 32 */
-+#define TEGRA124_CLK_MC 32
- /* 33 */
- #define TEGRA124_CLK_APBDMA 34
- /* 35 */
-diff --git a/include/dt-bindings/clock/tegra20-car.h b/include/dt-bindings/clock/tegra20-car.h
-index 9406207cfac8..04500b243a4d 100644
---- a/include/dt-bindings/clock/tegra20-car.h
-+++ b/include/dt-bindings/clock/tegra20-car.h
-@@ -49,7 +49,7 @@
- /* 30 */
- #define TEGRA20_CLK_CACHE2 31
- 
--#define TEGRA20_CLK_MEM 32
-+#define TEGRA20_CLK_MC 32
- #define TEGRA20_CLK_AHBDMA 33
- #define TEGRA20_CLK_APBDMA 34
- /* 35 */
+ /* Used only when drivers/pci/setup.c is used */
+ resource_size_t pcibios_align_resource(void *, const struct resource *,
 -- 
-2.0.3
+1.7.9.5
+
+
+
+The enabling of CRS software visibility, going by my own problem, seems like a good thing to me to do by default (and probably maintaining a black-list rather than a white-list may be a better idea?). Or at least it should be enabled by default for those root ports that are known to go into an infinite retry loop (such as the Intel one I am using).
+
+FWIW, currently I see it is only being enabled for a Broadcom root port - bcma_core_pci_enable_crs() and my system is running on an Intel Haswell CPU with the /proc/cpuinfo reporting:
+
+processor       : 0
+vendor_id       : GenuineIntel
+cpu family      : 6
+model           : 63
+model name      : Genuine Intel(R) CPU @ 1.80GHz
+stepping        : 1
+microcode       : 0x14
+cpu MHz         : 1800.024
+cache size      : 20480 KB
+physical id     : 0
+siblings        : 16
+core id         : 0
+cpu cores       : 8
+apicid          : 0
+initial apicid  : 0
+fpu             : yes
+fpu_exception   : yes
+cpuid level     : 15
+wp              : yes
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm ida arat epb xsaveopt pln pts dtherm tpr_shadow vnmi flexpriority ept vpid fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm
+bogomips        : 3600.04
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 46 bits physical, 48 bits virtual
+power management:
+
+
+Thanks,
+
+Rajat
 
