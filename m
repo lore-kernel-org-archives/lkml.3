@@ -1,69 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328AbaHAOhM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:37:12 -0400
-Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:30355
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750876AbaHAOhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:37:09 -0400
-X-WSS-ID: 0N9MTXP-07-5BB-02
-X-M-MSG: 
-Message-ID: <53DBA603.9030509@amd.com>
-Date: Fri, 1 Aug 2014 09:36:51 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754587AbaHAOhw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 10:37:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15946 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751694AbaHAOhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 10:37:50 -0400
+Message-ID: <53DBA604.1090204@redhat.com>
+Date: Fri, 01 Aug 2014 16:36:52 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Mark Rutland <Mark.Rutland@arm.com>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 4/4 V3] irqchip: gicv2m: Add support for multiple MSI
- for ARM64 GICv2m
-References: <1404947104-21345-1-git-send-email-suravee.suthikulpanit@amd.com>
-	<1404947104-21345-5-git-send-email-suravee.suthikulpanit@amd.com>
- <87vbqej2rj.fsf@approximate.cambridge.arm.com>
-In-Reply-To: <87vbqej2rj.fsf@approximate.cambridge.arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(24454002)(164054003)(377454003)(479174003)(189002)(199002)(23756003)(92726001)(102836001)(110136001)(64706001)(20776003)(50986999)(101416001)(83072002)(87936001)(80022001)(92566001)(85852003)(74662001)(74502001)(99396002)(64126003)(105586002)(81542001)(50466002)(95666004)(65806001)(65956001)(106466001)(81342001)(65816999)(36756003)(33656002)(76176999)(47776003)(107046002)(54356999)(87266999)(4396001)(79102001)(31966008)(21056001)(44976005)(83322001)(80316001)(83506001)(76482001)(86362001)(97736001)(77982001)(46102001)(59896001)(84676001)(85306004)(68736004);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR02MB042;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 029097202E
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+To: Hugh Dickins <hughd@google.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-doc@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux390@de.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH 1/5] mm, shmem: Add shmem resident memory accounting
+References: <1406036632-26552-1-git-send-email-jmarchan@redhat.com> <1406036632-26552-2-git-send-email-jmarchan@redhat.com> <alpine.LSU.2.11.1407312159180.3912@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1407312159180.3912@eggly.anvils>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="lxVGKElGwxXE45ip0IhXLqN9P4K6qCS4C"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/30/2014 10:16 AM, Marc Zyngier wrote:
-> Why do we need this complexity at all? Is there any case where we'd want
-> to limit ourselves to a single vector for MSI?
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--lxVGKElGwxXE45ip0IhXLqN9P4K6qCS4C
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I think the ARM64 GICv2m should not be the limitation for the devices 
-multiple MSI if there is no real hardware/design limitation.
+On 08/01/2014 07:01 AM, Hugh Dickins wrote:
+> On Tue, 22 Jul 2014, Jerome Marchand wrote:
+>=20
+>> Currently looking at /proc/<pid>/status or statm, there is no way to
+>> distinguish shmem pages from pages mapped to a regular file (shmem
+>> pages are mapped to /dev/zero), even though their implication in
+>> actual memory use is quite different.
+>> This patch adds MM_SHMEMPAGES counter to mm_rss_stat. It keeps track o=
+f
+>> resident shmem memory size. Its value is exposed in the new VmShm line=
 
-> arm64 is a new enough architecture so that we can expect all interrupt controllers to cope
-> with that.
+>> of /proc/<pid>/status.
+>=20
+> I like adding this info to /proc/<pid>/status - thank you -
+> but I think you can make the patch much better in a couple of ways.
+>=20
+>>
+>> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+>> ---
+>>  Documentation/filesystems/proc.txt |  2 ++
+>>  arch/s390/mm/pgtable.c             |  2 +-
+>>  fs/proc/task_mmu.c                 |  9 ++++++---
+>>  include/linux/mm.h                 |  7 +++++++
+>>  include/linux/mm_types.h           |  7 ++++---
+>>  kernel/events/uprobes.c            |  2 +-
+>>  mm/filemap_xip.c                   |  2 +-
+>>  mm/memory.c                        | 37 +++++++++++++++++++++++++++++=
+++------
+>>  mm/rmap.c                          |  8 ++++----
+>>  9 files changed, 57 insertions(+), 19 deletions(-)
+>>
+>> diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesy=
+stems/proc.txt
+>> index ddc531a..1c49957 100644
+>> --- a/Documentation/filesystems/proc.txt
+>> +++ b/Documentation/filesystems/proc.txt
+>> @@ -171,6 +171,7 @@ read the file /proc/PID/status:
+>>    VmLib:      1412 kB
+>>    VmPTE:        20 kb
+>>    VmSwap:        0 kB
+>> +  VmShm:         0 kB
+>>    Threads:        1
+>>    SigQ:   0/28578
+>>    SigPnd: 0000000000000000
+>> @@ -228,6 +229,7 @@ Table 1-2: Contents of the status files (as of 2.6=
+=2E30-rc7)
+>>   VmLib                       size of shared library code
+>>   VmPTE                       size of page table entries
+>>   VmSwap                      size of swap usage (the number of referr=
+ed swapents)
+>> + VmShm	                      size of resident shmem memory
+>=20
+> Needs to say that includes mappings of tmpfs, and needs to say that
+> it's a subset of VmRSS.  Better placed immediately after VmRSS...
+>=20
+> ...but now that I look through what's in /proc/<pid>/status, it appears=
 
-I am not sure if I understand this comment.
+> that we have to defer to /proc/<pid>/statm to see MM_FILEPAGES (third
+> field) and MM_ANONPAGES (subtract third field from second field).
+>=20
+> That's not a very friendly interface.  If you're going to help by
+> exposing MM_SHMPAGES separately, please help even more by exposing
+> VmFile and VmAnon here in /proc/<pid>/status too.
+>=20
 
-We are not forcing all interrupt controllers for ARM64 to handle 
-multi-MSI.  They have the option to support if multi-MSI if they want 
-to. I just think that we should not put the architectural limit here.
+Good point.
 
-Thanks,
+> VmRSS, VmAnon, VmShm, VmFile?  I'm not sure what's the best order:
+> here I'm thinking that anon comes before file in /proc/meminfo, and
+> shm should be halfway between anon and file.  You may have another idea=
+=2E
+>=20
+> And of course the VmFile count here should exclude VmShm: I think it
+> will work out least confusingly if you account MM_FILEPAGES separately
+> from MM_SHMPAGES, but add them together where needed e.g. for statm.
 
-Suravee
+I chose not to change MM_FILEPAGES to avoid to break anything, but it
+might indeed look better not to have MM_SHMPAGES included in
+MM_FILEPAGES. I'll look into it.
 
+>=20
+>>   Threads                     number of threads
+>>   SigQ                        number of signals queued/max. number for=
+ queue
+>>   SigPnd                      bitmap of pending signals for the thread=
+
+>> diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
+>> index 37b8241..9fe31b0 100644
+>> --- a/arch/s390/mm/pgtable.c
+>> +++ b/arch/s390/mm/pgtable.c
+>> @@ -612,7 +612,7 @@ static void gmap_zap_swap_entry(swp_entry_t entry,=
+ struct mm_struct *mm)
+>>  		if (PageAnon(page))
+>>  			dec_mm_counter(mm, MM_ANONPAGES);
+>>  		else
+>> -			dec_mm_counter(mm, MM_FILEPAGES);
+>> +			dec_mm_file_counters(mm, page);
+>>  	}
+>=20
+> That is a recurring pattern: please try putting
+>=20
+> static inline int mm_counter(struct page *page)
+> {
+> 	if (PageAnon(page))
+> 		return MM_ANONPAGES;
+> 	if (PageSwapBacked(page))
+> 		return MM_SHMPAGES;
+> 	return MM_FILEPAGES;
+> }
+>=20
+> in include/linux/mm.h.
+>=20
+> Then dec_mm_counter(mm, mm_counter(page)) here, and wherever you can,
+> use mm_counter(page) to simplify the code throughout.
+>=20
+> I say "try" because I think factoring out mm_counter() will simplify
+> the most code, given the profusion of different accessors, particularly=
+
+> in mm/memory.c.  But I'm not sure how much bloat having it as an inline=
+
+> function will add, versus how much overhead it would add if not inline.=
+
+
+I'll look into that.
+
+Jerome
+
+>=20
+> Hugh
+>=20
+
+
+
+--lxVGKElGwxXE45ip0IhXLqN9P4K6qCS4C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJT26YEAAoJEHTzHJCtsuoCGpYH/RD+1RP2S7K9/aMTE34PatN3
+/lnBqiFH6/ibJmVBZm0gzR3AR6dH7DgYZIVznbybDsE+2QNosSXQ7h2IGJqBdUJE
+kj6grHZmZdTa4ISVJXFawEwk+Jg+mq+CoO9FJqA7833/PxtdDI2/84kILFAMmZSN
+PFyldr6vZ1AxxzBHnAahQkbxx4Mwp+5QtQLUDHjMLGVGCa3efHWcD7z3oAICT50R
+sy4u34ZqyS3EwMNkC0cTyOsl0u5PHQIBnstU2gd+15irka0bwEHkTO2+gZI1XQEt
+QPIZeGPwVHkbVg4VayWODjAWGwrd1xlMIlSHXavFWN1mGTqxuBm8Y9xir8Py1+I=
+=HVkx
+-----END PGP SIGNATURE-----
+
+--lxVGKElGwxXE45ip0IhXLqN9P4K6qCS4C--
