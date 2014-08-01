@@ -1,87 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897AbaHAPZF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 11:25:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56889 "EHLO mx2.suse.de"
+	id S1754752AbaHAP1J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 11:27:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54264 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754715AbaHAPZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 11:25:03 -0400
-Date: Fri, 1 Aug 2014 17:24:59 +0200
-From: Jan Kara <jack@suse.cz>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, Gioh Kim <gioh.kim@lge.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
-        Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH 0/2] new API to allocate buffer-cache for superblock in
- non-movable area
-Message-ID: <20140801152459.GA7525@quack.suse.cz>
-References: <53D8A258.7010904@lge.com>
- <20140730101143.GB19205@quack.suse.cz>
- <53D985C0.3070300@lge.com>
- <20140731000355.GB25362@quack.suse.cz>
- <53D98FBB.6060700@lge.com>
- <20140731122114.GA5240@quack.suse.cz>
- <53DADA2F.1020404@lge.com>
- <53DAE820.7050508@lge.com>
- <20140801095700.GB27281@quack.suse.cz>
- <20140801133618.GJ19379@twins.programming.kicks-ass.net>
+	id S1751204AbaHAP1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 11:27:07 -0400
+Message-ID: <53DBB049.30902@redhat.com>
+Date: Fri, 01 Aug 2014 17:20:41 +0200
+From: Nikolay Aleksandrov <nikolay@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140801133618.GJ19379@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Graf <tgraf@suug.ch>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kaber@trash.net, paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
+        challa@noironetworks.com, walpole@cs.pdx.edu, dev@openvswitch.org,
+        tklauser@distanz.ch, netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH net-next 2/3] netlink: Convert netlink_lookup() to use
+ RCU protected hash table
+References: <cover.1406891028.git.tgraf@suug.ch> <72a64dfee4f20f2ca596df26f3e4ae543cf4c068.1406891028.git.tgraf@suug.ch> <53DBA976.8030103@redhat.com> <20140801151527.GF7331@casper.infradead.org>
+In-Reply-To: <20140801151527.GF7331@casper.infradead.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 01-08-14 15:36:18, Peter Zijlstra wrote:
-> On Fri, Aug 01, 2014 at 11:57:00AM +0200, Jan Kara wrote:
-> > So the quiestion really is how hard guarantee do you need that a page in
-> > movable zone is really movable. Or better in what timeframe should it be
-> > movable? It may be possible to make e.g. migratepage callback for ext4
-> > blkdev pages which will handle migration of pages that are just idly
-> > sitting in a journal waiting to be committed. That may be reasonably doable
-> > although it won't be perfect. Or we may just decide it's not worth the
-> > bother and allocate all blkdev pages from unmovable zone...
+On 08/01/2014 05:15 PM, Thomas Graf wrote:
+> On 08/01/14 at 04:51pm, Nikolay Aleksandrov wrote:
+>> Hmm, in both the rhashtable_insert() and rhashtable_remove() calls in the
+>> netlink code you're using GFP_ATOMIC flags but if rhashtable_expand/shring gets
+>> called even though the allocation will be with GFP_ATOMIC, they still call
+>> synchronize_rcu() which may block. Now I'm not familiar with the netlink code,
+>> but I think that in general the flags are useless for GFP_ATOMIC because of the
+>> calls to synchronize_rcu() in expand/shrink which can block anyway.
+>> Just a thought, I may be missing something of course.
 > 
-> So the point of CMA is to cater to those (arguably broken) devices that
-> do not have scatter gather IO, and these include things like the camera
-> device on your phone.
+> I don't think you are missing anything. The GFP_ATOMIC flag was
+> inherited from how the bucket table was allocated prior to the
+> convertion to the new hash table but you are right, it can't be
+> needed since the table protection was converted to a mutex.
+> Using GFP_KERNEL will have a better chance of succeeding.
 > 
-> Previously (and possibly currently) your android Linux kernel will
-> simply preallocate a massive physically linear chunk of memory and
-> assign it to the camera hardware and not use it at all.
-> 
-> This is a terrible waste for most of the time people aren't running
-> their camera app at all. So the point is to allow usage of the memory,
-> but upon request be able to 'immediately' clear it through
-> migration/writeback.
-> 
-> So we should be fairly 'quick' in making the memory available,
-> definitely sub second timeframes.
-  OK, makes sense. But then if there's heavy IO going on, anything that has
-IO pending on it is pinned and IO completion can easily take something
-close to a second or more. So meeting subsecond deadlines may be tough even
-for ordinary data pages under heavy load, even more so for metadata where
-there are further constraints. OTOH phones aren't usually IO bound so in
-practice it needn't be so bad ;). So if it is sub-second unless someone
-loads the storage, then that sounds doable even for metadata. But we'll
-need to attach ->migratepage callback to blkdev pages and at least in ext4
-case teach it how to move pages tracked by the journal.
- 
-> Sadly its not only mobile devices that excel in crappy hardware, there's
-> plenty desktop stuff that could use this too, like some of the v4l
-> devices iirc.
-  Yeah, but in such usecases the guarantees we can offer for completion of
-migration are even more vague :(.
+Right, I was wondering why it was atomic in the first place and couldn't find a
+good reason from the code :-)
+But that explains it.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Cheers,
+ Nik
