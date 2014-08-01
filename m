@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806AbaHAFnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 01:43:50 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:35682 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbaHAFnt (ORCPT
+	id S1753904AbaHAFrD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 01:47:03 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:54627 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663AbaHAFrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 01:43:49 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: perf tools: Question about kmem and kernel symbol resolution
-References: <CAM9d7ci1grg4NSMJahr-zjo+v8CkumbnwREhjkc+o6y9kYuaGw@mail.gmail.com>
-	<20140731142711.GX7831@kernel.org>
-Date: Fri, 01 Aug 2014 14:43:48 +0900
-In-Reply-To: <20140731142711.GX7831@kernel.org> (Arnaldo Carvalho de Melo's
-	message of "Thu, 31 Jul 2014 11:27:11 -0300")
-Message-ID: <878un8hii3.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 1 Aug 2014 01:47:01 -0400
+Date: Thu, 31 Jul 2014 22:46:59 -0700 (PDT)
+Message-Id: <20140731.224659.1839149761075616147.davem@davemloft.net>
+To: tgraf@suug.ch
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kaber@trash.net,
+        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
+        challa@noironetworks.com, walpole@cs.pdx.edu, dev@openvswitch.org,
+        tklauser@distanz.ch, netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH v2 0/3 net-next] Lockless netlink_lookup() with new
+ concurrent hash table
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140731.223946.2222491319947824077.davem@davemloft.net>
+References: <cover.1406846586.git.tgraf@suug.ch>
+	<20140731.223946.2222491319947824077.davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 31 Jul 2014 22:47:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s715l86r014152
 
-On Thu, 31 Jul 2014 11:27:11 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Jul 31, 2014 at 05:35:32PM +0900, Namhyung Kim escreveu:
->> I'm looking kernel symbol mismatch issue, and found something in perf
->> kmem code.  The commit e727ca73f85d ("perf kmem: Resolve kernel
->> symbols again") added perf_session__create_kernel_maps() but I don't
->> know why.  Why did it miss the MMAP event?
->  
->> I think if we create a kernel maps at report time, it might not match
->> to samples in a perf.data if it's recorded on a different kernel.
->> This is the main reason of the mismatch problem I'm currently chasing
->> IMHO.  What am I missing?
->
->> From a quick look, nothing, i.e. we can not call
-> perf_session__create_kernel_maps() at that point, as it will create the
-> kernel maps from the running kernel and use it with events from the
-> kernel that was in place when the perf.data file being processed was
-> created.
->
-> Perhaps that problem was fixed somewhere else and we should just revert
-> that patch?
->
-> Have you tried just reverting it and checking that the results are the
-> expected ones? I.e. that there is the kernel MMAP event in perf.data
-> file and that it gets properly processed?
+From: David Miller <davem@davemloft.net>
+Date: Thu, 31 Jul 2014 22:39:46 -0700 (PDT)
 
-Simply reverting ended up with no symbols but it contains MMAP event for
-sure.
+> Looks great, series applied, thanks!
 
-Then I found a reason - it's simply because kmem tools doesn't register
-mmap event handlers. :-/  Adding mmap[2] handlers + reverting ended up
-with the expected output.
+Actually, this needs more work, reverted:
 
-I'll send the fix soon.
-
-Thanks,
-Namhyung
+net/netfilter/nft_hash.c: In function ¡nft_hash_destroy¢:
+net/netfilter/nft_hash.c:183:3: error: ¡ht¢ undeclared (first use in this function)
+net/netfilter/nft_hash.c:183:3: note: each undeclared identifier is reported only once for each function it appears in
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
