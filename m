@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932473AbaHATXE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 15:23:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36708 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189AbaHATXB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 15:23:01 -0400
-Date: Fri, 1 Aug 2014 12:23:00 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Aniroop Mathur <aniroop.mathur@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org
-Subject: Re: [Question: Drivers/base/core.c] Why dev->init_name = NULL in
- device_add function ?
-Message-ID: <20140801192300.GB16085@kroah.com>
-References: <CADYu30_FciG_aTTV4DFNdy+CdRChMYQ7pAGZGambE1F9s=ofYQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADYu30_FciG_aTTV4DFNdy+CdRChMYQ7pAGZGambE1F9s=ofYQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756211AbaHATXo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 15:23:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12773 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932258AbaHATVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 15:21:18 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Jerome Marchand <jmarchan@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: [PATCH -mm v6 06/13] pagemap: use walk->vma instead of calling find_vma()
+Date: Fri,  1 Aug 2014 15:20:42 -0400
+Message-Id: <1406920849-25908-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1406920849-25908-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1406920849-25908-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 10:43:23PM +0530, Aniroop Mathur wrote:
-> Dear Mr. Greg Kroah-Hartman and Linux Community,
-> Greetings of the day !! :)
-> 
-> I am Aniroop Mathur working on Linux Kernel for last two years.
-> I am stuck at one point and could not find the solution over internet.
-> I posted on linuxquestions.org too.
-> So I need your help and suggestion for it.
-> 
-> Can you please help in answering my query as below:
-> 
-> =====================================================
-> In function device_add of /drivers/base/core.c file, it is mentioned:
-> /*
-> * for statically allocated devices, which should all be converted
-> * some day, we need to initialize the name. We prevent reading back
-> * the name, and force the use of dev_name()
-> */
-> if (dev->init_name) {
-> dev_set_name(dev, "%s", dev->init_name);
-> dev->init_name = NULL;
-> }
-> 
-> 
-> Except forcing the use of dev_name to read device name,
-> Is there any other reason to make init_name as NULL ?
+Page table walker has the information of the current vma in mm_walk, so
+we don't have to call find_vma() in each pagemap_hugetlb_range() call.
 
-Why would you want init_name to not be NULL?
+NULL-vma check is omitted because we assume that we never run hugetlb_entry()
+callback on the address without vma. And even if it were broken, null pointer
+dereference would be detected, so we can get enough information for debugging.
 
-> And if it is not made NULL, is there any problem or side-effect ?
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ fs/proc/task_mmu.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-Yes, people would start to use it thinking it was the real name of the
-device, when it might not be.
+diff --git mmotm-2014-07-30-15-57.orig/fs/proc/task_mmu.c mmotm-2014-07-30-15-57/fs/proc/task_mmu.c
+index 4baf34230191..e4c6cdb9647b 100644
+--- mmotm-2014-07-30-15-57.orig/fs/proc/task_mmu.c
++++ mmotm-2014-07-30-15-57/fs/proc/task_mmu.c
+@@ -1073,15 +1073,12 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+ 				 struct mm_walk *walk)
+ {
+ 	struct pagemapread *pm = walk->private;
+-	struct vm_area_struct *vma;
++	struct vm_area_struct *vma = walk->vma;
+ 	int err = 0;
+ 	int flags2;
+ 	pagemap_entry_t pme;
+ 
+-	vma = find_vma(walk->mm, addr);
+-	WARN_ON_ONCE(!vma);
+-
+-	if (vma && (vma->vm_flags & VM_SOFTDIRTY))
++	if (vma->vm_flags & VM_SOFTDIRTY)
+ 		flags2 = __PM_SOFT_DIRTY;
+ 	else
+ 		flags2 = 0;
+-- 
+1.9.3
 
-greg k-h
