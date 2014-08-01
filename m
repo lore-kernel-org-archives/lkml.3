@@ -1,74 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401AbaHAQML (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 12:12:11 -0400
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:38300 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754714AbaHAQMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 12:12:09 -0400
-X-Originating-IP: 50.43.15.134
-Date: Fri, 1 Aug 2014 09:11:54 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Srihari Vijayaraghavan <linux.bug.reporting@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH] efi-bgrt: Add error handling; inform the user when
- ignoring the BGRT
-Message-ID: <20140801161154.GA1258@thin>
-References: <20140730192331.GA23730@jtriplet-mobl1>
- <20140731103110.GC15082@console-pimps.org>
- <20140731161133.GA12663@cloud>
- <20140801091949.GD15082@console-pimps.org>
+	id S1755062AbaHAQQJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 12:16:09 -0400
+Received: from sauhun.de ([89.238.76.85]:37741 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751624AbaHAQQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 12:16:07 -0400
+Date: Fri, 1 Aug 2014 18:15:57 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>, devicetree@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
+        broonie@kernel.org, linux-arm-kernel@lists.infradead.org,
+        pawel.moll@arm.com, mark.rutland@arm.com, galak@codeaurora.org,
+        gregkh@linuxfoundation.org, kyungmin.park@samsung.com,
+        m.szyprowski@samsung.com, t.figa@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC V8 1/1] clk: Support for clock parents and rates
+ assigned from device tree
+Message-ID: <20140801161557.GA3277@katana>
+References: <1403105372-30403-1-git-send-email-s.nawrocki@samsung.com>
+ <1403105372-30403-2-git-send-email-s.nawrocki@samsung.com>
+ <53B59221.5080100@samsung.com>
+ <20140725214231.5177.86866@quantum>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
 Content-Disposition: inline
-In-Reply-To: <20140801091949.GD15082@console-pimps.org>
+In-Reply-To: <20140725214231.5177.86866@quantum>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 10:19:49AM +0100, Matt Fleming wrote:
-> (Including akpm, the __GFP_NOWARN police)
 
-Andrew suggested __GFP_NOWARN here in the first place.
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, 31 Jul, at 09:11:33AM, Josh Triplett wrote:
-> > 
-> > I started to add an explicit limit, but any reasonable limit (large
-> > enough for modern screens) would be large enough that there's still a
-> > non-trivial possibility of allocation failure.  And I think it makes
-> > sense for BGRT image allocation to be non-fatal and minimally noisy
-> > (just a single-line error, not a scary-looking allocation warning),
-> > considering the highly optional and cosmetic nature of BGRT.  So, I
-> > believe __GFP_NOWARN makes sense.
-> 
-> Yes, I agree that we don't want to trigger the page allocator warning,
-> but I don't agree that passing __GFP_NOWARN is OK, which is why I'm
-> advocating some size limit checks.
-> 
-> We need to distinguish between "Your BGRT image size is huge, and
-> assumed buggy" and "Your BGRT looks valid, but we ran out of memory".
-> 
-> We've already got enough problems with the EFI code because we silently
-> paper over bugs, and using the page allocator's failure path as a way to
-> check for buggy BGRT images just doesn't make any sense to me at all.
-> 
-> If we get the limit wrong, it's not the end of the world, we can change
-> it later, but it's a safe bet that if the firmware engineers start
-> seeing "BGRT is buggy" in the kernel log they're going to start a
-> dialogue with us.
+On Fri, Jul 25, 2014 at 02:42:31PM -0700, Mike Turquette wrote:
+> Quoting Sylwester Nawrocki (2014-07-03 10:25:53)
+> > On 18/06/14 17:29, Sylwester Nawrocki wrote:
+> > > This patch adds helper functions to configure clock parents and rates
+> > > as specified through 'assigned-clock-parents', 'assigned-clock-rates'
+> > > DT properties for a clock provider or clock consumer device.
+> > > The helpers are now being called by the bus code for the platform, I2C
+> > > and SPI busses, before the driver probing and also in the clock core
+> > > after registration of a clock provider.
+> > >=20
+> > > Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> > > Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> >=20
+> > Could someone please take a look and review that patch ?
+> > Any further suggestions, ACKs/NAKs ?
+>=20
+> Patch looks good to me. I'm happy to take it.
+>=20
+> >=20
+> > I would appreciate a DT, SPI or the I2C maintainer opinions.
+>=20
+> Yes, Acks from SPI and I2C maintainers would be good. I might need to
+> drop those parts of this patch if they don't come through :-(
 
-The original bug report was about an allocation failure for a fairly
-reasonable BGRT size.  We can certainly prohibit absurdly huge ones (for
-instance, bigger than the maximum likely screen resolution times 4 bytes
-per pixel), but allocation failures may well occur for smaller sizes,
-and I don't think we want to spew a massive warning for that either.
+For the I2C part:
 
-- Josh Triplett
+Acked-by: Wolfram Sang <wsa@the-dreams.de>
+
+
+--UugvWAfsgieZRqgk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT2708AAoJEBQN5MwUoCm2aCYP/365qBaTpbuWjzeZ1mlBEwpR
+3/qVH7fE0MfwEHd03BafDmNAf3rV3zTdQjvTyz3w7eH1Tvwf5nWJr3Wgqltkp5iU
+Dcm4FUO6r17Fae+bZLO88By7UOm8WccZtsI8TorQTruGanCVZbavul/AvJdDX7ck
+ffhNzao4AMuQdjFMz3FQr7kkGo3GpveC3tmNhK4aFnDWsleEgNvQ2NvaRLdz6wbe
+OTxk42sIJtG7iKjleKz2xthCp6R/AvhdU1O6SZCKmskpmZW3eHp6107WuCqd0IMr
+ifs9cwEK62iqVAix0cNp5GxmsOpEUBtExk2RAxTQMGCwFePPu4BI5iXYMYuDXbDl
+4xHzLoSr0wbCW8EGl17+Pd3i+llfjgZxvKIi0DUOh6IeuvWtB8sVNA6h1+6w3VTi
+DmUOEBcdbpNR1y0OdszrApcP5CJYbYlFzUYWfVn+MV01nj9lNaAwGB2ynlk2CpMI
+r9u0PbShD9lib5CgbO/rbQqSJfG+o5rjlzP/YtTw+InVZQT+2OQqYh/RxsKVGjcE
+9SHHRKesGwBhiDtLS5oRTI5GakkYjqg5+euIFKcHBshmoTgf54BiWAV4WATKuxwT
+gjcfbiUHdTDJ6+z2klekmIelujnlAMgAoKcksb0toRkMXZbq91bqB/ytak6/wHEG
+YtLYHZZiHTwejG8qi5jm
+=mIbT
+-----END PGP SIGNATURE-----
+
+--UugvWAfsgieZRqgk--
