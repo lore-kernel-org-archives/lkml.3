@@ -1,145 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997AbaHATOI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 15:14:08 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58811 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755270AbaHATOG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 15:14:06 -0400
-Date: Fri, 1 Aug 2014 20:13:40 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jeff Harris <jefftharris@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jeff Harris <jharris@westell.com>
-Subject: Re: [PATCH] jffs2: Re-enable write-buffering after filesystem sync
-Message-ID: <20140801191340.GN18016@ZenIV.linux.org.uk>
-References: <1406909172-7219-1-git-send-email-jharris@westell.com>
- <20140801165607.GM18016@ZenIV.linux.org.uk>
- <CAGMfbUPOMKVkZuZtzoN-w5pTpjHMzYhrdaM2WuBdm7RSMsNYAw@mail.gmail.com>
+	id S1756008AbaHATQK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 15:16:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25393 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751694AbaHATQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 15:16:07 -0400
+Message-ID: <53DBE764.8050109@redhat.com>
+Date: Fri, 01 Aug 2014 15:15:48 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGMfbUPOMKVkZuZtzoN-w5pTpjHMzYhrdaM2WuBdm7RSMsNYAw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Saravana Kannan <skannan@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
+ to be held for duration of changing governors [v2]
+References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org> <53DAA749.5080506@redhat.com> <53DAA95B.2040505@codeaurora.org> <53DAB038.3050007@redhat.com> <53DABFA6.6090503@codeaurora.org> <53DACA26.1000908@redhat.com> <53DAE592.2030909@codeaurora.org> <53DB6B81.6050400@redhat.com> <53DBCBE8.6010809@codeaurora.org>
+In-Reply-To: <53DBCBE8.6010809@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 01:15:45PM -0400, Jeff Harris wrote:
-> On Fri, Aug 1, 2014 at 12:56 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > On Fri, Aug 01, 2014 at 12:06:12PM -0400, Jeff Harris wrote:
-> >
-> > > +     spin_lock(&c->wbuf_dwork_lock);
-> > >       cancel_delayed_work_sync(&c->wbuf_dwork);
-> >
-> > Umm...  Usually ..._sync in function name is a sign of potential sleeper,
-> > and calling those under a spinlock is a bad idea.
-> >
-> > And looking at the definition of cancel_delayed_work_sync() turns up the
-> > following call chain: cancel_delayed_work_sync() -> __cancel_work_timer() ->
-> > flush_work() -> wait_for_completion(), which definitely isn't something
-> > you should ever do under a spinlock.
+
+
+On 08/01/2014 01:18 PM, Stephen Boyd wrote:
+> On 08/01/14 03:27, Prarit Bhargava wrote:
+>>
+>> Can you send me the test and the trace of the deadlock?  I'm not creating it with:
+>>
 > 
-> The jffs2_dirty_trigger function calls queue_delayed_work under the spinlock.
-> I suppose the flag could be reset after the cancel so the dirty
-> trigger would see
-> the false value.
+> This was with conservative as the default, and switching to ondemand
+> 
+> # cd /sys/devices/system/cpu/cpu2/cpufreq
+> # ls
+> affected_cpus                  scaling_available_governors
+> conservative                   scaling_cur_freq
+> cpuinfo_cur_freq               scaling_driver
+> cpuinfo_max_freq               scaling_governor
+> cpuinfo_min_freq               scaling_max_freq
+> cpuinfo_transition_latency     scaling_min_freq
+> related_cpus                   scaling_setspeed
+> scaling_available_frequencies  stats
+> # cat conservative/down_threshold
+> 20
+> # echo ondemand > scaling_governor
 
-Why do we need ->wbuf_queued, anyway?  It's not as if queue_delayed_work()
-wouldn't do the right thing - if the sucker already has WORK_STRUCT_PENDING_BIT
-set it'll simply do nothing.  And it won't spend much time finding that
-out - in fact, it'll be cheaper than what we do right now.
+Thanks Stephen,
 
-IOW, how about the following (completely untested):
+There's obviously a difference in our .configs.  I have a global conservative
+directory, ie) /sys/devices/system/cpu/cpufreq/conservative instead of a per-cpu
+governor file.
 
-[jffs2] kill wbuf_queued/wbuf_dwork_lock
+ie) what are your .config options for CPUFREQ?
 
-schedule_delayed_work() happening when the work is already pending is
-a cheap no-op.  Don't bother with ->wbuf_queued logics - it's both
-broken (cancelling ->wbuf_dwork leaves it set, as spotted by Jeff Harris)
-and pointless.  It's cheaper to let schedule_delayed_work() handle that
-case.
+Mine are:
 
-Reported-by: Jeff Harris <jefftharris@gmail.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
+#
+# CPU Frequency scaling
+#
+CONFIG_CPU_FREQ=y
+CONFIG_CPU_FREQ_GOV_COMMON=y
+CONFIG_CPU_FREQ_STAT=m
+CONFIG_CPU_FREQ_STAT_DETAILS=y
+# CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE is not set
+# CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE is not set
+# CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND is not set
+CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE=y
+CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+CONFIG_CPU_FREQ_GOV_POWERSAVE=y
+CONFIG_CPU_FREQ_GOV_USERSPACE=y
+CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
 
-diff --git a/fs/jffs2/jffs2_fs_sb.h b/fs/jffs2/jffs2_fs_sb.h
-index 413ef89..046fee8 100644
---- a/fs/jffs2/jffs2_fs_sb.h
-+++ b/fs/jffs2/jffs2_fs_sb.h
-@@ -134,8 +134,6 @@ struct jffs2_sb_info {
- 	struct rw_semaphore wbuf_sem;	/* Protects the write buffer */
- 
- 	struct delayed_work wbuf_dwork; /* write-buffer write-out work */
--	int wbuf_queued;                /* non-zero delayed work is queued */
--	spinlock_t wbuf_dwork_lock;     /* protects wbuf_dwork and and wbuf_queued */
- 
- 	unsigned char *oobbuf;
- 	int oobavail; /* How many bytes are available for JFFS2 in OOB */
-diff --git a/fs/jffs2/wbuf.c b/fs/jffs2/wbuf.c
-index a6597d6..09ed551 100644
---- a/fs/jffs2/wbuf.c
-+++ b/fs/jffs2/wbuf.c
-@@ -1162,10 +1162,6 @@ static void delayed_wbuf_sync(struct work_struct *work)
- 	struct jffs2_sb_info *c = work_to_sb(work);
- 	struct super_block *sb = OFNI_BS_2SFFJ(c);
- 
--	spin_lock(&c->wbuf_dwork_lock);
--	c->wbuf_queued = 0;
--	spin_unlock(&c->wbuf_dwork_lock);
--
- 	if (!(sb->s_flags & MS_RDONLY)) {
- 		jffs2_dbg(1, "%s()\n", __func__);
- 		jffs2_flush_wbuf_gc(c, 0);
-@@ -1180,14 +1176,9 @@ void jffs2_dirty_trigger(struct jffs2_sb_info *c)
- 	if (sb->s_flags & MS_RDONLY)
- 		return;
- 
--	spin_lock(&c->wbuf_dwork_lock);
--	if (!c->wbuf_queued) {
-+	delay = msecs_to_jiffies(dirty_writeback_interval * 10);
-+	if (queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay))
- 		jffs2_dbg(1, "%s()\n", __func__);
--		delay = msecs_to_jiffies(dirty_writeback_interval * 10);
--		queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay);
--		c->wbuf_queued = 1;
--	}
--	spin_unlock(&c->wbuf_dwork_lock);
- }
- 
- int jffs2_nand_flash_setup(struct jffs2_sb_info *c)
-@@ -1211,7 +1202,6 @@ int jffs2_nand_flash_setup(struct jffs2_sb_info *c)
- 
- 	/* Initialise write buffer */
- 	init_rwsem(&c->wbuf_sem);
--	spin_lock_init(&c->wbuf_dwork_lock);
- 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
- 	c->wbuf_pagesize = c->mtd->writesize;
- 	c->wbuf_ofs = 0xFFFFFFFF;
-@@ -1251,7 +1241,6 @@ int jffs2_dataflash_setup(struct jffs2_sb_info *c) {
- 
- 	/* Initialize write buffer */
- 	init_rwsem(&c->wbuf_sem);
--	spin_lock_init(&c->wbuf_dwork_lock);
- 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
- 	c->wbuf_pagesize =  c->mtd->erasesize;
- 
-@@ -1311,7 +1300,6 @@ int jffs2_nor_wbuf_flash_setup(struct jffs2_sb_info *c) {
- 
- 	/* Initialize write buffer */
- 	init_rwsem(&c->wbuf_sem);
--	spin_lock_init(&c->wbuf_dwork_lock);
- 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
- 
- 	c->wbuf_pagesize = c->mtd->writesize;
-@@ -1346,7 +1334,6 @@ int jffs2_ubivol_setup(struct jffs2_sb_info *c) {
- 		return 0;
- 
- 	init_rwsem(&c->wbuf_sem);
--	spin_lock_init(&c->wbuf_dwork_lock);
- 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
- 
- 	c->wbuf_pagesize =  c->mtd->writesize;
+Is there some other config option I have to set?
+
+P.
+
+> 
+>  ======================================================
+>  [ INFO: possible circular locking dependency detected ]
+>  3.16.0-rc3-00039-ge1e38f124d87 #47 Not tainted
+>  -------------------------------------------------------
+>  sh/75 is trying to acquire lock:
+>   (s_active#9){++++..}, at: [<c0358a94>] kernfs_remove_by_name_ns+0x3c/0x84
+> 
+>  but task is already holding lock:
+>   (&policy->rwsem){+++++.}, at: [<c05ab1f0>] store+0x68/0xb8
+> 
+>  which lock already depends on the new lock.
+> 
+> 
+>  the existing dependency chain (in reverse order) is:
+> 
+> -> #1 (&policy->rwsem){+++++.}:
+>         [<c0359234>] kernfs_fop_open+0x138/0x298
+>         [<c02fa3f4>] do_dentry_open.isra.12+0x1b0/0x2f0
+>         [<c02fa604>] finish_open+0x20/0x38
+>         [<c0308d34>] do_last.isra.37+0x5ac/0xb68
+>         [<c03093a4>] path_openat+0xb4/0x5d8
+>         [<c0309bcc>] do_filp_open+0x2c/0x80
+>         [<c02fb558>] do_sys_open+0x10c/0x1c8
+>         [<c020f0a0>] ret_fast_syscall+0x0/0x48
+> 
+> -> #0 (s_active#9){++++..}:
+>         [<c0357d18>] __kernfs_remove+0x250/0x300
+>         [<c0358a94>] kernfs_remove_by_name_ns+0x3c/0x84
+>         [<c035aa78>] remove_files+0x34/0x78
+>         [<c035aee0>] sysfs_remove_group+0x40/0x98
+>         [<c05b0560>] cpufreq_governor_dbs+0x4c0/0x6ec
+>         [<c05abebc>] __cpufreq_governor+0x118/0x200
+>         [<c05ac0fc>] cpufreq_set_policy+0x158/0x2ac
+>         [<c05ad5e4>] store_scaling_governor+0x6c/0x94
+>         [<c05ab210>] store+0x88/0xb8
+>         [<c035a00c>] sysfs_kf_write+0x4c/0x50
+>         [<c03594d4>] kernfs_fop_write+0xc0/0x180
+>         [<c02fc5c8>] vfs_write+0xa0/0x1a8
+>         [<c02fc9d4>] SyS_write+0x40/0x8c
+>         [<c020f0a0>] ret_fast_syscall+0x0/0x48
+> 
+>  other info that might help us debug this:
+> 
+>   Possible unsafe locking scenario:
+> 
+>         CPU0                    CPU1
+>         ----                    ----
+>    lock(&policy->rwsem);
+>                                 lock(s_active#9);
+>                                 lock(&policy->rwsem);
+>    lock(s_active#9);
+> 
+>   *** DEADLOCK ***
+> 
+>  6 locks held by sh/75:
+>   #0:  (sb_writers#4){.+.+..}, at: [<c02fc6a8>] vfs_write+0x180/0x1a8
+>   #1:  (&of->mutex){+.+...}, at: [<c0359498>] kernfs_fop_write+0x84/0x180
+>   #2:  (s_active#10){.+.+..}, at: [<c03594a0>] kernfs_fop_write+0x8c/0x180
+>   #3:  (cpu_hotplug.lock){++++++}, at: [<c0221ef8>] get_online_cpus+0x38/0x9c
+>   #4:  (cpufreq_rwsem){.+.+.+}, at: [<c05ab1d8>] store+0x50/0xb8
+>   #5:  (&policy->rwsem){+++++.}, at: [<c05ab1f0>] store+0x68/0xb8
+> 
+>  stack backtrace:
+>  CPU: 0 PID: 75 Comm: sh Not tainted 3.16.0-rc3-00039-ge1e38f124d87 #47
+>  [<c0214de8>] (unwind_backtrace) from [<c02123f8>] (show_stack+0x10/0x14)
+>  [<c02123f8>] (show_stack) from [<c0709e5c>] (dump_stack+0x70/0xbc)
+>  [<c0709e5c>] (dump_stack) from [<c070722c>] (print_circular_bug+0x280/0x2d4)
+>  [<c070722c>] (print_circular_bug) from [<c02629cc>] (__lock_acquire+0x18d0/0x1abc)
+>  [<c02629cc>] (__lock_acquire) from [<c026310c>] (lock_acquire+0x9c/0x138)
+>  [<c026310c>] (lock_acquire) from [<c0357d18>] (__kernfs_remove+0x250/0x300)
+>  [<c0357d18>] (__kernfs_remove) from [<c0358a94>] (kernfs_remove_by_name_ns+0x3c/0x84)
+>  [<c0358a94>] (kernfs_remove_by_name_ns) from [<c035aa78>] (remove_files+0x34/0x78)
+>  [<c035aa78>] (remove_files) from [<c035aee0>] (sysfs_remove_group+0x40/0x98)
+>  [<c035aee0>] (sysfs_remove_group) from [<c05b0560>] (cpufreq_governor_dbs+0x4c0/0x6ec)
+>  [<c05b0560>] (cpufreq_governor_dbs) from [<c05abebc>] (__cpufreq_governor+0x118/0x200)
+>  [<c05abebc>] (__cpufreq_governor) from [<c05ac0fc>] (cpufreq_set_policy+0x158/0x2ac)
+>  [<c05ac0fc>] (cpufreq_set_policy) from [<c05ad5e4>] (store_scaling_governor+0x6c/0x94)
+>  [<c05ad5e4>] (store_scaling_governor) from [<c05ab210>] (store+0x88/0xb8)
+>  [<c05ab210>] (store) from [<c035a00c>] (sysfs_kf_write+0x4c/0x50)
+>  [<c035a00c>] (sysfs_kf_write) from [<c03594d4>] (kernfs_fop_write+0xc0/0x180)
+>  [<c03594d4>] (kernfs_fop_write) from [<c02fc5c8>] (vfs_write+0xa0/0x1a8)
+>  [<c02fc5c8>] (vfs_write) from [<c02fc9d4>] (SyS_write+0x40/0x8c)
+>  [<c02fc9d4>] (SyS_write) from [<c020f0a0>] (ret_fast_syscall+0x0/0x48)
+> 
+> 
