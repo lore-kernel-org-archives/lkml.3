@@ -1,96 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113AbaHAQHt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 12:07:49 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:48334 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139AbaHAQHs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 12:07:48 -0400
+	id S1754598AbaHAQLO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 12:11:14 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35876 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751008AbaHAQLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 12:11:12 -0400
+Date: Fri, 1 Aug 2014 18:11:08 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>,
+        =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
+Cc: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, irq: Keep IRQ assignment for PCI devices during
+ suspend/hibernation, bisected
+Message-ID: <20140801161107.GA4553@pd.tnic>
+References: <20140730175836.GC10213@pd.tnic>
+ <1406766807-5745-1-git-send-email-jiang.liu@linux.intel.com>
+ <20140731103941.GA4375@pd.tnic>
+ <53DA70AB.9010906@linux.intel.com>
+ <20140731165648.GG4375@pd.tnic>
+ <20140801105618.GA3857@nazgul.tnic>
+ <53DB87AB.1000900@linux.intel.com>
+ <20140801143922.GB5406@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <20140801122154.GA15110@thunk.org>
-References: <1406829213-4759-1-git-send-email-xerofoify@gmail.com>
-	<20140731190910.GP31950@carfax.org.uk>
-	<20140801122154.GA15110@thunk.org>
-Date: Fri, 1 Aug 2014 12:07:46 -0400
-Message-ID: <CAPDOMVgY7Aaz8z6akTrHV2Hi=h5k2o1ocTCbgarq3hvuuVP+CQ@mail.gmail.com>
-Subject: Re: [PATCH] Add support to check for FALLOC_FL_COLLAPSE_RANGE and
- FALLOC_FL_ZERO_RANGE crap modes
-From: Nick Krause <xerofoify@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Hugo Mills <hugo@carfax.org.uk>,
-        Nicholas Krause <xerofoify@gmail.com>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>,
-        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
-	<linux-btrfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140801143922.GB5406@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 1, 2014 at 8:21 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Thu, Jul 31, 2014 at 08:09:10PM +0100, Hugo Mills wrote:
->> On Thu, Jul 31, 2014 at 01:53:33PM -0400, Nicholas Krause wrote:
->> > This adds checks for the stated modes as if they are crap we will return error
->> > not supported.
->>
->>    You've just enabled two options, but you haven't actually
->> implemented the code behind it. I would tell you *NOT* to do anything
->> else on this work until you can answer the question: What happens if
->> you apply this patch, create a large file called "foo.txt", and then a
->> userspace program executes the following code?
->>
->> int fd = open("foo.txt", O_RDWR);
->> fallocate(fd, FALLOCATE_FL_COLLAPSE_RANGE, 50, 50);
->>
->>    Try it on a btrfs filesystem, both with and without your patch.
->> Also try it on an ext4 filesystem.
->>
->>    Once you've done all of that, reply to this mail and tell me what
->> the problem is with this patch. You need to make two answers: what are
->> the technical problems with the patch? What errors have you made in
->> the development process?
->
-> There are also the conceptual failures.  Before you do anything else,
-> you need to be able to answer the question, "what do you think the
-> flags FALLOC_FL_COLLAPSE_RANGE and FALLOC_FL_ZERO_RANGE are supposed
-> to do?"  What are the possible appropriate things for btrfs to do if
-> it sees these flags?  (Hint: there is more than one correct answer,
-> and its current choice is one of them.  What is the other one?)
->
-> Nick, the fact that you call these modes "crap" is a hint that you
-> have a fundamental lack of understanding --- and before you waste more
-> of kernel developers' time, you need to get that understanding first,
-> for any bit of code that you propose to "improve".
->
-> This is why I suggested that you work on userspace testing scripts
-> first.  It's pretty clear you are (a) incredibly sloppy, and (b)
-> lacking conceptual understanding of a lot of technical details, and
-> (c) even worse, aren't letting this lack of understanding stop you
-> from posting patches.  As a result you are adding negative value to
-> whatever project or subsystem you try to attach yourself to --- you're
-> not helping.
->
->                                                 - Ted
->
-> P.S.   As a further hint, change the above code to read:
->
->         int fd = open("foo.txt", O_RDWR);
->         if (fallocate(fd, FALLOCATE_FL_COLLAPSE_RANGE, 4096, 8192) < 0)
->                 perror("fallocate");
->
-> And then run "filefrag -vs foo.txt" before and after running the above
-> code fragment and then try something like this:
->
->      cp /usr/share/dict/words foo.txt
->      filefrag -vs foo.txt
->      ls -l foo.txt
->      /tmp/fallocate-test-prog
->      filefrag -vs foo.txt
->      ls -l foo.txt
->      diff /usr/share/dict/words foo.txt
->
-> Try doing this on an ext4 or xfs system and a btrfs file system.
+On Fri, Aug 01, 2014 at 04:39:22PM +0200, Borislav Petkov wrote:
+> I could try to disable the IOMMU and see whether it still triggers.
+> That could tell us something.
 
-I miss send this patch, that's my there are issues.
-Cheers Nick
+Ok, let me summarize what I've been able to observe so far:
+
+* https://lkml.kernel.org/r/1406766807-5745-1-git-send-email-jiang.liu@linux.intel.com
+
+this is definitely needed for suspend/resume so for that patch
+
+Acked-and-tested-by: Borislav Petkov <bp@suse.de>
+
+(I need to somehow justify a whole day of bisecting today :-P)
+
+* Then, this
+---
+diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
+index 82044b5d6113..efc953119ce2 100644
+--- a/drivers/usb/core/hcd-pci.c
++++ b/drivers/usb/core/hcd-pci.c
+@@ -380,6 +380,8 @@ void usb_hcd_pci_shutdown(struct pci_dev *dev)
+ 	if (test_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags) &&
+ 			hcd->driver->shutdown) {
+ 		hcd->driver->shutdown(hcd);
++		if (usb_hcd_is_primary_hcd(hcd) && hcd->irq > 0)
++			free_irq(hcd->irq, hcd);
+ 		pci_disable_device(dev);
+ 	}
+ }
+--
+
+is needed for not triggering the remove_proc_entry() WARN_ON.
+
+Finally, even with this hunk above, suspend works fine but I see IOMMU
+PFs sometimes(!). Yes, sometimes as in it suspends fine without even
+screaming at all and sometimes I get a few of those right before the
+machine goes down:
+
+[   89.040795] pcieport 0000:00:04.0: System wakeup enabled by ACPI
+[   89.061697] AMD-Vi: Event logged [IO_PAGE_FAULT device=01:00.0 domain=0x0014 address=0x0000000020001000 flags=0x0000]
+[   89.071871] ACPI: Preparing to enter system sleep state S5
+[   89.072117] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query honored via cmdline
+[   89.089832] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x0000000000000080 flags=0x0020]
+[   89.102239] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x0000000000000000 flags=0x0000]
+[   89.114684] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x00000000ffffffc0 flags=0x0010]
+[   89.127162] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x00000000ffffffc0 flags=0x0010]
+[   89.139576] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x00000000ffffffc0 flags=0x0010]
+[   89.152017] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x00000000ffffffc0 flags=0x0010]
+[   89.164481] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x00000000ffffffc0 flags=0x0010]
+[   89.176994] AMD-Vi: Event logged [[   89.177657] reboot: Power down
+[   89.185286] acpi_power_off called
+
+Now this device 00:12.0 is that OHCI thing for which we have the
+hcd-pci.c hunk applied above, AFAICT:
+
+00:12.0 USB controller: Advanced Micro Devices, Inc. [AMD/ATI] SB7x0/SB8x0/SB9x0 USB OHCI0 Controller
+
+so it must be still some timing issue there after disabling the device
+and *before* disabling the IOMMU.
+
+I don't have a clue how to further debug that. Joerg is on CC.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
