@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837AbaHAC7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 22:59:40 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:63600 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388AbaHAC7j (ORCPT
+	id S1753449AbaHADBQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 23:01:16 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:45852 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaHADBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 22:59:39 -0400
-Message-ID: <1406861975.5319.5.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, bobby.prani@gmail.com
-Date: Fri, 01 Aug 2014 04:59:35 +0200
-In-Reply-To: <20140731163819.GS11241@linux.vnet.ibm.com>
-References: <20140728225556.GA19493@linux.vnet.ibm.com>
-	 <1406588180-21933-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20140729081416.GR20603@laptop.programming.kicks-ass.net>
-	 <20140729172304.GA16073@linux.vnet.ibm.com> <20140729173332.GM3935@laptop>
-	 <20140729180656.GY11241@linux.vnet.ibm.com>
-	 <1406726619.5889.17.camel@marge.simpson.net>
-	 <20140730142311.GJ11241@linux.vnet.ibm.com>
-	 <1406792228.6348.22.camel@marge.simpson.net>
-	 <20140731163819.GS11241@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 31 Jul 2014 23:01:15 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: davem@davemloft.net, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] iovec: make sure the caller actually wants anything in memcpy_fromiovecend
+Date: Thu, 31 Jul 2014 23:00:35 -0400
+Message-Id: <1406862035-27818-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.9.1
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-31 at 09:38 -0700, Paul E. McKenney wrote:
+Check for cases when the caller requests 0 bytes instead of running off
+and dereferencing potentially invalid iovecs.
 
-> Does building with CONFIG_NO_HZ_FULL_SYSIDLE=y slow things down even more?
-> If so, that would give me a rough idea of the cost of RCU's dyntick-idle
-> handling.
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ lib/iovec.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Nope.  Deltas are all down in the statistical frog hair.
-
--Mike
+diff --git a/lib/iovec.c b/lib/iovec.c
+index 7a7c2da..df3abd1 100644
+--- a/lib/iovec.c
++++ b/lib/iovec.c
+@@ -85,6 +85,10 @@ EXPORT_SYMBOL(memcpy_toiovecend);
+ int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
+ 			int offset, int len)
+ {
++	/* No data? Done! */
++	if (len == 0)
++		return 0;
++
+ 	/* Skip over the finished iovecs */
+ 	while (offset >= iov->iov_len) {
+ 		offset -= iov->iov_len;
+-- 
+1.7.10.4
 
