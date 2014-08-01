@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418AbaHAI3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 04:29:41 -0400
-Received: from bart.luffy.cx ([78.47.78.131]:56180 "EHLO bart.luffy.cx"
+	id S1754190AbaHAIbe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 04:31:34 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:49549 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753830AbaHAI3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 04:29:39 -0400
-From: Vincent Bernat <vincent@bernat.im>
-To: Benjamin Romer <benjamin.romer@unisys.com>,
-        David Kershner <david.kershner@unisys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        sparmaintainer@unisys.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Vincent Bernat <vincent@bernat.im>
-Subject: [PATCH] staging: visorchipset: fix sparse warnings about static declaration
-Date: Fri,  1 Aug 2014 10:29:30 +0200
-Message-Id: <1406881770-13808-1-git-send-email-vincent@bernat.im>
-X-Mailer: git-send-email 2.0.1
+	id S1751492AbaHAIbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 04:31:32 -0400
+Message-ID: <53DB5061.8080403@mm-sol.com>
+Date: Fri, 01 Aug 2014 11:31:29 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+CC: David Collins <collinsd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v3 1/4] mfd: pm8xxx-spmi: add support for Qualcomm SPMI
+ PMICs
+References: <1406205921-7452-1-git-send-email-svarbanov@mm-sol.com> <1406205921-7452-2-git-send-email-svarbanov@mm-sol.com> <53D8182A.5050204@codeaurora.org> <53DA02C0.2050606@mm-sol.com>
+In-Reply-To: <53DA02C0.2050606@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some functions were prototyped as static but the actual definition
-wasn't. While this is valid (the function is static because the two
-declarations don't conflict and the first one is static), this makes
-sparse unhappy and cause confusion of normal people too.
+On 07/31/2014 11:48 AM, Stanimir Varbanov wrote:
+> Hi David,
+> 
+> Thanks for the comments!
+> 
+> On 07/30/2014 12:54 AM, David Collins wrote:
+>> On 07/24/2014 05:45 AM, Stanimir Varbanov wrote:
+>>> From: Josh Cartwright <joshc@codeaurora.org>
+>>>
+>>> The Qualcomm SPMI PMIC chips are components used with the
+>>> Snapdragon 800 series SoC family.  This driver exists
+>>> largely as a glue mfd component, it exists to be an owner
+>>> of an SPMI regmap for children devices described in
+>>> device tree.
+>>>
+>>> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+>>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+>>> Acked-by: Lee Jones <lee.jones@linaro.org>
+>>> ---
+>>>  drivers/mfd/Kconfig       |   16 +++++++++++
+>>>  drivers/mfd/Makefile      |    1 +
+>>>  drivers/mfd/pm8xxx-spmi.c |   65 +++++++++++++++++++++++++++++++++++++++++++++
+>>
+>> Would it be possible to rename this driver: qcom-spmi-pmic.c?  The driver
+>> will be supporting several PMICs that do not fit the pm8xxx naming scheme.
+>>  One of which is even specified in the compatible list of this driver
+>> (pma8084).  There is presently downstream support for the following PMICs:
+>> PM8019, PM8110, PM8226, PM8841, PM8916, PM8941, PM8994, PMA8084, PMD9635,
+>> PMI8962, and PMI8994 [1].  Four of these do not fit the "PM8XXX" template.
+> 
+> I haven't strong opinion on the file names. The qcom prefix is the one
+> which annoying me. If you look at /drivers/mfd the company name prefixes
+> are very few.
+> 
+> The *compatible* strings are the important thing here. So If MFD
+> maintainer is fine with this name I'm fine too.
 
-Signed-off-by: Vincent Bernat <vincent@bernat.im>
----
- .../unisys/visorchipset/visorchipset_main.c        | 22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+Lee, are you OK with suggested names qcom-spmi-pmic and qcom-ssbi-pmic?
 
-diff --git a/drivers/staging/unisys/visorchipset/visorchipset_main.c b/drivers/staging/unisys/visorchipset/visorchipset_main.c
-index 156a72fdabd9..c40ff24a30b9 100644
---- a/drivers/staging/unisys/visorchipset/visorchipset_main.c
-+++ b/drivers/staging/unisys/visorchipset/visorchipset_main.c
-@@ -339,8 +339,9 @@ static void controlvm_respond_physdev_changestate(CONTROLVM_MESSAGE_HEADER *
- 						  msgHdr, int response,
- 						  ULTRA_SEGMENT_STATE state);
- 
--ssize_t toolaction_show(struct device *dev, struct device_attribute *attr,
--		char *buf)
-+static ssize_t toolaction_show(struct device *dev,
-+			       struct device_attribute *attr,
-+			       char *buf)
- {
- 	u8 toolAction;
- 
-@@ -350,8 +351,9 @@ ssize_t toolaction_show(struct device *dev, struct device_attribute *attr,
- 	return scnprintf(buf, PAGE_SIZE, "%u\n", toolAction);
- }
- 
--ssize_t toolaction_store(struct device *dev, struct device_attribute *attr,
--		const char *buf, size_t count)
-+static ssize_t toolaction_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count)
- {
- 	u8 toolAction;
- 	int ret;
-@@ -369,8 +371,9 @@ ssize_t toolaction_store(struct device *dev, struct device_attribute *attr,
- 		return count;
- }
- 
--ssize_t boottotool_show(struct device *dev, struct device_attribute *attr,
--		char *buf)
-+static ssize_t boottotool_show(struct device *dev,
-+			       struct device_attribute *attr,
-+			       char *buf)
- {
- 	ULTRA_EFI_SPAR_INDICATION efiSparIndication;
- 
-@@ -382,8 +385,9 @@ ssize_t boottotool_show(struct device *dev, struct device_attribute *attr,
- 			efiSparIndication.BootToTool);
- }
- 
--ssize_t boottotool_store(struct device *dev, struct device_attribute *attr,
--		const char *buf, size_t count)
-+static ssize_t boottotool_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count)
- {
- 	int val, ret;
- 	ULTRA_EFI_SPAR_INDICATION efiSparIndication;
-@@ -1932,7 +1936,7 @@ handle_command(CONTROLVM_MESSAGE inmsg, HOSTADDRESS channel_addr)
- 	return TRUE;
- }
- 
--HOSTADDRESS controlvm_get_channel_address(void)
-+static HOSTADDRESS controlvm_get_channel_address(void)
- {
- 	U64 addr = 0;
- 	U32 size = 0;
 -- 
-2.0.1
-
+regards,
+Stan
