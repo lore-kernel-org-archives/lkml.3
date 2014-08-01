@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208AbaHAILL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 04:11:11 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40192 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753924AbaHAILD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 04:11:03 -0400
-Date: Fri, 1 Aug 2014 09:10:38 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Omar Sandoval <osandov@osandov.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH] ARM: don't enter kgdb when userspace executes a kgdb
- break instruction.
-Message-ID: <20140801081038.GA15733@arm.com>
-References: <20140801030520.GA27665@mew>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140801030520.GA27665@mew>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754234AbaHAIMS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 04:12:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39958 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750892AbaHAIMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 04:12:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,778,1400050800"; 
+   d="scan'208";a="582101572"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH 1/2] KVM: nVMX: Fix nested vmexit ack intr before load vmcs01
+Date: Fri,  1 Aug 2014 16:12:06 +0800
+Message-Id: <1406880727-60001-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 04:05:20AM +0100, Omar Sandoval wrote:
-> The kgdb breakpoint hooks (kgdb_brk_fn and kgdb_compiled_brk_fn) should only be
-> entered when a kgdb break instruction is executed from the kernel. Otherwise,
-> if kgdb is enabled, a userspace program can cause the kernel to drop into the
-> debugger by executing either KGDB_BREAKINST or KGDB_COMPILED_BREAK.
-> 
-> Signed-off-by: Omar Sandoval <osandov@osandov.com>
-> ---
-> On a kernel running with kgdb enabled, this program reproduces the problem:
-> .globl _start
-> _start:
-> 	udf	#65006	@ KGDB_BREAKINST
-> 
-> The same problem has been fixed in ARM64.
-> 
->  arch/arm/kernel/kgdb.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
-> index 778c2f7..a74b53c 100644
-> --- a/arch/arm/kernel/kgdb.c
-> +++ b/arch/arm/kernel/kgdb.c
-> @@ -160,12 +160,16 @@ static int kgdb_compiled_brk_fn(struct pt_regs *regs, unsigned int instr)
->  static struct undef_hook kgdb_brkpt_hook = {
->  	.instr_mask		= 0xffffffff,
->  	.instr_val		= KGDB_BREAKINST,
-> +	.cpsr_mask		= MODE_MASK,
-> +	.cpsr_val		= SVC_MODE,
->  	.fn			= kgdb_brk_fn
->  };
->  
->  static struct undef_hook kgdb_compiled_brkpt_hook = {
->  	.instr_mask		= 0xffffffff,
->  	.instr_val		= KGDB_COMPILED_BREAK,
-> +	.cpsr_mask		= MODE_MASK,
-> +	.cpsr_val		= SVC_MODE,
->  	.fn			= kgdb_compiled_brk_fn
->  };
+External interrupt will cause L1 vmexit w/ reason external interrupt when L2 is 
+running. Then L1 will pick up the interrupt through vmcs12 if L1 set the ack 
+interrupt bit. Commit 77b0f5d (KVM: nVMX: Ack and write vector info to intr_info
+if L1 asks us to) get intr that belongs to L1 before load vmcs01 which is wrong, 
+especially this lead to the obvious L1 ack APICv behavior weired since APICv 
+is for L1 instead of L2. This patch fix it by ack intr after load vmcs01.
 
-Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+ arch/x86/kvm/vmx.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Please put this into rmk's patch system.
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index e618f34..b8122b3 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -8754,14 +8754,6 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
+ 	prepare_vmcs12(vcpu, vmcs12, exit_reason, exit_intr_info,
+ 		       exit_qualification);
+ 
+-	if ((exit_reason == EXIT_REASON_EXTERNAL_INTERRUPT)
+-	    && nested_exit_intr_ack_set(vcpu)) {
+-		int irq = kvm_cpu_get_interrupt(vcpu);
+-		WARN_ON(irq < 0);
+-		vmcs12->vm_exit_intr_info = irq |
+-			INTR_INFO_VALID_MASK | INTR_TYPE_EXT_INTR;
+-	}
+-
+ 	trace_kvm_nested_vmexit_inject(vmcs12->vm_exit_reason,
+ 				       vmcs12->exit_qualification,
+ 				       vmcs12->idt_vectoring_info_field,
+@@ -8771,6 +8763,14 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
+ 
+ 	vmx_load_vmcs01(vcpu);
+ 
++	if ((exit_reason == EXIT_REASON_EXTERNAL_INTERRUPT)
++	    && nested_exit_intr_ack_set(vcpu)) {
++		int irq = kvm_cpu_get_interrupt(vcpu);
++		WARN_ON(irq < 0);
++		vmcs12->vm_exit_intr_info = irq |
++			INTR_INFO_VALID_MASK | INTR_TYPE_EXT_INTR;
++	}
++
+ 	vm_entry_controls_init(vmx, vmcs_read32(VM_ENTRY_CONTROLS));
+ 	vm_exit_controls_init(vmx, vmcs_read32(VM_EXIT_CONTROLS));
+ 	vmx_segment_cache_clear(vmx);
+-- 
+1.9.1
 
-Cheers,
-
-Will
