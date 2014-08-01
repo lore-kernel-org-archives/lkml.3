@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320AbaHABxk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 21:53:40 -0400
-Received: from ozlabs.org ([103.22.144.67]:44312 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752673AbaHABxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 21:53:39 -0400
-Message-ID: <1406858017.32701.1.camel@concordia>
-Subject: Re: scheduler crash on Power
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: peterz@infrdead.org, bruno@wolff.to, jwboyer@redhat.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Fri, 01 Aug 2014 11:53:37 +1000
-In-Reply-To: <20140730072242.GA21516@us.ibm.com>
-References: <20140730072242.GA21516@us.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753477AbaHABzy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 21:55:54 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:39891 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624AbaHABzw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 21:55:52 -0400
+From: Chase Southwood <chase.southwood@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chase Southwood <chase.southwood@gmail.com>
+Subject: [PATCH 0/2] staging: comedi: addi_apci_1564: provide interface to read diagnostic status
+Date: Thu, 31 Jul 2014 20:55:37 -0500
+Message-Id: <cover.1406857380.git.chase.southwood@gmail.com>
+X-Mailer: git-send-email 2.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-30 at 00:22 -0700, Sukadev Bhattiprolu wrote:
-> I am getting this crash on a Powerpc system using 3.16.0-rc7 kernel plus
-> some patches related to perf (24x7 counters) that Cody Schafer posted here:
-> 
-> 	https://lkml.org/lkml/2014/5/27/768
-> 
-> I don't get the crash on an unpatched kernel though.
+This patchset creates a simple subdevice to allow for reading of the
+board's diagnostic status, and then removes any code which is related to
+diagnostic interrupts, as the driver will not support these at this time.
 
-You mean you don't get the crash on 3.16-rc7 ?
+Chase Southwood (2):
+  staging: comedi: addi_apci_1564: add subdevice to check diagnostic
+    status
+  staging: comedi: addi_apci_1564: remove diagnostic interrupt support
+    code
 
-I find it hard to believe those 24x7 patches are causing this.
- 
-> I am also attaching the debug messages that Peterz added
-> here: https://lkml.org/lkml/2014/7/17/288
+ .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 14 --------
+ drivers/staging/comedi/drivers/addi_apci_1564.c    | 41 ++++++++++++----------
+ 2 files changed, 22 insertions(+), 33 deletions(-)
 
-I don't see any FAIL messages in your log, so it looks like you're not hitting
-the case that patch was looking for?
-
-> Appreciate any debug suggestions.
-
-Reproduce on an unpatched kernel.
-
-cheers
-
+-- 
+2.0.3
 
