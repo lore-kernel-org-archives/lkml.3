@@ -1,120 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaHAAzt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 20:55:49 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37404 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102AbaHAAzr (ORCPT
+	id S1752977AbaHAA5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 20:57:16 -0400
+Received: from mga03.intel.com ([143.182.124.21]:62885 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750907AbaHAA5P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 20:55:47 -0400
-Message-ID: <53DAE592.2030909@codeaurora.org>
-Date: Thu, 31 Jul 2014 17:55:46 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 31 Jul 2014 20:57:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,776,1400050800"; 
+   d="scan'208";a="463811895"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] KVM: nVMX: nested TPR shadow/threshold emulation
+Thread-Topic: [PATCH] KVM: nVMX: nested TPR shadow/threshold emulation
+Thread-Index: AQHPrJX4RhX9yaWyK0S7bgZ3S5tyfZu5Y36AgAGGr9A=
+Date: Fri, 1 Aug 2014 00:57:11 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AB4D3F5@SHSMSX104.ccr.corp.intel.com>
+References: <1406721880-5490-1-git-send-email-wanpeng.li@linux.intel.com>
+ <53D90D5A.3060404@redhat.com> <20140731080353.GA3033@kernel>
+ <53DA0B91.1010703@redhat.com>
+In-Reply-To: <53DA0B91.1010703@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
- to be held for duration of changing governors [v2]
-References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org> <53DAA749.5080506@redhat.com> <53DAA95B.2040505@codeaurora.org> <53DAB038.3050007@redhat.com> <53DABFA6.6090503@codeaurora.org> <53DACA26.1000908@redhat.com>
-In-Reply-To: <53DACA26.1000908@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2014 03:58 PM, Prarit Bhargava wrote:
->
->
-> On 07/31/2014 06:13 PM, Saravana Kannan wrote:
->> On 07/31/2014 02:08 PM, Prarit Bhargava wrote:
->>>
->>>
->>> On 07/31/2014 04:38 PM, Saravana Kannan wrote:
->>>> On 07/31/2014 01:30 PM, Prarit Bhargava wrote:
->>>>>
->>>>>
->>>>> On 07/31/2014 04:24 PM, Saravana Kannan wrote:
->>>>>>
->>>>>> Prarit,
->>>>>>
->>>>>> I'm not an expert on sysfs locking, but I would think the specific sysfs lock
->>>>>> would depend on the file/attribute group. So, can you please try to hotplug a
->>>>>> core in/out (to trigger the POLICY_EXIT) and then read a sysfs file
->>>>>> exported by
->>>>>> the governor? scaling_governor doesn't cut it since that file is not
->>>>>> removed on
->>>>>> policy exit event to governor. If it's ondemand, try reading/write it's
->>>>>> sampling
->>>>>> rate file.
->>>>>
->>>>> Thanks Saravana -- will do.  I will get back to you shortly on this.
->>>>>
->>>>
->>>> Thanks. Btw, in case you weren't already aware of it. You'll have to hoplug out
->>>> all the CPUs in a cluster to trigger a POLICY_EXIT for that cluster/policy.
->>>
->>> Yep -- the affected_cpus file should show all the cpus in the policy IIRC.  One
->>> of the systems I have has 1 cpu/policy and has 48 threads so the POLICY_EXIT is
->>> called.
->>>
->>> I'll put something like
->>>
->>> while [1];
->>> do
->>> echo ondemand > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor
->>> cat /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate
->>> echo 20000 > /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate
->>> cat /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate
->>> echo 0 > /sys/devices/system/cpu/cpu1/online
->>> sleep 1
->>> echo 1 > /sys/devices/system/cpu/cpu1/online
->>> sleep 1
->>> done
->>>
->>
->> The actual race can only happen with 2 threads. I'm just trying to trigger a
->> lockdep warning here.
->
-> I ran the above in two separate terminals with cpuset -c 0 and cpuset -c 1 to
-> multi-thread it all.  No deadlock or LOCKDEP trace after about 1/2 hour, so I
-> think we're in the clear on that concern.
->
+Paolo Bonzini wrote on 2014-07-31:
+> Il 31/07/2014 10:03, Wanpeng Li ha scritto:
+>>> One thing:
+>>> 
+>>>> +	if (nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW))
+>>>> +		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
+>>> 
+>>> I think you can just do this write unconditionally, since most
+>>> hypervisors will enable this.  Also, you probably can add the tpr
+>> 
+>> What will happen if a hypervisor doesn't enable it? I make it more
+>> cleaner in version two.
+> 
+> TPR_THRESHOLD will be likely written as zero, but the processor will
+> never use it anyway.  It's just a small optimization because
+> nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW) will almost always be true.
 
-I wasn't convinced. So, I took some help from Stephen to test it.
+Theoretically, you are right. But we should not expect all VMMs follow it. It is not worth to violate the SDM just for saving two or three instructions' cost.
 
-It's been a while, so I didn't remember the original issue clearly when 
-I gave you some test suggestions. Now that I looked at the code more 
-closely, I have a proper way to reproduce the original issue.
+> 
+> Paolo
+> 
+>>> threshold field to the read-write fields for shadow VMCS.
+>> 
+>> Agreed.
+>> 
+>> Regards,
+>> Wanpeng Li
 
-Nack for this patch for 2 reasons:
-1. You seem to have accidentally removed a GOV_STOP in your patch. We 
-definitely can't do that. This broke changing governors and that's why 
-your patch didn't cause any issues. Because all your governor echos were 
-failing.
-2. When we fixed that and actually tried a proper test (not the one I 
-gave you), we reproduced the original issue.
 
-To reproduce original issue:
-Preconditions:
-* lockdep is enabled
-* governor per policy is enabled
+Best regards,
+Yang
 
-Steps:
-1. Set governor to ondemand.
-2. Cat one of the ondemand sysfs files.
-3. Change governor to conservative.
 
-When you do that, there's an AB, BA dead lock issue with one thread 
-trying to cat a governor sysfs file and another thread trying to change 
-governors.
-
--Saravana
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
