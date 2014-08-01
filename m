@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbaHABFc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 21:05:32 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63137 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750907AbaHABFa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 21:05:30 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: Re: [PATCH 1/3] irq / PM: New driver interface for wakeup interrupts
-Date: Fri, 01 Aug 2014 03:24:04 +0200
-Message-ID: <1918133.CZQNkLMFlz@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1624300.2IhdzCt5pu@vostro.rjw.lan>
-References: <20140724212620.GO3935@laptop> <alpine.DEB.2.10.1407312103190.4997@nanos> <1624300.2IhdzCt5pu@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752916AbaHABFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 21:05:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:42373 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752726AbaHABFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 21:05:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,776,1400050800"; 
+   d="scan'208";a="570243845"
+From: Jie Yang <yang.jie@intel.com>
+To: linux-acpi@vger.kernel.org
+Cc: rjw@rjwysocki.net, lenb@kernel.org, linux-kernel@vger.kernel.org,
+        andriy.shevchenko@linux.intel.com, liam.r.girdwood@intel.com,
+        vinod.koul@intel.com, yang.jie@intel.com, mengdong.lin@intel.com
+Subject: [PATCH v2] ACPI / LPSS: add lpss device for Wildcat Point PCH
+Date: Fri,  1 Aug 2014 09:06:35 +0800
+Message-Id: <1406855195-14275-1-git-send-email-yang.jie@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 01, 2014 02:08:12 AM Rafael J. Wysocki wrote:
-> On Friday, August 01, 2014 12:16:23 AM Thomas Gleixner wrote:
-> > On Thu, 31 Jul 2014, Rafael J. Wysocki wrote:
-> > > On Thursday, July 31, 2014 12:44:24 PM Thomas Gleixner wrote:
+INT3438 is the ADSP device on Wildcat Point platform
+with 2 DW DMA engines built In. The DMA engines are
+used for DSP FW loading and audio data transferring.
+These DMA engine probing need the clock, without it,
+probing may failed and can't go forward.
 
-[cut]
+Add lpss device "INT3438" for Wildcat Point PCH, to
+provide clock for its ADSP DMA engine probing.
 
-> Except for a couple of points where I'm not sure I understand you correctly
-> (commented above), all of that sounds good to me.
-> 
-> I'm not sure about the ordering, though.  It would be good to have a working
-> replacement for the IRQF_NO_SUSPEND things that we'll be removing in 1, for
-> example.  So since we need to do 3) IRQF_SHARED for both IRQF_NO_SUSPEND and
-> wakeup, as you said, would it be practical to start with that one?
+Signed-off-by: Jie Yang <yang.jie@intel.com>
+---
+ drivers/acpi/acpi_lpss.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-I forgot about one case which in my opinion would be good to take into account
-from the outset.  That is the case of runtime-suspended devices that we don't
-want to touch during system suspend/resume.  If those are system wakeup
-devices, their drivers should be able to configure them for system wakeup
-at the runtime suspend time rather than during system suspend.  Also if their
-interrupts are going to be used as system wakeup interrupts, the interface
-that we're going to provide needs to handle that case.  That is, it should
-be possible to use that interface at the runtime suspend time and it should
-take care of all things going forward.
-
-Triggering a lazy disable right at the runtime suspend time may not work,
-because the interrupt will also be used for the device's runtime remote wakeup
-in that case, so it has to be functional until system suspend is started and
-the core decides to leave the device in its current state.  This means that
-the core will need to trigger the lazy disable for it at one point during
-system suspend.
-
-Rafael
+diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+index 9cb65b0..ce06149 100644
+--- a/drivers/acpi/acpi_lpss.c
++++ b/drivers/acpi/acpi_lpss.c
+@@ -113,6 +113,14 @@ static void lpss_i2c_setup(struct lpss_private_data *pdata)
+ 	writel(val, pdata->mmio_base + offset);
+ }
+ 
++static struct lpss_device_desc wpt_dev_desc = {
++	.clk_required = true,
++	.prv_offset = 0x800,
++	.ltr_required = true,
++	.clk_divider = true,
++	.clk_gate = true,
++};
++
+ static struct lpss_device_desc lpt_dev_desc = {
+ 	.clk_required = true,
+ 	.prv_offset = 0x800,
+@@ -226,6 +234,8 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
+ 	{ "INT3436", LPSS_ADDR(lpt_sdio_dev_desc) },
+ 	{ "INT3437", },
+ 
++	{ "INT3438", LPSS_ADDR(wpt_dev_desc) },
++
+ 	{ }
+ };
+ 
+-- 
+1.8.3.2
 
