@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388AbaHANf7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:35:59 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53952 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932200AbaHANf6 (ORCPT
+	id S932407AbaHANgm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:36:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52620 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932174AbaHANgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 09:35:58 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3][update] PM / sleep: Introduce command line argument for sleep state enumeration
-Date: Fri, 01 Aug 2014 15:54:32 +0200
-Message-ID: <3319219.i7p5TE6seQ@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140730105529.GB12448@amd.pavel.ucw.cz>
-References: <1817539.9KW2IGGbDV@vostro.rjw.lan> <2242480.eT2OxdNqLH@vostro.rjw.lan> <20140730105529.GB12448@amd.pavel.ucw.cz>
+	Fri, 1 Aug 2014 09:36:40 -0400
+Date: Fri, 1 Aug 2014 15:36:18 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Gioh Kim <gioh.kim@lge.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
+        Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH 0/2] new API to allocate buffer-cache for superblock in
+ non-movable area
+Message-ID: <20140801133618.GJ19379@twins.programming.kicks-ass.net>
+References: <20140722093838.GA22331@quack.suse.cz>
+ <53D8A258.7010904@lge.com>
+ <20140730101143.GB19205@quack.suse.cz>
+ <53D985C0.3070300@lge.com>
+ <20140731000355.GB25362@quack.suse.cz>
+ <53D98FBB.6060700@lge.com>
+ <20140731122114.GA5240@quack.suse.cz>
+ <53DADA2F.1020404@lge.com>
+ <53DAE820.7050508@lge.com>
+ <20140801095700.GB27281@quack.suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SzFONp+077xxuUwz"
+Content-Disposition: inline
+In-Reply-To: <20140801095700.GB27281@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 30, 2014 12:55:29 PM Pavel Machek wrote:
-> Hi!
-> 
-> > For this reason I'm considering changing the defaul behavior going forward (so
-> > that "mem" is always present and means "the deepest sleep state available other
-> > than hibernation"), but I don't want to do that in one go.
-> 
-> Actually, I don't think that's good idea, at least on PC.
-> 
-> The way to wake up from S3 is power button. The way to wake up from
-> "echo freeze > state" is going to be different, right?
 
-No, it isn't.  That's the point among other things.
+--SzFONp+077xxuUwz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> If I disable S3 in the BIOS and get different result from "echo mem >
-> state", that will be confusing.
+On Fri, Aug 01, 2014 at 11:57:00AM +0200, Jan Kara wrote:
+> So the quiestion really is how hard guarantee do you need that a page in
+> movable zone is really movable. Or better in what timeframe should it be
+> movable? It may be possible to make e.g. migratepage callback for ext4
+> blkdev pages which will handle migration of pages that are just idly
+> sitting in a journal waiting to be committed. That may be reasonably doable
+> although it won't be perfect. Or we may just decide it's not worth the
+> bother and allocate all blkdev pages from unmovable zone...
 
-It may or may not be, depending on how different the handling of the states
-is.  It shouldn't be much different.
+So the point of CMA is to cater to those (arguably broken) devices that
+do not have scatter gather IO, and these include things like the camera
+device on your phone.
 
-> Similar (but less severe) problem is there with S1, as it will
-> probably power down USB ports, etc.
+Previously (and possibly currently) your android Linux kernel will
+simply preallocate a massive physically linear chunk of memory and
+assign it to the camera hardware and not use it at all.
 
-Hmm.  S1 is implemented very rarely AFAICS and usually it works in analogy
-with suspend-to-idle, but in the firmware.
+This is a terrible waste for most of the time people aren't running
+their camera app at all. So the point is to allow usage of the memory,
+but upon request be able to 'immediately' clear it through
+migration/writeback.
 
-> So for example if I have system with S1, learn to do "echo mem >
-> state" and that it still charges my phone, then ACPI updates come and
-> "echo mem > state" now puts it in S3 and not charging my phone -- that
-> would be confusing.
+So we should be fairly 'quick' in making the memory available,
+definitely sub second timeframes.
 
-Yes, it would.
 
-Rafael
+Sadly its not only mobile devices that excel in crappy hardware, there's
+plenty desktop stuff that could use this too, like some of the v4l
+devices iirc.
 
+--SzFONp+077xxuUwz
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT25fSAAoJEHZH4aRLwOS6+1EP/iMZzyhlVxyDx/F8DuyuTS08
+fpyAN5FSmfs/0/StWuZFH3KYiBLCgHd0jmDQVg4/uaPZQUOxRi+l4Rgd1XCyYK6Y
+bBkFHcY/GPfk5lkbieyg1EOP4wVWU6I7MkE1v/qCCcmQoX/lHIw7op5g3Xs8LhZp
+BOmFWRBQpBW64ErXwrRgnAJFPP6bGmmXrKLJ8i1EcQketsMep5rij/xJc/NRYmxK
+sOmuR1G7h+afVVQ21c0azDCqR8+NUJJENErl2IcQCDSxl5snK9jwGDapXXw6xWDf
+kyFUD+TV+orUkjxtm6nsSl5C1/JMbiCRRxf7JdLFgCYS1ibZtr5Pks2Fx5MRbHx3
+kWZAHgDjy87cxYwKcuglpp5XfNm4lQdSWict2o9AQIQgqPDj+oopjbaz9yPAMaT+
+uLQ6/4yZWhuJF/Bkzg4JHecyZIbK2BvxaiZr6tgpDsLl8LJ++FADscWeNpLkTUZY
+yKM/925zBeKz+34bdwKNe0a4dCvvMGg/XezJnC0vfS7qR5+M9nYi5eie23Nb008V
+1wJn3C7I+8r3RH+0cASFeYNwT0Tg7ZgEPVPuO1MPf6XMNg3/QpKMPLFWBOB87w9W
+oDM8GOilyi6jo/ayW6opGO4Hecwc4Vs4+ihsYkpFKgUV2X6S0Dv3ohR4sGHe7cmS
++OSRGzlCtC3dFuwwBVtc
+=zq7I
+-----END PGP SIGNATURE-----
+
+--SzFONp+077xxuUwz--
