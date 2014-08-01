@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783AbaHAIAe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 04:00:34 -0400
-Received: from mga14.intel.com ([192.55.52.115]:16190 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753459AbaHAIAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 04:00:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,778,1400050800"; 
-   d="scan'208";a="570360617"
-Date: Fri, 1 Aug 2014 07:58:25 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Aaron Lu <aaron.lu@intel.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org, jhladky@redhat.com,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1%
- proc-vmstat.numa_hint_faults_local
-Message-ID: <20140731235825.GH28673@intel.com>
-References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>
- <53D72FF5.90908@intel.com>
- <20140729023940.37b6aebc@annuminas.surriel.com>
- <20140731104241.GA9918@twins.programming.kicks-ass.net>
- <20140801020330.GA30211@aaronlu.sh.intel.com>
- <20140801072911.GE19379@twins.programming.kicks-ass.net>
+	id S1753376AbaHAIE0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 04:04:26 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:42154 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750886AbaHAIEV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 04:04:21 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18mdRRuNOvsZWmAVMXJi1CT
+Date: Fri, 1 Aug 2014 01:02:46 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Javier Martinez Canillas <javier@dowhile0.org>
+Cc: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        Michael Trimarchi <michael@amarulasolutions.com>,
+        Marek Belisko <marek.belisko@gmail.com>,
+        Pawel Moll <pawel.moll@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 3/3] arm: dts: Add gta04a5 model
+Message-ID: <20140801080246.GG29045@atomide.com>
+References: <1406577213-9642-1-git-send-email-marek@goldelico.com>
+ <1406577213-9642-4-git-send-email-marek@goldelico.com>
+ <CAOf5uwk=ctww=pP4Ae+1C6i-oOtiYTv2NJbj1GpuPwVSKXB4Hw@mail.gmail.com>
+ <CAAfyv35jvhzvjCKMwrpa=RQ1JkfcmthCsGDzwLW9Y6bq3Ww_fg@mail.gmail.com>
+ <CAOf5uw=Fm9FXEH5ESqDC8pGjMbn5VQ1+MyPJVXSqGh_9+JRLHw@mail.gmail.com>
+ <1FA8171E-1B7A-4684-887E-11593BB9C29E@goldelico.com>
+ <20140729124120.GS29045@atomide.com>
+ <589F7CA3-F245-4299-8E39-36A7FA9F3CBD@goldelico.com>
+ <CABxcv=n7g8c2ePGKgu_0Y35iearcRoAj9ZH5jDWY9nE+1uUKnA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140801072911.GE19379@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABxcv=n7g8c2ePGKgu_0Y35iearcRoAj9ZH5jDWY9nE+1uUKnA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 09:29:11AM +0200, Peter Zijlstra wrote:
-> On Fri, Aug 01, 2014 at 10:03:30AM +0800, Aaron Lu wrote:
-> > > > > ebe06187bf2aec1  a43455a1d572daf7b730fe12e  
-> > > > > ---------------  -------------------------  
-> > > > >      94500 ~ 3%    +115.6%     203711 ~ 6%  ivb42/hackbench/50%-threads-pipe
-> > > > >      67745 ~ 4%     +64.1%     111174 ~ 5%  lkp-snb01/hackbench/50%-threads-socket
-> > > > >     162245 ~ 3%     +94.1%     314885 ~ 6%  TOTAL proc-vmstat.numa_hint_faults_local
+* Javier Martinez Canillas <javier@dowhile0.org> [140729 07:14]:
+> Hello,
 > 
-> > It means, for commit ebe06187bf2aec1, the number for
-> > num_hint_local_faults is 94500 for ivb42 machine and 67745 for lkp-snb01
-> > machine. The 3%, 4% following that number means the deviation of the
-> > different runs to their average(we usually run it multiple times to
-> > phase out possible sharp values). We should probably remove that
-> > percentage, as they cause confusion if no detailed explanation and may
-> > not mean much to the commit author and others(if the deviation is big
-> > enough, we should simply drop that result).
+> On Tue, Jul 29, 2014 at 3:03 PM, Dr. H. Nikolaus Schaller
+> <hns@goldelico.com> wrote:
+> > Hi,
+> >> So what's the conclusion? Are changes needed to this patch
+> >> series or not?
+> >
+> > I advocate that no changes are needed.
+> >
 > 
-> Nah, variance is good, but the typical symbol would be +- or the fancy
-> ±.
+> I agree with Dr. H. Nikolaus on this regard. A DeviceTree should be a
+> description of the hardware and if two hardware platforms differs,
+> then we need two different DTS.
 > 
-> ~ when used as a unary op means 'approx' or 'about' or 'same order'
-> ~ when used as a binary op means equivalence, a weaker equal, often in
-> the vein of the unary op meaning.
-> 
-> Also see: http://en.wikipedia.org/wiki/Tilde#Mathematics
-> 
-> So while I think having a measure of variance is good, I think you
-> picked entirely the wrong symbol.
+> Lately I'm seeing some attempts to abuse u-boot's fdt command, u-boot
+> should only modify the strictly necessary like the /chosen branch.
+> Allowing u-boot to mangle the FDT before passing to the kernel just to
+> avoid some DT duplication doesn't sound like a good idea IMHO.
 
-Or, maybe you can use σ (lower case sigma) to indicate stddev, :)
+OK no more comments, so applied all into omap-for-v3.17/dt.
+As there's a good chance the merge window will open on Monday,
+no guarantees the gta04 related changes will make it. But I'll
+send a pull request a bit later on today for them anyways.
+
+Regards,
+
+Tony
