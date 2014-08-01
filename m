@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484AbaHARiL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 13:38:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26223 "EHLO mx1.redhat.com"
+	id S1755601AbaHARif (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 13:38:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24141 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204AbaHARiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 13:38:06 -0400
+	id S1751858AbaHARiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 13:38:09 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
 Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH v2 2/3] mm/hugetlb: use get_page_unless_zero() in hugetlb_fault()
-Date: Fri,  1 Aug 2014 13:37:42 -0400
-Message-Id: <1406914663-8631-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH v2 3/3] mm/hugetlb: add migration entry check in hugetlb_change_protection
+Date: Fri,  1 Aug 2014 13:37:43 -0400
+Message-Id: <1406914663-8631-3-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1406914663-8631-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1406914663-8631-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After fixing locking in follow_page(FOLL_GET) for hugepages, I start to
-observe the BUG of "get_page() on refcount 0 page" in hugetlb_fault() in
-the same test.
+There is a race condition between hugepage migration and change_protection(),
+where hugetlb_change_protection() doesn't care about migration entries and
+wrongly overwrites them. That causes unexpected results like kernel crash.
 
-I'm not exactly sure about how this race is triggered, but hugetlb_fault()
-calls pte_page() and get_page() outside page table lock, so it's not safe.
-This patch checks the refcount of the gotten page, and aborts the page fault
-if the refcount is 0, expecting to retry.
+This patch adds is_hugetlb_entry_(migration|hwpoisoned) check in this
+function and skip all such entries.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Cc: <stable@vger.kernel.org>  # [3.12+]
 ---
- mm/hugetlb.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ mm/hugetlb.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git mmotm-2014-07-22-15-58.orig/mm/hugetlb.c mmotm-2014-07-22-15-58/mm/hugetlb.c
-index 4437896cd6ed..863f45f63cd5 100644
+index 863f45f63cd5..1da7ca2e2a02 100644
 --- mmotm-2014-07-22-15-58.orig/mm/hugetlb.c
 +++ mmotm-2014-07-22-15-58/mm/hugetlb.c
-@@ -3189,7 +3189,8 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * so no worry about deadlock.
- 	 */
- 	page = pte_page(entry);
--	get_page(page);
-+	if (!get_page_unless_zero(page))
-+		goto out_put_pagecache;
- 	if (page != pagecache_page)
- 		lock_page(page);
- 
-@@ -3215,15 +3216,14 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- out_ptl:
- 	spin_unlock(ptl);
--
-+	if (page != pagecache_page)
-+		unlock_page(page);
-+	put_page(page);
-+out_put_pagecache:
- 	if (pagecache_page) {
- 		unlock_page(pagecache_page);
- 		put_page(pagecache_page);
- 	}
--	if (page != pagecache_page)
--		unlock_page(page);
--	put_page(page);
--
- out_mutex:
- 	mutex_unlock(&htlb_fault_mutex_table[hash]);
- 	return ret;
+@@ -3355,7 +3355,13 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+ 			spin_unlock(ptl);
+ 			continue;
+ 		}
+-		if (!huge_pte_none(huge_ptep_get(ptep))) {
++		pte = huge_ptep_get(ptep);
++		if (unlikely(is_hugetlb_entry_migration(pte) ||
++			     is_hugetlb_entry_hwpoisoned(pte))) {
++			spin_unlock(ptl);
++			continue;
++		}
++		if (!huge_pte_none(pte)) {
+ 			pte = huge_ptep_get_and_clear(mm, address, ptep);
+ 			pte = pte_mkhuge(huge_pte_modify(pte, newprot));
+ 			pte = arch_make_huge_pte(pte, vma, NULL, 0);
 -- 
 1.9.3
 
