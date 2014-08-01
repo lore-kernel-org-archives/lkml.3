@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319AbaHATVV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 15:21:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26470 "EHLO mx1.redhat.com"
+	id S932392AbaHATVa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 15:21:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52771 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932248AbaHATVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 15:21:19 -0400
+	id S932248AbaHATV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 15:21:27 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
@@ -13,70 +13,66 @@ Cc: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
         Jerome Marchand <jmarchan@redhat.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH -mm v6 04/13] smaps: remove mem_size_stats->vma and use walk_page_vma()
-Date: Fri,  1 Aug 2014 15:20:40 -0400
-Message-Id: <1406920849-25908-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH -mm v6 03/13] pagewalk: add walk_page_vma()
+Date: Fri,  1 Aug 2014 15:20:39 -0400
+Message-Id: <1406920849-25908-4-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1406920849-25908-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1406920849-25908-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pagewalk.c can handle vma in itself, so we don't have to pass vma via
-walk->private. And show_smap() walks pages on vma basis, so using
-walk_page_vma() is preferable.
+Introduces walk_page_vma(), which is useful for the callers which want to
+walk over a given vma.  It's used by later patches.
 
-ChangeLog v4:
-- remove redundant vma
+ChangeLog v3:
+- check walk_page_test's return value instead of walk->skip
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- fs/proc/task_mmu.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ include/linux/mm.h |  1 +
+ mm/pagewalk.c      | 18 ++++++++++++++++++
+ 2 files changed, 19 insertions(+)
 
-diff --git mmotm-2014-07-30-15-57.orig/fs/proc/task_mmu.c mmotm-2014-07-30-15-57/fs/proc/task_mmu.c
-index 5a33c7efade1..2c3a501c0dc7 100644
---- mmotm-2014-07-30-15-57.orig/fs/proc/task_mmu.c
-+++ mmotm-2014-07-30-15-57/fs/proc/task_mmu.c
-@@ -424,7 +424,6 @@ const struct file_operations proc_tid_maps_operations = {
+diff --git mmotm-2014-07-30-15-57.orig/include/linux/mm.h mmotm-2014-07-30-15-57/include/linux/mm.h
+index 1640cf740837..84b2a6cf45f6 100644
+--- mmotm-2014-07-30-15-57.orig/include/linux/mm.h
++++ mmotm-2014-07-30-15-57/include/linux/mm.h
+@@ -1131,6 +1131,7 @@ struct mm_walk {
  
- #ifdef CONFIG_PROC_PAGE_MONITOR
- struct mem_size_stats {
--	struct vm_area_struct *vma;
- 	unsigned long resident;
- 	unsigned long shared_clean;
- 	unsigned long shared_dirty;
-@@ -443,7 +442,7 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
- 		unsigned long ptent_size, struct mm_walk *walk)
- {
- 	struct mem_size_stats *mss = walk->private;
--	struct vm_area_struct *vma = mss->vma;
-+	struct vm_area_struct *vma = walk->vma;
- 	pgoff_t pgoff = linear_page_index(vma, addr);
- 	struct page *page = NULL;
- 	int mapcount;
-@@ -495,7 +494,7 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 			   struct mm_walk *walk)
- {
- 	struct mem_size_stats *mss = walk->private;
--	struct vm_area_struct *vma = mss->vma;
-+	struct vm_area_struct *vma = walk->vma;
- 	pte_t *pte;
- 	spinlock_t *ptl;
- 
-@@ -588,10 +587,8 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
- 	};
- 
- 	memset(&mss, 0, sizeof mss);
--	mss.vma = vma;
- 	/* mmap_sem is held in m_start */
--	if (vma->vm_mm && !is_vm_hugetlb_page(vma))
--		walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
-+	walk_page_vma(vma, &smaps_walk);
- 
- 	show_map_vma(m, vma, is_pid);
- 
+ int walk_page_range(unsigned long addr, unsigned long end,
+ 		struct mm_walk *walk);
++int walk_page_vma(struct vm_area_struct *vma, struct mm_walk *walk);
+ void free_pgd_range(struct mmu_gather *tlb, unsigned long addr,
+ 		unsigned long end, unsigned long floor, unsigned long ceiling);
+ int copy_page_range(struct mm_struct *dst, struct mm_struct *src,
+diff --git mmotm-2014-07-30-15-57.orig/mm/pagewalk.c mmotm-2014-07-30-15-57/mm/pagewalk.c
+index 91810ba875ea..65fb68df3aa2 100644
+--- mmotm-2014-07-30-15-57.orig/mm/pagewalk.c
++++ mmotm-2014-07-30-15-57/mm/pagewalk.c
+@@ -272,3 +272,21 @@ int walk_page_range(unsigned long start, unsigned long end,
+ 	} while (start = next, start < end);
+ 	return err;
+ }
++
++int walk_page_vma(struct vm_area_struct *vma, struct mm_walk *walk)
++{
++	int err;
++
++	if (!walk->mm)
++		return -EINVAL;
++
++	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
++	VM_BUG_ON(!vma);
++	walk->vma = vma;
++	err = walk_page_test(vma->vm_start, vma->vm_end, walk);
++	if (err > 0)
++		return 0;
++	if (err < 0)
++		return err;
++	return __walk_page_range(vma->vm_start, vma->vm_end, walk);
++}
 -- 
 1.9.3
 
