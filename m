@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223AbaHAAdV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 20:33:21 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62768 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750977AbaHAAdU (ORCPT
+	id S1752838AbaHAAeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 20:34:37 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:59342 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaHAAee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 20:33:20 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: Re: [PATCH 1/3] irq / PM: New driver interface for wakeup interrupts
-Date: Fri, 01 Aug 2014 02:51:53 +0200
-Message-ID: <18540471.qjHjCLCFs6@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.10.1408010134440.4997@nanos>
-References: <Pine.LNX.4.44L0.1407311552530.885-100000@iolanthe.rowland.org> <1483885.6aPDiGeI4u@vostro.rjw.lan> <alpine.DEB.2.10.1408010134440.4997@nanos>
+	Thu, 31 Jul 2014 20:34:34 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linux Containers <containers@lists.linux-foundation.org>
+Cc: linux-api@vger.kernel.org,
+        "Michael Kerrisk \(man-pages\)" <mtk.manpages@gmail.com>,
+        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Date: Thu, 31 Jul 2014 17:30:46 -0700
+Message-ID: <87oaw5caq1.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+MFw0ZiipcRv/fRUZA/wjGTsBfegw+5H4=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1018]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Linux Containers <containers@lists.linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [REVIEW][PATCH 0/4] /proc/thread-self
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 01, 2014 01:41:31 AM Thomas Gleixner wrote:
-> On Thu, 31 Jul 2014, Rafael J. Wysocki wrote:
-> > On Thursday, July 31, 2014 04:12:55 PM Alan Stern wrote:
-> > > Pardon me for sticking my nose into the middle of the conversation, but
-> > > here's what it looks like to me:
-> > > 
-> > > The entire no_irq phase of suspend/resume is starting to seem like a
-> > > mistake.  We should never have done it.
-> > 
-> > In hindsight, I totally agree.  Question is what we can do about it now.
-> 
-> <SNIP>
-> 
-> > So how can we eliminate the noirq phase in a workable way?
-> 
-> The straight way to do that is breaking the world and some more and
-> then fix up a gazillion of device drivers by doing a massive voodoo
-> debugging effort simply because in most cases we do not get any useful
-> information out of the system once the shit hits the fan.
-> 
-> We could add instrumentation to the core code about interrupts which
-> are coming in unexpectedly during suspend, but that does not solve
-> anything.
-> 
-> We really cannot call any device handler at that point as clocks might
-> be turned off already and any access to a device register might simply
-> cause a full undebuggable stall of the CPU.
-> 
-> And there is no way to prove that there is no chance of a spurious
-> interrupt for a given device. 
-> 
-> So if we cannot handle it at the infrastructure level, we need to make
-> sure that every fricking device driver interrupt handler has a 
-> 
->      if (dev->suspended)
->      	return CRAP;
-> 
-> conditional as the first line of code in it.
-> 
-> What is that buying us? 
-> 
-> Nothing than a shitload of hard to understand problems, really. The
-> only sensible way to handle this is at the core level.
-> 
-> #1 There is no way that you can rely on random drivers to do the Right
->    Thing. 
-> 
-> #2 There is no way that all hardware is implemented in a sane way.
-> 
-> #3 You CANNOT educate the people who are tasked to implement something
->    which "does the job" to understand all the subtle details of
->    suspend/resume or whatever.
 
-These are fair points.
+This patchset implements /proc/thread-self a magic symlink that
+solves a couple of problems.
 
-However, if the driver implements ->runtime_suspend, it has to handle
-the "my device is suspended" condition in its interrupt handler regardless.
+- It makes it easy to get to a specific threads directory in /proc
+  with gettid() not being exported in glibc this is currently a pain.
 
-For such a driver doing the same over system suspend/resume shouldn't
-be a real problem.
+- It allows fixing the problem present in /proc/mounts and /proc/net
+  that when the thread group leader exits but the entire thread group
+  remains /proc/self/net and /proc/self/mounts and thus /proc/mounts and
+  /proc/net become empty.
 
-Rafael
+- As mount and network namespaces are per thread it allows /proc/net and
+  /proc/mounts to reflect this.
 
+This is small chance changing /proc/net and /proc/mounts will cause
+userspace regressions (although nothing has shown up in my testing) if
+that happens we can just point the change that moves them from
+/proc/self/... to /proc/thread-self/...
+
+Eric W. Biederman (4):
+      proc: Have net show up under /proc/<tgid>/task/<tid>
+      proc: Implement /proc/thread-self to point at the directory of the current thread
+      proc: Point /proc/net at /proc/thread-self/net instead of /proc/self/net
+      proc: Point /proc/mounts at /proc/thread-self/mounts instead of /proc/self/mounts
+
+ fs/proc/Makefile              |  1 +
+ fs/proc/base.c                | 18 ++++++---
+ fs/proc/inode.c               |  7 +++-
+ fs/proc/internal.h            |  6 +++
+ fs/proc/proc_net.c            |  2 +-
+ fs/proc/root.c                |  5 ++-
+ fs/proc/thread_self.c         | 85 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pid_namespace.h |  1 +
+ 8 files changed, 117 insertions(+), 8 deletions(-)
+
+Eric
