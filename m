@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169AbaHAGOc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 02:14:32 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33885 "EHLO arroyo.ext.ti.com"
+	id S1754209AbaHAGOe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 02:14:34 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50409 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753515AbaHAGOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 02:14:16 -0400
+	id S1753571AbaHAGOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 02:14:18 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: <nsekhar@ti.com>, <robh+dt@kernel.org>
 CC: <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>,
         <davinci-linux-open-source@linux.davincidsp.com>, <pawel.moll@arm.com>,
         <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 5/6] ARM: DTS: da850-evm: Add node for tlv320aic3106 codec
-Date: Fri, 1 Aug 2014 09:13:29 +0300
-Message-ID: <1406873610-5037-6-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 2/6] ARM: DTS: da850: Add node for edma0
+Date: Fri, 1 Aug 2014 09:13:26 +0300
+Message-ID: <1406873610-5037-3-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <1406873610-5037-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1406873610-5037-1-git-send-email-peter.ujfalusi@ti.com>
@@ -24,37 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The board uses aic3106 for audio.
+Add DT node for edma0.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- arch/arm/boot/dts/da850-evm.dts | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ arch/arm/boot/dts/da850.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
-index 1422c311af4c..41715b495861 100644
---- a/arch/arm/boot/dts/da850-evm.dts
-+++ b/arch/arm/boot/dts/da850-evm.dts
-@@ -51,6 +51,19 @@
- 			tps: tps@48 {
- 				reg = <0x48>;
+diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+index b695548dbb4e..41ce4e8bf227 100644
+--- a/arch/arm/boot/dts/da850.dtsi
++++ b/arch/arm/boot/dts/da850.dtsi
+@@ -150,6 +150,12 @@
  			};
-+			tlv320aic3106: tlv320aic3106@18 {
-+				compatible = "ti,tlv320aic3106";
-+				reg = <0x18>;
-+				status = "okay";
-+
-+				/* Regulators */
-+				IOVDD-supply = <&vdcdc2_reg>;
-+				/* Derived from VBAT: Baseboard 3.3V / 1.8V */
-+				AVDD-supply = <&vbat>;
-+				DRVDD-supply = <&vbat>;
-+				DVDD-supply = <&vbat>;
-+			};
-+
+ 
  		};
- 		wdt: wdt@1c21000 {
- 			status = "okay";
++		edma0: edma@01c00000 {
++			compatible = "ti,edma3";
++			reg =	<0x0 0x10000>;
++			interrupts = <11 13 12>;
++			#dma-cells = <1>;
++		};
+ 		serial0: serial@1c42000 {
+ 			compatible = "ns16550a";
+ 			reg = <0x42000 0x100>;
 -- 
 2.0.2
 
