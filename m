@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262AbaHAOlK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:41:10 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:57844 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755200AbaHAOlH (ORCPT
+	id S1754402AbaHAOos (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 10:44:48 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:36546 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbaHAOor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:41:07 -0400
-Date: Fri, 1 Aug 2014 10:41:06 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Peter Zijlstra <peterz@infradead.org>, <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: Re: [PATCH 1/3] irq / PM: New driver interface for wakeup interrupts
-In-Reply-To: <alpine.DEB.2.10.1408010134440.4997@nanos>
-Message-ID: <Pine.LNX.4.44L0.1408011030200.1185-100000@iolanthe.rowland.org>
+	Fri, 1 Aug 2014 10:44:47 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <53DB58A8.3070600@freescale.com>
+References: <1406626353-23309-1-git-send-email-cristian.stoica@freescale.com>
+ <1406626353-23309-2-git-send-email-cristian.stoica@freescale.com>
+ <53DAA097.90005@amacapital.net> <53DB58A8.3070600@freescale.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 1 Aug 2014 07:44:23 -0700
+Message-ID: <CALCETrX3r2shBVTCR=WEmXNV+L=Qk7+ZxKYamWZ4EjVLgqU5kg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] crypto: add support for TLS 1.0 record encryption
+To: Cristian Stoica <cristian.stoica@freescale.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, linux-crypto@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Aug 2014, Thomas Gleixner wrote:
+On Fri, Aug 1, 2014 at 2:06 AM, Cristian Stoica
+<cristian.stoica@freescale.com> wrote:
+> Hi Andy
+>
+> On 31.07.2014 23:01, Andy Lutomirski wrote:
+>> On 07/29/2014 02:32 AM, Cristian Stoica wrote:
+> ...
 
-> Anyone who thinks that this can and should be solved at the driver
-> level is simply taking the wrong drugs or ran out of supply of the
-> proper ones. Either call your shrink or your drug dealer to get out of
-> that.
+>>> +static int crypto_tls_decrypt(struct aead_request *req)
+>>> +{
 
-That's absolutely true, but there is a counterpoint: Some of the 
-problems in this area _must_ be fixed at the driver level.
+>>> +    /*
+>>> +     * Step 2 - Verify padding
+>>> +     * Retrieve the last byte of the payload; this is the padding size
+>>> +     */
+>>> +    cryptlen -= 1;
+>>> +    scatterwalk_map_and_copy(&pad_size, req->dst, cryptlen, 1, 0);
+>>> +
+>>> +    /* RFC recommendation to defend against timing attacks is to continue
+>>> +     * with hash calculation even if the padding is incorrect */
+>>> +    if (cryptlen < pad_size + hash_size) {
+>>> +            pad_size = 0;
+>>> +            paderr = -EBADMSG;
 
-In particular, any driver that:
+If this happens, then pad_size == 0.
 
-	doesn't prevent its device from generating interrupt requests 
-	while the system is suspended
+>>> +    }
 
-	and allows its device to share an IRQ line with a wakeup source
+else pad_size is likely to be nonzero.
 
-has to be fixed.  The situation is even worse if the driver's interrupt 
-handler blows up when called at an inopportune time (such as when 
-clocks or power supplies are off).
+>>> +    cryptlen -= pad_size;
 
-Unfortunately, the only reasonable way to find such drivers is to wait
-and see when the bad combination of events happens.
+So now cryptlen depends on the result of the decryption, which means
+that this part is not constant time:
 
-Alan Stern
+>>> +
+>>> +    /* Now compute and compare our ICV with the one from the packet */
+>>> +    err = crypto_tls_genicv(hash, req->dst, cryptlen, req);
+>>> +    if (!err)
+>>> +            err = crypto_memneq(hash, ihash, hash_size) ? -EBADMSG : 0;
+>>
+>> This looks like it's vulnerable to the Lucky 13 attack.
+>
+> Digest is always calculated and in this particular case memneq should
+> help with some of the timing leaks. ICV calculation is expected to pass
+> and any failures should be only for internal reasons. There are maybe
+> some other problems that I've never thought of. Did you have something
+> else in mind when you mentioned this attack?
+>
+> Cristian S.
 
+If I understand it correctly, the issue is that cryptlen depends on
+the padding.  I added some notes inline above.  See here, too:
+
+https://www.imperialviolet.org/2013/02/04/luckythirteen.html
+
+--Andy
