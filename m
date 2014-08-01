@@ -1,120 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379AbaHAXTl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 19:19:41 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:43699 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620AbaHAXTj (ORCPT
+	id S1756119AbaHAXi3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 19:38:29 -0400
+Received: from mail-oi0-f45.google.com ([209.85.218.45]:36327 "EHLO
+	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754382AbaHAXi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 19:19:39 -0400
-Date: Sat, 2 Aug 2014 01:19:31 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH 4/5] x86: entry_64.S: always allocate complete "struct
- pt_regs"
-Message-ID: <20140801231929.GB26491@localhost.localdomain>
-References: <1406904498-21647-1-git-send-email-dvlasenk@redhat.com>
- <1406904498-21647-4-git-send-email-dvlasenk@redhat.com>
+	Fri, 1 Aug 2014 19:38:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406904498-21647-4-git-send-email-dvlasenk@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140801002017.GA2945@kroah.com>
+References: <20140731170735.5cf2062b@canb.auug.org.au>
+	<20140801002017.GA2945@kroah.com>
+Date: Fri, 1 Aug 2014 19:38:26 -0400
+X-Google-Sender-Auth: qYEvGypLuYKYlPdbPO4MImznmag
+Message-ID: <CAGXu5jKD5X4ZZreierjWsB659pXJgc9eXJX==Wm+-R22nKY+xQ@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the driver-core tree with the tip tree
+From: Kees Cook <keescook@chromium.org>
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Riley <davidriley@chromium.org>,
+        John Stultz <john.stultz@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 04:48:17PM +0200, Denys Vlasenko wrote:
->  
->  /* 0(%rsp): ~(interrupt number) */
->  	.macro interrupt func
-> -	/* reserve pt_regs for scratch regs and rbp */
-> -	subq $ORIG_RAX-RBP, %rsp
-> -	CFI_ADJUST_CFA_OFFSET ORIG_RAX-RBP
-> -	cld
-> -	/* start from rbp in pt_regs and jump over */
-> -	movq_cfi rdi, (RDI-RBP)
-> -	movq_cfi rsi, (RSI-RBP)
-> -	movq_cfi rdx, (RDX-RBP)
-> -	movq_cfi rcx, (RCX-RBP)
-> -	movq_cfi rax, (RAX-RBP)
-> -	movq_cfi  r8,  (R8-RBP)
-> -	movq_cfi  r9,  (R9-RBP)
-> -	movq_cfi r10, (R10-RBP)
-> -	movq_cfi r11, (R11-RBP)
-> -
-> -	/* Save rbp so that we can unwind from get_irq_regs() */
-> -	movq_cfi rbp, 0
+On Thu, Jul 31, 2014 at 8:20 PM, Greg KH <greg@kroah.com> wrote:
+> On Thu, Jul 31, 2014 at 05:07:35PM +1000, Stephen Rothwell wrote:
+>> Hi Greg,
+>>
+>> Today's linux-next merge of the driver-core tree got a conflict in
+>> lib/Kconfig.debug between commit e704f93af5a0 ("kernel: time: Add
+>> udelay_test module to validate udelay") from the tip tree and commit
+>> 0a8adf584759 ("test: add firmware_class loader test") from the
+>> driver-core tree.
+>>
+>> I fixed it up (see below) and can carry the fix as necessary (no action
+>> is required).
+>
+> Looks good, thanks.
 
-Hmm SAVEE_C_REGS below doesn't seem to save rbp like we did before.
-Perhaps it's implicitely saved somewhere?
+For keeping things regularized, could this module instead be named
+"test_udelay", to match the rest of most of the test modules?
+(Starting with "test_".)
 
-> -
-> -	/* Save previous stack value */
-> -	movq %rsp, %rsi
+-Kees
 
-Also rsp isn't saved in %rsi like before. Maybe
-that's because we already save it in rdi? Makes sense since
-now arg1 == rsp. More on that later.
-
-> -
-> -	leaq -RBP(%rsp),%rdi	/* arg1 for handler */
-> -	testl $3, CS-RBP(%rsi)
-> +	ALLOC_PTREGS_ON_STACK
-> +	SAVE_C_REGS
-> +	movq %rsp, %rdi	/* arg1 for handler */
-> +	testl $3, CS(%rsp)
->  	je 1f
->  	SWAPGS
-> -	/*
-> +1:	/*
->  	 * irq_count is used to check if a CPU is already on an interrupt stack
->  	 * or not. While this is essentially redundant with preempt_count it is
->  	 * a little cheaper to use a separate counter in the PDA (short of
->  	 * moving irq_enter into assembly, which would be too much work)
->  	 */
-> -1:	incl PER_CPU_VAR(irq_count)
-> +	incl PER_CPU_VAR(irq_count)
->  	cmovzq PER_CPU_VAR(irq_stack_ptr),%rsp
-> -	CFI_DEF_CFA_REGISTER	rsi
-> +	CFI_DEF_CFA_REGISTER	rdi
->  
->  	/* Store previous stack value */
-> -	pushq %rsi
-> +	pushq %rdi
-
-So you push rdi instead...
-
->  	CFI_ESCAPE	0x0f /* DW_CFA_def_cfa_expression */, 6, \
->  			0x77 /* DW_OP_breg7 */, 0, \
->  			0x06 /* DW_OP_deref */, \
-> -			0x08 /* DW_OP_const1u */, SS+8-RBP, \
-> +			0x08 /* DW_OP_const1u */, SS+8, \
->  			0x22 /* DW_OP_plus */
->  	/* We entered an interrupt context - irqs are off: */
->  	TRACE_IRQS_OFF
-> -
->  	call \func
->  	.endm
->  
-> @@ -749,10 +719,9 @@ ret_from_intr:
->  
->  	/* Restore saved previous stack */
->  	popq %rsi
-
-And then you pop to rsi. Ok that indeed works but perhaps we should keep it symetrical
-just for clarity? Any reason why we can't reuse rdi here?
-
-> -	CFI_DEF_CFA rsi,SS+8-RBP	/* reg/off reset after def_cfa_expr */
-> -	leaq ARGOFFSET-RBP(%rsi), %rsp
-> +	CFI_DEF_CFA rsi,SS+8	/* reg/off reset after def_cfa_expr */
-> +	movq %rsi, %rsp
->  	CFI_DEF_CFA_REGISTER	rsp
-> -	CFI_ADJUST_CFA_OFFSET	RBP-ARGOFFSET
-
-Thanks.
+-- 
+Kees Cook
+Chrome OS Security
