@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577AbaHAN1v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:27:51 -0400
+	id S1756401AbaHANee (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:34:34 -0400
 Received: from mga14.intel.com ([192.55.52.115]:23501 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755180AbaHAN1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 09:27:49 -0400
+	id S1755556AbaHAN1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 09:27:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,780,1400050800"; 
-   d="scan'208";a="570461675"
+   d="scan'208";a="570461684"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v9 01/22] axonram: Fix bug in direct_access
-Date: Fri,  1 Aug 2014 09:27:17 -0400
-Message-Id: <55fc8f9c41f5350977e8188421fc40d8a414e7a3.1406897885.git.willy@linux.intel.com>
+Subject: [PATCH v9 05/22] Introduce IS_DAX(inode)
+Date: Fri,  1 Aug 2014 09:27:21 -0400
+Message-Id: <d5d9388fd9eb1391831be284d86edf670c1eef1e.1406897885.git.willy@linux.intel.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
 References: <cover.1406897885.git.willy@linux.intel.com>
@@ -25,28 +25,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'pfn' returned by axonram was completely bogus, and has been since
-2008.
+Use an inode flag to tag inodes which should avoid using the page cache.
+Convert ext2 to use it instead of mapping_is_xip().
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 Reviewed-by: Jan Kara <jack@suse.cz>
 ---
- arch/powerpc/sysdev/axonram.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext2/inode.c    | 9 ++++++---
+ fs/ext2/xip.h      | 2 --
+ include/linux/fs.h | 6 ++++++
+ 3 files changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
-index 47b6b9f..830edc8 100644
---- a/arch/powerpc/sysdev/axonram.c
-+++ b/arch/powerpc/sysdev/axonram.c
-@@ -156,7 +156,7 @@ axon_ram_direct_access(struct block_device *device, sector_t sector,
+diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+index 36d35c3..0cb0448 100644
+--- a/fs/ext2/inode.c
++++ b/fs/ext2/inode.c
+@@ -731,7 +731,7 @@ static int ext2_get_blocks(struct inode *inode,
+ 		goto cleanup;
  	}
  
- 	*kaddr = (void *)(bank->ph_addr + offset);
--	*pfn = virt_to_phys(kaddr) >> PAGE_SHIFT;
-+	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+-	if (ext2_use_xip(inode->i_sb)) {
++	if (IS_DAX(inode)) {
+ 		/*
+ 		 * we need to clear the block
+ 		 */
+@@ -1201,7 +1201,7 @@ static int ext2_setsize(struct inode *inode, loff_t newsize)
  
- 	return 0;
+ 	inode_dio_wait(inode);
+ 
+-	if (mapping_is_xip(inode->i_mapping))
++	if (IS_DAX(inode))
+ 		error = xip_truncate_page(inode->i_mapping, newsize);
+ 	else if (test_opt(inode->i_sb, NOBH))
+ 		error = nobh_truncate_page(inode->i_mapping,
+@@ -1273,7 +1273,8 @@ void ext2_set_inode_flags(struct inode *inode)
+ {
+ 	unsigned int flags = EXT2_I(inode)->i_flags;
+ 
+-	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
++	inode->i_flags &= ~(S_SYNC | S_APPEND | S_IMMUTABLE | S_NOATIME |
++				S_DIRSYNC | S_DAX);
+ 	if (flags & EXT2_SYNC_FL)
+ 		inode->i_flags |= S_SYNC;
+ 	if (flags & EXT2_APPEND_FL)
+@@ -1284,6 +1285,8 @@ void ext2_set_inode_flags(struct inode *inode)
+ 		inode->i_flags |= S_NOATIME;
+ 	if (flags & EXT2_DIRSYNC_FL)
+ 		inode->i_flags |= S_DIRSYNC;
++	if (test_opt(inode->i_sb, XIP))
++		inode->i_flags |= S_DAX;
  }
+ 
+ /* Propagate flags from i_flags to EXT2_I(inode)->i_flags */
+diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
+index 18b34d2..29be737 100644
+--- a/fs/ext2/xip.h
++++ b/fs/ext2/xip.h
+@@ -16,9 +16,7 @@ static inline int ext2_use_xip (struct super_block *sb)
+ }
+ int ext2_get_xip_mem(struct address_space *, pgoff_t, int,
+ 				void **, unsigned long *);
+-#define mapping_is_xip(map) unlikely(map->a_ops->get_xip_mem)
+ #else
+-#define mapping_is_xip(map)			0
+ #define ext2_xip_verify_sb(sb)			do { } while (0)
+ #define ext2_use_xip(sb)			0
+ #define ext2_clear_xip_target(inode, chain)	0
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e11d60c..a94e5d7 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1579,6 +1579,7 @@ struct super_operations {
+ #define S_IMA		1024	/* Inode has an associated IMA struct */
+ #define S_AUTOMOUNT	2048	/* Automount/referral quasi-directory */
+ #define S_NOSEC		4096	/* no suid or xattr security attributes */
++#define S_DAX		8192	/* Direct Access, avoiding the page cache */
+ 
+ /*
+  * Note that nosuid etc flags are inode-specific: setting some file-system
+@@ -1616,6 +1617,11 @@ struct super_operations {
+ #define IS_IMA(inode)		((inode)->i_flags & S_IMA)
+ #define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
+ #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
++#ifdef CONFIG_FS_XIP
++#define IS_DAX(inode)		((inode)->i_flags & S_DAX)
++#else
++#define IS_DAX(inode)		0
++#endif
+ 
+ /*
+  * Inode state bits.  Protected by inode->i_lock
 -- 
 2.0.1
 
