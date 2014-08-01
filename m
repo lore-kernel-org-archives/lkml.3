@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317AbaHANdM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:33:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9271 "EHLO mga09.intel.com"
+	id S1756291AbaHANdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:33:10 -0400
+Received: from mga14.intel.com ([192.55.52.115]:23520 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755486AbaHAN1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755633AbaHAN1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Aug 2014 09:27:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,780,1400050800"; 
-   d="scan'208";a="552352870"
+   d="scan'208";a="570461705"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v9 10/22] Replace xip_truncate_page with dax_truncate_page
-Date: Fri,  1 Aug 2014 09:27:26 -0400
-Message-Id: <fa5e2eea4ba15cec2082268b40aeff728b4f02ba.1406897885.git.willy@linux.intel.com>
+Subject: [PATCH v9 15/22] ext2: Remove xip.c and xip.h
+Date: Fri,  1 Aug 2014 09:27:31 -0400
+Message-Id: <746fb244d92097eb6d4159ff9bba2a69ea53a6e3.1406897885.git.willy@linux.intel.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
 References: <cover.1406897885.git.willy@linux.intel.com>
@@ -25,152 +25,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It takes a get_block parameter just like nobh_truncate_page() and
-block_truncate_page()
+These files are now empty, so delete them
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 ---
- fs/dax.c           | 44 ++++++++++++++++++++++++++++++++++++++++++++
- fs/ext2/inode.c    |  2 +-
- include/linux/fs.h |  4 ++--
- mm/filemap_xip.c   | 40 ----------------------------------------
- 4 files changed, 47 insertions(+), 43 deletions(-)
+ fs/ext2/Makefile |  1 -
+ fs/ext2/inode.c  |  1 -
+ fs/ext2/namei.c  |  1 -
+ fs/ext2/super.c  |  1 -
+ fs/ext2/xip.c    | 15 ---------------
+ fs/ext2/xip.h    | 16 ----------------
+ 6 files changed, 35 deletions(-)
+ delete mode 100644 fs/ext2/xip.c
+ delete mode 100644 fs/ext2/xip.h
 
-diff --git a/fs/dax.c b/fs/dax.c
-index 97fd885..15654ce 100644
---- a/fs/dax.c
-+++ b/fs/dax.c
-@@ -422,3 +422,47 @@ int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	return result;
- }
- EXPORT_SYMBOL_GPL(dax_fault);
-+
-+/**
-+ * dax_truncate_page - handle a partial page being truncated in a DAX file
-+ * @inode: The file being truncated
-+ * @from: The file offset that is being truncated to
-+ * @get_block: The filesystem method used to translate file offsets to blocks
-+ *
-+ * Similar to block_truncate_page(), this function can be called by a
-+ * filesystem when it is truncating an DAX file to handle the partial page.
-+ *
-+ * We work in terms of PAGE_CACHE_SIZE here for commonality with
-+ * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
-+ * took care of disposing of the unnecessary blocks.  Even if the filesystem
-+ * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
-+ * since the file might be mmaped.
-+ */
-+int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
-+{
-+	struct buffer_head bh;
-+	pgoff_t index = from >> PAGE_CACHE_SHIFT;
-+	unsigned offset = from & (PAGE_CACHE_SIZE-1);
-+	unsigned length = PAGE_CACHE_ALIGN(from) - from;
-+	int err;
-+
-+	/* Block boundary? Nothing to do */
-+	if (!length)
-+		return 0;
-+
-+	memset(&bh, 0, sizeof(bh));
-+	bh.b_size = PAGE_CACHE_SIZE;
-+	err = get_block(inode, index, &bh, 0);
-+	if (err < 0)
-+		return err;
-+	if (buffer_written(&bh)) {
-+		void *addr;
-+		err = dax_get_addr(&bh, &addr, inode->i_blkbits);
-+		if (err < 0)
-+			return err;
-+		memset(addr + offset, 0, length);
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(dax_truncate_page);
+diff --git a/fs/ext2/Makefile b/fs/ext2/Makefile
+index f42af45..445b0e9 100644
+--- a/fs/ext2/Makefile
++++ b/fs/ext2/Makefile
+@@ -10,4 +10,3 @@ ext2-y := balloc.o dir.o file.o ialloc.o inode.o \
+ ext2-$(CONFIG_EXT2_FS_XATTR)	 += xattr.o xattr_user.o xattr_trusted.o
+ ext2-$(CONFIG_EXT2_FS_POSIX_ACL) += acl.o
+ ext2-$(CONFIG_EXT2_FS_SECURITY)	 += xattr_security.o
+-ext2-$(CONFIG_EXT2_FS_XIP)	 += xip.o
 diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 52978b8..5ac0a34 100644
+index cba3833..154cbcf 100644
 --- a/fs/ext2/inode.c
 +++ b/fs/ext2/inode.c
-@@ -1210,7 +1210,7 @@ static int ext2_setsize(struct inode *inode, loff_t newsize)
- 	inode_dio_wait(inode);
+@@ -34,7 +34,6 @@
+ #include <linux/aio.h>
+ #include "ext2.h"
+ #include "acl.h"
+-#include "xip.h"
+ #include "xattr.h"
  
- 	if (IS_DAX(inode))
--		error = xip_truncate_page(inode->i_mapping, newsize);
-+		error = dax_truncate_page(inode, newsize, ext2_get_block);
- 	else if (test_opt(inode->i_sb, NOBH))
- 		error = nobh_truncate_page(inode->i_mapping,
- 				newsize, ext2_get_block);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index d628b50..0cdb57b 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2465,7 +2465,7 @@ extern int nonseekable_open(struct inode * inode, struct file * filp);
+ static int __ext2_write_inode(struct inode *inode, int do_sync);
+diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
+index 846c356..7ca803f 100644
+--- a/fs/ext2/namei.c
++++ b/fs/ext2/namei.c
+@@ -35,7 +35,6 @@
+ #include "ext2.h"
+ #include "xattr.h"
+ #include "acl.h"
+-#include "xip.h"
  
- #ifdef CONFIG_FS_XIP
- int dax_clear_blocks(struct inode *, sector_t block, long size);
--extern int xip_truncate_page(struct address_space *mapping, loff_t from);
-+int dax_truncate_page(struct inode *, loff_t from, get_block_t);
- ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
- 		loff_t, get_block_t, dio_iodone_t, int flags);
- int dax_fault(struct vm_area_struct *, struct vm_fault *, get_block_t);
-@@ -2476,7 +2476,7 @@ static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
- 	return 0;
- }
- 
--static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
-+static inline int dax_truncate_page(struct inode *i, loff_t frm, get_block_t gb)
+ static inline int ext2_add_nondir(struct dentry *dentry, struct inode *inode)
  {
- 	return 0;
- }
-diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-index 9dd45f3..6316578 100644
---- a/mm/filemap_xip.c
-+++ b/mm/filemap_xip.c
-@@ -21,43 +21,3 @@
- #include <asm/tlbflush.h>
- #include <asm/io.h>
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index 3ac6555..747e293 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -35,7 +35,6 @@
+ #include "ext2.h"
+ #include "xattr.h"
+ #include "acl.h"
+-#include "xip.h"
  
+ static void ext2_sync_super(struct super_block *sb,
+ 			    struct ext2_super_block *es, int wait);
+diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
+deleted file mode 100644
+index 66ca113..0000000
+--- a/fs/ext2/xip.c
++++ /dev/null
+@@ -1,15 +0,0 @@
 -/*
-- * truncate a page used for execute in place
-- * functionality is analog to block_truncate_page but does use get_xip_mem
-- * to get the page instead of page cache
+- *  linux/fs/ext2/xip.c
+- *
+- * Copyright (C) 2005 IBM Corporation
+- * Author: Carsten Otte (cotte@de.ibm.com)
 - */
--int
--xip_truncate_page(struct address_space *mapping, loff_t from)
+-
+-#include <linux/mm.h>
+-#include <linux/fs.h>
+-#include <linux/genhd.h>
+-#include <linux/buffer_head.h>
+-#include <linux/blkdev.h>
+-#include "ext2.h"
+-#include "xip.h"
+-
+diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
+deleted file mode 100644
+index 87eeb04..0000000
+--- a/fs/ext2/xip.h
++++ /dev/null
+@@ -1,16 +0,0 @@
+-/*
+- *  linux/fs/ext2/xip.h
+- *
+- * Copyright (C) 2005 IBM Corporation
+- * Author: Carsten Otte (cotte@de.ibm.com)
+- */
+-
+-#ifdef CONFIG_EXT2_FS_XIP
+-static inline int ext2_use_xip (struct super_block *sb)
 -{
--	pgoff_t index = from >> PAGE_CACHE_SHIFT;
--	unsigned offset = from & (PAGE_CACHE_SIZE-1);
--	unsigned blocksize;
--	unsigned length;
--	void *xip_mem;
--	unsigned long xip_pfn;
--	int err;
--
--	BUG_ON(!mapping->a_ops->get_xip_mem);
--
--	blocksize = 1 << mapping->host->i_blkbits;
--	length = offset & (blocksize - 1);
--
--	/* Block boundary? Nothing to do */
--	if (!length)
--		return 0;
--
--	length = blocksize - length;
--
--	err = mapping->a_ops->get_xip_mem(mapping, index, 0,
--						&xip_mem, &xip_pfn);
--	if (unlikely(err)) {
--		if (err == -ENODATA)
--			/* Hole? No need to truncate */
--			return 0;
--		else
--			return err;
--	}
--	memset(xip_mem + offset, 0, length);
--	return 0;
+-	struct ext2_sb_info *sbi = EXT2_SB(sb);
+-	return (sbi->s_mount_opt & EXT2_MOUNT_XIP);
 -}
--EXPORT_SYMBOL_GPL(xip_truncate_page);
+-#else
+-#define ext2_use_xip(sb)			0
+-#endif
 -- 
 2.0.1
 
