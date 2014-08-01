@@ -1,90 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762AbaHANtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:49:17 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:63689 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbaHANtN (ORCPT
+	id S1754064AbaHANuI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:50:08 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:37912 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbaHANuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 09:49:13 -0400
-Date: Fri, 1 Aug 2014 15:49:07 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of: Add vendor prefix for Innolux Corporation
-Message-ID: <20140801134905.GA20199@ulmo>
-References: <1404734672-14671-1-git-send-email-thierry.reding@gmail.com>
+	Fri, 1 Aug 2014 09:50:06 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
-Content-Disposition: inline
-In-Reply-To: <1404734672-14671-1-git-send-email-thierry.reding@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140801132754.GI19379@twins.programming.kicks-ass.net>
+References: <1406801797-20139-1-git-send-email-ilya.dryomov@inktank.com>
+	<20140731115759.GS19379@twins.programming.kicks-ass.net>
+	<CALFYKtBGQpxaZ0EFXbdvuEHeDeASeU-7XxQ_1a6ZDM=aJS651w@mail.gmail.com>
+	<20140731131331.GT19379@twins.programming.kicks-ass.net>
+	<1406817052.17194.12.camel@marge.simpson.net>
+	<20140731143946.GV19379@twins.programming.kicks-ass.net>
+	<CALFYKtBnK4uaq-37O3gWVQLuQZ9Vrs8oNhdvcUWEPqgpge-pdw@mail.gmail.com>
+	<20140801132754.GI19379@twins.programming.kicks-ass.net>
+Date: Fri, 1 Aug 2014 17:50:05 +0400
+Message-ID: <CALFYKtDDnebBbQSXBOGwabJ5cNga8b_MFq8bREJ+Qnw2f4eYmw@mail.gmail.com>
+Subject: Re: [PATCH] locking/mutexes: Revert "locking/mutexes: Add extra
+ reschedule point"
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Ceph Development <ceph-devel@vger.kernel.org>, davidlohr@hp.com,
+        jason.low2@hp.com, axboe@kernel.dk,
+        Kent Overstreet <kmo@daterainc.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 1, 2014 at 5:27 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Aug 01, 2014 at 04:56:27PM +0400, Ilya Dryomov wrote:
+>> I'm going to fix up rbd_request_fn(), but I want to make sure
+>> I understand this in full.
+>>
+>> - Previously the danger of calling blocking primitives on the way to
+>>   schedule(), i.e. with task->state != TASK_RUNNING, was that if the
+>>   blocking primitive was indeed to block the task state would be set
+>>   back to TASK_RUNNING and the schedule() that that task was on the way
+>>   to wouldn't have any effect.  Your "Add extra reschedule point" patch
+>>   essentially made calling mutex_lock() and probably others much more
+>>   wrong that it used to be, because mutex_lock() may now reschedule
+>>   when the task is not on the mutex wait queue.
+>
+> Right and in general we cannot allow spurious wakeups (although we try
+> very hard to deal with them in generic code, which is why things more or
+> less worked).
+>
+> But if you do a patch that 'randomly' ignores ->state on schedule (I did
+> one) stuff comes apart _real_ quick.
+>
+> Therefore you should very much not destroy ->state on the way to
+> schedule.
+>
+>> - There is nothing wrong with releasing queue_lock and reenabling IRQs
+>>   in rbd_request_fn() as long as it doesn't block and I remember to
+>>   disable IRQs and take queue_lock back on return.
+>
+> Releasing queue_lock might be ok, dunno about the blk locking, however
+> reenabling IRQs it is actually wrong as per blk_flush_plug_list() since
+> that uses local_irq_save()/restore() which means it can be called from
+> contexts which cannot deal with enabling IRQs, and then your
+> ->request_fn() goes and does that.
+>
+> Now maybe blk_flush_plug_list() is overly paranoid and it could use
+> local_irq_disable()/enable() instead, I don't know. But until it does, a
+> request_fn() should never reenable IRQs.
+>
+>> I'm asking because rbd_request_fn() is probably not the only broken in
+>> this way code path.  I poked around and found read_events() in aio.c,
+>> it seems to have been written with the "danger" assumption that
+>> I outlined above and there is even a comment to it.
+>
+> I'm fairly sure there's more broken stuff, I didn't dare looking.
+>
+>> Does that above make sense or am I missing something?
+>
+> I think that's about it.
 
---82I3+IH0IqGh5yIs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for clarifying things.  CC'ing Kent to draw attention to
+read_events().
 
-On Mon, Jul 07, 2014 at 02:04:32PM +0200, Thierry Reding wrote:
-> From: Thierry Reding <treding@nvidia.com>
->=20
-> According to Wikipedia, Innolux started out in 2003 as InnoLux Display
-> Corporation and merged with Chi Mei Optoelectronics in 2006. It went by
-> the name of Chimei Innolux Corporation for a while and changed its name
-> back to Innolux Corporation in late 2012.
->=20
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
->  1 file changed, 1 insertion(+)
-
-Ping?
-
->=20
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Docu=
-mentation/devicetree/bindings/vendor-prefixes.txt
-> index 4c4883e05df7..c9adab8eb2dc 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -63,6 +63,7 @@ ibm	International Business Machines (IBM)
->  idt	Integrated Device Technologies, Inc.
->  iom	Iomega Corporation
->  img	Imagination Technologies Ltd.
-> +innolux	Innolux Corporation
->  intel	Intel Corporation
->  intercontrol	Inter Control Group
->  isee	ISEE 2007 S.L.
-> --=20
-> 2.0.1
->=20
-
---82I3+IH0IqGh5yIs
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT25rRAAoJEN0jrNd/PrOhCVkP/iz54CMkpSHnJJBPtES5qp5r
-OHRaOP/XGwp0jZvQlQybjN4vp75tb4+5UGuG1efN0YZt328vg8Mhio+zvx8l2M4W
-ZvsmaIpYaMn/yIEBv9tp6sz1aiWGcHSuySILvsahZhC3nDAZVke+dZlHSZsO9OE5
-bRdzHQ64GO9RpUrhsweqdhDceb8jL2/N5eqp29aH+Z0tCslcAyNcC/vReb8kZ529
-ikbUI1C1TKk/T40Og0W46/CGDHAQBTZcCRPeYcZ+ajmGfGPtvbNN1DQVqTkP5tD6
-fbz2kAKp4P9pBOnbv2naarJQq5bz3Unf8VATHTEBeNY0Adq2LoMKc9WOn7Qhl4PP
-ZT4YFZPv9p1CIRJTk+cMESX55U1soQTf4IB44mjQJXwQWdJs7NW4xEu29tR30D6+
-XaFIA6qyC+lE+zbQKJknTRnrXCExS7lNGWnKq86SkXfEhAZ3a8QDF0/bXu/lBVBG
-3BublDoxRcrS1Aogz5hXDhEH9YhEK2XLjsKO5nu+RHGOCrNRC8IGvBtayfn/2YdY
-Sh1YTcMeebRDw1JZA4/4dYyZhW16n8oX44xddv0WX13GsvUPXAsCTZVXTJpjlxgT
-elMxmwVaSy5p9wrwk+PlpB4XG6V3beW2f8Y7YRC9sYMJ+qMod0IUZiuJJXtSUaWA
-C1omBzx8x0CRplrHKakY
-=inXf
------END PGP SIGNATURE-----
-
---82I3+IH0IqGh5yIs--
+                Ilya
