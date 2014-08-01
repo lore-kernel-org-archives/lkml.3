@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839AbaHALgA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 07:36:00 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:50581 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497AbaHALf7 (ORCPT
+	id S1754636AbaHALjs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 07:39:48 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:49591 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008AbaHALjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 07:35:59 -0400
-From: Miguel Oliveira <cmroliv@gmail.com>
-To: Larry.Finger@lwfinger.net, Jes.Sorensen@redhat.com,
-        gregkh@linuxfoundation.org, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        cmroliv@gmail.com
-Subject: [PATCH] staging: rtl8723au: Fix static symbol sparse warning
-Date: Fri,  1 Aug 2014 14:06:27 +0100
-Message-Id: <1406898387-13987-1-git-send-email-cmroliv@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 1 Aug 2014 07:39:46 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ata: libahci: Make host flags unsigned long
+Date: Fri,  1 Aug 2014 13:39:41 +0200
+Message-Id: <1406893181-24764-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix sparse warning:
-drivers/staging/rtl8723au/core/rtw_efuse.c:579:5: warning: symbol 'efuse_GetCurrentSize23a' was not declared. Should it be static?
+From: Thierry Reding <treding@nvidia.com>
 
-Signed-off-by: Miguel Oliveira <cmroliv@gmail.com>
+Commit 725c7b570fda (ata: libahci_platform: move port_map parameters
+into the AHCI structure) moves flags into the struct ahci_host_priv's
+.flags field, which causes compiler warnings on 64-bit builds when that
+value is cast to a void * pointer. Rather than adding additional casting
+to silence the warning, turn the flags field into a unsigned long.
+
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/staging/rtl8723au/include/rtw_efuse.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/ata/ahci.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/rtl8723au/include/rtw_efuse.h b/drivers/staging/rtl8723au/include/rtw_efuse.h
-index 07bdc34..304cc71 100644
---- a/drivers/staging/rtl8723au/include/rtw_efuse.h
-+++ b/drivers/staging/rtl8723au/include/rtw_efuse.h
-@@ -82,6 +82,7 @@ struct pg_pkt_struct {
- /*------------------------Export global variable----------------------------*/
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+index 59ae0ee00149..e68532ca3826 100644
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -317,7 +317,7 @@ struct ahci_port_priv {
  
- u16	efuse_GetMaxSize23a(struct rtw_adapter *padapter);
-+int	efuse_GetCurrentSize23a(struct rtw_adapter *padapter, u16 *size);
- int	rtw_efuse_access23a(struct rtw_adapter *padapter, u8 bRead, u16 start_addr, u16 cnts, u8 *data);
- int	rtw_efuse_map_read23a(struct rtw_adapter *padapter, u16 addr, u16 cnts, u8 *data);
- u8	rtw_efuse_map_write(struct rtw_adapter *padapter, u16 addr, u16 cnts, u8 *data);
+ struct ahci_host_priv {
+ 	/* Input fields */
+-	unsigned int		flags;		/* AHCI_HFLAG_* */
++	unsigned long		flags;		/* AHCI_HFLAG_* */
+ 	u32			force_port_map;	/* force port map */
+ 	u32			mask_port_map;	/* mask out particular bits */
+ 
 -- 
-1.7.10.4
+2.0.3
 
