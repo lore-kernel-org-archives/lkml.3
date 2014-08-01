@@ -1,443 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826AbaHAB7L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 21:59:11 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:50646 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388AbaHAB7J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 21:59:09 -0400
-Date: Thu, 31 Jul 2014 18:59:03 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140801015903.GH11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140731215445.GA21933@linux.vnet.ibm.com>
- <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <53DAEA36.7010905@cn.fujitsu.com>
+	id S1752587AbaHACDg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 22:03:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41581 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751316AbaHACDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jul 2014 22:03:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,776,1400050800"; 
+   d="scan'208";a="578545981"
+Date: Fri, 1 Aug 2014 10:03:30 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org, jhladky@redhat.com, Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1%
+ proc-vmstat.numa_hint_faults_local
+Message-ID: <20140801020330.GA30211@aaronlu.sh.intel.com>
+References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>
+ <53D72FF5.90908@intel.com>
+ <20140729023940.37b6aebc@annuminas.surriel.com>
+ <20140731104241.GA9918@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53DAEA36.7010905@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080101-6688-0000-0000-000003B1253C
+In-Reply-To: <20140731104241.GA9918@twins.programming.kicks-ass.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 09:15:34AM +0800, Lai Jiangshan wrote:
-> On 08/01/2014 05:55 AM, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Thu, Jul 31, 2014 at 12:42:41PM +0200, Peter Zijlstra wrote:
+> On Tue, Jul 29, 2014 at 02:39:40AM -0400, Rik van Riel wrote:
+> > On Tue, 29 Jul 2014 13:24:05 +0800
+> > Aaron Lu <aaron.lu@intel.com> wrote:
 > > 
-> > This commit adds a new RCU-tasks flavor of RCU, which provides
-> > call_rcu_tasks().  This RCU flavor's quiescent states are voluntary
-> > context switch (not preemption!), userspace execution, and the idle loop.
-> > Note that unlike other RCU flavors, these quiescent states occur in tasks,
-> > not necessarily CPUs.  Includes fixes from Steven Rostedt.
+> > > FYI, we noticed the below changes on
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
+> > > commit a43455a1d572daf7b730fe12eb747d1e17411365 ("sched/numa: Ensure task_numa_migrate() checks the preferred node")
+> > > 
+> > > ebe06187bf2aec1  a43455a1d572daf7b730fe12e  
+> > > ---------------  -------------------------  
+> > >      94500 ~ 3%    +115.6%     203711 ~ 6%  ivb42/hackbench/50%-threads-pipe
+> > >      67745 ~ 4%     +64.1%     111174 ~ 5%  lkp-snb01/hackbench/50%-threads-socket
+> > >     162245 ~ 3%     +94.1%     314885 ~ 6%  TOTAL proc-vmstat.numa_hint_faults_local
 > > 
-> > This RCU flavor is assumed to have very infrequent latency-tolerate
-> > updaters.  This assumption permits significant simplifications, including
-> > a single global callback list protected by a single global lock, along
-> > with a single linked list containing all tasks that have not yet passed
-> > through a quiescent state.  If experience shows this assumption to be
-> > incorrect, the required additional complexity will be added.
+> > Hi Aaron,
 > > 
-> > Suggested-by: Steven Rostedt <rostedt@goodmis.org>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  include/linux/init_task.h |   9 +++
-> >  include/linux/rcupdate.h  |  36 ++++++++++
-> >  include/linux/sched.h     |  23 ++++---
-> >  init/Kconfig              |  10 +++
-> >  kernel/rcu/tiny.c         |   2 +
-> >  kernel/rcu/tree.c         |   2 +
-> >  kernel/rcu/update.c       | 171 ++++++++++++++++++++++++++++++++++++++++++++++
-> >  7 files changed, 242 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-> > index 6df7f9fe0d01..78715ea7c30c 100644
-> > --- a/include/linux/init_task.h
-> > +++ b/include/linux/init_task.h
-> > @@ -124,6 +124,14 @@ extern struct group_info init_groups;
-> >  #else
-> >  #define INIT_TASK_RCU_PREEMPT(tsk)
-> >  #endif
-> > +#ifdef CONFIG_TASKS_RCU
-> > +#define INIT_TASK_RCU_TASKS(tsk)					\
-> > +	.rcu_tasks_holdout = false,					\
-> > +	.rcu_tasks_holdout_list =					\
-> > +		LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),
-> > +#else
-> > +#define INIT_TASK_RCU_TASKS(tsk)
-> > +#endif
-> >  
-> >  extern struct cred init_cred;
-> >  
-> > @@ -231,6 +239,7 @@ extern struct task_group root_task_group;
-> >  	INIT_FTRACE_GRAPH						\
-> >  	INIT_TRACE_RECURSION						\
-> >  	INIT_TASK_RCU_PREEMPT(tsk)					\
-> > +	INIT_TASK_RCU_TASKS(tsk)					\
-> >  	INIT_CPUSET_SEQ(tsk)						\
-> >  	INIT_RT_MUTEXES(tsk)						\
-> >  	INIT_VTIME(tsk)							\
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index 6a94cc8b1ca0..829efc99df3e 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -197,6 +197,26 @@ void call_rcu_sched(struct rcu_head *head,
-> >  
-> >  void synchronize_sched(void);
-> >  
-> > +/**
-> > + * call_rcu_tasks() - Queue an RCU for invocation task-based grace period
-> > + * @head: structure to be used for queueing the RCU updates.
-> > + * @func: actual callback function to be invoked after the grace period
-> > + *
-> > + * The callback function will be invoked some time after a full grace
-> > + * period elapses, in other words after all currently executing RCU
-> > + * read-side critical sections have completed. call_rcu_tasks() assumes
-> > + * that the read-side critical sections end at a voluntary context
-> > + * switch (not a preemption!), entry into idle, or transition to usermode
-> > + * execution.  As such, there are no read-side primitives analogous to
-> > + * rcu_read_lock() and rcu_read_unlock() because this primitive is intended
-> > + * to determine that all tasks have passed through a safe state, not so
-> > + * much for data-strcuture synchronization.
-> > + *
-> > + * See the description of call_rcu() for more detailed information on
-> > + * memory ordering guarantees.
-> > + */
-> > +void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
-> > +
-> >  #ifdef CONFIG_PREEMPT_RCU
-> >  
-> >  void __rcu_read_lock(void);
-> > @@ -294,6 +314,22 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
-> >  		rcu_irq_exit(); \
-> >  	} while (0)
-> >  
-> > +/*
-> > + * Note a voluntary context switch for RCU-tasks benefit.  This is a
-> > + * macro rather than an inline function to avoid #include hell.
-> > + */
-> > +#ifdef CONFIG_TASKS_RCU
-> > +#define rcu_note_voluntary_context_switch(t) \
-> > +	do { \
-> > +		preempt_disable(); /* Exclude synchronize_sched(); */ \
-> > +		if (ACCESS_ONCE((t)->rcu_tasks_holdout)) \
-> > +			ACCESS_ONCE((t)->rcu_tasks_holdout) = 0; \
-> > +		preempt_enable(); \
-> > +	} while (0)
-> > +#else /* #ifdef CONFIG_TASKS_RCU */
-> > +#define rcu_note_voluntary_context_switch(t)	do { } while (0)
-> > +#endif /* #else #ifdef CONFIG_TASKS_RCU */
-> > +
-> >  #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP)
-> >  bool __rcu_is_watching(void);
-> >  #endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
-> > diff --git a/include/linux/sched.h b/include/linux/sched.h
-> > index 306f4f0c987a..3cf124389ec7 100644
-> > --- a/include/linux/sched.h
-> > +++ b/include/linux/sched.h
-> > @@ -1273,6 +1273,11 @@ struct task_struct {
-> >  #ifdef CONFIG_RCU_BOOST
-> >  	struct rt_mutex *rcu_boost_mutex;
-> >  #endif /* #ifdef CONFIG_RCU_BOOST */
-> > +#ifdef CONFIG_TASKS_RCU
-> > +	unsigned long rcu_tasks_nvcsw;
-> > +	int rcu_tasks_holdout;
-> > +	struct list_head rcu_tasks_holdout_list;
-> > +#endif /* #ifdef CONFIG_TASKS_RCU */
-> >  
-> >  #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
-> >  	struct sched_info sched_info;
-> > @@ -1998,31 +2003,27 @@ extern void task_clear_jobctl_pending(struct task_struct *task,
-> >  				      unsigned int mask);
-> >  
-> >  #ifdef CONFIG_PREEMPT_RCU
-> > -
-> >  #define RCU_READ_UNLOCK_BLOCKED (1 << 0) /* blocked while in RCU read-side. */
-> >  #define RCU_READ_UNLOCK_NEED_QS (1 << 1) /* RCU core needs CPU response. */
-> > +#endif /* #ifdef CONFIG_PREEMPT_RCU */
-> >  
-> >  static inline void rcu_copy_process(struct task_struct *p)
-> >  {
-> > +#ifdef CONFIG_PREEMPT_RCU
-> >  	p->rcu_read_lock_nesting = 0;
-> >  	p->rcu_read_unlock_special = 0;
-> > -#ifdef CONFIG_TREE_PREEMPT_RCU
-> >  	p->rcu_blocked_node = NULL;
-> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> >  #ifdef CONFIG_RCU_BOOST
-> >  	p->rcu_boost_mutex = NULL;
-> >  #endif /* #ifdef CONFIG_RCU_BOOST */
-> >  	INIT_LIST_HEAD(&p->rcu_node_entry);
-> > +#endif /* #ifdef CONFIG_PREEMPT_RCU */
-> > +#ifdef CONFIG_TASKS_RCU
-> > +	p->rcu_tasks_holdout = false;
-> > +	INIT_LIST_HEAD(&p->rcu_tasks_holdout_list);
-> > +#endif /* #ifdef CONFIG_TASKS_RCU */
-> >  }
-> >  
-> > -#else
-> > -
-> > -static inline void rcu_copy_process(struct task_struct *p)
-> > -{
-> > -}
-> > -
-> > -#endif
-> > -
-> >  static inline void tsk_restore_flags(struct task_struct *task,
-> >  				unsigned long orig_flags, unsigned long flags)
-> >  {
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index 9d76b99af1b9..c56cb62a2df1 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -507,6 +507,16 @@ config PREEMPT_RCU
-> >  	  This option enables preemptible-RCU code that is common between
-> >  	  the TREE_PREEMPT_RCU and TINY_PREEMPT_RCU implementations.
-> >  
-> > +config TASKS_RCU
-> > +	bool "Task_based RCU implementation using voluntary context switch"
-> > +	default n
-> > +	help
-> > +	  This option enables a task-based RCU implementation that uses
-> > +	  only voluntary context switch (not preemption!), idle, and
-> > +	  user-mode execution as quiescent states.
-> > +
-> > +	  If unsure, say N.
-> > +
-> >  config RCU_STALL_COMMON
-> >  	def_bool ( TREE_RCU || TREE_PREEMPT_RCU || RCU_TRACE )
-> >  	help
-> > diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
-> > index d9efcc13008c..717f00854fc0 100644
-> > --- a/kernel/rcu/tiny.c
-> > +++ b/kernel/rcu/tiny.c
-> > @@ -254,6 +254,8 @@ void rcu_check_callbacks(int cpu, int user)
-> >  		rcu_sched_qs(cpu);
-> >  	else if (!in_softirq())
-> >  		rcu_bh_qs(cpu);
-> > +	if (user)
-> > +		rcu_note_voluntary_context_switch(current);
-> >  }
-> >  
-> >  /*
-> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> > index 625d0b0cd75a..f958c52f644d 100644
-> > --- a/kernel/rcu/tree.c
-> > +++ b/kernel/rcu/tree.c
-> > @@ -2413,6 +2413,8 @@ void rcu_check_callbacks(int cpu, int user)
-> >  	rcu_preempt_check_callbacks(cpu);
-> >  	if (rcu_pending(cpu))
-> >  		invoke_rcu_core();
-> > +	if (user)
-> > +		rcu_note_voluntary_context_switch(current);
-> >  	trace_rcu_utilization(TPS("End scheduler-tick"));
-> >  }
-> >  
-> > diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> > index bc7883570530..50453589e3ca 100644
-> > --- a/kernel/rcu/update.c
-> > +++ b/kernel/rcu/update.c
-> > @@ -47,6 +47,7 @@
-> >  #include <linux/hardirq.h>
-> >  #include <linux/delay.h>
-> >  #include <linux/module.h>
-> > +#include <linux/kthread.h>
-> >  
-> >  #define CREATE_TRACE_POINTS
-> >  
-> > @@ -350,3 +351,173 @@ static int __init check_cpu_stall_init(void)
-> >  early_initcall(check_cpu_stall_init);
-> >  
-> >  #endif /* #ifdef CONFIG_RCU_STALL_COMMON */
-> > +
-> > +#ifdef CONFIG_TASKS_RCU
-> > +
-> > +/*
-> > + * Simple variant of RCU whose quiescent states are voluntary context switch,
-> > + * user-space execution, and idle.  As such, grace periods can take one good
-> > + * long time.  There are no read-side primitives similar to rcu_read_lock()
-> > + * and rcu_read_unlock() because this implementation is intended to get
-> > + * the system into a safe state for some of the manipulations involved in
-> > + * tracing and the like.  Finally, this implementation does not support
-> > + * high call_rcu_tasks() rates from multiple CPUs.  If this is required,
-> > + * per-CPU callback lists will be needed.
-> > + */
-> > +
-> > +/* Lists of tasks that we are still waiting for during this grace period. */
-> > +static LIST_HEAD(rcu_tasks_holdouts);
-> > +
-> > +/* Global list of callbacks and associated lock. */
-> > +static struct rcu_head *rcu_tasks_cbs_head;
-> > +static struct rcu_head **rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
-> > +static DEFINE_RAW_SPINLOCK(rcu_tasks_cbs_lock);
-> > +
-> > +/* Post an RCU-tasks callback. */
-> > +void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
-> > +{
-> > +	unsigned long flags;
-> > +
-> > +	rhp->next = NULL;
-> > +	rhp->func = func;
-> > +	raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
-> > +	*rcu_tasks_cbs_tail = rhp;
-> > +	rcu_tasks_cbs_tail = &rhp->next;
-> > +	raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
-> > +}
-> > +EXPORT_SYMBOL_GPL(call_rcu_tasks);
-> > +
-> > +/* RCU-tasks kthread that detects grace periods and invokes callbacks. */
-> > +static int __noreturn rcu_tasks_kthread(void *arg)
-> > +{
-> > +	unsigned long flags;
-> > +	struct task_struct *g, *t;
-> > +	struct rcu_head *list;
-> > +	struct rcu_head *next;
-> > +
-> > +	/* FIXME: Add housekeeping affinity. */
-> > +
-> > +	/*
-> > +	 * Each pass through the following loop makes one check for
-> > +	 * newly arrived callbacks, and, if there are some, waits for
-> > +	 * one RCU-tasks grace period and then invokes the callbacks.
-> > +	 * This loop is terminated by the system going down.  ;-)
-> > +	 */
-> > +	for (;;) {
-> > +
-> > +		/* Pick up any new callbacks. */
-> > +		raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
-> > +		smp_mb__after_unlock_lock(); /* Enforce GP memory ordering. */
-> > +		list = rcu_tasks_cbs_head;
-> > +		rcu_tasks_cbs_head = NULL;
-> > +		rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
-> > +		raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
-> > +
-> > +		/* If there were none, wait a bit and start over. */
-> > +		if (!list) {
-> > +			schedule_timeout_interruptible(HZ);
-> > +			flush_signals(current);
-> > +			continue;
-> > +		}
-> > +
-> > +		/*
-> > +		 * Wait for all pre-existing t->on_rq and t->nvcsw
-> > +		 * transitions to complete.  Invoking synchronize_sched()
-> > +		 * suffices because all these transitions occur with
-> > +		 * interrupts disabled.  Without this synchronize_sched(),
-> > +		 * a read-side critical section that started before the
-> > +		 * grace period might be incorrectly seen as having started
-> > +		 * after the grace period.
-> > +		 *
-> > +		 * This synchronize_sched() also dispenses with the
-> > +		 * need for a memory barrier on the first store to
-> > +		 * ->rcu_tasks_holdout, as it forces the store to happen
-> > +		 * after the beginning of the grace period.
-> > +		 */
-> > +		synchronize_sched();
-> > +
-> > +		/*
-> > +		 * There were callbacks, so we need to wait for an
-> > +		 * RCU-tasks grace period.  Start off by scanning
-> > +		 * the task list for tasks that are not already
-> > +		 * voluntarily blocked.  Mark these tasks and make
-> > +		 * a list of them in rcu_tasks_holdouts.
-> > +		 */
-> > +		rcu_read_lock();
-> > +		for_each_process_thread(g, t) {
-> > +			if (t != current && ACCESS_ONCE(t->on_rq) &&
-> > +			    !is_idle_task(t)) {
-> > +				get_task_struct(t);
-> > +				t->rcu_tasks_nvcsw = ACCESS_ONCE(t->nvcsw);
-> > +				ACCESS_ONCE(t->rcu_tasks_holdout) = 1;
-> > +				list_add(&t->rcu_tasks_holdout_list,
-> > +					 &rcu_tasks_holdouts);
-> > +			}
-> > +		}
-> > +		rcu_read_unlock();
-> > +
-> > +		/*
-> > +		 * Each pass through the following loop scans the list
-> > +		 * of holdout tasks, removing any that are no longer
-> > +		 * holdouts.  When the list is empty, we are done.
-> > +		 */
-> > +		while (!list_empty(&rcu_tasks_holdouts)) {
-> > +			schedule_timeout_interruptible(HZ / 10);
-> > +			flush_signals(current);
-> > +			rcu_read_lock();
-> > +			list_for_each_entry_rcu(t, &rcu_tasks_holdouts,
-> > +						rcu_tasks_holdout_list) {
-> > +				if (ACCESS_ONCE(t->rcu_tasks_holdout)) {
-> > +					if (t->rcu_tasks_nvcsw ==
-> > +					    ACCESS_ONCE(t->nvcsw) &&
-> > +					    ACCESS_ONCE(t->on_rq))
-> > +						continue;
-> > +					ACCESS_ONCE(t->rcu_tasks_holdout) = 0;
-> > +				}
-> > +				list_del_rcu(&t->rcu_tasks_holdout_list);
-> > +				put_task_struct(t);
-> > +			}
-> > +			rcu_read_unlock();
+> > Jirka Hladky has reported a regression with that changeset as
+> > well, and I have already spent some time debugging the issue.
 > 
-> rcu_read_lock() and list opertions of rcu variant are unneeded.
+> So assuming those numbers above are the difference in
 
-Good point, will change to list_for_each_entry_safe().
+Yes, they are.
 
-							Thanx, Paul
+It means, for commit ebe06187bf2aec1, the number for
+num_hint_local_faults is 94500 for ivb42 machine and 67745 for lkp-snb01
+machine. The 3%, 4% following that number means the deviation of the
+different runs to their average(we usually run it multiple times to
+phase out possible sharp values). We should probably remove that
+percentage, as they cause confusion if no detailed explanation and may
+not mean much to the commit author and others(if the deviation is big
+enough, we should simply drop that result).
 
-> > +		}
-> > +
-> > +		/*
-> > +		 * Because ->on_rq and ->nvcsw are not guaranteed
-> > +		 * to have a full memory barriers prior to them in the
-> > +		 * schedule() path, memory reordering on other CPUs could
-> > +		 * cause their RCU-tasks read-side critical sections to
-> > +		 * extend past the end of the grace period.  However,
-> > +		 * because these ->nvcsw updates are carried out with
-> > +		 * interrupts disabled, we can use synchronize_sched()
-> > +		 * to force the needed ordering on all such CPUs.
-> > +		 *
-> > +		 * This synchronize_sched() also confines all
-> > +		 * ->rcu_tasks_holdout accesses to be within the grace
-> > +		 * period, avoiding the need for memory barriers for
-> > +		 * ->rcu_tasks_holdout accesses.
-> > +		 */
-> > +		synchronize_sched();
-> > +
-> > +		/* Invoke the callbacks. */
-> > +		while (list) {
-> > +			next = list->next;
-> > +			local_bh_disable();
-> > +			list->func(list);
-> > +			local_bh_enable();
-> > +			list = next;
-> > +			cond_resched();
-> > +		}
-> > +	}
-> > +}
-> > +
-> > +/* Spawn rcu_tasks_kthread() at boot time. */
-> > +static int __init rcu_spawn_tasks_kthread(void)
-> > +{
-> > +	struct task_struct __maybe_unused *t;
-> > +
-> > +	t = kthread_run(rcu_tasks_kthread, NULL, "rcu_tasks_kthread");
-> > +	BUG_ON(IS_ERR(t));
-> > +	return 0;
-> > +}
-> > +early_initcall(rcu_spawn_tasks_kthread);
-> > +
-> > +#endif /* #ifdef CONFIG_TASKS_RCU */
+The percentage in the middle is the change between the two commits.
+
+Another thing is the meaning of the numbers, it doesn't seem that
+evident they are for proc-vmstat.numa_hint_faults_local. Maybe something
+like this is better?
+
+ebe06187bf2aec1  a43455a1d572daf7b730fe12e  proc-vmstat.numa_hint_faults_local
+---------------  -------------------------  -----------------------------
+     94500         +115.6%     203711       ivb42/hackbench/50%-threads-pipe
+     67745          +64.1%     111174       lkp-snb01/hackbench/50%-threads-socket
+    162245          +94.1%     314885       TOTAL 
+
+Regards,
+Aaron
+
+> numa_hint_local_faults, the report is actually a significant
+> _improvement_, not a regression.
 > 
+> On my IVB-EP I get similar numbers; using:
+> 
+>   PRE=`grep numa_hint_faults_local /proc/vmstat | cut -d' ' -f2`
+>   perf bench sched messaging -g 24 -t -p -l 60000
+>   POST=`grep numa_hint_faults_local /proc/vmstat | cut -d' ' -f2`
+>   echo $((POST-PRE))
+> 
+> 
+> tip/mater+origin/master		tip/master+origin/master-a43455a1d57
+> 
+> local	total                   local	total
+> faults  time                    faults  time
+> 
+> 19971	51.384                  10104	50.838
+> 17193	50.564                  9116	50.208
+> 13435	49.057                  8332	51.344
+> 23794	50.795                  9954	51.364
+> 20255	49.463                  9598	51.258
+> 
+> 18929.6	50.2526                 9420.8	51.0024
+> 3863.61	0.96                    717.78	0.49
+> 
+> So that patch improves both local faults and runtime. Its good (even
+> though for the runtime we're still inside stdev overlap, so ideally I'd
+> do more runs).
+> 
+> 
+> Now I also did a run with the proposed patch, NUMA_SCALE/8 variant, and
+> that slightly reduces both again:
+> 
+> tip/master+origin/master+patch
+> 
+> local	total
+> faults  time
+> 
+> 21296	50.541
+> 12771	50.54
+> 13872	52.224
+> 23352	50.85
+> 16516	50.705
+> 
+> 17561.4	50.972
+> 4613.32	0.71
+> 
+> So for hackbench a43455a1d57 is good and the proposed patch is making
+> things worse.
+> 
+> Let me see if I can still find my SPECjbb2005 copy to see what that
+> does.
+
 
