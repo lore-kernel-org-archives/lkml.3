@@ -1,117 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256AbaHAUd1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 16:33:27 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:50490 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755979AbaHAUdY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 16:33:24 -0400
+	id S1756315AbaHAUeF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 16:34:05 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:58177 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754822AbaHAUeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 16:34:03 -0400
+Message-ID: <53DBF99D.1050803@gentoo.org>
+Date: Fri, 01 Aug 2014 16:33:33 -0400
+From: Richard Yao <ryao@gentoo.org>
+Reply-To: "kernel@gentoo.org" <kernel@gentoo.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1406868897-26874-6-git-send-email-afaerber@suse.de>
-References: <1406868897-26874-1-git-send-email-afaerber@suse.de>
-	<1406868897-26874-6-git-send-email-afaerber@suse.de>
-Date: Fri, 1 Aug 2014 13:33:23 -0700
-X-Google-Sender-Auth: 2j8iuo4QzTxhPDxYe9LupQmV4JM
-Message-ID: <CAD=FV=WhocoyQ=rU7dU1EPM-PAQq06gg9HhamSOm+BgMDeM8NA@mail.gmail.com>
-Subject: Re: [PATCH v5 05/10] ARM: dts: Move dp_hpd from exynos5250 into
- smdk5250 and snow
-From: Doug Anderson <dianders@chromium.org>
-To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomasz Figa <t.figa@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Mateusz Guzik <mguzik@redhat.com>
+CC: kernel@gentoo.org, mthode@mthode.org, michael@fds-team.de,
+        drobbins@funtoo.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] vfs: Respect MS_RDONLY at bind mount creation
+References: <1406916744-6634-1-git-send-email-ryao@gentoo.org> <1406916744-6634-2-git-send-email-ryao@gentoo.org> <20140801192017.GC1850@mguzik.redhat.com>
+In-Reply-To: <20140801192017.GC1850@mguzik.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="OHf7HMiNFv9UeUlkSwJevifOdEg9CLWK7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--OHf7HMiNFv9UeUlkSwJevifOdEg9CLWK7
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jul 31, 2014 at 9:54 PM, Andreas Färber <afaerber@suse.de> wrote:
-> Spring uses a different GPIO, so this is not a generic SoC piece.
->
-> Suggested-by: Tomasz Figa <t.figa@samsung.com>
-> Signed-off-by: Andreas Färber <afaerber@suse.de>
-> ---
->  v5: New (Tomasz Figa)
->  Frees dp_hpd for Spring.
->
->  arch/arm/boot/dts/exynos5250-pinctrl.dtsi | 7 -------
->  arch/arm/boot/dts/exynos5250-smdk5250.dts | 9 +++++++++
->  arch/arm/boot/dts/exynos5250-snow.dts     | 7 +++++++
->  3 files changed, 16 insertions(+), 7 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
-> index 886cfca044ac..ed0e5230514b 100644
-> --- a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
-> +++ b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
-> @@ -581,13 +581,6 @@
->                         samsung,pin-pud = <0>;
->                         samsung,pin-drv = <0>;
->                 };
-> -
-> -               dp_hpd: dp_hpd {
-> -                       samsung,pins = "gpx0-7";
-> -                       samsung,pin-function = <3>;
-> -                       samsung,pin-pud = <0>;
-> -                       samsung,pin-drv = <0>;
-> -               };
->         };
->
->         pinctrl@13400000 {
-> diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-> index aaa055ac0fe3..5d30fe1dcda4 100644
-> --- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
-> +++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-> @@ -414,3 +414,12 @@
->                 };
->         };
->  };
-> +
-> +&pinctrl_0 {
-> +       dp_hpd: dp_hpd {
-> +               samsung,pins = "gpx0-7";
-> +               samsung,pin-function = <3>;
-> +               samsung,pin-pud = <0>;
-> +               samsung,pin-drv = <0>;
-> +       };
-> +};
-> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-> index c4b0c73c736d..a9a2f2743794 100644
-> --- a/arch/arm/boot/dts/exynos5250-snow.dts
-> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
-> @@ -547,6 +547,13 @@
->  };
->
->  &pinctrl_0 {
-> +       dp_hpd: dp_hpd {
-> +               samsung,pins = "gpx0-7";
-> +               samsung,pin-function = <3>;
-> +               samsung,pin-pud = <0>;
-> +               samsung,pin-drv = <0>;
-> +       };
-> +
+On 08/01/2014 03:20 PM, Mateusz Guzik wrote:
+> On Fri, Aug 01, 2014 at 02:12:24PM -0400, Richard Yao wrote:
+>> `mount -o bind,ro ...` suffers from a silent failure where the readonl=
+y
+>> flag is ignored. The bind mount will be created rw whenever the target=
 
-NAK.  dp_hpd is a generic SoC piece.  Pin function 0 and 1 are GPIOs.
-Pin function 3 is special function.  This pin _is_ the hot plug detect
-pin for display port.  When it's set as special function 3 it goes
-straight into the hot plug logic of the display port controller.
+>> is rw. Users typically workaround this by remounting readonly, but tha=
+t
+>> does not work when you want to define readonly bind mounts in fstab.
+>> This is a major annoyance when dealing with recursive bind mounts
+>> because the userland mount command does not expose the option to
+>> recursively remount a subtree as readonly.
+>>
+>> Signed-off-by: Richard Yao <ryao@gentoo.org>
+>> ---
+>>  fs/namespace.c | 12 +++++++++---
+>>  1 file changed, 9 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/fs/namespace.c b/fs/namespace.c
+>> index 182bc41..0d23525 100644
+>> --- a/fs/namespace.c
+>> +++ b/fs/namespace.c
+>> @@ -1827,11 +1827,12 @@ static bool has_locked_children(struct mount *=
+mnt, struct dentry *dentry)
+>>   * do loopback mount.
+>>   */
+>>  static int do_loopback(struct path *path, const char *old_name,
+>> -				int recurse)
+>> +				unsigned long flags)
+>>  {
+>>  	struct path old_path;
+>> -	struct mount *mnt =3D NULL, *old, *parent;
+>> +	struct mount *mnt =3D NULL, *old, *parent, *m;
+>>  	struct mountpoint *mp;
+>> +	int recurse =3D flags & MS_REC;
+>>  	int err;
+>>  	if (!old_name || !*old_name)
+>>  		return -EINVAL;
+>> @@ -1871,6 +1872,10 @@ static int do_loopback(struct path *path, const=
+ char *old_name,
+>>  		goto out2;
+>>  	}
+>> =20
+>> +	if (flags & MS_RDONLY)
+>> +		for (m =3D mnt; m; m =3D (recurse ? next_mnt(m, mnt) : NULL))
+>> +			mnt_make_readonly(m);
+>> +
+>>  	mnt->mnt.mnt_flags &=3D ~MNT_LOCKED;
+>> =20
+>>  	err =3D graft_tree(mnt, parent, mp);
+>> @@ -2444,7 +2449,8 @@ long do_mount(const char *dev_name, const char *=
+dir_name,
+>>  		retval =3D do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
+>>  				    data_page);
+>>  	else if (flags & MS_BIND)
+>> -		retval =3D do_loopback(&path, dev_name, flags & MS_REC);
+>> +		retval =3D do_loopback(&path, dev_name, flags & (MS_REC |
+>> +							       MS_RDONLY));
+>>  	else if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE)=
+)
+>>  		retval =3D do_change_type(&path, flags);
+>>  	else if (flags & MS_MOVE)
+>=20
+> I don't really know this code, but have to ask.
+>=20
+> Would not it be much better to pass down info about rdonly request to
+> copy_tree/clone_mnt (perhaps CL_MOUNT_RDONLY flag or a separate flags
+> argument) and handle it there?
+>=20
+> This would avoid fishy-looking traversal before graft_tree, which even
+> if correct should not be necessary.
+>=20
 
-Spring may have had its reasons to detect hot plug events on a GPIO
-instead of using this pin, but that doesn't make this pin any less the
-"hot plug pin".
+I have a nagging feeling that people doing backports will hate me for
+adding a power of 2 plus 1 bit, but your suggestion makes this more
+readable. I will send v3 after I finish my regression tests.
 
--Doug
+
+--OHf7HMiNFv9UeUlkSwJevifOdEg9CLWK7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJT2/mhAAoJECDuEZm+6Exk38IP/03UL46x+LniWZ+2u1dky/mz
+vg5ZxThyQgxFeV2vap9br3Ai7CiuYSRhHiJAiv66GofDR1JeRsUexOxSj2hYh7DO
+rQfgn7VNZ1nhcMae/UCDI7aI/S5YwMISYIbJ/gDkslt13uJyGhyu+U9p2xC1HMcC
+1N5WreyQIo3DSfIS6O7kHTgXdNKn6dgHD6Aat3i0VCBMiQ6c9wXkCigbky+DCBmI
+iHo36+zcMm68MK0SuFSol4yDMx2d2/ZEZUvYz2aYU9W8V4EVCIzbu5updVDqI78b
+TrthP2drh9T8R9+ucB4H7bAL+PLiNCEHtKj1R9cnNj+aT7M7UxZDen1tyqY+gtIg
+14+VQrLjdZMVkOmtHeQ/o87QtXfVe2xfSk1drd6GVeEGjA06Ki3+ihF4RX3mgcYt
+1vo481OzajF36Sy3XutPo05l3he5YvjmkQy3WkYXLUe96Xayb0oaZdz8mTT4C9mR
+cQfd3XRi/raxfH41ThRM3xG1qzjfURXjWKLSyPeRQdUeSg6ts85xSVmlEVC3d9lM
+UmkoMrT10SgznJiCVMVD0FMK3c7YSoJ9uHlmJItRbIuDmE0EI+HQy3Ks5kOHEFF0
+o/O32aNQKLLk6/DDXj8zDvuVzUZaQZU50gA6L1fNgh2bywbHc8Roe7/rV9JHp/KI
+E55Lh+8fn0P6/DPvmgXr
+=VKJQ
+-----END PGP SIGNATURE-----
+
+--OHf7HMiNFv9UeUlkSwJevifOdEg9CLWK7--
