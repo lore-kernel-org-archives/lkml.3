@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178AbaHAQwA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 12:52:00 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:44885 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751734AbaHAQv7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 12:51:59 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>, Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2] dma: at_hdmac: fix invalid remaining bytes detection
-Date: Fri,  1 Aug 2014 18:51:46 +0200
-Message-Id: <1406911906-397-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	id S1755250AbaHAQyT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 12:54:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:63894 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751694AbaHAQyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 12:54:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,780,1400050800"; 
+   d="scan'208";a="552432913"
+Date: Fri, 1 Aug 2014 22:15:24 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Vignesh Raman <Vignesh_Raman@mentor.com>
+Cc: dan.j.williams@intel.com, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiada_Wang@mentor.com
+Subject: Re: [PATCH 2/2] dma: imx-sdma: Adding tasklet_kill() in
+ sdma_remove function.
+Message-ID: <20140801164524.GC8181@intel.com>
+References: <1406725875-9171-1-git-send-email-Vignesh_Raman@mentor.com>
+ <1406725875-9171-3-git-send-email-Vignesh_Raman@mentor.com>
+ <20140731120205.GT8181@intel.com>
+ <53DB9EFD.4040107@mentor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53DB9EFD.4040107@mentor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found using smatch:
-drivers/dma/at_hdmac.c:299 atc_get_bytes_left() warn: unsigned
-'atchan->remain_desc' is never less than zero.
+On Fri, Aug 01, 2014 at 07:36:53PM +0530, Vignesh Raman wrote:
+> On Thursday 31 July 2014 05:32 PM, Vinod Koul wrote:
+> > On Wed, Jul 30, 2014 at 06:41:15PM +0530, Vignesh Raman wrote:
+> >> Several dma drivers calls tasklet_kill() in remove function. This is missing in
+> >> imx driver, so adding tasklet_kill() in sdma_remove function.
+> > And why should we do that ?
+> > 
+> This is done because all running tasklets should be killed on remove.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
+And what prevents is from mentioning this in changelog!
 
-Changes in v2:
- - remove unnecessary parentheses
-
- drivers/dma/at_hdmac.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index c13a3bb0f594..adb0fbc63f16 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -294,14 +294,16 @@ static int atc_get_bytes_left(struct dma_chan *chan)
- 			ret = -EINVAL;
- 			goto out;
- 		}
--		atchan->remain_desc -= (desc_cur->lli.ctrla & ATC_BTSIZE_MAX)
--						<< (desc_first->tx_width);
--		if (atchan->remain_desc < 0) {
-+
-+		count = (desc_cur->lli.ctrla & ATC_BTSIZE_MAX)
-+			<< desc_first->tx_width;
-+		if (atchan->remain_desc < count) {
- 			ret = -EINVAL;
- 			goto out;
--		} else {
--			ret = atchan->remain_desc;
- 		}
-+
-+		atchan->remain_desc -= count;
-+		ret = atchan->remain_desc;
- 	} else {
- 		/*
- 		 * Get residual bytes when current
 -- 
-1.9.1
-
+~Vinod
