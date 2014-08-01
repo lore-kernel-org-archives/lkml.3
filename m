@@ -1,171 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072AbaHAP3S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 11:29:18 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:37146 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaHAP3Q (ORCPT
+	id S1755145AbaHAPaJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 11:30:09 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:53421 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaHAPaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 11:29:16 -0400
-Date: Fri, 1 Aug 2014 20:59:13 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>, Jingoo Han <jg1.han@samsung.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        Arend van Spriel <arend@broadcom.com>, Joe Perches <joe@perches.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] net: ks8851-ml: Use devm_ioremap_resource
-Message-ID: <20140801152913.GA11494@himangi-Dell>
+	Fri, 1 Aug 2014 11:30:07 -0400
+X-IronPort-AV: E=Sophos;i="5.01,780,1400025600"; 
+   d="scan'208";a="158503477"
+Message-ID: <53DBB27D.2040203@citrix.com>
+Date: Fri, 1 Aug 2014 16:30:05 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <gregkh@linuxfoundation.org>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>, <boris.ostrovsky@oracle.com>
+Subject: Re: [PATCH v5] Fixes to Xen pciback for 3.17.
+References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of devm_ioremap_resource, devm_kmalloc and
-does away with the functions to free the allocated memory in the probe
-and remove functions. Also, some labels are done away with. A bug is
-fixed as two regions are allocated in the probe function, but only one
-is freed in the remove function.
+On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
+> Greg: goto GHK
+> 
+> This is v5 version of patches to fix some issues in Xen PCIback.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/net/ethernet/micrel/ks8851_mll.c | 59 ++++++++++++--------------------
- 1 file changed, 21 insertions(+), 38 deletions(-)
+Applied to devel/for-linus-3.17.
 
-diff --git a/drivers/net/ethernet/micrel/ks8851_mll.c b/drivers/net/ethernet/micrel/ks8851_mll.c
-index c83d16d..0eb4764 100644
---- a/drivers/net/ethernet/micrel/ks8851_mll.c
-+++ b/drivers/net/ethernet/micrel/ks8851_mll.c
-@@ -1519,7 +1519,8 @@ static int ks_hw_init(struct ks_net *ks)
- 	ks->all_mcast = 0;
- 	ks->mcast_lst_size = 0;
- 
--	ks->frame_head_info = kmalloc(MHEADER_SIZE, GFP_KERNEL);
-+	ks->frame_head_info = devm_kmalloc(&ks->pdev->dev, MHEADER_SIZE,
-+					   GFP_KERNEL);
- 	if (!ks->frame_head_info)
- 		return false;
- 
-@@ -1537,44 +1538,41 @@ MODULE_DEVICE_TABLE(of, ks8851_ml_dt_ids);
- 
- static int ks8851_probe(struct platform_device *pdev)
- {
--	int err = -ENOMEM;
-+	int err;
- 	struct resource *io_d, *io_c;
- 	struct net_device *netdev;
- 	struct ks_net *ks;
- 	u16 id, data;
- 	const char *mac;
- 
--	io_d = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	io_c = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--
--	if (!request_mem_region(io_d->start, resource_size(io_d), DRV_NAME))
--		goto err_mem_region;
--
--	if (!request_mem_region(io_c->start, resource_size(io_c), DRV_NAME))
--		goto err_mem_region1;
--
- 	netdev = alloc_etherdev(sizeof(struct ks_net));
- 	if (!netdev)
--		goto err_alloc_etherdev;
-+		return -ENOMEM;
- 
- 	SET_NETDEV_DEV(netdev, &pdev->dev);
- 
- 	ks = netdev_priv(netdev);
- 	ks->netdev = netdev;
--	ks->hw_addr = ioremap(io_d->start, resource_size(io_d));
- 
--	if (!ks->hw_addr)
--		goto err_ioremap;
-+	io_d = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	ks->hw_addr = devm_ioremap_resource(&pdev->dev, io_d);
-+	if (IS_ERR(ks->hw_addr)) {
-+		err = PTR_ERR(ks->hw_addr);
-+		goto err_free;
-+	}
- 
--	ks->hw_addr_cmd = ioremap(io_c->start, resource_size(io_c));
--	if (!ks->hw_addr_cmd)
--		goto err_ioremap1;
-+	io_c = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	ks->hw_addr_cmd = devm_ioremap_resource(&pdev->dev, io_c);
-+	if (IS_ERR(ks->hw_addr_cmd)) {
-+		err = PTR_ERR(ks->hw_addr_cmd);
-+		goto err_free;
-+	}
- 
- 	netdev->irq = platform_get_irq(pdev, 0);
- 
- 	if ((int)netdev->irq < 0) {
- 		err = netdev->irq;
--		goto err_get_irq;
-+		goto err_free;
- 	}
- 
- 	ks->pdev = pdev;
-@@ -1604,18 +1602,18 @@ static int ks8851_probe(struct platform_device *pdev)
- 	if ((ks_rdreg16(ks, KS_CIDER) & ~CIDER_REV_MASK) != CIDER_ID) {
- 		netdev_err(netdev, "failed to read device ID\n");
- 		err = -ENODEV;
--		goto err_register;
-+		goto err_free;
- 	}
- 
- 	if (ks_read_selftest(ks)) {
- 		netdev_err(netdev, "failed to read device ID\n");
- 		err = -ENODEV;
--		goto err_register;
-+		goto err_free;
- 	}
- 
- 	err = register_netdev(netdev);
- 	if (err)
--		goto err_register;
-+		goto err_free;
- 
- 	platform_set_drvdata(pdev, netdev);
- 
-@@ -1663,32 +1661,17 @@ static int ks8851_probe(struct platform_device *pdev)
- 
- err_pdata:
- 	unregister_netdev(netdev);
--err_register:
--err_get_irq:
--	iounmap(ks->hw_addr_cmd);
--err_ioremap1:
--	iounmap(ks->hw_addr);
--err_ioremap:
-+err_free:
- 	free_netdev(netdev);
--err_alloc_etherdev:
--	release_mem_region(io_c->start, resource_size(io_c));
--err_mem_region1:
--	release_mem_region(io_d->start, resource_size(io_d));
--err_mem_region:
- 	return err;
- }
- 
- static int ks8851_remove(struct platform_device *pdev)
- {
- 	struct net_device *netdev = platform_get_drvdata(pdev);
--	struct ks_net *ks = netdev_priv(netdev);
--	struct resource *iomem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
--	kfree(ks->frame_head_info);
- 	unregister_netdev(netdev);
--	iounmap(ks->hw_addr);
- 	free_netdev(netdev);
--	release_mem_region(iomem->start, resource_size(iomem));
- 	return 0;
- 
- }
--- 
-1.9.1
+I dropped the stable Cc for #2 pending a final decision on whether it
+really is a stable candidate.
 
+David
