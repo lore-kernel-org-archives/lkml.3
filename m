@@ -1,152 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744AbaHAJHK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 05:07:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30538 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852AbaHAJHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 05:07:05 -0400
-Message-ID: <53DB5849.2070508@redhat.com>
-Date: Fri, 01 Aug 2014 11:05:13 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753998AbaHAJKJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 05:10:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:42146 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750716AbaHAJKF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 05:10:05 -0400
+Date: Fri, 1 Aug 2014 10:57:07 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dmaengine@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris Brezillon <boris@free-electrons.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        laurent.pinchart@ideasonboard.com, ludovic.desroches@atmel.com,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
+ dma controller API
+Message-ID: <20140801085707.GI3952@lukather>
+References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140730160607.GM8181@intel.com>
+ <20140731074440.GY3952@lukather>
+ <53DA3A48.8070900@metafoo.de>
+ <20140731161331.GD3952@lukather>
+ <53DA74B3.6060502@metafoo.de>
+ <20140731173730.GH3952@lukather>
+ <53DB490A.5040709@metafoo.de>
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] KVM: nVMX: nested TPR shadow/threshold emulation
-References: <1406880570-9746-1-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1406880570-9746-1-git-send-email-wanpeng.li@linux.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wwX5Nmi7feudBrEr"
+Content-Disposition: inline
+In-Reply-To: <53DB490A.5040709@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 01/08/2014 10:09, Wanpeng Li ha scritto:
-> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=61411
-> 
-> TPR shadow/threshold feature is important to speed up the Windows guest.
-> Besides, it is a must feature for certain VMM.
-> 
-> We map virtual APIC page address and TPR threshold from L1 VMCS. If
-> TPR_BELOW_THRESHOLD VM exit is triggered by L2 guest and L1 interested
-> in, we inject it into L1 VMM for handling.
-> 
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
-> v1 -> v2:
->  * don't take L0's "virtualize APIC accesses" setting into account
->  * virtual_apic_page do exactly the same thing that is done for apic_access_page
->  * add the tpr threshold field to the read-write fields for shadow VMCS
-> 
->  arch/x86/kvm/vmx.c | 33 +++++++++++++++++++++++++++++++--
->  1 file changed, 31 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index a3845b8..0e6e95e 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -379,6 +379,7 @@ struct nested_vmx {
->  	 * we must keep them pinned while L2 runs.
->  	 */
->  	struct page *apic_access_page;
-> +	struct page *virtual_apic_page;
->  	u64 msr_ia32_feature_control;
->  
->  	struct hrtimer preemption_timer;
-> @@ -533,6 +534,7 @@ static int max_shadow_read_only_fields =
->  	ARRAY_SIZE(shadow_read_only_fields);
->  
->  static unsigned long shadow_read_write_fields[] = {
-> +	TPR_THRESHOLD,
->  	GUEST_RIP,
->  	GUEST_RSP,
->  	GUEST_CR0,
-> @@ -2331,7 +2333,7 @@ static __init void nested_vmx_setup_ctls_msrs(void)
->  		CPU_BASED_MOV_DR_EXITING | CPU_BASED_UNCOND_IO_EXITING |
->  		CPU_BASED_USE_IO_BITMAPS | CPU_BASED_MONITOR_EXITING |
->  		CPU_BASED_RDPMC_EXITING | CPU_BASED_RDTSC_EXITING |
-> -		CPU_BASED_PAUSE_EXITING |
-> +		CPU_BASED_PAUSE_EXITING | CPU_BASED_TPR_SHADOW |
->  		CPU_BASED_ACTIVATE_SECONDARY_CONTROLS;
->  	/*
->  	 * We can allow some features even when not supported by the
-> @@ -6149,6 +6151,10 @@ static void free_nested(struct vcpu_vmx *vmx)
->  		nested_release_page(vmx->nested.apic_access_page);
->  		vmx->nested.apic_access_page = 0;
->  	}
-> +	if (vmx->nested.virtual_apic_page) {
-> +		nested_release_page(vmx->nested.virtual_apic_page);
-> +		vmx->nested.virtual_apic_page = 0;
-> +	}
->  
->  	nested_free_all_saved_vmcss(vmx);
->  }
-> @@ -6937,7 +6943,7 @@ static bool nested_vmx_exit_handled(struct kvm_vcpu *vcpu)
->  	case EXIT_REASON_MCE_DURING_VMENTRY:
->  		return 0;
->  	case EXIT_REASON_TPR_BELOW_THRESHOLD:
-> -		return 1;
-> +		return nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW);
->  	case EXIT_REASON_APIC_ACCESS:
->  		return nested_cpu_has2(vmcs12,
->  			SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES);
-> @@ -7058,6 +7064,9 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
->  
->  static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
->  {
-> +	if (is_guest_mode(vcpu))
-> +		return;
-> +
->  	if (irr == -1 || tpr < irr) {
->  		vmcs_write32(TPR_THRESHOLD, 0);
->  		return;
-> @@ -8025,6 +8034,22 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
->  	exec_control &= ~CPU_BASED_VIRTUAL_NMI_PENDING;
->  	exec_control &= ~CPU_BASED_TPR_SHADOW;
->  	exec_control |= vmcs12->cpu_based_vm_exec_control;
-> +
-> +	if (exec_control & CPU_BASED_TPR_SHADOW) {
-> +		if (vmx->nested.virtual_apic_page)
-> +			nested_release_page(vmx->nested.virtual_apic_page);
-> +		vmx->nested.virtual_apic_page =
-> +		   nested_get_page(vcpu, vmcs12->virtual_apic_page_addr);
-> +		if (!vmx->nested.virtual_apic_page)
-> +			exec_control &=
-> +				~CPU_BASED_TPR_SHADOW;
 
-This will cause L1 to miss exits when L2 writes to CR8.  I think the
-only sensible thing to do if this happens is fail the vmentry.
+--wwX5Nmi7feudBrEr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The problem is that while the APIC access page field is used to trap
-reads/writes to the APIC access page itself, here the processor will
-read/write the virtual APIC page when L2 does CR8 accesses.
+On Fri, Aug 01, 2014 at 10:00:10AM +0200, Lars-Peter Clausen wrote:
+> On 07/31/2014 07:37 PM, Maxime Ripard wrote:
+> >On Thu, Jul 31, 2014 at 06:54:11PM +0200, Lars-Peter Clausen wrote:
+> >>On 07/31/2014 06:13 PM, Maxime Ripard wrote:
+> >>[...]
+> >>> From what you're saying, and judging from the drivers that already
+> >>>implement it, can't it be moved directly to the framework itself ?
+> >>>
+> >>
+> >>What exactly do you mean by moving it directly to the framework? The
+> >>slave_caps API is part of the DMAengine framework.
+> >
+> >Not its implementation, which is defined by each and every driver,
+> >while the behaviour of device_slave_caps is rather generic.
+> >
+>=20
+> Do you mean something like adding a dma_slave_caps struct field to
+> the DMA channel that gets initialized when the channel is created
+> and then remove the callback? That makes some sense.
 
-Paolo
-> +		else
-> +			vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
-> +				page_to_phys(vmx->nested.virtual_apic_page));
-> +
-> +		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
-> +	}
-> +
->  	/*
->  	 * Merging of IO and MSR bitmaps not currently supported.
->  	 * Rather, exit every time.
-> @@ -8793,6 +8818,10 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
->  		nested_release_page(vmx->nested.apic_access_page);
->  		vmx->nested.apic_access_page = 0;
->  	}
-> +	if (vmx->nested.virtual_apic_page) {
-> +		nested_release_page(vmx->nested.virtual_apic_page);
-> +		vmx->nested.virtual_apic_page = 0;
-> +	}
->  
->  	/*
->  	 * Exiting from L2 to L1, we're now back to L1 which thinks it just
-> 
+I was rather thinking into something like:
+  - Splitting device_control into independant functions
+  - Then, knowing if you support pause/resume/terminate is trivial:
+    either you implement the callback, or you don't
+  - Putting the supported width and direction into fields of struct
+    dma_device, which can eventually be used by the framework to
+    filter out invalid configurations before calling the relevant
+    callbacks
+  - That would then be trivial to get from the framework, without
+    calling any callback
 
+> I think the main reason why we use a callback right now is that in
+> earlier revisions of the API it was possible to pass a slave_config
+> and the result would be the capabilities of the DMA channel for this
+> particular config. But this was dropped before the final version was
+> merged upstream.
+
+Ah, that would explain yes.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--wwX5Nmi7feudBrEr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT21ZjAAoJEBx+YmzsjxAgEp4P/3vgw8nQcWo1zYmYGS2XhrQA
+SXwaQXcUCUswqb19Yp6P+fbx7yTzwEwgEaWHYG2F0ka3vp84kgf+DJ9z2CGqz355
+kZye6wRGYzXtvr+nxEJzW209C5z5TrmLjuZW+M7MC/+nEpyngZHRC3cx4tUZxTUl
+AOaGcGC2MHK501Qgr8UTHUXzE3ONozhjkLvE1vxxXsp4bUO+SEJXvPtuyWVeWEGo
+2Xb8ZTtHtB4YzCrWh24NtsQMbFZkakpS7P0R81jROXdcuPZKReMHckfVrMEWHKY+
+LCQa0Cp5r+Uk9I10c2CAGkw4BglZvSiJ+gn9/Lj8CV7wqiyM7XpFkdtI7+s5RS5n
+iGrWZguObW7+4SzQ6WznD8BYMy95pTKHRT4qA25oGoo3905pLbppSGgLUCqA95Mp
+RfWBsRaH2Q/fAEY7EzJ/U0Ffc3wz5BLGnUoqQ7hhmYDdxi1rEsxCUPQ1DTFMoPP6
+oM27Obk9IrofxA9KP+WWV+Ln36IbqI6sfjCsXxg5HW7e1VO5uO+NMrE8a5903x79
+nlVUgmCEzXvuo0kij3i1a6sbggMG90oghO4BxQnSnlzhugv47juXE5rjL/Td6ymM
+DHX8KM4A+5ym0bNNZGjf5+FJnyr7EzcYLehkBS0ZRVpJegrbVLbYK70/ABDiq4ym
+ktUWOchzZb0wk57zlQAB
+=dzmo
+-----END PGP SIGNATURE-----
+
+--wwX5Nmi7feudBrEr--
