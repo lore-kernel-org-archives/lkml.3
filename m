@@ -1,67 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885AbaHAPAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 11:00:10 -0400
-Received: from stinky.trash.net ([213.144.137.162]:55759 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547AbaHAPAI (ORCPT
+	id S1753535AbaHAPDM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 11:03:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52995 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783AbaHAPDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 11:00:08 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140801145145.GE7331@casper.infradead.org>
-References: <cover.1406891028.git.tgraf@suug.ch> <bd4d9fa542072358cb0bd77e493ec5785a1d9666.1406891028.git.tgraf@suug.ch> <53DB864B.2070205@redhat.com> <20140801134901.GD7331@casper.infradead.org> <0d77fb6a-4465-432f-9d6a-b1c1497a780b@email.android.com> <20140801145145.GE7331@casper.infradead.org>
+	Fri, 1 Aug 2014 11:03:10 -0400
+Date: Fri, 1 Aug 2014 17:02:46 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jirka Hladky <jhladky@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, Aaron Lu <aaron.lu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1%
+ proc-vmstat.numa_hint_faults_local
+Message-ID: <20140801150246.GC3588@twins.programming.kicks-ass.net>
+References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>
+ <53D72FF5.90908@intel.com>
+ <20140729023940.37b6aebc@annuminas.surriel.com>
+ <20140731104241.GA9918@twins.programming.kicks-ass.net>
+ <20140731155723.GY3588@twins.programming.kicks-ass.net>
+ <53DA6BDA.8080000@redhat.com>
+ <20140731162702.GZ19379@twins.programming.kicks-ass.net>
+ <53DA7129.7020100@redhat.com>
+ <20140731173705.GC19379@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH net-next 3/3] nftables: Convert nft_hash to use generic rhashtable
-From: Patrick McHardy <kaber@trash.net>
-Date: Fri, 01 Aug 2014 16:00:00 +0100
-To: Thomas Graf <tgraf@suug.ch>
-CC: Nikolay Aleksandrov <nikolay@redhat.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
-        challa@noironetworks.com, walpole@cs.pdx.edu, dev@openvswitch.org,
-        tklauser@distanz.ch, netfilter-devel@vger.kernel.org,
-        pablo@netfilter.org
-Message-ID: <68a32a9d-9421-4fdd-91db-8106eaa0897a@email.android.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0tC/8VcTcTa+VwnR"
+Content-Disposition: inline
+In-Reply-To: <20140731173705.GC19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1. August 2014 15:51:45 GMT+01:00, Thomas Graf <tgraf@suug.ch> wrote:
->On 08/01/14 at 03:12pm, Patrick McHardy wrote:
->> On 1. August 2014 14:49:01 GMT+01:00, Thomas Graf <tgraf@suug.ch>
->wrote:
->> >On 08/01/14 at 02:21pm, Nikolay Aleksandrov wrote:
->> >> Sorry for the late response but I just got around to check the 3rd
->> >patch now,
->> >> so my question about this fragment is: before nft_hash_remove()
->would
->> >free the
->> >> element after removal, but after this change I don't see where and
->> >when the
->> >> removed element would get freed ?
->> >
->> >You are right. Looking at this closer we were leaking references
->even
->> >before the change because it would not call nft_data_uninit() to
->> >release
->> >the data objects. So it should really just call
->> >nft_hash_elem_destroy().
->> 
->> No, the data uninit is performed by the set core. Just freeing it is
->fine.
->
->OK, I can see the uninit on the data in nft_del_setelem() for maps
->prior to the actual commit. The location is slightly unexpected since
->the element is still findable in the hash table at that point.
 
-That's most likely a bug from the transaction API.
+--0tC/8VcTcTa+VwnR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Pablo?
+On Thu, Jul 31, 2014 at 07:37:05PM +0200, Peter Zijlstra wrote:
+> On Thu, Jul 31, 2014 at 06:39:05PM +0200, Jirka Hladky wrote:
+> > I'm doing 3 iterations (3 runs) to get some statistics. To speed up the=
+ test
+> > significantly please do the run with 20 warehouses only
+> > (or in general with #warehouses =3D=3D  number of nodes * number of PHY=
+SICAL
+> > cores)
+>=20
+> Yeah, went and did that for my 4 node machine, its got a ton more cores, =
+but I
+> matches the warehouses to it:
+>=20
+> -a43455a1d57	tip/master
+>=20
+> 979996.47	1144715.44
+> 876146		1098499.07
+> 1058974.18	1019499.38
+> 1055951.59	1139405.22
+> 970504.01	1099659.09
+>=20
+> 988314.45	1100355.64	(avg)
+> 75059.546179565	50085.7473975167(stdev)
+>=20
+> So for 5 runs, tip/master (which includes the offending patch) wins hands=
+ down.
+>=20
+> Each run is 2 minutes.
 
->I'll wait a short while to see if there is more feedback and resubmit
->afterwards.
+Because Rik asked for a43455a1d57^1 numbers:
 
+546423.08
+546558.63
+545990.01
+546015.98
 
+some a43455a1d57 numbers:
+
+538652.93
+544333.57
+542684.77
+
+same setup and everything. So clearly the patches after that made 'some'
+difference indeed, seeing how tip/master is almost twice that.
+
+So the reason I didn't so a43455a1d57^1 vs a43455a1d57 is because we already
+fingered a commit, after that what you test is the revert of that commit,
+because revert is what you typically end up doing if a commit is fail.
+
+But on the state of tip/master, taking that commit out is a net negative for
+everything I've tested.
+
+--0tC/8VcTcTa+VwnR
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT26wWAAoJEHZH4aRLwOS6+gUQAKlLsJF4051xp7nGEOQuJhoR
+PE899EevVXGHRlgs8o2gnGkCt3UnPdIFWihFtEqA2My1MHcVIzpkz+5nnmEZhBA9
+nIwF2coF2qGro8WURaA3bXR7bADIWfZcnk3KZjJa2ibT87f+wHRq4/Firrb8GRU7
+rairqulh83IV3FFdLlqAgkMuL20IH9dhPGNkJ4FrOzS6oz2qbXO6329qH/VC05+Z
+XAH61pEVfN7BYbOS2TNAfEGCgzV6Lr01kPhc/qeOLbauVCzVUENaw9Qe3gOpskFM
+PxjRqv3R6PkNtfL2oA/Zbg+7bz/X32R5mo2o+HCqQyT4IjURBRQsydfeszS4vdms
+/cokqo1b2H0CnU2BMZLxMSsb36Ql6xjcNdp2/jkHnZ5tFKdfy2/c5Jcmf/2ajwyo
+rA/vxHq6ykhtZSw71+3J7NnrNU0l4KrZflE66XhaJ9dVOTs826QIpFW0D0rzaHJv
+7j9GCze5SG4Dt0xki2ocJJsyRTnBnxwlZpxOU7xcDIzGfTjTfsmuXwaSfmzXlmVr
+oXEOjkP0BUKcW8RVdM7/KkyGjmzX9mQOmDXggr3BFmrRmVJEeCg63M0nktG1OrVa
+A+IowCffoH7PRnP2K5fVgaKpYGhGdGgazCN9VO1XzfqXJdmyaQLTG1kh8vkOZb6x
+9zKJUksAPV3jfyNgDuPg
+=ddls
+-----END PGP SIGNATURE-----
+
+--0tC/8VcTcTa+VwnR--
