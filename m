@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218AbaHAJxC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 05:53:02 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:25505 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754003AbaHAJxA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 05:53:00 -0400
-Message-ID: <53DB6369.8070907@huawei.com>
-Date: Fri, 1 Aug 2014 17:52:41 +0800
-From: Wang Weidong <wangweidong1@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1754237AbaHAJ5I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 05:57:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50859 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750783AbaHAJ5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 05:57:05 -0400
+Date: Fri, 1 Aug 2014 11:57:00 +0200
+From: Jan Kara <jack@suse.cz>
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: Jan Kara <jack@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
+        Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH 0/2] new API to allocate buffer-cache for superblock in
+ non-movable area
+Message-ID: <20140801095700.GB27281@quack.suse.cz>
+References: <20140722073005.GT3935@laptop>
+ <20140722093838.GA22331@quack.suse.cz>
+ <53D8A258.7010904@lge.com>
+ <20140730101143.GB19205@quack.suse.cz>
+ <53D985C0.3070300@lge.com>
+ <20140731000355.GB25362@quack.suse.cz>
+ <53D98FBB.6060700@lge.com>
+ <20140731122114.GA5240@quack.suse.cz>
+ <53DADA2F.1020404@lge.com>
+ <53DAE820.7050508@lge.com>
 MIME-Version: 1.0
-To: <rjw@rjwysocki.net>, <viresh.kumar@linaro.org>
-CC: <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        wangweidong <wangweidong1@huawei.com>
-Subject: [PATCH] cpufreq: get the cur_freq from acpi_processor_performance
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.75]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53DAE820.7050508@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the initialized freq_tables maybe different from the p-states
-values, so the array index is different as well.
+On Fri 01-08-14 10:06:40, Gioh Kim wrote:
+> Function path is like followings:
+> 
+> [   97.868304] [<8011a750>] (drop_buffers+0xfc/0x168) from [<8011bc64>] (try_to_free_buffers+0x50/0xbc)
+> [   97.877457] [<8011bc64>] (try_to_free_buffers+0x50/0xbc) from [<80121e40>] (blkdev_releasepage+0x38/0x48)
+> [   97.887093] [<80121e40>] (blkdev_releasepage+0x38/0x48) from [<800add8c>] (try_to_release_page+0x40/0x5c)
+> [   97.896728] [<800add8c>] (try_to_release_page+0x40/0x5c) from [<800bd9bc>] (shrink_page_list+0x508/0x8a4)
+> [   97.906334] [<800bd9bc>] (shrink_page_list+0x508/0x8a4) from [<800bde5c>] (reclaim_clean_pages_from_list+0x104/0x148)
+> [   97.917017] [<800bde5c>] (reclaim_clean_pages_from_list+0x104/0x148) from [<800b5dec>] (alloc_contig_range+0x114/0x2dc)
+> [   97.927856] [<800b5dec>] (alloc_contig_range+0x114/0x2dc) from [<802f6c04>] (dma_alloc_from_contiguous+0x8c/0x14c)
+> [   97.938264] [<802f6c04>] (dma_alloc_from_contiguous+0x8c/0x14c) from [<80017b6c>] (__alloc_from_contiguous+0x34/0xc0)
+> [   97.948926] [<80017b6c>] (__alloc_from_contiguous+0x34/0xc0) from [<80017d40>] (__dma_alloc+0xc4/0x2a0)
+> [   97.958362] [<80017d40>] (__dma_alloc+0xc4/0x2a0) from [<8001803c>] (arm_dma_alloc+0x80/0x98)
+> [   97.966916] [<8001803c>] (arm_dma_alloc+0x80/0x98) from [<7f6ea188>] (cma_test_probe+0xe0/0x1f0 [drv])
+  OK, this makes more sense to me. But also as Joonsoo Kim pointed out
+even if we go into the migration path, we will end up calling
+try_to_free_buffers() because blkdev pages are one of those which use
+fallback_migrate_page() as their ->migratepage callback.
 
-p-states value: [2400 2400 2000 ...], while the freq_tables:
-[2400 2000 ... CPUFREQ_TABLE_END]. After setted the freqs 2000,
-the perf->state is 3 while the freqs_table's index should be 2.
-So when call the get_cur_freq_on_cpu, the freqs value we get
-is 2400.
+Now regarding your quest to make all pages in the movable zone really
+movable - you are going to have hard time to achieve that for blkdev pages.
+E.g. when a metadata buffer is part of a running transaction, it will be
+pinned in memory until that transaction commits which easily takes seconds.
+And for busy metadata buffer there's no guarantee that after that
+transaction commits the buffer isn't already part of the newly started
+transaction. So these buffers may be effectively unmovable while someone
+writes to the filesystem.
 
-So, fix the problem with the correct tables.
+So the quiestion really is how hard guarantee do you need that a page in
+movable zone is really movable. Or better in what timeframe should it be
+movable? It may be possible to make e.g. migratepage callback for ext4
+blkdev pages which will handle migration of pages that are just idly
+sitting in a journal waiting to be committed. That may be reasonably doable
+although it won't be perfect. Or we may just decide it's not worth the
+bother and allocate all blkdev pages from unmovable zone...
 
-Signed-off-by: Wang Weidong <wangweidong1@huawei.com>
----
- drivers/cpufreq/acpi-cpufreq.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+								Honza
 
-diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-index b0c18ed..2b934cb 100644
---- a/drivers/cpufreq/acpi-cpufreq.c
-+++ b/drivers/cpufreq/acpi-cpufreq.c
-@@ -365,6 +365,7 @@ static u32 get_cur_val(const struct cpumask *mask)
- static unsigned int get_cur_freq_on_cpu(unsigned int cpu)
- {
- 	struct acpi_cpufreq_data *data = per_cpu(acfreq_data, cpu);
-+	struct acpi_processor_performance *perf;
- 	unsigned int freq;
- 	unsigned int cached_freq;
- 
-@@ -375,7 +376,8 @@ static unsigned int get_cur_freq_on_cpu(unsigned int cpu)
- 		return 0;
- 	}
- 
--	cached_freq = data->freq_table[data->acpi_data->state].frequency;
-+	perf = data->acpi_data;
-+	cached_freq = perf->states[perf->state].core_frequency * 1000;
- 	freq = extract_freq(get_cur_val(cpumask_of(cpu)), data);
- 	if (freq != cached_freq) {
- 		/*
 -- 
-1.7.12
-
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
