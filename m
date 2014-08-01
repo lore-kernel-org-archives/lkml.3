@@ -1,377 +1,432 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257AbaHARAQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 13:00:16 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:41255 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734AbaHARAN (ORCPT
+	id S1755581AbaHARAe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 13:00:34 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:62431 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734AbaHARAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 13:00:13 -0400
-Date: Fri, 1 Aug 2014 12:57:38 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless-next 2014-08-01
-Message-ID: <20140801165738.GA26953@tuxdriver.com>
+	Fri, 1 Aug 2014 13:00:31 -0400
+Message-ID: <53DBC7AB.10301@suse.cz>
+Date: Fri, 01 Aug 2014 19:00:27 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+CC: lwn@lwn.net
+Subject: Linux 3.12.26
+Content-Type: text/plain; charset=iso-8859-2
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
---azLHFNyN32YCQGCU
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'm announcing the release of the 3.12.26 kernel.
 
-Dave,
+All users of the 3.12 kernel series must upgrade.
 
-Please pull this last(?) batch of wireless change intended for the
-3.17 stream...
+The updated 3.12.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+linux-3.12.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
 
-For the NFC bits, Samuel says:
+- ----------------------------------------------------------------
+Abbas Raza (1):
+      usb: chipidea: udc: Disable auto ZLP generation on ep0
 
-"This is a rather quiet one, we have:
+Alex Deucher (2):
+      drm/radeon: set default bl level to something reasonable
+      drm/radeon: avoid leaking edid data
 
-- A new driver from ST Microelectronics for their NCI ST21NFCB,
-  including device tree  support.
+Amitkumar Karwar (1):
+      mwifiex: fix Tx timeout issue
 
-- p2p support for the ST21NFCA driver
+Anand Avati (1):
+      fuse: ignore entry-timeout on LOOKUP_REVAL
 
-- A few fixes an enhancements for the NFC digital laye"
+Andrey Utkin (1):
+      appletalk: Fix socket referencing in skb
 
-For the Atheros bits, Kalle says:
+Andy Whitcroft (1):
+      ACPI / resources: only reject zero length resources based at
+address zero
 
-"Michal and Janusz did some important RX aggregation fixes, basically we
-were missing RX reordering altogether. The 10.1 firmware doesn't support
-Ad-Hoc mode and Michal fixed ath10k so that it doesn't advertise Ad-Hoc
-support with that firmware. Also he implemented a workaround for a KVM
-issue."
+Anton Kolesov (1):
+      ARC: Implement ptrace(PTRACE_GET_THREAD_AREA)
 
-For the Bluetooth bits, Gustavo and Johan say:
+Antti Palosaari (1):
+      media: tda10071: force modulation to QPSK on DVB-S
 
-"To quote Gustavo from his previous request:
+Axel Lin (2):
+      hwmon: (da9055) Don't use dash in the name attribute
+      hwmon: (da9052) Don't use dash in the name attribute
 
-'Some last minute fixes for -next. We have a fix for a use after free in
-RFCOMM, another fix to an issue with ADV_DIRECT_IND and one for ADV_IND with
-auto-connection handling.  Last, we added support for reading the codec and
-MWS setting for controllers that support these features.'
+Ben Pfaff (1):
+      netlink: Fix handling of error from netlink_dump().
 
-Additionally there are fixes to LE scanning, an update to conform to the 4.1
-core specification as well as fixes for tracking the page scan state. All
-of these fixes are important for 3.17."
+Benjamin LaHaise (1):
+      aio: protect reqs_available updates from changes in interrupt
+handlers
 
-And,
+Bernd Wachter (1):
+      net: qmi_wwan: Add ID for Telewell TW-LTE 4G v2
 
-"We've got:
+Bj?rn Mork (1):
+      net: qmi_wwan: add two Sierra Wireless/Netgear devices
 
-- 6lowpan fixes/cleanups
-- A couple crash fixes, one for the Marvell HCI driver and another in LE SM=
-P.
-- Fix for an incorrect connected state check
-- Fix for the bondable requirement during pairing (an issue which had
-  crept in because of using "pairable" when in fact the actual meaning
-  was "bondable" (these have different meanings in Bluetooth)"
+Catalin Marinas (1):
+      mm: kmemleak: avoid false negatives on vmalloc'ed objects
 
-Along with those are some late-breaking hardware support patches in
-brcmfmac and b43 as well as a stray ath9k patch.
+Christian König (1):
+      drm/radeon: fix irq ring buffer overflow handling
 
-Please let me know if there are problems!
+Christoph Hellwig (1):
+      block: don't assume last put of shared tags is for the host
 
-Thanks,
+Christoph Paasch (1):
+      tcp: Fix divide by zero when pushing during tcp-repair
 
-John
+Christoph Schulz (1):
+      net: pppoe: use correct channel MTU when using Multilink PPP
 
-P.S.  It looks like there are a number of minor merge conflicts
-resulting from Marcel's 6lowpan style cleanups.  I don't think you
-will have any issues resolving them, but if you do then let me know
-how I can help!
+Daniel Borkmann (3):
+      net: sctp: propagate sysctl errors from proc_do* properly
+      net: sctp: check proc_dointvec result in proc_sctp_do_auth
+      net: sctp: fix information leaks in ulpevent layer
 
----
+Daniel Thompson (1):
+      serial: sirf: Fix compilation failure
 
-The following changes since commit 9a244409d0b0cf3b1e46f1dc331f2c718597fae0:
+David Ertman (1):
+      e1000e: Fix SHRA register access for 82579
 
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/li=
-nville/wireless (2014-07-25 10:22:36 -0400)
+Dmitry Popov (1):
+      ip_tunnel: fix ip_tunnel_lookup
 
-are available in the git repository at:
+Dmitry Torokhov (1):
+      Input: fix defuzzing logic
+
+Edward Allcutt (1):
+      ipv4: icmp: Fix pMTU handling for rare case
+
+Emmanuel Grumbach (1):
+      iwlwifi: dvm: don't enable CTS to self
+
+Eric Dumazet (4):
+      ipv4: fix dst race in sk_dst_get()
+      ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix
+      bnx2x: fix possible panic under memory stress
+      ipv4: fix buffer overflow in ip_options_compile()
+
+Gavin Guo (1):
+      usb: Check if port status is equal to RxDetect
+
+Guenter Roeck (2):
+      hwmon: (adt7470) Fix writes to temperature limit registers
+      hwmon: (smsc47m192) Fix temperature limit and vrm write operations
+
+HATAYAMA Daisuke (1):
+      perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
+
+Hans Verkuil (1):
+      media: hdpvr: fix two audio bugs
+
+Hans de Goede (1):
+      media: gspca_pac7302: Add new usb-id for Genius i-Look 317
+
+Hugh Dickins (3):
+      shmem: fix faulting into a hole while it's punched
+      shmem: fix faulting into a hole, not taking i_mutex
+      shmem: fix splicing from a hole while it's punched
+
+Jason Wang (1):
+      drm/qxl: return IRQ_NONE if it was not our irq
+
+Jiri Slaby (1):
+      Linux 3.12.26
+
+John David Anglin (1):
+      parisc: Remove SA_RESTORER define
+
+John Stultz (1):
+      alarmtimer: Fix bug where relative alarm timers were treated as
+absolute
+
+Jon Paul Maloy (1):
+      tipc: clear 'next'-pointer of message fragments before reassembly
+
+K. Y. Srinivasan (1):
+      Drivers: hv: util: Fix a bug in the KVP code
+
+Kevin Hao (1):
+      libata: support the ata host which implements a queue depth less
+than 32
+
+Li RongQing (1):
+      8021q: fix a potential memory leak
+
+Linus Torvalds (2):
+      Don't trigger congestion wait on dirty-but-not-writeout pages
+      Fix gcc-4.9.0 miscompilation of load_balance() in scheduler
+
+Loic Poulain (1):
+      Bluetooth: Ignore H5 non-link packets in non-active state
+
+Loic Prylli (1):
+      net: Fix NETDEV_CHANGE notifier usage causing spurious arp flush
+
+Manuel Schölling (1):
+      dns_resolver: assure that dns_query() result is null-terminated
+
+Marek Vasut (1):
+      ARM: dts: imx: Add alias for ethernet controller
+
+Martin Lau (1):
+      ring-buffer: Fix polling on trace_pipe
+
+Mateusz Guzik (1):
+      sched: Fix possible divide by zero in avg_atom() calculation
+
+Matthias Brugger (1):
+      irqchip: gic: Add support for cortex a7 compatible string
+
+Michael Brown (1):
+      x86/efi: Include a .bss section within the PE/COFF headers
+
+Mike Snitzer (2):
+      dm thin metadata: do not allow the data block size to change
+      dm cache metadata: do not allow the data block size to change
+
+Miklos Szeredi (2):
+      fuse: timeout comparison fix
+      fuse: handle large user and group ID
+
+Mikulas Patocka (2):
+      block: provide compat ioctl for BLKZEROOUT
+      slab_common: fix the check for duplicate slab names
+
+Neal Cardwell (1):
+      tcp: fix tcp_match_skb_to_sack() for unaligned SACK at end of an skb
+
+Niu Yawei (1):
+      quota: missing lock in dqcache_shrink_scan()
+
+Peter Zijlstra (1):
+      locking/mutex: Disable optimistic spinning on some architectures
+
+Qipan Li (1):
+      serial: sirf: fix spinlock deadlock issue
+
+Rickard Strandqvist (1):
+      media: media: v4l2-core: v4l2-dv-timings.c: Cleaning up code
+wrong value used in aspect ratio
+
+Romain Degez (1):
+      ahci: add support for the Promise FastTrak TX8660 SATA HBA (ahci
+mode)
+
+Silesh C V (1):
+      coredump: fix the setting of PF_DUMPCORE
+
+Sowmini Varadhan (1):
+      sunvnet: clean up objects created in vnet_new() on vnet_exit()
+
+Stefan Assmann (1):
+      igb: do a reset on SR-IOV re-init if device is down
+
+Steven Rostedt (Red Hat) (1):
+      tracing: Fix graph tracer with stack tracer on other archs
+
+Suresh Reddy (1):
+      be2net: set EQ DB clear-intr bit in be_open()
+
+Sven Wegener (1):
+      x86_32, entry: Store badsys error code in %eax
+
+Takashi Iwai (2):
+      ALSA: hda - Fix broken PM due to incomplete i915 initialization
+      PM / sleep: Fix request_firmware() error at resume
+
+Ted Juan (1):
+      mtd: devices: elm: fix elm_context_save() and
+elm_context_restore() functions
+
+Tejun Heo (2):
+      libata: introduce ata_host->n_tags to avoid oops on SAS controllers
+      blkcg: don't call into policy draining if root_blkg is already gone
+
+Thomas Gleixner (1):
+      can: c_can: Remove EOB exit
+
+Thomas Petazzoni (1):
+      net: mvneta: fix operation in 10 Mbit/s mode
+
+Todd Fujinaka (1):
+      igb: Workaround for i210 Errata 25: Slow System Clock
+
+Tomasz Figa (1):
+      irqchip: gic: Fix core ID calculation when topology is read from DT
+
+Tony Luck (1):
+      tracing: Fix wraparound problems in "uptime" trace clock
+
+Tyler Hall (2):
+      slip: Fix deadlock in write_wakeup
+      slcan: Port write_wakeup deadlock fix from slip
+
+Vasily Averin (1):
+      fs: umount on symlink leaks mnt count
+
+Wei-Chun Chao (1):
+      net: fix UDP tunnel GSO of frag_list GRO packets
+
+Yuchung Cheng (1):
+      tcp: fix false undo corner cases
+
+dingtianhong (1):
+      igmp: fix the problem when mc leave group
+
+zhangwei(Jovi) (2):
+      tracing: Add ftrace_trace_stack into __trace_puts/__trace_bputs
+      tracing: Add TRACE_ITER_PRINTK flag check in
+__trace_puts/__trace_bputs
+
+ Makefile                                     |   4 +-
+ arch/arc/include/uapi/asm/ptrace.h           |   1 +
+ arch/arc/kernel/ptrace.c                     |   4 +
+ arch/arm/Kconfig                             |   1 +
+ arch/arm/boot/dts/imx25.dtsi                 |   1 +
+ arch/arm/boot/dts/imx27.dtsi                 |   1 +
+ arch/arm/boot/dts/imx51.dtsi                 |   1 +
+ arch/arm/boot/dts/imx53.dtsi                 |   1 +
+ arch/arm64/Kconfig                           |   1 +
+ arch/parisc/include/uapi/asm/signal.h        |   2 -
+ arch/powerpc/Kconfig                         |   1 +
+ arch/sparc/Kconfig                           |   1 +
+ arch/x86/Kconfig                             |   1 +
+ arch/x86/boot/header.S                       |  26 +++-
+ arch/x86/boot/tools/build.c                  |  37 ++++-
+ arch/x86/kernel/cpu/perf_event_intel.c       |   9 ++
+ arch/x86/kernel/entry_32.S                   |   9 +-
+ block/blk-cgroup.c                           |   7 +
+ block/blk-tag.c                              |  33 +----
+ block/compat_ioctl.c                         |   1 +
+ drivers/acpi/resource.c                      |  10 +-
+ drivers/ata/ahci.c                           |   1 +
+ drivers/ata/libata-core.c                    |  12 +-
+ drivers/bluetooth/hci_h5.c                   |   1 +
+ drivers/gpu/drm/qxl/qxl_irq.c                |   3 +
+ drivers/gpu/drm/radeon/atombios_encoders.c   |  10 +-
+ drivers/gpu/drm/radeon/cik.c                 |   1 +
+ drivers/gpu/drm/radeon/evergreen.c           |   1 +
+ drivers/gpu/drm/radeon/r600.c                |   1 +
+ drivers/gpu/drm/radeon/radeon_display.c      |   5 +
+ drivers/gpu/drm/radeon/si.c                  |   1 +
+ drivers/hv/hv_kvp.c                          |  14 +-
+ drivers/hv/hv_util.c                         |   2 +-
+ drivers/hwmon/adt7470.c                      |   6 +-
+ drivers/hwmon/da9052-hwmon.c                 |   2 +-
+ drivers/hwmon/da9055-hwmon.c                 |   2 +-
+ drivers/hwmon/smsc47m192.c                   |   4 +-
+ drivers/input/input.c                        |   6 +-
+ drivers/irqchip/irq-gic.c                    |   6 +-
+ drivers/md/dm-cache-metadata.c               |   9 ++
+ drivers/md/dm-thin-metadata.c                |   9 ++
+ drivers/media/dvb-frontends/tda10071.c       |   6 +-
+ drivers/media/usb/gspca/pac7302.c            |   1 +
+ drivers/media/usb/hdpvr/hdpvr-video.c        |   6 +-
+ drivers/media/v4l2-core/v4l2-dv-timings.c    |   4 +-
+ drivers/mtd/devices/elm.c                    |   2 +
+ drivers/net/can/c_can/c_can.c                |   3 -
+ drivers/net/can/slcan.c                      |  41 ++++--
+ .../net/ethernet/broadcom/bnx2x/bnx2x_cmn.c  |   3 +-
+ drivers/net/ethernet/emulex/benet/be_main.c  |   2 +-
+ drivers/net/ethernet/intel/e1000e/ich8lan.c  |   2 +-
+ drivers/net/ethernet/intel/e1000e/ich8lan.h  |   2 +-
+ drivers/net/ethernet/intel/igb/e1000_82575.c |   7 +
+ .../net/ethernet/intel/igb/e1000_defines.h   |  18 +--
+ drivers/net/ethernet/intel/igb/e1000_hw.h    |   3 +
+ drivers/net/ethernet/intel/igb/e1000_i210.c  |  66 +++++++++
+ drivers/net/ethernet/intel/igb/e1000_i210.h  |  12 ++
+ drivers/net/ethernet/intel/igb/e1000_regs.h  |   1 +
+ drivers/net/ethernet/intel/igb/igb_main.c    |  16 +++
+ drivers/net/ethernet/marvell/mvneta.c        |   2 +-
+ drivers/net/ethernet/sun/sunvnet.c           |  20 ++-
+ drivers/net/ppp/pppoe.c                      |   2 +-
+ drivers/net/slip/slip.c                      |  36 +++--
+ drivers/net/slip/slip.h                      |   1 +
+ drivers/net/usb/qmi_wwan.c                   |   3 +
+ drivers/net/wireless/iwlwifi/dvm/rxon.c      |  12 --
+ drivers/net/wireless/mwifiex/main.c          |   1 +
+ drivers/tty/serial/sirfsoc_uart.c            |  49 +++----
+ drivers/tty/serial/sirfsoc_uart.h            |   2 -
+ drivers/usb/chipidea/udc.c                   |   4 +-
+ drivers/usb/core/hub.c                       |  19 +++
+ fs/aio.c                                     |   7 +
+ fs/coredump.c                                |   2 +-
+ fs/fuse/dir.c                                |   7 +-
+ fs/fuse/inode.c                              |  20 ++-
+ fs/namei.c                                   |   3 +-
+ fs/quota/dquot.c                             |   2 +
+ include/linux/libata.h                       |   1 +
+ include/net/sock.h                           |  16 +--
+ kernel/Kconfig.locks                         |   5 +-
+ kernel/power/process.c                       |   1 +
+ kernel/sched/debug.c                         |   2 +-
+ kernel/time/alarmtimer.c                     |  20 ++-
+ kernel/trace/ftrace.c                        |   4 +-
+ kernel/trace/ring_buffer.c                   |   4 -
+ kernel/trace/trace.c                         |  20 ++-
+ kernel/trace/trace_clock.c                   |   9 +-
+ mm/kmemleak.c                                |   4 +-
+ mm/shmem.c                                   | 104 ++++++++++++--
+ mm/slab_common.c                             |   2 +-
+ mm/vmalloc.c                                 |  14 +-
+ mm/vmscan.c                                  |  11 +-
+ net/8021q/vlan_core.c                        |   5 +-
+ net/appletalk/ddp.c                          |   3 -
+ net/core/dev.c                               |   6 +-
+ net/core/dst.c                               |  16 ++-
+ net/core/skbuff.c                            |   3 +-
+ net/dns_resolver/dns_query.c                 |   4 +-
+ net/ipv4/icmp.c                              |   2 -
+ net/ipv4/igmp.c                              |  10 +-
+ net/ipv4/ip_options.c                        |   4 +
+ net/ipv4/ip_tunnel.c                         |  12 +-
+ net/ipv4/route.c                             |  15 +-
+ net/ipv4/tcp.c                               |   3 +-
+ net/ipv4/tcp_input.c                         |  10 +-
+ net/ipv4/tcp_output.c                        |   6 +-
+ net/netlink/af_netlink.c                     |   4 +-
+ net/sctp/sysctl.c                            |  22 ++-
+ net/sctp/ulpevent.c                          | 122 ++---------------
+ net/tipc/bcast.c                             |   1 +
+ sound/pci/hda/hda_intel.c                    |  10 +-
+ 111 files changed, 730 insertions(+), 380 deletions(-)
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next.git =
-tags/master-2014-07-31
-
-for you to fetch changes up to dc6be9f54a4ecb0a09765d1f515ed947d86b7528:
-
-  bcma: use NS prefix for names of Northstar specific cores (2014-07-31 13:=
-45:32 -0400)
-
-----------------------------------------------------------------
-Alexander Aring (8):
-      MAINTAINERS: add 6lowpan header file
-      6lowpan: iphc: rename hc06_ptr pointer to hc_ptr
-      6lowpan: iphc: use sizeof in udp uncompression
-      6lowpan: iphc: cleanup use of lowpan_fetch_skb
-      6lowpan: iphc: cleanup use of lowpan_push_hc_data
-      6lowpan: iphc: use ipv6 api to check address scope
-      6lowpan: iphc: remove check on null
-      6lowpan: remove unused LOWPAN_FRAG_SIZE define
-
-Anatol Pomozov (1):
-      Bluetooth: Fix crash in the Marvell driver initialization codepath
-
-Arend van Spriel (1):
-      dt: bindings: add bindings for Broadcom bcm43xx sdio devices
-
-Bing Zhao (1):
-      MAINTAINERS: update for mwifiex driver maintainers
-
-Chen-Yu Tsai (1):
-      brcmfmac: add device tree support for SDIO devices
-
-Christophe Ricard (10):
-      NFC: st21nfcb: Add driver for STMicroelectronics ST21NFCB NFC chip
-      NFC: dts: st21nfcb_i2c: Add DTS Documentation
-      NFC: nci: Add T1T support notification
-      NFC: st21nfcb: few code clean up
-      NFC: st21nfca: Free buffer in case no data are retrieved.
-      NFC: st21nfca: Improved start of frame detection
-      NFC: st21nfca: Improve read length sequence for P2P mode.
-      NFC: hci: Add stop_poll HCI operand.
-      NFC: st21nfca: Implement stop_poll HCI hook
-      NFC: st21nfca: Adding P2P support to st21nfca in Initiator & Target m=
-ode
-
-Daniel Kim (1):
-      brcmfmac: Do not use strcpy and strcat
-
-Georg Lukas (2):
-      Bluetooth: Provide defaults for LE advertising interval
-      Bluetooth: Expose default LE advertising interval via debugfs
-
-Hans de Goede (2):
-      brcmfmac: Fix some wrong register defines
-      brcmfmac: Fix OOB interrupt not working for BCM43362
-
-Hante Meuleman (7):
-      brcmfmac: Export brcmf_netif_rx for new protocol msgbuf.
-      brcmfmac: Add protocol addressing mode and peer deletion API.
-      brcmfmac: Adding msgbuf protocol.
-      brcmfmac: Adding PCIe bus layer support.
-      brcmfmac: Update pcie reset device routine.
-      brcmfmac: Fix msgbuf flow control.
-      brcmfmac: Add TDLS support to msgbuf.
-
-Janusz Dziedzic (1):
-      ath10k: handle attention flags correctly when using A-MSDU
-
-Johan Hedberg (7):
-      Bluetooth: Fix clearing HCI_PSCAN flag
-      Bluetooth: Fix incorrectly disabling page scan when toggling connecta=
-ble
-      Bluetooth: Fix SMP context tracking leading to a kernel crash
-      Bluetooth: Fix check for connected state when pairing
-      Bluetooth: Rename HCI_PAIRABLE to HCI_BONDABLE
-      Bluetooth: Rename pairable mgmt setting to bondable
-      Bluetooth: Always use non-bonding requirement when not bondable
-
-John W. Linville (3):
-      Merge tag 'nfc-next-3.17-1' of git://git.kernel.org/.../sameo/nfc-next
-      Merge tag 'for-linville-20140725' of git://github.com/kvalo/ath
-      Merge branch 'for-upstream' of git://git.kernel.org/.../bluetooth/blu=
-etooth-next
-
-Julia Lawall (1):
-      iwlegacy: use correct structure type name in sizeof
-
-Kalle Valo (1):
-      Merge remote-tracking branch 'wireless-next/master' into ath-next
-
-Marcel Holtmann (13):
-      Bluetooth: Read list of local codecs supported by the controller
-      Bluetooth: Get MWS transport configuration of the controller
-      Bluetooth: Ignore ADV_DIRECT_IND attempts from unknown devices
-      Bluetooth: Fix issue with ADV_IND reports and auto-connection handling
-      Bluetooth: Add support for using controller white list filtering
-      Bluetooth: Fix white list handling with resolvable private addresses
-      Bluetooth: Set Simultaneous LE and BR/EDR controller option to zero
-      6lowpan: iphc: Fix block comments to match networking style
-      6lowpan: iphc: Fix issues with alignment matching open parenthesis
-      6lowpan: iphc: Fix missing blank line after variable declarations
-      6lowpan: iphc: Fix missing braces for if statement
-      6lowpan: iphc: Fix parenthesis alignments which off-by-one
-      Bluetooth: Fix sparse warning from HID new leds handling
-
-Mark A. Greer (5):
-      NFC: digital: Check for NFC-DEP before checking for Type 4 tag
-      NFC: digital: Clear poll_tech_count before activating target
-      NFC: digital: Add digital framing calls when in target mode
-      NFC: digital: Remove extra blank line
-      NFC: digital: Add 'tg_listen_md' and 'tg_get_rf_tech' driver hooks
-
-Michal Kazior (7):
-      ath10k: workaround boot issues with KVM/PCI-passthrough
-      ath10k: prevent some tx flushing failures
-      ath10k: simplify tx helpers
-      ath10k: workaround qos nullfunc bug
-      ath10k: prevent endless pci rx loop
-      ath10k: fix Rx aggregation reordering
-      ath10k: don't advertise IBSS iftype for 10.x
-
-Rafa=C5=82 Mi=C5=82ecki (5):
-      b43: add support for BCM43131 chipset with N-PHY rev 17
-      bcma: add support for BCM43131 that was found in Tenda W311E
-      b43: update PHY descriptions in Kconfig
-      b43: N-PHY: fix "Data bus error" while working in 5 GHz
-      bcma: use NS prefix for names of Northstar specific cores
-
-Rajkumar Manoharan (1):
-      ath9k: Initialize channel context ops on ahb probe
-
-Varka Bhadram (2):
-      6lowpan: remove unused macros
-      6lowpan: remove unused function
-
-Vignesh Raman (1):
-      Bluetooth: Avoid use of session socket after the session gets freed
-
- .../devicetree/bindings/net/nfc/st21nfcb.txt       |   33 +
- .../bindings/net/wireless/brcm,bcm43xx-fmac.txt    |   41 +
- MAINTAINERS                                        |    4 +-
- drivers/bcma/driver_chipcommon_pmu.c               |    1 +
- drivers/bcma/host_pci.c                            |    1 +
- drivers/bcma/scan.c                                |   22 +-
- drivers/bcma/sprom.c                               |    1 +
- drivers/bluetooth/btmrvl_main.c                    |    5 +
- drivers/net/wireless/ath/ath10k/htc.c              |   20 +-
- drivers/net/wireless/ath/ath10k/htt_rx.c           |  122 +-
- drivers/net/wireless/ath/ath10k/htt_tx.c           |    6 +
- drivers/net/wireless/ath/ath10k/mac.c              |   96 +-
- drivers/net/wireless/ath/ath10k/mac.h              |    4 +-
- drivers/net/wireless/ath/ath10k/pci.c              |   17 +-
- drivers/net/wireless/ath/ath10k/txrx.c             |    3 +-
- drivers/net/wireless/ath/ath10k/txrx.h             |    1 +
- drivers/net/wireless/ath/ath10k/wmi.c              |    2 +-
- drivers/net/wireless/ath/ath9k/ahb.c               |    1 +
- drivers/net/wireless/b43/Kconfig                   |   22 +-
- drivers/net/wireless/b43/main.c                    |    3 +-
- drivers/net/wireless/b43/phy_n.c                   |    6 +-
- drivers/net/wireless/brcm80211/Kconfig             |   10 +
- drivers/net/wireless/brcm80211/brcmfmac/Makefile   |    7 +
- drivers/net/wireless/brcm80211/brcmfmac/bcdc.c     |   20 +
- drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c   |   20 +
- drivers/net/wireless/brcm80211/brcmfmac/chip.c     |    8 +
- .../net/wireless/brcm80211/brcmfmac/commonring.c   |  273 +++
- .../net/wireless/brcm80211/brcmfmac/commonring.h   |   69 +
- drivers/net/wireless/brcm80211/brcmfmac/dhd.h      |    7 +-
- drivers/net/wireless/brcm80211/brcmfmac/dhd_bus.h  |   33 +
- drivers/net/wireless/brcm80211/brcmfmac/dhd_dbg.h  |   36 +-
- .../net/wireless/brcm80211/brcmfmac/dhd_linux.c    |    9 +-
- drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |   25 +-
- drivers/net/wireless/brcm80211/brcmfmac/flowring.c |  501 ++++++
- drivers/net/wireless/brcm80211/brcmfmac/flowring.h |   84 +
- drivers/net/wireless/brcm80211/brcmfmac/fweh.c     |    6 +-
- drivers/net/wireless/brcm80211/brcmfmac/fweh.h     |    5 +
- drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c   | 1397 +++++++++++++++
- drivers/net/wireless/brcm80211/brcmfmac/msgbuf.h   |   40 +
- drivers/net/wireless/brcm80211/brcmfmac/of.c       |   56 +
- drivers/net/wireless/brcm80211/brcmfmac/of.h       |   22 +
- drivers/net/wireless/brcm80211/brcmfmac/pcie.c     | 1846 ++++++++++++++++=
-++++
- drivers/net/wireless/brcm80211/brcmfmac/pcie.h     |   29 +
- drivers/net/wireless/brcm80211/brcmfmac/proto.c    |   29 +-
- drivers/net/wireless/brcm80211/brcmfmac/proto.h    |   31 +-
- .../net/wireless/brcm80211/brcmfmac/sdio_host.h    |   12 +-
- .../net/wireless/brcm80211/brcmfmac/wl_cfg80211.c  |   57 +-
- .../net/wireless/brcm80211/include/brcm_hw_ids.h   |   11 +
- drivers/net/wireless/iwlegacy/common.c             |    3 +-
- drivers/nfc/Kconfig                                |    2 +-
- drivers/nfc/Makefile                               |    3 +-
- drivers/nfc/st21nfca/Makefile                      |    2 +-
- drivers/nfc/st21nfca/i2c.c                         |    9 +-
- drivers/nfc/st21nfca/st21nfca.c                    |  272 ++-
- drivers/nfc/st21nfca/st21nfca.h                    |   26 +-
- drivers/nfc/st21nfca/st21nfca_dep.c                |  661 +++++++
- drivers/nfc/st21nfca/st21nfca_dep.h                |   43 +
- drivers/nfc/st21nfcb/Kconfig                       |   22 +
- drivers/nfc/st21nfcb/Makefile                      |    8 +
- drivers/nfc/st21nfcb/i2c.c                         |  462 +++++
- drivers/nfc/st21nfcb/ndlc.c                        |  298 ++++
- drivers/nfc/st21nfcb/ndlc.h                        |   55 +
- drivers/nfc/st21nfcb/st21nfcb.c                    |  129 ++
- drivers/nfc/st21nfcb/st21nfcb.h                    |   38 +
- include/linux/bcma/bcma.h                          |   23 +-
- include/linux/platform_data/st21nfcb.h             |   32 +
- include/net/6lowpan.h                              |   50 -
- include/net/bluetooth/hci.h                        |    6 +-
- include/net/bluetooth/hci_core.h                   |    3 +
- include/net/bluetooth/mgmt.h                       |    4 +-
- include/net/nfc/digital.h                          |   13 +
- include/net/nfc/hci.h                              |    1 +
- net/6lowpan/iphc.c                                 |  295 ++--
- net/bluetooth/hci_core.c                           |  185 +-
- net/bluetooth/hci_event.c                          |   50 +-
- net/bluetooth/hidp/core.c                          |    2 +-
- net/bluetooth/mgmt.c                               |   57 +-
- net/bluetooth/rfcomm/core.c                        |    7 +-
- net/bluetooth/smp.c                                |   33 +-
- net/nfc/digital.h                                  |    3 +
- net/nfc/digital_core.c                             |   27 +-
- net/nfc/digital_dep.c                              |   11 +-
- net/nfc/digital_technology.c                       |   96 +-
- net/nfc/hci/core.c                                 |    7 +-
- net/nfc/nci/ntf.c                                  |    4 +-
- 85 files changed, 7579 insertions(+), 417 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/net/nfc/st21nfcb.txt
- create mode 100644 Documentation/devicetree/bindings/net/wireless/brcm,bcm=
-43xx-fmac.txt
- create mode 100644 drivers/net/wireless/brcm80211/brcmfmac/commonring.c
- create mode 100644 drivers/net/wireless/brcm80211/brcmfmac/commonring.h
- create mode 100644 drivers/net/wireless/brcm80211/brcmfmac/flowring.c
- create mode 100644 drivers/net/wireless/brcm80211/brcmfmac/flowring.h
- create mode 100644 drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
- create mode 100644 drivers/net/wireless/brcm80211/brcmfmac/msgbuf.h
- create mode 100644 drivers/net/wireless/brcm80211/brcmfmac/of.c
- create mode 100644 drivers/net/wireless/brcm80211/brcmfmac/of.h
- create mode 100644 drivers/net/wireless/brcm80211/brcmfmac/pcie.c
- create mode 100644 drivers/net/wireless/brcm80211/brcmfmac/pcie.h
- create mode 100644 drivers/nfc/st21nfca/st21nfca_dep.c
- create mode 100644 drivers/nfc/st21nfca/st21nfca_dep.h
- create mode 100644 drivers/nfc/st21nfcb/Kconfig
- create mode 100644 drivers/nfc/st21nfcb/Makefile
- create mode 100644 drivers/nfc/st21nfcb/i2c.c
- create mode 100644 drivers/nfc/st21nfcb/ndlc.c
- create mode 100644 drivers/nfc/st21nfcb/ndlc.h
- create mode 100644 drivers/nfc/st21nfcb/st21nfcb.c
- create mode 100644 drivers/nfc/st21nfcb/st21nfcb.h
- create mode 100644 include/linux/platform_data/st21nfcb.h
---=20
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
-
---azLHFNyN32YCQGCU
-Content-Type: application/pgp-signature
-
+thanks,
+- -- 
+js
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2
 
-iQIcBAEBAgAGBQJT28cCAAoJEJctW/TcYTgGD/4P/0HMUDJwNxkJmUB+R/UdrTzD
-veEi0acHh3KDDjpO0M9GxFvXkynHZmrNeJ3pcrehw8nqSThzFs7oBspgctpP6Yf3
-CvhuoQ486iHH4ZgDK81sIQE7xaS2gTvozUPN1e2aIMQBq60QAKsufwo3utDAcWaO
-7mb1fbcMqhvMprrghyzPr+mh/bcwc6R8VG2SdNsa0Fdx4Lnhn6seMkffFixZw+6g
-oW8SLyHyx/53QA3LizCnQo3Vcnq075d5+frmhd9U22is04HEza4eBrFWhaNWV+03
-Yf4UKS7cJxrBJvsi+fNV51ZoViC6TGjzRC1TpcgnaUqY7hkgslXTTB61/KMJsJb8
-dgE8b8rQmZeRxEHjnLLBL0hJ27iV48Rv/ojSt8KxpfqascsrdNnKpHNfstHrlZXq
-qBeI02Emi49aHJjE+BOxPsJjIhc8Z+cAzQ+zvMQ2dYMNP1Q65lz8K81TAq9PVPM9
-c6V8h37Ua/n2L6hP01ew4qys0wqcjY6Y3Di8JIGg4UfK+sCvTR/rAC1U4uYu92zX
-kascyOzta7veUDbRk6/1/fgtzPO9kCnw6205f3xiRNL869VDHRaYRofy+RSdVe5y
-s6WTIWFAf6jAnfF1hfwi2Nf7M6Giu99DVd5OCcmQ984BuNzJQ2FS4TQ/LtwUrPQj
-TvTAflkIQ2zBlQ5yqz+p
-=+3hC
+iQIcBAEBAgAGBQJT28erAAoJEL0lsQQGtHBJB7EP/00t9FEwCiuLq1DdLMu8ZbJl
+5cnWxs9+gehHqftjI+SfLVfbfCPT430R5kq11dTlixNbsY7Tr+Bdy5vGy9SQ1g5E
+dWO0MOhMHSwiFxhmhWPqX5FY5pYTpGxt0zRNoGh1y0d1vpras4tELvMDq+AGAxii
+Co0moAfKqsRH9JIskPK7c1KOOI5Sri+t54Xbixnzal1wx1W6WvrZz2No/xT9fFoe
+/sVJhNKCDlZrqOLI5Lj57B3bs51cgg22HvzdGI6fGxXFOExyhq4+HjJH3Kd01Wb6
+S1YLZagSHKcEomfs1I+5dLYNcV50DX4cFKNykhdG0+ApMdbOPjG2Ot6ALeXDzcwG
+N9U6Xxid3Thde8kUUhKAf/b9JQfkbL9iOnwwOdFeZJ1ywI4dwWXKiAUyl2mCvNOK
+6B8YDpxEXXz0sCxTMePLiDDgKyuyvZz+zFblIpfqmr4d/UpIDvVpluA5wBRV3j0U
+dqEOCidotzVG8VDvDjcNKZHRaRKjWSuiAkkoj9IJ+ixeNE3eVuj1M1Oe0Hwy13dy
+zSU9u35VYVETAvScud9uQXL54Oc8y+G+dN9P5CQCSaycOsqJV1RM5x6jcwBTQFZP
+nAFm8ECM0pQl4fdDXiMAqeLN1aNJTcNlfux7xLR38H4V+G7No4tGC3fzbfTTjlm8
+H3wLhhhdrnleo+1J/984
+=xgiB
 -----END PGP SIGNATURE-----
-
---azLHFNyN32YCQGCU--
