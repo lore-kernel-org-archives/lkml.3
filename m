@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185AbaHAQb3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 12:31:29 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:38664 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624AbaHAQb1 (ORCPT
+	id S1755296AbaHAQbq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 12:31:46 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:37725 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139AbaHAQbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 12:31:27 -0400
+	Fri, 1 Aug 2014 12:31:45 -0400
 From: Amit Pundir <amit.pundir@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: Todd Poynor <toddpoynor@google.com>, Pavel Machek <pavel@ucw.cz>,
@@ -15,40 +15,63 @@ Cc: Todd Poynor <toddpoynor@google.com>, Pavel Machek <pavel@ucw.cz>,
         Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
         Android Kernel Team <kernel-team@android.com>,
         John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [RFC][PATCH 0/2] Minor Suspend debugging patches from Android
-Date: Fri,  1 Aug 2014 22:00:47 +0530
-Message-Id: <1406910649-4028-1-git-send-email-amit.pundir@linaro.org>
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Amit Pundir <amit.pundir@linaro.org>
+Subject: [RFC][PATCH 1/2] PM: Print pending wakeup IRQ preventing suspend to dmesg
+Date: Fri,  1 Aug 2014 22:00:48 +0530
+Message-Id: <1406910649-4028-2-git-send-email-amit.pundir@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
-Author: Amit Pundir <amit.pundir@linaro.org>
+In-Reply-To: <1406910649-4028-1-git-send-email-amit.pundir@linaro.org>
+References: <1406910649-4028-1-git-send-email-amit.pundir@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Couple of PM patches from Android tree printing Suspend debug messages.
-These messages are used to help debug PM related issues on Android based
-devices and look useful enough to troubleshoot PM issues on generic Linux
-devices as well.
+From: Todd Poynor <toddpoynor@google.com>
 
-I'd greatly appreciate any feedback or comments!
+Currently when a pending wakeup irq stops suspend, it can be difficult
+to determine why suspend was prevented and which IRQ was actually
+responsible.
 
-Todd Poynor (2):
-  PM: Print pending wakeup IRQ preventing suspend to dmesg
-  PM: Suspend: Print wall time at suspend entry and exit
+In order to help debug these situations, this patch prints the IRQ
+number and action name of that pending wakeup irq which prevents suspend.
+This patch comes from the Android patch set, where its been used to debug
+suspend problems.
 
- kernel/irq/pm.c        |    7 ++++++-
- kernel/power/suspend.c |   15 +++++++++++++++
- 2 files changed, 21 insertions(+), 1 deletion(-)
-
-Cc: Todd Poynor <toddpoynor@google.com>
 Cc: Pavel Machek <pavel@ucw.cz>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Len Brown <len.brown@intel.com>
 Cc: linux-pm@vger.kernel.org
 Cc: Android Kernel Team <kernel-team@android.com>
 Cc: John Stultz <john.stultz@linaro.org>
 Cc: Sumit Semwal <sumit.semwal@linaro.org>
+Signed-off-by: Todd Poynor <toddpoynor@google.com>
+[Amit Pundir: Reworded the commit message]
+Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
+---
+ kernel/irq/pm.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
+index abcd6ca..c2bc8d9 100644
+--- a/kernel/irq/pm.c
++++ b/kernel/irq/pm.c
+@@ -109,8 +109,13 @@ int check_wakeup_irqs(void)
+ 		 * can abort suspend.
+ 		 */
+ 		if (irqd_is_wakeup_set(&desc->irq_data)) {
+-			if (desc->depth == 1 && desc->istate & IRQS_PENDING)
++			if (desc->depth == 1 && desc->istate & IRQS_PENDING) {
++				pr_info("Wakeup IRQ %d %s pending, suspend aborted\n",
++					irq,
++					desc->action && desc->action->name ?
++					desc->action->name : "");
+ 				return -EBUSY;
++			}
+ 			continue;
+ 		}
+ 		/*
 -- 
 1.7.10.4
 
