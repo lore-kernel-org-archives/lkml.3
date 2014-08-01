@@ -1,121 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343AbaHAVg1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 17:36:27 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:42710 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754822AbaHAVgZ (ORCPT
+	id S1756203AbaHAVmX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 17:42:23 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:35352 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460AbaHAVmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 17:36:25 -0400
-Date: Fri, 1 Aug 2014 14:36:17 -0700
-From: josh@joshtriplett.org
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christopher Li <sparse@chrisli.org>, Ingo Molnar <mingo@redhat.com>,
-        Jeff Layton <jlayton@poochiereds.net>, Michal Marek <mmarek@suse.cz>,
-        Neil Brown <neilb@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, linux-sparse@vger.kernel.org
-Subject: Re: [PATCH 1/5] Add __designated_init, wrapping
- __attribute__((designated_init))
-Message-ID: <20140801213617.GB20310@cloud>
-References: <3130b0553b15518e3bef6d14c80280beed0f5ff9.1406850006.git.josh@joshtriplett.org>
- <20140801134529.40b46e92a48d9bf0c0abc139@linux-foundation.org>
+	Fri, 1 Aug 2014 17:42:21 -0400
+Date: Fri, 1 Aug 2014 14:42:19 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch 2/3] mm, oom: remove unnecessary check for NULL
+ zonelist
+In-Reply-To: <20140801133444.GH9952@cmpxchg.org>
+Message-ID: <alpine.DEB.2.02.1408011434330.11532@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1407231814110.22326@chino.kir.corp.google.com> <alpine.DEB.2.02.1407231815090.22326@chino.kir.corp.google.com> <20140731152659.GB9952@cmpxchg.org> <alpine.DEB.2.02.1408010159500.4061@chino.kir.corp.google.com>
+ <20140801133444.GH9952@cmpxchg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140801134529.40b46e92a48d9bf0c0abc139@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 01:45:29PM -0700, Andrew Morton wrote:
-> On Thu, 31 Jul 2014 16:47:23 -0700 Josh Triplett <josh@joshtriplett.org> wrote:
-> 
-> > GCC 4.10 and newer, and Sparse, supports
-> > __attribute__((designated_init)), which marks a structure as requiring
-> > a designated initializer rather than a positional one.  This helps
-> > reduce churn and errors when used with _ops structures and similar
-> > structures designed for future extension.
+On Fri, 1 Aug 2014, Johannes Weiner wrote:
+
+> > > out_of_memory() wants the zonelist that was used during allocation,
+> > > not just the random first node's zonelist that's simply picked to
+> > > serialize page fault OOM kills system-wide.
+> > > 
+> > > This would even change how panic_on_oom behaves for page fault OOMs
+> > > (in a completely unpredictable way) if we get CONSTRAINED_CPUSET.
+> > > 
+> > > This change makes no sense to me.
+> > > 
 > > 
-> > Add a wrapper __designated_init, which turns into
-> > __attribute__((designated_init)) for Sparse or sufficiently new GCC.
-> > Enable the corresponding warning as an error.
-> > 
-> > The following semantic patch can help mark structures containing
-> > function pointers as requiring designated initializers:
-> > 
-> > @@
-> > identifier I, f;
-> > type T;
-> > @@
-> > 
-> > struct I {
-> > 	...
-> > 	T (*f)(...);
-> > 	...
-> > }
-> > + __designated_init
+> > Allocations during fault will be constrained by the cpuset's mems, if we 
+> > are oom then why would we panic when panic_on_oom == 1?
 > 
-> hm, dunno about this.
+> Can you please address the concerns I raised?
 > 
-> I think that the kernel should always use designated initializers
-> everywhere.  Perhaps there are a few special cases where positional
-> initializers provide a superior result but I'm not sure where those
-> might be.
+
+I see one concern: that panic_on_oom == 1 will not trigger on pagefault 
+when constrained by cpusets.  To address that, I'll state that, since 
+cpuset-constrained allocations are the allocation context for pagefaults,
+panic_on_oom == 1 should not trigger on pagefault when constrained by 
+cpusets.
+
+> And please describe user-visible changes in the changelog.
 > 
-> In which case what we should do is to teach sparse to warn about
-> positional initializers then go fix them all up (lol).  After that
-> process is complete, this __designated_init tag would be just noise.
-> 
-> To support this perhaps a sparse tag would be needed which says
-> "positional initializers are OK here".  This way we're adding the
-> annotation to the exceptional cases, not to the common cases.
 
-Before submitting this series, I actually used coccinelle to
-automatically add __designated_init to nearly a thousand structures
-(just in include/linux/ alone), and did a build with that.  Even just
-adding it to structures with function pointers, some cases produce a
-*huge* number of warnings.  I think it might make sense to work our way
-through those warnings, but "go fix them all up" would be a gargantuan
-effort.  (For an idea of scale: there were more warnings about
-positional initialization than everything other warning combined, by a
-substantial factor, and that's just from changing a few hundred
-structures.)
+Ok, Andrew please annotate the changelog for 
+mm-oom-remove-unnecessary-check-for-null-zonelist.patch by including:
 
-I'm not at all convinced that we want to universally enforce designated
-initializers *yet*.  They make sense for _ops structures and other
-structures that contain function pointers (which is a small subset), but
-for many other structures they just add a large amount of noise to
-initialization.  If we could say "automatically add __designated_init to
-structures matching these criteria", that could work, but "all
-structures" not so much.  (For instance, a structure with a single
-field, or two fields of incompatible types with an intuitive ordering,
-doesn't gain much value from designated initialization.)
-
-Now, some cases may make sense to fix despite the large volume.  For
-instance, many users of dmi_system_id initialize it positionally, and
-shouldn't; I've already written patches for quite a few of them, with
-many more to go.  But, for instance, obs_kernel_param seems much less
-worthwhile to fix, because we shouldn't add any new instances of it, and
-we likely won't ever extend it.  The value in fixing this issue mostly
-comes not with the current code, but with future changes to the
-structure.  (And, as always happens with this kind of change, we'll end
-up with a few holdouts who don't want to change their code, which will
-stop us from eliminating the warning completely.)
-
-In the course of introducing this change, we'll end up fixing a large
-number of positional init warnings.  If in the course of doing so, it
-starts making sense to enforce it everywhere, it seems easy enough to
-sed away all the __designated_init tags.  But in terms of noise, the
-actual additions of __designated_init will pale in comparison to the
-patches fixing positional initializers.
-
-Finally, by migrating over to this incrementally, structure by
-structure, we can safely make the warning an error, which we could not
-do if we applied it to every struct immediately.
-
-- Josh Triplett
+This also causes panic_on_oom == 1 to not panic the machine when the 
+pagefault is constrained by the mems of current's cpuset.  That behavior 
+agrees with the semantics of the sysctl in Documentation/sysctl/vm.txt.
