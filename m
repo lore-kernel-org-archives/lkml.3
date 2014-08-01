@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001AbaHALCx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 07:02:53 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:25309 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753793AbaHALCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 07:02:52 -0400
-X-IronPort-AV: E=Sophos;i="5.01,779,1400025600"; 
-   d="scan'208";a="157838310"
-Date: Fri, 1 Aug 2014 12:02:46 +0100
-From: Wei Liu <wei.liu2@citrix.com>
-To: David Miller <davem@davemloft.net>
-CC: <zoltan.kiss@citrix.com>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        <wei.liu2@citrix.com>, <Ian.Campbell@citrix.com>,
-        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: Re: [PATCH] xen-netfront: Fix handling packets on compound pages
- with skb_segment
-Message-ID: <20140801110246.GB17947@zion.uk.xensource.com>
-References: <1406726730-17994-1-git-send-email-zoltan.kiss@citrix.com>
- <20140731.132520.1889577477638334755.davem@davemloft.net>
+	id S1754521AbaHALFD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 07:05:03 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:10993 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751008AbaHALFA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 07:05:00 -0400
+Date: Fri, 1 Aug 2014 19:02:27 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Sudeep Holla <sudeep.holla@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Query] How to pass reboot arguments to secure firmware with
+ PSCI spec
+Message-ID: <20140801190227.116f4c39@xhacker>
+In-Reply-To: <53DB6A18.5050904@arm.com>
+References: <20140801180652.72e722be@xhacker>
+	<53DB6A18.5050904@arm.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140731.132520.1889577477638334755.davem@davemloft.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-DLP: MIA2
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-01_04:2014-08-01,2014-08-01,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1408010141
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 01:25:20PM -0700, David Miller wrote:
-> From: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Date: Wed, 30 Jul 2014 14:25:30 +0100
-[...]
-> Secondly, for something like UDP you can't just split the packet up
-> like this, or for any other datagram protocol for that matter.
+Hi Sudeep,
+
+On Fri, 1 Aug 2014 03:21:12 -0700
+Sudeep Holla <sudeep.holla@arm.com> wrote:
+
 > 
-> I know you're in a difficult situation, but I just can't see this
-> being an acceptable approach to solving the problem right now.
 > 
-> Where does the MAX_SKB_FRAGS + 1 limit really come from, the size of
-> the TX queue?
+> On 01/08/14 11:06, Jisheng Zhang wrote:
+> > Hi Catalin and Will,
+> >
+> > I noticed that the following commit implement reboot via. PSCI
+> > SYSTEM_RESET function. So my question is how to handle the reboot
+> > arguments?
+> >
 > 
+> What reboot arguments do you want to handle ?
 
-It stems from the implicit transimit protocol since inception of
-netfront / netback. Sigh.
+man 2 reboot
 
-> If you were to have a 64-slot TX queue, you ought to be able to handle
-> this theoretical 51 slot SKB.
+...
+
+int reboot(int magic, int magic2, int cmd, void *arg);
+
+...
+
+I want to pass "void *arg" to secure firmware.
+
+
 > 
+> >
+> >> static void psci_sys_reset(enum reboot_mode reboot_mode, const char *cmd)
+> >> {
+> >>        invoke_psci_fn(PSCI_0_2_FN_SYSTEM_RESET, 0, 0, 0);
+> >
+> > How to pass cmd to secure firmware?
+> >
+> 
+> What cmd do you want to pass ? The function id is already handled. What
+> else do you want to pass ?
 
-There's two problems:
-1. IIRC a single page ring has 256 slots, allowing 64 slots packet
-   yields 4 in-flight packets in worst case.
-2. Older netback could not handle this large number of slots and it's
-   likely to deem the frontend malicious.
+the "const char *cmd", usually this is the "abc" if user type "reboot abc"
+under shell.
 
-For #1, we don't actually care that much if guest screws itself by
-generating 64 slot packets. #2 is more concerning.
+For example, android usually type "reboot recovery", the "recovery" will be
+passed to next boot kernel boot args.
 
-Wei.
+> 
+> If you see PSCI v0.2 spec, the SYSTEM_RESET and SYSTEM_SHUTDOWN takes no
+> parameters.
 
-> And I don't think it's so theoretical, a carefully crafted sequence of
-> sendfile() calls during a TCP_CORK sequence should be able to do it.
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Yes. I know it. That's why I need your help/suggestions about how to handle
+the situation above.
+
+Thanks for your input,
+Jisheng
