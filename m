@@ -1,141 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbaHALcY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 07:32:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6844 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751963AbaHALcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 07:32:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,779,1400050800"; 
-   d="scan'208";a="578705293"
-Message-ID: <53DB7AC3.3030207@intel.com>
-Date: Fri, 01 Aug 2014 14:32:19 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] perf script: Fix possible memory leaks
-References: <1406881486-5789-1-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1406881486-5789-1-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754839AbaHALgA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 07:36:00 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:50581 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497AbaHALf7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 07:35:59 -0400
+From: Miguel Oliveira <cmroliv@gmail.com>
+To: Larry.Finger@lwfinger.net, Jes.Sorensen@redhat.com,
+        gregkh@linuxfoundation.org, linux-wireless@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        cmroliv@gmail.com
+Subject: [PATCH] staging: rtl8723au: Fix static symbol sparse warning
+Date: Fri,  1 Aug 2014 14:06:27 +0100
+Message-Id: <1406898387-13987-1-git-send-email-cmroliv@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/08/2014 11:24 a.m., Namhyung Kim wrote:
-> Some paths in perf script don't call perf_session__delete() after
-> creating a new session.
->
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->   tools/perf/builtin-script.c | 31 ++++++++++++++++++-------------
->   1 file changed, 18 insertions(+), 13 deletions(-)
->
-> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-> index f57035b89c15..df0f84d7e825 100644
-> --- a/tools/perf/builtin-script.c
-> +++ b/tools/perf/builtin-script.c
-> @@ -1476,7 +1476,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
->   	struct perf_session *session;
->   	char *script_path = NULL;
->   	const char **__argv;
-> -	int i, j, err;
-> +	int i, j, err = 0;
->   	struct perf_script script = {
->   		.tool = {
->   			.sample		 = process_sample_event,
-> @@ -1730,14 +1730,15 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
->   	if (header || header_only) {
->   		perf_session__fprintf_info(session, stdout, show_full_info);
->   		if (header_only)
-> -			return 0;
-> +			goto out_delete;
->   	}
->
->   	script.session = session;
->
->   	if (cpu_list) {
-> -		if (perf_session__cpu_bitmap(session, cpu_list, cpu_bitmap))
-> -			return -1;
-> +		err = perf_session__cpu_bitmap(session, cpu_list, cpu_bitmap);
-> +		if (err < 0)
-> +			goto out_delete;
->   	}
->
->   	if (!no_callchain)
-> @@ -1752,53 +1753,57 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
->   		if (output_set_by_user()) {
->   			fprintf(stderr,
->   				"custom fields not supported for generated scripts");
-> -			return -1;
-> +			err = -EINVAL;
-> +			goto out_delete;
->   		}
->
->   		input = open(file.path, O_RDONLY);	/* input_name */
->   		if (input < 0) {
->   			perror("failed to open file");
-> -			return -1;
-> +			err = -errno;
-> +			goto out_delete;
->   		}
->
->   		err = fstat(input, &perf_stat);
->   		if (err < 0) {
->   			perror("failed to stat file");
-> -			return -1;
-> +			goto out_delete;
->   		}
->
->   		if (!perf_stat.st_size) {
->   			fprintf(stderr, "zero-sized file, nothing to do!\n");
-> -			return 0;
-> +			goto out_delete;
->   		}
->
->   		scripting_ops = script_spec__lookup(generate_script_lang);
->   		if (!scripting_ops) {
->   			fprintf(stderr, "invalid language specifier");
-> -			return -1;
-> +			err = -ENOENT;
-> +			goto out_delete;
->   		}
->
->   		err = scripting_ops->generate_script(session->tevent.pevent,
->   						     "perf-script");
-> -		goto out;
-> +		goto out_delete;
->   	}
->
->   	if (script_name) {
->   		err = scripting_ops->start_script(script_name, argc, argv);
->   		if (err)
-> -			goto out;
-> +			goto out_delete;
->   		pr_debug("perf script started with script %s\n\n", script_name);
->   	}
->
->
->   	err = perf_session__check_output_opt(session);
->   	if (err < 0)
-> -		goto out;
-> +		goto out_delete;
->
->   	err = __cmd_script(&script);
->
-> -	perf_session__delete(session);
->   	cleanup_scripting();
-> +out_delete:
-> +	perf_session__delete(session);
+Fix sparse warning:
+drivers/staging/rtl8723au/core/rtw_efuse.c:579:5: warning: symbol 'efuse_GetCurrentSize23a' was not declared. Should it be static?
 
-Some of the db-export scripting I do relies on the session
-being deleted before the script is stopped.  I would prefer
-the original order i.e. perf_session__delete() then
-cleanup_scripting()
+Signed-off-by: Miguel Oliveira <cmroliv@gmail.com>
+---
+ drivers/staging/rtl8723au/include/rtw_efuse.h |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/staging/rtl8723au/include/rtw_efuse.h b/drivers/staging/rtl8723au/include/rtw_efuse.h
+index 07bdc34..304cc71 100644
+--- a/drivers/staging/rtl8723au/include/rtw_efuse.h
++++ b/drivers/staging/rtl8723au/include/rtw_efuse.h
+@@ -82,6 +82,7 @@ struct pg_pkt_struct {
+ /*------------------------Export global variable----------------------------*/
+ 
+ u16	efuse_GetMaxSize23a(struct rtw_adapter *padapter);
++int	efuse_GetCurrentSize23a(struct rtw_adapter *padapter, u16 *size);
+ int	rtw_efuse_access23a(struct rtw_adapter *padapter, u8 bRead, u16 start_addr, u16 cnts, u8 *data);
+ int	rtw_efuse_map_read23a(struct rtw_adapter *padapter, u16 addr, u16 cnts, u8 *data);
+ u8	rtw_efuse_map_write(struct rtw_adapter *padapter, u16 addr, u16 cnts, u8 *data);
+-- 
+1.7.10.4
+
