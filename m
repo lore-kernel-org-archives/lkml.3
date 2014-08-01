@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214AbaHAGgr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 02:36:47 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:43679 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553AbaHAGgn (ORCPT
+	id S1753420AbaHAGoP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 02:44:15 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63256 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750886AbaHAGoN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 02:36:43 -0400
-Message-ID: <53DB352D.10507@linaro.org>
-Date: Fri, 01 Aug 2014 14:35:25 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Sudeep Holla <sudeep.holla@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>
-CC: "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Robert Richter <rric@kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Fri, 1 Aug 2014 02:44:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,778,1400050800"; 
+   d="scan'208";a="578618688"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/19] ARM64 / ACPI: Introduce arch_fix_phys_package_id()
- for cpu topology
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <1406206825-15590-5-git-send-email-hanjun.guo@linaro.org> <53D69BB3.8040106@arm.com>
-In-Reply-To: <53D69BB3.8040106@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Subject: RE: [PATCH] KVM: nVMX: nested TPR shadow/threshold emulation
+Thread-Topic: [PATCH] KVM: nVMX: nested TPR shadow/threshold emulation
+Thread-Index: AQHPrJX4RhX9yaWyK0S7bgZ3S5tyfZu5Y36AgAGGr9D//9v+gIAAhwdg
+Date: Fri, 1 Aug 2014 06:44:10 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AB4D72D@SHSMSX104.ccr.corp.intel.com>
+References: <1406721880-5490-1-git-send-email-wanpeng.li@linux.intel.com>
+ <53D90D5A.3060404@redhat.com> <20140731080353.GA3033@kernel>
+ <53DA0B91.1010703@redhat.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AB4D3F5@SHSMSX104.ccr.corp.intel.com>
+ <53DB3517.1010408@redhat.com>
+In-Reply-To: <53DB3517.1010408@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-7-29 2:51, Sudeep Holla wrote:
-> On 24/07/14 14:00, Hanjun Guo wrote:
->> arch_fix_phys_package_id() will be called in ACPI core to use
->> the slot number provided by ACPI to update the physical package
->> id, then we can get the right value in the "physical id" field
->> of /proc/cpuinfo.
->>
->> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->> ---
->>   arch/arm64/include/asm/topology.h |    2 ++
->>   arch/arm64/kernel/topology.c      |   14 ++++++++++++++
->>   2 files changed, 16 insertions(+)
->>
->> diff --git a/arch/arm64/include/asm/topology.h
->> b/arch/arm64/include/asm/topology.h
->> index 7ebcd31..2b216d4 100644
->> --- a/arch/arm64/include/asm/topology.h
->> +++ b/arch/arm64/include/asm/topology.h
->> @@ -23,11 +23,13 @@ extern struct cpu_topology cpu_topology[NR_CPUS];
->>   void init_cpu_topology(void);
->>   void store_cpu_topology(unsigned int cpuid);
->>   const struct cpumask *cpu_coregroup_mask(int cpu);
->> +void arch_fix_phys_package_id(int num, u32 slot);
->>
->>   #else
->>
->>   static inline void init_cpu_topology(void) { }
->>   static inline void store_cpu_topology(unsigned int cpuid) { }
->> +static inline void arch_fix_phys_package_id(int num, u32 slot) { }
->>
->>   #endif
->>
->> diff --git a/arch/arm64/kernel/topology.c b/arch/arm64/kernel/topology.c
->> index 43514f9..c547885 100644
->> --- a/arch/arm64/kernel/topology.c
->> +++ b/arch/arm64/kernel/topology.c
->> @@ -281,3 +281,17 @@ void __init init_cpu_topology(void)
->>       if (parse_dt_topology())
->>           reset_cpu_topology();
->>   }
->> +
->> +/*
->> + * Use the CPU slot number provided by ACPI to update the physical
->> + * package id when cpuid_topo->cluster_id is not available, then we
->> + * can get the right value in the "physical id" field of /proc/cpuinfo.
->> + */
+Paolo Bonzini wrote on 2014-08-01:
+> Il 01/08/2014 02:57, Zhang, Yang Z ha scritto:
+>>> TPR_THRESHOLD will be likely written as zero, but the processor
+>>> will never use it anyway.  It's just a small optimization because
+>>> nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW) will almost always
+> be true.
+>> 
+>> Theoretically, you are right. But we should not expect all VMMs
+>> follow it. It is not worth to violate the SDM just for saving two or
+>> three instructions' cost.
 > 
-> We don't have "physical id" field in /proc/cpuinfo on ARM64.
+> Yes, you do need an "if (cpu_has_vmx_tpr_shadow())" around the
+> vmcs_write32.  But still, checking nested_cpu_has is not strictly necessary.
+> Right now they both are a single AND, but I have plans to change all
+> of the
+> cpu_has_*() checks to static keys.
 
-I'm just curious, if there are two or more CPU (SoC) chips and connected
-into one system, how to tell one SoC from another?
+See v2 patch. It isn't a problem anymore.
 
 > 
->> +void arch_fix_phys_package_id(int num, u32 slot)
->> +{
->> +    struct cpu_topology *cpuid_topo = &cpu_topology[num];
->> +
->> +    if (cpuid_topo->cluster_id == -1)
->> +        cpuid_topo->cluster_id = slot;
->> +}
->> +EXPORT_SYMBOL_GPL(arch_fix_phys_package_id);
->>
-> 
-> The ACPI core uses this function to set the package id as read from
-> _SUN from the device. As per spec, _SUN is used by OSPM UI to identify
-> slots for the user. Do we know how will this be used on ARM64 ?
-> 
-> If not clear at this time, better to define it or keep it empty. I see
-> even x86 does nothing in that function.
+> Paolo
 
-I'm ok with it, will introduce a stub function for it and remove this patch.
 
-Thanks
-Hanjun
+Best regards,
+Yang
 
 
