@@ -1,296 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575AbaHAI2Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 04:28:24 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:56522 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754521AbaHAI2W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 04:28:22 -0400
-Subject: [PATCH v1.3 1/18] arcmsr: Revised interrupt service routine relate
- function to fix bug
-From: Ching Huang <ching2048@areca.com.tw>
-To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
+	id S1754418AbaHAI3l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 04:29:41 -0400
+Received: from bart.luffy.cx ([78.47.78.131]:56180 "EHLO bart.luffy.cx"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753830AbaHAI3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 04:29:39 -0400
+From: Vincent Bernat <vincent@bernat.im>
+To: Benjamin Romer <benjamin.romer@unisys.com>,
+        David Kershner <david.kershner@unisys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        sparmaintainer@unisys.com, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Aug 2014 16:28:12 +0800
-Message-ID: <1406881692.10378.34.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
+Cc: Vincent Bernat <vincent@bernat.im>
+Subject: [PATCH] staging: visorchipset: fix sparse warnings about static declaration
+Date: Fri,  1 Aug 2014 10:29:30 +0200
+Message-Id: <1406881770-13808-1-git-send-email-vincent@bernat.im>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some functions were prototyped as static but the actual definition
+wasn't. While this is valid (the function is static because the two
+declarations don't conflict and the first one is static), this makes
+sparse unhappy and cause confusion of normal people too.
 
-This patch rewrite the interrupt service routine relate function to fix command timeout when controller has very 
-heavy loading.
-
-Signed-off-by: Ching<ching2048@areca.com.tw>
+Signed-off-by: Vincent Bernat <vincent@bernat.im>
 ---
+ .../unisys/visorchipset/visorchipset_main.c        | 22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
---- a/drivers/scsi/arcmsr/arcmsr.h	2014-07-30 10:33:02.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 16:02:46.000000000 +0800
-@@ -51,7 +51,7 @@ struct device_attribute;
- #else
- 	#define ARCMSR_MAX_FREECCB_NUM	320
- #endif
--#define ARCMSR_DRIVER_VERSION		     "Driver Version 1.20.00.15 2010/08/05"
-+#define ARCMSR_DRIVER_VERSION		"v1.30.00.04-20140428"
- #define ARCMSR_SCSI_INITIATOR_ID						255
- #define ARCMSR_MAX_XFER_SECTORS							512
- #define ARCMSR_MAX_XFER_SECTORS_B						4096
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-07-30 10:32:28.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-01 11:02:44.000000000 +0800
-@@ -1441,14 +1441,15 @@ static void arcmsr_hba_doorbell_isr(stru
- 	uint32_t outbound_doorbell;
- 	struct MessageUnit_A __iomem *reg = acb->pmuA;
- 	outbound_doorbell = readl(&reg->outbound_doorbell);
--	writel(outbound_doorbell, &reg->outbound_doorbell);
--	if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK) {
--		arcmsr_iop2drv_data_wrote_handle(acb);
--	}
--
--	if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_READ_OK) {
--		arcmsr_iop2drv_data_read_handle(acb);
--	}
-+	do {
-+		writel(outbound_doorbell, &reg->outbound_doorbell);
-+		if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK)
-+			arcmsr_iop2drv_data_wrote_handle(acb);
-+		if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_READ_OK)
-+			arcmsr_iop2drv_data_read_handle(acb);
-+		outbound_doorbell = readl(&reg->outbound_doorbell);
-+	} while (outbound_doorbell & (ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK
-+		| ARCMSR_OUTBOUND_IOP331_DATA_READ_OK));
- }
- static void arcmsr_hbc_doorbell_isr(struct AdapterControlBlock *pACB)
+diff --git a/drivers/staging/unisys/visorchipset/visorchipset_main.c b/drivers/staging/unisys/visorchipset/visorchipset_main.c
+index 156a72fdabd9..c40ff24a30b9 100644
+--- a/drivers/staging/unisys/visorchipset/visorchipset_main.c
++++ b/drivers/staging/unisys/visorchipset/visorchipset_main.c
+@@ -339,8 +339,9 @@ static void controlvm_respond_physdev_changestate(CONTROLVM_MESSAGE_HEADER *
+ 						  msgHdr, int response,
+ 						  ULTRA_SEGMENT_STATE state);
+ 
+-ssize_t toolaction_show(struct device *dev, struct device_attribute *attr,
+-		char *buf)
++static ssize_t toolaction_show(struct device *dev,
++			       struct device_attribute *attr,
++			       char *buf)
  {
-@@ -1462,17 +1463,19 @@ static void arcmsr_hbc_doorbell_isr(stru
- 	*******************************************************************
- 	*/
- 	outbound_doorbell = readl(&reg->outbound_doorbell);
--	writel(outbound_doorbell, &reg->outbound_doorbell_clear);/*clear interrupt*/
--	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK) {
--		arcmsr_iop2drv_data_wrote_handle(pACB);
--	}
--	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK) {
--		arcmsr_iop2drv_data_read_handle(pACB);
--	}
--	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE) {
--		arcmsr_hbc_message_isr(pACB);    /* messenger of "driver to iop commands" */
--	}
--	return;
-+	do {
-+		writel(outbound_doorbell, &reg->outbound_doorbell_clear);
-+		readl(&reg->outbound_doorbell_clear);
-+		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK)
-+			arcmsr_iop2drv_data_wrote_handle(pACB);
-+		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK)
-+			arcmsr_iop2drv_data_read_handle(pACB);
-+		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE)
-+			arcmsr_hbc_message_isr(pACB);
-+		outbound_doorbell = readl(&reg->outbound_doorbell);
-+	} while (outbound_doorbell & (ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK
-+		| ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK
-+		| ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE));
+ 	u8 toolAction;
+ 
+@@ -350,8 +351,9 @@ ssize_t toolaction_show(struct device *dev, struct device_attribute *attr,
+ 	return scnprintf(buf, PAGE_SIZE, "%u\n", toolAction);
  }
- static void arcmsr_hba_postqueue_isr(struct AdapterControlBlock *acb)
+ 
+-ssize_t toolaction_store(struct device *dev, struct device_attribute *attr,
+-		const char *buf, size_t count)
++static ssize_t toolaction_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
  {
-@@ -1521,21 +1524,22 @@ static void arcmsr_hbc_postqueue_isr(str
- 	/* areca cdb command done */
- 	/* Use correct offset and size for syncing */
- 
--	while (readl(&phbcmu->host_int_status) &
--	ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR){
--	/* check if command done with no error*/
--	flag_ccb = readl(&phbcmu->outbound_queueport_low);
--	ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);/*frame must be 32 bytes aligned*/
--	arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + ccb_cdb_phy);
--	ccb = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
--	error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1) ? true : false;
--	/* check if command done with no error */
--	arcmsr_drain_donequeue(acb, ccb, error);
--	if (throttling == ARCMSR_HBC_ISR_THROTTLING_LEVEL) {
--		writel(ARCMSR_HBCMU_DRV2IOP_POSTQUEUE_THROTTLING, &phbcmu->inbound_doorbell);
--		break;
--	}
--	throttling++;
-+	while ((flag_ccb = readl(&phbcmu->outbound_queueport_low)) != 0xFFFFFFFF) {
-+		ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);
-+		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset
-+			+ ccb_cdb_phy);
-+		ccb = container_of(arcmsr_cdb, struct CommandControlBlock,
-+			arcmsr_cdb);
-+		error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1)
-+			? true : false;
-+		/* check if command done with no error */
-+		arcmsr_drain_donequeue(acb, ccb, error);
-+		throttling++;
-+		if (throttling == ARCMSR_HBC_ISR_THROTTLING_LEVEL) {
-+			writel(ARCMSR_HBCMU_DRV2IOP_POSTQUEUE_THROTTLING,
-+				&phbcmu->inbound_doorbell);
-+			throttling = 0;
-+		}
- 	}
- }
- /*
-@@ -1584,21 +1588,22 @@ static int arcmsr_handle_hba_isr(struct 
- 	struct MessageUnit_A __iomem *reg = acb->pmuA;
- 	outbound_intstatus = readl(&reg->outbound_intstatus) &
- 		acb->outbound_int_enable;
--	if (!(outbound_intstatus & ARCMSR_MU_OUTBOUND_HANDLE_INT))	{
--		return 1;
--	}
--	writel(outbound_intstatus, &reg->outbound_intstatus);
--	if (outbound_intstatus & ARCMSR_MU_OUTBOUND_DOORBELL_INT)	{
--		arcmsr_hba_doorbell_isr(acb);
--	}
--	if (outbound_intstatus & ARCMSR_MU_OUTBOUND_POSTQUEUE_INT) {
--		arcmsr_hba_postqueue_isr(acb);
--	}
--	if(outbound_intstatus & ARCMSR_MU_OUTBOUND_MESSAGE0_INT) 	{
--		/* messenger of "driver to iop commands" */
--		arcmsr_hba_message_isr(acb);
--	}
--	return 0;
-+	if (!(outbound_intstatus & ARCMSR_MU_OUTBOUND_HANDLE_INT))
-+		return IRQ_NONE;
-+	do {
-+		writel(outbound_intstatus, &reg->outbound_intstatus);
-+		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_DOORBELL_INT)
-+			arcmsr_hba_doorbell_isr(acb);
-+		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_POSTQUEUE_INT)
-+			arcmsr_hba_postqueue_isr(acb);
-+		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_MESSAGE0_INT)
-+			arcmsr_hba_message_isr(acb);
-+		outbound_intstatus = readl(&reg->outbound_intstatus) &
-+			acb->outbound_int_enable;
-+	} while (outbound_intstatus & (ARCMSR_MU_OUTBOUND_DOORBELL_INT
-+		| ARCMSR_MU_OUTBOUND_POSTQUEUE_INT
-+		| ARCMSR_MU_OUTBOUND_MESSAGE0_INT));
-+	return IRQ_HANDLED;
+ 	u8 toolAction;
+ 	int ret;
+@@ -369,8 +371,9 @@ ssize_t toolaction_store(struct device *dev, struct device_attribute *attr,
+ 		return count;
  }
  
- static int arcmsr_handle_hbb_isr(struct AdapterControlBlock *acb)
-@@ -1608,27 +1613,25 @@ static int arcmsr_handle_hbb_isr(struct 
- 	outbound_doorbell = readl(reg->iop2drv_doorbell) &
- 				acb->outbound_int_enable;
- 	if (!outbound_doorbell)
--		return 1;
--
--	writel(~outbound_doorbell, reg->iop2drv_doorbell);
--	/*in case the last action of doorbell interrupt clearance is cached,
--	this action can push HW to write down the clear bit*/
--	readl(reg->iop2drv_doorbell);
--	writel(ARCMSR_DRV2IOP_END_OF_INTERRUPT, reg->drv2iop_doorbell);
--	if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_WRITE_OK) {
--		arcmsr_iop2drv_data_wrote_handle(acb);
--	}
--	if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_READ_OK) {
--		arcmsr_iop2drv_data_read_handle(acb);
--	}
--	if (outbound_doorbell & ARCMSR_IOP2DRV_CDB_DONE) {
--		arcmsr_hbb_postqueue_isr(acb);
--	}
--	if(outbound_doorbell & ARCMSR_IOP2DRV_MESSAGE_CMD_DONE) {
--		/* messenger of "driver to iop commands" */
--		arcmsr_hbb_message_isr(acb);
--	}
--	return 0;
-+		return IRQ_NONE;
-+	do {
-+		writel(~outbound_doorbell, reg->iop2drv_doorbell);
-+		writel(ARCMSR_DRV2IOP_END_OF_INTERRUPT, reg->drv2iop_doorbell);
-+		if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_WRITE_OK)
-+			arcmsr_iop2drv_data_wrote_handle(acb);
-+		if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_READ_OK)
-+			arcmsr_iop2drv_data_read_handle(acb);
-+		if (outbound_doorbell & ARCMSR_IOP2DRV_CDB_DONE)
-+			arcmsr_hbb_postqueue_isr(acb);
-+		if (outbound_doorbell & ARCMSR_IOP2DRV_MESSAGE_CMD_DONE)
-+			arcmsr_hbb_message_isr(acb);
-+		outbound_doorbell = readl(reg->iop2drv_doorbell) &
-+			acb->outbound_int_enable;
-+	} while (outbound_doorbell & (ARCMSR_IOP2DRV_DATA_WRITE_OK
-+		| ARCMSR_IOP2DRV_DATA_READ_OK
-+		| ARCMSR_IOP2DRV_CDB_DONE
-+		| ARCMSR_IOP2DRV_MESSAGE_CMD_DONE));
-+	return IRQ_HANDLED;
- }
- 
- static int arcmsr_handle_hbc_isr(struct AdapterControlBlock *pACB)
-@@ -1640,44 +1643,37 @@ static int arcmsr_handle_hbc_isr(struct 
- 	**   check outbound intstatus
- 	*********************************************
- 	*/
--	host_interrupt_status = readl(&phbcmu->host_int_status);
--	if (!host_interrupt_status) {
--		/*it must be share irq*/
--		return 1;
--	}
--	/* MU ioctl transfer doorbell interrupts*/
--	if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR) {
--		arcmsr_hbc_doorbell_isr(pACB);   /* messenger of "ioctl message read write" */
--	}
--	/* MU post queue interrupts*/
--	if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR) {
--		arcmsr_hbc_postqueue_isr(pACB);  /* messenger of "scsi commands" */
--	}
--	return 0;
-+	host_interrupt_status = readl(&phbcmu->host_int_status) &
-+		(ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR |
-+		ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR);
-+	if (!host_interrupt_status)
-+		return IRQ_NONE;
-+	do {
-+		if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR)
-+			arcmsr_hbc_doorbell_isr(pACB);
-+		/* MU post queue interrupts*/
-+		if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR)
-+			arcmsr_hbc_postqueue_isr(pACB);
-+		host_interrupt_status = readl(&phbcmu->host_int_status);
-+	} while (host_interrupt_status & (ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR |
-+		ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR));
-+	return IRQ_HANDLED;
- }
- static irqreturn_t arcmsr_interrupt(struct AdapterControlBlock *acb)
+-ssize_t boottotool_show(struct device *dev, struct device_attribute *attr,
+-		char *buf)
++static ssize_t boottotool_show(struct device *dev,
++			       struct device_attribute *attr,
++			       char *buf)
  {
- 	switch (acb->adapter_type) {
--	case ACB_ADAPTER_TYPE_A: {
--		if (arcmsr_handle_hba_isr(acb)) {
--			return IRQ_NONE;
--		}
--		}
-+	case ACB_ADAPTER_TYPE_A:
-+		return arcmsr_handle_hba_isr(acb);
- 		break;
--
--	case ACB_ADAPTER_TYPE_B: {
--		if (arcmsr_handle_hbb_isr(acb)) {
--			return IRQ_NONE;
--		}
--		}
-+	case ACB_ADAPTER_TYPE_B:
-+		return arcmsr_handle_hbb_isr(acb);
- 		break;
--	 case ACB_ADAPTER_TYPE_C: {
--		if (arcmsr_handle_hbc_isr(acb)) {
--			return IRQ_NONE;
--		}
--		}
-+	case ACB_ADAPTER_TYPE_C:
-+		return arcmsr_handle_hbc_isr(acb);
-+		break;
-+	default:
-+		return IRQ_NONE;
- 	}
--	return IRQ_HANDLED;
+ 	ULTRA_EFI_SPAR_INDICATION efiSparIndication;
+ 
+@@ -382,8 +385,9 @@ ssize_t boottotool_show(struct device *dev, struct device_attribute *attr,
+ 			efiSparIndication.BootToTool);
  }
  
- static void arcmsr_iop_parking(struct AdapterControlBlock *acb)
-
+-ssize_t boottotool_store(struct device *dev, struct device_attribute *attr,
+-		const char *buf, size_t count)
++static ssize_t boottotool_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
+ {
+ 	int val, ret;
+ 	ULTRA_EFI_SPAR_INDICATION efiSparIndication;
+@@ -1932,7 +1936,7 @@ handle_command(CONTROLVM_MESSAGE inmsg, HOSTADDRESS channel_addr)
+ 	return TRUE;
+ }
+ 
+-HOSTADDRESS controlvm_get_channel_address(void)
++static HOSTADDRESS controlvm_get_channel_address(void)
+ {
+ 	U64 addr = 0;
+ 	U32 size = 0;
+-- 
+2.0.1
 
