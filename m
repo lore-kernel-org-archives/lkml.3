@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbaHAOWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:22:04 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:57826 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751008AbaHAOWB (ORCPT
+	id S1753999AbaHAO0Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 10:26:16 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:58224 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303AbaHAO0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:22:01 -0400
-Date: Fri, 1 Aug 2014 10:22:00 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Tenoutit, Faouaz" <faouaz.tenoutit@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2 V2] USB: Use ACPI device information
-In-Reply-To: <140713857.5QYWLe1hHM@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1408011021120.1185-100000@iolanthe.rowland.org>
+	Fri, 1 Aug 2014 10:26:14 -0400
+Date: Fri, 1 Aug 2014 22:26:06 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mhcerri@linux.vnet.ibm.com,
+        fin@linux.vnet.ibm.com
+Subject: Re: [PATCH 8/8] Replacing spinlocks by nx_copy_ctx on NX-SHA256 and
+ NX-SHA512
+Message-ID: <20140801142606.GB14651@gondor.apana.org.au>
+References: <20140724140243.GA26496@bluepex.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140724140243.GA26496@bluepex.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Aug 2014, Rafael J. Wysocki wrote:
-
-> On Wednesday, July 09, 2014 04:42:38 PM Tenoutit, Faouaz wrote:
-> > From: Faouaz TENOUTIT <faouaz.tenoutit@intel.com>
-> > 
-> > Use ACPI device pld information instead of calling
-> > acpi_get_physical_device_location.
-> > 
-> > Signed-off-by: Faouaz TENOUTIT <faouaz.tenoutit@intel.com>
-> > Acked-by: Samuel Ortiz <samuel.ortiz@intel.com>
+On Thu, Jul 24, 2014 at 11:02:45AM -0300, Leonidas Da Silva Barbosa wrote:
+> Replaces spinlock usage by a simple copy of the crypto context, avoiding
+> possible bottlenecks.
 > 
-> Greg, Alan, any objections agains this?
+> Signed-off-by: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
 
-No objection from me, aside from the fact that the posted patch was 
-whitespace-damaged.
+While your patches look OK, it appears that the underlying hash
+code is completely broken when it's used by multiple users because
+it stores the hash state in the tfm context.
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+If this is the case we should disable the hash part of the driver
+until it's fixed properly.
 
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
