@@ -1,51 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752AbaHAP1J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 11:27:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54264 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204AbaHAP1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 11:27:07 -0400
-Message-ID: <53DBB049.30902@redhat.com>
-Date: Fri, 01 Aug 2014 17:20:41 +0200
-From: Nikolay Aleksandrov <nikolay@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755024AbaHAP2Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 11:28:24 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:32841 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbaHAP2X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 11:28:23 -0400
+Date: Fri, 1 Aug 2014 20:58:19 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH] cirrus: cs89x0: Use managed interfaces
+Message-ID: <20140801152819.GA11441@himangi-Dell>
 MIME-Version: 1.0
-To: Thomas Graf <tgraf@suug.ch>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kaber@trash.net, paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
-        challa@noironetworks.com, walpole@cs.pdx.edu, dev@openvswitch.org,
-        tklauser@distanz.ch, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH net-next 2/3] netlink: Convert netlink_lookup() to use
- RCU protected hash table
-References: <cover.1406891028.git.tgraf@suug.ch> <72a64dfee4f20f2ca596df26f3e4ae543cf4c068.1406891028.git.tgraf@suug.ch> <53DBA976.8030103@redhat.com> <20140801151527.GF7331@casper.infradead.org>
-In-Reply-To: <20140801151527.GF7331@casper.infradead.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2014 05:15 PM, Thomas Graf wrote:
-> On 08/01/14 at 04:51pm, Nikolay Aleksandrov wrote:
->> Hmm, in both the rhashtable_insert() and rhashtable_remove() calls in the
->> netlink code you're using GFP_ATOMIC flags but if rhashtable_expand/shring gets
->> called even though the allocation will be with GFP_ATOMIC, they still call
->> synchronize_rcu() which may block. Now I'm not familiar with the netlink code,
->> but I think that in general the flags are useless for GFP_ATOMIC because of the
->> calls to synchronize_rcu() in expand/shrink which can block anyway.
->> Just a thought, I may be missing something of course.
-> 
-> I don't think you are missing anything. The GFP_ATOMIC flag was
-> inherited from how the bucket table was allocated prior to the
-> convertion to the new hash table but you are right, it can't be
-> needed since the table protection was converted to a mutex.
-> Using GFP_KERNEL will have a better chance of succeeding.
-> 
-Right, I was wondering why it was atomic in the first place and couldn't find a
-good reason from the code :-)
-But that explains it.
+This patch introduces the use of managed interfaces like
+devm_ioremap_resource and does away with the functions to free the
+allocated memory in the probe and remove functions. Also, many labels
+are done away with. The field size in no longer needed and is hence
+removed from the struct net_local.
 
-Cheers,
- Nik
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ drivers/net/ethernet/cirrus/cs89x0.c | 32 +++++++-------------------------
+ 1 file changed, 7 insertions(+), 25 deletions(-)
+
+diff --git a/drivers/net/ethernet/cirrus/cs89x0.c b/drivers/net/ethernet/cirrus/cs89x0.c
+index fe84fba..9823a0e 100644
+--- a/drivers/net/ethernet/cirrus/cs89x0.c
++++ b/drivers/net/ethernet/cirrus/cs89x0.c
+@@ -145,7 +145,6 @@ struct net_local {
+ 	int force;		/* force various values; see FORCE* above. */
+ 	spinlock_t lock;
+ 	void __iomem *virt_addr;/* CS89x0 virtual address. */
+-	unsigned long size;	/* Length of CS89x0 memory region. */
+ #if ALLOW_DMA
+ 	int use_dma;		/* Flag: we're using dma */
+ 	int dma;		/* DMA channel */
+@@ -1854,41 +1853,29 @@ static int __init cs89x0_platform_probe(struct platform_device *pdev)
+ 
+ 	lp = netdev_priv(dev);
+ 
+-	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	dev->irq = platform_get_irq(pdev, 0);
+-	if (mem_res == NULL || dev->irq <= 0) {
+-		dev_warn(&dev->dev, "memory/interrupt resource missing\n");
++	if (dev->irq <= 0) {
++		dev_warn(&dev->dev, "interrupt resource missing\n");
+ 		err = -ENXIO;
+ 		goto free;
+ 	}
+ 
+-	lp->size = resource_size(mem_res);
+-	if (!request_mem_region(mem_res->start, lp->size, DRV_NAME)) {
+-		dev_warn(&dev->dev, "request_mem_region() failed\n");
+-		err = -EBUSY;
++	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	virt_addr = devm_ioremap_resource(&pdev->dev, mem_res);
++	if (IS_ERR(virt_addr)) {
++		err = PTR_ERR(virt_addr);
+ 		goto free;
+ 	}
+ 
+-	virt_addr = ioremap(mem_res->start, lp->size);
+-	if (!virt_addr) {
+-		dev_warn(&dev->dev, "ioremap() failed\n");
+-		err = -ENOMEM;
+-		goto release;
+-	}
+-
+ 	err = cs89x0_probe1(dev, virt_addr, 0);
+ 	if (err) {
+ 		dev_warn(&dev->dev, "no cs8900 or cs8920 detected\n");
+-		goto unmap;
++		goto free;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, dev);
+ 	return 0;
+ 
+-unmap:
+-	iounmap(virt_addr);
+-release:
+-	release_mem_region(mem_res->start, lp->size);
+ free:
+ 	free_netdev(dev);
+ 	return err;
+@@ -1897,17 +1884,12 @@ free:
+ static int cs89x0_platform_remove(struct platform_device *pdev)
+ {
+ 	struct net_device *dev = platform_get_drvdata(pdev);
+-	struct net_local *lp = netdev_priv(dev);
+-	struct resource *mem_res;
+ 
+ 	/* This platform_get_resource() call will not return NULL, because
+ 	 * the same call in cs89x0_platform_probe() has returned a non NULL
+ 	 * value.
+ 	 */
+-	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	unregister_netdev(dev);
+-	iounmap(lp->virt_addr);
+-	release_mem_region(mem_res->start, lp->size);
+ 	free_netdev(dev);
+ 	return 0;
+ }
+-- 
+1.9.1
+
