@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151AbaHAN6M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:58:12 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:40099 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaHAN6I (ORCPT
+	id S1754095AbaHAN64 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:58:56 -0400
+Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:48058 "EHLO
+	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751303AbaHAN6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 09:58:08 -0400
-Date: Fri, 1 Aug 2014 09:58:03 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-pci@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] resource: Add device-managed
- request/release_resource()
-Message-ID: <20140801135803.GD21624@htj.dyndns.org>
-References: <1406895311-18869-1-git-send-email-thierry.reding@gmail.com>
- <20140801125522.GC21624@htj.dyndns.org>
- <20140801135540.GA373@ulmo.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140801135540.GA373@ulmo.nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 1 Aug 2014 09:58:55 -0400
+Date: Fri, 1 Aug 2014 08:58:52 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+cc: Fengguang Wu <fengguang.wu@intel.com>, Tejun Heo <tj@kernel.org>,
+        Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [scheduler] BUG: unable to handle kernel paging request at
+ 000000000000ce50
+In-Reply-To: <53D9F692.2090103@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.11.1408010855380.19843@gentwo.org>
+References: <20140730135616.GK16537@localhost> <53D9F692.2090103@cn.fujitsu.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 03:55:42PM +0200, Thierry Reding wrote:
-> On Fri, Aug 01, 2014 at 08:55:22AM -0400, Tejun Heo wrote:
-> > On Fri, Aug 01, 2014 at 02:15:10PM +0200, Thierry Reding wrote:
-> > > From: Thierry Reding <treding@nvidia.com>
-> > > 
-> > > Provide device-managed implementations of the request_resource() and
-> > > release_resource() functions. Upon failure to request a resource, the
-> > > new devm_request_resource() function will output an error message for
-> > > consistent error reporting.
-> > > 
-> > > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> > 
-> > Acked-by: Tejun Heo <tj@kernel.org>
-> > 
-> > But please also update Documentation/driver-model/devres.txt.
-> 
-> The patch already contains the below hunk. Do you expect anything more
-> to be added to that file?
+On Thu, 31 Jul 2014, Lai Jiangshan wrote:
 
-Oops, I missed that.  All look fine to me.
+> >     this_cpu_ptr instead.
+>
+>
+> -	struct cpumask *cpus = __get_cpu_var(load_balance_mask);
+> +	struct cpumask *cpus = this_cpu_ptr(load_balance_mask);
+>
+>
+> I think the conversion is wrong. it should be
+> 			*this_cpu_ptr(&load_balance_mask);
 
-Thanks.
+Hmmm.... that is going to cause some pretty strange looking code. Would
+the compiler/sparse not complain if the wrong type of pointer is assigned
+to?
 
--- 
-tejun
+
+If we are retrieving a pointer then the right way to do things would be:
+
+cpus = this_cpu_read(load_balance_mask);
+
+
+
