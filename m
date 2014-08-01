@@ -1,93 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062AbaHAQQJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 12:16:09 -0400
-Received: from sauhun.de ([89.238.76.85]:37741 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751624AbaHAQQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 12:16:07 -0400
-Date: Fri, 1 Aug 2014 18:15:57 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>, devicetree@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
-        broonie@kernel.org, linux-arm-kernel@lists.infradead.org,
-        pawel.moll@arm.com, mark.rutland@arm.com, galak@codeaurora.org,
-        gregkh@linuxfoundation.org, kyungmin.park@samsung.com,
-        m.szyprowski@samsung.com, t.figa@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC V8 1/1] clk: Support for clock parents and rates
- assigned from device tree
-Message-ID: <20140801161557.GA3277@katana>
-References: <1403105372-30403-1-git-send-email-s.nawrocki@samsung.com>
- <1403105372-30403-2-git-send-email-s.nawrocki@samsung.com>
- <53B59221.5080100@samsung.com>
- <20140725214231.5177.86866@quantum>
+	id S1755069AbaHAQTR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 12:19:17 -0400
+Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:41319
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750886AbaHAQTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 12:19:16 -0400
+Date: Fri, 1 Aug 2014 18:18:39 +0200
+From: Robert Richter <robert.richter@caviumnetworks.com>
+To: Olof Johansson <olof@lixom.net>
+CC: Robert Richter <rric@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder
+ SoC
+Message-ID: <20140801161839.GE4703@rric.localhost>
+References: <1406732794-20920-1-git-send-email-rric@kernel.org>
+ <1406732794-20920-3-git-send-email-rric@kernel.org>
+ <CAOesGMh9KkdKB_ytJ7CCbkPW7dHTX91NdfDMsMNfbmOBVOJ8PQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140725214231.5177.86866@quantum>
+In-Reply-To: <CAOesGMh9KkdKB_ytJ7CCbkPW7dHTX91NdfDMsMNfbmOBVOJ8PQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [78.53.84.104]
+X-ClientProxiedBy: DB4PR01CA014.eurprd01.prod.exchangelabs.com (10.242.152.44)
+ To SN2PR0701MB814.namprd07.prod.outlook.com (25.160.16.148)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 029097202E
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6069001)(6009001)(24454002)(189002)(51704005)(199002)(377454003)(4396001)(64706001)(46102001)(76506005)(77982001)(106356001)(50466002)(110136001)(76482001)(42186005)(85306004)(83072002)(105586002)(81342001)(50986999)(19580405001)(74662001)(92566001)(81542001)(87976001)(83506001)(19580395003)(31966008)(107046002)(20776003)(79102001)(66066001)(46406003)(21056001)(99396002)(54356999)(101416001)(80022001)(23726002)(95666004)(86362001)(77096002)(85852003)(76176999)(97756001)(92726001)(47776003)(102836001)(83322001)(74502001)(33656002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR0701MB814;H:rric.localhost;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Olof,
 
---UugvWAfsgieZRqgk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 30.07.14 11:14:23, Olof Johansson wrote:
+> On Wed, Jul 30, 2014 at 8:06 AM, Robert Richter <rric@kernel.org> wrote:
+> > From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+> >
+> > Add initial device tree nodes for Cavium Thunder SoCs with support of
+> > 48 cores and gicv3. The dts file requires further changes, esp. for
+> > pci, gicv3-its and smmu. This changes will be added later together
+> > with the device drivers.
+> >
+> > Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+> > Signed-off-by: Robert Richter <rrichter@cavium.com>
+> > ---
+> >  arch/arm64/boot/dts/Makefile         |   1 +
+> >  arch/arm64/boot/dts/thunder-88xx.dts | 387 +++++++++++++++++++++++++++++++++++
+> >  2 files changed, 388 insertions(+)
+> >  create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
+> >
+> > diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
+> > index c52bdb051f66..f8001a62029c 100644
+> > --- a/arch/arm64/boot/dts/Makefile
+> > +++ b/arch/arm64/boot/dts/Makefile
+> > @@ -1,3 +1,4 @@
+> > +dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
+> >  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
+> >  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
+> 
+> Oh, and:
+> 
+> Let's fix the mistake we made on 32-bit here (that we can't undo
+> unless we move all dts files now, which is too much churn), and put
+> each SoC vendor in its own subdirectory.
+> 
+> So, please add a arch/arm64/boot/dts/cavium/ directory, add a Makefile
+> and the dts there.
+> 
+> We should move vexpress under arm/   and xgene under apm/ too.
 
-On Fri, Jul 25, 2014 at 02:42:31PM -0700, Mike Turquette wrote:
-> Quoting Sylwester Nawrocki (2014-07-03 10:25:53)
-> > On 18/06/14 17:29, Sylwester Nawrocki wrote:
-> > > This patch adds helper functions to configure clock parents and rates
-> > > as specified through 'assigned-clock-parents', 'assigned-clock-rates'
-> > > DT properties for a clock provider or clock consumer device.
-> > > The helpers are now being called by the bus code for the platform, I2C
-> > > and SPI busses, before the driver probing and also in the clock core
-> > > after registration of a clock provider.
-> > >=20
-> > > Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> > > Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >=20
-> > Could someone please take a look and review that patch ?
-> > Any further suggestions, ACKs/NAKs ?
->=20
-> Patch looks good to me. I'm happy to take it.
->=20
-> >=20
-> > I would appreciate a DT, SPI or the I2C maintainer opinions.
->=20
-> Yes, Acks from SPI and I2C maintainers would be good. I might need to
-> drop those parts of this patch if they don't come through :-(
+I well take a look at this.
 
-For the I2C part:
-
-Acked-by: Wolfram Sang <wsa@the-dreams.de>
-
-
---UugvWAfsgieZRqgk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT2708AAoJEBQN5MwUoCm2aCYP/365qBaTpbuWjzeZ1mlBEwpR
-3/qVH7fE0MfwEHd03BafDmNAf3rV3zTdQjvTyz3w7eH1Tvwf5nWJr3Wgqltkp5iU
-Dcm4FUO6r17Fae+bZLO88By7UOm8WccZtsI8TorQTruGanCVZbavul/AvJdDX7ck
-ffhNzao4AMuQdjFMz3FQr7kkGo3GpveC3tmNhK4aFnDWsleEgNvQ2NvaRLdz6wbe
-OTxk42sIJtG7iKjleKz2xthCp6R/AvhdU1O6SZCKmskpmZW3eHp6107WuCqd0IMr
-ifs9cwEK62iqVAix0cNp5GxmsOpEUBtExk2RAxTQMGCwFePPu4BI5iXYMYuDXbDl
-4xHzLoSr0wbCW8EGl17+Pd3i+llfjgZxvKIi0DUOh6IeuvWtB8sVNA6h1+6w3VTi
-DmUOEBcdbpNR1y0OdszrApcP5CJYbYlFzUYWfVn+MV01nj9lNaAwGB2ynlk2CpMI
-r9u0PbShD9lib5CgbO/rbQqSJfG+o5rjlzP/YtTw+InVZQT+2OQqYh/RxsKVGjcE
-9SHHRKesGwBhiDtLS5oRTI5GakkYjqg5+euIFKcHBshmoTgf54BiWAV4WATKuxwT
-gjcfbiUHdTDJ6+z2klekmIelujnlAMgAoKcksb0toRkMXZbq91bqB/ytak6/wHEG
-YtLYHZZiHTwejG8qi5jm
-=mIbT
------END PGP SIGNATURE-----
-
---UugvWAfsgieZRqgk--
+-Robert
