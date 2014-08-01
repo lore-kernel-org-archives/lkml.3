@@ -1,96 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957AbaHATE2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 15:04:28 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:43700 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaHATE1 (ORCPT
+	id S1755884AbaHATMn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 15:12:43 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:63344 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755648AbaHATMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 15:04:27 -0400
-Date: Sat, 2 Aug 2014 00:34:23 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Jean Delvare <jdelvare@suse.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH v3] EEPROM: Introduce the use of devm_kzalloc
-Message-ID: <20140801190423.GA7281@himangi-Dell>
+	Fri, 1 Aug 2014 15:12:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140801190341.GA28642@salvia>
+References: <1406777656-27755-1-git-send-email-ast@plumgrid.com>
+	<1406777656-27755-6-git-send-email-ast@plumgrid.com>
+	<20140731194059.GA8681@salvia>
+	<CAMEtUuy+iABzHagoono+CPB=Ex4Ew4vQBK65x1jDRC9_W9L7Dw@mail.gmail.com>
+	<20140801160612.GA4679@salvia>
+	<CAMEtUuympZm+qVOc+4MJoSnAwSZ-Gx=tSOaHwudtP7Q92eHAtw@mail.gmail.com>
+	<20140801190341.GA28642@salvia>
+Date: Fri, 1 Aug 2014 12:12:36 -0700
+Message-ID: <CAMEtUuxDSGysNKr12qYQAXjmb4qP45trh3qVx41W7WVduPS5zw@mail.gmail.com>
+Subject: Re: [PATCH v4 net-next 5/5] net: filter: split 'struct sk_filter'
+ into socket and bpf parts
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Kees Cook <keescook@chromium.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        netfilter-devel <netfilter-devel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of devm_kzalloc and does away with the
-kfrees in the probe and remove functions. Also, a label and the err
-variable are removed. The header device.h is included to make the devm_
-function explicitly available and slab.h is done away with as it is no
-longer needed.
+On Fri, Aug 1, 2014 at 12:03 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+>> > I think you can allocate the sk_filter once you get the final bpf
+>> > program, then you can memcpy() it. This adds some extra overhead in
+>> > the sk_attach_filter(), but that path is executed from user context
+>> > and it's also a rare operation (only once to attach the filter). It's
+>> > still not going to be a beauty, but IMO it's worth to focus on getting
+>> > that little speed up in the packet path at the cost of adding some
+>> > overhead on the socket attach path.
+>>
+>> memcpy of 'bpf_prog' is not just 'not a beauty', it won't work, since
+>> bpf_prog is freed via work_queue due to JIT. See bpf_jit_free()
+> [...]
+>
+> I see, in this patch you renamed sk_filter to bpf_prog in
+> bpf_jit_free() so no access to sk_filter anymore and alignment needs a
+> closer look.
+>
+> OK... let's stick to the struct bpf_prog pointer.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
-v3: change headers included.
- drivers/misc/eeprom/eeprom.c | 23 ++++++-----------------
- 1 file changed, 6 insertions(+), 17 deletions(-)
+great. Once nft comes along we can always revisit this bit.
 
-diff --git a/drivers/misc/eeprom/eeprom.c b/drivers/misc/eeprom/eeprom.c
-index 33f8673..b432873 100644
---- a/drivers/misc/eeprom/eeprom.c
-+++ b/drivers/misc/eeprom/eeprom.c
-@@ -18,7 +18,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
--#include <linux/slab.h>
-+#include <linux/device.h>
- #include <linux/jiffies.h>
- #include <linux/i2c.h>
- #include <linux/mutex.h>
-@@ -159,12 +159,11 @@ static int eeprom_probe(struct i2c_client *client,
- {
- 	struct i2c_adapter *adapter = client->adapter;
- 	struct eeprom_data *data;
--	int err;
- 
--	if (!(data = kzalloc(sizeof(struct eeprom_data), GFP_KERNEL))) {
--		err = -ENOMEM;
--		goto exit;
--	}
-+	data = devm_kzalloc(&client->dev, sizeof(struct eeprom_data),
-+			    GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
- 
- 	memset(data->data, 0xff, EEPROM_SIZE);
- 	i2c_set_clientdata(client, data);
-@@ -190,22 +189,12 @@ static int eeprom_probe(struct i2c_client *client,
- 	}
- 
- 	/* create the sysfs eeprom file */
--	err = sysfs_create_bin_file(&client->dev.kobj, &eeprom_attr);
--	if (err)
--		goto exit_kfree;
--
--	return 0;
--
--exit_kfree:
--	kfree(data);
--exit:
--	return err;
-+	return sysfs_create_bin_file(&client->dev.kobj, &eeprom_attr);
- }
- 
- static int eeprom_remove(struct i2c_client *client)
- {
- 	sysfs_remove_bin_file(&client->dev.kobj, &eeprom_attr);
--	kfree(i2c_get_clientdata(client));
- 
- 	return 0;
- }
--- 
-1.9.1
+Dave, this patch has trivial conflict with Daniel's
+("team: fix releasing uninitialized pointer to BPF prog") fix.
+Let me know if you want me to respin the series or you'll patch up
+the conflict yourself.
 
+Thanks
