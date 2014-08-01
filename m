@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346AbaHAMp1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 08:45:27 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:56744 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075AbaHAMpX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 08:45:23 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: iommu@lists.linux-foundation.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] iommu: Implement a dummy bus_set_iommu()
-Date: Fri,  1 Aug 2014 14:45:13 +0200
-Message-Id: <1406897113-20099-2-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.3
-In-Reply-To: <1406897113-20099-1-git-send-email-thierry.reding@gmail.com>
-References: <1406897113-20099-1-git-send-email-thierry.reding@gmail.com>
+	id S1755399AbaHAMqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 08:46:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54000 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754881AbaHAMqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 08:46:35 -0400
+From: jgross@suse.com
+To: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [V2 PATCH] Save command pool address of Scsi_Host
+Date: Fri,  1 Aug 2014 14:46:30 +0200
+Message-Id: <1406897190-28427-1-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+From: Juergen Gross <jgross@suse.com>
 
-This allows IOMMU drivers to compile even if IOMMU_API is not selected
-and helps improve compile coverage.
+If a scsi host driver specifies .cmd_len in it's scsi_host_template, a driver's
+private command pool is needed. scsi_find_host_cmd_pool() will locate it, but
+scsi_alloc_host_cmd_pool() isn't saving the pool address in the host template.
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+This will result in an access error when the host is removed.
+
+Avoid the problem by saving the address of a new allocated command pool where
+it is expected.
+
+Signed-off-by: Juergen Gross <jgross@suse.com>
 ---
- include/linux/iommu.h | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/scsi/scsi.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index 0b5222c7ff97..415608ea2999 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -242,6 +242,12 @@ static inline int report_iommu_fault(struct iommu_domain *domain,
- 
- #else /* CONFIG_IOMMU_API */
- 
-+static inline int bus_set_iommu(struct bus_type *bus,
-+				const struct iommu_ops *ops)
-+{
-+	return -ENOSYS;
-+}
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index 88d46fe..e8e8428 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -380,6 +380,10 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
+ 		pool->slab_flags |= SLAB_CACHE_DMA;
+ 		pool->gfp_mask = __GFP_DMA;
+ 	}
 +
- static inline bool iommu_present(struct bus_type *bus)
- {
- 	return false;
++	if (hostt->cmd_size)
++		hostt->cmd_pool = pool;
++
+ 	return pool;
+ }
+ 
 -- 
-2.0.3
+1.8.4.5
 
