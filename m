@@ -1,134 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089AbaHATtI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 15:49:08 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:45003 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754818AbaHATtG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 15:49:06 -0400
-Date: Fri, 1 Aug 2014 20:48:57 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        ohering@suse.com, apw@canonical.com, jasowang@redhat.com,
-        jbottomley@parallels.com, linux-scsi@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Add blist flags
-Message-ID: <20140801194857.GA1476@sucs.org>
-References: <1405983961-18782-1-git-send-email-kys@microsoft.com>
- <53D09C54.1000206@suse.de>
+	id S1755910AbaHATxr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 15:53:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11300 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754141AbaHATxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 15:53:46 -0400
+Date: Fri, 1 Aug 2014 15:53:38 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Peter Feiner <pfeiner@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] mm: softdirty: respect VM_SOFTDIRTY in PTE holes
+Message-ID: <20140801195338.GA29508@nhori.bos.redhat.com>
+References: <1406846605-12176-1-git-send-email-pfeiner@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53D09C54.1000206@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1406846605-12176-1-git-send-email-pfeiner@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 07:40:36AM +0200, Hannes Reinecke wrote:
-> On 07/22/2014 01:06 AM, K. Y. Srinivasan wrote:
-> >Add blist flags to permit the reading of the VPD pages even when
-> >the target may claim SPC-2 compliance. MSFT targets currently
-> >claim SPC-2 compliance while they implement post SPC-2 features.
-> >With this patch we can correctly handle WRITE_SAME_16 issues.
-> >
-> >Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> >
-> Reviewed-by: Hannes Reinecke <hare@suse.de>
-
-On Wed, Jul 23, 2014 at 09:13:41PM +0100, Sitsofe Wheeler wrote:
-> On Wed, Jul 23, 2014 at 07:15:58AM -0700, Christoph Hellwig wrote:
-> > On Wed, Jul 23, 2014 at 03:10:28PM +0100, Sitsofe Wheeler wrote:
-> > > I'm not sure this alone will work - won't sdev_bflags/bflags have
-> > > already been built at this point?
-> > 
-> > They've been built up, but we can still or new values into it.  It looks
-> > fine to me from review, but if you can test it on an actualy hypverv
-> > setup that would be valueable feedback.
+On Thu, Jul 31, 2014 at 06:43:25PM -0400, Peter Feiner wrote:
+> After a VMA is created with the VM_SOFTDIRTY flag set,
+> /proc/pid/pagemap should report that the VMA's virtual pages are
+> soft-dirty until VM_SOFTDIRTY is cleared (i.e., by the next write of
+> "4" to /proc/pid/clear_refs). However, pagemap ignores the
+> VM_SOFTDIRTY flag for virtual addresses that fall in PTE holes (i.e.,
+> virtual addresses that don't have a PMD, PUD, or PGD allocated yet).
 > 
-> The previous patches didn't work for me with a Windows 2012 R2 host with a
-> 3.16.0-rc6.x86_64-00076-g2f7d2ec-dirty guest. After applying
-> https://patchwork.kernel.org/patch/4541201 (which needed a small fixup) and
-> https://patchwork.kernel.org/patch/4598601 and the attached debugging output
+> To observe this bug, use mmap to create a VMA large enough such that
+> there's a good chance that the VMA will occupy an unused PMD, then
+> test the soft-dirty bit on its pages. In practice, I found that a VMA
+> that covered a PMD's worth of address space was big enough.
+> 
+> This patch adds the necessary VMA lookup to the PTE hole callback in
+> /proc/pid/pagemap's page walk and sets soft-dirty according to the
+> VMAs' VM_SOFTDIRTY flag.
+> 
+> Signed-off-by: Peter Feiner <pfeiner@google.com>
 
-I've tested f3cfabce7a2e92564d380de3aad4b43901fb7ae6 (Drivers: add blist
-flags) from the drivers-for-3.17 branch of scsi-queue
-(http://git.infradead.org/users/hch/scsi-queue.git/commit/f3cfabce7a2e92564d380de3aad4b43901fb7ae6
-) and this patch still doesn't appear to work (thin provisioning on
-Hyper-V's Virtual Disks is not enabled):
+It's unfortunate that we have to do this kind of vma boundary calculation
+inside pagemap_pte_hole, which comes from poor vma handling in mm/pagewalk.c.
+Recently I'm trying to solve this (I posted ver.6 patchset today) and if
+that's merged, your problem should be implicitly fixed.
 
-# sg_inq  /dev/sda
-standard INQUIRY:
-  PQual=0  Device_type=0  RMB=0  version=0x04  [SPC-2]
-  [AERC=0]  [TrmTsk=0]  NormACA=0  HiSUP=0  Resp_data_format=2
-  SCCS=0  ACC=0  TPGS=0  3PC=0  Protect=0  [BQue=0]
-  EncServ=0  MultiP=0  [MChngr=0]  [ACKREQQ=0]  Addr16=0
-  [RelAdr=0]  WBus16=0  Sync=0  Linked=0  [TranDis=0]  CmdQue=1
-    length=36 (0x24)   Peripheral device type: disk
- Vendor identification: Msft    
- Product identification: Virtual Disk    
- Product revision level: 1.0 
-# sg_vpd -p lbpv /dev/sda
-Logical block provisioning VPD page (SBC):
-  Unmap command supported (LBPU): 1
-  Write same (16) with unmap bit supported (LBWS): 0
-  Write same (10) with unmap bit supported (LBWS10): 0
-  Logical block provisioning read zeros (LBPRZ): 0
-  Anchored LBAs supported (ANC_SUP): 0
-  Threshold exponent: 1
-  Descriptor present (DP): 0
-  Provisioning type: 2
+But anyway if Andrew decided to merge your patch in first, it's OK for me.
 
-grep . /sys/block/sd*/device/scsi_disk/*/{thin,prov,rotat,device/model}* | sort
-/sys/block/sda/device/scsi_disk/0:0:0:0/device/model:Virtual Disk    
-/sys/block/sda/device/scsi_disk/0:0:0:0/provisioning_mode:full
-/sys/block/sda/device/scsi_disk/0:0:0:0/thin_provisioning:0
-/sys/block/sdb/device/scsi_disk/1:0:0:0/device/model:Virtual Disk    
-/sys/block/sdb/device/scsi_disk/1:0:0:0/provisioning_mode:full
-/sys/block/sdb/device/scsi_disk/1:0:0:0/thin_provisioning:0
-/sys/block/sdc/device/scsi_disk/1:0:0:2/device/model:00AAKS-00TMA0   
-/sys/block/sdc/device/scsi_disk/1:0:0:2/provisioning_mode:full
-/sys/block/sdc/device/scsi_disk/1:0:0:2/thin_provisioning:0
-/sys/block/sdd/device/scsi_disk/1:0:0:1/device/model:SSD S510 120GB  
-/sys/block/sdd/device/scsi_disk/1:0:0:1/provisioning_mode:full
-/sys/block/sdd/device/scsi_disk/1:0:0:1/thin_provisioning:0
-/sys/block/sde/device/scsi_disk/1:0:0:3/device/model:Virtual Disk    
-/sys/block/sde/device/scsi_disk/1:0:0:3/provisioning_mode:full
-/sys/block/sde/device/scsi_disk/1:0:0:3/thin_provisioning:0
-/sys/block/sdf/device/scsi_disk/1:0:0:4/device/model:ST1000DM003-9YN1
-/sys/block/sdf/device/scsi_disk/1:0:0:4/provisioning_mode:full
-/sys/block/sdf/device/scsi_disk/1:0:0:4/thin_provisioning:0
+Acked-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-At least the virtual disks should have thin_provisioning... I was also
-expecting the passthrough SSD to be reported as non-rotational with this patch:
+Thanks,
+Naoya Horiguchi
 
-# sg_inq /dev/sdd
-standard INQUIRY:
-  PQual=0  Device_type=0  RMB=0  version=0x00  [no conformance claimed]
-  [AERC=0]  [TrmTsk=0]  NormACA=0  HiSUP=0  Resp_data_format=2
-  SCCS=0  ACC=0  TPGS=0  3PC=0  Protect=0  [BQue=0]
-  EncServ=0  MultiP=0  [MChngr=0]  [ACKREQQ=0]  Addr16=0
-  [RelAdr=0]  WBus16=0  Sync=0  Linked=0  [TranDis=0]  CmdQue=1
-  [SPI: Clocking=0x0  QAS=0  IUS=0]
-    length=60 (0x3c)   Peripheral device type: disk
- Vendor identification: ADATA   
- Product identification: SSD S510 120GB
- Product revision level: 5.2.
- Unit serial number: 03205115500300002076
-# sg_vpd -p bdc /dev/sdd
-Block device characteristics VPD page (SBC):
-  Non-rotating medium (e.g. solid state)
-  Product type: Not specified
-  WABEREQ=0
-  WACEREQ=0
-  Nominal form factor not reported
-  FUAB=0
-  VBULS=0
-# grep -H . /sys/block/sdd/queue/rot*
-/sys/block/sdd/queue/rotational:1
-
--- 
-Sitsofe | http://sucs.org/~sits/
+> ---
+>  fs/proc/task_mmu.c | 27 +++++++++++++++++++++------
+>  1 file changed, 21 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index cfa63ee..dfc791c 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -925,15 +925,30 @@ static int pagemap_pte_hole(unsigned long start, unsigned long end,
+>  				struct mm_walk *walk)
+>  {
+>  	struct pagemapread *pm = walk->private;
+> -	unsigned long addr;
+> +	unsigned long addr = start;
+>  	int err = 0;
+> -	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
+>  
+> -	for (addr = start; addr < end; addr += PAGE_SIZE) {
+> -		err = add_to_pagemap(addr, &pme, pm);
+> -		if (err)
+> -			break;
+> +	while (addr < end) {
+> +		struct vm_area_struct *vma = find_vma(walk->mm, addr);
+> +		pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
+> +		unsigned long vm_end;
+> +
+> +		if (!vma) {
+> +			vm_end = end;
+> +		} else {
+> +			vm_end = min(end, vma->vm_end);
+> +			if (vma->vm_flags & VM_SOFTDIRTY)
+> +				pme.pme |= PM_STATUS2(pm->v2, __PM_SOFT_DIRTY);
+> +		}
+> +
+> +		for (; addr < vm_end; addr += PAGE_SIZE) {
+> +			err = add_to_pagemap(addr, &pme, pm);
+> +			if (err)
+> +				goto out;
+> +		}
+>  	}
+> +
+> +out:
+>  	return err;
+>  }
+>  
+> -- 
+> 2.0.0.526.g5318336
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
