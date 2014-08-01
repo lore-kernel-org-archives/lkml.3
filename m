@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135AbaHAN3m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:29:42 -0400
-Received: from mga01.intel.com ([192.55.52.88]:10875 "EHLO mga01.intel.com"
+	id S932257AbaHANaw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:30:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:54888 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755888AbaHAN3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 09:29:12 -0400
+	id S1755691AbaHAN15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 09:27:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,780,1400050800"; 
-   d="scan'208";a="578740166"
+   d="scan'208";a="463980732"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v9 02/22] Change direct_access calling convention
-Date: Fri,  1 Aug 2014 09:27:18 -0400
-Message-Id: <9e981c95a30a469de3c5639b65941956bea0ac81.1406897885.git.willy@linux.intel.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>
+Subject: [PATCH v9 06/22] Add copy_to_iter(), copy_from_iter() and iov_iter_zero()
+Date: Fri,  1 Aug 2014 09:27:22 -0400
+Message-Id: <7bdb1c7cbb0175a817f52864c1a306d4311290ea.1406897885.git.willy@linux.intel.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
 References: <cover.1406897885.git.willy@linux.intel.com>
@@ -25,304 +25,356 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to support accesses to larger chunks of memory, pass in a
-'size' parameter (counted in bytes), and return the amount available at
-that address.
+From: Matthew Wilcox <willy@linux.intel.com>
 
-Add a new helper function, bdev_direct_access(), to handle common
-functionality including partition handling, checking for the sector
-being page-aligned, and checking the length of the request does not
-pass the end of the partition.
+For DAX, we want to be able to copy between iovecs and kernel addresses
+that don't necessarily have a struct page.  This is a fairly simple
+rearrangement for bvec iters to kmap the pages outside and pass them in,
+but for user iovecs it gets more complicated because we might try various
+different ways to kmap the memory.  Duplicating the existing logic works
+out best in this case.
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
+We need to be able to write zeroes to an iovec for reads from unwritten
+ranges in a file.  This is performed by the new iov_iter_zero() function,
+again patterned after the existing code that handles iovec iterators.
+
+Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
 ---
- Documentation/filesystems/xip.txt | 15 +++++++++------
- arch/powerpc/sysdev/axonram.c     | 17 ++++-------------
- drivers/block/brd.c               | 12 +++++-------
- drivers/s390/block/dcssblk.c      | 21 +++++++++------------
- fs/block_dev.c                    | 34 ++++++++++++++++++++++++++++++++++
- fs/ext2/xip.c                     | 31 +++++++++++++------------------
- include/linux/blkdev.h            |  6 ++++--
- 7 files changed, 78 insertions(+), 58 deletions(-)
+ include/linux/uio.h |   3 +
+ mm/iov_iter.c       | 237 ++++++++++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 226 insertions(+), 14 deletions(-)
 
-diff --git a/Documentation/filesystems/xip.txt b/Documentation/filesystems/xip.txt
-index 0466ee5..b62eabf 100644
---- a/Documentation/filesystems/xip.txt
-+++ b/Documentation/filesystems/xip.txt
-@@ -28,12 +28,15 @@ Implementation
- Execute-in-place is implemented in three steps: block device operation,
- address space operation, and file operations.
+diff --git a/include/linux/uio.h b/include/linux/uio.h
+index 09a7cff..86fb3e9 100644
+--- a/include/linux/uio.h
++++ b/include/linux/uio.h
+@@ -80,6 +80,9 @@ size_t copy_page_to_iter(struct page *page, size_t offset, size_t bytes,
+ 			 struct iov_iter *i);
+ size_t copy_page_from_iter(struct page *page, size_t offset, size_t bytes,
+ 			 struct iov_iter *i);
++size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i);
++size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i);
++size_t iov_iter_zero(size_t bytes, struct iov_iter *);
+ unsigned long iov_iter_alignment(const struct iov_iter *i);
+ void iov_iter_init(struct iov_iter *i, int direction, const struct iovec *iov,
+ 			unsigned long nr_segs, size_t count);
+diff --git a/mm/iov_iter.c b/mm/iov_iter.c
+index 7b5dbd1..e95ed80 100644
+--- a/mm/iov_iter.c
++++ b/mm/iov_iter.c
+@@ -4,6 +4,96 @@
+ #include <linux/slab.h>
+ #include <linux/vmalloc.h>
  
--A block device operation named direct_access is used to retrieve a
--reference (pointer) to a block on-disk. The reference is supposed to be
--cpu-addressable, physical address and remain valid until the release operation
--is performed. A struct block_device reference is used to address the device,
--and a sector_t argument is used to identify the individual block. As an
--alternative, memory technology devices can be used for this.
-+A block device operation named direct_access is used to translate the
-+block device sector number to a page frame number (pfn) that identifies
-+the physical page for the memory.  It also returns a kernel virtual
-+address that can be used to access the memory.
-+
-+The direct_access method takes a 'size' parameter that indicates the
-+number of bytes being requested.  The function should return the number
-+of bytes that it can provide, although it must not exceed the number of
-+bytes requested.  It may also return a negative errno if an error occurs.
- 
- The block device operation is optional, these block devices support it as of
- today:
-diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
-index 830edc8..741293f 100644
---- a/arch/powerpc/sysdev/axonram.c
-+++ b/arch/powerpc/sysdev/axonram.c
-@@ -139,26 +139,17 @@ axon_ram_make_request(struct request_queue *queue, struct bio *bio)
-  * axon_ram_direct_access - direct_access() method for block device
-  * @device, @sector, @data: see block_device_operations method
-  */
--static int
-+static long
- axon_ram_direct_access(struct block_device *device, sector_t sector,
--		       void **kaddr, unsigned long *pfn)
-+		       void **kaddr, unsigned long *pfn, long size)
- {
- 	struct axon_ram_bank *bank = device->bd_disk->private_data;
--	loff_t offset;
--
--	offset = sector;
--	if (device->bd_part != NULL)
--		offset += device->bd_part->start_sect;
--	offset <<= AXON_RAM_SECTOR_SHIFT;
--	if (offset >= bank->size) {
--		dev_err(&bank->device->dev, "Access outside of address space\n");
--		return -ERANGE;
--	}
-+	loff_t offset = (loff_t)sector << AXON_RAM_SECTOR_SHIFT;
- 
- 	*kaddr = (void *)(bank->ph_addr + offset);
- 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
- 
--	return 0;
-+	return min_t(long, size, bank->size - offset);
- }
- 
- static const struct block_device_operations axon_ram_devops = {
-diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index c7d138e..a10a0a9 100644
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -370,25 +370,23 @@ static int brd_rw_page(struct block_device *bdev, sector_t sector,
- }
- 
- #ifdef CONFIG_BLK_DEV_XIP
--static int brd_direct_access(struct block_device *bdev, sector_t sector,
--			void **kaddr, unsigned long *pfn)
-+static long brd_direct_access(struct block_device *bdev, sector_t sector,
-+			void **kaddr, unsigned long *pfn, long size)
- {
- 	struct brd_device *brd = bdev->bd_disk->private_data;
- 	struct page *page;
- 
- 	if (!brd)
- 		return -ENODEV;
--	if (sector & (PAGE_SECTORS-1))
--		return -EINVAL;
--	if (sector + PAGE_SECTORS > get_capacity(bdev->bd_disk))
--		return -ERANGE;
- 	page = brd_insert_page(brd, sector);
- 	if (!page)
- 		return -ENOSPC;
- 	*kaddr = page_address(page);
- 	*pfn = page_to_pfn(page);
- 
--	return 0;
-+	/* Could optimistically check to see if the next page in the
-+	 * file is mapped to the next page of physical RAM */
-+	return min_t(long, PAGE_SIZE, size);
- }
- #endif
- 
-diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
-index 0f47175..2ee5556 100644
---- a/drivers/s390/block/dcssblk.c
-+++ b/drivers/s390/block/dcssblk.c
-@@ -28,8 +28,8 @@
- static int dcssblk_open(struct block_device *bdev, fmode_t mode);
- static void dcssblk_release(struct gendisk *disk, fmode_t mode);
- static void dcssblk_make_request(struct request_queue *q, struct bio *bio);
--static int dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
--				 void **kaddr, unsigned long *pfn);
-+static long dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
-+				 void **kaddr, unsigned long *pfn, long size);
- 
- static char dcssblk_segments[DCSSBLK_PARM_LEN] = "\0";
- 
-@@ -866,25 +866,22 @@ fail:
- 	bio_io_error(bio);
- }
- 
--static int
-+static long
- dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
--			void **kaddr, unsigned long *pfn)
-+			void **kaddr, unsigned long *pfn, long size)
- {
- 	struct dcssblk_dev_info *dev_info;
--	unsigned long pgoff;
-+	unsigned long offset, dev_sz;
- 
- 	dev_info = bdev->bd_disk->private_data;
- 	if (!dev_info)
- 		return -ENODEV;
--	if (secnum % (PAGE_SIZE/512))
--		return -EINVAL;
--	pgoff = secnum / (PAGE_SIZE / 512);
--	if ((pgoff+1)*PAGE_SIZE-1 > dev_info->end - dev_info->start)
--		return -ERANGE;
--	*kaddr = (void *) (dev_info->start+pgoff*PAGE_SIZE);
-+	dev_sz = dev_info->end - dev_info->start;
-+	offset = secnum * 512;
-+	*kaddr = (void *) (dev_info->start + offset);
- 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
- 
--	return 0;
-+	return min_t(long, size, dev_sz - offset);
- }
- 
- static void
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 6d72746..93ebdd53 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -427,6 +427,40 @@ int bdev_write_page(struct block_device *bdev, sector_t sector,
- }
- EXPORT_SYMBOL_GPL(bdev_write_page);
- 
-+/**
-+ * bdev_direct_access() - Get the address for directly-accessibly memory
-+ * @bdev: The device containing the memory
-+ * @sector: The offset within the device
-+ * @addr: Where to put the address of the memory
-+ * @pfn: The Page Frame Number for the memory
-+ * @size: The number of bytes requested
-+ *
-+ * If a block device is made up of directly addressable memory, this function
-+ * will tell the caller the PFN and the address of the memory.  The address
-+ * may be directly dereferenced within the kernel without the need to call
-+ * ioremap(), kmap() or similar.  THe PFN is suitable for inserting into
-+ * page tables.
-+ *
-+ * Return: negative errno if an error occurs, otherwise the number of bytes
-+ * accessible at this address.
-+ */
-+long bdev_direct_access(struct block_device *bdev, sector_t sector,
-+			void **addr, unsigned long *pfn, long size)
++static size_t copy_to_iter_iovec(void *from, size_t bytes, struct iov_iter *i)
 +{
-+	const struct block_device_operations *ops = bdev->bd_disk->fops;
-+	if (!ops->direct_access)
-+		return -EOPNOTSUPP;
-+	if ((sector + DIV_ROUND_UP(size, 512)) >
-+					part_nr_sects_read(bdev->bd_part))
-+		return -ERANGE;
-+	sector += get_start_sect(bdev);
-+	if (sector % (PAGE_SIZE / 512))
-+		return -EINVAL;
-+	size = ops->direct_access(bdev, sector, addr, pfn, size);
-+	return size ? size : -ERANGE;
-+}
-+EXPORT_SYMBOL_GPL(bdev_direct_access);
++	size_t skip, copy, left, wanted;
++	const struct iovec *iov;
++	char __user *buf;
 +
- /*
-  * pseudo-fs
-  */
-diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
-index e98171a..bbc5fec 100644
---- a/fs/ext2/xip.c
-+++ b/fs/ext2/xip.c
-@@ -13,18 +13,12 @@
- #include "ext2.h"
- #include "xip.h"
- 
--static inline int
--__inode_direct_access(struct inode *inode, sector_t block,
--		      void **kaddr, unsigned long *pfn)
-+static inline long __inode_direct_access(struct inode *inode, sector_t block,
-+				void **kaddr, unsigned long *pfn, long size)
++	if (unlikely(bytes > i->count))
++		bytes = i->count;
++
++	if (unlikely(!bytes))
++		return 0;
++
++	wanted = bytes;
++	iov = i->iov;
++	skip = i->iov_offset;
++	buf = iov->iov_base + skip;
++	copy = min(bytes, iov->iov_len - skip);
++
++	left = __copy_to_user(buf, from, copy);
++	copy -= left;
++	skip += copy;
++	from += copy;
++	bytes -= copy;
++	while (unlikely(!left && bytes)) {
++		iov++;
++		buf = iov->iov_base;
++		copy = min(bytes, iov->iov_len);
++		left = __copy_to_user(buf, from, copy);
++		copy -= left;
++		skip = copy;
++		from += copy;
++		bytes -= copy;
++	}
++
++	if (skip == iov->iov_len) {
++		iov++;
++		skip = 0;
++	}
++	i->count -= wanted - bytes;
++	i->nr_segs -= iov - i->iov;
++	i->iov = iov;
++	i->iov_offset = skip;
++	return wanted - bytes;
++}
++
++static size_t copy_from_iter_iovec(void *to, size_t bytes, struct iov_iter *i)
++{
++	size_t skip, copy, left, wanted;
++	const struct iovec *iov;
++	char __user *buf;
++
++	if (unlikely(bytes > i->count))
++		bytes = i->count;
++
++	if (unlikely(!bytes))
++		return 0;
++
++	wanted = bytes;
++	iov = i->iov;
++	skip = i->iov_offset;
++	buf = iov->iov_base + skip;
++	copy = min(bytes, iov->iov_len - skip);
++
++	left = __copy_from_user(to, buf, copy);
++	copy -= left;
++	skip += copy;
++	to += copy;
++	bytes -= copy;
++	while (unlikely(!left && bytes)) {
++		iov++;
++		buf = iov->iov_base;
++		copy = min(bytes, iov->iov_len);
++		left = __copy_from_user(to, buf, copy);
++		copy -= left;
++		skip = copy;
++		to += copy;
++		bytes -= copy;
++	}
++
++	if (skip == iov->iov_len) {
++		iov++;
++		skip = 0;
++	}
++	i->count -= wanted - bytes;
++	i->nr_segs -= iov - i->iov;
++	i->iov = iov;
++	i->iov_offset = skip;
++	return wanted - bytes;
++}
++
+ static size_t copy_page_to_iter_iovec(struct page *page, size_t offset, size_t bytes,
+ 			 struct iov_iter *i)
  {
- 	struct block_device *bdev = inode->i_sb->s_bdev;
--	const struct block_device_operations *ops = bdev->bd_disk->fops;
--	sector_t sector;
+@@ -166,6 +256,50 @@ done:
+ 	return wanted - bytes;
+ }
+ 
++static size_t zero_iovec(size_t bytes, struct iov_iter *i)
++{
++	size_t skip, copy, left, wanted;
++	const struct iovec *iov;
++	char __user *buf;
++
++	if (unlikely(bytes > i->count))
++		bytes = i->count;
++
++	if (unlikely(!bytes))
++		return 0;
++
++	wanted = bytes;
++	iov = i->iov;
++	skip = i->iov_offset;
++	buf = iov->iov_base + skip;
++	copy = min(bytes, iov->iov_len - skip);
++
++	left = __clear_user(buf, copy);
++	copy -= left;
++	skip += copy;
++	bytes -= copy;
++
++	while (unlikely(!left && bytes)) {
++		iov++;
++		buf = iov->iov_base;
++		copy = min(bytes, iov->iov_len);
++		left = __clear_user(buf, copy);
++		copy -= left;
++		skip = copy;
++		bytes -= copy;
++	}
++
++	if (skip == iov->iov_len) {
++		iov++;
++		skip = 0;
++	}
++	i->count -= wanted - bytes;
++	i->nr_segs -= iov - i->iov;
++	i->iov = iov;
++	i->iov_offset = skip;
++	return wanted - bytes;
++}
++
+ static size_t __iovec_copy_from_user_inatomic(char *vaddr,
+ 			const struct iovec *iov, size_t base, size_t bytes)
+ {
+@@ -412,12 +546,17 @@ static void memcpy_to_page(struct page *page, size_t offset, char *from, size_t
+ 	kunmap_atomic(to);
+ }
+ 
+-static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t bytes,
+-			 struct iov_iter *i)
++static void memzero_page(struct page *page, size_t offset, size_t len)
++{
++	char *addr = kmap_atomic(page);
++	memset(addr + offset, 0, len);
++	kunmap_atomic(addr);
++}
++
++static size_t copy_to_iter_bvec(void *from, size_t bytes, struct iov_iter *i)
+ {
+ 	size_t skip, copy, wanted;
+ 	const struct bio_vec *bvec;
+-	void *kaddr, *from;
+ 
+ 	if (unlikely(bytes > i->count))
+ 		bytes = i->count;
+@@ -430,8 +569,6 @@ static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t by
+ 	skip = i->iov_offset;
+ 	copy = min_t(size_t, bytes, bvec->bv_len - skip);
+ 
+-	kaddr = kmap_atomic(page);
+-	from = kaddr + offset;
+ 	memcpy_to_page(bvec->bv_page, skip + bvec->bv_offset, from, copy);
+ 	skip += copy;
+ 	from += copy;
+@@ -444,7 +581,6 @@ static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t by
+ 		from += copy;
+ 		bytes -= copy;
+ 	}
+-	kunmap_atomic(kaddr);
+ 	if (skip == bvec->bv_len) {
+ 		bvec++;
+ 		skip = 0;
+@@ -456,12 +592,10 @@ static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t by
+ 	return wanted - bytes;
+ }
+ 
+-static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t bytes,
+-			 struct iov_iter *i)
++static size_t copy_from_iter_bvec(void *to, size_t bytes, struct iov_iter *i)
+ {
+ 	size_t skip, copy, wanted;
+ 	const struct bio_vec *bvec;
+-	void *kaddr, *to;
+ 
+ 	if (unlikely(bytes > i->count))
+ 		bytes = i->count;
+@@ -473,10 +607,6 @@ static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t
+ 	bvec = i->bvec;
+ 	skip = i->iov_offset;
+ 
+-	kaddr = kmap_atomic(page);
 -
--	sector = block * (PAGE_SIZE / 512); /* ext2 block to bdev sector */
+-	to = kaddr + offset;
 -
--	BUG_ON(!ops->direct_access);
--	return ops->direct_access(bdev, sector, kaddr, pfn);
-+	sector_t sector = block * (PAGE_SIZE / 512);
-+	return bdev_direct_access(bdev, sector, kaddr, pfn, size);
+ 	copy = min(bytes, bvec->bv_len - skip);
+ 
+ 	memcpy_from_page(to, bvec->bv_page, bvec->bv_offset + skip, copy);
+@@ -493,7 +623,6 @@ static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t
+ 		to += copy;
+ 		bytes -= copy;
+ 	}
+-	kunmap_atomic(kaddr);
+ 	if (skip == bvec->bv_len) {
+ 		bvec++;
+ 		skip = 0;
+@@ -505,6 +634,61 @@ static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t
+ 	return wanted;
  }
  
- static inline int
-@@ -53,12 +47,13 @@ ext2_clear_xip_target(struct inode *inode, sector_t block)
++static size_t copy_page_to_iter_bvec(struct page *page, size_t offset,
++					size_t bytes, struct iov_iter *i)
++{
++	void *kaddr = kmap_atomic(page);
++	size_t wanted = copy_to_iter_bvec(kaddr + offset, bytes, i);
++	kunmap_atomic(kaddr);
++	return wanted;
++}
++
++static size_t copy_page_from_iter_bvec(struct page *page, size_t offset,
++					size_t bytes, struct iov_iter *i)
++{
++	void *kaddr = kmap_atomic(page);
++	size_t wanted = copy_from_iter_bvec(kaddr + offset, bytes, i);
++	kunmap_atomic(kaddr);
++	return wanted;
++}
++
++static size_t zero_bvec(size_t bytes, struct iov_iter *i)
++{
++	size_t skip, copy, wanted;
++	const struct bio_vec *bvec;
++
++	if (unlikely(bytes > i->count))
++		bytes = i->count;
++
++	if (unlikely(!bytes))
++		return 0;
++
++	wanted = bytes;
++	bvec = i->bvec;
++	skip = i->iov_offset;
++	copy = min_t(size_t, bytes, bvec->bv_len - skip);
++
++	memzero_page(bvec->bv_page, skip + bvec->bv_offset, copy);
++	skip += copy;
++	bytes -= copy;
++	while (bytes) {
++		bvec++;
++		copy = min(bytes, (size_t)bvec->bv_len);
++		memzero_page(bvec->bv_page, bvec->bv_offset, copy);
++		skip = copy;
++		bytes -= copy;
++	}
++	if (skip == bvec->bv_len) {
++		bvec++;
++		skip = 0;
++	}
++	i->count -= wanted - bytes;
++	i->nr_segs -= bvec - i->bvec;
++	i->bvec = bvec;
++	i->iov_offset = skip;
++	return wanted - bytes;
++}
++
+ static size_t copy_from_user_bvec(struct page *page,
+ 		struct iov_iter *i, unsigned long offset, size_t bytes)
  {
- 	void *kaddr;
- 	unsigned long pfn;
--	int rc;
-+	long size;
- 
--	rc = __inode_direct_access(inode, block, &kaddr, &pfn);
--	if (!rc)
--		clear_page(kaddr);
--	return rc;
-+	size = __inode_direct_access(inode, block, &kaddr, &pfn, PAGE_SIZE);
-+	if (size < 0)
-+		return size;
-+	clear_page(kaddr);
-+	return 0;
+@@ -669,6 +853,31 @@ size_t copy_page_from_iter(struct page *page, size_t offset, size_t bytes,
  }
+ EXPORT_SYMBOL(copy_page_from_iter);
  
- void ext2_xip_verify_sb(struct super_block *sb)
-@@ -77,7 +72,7 @@ void ext2_xip_verify_sb(struct super_block *sb)
- int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
- 				void **kmem, unsigned long *pfn)
++size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i)
++{
++	if (i->type & ITER_BVEC)
++		return copy_to_iter_bvec(addr, bytes, i);
++	else
++		return copy_to_iter_iovec(addr, bytes, i);
++}
++
++size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i)
++{
++	if (i->type & ITER_BVEC)
++		return copy_from_iter_bvec(addr, bytes, i);
++	else
++		return copy_from_iter_iovec(addr, bytes, i);
++}
++
++size_t iov_iter_zero(size_t bytes, struct iov_iter *i)
++{
++	if (i->type & ITER_BVEC) {
++		return zero_bvec(bytes, i);
++	} else {
++		return zero_iovec(bytes, i);
++	}
++}
++
+ size_t iov_iter_copy_from_user_atomic(struct page *page,
+ 		struct iov_iter *i, unsigned long offset, size_t bytes)
  {
--	int rc;
-+	long rc;
- 	sector_t block;
- 
- 	/* first, retrieve the sector number */
-@@ -86,6 +81,6 @@ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
- 		return rc;
- 
- 	/* retrieve address of the target data */
--	rc = __inode_direct_access(mapping->host, block, kmem, pfn);
--	return rc;
-+	rc = __inode_direct_access(mapping->host, block, kmem, pfn, PAGE_SIZE);
-+	return (rc < 0) ? rc : 0;
- }
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 8699bcf..bc5ea9e 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1613,8 +1613,8 @@ struct block_device_operations {
- 	int (*rw_page)(struct block_device *, sector_t, struct page *, int rw);
- 	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
- 	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
--	int (*direct_access) (struct block_device *, sector_t,
--						void **, unsigned long *);
-+	long (*direct_access) (struct block_device *, sector_t,
-+					void **, unsigned long *pfn, long size);
- 	unsigned int (*check_events) (struct gendisk *disk,
- 				      unsigned int clearing);
- 	/* ->media_changed() is DEPRECATED, use ->check_events() instead */
-@@ -1632,6 +1632,8 @@ extern int __blkdev_driver_ioctl(struct block_device *, fmode_t, unsigned int,
- extern int bdev_read_page(struct block_device *, sector_t, struct page *);
- extern int bdev_write_page(struct block_device *, sector_t, struct page *,
- 						struct writeback_control *);
-+extern long bdev_direct_access(struct block_device *, sector_t, void **addr,
-+						unsigned long *pfn, long size);
- #else /* CONFIG_BLOCK */
- 
- struct block_device;
 -- 
 2.0.1
 
