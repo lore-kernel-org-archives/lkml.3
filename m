@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaHAFVx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 01:21:53 -0400
-Received: from ozlabs.org ([103.22.144.67]:53793 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770AbaHAFVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 01:21:51 -0400
-Date: Fri, 1 Aug 2014 15:21:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Christoffer Dall <cdall@cs.columbia.edu>
-Cc: Marc Zyngier <marc.zyngier@arm.com>,
-        Christoffer Dall <christofferdall@christofferdall.dk>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: linux-next: manual merge of the kvm-arm tree with Linus' tree
-Message-ID: <20140801152141.15d028c1@canb.auug.org.au>
-In-Reply-To: <20140731142347.GB589@cbox>
-References: <20140731163004.474501fb@canb.auug.org.au>
-	<CAEDV+gJ1oSPzgZMO=kdFDNPnzy-EOHGuLxHqTB8KO6d_8yPrxQ@mail.gmail.com>
-	<87mwbpiv0z.fsf@approximate.cambridge.arm.com>
-	<20140731142347.GB589@cbox>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1753432AbaHAFXF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 01:23:05 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49030 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864AbaHAFXD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 01:23:03 -0400
+Message-ID: <53DB240F.2030908@ti.com>
+Date: Fri, 1 Aug 2014 08:22:23 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/=g8B=AAE41pOt58oODPQxwr"; protocol="application/pgp-signature"
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>, <nsekhar@ti.com>,
+        <robh+dt@kernel.org>
+CC: <devicetree@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux@arm.linux.org.uk>, <pawel.moll@arm.com>,
+        <khilman@deeprootsystems.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 5/6] ARM: DTS: da850-evm: Add node for tlv320aic3106 codec
+References: <1406801934-23334-1-git-send-email-peter.ujfalusi@ti.com> <1406801934-23334-6-git-send-email-peter.ujfalusi@ti.com> <53DA519A.4090905@cogentembedded.com>
+In-Reply-To: <53DA519A.4090905@cogentembedded.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/=g8B=AAE41pOt58oODPQxwr
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 07/31/2014 05:24 PM, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 07/31/2014 02:18 PM, Peter Ujfalusi wrote:
+> 
+>> The board uses aic3106 for audio.
+> 
+>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>> ---
+>>   arch/arm/boot/dts/da850-evm.dts | 14 ++++++++++++++
+>>   1 file changed, 14 insertions(+)
+> 
+>> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+>> index 09118c72e83f..b9ef2be0b145 100644
+>> --- a/arch/arm/boot/dts/da850-evm.dts
+>> +++ b/arch/arm/boot/dts/da850-evm.dts
+>> @@ -51,6 +51,20 @@
+>>               tps: tps@48 {
+>>                   reg = <0x48>;
+>>               };
+>> +            tlv320aic3106: tlv320aic3106@1b {
+> 
+>    The "reg" property is <0x18>, why the unit-address part of a name is
+> different?
 
-Hi Christoffer,
+True, I have lifted the codec part from other dts file and overlooked the
+unit-address.
+I will resend the series with this fixed.
 
-On Thu, 31 Jul 2014 16:23:47 +0200 Christoffer Dall <cdall@cs.columbia.edu>=
- wrote:
->
-> Stephen, did you pick up the resolution provided by Marc for the gicv2
-> fix patch so that it applies to tomorrow's next/kvmarm merge?
 
-Yes, I have.  You will need to produce the same for Linus eventually,
-or do the merge yourself as I suggested.
+> Also, the ePAPR standard [1] says:
+> 
+> The name of a node should be somewhat generic, reflecting the function of the
+> device and not its precise programming model.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+True. This is why the node for the audio support is named as 'sound'. For the
+components, like in this case I do not see issue to call the audio codec with
+it's name.
 
---Sig_/=g8B=AAE41pOt58oODPQxwr
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> 
+>> +                #sound-dai-cells = <0>;
+>> +                compatible = "ti,tlv320aic3106";
+>> +                reg = <0x18>;
+>> +                status = "okay";
+>> +
+>> +                /* Regulators */
+>> +                IOVDD-supply = <&vdcdc2_reg>;
+>> +                /* Derived from VBAT: Baseboard 3.3V / 1.8V */
+>> +                AVDD-supply = <&vbat>;
+>> +                DRVDD-supply = <&vbat>;
+>> +                DVDD-supply = <&vbat>;
+>> +            };
+>> +
+> 
+> [1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+BTW: there's a newer version available:
+https://www.power.org/wp-content/uploads/2012/06/Power_ePAPR_APPROVED_v1.1.pdf
 
-iQIcBAEBCAAGBQJT2yPsAAoJEMDTa8Ir7ZwVQ30P/3eD/3MZBY7NTzcFVRSy8knr
-JVta4BccjTrO2yOgsyPvNjnLA1DjuMiQCW3C9KyaP2AVbMl+TLBQ+t+25gP0qiSZ
-B+pESo3YGJP8S4xNY8sg32f9DZWqBViOmmX+xTDSrXRKuEoUjouNtRZWd8uGVz8a
-2R0KhhQqt1vhhQXokvZ7scWATXUaK+7jH3Ajxnsa4nhawdKKKRRlIbGvKju9/KEM
-xhV2R+wqCblDaiRmiai2bOaZpoPf3+BKvg3Pv4g6d1YTHQN+hxper21GBRYlJpnd
-VUqqvub7hG+gQvo40JoiXbT3JZriSEeaYwDU525196vq5H3uUe1eiiLoocQnqV8L
-2DUCC+2iK149cu0fnMST8y+ZuVBPLaYRABCSa1X1/P+u8N7+3KaGEEbD6/4u4r+k
-O8IkG2x2IzgZdxYAIth3c1Cz3tVEBWgV4usaNQdbCfqhdfH+9IvfVLolR/CZK24D
-CWveQKMrjcY8v75xTZPS6Daw0IL61tnGlVAsj5TwLCntMaXLDaBiOZmAfHc+J3re
-wWFyPnHd5o8GDSy0gAc8rPWr2c/spyg8VgIMWMtrhxMz7+WkDultyWw4V5e9Yabr
-YAm9IFEUJldtYw6zG24WWa80AA5Pos9SlfMN+Lx0vpnLPbenwCdvOAXhGM9T7GIv
-c+EMdVtuYZN820l0OSqd
-=XOml
------END PGP SIGNATURE-----
+> 
+> WBR, Sergei
+> 
 
---Sig_/=g8B=AAE41pOt58oODPQxwr--
+
+-- 
+Péter
