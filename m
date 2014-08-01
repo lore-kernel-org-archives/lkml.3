@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756AbaHASne (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 14:43:34 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40595 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaHASnc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 14:43:32 -0400
-Date: Fri, 1 Aug 2014 19:43:14 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ks.giri@samsung.com, arnd@arndb.de, ijc+devicetree@hellion.org.uk,
-        mark.rutland@arm.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        courtney.cavin@sonymobile.com, mporter@linaro.org,
-        slapdau@yahoo.com.au, lftan.linux@gmail.com, loic.pallardy@st.com,
-        s-anna@ti.com, ashwin.chaugule@linaro.org, bjorn@kryo.se,
-        patches@linaro.org, mollie.wu@linaro.org, t.takinishi@jp.fujitsu.com,
-        khilman@linaro.org, lee.jones@linaro.org, andy.green@linaro.org
-Message-ID: <20140801184314.GM30458@sirena.org.uk>
-References: <1406896194-4667-1-git-send-email-jaswinder.singh@linaro.org>
- <1406896365-4971-1-git-send-email-jaswinder.singh@linaro.org>
+	id S1755867AbaHASoX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 14:44:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60771 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750851AbaHASoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 14:44:22 -0400
+Date: Fri, 1 Aug 2014 20:40:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140801184059.GB10718@redhat.com>
+References: <20140731215445.GA21933@linux.vnet.ibm.com> <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com> <20140801141144.GA30293@redhat.com> <20140801182837.GI4784@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="11IAkegDWp8TRrA/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406896365-4971-1-git-send-email-jaswinder.singh@linaro.org>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.197.121.167
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv10 4/4] dt: mailbox: add generic bindings
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140801182837.GI4784@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/01, Paul E. McKenney wrote:
+>
+> On Fri, Aug 01, 2014 at 04:11:44PM +0200, Oleg Nesterov wrote:
+> > Not sure this makes any sense, but perhaps we can check for the new
+> > callbacks and start the next gp. IOW, the main loop roughly does
+> >
+> > 	for (;;) {
+> > 		list = rcu_tasks_cbs_head;
+> > 		rcu_tasks_cbs_head = NULL;
+> >
+> > 		if (!list)
+> > 			sleep();
+> >
+> > 		synchronize_sched();
+> >
+> > 		wait_for_rcu_tasks_holdout();
+> >
+> > 		synchronize_sched();
+> >
+> > 		process_callbacks(list);
+> > 	}
+> >
+> > we can "join" 2 synchronize_sched's and do
+> >
+> > 	ready_list = NULL;
+> > 	for (;;) {
+> > 		list = rcu_tasks_cbs_head;
+> > 		rcu_tasks_cbs_head = NULL;
+> >
+> > 		if (!list && !ready_list)
+> > 			sleep();
+> >
+> > 		synchronize_sched();
+> >
+> > 		if (ready_list) {
+> > 			process_callbacks(ready_list);
+> > 			ready_list = NULL;
+> > 		}
+> >
+> > 		if (!list)
+> > 			continue;
+> >
+> > 		wait_for_rcu_tasks_holdout();
+> > 		ready_list = list;
+> > 	}
+>
+> The lack of barriers for the updates I am checking mean that I really
+> do need a synchronize_sched() on either side of the grace-period wait.
 
---11IAkegDWp8TRrA/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes,
 
-On Fri, Aug 01, 2014 at 06:02:45PM +0530, Jassi Brar wrote:
+> The grace period needs to guarantee that anything that happened on any
+> CPU before the start of the grace period happens before anything that
+> happens on any CPU after the end of the grace period.  If I leave off
+> either synchronize_sched(), we lose this guarantee.
 
-> +Optional property:
-> +- mbox-names: List of identifier strings for each mailbox channel
-> +		required by the client. The use of this property
-> +		is discouraged in favor of using index in list of
-> +		'mboxes' while requesting a mailbox.
+But the 2nd variant still has synchronize_sched() on both sides?
 
-Can I suggest that if we do want to avoid strings for some reason (it's
-not obvious to me why) then we include a recommendation to provide
-defines in a header file in order to improve legibility.  That's pretty
-minor, though.
+Oleg.
 
-Reviewed-by: Mark Brown <broonie@linaro.org>
-
---11IAkegDWp8TRrA/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT29+/AAoJELSic+t+oim9Z0gQAJRm9uoGH3PxJ/IPZhHouqJQ
-sC6tl9efWmMQg2WLo/ZYGJoiRjwV2tfvpznyex11zYHMtVJU1rj5nKxd0IGVA+ux
-qA5gH2h+hJF8SkoYqcu4IuTyCvv0arBx3fly+0XyH0kH306gI38JapCX7eGrK+Mo
-fjdub/UXSc79anNC34qLcB8V/s6VoIJYiM/IPoLgShdjyM+ZRQBvhNZ65RUmPv+l
-uqiFvgIHztXFjGTfXbqvoZ0ZPgWBoDEIELrmeXIzynCTBuUxFHUOeQwBCvdHlztd
-fj1VT5qTu6l13Sv2lDEU7oWVjrPUF1Kk44Kxk/NJHoW+NSSD6AJexdxj3ae8SHLK
-9DoiAbPxB948ylihypZcMEDWElvVMGr/rJKK1losETK4GOywOGo4TsWZEGt49zkv
-NYY8B6SMbWAKSL2MN+bdh9ZFhQUyRb+NWZVLDQSMVGmBm9Vo4tXx2eEro461JgB/
-YeNH45+s2Z46s23/ffwKGb9/2as6ZaXyBbyJbHqkK6gv6Np3N2+u5GFTmq39HRqK
-JA3Dsd8/wjLSYBkVhfawAZWIzwNxhLXyO0CRgG0AOuhhdImZnN3q4UIweWMnILWE
-DuF50NOEgFK9/NLR0xHHQAUTLfzAmbsVYJzeNdQmrqjyhXIMV8mPHyC725f+/tin
-nUvhiv/NIDoWCAYdONkq
-=00ie
------END PGP SIGNATURE-----
-
---11IAkegDWp8TRrA/--
