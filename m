@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932210AbaHAUpf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 16:45:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37084 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756097AbaHAUpc (ORCPT
+	id S1756184AbaHAUqo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 16:46:44 -0400
+Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:2328 "EHLO
+	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460AbaHAUqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 16:45:32 -0400
-Date: Fri, 1 Aug 2014 13:45:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christopher Li <sparse@chrisli.org>, Ingo Molnar <mingo@redhat.com>,
-        Jeff Layton <jlayton@poochiereds.net>, Michal Marek <mmarek@suse.cz>,
-        Neil Brown <neilb@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, linux-sparse@vger.kernel.org
-Subject: Re: [PATCH 1/5] Add __designated_init, wrapping
- __attribute__((designated_init))
-Message-Id: <20140801134529.40b46e92a48d9bf0c0abc139@linux-foundation.org>
-In-Reply-To: <3130b0553b15518e3bef6d14c80280beed0f5ff9.1406850006.git.josh@joshtriplett.org>
-References: <3130b0553b15518e3bef6d14c80280beed0f5ff9.1406850006.git.josh@joshtriplett.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Fri, 1 Aug 2014 16:46:43 -0400
+Message-ID: <1406926000.16021.6.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1%
+ proc-vmstat.numa_hint_faults_local
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Jirka Hladky <jhladky@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Aaron Lu <aaron.lu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org
+Date: Fri, 01 Aug 2014 13:46:40 -0700
+In-Reply-To: <53DA6BDA.8080000@redhat.com>
+References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>
+	 <53D72FF5.90908@intel.com> <20140729023940.37b6aebc@annuminas.surriel.com>
+	 <20140731104241.GA9918@twins.programming.kicks-ass.net>
+	 <20140731155723.GY3588@twins.programming.kicks-ass.net>
+	 <53DA6BDA.8080000@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jul 2014 16:47:23 -0700 Josh Triplett <josh@joshtriplett.org> wrote:
-
-> GCC 4.10 and newer, and Sparse, supports
-> __attribute__((designated_init)), which marks a structure as requiring
-> a designated initializer rather than a positional one.  This helps
-> reduce churn and errors when used with _ops structures and similar
-> structures designed for future extension.
+On Thu, 2014-07-31 at 18:16 +0200, Jirka Hladky wrote:
+> Peter, I'm seeing regressions for
 > 
-> Add a wrapper __designated_init, which turns into
-> __attribute__((designated_init)) for Sparse or sufficiently new GCC.
-> Enable the corresponding warning as an error.
+> SINGLE SPECjbb instance for number of warehouses being the same as total 
+> number of cores in the box.
 > 
-> The following semantic patch can help mark structures containing
-> function pointers as requiring designated initializers:
-> 
-> @@
-> identifier I, f;
-> type T;
-> @@
-> 
-> struct I {
-> 	...
-> 	T (*f)(...);
-> 	...
-> }
-> + __designated_init
+> Example: 4 NUMA node box, each CPU has 6 cores => biggest regression is 
+> for 24 warehouses.
 
-hm, dunno about this.
+By looking at your graph, that's around a 10% difference.
 
-I think that the kernel should always use designated initializers
-everywhere.  Perhaps there are a few special cases where positional
-initializers provide a superior result but I'm not sure where those
-might be.
+So I'm not seeing anywhere near as bad a regression on a 80-core box.
+Testing single with 80 warehouses, I get:
 
-In which case what we should do is to teach sparse to warn about
-positional initializers then go fix them all up (lol).  After that
-process is complete, this __designated_init tag would be just noise.
+tip/master baseline:
+677476.36 bops
+705826.70 bops
+704870.87 bops
+681741.20 bops 
+707014.59 bops
 
-To support this perhaps a sparse tag would be needed which says
-"positional initializers are OK here".  This way we're adding the
-annotation to the exceptional cases, not to the common cases.
+Avg: 695385.94 bops
 
+tip/master + patch (NUMA_SCALE/8 variant):
+698242.66 bops
+693873.18 bops 
+707852.28 bops
+691785.96 bops 
+747206.03 bopsthis 
+
+Avg: 707792.022 bops
+
+So both these are pretty similar, however, when reverting, on avg we
+increase the amount of bops a mere ~4%:
+
+tip/master + reverted:
+778416.02 bops 
+702602.62 bops 
+712557.32 bops 
+713982.90 bops
+783300.36 bops
+
+Avg: 738171.84 bops
+
+Are there perhaps any special specjbb options you are using?
 
