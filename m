@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399AbaHAMqh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 08:46:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54000 "EHLO mx2.suse.de"
+	id S1755456AbaHAMrj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 08:47:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54017 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754881AbaHAMqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 08:46:35 -0400
-From: jgross@suse.com
-To: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [V2 PATCH] Save command pool address of Scsi_Host
-Date: Fri,  1 Aug 2014 14:46:30 +0200
-Message-Id: <1406897190-28427-1-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 1.8.4.5
+	id S1754323AbaHAMri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 08:47:38 -0400
+Date: Fri, 1 Aug 2014 14:47:34 +0200
+From: Jan Kara <jack@suse.cz>
+To: NeilBrown <neilb@suse.de>
+Cc: Ben Greear <greearb@candelatech.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: Killing process in D state on mount to dead NFS server. (when
+ process is in fsync)
+Message-ID: <20140801124734.GB5431@quack.suse.cz>
+References: <53DA8443.407@candelatech.com>
+ <20140801064217.01852788@notabene.brown>
+ <53DAB307.2000206@candelatech.com>
+ <20140801075053.2120cb33@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140801075053.2120cb33@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Juergen Gross <jgross@suse.com>
+On Fri 01-08-14 07:50:53, NeilBrown wrote:
+> On Thu, 31 Jul 2014 14:20:07 -0700 Ben Greear <greearb@candelatech.com> wrote:
+> > -----BEGIN PGP SIGNED MESSAGE-----
+> > Hash: SHA1
+> > 
+> > On 07/31/2014 01:42 PM, NeilBrown wrote:
+> > > On Thu, 31 Jul 2014 11:00:35 -0700 Ben Greear <greearb@candelatech.com> wrote:
+> > > 
+> > >> So, this has been asked all over the interweb for years and years, but the best answer I can find is to reboot the system or create a fake NFS server
+> > >> somewhere with the same IP as the gone-away NFS server.
+> > >> 
+> > >> The problem is:
+> > >> 
+> > >> I have some mounts to an NFS server that no longer exists (crashed/powered down).
+> > >> 
+> > >> I have some processes stuck trying to write to files open on these mounts.
+> > >> 
+> > >> I want to kill the process and unmount.
+> > >> 
+> > >> umount -l will make the mount go a way, sort of.  But process is still hung. umount -f complains: umount2:  Device or resource busy umount.nfs: /mnt/foo:
+> > >> device is busy
+> > >> 
+> > >> kill -9 does not work on process.
+> > > 
+> > > Kill -1 should work (since about 2.6.25 or so).
+> > 
+> > That is -[ONE], right?  Assuming so, it did not work for me.
+> 
+> No, it was "-9" .... sorry, I really shouldn't be let out without my proof
+> reader.
+> 
+> However the 'stack' is sufficient to see what is going on.
+> 
+> The problem is that it is blocked inside the "VM" well away from NFS and
+> there is no way for NFS to say "give up and go home".
+> 
+> I'd suggest that is a bug.   I cannot see any justification for fsync to not
+> be killable.
+> It wouldn't be too hard to create a patch to make it so.
+> It would be a little harder to examine all call paths and create a
+> convincing case that the patch was safe.
+> It might be herculean task to convince others that it was the right thing
+> to do.... so let's start with that one.
+> 
+> Hi Linux-mm and fs-devel people.  What do people think of making "fsync" and
+> variants "KILLABLE" ??
+  Sounds useful to me and I don't see how it could break some
+application...
 
-If a scsi host driver specifies .cmd_len in it's scsi_host_template, a driver's
-private command pool is needed. scsi_find_host_cmd_pool() will locate it, but
-scsi_alloc_host_cmd_pool() isn't saving the pool address in the host template.
+								Honza
 
-This will result in an access error when the host is removed.
-
-Avoid the problem by saving the address of a new allocated command pool where
-it is expected.
-
-Signed-off-by: Juergen Gross <jgross@suse.com>
----
- drivers/scsi/scsi.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index 88d46fe..e8e8428 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -380,6 +380,10 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
- 		pool->slab_flags |= SLAB_CACHE_DMA;
- 		pool->gfp_mask = __GFP_DMA;
- 	}
-+
-+	if (hostt->cmd_size)
-+		hostt->cmd_pool = pool;
-+
- 	return pool;
- }
- 
 -- 
-1.8.4.5
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
