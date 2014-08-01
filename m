@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292AbaHAPMY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 11:12:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65118 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750738AbaHAPMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 11:12:23 -0400
-Date: Fri, 1 Aug 2014 17:09:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
-	waiting for RCU-tasks
-Message-ID: <20140801150926.GA845@redhat.com>
-References: <20140731215445.GA21933@linux.vnet.ibm.com> <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com> <1406843709-23396-3-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1754196AbaHAPPc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 11:15:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53203 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaHAPPb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 11:15:31 -0400
+Date: Fri, 1 Aug 2014 16:15:27 +0100
+From: Thomas Graf <tgraf@suug.ch>
+To: Nikolay Aleksandrov <nikolay@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kaber@trash.net, paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
+        challa@noironetworks.com, walpole@cs.pdx.edu, dev@openvswitch.org,
+        tklauser@distanz.ch, netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH net-next 2/3] netlink: Convert netlink_lookup() to use
+ RCU protected hash table
+Message-ID: <20140801151527.GF7331@casper.infradead.org>
+References: <cover.1406891028.git.tgraf@suug.ch>
+ <72a64dfee4f20f2ca596df26f3e4ae543cf4c068.1406891028.git.tgraf@suug.ch>
+ <53DBA976.8030103@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406843709-23396-3-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <53DBA976.8030103@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31, Paul E. McKenney wrote:
->
-> +void synchronize_rcu_tasks(void)
-> +{
-> +	/* Complain if the scheduler has not started.  */
-> +	rcu_lockdep_assert(!rcu_scheduler_active,
-> +			   "synchronize_rcu_tasks called too soon");
-> +
-> +	/* Wait for the grace period. */
-> +	wait_rcu_gp(call_rcu_tasks);
-> +}
+On 08/01/14 at 04:51pm, Nikolay Aleksandrov wrote:
+> Hmm, in both the rhashtable_insert() and rhashtable_remove() calls in the
+> netlink code you're using GFP_ATOMIC flags but if rhashtable_expand/shring gets
+> called even though the allocation will be with GFP_ATOMIC, they still call
+> synchronize_rcu() which may block. Now I'm not familiar with the netlink code,
+> but I think that in general the flags are useless for GFP_ATOMIC because of the
+> calls to synchronize_rcu() in expand/shrink which can block anyway.
+> Just a thought, I may be missing something of course.
 
-Btw, what about CONFIG_PREEMPT=n ?
-
-I mean, can't synchronize_rcu_tasks() be synchronize_sched() in this
-case?
-
-Oleg.
-
+I don't think you are missing anything. The GFP_ATOMIC flag was
+inherited from how the bucket table was allocated prior to the
+convertion to the new hash table but you are right, it can't be
+needed since the table protection was converted to a mutex.
+Using GFP_KERNEL will have a better chance of succeeding.
