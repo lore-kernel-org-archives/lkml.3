@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312AbaHAO7q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:59:46 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:60844 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845AbaHAO7p (ORCPT
+	id S1754885AbaHAPAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 11:00:10 -0400
+Received: from stinky.trash.net ([213.144.137.162]:55759 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547AbaHAPAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:59:45 -0400
-X-IronPort-AV: E=Sophos;i="5.01,780,1400025600"; 
-   d="scan'208";a="158490858"
-Message-ID: <53DBAB5E.70707@citrix.com>
-Date: Fri, 1 Aug 2014 15:59:42 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Fri, 1 Aug 2014 11:00:08 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140801145145.GE7331@casper.infradead.org>
+References: <cover.1406891028.git.tgraf@suug.ch> <bd4d9fa542072358cb0bd77e493ec5785a1d9666.1406891028.git.tgraf@suug.ch> <53DB864B.2070205@redhat.com> <20140801134901.GD7331@casper.infradead.org> <0d77fb6a-4465-432f-9d6a-b1c1497a780b@email.android.com> <20140801145145.GE7331@casper.infradead.org>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>,
-        David Vrabel <david.vrabel@citrix.com>
-CC: <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH v5 1/6] xen-pciback: Document the various
- parameters and attributes in SysFS
-References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com>	<1405354736-7358-2-git-send-email-konrad.wilk@oracle.com>	<53D64A52.7030705@citrix.com> <20140728145636.GC8027@kroah.com>
-In-Reply-To: <20140728145636.GC8027@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH net-next 3/3] nftables: Convert nft_hash to use generic rhashtable
+From: Patrick McHardy <kaber@trash.net>
+Date: Fri, 01 Aug 2014 16:00:00 +0100
+To: Thomas Graf <tgraf@suug.ch>
+CC: Nikolay Aleksandrov <nikolay@redhat.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
+        challa@noironetworks.com, walpole@cs.pdx.edu, dev@openvswitch.org,
+        tklauser@distanz.ch, netfilter-devel@vger.kernel.org,
+        pablo@netfilter.org
+Message-ID: <68a32a9d-9421-4fdd-91db-8106eaa0897a@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/07/14 15:56, Greg KH wrote:
-> On Mon, Jul 28, 2014 at 02:04:18PM +0100, David Vrabel wrote:
->> On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
->>> Which hadn't been done with the initial commit.
->>>
->>> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->>> ---
->>> v2: Dropped the parameters and one that is unlikeable.
->>> ---
->>>  Documentation/ABI/testing/sysfs-driver-pciback | 25 +++++++++++++++++++++++++
->>>  1 file changed, 25 insertions(+)
->>>  create mode 100644 Documentation/ABI/testing/sysfs-driver-pciback
->>>
->>> diff --git a/Documentation/ABI/testing/sysfs-driver-pciback b/Documentation/ABI/testing/sysfs-driver-pciback
->>> new file mode 100644
->>> index 0000000..cdc8340
->>> --- /dev/null
->>> +++ b/Documentation/ABI/testing/sysfs-driver-pciback
->>> @@ -0,0 +1,25 @@
->>> +What:           /sys/bus/pci/drivers/pciback/quirks
->>> +Date:           Oct 2011
->>> +KernelVersion:  3.1
->>> +Contact:        xen-devel@lists.xenproject.org
->>> +Description:
->>> +                If the permissive attribute is set, then writing a string in
->>> +                the format of DDDD:BB:DD.F-REG:SIZE:MASK will allow the guest
->>> +                to write and read from the PCI device. That is Domain:Bus:
->>
->> "...write and read the PCI device's configuration space."
-> 
-> How is this different from the normal pci device config file?
+On 1. August 2014 15:51:45 GMT+01:00, Thomas Graf <tgraf@suug.ch> wrote:
+>On 08/01/14 at 03:12pm, Patrick McHardy wrote:
+>> On 1. August 2014 14:49:01 GMT+01:00, Thomas Graf <tgraf@suug.ch>
+>wrote:
+>> >On 08/01/14 at 02:21pm, Nikolay Aleksandrov wrote:
+>> >> Sorry for the late response but I just got around to check the 3rd
+>> >patch now,
+>> >> so my question about this fragment is: before nft_hash_remove()
+>would
+>> >free the
+>> >> element after removal, but after this change I don't see where and
+>> >when the
+>> >> removed element would get freed ?
+>> >
+>> >You are right. Looking at this closer we were leaking references
+>even
+>> >before the change because it would not call nft_data_uninit() to
+>> >release
+>> >the data objects. So it should really just call
+>> >nft_hash_elem_destroy().
+>> 
+>> No, the data uninit is performed by the set core. Just freeing it is
+>fine.
+>
+>OK, I can see the uninit on the data in nft_del_setelem() for maps
+>prior to the actual commit. The location is slightly unexpected since
+>the element is still findable in the hash table at that point.
 
-This is setting the permissions for a guest to access the real hardware
-PCI config space (instead of the virtualized config space which the
-guest has access to by default).
+That's most likely a bug from the transaction API.
 
-The guest access the config space using the normal methods (the file or
-the kernel functions).
+Pablo?
 
-David
+>I'll wait a short while to see if there is more feedback and resubmit
+>afterwards.
+
+
