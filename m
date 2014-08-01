@@ -1,48 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646AbaHAOMj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:12:39 -0400
-Received: from stinky.trash.net ([213.144.137.162]:55455 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbaHAOMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:12:38 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140801134901.GD7331@casper.infradead.org>
-References: <cover.1406891028.git.tgraf@suug.ch> <bd4d9fa542072358cb0bd77e493ec5785a1d9666.1406891028.git.tgraf@suug.ch> <53DB864B.2070205@redhat.com> <20140801134901.GD7331@casper.infradead.org>
+	id S1753511AbaHAOO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 10:14:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64336 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750886AbaHAOO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 10:14:26 -0400
+Date: Fri, 1 Aug 2014 16:11:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140801141144.GA30293@redhat.com>
+References: <20140731215445.GA21933@linux.vnet.ibm.com> <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH net-next 3/3] nftables: Convert nft_hash to use generic rhashtable
-From: Patrick McHardy <kaber@trash.net>
-Date: Fri, 01 Aug 2014 15:12:28 +0100
-To: Thomas Graf <tgraf@suug.ch>, Nikolay Aleksandrov <nikolay@redhat.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
-        challa@noironetworks.com, walpole@cs.pdx.edu, dev@openvswitch.org,
-        tklauser@distanz.ch, netfilter-devel@vger.kernel.org
-Message-ID: <0d77fb6a-4465-432f-9d6a-b1c1497a780b@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1. August 2014 14:49:01 GMT+01:00, Thomas Graf <tgraf@suug.ch> wrote:
->On 08/01/14 at 02:21pm, Nikolay Aleksandrov wrote:
->> Sorry for the late response but I just got around to check the 3rd
->patch now,
->> so my question about this fragment is: before nft_hash_remove() would
->free the
->> element after removal, but after this change I don't see where and
->when the
->> removed element would get freed ?
+On 07/31, Paul E. McKenney wrote:
 >
->You are right. Looking at this closer we were leaking references even
->before the change because it would not call nft_data_uninit() to
->release
->the data objects. So it should really just call
->nft_hash_elem_destroy().
+> +/* Lists of tasks that we are still waiting for during this grace period. */
+> +static LIST_HEAD(rcu_tasks_holdouts);
 
-No, the data uninit is performed by the set core. Just freeing it is fine.
+This can be local var in rcu_tasks_kthread()
 
+> +		while (!list_empty(&rcu_tasks_holdouts)) {
+> +			schedule_timeout_interruptible(HZ / 10);
+> +			flush_signals(current);
+
+Still can't undestand why your paranoia wants flush_signals ;)
+This is unneeded and confusing. If you think we can have a bug here,
+then we should ot hide it, WARN_ON(signal_pending) would be better.
+And if you think signal_pending(current) is possible, why do you
+check this only after schedule_interruptible() ?
+
+> +		synchronize_sched();
+> +
+> +		/* Invoke the callbacks. */
+> +		while (list) {
+> +			next = list->next;
+> +			local_bh_disable();
+> +			list->func(list);
+> +			local_bh_enable();
+> +			list = next;
+> +			cond_resched();
+> +		}
+
+Not sure this makes any sense, but perhaps we can check for the new
+callbacks and start the next gp. IOW, the main loop roughly does
+
+	for (;;) {
+		list = rcu_tasks_cbs_head;
+		rcu_tasks_cbs_head = NULL;
+
+		if (!list)
+			sleep();
+
+		synchronize_sched();
+
+		wait_for_rcu_tasks_holdout();
+
+		synchronize_sched();
+
+		process_callbacks(list);
+	}
+
+we can "join" 2 synchronize_sched's and do
+
+	ready_list = NULL;
+	for (;;) {
+		list = rcu_tasks_cbs_head;
+		rcu_tasks_cbs_head = NULL;
+
+		if (!list && !ready_list)
+			sleep();
+
+		synchronize_sched();
+
+		if (ready_list) {
+			process_callbacks(ready_list);
+			ready_list = NULL;
+		}
+
+		if (!list)
+			continue;
+
+		wait_for_rcu_tasks_holdout();
+		ready_list = list;
+	}
+
+Oleg.
 
