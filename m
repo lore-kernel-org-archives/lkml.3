@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196AbaHAPPc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 11:15:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53203 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaHAPPb (ORCPT
+	id S1754214AbaHAPST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 11:18:19 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:36209 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaHAPSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 11:15:31 -0400
-Date: Fri, 1 Aug 2014 16:15:27 +0100
-From: Thomas Graf <tgraf@suug.ch>
-To: Nikolay Aleksandrov <nikolay@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kaber@trash.net, paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
-        challa@noironetworks.com, walpole@cs.pdx.edu, dev@openvswitch.org,
-        tklauser@distanz.ch, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH net-next 2/3] netlink: Convert netlink_lookup() to use
- RCU protected hash table
-Message-ID: <20140801151527.GF7331@casper.infradead.org>
-References: <cover.1406891028.git.tgraf@suug.ch>
- <72a64dfee4f20f2ca596df26f3e4ae543cf4c068.1406891028.git.tgraf@suug.ch>
- <53DBA976.8030103@redhat.com>
+	Fri, 1 Aug 2014 11:18:18 -0400
+Date: Fri, 1 Aug 2014 11:18:14 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jianyu Zhan <Jianyu.Zhan@emc.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH RFC] sysfs: fix the race of "parent deleted before child
+ added"
+Message-ID: <20140801151814.GF21624@htj.dyndns.org>
+References: <1406891892-10992-1-git-send-email-nasa4836@gmail.com>
+ <20140801125045.GA21624@htj.dyndns.org>
+ <CAHz2CGXpG2RYNkWHdoj947HUD6ns-CwkOH82n2DJ8cegEogHQw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53DBA976.8030103@redhat.com>
+In-Reply-To: <CAHz2CGXpG2RYNkWHdoj947HUD6ns-CwkOH82n2DJ8cegEogHQw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/14 at 04:51pm, Nikolay Aleksandrov wrote:
-> Hmm, in both the rhashtable_insert() and rhashtable_remove() calls in the
-> netlink code you're using GFP_ATOMIC flags but if rhashtable_expand/shring gets
-> called even though the allocation will be with GFP_ATOMIC, they still call
-> synchronize_rcu() which may block. Now I'm not familiar with the netlink code,
-> but I think that in general the flags are useless for GFP_ATOMIC because of the
-> calls to synchronize_rcu() in expand/shrink which can block anyway.
-> Just a thought, I may be missing something of course.
+(cc'ing Dan)
 
-I don't think you are missing anything. The GFP_ATOMIC flag was
-inherited from how the bucket table was allocated prior to the
-convertion to the new hash table but you are right, it can't be
-needed since the table protection was converted to a mutex.
-Using GFP_KERNEL will have a better chance of succeeding.
+Hello, Jianyu, Dan.
+
+On Fri, Aug 01, 2014 at 10:31:00PM +0800, Jianyu Zhan wrote:
+> The problem I met is in an old kernel, in sysfs_create_dir(),  at thie line:
+
+Which old kernel?
+
+>    sysfs_create_dir()
+>        if (kobj->parent)
+>             parent = kobj->parent->sd;
+> 
+> I found kobj->parent is valid, so parent == kobj->parent->sd,
+> then it is passed into create_dir() function, in which it is dereferenced,
+> however  the parent passed in is NULL, so a panic.
+
+Which node?
+
+> Apprently, there is a race, as my case is a test of fast removal and plugging
+> of a block device.
+> 
+> The race is that the kerfs_node(was sysfs_dirent) is disassociated with
+> parent kobject, but parent kobject is still alive, so we saw it.
+
+What is the race condition?  You're just describing symptoms.
+
+> And the commit 3a198886 ("sysfs: handle 'parent deleted before child added'")
+> add a parent NULLness check before calling into create_dir(),  but I think this
+> isn't the real fix, it just narrow down the racy window.
+
+Suspicions aren't good enough justifications.  If you think there's a
+race window, please track it down and then determine what the proper
+fix is.  You're now trying to change the basic objection lifetime
+rules of the driver model without root causing what's actually going
+on.  Please don't do things like this.
+
+Thanks.
+
+-- 
+tejun
