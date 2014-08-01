@@ -1,182 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811AbaHANcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:32:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54888 "EHLO mga03.intel.com"
+	id S1755621AbaHAN1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:27:52 -0400
+Received: from mga14.intel.com ([192.55.52.115]:23501 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755641AbaHAN1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 09:27:54 -0400
+	id S1755486AbaHAN1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 09:27:50 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,780,1400050800"; 
-   d="scan'208";a="463980739"
+   d="scan'208";a="570461661"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v9 08/22] Replace ext2_clear_xip_target with dax_clear_blocks
-Date: Fri,  1 Aug 2014 09:27:24 -0400
-Message-Id: <dd6ce36814c5b0ecae961e37a3708ea06adb51eb.1406897885.git.willy@linux.intel.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>
+Subject: [PATCH v9 00/22] Support ext4 on NV-DIMMs
+Date: Fri,  1 Aug 2014 09:27:16 -0400
+Message-Id: <cover.1406897885.git.willy@linux.intel.com>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
-References: <cover.1406897885.git.willy@linux.intel.com>
-In-Reply-To: <cover.1406897885.git.willy@linux.intel.com>
-References: <cover.1406897885.git.willy@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is practically generic code; other filesystems will want to call
-it from other places, but there's nothing ext2-specific about it.
+From: Matthew Wilcox <willy@linux.intel.com>
 
-Make it a little more generic by allowing it to take a count of the number
-of bytes to zero rather than fixing it to a single page.  Thanks to Dave
-Hansen for suggesting that I need to call cond_resched() if zeroing more
-than one page.
+One of the primary uses for NV-DIMMs is to expose them as a block device
+and use a filesystem to store files on the NV-DIMM.  While that works,
+it currently wastes memory and CPU time buffering the files in the page
+cache.  We have support in ext2 for bypassing the page cache, but it
+has some races which are unfixable in the current design.  This series
+of patches rewrite the underlying support, and add support for direct
+access to ext4.
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
----
- fs/dax.c           | 35 +++++++++++++++++++++++++++++++++++
- fs/ext2/inode.c    |  8 +++++---
- fs/ext2/xip.c      | 14 --------------
- fs/ext2/xip.h      |  3 ---
- include/linux/fs.h |  6 ++++++
- 5 files changed, 46 insertions(+), 20 deletions(-)
+This iteration of the patchset rebases to 3.16-rc7 and makes substantial
+changes based on feedback from Jan Kara, Boaz Harrosh and Kirill Shutemov:
 
-diff --git a/fs/dax.c b/fs/dax.c
-index 108c68e..02e226f 100644
---- a/fs/dax.c
-+++ b/fs/dax.c
-@@ -20,8 +20,43 @@
- #include <linux/fs.h>
- #include <linux/genhd.h>
- #include <linux/mutex.h>
-+#include <linux/sched.h>
- #include <linux/uio.h>
- 
-+int dax_clear_blocks(struct inode *inode, sector_t block, long size)
-+{
-+	struct block_device *bdev = inode->i_sb->s_bdev;
-+	sector_t sector = block << (inode->i_blkbits - 9);
-+
-+	might_sleep();
-+	do {
-+		void *addr;
-+		unsigned long pfn;
-+		long count;
-+
-+		count = bdev_direct_access(bdev, sector, &addr, &pfn, size);
-+		if (count < 0)
-+			return count;
-+		while (count > 0) {
-+			unsigned pgsz = PAGE_SIZE - offset_in_page(addr);
-+			if (pgsz > count)
-+				pgsz = count;
-+			if (pgsz < PAGE_SIZE)
-+				memset(addr, 0, pgsz);
-+			else
-+				clear_page(addr);
-+			addr += pgsz;
-+			size -= pgsz;
-+			count -= pgsz;
-+			sector += pgsz / 512;
-+			cond_resched();
-+		}
-+	} while (size);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(dax_clear_blocks);
-+
- static long dax_get_addr(struct buffer_head *bh, void **addr, unsigned blkbits)
- {
- 	unsigned long pfn;
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 3ccd5fd..52978b8 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -733,10 +733,12 @@ static int ext2_get_blocks(struct inode *inode,
- 
- 	if (IS_DAX(inode)) {
- 		/*
--		 * we need to clear the block
-+		 * block must be initialised before we put it in the tree
-+		 * so that it's not found by another thread before it's
-+		 * initialised
- 		 */
--		err = ext2_clear_xip_target (inode,
--			le32_to_cpu(chain[depth-1].key));
-+		err = dax_clear_blocks(inode, le32_to_cpu(chain[depth-1].key),
-+						1 << inode->i_blkbits);
- 		if (err) {
- 			mutex_unlock(&ei->truncate_mutex);
- 			goto cleanup;
-diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
-index bbc5fec..8cfca3a 100644
---- a/fs/ext2/xip.c
-+++ b/fs/ext2/xip.c
-@@ -42,20 +42,6 @@ __ext2_get_block(struct inode *inode, pgoff_t pgoff, int create,
- 	return rc;
- }
- 
--int
--ext2_clear_xip_target(struct inode *inode, sector_t block)
--{
--	void *kaddr;
--	unsigned long pfn;
--	long size;
--
--	size = __inode_direct_access(inode, block, &kaddr, &pfn, PAGE_SIZE);
--	if (size < 0)
--		return size;
--	clear_page(kaddr);
--	return 0;
--}
--
- void ext2_xip_verify_sb(struct super_block *sb)
- {
- 	struct ext2_sb_info *sbi = EXT2_SB(sb);
-diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
-index 29be737..b2592f2 100644
---- a/fs/ext2/xip.h
-+++ b/fs/ext2/xip.h
-@@ -7,8 +7,6 @@
- 
- #ifdef CONFIG_EXT2_FS_XIP
- extern void ext2_xip_verify_sb (struct super_block *);
--extern int ext2_clear_xip_target (struct inode *, sector_t);
--
- static inline int ext2_use_xip (struct super_block *sb)
- {
- 	struct ext2_sb_info *sbi = EXT2_SB(sb);
-@@ -19,6 +17,5 @@ int ext2_get_xip_mem(struct address_space *, pgoff_t, int,
- #else
- #define ext2_xip_verify_sb(sb)			do { } while (0)
- #define ext2_use_xip(sb)			0
--#define ext2_clear_xip_target(inode, chain)	0
- #define ext2_get_xip_mem			NULL
- #endif
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 87a135a..e38138b 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2463,11 +2463,17 @@ extern int generic_file_open(struct inode * inode, struct file * filp);
- extern int nonseekable_open(struct inode * inode, struct file * filp);
- 
- #ifdef CONFIG_FS_XIP
-+int dax_clear_blocks(struct inode *, sector_t block, long size);
- extern int xip_file_mmap(struct file * file, struct vm_area_struct * vma);
- extern int xip_truncate_page(struct address_space *mapping, loff_t from);
- ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
- 		loff_t, get_block_t, dio_iodone_t, int flags);
- #else
-+static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
-+{
-+	return 0;
-+}
-+
- static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
- {
- 	return 0;
+ - Fixes a double-unlock on i_mmap_mutex
+ - Switch the order of calling delete_from_page_cache() and
+   unmap_mapping_range() to match the truncate path
+ - Make dax_mkwrite a macro (Kirill)
+ - Drop vm_replace_mixed(); instead call unmap_mapping_range() before calling
+   vm_insert_mixed() (Kirill)
+ - Avoid lock inversion between i_mmap_mutex and transaction start (Jan)
+ - Move alignment & length checks into bdev_direct_access() (Boaz)
+ - Fix bugs in COW code; unfortunately this means reintroducing the knowledge
+   that the i_mmap_mutex protects PFNs to the core MM code.
+
+Jan Kara (1):
+  ext4: Avoid lock inversion between i_mmap_mutex and transaction start
+
+Matthew Wilcox (20):
+  axonram: Fix bug in direct_access
+  Change direct_access calling convention
+  Fix XIP fault vs truncate race
+  Allow page fault handlers to perform the COW
+  Introduce IS_DAX(inode)
+  Add copy_to_iter(), copy_from_iter() and iov_iter_zero()
+  Replace XIP read and write with DAX I/O
+  Replace ext2_clear_xip_target with dax_clear_blocks
+  Replace the XIP page fault handler with the DAX page fault handler
+  Replace xip_truncate_page with dax_truncate_page
+  Replace XIP documentation with DAX documentation
+  Remove get_xip_mem
+  ext2: Remove ext2_xip_verify_sb()
+  ext2: Remove ext2_use_xip
+  ext2: Remove xip.c and xip.h
+  Remove CONFIG_EXT2_FS_XIP and rename CONFIG_FS_XIP to CONFIG_FS_DAX
+  ext2: Remove ext2_aops_xip
+  Get rid of most mentions of XIP in ext2
+  xip: Add xip_zero_page_range
+  brd: Rename XIP to DAX
+
+Ross Zwisler (1):
+  ext4: Add DAX functionality
+
+ Documentation/filesystems/Locking  |   3 -
+ Documentation/filesystems/dax.txt  |  91 +++++++
+ Documentation/filesystems/ext4.txt |   2 +
+ Documentation/filesystems/xip.txt  |  68 ------
+ arch/powerpc/sysdev/axonram.c      |  19 +-
+ drivers/block/Kconfig              |  13 +-
+ drivers/block/brd.c                |  26 +-
+ drivers/s390/block/dcssblk.c       |  21 +-
+ fs/Kconfig                         |  21 +-
+ fs/Makefile                        |   1 +
+ fs/block_dev.c                     |  34 +++
+ fs/dax.c                           | 476 ++++++++++++++++++++++++++++++++++++
+ fs/exofs/inode.c                   |   1 -
+ fs/ext2/Kconfig                    |  11 -
+ fs/ext2/Makefile                   |   1 -
+ fs/ext2/ext2.h                     |  10 +-
+ fs/ext2/file.c                     |  45 +++-
+ fs/ext2/inode.c                    |  38 +--
+ fs/ext2/namei.c                    |  13 +-
+ fs/ext2/super.c                    |  53 ++--
+ fs/ext2/xip.c                      |  91 -------
+ fs/ext2/xip.h                      |  26 --
+ fs/ext4/ext4.h                     |   6 +
+ fs/ext4/file.c                     |  53 +++-
+ fs/ext4/indirect.c                 |  18 +-
+ fs/ext4/inode.c                    |  65 +++--
+ fs/ext4/namei.c                    |  10 +-
+ fs/ext4/super.c                    |  39 ++-
+ fs/open.c                          |   5 +-
+ include/linux/blkdev.h             |   6 +-
+ include/linux/fs.h                 |  49 +++-
+ include/linux/mm.h                 |   1 +
+ include/linux/uio.h                |   3 +
+ mm/Makefile                        |   1 -
+ mm/fadvise.c                       |   6 +-
+ mm/filemap.c                       |   6 +-
+ mm/filemap_xip.c                   | 483 -------------------------------------
+ mm/iov_iter.c                      | 237 ++++++++++++++++--
+ mm/madvise.c                       |   2 +-
+ mm/memory.c                        |  33 ++-
+ 40 files changed, 1206 insertions(+), 881 deletions(-)
+ create mode 100644 Documentation/filesystems/dax.txt
+ delete mode 100644 Documentation/filesystems/xip.txt
+ create mode 100644 fs/dax.c
+ delete mode 100644 fs/ext2/xip.c
+ delete mode 100644 fs/ext2/xip.h
+ delete mode 100644 mm/filemap_xip.c
+
 -- 
 2.0.1
 
