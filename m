@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475AbaHAAjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jul 2014 20:39:16 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:57104 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300AbaHAAjP (ORCPT
+	id S1752744AbaHAAkw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jul 2014 20:40:52 -0400
+Received: from smtprelay0162.hostedemail.com ([216.40.44.162]:40811 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750907AbaHAAkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jul 2014 20:39:15 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linux Containers <containers@lists.linux-foundation.org>
-Cc: linux-api@vger.kernel.org,
-        "Michael Kerrisk \(man-pages\)" <mtk.manpages@gmail.com>,
-        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <87oaw5caq1.fsf@x220.int.ebiederm.org>
-Date: Thu, 31 Jul 2014 17:35:27 -0700
-In-Reply-To: <87oaw5caq1.fsf@x220.int.ebiederm.org> (Eric W. Biederman's
-	message of "Thu, 31 Jul 2014 17:30:46 -0700")
-Message-ID: <87wqatavxs.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+uu389svZ+GOrJS2H9ld5ZtMhtfawGEDU=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.7 XMSubLong Long Subject
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1770]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Linux Containers <containers@lists.linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [REVIEW][PATCH 4/4] proc: Point /proc/mounts at /proc/thread-self/mounts instead of /proc/self/mounts
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Thu, 31 Jul 2014 20:40:51 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3865:3867:3870:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:8985:9025:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13069:13311:13357:13972:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: rake99_5e8e918372207
+X-Filterd-Recvd-Size: 1421
+Message-ID: <1406853648.9953.14.camel@joe-AO725>
+Subject: Re: [PATCH v2 1/2] printk: Add function to return log buffer
+ address and size
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Thu, 31 Jul 2014 17:40:48 -0700
+In-Reply-To: <20140731152255.37e675870dfdf77d9dbaff70@linux-foundation.org>
+References: <20140731153447.27134.44225.stgit@hegdevasant.in.ibm.com>
+	 <20140731152255.37e675870dfdf77d9dbaff70@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2014-07-31 at 15:22 -0700, Andrew Morton wrote:
 
-In oddball cases where the thread has a different mount namespace than
-the thread group leader or more likely in cases where the thread
-remains and the thread group leader has exited this ensures that
-/proc/mounts continues to work.
+> Please include this in whatever tree carries "powerpc/powernv:
+> Interface to register/unregister opal dump region".
 
-This should not cause any problems but if it does this patch can just
-be reverted.
+At some point, I'd like to redo the patch series
+that breaks up printk.c into more manageable blocks.
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
- fs/proc/root.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+https://lkml.org/lkml/2012/10/17/41
 
-diff --git a/fs/proc/root.c b/fs/proc/root.c
-index 48f1c03bc7ed..92c12c243ce3 100644
---- a/fs/proc/root.c
-+++ b/fs/proc/root.c
-@@ -173,7 +173,7 @@ void __init proc_root_init(void)
- 
- 	proc_self_init();
- 	proc_thread_self_init();
--	proc_symlink("mounts", NULL, "self/mounts");
-+	proc_symlink("mounts", NULL, "thread-self/mounts");
- 
- 	proc_net_init();
- 
--- 
-1.9.1
+Any suggestion for timing?
 
