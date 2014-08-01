@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316AbaHAIM0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 04:12:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39958 "EHLO mga02.intel.com"
+	id S1754415AbaHAINU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 04:13:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40144 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751602AbaHAIMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 04:12:19 -0400
+	id S1752842AbaHAINT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 04:13:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,778,1400050800"; 
-   d="scan'208";a="552253658"
+   d="scan'208";a="552253985"
 From: Wanpeng Li <wanpeng.li@linux.intel.com>
 To: Paolo Bonzini <pbonzini@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>
 Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
@@ -16,11 +16,9 @@ Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
         kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Wanpeng Li <wanpeng.li@linux.intel.com>
 Subject: [PATCH 2/2] KVM: nVMX: fix acknowledge interrupt on exit when APICv is in use
-Date: Fri,  1 Aug 2014 16:12:07 +0800
-Message-Id: <1406880727-60001-2-git-send-email-wanpeng.li@linux.intel.com>
+Date: Fri,  1 Aug 2014 16:13:13 +0800
+Message-Id: <1406880793-16854-1-git-send-email-wanpeng.li@linux.intel.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1406880727-60001-1-git-send-email-wanpeng.li@linux.intel.com>
-References: <1406880727-60001-1-git-send-email-wanpeng.li@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
