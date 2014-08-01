@@ -1,205 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbaHAJG6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 05:06:58 -0400
-Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:5889
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750716AbaHAJGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 05:06:54 -0400
-Message-ID: <53DB58A8.3070600@freescale.com>
-Date: Fri, 1 Aug 2014 12:06:48 +0300
-From: Cristian Stoica <cristian.stoica@freescale.com>
+	id S1753744AbaHAJHK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 05:07:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30538 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750852AbaHAJHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 05:07:05 -0400
+Message-ID: <53DB5849.2070508@redhat.com>
+Date: Fri, 01 Aug 2014 11:05:13 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, <herbert@gondor.apana.org.au>,
-        <linux-crypto@vger.kernel.org>
-CC: <davem@davemloft.net>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] crypto: add support for TLS 1.0 record encryption
-References: <1406626353-23309-1-git-send-email-cristian.stoica@freescale.com>
- <1406626353-23309-2-git-send-email-cristian.stoica@freescale.com>
- <53DAA097.90005@amacapital.net>
-In-Reply-To: <53DAA097.90005@amacapital.net>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] KVM: nVMX: nested TPR shadow/threshold emulation
+References: <1406880570-9746-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1406880570-9746-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(51704005)(24454002)(199002)(189002)(479174003)(377454003)(80316001)(87936001)(23756003)(81342001)(44976005)(97736001)(33656002)(65806001)(83506001)(87266999)(69596002)(2201001)(59896001)(54356999)(76482001)(46102001)(107046002)(92726001)(86362001)(47776003)(80022001)(64126003)(106466001)(81156004)(20776003)(76176999)(81542001)(65956001)(74662001)(92566001)(79102001)(65816999)(99396002)(31966008)(83322001)(68736004)(26826002)(95666004)(50986999)(105606002)(50466002)(83072002)(84676001)(6806004)(102836001)(4396001)(77982001)(19580395003)(74502001)(64706001)(36756003)(85852003)(104016003)(21056001)(85306004);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB568;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 029097202E
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=cristian.stoica@freescale.com; 
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy
-
-On 31.07.2014 23:01, Andy Lutomirski wrote:
-> On 07/29/2014 02:32 AM, Cristian Stoica wrote:
-...
->> + * crypto_tls_genicv - Calculate hmac digest for a TLS record
->> + * @hash:	(output) buffer to save the digest into
->> + * @src:	(input) scatterlist with the payload data
->> + * @srclen:	(input) size of the payload data
->> + * @req:	(input) aead request (with pointers to associated data)
->> + **/
->> +static int crypto_tls_genicv(u8 *hash, struct scatterlist *src,
->> +			     unsigned int srclen, struct aead_request *req)
->> +{
->> +	struct crypto_aead *tls = crypto_aead_reqtfm(req);
->> +	struct crypto_tls_ctx *ctx = crypto_aead_ctx(tls);
->> +	struct tls_request_ctx *treq_ctx = aead_request_ctx(req);
->> +	struct scatterlist *assoc = req->assoc;
->> +	struct scatterlist *icv = treq_ctx->icv;
->> +	struct async_op ahash_op;
->> +	struct ahash_request *ahreq = (void *)(treq_ctx->tail + ctx->reqoff);
->> +	unsigned int flags = CRYPTO_TFM_REQ_MAY_SLEEP;
->> +	int err = -EBADMSG;
->> +
->> +	/*
->> +	 * Bail out as we have only two maneuvering scatterlists in icv. Check
->> +	 * also if the request assoc len matches the scatterlist len
->> +	 */
->> +	if (!req->assoclen || !sg_is_last(assoc) ||
->> +	    req->assoclen != assoc->length)
->> +		return err;
->> +
->> +	/*
->> +	 * Prepend associated data to the source scatterlist. If the source is
->> +	 * empty, use directly the associated data scatterlist
->> +	 */
->> +	if (srclen) {
->> +		sg_init_table(icv, 2);
->> +		sg_set_page(icv, sg_page(assoc), assoc->length, assoc->offset);
->> +		scatterwalk_sg_chain(icv, 2, src);
->> +	} else {
->> +		icv = assoc;
->> +	}
->> +	srclen += assoc->length;
->> +
->> +	init_completion(&ahash_op.completion);
->> +
->> +	/* the hash transform to be executed comes from the original request */
->> +	ahash_request_set_tfm(ahreq, ctx->auth);
->> +	/* prepare the hash request with input data and result pointer */
->> +	ahash_request_set_crypt(ahreq, icv, hash, srclen);
->> +	/* set the notifier for when the async hash function returns */
->> +	ahash_request_set_callback(ahreq, aead_request_flags(req) & flags,
->> +				   tls_async_op_done, &ahash_op);
->> +
->> +	/* Calculate the digest on the given data. The result is put in hash */
->> +	err = crypto_ahash_digest(ahreq);
->> +	if (err == -EINPROGRESS) {
->> +		err = wait_for_completion_interruptible(&ahash_op.completion);
->> +		if (!err)
->> +			err = ahash_op.err;
->> +	}
->> +
->> +	return err;
->> +}
->> +
-...
->> +static int crypto_tls_decrypt(struct aead_request *req)
->> +{
->> +	struct crypto_aead *tls = crypto_aead_reqtfm(req);
->> +	struct crypto_tls_ctx *ctx = crypto_aead_ctx(tls);
->> +	struct tls_request_ctx *treq_ctx = aead_request_ctx(req);
->> +	struct scatterlist *assoc = req->assoc;
->> +	unsigned int cryptlen = req->cryptlen;
->> +	unsigned int hash_size = crypto_aead_authsize(tls);
->> +	unsigned int block_size = crypto_aead_blocksize(tls);
->> +	struct ablkcipher_request *abreq = (void *)(treq_ctx->tail +
->> +						    ctx->reqoff);
->> +	u8 padding[255]; /* padding can be 0-255 bytes */
->> +	u8 pad_size;
->> +	u16 *len_field;
->> +	u8 *ihash, *hash = treq_ctx->tail;
->> +
->> +	int paderr = 0;
->> +	int err = -EINVAL;
->> +	int i;
->> +	struct async_op ciph_op;
->> +
->> +	/*
->> +	 * Rule out bad packets. The input packet length must be at least one
->> +	 * byte more than the hash_size
->> +	 */
->> +	if (cryptlen <= hash_size || cryptlen % block_size)
->> +		goto out;
->> +
->> +	/*
->> +	 * Step 1 - Decrypt the source
->> +	 */
->> +	init_completion(&ciph_op.completion);
->> +
->> +	ablkcipher_request_set_tfm(abreq, ctx->enc);
->> +	ablkcipher_request_set_callback(abreq, aead_request_flags(req),
->> +					tls_async_op_done, &ciph_op);
->> +	ablkcipher_request_set_crypt(abreq, req->src, req->dst, cryptlen,
->> +				     req->iv);
->> +	err = crypto_ablkcipher_decrypt(abreq);
->> +	if (err == -EINPROGRESS) {
->> +		err = wait_for_completion_interruptible(&ciph_op.completion);
->> +		if (!err)
->> +			err = ciph_op.err;
->> +	}
->> +	if (err)
->> +		goto out;
->> +
->> +	/*
->> +	 * Step 2 - Verify padding
->> +	 * Retrieve the last byte of the payload; this is the padding size
->> +	 */
->> +	cryptlen -= 1;
->> +	scatterwalk_map_and_copy(&pad_size, req->dst, cryptlen, 1, 0);
->> +
->> +	/* RFC recommendation to defend against timing attacks is to continue
->> +	 * with hash calculation even if the padding is incorrect */
->> +	if (cryptlen < pad_size + hash_size) {
->> +		pad_size = 0;
->> +		paderr = -EBADMSG;
->> +	}
->> +	cryptlen -= pad_size;
->> +	scatterwalk_map_and_copy(padding, req->dst, cryptlen, pad_size, 0);
->> +
->> +	/* Padding content must be equal with pad_size. We verify it all */
->> +	for (i = 0; i < pad_size; i++)
->> +		if (padding[i] != pad_size)
->> +			paderr = -EBADMSG;
->> +
->> +	/*
->> +	 * Step 3 - Verify hash
->> +	 * Align the digest result as required by the hash transform. Enough
->> +	 * space was allocated in crypto_tls_init_tfm
->> +	 */
->> +	hash = (u8 *)ALIGN((unsigned long)hash +
->> +			   crypto_ahash_alignmask(ctx->auth),
->> +			   crypto_ahash_alignmask(ctx->auth) + 1);
->> +	/*
->> +	 * Two bytes at the end of the associated data make the length field.
->> +	 * It must be updated with the length of the cleartext message before
->> +	 * the hash is calculated.
->> +	 */
->> +	len_field = sg_virt(assoc) + assoc->length - 2;
->> +	cryptlen -= hash_size;
->> +	*len_field = htons(cryptlen);
->> +
->> +	/* This is the hash from the decrypted packet. Save it for later */
->> +	ihash = hash + hash_size;
->> +	scatterwalk_map_and_copy(ihash, req->dst, cryptlen, hash_size, 0);
->> +
->> +	/* Now compute and compare our ICV with the one from the packet */
->> +	err = crypto_tls_genicv(hash, req->dst, cryptlen, req);
->> +	if (!err)
->> +		err = crypto_memneq(hash, ihash, hash_size) ? -EBADMSG : 0;
+Il 01/08/2014 10:09, Wanpeng Li ha scritto:
+> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=61411
 > 
-> This looks like it's vulnerable to the Lucky 13 attack.
+> TPR shadow/threshold feature is important to speed up the Windows guest.
+> Besides, it is a must feature for certain VMM.
+> 
+> We map virtual APIC page address and TPR threshold from L1 VMCS. If
+> TPR_BELOW_THRESHOLD VM exit is triggered by L2 guest and L1 interested
+> in, we inject it into L1 VMM for handling.
+> 
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+> v1 -> v2:
+>  * don't take L0's "virtualize APIC accesses" setting into account
+>  * virtual_apic_page do exactly the same thing that is done for apic_access_page
+>  * add the tpr threshold field to the read-write fields for shadow VMCS
+> 
+>  arch/x86/kvm/vmx.c | 33 +++++++++++++++++++++++++++++++--
+>  1 file changed, 31 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index a3845b8..0e6e95e 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -379,6 +379,7 @@ struct nested_vmx {
+>  	 * we must keep them pinned while L2 runs.
+>  	 */
+>  	struct page *apic_access_page;
+> +	struct page *virtual_apic_page;
+>  	u64 msr_ia32_feature_control;
+>  
+>  	struct hrtimer preemption_timer;
+> @@ -533,6 +534,7 @@ static int max_shadow_read_only_fields =
+>  	ARRAY_SIZE(shadow_read_only_fields);
+>  
+>  static unsigned long shadow_read_write_fields[] = {
+> +	TPR_THRESHOLD,
+>  	GUEST_RIP,
+>  	GUEST_RSP,
+>  	GUEST_CR0,
+> @@ -2331,7 +2333,7 @@ static __init void nested_vmx_setup_ctls_msrs(void)
+>  		CPU_BASED_MOV_DR_EXITING | CPU_BASED_UNCOND_IO_EXITING |
+>  		CPU_BASED_USE_IO_BITMAPS | CPU_BASED_MONITOR_EXITING |
+>  		CPU_BASED_RDPMC_EXITING | CPU_BASED_RDTSC_EXITING |
+> -		CPU_BASED_PAUSE_EXITING |
+> +		CPU_BASED_PAUSE_EXITING | CPU_BASED_TPR_SHADOW |
+>  		CPU_BASED_ACTIVATE_SECONDARY_CONTROLS;
+>  	/*
+>  	 * We can allow some features even when not supported by the
+> @@ -6149,6 +6151,10 @@ static void free_nested(struct vcpu_vmx *vmx)
+>  		nested_release_page(vmx->nested.apic_access_page);
+>  		vmx->nested.apic_access_page = 0;
+>  	}
+> +	if (vmx->nested.virtual_apic_page) {
+> +		nested_release_page(vmx->nested.virtual_apic_page);
+> +		vmx->nested.virtual_apic_page = 0;
+> +	}
+>  
+>  	nested_free_all_saved_vmcss(vmx);
+>  }
+> @@ -6937,7 +6943,7 @@ static bool nested_vmx_exit_handled(struct kvm_vcpu *vcpu)
+>  	case EXIT_REASON_MCE_DURING_VMENTRY:
+>  		return 0;
+>  	case EXIT_REASON_TPR_BELOW_THRESHOLD:
+> -		return 1;
+> +		return nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW);
+>  	case EXIT_REASON_APIC_ACCESS:
+>  		return nested_cpu_has2(vmcs12,
+>  			SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES);
+> @@ -7058,6 +7064,9 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
+>  
+>  static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
+>  {
+> +	if (is_guest_mode(vcpu))
+> +		return;
+> +
+>  	if (irr == -1 || tpr < irr) {
+>  		vmcs_write32(TPR_THRESHOLD, 0);
+>  		return;
+> @@ -8025,6 +8034,22 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+>  	exec_control &= ~CPU_BASED_VIRTUAL_NMI_PENDING;
+>  	exec_control &= ~CPU_BASED_TPR_SHADOW;
+>  	exec_control |= vmcs12->cpu_based_vm_exec_control;
+> +
+> +	if (exec_control & CPU_BASED_TPR_SHADOW) {
+> +		if (vmx->nested.virtual_apic_page)
+> +			nested_release_page(vmx->nested.virtual_apic_page);
+> +		vmx->nested.virtual_apic_page =
+> +		   nested_get_page(vcpu, vmcs12->virtual_apic_page_addr);
+> +		if (!vmx->nested.virtual_apic_page)
+> +			exec_control &=
+> +				~CPU_BASED_TPR_SHADOW;
 
-Digest is always calculated and in this particular case memneq should
-help with some of the timing leaks. ICV calculation is expected to pass
-and any failures should be only for internal reasons. There are maybe
-some other problems that I've never thought of. Did you have something
-else in mind when you mentioned this attack?
+This will cause L1 to miss exits when L2 writes to CR8.  I think the
+only sensible thing to do if this happens is fail the vmentry.
 
-Cristian S.
+The problem is that while the APIC access page field is used to trap
+reads/writes to the APIC access page itself, here the processor will
+read/write the virtual APIC page when L2 does CR8 accesses.
+
+Paolo
+> +		else
+> +			vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
+> +				page_to_phys(vmx->nested.virtual_apic_page));
+> +
+> +		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
+> +	}
+> +
+>  	/*
+>  	 * Merging of IO and MSR bitmaps not currently supported.
+>  	 * Rather, exit every time.
+> @@ -8793,6 +8818,10 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
+>  		nested_release_page(vmx->nested.apic_access_page);
+>  		vmx->nested.apic_access_page = 0;
+>  	}
+> +	if (vmx->nested.virtual_apic_page) {
+> +		nested_release_page(vmx->nested.virtual_apic_page);
+> +		vmx->nested.virtual_apic_page = 0;
+> +	}
+>  
+>  	/*
+>  	 * Exiting from L2 to L1, we're now back to L1 which thinks it just
+> 
+
