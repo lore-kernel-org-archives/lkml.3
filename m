@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088AbaHAUhS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 16:37:18 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:63909 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaHAUhP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 16:37:15 -0400
+	id S1755903AbaHAUo6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 16:44:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60273 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754697AbaHAUo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 16:44:56 -0400
+Message-ID: <53DBFC42.6030205@suse.de>
+Date: Fri, 01 Aug 2014 22:44:50 +0200
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1406868897-26874-7-git-send-email-afaerber@suse.de>
-References: <1406868897-26874-1-git-send-email-afaerber@suse.de>
-	<1406868897-26874-7-git-send-email-afaerber@suse.de>
-Date: Fri, 1 Aug 2014 13:37:13 -0700
-X-Google-Sender-Auth: -GOAPgTgWh-B81Mfl0PIMmd2xqM
-Message-ID: <CAD=FV=Vra6p3bUeHGz6hTXjM1QMCZ-Ph++oqMWFAj1Uqmdg1rw@mail.gmail.com>
-Subject: Re: [PATCH v5 06/10] ARM: dts: Clean up exynos5250-smdk5250
-From: Doug Anderson <dianders@chromium.org>
-To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+To: Doug Anderson <dianders@chromium.org>
+CC: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
@@ -31,29 +27,82 @@ Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
         Kumar Gala <galak@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>,
         open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 03/10] ARM: dts: Clean up exynos5250-snow
+References: <1406868897-26874-1-git-send-email-afaerber@suse.de>	<1406868897-26874-4-git-send-email-afaerber@suse.de> <CAD=FV=W2XJzv4NpB=27AFjX94VkH8dYXxAPBL58ntXL2WvRCoQ@mail.gmail.com>
+In-Reply-To: <CAD=FV=W2XJzv4NpB=27AFjX94VkH8dYXxAPBL58ntXL2WvRCoQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas,
+Am 01.08.2014 22:24, schrieb Doug Anderson:
+> Andreas,
+> 
+> On Thu, Jul 31, 2014 at 9:54 PM, Andreas Färber <afaerber@suse.de> wrote:
+>> Use the new style of referencing inherited nodes and use symbolic names.
+>> Reorder one pinctrl node in GPIO order.
+>>
+>> Goal is the alignment of all exynos5250 based device trees for comparison.
+>>
+>> Suggested-by: Doug Anderson <dianders@chromium.org>
+>> Signed-off-by: Andreas Färber <afaerber@suse.de>
+>> ---
+>>  v4 -> v5:
+>>  * Introduced labels to consistently use new referencing style (Tomasz)
+>>  * Use IRQ_TYPE_* constants
+>>  * Use some more GPIO_ACTIVE_*
+>>
+>>  v3 -> v4: Unchanged
+>>
+>>  v3: New (Doug Anderson)
+>>
+>>  arch/arm/boot/dts/exynos5250-snow.dts | 291 +++++++++++++++++-----------------
+>>  arch/arm/boot/dts/exynos5250.dtsi     |  20 +--
+> 
+> As much as possible it's nice to touch the main exynos dtsi file and
+> specific board files in different patches.  Among other things it
+> makes backporting the patch and resolving merge conflicts easier (if
+> someone doesn't care about snow they could just pick up the main dtsi,
+> for instance).
+> 
+> I'm not a total stickler and I'd love to see this land quickly to
+> avoid conflicts, though...
+> 
+> 
+>> +&sd3_clk {
+>> +       samsung,pin-drv = <0>;
+>> +};
+>> +
+>> +&sd3_cmd {
+>> +       samsung,pin-pud = <3>;
+>> +       samsung,pin-drv = <0>;
+>> +};
+>> +
+>> +&sd3_bus4 {
+> 
+> Itty bitty bitty nit that "bus" sorts alphabetically above "clk".  ;)
 
-On Thu, Jul 31, 2014 at 9:54 PM, Andreas Färber <afaerber@suse.de> wrote:
-> Use the new style for referencing inherited nodes and use symbolic names.
+True. I guess I just reused the original order from within pinctrl.
+
+> Maybe Kukjin would be willing to sort these when he applies?
 >
-> Goal is the alignment of all exynos5250 based device trees for comparison.
 >
-> Signed-off-by: Andreas Färber <afaerber@suse.de>
-> ---
->  v5: New
->  Follow-up after adding dp_hpd pinctrl node new-style.
+> Thank you for all your hard work on this one.  Things look MUCH MUCH
+> nicer!  I did a pretty thorough review of your changes and it all
+> looks good.
+> 
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
 
-Since I NAKed that one, are you going to drop this patch?  It's
-probably still a useful thing to do.
+I need to respin anyway for a .dtsi label, so I can factor this out
+while at it.
 
-It sounds like you might be spinning?  ...if so I'll review it in the
-next cycle...  Note: same feedback as before about splitting changes
-to exynos5250.dtsi and actual board files...
+Patches 1-2 could meanwhile already be applied by Kukjin.
 
--Doug
+Thanks,
+Andreas
+
+-- 
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
