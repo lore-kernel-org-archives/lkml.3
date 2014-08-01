@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632AbaHAMdo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 08:33:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12292 "EHLO mx1.redhat.com"
+	id S1755596AbaHAMdn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 08:33:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49612 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754874AbaHAMdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754697AbaHAMdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Aug 2014 08:33:41 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
@@ -13,17 +13,18 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Mark Rutland <mark.rutland@arm.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 1/3] perf: Do not allow to create kernel events without handler
-Date: Fri,  1 Aug 2014 14:33:00 +0200
-Message-Id: <1406896382-18404-2-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 2/3] perf: Set owner pointer for kernel events
+Date: Fri,  1 Aug 2014 14:33:01 +0200
+Message-Id: <1406896382-18404-3-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1406896382-18404-1-git-send-email-jolsa@kernel.org>
 References: <1406896382-18404-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Force kernel events to specify the handler, because
-there's no use for kernel perf event without it.
+Adding fake EVENT_OWNER_KERNEL owner pointer value for kernel perf
+events, so we could distinguish it from user events, which needs
+special care in following patch.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -33,23 +34,77 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- kernel/events/core.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/events/core.c | 32 ++++++++++++++++++++++++++------
+ 1 file changed, 26 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 1cf24b3e42ec..75c4ff8d1590 100644
+index 75c4ff8d1590..c2fba5736405 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -7355,6 +7355,9 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
- 	struct perf_event *event;
- 	int err;
+@@ -119,6 +119,13 @@ static int cpu_function_call(int cpu, int (*func) (void *info), void *info)
+ 	return data.ret;
+ }
  
-+	if (WARN_ON(!overflow_handler))
-+		return NULL;
++#define EVENT_OWNER_KERNEL ((void *) -1)
 +
++static bool is_kernel_event(struct perf_event *event)
++{
++	return event->owner == EVENT_OWNER_KERNEL;
++}
++
+ #define PERF_FLAG_ALL (PERF_FLAG_FD_NO_GROUP |\
+ 		       PERF_FLAG_FD_OUTPUT  |\
+ 		       PERF_FLAG_PID_CGROUP |\
+@@ -3312,16 +3319,12 @@ static void free_event(struct perf_event *event)
+ }
+ 
+ /*
+- * Called when the last reference to the file is gone.
++ * Remove user event from the owner task.
+  */
+-static void put_event(struct perf_event *event)
++static void perf_remove_from_owner(struct perf_event *event)
+ {
+-	struct perf_event_context *ctx = event->ctx;
+ 	struct task_struct *owner;
+ 
+-	if (!atomic_long_dec_and_test(&event->refcount))
+-		return;
+-
+ 	rcu_read_lock();
+ 	owner = ACCESS_ONCE(event->owner);
  	/*
- 	 * Get the target context (task or percpu):
- 	 */
+@@ -3354,6 +3357,20 @@ static void put_event(struct perf_event *event)
+ 		mutex_unlock(&owner->perf_event_mutex);
+ 		put_task_struct(owner);
+ 	}
++}
++
++/*
++ * Called when the last reference to the file is gone.
++ */
++static void put_event(struct perf_event *event)
++{
++	struct perf_event_context *ctx = event->ctx;
++
++	if (!atomic_long_dec_and_test(&event->refcount))
++		return;
++
++	if (!is_kernel_event(event))
++		perf_remove_from_owner(event);
+ 
+ 	WARN_ON_ONCE(ctx->parent_ctx);
+ 	/*
+@@ -7369,6 +7386,9 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
+ 		goto err;
+ 	}
+ 
++	/* Mark owner so we could distinguish it from user events. */
++	event->owner = EVENT_OWNER_KERNEL;
++
+ 	account_event(event);
+ 
+ 	ctx = find_get_context(event->pmu, task, cpu);
 -- 
 1.8.3.1
 
