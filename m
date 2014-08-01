@@ -1,150 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaHAEcY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 00:32:24 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53967 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaHAEcW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 00:32:22 -0400
-Date: Thu, 31 Jul 2014 21:32:20 -0700 (PDT)
-Message-Id: <20140731.213220.2290285957519220651.davem@davemloft.net>
-To: zoltan.kiss@citrix.com
-Cc: steffen.klassert@secunet.com, minipli@googlemail.com, dborkman@redhat.com,
-        tgraf@suug.ch, joe@perches.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: [PATCH net-next v3 4/4 RFC] pktgen: Allow sending IPv4 TCP
- packets
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1406737212-23351-5-git-send-email-zoltan.kiss@citrix.com>
-References: <1406737212-23351-1-git-send-email-zoltan.kiss@citrix.com>
-	<1406737212-23351-5-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 31 Jul 2014 21:32:21 -0700 (PDT)
+	id S1751718AbaHAEoa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 00:44:30 -0400
+Received: from ozlabs.org ([103.22.144.67]:41753 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750770AbaHAEo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 00:44:29 -0400
+Date: Fri, 1 Aug 2014 14:44:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark D Rustad <mark.d.rustad@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: linux-next: manual merge of the kvm tree with the ftrace tree
+Message-ID: <20140801144420.4ba1c011@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/aI.ALIqRkdhyln5l74Pl+kf"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-Date: Wed, 30 Jul 2014 17:20:12 +0100
+--Sig_/aI.ALIqRkdhyln5l74Pl+kf
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> This is a prototype patch to enable sending IPv4 TCP packets with pktgen. The
-> original motivation is to test TCP GSO with xen-netback/netfront, but I'm not
-> sure about how the checksum should be set up, and also someone should verify the
-> GSO settings I'm using.
-> 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Thomas Graf <tgraf@suug.ch>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: xen-devel@lists.xenproject.org
-> ---
-> v3:
-> - mention explicitly that this for IPv4
-> - memset the TCP header and set up doff
-> - rework of checksum handling and GSO setting in fill_packet_ipv4
-> - bail out in pktgen_xmit if the device won't be able to handle GSO
-> 
-> diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-> index 0d0aaac..9d93bda 100644
-> --- a/net/core/pktgen.c
-> +++ b/net/core/pktgen.c
-> @@ -162,6 +162,7 @@
->  #include <net/checksum.h>
->  #include <net/ipv6.h>
->  #include <net/udp.h>
-> +#include <net/tcp.h>
->  #include <net/ip6_checksum.h>
->  #include <net/addrconf.h>
->  #ifdef CONFIG_XFRM
-> @@ -203,6 +204,7 @@
->  #define F_NODE          (1<<15)	/* Node memory alloc*/
->  #define F_UDPCSUM       (1<<16)	/* Include UDP checksum */
->  #define F_PATTERN       (1<<17)	/* Fill the payload with a pattern */
-> +#define F_TCP           (1<<18)	/* Send TCP packet instead of UDP */
->  
->  /* Thread control flag bits */
->  #define T_STOP        (1<<0)	/* Stop run */
-> @@ -664,6 +666,9 @@ static int pktgen_if_show(struct seq_file *seq, void *v)
->  	if (pkt_dev->flags & F_PATTERN)
->  		seq_puts(seq, "PATTERN  ");
->  
-> +	if (pkt_dev->flags & F_TCP)
-> +		seq_puts(seq, "TCP  ");
-> +
->  	if (pkt_dev->flags & F_MPLS_RND)
->  		seq_puts(seq,  "MPLS_RND  ");
->  
-> @@ -1342,6 +1347,12 @@ static ssize_t pktgen_if_write(struct file *file,
->  		else if (strcmp(f, "!PATTERN") == 0)
->  			pkt_dev->flags &= ~F_PATTERN;
->  
-> +		else if (strcmp(f, "TCP") == 0)
-> +			pkt_dev->flags |= F_TCP;
-> +
-> +		else if (strcmp(f, "!TCP") == 0)
-> +			pkt_dev->flags &= ~F_TCP;
-> +
->  		else {
->  			sprintf(pg_result,
->  				"Flag -:%s:- unknown\nAvailable flags, (prepend ! to un-set flag):\n%s",
-> @@ -2955,7 +2966,8 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
->  {
->  	struct sk_buff *skb = NULL;
->  	__u8 *eth;
-> -	struct udphdr *udph;
-> +	struct udphdr *udph = NULL;
-> +	struct tcphdr *tcph;
->  	int datalen, iplen;
->  	struct iphdr *iph;
->  	__be16 protocol = htons(ETH_P_IP);
-> @@ -3017,29 +3029,40 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
->  	iph = (struct iphdr *) skb_put(skb, sizeof(struct iphdr));
->  
->  	skb_set_transport_header(skb, skb->len);
-> -	udph = (struct udphdr *) skb_put(skb, sizeof(struct udphdr));
-> +
-> +	if (pkt_dev->flags & F_TCP) {
-> +		datalen = pkt_dev->cur_pkt_size - ETH_HLEN - 20 -
-> +			  sizeof(struct tcphdr) - pkt_dev->pkt_overhead;
-> +		tcph = (struct tcphdr *)skb_put(skb, sizeof(struct tcphdr));
-> +		memset(tcph, 0, sizeof(*tcph));
-> +		tcph->source = htons(pkt_dev->cur_udp_src);
-> +		tcph->dest = htons(pkt_dev->cur_udp_dst);
-> +		tcph->doff = sizeof(struct tcphdr) >> 2;
-> +	} else {
-> +		datalen = pkt_dev->cur_pkt_size - ETH_HLEN - 20 -
-> +			  sizeof(struct udphdr) - pkt_dev->pkt_overhead;
-> +		udph = (struct udphdr *)skb_put(skb, sizeof(struct udphdr));
-> +		udph->source = htons(pkt_dev->cur_udp_src);
-> +		udph->dest = htons(pkt_dev->cur_udp_dst);
-> +		udph->len = htons(datalen + sizeof(struct udphdr));
-> +		udph->check = 0;
-> +	}
-> +
+Hi all,
 
-As more protocols (SCTP, etc.) get supported, this is going to become
-completely unmanageable.  Please use callbacks or something like that
-so this function doesn't turn into even more spaghetti.
+Today's linux-next merge of the kvm tree got a conflict in
+arch/x86/kvm/mmutrace.h between commit 7b039cb4c5a9 ("tracing: Add
+trace_seq_buffer_ptr() helper function") from the ftrace tree and
+commit 42cbc04fd3b5 ("x86/kvm: Resolve shadow warnings in macro
+expansion") from the kvm tree.
 
-> +	} else if (pkt_dev->flags & F_TCP) {
-> +		struct inet_sock inet;
-> +
-> +		inet.inet_saddr = iph->saddr;
-> +		inet.inet_daddr = iph->daddr;
-> +		skb->ip_summed = CHECKSUM_NONE;
-> +		tcp_v4_send_check((struct sock *)&inet, skb);
+I fixed it up (I dropped the ftrace tree's change to this file) and can
+carry the fix as necessary (no action is required).
 
-Please don't do things like this.  Making fake sockets on the stack, don't
-do it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Do other non-socket contexts compute TCP checksums this way?  Check
-netfilter or similar, see what they do.
+--Sig_/aI.ALIqRkdhyln5l74Pl+kf
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Worst case export __tcp_v4_send_check() or just duplicate it's contents
-in the tcp case here.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT2xspAAoJEMDTa8Ir7ZwVuHUQAJHLisz/E4W5cB5J0Dp2t8L9
+1VDbmS+03rEjVqurjkla9AwueDaAbIM4DlEqhzbqLbC17LNxx2jcAGA7d8Rdv27L
+xD5VQeY/6Ab4mxVgr4RMZlaMQ79z9XIlNbep9nKfHM006eBPHpD++yGlcpuOdTsD
+sxYZ2Ui8GgjTAAF3xj6x+kDcuXG3C7Dl1zWFyBVmpe24f9ZbI4ntAzSXpq0bC+Py
+BYIhpYBnDefhCdhN7/EMMGUFBkKy78mywNYthIKlT4uLas1FBF0ppC2kgVq+zFnR
+NzlVuAfGcZ6cpbwQO/WicyZ5dIPF5AC2FqsbaRT6vxSa7msndP0EQZpGprcWzprd
+OpvsAJ5OnDQPZIjyfvSvaGyNN7eYIGQO9YCTjTNQYHGdq+ubObF3RT9r1y5JgEhu
+IKWdPDgJStAJnOsIB++wK15rCGi+qx+YgIegDOrOYTlL4uCSKo+dsxk9Yo2revWV
+BchM81C/BXHzrbaLn6OFUhnL82/7V/8w+m6iEjvDcxsKw97GekyJviuAqtbIuEoU
+UJmReVWB3UQElqImWc4IuqxTFV7RuVF45M2MJutAmqbokf5VYgivtqvcU52JHEW7
+oniyEoFsVukD/7nZrGn/Ct2Ftx4q1CW/PqCgK04K+h4lgI3xAfNbFuhJeDPrYw0L
+zvQ7kZSMQOp5Cup6zqPk
+=kMUJ
+-----END PGP SIGNATURE-----
+
+--Sig_/aI.ALIqRkdhyln5l74Pl+kf--
