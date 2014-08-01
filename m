@@ -1,139 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564AbaHARSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 13:18:36 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56680 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaHARSe (ORCPT
+	id S1754956AbaHARVQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 13:21:16 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:35955 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750851AbaHARVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 13:18:34 -0400
-Message-ID: <53DBCBE8.6010809@codeaurora.org>
-Date: Fri, 01 Aug 2014 10:18:32 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: Saravana Kannan <skannan@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
- to be held for duration of changing governors [v2]
-References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org> <53DAA749.5080506@redhat.com> <53DAA95B.2040505@codeaurora.org> <53DAB038.3050007@redhat.com> <53DABFA6.6090503@codeaurora.org> <53DACA26.1000908@redhat.com> <53DAE592.2030909@codeaurora.org> <53DB6B81.6050400@redhat.com>
-In-Reply-To: <53DB6B81.6050400@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 1 Aug 2014 13:21:14 -0400
+Message-ID: <1406913678.22529.46.camel@hornet>
+Subject: Re: [PATCH 2/5] char: tile-srom: Remove reference to platform_bus
+From: Pawel Moll <pawel.moll@arm.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "paul@pwsan.com" <paul@pwsan.com>, Arnd Bergmann <arnd@arndb.de>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 01 Aug 2014 18:21:18 +0100
+In-Reply-To: <53DAA605.2030500@tilera.com>
+References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>
+	 <1406298233-27876-2-git-send-email-pawel.moll@arm.com>
+	 <53DAA605.2030500@tilera.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/14 03:27, Prarit Bhargava wrote:
->
-> Can you send me the test and the trace of the deadlock?  I'm not creating it with:
->
+On Thu, 2014-07-31 at 21:24 +0100, Chris Metcalf wrote:
+> On 7/25/2014 10:23 AM, Pawel Moll wrote:
+> > The code was creating "srom" class devices using
+> > platform_bus as a parent. As they are not really
+> > platform devices, make them virtual, using NULL instead.
+> >
+> > Cc: Chris Metcalf<cmetcalf@tilera.com>
+> > Signed-off-by: Pawel Moll<pawel.moll@arm.com>
+> > ---
+> >   drivers/char/tile-srom.c | 2 +-
+> >   1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Can you clarify the point of this change a bit? 
 
-This was with conservative as the default, and switching to ondemand
+Theoretically speaking there shouldn't be any need to export the
+platform bus root, as all devices should be registered via the platform
+API (platform_device_register & co.)
 
-# cd /sys/devices/system/cpu/cpu2/cpufreq
-# ls
-affected_cpus                  scaling_available_governors
-conservative                   scaling_cur_freq
-cpuinfo_cur_freq               scaling_driver
-cpuinfo_max_freq               scaling_governor
-cpuinfo_min_freq               scaling_max_freq
-cpuinfo_transition_latency     scaling_min_freq
-related_cpus                   scaling_setspeed
-scaling_available_frequencies  stats
-# cat conservative/down_threshold
-20
-# echo ondemand > scaling_governor
+>  The SROM devices
+> in question are real devices (bits of silicon on the processor die), not
+> some kind of virtual construct.  
 
- ======================================================
- [ INFO: possible circular locking dependency detected ]
- 3.16.0-rc3-00039-ge1e38f124d87 #47 Not tainted
- -------------------------------------------------------
- sh/75 is trying to acquire lock:
-  (s_active#9){++++..}, at: [<c0358a94>] kernfs_remove_by_name_ns+0x3c/0x84
+... but the driver seems to be accessing then through hypervisor calls
+only? One could say that you this make them virtual ;-)
 
- but task is already holding lock:
-  (&policy->rwsem){+++++.}, at: [<c05ab1f0>] store+0x68/0xb8
+> In addition, we also have user binaries
+> in the wild that know to look for /sys/devices/platform/srom/ paths,
+> so I'm pretty reluctant to change this path without good reason.
 
- which lock already depends on the new lock.
+So what is the srom class for then if not for device discovery? And why
+do they look for them in the first place? To get relevant character
+device's data, if I understand it right?
 
+Maybe you could just register a simple "proper" platform device for all
+the sroms and then hang the class devices from it? I can type some code
+doing this if it sound reasonably?
 
- the existing dependency chain (in reverse order) is:
-
--> #1 (&policy->rwsem){+++++.}:
-        [<c0359234>] kernfs_fop_open+0x138/0x298
-        [<c02fa3f4>] do_dentry_open.isra.12+0x1b0/0x2f0
-        [<c02fa604>] finish_open+0x20/0x38
-        [<c0308d34>] do_last.isra.37+0x5ac/0xb68
-        [<c03093a4>] path_openat+0xb4/0x5d8
-        [<c0309bcc>] do_filp_open+0x2c/0x80
-        [<c02fb558>] do_sys_open+0x10c/0x1c8
-        [<c020f0a0>] ret_fast_syscall+0x0/0x48
-
--> #0 (s_active#9){++++..}:
-        [<c0357d18>] __kernfs_remove+0x250/0x300
-        [<c0358a94>] kernfs_remove_by_name_ns+0x3c/0x84
-        [<c035aa78>] remove_files+0x34/0x78
-        [<c035aee0>] sysfs_remove_group+0x40/0x98
-        [<c05b0560>] cpufreq_governor_dbs+0x4c0/0x6ec
-        [<c05abebc>] __cpufreq_governor+0x118/0x200
-        [<c05ac0fc>] cpufreq_set_policy+0x158/0x2ac
-        [<c05ad5e4>] store_scaling_governor+0x6c/0x94
-        [<c05ab210>] store+0x88/0xb8
-        [<c035a00c>] sysfs_kf_write+0x4c/0x50
-        [<c03594d4>] kernfs_fop_write+0xc0/0x180
-        [<c02fc5c8>] vfs_write+0xa0/0x1a8
-        [<c02fc9d4>] SyS_write+0x40/0x8c
-        [<c020f0a0>] ret_fast_syscall+0x0/0x48
-
- other info that might help us debug this:
-
-  Possible unsafe locking scenario:
-
-        CPU0                    CPU1
-        ----                    ----
-   lock(&policy->rwsem);
-                                lock(s_active#9);
-                                lock(&policy->rwsem);
-   lock(s_active#9);
-
-  *** DEADLOCK ***
-
- 6 locks held by sh/75:
-  #0:  (sb_writers#4){.+.+..}, at: [<c02fc6a8>] vfs_write+0x180/0x1a8
-  #1:  (&of->mutex){+.+...}, at: [<c0359498>] kernfs_fop_write+0x84/0x180
-  #2:  (s_active#10){.+.+..}, at: [<c03594a0>] kernfs_fop_write+0x8c/0x180
-  #3:  (cpu_hotplug.lock){++++++}, at: [<c0221ef8>] get_online_cpus+0x38/0x9c
-  #4:  (cpufreq_rwsem){.+.+.+}, at: [<c05ab1d8>] store+0x50/0xb8
-  #5:  (&policy->rwsem){+++++.}, at: [<c05ab1f0>] store+0x68/0xb8
-
- stack backtrace:
- CPU: 0 PID: 75 Comm: sh Not tainted 3.16.0-rc3-00039-ge1e38f124d87 #47
- [<c0214de8>] (unwind_backtrace) from [<c02123f8>] (show_stack+0x10/0x14)
- [<c02123f8>] (show_stack) from [<c0709e5c>] (dump_stack+0x70/0xbc)
- [<c0709e5c>] (dump_stack) from [<c070722c>] (print_circular_bug+0x280/0x2d4)
- [<c070722c>] (print_circular_bug) from [<c02629cc>] (__lock_acquire+0x18d0/0x1abc)
- [<c02629cc>] (__lock_acquire) from [<c026310c>] (lock_acquire+0x9c/0x138)
- [<c026310c>] (lock_acquire) from [<c0357d18>] (__kernfs_remove+0x250/0x300)
- [<c0357d18>] (__kernfs_remove) from [<c0358a94>] (kernfs_remove_by_name_ns+0x3c/0x84)
- [<c0358a94>] (kernfs_remove_by_name_ns) from [<c035aa78>] (remove_files+0x34/0x78)
- [<c035aa78>] (remove_files) from [<c035aee0>] (sysfs_remove_group+0x40/0x98)
- [<c035aee0>] (sysfs_remove_group) from [<c05b0560>] (cpufreq_governor_dbs+0x4c0/0x6ec)
- [<c05b0560>] (cpufreq_governor_dbs) from [<c05abebc>] (__cpufreq_governor+0x118/0x200)
- [<c05abebc>] (__cpufreq_governor) from [<c05ac0fc>] (cpufreq_set_policy+0x158/0x2ac)
- [<c05ac0fc>] (cpufreq_set_policy) from [<c05ad5e4>] (store_scaling_governor+0x6c/0x94)
- [<c05ad5e4>] (store_scaling_governor) from [<c05ab210>] (store+0x88/0xb8)
- [<c05ab210>] (store) from [<c035a00c>] (sysfs_kf_write+0x4c/0x50)
- [<c035a00c>] (sysfs_kf_write) from [<c03594d4>] (kernfs_fop_write+0xc0/0x180)
- [<c03594d4>] (kernfs_fop_write) from [<c02fc5c8>] (vfs_write+0xa0/0x1a8)
- [<c02fc5c8>] (vfs_write) from [<c02fc9d4>] (SyS_write+0x40/0x8c)
- [<c02fc9d4>] (SyS_write) from [<c020f0a0>] (ret_fast_syscall+0x0/0x48)
-
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Pawel
 
