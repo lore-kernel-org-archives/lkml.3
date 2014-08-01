@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415AbaHANVX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 09:21:23 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:54385 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754684AbaHANVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 09:21:22 -0400
-Date: Fri, 1 Aug 2014 15:21:20 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: kan.liang@intel.com, andi@firstfloor.org,
-        alexander.shishkin@linux.intel.com, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/3] x86 perf: Protect LBR msrs accessing against
- potential #GP
-Message-ID: <20140801132120.GO18735@two.firstfloor.org>
-References: <1406799663-18192-1-git-send-email-kan.liang@intel.com>
- <1406799663-18192-2-git-send-email-kan.liang@intel.com>
- <20140801073825.GG19379@twins.programming.kicks-ass.net>
- <20140801074430.GB3588@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140801074430.GB3588@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755267AbaHANYv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 09:24:51 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:48652
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751008AbaHANYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 09:24:50 -0400
+x-originating-ip: 72.167.245.219
+From: Dexuan Cui <decui@microsoft.com>
+To: gregkh@linuxfoundation.org, jkosina@suse.cz, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com
+Cc: kys@microsoft.com, haiyangz@microsoft.com
+Subject: [PATCH] HID: hyperv: register as a wakeup source
+Date: Fri,  1 Aug 2014 07:26:41 -0700
+Message-Id: <1406903201-7210-1-git-send-email-decui@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > NAK!
-> > 
-> > I already said this isn't going to ever happen.
-> > 
-> > Both PT and LBR are arbitrated through the kernel, therefore we can (and
-> > must) deny PT when there's existing LBR usage and vice versa.
-> > 
-> > We will not hijack resources like this full stop end of story.
-> > 
-> > Fuck hardware/BIOS, they should _NOT_ be touching this.
-> > 
-> > The 3 people in the world with access to an x86 hardware debugger had
-> > better be competent and know WTF they're doing and the BIOS can just
-> > piss off right now, they should not be touching this _EVER_.
+With this patch, we can move the mouse to wake up the VM after the VM executes
+"echo freeze > /sys/power/state".
 
+This addresses part of https://bugzilla.redhat.com/show_bug.cgi?id=1086100
 
-So you realize that hardware level debugging becomes impossible
-if everyone starts using perf?
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Dexuan Cui <decui@microsoft.com>
+---
+ drivers/hid/hid-hyperv.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-I dont know how anyone can construct essentially sabotaging powerful
-debugging techniques ever as a good thing. In the end it'll just
-lead to more buggy software (and likely hardware) for everyone.
-
-
-> 
-> I yelled at BIOS engineers over their PMU usage and $vendor added a BIOS
-> knob to disable that, I'll yell at BIOS engineers again, just give me
-> their number.
-> 
-> Really, say NO already.
-
-Ok, so no technical reason, merely a "me vs you" power play.
-
-Thank you for not stating that earlier and wasting everyone's time.
-
--Andi
-
+diff --git a/drivers/hid/hid-hyperv.c b/drivers/hid/hid-hyperv.c
+index f52dbcb..31fad64 100644
+--- a/drivers/hid/hid-hyperv.c
++++ b/drivers/hid/hid-hyperv.c
+@@ -308,6 +308,9 @@ static void mousevsc_on_receive(struct hv_device *device,
+ 		memcpy(input_dev->input_buf, input_report->buffer, len);
+ 		hid_input_report(input_dev->hid_device, HID_INPUT_REPORT,
+ 				 input_dev->input_buf, len, 1);
++
++		pm_wakeup_event(&input_dev->device->device, 0);
++
+ 		break;
+ 	default:
+ 		pr_err("unsupported hid msg type - type %d len %d",
+@@ -549,6 +552,8 @@ static int mousevsc_probe(struct hv_device *device,
+ 		goto probe_err2;
+ 	}
+ 
++	device_init_wakeup(&device->device, true);
++
+ 	input_dev->connected = true;
+ 	input_dev->init_complete = true;
+ 
+@@ -571,6 +576,7 @@ static int mousevsc_remove(struct hv_device *dev)
+ {
+ 	struct mousevsc_dev *input_dev = hv_get_drvdata(dev);
+ 
++	device_init_wakeup(&dev->device, false);
+ 	vmbus_close(dev->channel);
+ 	hid_hw_stop(input_dev->hid_device);
+ 	hid_destroy_device(input_dev->hid_device);
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.9.1
+
