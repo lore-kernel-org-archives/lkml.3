@@ -1,93 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932197AbaHATUj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 15:20:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18192 "EHLO mx1.redhat.com"
+	id S932246AbaHATVE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 15:21:04 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932088AbaHATUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 15:20:37 -0400
-Date: Fri, 1 Aug 2014 21:20:18 +0200
-From: Mateusz Guzik <mguzik@redhat.com>
-To: Richard Yao <ryao@gentoo.org>
-Cc: kernel@gentoo.org, mthode@mthode.org, michael@fds-team.de,
-        drobbins@funtoo.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] vfs: Respect MS_RDONLY at bind mount creation
-Message-ID: <20140801192017.GC1850@mguzik.redhat.com>
-References: <1406916744-6634-1-git-send-email-ryao@gentoo.org>
- <1406916744-6634-2-git-send-email-ryao@gentoo.org>
+	id S1754684AbaHATVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 15:21:01 -0400
+Message-ID: <53DBE894.3020900@nod.at>
+Date: Fri, 01 Aug 2014 21:20:52 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1406916744-6634-2-git-send-email-ryao@gentoo.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Ram Pai <linuxram@us.ibm.com>
+CC: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk, hch@infradead.org,
+        paulmck@linux.vnet.ibm.com, jeffm@suse.com, sahne@0x90.at,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: MNT_DETACH and mount namespace issue
+References: <1406728756-32443-1-git-send-email-richard@sigma-star.at> <53D959A7.5070702@nod.at> <53DAC069.7070606@nod.at> <20140801154448.GE24719@ram.oc3035372033.ibm.com>
+In-Reply-To: <20140801154448.GE24719@ram.oc3035372033.ibm.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 02:12:24PM -0400, Richard Yao wrote:
-> `mount -o bind,ro ...` suffers from a silent failure where the readonly
-> flag is ignored. The bind mount will be created rw whenever the target
-> is rw. Users typically workaround this by remounting readonly, but that
-> does not work when you want to define readonly bind mounts in fstab.
-> This is a major annoyance when dealing with recursive bind mounts
-> because the userland mount command does not expose the option to
-> recursively remount a subtree as readonly.
+Am 01.08.2014 17:44, schrieb Ram Pai:
+> On Fri, Aug 01, 2014 at 12:17:13AM +0200, Richard Weinberger wrote:
+>> Am 30.07.2014 22:46, schrieb Richard Weinberger:
+>>> Am 30.07.2014 15:59, schrieb Richard Weinberger:
+>>>> If we use the plain list_empty() we might not see the
+>>>> hlist_del_init_rcu() and therefore miss one member of the
+>>>> list.
+>>>>
+>>>> It fixes the following issue:
+>>>> $ unshare -m /usr/bin/sleep 10000 &
+>>>> $ mkdir -p foo/proc
+>>>> $ mount -t proc none foo/proc
+>>>> $ mount -t binfmt_misc none foo/proc/sys/fs/binfmt_misc
+>>>> $ umount -l foo/proc
+>>>> $ rmdir foo/proc
+>>>> rmdir: failed to remove ‘foo/proc’: Device or resource busy
+>>>
+>>> Although my fix was wrong, the issue is real, it seems to exist for a very long
+>>> time. Just was able to reproduce it on 2.6.32.
+>>> Please note that you need a shared root subtree to trigger the issue.
+>>> i.e. mount --shared /
+>>> Maybe this is why nobody noticed it so far as only systemd distros
+>>> have the root subtree shared by default.
+>>>
+>>> I hit the issue on openSUSE 13.1 where an application creates a chroot environment
+>>> and then lazy umounts /proc.
+>>> It happened on very few machines. An analysis showed that only boxes with an OpenVPN tunnel
+>>> were affected. This did not make any sense until I discovered that the OpenVPN systemd
+>>> service file has set "PrivateTmp=true". This setting creates
+>>> a mount namespace for the said service...
+>>>
+>>> In __propagate_umount() the following piece of code is interesting:
+>>>
+>>>  /*
+>>>  * umount the child only if the child has no
+>>>  * other children
+>>>  */
+>>> if (child && list_empty(&child->mnt_mounts)) {
+>>>         hlist_del_init_rcu(&child->mnt_hash);
+>>>         hlist_add_before_rcu(&child->mnt_hash, &mnt->mnt_hash);
+>>> }
+>>>
+>>> child->mnt_mounts is non-empty for the "proc" although the "binfmt_misc"
+>>> subtree was removed.
+>>> I'm not sure whether this is only one more symptom or the main culprit.
+>>
+>> CC'ing Ram Pai.
+>>
+>> Ram, you are the author of the said code. Can you please explain why we need that
+>> list_empty() check?
+>> To my (limited) understanding of VFS, the following change should be fine to fix the issue:
 > 
-> Signed-off-by: Richard Yao <ryao@gentoo.org>
-> ---
->  fs/namespace.c | 12 +++++++++---
->  1 file changed, 9 insertions(+), 3 deletions(-)
+> We had made a rule then, that busy vfsmounts cannot be lazily unmounted
+> **implicitly**. Propagated unmounts are implicit unmounts, and if such
+> implicit vfsmounts have child-mounts than obviously they are busy, and
+> hence they cannot be lazy-unmounted implicitly.
 > 
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index 182bc41..0d23525 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -1827,11 +1827,12 @@ static bool has_locked_children(struct mount *mnt, struct dentry *dentry)
->   * do loopback mount.
->   */
->  static int do_loopback(struct path *path, const char *old_name,
-> -				int recurse)
-> +				unsigned long flags)
->  {
->  	struct path old_path;
-> -	struct mount *mnt = NULL, *old, *parent;
-> +	struct mount *mnt = NULL, *old, *parent, *m;
->  	struct mountpoint *mp;
-> +	int recurse = flags & MS_REC;
->  	int err;
->  	if (!old_name || !*old_name)
->  		return -EINVAL;
-> @@ -1871,6 +1872,10 @@ static int do_loopback(struct path *path, const char *old_name,
->  		goto out2;
->  	}
->  
-> +	if (flags & MS_RDONLY)
-> +		for (m = mnt; m; m = (recurse ? next_mnt(m, mnt) : NULL))
-> +			mnt_make_readonly(m);
-> +
->  	mnt->mnt.mnt_flags &= ~MNT_LOCKED;
->  
->  	err = graft_tree(mnt, parent, mp);
-> @@ -2444,7 +2449,8 @@ long do_mount(const char *dev_name, const char *dir_name,
->  		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
->  				    data_page);
->  	else if (flags & MS_BIND)
-> -		retval = do_loopback(&path, dev_name, flags & MS_REC);
-> +		retval = do_loopback(&path, dev_name, flags & (MS_REC |
-> +							       MS_RDONLY));
->  	else if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
->  		retval = do_change_type(&path, flags);
->  	else if (flags & MS_MOVE)
+> the list_empty() is checking for no child-mounts on the vfsmount before
+> letting it unmount.
+> 
+> We did not want a bunch of mounts disappear without the users knowledge.
+> Hence we made the above rule.
+> 
+> Al Viro, will have more insights into this.
 
-I don't really know this code, but have to ask.
+Hmm, with the root subtree shared by default this policy will be problematic and
+lead to problems.
+As I observe on openSUSE 13.1.
 
-Would not it be much better to pass down info about rdonly request to
-copy_tree/clone_mnt (perhaps CL_MOUNT_RDONLY flag or a separate flags
-argument) and handle it there?
+Al, what do you think?
 
-This would avoid fishy-looking traversal before graft_tree, which even
-if correct should not be necessary.
-
--- 
-Mateusz Guzik
+Thanks,
+//richard
