@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420AbaHAM2C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 08:28:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876AbaHAM2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 08:28:00 -0400
-Message-ID: <53DB864B.2070205@redhat.com>
-Date: Fri, 01 Aug 2014 14:21:31 +0200
-From: Nikolay Aleksandrov <nikolay@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755428AbaHAM2e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 08:28:34 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:44703 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754323AbaHAM2b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 08:28:31 -0400
 MIME-Version: 1.0
-To: Thomas Graf <tgraf@suug.ch>, davem@davemloft.net, netdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kaber@trash.net, paulmck@linux.vnet.ibm.com,
-        josh@joshtriplett.org, challa@noironetworks.com, walpole@cs.pdx.edu,
-        dev@openvswitch.org, tklauser@distanz.ch,
-        netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH net-next 3/3] nftables: Convert nft_hash to use generic
- rhashtable
-References: <cover.1406891028.git.tgraf@suug.ch> <bd4d9fa542072358cb0bd77e493ec5785a1d9666.1406891028.git.tgraf@suug.ch>
-In-Reply-To: <bd4d9fa542072358cb0bd77e493ec5785a1d9666.1406891028.git.tgraf@suug.ch>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140801132343.45153300@alan.etchedpixels.co.uk>
+References: <CAPybu_1Ma+7nGaS0e17HpPcM1vk6ANSFN3C8MNR=JxWrBBmMOA@mail.gmail.com>
+ <1406834546-23033-1-git-send-email-ricardo.ribalda@gmail.com> <20140801132343.45153300@alan.etchedpixels.co.uk>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Fri, 1 Aug 2014 14:28:11 +0200
+Message-ID: <CAPybu_2U2jjyY_9gji41mUc5F4N+idDVNO=LAr3F5PpJ0JzYSg@mail.gmail.com>
+Subject: Re: [PATCH 2/2 v2] serial: Add support for Fintek F81216A LPC to 4 UART
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Jingoo Han <jg1.han@samsung.com>, Michael Welling <mwelling@ieee.org>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Joe Schultz <jschultz@xes-inc.com>, Ingo Molnar <mingo@elte.hu>,
+        Doug Anderson <dianders@chromium.org>, linux-serial@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2014 01:58 PM, Thomas Graf wrote:
-> The sizing of the hash table and the practice of requiring a lookup
-> to retrieve the pprev to be stored in the element cookie before the
-> deletion of an entry is left intact.
-> 
-> Signed-off-by: Thomas Graf <tgraf@suug.ch>
-> Acked-by: Patrick McHardy <kaber@trash.net>
-> ---
-<<snip>>
-> @@ -257,36 +82,28 @@ static void nft_hash_elem_destroy(const struct nft_set *set,
->  static void nft_hash_remove(const struct nft_set *set,
->  			    const struct nft_set_elem *elem)
->  {
-> -	struct nft_hash *priv = nft_set_priv(set);
-> -	struct nft_hash_table *tbl = nft_dereference(priv->tbl);
-> -	struct nft_hash_elem *he, __rcu **pprev;
-> +	struct rhashtable *priv = nft_set_priv(set);
-> +	struct rhash_head *he, __rcu **pprev;
->  
->  	pprev = elem->cookie;
-> -	he = nft_dereference((*pprev));
-> -
-> -	RCU_INIT_POINTER(*pprev, he->next);
-> -	synchronize_rcu();
-> -	kfree(he);
-> +	he = rht_dereference((*pprev), priv);
->  
-> -	/* Shrink table beneath 30% load */
-> -	if (set->nelems - 1 < tbl->size * 3 / 10 &&
-> -	    tbl->size > NFT_HASH_MIN_SIZE)
-> -		nft_hash_tbl_shrink(set, priv);
-> +	rhashtable_remove_pprev(priv, he, pprev, GFP_KERNEL);
->  }
-<<snip>>
-Hi again,
-Sorry for the late response but I just got around to check the 3rd patch now,
-so my question about this fragment is: before nft_hash_remove() would free the
-element after removal, but after this change I don't see where and when the
-removed element would get freed ?
+Hello
 
-Nik
+>> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+>
+> This half of things looks good to me.
 
+
+Thanks!, What about the other half? Would you accept a two step approach?
+
+1st: add support for 8250_core
+2nd: handle rs485 ioctl on serial_core and modify all the other
+drivers to use that? (to avoid code duplication)
+
+Thanks
+
+
+-- 
+Ricardo Ribalda
