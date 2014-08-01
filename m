@@ -1,84 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402AbaHAOos (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 10:44:48 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:36546 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947AbaHAOor (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 10:44:47 -0400
+	id S1754738AbaHAOpc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 10:45:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60435 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750783AbaHAOpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 10:45:30 -0400
+Message-ID: <53DBA7E3.6000803@redhat.com>
+Date: Fri, 01 Aug 2014 16:44:51 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <53DB58A8.3070600@freescale.com>
-References: <1406626353-23309-1-git-send-email-cristian.stoica@freescale.com>
- <1406626353-23309-2-git-send-email-cristian.stoica@freescale.com>
- <53DAA097.90005@amacapital.net> <53DB58A8.3070600@freescale.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 1 Aug 2014 07:44:23 -0700
-Message-ID: <CALCETrX3r2shBVTCR=WEmXNV+L=Qk7+ZxKYamWZ4EjVLgqU5kg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] crypto: add support for TLS 1.0 record encryption
-To: Cristian Stoica <cristian.stoica@freescale.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, linux-crypto@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Hugh Dickins <hughd@google.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-doc@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux390@de.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH 4/5] mm, shmem: Add shmem swap memory accounting
+References: <1406036632-26552-1-git-send-email-jmarchan@redhat.com> <1406036632-26552-5-git-send-email-jmarchan@redhat.com> <alpine.LSU.2.11.1407312204000.3912@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1407312204000.3912@eggly.anvils>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="eVTrdPo9xN7VOjmWB6FO4XAEKfD6WMhmU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 1, 2014 at 2:06 AM, Cristian Stoica
-<cristian.stoica@freescale.com> wrote:
-> Hi Andy
->
-> On 31.07.2014 23:01, Andy Lutomirski wrote:
->> On 07/29/2014 02:32 AM, Cristian Stoica wrote:
-> ...
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--eVTrdPo9xN7VOjmWB6FO4XAEKfD6WMhmU
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
->>> +static int crypto_tls_decrypt(struct aead_request *req)
->>> +{
-
->>> +    /*
->>> +     * Step 2 - Verify padding
->>> +     * Retrieve the last byte of the payload; this is the padding size
->>> +     */
->>> +    cryptlen -= 1;
->>> +    scatterwalk_map_and_copy(&pad_size, req->dst, cryptlen, 1, 0);
->>> +
->>> +    /* RFC recommendation to defend against timing attacks is to continue
->>> +     * with hash calculation even if the padding is incorrect */
->>> +    if (cryptlen < pad_size + hash_size) {
->>> +            pad_size = 0;
->>> +            paderr = -EBADMSG;
-
-If this happens, then pad_size == 0.
-
->>> +    }
-
-else pad_size is likely to be nonzero.
-
->>> +    cryptlen -= pad_size;
-
-So now cryptlen depends on the result of the decryption, which means
-that this part is not constant time:
-
->>> +
->>> +    /* Now compute and compare our ICV with the one from the packet */
->>> +    err = crypto_tls_genicv(hash, req->dst, cryptlen, req);
->>> +    if (!err)
->>> +            err = crypto_memneq(hash, ihash, hash_size) ? -EBADMSG : 0;
+On 08/01/2014 07:05 AM, Hugh Dickins wrote:
+> On Tue, 22 Jul 2014, Jerome Marchand wrote:
+>=20
+>> Adds get_mm_shswap() which compute the size of swaped out shmem. It
+>> does so by pagewalking the mm and using the new shmem_locate() functio=
+n
+>> to get the physical location of shmem pages.
+>> The result is displayed in the new VmShSw line of /proc/<pid>/status.
+>> Use mm_walk an shmem_locate() to account paged out shmem pages.
 >>
->> This looks like it's vulnerable to the Lucky 13 attack.
->
-> Digest is always calculated and in this particular case memneq should
-> help with some of the timing leaks. ICV calculation is expected to pass
-> and any failures should be only for internal reasons. There are maybe
-> some other problems that I've never thought of. Did you have something
-> else in mind when you mentioned this attack?
->
-> Cristian S.
+>> It significantly slows down /proc/<pid>/status acccess speed when
+>> there is a big shmem mapping. If that is an issue, we can drop this
+>> patch and only display this counter in the inherently slower
+>> /proc/<pid>/smaps file (cf. next patch).
+>>
+>> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+>=20
+> Definite NAK to this one.  As you guessed yourself, it is always a
+> mistake to add one potentially very slow-to-gather number to a stats
+> file showing a group of quickly gathered numbers.
 
-If I understand it correctly, the issue is that cryptlen depends on
-the padding.  I added some notes inline above.  See here, too:
+What I was going for, is to have a counter for  shared swap in the same
+way I did for VmShm, but I never found a way to do it. The reason I
+posted this patch is that I hope than someone will have a better idea.
 
-https://www.imperialviolet.org/2013/02/04/luckythirteen.html
+>=20
+> Is there anything you could do instead?  I don't know if it's worth
+> the (little) extra mm_struct storage and maintenance, but you could
+> add a VmShmSize, which shows that subset of VmSize (total_vm) which
+> is occupied by shmem mappings.
+>=20
+> It's ambiguous what to deduce when VmShm is less than VmShmSize:
+> the difference might be swapped out, it might be holes in the sparse
+> object, it might be instantiated in the object but never faulted
+> into the mapping: in general it will be a mix of all of those.
+> So, sometimes useful info, but easy to be misled by it.
+>=20
+> As I say, I don't know if VmShmSize would be worth adding, given its
+> deficiencies; and it could be worked out from /proc/<pid>/maps anyway.
 
---Andy
+I don't think that would be very useful. Sparse mapping are quite common.=
+
+
+Jerome
+
+>=20
+> Hugh
+>=20
+
+
+
+--eVTrdPo9xN7VOjmWB6FO4XAEKfD6WMhmU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJT26fjAAoJEHTzHJCtsuoC+pUH/1O11EmBxfYoxEFZaFaQ8ISn
+axppvsKfJOmeceA1AKkFUdLrnPj2ZDfdlvbczKN6DR5HjsO6dRg8SExU+8SYVlr2
+io8QgEjwrrt6yFNNMhmaTob/xGySPCaepA9/YAEPXRewfueMGaCSsRoYfXiaFH/E
+QiPeb1/wWCDlvisiiz5vv2NBkPEE2C8/iVDyrE8KmefMvleD7+LovaZOzNhD7DV5
+cNQUj3WcVDgkMl6EcEiJS0Oriy/s3Xws31przHnfhyHGNuPhkuFptZZfApOcHn1m
+RTbr4LZvft7Kd08mJBIUhPSf+BNKJzHzk32GmiKAz/YAyXiFQp+KWonflCdnyYA=
+=6ENS
+-----END PGP SIGNATURE-----
+
+--eVTrdPo9xN7VOjmWB6FO4XAEKfD6WMhmU--
