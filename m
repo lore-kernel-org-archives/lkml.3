@@ -1,113 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaHBFPt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 01:15:49 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:52191 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040AbaHBFPq convert rfc822-to-8bit (ORCPT
+	id S1751972AbaHBF1d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 01:27:33 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:42629 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819AbaHBF1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 01:15:46 -0400
+	Sat, 2 Aug 2014 01:27:31 -0400
+Date: Sat, 2 Aug 2014 07:27:26 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, kan.liang@intel.com,
+        alexander.shishkin@linux.intel.com, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/3] x86 perf: Protect LBR msrs accessing against
+ potential #GP
+Message-ID: <20140802052726.GB14766@gmail.com>
+References: <1406799663-18192-1-git-send-email-kan.liang@intel.com>
+ <1406799663-18192-2-git-send-email-kan.liang@intel.com>
+ <20140801073825.GG19379@twins.programming.kicks-ass.net>
+ <20140801074430.GB3588@twins.programming.kicks-ass.net>
+ <20140801132120.GO18735@two.firstfloor.org>
+ <20140801185057.GK19379@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <53DA9BA9.60808@gmail.com>
-References: <1406822910-6255-1-git-send-email-afaerber@suse.de>
-	<1406822910-6255-5-git-send-email-afaerber@suse.de>
-	<53DA936E.9060004@gmail.com>
-	<53DA9709.10602@suse.de>
-	<53DA9BA9.60808@gmail.com>
-Date: Fri, 1 Aug 2014 22:15:45 -0700
-X-Google-Sender-Auth: ezA33yKdIUJhg4oBxtfoNHZ0Wus
-Message-ID: <CAD=FV=XVM4FUMxjindZGXku5DZ1MkTWq=Smmt_Fs7=_i4MBFKw@mail.gmail.com>
-Subject: Re: [PATCH v4 4/4] ARM: dts: Add exynos5250-spring device tree
-From: Doug Anderson <dianders@chromium.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140801185057.GK19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomasz,
 
-On Thu, Jul 31, 2014 at 12:40 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> Andreas,
->
-> On 31.07.2014 21:20, Andreas Färber wrote:
->> Am 31.07.2014 21:05, schrieb Tomasz Figa:
->>> On 31.07.2014 18:08, Andreas Färber wrote:
->>>> Adds initial support for the HP Chromebook 11.
->>>
->>> [snip]
->>>
->>>> +   gpio-keys {
->>>> +           compatible = "gpio-keys";
->>>> +           pinctrl-names = "default";
->>>> +           pinctrl-0 = <&power_key_irq>, <&lid_irq>;
->>>> +
->>>> +           power {
->>>> +                   label = "Power";
->>>> +                   gpios = <&gpx1 3 GPIO_ACTIVE_LOW>;
->>>> +                   linux,code = <KEY_POWER>;
->>>
->>> I assume the key is debounced in hardware, so there is no need for
->>> debounce-interval here. Is this correct?
->>
->> You're asking the wrong person... This is copied from
->> -cros-common/-snow. Downstream 3.8 does not have a debounce-interval
->> property.
->
-> Doug, Vincent?
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-Not something I've looked at, but it's never been a problem...
+> > > I yelled at BIOS engineers over their PMU usage and $vendor 
+> > > added a BIOS knob to disable that, I'll yell at BIOS engineers 
+> > > again, just give me their number.
+> > > 
+> > > Really, say NO already.
+> > 
+> > Ok, so no technical reason, merely a "me vs you" power play.
 
+Andi, stop the silly arguments already and stop launching personal 
+attacks against maintainers who are simply doing their job!
 
->>>> +&sd1_clk {
->>>> +   samsung,pin-drv = <0>;
->>>> +};
->>>> +
->>>> +&sd1_cmd {
->>>> +   samsung,pin-pud = <3>;
->>>> +   samsung,pin-drv = <0>;
->>>> +};
->>>> +
->>>> +&sd1_cd {
->>>> +   samsung,pin-drv = <0>;
->>>> +};
->>>> +
->>>> +&sd1_bus4 {
->>>> +   samsung,pin-drv = <0>;
->>>> +};
->>>
->>> Here generic settings are being overridden, so it might be a good idea
->>> to explain why, like with i2c pull-up above.
->>
->> Snow does not have an explanation either, so please suggest what comment
->> you'd like to see. Consider me just a user with no specs. :)
->
-> Doug, Vincent, someone else?
+> Clearly you forgot the discussion we had back then, you want me to 
+> find you a link or do you think you can Google it yourself? I'm not 
+> the only one who thinks its a terrible idea for the BIOS to involve 
+> itself in these things.
 
-The comment is just in a different place--it's in the dw_mmc node.
-Probably belongs here, though:
+The BIOS has no business stealing or meddling with limited resources 
+used by and managed by the kernel, such as PMU state. In addition to 
+the loss of utility to users when the BIOS interferes, PMUs are buggy 
+and fragile enough even without any undue BIOS interference.
 
-                /*
-                 * Wifi is a SiP, so can keep drive strengths low
-                 * to reduce EMI.
-                 */
+This was escallated up to Linus last time around and he agreed that 
+such BIOS meddling with kernel state is not acceptable, so you'll 
+probably have to convince him as well in addition to having to 
+convince every perf and x86 maintainer.
 
-I guess the cmd line isn't documented.  There is no external pull on
-the command line and on most boards there is one.  Our hardware guys
-thought we didn't need it and apparently we don't...
+	Ingo
