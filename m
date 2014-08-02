@@ -1,121 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654AbaHBDz4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 23:55:56 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:46966 "EHLO smtp.gentoo.org"
+	id S1751087AbaHBERn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 00:17:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60722 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753451AbaHBDzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 23:55:42 -0400
-From: Richard Yao <ryao@gentoo.org>
-To: kernel@gentoo.org
-Cc: Mateusz Guzik <mguzik@redhat.com>, mthode@mthode.org, michael@fds-team.de,
-        drobbins@funtoo.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 1/1] vfs: Respect MS_RDONLY at bind mount creation
-Date: Fri,  1 Aug 2014 23:55:12 -0400
-Message-Id: <1406951712-17687-2-git-send-email-ryao@gentoo.org>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <1406951712-17687-1-git-send-email-ryao@gentoo.org>
-References: <20140801192017.GC1850@mguzik.redhat.com>
- <1406951712-17687-1-git-send-email-ryao@gentoo.org>
+	id S1750729AbaHBERm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Aug 2014 00:17:42 -0400
+Message-ID: <53DC6641.2050904@redhat.com>
+Date: Sat, 02 Aug 2014 00:17:05 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Jirka Hladky <jhladky@redhat.com>, Davidlohr Bueso <davidlohr@hp.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Aaron Lu <aaron.lu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Hai Huang <hhuang@redhat.com>
+Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1% proc-vmstat.numa_hint_faults_local
+References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com>	 <53D72FF5.90908@intel.com> <20140729023940.37b6aebc@annuminas.surriel.com>	 <20140731104241.GA9918@twins.programming.kicks-ass.net>	 <20140731155723.GY3588@twins.programming.kicks-ass.net>	 <53DA6BDA.8080000@redhat.com> <1406926000.16021.6.camel@buesod1.americas.hpqcorp.net> <53DC06FA.8030104@redhat.com>
+In-Reply-To: <53DC06FA.8030104@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-`mount -o bind,ro ...` suffers from a silent failure where the readonly
-flag is ignored. The bind mount will be created rw whenever the target
-is rw. Users typically workaround this by remounting readonly, but that
-does not work when you want to define readonly bind mounts in fstab.
-This is a major annoyance when dealing with recursive bind mounts
-because the userland mount command does not expose the option to
-recursively remount a subtree as readonly.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Signed-off-by: Richard Yao <ryao@gentoo.org>
----
- fs/namespace.c | 15 +++++++++++----
- fs/pnode.h     | 17 +++++++++--------
- 2 files changed, 20 insertions(+), 12 deletions(-)
+On 08/01/2014 05:30 PM, Jirka Hladky wrote:
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 182bc41..6b3a566 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -921,6 +921,9 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
- 	if (flag & CL_MAKE_SHARED)
- 		set_mnt_shared(mnt);
- 
-+	if (flag & CL_MAKE_RDONLY)
-+		mnt_make_readonly(mnt);
-+
- 	/* stick the duplicate mount on the same expiry list
- 	 * as the original if that was on one */
- 	if (flag & CL_EXPIRE) {
-@@ -1827,11 +1830,13 @@ static bool has_locked_children(struct mount *mnt, struct dentry *dentry)
-  * do loopback mount.
-  */
- static int do_loopback(struct path *path, const char *old_name,
--				int recurse)
-+				unsigned long flags)
- {
- 	struct path old_path;
- 	struct mount *mnt = NULL, *old, *parent;
- 	struct mountpoint *mp;
-+	int recurse = flags & MS_REC;
-+	int clflags = (flags & MS_RDONLY) ? CL_MAKE_RDONLY : 0;
- 	int err;
- 	if (!old_name || !*old_name)
- 		return -EINVAL;
-@@ -1862,9 +1867,10 @@ static int do_loopback(struct path *path, const char *old_name,
- 		goto out2;
- 
- 	if (recurse)
--		mnt = copy_tree(old, old_path.dentry, CL_COPY_MNT_NS_FILE);
-+		mnt = copy_tree(old, old_path.dentry, CL_COPY_MNT_NS_FILE |
-+			clflags);
- 	else
--		mnt = clone_mnt(old, old_path.dentry, 0);
-+		mnt = clone_mnt(old, old_path.dentry, clflags);
- 
- 	if (IS_ERR(mnt)) {
- 		err = PTR_ERR(mnt);
-@@ -2444,7 +2450,8 @@ long do_mount(const char *dev_name, const char *dir_name,
- 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
- 				    data_page);
- 	else if (flags & MS_BIND)
--		retval = do_loopback(&path, dev_name, flags & MS_REC);
-+		retval = do_loopback(&path, dev_name, flags & (MS_REC |
-+							       MS_RDONLY));
- 	else if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
- 		retval = do_change_type(&path, flags);
- 	else if (flags & MS_MOVE)
-diff --git a/fs/pnode.h b/fs/pnode.h
-index 4a24635..7d32196 100644
---- a/fs/pnode.h
-+++ b/fs/pnode.h
-@@ -20,14 +20,15 @@
- #define SET_MNT_MARK(m) ((m)->mnt.mnt_flags |= MNT_MARKED)
- #define CLEAR_MNT_MARK(m) ((m)->mnt.mnt_flags &= ~MNT_MARKED)
- 
--#define CL_EXPIRE    		0x01
--#define CL_SLAVE     		0x02
--#define CL_COPY_UNBINDABLE	0x04
--#define CL_MAKE_SHARED 		0x08
--#define CL_PRIVATE 		0x10
--#define CL_SHARED_TO_SLAVE	0x20
--#define CL_UNPRIVILEGED		0x40
--#define CL_COPY_MNT_NS_FILE	0x80
-+#define CL_EXPIRE    		0x001
-+#define CL_SLAVE     		0x002
-+#define CL_COPY_UNBINDABLE	0x004
-+#define CL_MAKE_SHARED 		0x008
-+#define CL_PRIVATE 		0x010
-+#define CL_SHARED_TO_SLAVE	0x020
-+#define CL_UNPRIVILEGED		0x040
-+#define CL_COPY_MNT_NS_FILE	0x080
-+#define CL_MAKE_RDONLY 		0x100
- 
- #define CL_COPY_ALL		(CL_COPY_UNBINDABLE | CL_COPY_MNT_NS_FILE)
- 
--- 
-1.8.5.5
+> I see the regression only on this box. It has 4 "Ivy Bridge-EX"
+> Xeon E7-4890 v2 CPUs.
+> 
+> http://ark.intel.com/products/75251 
+> http://en.wikipedia.org/wiki/List_of_Intel_Xeon_microprocessors#.22Ivy_Bridge-EX.22_.2822_nm.29_Expandable_2
+>
+> 
+> 
+> Please rerun the test on box with Ivy Bridge CPUs. It seems that
+> older CPU generations are not affected.
 
+That would have been good info to know :)
+
+I've been spending about a month trying to reproduce your issue on a
+Westmere E7-4860.
+
+Good thing I found all kinds of other scheduler issues along the way...
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJT3GZBAAoJEM553pKExN6D4FcH/2c/kYOZkbJeLBEWJHB0yWNR
+tqI2Lt/qxPxOKADlDylJwj2Dq8R19Cc4tnJZAdPh+wgCivFefseQY0MI1TI8CO/Z
+vEH+dCG8hokygFxKqAX9udI0MD1OxfTKKIk4fdjInZ632JG+JHnqVH6qWxBsriXD
+151jzCR/zQEjg6gyCc8YsL06Q9YHyVv7dakggtRkYnE1GIUAtTDhFttRpNYoiVQQ
+y/d32adq//PywTmsyWwJMu1ZGe1eGC57JBYzjoUo2iOlFQ9QR+fe4W2/6ZCbekwK
+O8ZYbrJzDGrNQP2yDYd+o040KeVfzYkOtwz7+/40TYIvqFiuvKxEAxbJ32+krxA=
+=XxCE
+-----END PGP SIGNATURE-----
