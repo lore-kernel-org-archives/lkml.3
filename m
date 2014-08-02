@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753AbaHBK5P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 06:57:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9059 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753622AbaHBK5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 06:57:07 -0400
-Message-ID: <53DCC3CF.4000003@redhat.com>
-Date: Sat, 02 Aug 2014 12:56:15 +0200
-From: Nikolay Aleksandrov <nikolay@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754783AbaHBLVf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 07:21:35 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:52960 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754389AbaHBLVd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Aug 2014 07:21:33 -0400
+Date: Sat, 2 Aug 2014 16:51:30 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] net: wireless: wl1251: Remove unnecessary free_irq
+Message-ID: <20140802112130.GA3193@himangi-Dell>
 MIME-Version: 1.0
-To: Thomas Graf <tgraf@suug.ch>, davem@davemloft.net, netdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kaber@trash.net, paulmck@linux.vnet.ibm.com,
-        josh@joshtriplett.org, challa@noironetworks.com, walpole@cs.pdx.edu,
-        dev@openvswitch.org, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH net-next 3/3] nftables: Convert nft_hash to use generic
- rhashtable
-References: <cover.1406971567.git.tgraf@suug.ch> <583cb5fc8f1bc2f47d338dfba06f514e7b89a548.1406971567.git.tgraf@suug.ch>
-In-Reply-To: <583cb5fc8f1bc2f47d338dfba06f514e7b89a548.1406971567.git.tgraf@suug.ch>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2014 11:47 AM, Thomas Graf wrote:
-> The sizing of the hash table and the practice of requiring a lookup
-> to retrieve the pprev to be stored in the element cookie before the
-> deletion of an entry is left intact.
-> 
-> Signed-off-by: Thomas Graf <tgraf@suug.ch>
-> Acked-by: Patrick McHardy <kaber@trash.net>
-> ---
->  net/netfilter/nft_hash.c | 291 +++++++++--------------------------------------
->  1 file changed, 55 insertions(+), 236 deletions(-)
-> 
+This patch does away with free_irq in the remove function as the irq is
+allocated with a devm_request_irq.
 
-Reviewed-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+---
+I'm not sure that devm_request_irq should be used in
+the first place, as it will move the stopping of the interrupt over
+wl1251_free_hw. Should I use request_irq?
+ drivers/net/wireless/ti/wl1251/spi.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/net/wireless/ti/wl1251/spi.c b/drivers/net/wireless/ti/wl1251/spi.c
+index a0aa8fa..735be53 100644
+--- a/drivers/net/wireless/ti/wl1251/spi.c
++++ b/drivers/net/wireless/ti/wl1251/spi.c
+@@ -345,7 +345,6 @@ static int wl1251_spi_remove(struct spi_device *spi)
+ {
+ 	struct wl1251 *wl = spi_get_drvdata(spi);
+ 
+-	free_irq(wl->irq, wl);
+ 	wl1251_free_hw(wl);
+ 	regulator_disable(wl->vio);
+ 
+-- 
+1.9.1
 
