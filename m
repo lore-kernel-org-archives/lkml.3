@@ -1,132 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977AbaHBNUV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 09:20:21 -0400
-Received: from mail.kernel.org ([198.145.19.201]:41762 "EHLO mail.kernel.org"
+	id S1755006AbaHBNae (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 09:30:34 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42022 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754676AbaHBNUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 09:20:19 -0400
-Date: Sat, 2 Aug 2014 10:20:13 -0300
+	id S1754489AbaHBNac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Aug 2014 09:30:32 -0400
+Date: Sat, 2 Aug 2014 10:30:26 -0300
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH v2 2/2] perf tools: Default to python version 2
-Message-ID: <20140802132013.GC13375@kernel.org>
-References: <1406617040-26909-1-git-send-email-namhyung@kernel.org>
- <1406617040-26909-2-git-send-email-namhyung@kernel.org>
- <20140801202149.GB13375@kernel.org>
- <53DCC3F0.6000105@tu-dresden.de>
+Subject: Re: [PATCH 2/8] perf tools: Make __hpp__fmt() receive an additional
+ len argument
+Message-ID: <20140802133026.GD13375@kernel.org>
+References: <1406785662-5534-1-git-send-email-namhyung@kernel.org>
+ <1406785662-5534-3-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53DCC3F0.6000105@tu-dresden.de>
+In-Reply-To: <1406785662-5534-3-git-send-email-namhyung@kernel.org>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Aug 02, 2014 at 12:56:48PM +0200, Thomas Ilsche escreveu:
-> 
-> Zitat von Arnaldo Carvalho de Melo <acme@kernel.org>:
-> 
-> > Em Tue, Jul 29, 2014 at 03:57:20PM +0900, Namhyung Kim escreveu:
-> >> According to PEP 394 recommendation [1], it's more portable to use
-> >> python2 rather than plain python to refer python binary version 2.
-> >>
-> >> Since there're distros using python3 by default like Arch, and we
-> >> don't support python3 (yet), it'd be better using python2 explicitly.
-> >>
-> >> But older versions (prior to 2.7) seem not to provide python2 but just
-> >> python.  Given that it's only old version, try python2 first and then
-> >> fallback to python.  It'll ensure that it always points to python 2.x.
-> >
-> > It should fallback, right?
-> 
-> Yes.
-> 
-> > [acme@fedora14 linux]$ ls -la /usr/bin/python2-config
-> > ls: cannot access /usr/bin/python2-config: No such file or directory
-> > [acme@fedora14 linux]$ ls -la /usr/bin/python-config
-> > lrwxrwxrwx. 1 root root 16 Mar 25 09:43 /usr/bin/python-config ->  
-> > python2.7-config
-> 
-> Appearently this fedora package symlinks python -> python2 but does not so for
-> python2-config. The Makefile looks for either python2 or python as fallback and
-> then assumes that a respective "-config" exists. I think this is a sane assumption.
+Em Thu, Jul 31, 2014 at 02:47:36PM +0900, Namhyung Kim escreveu:
+> So that it can properly handle alignment requirements later.  To do
+> that, add percent_color_len_snprintf() fucntion to help coloring of
+> overhead columns.
 
-Maybe the way python was packaged on f14 is problematic, as you
-describe, but the fact is that python support is not working on that
-platform after this patch.
+Can you elaborate on this description? What is not possible to do before
+this patch?
 
-Could you please try to prepare a patch that does as you suggest so that
-I can try?
-
-Thanks,
-
-- Arnaldo
+Perhaps a formatted line before this patch and then the same line
+formatted after the patch?
  
-> I guess if this needs to be supported, there needs to be another fallback if
-> $(PYTHON)-config is not found to try python-config again. However this may
-> behave weirdly if someone has python2, no python2-devel but python3-devel
-> installed, sets PYTHON=python2 and then still gets a version error. Or we
-> somehow only fallback if no PYTHON is specified (not sure how to implemented
-> that elegantly).
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/ui/browsers/hists.c | 14 ++++++++------
+>  tools/perf/ui/gtk/hists.c      |  8 +++++---
+>  tools/perf/ui/hist.c           | 43 +++++++++++++++++++++---------------------
+>  tools/perf/util/color.c        | 16 ++++++++++++++++
+>  tools/perf/util/color.h        |  1 +
+>  tools/perf/util/hist.h         |  4 ++--
+>  6 files changed, 54 insertions(+), 32 deletions(-)
 > 
-> Best,
-> Thomas
-> 
-> 
-> > [acme@fedora14 linux]$ rpm -qf /usr/bin/python-config
-> > python-devel-2.7-8.fc14.1.x86_64
-> > [acme@fedora14 linux]$ cat /etc/fedora-release
-> > Fedora release 14 (Laughlin)
-> > [acme@fedora14 linux]$
-> >
-> > [acme@fedora14 linux]$ time make O=/tmp/build/perf -C tools/perf install
-> > make: Entering directory `/home/acme/git/linux/tools/perf'
-> >   BUILD:   Doing 'make -j4' parallel build
-> > config/Makefile:126: The path '/usr/bin/python2-config' is not executable.
-> > config/Makefile:339: No libdw DWARF unwind found, Please install
-> > elfutils-devel/libdw-dev >= 0.158 and/or set LIBDW_DIR
-> > config/Makefile:481: Missing perl devel files. Disabling perl scripting
-> > support, consider installing perl-ExtUtils-Embed
-> > config/Makefile:512: No python-config tool was found
-> > config/Makefile:512: Python support will not be built
-> >
-> >> [1] https://www.python.org/dev/peps/pep-0394
-> >>
-> >> Suggested-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
-> >> Tested-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
-> >> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> >> ---
-> >>  tools/perf/config/Makefile | 4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> >> index e05d8f99424d..60177278a357 100644
-> >> --- a/tools/perf/config/Makefile
-> >> +++ b/tools/perf/config/Makefile
-> >> @@ -121,8 +121,8 @@ ifdef PARSER_DEBUG
-> >>  endif
-> >>
-> >>  ifndef NO_LIBPYTHON
-> >> -  override PYTHON := \
-> >> -    $(call get-executable-or-default,PYTHON,python)
-> >> +  PYTHON2 := $(if $(call get-executable,python2),python2,python)
-> >> +  override PYTHON := $(call get-executable-or-default,PYTHON,$(PYTHON2))
-> >>    override PYTHON_CONFIG := \
-> >>      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
-> >>
-> >> --
-> >> 2.0.0
-> 
-> 
-> 
-> 
-
-
+> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+> index a94b11fc5e00..02507ba944e3 100644
+> --- a/tools/perf/ui/browsers/hists.c
+> +++ b/tools/perf/ui/browsers/hists.c
+> @@ -653,17 +653,18 @@ struct hpp_arg {
+>  static int __hpp__slsmg_color_printf(struct perf_hpp *hpp, const char *fmt, ...)
+>  {
+>  	struct hpp_arg *arg = hpp->ptr;
+> -	int ret;
+> +	int ret, len;
+>  	va_list args;
+>  	double percent;
+>  
+>  	va_start(args, fmt);
+> +	len = va_arg(args, int);
+>  	percent = va_arg(args, double);
+>  	va_end(args);
+>  
+>  	ui_browser__set_percent_color(arg->b, percent, arg->current_entry);
+>  
+> -	ret = scnprintf(hpp->buf, hpp->size, fmt, percent);
+> +	ret = scnprintf(hpp->buf, hpp->size, fmt, len, percent);
+>  	slsmg_printf("%s", hpp->buf);
+>  
+>  	advance_hpp(hpp, ret);
+> @@ -681,7 +682,7 @@ hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
+>  				struct perf_hpp *hpp,			\
+>  				struct hist_entry *he)			\
+>  {									\
+> -	return __hpp__fmt(hpp, he, __hpp_get_##_field, " %6.2f%%",	\
+> +	return __hpp__fmt(hpp, he, __hpp_get_##_field, " %*.2f%%", 6,	\
+>  			  __hpp__slsmg_color_printf, true);		\
+>  }
+>  
+> @@ -697,13 +698,14 @@ hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
+>  				struct hist_entry *he)			\
+>  {									\
+>  	if (!symbol_conf.cumulate_callchain) {				\
+> -		int ret = scnprintf(hpp->buf, hpp->size, "%8s", "N/A");	\
+> +		int ret = scnprintf(hpp->buf, hpp->size,		\
+> +				    "%*s", 8, "N/A");			\
+>  		slsmg_printf("%s", hpp->buf);				\
+>  									\
+>  		return ret;						\
+>  	}								\
+> -	return __hpp__fmt(hpp, he, __hpp_get_acc_##_field, " %6.2f%%",	\
+> -			  __hpp__slsmg_color_printf, true);		\
+> +	return __hpp__fmt(hpp, he, __hpp_get_acc_##_field, " %*.2f%%",	\
+> +			  6, __hpp__slsmg_color_printf, true);	\
+>  }
+>  
+>  __HPP_COLOR_PERCENT_FN(overhead, period)
+> diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+> index 6ca60e482cdc..91f6cd7d2312 100644
+> --- a/tools/perf/ui/gtk/hists.c
+> +++ b/tools/perf/ui/gtk/hists.c
+> @@ -11,6 +11,7 @@
+>  static int __percent_color_snprintf(struct perf_hpp *hpp, const char *fmt, ...)
+>  {
+>  	int ret = 0;
+> +	int len;
+>  	va_list args;
+>  	double percent;
+>  	const char *markup;
+> @@ -18,6 +19,7 @@ static int __percent_color_snprintf(struct perf_hpp *hpp, const char *fmt, ...)
+>  	size_t size = hpp->size;
+>  
+>  	va_start(args, fmt);
+> +	len = va_arg(args, int);
+>  	percent = va_arg(args, double);
+>  	va_end(args);
+>  
+> @@ -25,7 +27,7 @@ static int __percent_color_snprintf(struct perf_hpp *hpp, const char *fmt, ...)
+>  	if (markup)
+>  		ret += scnprintf(buf, size, markup);
+>  
+> -	ret += scnprintf(buf + ret, size - ret, fmt, percent);
+> +	ret += scnprintf(buf + ret, size - ret, fmt, len, percent);
+>  
+>  	if (markup)
+>  		ret += scnprintf(buf + ret, size - ret, "</span>");
+> @@ -43,7 +45,7 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
+>  				       struct perf_hpp *hpp,			\
+>  				       struct hist_entry *he)			\
+>  {										\
+> -	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
+> +	return __hpp__fmt(hpp, he, he_get_##_field, " %*.2f%%", 6,		\
+>  			  __percent_color_snprintf, true);			\
+>  }
+>  
+> @@ -57,7 +59,7 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
+>  				       struct perf_hpp *hpp,			\
+>  				       struct hist_entry *he)			\
+>  {										\
+> -	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
+> +	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %*.2f%%", 6, 	\
+>  			      __percent_color_snprintf, true);			\
+>  }
+>  
+> diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+> index 498adb23c02e..c6cffbd0b0e1 100644
+> --- a/tools/perf/ui/hist.c
+> +++ b/tools/perf/ui/hist.c
+> @@ -16,7 +16,7 @@
+>  })
+>  
+>  int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+> -	       hpp_field_fn get_field, const char *fmt,
+> +	       hpp_field_fn get_field, const char *fmt, int len,
+>  	       hpp_snprint_fn print_fn, bool fmt_percent)
+>  {
+>  	int ret;
+> @@ -32,9 +32,9 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+>  		if (total)
+>  			percent = 100.0 * get_field(he) / total;
+>  
+> -		ret = hpp__call_print_fn(hpp, print_fn, fmt, percent);
+> +		ret = hpp__call_print_fn(hpp, print_fn, fmt, len, percent);
+>  	} else
+> -		ret = hpp__call_print_fn(hpp, print_fn, fmt, get_field(he));
+> +		ret = hpp__call_print_fn(hpp, print_fn, fmt, len, get_field(he));
+>  
+>  	if (perf_evsel__is_group_event(evsel)) {
+>  		int prev_idx, idx_delta;
+> @@ -60,19 +60,19 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+>  				 */
+>  				if (fmt_percent) {
+>  					ret += hpp__call_print_fn(hpp, print_fn,
+> -								  fmt, 0.0);
+> +								  fmt, len, 0.0);
+>  				} else {
+>  					ret += hpp__call_print_fn(hpp, print_fn,
+> -								  fmt, 0ULL);
+> +								  fmt, len, 0ULL);
+>  				}
+>  			}
+>  
+>  			if (fmt_percent) {
+> -				ret += hpp__call_print_fn(hpp, print_fn, fmt,
+> +				ret += hpp__call_print_fn(hpp, print_fn, fmt, len,
+>  							  100.0 * period / total);
+>  			} else {
+>  				ret += hpp__call_print_fn(hpp, print_fn, fmt,
+> -							  period);
+> +							  len, period);
+>  			}
+>  
+>  			prev_idx = perf_evsel__group_idx(evsel);
+> @@ -86,10 +86,10 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+>  			 */
+>  			if (fmt_percent) {
+>  				ret += hpp__call_print_fn(hpp, print_fn,
+> -							  fmt, 0.0);
+> +							  fmt, len, 0.0);
+>  			} else {
+>  				ret += hpp__call_print_fn(hpp, print_fn,
+> -							  fmt, 0ULL);
+> +							  fmt, len, 0ULL);
+>  			}
+>  		}
+>  	}
+> @@ -105,7 +105,7 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+>  }
+>  
+>  int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
+> -		   hpp_field_fn get_field, const char *fmt,
+> +		   hpp_field_fn get_field, const char *fmt, int len,
+>  		   hpp_snprint_fn print_fn, bool fmt_percent)
+>  {
+>  	if (!symbol_conf.cumulate_callchain) {
+> @@ -113,7 +113,7 @@ int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
+>  				fmt_percent ? 8 : 12, "N/A");
+>  	}
+>  
+> -	return __hpp__fmt(hpp, he, get_field, fmt, print_fn, fmt_percent);
+> +	return __hpp__fmt(hpp, he, get_field, fmt, len, print_fn, fmt_percent);
+>  }
+>  
+>  static int field_cmp(u64 field_a, u64 field_b)
+> @@ -221,11 +221,12 @@ static int hpp_color_scnprintf(struct perf_hpp *hpp, const char *fmt, ...)
+>  	va_list args;
+>  	ssize_t ssize = hpp->size;
+>  	double percent;
+> -	int ret;
+> +	int ret, len;
+>  
+>  	va_start(args, fmt);
+> +	len = va_arg(args, int);
+>  	percent = va_arg(args, double);
+> -	ret = value_color_snprintf(hpp->buf, hpp->size, fmt, percent);
+> +	ret = percent_color_len_snprintf(hpp->buf, hpp->size, fmt, len, percent);
+>  	va_end(args);
+>  
+>  	return (ret >= ssize) ? (ssize - 1) : ret;
+> @@ -253,7 +254,7 @@ static u64 he_get_##_field(struct hist_entry *he)				\
+>  static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
+>  			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+>  {										\
+> -	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
+> +	return __hpp__fmt(hpp, he, he_get_##_field, " %*.2f%%",	6,		\
+>  			  hpp_color_scnprintf, true);				\
+>  }
+>  
+> @@ -261,8 +262,8 @@ static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
+>  static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+>  			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+>  {										\
+> -	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
+> -	return __hpp__fmt(hpp, he, he_get_##_field, fmt,			\
+> +	int len = symbol_conf.field_sep ? 1 : 6;				\
+> +	return __hpp__fmt(hpp, he, he_get_##_field, " %*.2f%%",	len,		\
+>  			  hpp_entry_scnprintf, true);				\
+>  }
+>  
+> @@ -281,7 +282,7 @@ static u64 he_get_acc_##_field(struct hist_entry *he)				\
+>  static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
+>  			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+>  {										\
+> -	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
+> +	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %*.2f%%",	6, 	\
+>  			      hpp_color_scnprintf, true);			\
+>  }
+>  
+> @@ -289,8 +290,8 @@ static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
+>  static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+>  			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+>  {										\
+> -	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
+> -	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, fmt,		\
+> +	int len = symbol_conf.field_sep ? 1 : 6;				\
+> +	return __hpp__fmt_acc(hpp, he, he_get_##_field, " %*.2f%%", len,	\
+>  			      hpp_entry_scnprintf, true);			\
+>  }
+>  
+> @@ -309,8 +310,8 @@ static u64 he_get_raw_##_field(struct hist_entry *he)				\
+>  static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+>  			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+>  {										\
+> -	const char *fmt = symbol_conf.field_sep ? " %"PRIu64 : " %11"PRIu64;	\
+> -	return __hpp__fmt(hpp, he, he_get_raw_##_field, fmt,			\
+> +	int len = symbol_conf.field_sep ? 1 : 11;				\
+> +	return __hpp__fmt(hpp, he, he_get_raw_##_field, " %*"PRIu64, len, 	\
+>  			  hpp_entry_scnprintf, false);				\
+>  }
+>  
+> diff --git a/tools/perf/util/color.c b/tools/perf/util/color.c
+> index 87b8672eb413..f4654183d391 100644
+> --- a/tools/perf/util/color.c
+> +++ b/tools/perf/util/color.c
+> @@ -335,3 +335,19 @@ int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...)
+>  	va_end(args);
+>  	return value_color_snprintf(bf, size, fmt, percent);
+>  }
+> +
+> +int percent_color_len_snprintf(char *bf, size_t size, const char *fmt, ...)
+> +{
+> +	va_list args;
+> +	int len;
+> +	double percent;
+> +	const char *color;
+> +
+> +	va_start(args, fmt);
+> +	len = va_arg(args, int);
+> +	percent = va_arg(args, double);
+> +	va_end(args);
+> +
+> +	color = get_percent_color(percent);
+> +	return color_snprintf(bf, size, color, fmt, len, percent);
+> +}
+> diff --git a/tools/perf/util/color.h b/tools/perf/util/color.h
+> index 7ff30a62a132..0a594b8a0c26 100644
+> --- a/tools/perf/util/color.h
+> +++ b/tools/perf/util/color.h
+> @@ -41,6 +41,7 @@ int color_fprintf_ln(FILE *fp, const char *color, const char *fmt, ...);
+>  int color_fwrite_lines(FILE *fp, const char *color, size_t count, const char *buf);
+>  int value_color_snprintf(char *bf, size_t size, const char *fmt, double value);
+>  int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...);
+> +int percent_color_len_snprintf(char *bf, size_t size, const char *fmt, ...);
+>  int percent_color_fprintf(FILE *fp, const char *fmt, double percent);
+>  const char *get_percent_color(double percent);
+>  
+> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+> index 742f49a85725..13d074db9ef1 100644
+> --- a/tools/perf/util/hist.h
+> +++ b/tools/perf/util/hist.h
+> @@ -267,10 +267,10 @@ typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
+>  typedef int (*hpp_snprint_fn)(struct perf_hpp *hpp, const char *fmt, ...);
+>  
+>  int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+> -	       hpp_field_fn get_field, const char *fmt,
+> +	       hpp_field_fn get_field, const char *fmt, int len,
+>  	       hpp_snprint_fn print_fn, bool fmt_percent);
+>  int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
+> -		   hpp_field_fn get_field, const char *fmt,
+> +		   hpp_field_fn get_field, const char *fmt, int len,
+>  		   hpp_snprint_fn print_fn, bool fmt_percent);
+>  
+>  static inline void advance_hpp(struct perf_hpp *hpp, int inc)
+> -- 
+> 2.0.0
