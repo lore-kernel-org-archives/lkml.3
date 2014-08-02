@@ -1,371 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560AbaHBBM3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 21:12:29 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63263 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754389AbaHBBM1 (ORCPT
+	id S1754700AbaHBBMt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 21:12:49 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:47007 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255AbaHBBMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 21:12:27 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: Re: [PATCH 1/3] irq / PM: New driver interface for wakeup interruptsn
-Date: Sat, 02 Aug 2014 03:31:01 +0200
-Message-ID: <1466301.X6ofroi0AB@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <3855585.ek3PTQLkmN@vostro.rjw.lan>
-References: <20140724212620.GO3935@laptop> <alpine.DEB.2.10.1408011533580.4997@nanos> <3855585.ek3PTQLkmN@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 1 Aug 2014 21:12:09 -0400
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: linux-xtensa@linux-xtensa.org
+Cc: Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+        Steven Hill <Steven.Hill@imgtec.com>,
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH v4 1/2] mm/highmem: make kmap cache coloring aware
+Date: Sat,  2 Aug 2014 05:11:38 +0400
+Message-Id: <1406941899-19932-2-git-send-email-jcmvbkbc@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1406941899-19932-1-git-send-email-jcmvbkbc@gmail.com>
+References: <1406941899-19932-1-git-send-email-jcmvbkbc@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 01, 2014 04:29:40 PM Rafael J. Wysocki wrote:
-> On Friday, August 01, 2014 03:43:21 PM Thomas Gleixner wrote:
-> > On Fri, 1 Aug 2014, Rafael J. Wysocki wrote:
-> > > OK, I guess "IRQ_HANDLED from a wakeup interrupt" may be interpreted as
-> > > IRQ_HANDLED_PMWAKE.  On the other hand, if that's going to be handled in
-> > > handle_irq_event_percpu(), then using a special return code would save us
-> > > a brach for IRQ_HANDLED interrupts.  We could convert it to IRQ_HANDLED
-> > > immediately then.
-> > 
-> > We can handle it at the end of the function by calling
-> > note_interrupt() unconditionally do the following there:
-> > 
-> >       if (suspended) {
-> >       	 if (ret == IRQ_NONE) {
-> > 	    if (shared)
-> > 	       yell_and_abort_or_resume();
-> >          } else {
-> > 	    abort_or_resume();
-> >          }
-> >       }
-> >       if (noirqdebug)
-> >       	 return;
-> 
-> I see.
-> 
-> > > OK, I'll take a stab at the IRQF_SHARED thing if you don't mind.
-> > 
-> > Definitely not :)
-> > 
-> > > Here's my current understanding of what can be done for IRQF_NO_SUSPEND.
-> > > 
-> > > In suspend_device_irqs():
-> > > 
-> > > (1) If all actions in the list have the same setting (eg. IRQF_NO_SUSPEND unset),
-> > >     keep the current behavior.
-> > > (2) If the actions have different settings:
-> > >     - Actions with IRQF_NO_SUSPEND set are not modified.
-> > >     - Actions with IRQF_NO_SUSPEND unset are switched over to a stub handler.
-> > >     - IRQS_SUSPEND_MODE (new flag) is set for the IRQ.
-> > 
-> > Can we please do that in setup_irq() and let the shared ones always
-> > run through the stub? That keeps suspend/resume_device_irqs() simple.
-> 
-> OK
+User-visible effect:
+Architectures that choose this method of maintaining cache coherency
+(MIPS and xtensa currently) are able to use high memory on cores with
+aliasing data cache. Without this fix such architectures can not use
+high memory (in case of xtensa it means that at most 128 MBytes of
+physical memory is available).
 
-I've tried to do that, but encountered a problem.  The stub handler is called
-with irq, dev_id as arguments and for the "interrupts are not suspended" case
-(common) it has to use irq to find the irq_desc and then it has to use dev_id
-to find the irqaction to call the original handler from there.  That seemed to
-be a bit too much of a penalty to me.  Especially for people who never suspend
-their machines. :-)
+The problem:
+VIPT cache with way size larger than MMU page size may suffer from
+aliasing problem: a single physical address accessed via different
+virtual addresses may end up in multiple locations in the cache.
+Virtual mappings of a physical address that always get cached in
+different cache locations are said to have different colors.
+L1 caching hardware usually doesn't handle this situation leaving it
+up to software. Software must avoid this situation as it leads to
+data corruption.
 
-For this reason, I went for changing handlers in suspend_device_irqs() and
-back in resume_device_irqs().  That's not terribly complicated (the restoration
-in particular is pretty simple) and it should be easily reusable for the wakeup
-interrupts case.  resume_device_irqs() wouldn't need any more changes for that,
-for example.  It minimally affects systems that don't suspend too.
+What can be done:
+One way to handle this is to flush and invalidate data cache every time
+page mapping changes color. The other way is to always map physical page
+at a virtual address with the same color. Low memory pages already have
+this property. Giving architecture a way to control color of high memory
+page mapping allows reusing of existing low memory cache alias handling
+code.
 
-I also ended up adding a new interrupt handler return code (IRQ_SUSPENDED).
-I could add a new irq_desc flag instead, but then the new code in suspend_device_irqs()
-and the new check in note_interrupt() would need to be slightly more complicated.
+How this is done with this patch:
+Provide hooks that allow architectures with aliasing cache to align
+mapping address of high pages according to their color. Such architectures
+may enforce similar coloring of low- and high-memory page mappings and
+reuse existing cache management functions to support highmem.
 
-Below is my current prototype.  Please have a look and let me know what you
-think.
+This code is based on the implementation of similar feature for MIPS by
+Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>.
 
-I gave it a little bit of testing with success.
-
-Of course, I'd prefer to move the IRQ suspend/resume code to pm.c and get rid
-of the third argument in __disable_irq() and __enable_irq() before making these
-changes for real.
-
-Rafael
-
-
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 ---
- drivers/base/power/main.c   |    1 +
- drivers/base/power/wakeup.c |   20 ++++++++++++++++++++
- include/linux/interrupt.h   |    2 ++
- include/linux/irqreturn.h   |    2 ++
- include/linux/suspend.h     |    3 +++
- kernel/irq/handle.c         |    3 +--
- kernel/irq/manage.c         |   35 ++++++++++++++++++++++++++++++++++-
- kernel/irq/pm.c             |    7 +++++--
- kernel/irq/spurious.c       |   16 ++++++++++++++++
- 9 files changed, 84 insertions(+), 5 deletions(-)
+Changes v3->v4:
+- drop #include <asm/highmem.h> from mm/highmem.c as it's done in
+  linux/highmem.h;
+- add 'User-visible effect' section to changelog.
 
-Index: linux-pm/kernel/irq/manage.c
-===================================================================
---- linux-pm.orig/kernel/irq/manage.c
-+++ linux-pm/kernel/irq/manage.c
-@@ -382,11 +382,36 @@ setup_affinity(unsigned int irq, struct
- }
- #endif
+Changes v2->v3:
+- drop ARCH_PKMAP_COLORING, check gif et_pkmap_color is defined instead;
+- add comment stating that arch should place definitions into
+  asm/highmem.h, include it directly to mm/highmem.c;
+- replace macros with inline functions, change set_pkmap_color to
+  get_pkmap_color which better fits inline function model;
+- drop get_last_pkmap_nr;
+- replace get_next_pkmap_counter with get_pkmap_entries_count, leave
+  original counting code;
+- introduce get_pkmap_wait_queue_head and make sleeping/waking dependent
+  on mapping color;
+- move file-scope static variables last_pkmap_nr and pkmap_map_wait into
+  get_next_pkmap_nr and get_pkmap_wait_queue_head respectively;
+- document new functions;
+- expand patch description and change authorship.
+
+Changes v1->v2:
+- define set_pkmap_color(pg, cl) as do { } while (0) instead of /* */;
+- rename is_no_more_pkmaps to no_more_pkmaps;
+- change 'if (count > 0)' to 'if (count)' to better match the original
+  code behavior;
+
+ mm/highmem.c | 86 ++++++++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 75 insertions(+), 11 deletions(-)
+
+diff --git a/mm/highmem.c b/mm/highmem.c
+index b32b70c..123bcd3 100644
+--- a/mm/highmem.c
++++ b/mm/highmem.c
+@@ -44,6 +44,66 @@ DEFINE_PER_CPU(int, __kmap_atomic_idx);
+  */
+ #ifdef CONFIG_HIGHMEM
  
 +/*
-+ * Dummy handler for shared interrupts to use during system suspend.
++ * Architecture with aliasing data cache may define the following family of
++ * helper functions in its asm/highmem.h to control cache color of virtual
++ * addresses where physical memory pages are mapped by kmap.
 + */
-+static irqreturn_t irq_pm_dummy_handler(int irq, void *dev_id)
++#ifndef get_pkmap_color
++
++/*
++ * Determine color of virtual address where the page should be mapped.
++ */
++static inline unsigned int get_pkmap_color(struct page *page)
 +{
-+	return IRQ_SUSPENDED;
++	return 0;
++}
++#define get_pkmap_color get_pkmap_color
++
++/*
++ * Get next index for mapping inside PKMAP region for page with given color.
++ */
++static inline unsigned int get_next_pkmap_nr(unsigned int color)
++{
++	static unsigned int last_pkmap_nr;
++
++	last_pkmap_nr = (last_pkmap_nr + 1) & LAST_PKMAP_MASK;
++	return last_pkmap_nr;
 +}
 +
- void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
- {
- 	if (suspend) {
--		if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND))
-+		struct irqaction *action;
-+
-+		if (!desc->action)
- 			return;
-+
-+		for (action = desc->action; action; action = action->next) {
-+			if (action->flags & IRQF_NO_SUSPEND)
-+				break;
-+		}
-+		if (action) {
-+			for (action = desc->action; action; action = action->next) {
-+				if (!(action->flags & IRQF_NO_SUSPEND)) {
-+					action->saved_handler = action->handler;
-+					action->handler = irq_pm_dummy_handler;
-+				}
-+			}
-+			return;
-+		}
-+
- 		desc->istate |= IRQS_SUSPENDED;
- 	}
- 
-@@ -445,6 +470,14 @@ EXPORT_SYMBOL(disable_irq);
- void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume)
- {
- 	if (resume) {
-+		struct irqaction *action;
-+
-+		for (action = desc->action; action; action = action->next) {
-+			if (action->handler == irq_pm_dummy_handler) {
-+				action->handler = action->saved_handler;
-+				action->saved_handler = NULL;
-+			}
-+		}
- 		if (!(desc->istate & IRQS_SUSPENDED)) {
- 			if (!desc->action)
- 				return;
-Index: linux-pm/include/linux/interrupt.h
-===================================================================
---- linux-pm.orig/include/linux/interrupt.h
-+++ linux-pm/include/linux/interrupt.h
-@@ -90,6 +90,7 @@ typedef irqreturn_t (*irq_handler_t)(int
- /**
-  * struct irqaction - per interrupt action descriptor
-  * @handler:	interrupt handler function
-+ * @saved_handler:	saved pointer to interrupt handler function
-  * @name:	name of the device
-  * @dev_id:	cookie to identify the device
-  * @percpu_dev_id:	cookie to identify the device
-@@ -104,6 +105,7 @@ typedef irqreturn_t (*irq_handler_t)(int
-  */
- struct irqaction {
- 	irq_handler_t		handler;
-+	irq_handler_t		saved_handler;
- 	void			*dev_id;
- 	void __percpu		*percpu_dev_id;
- 	struct irqaction	*next;
-Index: linux-pm/kernel/irq/handle.c
-===================================================================
---- linux-pm.orig/kernel/irq/handle.c
-+++ linux-pm/kernel/irq/handle.c
-@@ -175,8 +175,7 @@ handle_irq_event_percpu(struct irq_desc
- 
- 	add_interrupt_randomness(irq, flags);
- 
--	if (!noirqdebug)
--		note_interrupt(irq, desc, retval);
-+	note_interrupt(irq, desc, retval);
- 	return retval;
- }
- 
-Index: linux-pm/kernel/irq/spurious.c
-===================================================================
---- linux-pm.orig/kernel/irq/spurious.c
-+++ linux-pm/kernel/irq/spurious.c
-@@ -13,6 +13,7 @@
- #include <linux/interrupt.h>
- #include <linux/moduleparam.h>
- #include <linux/timer.h>
-+#include <linux/suspend.h>
- 
- #include "internals.h"
- 
-@@ -275,10 +276,25 @@ try_misrouted_irq(unsigned int irq, stru
- void note_interrupt(unsigned int irq, struct irq_desc *desc,
- 		    irqreturn_t action_ret)
- {
-+	if (unlikely(action_ret == IRQ_SUSPENDED)) {
-+		pr_err("IRQ %d: Unhandled interrupt from suspended device\n", irq);
-+
-+		desc->istate |= IRQS_SUSPENDED;
-+		desc->depth++;
-+		irq_disable(desc);
-+		pm_system_wakeup();
-+		return;
-+	}
-+
-+	if (noirqdebug)
-+		return;
-+
- 	if (desc->istate & IRQS_POLL_INPROGRESS ||
- 	    irq_settings_is_polled(desc))
- 		return;
- 
-+	action_ret &= ~IRQ_SUSPENDED;
-+
- 	if (bad_action_ret(action_ret)) {
- 		report_bad_irq(irq, desc, action_ret);
- 		return;
-Index: linux-pm/include/linux/suspend.h
-===================================================================
---- linux-pm.orig/include/linux/suspend.h
-+++ linux-pm/include/linux/suspend.h
-@@ -371,6 +371,8 @@ extern int unregister_pm_notifier(struct
- extern bool events_check_enabled;
- 
- extern bool pm_wakeup_pending(void);
-+extern void pm_system_wakeup(void);
-+extern void pm_wakeup_clear(void);
- extern bool pm_get_wakeup_count(unsigned int *count, bool block);
- extern bool pm_save_wakeup_count(unsigned int count);
- extern void pm_wakep_autosleep_enabled(bool set);
-@@ -418,6 +420,7 @@ static inline int unregister_pm_notifier
- #define pm_notifier(fn, pri)	do { (void)(fn); } while (0)
- 
- static inline bool pm_wakeup_pending(void) { return false; }
-+static inline void pm_system_wakeup(void) {}
- 
- static inline void lock_system_sleep(void) {}
- static inline void unlock_system_sleep(void) {}
-Index: linux-pm/drivers/base/power/wakeup.c
-===================================================================
---- linux-pm.orig/drivers/base/power/wakeup.c
-+++ linux-pm/drivers/base/power/wakeup.c
-@@ -691,6 +691,8 @@ void pm_print_active_wakeup_sources(void
- }
- EXPORT_SYMBOL_GPL(pm_print_active_wakeup_sources);
- 
-+static bool abort_suspend;
-+
- /**
-  * pm_wakeup_pending - Check if power transition in progress should be aborted.
-  *
-@@ -712,6 +714,7 @@ bool pm_wakeup_pending(void)
- 		ret = (cnt != saved_count || inpr > 0);
- 		events_check_enabled = !ret;
- 	}
-+	ret = ret || abort_suspend;
- 	spin_unlock_irqrestore(&events_lock, flags);
- 
- 	if (ret) {
-@@ -722,6 +725,23 @@ bool pm_wakeup_pending(void)
- 	return ret;
- }
- 
-+void pm_system_wakeup(void)
++/*
++ * Determine if page index inside PKMAP region (pkmap_nr) of given color
++ * has wrapped around PKMAP region end. When this happens an attempt to
++ * flush all unused PKMAP slots is made.
++ */
++static inline int no_more_pkmaps(unsigned int pkmap_nr, unsigned int color)
 +{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&events_lock, flags);
-+	abort_suspend = true;
-+	spin_unlock_irqrestore(&events_lock, flags);
-+	freeze_wake();
++	return pkmap_nr == 0;
 +}
 +
-+void pm_wakeup_clear(void)
++/*
++ * Get the number of PKMAP entries of the given color. If no free slot is
++ * found after checking that many entries, kmap will sleep waiting for
++ * someone to call kunmap and free PKMAP slot.
++ */
++static inline int get_pkmap_entries_count(unsigned int color)
 +{
-+	spin_lock_irq(&events_lock);
-+	abort_suspend = false;
-+	spin_unlock_irq(&events_lock);
++	return LAST_PKMAP;
 +}
 +
- /**
-  * pm_get_wakeup_count - Read the number of registered wakeup events.
-  * @count: Address to store the value at.
-Index: linux-pm/drivers/base/power/main.c
-===================================================================
---- linux-pm.orig/drivers/base/power/main.c
-+++ linux-pm/drivers/base/power/main.c
-@@ -1648,6 +1648,7 @@ int dpm_suspend_start(pm_message_t state
- {
- 	int error;
- 
-+	pm_wakeup_clear();
- 	error = dpm_prepare(state);
- 	if (error) {
- 		suspend_stats.failed_prepare++;
-Index: linux-pm/kernel/irq/pm.c
-===================================================================
---- linux-pm.orig/kernel/irq/pm.c
-+++ linux-pm/kernel/irq/pm.c
-@@ -10,6 +10,7 @@
- #include <linux/module.h>
- #include <linux/interrupt.h>
- #include <linux/syscore_ops.h>
-+#include <linux/suspend.h>
- 
- #include "internals.h"
- 
-@@ -35,8 +36,7 @@ void suspend_device_irqs(void)
- 	}
- 
- 	for_each_irq_desc(irq, desc)
--		if (desc->istate & IRQS_SUSPENDED)
--			synchronize_irq(irq);
-+		synchronize_irq(irq);
- }
- EXPORT_SYMBOL_GPL(suspend_device_irqs);
- 
-@@ -102,6 +102,9 @@ int check_wakeup_irqs(void)
- 	struct irq_desc *desc;
- 	int irq;
- 
-+	if (pm_wakeup_pending())
-+		return -EBUSY;
++/*
++ * Get head of a wait queue for PKMAP entries of the given color.
++ * Wait queues for different mapping colors should be independent to avoid
++ * unnecessary wakeups caused by freeing of slots of other colors.
++ */
++static inline wait_queue_head_t *get_pkmap_wait_queue_head(unsigned int color)
++{
++	static DECLARE_WAIT_QUEUE_HEAD(pkmap_map_wait);
 +
- 	for_each_irq_desc(irq, desc) {
- 		/*
- 		 * Only interrupts which are marked as wakeup source
-Index: linux-pm/include/linux/irqreturn.h
-===================================================================
---- linux-pm.orig/include/linux/irqreturn.h
-+++ linux-pm/include/linux/irqreturn.h
-@@ -6,11 +6,13 @@
-  * @IRQ_NONE		interrupt was not from this device
-  * @IRQ_HANDLED		interrupt was handled by this device
-  * @IRQ_WAKE_THREAD	handler requests to wake the handler thread
-+ * @IRQ_SUSPENDED	interrupt has been suspended for this device
-  */
- enum irqreturn {
- 	IRQ_NONE		= (0 << 0),
- 	IRQ_HANDLED		= (1 << 0),
- 	IRQ_WAKE_THREAD		= (1 << 1),
-+	IRQ_SUSPENDED		= (1 << 2),
- };
++	return &pkmap_map_wait;
++}
++#endif
++
+ unsigned long totalhigh_pages __read_mostly;
+ EXPORT_SYMBOL(totalhigh_pages);
  
- typedef enum irqreturn irqreturn_t;
+@@ -68,13 +128,10 @@ unsigned int nr_free_highpages (void)
+ }
+ 
+ static int pkmap_count[LAST_PKMAP];
+-static unsigned int last_pkmap_nr;
+ static  __cacheline_aligned_in_smp DEFINE_SPINLOCK(kmap_lock);
+ 
+ pte_t * pkmap_page_table;
+ 
+-static DECLARE_WAIT_QUEUE_HEAD(pkmap_map_wait);
+-
+ /*
+  * Most architectures have no use for kmap_high_get(), so let's abstract
+  * the disabling of IRQ out of the locking in that case to save on a
+@@ -161,15 +218,17 @@ static inline unsigned long map_new_virtual(struct page *page)
+ {
+ 	unsigned long vaddr;
+ 	int count;
++	unsigned int last_pkmap_nr;
++	unsigned int color = get_pkmap_color(page);
+ 
+ start:
+-	count = LAST_PKMAP;
++	count = get_pkmap_entries_count(color);
+ 	/* Find an empty entry */
+ 	for (;;) {
+-		last_pkmap_nr = (last_pkmap_nr + 1) & LAST_PKMAP_MASK;
+-		if (!last_pkmap_nr) {
++		last_pkmap_nr = get_next_pkmap_nr(color);
++		if (no_more_pkmaps(last_pkmap_nr, color)) {
+ 			flush_all_zero_pkmaps();
+-			count = LAST_PKMAP;
++			count = get_pkmap_entries_count(color);
+ 		}
+ 		if (!pkmap_count[last_pkmap_nr])
+ 			break;	/* Found a usable entry */
+@@ -181,12 +240,14 @@ start:
+ 		 */
+ 		{
+ 			DECLARE_WAITQUEUE(wait, current);
++			wait_queue_head_t *pkmap_map_wait =
++				get_pkmap_wait_queue_head(color);
+ 
+ 			__set_current_state(TASK_UNINTERRUPTIBLE);
+-			add_wait_queue(&pkmap_map_wait, &wait);
++			add_wait_queue(pkmap_map_wait, &wait);
+ 			unlock_kmap();
+ 			schedule();
+-			remove_wait_queue(&pkmap_map_wait, &wait);
++			remove_wait_queue(pkmap_map_wait, &wait);
+ 			lock_kmap();
+ 
+ 			/* Somebody else might have mapped it while we slept */
+@@ -274,6 +335,8 @@ void kunmap_high(struct page *page)
+ 	unsigned long nr;
+ 	unsigned long flags;
+ 	int need_wakeup;
++	unsigned int color = get_pkmap_color(page);
++	wait_queue_head_t *pkmap_map_wait;
+ 
+ 	lock_kmap_any(flags);
+ 	vaddr = (unsigned long)page_address(page);
+@@ -299,13 +362,14 @@ void kunmap_high(struct page *page)
+ 		 * no need for the wait-queue-head's lock.  Simply
+ 		 * test if the queue is empty.
+ 		 */
+-		need_wakeup = waitqueue_active(&pkmap_map_wait);
++		pkmap_map_wait = get_pkmap_wait_queue_head(color);
++		need_wakeup = waitqueue_active(pkmap_map_wait);
+ 	}
+ 	unlock_kmap_any(flags);
+ 
+ 	/* do wake-up, if needed, race-free outside of the spin lock */
+ 	if (need_wakeup)
+-		wake_up(&pkmap_map_wait);
++		wake_up(pkmap_map_wait);
+ }
+ 
+ EXPORT_SYMBOL(kunmap_high);
+-- 
+1.8.1.4
 
