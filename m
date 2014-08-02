@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048AbaHBRcx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 13:32:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31629 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754547AbaHBRcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 13:32:50 -0400
-Date: Sat, 2 Aug 2014 19:30:24 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Will Drewry <wad@chromium.org>, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Alexei Starovoitov <ast@plumgrid.com>, hpa@zytor.com
-Subject: Re: TIF_NOHZ can escape nonhz mask? (Was: [PATCH v3 6/8] x86:
-	Split syscall_trace_enter into two phases)
-Message-ID: <20140802173024.GB22510@redhat.com>
-References: <20140728185803.GA24663@redhat.com> <20140728192209.GA26017@localhost.localdomain> <20140729175414.GA3289@redhat.com> <20140730163516.GC18158@localhost.localdomain> <20140730174630.GA30862@redhat.com> <20140731003034.GA32078@localhost.localdomain> <20140731160353.GA14772@redhat.com> <20140731171329.GD7842@localhost.localdomain> <20140731181230.GA18695@redhat.com> <20140731184729.GA12296@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140731184729.GA12296@localhost.localdomain>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755165AbaHBRdd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 13:33:33 -0400
+Received: from smtprelay0215.hostedemail.com ([216.40.44.215]:56517 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755074AbaHBRdb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Aug 2014 13:33:31 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1256:1260:1261:1277:1311:1313:1314:1345:1359:1373:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3871:3876:4321:4605:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: noise91_75c795bb6b904
+X-Filterd-Recvd-Size: 1716
+Message-ID: <1407000807.1835.14.camel@joe-AO725>
+Subject: Re: [PATCH] fs: cifs: cifsencrypt.c: Cleaning up missing
+ null-terminate in conjunction with strncpy
+From: Joe Perches <joe@perches.com>
+To: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Steve French <sfrench@samba.org>,
+        linux-cifs <linux-cifs@vger.kernel.org>,
+        samba-technical <samba-technical@lists.samba.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 02 Aug 2014 10:33:27 -0700
+In-Reply-To: <CADT32eLts-tdQdHo+W3Zc1wQ6Qz8aS3TmHsm8OxmiF2fmhOW5g@mail.gmail.com>
+References: <1406413711-7798-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	 <CADT32eLts-tdQdHo+W3Zc1wQ6Qz8aS3TmHsm8OxmiF2fmhOW5g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31, Frederic Weisbecker wrote:
->
-> On Thu, Jul 31, 2014 at 08:12:30PM +0200, Oleg Nesterov wrote:
-> > > >
-> > > > Yes sure. But context_tracking_cpu_set() is called by init task with PID 1, not
-> > > > by "swapper".
-> > >
-> > > Are you sure? It's called from start_kernel() which is init/0.
+On Sat, 2014-08-02 at 11:55 -0500, Shirish Pargaonkar wrote:
+> Acked-by: Shirish Pargaonkar <spargaonkar@suse.com>
+[]
+> > diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
+[]
+> > @@ -307,7 +307,7 @@ int calc_lanman_hash(const char *password, const char *cryptkey, bool encrypt,
 > >
-> > But do_initcalls() is called by kernel_init(), this is the init process which is
-> > going to exec /sbin/init later.
-> >
-> > But this doesn't really matter,
->
-> Yeah but tick_nohz_init() is not an initcall, it's a function called from start_kernel(),
-> before initcalls.
+> >         memset(password_with_pad, 0, CIFS_ENCPWD_SIZE);
+> >         if (password)
+> > -               strncpy(password_with_pad, password, CIFS_ENCPWD_SIZE);
+> > +               strncpy(password_with_pad, password, CIFS_ENCPWD_SIZE - 1);
 
-Ah, indeed, and context_tracking_init() too. Even better, so we only need
 
-	--- x/kernel/context_tracking.c
-	+++ x/kernel/context_tracking.c
-	@@ -30,8 +30,10 @@ EXPORT_SYMBOL_GPL(context_tracking_enabl
-	 DEFINE_PER_CPU(struct context_tracking, context_tracking);
-	 EXPORT_SYMBOL_GPL(context_tracking);
-	 
-	-void context_tracking_cpu_set(int cpu)
-	+void __init context_tracking_cpu_set(int cpu)
-	 {
-	+	/* Called by "swapper" thread, all threads will inherit this flag */
-	+	set_thread_flag(TIF_NOHZ);
-		if (!per_cpu(context_tracking.active, cpu)) {
-			per_cpu(context_tracking.active, cpu) = true;
-			static_key_slow_inc(&context_tracking_enabled);
+Is this always correct?
 
-and now we can kill context_tracking_task_switch() ?
-
-> > Yes, yes, this doesn't really matter. We can even add set(TIF_NOHZ) at the start
-> > of start_kernel(). The question is, I still can't understand why do we want to
-> > have the global TIF_NOHZ.
->
-> Because then the flags is inherited in forks. It's better than inheriting it on
-> context switch due to context switch being called much more often than fork.
-
-This is clear, that is why I suggested this. Just we didn't understand each other,
-when I said "global TIF_NOHZ" I meant the current situtation when every (running)
-task has this bit set anyway. Sorry for confusion.
-
-> No, because preempt_schedule_irq() does the ctx_state save and restore with
-> exception_enter/exception_exit.
-
-Thanks again. Can't understand how I managed to miss that exception_enter/exit
-in preempt_schedule_*.
-
-Damn. And after I spent more time, I don't have any idea how to make this
-tracking cheaper.
-
-Oleg.
 
