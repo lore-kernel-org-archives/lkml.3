@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027AbaHBCSB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Aug 2014 22:18:01 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:60556 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858AbaHBCR7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Aug 2014 22:17:59 -0400
-Message-ID: <53DC4A4F.8060009@collabora.co.uk>
-Date: Sat, 02 Aug 2014 04:17:51 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
-        linux-samsung-soc@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Tomasz Figa <t.figa@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 05/10] ARM: dts: Fill in bootargs for exynos5250-snow
-References: <1406940750-15880-1-git-send-email-afaerber@suse.de> <1406940750-15880-6-git-send-email-afaerber@suse.de>
-In-Reply-To: <1406940750-15880-6-git-send-email-afaerber@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1753980AbaHBCWt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Aug 2014 22:22:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22444 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751858AbaHBCWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Aug 2014 22:22:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,784,1400050800"; 
+   d="scan'208";a="582427286"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Borislav Petkov <bp@alien8.de>, "Rafael J . Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Joerg Roedel <joro@8bytes.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, x86-ml <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, iommu@lists.linux-foundation.org
+Subject: [PATCH] iommu/amd: Implement syscore_ops.shutdown()
+Date: Sat,  2 Aug 2014 10:25:39 +0800
+Message-Id: <1406946339-4297-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20140801225049.GC4553@pd.tnic>
+References: <20140801225049.GC4553@pd.tnic>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andreas,
+During hibernation or shutdown, AMD iommu generates warnings on some
+platforms as below:
+[   89.089832] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x0000000000000080 flags=0x0020]
+[   89.102239] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x0000000000000000 flags=0x0000]
+[   89.114684] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x00000000ffffffc0 flags=0x0010]
+[   89.127162] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x00000000ffffffc0 flags=0x0010]
+[   89.139576] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x00000000ffffffc0 flags=0x0010]
+[   89.152017] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x00000000ffffffc0 flags=0x0010]
+[   89.164481] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x0009 address=0x00000000ffffffc0 flags=0x0010]
 
-Sorry for missing your v5.
+It may be caused by that the firmware takes back the device after the OS
+released it and now the legacy emulation tries to do DMA with it. But
+since there is an IOMMU the physical addresses it tries to DMA to is
+not mapped and it generated IO page faults. So explicitly shutdown
+IOMMU units during hibernation or poweroff.
 
-On 08/02/2014 02:52 AM, Andreas Färber wrote:
->  
->  	chosen {
-> +		bootargs = "console=tty1";
->  	};
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+Hi Borislav,
+	Could you please help to verify whether this patch help to minimize
+the race window and reduce IOMMU warning messages?
+Regards!
+Gerry
+---
+ drivers/iommu/amd_iommu_init.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-While I agree with you that having a chosen node with a default bootargs is
-better than having an empty one, I second Doug that this bootargs is not very
-useful.
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 0e08545d7298..4d1752fe12e1 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1687,9 +1687,16 @@ static int amd_iommu_suspend(void)
+ 	return 0;
+ }
+ 
++static void amd_iommu_shutdown(void)
++{
++	/* disable IOMMUs to go out of the way for BIOS */
++	disable_iommus();
++}
++
+ static struct syscore_ops amd_iommu_syscore_ops = {
+ 	.suspend = amd_iommu_suspend,
+ 	.resume = amd_iommu_resume,
++	.shutdown = amd_iommu_shutdown,
+ };
+ 
+ static void __init free_on_init_error(void)
+-- 
+1.7.10.4
 
-If you want to add a bootargs in the DTS I think that it should be a complete
-kernel command line that allows to boot a system. I would at least add a root
-parameter and possibly another console for the serial port. So if
-CMDLINE_FROM_BOOTLOADER is not set then the DT can be used to specify the
-bootargs instead of using whatever was set in CONFIG_CMDLINE which probably
-won't be relevant for every system on a multi-platform kernel.
-
-But I think that is safe to rely on the bootloader to set the bootargs and after
-all having a hardcoded bootargs in the DTS is not much better than having a
-hardcoded CONFIG_CMDLINE since as Doug said it is hard to make assumptions about
-what would be the most common options.
-
-Personally I would just drop this change and as I said before remove the empty
-chosen node on a follow up patch but I don't have a strong opinion either.
-
-Best regards,
-Javier
