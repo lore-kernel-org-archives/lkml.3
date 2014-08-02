@@ -1,88 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361AbaHBSNh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 14:13:37 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58177 "EHLO zene.cmpxchg.org"
+	id S1755113AbaHBSPv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 14:15:51 -0400
+Received: from smtp2-g21.free.fr ([212.27.42.2]:52904 "EHLO smtp2-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754676AbaHBSNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 14:13:36 -0400
-Date: Sat, 2 Aug 2014 14:13:27 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch 2/3] mm, oom: remove unnecessary check for NULL zonelist
-Message-ID: <20140802181327.GL9952@cmpxchg.org>
-References: <alpine.DEB.2.02.1407231814110.22326@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1407231815090.22326@chino.kir.corp.google.com>
- <20140731152659.GB9952@cmpxchg.org>
- <alpine.DEB.2.02.1408010159500.4061@chino.kir.corp.google.com>
- <20140801133444.GH9952@cmpxchg.org>
- <alpine.DEB.2.02.1408011434330.11532@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1408011434330.11532@chino.kir.corp.google.com>
+	id S1754723AbaHBSPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Aug 2014 14:15:50 -0400
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        William Cohen <wcohen@redhat.com>
+Subject: [PATCH] perf tools: report PERF_FLAG_FD_CLOEXEC probing error once
+Date: Sat,  2 Aug 2014 20:13:22 +0200
+Message-Id: <1407003202-13672-1-git-send-email-ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1406908014-8312-1-git-send-email-jolsa@kernel.org>
+References: <1406908014-8312-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 02:42:19PM -0700, David Rientjes wrote:
-> On Fri, 1 Aug 2014, Johannes Weiner wrote:
-> 
-> > > > out_of_memory() wants the zonelist that was used during allocation,
-> > > > not just the random first node's zonelist that's simply picked to
-> > > > serialize page fault OOM kills system-wide.
-> > > > 
-> > > > This would even change how panic_on_oom behaves for page fault OOMs
-> > > > (in a completely unpredictable way) if we get CONSTRAINED_CPUSET.
-> > > > 
-> > > > This change makes no sense to me.
-> > > > 
-> > > 
-> > > Allocations during fault will be constrained by the cpuset's mems, if we 
-> > > are oom then why would we panic when panic_on_oom == 1?
-> > 
-> > Can you please address the concerns I raised?
-> > 
-> 
-> I see one concern: that panic_on_oom == 1 will not trigger on pagefault 
-> when constrained by cpusets.  To address that, I'll state that, since 
-> cpuset-constrained allocations are the allocation context for pagefaults,
-> panic_on_oom == 1 should not trigger on pagefault when constrained by 
-> cpusets.
+In case of failure, unrelated to PERF_FLAG_FD_CLOEXEC,
+perf_flag_probe() reports the error twice. For example:
 
-I expressed my concern pretty clearly above: out_of_memory() wants the
-zonelist that was used during the failed allocation, you are passing a
-non-sensical value in there that only happens to have the same type.
+  $ perf record ls
+  Error:
+  perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error 16 (Device or resource busy)
+  perf_event_open(..., 0) failed unexpectedly with error 16 (Device or resource busy)
+  The PMU counters are busy/taken by another profiler.
+  We found oprofile daemon running, please stop it and try again.
 
-We simply don't have the right information at the end of the page
-fault handler to respect constrained allocations.  Case in point:
-nodemask is unset from pagefault_out_of_memory(), so we still kill
-based on mempolicy even though check_panic_on_oom() says it wouldn't.
+This patch changes the function to only report a second
+error message when the two calls to perf_even_open(2)
+fail with different error codes.
 
-The code change is not an adequate solution for the problem we have
-here and the changelog is an insult to everybody who wants to make
-sense of this from the git history later on.
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: William Cohen <wcohen@redhat.com>
+Link: http://lkml.kernel.org/r/1406908014-8312-1-git-send-email-jolsa@kernel.org
+Reported-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+---
+ tools/perf/util/cloexec.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-But the much bigger problem is that you continue to fail to address
-even basic feedback and instead consistently derail discussions with
-unrelated drivel and circular arguments.  As long as you continue to
-do that I don't think we should be merging any of your patches.
+diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
+index c5d05ec17220..dc360ebde745 100644
+--- a/tools/perf/util/cloexec.c
++++ b/tools/perf/util/cloexec.c
+@@ -13,34 +13,36 @@ static int perf_flag_probe(void)
+ 		.config = PERF_COUNT_SW_CPU_CLOCK,
+ 	};
+ 	int fd;
+-	int err;
++	int err0, err1;
+ 
+ 	/* check cloexec flag */
+ 	fd = sys_perf_event_open(&attr, 0, -1, -1,
+ 				 PERF_FLAG_FD_CLOEXEC);
+-	err = errno;
++	err0 = errno;
+ 
+ 	if (fd >= 0) {
+ 		close(fd);
+ 		return 1;
+ 	}
+ 
+-	WARN_ONCE(err != EINVAL,
++	WARN_ONCE(err0 != EINVAL,
+ 		  "perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error %d (%s)\n",
+-		  err, strerror(err));
++		  err0, strerror(err0));
+ 
+ 	/* not supported, confirm error related to PERF_FLAG_FD_CLOEXEC */
+ 	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
+-	err = errno;
++	err1 = errno;
+ 
+-	if (WARN_ONCE(fd < 0,
+-		      "perf_event_open(..., 0) failed unexpectedly with error %d (%s)\n",
+-		      err, strerror(err)))
+-		return -1;
++	if (fd >= 0) {
++		close(fd);
++		return 0;
++	}
+ 
+-	close(fd);
++	WARN_ONCE(err0 != err1,
++		  "perf_event_open(..., 0) failed unexpectedly with error %d (%s)\n",
++		  err1, strerror(err1));
+ 
+-	return 0;
++	return -1;
+ }
+ 
+ unsigned long perf_event_open_cloexec_flag(void)
+-- 
+1.9.3
 
-> > And please describe user-visible changes in the changelog.
-> > 
-> 
-> Ok, Andrew please annotate the changelog for 
-> mm-oom-remove-unnecessary-check-for-null-zonelist.patch by including:
-> 
-> This also causes panic_on_oom == 1 to not panic the machine when the 
-> pagefault is constrained by the mems of current's cpuset.  That behavior 
-> agrees with the semantics of the sysctl in Documentation/sysctl/vm.txt.
-
-Great, now we have a cleanup patch with the side-effect of changing
-user-visible behavior and introducing non-sensical code semantics.
-
-Nacked-by: Johannes Weiner <hannes@cmpxchg.org>
