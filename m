@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbaHCQt0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 12:49:26 -0400
-Received: from smtprelay0151.hostedemail.com ([216.40.44.151]:42050 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750959AbaHCQtZ (ORCPT
+	id S1752931AbaHCREf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 13:04:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48462 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622AbaHCREe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 12:49:25 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3868:3871:3874:4321:5007:7652:9010:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: straw45_51fa31e7b5528
-X-Filterd-Recvd-Size: 1225
-Message-ID: <1407084561.12855.5.camel@joe-AO725>
-Subject: Re: [PATCH] staging: rtl8192ee: checkpatch: use tabs for indent
-From: Joe Perches <joe@perches.com>
-To: Martin Kepplinger <martink@posteo.de>
-Cc: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
-        linux-kernel@vger.kernel.org
-Date: Sun, 03 Aug 2014 09:49:21 -0700
-In-Reply-To: <53DE6575.6070904@posteo.de>
-References: <1407082009-17133-1-git-send-email-martink@posteo.de>
-	 <1407083245.12855.3.camel@joe-AO725> <53DE6575.6070904@posteo.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 3 Aug 2014 13:04:34 -0400
+Date: Fri, 1 Aug 2014 19:39:58 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Aniroop Mathur <aniroop.mathur@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org
+Subject: Re: [Question: Drivers/base/core.c] Why dev->init_name = NULL in
+ device_add function ?
+Message-ID: <20140802023958.GA22728@kroah.com>
+References: <CADYu30_FciG_aTTV4DFNdy+CdRChMYQ7pAGZGambE1F9s=ofYQ@mail.gmail.com>
+ <20140801192300.GB16085@kroah.com>
+ <CADYu30_o7rzERKEDe=eZiONp6n1ktMWPydMnXQjDeLrDFQh+vg@mail.gmail.com>
+ <20140801224127.GA11596@kroah.com>
+ <CADYu309eydkp83a1aMybHn5vyLLGBAmFDYeR59RRiC+mGc9w7w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADYu309eydkp83a1aMybHn5vyLLGBAmFDYeR59RRiC+mGc9w7w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-08-03 at 18:38 +0200, Martin Kepplinger wrote:
-> I'd rather have the return value on the same line than aligned
-> parameters but that's taste. Either way looks better and satisfies
-> checkpatch, which is the only goal.
+On Sat, Aug 02, 2014 at 05:14:44AM +0530, Aniroop Mathur wrote:
+> >> So, overall output will be
+> >> /dev/input/event<x> --> /dev/input/event_accelerometer
+> >> sys/class/input/input<x> --> sys/class/input/accelerometer
+> >>
+> >> In short, input and event node names are set just by
+> >> adding one line, which i found quite efficient.
+> >> There is other way also to set name of event node but
+> >> it involves using extra variable and little more code,
+> >> So I am looking for best solution possible. :)
+> >
+> > Only use init_name for static struct devices, for a dynamic one, jsut
+> > set the name like everyone else does, how is that "more" code than
+> > anything else?
+> >
+> 
+> Can you please elaborate what do you mean by static struct devices ?
 
-Satisfying checkpatch should not be high on the goal list.
+Exactly what you wrote there, 'static' is a C thing, right?
 
-Consistent readability should be though.
+> Can I consider embedded accelerometer, proximity, gyro sensor,
+> touch panel in android mobile devices as static devices ?
 
+Nope, because in my Android phone, I can yank out those and add new ones
+on the fly while the phone is running.  The kernel is fully dynamic that
+way.
+
+> Input subsystem is setting default name of input and event node.
+
+As it should.
+
+> This is the normal method everyone uses.
+
+And so should you :)
+
+> I do not want to use default name like event0, event4, input2, etc
+
+Yes, you really do.
+
+> My aim is to set name of input and event node through driver as desired.
+
+Nope, that's userspace's job, just use udev to rename the device node,
+or even better yet, create a symlink like /dev/input/by-id/ has if you
+really need more than that.
+
+Don't mess with kernel device names, we can't do that without breaking
+tons of things, there's a reason that we standardized on something,
+please use it.
+
+good luck,
+
+greg k-h
