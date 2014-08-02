@@ -1,119 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113AbaHBSPv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 14:15:51 -0400
-Received: from smtp2-g21.free.fr ([212.27.42.2]:52904 "EHLO smtp2-g21.free.fr"
+	id S1755234AbaHBSVs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 14:21:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38815 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754723AbaHBSPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 14:15:50 -0400
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        William Cohen <wcohen@redhat.com>
-Subject: [PATCH] perf tools: report PERF_FLAG_FD_CLOEXEC probing error once
-Date: Sat,  2 Aug 2014 20:13:22 +0200
-Message-Id: <1407003202-13672-1-git-send-email-ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1406908014-8312-1-git-send-email-jolsa@kernel.org>
-References: <1406908014-8312-1-git-send-email-jolsa@kernel.org>
+	id S1754808AbaHBSVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Aug 2014 14:21:47 -0400
+Date: Sat, 2 Aug 2014 20:19:58 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Aleksei Besogonov <alex.besogonov@gmail.com>
+Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: Soft lockups during reading /proc/PID/smaps
+Message-ID: <20140802181958.GA28283@redhat.com>
+References: <loom.20140731T091947-310@post.gmane.org> <alpine.DEB.2.02.1407310041500.20816@chino.kir.corp.google.com> <117A54C0-F3AC-4DD0-B2F6-886C5D4419E3@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <117A54C0-F3AC-4DD0-B2F6-886C5D4419E3@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of failure, unrelated to PERF_FLAG_FD_CLOEXEC,
-perf_flag_probe() reports the error twice. For example:
+On 07/31, Aleksei Besogonov wrote:
+>
+> On 31 Jul 2014, at 00:43, David Rientjes <rientjes@google.com> wrote:
+>
+> > The while_each_thread() in vm_is_stack() looks suspicious since the task
+> > isn't current and rcu won't protect the iteration, and we also don't hold
+> > sighand lock or a readlock on tasklist_lock.
+> > I think Oleg will know how to proceed, cc'd.
+> I’m attaching a minimal test case that can reproduce the issue. Works in 100% cases on any system I’ve tried.
 
-  $ perf record ls
-  Error:
-  perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error 16 (Device or resource busy)
-  perf_event_open(..., 0) failed unexpectedly with error 16 (Device or resource busy)
-  The PMU counters are busy/taken by another profiler.
-  We found oprofile daemon running, please stop it and try again.
+Thanks. I think David is right and we need the simple patch below.
+This reminds me I should kill while_each_thread :/
 
-This patch changes the function to only report a second
-error message when the two calls to perf_even_open(2)
-fail with different error codes.
+Any chance you can test it? If not, I will do this later and send
+the patch if it helps.
 
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: William Cohen <wcohen@redhat.com>
-Link: http://lkml.kernel.org/r/1406908014-8312-1-git-send-email-jolsa@kernel.org
-Reported-by: Jiri Olsa <jolsa@kernel.org>
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
----
- tools/perf/util/cloexec.c | 24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+Oleg.
 
-diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
-index c5d05ec17220..dc360ebde745 100644
---- a/tools/perf/util/cloexec.c
-+++ b/tools/perf/util/cloexec.c
-@@ -13,34 +13,36 @@ static int perf_flag_probe(void)
- 		.config = PERF_COUNT_SW_CPU_CLOCK,
- 	};
- 	int fd;
--	int err;
-+	int err0, err1;
+--- x/mm/util.c
++++ x/mm/util.c
+@@ -277,17 +277,14 @@ pid_t vm_is_stack(struct task_struct *ta
  
- 	/* check cloexec flag */
- 	fd = sys_perf_event_open(&attr, 0, -1, -1,
- 				 PERF_FLAG_FD_CLOEXEC);
--	err = errno;
-+	err0 = errno;
+ 	if (in_group) {
+ 		struct task_struct *t;
+-		rcu_read_lock();
+-		if (!pid_alive(task))
+-			goto done;
  
- 	if (fd >= 0) {
- 		close(fd);
- 		return 1;
+-		t = task;
+-		do {
++		rcu_read_lock();
++		for_each_thread(task, t) {
+ 			if (vm_is_stack_for_task(t, vma)) {
+ 				ret = t->pid;
+ 				goto done;
+ 			}
+-		} while_each_thread(task, t);
++		}
+ done:
+ 		rcu_read_unlock();
  	}
- 
--	WARN_ONCE(err != EINVAL,
-+	WARN_ONCE(err0 != EINVAL,
- 		  "perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error %d (%s)\n",
--		  err, strerror(err));
-+		  err0, strerror(err0));
- 
- 	/* not supported, confirm error related to PERF_FLAG_FD_CLOEXEC */
- 	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
--	err = errno;
-+	err1 = errno;
- 
--	if (WARN_ONCE(fd < 0,
--		      "perf_event_open(..., 0) failed unexpectedly with error %d (%s)\n",
--		      err, strerror(err)))
--		return -1;
-+	if (fd >= 0) {
-+		close(fd);
-+		return 0;
-+	}
- 
--	close(fd);
-+	WARN_ONCE(err0 != err1,
-+		  "perf_event_open(..., 0) failed unexpectedly with error %d (%s)\n",
-+		  err1, strerror(err1));
- 
--	return 0;
-+	return -1;
- }
- 
- unsigned long perf_event_open_cloexec_flag(void)
--- 
-1.9.3
 
