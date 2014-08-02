@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751322AbaHBXWc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 19:22:32 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:44661 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaHBXW3 (ORCPT
+	id S1751611AbaHBXlH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 19:41:07 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:50080 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845AbaHBXlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 19:22:29 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Rob Herring <robh+dt@kernel.org>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH] scsi: ibmvscsi: ibmvstgt.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sun,  3 Aug 2014 01:23:57 +0200
-Message-Id: <1407021837-28525-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 2 Aug 2014 19:41:06 -0400
+Date: Sat, 02 Aug 2014 16:41:04 -0700 (PDT)
+Message-Id: <20140802.164104.2280645832684968269.davem@davemloft.net>
+To: himangi774@gmail.com
+Cc: ebiederm@xmission.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
+Subject: Re: [PATCH] cirrus: cs89x0: Use managed interfaces
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140801152819.GA11441@himangi-Dell>
+References: <20140801152819.GA11441@himangi-Dell>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 02 Aug 2014 16:41:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+From: Himangi Saraogi <himangi774@gmail.com>
+Date: Fri, 1 Aug 2014 20:58:19 +0530
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/scsi/ibmvscsi/ibmvstgt.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> This patch introduces the use of managed interfaces like
+> devm_ioremap_resource and does away with the functions to free the
+> allocated memory in the probe and remove functions. Also, many labels
+> are done away with. The field size in no longer needed and is hence
+> removed from the struct net_local.
+> 
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 
-diff --git a/drivers/scsi/ibmvscsi/ibmvstgt.c b/drivers/scsi/ibmvscsi/ibmvstgt.c
-index 56f8a86..5c16d17 100644
---- a/drivers/scsi/ibmvscsi/ibmvstgt.c
-+++ b/drivers/scsi/ibmvscsi/ibmvstgt.c
-@@ -340,7 +340,7 @@ int send_adapter_info(struct iu_entry *iue,
- 	memset(info, 0, sizeof(*info));
- 
- 	strcpy(info->srp_version, "16.a");
--	strncpy(info->partition_name, partition_name,
-+	strlcpy(info->partition_name, partition_name,
- 		sizeof(info->partition_name));
- 	info->partition_number = partition_number;
- 	info->mad_version = 1;
-@@ -938,7 +938,7 @@ static int get_system_info(void)
- 
- 	name = of_get_property(rootdn, "ibm,partition-name", NULL);
- 	if (name)
--		strncpy(partition_name, name, sizeof(partition_name));
-+		strlcpy(partition_name, name, sizeof(partition_name));
- 
- 	num = of_get_property(rootdn, "ibm,partition-no", NULL);
- 	if (num)
--- 
-1.7.10.4
-
+Applied.
