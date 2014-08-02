@@ -1,135 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157AbaHBUNk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 16:13:40 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:42189 "EHLO gloria.sntech.de"
+	id S1755297AbaHBUPD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 16:15:03 -0400
+Received: from mta-out1.inet.fi ([62.71.2.200]:60533 "EHLO jenni1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754243AbaHBUNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 16:13:38 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v5.1 9/7] watchdog: s3c2410: add restart handler
-Date: Sat, 02 Aug 2014 21:51:42 +0200
-Message-ID: <1701800.eiHDUvPYI3@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <53D9010B.7070700@roeck-us.net>
-References: <1405668856-13738-1-git-send-email-linux@roeck-us.net> <53D8FCEA.9020506@roeck-us.net> <53D9010B.7070700@roeck-us.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1754333AbaHBUPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Aug 2014 16:15:00 -0400
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH, RESEND] procfs: silence lockdep warning about read vs. exec seq_file
+Date: Sat,  2 Aug 2014 23:10:27 +0300
+Message-Id: <1407010227-2269-1-git-send-email-kirill@shutemov.name>
+X-Mailer: git-send-email 2.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a lot of Samsung systems the watchdog is responsible for restarting the
-system and until now this code was contained in plat-samsung/watchdog-reset.c .
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-With the introduction of the restart handlers, this code can now move into
-driver itself, removing the need for arch-specific code.
+Testcase:
 
-Tested on a S3C2442 based GTA02
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-[Guenter Roeck: Update to latest API; do not require static context variable]
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Heiko Stuebner <heiko@sntech.de>
+  cat /proc/self/maps >/dev/null
+  chmod +x /proc/self/net/packet
+  exec /proc/self/net/packet
+
+It triggers lockdep warning:
+
+	 [ INFO: possible circular locking dependency detected ]
+	 3.16.0-rc7-00064-g26bcd8b72563 #8 Not tainted
+	 -------------------------------------------------------
+	 sh/157 is trying to acquire lock:
+	  (&p->lock){+.+.+.}, at: [<ffffffff8117f4f8>] seq_read+0x38/0x3e0
+
+	 but task is already holding lock:
+	  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff81160018>] prepare_bprm_creds+0x28/0x90
+
+	 which lock already depends on the new lock.
+
+	 the existing dependency chain (in reverse order) is:
+
+	-> #1 (&sig->cred_guard_mutex){+.+.+.}:
+	        [<ffffffff8109a9c1>] __lock_acquire+0x531/0xde0
+	        [<ffffffff8109b959>] lock_acquire+0x79/0xd0
+	        [<ffffffff8173f838>] mutex_lock_killable_nested+0x68/0x460
+	        [<ffffffff811c0d9f>] lock_trace+0x1f/0x60
+	        [<ffffffff811c0ed7>] proc_pid_personality+0x17/0x60
+	        [<ffffffff811be39b>] proc_single_show+0x4b/0x90
+	        [<ffffffff8117f5a0>] seq_read+0xe0/0x3e0
+	        [<ffffffff81158f1e>] vfs_read+0x8e/0x170
+	        [<ffffffff81159be8>] SyS_read+0x48/0xc0
+	        [<ffffffff81743712>] system_call_fastpath+0x16/0x1b
+
+	-> #0 (&p->lock){+.+.+.}:
+	        [<ffffffff81097437>] validate_chain.isra.37+0xfe7/0x13b0
+	        [<ffffffff8109a9c1>] __lock_acquire+0x531/0xde0
+	        [<ffffffff8109b959>] lock_acquire+0x79/0xd0
+	        [<ffffffff8173f09a>] mutex_lock_nested+0x6a/0x3d0
+	        [<ffffffff8117f4f8>] seq_read+0x38/0x3e0
+	        [<ffffffff811bd5f3>] proc_reg_read+0x43/0x70
+	        [<ffffffff81158f1e>] vfs_read+0x8e/0x170
+	        [<ffffffff8115ea13>] kernel_read+0x43/0x60
+	        [<ffffffff8115ec65>] prepare_binprm+0xd5/0x170
+	        [<ffffffff811605c8>] do_execve_common.isra.32+0x548/0x800
+	        [<ffffffff81160893>] do_execve+0x13/0x20
+	        [<ffffffff81160b70>] SyS_execve+0x20/0x30
+	        [<ffffffff81743c89>] stub_execve+0x69/0xa0
+
+	 other info that might help us debug this:
+
+	  Possible unsafe locking scenario:
+
+	        CPU0                    CPU1
+	        ----                    ----
+	   lock(&sig->cred_guard_mutex);
+	                                lock(&p->lock);
+	                                lock(&sig->cred_guard_mutex);
+	   lock(&p->lock);
+
+	  *** DEADLOCK ***
+
+	 1 lock held by sh/157:
+	  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff81160018>] prepare_bprm_creds+0x28/0x90
+
+It's a false positive: seq files which take cred_guard_mutex are never
+executable. Let's use separate lock class for them.
+
+I don't know why we allow "chmod +x" on some proc files, notably net-related.
+Is it a bug?
+
+Also I suspect eb94cd96e05d fixes non-existing bug, like this one.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
-changes since v5:
-- reintroduce the mdelay(500) from the platform code, to make sure the
-  watchdog has time to assert, as suggested by Tomasz Figa
+ fs/proc/base.c       | 24 +++++++++++++++++++++++-
+ fs/proc/task_mmu.c   | 14 ++++++++++++++
+ fs/proc/task_nommu.c |  4 ++++
+ 3 files changed, 41 insertions(+), 1 deletion(-)
 
- drivers/watchdog/s3c2410_wdt.c | 36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
-
-diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
-index 7c6ccd0..2955aef 100644
---- a/drivers/watchdog/s3c2410_wdt.c
-+++ b/drivers/watchdog/s3c2410_wdt.c
-@@ -41,6 +41,8 @@
- #include <linux/of.h>
- #include <linux/mfd/syscon.h>
- #include <linux/regmap.h>
-+#include <linux/reboot.h>
-+#include <linux/delay.h>
- 
- #define S3C2410_WTCON		0x00
- #define S3C2410_WTDAT		0x04
-@@ -128,6 +130,7 @@ struct s3c2410_wdt {
- 	unsigned long		wtdat_save;
- 	struct watchdog_device	wdt_device;
- 	struct notifier_block	freq_transition;
-+	struct notifier_block	restart_handler;
- 	struct s3c2410_wdt_variant *drv_data;
- 	struct regmap *pmureg;
- };
-@@ -438,6 +441,31 @@ static inline void s3c2410wdt_cpufreq_deregister(struct s3c2410_wdt *wdt)
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 2d696b0c93bf..c05b4a227acb 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -655,9 +655,31 @@ static int proc_single_show(struct seq_file *m, void *v)
+ 	return ret;
  }
- #endif
  
-+static int s3c2410wdt_restart(struct notifier_block *this,
-+			      unsigned long mode, void *cmd)
-+{
-+	struct s3c2410_wdt *wdt = container_of(this, struct s3c2410_wdt,
-+					       restart_handler);
-+	void __iomem *wdt_base = wdt->reg_base;
++/*
++ * proc_pid_personality() and proc_pid_stack() take cred_guard_mutex via
++ * lock_trace() with seq_file->lock held.
++ * execve(2) calls vfs_read() with cred_guard_mutex held.
++ *
++ * So if you will try to execute a seq_file, lockdep will report a possible
++ * circular locking dependency. It's false-positive, since ONE() files are
++ * never executable.
++ *
++ * Let's set separate lock class for seq_file->lock of ONE() files.
++ */
++static struct lock_class_key proc_single_open_lock_class;
 +
-+	/* disable watchdog, to be safe  */
-+	writel(0, wdt_base + S3C2410_WTCON);
-+
-+	/* put initial values into count and data */
-+	writel(0x80, wdt_base + S3C2410_WTCNT);
-+	writel(0x80, wdt_base + S3C2410_WTDAT);
-+
-+	/* set the watchdog to go and reset... */
-+	writel(S3C2410_WTCON_ENABLE | S3C2410_WTCON_DIV16 |
-+		S3C2410_WTCON_RSTEN | S3C2410_WTCON_PRESCALE(0x20),
-+		wdt_base + S3C2410_WTCON);
-+
-+	/* wait for reset to assert... */
-+	mdelay(500);
-+
-+	return NOTIFY_DONE;
-+}
-+
- static inline unsigned int s3c2410wdt_get_bootstatus(struct s3c2410_wdt *wdt)
+ static int proc_single_open(struct inode *inode, struct file *filp)
  {
- 	unsigned int rst_stat;
-@@ -592,6 +620,12 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, wdt);
- 
-+	wdt->restart_handler.notifier_call = s3c2410wdt_restart;
-+	wdt->restart_handler.priority = 128;
-+	ret = register_restart_handler(&wdt->restart_handler);
+-	return single_open(filp, proc_single_show, inode);
++	struct seq_file *m;
++	int ret;
++
++	ret = single_open(filp, proc_single_show, inode);
 +	if (ret)
-+		pr_err("cannot register restart handler, %d\n", ret);
++		return ret;
 +
- 	/* print out a statement of readiness */
++	m = filp->private_data;
++	lockdep_set_class(&m->lock, &proc_single_open_lock_class);
++	return 0;
+ }
  
- 	wtcon = readl(wdt->reg_base + S3C2410_WTCON);
-@@ -621,6 +655,8 @@ static int s3c2410wdt_remove(struct platform_device *dev)
- 	int ret;
- 	struct s3c2410_wdt *wdt = platform_get_drvdata(dev);
+ static const struct file_operations proc_single_file_operations = {
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index cfa63ee92c96..536b9f9a9ff5 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -19,6 +19,18 @@
+ #include <asm/tlbflush.h>
+ #include "internal.h"
  
-+	unregister_restart_handler(&wdt->restart_handler);
++/*
++ * m_start() takes cred_guard_mutex via mm_access() with seq_file->lock held.
++ * execve(2) calls vfs_read() with cred_guard_mutex held.
++ *
++ * So if you will try to execute a seq_file, lockdep will report a possible
++ * circular locking dependency. It's false positive, since m_start() users are
++ * never executable.
++ *
++ * Let's set separate class lock for seq_file->lock of m_start() users.
++ */
++static struct lock_class_key pid_maps_seq_file_lock;
 +
- 	ret = s3c2410wdt_mask_and_disable_reset(wdt, true);
- 	if (ret < 0)
- 		return ret;
+ void task_mem(struct seq_file *m, struct mm_struct *mm)
+ {
+ 	unsigned long data, text, lib, swap;
+@@ -242,6 +254,7 @@ static int do_maps_open(struct inode *inode, struct file *file,
+ 		ret = seq_open(file, ops);
+ 		if (!ret) {
+ 			struct seq_file *m = file->private_data;
++			lockdep_set_class(&m->lock, &pid_maps_seq_file_lock);
+ 			m->private = priv;
+ 		} else {
+ 			kfree(priv);
+@@ -1512,6 +1525,7 @@ static int numa_maps_open(struct inode *inode, struct file *file,
+ 		ret = seq_open(file, ops);
+ 		if (!ret) {
+ 			struct seq_file *m = file->private_data;
++			lockdep_set_class(&m->lock, &pid_maps_seq_file_lock);
+ 			m->private = priv;
+ 		} else {
+ 			kfree(priv);
+diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
+index 678455d2d683..35a799443990 100644
+--- a/fs/proc/task_nommu.c
++++ b/fs/proc/task_nommu.c
+@@ -9,6 +9,9 @@
+ #include <linux/seq_file.h>
+ #include "internal.h"
+ 
++/* See comment in task_mmu.c */
++static struct lock_class_key pid_maps_seq_file_lock;
++
+ /*
+  * Logic: we've got two memory sums for each process, "shared", and
+  * "non-shared". Shared memory may get counted more than once, for
+@@ -277,6 +280,7 @@ static int maps_open(struct inode *inode, struct file *file,
+ 		ret = seq_open(file, ops);
+ 		if (!ret) {
+ 			struct seq_file *m = file->private_data;
++			lockdep_set_class(&m->lock, &pid_maps_seq_file_lock);
+ 			m->private = priv;
+ 		} else {
+ 			kfree(priv);
 -- 
-2.0.1
-
+2.0.3
 
