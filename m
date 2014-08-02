@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaHCREf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 13:04:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48462 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622AbaHCREe (ORCPT
+	id S1753047AbaHCREp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 13:04:45 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39473 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753000AbaHCREk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 13:04:34 -0400
-Date: Fri, 1 Aug 2014 19:39:58 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Aniroop Mathur <aniroop.mathur@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org
-Subject: Re: [Question: Drivers/base/core.c] Why dev->init_name = NULL in
- device_add function ?
-Message-ID: <20140802023958.GA22728@kroah.com>
-References: <CADYu30_FciG_aTTV4DFNdy+CdRChMYQ7pAGZGambE1F9s=ofYQ@mail.gmail.com>
- <20140801192300.GB16085@kroah.com>
- <CADYu30_o7rzERKEDe=eZiONp6n1ktMWPydMnXQjDeLrDFQh+vg@mail.gmail.com>
- <20140801224127.GA11596@kroah.com>
- <CADYu309eydkp83a1aMybHn5vyLLGBAmFDYeR59RRiC+mGc9w7w@mail.gmail.com>
+	Sun, 3 Aug 2014 13:04:40 -0400
+X-Sasl-enc: pvQ7/I417PPP4NJ0yfAUHFK8SUz0X4bAyeGzeXsvzvrt 1407085475
+Date: Fri, 1 Aug 2014 19:40:38 -0700
+From: Greg KH <greg@kroah.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Riley <davidriley@chromium.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: linux-next: manual merge of the driver-core tree with the tip
+ tree
+Message-ID: <20140802024038.GB22728@kroah.com>
+References: <20140731170735.5cf2062b@canb.auug.org.au>
+ <20140801002017.GA2945@kroah.com>
+ <CAGXu5jKD5X4ZZreierjWsB659pXJgc9eXJX==Wm+-R22nKY+xQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CADYu309eydkp83a1aMybHn5vyLLGBAmFDYeR59RRiC+mGc9w7w@mail.gmail.com>
+In-Reply-To: <CAGXu5jKD5X4ZZreierjWsB659pXJgc9eXJX==Wm+-R22nKY+xQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 02, 2014 at 05:14:44AM +0530, Aniroop Mathur wrote:
-> >> So, overall output will be
-> >> /dev/input/event<x> --> /dev/input/event_accelerometer
-> >> sys/class/input/input<x> --> sys/class/input/accelerometer
+On Fri, Aug 01, 2014 at 07:38:26PM -0400, Kees Cook wrote:
+> On Thu, Jul 31, 2014 at 8:20 PM, Greg KH <greg@kroah.com> wrote:
+> > On Thu, Jul 31, 2014 at 05:07:35PM +1000, Stephen Rothwell wrote:
+> >> Hi Greg,
 > >>
-> >> In short, input and event node names are set just by
-> >> adding one line, which i found quite efficient.
-> >> There is other way also to set name of event node but
-> >> it involves using extra variable and little more code,
-> >> So I am looking for best solution possible. :)
+> >> Today's linux-next merge of the driver-core tree got a conflict in
+> >> lib/Kconfig.debug between commit e704f93af5a0 ("kernel: time: Add
+> >> udelay_test module to validate udelay") from the tip tree and commit
+> >> 0a8adf584759 ("test: add firmware_class loader test") from the
+> >> driver-core tree.
+> >>
+> >> I fixed it up (see below) and can carry the fix as necessary (no action
+> >> is required).
 > >
-> > Only use init_name for static struct devices, for a dynamic one, jsut
-> > set the name like everyone else does, how is that "more" code than
-> > anything else?
-> >
+> > Looks good, thanks.
 > 
-> Can you please elaborate what do you mean by static struct devices ?
+> For keeping things regularized, could this module instead be named
+> "test_udelay", to match the rest of most of the test modules?
+> (Starting with "test_".)
 
-Exactly what you wrote there, 'static' is a C thing, right?
+Makes sense, want to send a patch to rename it?
 
-> Can I consider embedded accelerometer, proximity, gyro sensor,
-> touch panel in android mobile devices as static devices ?
-
-Nope, because in my Android phone, I can yank out those and add new ones
-on the fly while the phone is running.  The kernel is fully dynamic that
-way.
-
-> Input subsystem is setting default name of input and event node.
-
-As it should.
-
-> This is the normal method everyone uses.
-
-And so should you :)
-
-> I do not want to use default name like event0, event4, input2, etc
-
-Yes, you really do.
-
-> My aim is to set name of input and event node through driver as desired.
-
-Nope, that's userspace's job, just use udev to rename the device node,
-or even better yet, create a symlink like /dev/input/by-id/ has if you
-really need more than that.
-
-Don't mess with kernel device names, we can't do that without breaking
-tons of things, there's a reason that we standardized on something,
-please use it.
-
-good luck,
+thanks,
 
 greg k-h
