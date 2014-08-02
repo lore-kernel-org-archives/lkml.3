@@ -1,140 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410AbaHBWLk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 18:11:40 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47879 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932385AbaHBWLi (ORCPT
+	id S932364AbaHBWQU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 18:16:20 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57670 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578AbaHBWQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 18:11:38 -0400
-Date: Sun, 3 Aug 2014 03:41:35 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Archana Patni <archana.patni@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] HID: hid-sensor-hub: use devm_ functions consistently
-Message-ID: <20140802221135.GA18239@himangi-Dell>
+	Sat, 2 Aug 2014 18:16:18 -0400
+Message-ID: <53DD632D.6070308@gmail.com>
+Date: Sun, 03 Aug 2014 00:16:13 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomasz Figa <t.figa@samsung.com>
+CC: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
+        linux-omap@vger.kernel.org, linus.walleij@linaro.org,
+        santosh.shilimkar@ti.com, tony@atomide.com, drake@endlessm.com,
+        Marek Szyprowski <m.szyprowski@samsung.com>, loeliger@gmail.com
+Subject: Re: [PATCH v3 1/7] ARM: l2c: Refactor the driver to use commit-like
+ interface
+References: <1405615142-21426-1-git-send-email-t.figa@samsung.com> <1405615142-21426-2-git-send-email-t.figa@samsung.com> <20140802220940.GW3705@n2100.arm.linux.org.uk>
+In-Reply-To: <20140802220940.GW3705@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_kzalloc for all calls to kzalloc and not just the first.  Use
-devm functions for other allocations as well. The calls to free the
-allocated memory in the probe and remove functions are done away with
-and a label is removed in the probe function.
+On 03.08.2014 00:09, Russell King - ARM Linux wrote:
+> On Thu, Jul 17, 2014 at 06:38:56PM +0200, Tomasz Figa wrote:
+>> Certain implementations of secure hypervisors (namely the one found on
+>> Samsung Exynos-based boards) do not provide access to individual L2C
+>> registers. This makes the .write_sec()-based interface insufficient and
+>> provoking ugly hacks.
+>>
+>> This patch is first step to make the driver not rely on availability of
+>> writes to individual registers. This is achieved by refactoring the
+>> driver to use a commit-like operation scheme: all register values are
+>> prepared first and stored in an instance of l2x0_regs struct and then a
+>> single callback is responsible to flush those values to the hardware.
+> 
+> This isn't going to work very well...
+> 
+>> +static const struct l2c_init_data *l2x0_data;
+> 
+> So you keep a pointer to the init data...
+> 
+>> +static void l2c_resume(void)
+>> +{
+>> +	l2x0_data->enable(l2x0_base, l2x0_saved_regs.aux_ctrl,
+>> +				l2x0_data->num_lock);
+> 
+> which you dereference at resume time...
+> 
+>>  static const struct l2c_init_data l2c210_data __initconst = {
+> 
+> but the structures which get assigned to the pointer are marked __initconst.
 
-The semantic match that finds the inconsistency is as follows:
+Good catch. The code was tested on Exynos which requires the cache to be
+resumed from early assembly code and so I did not hit issues caused by this.
 
-// <smpl>
-@@
-@@
+Proposed solution: kmemdup() in init, so that only used data remain in
+memory and the structures can be kept __initconst.
 
-*devm_kzalloc(...)
-...
-*kzalloc(...)
-// </smpl>
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/hid/hid-sensor-hub.c | 33 +++++++++++----------------------
- 1 file changed, 11 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
-index e244e44..2ac2576 100644
---- a/drivers/hid/hid-sensor-hub.c
-+++ b/drivers/hid/hid-sensor-hub.c
-@@ -604,9 +604,9 @@ static int sensor_hub_probe(struct hid_device *hdev,
- 		ret = -EINVAL;
- 		goto err_stop_hw;
- 	}
--	sd->hid_sensor_hub_client_devs = kzalloc(dev_cnt *
--						sizeof(struct mfd_cell),
--						GFP_KERNEL);
-+	sd->hid_sensor_hub_client_devs = devm_kzalloc(&hdev->dev, dev_cnt *
-+						      sizeof(struct mfd_cell),
-+						      GFP_KERNEL);
- 	if (sd->hid_sensor_hub_client_devs == NULL) {
- 		hid_err(hdev, "Failed to allocate memory for mfd cells\n");
- 			ret = -ENOMEM;
-@@ -618,11 +618,12 @@ static int sensor_hub_probe(struct hid_device *hdev,
- 
- 		if (collection->type == HID_COLLECTION_PHYSICAL) {
- 
--			hsdev = kzalloc(sizeof(*hsdev), GFP_KERNEL);
-+			hsdev = devm_kzalloc(&hdev->dev, sizeof(*hsdev),
-+					     GFP_KERNEL);
- 			if (!hsdev) {
- 				hid_err(hdev, "cannot allocate hid_sensor_hub_device\n");
- 				ret = -ENOMEM;
--				goto err_no_mem;
-+				goto err_stop_hw;
- 			}
- 			hsdev->hdev = hdev;
- 			hsdev->vendor_id = hdev->vendor;
-@@ -631,13 +632,13 @@ static int sensor_hub_probe(struct hid_device *hdev,
- 			if (last_hsdev)
- 				last_hsdev->end_collection_index = i;
- 			last_hsdev = hsdev;
--			name = kasprintf(GFP_KERNEL, "HID-SENSOR-%x",
--					collection->usage);
-+			name = devm_kasprintf(&hdev->dev, GFP_KERNEL,
-+					      "HID-SENSOR-%x",
-+					      collection->usage);
- 			if (name == NULL) {
- 				hid_err(hdev, "Failed MFD device name\n");
- 					ret = -ENOMEM;
--					kfree(hsdev);
--					goto err_no_mem;
-+					goto err_stop_hw;
- 			}
- 			sd->hid_sensor_hub_client_devs[
- 				sd->hid_sensor_client_cnt].id =
-@@ -661,16 +662,10 @@ static int sensor_hub_probe(struct hid_device *hdev,
- 	ret = mfd_add_devices(&hdev->dev, 0, sd->hid_sensor_hub_client_devs,
- 		sd->hid_sensor_client_cnt, NULL, 0, NULL);
- 	if (ret < 0)
--		goto err_no_mem;
-+		goto err_stop_hw;
- 
- 	return ret;
- 
--err_no_mem:
--	for (i = 0; i < sd->hid_sensor_client_cnt; ++i) {
--		kfree(sd->hid_sensor_hub_client_devs[i].name);
--		kfree(sd->hid_sensor_hub_client_devs[i].platform_data);
--	}
--	kfree(sd->hid_sensor_hub_client_devs);
- err_stop_hw:
- 	hid_hw_stop(hdev);
- 
-@@ -681,7 +676,6 @@ static void sensor_hub_remove(struct hid_device *hdev)
- {
- 	struct sensor_hub_data *data = hid_get_drvdata(hdev);
- 	unsigned long flags;
--	int i;
- 
- 	hid_dbg(hdev, " hardware removed\n");
- 	hid_hw_close(hdev);
-@@ -691,11 +685,6 @@ static void sensor_hub_remove(struct hid_device *hdev)
- 		complete(&data->pending.ready);
- 	spin_unlock_irqrestore(&data->lock, flags);
- 	mfd_remove_devices(&hdev->dev);
--	for (i = 0; i < data->hid_sensor_client_cnt; ++i) {
--		kfree(data->hid_sensor_hub_client_devs[i].name);
--		kfree(data->hid_sensor_hub_client_devs[i].platform_data);
--	}
--	kfree(data->hid_sensor_hub_client_devs);
- 	hid_set_drvdata(hdev, NULL);
- 	mutex_destroy(&data->mutex);
- }
--- 
-1.9.1
-
+Best regards,
+Tomasz
