@@ -1,98 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928AbaHBQkM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 12:40:12 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:34366
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754489AbaHBQkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 12:40:10 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/1 V2] Drivers: net-next: hyperv: Increase the size of the sendbuf region
-Date: Sat,  2 Aug 2014 10:42:02 -0700
-Message-Id: <1407001322-12010-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754874AbaHBQzv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 12:55:51 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:60180 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754489AbaHBQzu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Aug 2014 12:55:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1406413711-7798-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1406413711-7798-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Sat, 2 Aug 2014 11:55:48 -0500
+Message-ID: <CADT32eLts-tdQdHo+W3Zc1wQ6Qz8aS3TmHsm8OxmiF2fmhOW5g@mail.gmail.com>
+Subject: Re: [PATCH] fs: cifs: cifsencrypt.c: Cleaning up missing
+ null-terminate in conjunction with strncpy
+From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Steve French <sfrench@samba.org>, linux-cifs <linux-cifs@vger.kernel.org>,
+        samba-technical <samba-technical@lists.samba.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel did some benchmarking on our network throughput when Linux on Hyper-V
-is as used as a gateway. This fix gave us almost a 1 Gbps additional throughput
-on about 5Gbps base throughput we hadi, prior to increasing the sendbuf size.
-The sendbuf mechanism is a copy based transport that we have which is clearly
-more optimal than the copy-free page flipping mechanism (for small packets).
-In the forwarding scenario, we deal only with MTU sized packets,
-and increasing the size of the senbuf area gave us the additional performance.
-For what it is worth, Windows guests on Hyper-V, I am told use similar sendbuf
-size as well.
+Acked-by: Shirish Pargaonkar <spargaonkar@suse.com>
 
-The exact value of sendbuf I think is less important than the fact that it needs
-to be larger than what Linux can allocate as physically contiguous memory.
-Thus the change over to allocating via vmalloc().
-
-We currently allocate 16MB receive buffer and we use vmalloc there for allocation.
-Also the low level channel code has already been modified to deal with physically
-dis-contiguous memory in the ringbuffer setup.
-
-Based on experimentation Intel did, they say there was some improvement in throughput
-as the sendbuf size was increased up to 16MB and there was no effect on throughput
-beyond 16MB. Thus I have chosen 16MB here.
-
-Increasing the sendbuf value makes a material difference in small packet handling
-
-In this version of the patch, based on David's feedback, I have added
-additional details in the commit log.
-
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/net/hyperv/hyperv_net.h |    2 +-
- drivers/net/hyperv/netvsc.c     |    7 ++-----
- 2 files changed, 3 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index 6cc37c1..40ba1ef 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -584,7 +584,7 @@ struct nvsp_message {
- 
- #define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024*16)	/* 16MB */
- #define NETVSC_RECEIVE_BUFFER_SIZE_LEGACY	(1024*1024*15)  /* 15MB */
--#define NETVSC_SEND_BUFFER_SIZE			(1024 * 1024)   /* 1MB */
-+#define NETVSC_SEND_BUFFER_SIZE			(1024 * 1024 * 16)   /* 16MB */
- #define NETVSC_INVALID_INDEX			-1
- 
- 
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index c041f63..c76178e 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -193,8 +193,7 @@ static int netvsc_destroy_buf(struct netvsc_device *net_device)
- 	}
- 	if (net_device->send_buf) {
- 		/* Free up the receive buffer */
--		free_pages((unsigned long)net_device->send_buf,
--			   get_order(net_device->send_buf_size));
-+		vfree(net_device->send_buf);
- 		net_device->send_buf = NULL;
- 	}
- 	kfree(net_device->send_section_map);
-@@ -303,9 +302,7 @@ static int netvsc_init_buf(struct hv_device *device)
- 
- 	/* Now setup the send buffer.
- 	 */
--	net_device->send_buf =
--		(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
--					 get_order(net_device->send_buf_size));
-+	net_device->send_buf = vzalloc(net_device->send_buf_size);
- 	if (!net_device->send_buf) {
- 		netdev_err(ndev, "unable to allocate send "
- 			   "buffer of size %d\n", net_device->send_buf_size);
--- 
-1.7.4.1
-
+On Sat, Jul 26, 2014 at 5:28 PM, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
+> If you are going to use memset before strncpy you must copy sizeof -1
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  fs/cifs/cifsencrypt.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
+> index 4934347..dcca8b3 100644
+> --- a/fs/cifs/cifsencrypt.c
+> +++ b/fs/cifs/cifsencrypt.c
+> @@ -307,7 +307,7 @@ int calc_lanman_hash(const char *password, const char *cryptkey, bool encrypt,
+>
+>         memset(password_with_pad, 0, CIFS_ENCPWD_SIZE);
+>         if (password)
+> -               strncpy(password_with_pad, password, CIFS_ENCPWD_SIZE);
+> +               strncpy(password_with_pad, password, CIFS_ENCPWD_SIZE - 1);
+>
+>         if (!encrypt && global_secflags & CIFSSEC_MAY_PLNTXT) {
+>                 memcpy(lnm_session_key, password_with_pad,
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
