@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595AbaHBKde (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 06:33:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61321 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751863AbaHBKdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 06:33:33 -0400
-Message-ID: <53DCBE49.5040507@redhat.com>
-Date: Sat, 02 Aug 2014 12:32:41 +0200
-From: Nikolay Aleksandrov <nikolay@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754512AbaHBKlp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 06:41:45 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33419 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750851AbaHBKln (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Aug 2014 06:41:43 -0400
+Date: Sat, 2 Aug 2014 11:41:34 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Sachin Kamat <sachin.kamat@samsung.com>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 1/2] ARM: EXYNOS: Fix build with PM_SLEEP=n part #2
+Message-ID: <20140802104134.GA30282@n2100.arm.linux.org.uk>
+References: <1405349040-5265-1-git-send-email-b.zolnierkie@samsung.com> <1405349040-5265-2-git-send-email-b.zolnierkie@samsung.com>
 MIME-Version: 1.0
-To: Thomas Graf <tgraf@suug.ch>, davem@davemloft.net, netdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kaber@trash.net, paulmck@linux.vnet.ibm.com,
-        josh@joshtriplett.org, challa@noironetworks.com, walpole@cs.pdx.edu,
-        dev@openvswitch.org, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH net-next 1/3] lib: Resizable, Scalable, Concurrent Hash
- Table
-References: <cover.1406971567.git.tgraf@suug.ch> <f7740ef7d22a334a775348caee916f1ddb3c584d.1406971567.git.tgraf@suug.ch>
-In-Reply-To: <f7740ef7d22a334a775348caee916f1ddb3c584d.1406971567.git.tgraf@suug.ch>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405349040-5265-2-git-send-email-b.zolnierkie@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2014 11:47 AM, Thomas Graf wrote:
-> Generic implementation of a resizable, scalable, concurrent hash table
-> based on [0]. The implementation supports both, fixed size keys specified
-> via an offset and length, or arbitrary keys via own hash and compare
-> functions.
+On Mon, Jul 14, 2014 at 04:43:59PM +0200, Bartlomiej Zolnierkiewicz wrote:
+> Fix building of exynos_defconfig with disabled CONFIG_PM_SLEEP by
+> adding checking whether Exynos cpuidle support is enabled before
+> accessing exynos_enter_aftr.
 > 
-> Lookups are lockless and protected as RCU read side critical sections.
-> Automatic growing/shrinking based on user configurable watermarks is
-> available while allowing concurrent lookups to take place.
+> The build error message:
+> arch/arm/mach-exynos/built-in.o:(.data+0x74): undefined reference to `exynos_enter_aftr'
+> make: *** [vmlinux] Error 1
 > 
-> Objects to be hashed must include a struct rhash_head. The reason for not
-> using the existing struct hlist_head is that the expansion and shrinking
-> will have two buckets point to a single entry which would lead in obscure
-> reverse chaining behaviour.
-> 
-> Code includes a boot selftest if CONFIG_TEST_RHASHTABLE is defined.
-> 
-> [0] https://www.usenix.org/legacy/event/atc11/tech/final_files/Triplett.pdf
-> 
-> Signed-off-by: Thomas Graf <tgraf@suug.ch>
-> ---
->  include/linux/rhashtable.h | 213 ++++++++++++
->  lib/Kconfig.debug          |   8 +
->  lib/Makefile               |   2 +-
->  lib/rhashtable.c           | 797 +++++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 1019 insertions(+), 1 deletion(-)
->  create mode 100644 include/linux/rhashtable.h
->  create mode 100644 lib/rhashtable.c
-> 
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Reviewed-by: Nikolay Aleksandrov <nikolay@redhat.com>
+What's happening with this patch?  I'm still seeing failures in my builds
+due to the above error from Tuesday's arm-soc.
 
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
