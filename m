@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349AbaHBWKb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 18:10:31 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:57261 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755360AbaHBWKZ (ORCPT
+	id S932410AbaHBWLk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 18:11:40 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47879 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932385AbaHBWLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 18:10:25 -0400
-Date: Sun, 3 Aug 2014 03:40:22 +0530
+	Sat, 2 Aug 2014 18:11:38 -0400
+Date: Sun, 3 Aug 2014 03:41:35 +0530
 From: Himangi Saraogi <himangi774@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org
+To: Jiri Kosina <jkosina@suse.cz>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Archana Patni <archana.patni@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>, linux-kernel@vger.kernel.org
 Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] net: phy: spi_ks8995: Introduce the use of devm_kzalloc
-Message-ID: <20140802221021.GA18205@himangi-Dell>
+Subject: [PATCH] HID: hid-sensor-hub: use devm_ functions consistently
+Message-ID: <20140802221135.GA18239@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,106 +25,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of devm_kzalloc and does away with the
-kfrees in the probe and remove functions. Also, a label is removed.
+Use devm_kzalloc for all calls to kzalloc and not just the first.  Use
+devm functions for other allocations as well. The calls to free the
+allocated memory in the probe and remove functions are done away with
+and a label is removed in the probe function.
+
+The semantic match that finds the inconsistency is as follows:
+
+// <smpl>
+@@
+@@
+
+*devm_kzalloc(...)
+...
+*kzalloc(...)
+// </smpl>
 
 Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- drivers/net/phy/spi_ks8995.c | 26 ++++++++------------------
- 1 file changed, 8 insertions(+), 18 deletions(-)
+ drivers/hid/hid-sensor-hub.c | 33 +++++++++++----------------------
+ 1 file changed, 11 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/net/phy/spi_ks8995.c b/drivers/net/phy/spi_ks8995.c
-index 22b047f..eab57fc 100644
---- a/drivers/net/phy/spi_ks8995.c
-+++ b/drivers/net/phy/spi_ks8995.c
-@@ -277,7 +277,7 @@ static int ks8995_probe(struct spi_device *spi)
- 	/* Chip description */
- 	pdata = spi->dev.platform_data;
- 
--	ks = kzalloc(sizeof(*ks), GFP_KERNEL);
-+	ks = devm_kzalloc(&spi->dev, sizeof(*ks), GFP_KERNEL);
- 	if (!ks)
- 		return -ENOMEM;
- 
-@@ -291,14 +291,14 @@ static int ks8995_probe(struct spi_device *spi)
- 	err = spi_setup(spi);
- 	if (err) {
- 		dev_err(&spi->dev, "spi_setup failed, err=%d\n", err);
--		goto err_drvdata;
-+		return err;
+diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
+index e244e44..2ac2576 100644
+--- a/drivers/hid/hid-sensor-hub.c
++++ b/drivers/hid/hid-sensor-hub.c
+@@ -604,9 +604,9 @@ static int sensor_hub_probe(struct hid_device *hdev,
+ 		ret = -EINVAL;
+ 		goto err_stop_hw;
  	}
+-	sd->hid_sensor_hub_client_devs = kzalloc(dev_cnt *
+-						sizeof(struct mfd_cell),
+-						GFP_KERNEL);
++	sd->hid_sensor_hub_client_devs = devm_kzalloc(&hdev->dev, dev_cnt *
++						      sizeof(struct mfd_cell),
++						      GFP_KERNEL);
+ 	if (sd->hid_sensor_hub_client_devs == NULL) {
+ 		hid_err(hdev, "Failed to allocate memory for mfd cells\n");
+ 			ret = -ENOMEM;
+@@ -618,11 +618,12 @@ static int sensor_hub_probe(struct hid_device *hdev,
  
- 	err = ks8995_read(ks, ids, KS8995_REG_ID0, sizeof(ids));
- 	if (err < 0) {
- 		dev_err(&spi->dev, "unable to read id registers, err=%d\n",
- 				err);
--		goto err_drvdata;
-+		return err;
- 	}
+ 		if (collection->type == HID_COLLECTION_PHYSICAL) {
  
- 	switch (ids[0]) {
-@@ -306,8 +306,7 @@ static int ks8995_probe(struct spi_device *spi)
- 		break;
- 	default:
- 		dev_err(&spi->dev, "unknown family id:%02x\n", ids[0]);
--		err = -ENODEV;
--		goto err_drvdata;
-+		return -ENODEV;
- 	}
+-			hsdev = kzalloc(sizeof(*hsdev), GFP_KERNEL);
++			hsdev = devm_kzalloc(&hdev->dev, sizeof(*hsdev),
++					     GFP_KERNEL);
+ 			if (!hsdev) {
+ 				hid_err(hdev, "cannot allocate hid_sensor_hub_device\n");
+ 				ret = -ENOMEM;
+-				goto err_no_mem;
++				goto err_stop_hw;
+ 			}
+ 			hsdev->hdev = hdev;
+ 			hsdev->vendor_id = hdev->vendor;
+@@ -631,13 +632,13 @@ static int sensor_hub_probe(struct hid_device *hdev,
+ 			if (last_hsdev)
+ 				last_hsdev->end_collection_index = i;
+ 			last_hsdev = hsdev;
+-			name = kasprintf(GFP_KERNEL, "HID-SENSOR-%x",
+-					collection->usage);
++			name = devm_kasprintf(&hdev->dev, GFP_KERNEL,
++					      "HID-SENSOR-%x",
++					      collection->usage);
+ 			if (name == NULL) {
+ 				hid_err(hdev, "Failed MFD device name\n");
+ 					ret = -ENOMEM;
+-					kfree(hsdev);
+-					goto err_no_mem;
++					goto err_stop_hw;
+ 			}
+ 			sd->hid_sensor_hub_client_devs[
+ 				sd->hid_sensor_client_cnt].id =
+@@ -661,16 +662,10 @@ static int sensor_hub_probe(struct hid_device *hdev,
+ 	ret = mfd_add_devices(&hdev->dev, 0, sd->hid_sensor_hub_client_devs,
+ 		sd->hid_sensor_client_cnt, NULL, 0, NULL);
+ 	if (ret < 0)
+-		goto err_no_mem;
++		goto err_stop_hw;
  
- 	memcpy(&ks->regs_attr, &ks8995_registers_attr, sizeof(ks->regs_attr));
-@@ -320,24 +319,24 @@ static int ks8995_probe(struct spi_device *spi)
- 			dev_err(&spi->dev,
- 				"unable to read chip id register, err=%d\n",
- 				err);
--			goto err_drvdata;
-+			return err;
- 		}
- 		if ((val & 0x80) == 0) {
- 			dev_err(&spi->dev, "unknown chip:%02x,0\n", ids[1]);
--			goto err_drvdata;
-+			return err;
- 		}
- 		ks->regs_attr.size = KSZ8864_REGS_SIZE;
- 	}
+ 	return ret;
  
- 	err = ks8995_reset(ks);
- 	if (err)
--		goto err_drvdata;
-+		return err;
+-err_no_mem:
+-	for (i = 0; i < sd->hid_sensor_client_cnt; ++i) {
+-		kfree(sd->hid_sensor_hub_client_devs[i].name);
+-		kfree(sd->hid_sensor_hub_client_devs[i].platform_data);
+-	}
+-	kfree(sd->hid_sensor_hub_client_devs);
+ err_stop_hw:
+ 	hid_hw_stop(hdev);
  
- 	err = sysfs_create_bin_file(&spi->dev.kobj, &ks->regs_attr);
- 	if (err) {
- 		dev_err(&spi->dev, "unable to create sysfs file, err=%d\n",
- 				    err);
--		goto err_drvdata;
-+		return err;
- 	}
- 
- 	if (get_chip_id(ids[1]) == CHIPID_M) {
-@@ -350,21 +349,12 @@ static int ks8995_probe(struct spi_device *spi)
- 	}
- 
- 	return 0;
--
--err_drvdata:
--	kfree(ks);
--	return err;
- }
- 
- static int ks8995_remove(struct spi_device *spi)
+@@ -681,7 +676,6 @@ static void sensor_hub_remove(struct hid_device *hdev)
  {
--	struct ks8995_data      *ks8995;
--
--	ks8995 = spi_get_drvdata(spi);
- 	sysfs_remove_bin_file(&spi->dev.kobj, &ks8995_registers_attr);
+ 	struct sensor_hub_data *data = hid_get_drvdata(hdev);
+ 	unsigned long flags;
+-	int i;
  
--	kfree(ks8995);
--
- 	return 0;
+ 	hid_dbg(hdev, " hardware removed\n");
+ 	hid_hw_close(hdev);
+@@ -691,11 +685,6 @@ static void sensor_hub_remove(struct hid_device *hdev)
+ 		complete(&data->pending.ready);
+ 	spin_unlock_irqrestore(&data->lock, flags);
+ 	mfd_remove_devices(&hdev->dev);
+-	for (i = 0; i < data->hid_sensor_client_cnt; ++i) {
+-		kfree(data->hid_sensor_hub_client_devs[i].name);
+-		kfree(data->hid_sensor_hub_client_devs[i].platform_data);
+-	}
+-	kfree(data->hid_sensor_hub_client_devs);
+ 	hid_set_drvdata(hdev, NULL);
+ 	mutex_destroy(&data->mutex);
  }
- 
 -- 
 1.9.1
 
