@@ -1,69 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841AbaHBMVv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 08:21:51 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:59918 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbaHBMVt (ORCPT
+	id S1754843AbaHBMYx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 08:24:53 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:38123 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750971AbaHBMYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 08:21:49 -0400
-Message-ID: <53DCD7D7.2070208@gmail.com>
-Date: Sat, 02 Aug 2014 14:21:43 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
-        linux-samsung-soc@vger.kernel.org
-CC: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        open list <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Ben Dooks <ben-linux@fluff.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 04/10] ARM: dts: Clean up exynos5250-snow
-References: <1406940750-15880-1-git-send-email-afaerber@suse.de> <1406940750-15880-5-git-send-email-afaerber@suse.de>
-In-Reply-To: <1406940750-15880-5-git-send-email-afaerber@suse.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	Sat, 2 Aug 2014 08:24:51 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiUiALjX3FNXQwcM/2dsb2JhbABZgw2BKYInrCgGBQFupBYCAgGBAhd3BDMBAYNLAQUnExwjEAgDDjg5DREGE4hGAcZnF4V8iVAHhEsBBJwEAZRfg087Lw
+Date: Sat, 2 Aug 2014 14:24:49 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: Zach Brown <zab@zabbo.net>
+Cc: Josef Bacik <jbacik@fb.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, Chris Mason <clm@fb.com>
+Subject: Re: [PATCH 1/1] Btrfs: fix sparse warning
+Message-Id: <20140802142449.15f4cfc2c2821e90e04e175e@skynet.be>
+In-Reply-To: <20140717190152.GB24196@lenny.home.zabbo.net>
+References: <1405451837-8235-1-git-send-email-fabf@skynet.be>
+	<20140716172021.GA10833@lenny.home.zabbo.net>
+	<1762701571.679094.1405622254558.open-xchange@webmail.nmp.skynet.be>
+	<20140717190152.GB24196@lenny.home.zabbo.net>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02.08.2014 02:52, Andreas Färber wrote:
-> Use the new style of referencing inherited nodes and use symbolic names.
-> Reorder one pinctrl node in GPIO order.
-> 
-> Goal is the alignment of all exynos5250 based device trees for comparison.
-> 
-> Suggested-by: Doug Anderson <dianders@chromium.org>
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
-> Signed-off-by: Andreas Färber <afaerber@suse.de>
-> ---
->  v5 -> v6:
->  * Split off label additions (Doug Anderson)
->  * Fixed alphabetical order of sd3_* nodes (Doug Anderson)
->  
->  v4 -> v5:
->  * Introduced labels to consistently use new referencing style (Tomasz Figa)
->  * Use IRQ_TYPE_* constants
->  * Use some more GPIO_ACTIVE_*
-> 
->  v3 -> v4: Unchanged
->  
->  v3: New (Doug Anderson)
-> 
->  arch/arm/boot/dts/exynos5250-snow.dts | 291 +++++++++++++++++-----------------
->  1 file changed, 145 insertions(+), 146 deletions(-)
+On Thu, 17 Jul 2014 12:01:52 -0700
+Zach Brown <zab@zabbo.net> wrote:
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> > > > @@ -515,7 +515,8 @@ static int write_buf(struct file *filp, const void *buf,
+> > > > u32 len, loff_t *off)
+> > >
+> > > Though this probably wants to be rewritten in terms of kernel_write().
+> > > That'd give an opportunity to get rid of the sctx->send_off and have it
+> > > use f_pos in the filp.
+> > 
+> > Do you mean directly call kernel_write from send_cmd/send_header ?
+> > I guess that loop around vfs_write in write_buf is there for something ...
+> 
+> write_buf() could still exist to iterate over the buffer in the case of
+> partial writes but it doesn't need to muck around with set_fs() and
+> forcing casts.
+> 
+> - z
 
-Best regards,
-Tomasz
+Hello Zach,
+
+	Here's an untested patch which
+
+	-removes send_off and set_fs
+	-calls kernel_write with ppos 0
+
+but I don't know if something like adding filp->f_pos = pos
+at the end of write_buf would be enough to replace send_off ...
+
+Regards,
+Fabian 
+	
+
+diff --git a/fs/btrfs/send.c b/fs/btrfs/send.c
+index 6528aa6..a144b4e 100644
+--- a/fs/btrfs/send.c
++++ b/fs/btrfs/send.c
+@@ -83,7 +83,6 @@ struct clone_root {
+ 
+ struct send_ctx {
+ 	struct file *send_filp;
+-	loff_t send_off;
+ 	char *send_buf;
+ 	u32 send_size;
+ 	u32 send_max_size;
+@@ -505,35 +504,28 @@ static struct btrfs_path *alloc_path_for_send(void)
+ 	return path;
+ }
+ 
+-static int write_buf(struct file *filp, const void *buf, u32 len, loff_t *off)
++static int write_buf(struct file *filp, const void *buf, u32 len)
+ {
+ 	int ret;
+ 	mm_segment_t old_fs;
+ 	u32 pos = 0;
+ 
+-	old_fs = get_fs();
+-	set_fs(KERNEL_DS);
+-
+ 	while (pos < len) {
+-		ret = vfs_write(filp, (char *)buf + pos, len - pos, off);
++		ret = kernel_write(filp, (char *)buf + pos, len - pos, 0);
+ 		/* TODO handle that correctly */
+ 		/*if (ret == -ERESTARTSYS) {
+ 			continue;
+ 		}*/
+ 		if (ret < 0)
+-			goto out;
++			return ret;
+ 		if (ret == 0) {
+ 			ret = -EIO;
+-			goto out;
++			return ret;
+ 		}
+ 		pos += ret;
+ 	}
+ 
+-	ret = 0;
+-
+-out:
+-	set_fs(old_fs);
+-	return ret;
++	return 0;
+ }
+ 
+ static int tlv_put(struct send_ctx *sctx, u16 attr, const void *data, int len)
+@@ -639,8 +631,7 @@ static int send_header(struct send_ctx *sctx)
+ 	strcpy(hdr.magic, BTRFS_SEND_STREAM_MAGIC);
+ 	hdr.version = cpu_to_le32(BTRFS_SEND_STREAM_VERSION);
+ 
+-	return write_buf(sctx->send_filp, &hdr, sizeof(hdr),
+-					&sctx->send_off);
++	return write_buf(sctx->send_filp, &hdr, sizeof(hdr));
+ }
+ 
+ /*
+@@ -675,8 +666,7 @@ static int send_cmd(struct send_ctx *sctx)
+ 	crc = btrfs_crc32c(0, (unsigned char *)sctx->send_buf, sctx->send_size);
+ 	hdr->crc = cpu_to_le32(crc);
+ 
+-	ret = write_buf(sctx->send_filp, sctx->send_buf, sctx->send_size,
+-					&sctx->send_off);
++	ret = write_buf(sctx->send_filp, sctx->send_buf);
+ 
+ 	sctx->total_send_size += sctx->send_size;
+ 	sctx->cmd_send_size[le16_to_cpu(hdr->cmd)] += sctx->send_size;
