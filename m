@@ -1,51 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165AbaHBRdd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 13:33:33 -0400
-Received: from smtprelay0215.hostedemail.com ([216.40.44.215]:56517 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755074AbaHBRdb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 13:33:31 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1256:1260:1261:1277:1311:1313:1314:1345:1359:1373:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3871:3876:4321:4605:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: noise91_75c795bb6b904
-X-Filterd-Recvd-Size: 1716
-Message-ID: <1407000807.1835.14.camel@joe-AO725>
-Subject: Re: [PATCH] fs: cifs: cifsencrypt.c: Cleaning up missing
- null-terminate in conjunction with strncpy
-From: Joe Perches <joe@perches.com>
-To: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Steve French <sfrench@samba.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>,
-        samba-technical <samba-technical@lists.samba.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 02 Aug 2014 10:33:27 -0700
-In-Reply-To: <CADT32eLts-tdQdHo+W3Zc1wQ6Qz8aS3TmHsm8OxmiF2fmhOW5g@mail.gmail.com>
-References: <1406413711-7798-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	 <CADT32eLts-tdQdHo+W3Zc1wQ6Qz8aS3TmHsm8OxmiF2fmhOW5g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	id S1755056AbaHBR6u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 13:58:50 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:28636 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754712AbaHBR6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Aug 2014 13:58:48 -0400
+Message-ID: <1407002305.3573.12.camel@dworkin>
+Subject: Re: [PATCH] perf tools: Show better error message in case we fail
+ to open counters due to EBUSY error
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        William Cohen <wcohen@redhat.com>, ydroneaud@opteya.com
+Date: Sat, 02 Aug 2014 19:58:25 +0200
+In-Reply-To: <1406908014-8312-1-git-send-email-jolsa@kernel.org>
+References: <1406908014-8312-1-git-send-email-jolsa@kernel.org>
+Organization: OPTEYA
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-08-02 at 11:55 -0500, Shirish Pargaonkar wrote:
-> Acked-by: Shirish Pargaonkar <spargaonkar@suse.com>
-[]
-> > diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
-[]
-> > @@ -307,7 +307,7 @@ int calc_lanman_hash(const char *password, const char *cryptkey, bool encrypt,
-> >
-> >         memset(password_with_pad, 0, CIFS_ENCPWD_SIZE);
-> >         if (password)
-> > -               strncpy(password_with_pad, password, CIFS_ENCPWD_SIZE);
-> > +               strncpy(password_with_pad, password, CIFS_ENCPWD_SIZE - 1);
+Hi Jiri,
+
+Le vendredi 01 août 2014 à 17:46 +0200, Jiri Olsa a écrit :
+> Showing better error message in case we fail to open
+> counters due to the EBUSY error. If we detect oprofile
+> daemon process running, we now display following message
+> for EBUSY error:
+> 
+>   $ perf record ls
+>   Error:
+>   The PMU counters are busy/taken by another profiler.
+>   We found oprofile daemon running, please stop it and try again.
+> 
+> In case oprofiled was not detected the current error
+> message stays:
+> 
+>   $ perf record ls
+>   Error:
+>   The sys_perf_event_open() syscall returned with 16 (Device or resource busy) for event (cycles).
+>   /bin/dmesg may provide additional information.
+>   No CONFIG_PERF_EVENTS=y kernel support configured?
+> 
+> Also changing PERF_FLAG_FD_CLOEXEC detection code not to display
+> error in case of EBUSY error, as it currently does:
+> 
+>   $ perf record ls
+>   Error:
+>   perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error 16 (Device or resource busy)
+>   perf_event_open(..., 0) failed unexpectedly with error 16 (Device or resource busy)
+>   The PMU counters are busy/taken by another profiler.
+>   We found oprofile daemon running, please stop it and try again.
+> 
+> Cc: Adrian Hunter <adrian.hunter@intel.com>
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Namhyung Kim <namhyung@gmail.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> Cc: William Cohen <wcohen@redhat.com>
+> Cc: Yann Droneaud <ydroneaud@opteya.com>
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> ---
+>  tools/perf/util/cloexec.c |  4 ++--
+>  tools/perf/util/evsel.c   |  6 ++++++
+>  tools/perf/util/util.c    | 36 ++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/util.h    |  1 +
+>  4 files changed, 45 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
+> index c5d05ec17220..dede0c388ed4 100644
+> --- a/tools/perf/util/cloexec.c
+> +++ b/tools/perf/util/cloexec.c
+> @@ -25,7 +25,7 @@ static int perf_flag_probe(void)
+>  		return 1;
+>  	}
+>  
+> -	WARN_ONCE(err != EINVAL,
+> +	WARN_ONCE(err != EINVAL && err != EBUSY,
+>  		  "perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error %d (%s)\n",
+>  		  err, strerror(err));
+>  
+> @@ -33,7 +33,7 @@ static int perf_flag_probe(void)
+>  	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
+>  	err = errno;
+>  
+> -	if (WARN_ONCE(fd < 0,
+> +	if (WARN_ONCE(fd < 0 && err != EBUSY,
+>  		      "perf_event_open(..., 0) failed unexpectedly with error %d (%s)\n",
+>  		      err, strerror(err)))
+>  		return -1;
+
+It's definitely possible to shortcut the function if EBUSY is returned
+by first call to perf_event_open().
+
+diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
+index dc360ebde745..d5c626d5432a 100644
+--- a/tools/perf/util/cloexec.c
++++ b/tools/perf/util/cloexec.c
+@@ -25,6 +25,9 @@ static int perf_flag_probe(void)
+ 		return 1;
+ 	}
+ 
++	if (err == EBUSY)
++		return -1;
++
+ 	WARN_ONCE(err != EINVAL,
+ 		  "perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error %d (%s)\n",
+ 		  err, strerror(err));
 
 
-Is this always correct?
+BTW, I'm going to submit a patch to make the function report such 
+warning only once.
+
+Regards.
+
+-- 
+Yann Droneaud
+OPTEYA
 
 
