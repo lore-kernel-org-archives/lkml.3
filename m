@@ -1,271 +1,482 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180AbaHBUBH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 16:01:07 -0400
-Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:12426
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754739AbaHBUBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 16:01:05 -0400
-X-WSS-ID: 0N9P3LK-08-LK0-02
-X-M-MSG: 
-Message-ID: <53DD4372.3040108@amd.com>
-Date: Sat, 2 Aug 2014 23:00:50 +0300
-From: Oded Gabbay <oded.gabbay@amd.com>
-Organization: AMD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1755240AbaHBUEv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 16:04:51 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47157 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754739AbaHBUEt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Aug 2014 16:04:49 -0400
+Date: Sat, 2 Aug 2014 22:04:43 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ilya Dryomov <ilya.dryomov@inktank.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ceph Development <ceph-devel@vger.kernel.org>, davidlohr@hp.com,
+        jason.low2@hp.com
+Subject: [RFC][PATCH] locking: Debug nested wait/locking primitives
+Message-ID: <20140802200443.GA12054@laptop.lan>
+References: <1406801797-20139-1-git-send-email-ilya.dryomov@inktank.com>
+ <20140731115759.GS19379@twins.programming.kicks-ass.net>
+ <CALFYKtBGQpxaZ0EFXbdvuEHeDeASeU-7XxQ_1a6ZDM=aJS651w@mail.gmail.com>
+ <20140731131331.GT19379@twins.programming.kicks-ass.net>
+ <20140731134411.GA12050@gmail.com>
+ <20140731135616.GU19379@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Jerome Glisse <j.glisse@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-api@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-CC: David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>,
-        =?UTF-8?B?TWljaGVsIETDpG56ZXI=?= <michel.daenzer@amd.com>,
-        Ben Goz <Ben.Goz@amd.com>, Alexey Skidanov <Alexey.Skidanov@amd.com>
-Subject: Re: [PATCH v2 08/25] amdkfd: Add IOCTL set definitions of amdkfd
-References: <1405603773-32688-1-git-send-email-oded.gabbay@amd.com>
- <1405603773-32688-9-git-send-email-oded.gabbay@amd.com>
- <20140720165432.GB3068@gmail.com>
-In-Reply-To: <20140720165432.GB3068@gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.224.152.144]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(479174003)(51234002)(51704005)(24454002)(189002)(199002)(83506001)(83072002)(77982001)(92726001)(92566001)(2201001)(81542001)(23676002)(33656002)(84676001)(85852003)(101416001)(79102001)(68736004)(80316001)(83322001)(85306004)(4396001)(105586002)(36756003)(102836001)(87936001)(106466001)(107046002)(20776003)(76176999)(99396002)(64706001)(87266999)(81342001)(97736001)(50466002)(65816999)(54356999)(74502001)(65956001)(21056001)(50986999)(80022001)(86362001)(19580405001)(44976005)(76482001)(65806001)(46102001)(95666004)(47776003)(31966008)(19580395003)(74662001)(129583001);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR02MB037;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 029174C036
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140731135616.GU19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+This should cover most cases I think.
 
-On 20/07/14 19:54, Jerome Glisse wrote:
-> On Thu, Jul 17, 2014 at 04:29:15PM +0300, Oded Gabbay wrote:
->> - KFD_IOC_GET_VERSION:
->> 	Retrieves the interface version of amdkfd
->>
->> - KFD_IOC_CREATE_QUEUE:
->> 	Creates a usermode queue that runs on a specific GPU device
->>
->> - KFD_IOC_DESTROY_QUEUE:
->> 	Destroys an existing usermode queue
->>
->> - KFD_IOC_SET_MEMORY_POLICY:
->> 	Sets the memory policy of the default and alternate aperture of the calling process
->>
->> - KFD_IOC_GET_CLOCK_COUNTERS:
->> 	Retrieves counters (timestamps) of CPU and GPU
->>
->> - KFD_IOC_GET_PROCESS_APERTURES:
->> 	Retrieves information about process apertures that were initialized
->> during the open() call of the amdkfd device
->>
->> - KFD_IOC_UPDATE_QUEUE:
->> 	Updates configuration of an existing usermode queue
->>
->> - KFD_IOC_PMC_ACQUIRE_ACCESS:
->> 	Acquires exclusive access (from other HSA processes) to the performance
->> counters of the GPU
->>
->> - KFD_IOC_PMC_RELEASE_ACCESS:
->> 	Releases exclusive access of the GPU's performance counters
-> 
-> Exclusive userspace access is recipie for failure. This must go and you must
-> come up with better model. Which in my mind involve an ioctl for each command
-> buffer submission.
-> 
-Removed these 2 ioctls in v3
->>
->> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
->> ---
->>  include/uapi/linux/kfd_ioctl.h | 133 +++++++++++++++++++++++++++++++++++++++++
->>  1 file changed, 133 insertions(+)
->>  create mode 100644 include/uapi/linux/kfd_ioctl.h
->>
->> diff --git a/include/uapi/linux/kfd_ioctl.h b/include/uapi/linux/kfd_ioctl.h
->> new file mode 100644
->> index 0000000..3cedd1a
->> --- /dev/null
->> +++ b/include/uapi/linux/kfd_ioctl.h
->> @@ -0,0 +1,133 @@
->> +/*
->> + * Copyright 2014 Advanced Micro Devices, Inc.
->> + *
->> + * Permission is hereby granted, free of charge, to any person obtaining a
->> + * copy of this software and associated documentation files (the "Software"),
->> + * to deal in the Software without restriction, including without limitation
->> + * the rights to use, copy, modify, merge, publish, distribute, sublicense,
->> + * and/or sell copies of the Software, and to permit persons to whom the
->> + * Software is furnished to do so, subject to the following conditions:
->> + *
->> + * The above copyright notice and this permission notice shall be included in
->> + * all copies or substantial portions of the Software.
->> + *
->> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
->> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
->> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
->> + * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
->> + * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
->> + * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
->> + * OTHER DEALINGS IN THE SOFTWARE.
->> + */
->> +
->> +#ifndef KFD_IOCTL_H_INCLUDED
->> +#define KFD_IOCTL_H_INCLUDED
->> +
->> +#include <linux/types.h>
->> +#include <linux/ioctl.h>
->> +
->> +#define KFD_IOCTL_CURRENT_VERSION 1
->> +
->> +/* The 64-bit ABI is the authoritative version. */
->> +#pragma pack(push, 1)
-> 
-> pagram pack must be remove do not use that.
-> 
-Removed in v3
->> +
->> +struct kfd_ioctl_get_version_args {
->> +	uint32_t min_supported_version;	/* from KFD */
->> +	uint32_t max_supported_version;	/* from KFD */
->> +};
->> +
->> +/* For kfd_ioctl_create_queue_args.queue_type. */
->> +#define KFD_IOC_QUEUE_TYPE_COMPUTE   0
->> +#define KFD_IOC_QUEUE_TYPE_SDMA      1
->> +
->> +struct kfd_ioctl_create_queue_args {
->> +	uint64_t ring_base_address;	/* to KFD */
->> +	uint64_t write_pointer_address;	/* from KFD */
->> +	uint64_t read_pointer_address;	/* from KFD */
->> +	uint64_t doorbell_address;	/* from KFD */
->> +
->> +	uint32_t ring_size;		/* to KFD */
->> +	uint32_t gpu_id;		/* to KFD */
->> +	uint32_t queue_type;		/* to KFD */
->> +	uint32_t queue_percentage;	/* to KFD */
->> +	uint32_t queue_priority;	/* to KFD */
->> +	uint32_t queue_id;		/* from KFD */
->> +};
->> +
->> +struct kfd_ioctl_destroy_queue_args {
->> +	uint32_t queue_id;		/* to KFD */
->> +};
->> +
->> +struct kfd_ioctl_update_queue_args {
->> +	uint64_t ring_base_address;	/* to KFD */
->> +
->> +	uint32_t queue_id;		/* to KFD */
->> +	uint32_t ring_size;		/* to KFD */
->> +	uint32_t queue_percentage;	/* to KFD */
->> +	uint32_t queue_priority;	/* to KFD */
->> +};
-> 
-> The queue_percentage and queue_priority really needs some explanations. I guess
-> userspace would shed some light on those but still this should be properly explain.
-> 
-Added explanation in v3
->> +
->> +/* For kfd_ioctl_set_memory_policy_args.default_policy and alternate_policy */
->> +#define KFD_IOC_CACHE_POLICY_COHERENT 0
->> +#define KFD_IOC_CACHE_POLICY_NONCOHERENT 1
->> +
->> +struct kfd_ioctl_set_memory_policy_args {
->> +	uint64_t alternate_aperture_base;	/* to KFD */
->> +	uint64_t alternate_aperture_size;	/* to KFD */
->> +
->> +	uint32_t gpu_id;			/* to KFD */
->> +	uint32_t default_policy;		/* to KFD */
->> +	uint32_t alternate_policy;		/* to KFD */
->> +};
-> 
-> Same what is aperture in this context. I know about all this stuff but i have no
-> idea what aperture is in this context.
-> 
-Added explanation in v3
->> +
->> +struct kfd_ioctl_get_clock_counters_args {
->> +	uint64_t gpu_clock_counter;	/* from KFD */
->> +	uint64_t cpu_clock_counter;	/* from KFD */
->> +	uint64_t system_clock_counter;	/* from KFD */
->> +	uint64_t system_clock_freq;	/* from KFD */
->> +
->> +	uint32_t gpu_id;		/* to KFD */
->> +};
-> 
-> Again comment about what kind of counter this is, monotonic, ...
-> 
-Added explanation in v3
->> +
->> +#define NUM_OF_SUPPORTED_GPUS 7
->> +
->> +struct kfd_process_device_apertures {
->> +	uint64_t lds_base;		/* from KFD */
->> +	uint64_t lds_limit;		/* from KFD */
->> +	uint64_t scratch_base;		/* from KFD */
->> +	uint64_t scratch_limit;		/* from KFD */
->> +	uint64_t gpuvm_base;		/* from KFD */
->> +	uint64_t gpuvm_limit;		/* from KFD */
->> +	uint32_t gpu_id;		/* from KFD */
->> +};
->> +
->> +struct kfd_ioctl_get_process_apertures_args {
->> +	struct kfd_process_device_apertures process_apertures[NUM_OF_SUPPORTED_GPUS];/* from KFD */
->> +	uint8_t num_of_nodes; /* from KFD, should be in the range [1 - NUM_OF_SUPPORTED_GPUS]*/
->> +};
-> 
-> I would rather see userspace provide a pointer to an array and the size of that
-> array and possibly size of individual element. This would allow you to grow the
-> kfd_process_device_apertures if needs be. Thought as i understand it this is a
-> temporary driver.
-> 
-This is not going to change in the near or far future. I also agree that
-we would probably see a common framework before NUM_OF_SUPPORTED_GPUS
-increases.
-If you insist, I'll try to squeeze it in at v4
->> +
->> +struct kfd_ioctl_pmc_acquire_access_args {
->> +	uint64_t trace_id;		/* to KFD */
->> +	uint32_t gpu_id;		/* to KFD */
->> +};
->> +
->> +struct kfd_ioctl_pmc_release_access_args {
->> +	uint64_t trace_id;		/* to KFD */
->> +	uint32_t gpu_id;		/* to KFD */
->> +};
-> 
-> As said above no ioctl to have some exclusive access you can not trust userspace
-> that's rules NUMBER ONE.
-> 
-Removed in v3.
->> +
->> +#define KFD_IOC_MAGIC 'K'
->> +
->> +#define KFD_IOC_GET_VERSION		_IOR(KFD_IOC_MAGIC, 1, struct kfd_ioctl_get_version_args)
->> +#define KFD_IOC_CREATE_QUEUE		_IOWR(KFD_IOC_MAGIC, 2, struct kfd_ioctl_create_queue_args)
->> +#define KFD_IOC_DESTROY_QUEUE		_IOWR(KFD_IOC_MAGIC, 3, struct kfd_ioctl_destroy_queue_args)
->> +#define KFD_IOC_SET_MEMORY_POLICY	_IOW(KFD_IOC_MAGIC, 4, struct kfd_ioctl_set_memory_policy_args)
->> +#define KFD_IOC_GET_CLOCK_COUNTERS	_IOWR(KFD_IOC_MAGIC, 5, struct kfd_ioctl_get_clock_counters_args)
->> +#define KFD_IOC_GET_PROCESS_APERTURES	_IOR(KFD_IOC_MAGIC, 6, struct kfd_ioctl_get_process_apertures_args)
->> +#define KFD_IOC_UPDATE_QUEUE		_IOW(KFD_IOC_MAGIC, 7, struct kfd_ioctl_update_queue_args)
->> +#define KFD_IOC_PMC_ACQUIRE_ACCESS	_IOW(KFD_IOC_MAGIC, 12, struct kfd_ioctl_pmc_acquire_access_args)
->> +#define KFD_IOC_PMC_RELEASE_ACCESS	_IOW(KFD_IOC_MAGIC, 13, struct kfd_ioctl_pmc_release_access_args)
->> +
->> +#pragma pack(pop)
-> 
-> No pragma packing.
-> 
-Removed in v3
->> +
->> +#endif
->> -- 
->> 1.9.1
->>
-Oded
+I'll have to break this out into different patches, and maybe clean up
+things a bit (there's certainly comments missing and some repetition).
+
+But this boots on my test box and builds a kernel without generating a
+single WARN -- big improvement over not booting (partly due to excessive
+warn output) with just the sched/core.c bit.
+
+---
+ drivers/tty/n_tty.c              | 71 +++++++++++++++++++++++++++++++++-------
+ fs/notify/inotify/inotify_user.c | 34 +++++++++++++++++--
+ fs/notify/notification.c         |  2 +-
+ include/linux/kernel.h           |  4 +--
+ include/linux/sched.h            | 46 ++++++++++++++++++++++++--
+ include/linux/wait.h             |  2 ++
+ kernel/exit.c                    |  6 ++++
+ kernel/sched/core.c              | 14 ++++++++
+ kernel/smpboot.c                 | 15 +++++----
+ 9 files changed, 168 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index f44f1ba762c3..5e4830979937 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -2098,6 +2098,36 @@ static int job_control(struct tty_struct *tty, struct file *file)
+ 	return 0;
+ }
+ 
++/*
++ * n_tty_{read,write} use blocking primitives (mutex_lock, down_read, etc.)
++ * inside an open-coded wait loop.
++ *
++ * The wait loop relies on current->state to record wakeups; these will change
++ * it back to TASK_RUNNING. However blocking primitives themselves also change
++ * current->state. Therefore we must implement another means of recording
++ * wakeups.
++ *
++ * We do this by setting an alternative waitqueue wake function which changes
++ * an additional variable.
++ */
++
++struct n_tty_wakeup_state {
++	struct task_struct *task;
++	bool woken;
++};
++
++static int n_tty_wake(wait_queue_t *wait, unsigned mode,
++			    int wake_flags, void *key)
++{
++	struct n_tty_wakeup_state *s = wait->private;
++	DECLARE_WAITQUEUE(dummy_wait, s->task);
++
++	smp_wmb();
++	s->woken = true;
++
++	return default_wake_function(&dummy_wait, mode, wake_flags, key);
++}
++
+ 
+ /**
+  *	n_tty_read		-	read function for tty
+@@ -2123,7 +2153,11 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ {
+ 	struct n_tty_data *ldata = tty->disc_data;
+ 	unsigned char __user *b = buf;
+-	DECLARE_WAITQUEUE(wait, current);
++	struct n_tty_wakeup_state s = {
++		.task = current,
++		.woken = false,
++	};
++	wait_queue_t wait;
+ 	int c;
+ 	int minimum, time;
+ 	ssize_t retval = 0;
+@@ -2167,6 +2201,9 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 
+ 	packet = tty->packet;
+ 
++	init_waitqueue_func_entry(&wait, n_tty_wake);
++	wait.private = &s;
++
+ 	add_wait_queue(&tty->read_wait, &wait);
+ 	while (nr) {
+ 		/* First test for status change. */
+@@ -2186,10 +2223,11 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 			nr--;
+ 			break;
+ 		}
+-		/* This statement must be first before checking for input
+-		   so that any interrupt will set the state back to
+-		   TASK_RUNNING. */
+-		set_current_state(TASK_INTERRUPTIBLE);
++		/*
++		 * This statement must be first before checking for input so
++		 * that any interrupt will set it to true.
++		 */
++		s.woken = false;
+ 
+ 		if (((minimum - (b - buf)) < ldata->minimum_to_wake) &&
+ 		    ((minimum - (b - buf)) >= 1))
+@@ -2220,13 +2258,15 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 				n_tty_set_room(tty);
+ 				up_read(&tty->termios_rwsem);
+ 
+-				timeout = schedule_timeout(timeout);
++				set_current_state(TASK_INTERRUPTIBLE);
++				if (!s.woken)
++					timeout = schedule_timeout(timeout);
++				__set_current_state(TASK_RUNNING);
+ 
+ 				down_read(&tty->termios_rwsem);
+ 				continue;
+ 			}
+ 		}
+-		__set_current_state(TASK_RUNNING);
+ 
+ 		/* Deal with packet mode. */
+ 		if (packet && b == buf) {
+@@ -2273,7 +2313,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 
+ 	mutex_unlock(&ldata->atomic_read_lock);
+ 
+-	__set_current_state(TASK_RUNNING);
+ 	if (b - buf)
+ 		retval = b - buf;
+ 
+@@ -2306,7 +2345,11 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
+ 			   const unsigned char *buf, size_t nr)
+ {
+ 	const unsigned char *b = buf;
+-	DECLARE_WAITQUEUE(wait, current);
++	struct n_tty_wakeup_state s = {
++		.task = current,
++		.woken = false,
++	};
++	wait_queue_t wait;
+ 	int c;
+ 	ssize_t retval = 0;
+ 
+@@ -2322,9 +2365,12 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
+ 	/* Write out any echoed characters that are still pending */
+ 	process_echoes(tty);
+ 
++	init_waitqueue_func_entry(&wait, n_tty_wake);
++	wait.private = &s;
++
+ 	add_wait_queue(&tty->write_wait, &wait);
+ 	while (1) {
+-		set_current_state(TASK_INTERRUPTIBLE);
++		s.woken = false;
+ 		if (signal_pending(current)) {
+ 			retval = -ERESTARTSYS;
+ 			break;
+@@ -2378,7 +2424,10 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
+ 		}
+ 		up_read(&tty->termios_rwsem);
+ 
+-		schedule();
++		set_current_state(TASK_INTERRUPTIBLE);
++		if (!s.woken)
++			schedule();
++		__set_current_state(TASK_RUNNING);
+ 
+ 		down_read(&tty->termios_rwsem);
+ 	}
+diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
+index cc423a30a0c8..e3b65ce6b312 100644
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -220,6 +220,23 @@ static ssize_t copy_event_to_user(struct fsnotify_group *group,
+ 	return event_size;
+ }
+ 
++struct inotify_wakeup_state {
++	struct task_struct *task;
++	bool woken;
++};
++
++static int inotify_wake(wait_queue_t *wait, unsigned mode,
++			int wake_flags, void *key)
++{
++	struct inotify_wakeup_state *s = wait->private;
++	DECLARE_WAITQUEUE(dummy_wait, s->task);
++
++	smp_wmb();
++	s->woken = true;
++
++	return autoremove_wake_function(&dummy_wait, mode, wake_flags, key);
++}
++
+ static ssize_t inotify_read(struct file *file, char __user *buf,
+ 			    size_t count, loff_t *pos)
+ {
+@@ -227,13 +244,21 @@ static ssize_t inotify_read(struct file *file, char __user *buf,
+ 	struct fsnotify_event *kevent;
+ 	char __user *start;
+ 	int ret;
+-	DEFINE_WAIT(wait);
++	struct inotify_wakeup_state s = {
++		.task = current,
++		.woken = false,
++	};
++	wait_queue_t wait;
++
++	init_waitqueue_func_entry(&wait, inotify_wake);
++	wait.private = &s;
+ 
+ 	start = buf;
+ 	group = file->private_data;
+ 
++	add_wait_queue(&group->notification_waitq, &wait);
+ 	while (1) {
+-		prepare_to_wait(&group->notification_waitq, &wait, TASK_INTERRUPTIBLE);
++		s.woken = false;
+ 
+ 		mutex_lock(&group->notification_mutex);
+ 		kevent = get_one_event(group, count);
+@@ -264,7 +289,10 @@ static ssize_t inotify_read(struct file *file, char __user *buf,
+ 		if (start != buf)
+ 			break;
+ 
+-		schedule();
++		set_current_state(TASK_INTERRUPTIBLE);
++		if (!s.woken)
++			schedule();
++		__set_current_state(TASK_RUNNING);
+ 	}
+ 
+ 	finish_wait(&group->notification_waitq, &wait);
+diff --git a/fs/notify/notification.c b/fs/notify/notification.c
+index 1e58402171a5..dcfcdd69d1de 100644
+--- a/fs/notify/notification.c
++++ b/fs/notify/notification.c
+@@ -63,7 +63,7 @@ EXPORT_SYMBOL_GPL(fsnotify_get_cookie);
+ /* return true if the notify queue is empty, false otherwise */
+ bool fsnotify_notify_queue_is_empty(struct fsnotify_group *group)
+ {
+-	BUG_ON(!mutex_is_locked(&group->notification_mutex));
++	lockdep_assert_held(&group->notification_mutex);
+ 	return list_empty(&group->notification_list) ? true : false;
+ }
+ 
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 4c52907a6d8b..aac1dc9da2d0 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -162,7 +162,7 @@ extern int _cond_resched(void);
+ #endif
+ 
+ #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+-  void __might_sleep(const char *file, int line, int preempt_offset);
++extern  void __might_sleep(const char *file, int line, int preempt_offset);
+ /**
+  * might_sleep - annotation for functions that can sleep
+  *
+@@ -174,7 +174,7 @@ extern int _cond_resched(void);
+  * supposed to.
+  */
+ # define might_sleep() \
+-	do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
++	  do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
+ #else
+   static inline void __might_sleep(const char *file, int line,
+ 				   int preempt_offset) { }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 66124d63371a..62dab5738e66 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -241,6 +241,43 @@ extern char ___assert_task_state[1 - 2*!!(
+ 				((task->state & TASK_UNINTERRUPTIBLE) != 0 && \
+ 				 (task->flags & PF_FROZEN) == 0)
+ 
++#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
++
++#define __set_task_state(tsk, state_value)			\
++	do {							\
++		(tsk)->task_state_change = _THIS_IP_;		\
++		(tsk)->state = (state_value);			\
++	} while (0)
++#define set_task_state(tsk, state_value)			\
++	do {							\
++		(tsk)->task_state_change = _THIS_IP_;		\
++		set_mb((tsk)->state, (state_value));		\
++	} while (0)
++
++/*
++ * set_current_state() includes a barrier so that the write of current->state
++ * is correctly serialised wrt the caller's subsequent test of whether to
++ * actually sleep:
++ *
++ *	set_current_state(TASK_UNINTERRUPTIBLE);
++ *	if (do_i_need_to_sleep())
++ *		schedule();
++ *
++ * If the caller does not need such serialisation then use __set_current_state()
++ */
++#define __set_current_state(state_value)			\
++	do {							\
++		current->task_state_change = _THIS_IP_;		\
++		current->state = (state_value);			\
++	} while (0)
++#define set_current_state(state_value)				\
++	do {							\
++		current->task_state_change = _THIS_IP_;		\
++		set_mb(current->state, (state_value));		\
++	} while (0)
++
++#else
++
+ #define __set_task_state(tsk, state_value)		\
+ 	do { (tsk)->state = (state_value); } while (0)
+ #define set_task_state(tsk, state_value)		\
+@@ -257,11 +294,13 @@ extern char ___assert_task_state[1 - 2*!!(
+  *
+  * If the caller does not need such serialisation then use __set_current_state()
+  */
+-#define __set_current_state(state_value)			\
++#define __set_current_state(state_value)		\
+ 	do { current->state = (state_value); } while (0)
+-#define set_current_state(state_value)		\
++#define set_current_state(state_value)			\
+ 	set_mb(current->state, (state_value))
+ 
++#endif
++
+ /* Task command name length */
+ #define TASK_COMM_LEN 16
+ 
+@@ -1650,6 +1689,9 @@ struct task_struct {
+ 	unsigned int	sequential_io;
+ 	unsigned int	sequential_io_avg;
+ #endif
++#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
++	unsigned long	task_state_change;
++#endif
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 6fb1ba5f9b2f..041b744e99b4 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -211,6 +211,8 @@ wait_queue_head_t *bit_waitqueue(void *, int);
+ 	wait_queue_t __wait;						\
+ 	long __ret = ret;	/* explicit shadow */			\
+ 									\
++	might_sleep();							\
++									\
+ 	INIT_LIST_HEAD(&__wait.task_list);				\
+ 	if (exclusive)							\
+ 		__wait.flags = WQ_FLAG_EXCLUSIVE;			\
+diff --git a/kernel/exit.c b/kernel/exit.c
+index e5c4668f1799..44cbc8791fca 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1067,6 +1067,12 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 	}
+ 
+ 	/*
++	 * Since we're going to terminate the wait loop from do_wait(),
++	 * reset task state.
++	 */
++	__set_current_state(TASK_RUNNING);
++
++	/*
+ 	 * Now we are sure this task is interesting, and no other
+ 	 * thread can reap it because we its state == DEAD/TRACE.
+ 	 */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2676866b4394..0577c12c9cf8 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7077,6 +7077,19 @@ void __might_sleep(const char *file, int line, int preempt_offset)
+ {
+ 	static unsigned long prev_jiffy;	/* ratelimiting */
+ 
++	/*
++	 * Blocking primitives will set (and therefore destroy) current->state,
++	 * since we will exit with TASK_RUNNING make sure we enter with it,
++	 * otherwise we will destroy state.
++	 */
++	if (WARN(current->state != TASK_RUNNING,
++			"do not call blocking ops when !TASK_RUNNING; "
++			"state=%lx set at [<%p>] %pS\n",
++			current->state,
++			current->task_state_change,
++			current->task_state_change))
++		__set_current_state(TASK_RUNNING);
++
+ 	rcu_sleep_check(); /* WARN_ON_ONCE() by default, no rate limit reqd. */
+ 	if ((preempt_count_equals(preempt_offset) && !irqs_disabled() &&
+ 	     !is_idle_task(current)) ||
+@@ -7107,6 +7120,7 @@ void __might_sleep(const char *file, int line, int preempt_offset)
+ 	dump_stack();
+ }
+ EXPORT_SYMBOL(__might_sleep);
++
+ #endif
+ 
+ #ifdef CONFIG_MAGIC_SYSRQ
+diff --git a/kernel/smpboot.c b/kernel/smpboot.c
+index eb89e1807408..f032fb5284e3 100644
+--- a/kernel/smpboot.c
++++ b/kernel/smpboot.c
+@@ -110,7 +110,7 @@ static int smpboot_thread_fn(void *data)
+ 		set_current_state(TASK_INTERRUPTIBLE);
+ 		preempt_disable();
+ 		if (kthread_should_stop()) {
+-			set_current_state(TASK_RUNNING);
++			__set_current_state(TASK_RUNNING);
+ 			preempt_enable();
+ 			if (ht->cleanup)
+ 				ht->cleanup(td->cpu, cpu_online(td->cpu));
+@@ -136,26 +136,27 @@ static int smpboot_thread_fn(void *data)
+ 		/* Check for state change setup */
+ 		switch (td->status) {
+ 		case HP_THREAD_NONE:
++			__set_current_state(TASK_RUNNING);
+ 			preempt_enable();
+ 			if (ht->setup)
+ 				ht->setup(td->cpu);
+ 			td->status = HP_THREAD_ACTIVE;
+-			preempt_disable();
+-			break;
++			continue;
++
+ 		case HP_THREAD_PARKED:
++			__set_current_state(TASK_RUNNING);
+ 			preempt_enable();
+ 			if (ht->unpark)
+ 				ht->unpark(td->cpu);
+ 			td->status = HP_THREAD_ACTIVE;
+-			preempt_disable();
+-			break;
++			continue;
+ 		}
+ 
+ 		if (!ht->thread_should_run(td->cpu)) {
+-			preempt_enable();
++			preempt_enable_no_resched();
+ 			schedule();
+ 		} else {
+-			set_current_state(TASK_RUNNING);
++			__set_current_state(TASK_RUNNING);
+ 			preempt_enable();
+ 			ht->thread_fn(td->cpu);
+ 		}
