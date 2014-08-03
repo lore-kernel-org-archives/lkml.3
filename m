@@ -1,117 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730AbaHCNAr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 09:00:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9307 "EHLO mx1.redhat.com"
+	id S1752714AbaHCNQc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 09:16:32 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54970 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751971AbaHCNAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 09:00:46 -0400
-Date: Sun, 3 Aug 2014 14:57:58 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140803125758.GA671@redhat.com>
-References: <20140731215445.GA21933@linux.vnet.ibm.com> <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com> <20140801141144.GA30293@redhat.com> <20140801182837.GI4784@linux.vnet.ibm.com> <20140801184059.GB10718@redhat.com> <20140802230020.GD8101@linux.vnet.ibm.com>
+	id S1752160AbaHCNQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Aug 2014 09:16:31 -0400
+Message-ID: <53DE3629.2020706@kernel.org>
+Date: Sun, 03 Aug 2014 09:16:25 -0400
+From: Sasha Levin <sashal@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140802230020.GD8101@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Rostislav Lisovy <lisovy@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+CC: Nicholas Krause <xerofoify@gmail.com>
+Subject: Re: [PATCH] ARM: PCI: Use PCI_CLASS_* defines for PCI class
+References: <1406904671-19197-1-git-send-email-lisovy@gmail.com>
+In-Reply-To: <1406904671-19197-1-git-send-email-lisovy@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02, Paul E. McKenney wrote:
->
-> On Fri, Aug 01, 2014 at 08:40:59PM +0200, Oleg Nesterov wrote:
-> > On 08/01, Paul E. McKenney wrote:
-> > >
-> > > On Fri, Aug 01, 2014 at 04:11:44PM +0200, Oleg Nesterov wrote:
-> > > > Not sure this makes any sense, but perhaps we can check for the new
-> > > > callbacks and start the next gp. IOW, the main loop roughly does
-> > > >
-> > > > 	for (;;) {
-> > > > 		list = rcu_tasks_cbs_head;
-> > > > 		rcu_tasks_cbs_head = NULL;
-> > > >
-> > > > 		if (!list)
-> > > > 			sleep();
-> > > >
-> > > > 		synchronize_sched();
-> > > >
-> > > > 		wait_for_rcu_tasks_holdout();
-> > > >
-> > > > 		synchronize_sched();
-> > > >
-> > > > 		process_callbacks(list);
-> > > > 	}
-> > > >
-> > > > we can "join" 2 synchronize_sched's and do
-> > > >
-> > > > 	ready_list = NULL;
-> > > > 	for (;;) {
-> > > > 		list = rcu_tasks_cbs_head;
-> > > > 		rcu_tasks_cbs_head = NULL;
-> > > >
-> > > > 		if (!list && !ready_list)
-> > > > 			sleep();
-> > > >
-> > > > 		synchronize_sched();
-> > > >
-> > > > 		if (ready_list) {
-> > > > 			process_callbacks(ready_list);
-> > > > 			ready_list = NULL;
-> > > > 		}
-> > > >
-> > > > 		if (!list)
-> > > > 			continue;
-> > > >
-> > > > 		wait_for_rcu_tasks_holdout();
-> > > > 		ready_list = list;
-> > > > 	}
-> > >
-> > > The lack of barriers for the updates I am checking mean that I really
-> > > do need a synchronize_sched() on either side of the grace-period wait.
-> >
-> > Yes,
-> >
-> > > The grace period needs to guarantee that anything that happened on any
-> > > CPU before the start of the grace period happens before anything that
-> > > happens on any CPU after the end of the grace period.  If I leave off
-> > > either synchronize_sched(), we lose this guarantee.
-> >
-> > But the 2nd variant still has synchronize_sched() on both sides?
->
-> Your second variant above?  Unless it is in wait_for_rcu_tasks_holdouts(),
-> I am not seeing it.
+On 08/01/2014 10:51 AM, Rostislav Lisovy wrote:
+> Signed-off-by: Rostislav Lisovy <lisovy@gmail.com>
+> ---
+>  arch/arm/kernel/bios32.c |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+> index 17a26c1..e511ad1 100644
+> --- a/arch/arm/kernel/bios32.c
+> +++ b/arch/arm/kernel/bios32.c
+> @@ -255,10 +255,9 @@ static void pci_fixup_it8152(struct pci_dev *dev)
+>  {
+>  	int i;
+>  	/* fixup for ITE 8152 devices */
+> -	/* FIXME: add defines for class 0x68000 and 0x80103 */
+>  	if ((dev->class >> 8) == PCI_CLASS_BRIDGE_HOST ||
+> -	    dev->class == 0x68000 ||
+> -	    dev->class == 0x80103) {
+> +	    dev->class == (PCI_CLASS_BRIDGE_OTHER << 8) ||
+> +	    dev->class == ((PCI_CLASS_SYSTEM_DMA << 8) | 0x03)) {
+>  		for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+>  			dev->resource[i].start = 0;
+>  			dev->resource[i].end   = 0;
+> 
 
-I guess I probably misunderstood you from the very beginning. And now I am
-curious what exactly I missed...
+Care to explain how your new code is equivalent to the old one?
 
-The code above doesn't do process_callbacks() after wait_for_rcu_tasks_holdout(),
-it does this only after another synchronize_sched(). The only difference is that
-we dequeue the next generation of the pending rcu_tasks_cbs_head callbacks.
 
-IOW. Lets look at the current code. Suppose that synchronize_rcu_tasks() is
-called when rcu_tasks_kthread() sleeps in wait_for_rcu_tasks_holdout(). In
-this case the new wakeme_after_rcu callback will sit in rcu_tasks_cbs_head
-until rcu_tasks_kthread() does the 2nd synchronize_sched() + process_callbacks().
-Only after that it will be dequeued and rcu_tasks_kthread() will start another gp.
-
-This means that we have 3 synchronize_sched()'s before synchronize_rcu_tasks()
-returns.
-
-Do we really need this? With the 2nd variant the new callback will be dequeud
-right after wait_for_rcu_tasks_holdout(), and we only have 2 necessary
-synchronize_sched()'s around wait_for_rcu_tasks_holdout().
-
-But it seems that I missed something else. Could you please spell?
-
-Oleg.
-
+Thanks,
+Sasha
