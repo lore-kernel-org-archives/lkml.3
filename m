@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbaHCRaf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 13:30:35 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:33233 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769AbaHCRae (ORCPT
+	id S1753006AbaHCRav (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 13:30:51 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:53971 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752845AbaHCRaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 13:30:34 -0400
-Date: Sun, 3 Aug 2014 19:30:31 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Sergey Oboguev <oboguev.public@gmail.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        khalid.aziz@oracle.com
-Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
-Message-ID: <20140803173031.GQ18735@two.firstfloor.org>
-References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
- <8738dm9t4z.fsf@tassilo.jf.intel.com>
- <1406532289.5133.223.camel@marge.simpson.net>
- <CA+80gGaohO-RaG0_tWZJEFzisrrBpgfiw-mxMrTfSK0N=k7gQA@mail.gmail.com>
+	Sun, 3 Aug 2014 13:30:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+80gGaohO-RaG0_tWZJEFzisrrBpgfiw-mxMrTfSK0N=k7gQA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <53DE2AEF.6080904@cogentembedded.com>
+References: <1407034573-14358-1-git-send-email-xerofoify@gmail.com>
+	<53DE2AEF.6080904@cogentembedded.com>
+Date: Sun, 3 Aug 2014 13:30:44 -0400
+Message-ID: <CAPDOMVgTNSTzXENWZvWhuJvHRoPBRBYSExNxrwqeFGyQ44YA-w@mail.gmail.com>
+Subject: Re: [PATCH] scatterlist.h: Change CONFIG_DEBUG_SG for ifdef statement
+ in sg_set_bf
+From: Nick Krause <xerofoify@gmail.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> (One example might be virtual machine that runs guest operating system that is
-> not paravirtualized or can be paravirtualized only to a limited extent. The VM
-> might guess that preemption of VCPU thread that is processing events such as
-> IPI interrupts, clock interrupts or certain device interrupts is likely to
-> cause overall performance degradation due to other VCPUs spinning for an IPI
-> response or spinning waiting for a spinlock, and thought the general kinds of
-> these dependencies may be foreseen, but actual dependency chains between VCPUs
-> cannot be established at run time.)
-
-PAUSE loop exiting (PLE) can handle it in limited fashion on VMs
-even without paravirtualization.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+On Sun, Aug 3, 2014 at 8:28 AM, Sergei Shtylyov
+<sergei.shtylyov@cogentembedded.com> wrote:
+> Hello.
+>
+>
+> On 03-08-2014 6:56, Nicholas Krause wrote:
+>
+>> This changes the ifdef statement  in sg_set_bg to !CONFIG_DEBUG_SG in
+>> order
+>> to avoid a bug with xhci dequence/enquence functions.
+>
+>
+>    dequeue/enqueue?
+>
+>
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>   include/linux/scatterlist.h | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+>
+>> diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
+>> index adae88f..62de7b3 100644
+>> --- a/include/linux/scatterlist.h
+>> +++ b/include/linux/scatterlist.h
+>> @@ -111,7 +111,7 @@ static inline struct page *sg_page(struct scatterlist
+>> *sg)
+>>   static inline void sg_set_buf(struct scatterlist *sg, const void *buf,
+>>                               unsigned int buflen)
+>>   {
+>> -#ifdef CONFIG_DEBUG_SG
+>> +#ifdef !CONFIG_DEBUG_SG
+>
+>
+>    Didn't you mean #ifndef instead? I guess you didn't even try to
+> build-test this.
+>
+>
+>>         BUG_ON(!virt_addr_valid(buf));
+>>   #endif
+>>         sg_set_page(sg, virt_to_page(buf), buflen, offset_in_page(buf));
+>
+>
+> WBR, Sergei
+>
+I am going to stay around and learn more but am going to check my
+patches better as this is
+my fault.
+Regards Nick
