@@ -1,141 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744AbaHCCKv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 22:10:51 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:54965 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaHCCKu (ORCPT
+	id S1754886AbaHCC1A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 22:27:00 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:35637 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911AbaHCC06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 22:10:50 -0400
+	Sat, 2 Aug 2014 22:26:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <53DD97B0.8040001@gmail.com>
-References: <53DD97B0.8040001@gmail.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Sat, 2 Aug 2014 22:10:18 -0400
-Message-ID: <CAJhHMCCFz5qpxocMbF1POBbFs6zPVaoM_j-52bw5vwpm1MV9aw@mail.gmail.com>
-Subject: Re: [PATCH] dm cache: fix race affecting dirty block count
-To: anssi.hannula@iki.fi
-Cc: ejt@redhat.com, snitzer@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <1407026806.1835.21.camel@joe-AO725>
+References: <1407018043-648-1-git-send-email-hans@hanshq.net> <1407026806.1835.21.camel@joe-AO725>
+From: Steve French <smfrench@gmail.com>
+Date: Sat, 2 Aug 2014 21:26:37 -0500
+Message-ID: <CAH2r5msfV4qCvL+g_moRDnusX+OefomGQ3AQQjcLtWKUeHZO9w@mail.gmail.com>
+Subject: Re: [PATCH 1/1] cris: fix %d confusingly prefixed with 0x in format string
+To: Joe Perches <joe@perches.com>
+Cc: Hans Wennborg <hans@hanshq.net>, starvik@axis.com,
+        linux-cris-kernel@axis.com, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors <kernel-janitors@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, devel <devel@driverdev.osuosl.org>,
+        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
+        alsa-devel@alsa-project.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Corrently adding Anssi this time.
+Thanks for pointing this out.  I fixed the instances of this that you
+spotted in the cifs.ko driver (pushed to cifs-2.6.git for-next) and
+noted that you pointed it out in the commit message.
 
-On Sat, Aug 2, 2014 at 10:00 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
-> Hello Anssi, Joe, Mike,
+http://git.samba.org/?p=sfrench/cifs-2.6.git;a=commit;h=59b04c5df75bd715002bb535930ae1982a739269
+
+
+
+On Sat, Aug 2, 2014 at 7:46 PM, Joe Perches <joe@perches.com> wrote:
+> On Sat, 2014-08-02 at 15:20 -0700, Hans Wennborg wrote:
+>> Signed-off-by: Hans Wennborg <hans@hanshq.net>
+>> ---
+>>  arch/cris/arch-v32/drivers/cryptocop.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/cris/arch-v32/drivers/cryptocop.c b/arch/cris/arch-v32/drivers/cryptocop.c
+> []
+>> @@ -3155,7 +3155,7 @@ static void print_dma_descriptors(struct cryptocop_int_operation *iop)
+>>       printk("print_dma_descriptors start\n");
+>>
+>>       printk("iop:\n");
+>> -     printk("\tsid: 0x%lld\n", iop->sid);
+>> +     printk("\tsid: 0x%llx\n", iop->sid);
+>>
+>>       printk("\tcdesc_out: 0x%p\n", iop->cdesc_out);
+>>       printk("\tcdesc_in: 0x%p\n", iop->cdesc_in);
 >
-> I just found your patch in the latest rc and wanted to ask a few
-> questions. I am not sure how this patch helps at all other than luck in
-> that dm_cblock_t type is of type int32_t, which should guarantee that it
-> is atomic on most platforms. Which begs the question, what platform did
-> you encounter this problem?
+> Thanks.
 >
-> The patch purports to solve a race condition by making use of atomic_t.
-> I am not sure that is enough. If indeed there is a race you need to use
-> smp_mb__{before/after}_atomic() for both your uses of atomic_inc() and
-> atomic_set().
+> This is a surprisingly common error:
 >
-> Also I have a concern about why this mail was not CC'ed on LKML. I had
-> to go to some difficulty in finding this patch. So please CC LKML for
-> such patches.
+> $ /usr/bin/git grep -P '0x\%(?!ull\b|ul\b|u\b|lu\b|llu\b|llux\b|lux\b|lx\b|lluX\b|luX\b|lX\b)[ul]*[ud]'
+> arch/arm/mach-omap2/id.c:               pr_warn("%s: unknown idcode=0x%08x (hawkeye=0x%08x,rev=0x%d)\n",
+> arch/cris/arch-v32/drivers/cryptocop.c: printk("\tsid: 0x%lld\n", iop->sid);
+> drivers/atm/eni.c:                      return sprintf(page,"tx[%d]:    0x%ld-0x%ld "
+> drivers/atm/eni.c:                              length += sprintf(page+length,"0x%ld-0x%ld "
+> drivers/block/DAC960.c:         DAC960_Error("IO port 0x%d busy for Controller at\n",
+> drivers/block/DAC960.c:         DAC960_Error("IO port 0x%d busy for Controller at\n",
+> drivers/block/cciss.c:  dev_dbg(&h->pdev->dev, "   Max outstanding commands = 0x%d\n",
+> drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c:        mfc_debug(2, "stream buf addr: 0x%08lx, size: 0x%d\n",
+> drivers/mfd/htc-i2cpld.c:       snprintf(client->name, I2C_NAME_SIZE, "Chip_0x%d", client->addr);
+> drivers/mfd/omap-usb-host.c:                     "USB HOST Rev:0x%d not recognized, assuming %d ports\n",
+> drivers/misc/sgi-gru/grumain.c: gru_dbg(grudev, "gid %d, gts %p, gms %p, ctxnum 0x%d, asidmap 0x%lx\n",
+> drivers/net/ethernet/smsc/smc911x.c:    DBG(SMC_DEBUG_MISC, dev, "phy_id1=0x%x, phy_id2=0x%x phyaddr=0x%d\n",
+> drivers/net/wireless/ath/ath6kl/init.c:                            "found reserved ram size ie 0x%d\n",
+> drivers/net/wireless/ath/ath6kl/main.c:         ath6kl_err("failed to write 0x%x during diagnose window to 0x%d\n",
+> drivers/net/wireless/iwlegacy/4965-mac.c:                       IL_ERR("failed setting tx power (0x%d).\n", ret);
+> drivers/net/wireless/rtlwifi/pci.c:                              "more desc left, wake skb_queue@%d, ring->idx = %d, skb_queue_len = 0x%d\n",
+> drivers/net/wireless/rtlwifi/pci.c:                              "No more TX desc@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
+> drivers/net/wireless/rtlwifi/pci.c:                      "less desc left, stop skb_queue@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
+> drivers/net/wireless/rtlwifi/rtl8192de/phy.c:            "MCSTxPowerLevelOriginalOffset[%d][%d] = 0x%ulx\n",
+> drivers/net/wireless/rtlwifi/rtl8192de/phy.c:                   "ver 1 set RF-A, 5G,    0x28 = 0x%ulx !!\n", u4tmp);
+> drivers/net/wireless/rtlwifi/rtl8192de/phy.c:                   "ver 3 set RF-B, 2G, 0x28 = 0x%ulx !!\n", u4tmp);
+> drivers/net/wireless/rtlwifi/rtl8192de/phy.c:                   "ver 3 set RF-B, 2G, 0x28 = 0x%ulx !!\n",
+> drivers/parisc/dino.c:          printk(KERN_ERR "DINO: Hey! Someone took my MMIO space (0x%ld)!\n",
+> drivers/scsi/hpsa.c:    dev_info(dev, "   Max outstanding commands = 0x%d\n",
+> drivers/staging/nokia_h4p/nokia_core.c:         dev_err(info->dev, "Cannot get GPIO line 0x%d",
+> drivers/staging/rtl8192ee/pci.c:                                 ("more desc left, wake skb_queue@%d,ring->idx = %d, skb_queue_len = 0x%d\n",
+> drivers/staging/rtl8192ee/pci.c:                                 ("No more TX desc@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
+> drivers/staging/rtl8192ee/pci.c:                         ("less desc left, stop skb_queue@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
+> drivers/staging/rtl8821ae/pci.c:                                         "skb_queue_len = 0x%d\n",
+> drivers/staging/rtl8821ae/pci.c:                                  "idx = %d, skb_queue_len = 0x%d\n",
+> drivers/staging/rtl8821ae/pci.c:                          "idx = %d, skb_queue_len = 0x%d\n",
+> fs/cifs/cifs_debug.c:                                   "\n\tPathComponentMax: %d Status: 0x%d",
+> fs/cifs/misc.c:                 cifs_dbg(FYI, "notify err 0x%d\n",
+> fs/cifs/misc.c: cifs_dbg(FYI, "oplock type 0x%d level 0x%d\n",
+> fs/cifs/smb2misc.c:             cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
+> fs/cifs/smb2misc.c:             cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
+> fs/cifs/smb2misc.c:     cifs_dbg(FYI, "oplock level 0x%d\n", rsp->OplockLevel);
+> sound/firewire/fireworks/fireworks_proc.c:                          "phys in grp[0x%d]: type 0x%d, count 0x%d\n",
+> sound/firewire/fireworks/fireworks_proc.c:                          "phys out grps[0x%d]: type 0x%d, count 0x%d\n",
+> sound/pci/riptide/riptide.c:    snd_printdd("sent mixer %d: 0x%d 0x%d\n", num, rval, lval);
+> sound/pci/riptide/riptide.c:    snd_printdd("got mixer %d: 0x%d 0x%d\n", num, *rval, *lval);
 >
-> Thanks,
+>
 > --
-> Pranith
->
-> -- Begin forwarded Message --
->
->
-> nr_dirty is updated without locking, causing it to drift so that it is
-> non-zero (either a small positive integer, or a very large one when an
-> underflow occurs) even when there are no actual dirty blocks.
->
-> Fix that by using an atomic type for nr_dirty.
->
-> Signed-off-by: Anssi Hannula <anssi hannula iki fi>
-> Cc: Joe Thornber <ejt redhat com>
-> Cc: stable vger kernel org
->
-> ---
->
-> So here's a patch for the issue I reported a few days ago.
->
-> I'm not sure what the actual effects of having wrong nr_dirty are
-> beyond the wrong value reported to userspace. Having wrong nr_dirty
-> causes dm_table_event(cache->ti->table) to be called at incorrect times,
-> but I'm not sure what the implications of that are.
->
-> So someone more knowledged should really amend my commit message
-> accordingly so that it explains the user-visible issues :)
->
-> I did notice that after a reboot (after having incorrect nr_dirty) the
-> entire cache was considered to be dirty and a full writeback occurred,
-> but I don't know if that was related at all.
->
->
->  drivers/md/dm-cache-target.c | 11 +++++------
->  1 file changed, 5 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-> index 0df3ec085ebb..83a7eb5ef113 100644
-> --- a/drivers/md/dm-cache-target.c
-> +++ b/drivers/md/dm-cache-target.c
-> @@ -154,7 +154,7 @@ struct cache {
->         /*
->          * cache_size entries, dirty if set
->          */
-> -       dm_cblock_t nr_dirty;
-> +       atomic_t nr_dirty;
->         unsigned long *dirty_bitset;
->
->         /*
-> @@ -403,7 +403,7 @@ static bool is_dirty(struct cache *cache, dm_cblock_t b)
->  static void set_dirty(struct cache *cache, dm_oblock_t oblock, dm_cblock_t cblock)
->  {
->         if (!test_and_set_bit(from_cblock(cblock), cache->dirty_bitset)) {
-> -               cache->nr_dirty = to_cblock(from_cblock(cache->nr_dirty) + 1);
-> +               atomic_inc(&cache->nr_dirty);
->                 policy_set_dirty(cache->policy, oblock);
->         }
->  }
-> @@ -412,8 +412,7 @@ static void clear_dirty(struct cache *cache, dm_oblock_t oblock, dm_cblock_t cbl
->  {
->         if (test_and_clear_bit(from_cblock(cblock), cache->dirty_bitset)) {
->                 policy_clear_dirty(cache->policy, oblock);
-> -               cache->nr_dirty = to_cblock(from_cblock(cache->nr_dirty) - 1);
-> -               if (!from_cblock(cache->nr_dirty))
-> +               if (atomic_dec_return(&cache->nr_dirty) == 0)
->                         dm_table_event(cache->ti->table);
->         }
->  }
-> @@ -2003,7 +2002,7 @@ static int cache_create(struct cache_args *ca, struct cache **result)
->         init_waitqueue_head(&cache->migration_wait);
->
->         r = -ENOMEM;
-> -       cache->nr_dirty = 0;
-> +       atomic_set(&cache->nr_dirty, 0);
->         cache->dirty_bitset = alloc_bitset(from_cblock(cache->cache_size));
->         if (!cache->dirty_bitset) {
->                 *error = "could not allocate dirty bitset";
-> @@ -2513,7 +2512,7 @@ static void cache_status(struct dm_target *ti, status_type_t type,
->                        (unsigned) atomic_read(&cache->stats.demotion),
->                        (unsigned) atomic_read(&cache->stats.promotion),
->                        (unsigned long long) from_cblock(residency),
-> -                      cache->nr_dirty);
-> +                      (unsigned) atomic_read(&cache->nr_dirty));
->
->                 if (cache->features.write_through)
->                         DMEMIT("1 writethrough ");
-> --
-> 1.8.4.5
->
-> -- End forwarded Message --
->
+> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
 
 -- 
-Pranith
+Thanks,
+
+Steve
