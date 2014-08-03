@@ -1,88 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbaHCNgD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 09:36:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41278 "EHLO mx1.redhat.com"
+	id S1752552AbaHCOMd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 10:12:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47416 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752486AbaHCNgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 09:36:01 -0400
-Date: Sun, 3 Aug 2014 15:33:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140803133318.GB671@redhat.com>
-References: <20140731215445.GA21933@linux.vnet.ibm.com> <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com> <20140802145616.GA18195@redhat.com> <20140802225757.GB8101@linux.vnet.ibm.com>
+	id S1751016AbaHCOMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Aug 2014 10:12:31 -0400
+Date: Sun, 3 Aug 2014 16:12:23 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Goffredo Baroncelli <kreijack@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, jdelvare@suse.de,
+        linux-kernel@vger.kernel.org, bryan@whatroute.net,
+        Goffredo Baroncelli <kreijack@inwind.it>
+Subject: Re: [PATCH 3/4] Add the "verbose" module option.
+Message-ID: <20140803161223.0b26e4bc@endymion.delvare>
+In-Reply-To: <1406901650-20841-4-git-send-email-kreijack@inwind.it>
+References: <1406901650-20841-1-git-send-email-kreijack@inwind.it>
+	<1406901650-20841-4-git-send-email-kreijack@inwind.it>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140802225757.GB8101@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02, Paul E. McKenney wrote:
->
-> On Sat, Aug 02, 2014 at 04:56:16PM +0200, Oleg Nesterov wrote:
-> > On 07/31, Paul E. McKenney wrote:
-> > >
-> > > +		rcu_read_lock();
-> > > +		for_each_process_thread(g, t) {
-> > > +			if (t != current && ACCESS_ONCE(t->on_rq) &&
-> > > +			    !is_idle_task(t)) {
-> >
-> > I didn't notice this check before, but it is not needed. for_each_process()
-> > can see the idle threads, there are not on process/thread lists.
-    ^^^^^^^
+Hi Goffredo,
 
-argh, I mean't "can't see" of course...
+You messed up your Cc's ;-)
 
-> Good to know.  Any other important tasks I am missing?
+On Fri,  1 Aug 2014 14:00:49 +0000, Goffredo Baroncelli wrote:
+> The "verbose" option controls the message in the kernel log
+> verbose = 0   no message
+> verbose = 1   log only the fan speed changes
+> verbose = 2   log the fan speed changes and the temperature changes
+> 
+> Signed-off-by: Goffredo Baroncelli <kreijack@inwind.it>
+> ---
+>  drivers/macintosh/therm_windtunnel.c | 37 +++++++++++++++++++++++-------------
+>  1 file changed, 24 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/macintosh/therm_windtunnel.c b/drivers/macintosh/therm_windtunnel.c
+> index 1e50455..0c4eb85 100644
+> --- a/drivers/macintosh/therm_windtunnel.c
+> +++ b/drivers/macintosh/therm_windtunnel.c
+> @@ -44,7 +44,11 @@
+>  #include <asm/sections.h>
+>  #include <asm/macio.h>
+>  
+> -#define LOG_TEMP		0			/* continuously log temperature */
+> +static int verbose = 1;	  /* see description below */
 
-Nothing else.
+This comment seems useless.
 
-> I am guessing that I need to do something like this:
->
-> 	for_each_process(g) {
-> 		/* Do build step. */
-> 		for_each_thread(g, t) {
-> 			if (g == t)
-> 				continue;
-> 			/* Do build step. */
-> 		}
-> 	}
+> +module_param(verbose, int, 0644);
+> +MODULE_PARM_DESC(verbose, "Vebosity level: 0=silent, "
 
-Sorry, I don't understand... This is equivalent to
+Typo: Verbosity
 
-	for_each_process_thread(g, t) {
-		/* Do build step. */
-	}
+> +				"1=log the fan tuning, "
+> +				"2=log the temperature.");
 
-> Your point about exiting tasks I get, and I believe I can solve it.
-> I am hoping that the above sort of construction takes care of the
-> idle threads.
+Trailing dot is not needed.
 
-It is simple to find the idle threads, just
+>  
+>  static struct {
+>  	volatile int		running;
+> @@ -157,10 +161,6 @@ tune_fan( int fan_setting )
+>  	/* write_reg( x.fan, 0x24, val, 1 ); */
+>  	write_reg( x.fan, 0x25, val, 1 );
+>  	write_reg( x.fan, 0x20, 0, 1 );
+> -	print_temp("CPU-temp: ", x.temp );
+> -	if( x.casetemp )
+> -		print_temp(", Case: ", x.casetemp );
+> -	printk(",  Fan: %d (tuned %+d)\n", 11-fan_setting, x.fan_level-fan_setting );
+>  
+>  	x.fan_level = fan_setting;
+>  }
+> @@ -179,14 +179,6 @@ poll_temp( void )
+>  	casetemp = read_reg(x.fan, 0x0b, 1) << 8;
+>  	casetemp |= (read_reg(x.fan, 0x06, 1) & 0x7) << 5;
+>  
+> -	if( LOG_TEMP && x.temp != temp ) {
+> -		print_temp("CPU-temp: ", temp );
+> -		print_temp(", Case: ", casetemp );
+> -		printk(",  Fan: %d\n", 11-x.fan_level );
+> -	}
+> -	x.temp = temp;
+> -	x.casetemp = casetemp;
+> -
+>  	level = -1;
+>  	for( i=0; (temp & 0xffff) > fan_table[i].temp ; i++ )
+>  		;
+> @@ -200,6 +192,25 @@ poll_temp( void )
+>  		level = fan_table[i].fan_up_setting;
+>  	x.upind = i;
+>  
+> +	/*
+> +	 * if verbose >0 log each fan tuning
+> +	 * if verbose >1 log each cpu temperature change
+> +	 */
 
-	for_each_cpu(cpu) {
-		do_something(cpu_rq(cpu)->idle);
-	}
+I think it is a good idea to have all the printing in a single place.
 
-but it is not clear to me what else you need to do with the idle threads.
-Probably not too much, they mostly run under preempt_disable().
+> +	if ((verbose > 1 && x.temp != temp ) ||
 
-> I might also need to do something to handle changes in
-> process/thread hierarchy -- but hopefully without having to read-acquire
-> the task-list lock.
+No space before closing parenthesis. I know the original code did not
+follow the standard coding style but you have the opportunity to make
+it better. Same many times below. scripts/checkpatch.pl tells you about
+that and many other style issues, most of which are easily fixable.
 
-It seems that you need another global list, a task should be visible on that
-list until exit_rcu().
+Also don't you want to log changes of case temperature too?
 
-Oleg.
+> +	    (verbose > 0 && level >= 0)) {
+> +		print_temp("CPU-temp: ", temp );
+> +		if (casetemp)
+> +			print_temp(", Case: ", casetemp );
+> +		if (level >= 0)
+> +			printk(", Fan: %d (tuned %+d)\n", 11-level,
+> +				x.fan_level-level );
+> +		else
+> +			printk(", Fan: %d (tuned +0)\n",x.fan_level);
 
+I think you can do without the "tuned +0" which doesn't add much value.
+
+> +	}
+> +
+> +	x.temp = temp;
+> +	x.casetemp = casetemp;
+> +
+>  	if( level >= 0 )
+>  		tune_fan( level );
+>  }
+
+
+-- 
+Jean Delvare
+SUSE L3 Support
