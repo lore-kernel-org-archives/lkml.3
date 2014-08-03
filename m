@@ -1,120 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220AbaHCDbX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 23:31:23 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:49481 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193AbaHCDbV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 23:31:21 -0400
-Date: Sat, 2 Aug 2014 20:31:48 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
-        "'Tomasz Figa'" <t.figa@samsung.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, arm@kernel.org
-Subject: Re: [FIX][RESEND PATCH v3] ARM: EXYNOS: Fix suspend/resume sequences
-Message-ID: <20140803033148.GA18838@quad.lixom.net>
-References: <1406883097-14157-1-git-send-email-tomasz.figa@gmail.com>
- <1910401.THJm9YLBl0@amdc1032>
- <081101cfad93$8615d810$92418830$@samsung.com>
- <20140803032718.GB16641@quad.lixom.net>
+	id S1755228AbaHCDja (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 23:39:30 -0400
+Received: from webmail.tpnet.fi ([62.106.63.33]:46024 "EHLO webmail.tpnet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752706AbaHCDj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Aug 2014 23:39:29 -0400
+X-Greylist: delayed 334 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Aug 2014 23:39:28 EDT
+Message-ID: <53DDAD9F.6010306@iki.fi>
+Date: Sun, 03 Aug 2014 06:33:51 +0300
+From: Anssi Hannula <anssi.hannula@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140803032718.GB16641@quad.lixom.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pranith Kumar <bobby.prani@gmail.com>
+CC: ejt@redhat.com, snitzer@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] dm cache: fix race affecting dirty block count
+References: <53DD97B0.8040001@gmail.com> <CAJhHMCCFz5qpxocMbF1POBbFs6zPVaoM_j-52bw5vwpm1MV9aw@mail.gmail.com>
+In-Reply-To: <CAJhHMCCFz5qpxocMbF1POBbFs6zPVaoM_j-52bw5vwpm1MV9aw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 02, 2014 at 08:27:18PM -0700, Olof Johansson wrote:
-> On Fri, Aug 01, 2014 at 11:18:53PM +0900, Kukjin Kim wrote:
-> > Bartlomiej Zolnierkiewicz wrote:
-> > > 
-> > > Hi,
-> > > 
-> > Hi,
-> > 
-> > > On Friday, August 01, 2014 10:51:37 AM Tomasz Figa wrote:
-> > > > From: Tomasz Figa <t.figa@samsung.com>
-> > > >
-> > > > Due to recent consolidation of Exynos suspend and cpuidle code, some
-> > > > parts of suspend and resume sequences are executed two times, once from
-> > > > exynos_pm_syscore_ops and then from exynos_cpu_pm_notifier() and thus it
-> > > > breaks suspend, at least on Exynos4-based boards. In addition, simple
-> > > > core power down from a cpuidle driver could, in case of CPU 0 could
-> > > > result in calling functions that are specific to suspend and deeper idle
-> > > > states.
-> > > >
-> > > > This patch fixes the issue by moving those operations outside the CPU PM
-> > > > notifier into suspend and AFTR code paths. This leads to a bit of code
-> > > > duplication, but allows additional code simplification, so in the end
-> > > > more code is removed than added.
-> > > >
-> > > > Fixes: 85f9f90808b4 ("ARM: EXYNOS: Use the cpu_pm notifier for pm")
-> > > > Cc: Kukjin Kim <kgene.kim@samsung.com>
-> > > > Cc: Arnd Bergmann <arnd@arndb.de>
-> > > > Cc: Olof Johansson <olof@lixom.net>
-> > > > Cc: arm@kernel.org
-> > > > Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> > > > ---
-> > > >  arch/arm/mach-exynos/pm.c        | 164 ++++++++++++++++++---------------------
-> > > >  drivers/cpuidle/cpuidle-exynos.c |  25 +-----
-> > > >  2 files changed, 80 insertions(+), 109 deletions(-)
-> > > >
-> > > > This is resend of a regression fix sent more than two weeks ago (July, 15;
-> > > > [1]), without any response from respective maintainers. It fixes
-> > > > a significant regression breaking suspend/resume on Exynos4-based systems.
-> > > >
-> > > > I know we already have -rc7, but this patch in its first iteration was
-> > > > sent more than a month ago (June, 24; [2]) and it changed only for
-> > > > convenience of authors of further patches, to either avoid conflicts ([3])
-> > > > or reduce the need of changes to support more functionality later (as
-> > > > discussed in [4]). However it should have had priority over clean-up or
-> > > > functional patches, which was apparently not the case.
-> > > 
-> > > This is not quite right, your initial version needed to be changed also
-> > > because of potential problems (https://lkml.org/lkml/2014/7/15/206).
-> > > 
-> > Yeah...hmm...maybe it should be updated in 3.17...
-> > 
-> > > However the current version (from two weeks ago) is fine and IMO still
-> > > should be merged as a _regression_ fix for v3.16 (despite not being
-> > > a tiny patch).
-> > > 
-> > Agreed. OK.
-> > 
-> > > Also FWIW:
-> > > 
-> > > Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> > > 
-> > Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> > 
-> > @Olof,
-> > 
-> > It's true this is a regression for v3.16 and I couldn't take this before
-> > because of some dependencies...so I'd like to ask you to take for v3.16 even
-> > though it's late and big...
+03.08.2014, 05:10, Pranith Kumar kirjoitti:
+> Corrently adding Anssi this time.
 > 
-> It's really, really late in the release cycle to pick this up now. I'm also
-> travelling right now and have limited email access to handle fall-out. :(
+> On Sat, Aug 2, 2014 at 10:00 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
+>> Hello Anssi, Joe, Mike,
+
+Hi,
+
+>> I just found your patch in the latest rc and wanted to ask a few
+>> questions. I am not sure how this patch helps at all other than luck in
+>> that dm_cblock_t type is of type int32_t, which should guarantee that it
+>> is atomic on most platforms. Which begs the question, what platform did
+>> you encounter this problem?
+
+On x86_64. Regular integer increment/decrement/addition/subtraction are
+not atomic on x86(_64).
+
+Assembly for increment without patch is
+	addl   $0x1,0x108(%rdi)
+and for decrement
+	subl   $0x1,0x108(%rbx)
+
+while with patch:
+	lock incl 0x108(%rdi)
+and
+	mov    $0xffffffff,%eax
+	lock xadd %eax,0x108(%rbx)
+.
+
+
+>> The patch purports to solve a race condition by making use of atomic_t.
+>> I am not sure that is enough. If indeed there is a race you need to use
+>> smp_mb__{before/after}_atomic() for both your uses of atomic_inc() and
+>> atomic_set().
+
+The issue was only about concurrent increments/decrements getting lost
+completely from time to time, which atomic_inc/dec will prevent without
+any explicit barriers.
+
+>> Also I have a concern about why this mail was not CC'ed on LKML. I had
+>> to go to some difficulty in finding this patch. So please CC LKML for
+>> such patches.
+
+I don't usually CC LKML if there is a subsystem-specific mailing list
+unless there is a specific reason to CC LKML as well. I thought this was
+standard practice, but I'm happy to spam LKML as well from now on if
+that is preferred by others as well.
+
+
+>> Thanks,
+>> --
+>> Pranith
+>>
+>> -- Begin forwarded Message --
+>>
+>>
+>> nr_dirty is updated without locking, causing it to drift so that it is
+>> non-zero (either a small positive integer, or a very large one when an
+>> underflow occurs) even when there are no actual dirty blocks.
+>>
+>> Fix that by using an atomic type for nr_dirty.
+>>
+>> Signed-off-by: Anssi Hannula <anssi hannula iki fi>
+>> Cc: Joe Thornber <ejt redhat com>
+>> Cc: stable vger kernel org
+>>
+>> ---
+>>
+>> So here's a patch for the issue I reported a few days ago.
+>>
+>> I'm not sure what the actual effects of having wrong nr_dirty are
+>> beyond the wrong value reported to userspace. Having wrong nr_dirty
+>> causes dm_table_event(cache->ti->table) to be called at incorrect times,
+>> but I'm not sure what the implications of that are.
+>>
+>> So someone more knowledged should really amend my commit message
+>> accordingly so that it explains the user-visible issues :)
+>>
+>> I did notice that after a reboot (after having incorrect nr_dirty) the
+>> entire cache was considered to be dirty and a full writeback occurred,
+>> but I don't know if that was related at all.
+>>
+>>
+>>  drivers/md/dm-cache-target.c | 11 +++++------
+>>  1 file changed, 5 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+>> index 0df3ec085ebb..83a7eb5ef113 100644
+>> --- a/drivers/md/dm-cache-target.c
+>> +++ b/drivers/md/dm-cache-target.c
+>> @@ -154,7 +154,7 @@ struct cache {
+>>         /*
+>>          * cache_size entries, dirty if set
+>>          */
+>> -       dm_cblock_t nr_dirty;
+>> +       atomic_t nr_dirty;
+>>         unsigned long *dirty_bitset;
+>>
+>>         /*
+>> @@ -403,7 +403,7 @@ static bool is_dirty(struct cache *cache, dm_cblock_t b)
+>>  static void set_dirty(struct cache *cache, dm_oblock_t oblock, dm_cblock_t cblock)
+>>  {
+>>         if (!test_and_set_bit(from_cblock(cblock), cache->dirty_bitset)) {
+>> -               cache->nr_dirty = to_cblock(from_cblock(cache->nr_dirty) + 1);
+>> +               atomic_inc(&cache->nr_dirty);
+>>                 policy_set_dirty(cache->policy, oblock);
+>>         }
+>>  }
+>> @@ -412,8 +412,7 @@ static void clear_dirty(struct cache *cache, dm_oblock_t oblock, dm_cblock_t cbl
+>>  {
+>>         if (test_and_clear_bit(from_cblock(cblock), cache->dirty_bitset)) {
+>>                 policy_clear_dirty(cache->policy, oblock);
+>> -               cache->nr_dirty = to_cblock(from_cblock(cache->nr_dirty) - 1);
+>> -               if (!from_cblock(cache->nr_dirty))
+>> +               if (atomic_dec_return(&cache->nr_dirty) == 0)
+>>                         dm_table_event(cache->ti->table);
+>>         }
+>>  }
+>> @@ -2003,7 +2002,7 @@ static int cache_create(struct cache_args *ca, struct cache **result)
+>>         init_waitqueue_head(&cache->migration_wait);
+>>
+>>         r = -ENOMEM;
+>> -       cache->nr_dirty = 0;
+>> +       atomic_set(&cache->nr_dirty, 0);
+>>         cache->dirty_bitset = alloc_bitset(from_cblock(cache->cache_size));
+>>         if (!cache->dirty_bitset) {
+>>                 *error = "could not allocate dirty bitset";
+>> @@ -2513,7 +2512,7 @@ static void cache_status(struct dm_target *ti, status_type_t type,
+>>                        (unsigned) atomic_read(&cache->stats.demotion),
+>>                        (unsigned) atomic_read(&cache->stats.promotion),
+>>                        (unsigned long long) from_cblock(residency),
+>> -                      cache->nr_dirty);
+>> +                      (unsigned) atomic_read(&cache->nr_dirty));
+>>
+>>                 if (cache->features.write_through)
+>>                         DMEMIT("1 writethrough ");
+>> --
+>> 1.8.4.5
+>>
+>> -- End forwarded Message --
+>>
 > 
-> I'll apply this to the fixes branch for 3.17 and mark it for stable instead.
 > 
-> Kukjin, seems like you're not testing suspend/resume yourself, since you
-> haven't known about the regression and the fix. Can you please make sure that
-> you have appropriate test coverage? Thanks!
-
-Actually, this has a bunch of merge conflicts with the 3.17 material that's
-queued up. ;(
-
-Please send a tested patch that applies on top of the 3.17 branches
-without a lot of conflicts.
+> 
 
 
--Olof
+-- 
+Anssi Hannula
