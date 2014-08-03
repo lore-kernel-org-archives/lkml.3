@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaHCLOd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 07:14:33 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:30178 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777AbaHCLOc (ORCPT
+	id S1752790AbaHCLPH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 07:15:07 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51410 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682AbaHCLPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 07:14:32 -0400
-To: konrad.wilk@oracle.com, dchinner@redhat.com
-Cc: airlied@linux.ie, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH 1/5] gpu/drm/ttm: Fix possible division by 0 in ttm_dma_pool_shrink_scan().
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201405311158.DGE64002.QLOOHJSFFMVFOt@I-love.SAKURA.ne.jp>
-	<201405311159.CHG64048.SOFLQHVtFOMFJO@I-love.SAKURA.ne.jp>
-	<201405311200.III57894.MLFOOFStQVHJFO@I-love.SAKURA.ne.jp>
-	<20140610191741.GA28523@phenom.dumpdata.com>
-	<201406110516.HCH90692.FFFStVJMOHOLQO@I-love.SAKURA.ne.jp>
-In-Reply-To: <201406110516.HCH90692.FFFStVJMOHOLQO@I-love.SAKURA.ne.jp>
-Message-Id: <201408032014.EBE26508.FQOFtHFOSVJMOL@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sun, 3 Aug 2014 20:14:02 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sun, 3 Aug 2014 07:15:05 -0400
+Date: Sun, 3 Aug 2014 13:14:59 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [GIT pull] timer fixes for 3.16
+Message-ID: <alpine.DEB.2.10.1408031313020.4997@nanos>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 5c2f18ca300a1182e40f143b81e927426232b005 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Sun, 3 Aug 2014 19:59:35 +0900
-Subject: [PATCH 1/5] gpu/drm/ttm: Fix possible division by 0 in ttm_dma_pool_shrink_scan().
+Linus,
 
-list_empty(&_manager->pools) being false before taking _manager->lock
-does not guarantee that _manager->npools != 0 after taking _manager->lock
-because _manager->npools is updated under _manager->lock.
+please pull the latest timers-urgent-for-linus git tree from:
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: stable <stable@kernel.org> [3.3+]
----
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index fb8259f..b751fff 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -1015,6 +1015,8 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 		return SHRINK_STOP;
- 
- 	mutex_lock(&_manager->lock);
-+	if (!_manager->npools)
-+		goto out;
- 	pool_offset = pool_offset % _manager->npools;
- 	list_for_each_entry(p, &_manager->pools, pools) {
- 		unsigned nr_free;
-@@ -1034,6 +1036,7 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 			 p->pool->dev_name, p->pool->name, current->pid,
- 			 nr_free, shrink_pages);
+Two fixes in the timer area:
+    * A long standing lock inversion due to a printk
+    * Suspend related hrtimer corruption in sched_clock
+
+Thanks,
+
+	tglx
+
+------------------>
+Jan Kara (1):
+      timer: Fix lock inversion between hrtimer_bases.lock and scheduler locks
+
+Stephen Boyd (1):
+      sched_clock: Avoid corrupting hrtimer tree during suspend
+
+
+ kernel/time/clockevents.c | 10 ++++++----
+ kernel/time/sched_clock.c |  4 +++-
+ 2 files changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index ad362c2..9c94c19 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -146,7 +146,8 @@ static int clockevents_increase_min_delta(struct clock_event_device *dev)
+ {
+ 	/* Nothing to do if we already reached the limit */
+ 	if (dev->min_delta_ns >= MIN_DELTA_LIMIT) {
+-		printk(KERN_WARNING "CE: Reprogramming failure. Giving up\n");
++		printk_deferred(KERN_WARNING
++				"CE: Reprogramming failure. Giving up\n");
+ 		dev->next_event.tv64 = KTIME_MAX;
+ 		return -ETIME;
  	}
-+out:
- 	mutex_unlock(&_manager->lock);
- 	return freed;
+@@ -159,9 +160,10 @@ static int clockevents_increase_min_delta(struct clock_event_device *dev)
+ 	if (dev->min_delta_ns > MIN_DELTA_LIMIT)
+ 		dev->min_delta_ns = MIN_DELTA_LIMIT;
+ 
+-	printk(KERN_WARNING "CE: %s increased min_delta_ns to %llu nsec\n",
+-	       dev->name ? dev->name : "?",
+-	       (unsigned long long) dev->min_delta_ns);
++	printk_deferred(KERN_WARNING
++			"CE: %s increased min_delta_ns to %llu nsec\n",
++			dev->name ? dev->name : "?",
++			(unsigned long long) dev->min_delta_ns);
+ 	return 0;
  }
--- 
-1.7.1
+ 
+diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
+index 445106d..01d2d15 100644
+--- a/kernel/time/sched_clock.c
++++ b/kernel/time/sched_clock.c
+@@ -191,7 +191,8 @@ void __init sched_clock_postinit(void)
+ 
+ static int sched_clock_suspend(void)
+ {
+-	sched_clock_poll(&sched_clock_timer);
++	update_sched_clock();
++	hrtimer_cancel(&sched_clock_timer);
+ 	cd.suspended = true;
+ 	return 0;
+ }
+@@ -199,6 +200,7 @@ static int sched_clock_suspend(void)
+ static void sched_clock_resume(void)
+ {
+ 	cd.epoch_cyc = read_sched_clock();
++	hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL);
+ 	cd.suspended = false;
+ }
+ 
