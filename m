@@ -1,184 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165AbaHCLRM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 07:17:12 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:59487 "EHLO
+	id S1752718AbaHCLV3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 07:21:29 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:53311 "EHLO
 	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101AbaHCLRL (ORCPT
+	with ESMTP id S1751777AbaHCLV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 07:17:11 -0400
-To: konrad.wilk@oracle.com, dchinner@redhat.com
-Cc: airlied@linux.ie, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH 5/5] gpu/drm/ttm: Pass GFP flags in order to avoid deadlock.
+	Sun, 3 Aug 2014 07:21:27 -0400
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH (resend)] fs: Fix theoretical division by 0 in super_cache_scan().
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201406110516.HCH90692.FFFStVJMOHOLQO@I-love.SAKURA.ne.jp>
-	<201408032014.EBE26508.FQOFtHFOSVJMOL@I-love.SAKURA.ne.jp>
-	<201408032014.BHF60482.VFOFSMJLtHQFOO@I-love.SAKURA.ne.jp>
-	<201408032015.EDH17687.SJOtFFLMFHVOQO@I-love.SAKURA.ne.jp>
-	<201408032016.CFI95841.SOVHFQtFJFOLOM@I-love.SAKURA.ne.jp>
-In-Reply-To: <201408032016.CFI95841.SOVHFQtFJFOLOM@I-love.SAKURA.ne.jp>
-Message-Id: <201408032016.GHJ12425.VtFOQJFOMFSLOH@I-love.SAKURA.ne.jp>
+Message-Id: <201408032021.IDI35961.MSOJVLFFOFtOQH@I-love.SAKURA.ne.jp>
 X-Mailer: Winbiff [Version 2.51 PL2]
 X-Accept-Language: ja,en,zh
-Date: Sun, 3 Aug 2014 20:16:54 +0900
+Date: Sun, 3 Aug 2014 20:21:18 +0900
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From cf572226bd1f67305dc5477fccdc6daa30396994 Mon Sep 17 00:00:00 2001
+>From 7a2ed4e9c91864736ce5ad89489fd5862d59542e Mon Sep 17 00:00:00 2001
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Sun, 3 Aug 2014 20:02:31 +0900
-Subject: [PATCH 5/5] gpu/drm/ttm: Pass GFP flags in order to avoid deadlock.
+Date: Sat, 17 May 2014 20:56:38 +0900
+Subject: [PATCH] fs: Fix theoretical division by 0 in super_cache_scan().
 
-Commit 7dc19d5a "drivers: convert shrinkers to new count/scan API" added
-deadlock warnings that ttm_page_pool_free() and ttm_dma_page_pool_free()
-are currently doing GFP_KERNEL allocation.
+total_objects could be 0 and is used as a denom.
 
-But these functions did not get updated to receive gfp_t argument.
-This patch explicitly passes sc->gfp_mask or GFP_KERNEL to these functions,
-and removes the deadlock warning.
+While total_objects is a "long", total_objects == 0 unlikely happens for
+3.12 and later kernels because 32-bit architectures would not be able to
+hold (1 << 32) objects. However, total_objects == 0 may happen for kernels
+between 3.1 and 3.11 because total_objects in prune_super() was an "int"
+and (e.g.) x86_64 architecture might be able to hold (1 << 32) objects.
 
 Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: stable <stable@kernel.org> [2.6.35+]
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Cc: stable <stable@kernel.org> # 3.1+
 ---
- drivers/gpu/drm/ttm/ttm_page_alloc.c     |   19 ++++++++++---------
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |   19 +++++++++----------
- 2 files changed, 19 insertions(+), 19 deletions(-)
+ fs/super.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index edb8315..09874d6 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -297,8 +297,10 @@ static void ttm_pool_update_free_locked(struct ttm_page_pool *pool,
-  *
-  * @pool: to free the pages from
-  * @free_all: If set to true will free all pages in pool
-+ * @gfp: GFP flags.
-  **/
--static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free)
-+static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free,
-+			      gfp_t gfp)
- {
- 	unsigned long irq_flags;
- 	struct page *p;
-@@ -309,8 +311,7 @@ static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free)
- 	if (NUM_PAGES_TO_ALLOC < nr_free)
- 		npages_to_free = NUM_PAGES_TO_ALLOC;
+diff --git a/fs/super.c b/fs/super.c
+index 48377f7..1408362 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -81,6 +81,8 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
+ 	inodes = list_lru_count_node(&sb->s_inode_lru, sc->nid);
+ 	dentries = list_lru_count_node(&sb->s_dentry_lru, sc->nid);
+ 	total_objects = dentries + inodes + fs_objects + 1;
++	if (!total_objects)
++		total_objects = 1;
  
--	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
--			GFP_KERNEL);
-+	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
- 	if (!pages_to_free) {
- 		pr_err("Failed to allocate memory for pool free operation\n");
- 		return 0;
-@@ -382,9 +383,7 @@ out:
-  *
-  * XXX: (dchinner) Deadlock warning!
-  *
-- * ttm_page_pool_free() does memory allocation using GFP_KERNEL.  that means
-- * this can deadlock when called a sc->gfp_mask that is not equal to
-- * GFP_KERNEL.
-+ * We need to pass sc->gfp_mask to ttm_page_pool_free().
-  *
-  * This code is crying out for a shrinker per pool....
-  */
-@@ -408,7 +407,8 @@ ttm_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 		if (shrink_pages == 0)
- 			break;
- 		pool = &_manager->pools[(i + pool_offset)%NUM_POOLS];
--		shrink_pages = ttm_page_pool_free(pool, nr_free);
-+		shrink_pages = ttm_page_pool_free(pool, nr_free,
-+						  sc->gfp_mask);
- 		freed += nr_free - shrink_pages;
- 	}
- 	mutex_unlock(&lock);
-@@ -710,7 +710,7 @@ static void ttm_put_pages(struct page **pages, unsigned npages, int flags,
- 	}
- 	spin_unlock_irqrestore(&pool->lock, irq_flags);
- 	if (npages)
--		ttm_page_pool_free(pool, npages);
-+		ttm_page_pool_free(pool, npages, GFP_KERNEL);
- }
- 
- /*
-@@ -850,7 +850,8 @@ void ttm_page_alloc_fini(void)
- 	ttm_pool_mm_shrink_fini(_manager);
- 
- 	for (i = 0; i < NUM_POOLS; ++i)
--		ttm_page_pool_free(&_manager->pools[i], FREE_ALL_PAGES);
-+		ttm_page_pool_free(&_manager->pools[i], FREE_ALL_PAGES,
-+				   GFP_KERNEL);
- 
- 	kobject_put(&_manager->kobj);
- 	_manager = NULL;
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index 524cc1a..ca65df1 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -411,8 +411,10 @@ static void ttm_dma_page_put(struct dma_pool *pool, struct dma_page *d_page)
-  *
-  * @pool: to free the pages from
-  * @nr_free: If set to true will free all pages in pool
-+ * @gfp: GFP flags.
-  **/
--static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free)
-+static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free,
-+				       gfp_t gfp)
- {
- 	unsigned long irq_flags;
- 	struct dma_page *dma_p, *tmp;
-@@ -430,8 +432,7 @@ static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free)
- 			 npages_to_free, nr_free);
- 	}
- #endif
--	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
--			GFP_KERNEL);
-+	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
- 
- 	if (!pages_to_free) {
- 		pr_err("%s: Failed to allocate memory for pool free operation\n",
-@@ -530,7 +531,7 @@ static void ttm_dma_free_pool(struct device *dev, enum pool_type type)
- 		if (pool->type != type)
- 			continue;
- 		/* Takes a spinlock.. */
--		ttm_dma_page_pool_free(pool, FREE_ALL_PAGES);
-+		ttm_dma_page_pool_free(pool, FREE_ALL_PAGES, GFP_KERNEL);
- 		WARN_ON(((pool->npages_in_use + pool->npages_free) != 0));
- 		/* This code path is called after _all_ references to the
- 		 * struct device has been dropped - so nobody should be
-@@ -983,7 +984,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
- 
- 	/* shrink pool if necessary (only on !is_cached pools)*/
- 	if (npages)
--		ttm_dma_page_pool_free(pool, npages);
-+		ttm_dma_page_pool_free(pool, npages, GFP_KERNEL);
- 	ttm->state = tt_unpopulated;
- }
- EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
-@@ -993,10 +994,7 @@ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
-  *
-  * XXX: (dchinner) Deadlock warning!
-  *
-- * ttm_dma_page_pool_free() does GFP_KERNEL memory allocation, and so attention
-- * needs to be paid to sc->gfp_mask to determine if this can be done or not.
-- * GFP_KERNEL memory allocation in a GFP_ATOMIC reclaim context woul dbe really
-- * bad.
-+ * We need to pass sc->gfp_mask to ttm_dma_page_pool_free().
-  *
-  * I'm getting sadder as I hear more pathetical whimpers about needing per-pool
-  * shrinkers
-@@ -1030,7 +1028,8 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 		if (++idx < pool_offset)
- 			continue;
- 		nr_free = shrink_pages;
--		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free);
-+		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free,
-+						      sc->gfp_mask);
- 		freed += nr_free - shrink_pages;
- 
- 		pr_debug("%s: (%s:%d) Asked to shrink %d, have %d more to go\n",
+ 	/* proportion the scan between the caches */
+ 	dentries = mult_frac(sc->nr_to_scan, dentries, total_objects);
 -- 
 1.7.1
