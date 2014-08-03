@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197AbaHCMDw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 08:03:52 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:41123 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025AbaHCMDu convert rfc822-to-8bit (ORCPT
+	id S1752712AbaHCMFK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 08:05:10 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:48650 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752320AbaHCMFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 08:03:50 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: Soft lockups during reading /proc/PID/smaps
-From: Aleksei Besogonov <alex.besogonov@gmail.com>
-In-Reply-To: <20140802181958.GA28283@redhat.com>
-Date: Sun, 3 Aug 2014 05:03:45 -0700
-Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <264016DC-6B8B-4732-8977-44AA2CF47E1A@gmail.com>
-References: <loom.20140731T091947-310@post.gmane.org> <alpine.DEB.2.02.1407310041500.20816@chino.kir.corp.google.com> <117A54C0-F3AC-4DD0-B2F6-886C5D4419E3@gmail.com> <20140802181958.GA28283@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Sun, 3 Aug 2014 08:05:08 -0400
+Date: Sun, 3 Aug 2014 15:04:33 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>, LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] media: davinci: vpif: fix array out of bound warnings
+Message-ID: <20140803120432.GZ16460@valkosipuli.retiisi.org.uk>
+References: <1405701111-26983-1-git-send-email-prabhakar.csengg@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405701111-26983-1-git-send-email-prabhakar.csengg@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02 Aug 2014, at 11:19, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 07/31, Aleksei Besogonov wrote:
->> 
->> On 31 Jul 2014, at 00:43, David Rientjes <rientjes@google.com> wrote:
->> 
->>> The while_each_thread() in vm_is_stack() looks suspicious since the task
->>> isn't current and rcu won't protect the iteration, and we also don't hold
->>> sighand lock or a readlock on tasklist_lock.
->>> I think Oleg will know how to proceed, cc'd.
->> I’m attaching a minimal test case that can reproduce the issue. Works in 100% cases on any system I’ve tried.
-> Thanks. I think David is right and we need the simple patch below.
-> This reminds me I should kill while_each_thread :/
-> Any chance you can test it? If not, I will do this later and send
-> the patch if it helps.
-Thanks, it works on the rc7 kernel.
+Hi Prabhakar,
 
-I can make a backported version for earlier kernels if nobody else is interested.
+On Fri, Jul 18, 2014 at 05:31:51PM +0100, Lad, Prabhakar wrote:
+> This patch fixes following array out of bound warnings,
+> 
+> drivers/media/platform/davinci/vpif_display.c: In function 'vpif_remove':
+> drivers/media/platform/davinci/vpif_display.c:1389:36: warning: iteration
+> 1u invokes undefined behavior [-Waggressive-loop-optimizations]
+>    vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
+>                                     ^
+> drivers/media/platform/davinci/vpif_display.c:1385:2: note: containing loop
+>   for (i = 0; i < VPIF_DISPLAY_MAX_DEVICES; i++) {
+>   ^
+> drivers/media/platform/davinci/vpif_capture.c: In function 'vpif_remove':
+> drivers/media/platform/davinci/vpif_capture.c:1581:36: warning: iteration
+> 1u invokes undefined behavior [-Waggressive-loop-optimizations]
+>    vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
+>                                     ^
+> drivers/media/platform/davinci/vpif_capture.c:1577:2: note: containing loop
+>   for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++) {
+>   ^
+> drivers/media/platform/davinci/vpif_capture.c:1580:23: warning: array subscript
+> is above array bounds [-Warray-bounds]
+>    common = &ch->common[i];
+> 
+> Reported-by: Hans Verkuil <hans.verkuil@cisco.com>
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>  drivers/media/platform/davinci/vpif_capture.c | 2 +-
+>  drivers/media/platform/davinci/vpif_display.c | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
+> index 2f90f0d..3a85238 100644
+> --- a/drivers/media/platform/davinci/vpif_capture.c
+> +++ b/drivers/media/platform/davinci/vpif_capture.c
+> @@ -1577,7 +1577,7 @@ static int vpif_remove(struct platform_device *device)
+>  	for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++) {
+>  		/* Get the pointer to the channel object */
+>  		ch = vpif_obj.dev[i];
+> -		common = &ch->common[i];
+> +		common = &ch->common[VPIF_VIDEO_INDEX];
 
-> 
-> Oleg.
-> 
-> --- x/mm/util.c
-> +++ x/mm/util.c
-> @@ -277,17 +277,14 @@ pid_t vm_is_stack(struct task_struct *ta
-> 
-> 	if (in_group) {
-> 		struct task_struct *t;
-> -		rcu_read_lock();
-> -		if (!pid_alive(task))
-> -			goto done;
-> 
-> -		t = task;
-> -		do {
-> +		rcu_read_lock();
-> +		for_each_thread(task, t) {
-> 			if (vm_is_stack_for_task(t, vma)) {
-> 				ret = t->pid;
-> 				goto done;
-> 			}
-> -		} while_each_thread(task, t);
-> +		}
-> done:
-> 		rcu_read_unlock();
-> 	}
-> 
+You could refer to the alloc_ctz directly w/o extra local variables. Also
+local variables that are only used inside the loop could be declared there
+as well.
 
+Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
+
+>  		vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
+>  		/* Unregister video device */
+>  		video_unregister_device(ch->video_dev);
+> diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
+> index 0bd6dcb..6c6bd6b 100644
+> --- a/drivers/media/platform/davinci/vpif_display.c
+> +++ b/drivers/media/platform/davinci/vpif_display.c
+> @@ -1385,7 +1385,7 @@ static int vpif_remove(struct platform_device *device)
+>  	for (i = 0; i < VPIF_DISPLAY_MAX_DEVICES; i++) {
+>  		/* Get the pointer to the channel object */
+>  		ch = vpif_obj.dev[i];
+> -		common = &ch->common[i];
+> +		common = &ch->common[VPIF_VIDEO_INDEX];
+>  		vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
+>  		/* Unregister video device */
+>  		video_unregister_device(ch->video_dev);
+
+-- 
+Kind regards,
+
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
