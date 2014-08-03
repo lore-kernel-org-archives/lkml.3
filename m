@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837AbaHCCIo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 22:08:44 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:38230 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425AbaHCCIm (ORCPT
+	id S1754744AbaHCCKv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 22:10:51 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:54965 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981AbaHCCKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 22:08:42 -0400
+	Sat, 2 Aug 2014 22:10:50 -0400
 MIME-Version: 1.0
 In-Reply-To: <53DD97B0.8040001@gmail.com>
 References: <53DD97B0.8040001@gmail.com>
 From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Sat, 2 Aug 2014 22:08:10 -0400
-Message-ID: <CAJhHMCBnXQVhNc85uQO2Ee--nEzKFVDGBeoW9Ke-+2zupvKmsA@mail.gmail.com>
+Date: Sat, 2 Aug 2014 22:10:18 -0400
+Message-ID: <CAJhHMCCFz5qpxocMbF1POBbFs6zPVaoM_j-52bw5vwpm1MV9aw@mail.gmail.com>
 Subject: Re: [PATCH] dm cache: fix race affecting dirty block count
-To: anssi.hannula@iki.fr
+To: anssi.hannula@iki.fi
 Cc: ejt@redhat.com, snitzer@redhat.com, LKML <linux-kernel@vger.kernel.org>,
         torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
@@ -22,7 +22,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correctly adding Anssi this time.
+Corrently adding Anssi this time.
 
 On Sat, Aug 2, 2014 at 10:00 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
 > Hello Anssi, Joe, Mike,
