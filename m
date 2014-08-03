@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940AbaHCLP7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 07:15:59 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:16653 "EHLO
+	id S1753058AbaHCLQe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 07:16:34 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:32388 "EHLO
 	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582AbaHCLP5 (ORCPT
+	with ESMTP id S1753010AbaHCLQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 07:15:57 -0400
+	Sun, 3 Aug 2014 07:16:33 -0400
 To: konrad.wilk@oracle.com, dchinner@redhat.com
 Cc: airlied@linux.ie, linux-kernel@vger.kernel.org,
         dri-devel@lists.freedesktop.org
-Subject: [PATCH 3/5] gpu/drm/ttm: Use mutex_trylock() to avoid deadlock inside shrinker functions.
+Subject: [PATCH 4/5] gpu/drm/ttm: Fix possible stack overflow by recursive shrinker calls.
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201405311200.III57894.MLFOOFStQVHJFO@I-love.SAKURA.ne.jp>
-	<20140610191741.GA28523@phenom.dumpdata.com>
+References: <20140610191741.GA28523@phenom.dumpdata.com>
 	<201406110516.HCH90692.FFFStVJMOHOLQO@I-love.SAKURA.ne.jp>
 	<201408032014.EBE26508.FQOFtHFOSVJMOL@I-love.SAKURA.ne.jp>
 	<201408032014.BHF60482.VFOFSMJLtHQFOO@I-love.SAKURA.ne.jp>
-In-Reply-To: <201408032014.BHF60482.VFOFSMJLtHQFOO@I-love.SAKURA.ne.jp>
-Message-Id: <201408032015.EDH17687.SJOtFFLMFHVOQO@I-love.SAKURA.ne.jp>
+	<201408032015.EDH17687.SJOtFFLMFHVOQO@I-love.SAKURA.ne.jp>
+In-Reply-To: <201408032015.EDH17687.SJOtFFLMFHVOQO@I-love.SAKURA.ne.jp>
+Message-Id: <201408032016.CFI95841.SOVHFQtFJFOLOM@I-love.SAKURA.ne.jp>
 X-Mailer: Winbiff [Version 2.51 PL2]
 X-Accept-Language: ja,en,zh
-Date: Sun, 3 Aug 2014 20:15:40 +0900
+Date: Sun, 3 Aug 2014 20:16:16 +0900
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From e945aa0d6518563835c3f279b9c7f9fc3f20b38b Mon Sep 17 00:00:00 2001
+>From 16009d9def2c3087772e6c9dbec6c60950ae768b Mon Sep 17 00:00:00 2001
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Sun, 3 Aug 2014 20:01:10 +0900
-Subject: [PATCH 3/5] gpu/drm/ttm: Use mutex_trylock() to avoid deadlock inside shrinker functions.
+Date: Sun, 3 Aug 2014 20:02:03 +0900
+Subject: [PATCH 4/5] gpu/drm/ttm: Fix possible stack overflow by recursive shrinker calls.
 
-I can observe that RHEL7 environment stalls with 100% CPU usage when a
-certain type of memory pressure is given. While the shrinker functions
-are called by shrink_slab() before the OOM killer is triggered, the stall
-lasts for many minutes.
+While ttm_dma_pool_shrink_scan() tries to take mutex before doing GFP_KERNEL
+allocation, ttm_pool_shrink_scan() does not do it. This can result in stack
+overflow if kmalloc() in ttm_page_pool_free() triggered recursion due to
+memory pressure.
 
-One of reasons of this stall is that
-ttm_dma_pool_shrink_count()/ttm_dma_pool_shrink_scan() are called and
-are blocked at mutex_lock(&_manager->lock). GFP_KERNEL allocation with
-_manager->lock held causes someone (including kswapd) to deadlock when
-these functions are called due to memory pressure. This patch changes
-"mutex_lock();" to "if (!mutex_trylock()) return ...;" in order to
-avoid deadlock.
+  shrink_slab()
+  => ttm_pool_shrink_scan()
+     => ttm_page_pool_free()
+        => kmalloc(GFP_KERNEL)
+           => shrink_slab()
+              => ttm_pool_shrink_scan()
+                 => ttm_page_pool_free()
+                    => kmalloc(GFP_KERNEL)
+
+Change ttm_pool_shrink_scan() to do like ttm_dma_pool_shrink_scan() does.
 
 Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: stable <stable@kernel.org> [3.3+]
+Cc: stable <stable@kernel.org> [2.6.35+]
 ---
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/ttm/ttm_page_alloc.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index d8e59f7..524cc1a 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -1014,7 +1014,8 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 	if (list_empty(&_manager->pools))
- 		return SHRINK_STOP;
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+index beb8e75..edb8315 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+@@ -391,14 +391,17 @@ out:
+ static unsigned long
+ ttm_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
+ {
+-	static atomic_t start_pool = ATOMIC_INIT(0);
++	static DEFINE_MUTEX(lock);
++	static unsigned start_pool;
+ 	unsigned i;
+-	unsigned pool_offset = atomic_add_return(1, &start_pool);
++	unsigned pool_offset;
+ 	struct ttm_page_pool *pool;
+ 	int shrink_pages = sc->nr_to_scan;
+ 	unsigned long freed = 0;
  
--	mutex_lock(&_manager->lock);
-+	if (!mutex_trylock(&_manager->lock))
+-	pool_offset = pool_offset % NUM_POOLS;
++	if (!mutex_trylock(&lock))
 +		return SHRINK_STOP;
- 	if (!_manager->npools)
- 		goto out;
- 	pool_offset = ++start_pool % _manager->npools;
-@@ -1047,7 +1048,8 @@ ttm_dma_pool_shrink_count(struct shrinker *shrink, struct shrink_control *sc)
- 	struct device_pools *p;
- 	unsigned long count = 0;
++	pool_offset = ++start_pool % NUM_POOLS;
+ 	/* select start pool in round robin fashion */
+ 	for (i = 0; i < NUM_POOLS; ++i) {
+ 		unsigned nr_free = shrink_pages;
+@@ -408,6 +411,7 @@ ttm_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
+ 		shrink_pages = ttm_page_pool_free(pool, nr_free);
+ 		freed += nr_free - shrink_pages;
+ 	}
++	mutex_unlock(&lock);
+ 	return freed;
+ }
  
--	mutex_lock(&_manager->lock);
-+	if (!mutex_trylock(&_manager->lock))
-+		return 0;
- 	list_for_each_entry(p, &_manager->pools, pools)
- 		count += p->pool->npages_free;
- 	mutex_unlock(&_manager->lock);
 -- 
 1.7.1
