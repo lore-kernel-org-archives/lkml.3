@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaHCKPp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 06:15:45 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:42807 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746AbaHCKPn (ORCPT
+	id S1752706AbaHCKRM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 06:17:12 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:53658 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746AbaHCKRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 06:15:43 -0400
-Date: Sun, 3 Aug 2014 15:45:40 +0530
+	Sun, 3 Aug 2014 06:17:11 -0400
+Date: Sun, 3 Aug 2014 15:47:07 +0530
 From: Himangi Saraogi <himangi774@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: Brian Norris <computersforpeace@gmail.com>,
+        Prabhakar Kushwaha <prabhakar@freescale.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Aaron Sierra <asierra@xes-inc.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Joe Schultz <jschultz@xes-inc.com>, linux-kernel@vger.kernel.org
 Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] cpufreq: integrator: Use set_cpus_allowed_ptr
-Message-ID: <20140803101539.GA7978@himangi-Dell>
+Subject: [PATCH] mtd: fsl_ifc_nand: use devm_ functions consistently
+Message-ID: <20140803101707.GA8018@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,87 +26,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several years ago there was an effort to convert all uses of
-set_cpus_allowed to use set_cpus_allowed_ptr with the goal of eventually
-removing the current definition of set_cpus_allowed and renaming
-set_cpus_allowed_ptr as set_cpus_allowed
-(https://lkml.org/lkml/2010/3/26/59). This is another step in this
-direction.
+Use devm_kzalloc for all calls to kzalloc and not just the first.  Use
+devm functions for other allocations as well. The calls to free the
+allocated memory in the remove function are done away with.
 
-The Coccinelle semantic patch that makes this change is as follows:
+The semantic match that finds the inconsistency is as follows:
 
 // <smpl>
 @@
-expression E1,E2;
 @@
 
-- set_cpus_allowed(E1, cpumask_of_cpu(E2))
-+ set_cpus_allowed_ptr(E1, cpumask_of(E2))
-
-@@
-expression E;
-identifier I;
-@@
-
-- set_cpus_allowed(E, I)
-+ set_cpus_allowed_ptr(E, &I)
+*devm_kzalloc(...)
+...
+*kzalloc(...)
 // </smpl>
 
 Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- drivers/cpufreq/integrator-cpufreq.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Not compile tested.
+ drivers/mtd/nand/fsl_ifc_nand.c | 17 ++++++-----------
+ 1 file changed, 6 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/cpufreq/integrator-cpufreq.c b/drivers/cpufreq/integrator-cpufreq.c
-index e5122f1..c132052 100644
---- a/drivers/cpufreq/integrator-cpufreq.c
-+++ b/drivers/cpufreq/integrator-cpufreq.c
-@@ -92,7 +92,7 @@ static int integrator_set_target(struct cpufreq_policy *policy,
- 	 * Bind to the specified CPU.  When this call returns,
- 	 * we should be running on the right CPU.
- 	 */
--	set_cpus_allowed(current, cpumask_of_cpu(cpu));
-+	set_cpus_allowed_ptr(current, cpumask_of(cpu));
- 	BUG_ON(cpu != smp_processor_id());
+diff --git a/drivers/mtd/nand/fsl_ifc_nand.c b/drivers/mtd/nand/fsl_ifc_nand.c
+index 2338124..b403a77 100644
+--- a/drivers/mtd/nand/fsl_ifc_nand.c
++++ b/drivers/mtd/nand/fsl_ifc_nand.c
+@@ -995,11 +995,6 @@ static int fsl_ifc_chip_remove(struct fsl_ifc_mtd *priv)
+ {
+ 	nand_release(&priv->mtd);
  
- 	/* get current setting */
-@@ -118,7 +118,7 @@ static int integrator_set_target(struct cpufreq_policy *policy,
- 	freqs.new = icst_hz(&cclk_params, vco) / 1000;
+-	kfree(priv->mtd.name);
+-
+-	if (priv->vbase)
+-		iounmap(priv->vbase);
+-
+ 	ifc_nand_ctrl->chips[priv->bank] = NULL;
  
- 	if (freqs.old == freqs.new) {
--		set_cpus_allowed(current, cpus_allowed);
-+		set_cpus_allowed_ptr(current, &cpus_allowed);
- 		return 0;
- 	}
+ 	return 0;
+@@ -1062,7 +1057,8 @@ static int fsl_ifc_nand_probe(struct platform_device *dev)
  
-@@ -141,7 +141,7 @@ static int integrator_set_target(struct cpufreq_policy *policy,
- 	/*
- 	 * Restore the CPUs allowed mask.
- 	 */
--	set_cpus_allowed(current, cpus_allowed);
-+	set_cpus_allowed_ptr(current, &cpus_allowed);
+ 	mutex_lock(&fsl_ifc_nand_mutex);
+ 	if (!fsl_ifc_ctrl_dev->nand) {
+-		ifc_nand_ctrl = kzalloc(sizeof(*ifc_nand_ctrl), GFP_KERNEL);
++		ifc_nand_ctrl = devm_kzalloc(&dev->dev, sizeof(*ifc_nand_ctrl),
++					     GFP_KERNEL);
+ 		if (!ifc_nand_ctrl) {
+ 			mutex_unlock(&fsl_ifc_nand_mutex);
+ 			return -ENOMEM;
+@@ -1085,7 +1081,7 @@ static int fsl_ifc_nand_probe(struct platform_device *dev)
+ 	priv->ctrl = fsl_ifc_ctrl_dev;
+ 	priv->dev = &dev->dev;
  
- 	cpufreq_freq_transition_end(policy, &freqs, 0);
+-	priv->vbase = ioremap(res.start, resource_size(&res));
++	priv->vbase = devm_ioremap(&dev->dev, res.start, resource_size(&res));
+ 	if (!priv->vbase) {
+ 		dev_err(priv->dev, "%s: failed to map chip region\n", __func__);
+ 		ret = -ENOMEM;
+@@ -1104,7 +1100,8 @@ static int fsl_ifc_nand_probe(struct platform_device *dev)
+ 		    IFC_NAND_EVTER_INTR_FTOERIR_EN |
+ 		    IFC_NAND_EVTER_INTR_WPERIR_EN,
+ 		    &ifc->ifc_nand.nand_evter_intr_en);
+-	priv->mtd.name = kasprintf(GFP_KERNEL, "%llx.flash", (u64)res.start);
++	priv->mtd.name = devm_kasprintf(&dev->dev, GFP_KERNEL, "%llx.flash",
++					(u64)res.start);
+ 	if (!priv->mtd.name) {
+ 		ret = -ENOMEM;
+ 		goto err;
+@@ -1148,10 +1145,8 @@ static int fsl_ifc_nand_remove(struct platform_device *dev)
  
-@@ -157,7 +157,7 @@ static unsigned int integrator_get(unsigned int cpu)
+ 	mutex_lock(&fsl_ifc_nand_mutex);
+ 	ifc_nand_ctrl->counter--;
+-	if (!ifc_nand_ctrl->counter) {
++	if (!ifc_nand_ctrl->counter)
+ 		fsl_ifc_ctrl_dev->nand = NULL;
+-		kfree(ifc_nand_ctrl);
+-	}
+ 	mutex_unlock(&fsl_ifc_nand_mutex);
  
- 	cpus_allowed = current->cpus_allowed;
- 
--	set_cpus_allowed(current, cpumask_of_cpu(cpu));
-+	set_cpus_allowed_ptr(current, cpumask_of(cpu));
- 	BUG_ON(cpu != smp_processor_id());
- 
- 	/* detect memory etc. */
-@@ -173,7 +173,7 @@ static unsigned int integrator_get(unsigned int cpu)
- 
- 	current_freq = icst_hz(&cclk_params, vco) / 1000; /* current freq */
- 
--	set_cpus_allowed(current, cpus_allowed);
-+	set_cpus_allowed_ptr(current, &cpus_allowed);
- 
- 	return current_freq;
- }
+ 	return 0;
 -- 
 1.9.1
 
