@@ -1,160 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901AbaHCAnH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 20:43:07 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:41698 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876AbaHCAnF (ORCPT
+	id S1753016AbaHCAqw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 20:46:52 -0400
+Received: from smtprelay0219.hostedemail.com ([216.40.44.219]:34275 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750866AbaHCAqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 20:43:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1406532289.5133.223.camel@marge.simpson.net>
-References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
-	<8738dm9t4z.fsf@tassilo.jf.intel.com>
-	<1406532289.5133.223.camel@marge.simpson.net>
-Date: Sat, 2 Aug 2014 17:43:03 -0700
-Message-ID: <CA+80gGaohO-RaG0_tWZJEFzisrrBpgfiw-mxMrTfSK0N=k7gQA@mail.gmail.com>
-Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
-From: Sergey Oboguev <oboguev.public@gmail.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        khalid.aziz@oracle.com
-Content-Type: text/plain; charset=UTF-8
+	Sat, 2 Aug 2014 20:46:50 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:2:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1593:1594:1606:1730:1747:1777:1792:1801:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3867:3870:3871:4117:4250:4321:4362:4423:4605:5007:6117:6119:7652:7903:8603:8957:9040:10004:10226:10848:11026:11232:11473:11657:11658:11914:12043:12294:12438:12517:12519:12681:12740:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0
+X-HE-Tag: chalk89_7585d8366685a
+X-Filterd-Recvd-Size: 6131
+Message-ID: <1407026806.1835.21.camel@joe-AO725>
+Subject: Re: [PATCH 1/1] cris: fix %d confusingly prefixed with 0x in format
+ string
+From: Joe Perches <joe@perches.com>
+To: Hans Wennborg <hans@hanshq.net>
+Cc: starvik@axis.com, linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
+        kernel-janitors <kernel-janitors@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, devel <devel@driverdev.osuosl.org>,
+        linux-cifs@vger.kernel.org, alsa-devel@alsa-project.org
+Date: Sat, 02 Aug 2014 17:46:46 -0700
+In-Reply-To: <1407018043-648-1-git-send-email-hans@hanshq.net>
+References: <1407018043-648-1-git-send-email-hans@hanshq.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 12:24 AM, Mike Galbraith
-<umgwanakikbuti@gmail.com> wrote:
-> On Sun, 2014-07-27 at 18:19 -0700, Andi Kleen wrote:
->> Sergey Oboguev <oboguev.public@gmail.com> writes:
->>
->> > [This is a repost of the message from few day ago, with patch file
->> > inline instead of being pointed by the URL.]
->>
->> Have you checked out the preemption control that was posted some time
->> ago? It did essentially the same thing, but somewhat simpler than your
->> patch.
->>
->> http://lkml.iu.edu/hypermail/linux/kernel/1403.0/00780.html
->>
->> Yes I agree with you that lock preemption is a serious issue that needs solving.
->
-> Yeah, it's a problem, and well known.
->
-> One mitigation mechanism that exists in the stock kernel today is the
-> LAST_BUDDY scheduler feature.  That took pgsql benchmarks from "shite"
-> to "shiny", and specifically targeted this issue.
->
-> Another is SCHED_BATCH, which can solve a lot of the lock problem by
-> eliminating wakeup preemption within an application.  One could also
-> create an extended batch class which is not only immune from other
-> SCHED_BATCH and/or SCHED_IDLE tasks, but all SCHED_NORMAL wakeup
-> preemption.  Trouble is that killing wakeup preemption precludes very
-> fast very light tasks competing with hogs for CPU time.  If your load
-> depends upon these performing well, you have a problem.
->
-> Mechanism #3 is use of realtime scheduler classes.  This one isn't
-> really a mitigation mechanism, it's more like donning a super suit.
->
-> So three mechanisms exist, the third being supremely effective, but high
-> frequency usage is expensive, ergo huge patch.
->
-> The lock holder preemption problem being identical to the problem RT
-> faces with kernel locks...
->
-> A lazy preempt implementation ala RT wouldn't have the SCHED_BATCH
-> problem, but would have a problem in that should critical sections not
-> be as tiny as it should be, every time you dodge preemption you're
-> fighting the fair engine, may pay heavily in terms of scheduling
-> latency.  Not a big hairy deal, if it hurts, don't do that.  Bigger
-> issue is that you have to pop into the kernel on lock acquisition and
-> release to avoid jabbering with the kernel via some public phone.
-> Popping into the kernel, if say some futex were victimized, also erases
-> the "f" in futex, and restricting cost to consumer won't be any easier.
->
-> The difference wrt cost acceptability is that the RT issue is not a
-> corner case, it's core issue resulting from the nature of the RT beast
-> itself, so the feature not being free is less annoying.  A corner case
-> fix OTOH should not impact the general case at all.
+On Sat, 2014-08-02 at 15:20 -0700, Hans Wennborg wrote:
+> Signed-off-by: Hans Wennborg <hans@hanshq.net>
+> ---
+>  arch/cris/arch-v32/drivers/cryptocop.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/cris/arch-v32/drivers/cryptocop.c b/arch/cris/arch-v32/drivers/cryptocop.c
+[]
+> @@ -3155,7 +3155,7 @@ static void print_dma_descriptors(struct cryptocop_int_operation *iop)
+>  	printk("print_dma_descriptors start\n");
+>  
+>  	printk("iop:\n");
+> -	printk("\tsid: 0x%lld\n", iop->sid);
+> +	printk("\tsid: 0x%llx\n", iop->sid);
+>  
+>  	printk("\tcdesc_out: 0x%p\n", iop->cdesc_out);
+>  	printk("\tcdesc_in: 0x%p\n", iop->cdesc_in);
+
+Thanks.
+
+This is a surprisingly common error:
+
+$ /usr/bin/git grep -P '0x\%(?!ull\b|ul\b|u\b|lu\b|llu\b|llux\b|lux\b|lx\b|lluX\b|luX\b|lX\b)[ul]*[ud]'
+arch/arm/mach-omap2/id.c:               pr_warn("%s: unknown idcode=0x%08x (hawkeye=0x%08x,rev=0x%d)\n",
+arch/cris/arch-v32/drivers/cryptocop.c: printk("\tsid: 0x%lld\n", iop->sid);
+drivers/atm/eni.c:                      return sprintf(page,"tx[%d]:    0x%ld-0x%ld "
+drivers/atm/eni.c:                              length += sprintf(page+length,"0x%ld-0x%ld "
+drivers/block/DAC960.c:         DAC960_Error("IO port 0x%d busy for Controller at\n",
+drivers/block/DAC960.c:         DAC960_Error("IO port 0x%d busy for Controller at\n",
+drivers/block/cciss.c:  dev_dbg(&h->pdev->dev, "   Max outstanding commands = 0x%d\n",
+drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c:        mfc_debug(2, "stream buf addr: 0x%08lx, size: 0x%d\n",
+drivers/mfd/htc-i2cpld.c:       snprintf(client->name, I2C_NAME_SIZE, "Chip_0x%d", client->addr);
+drivers/mfd/omap-usb-host.c:                     "USB HOST Rev:0x%d not recognized, assuming %d ports\n",
+drivers/misc/sgi-gru/grumain.c: gru_dbg(grudev, "gid %d, gts %p, gms %p, ctxnum 0x%d, asidmap 0x%lx\n",
+drivers/net/ethernet/smsc/smc911x.c:    DBG(SMC_DEBUG_MISC, dev, "phy_id1=0x%x, phy_id2=0x%x phyaddr=0x%d\n",
+drivers/net/wireless/ath/ath6kl/init.c:                            "found reserved ram size ie 0x%d\n",
+drivers/net/wireless/ath/ath6kl/main.c:         ath6kl_err("failed to write 0x%x during diagnose window to 0x%d\n",
+drivers/net/wireless/iwlegacy/4965-mac.c:                       IL_ERR("failed setting tx power (0x%d).\n", ret);
+drivers/net/wireless/rtlwifi/pci.c:                              "more desc left, wake skb_queue@%d, ring->idx = %d, skb_queue_len = 0x%d\n",
+drivers/net/wireless/rtlwifi/pci.c:                              "No more TX desc@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
+drivers/net/wireless/rtlwifi/pci.c:                      "less desc left, stop skb_queue@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
+drivers/net/wireless/rtlwifi/rtl8192de/phy.c:            "MCSTxPowerLevelOriginalOffset[%d][%d] = 0x%ulx\n",
+drivers/net/wireless/rtlwifi/rtl8192de/phy.c:                   "ver 1 set RF-A, 5G,    0x28 = 0x%ulx !!\n", u4tmp);
+drivers/net/wireless/rtlwifi/rtl8192de/phy.c:                   "ver 3 set RF-B, 2G, 0x28 = 0x%ulx !!\n", u4tmp);
+drivers/net/wireless/rtlwifi/rtl8192de/phy.c:                   "ver 3 set RF-B, 2G, 0x28 = 0x%ulx !!\n",
+drivers/parisc/dino.c:          printk(KERN_ERR "DINO: Hey! Someone took my MMIO space (0x%ld)!\n",
+drivers/scsi/hpsa.c:    dev_info(dev, "   Max outstanding commands = 0x%d\n",
+drivers/staging/nokia_h4p/nokia_core.c:         dev_err(info->dev, "Cannot get GPIO line 0x%d",
+drivers/staging/rtl8192ee/pci.c:                                 ("more desc left, wake skb_queue@%d,ring->idx = %d, skb_queue_len = 0x%d\n",
+drivers/staging/rtl8192ee/pci.c:                                 ("No more TX desc@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
+drivers/staging/rtl8192ee/pci.c:                         ("less desc left, stop skb_queue@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
+drivers/staging/rtl8821ae/pci.c:                                         "skb_queue_len = 0x%d\n",
+drivers/staging/rtl8821ae/pci.c:                                  "idx = %d, skb_queue_len = 0x%d\n",
+drivers/staging/rtl8821ae/pci.c:                          "idx = %d, skb_queue_len = 0x%d\n",
+fs/cifs/cifs_debug.c:                                   "\n\tPathComponentMax: %d Status: 0x%d",
+fs/cifs/misc.c:                 cifs_dbg(FYI, "notify err 0x%d\n",
+fs/cifs/misc.c: cifs_dbg(FYI, "oplock type 0x%d level 0x%d\n",
+fs/cifs/smb2misc.c:             cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
+fs/cifs/smb2misc.c:             cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
+fs/cifs/smb2misc.c:     cifs_dbg(FYI, "oplock level 0x%d\n", rsp->OplockLevel);
+sound/firewire/fireworks/fireworks_proc.c:                          "phys in grp[0x%d]: type 0x%d, count 0x%d\n",
+sound/firewire/fireworks/fireworks_proc.c:                          "phys out grps[0x%d]: type 0x%d, count 0x%d\n",
+sound/pci/riptide/riptide.c:    snd_printdd("sent mixer %d: 0x%d 0x%d\n", num, rval, lval);
+sound/pci/riptide/riptide.c:    snd_printdd("got mixer %d: 0x%d 0x%d\n", num, *rval, *lval);
 
 
-When reasoning about concurrency management it may be helpful to keep in mind
-the fundamental perspective that the problem space and solution space in this
-area are fragmented -- just as your message exemplifies as well, but it also
-applies across the board to all other solution techniques. There is no
-all-unifying solution that works in all use cases and for all purposes.
-
-This applies even to seemingly well-defined problems such as lock holder
-preemption avoidance.
-
-One of the divisions on a broad scale is between cases when wait/dependency
-chain can be made explicit at run time (e.g. application/system can tell that
-thread A is waiting on thread B which is waiting on thread C) and those cases
-when the dependency cannot be explicitly expressed and information on the
-dependency is lacking.
-
-In the former case some form of priority inheritance or proxy execution might
-often (but not always) work well.
-
-In the latter case PI/PE cannot be applied. This case occurs when a component
-needs to implement time-urgent section acting on behalf of (e.g. in response to
-an event in) another component in the application and the latter is not (or
-often cannot practically be) instrumented with the code that expresses its
-inner dependencies and thus the information about the dependencies is lacking.
-
-(One example might be virtual machine that runs guest operating system that is
-not paravirtualized or can be paravirtualized only to a limited extent. The VM
-might guess that preemption of VCPU thread that is processing events such as
-IPI interrupts, clock interrupts or certain device interrupts is likely to
-cause overall performance degradation due to other VCPUs spinning for an IPI
-response or spinning waiting for a spinlock, and thought the general kinds of
-these dependencies may be foreseen, but actual dependency chains between VCPUs
-cannot be established at run time.)
-
-In cases when dependency information is lacking, priority protection remains
-the only effective recourse.
-
-Furthermore, even in cases when dependency information is available, PI/PE per
-se is not always a satisfactory or sufficient solution. Consider for instance a
-classic case of a userspace spinlock or hybrid spin-then-block lock that is
-highly contended and often requested by the threads, and a running thread
-spends a notable part of a timeslice holding the lock (not necessarily grabbing
-and holding it, the thread may grab and release it many times during a
-timeslice, but the total of holding time is a notable fraction of a timeslice
--- notable being anywhere from a fraction of a percent and up). The probability
-of a thread being preempted while holding the lock may thus be significant. In
-a simple classic scheme the waiters will then continue to spin [*] and
-subsequently some of them start entering blocking wait after a timeout, at this
-point releasing the CPU(s) and letting the lock holder to continue, but by that
-time the incurred cost would involve several context switches and scheduler
-calculation cycles and the waste due to spinning... and all the while this is
-happening and takes time, new contenders arrive and start spinning, wasting
-CPU resources. What was supposed to be a short critical section turns into
-something very else. Yes, eventually the scheme based on PI/PE or some form of
-yield_to will push the holder through, but by the time this happens a high cost
-had already been paid.
-
-    [*] Unless the kernel provides a facility that will write "holder preempted"
-        flag into the lock structure when the thread is being preempted so the
-        spinners can spot this flag and transition to blocking wait. I am not
-        aware of any OS that actually provides such a facility, but even if it
-        were available, it would only partially reduce the overall incurred
-        cost described above.
-
-Furthermore, if preempted lock holder and the task that was willing to yield
-were executing on different CPUs (as is likely), then with per-CPU scheduling
-queues (as opposed to single global queue) it may be quite a while -- around the
-queues rebalancing interval -- before the preempted holder would get a chance
-to run and release the lock (all the while arriving waiters are spinning),
-and on top of that the cost of task cross-CPU migration may have to be paid.
-
-The wisdom of these observations is that problem and solution space is
-fragmented and there is no "holy grail" solution that would cover all use
-cases. Solutions are specific to use cases and their priorities.
-
-Given this, the best OS can do is to provide a range of solutions --
-instruments -- and let an application developer (and/or system owner) pick
-those that are most fitting for the given application's purposes.
-
-- Sergey
