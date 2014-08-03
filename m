@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365AbaHCEGp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 00:06:45 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:56328 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaHCEGn convert rfc822-to-8bit (ORCPT
+	id S1753146AbaHCEbd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 00:31:33 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:61584 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016AbaHCEbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 00:06:43 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: pull request: wireless-next 2014-08-01
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <20140802.193939.2179004210212543536.davem@davemloft.net>
-Date: Sat, 2 Aug 2014 21:06:49 -0700
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org Wireless" 
-	<linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C1E000CB-3DC7-458D-B249-8EE08A8072DD@holtmann.org>
-References: <20140801165738.GA26953@tuxdriver.com> <20140802.193939.2179004210212543536.davem@davemloft.net>
-To: "David S. Miller" <davem@davemloft.net>
-X-Mailer: Apple Mail (2.1878.6)
+	Sun, 3 Aug 2014 00:31:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140803035931.GA24059@mguzik.redhat.com>
+References: <1407034573-14358-1-git-send-email-xerofoify@gmail.com>
+	<20140803035931.GA24059@mguzik.redhat.com>
+Date: Sun, 3 Aug 2014 00:31:30 -0400
+Message-ID: <CAPDOMVh16no_Lh=4cPEpXJheCU67DJJS6EBtg9AH_0yUXxXSPg@mail.gmail.com>
+Subject: Re: [PATCH] scatterlist.h: Change CONFIG_DEBUG_SG for ifdef statement
+ in sg_set_bf
+From: Nick Krause <xerofoify@gmail.com>
+To: Mateusz Guzik <mguzik@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
-
->> Please pull this last(?) batch of wireless change intended for the
->> 3.17 stream...
-> 
-> When I pull this I get tons of conflicts for:
-> 
-> CONFLICT (content): Merge conflict in net/6lowpan/iphc.c
-> 
-> I don't feel comfortable fixing these up, where are they coming
-> from?
-
-they are coding style fixes to bring net/6lowpan/ in sync with net subsystem coding style. That code is still a bit outdated. I took a first stab at fixing the obvious mistakes.
-
-Regards
-
-Marcel
-
+On Sat, Aug 2, 2014 at 11:59 PM, Mateusz Guzik <mguzik@redhat.com> wrote:
+> On Sat, Aug 02, 2014 at 10:56:13PM -0400, Nicholas Krause wrote:
+>> This changes the ifdef statement in sg_set_bg to !CONFIG_DEBUG_SG in order
+>> to avoid a bug with xhci dequence/enquence functions.
+>>
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>  include/linux/scatterlist.h | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
+>> index adae88f..62de7b3 100644
+>> --- a/include/linux/scatterlist.h
+>> +++ b/include/linux/scatterlist.h
+>> @@ -111,7 +111,7 @@ static inline struct page *sg_page(struct scatterlist *sg)
+>>  static inline void sg_set_buf(struct scatterlist *sg, const void *buf,
+>>                             unsigned int buflen)
+>>  {
+>> -#ifdef CONFIG_DEBUG_SG
+>> +#ifdef !CONFIG_DEBUG_SG
+>>       BUG_ON(!virt_addr_valid(buf));
+>>  #endif
+>
+> Have you tried compiling this? IIRC you said you would compile your
+> stuff, what hapened to that?
+>
+> What exactly were you trying to achieve? Did this BUG_ON detect a
+> problem on your system and now you are trying to silence it?
+>
+> The change would be wrong even if it compiled since it would just
+> execute the assertion only when debug is disabled.
+>
+> --
+> Mateusz Guzik
+This is the mailing theme I am getting this from,[xhci] kernel BUG at
+include/linux/scatterlist.h:115.
+I hope this answers your question about the BUG_ON and yes I did
+compile check it with make
+M=include/. I also checked usb and usb net directories too.
+Regards,
+ Nick
