@@ -1,98 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaHCMFK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 08:05:10 -0400
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:48650 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752320AbaHCMFI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 08:05:08 -0400
-Date: Sun, 3 Aug 2014 15:04:33 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>, LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] media: davinci: vpif: fix array out of bound warnings
-Message-ID: <20140803120432.GZ16460@valkosipuli.retiisi.org.uk>
-References: <1405701111-26983-1-git-send-email-prabhakar.csengg@gmail.com>
+	id S1752398AbaHCMMX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 08:12:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44999 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751477AbaHCMMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Aug 2014 08:12:22 -0400
+Date: Sun, 3 Aug 2014 14:10:36 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Yann Droneaud <ydroneaud@opteya.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        William Cohen <wcohen@redhat.com>
+Subject: [PATCH] perf tools: Fix PERF_FLAG_FD_CLOEXEC flag probing event type
+ open counters due to EBUSY error
+Message-ID: <20140803121036.GA1181@krava.brq.redhat.com>
+References: <1406908014-8312-1-git-send-email-jolsa@kernel.org>
+ <1407002305.3573.12.camel@dworkin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405701111-26983-1-git-send-email-prabhakar.csengg@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407002305.3573.12.camel@dworkin>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+On Sat, Aug 02, 2014 at 07:58:25PM +0200, Yann Droneaud wrote:
+> Hi Jiri,
 
-On Fri, Jul 18, 2014 at 05:31:51PM +0100, Lad, Prabhakar wrote:
-> This patch fixes following array out of bound warnings,
+SNIP
+
+> >  	err = errno;
+> >  
+> > -	if (WARN_ONCE(fd < 0,
+> > +	if (WARN_ONCE(fd < 0 && err != EBUSY,
+> >  		      "perf_event_open(..., 0) failed unexpectedly with error %d (%s)\n",
+> >  		      err, strerror(err)))
+> >  		return -1;
 > 
-> drivers/media/platform/davinci/vpif_display.c: In function 'vpif_remove':
-> drivers/media/platform/davinci/vpif_display.c:1389:36: warning: iteration
-> 1u invokes undefined behavior [-Waggressive-loop-optimizations]
->    vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
->                                     ^
-> drivers/media/platform/davinci/vpif_display.c:1385:2: note: containing loop
->   for (i = 0; i < VPIF_DISPLAY_MAX_DEVICES; i++) {
->   ^
-> drivers/media/platform/davinci/vpif_capture.c: In function 'vpif_remove':
-> drivers/media/platform/davinci/vpif_capture.c:1581:36: warning: iteration
-> 1u invokes undefined behavior [-Waggressive-loop-optimizations]
->    vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
->                                     ^
-> drivers/media/platform/davinci/vpif_capture.c:1577:2: note: containing loop
->   for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++) {
->   ^
-> drivers/media/platform/davinci/vpif_capture.c:1580:23: warning: array subscript
-> is above array bounds [-Warray-bounds]
->    common = &ch->common[i];
+> It's definitely possible to shortcut the function if EBUSY is returned
+> by first call to perf_event_open().
 > 
-> Reported-by: Hans Verkuil <hans.verkuil@cisco.com>
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->  drivers/media/platform/davinci/vpif_capture.c | 2 +-
->  drivers/media/platform/davinci/vpif_display.c | 2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-> index 2f90f0d..3a85238 100644
-> --- a/drivers/media/platform/davinci/vpif_capture.c
-> +++ b/drivers/media/platform/davinci/vpif_capture.c
-> @@ -1577,7 +1577,7 @@ static int vpif_remove(struct platform_device *device)
->  	for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++) {
->  		/* Get the pointer to the channel object */
->  		ch = vpif_obj.dev[i];
-> -		common = &ch->common[i];
-> +		common = &ch->common[VPIF_VIDEO_INDEX];
+> diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
+> index dc360ebde745..d5c626d5432a 100644
+> --- a/tools/perf/util/cloexec.c
+> +++ b/tools/perf/util/cloexec.c
+> @@ -25,6 +25,9 @@ static int perf_flag_probe(void)
+>  		return 1;
+>  	}
+>  
+> +	if (err == EBUSY)
+> +		return -1;
+> +
+>  	WARN_ONCE(err != EINVAL,
+>  		  "perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error %d (%s)\n",
+>  		  err, strerror(err));
 
-You could refer to the alloc_ctz directly w/o extra local variables. Also
-local variables that are only used inside the loop could be declared there
-as well.
+heh, I haven't realized that your probing event was
+PERF_COUNT_SW_CPU_CLOCK, which could never be busy
+and found following bug ;-)
 
-Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
+jirka
 
->  		vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
->  		/* Unregister video device */
->  		video_unregister_device(ch->video_dev);
-> diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-> index 0bd6dcb..6c6bd6b 100644
-> --- a/drivers/media/platform/davinci/vpif_display.c
-> +++ b/drivers/media/platform/davinci/vpif_display.c
-> @@ -1385,7 +1385,7 @@ static int vpif_remove(struct platform_device *device)
->  	for (i = 0; i < VPIF_DISPLAY_MAX_DEVICES; i++) {
->  		/* Get the pointer to the channel object */
->  		ch = vpif_obj.dev[i];
-> -		common = &ch->common[i];
-> +		common = &ch->common[VPIF_VIDEO_INDEX];
->  		vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
->  		/* Unregister video device */
->  		video_unregister_device(ch->video_dev);
 
+---
+We were using PERF_COUNT_SW_CPU_CLOCK as an probing event type.
+Using expected PERF_TYPE_SOFTWARE type instead.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: William Cohen <wcohen@redhat.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/util/cloexec.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
+index dc360ebde745..0f7eb0a53d4b 100644
+--- a/tools/perf/util/cloexec.c
++++ b/tools/perf/util/cloexec.c
+@@ -9,7 +9,7 @@ static int perf_flag_probe(void)
+ {
+ 	/* use 'safest' configuration as used in perf_evsel__fallback() */
+ 	struct perf_event_attr attr = {
+-		.type = PERF_COUNT_SW_CPU_CLOCK,
++		.type = PERF_TYPE_SOFTWARE,
+ 		.config = PERF_COUNT_SW_CPU_CLOCK,
+ 	};
+ 	int fd;
 -- 
-Kind regards,
+1.8.3.1
 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
