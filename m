@@ -1,132 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066AbaHCIJw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 04:09:52 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:59981 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207AbaHCIJq (ORCPT
+	id S1751887AbaHCIaM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 04:30:12 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34810 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279AbaHCIaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 04:09:46 -0400
-Date: Sun, 3 Aug 2014 13:39:43 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH v2] net: phy: spi_ks8995: Introduce the use of devm_kzalloc
-Message-ID: <20140803080943.GA4323@himangi-Dell>
+	Sun, 3 Aug 2014 04:30:08 -0400
+Date: Sun, 3 Aug 2014 10:30:06 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Sergey Oboguev <oboguev.public@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
+Message-ID: <20140803083006.GA1758@amd.pavel.ucw.cz>
+References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
+ <20140730130238.GE13965@amd.pavel.ucw.cz>
+ <CA+80gGbOx9istV4UG7PF+qam81u+HzJyjznE5sjVV82jjWa=MQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+80gGbOx9istV4UG7PF+qam81u+HzJyjznE5sjVV82jjWa=MQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of devm_kzalloc and does away with the
-kfrees in the probe and remove functions. Also, a label is removed.
+On Sat 2014-08-02 17:47:52, Sergey Oboguev wrote:
+> On Wed, Jul 30, 2014 at 6:02 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> > Hi!
+> >
+> >> One of the intended purposes of this facility (but its not sole purpose) is to
+> >> render a lightweight mechanism for priority protection of lock-holding critical
+> >> sections that would be an adequate match for lightweight locking primitives
+> >> such as futex, with both featuring a fast path completing within the
+> >> userspace.
+> 
+> > Do we get a manpage describing the interface...?
+> 
+> At this point it is just an RFC, and the only available write-up is an article
+> (URL is in the original message).
+> 
+> There has been no word from the maintainers yet whether the proposal appears
+> to be a "go" or "no-go" in general.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
-v2: adding netdev@vger.kernel.org
- drivers/net/phy/spi_ks8995.c | 26 ++++++++------------------
- 1 file changed, 8 insertions(+), 18 deletions(-)
+It appears to be "no-go" to me.
 
-diff --git a/drivers/net/phy/spi_ks8995.c b/drivers/net/phy/spi_ks8995.c
-index 22b047f..eab57fc 100644
---- a/drivers/net/phy/spi_ks8995.c
-+++ b/drivers/net/phy/spi_ks8995.c
-@@ -277,7 +277,7 @@ static int ks8995_probe(struct spi_device *spi)
- 	/* Chip description */
- 	pdata = spi->dev.platform_data;
- 
--	ks = kzalloc(sizeof(*ks), GFP_KERNEL);
-+	ks = devm_kzalloc(&spi->dev, sizeof(*ks), GFP_KERNEL);
- 	if (!ks)
- 		return -ENOMEM;
- 
-@@ -291,14 +291,14 @@ static int ks8995_probe(struct spi_device *spi)
- 	err = spi_setup(spi);
- 	if (err) {
- 		dev_err(&spi->dev, "spi_setup failed, err=%d\n", err);
--		goto err_drvdata;
-+		return err;
- 	}
- 
- 	err = ks8995_read(ks, ids, KS8995_REG_ID0, sizeof(ids));
- 	if (err < 0) {
- 		dev_err(&spi->dev, "unable to read id registers, err=%d\n",
- 				err);
--		goto err_drvdata;
-+		return err;
- 	}
- 
- 	switch (ids[0]) {
-@@ -306,8 +306,7 @@ static int ks8995_probe(struct spi_device *spi)
- 		break;
- 	default:
- 		dev_err(&spi->dev, "unknown family id:%02x\n", ids[0]);
--		err = -ENODEV;
--		goto err_drvdata;
-+		return -ENODEV;
- 	}
- 
- 	memcpy(&ks->regs_attr, &ks8995_registers_attr, sizeof(ks->regs_attr));
-@@ -320,24 +319,24 @@ static int ks8995_probe(struct spi_device *spi)
- 			dev_err(&spi->dev,
- 				"unable to read chip id register, err=%d\n",
- 				err);
--			goto err_drvdata;
-+			return err;
- 		}
- 		if ((val & 0x80) == 0) {
- 			dev_err(&spi->dev, "unknown chip:%02x,0\n", ids[1]);
--			goto err_drvdata;
-+			return err;
- 		}
- 		ks->regs_attr.size = KSZ8864_REGS_SIZE;
- 	}
- 
- 	err = ks8995_reset(ks);
- 	if (err)
--		goto err_drvdata;
-+		return err;
- 
- 	err = sysfs_create_bin_file(&spi->dev.kobj, &ks->regs_attr);
- 	if (err) {
- 		dev_err(&spi->dev, "unable to create sysfs file, err=%d\n",
- 				    err);
--		goto err_drvdata;
-+		return err;
- 	}
- 
- 	if (get_chip_id(ids[1]) == CHIPID_M) {
-@@ -350,21 +349,12 @@ static int ks8995_probe(struct spi_device *spi)
- 	}
- 
- 	return 0;
--
--err_drvdata:
--	kfree(ks);
--	return err;
- }
- 
- static int ks8995_remove(struct spi_device *spi)
- {
--	struct ks8995_data      *ks8995;
--
--	ks8995 = spi_get_drvdata(spi);
- 	sysfs_remove_bin_file(&spi->dev.kobj, &ks8995_registers_attr);
- 
--	kfree(ks8995);
--
- 	return 0;
- }
- 
+> Regular "set priority" cannot be wrapped around "deferred set priority".
+
+Umm. Why not?
+
+int getpriority(int which, int who);
+int setpriority(int which, int who, int prio);
+
+Description
+
+
+ The scheduling priority of the process, process group, or user, as
+ indicated by which and who is obtained with the getpriority() call
+ and set with the setpriority() call.
+The value which is one of PRIO_PROCESS, PRIO_PGRP, or PRIO_USER, and
+ who is interpreted relative to which (a process identifier for
+ PRIO_PROCESS, process group identifier for PRIO_PGRP, and a user ID
+ for PRIO_USER). A zero value for who denotes (respectively) the
+ calling process, the process group of the calling process, or the
+ real user ID of the calling process. Prio is a value in the range -20
+ to 19 (but see the Notes below). The default priority is 0; lower
+ priorities cause more favorable scheduling.
+
+In vsyscall area:
+
+   if (which==PRIO_PROCESS && who==0) {
+      perform your optimized priority set
+   } else {
+      perform syscall
+}
+
+Now, you have to make sure to keep reasonably close semantics, but
+that would be good idea, anyway.
+   
+> Even more importantly, its use also relies on a thread caching the application's
+> current knowledge of the thread priority in the userspace, and if the thread
+> priority had been changed from the outside of the application (or even by
+> another thread within the same application), this knowledge becomes invalid,
+> and then the application is responsible for performing whatever recovery action
+> is appropriate.
+
+You mean "we rely on applications handling the situation they can't
+and will not handle"?
+
+Actually, it seems to be a security issue to me.
+
+If root renices the application to high nice value, application should
+not be able to work around it by the DPRIO interface.
+
+IOW the priority should be always the lower of DPRIO and normal one,
+at the very least.
+									Pavel
 -- 
-1.9.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
