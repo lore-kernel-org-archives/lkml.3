@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006AbaHCRav (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 13:30:51 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:53971 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845AbaHCRaq (ORCPT
+	id S1751660AbaHCRhK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 13:37:10 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:56791 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822AbaHCRhI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 13:30:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <53DE2AEF.6080904@cogentembedded.com>
-References: <1407034573-14358-1-git-send-email-xerofoify@gmail.com>
-	<53DE2AEF.6080904@cogentembedded.com>
-Date: Sun, 3 Aug 2014 13:30:44 -0400
-Message-ID: <CAPDOMVgTNSTzXENWZvWhuJvHRoPBRBYSExNxrwqeFGyQ44YA-w@mail.gmail.com>
-Subject: Re: [PATCH] scatterlist.h: Change CONFIG_DEBUG_SG for ifdef statement
- in sg_set_bf
-From: Nick Krause <xerofoify@gmail.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 3 Aug 2014 13:37:08 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: pull request: wireless-next 2014-08-01
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20140802.193939.2179004210212543536.davem@davemloft.net>
+Date: Sun, 3 Aug 2014 10:37:16 -0700
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org Wireless" 
+	<linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C2EB98EF-6873-4F44-B914-A9F89146914A@holtmann.org>
+References: <20140801165738.GA26953@tuxdriver.com> <20140802.193939.2179004210212543536.davem@davemloft.net>
+To: "David S. Miller" <davem@davemloft.net>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 3, 2014 at 8:28 AM, Sergei Shtylyov
-<sergei.shtylyov@cogentembedded.com> wrote:
-> Hello.
->
->
-> On 03-08-2014 6:56, Nicholas Krause wrote:
->
->> This changes the ifdef statement  in sg_set_bg to !CONFIG_DEBUG_SG in
->> order
->> to avoid a bug with xhci dequence/enquence functions.
->
->
->    dequeue/enqueue?
->
->
->> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->> ---
->>   include/linux/scatterlist.h | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->
->
->> diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
->> index adae88f..62de7b3 100644
->> --- a/include/linux/scatterlist.h
->> +++ b/include/linux/scatterlist.h
->> @@ -111,7 +111,7 @@ static inline struct page *sg_page(struct scatterlist
->> *sg)
->>   static inline void sg_set_buf(struct scatterlist *sg, const void *buf,
->>                               unsigned int buflen)
->>   {
->> -#ifdef CONFIG_DEBUG_SG
->> +#ifdef !CONFIG_DEBUG_SG
->
->
->    Didn't you mean #ifndef instead? I guess you didn't even try to
-> build-test this.
->
->
->>         BUG_ON(!virt_addr_valid(buf));
->>   #endif
->>         sg_set_page(sg, virt_to_page(buf), buflen, offset_in_page(buf));
->
->
-> WBR, Sergei
->
-I am going to stay around and learn more but am going to check my
-patches better as this is
-my fault.
-Regards Nick
+Hi Dave,
+
+>> Please pull this last(?) batch of wireless change intended for the
+>> 3.17 stream...
+> 
+> When I pull this I get tons of conflicts for:
+> 
+> CONFLICT (content): Merge conflict in net/6lowpan/iphc.c
+> 
+> I don't feel comfortable fixing these up, where are they coming
+> from?
+
+I was short on time yesterday, but now I checked up on this in detail. The merge conflicts are actually simple to resolve. You can just rely on John's tree to have the more recent net/6lowpan/ tree. I should have insisted on merging net/6lowpan/ through bluetooth-next and wireless-next way earlier to avoid conflicts.
+
+In the future we will avoid this by ensuring that all goes via bluetooth-next first. Sorry for this confusion. John mentioned these merge conflicts in his footnote.
+
+John, do you just want to resolve the merge conflicts and send Dave a new pull request?
+
+Regards
+
+Marcel
+
