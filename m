@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366AbaHCC4W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 22:56:22 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:54762 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754949AbaHCC4U (ORCPT
+	id S1755152AbaHCDYQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 23:24:16 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:58298 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706AbaHCDYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 22:56:20 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
-Subject: [PATCH] scatterlist.h: Change CONFIG_DEBUG_SG for ifdef statement in sg_set_bf
-Date: Sat,  2 Aug 2014 22:56:13 -0400
-Message-Id: <1407034573-14358-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 2 Aug 2014 23:24:14 -0400
+Date: Sat, 2 Aug 2014 20:24:42 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Roger Quadros <rogerq@ti.com>
+Cc: arm@kernel.org, tony@atomide.com, kishon@ti.com, balbi@ti.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [REBASED PATCH] ARM: multi_v7_defconfig: Enable TI PIPE3 PHY
+ driver
+Message-ID: <20140803032442.GA16641@quad.lixom.net>
+References: <1406540737-9493-1-git-send-email-rogerq@ti.com>
+ <1406625328-26112-1-git-send-email-rogerq@ti.com>
+ <20140730195242.GF18384@quad.lixom.net>
+ <53DB7910.1010808@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53DB7910.1010808@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This changes the ifdef statement in sg_set_bg to !CONFIG_DEBUG_SG in order
-to avoid a bug with xhci dequence/enquence functions.
+On Fri, Aug 01, 2014 at 02:25:04PM +0300, Roger Quadros wrote:
+> From: Roger Quadros <rogerq@ti.com>
+> 
+> This driver is needed by SATA, PCIe and USB modules on TI SoCs.
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Acked-by: Tony Lindgren <tony@atomide.com>
 
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
----
- include/linux/scatterlist.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks, applied.
 
-diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
-index adae88f..62de7b3 100644
---- a/include/linux/scatterlist.h
-+++ b/include/linux/scatterlist.h
-@@ -111,7 +111,7 @@ static inline struct page *sg_page(struct scatterlist *sg)
- static inline void sg_set_buf(struct scatterlist *sg, const void *buf,
- 			      unsigned int buflen)
- {
--#ifdef CONFIG_DEBUG_SG
-+#ifdef !CONFIG_DEBUG_SG
- 	BUG_ON(!virt_addr_valid(buf));
- #endif
- 	sg_set_page(sg, virt_to_page(buf), buflen, offset_in_page(buf));
---
-1.9.1
 
+-Olof
