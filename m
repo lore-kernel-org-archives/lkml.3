@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497AbaHCKpG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 06:45:06 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:3949 "EHLO
-	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750746AbaHCKpE (ORCPT
+	id S1752608AbaHCLOd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 07:14:33 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:30178 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777AbaHCLOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 06:45:04 -0400
-X-IronPort-AV: E=Sophos;i="5.01,792,1400018400"; 
-   d="scan'208";a="73810216"
-Date: Sun, 3 Aug 2014 12:45:00 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Jonathan Cameron <jic23@kernel.org>
-cc: Himangi Saraogi <himangi774@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: iio: ad9832: Use devm_iio_device_register
-In-Reply-To: <2af09d4e-10c7-4887-a29c-0d31b0ac6493@email.android.com>
-Message-ID: <alpine.DEB.2.02.1408031243500.2000@localhost6.localdomain6>
-References: <20140803095658.GA6753@himangi-Dell> <2af09d4e-10c7-4887-a29c-0d31b0ac6493@email.android.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 3 Aug 2014 07:14:32 -0400
+To: konrad.wilk@oracle.com, dchinner@redhat.com
+Cc: airlied@linux.ie, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: [PATCH 1/5] gpu/drm/ttm: Fix possible division by 0 in ttm_dma_pool_shrink_scan().
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201405311158.DGE64002.QLOOHJSFFMVFOt@I-love.SAKURA.ne.jp>
+	<201405311159.CHG64048.SOFLQHVtFOMFJO@I-love.SAKURA.ne.jp>
+	<201405311200.III57894.MLFOOFStQVHJFO@I-love.SAKURA.ne.jp>
+	<20140610191741.GA28523@phenom.dumpdata.com>
+	<201406110516.HCH90692.FFFStVJMOHOLQO@I-love.SAKURA.ne.jp>
+In-Reply-To: <201406110516.HCH90692.FFFStVJMOHOLQO@I-love.SAKURA.ne.jp>
+Message-Id: <201408032014.EBE26508.FQOFtHFOSVJMOL@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sun, 3 Aug 2014 20:14:02 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From 5c2f18ca300a1182e40f143b81e927426232b005 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Sun, 3 Aug 2014 19:59:35 +0900
+Subject: [PATCH 1/5] gpu/drm/ttm: Fix possible division by 0 in ttm_dma_pool_shrink_scan().
 
+list_empty(&_manager->pools) being false before taking _manager->lock
+does not guarantee that _manager->npools != 0 after taking _manager->lock
+because _manager->npools is updated under _manager->lock.
 
-On Sun, 3 Aug 2014, Jonathan Cameron wrote:
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: stable <stable@kernel.org> [3.3+]
+---
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-> 
-> 
-> On August 3, 2014 10:56:58 AM GMT+01:00, Himangi Saraogi <himangi774@gmail.com> wrote:
-> >This patch introduces the use of devm_iio_device_register and does away
-> >with the unregister in the remove function.
-> >
-> And changes the resulting ordering so the regulator disable occurs before the user
->  space interface has been removed by the unregister. 
-> 
-> Please be very wary of using devm_iio_register. It is only correct if the remove function does nothing else.
-
-I wonder if there could be a way to document these constraints?
-
-julia
-
-> Jonathan
-> >Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> >Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> >---
-> > drivers/staging/iio/frequency/ad9832.c | 3 +--
-> > 1 file changed, 1 insertion(+), 2 deletions(-)
-> >
-> >diff --git a/drivers/staging/iio/frequency/ad9832.c
-> >b/drivers/staging/iio/frequency/ad9832.c
-> >index cf68159..8a72c78 100644
-> >--- a/drivers/staging/iio/frequency/ad9832.c
-> >+++ b/drivers/staging/iio/frequency/ad9832.c
-> >@@ -304,7 +304,7 @@ static int ad9832_probe(struct spi_device *spi)
-> > 	if (ret)
-> > 		goto error_disable_reg;
-> > 
-> >-	ret = iio_device_register(indio_dev);
-> >+	ret = devm_iio_device_register(&spi->dev, indio_dev);
-> > 	if (ret)
-> > 		goto error_disable_reg;
-> > 
-> >@@ -322,7 +322,6 @@ static int ad9832_remove(struct spi_device *spi)
-> > 	struct iio_dev *indio_dev = spi_get_drvdata(spi);
-> > 	struct ad9832_state *st = iio_priv(indio_dev);
-> > 
-> >-	iio_device_unregister(indio_dev);
-> > 	if (!IS_ERR(st->reg))
-> > 		regulator_disable(st->reg);
-> > 
-> 
-> -- 
-> Sent from my Android phone with K-9 Mail. Please excuse my brevity.
-> 
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+index fb8259f..b751fff 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+@@ -1015,6 +1015,8 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
+ 		return SHRINK_STOP;
+ 
+ 	mutex_lock(&_manager->lock);
++	if (!_manager->npools)
++		goto out;
+ 	pool_offset = pool_offset % _manager->npools;
+ 	list_for_each_entry(p, &_manager->pools, pools) {
+ 		unsigned nr_free;
+@@ -1034,6 +1036,7 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
+ 			 p->pool->dev_name, p->pool->name, current->pid,
+ 			 nr_free, shrink_pages);
+ 	}
++out:
+ 	mutex_unlock(&_manager->lock);
+ 	return freed;
+ }
+-- 
+1.7.1
