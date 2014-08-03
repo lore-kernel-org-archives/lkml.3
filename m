@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887AbaHCIaM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 04:30:12 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34810 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279AbaHCIaI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 04:30:08 -0400
-Date: Sun, 3 Aug 2014 10:30:06 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Sergey Oboguev <oboguev.public@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
-Message-ID: <20140803083006.GA1758@amd.pavel.ucw.cz>
-References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
- <20140730130238.GE13965@amd.pavel.ucw.cz>
- <CA+80gGbOx9istV4UG7PF+qam81u+HzJyjznE5sjVV82jjWa=MQ@mail.gmail.com>
+	id S1752163AbaHCJL1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 05:11:27 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:21529 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751305AbaHCJLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Aug 2014 05:11:25 -0400
+X-IronPort-AV: E=Sophos;i="5.01,791,1400025600"; 
+   d="scan'208";a="158251362"
+Date: Sun, 3 Aug 2014 10:11:10 +0100
+From: Wei Liu <wei.liu2@citrix.com>
+To: David Miller <davem@davemloft.net>
+CC: <wei.liu2@citrix.com>, <zoltan.kiss@citrix.com>, <konrad.wilk@oracle.com>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <Ian.Campbell@citrix.com>, <paul.durrant@citrix.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>
+Subject: Re: [PATCH] xen-netfront: Fix handling packets on compound pages
+ with skb_segment
+Message-ID: <20140803091110.GA7093@zion.uk.xensource.com>
+References: <1406726730-17994-1-git-send-email-zoltan.kiss@citrix.com>
+ <20140731.132520.1889577477638334755.davem@davemloft.net>
+ <20140801110246.GB17947@zion.uk.xensource.com>
+ <20140802.153337.1399638752235662112.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CA+80gGbOx9istV4UG7PF+qam81u+HzJyjznE5sjVV82jjWa=MQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140802.153337.1399638752235662112.davem@davemloft.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2014-08-02 17:47:52, Sergey Oboguev wrote:
-> On Wed, Jul 30, 2014 at 6:02 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> > Hi!
-> >
-> >> One of the intended purposes of this facility (but its not sole purpose) is to
-> >> render a lightweight mechanism for priority protection of lock-holding critical
-> >> sections that would be an adequate match for lightweight locking primitives
-> >> such as futex, with both featuring a fast path completing within the
-> >> userspace.
+On Sat, Aug 02, 2014 at 03:33:37PM -0700, David Miller wrote:
+> From: Wei Liu <wei.liu2@citrix.com>
+> Date: Fri, 1 Aug 2014 12:02:46 +0100
 > 
-> > Do we get a manpage describing the interface...?
+> > On Thu, Jul 31, 2014 at 01:25:20PM -0700, David Miller wrote:
+> >> If you were to have a 64-slot TX queue, you ought to be able to handle
+> >> this theoretical 51 slot SKB.
+> > 
+> > There's two problems:
+> > 1. IIRC a single page ring has 256 slots, allowing 64 slots packet
+> >    yields 4 in-flight packets in worst case.
+> > 2. Older netback could not handle this large number of slots and it's
+> >    likely to deem the frontend malicious.
+> > 
+> > For #1, we don't actually care that much if guest screws itself by
+> > generating 64 slot packets. #2 is more concerning.
 > 
-> At this point it is just an RFC, and the only available write-up is an article
-> (URL is in the original message).
-> 
-> There has been no word from the maintainers yet whether the proposal appears
-> to be a "go" or "no-go" in general.
+> How many slots can the older netback handle?
 
-It appears to be "no-go" to me.
+I listed those two problems in the context "if we were to lift this
+limit in the latest net-next tree", so "older netback" actually refers
+to netback from 3.10 to 3.16.
 
-> Regular "set priority" cannot be wrapped around "deferred set priority".
+The current implementation allows the number of slots X:
+ 1. X <= 18, valid packet
+ 2. 18 < X < fatal_slot_count, dropped
+ 3. X >= fatal_slot_count, malicious frontend
 
-Umm. Why not?
+fatal_slot_count has default value of 20.
 
-int getpriority(int which, int who);
-int setpriority(int which, int who, int prio);
+Wei.
 
-Description
-
-
- The scheduling priority of the process, process group, or user, as
- indicated by which and who is obtained with the getpriority() call
- and set with the setpriority() call.
-The value which is one of PRIO_PROCESS, PRIO_PGRP, or PRIO_USER, and
- who is interpreted relative to which (a process identifier for
- PRIO_PROCESS, process group identifier for PRIO_PGRP, and a user ID
- for PRIO_USER). A zero value for who denotes (respectively) the
- calling process, the process group of the calling process, or the
- real user ID of the calling process. Prio is a value in the range -20
- to 19 (but see the Notes below). The default priority is 0; lower
- priorities cause more favorable scheduling.
-
-In vsyscall area:
-
-   if (which==PRIO_PROCESS && who==0) {
-      perform your optimized priority set
-   } else {
-      perform syscall
-}
-
-Now, you have to make sure to keep reasonably close semantics, but
-that would be good idea, anyway.
-   
-> Even more importantly, its use also relies on a thread caching the application's
-> current knowledge of the thread priority in the userspace, and if the thread
-> priority had been changed from the outside of the application (or even by
-> another thread within the same application), this knowledge becomes invalid,
-> and then the application is responsible for performing whatever recovery action
-> is appropriate.
-
-You mean "we rely on applications handling the situation they can't
-and will not handle"?
-
-Actually, it seems to be a security issue to me.
-
-If root renices the application to high nice value, application should
-not be able to work around it by the DPRIO interface.
-
-IOW the priority should be always the lower of DPRIO and normal one,
-at the very least.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
