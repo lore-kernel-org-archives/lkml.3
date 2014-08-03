@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339AbaHBXzu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 19:55:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36192 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaHBXzt (ORCPT
+	id S1751867AbaHCA1v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 20:27:51 -0400
+Received: from smtprelay0222.hostedemail.com ([216.40.44.222]:44237 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750866AbaHCA1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 19:55:49 -0400
-Date: Sat, 2 Aug 2014 16:55:08 -0700
-From: tip-bot for Dan Carpenter <tipbot@zytor.com>
-Message-ID: <tip-4c51cb005b29e6329d7e598bf835689b230817c9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, aubrey.li@linux.intel.com,
-        dan.carpenter@oracle.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, dan.carpenter@oracle.com,
-        aubrey.li@linux.intel.com
-In-Reply-To: <20140801082715.GE28869@mwanda>
-References: <20140801082715.GE28869@mwanda>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/pmc_atom:
-  Silence shift wrapping warnings in pmc_sleep_tmr_show()
-Git-Commit-ID: 4c51cb005b29e6329d7e598bf835689b230817c9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Sat, 2 Aug 2014 20:27:50 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1256:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:3872:3873:3874:4321:4605:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: stone31_6136c7e93dd34
+X-Filterd-Recvd-Size: 2232
+Message-ID: <1407025666.1835.16.camel@joe-AO725>
+Subject: Re: [PATCH] fs: cifs: cifsencrypt.c: Cleaning up missing
+ null-terminate in conjunction with strncpy
+From: Joe Perches <joe@perches.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        Steve French <sfrench@samba.org>,
+        linux-cifs <linux-cifs@vger.kernel.org>,
+        samba-technical <samba-technical@lists.samba.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 02 Aug 2014 17:27:46 -0700
+In-Reply-To: <CAFo99gZrTd5+Z_XK+CmhF8ROPZSLGZvwzuwQSwFz5_kGHTAn8w@mail.gmail.com>
+References: <1406413711-7798-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	 <CADT32eLts-tdQdHo+W3Zc1wQ6Qz8aS3TmHsm8OxmiF2fmhOW5g@mail.gmail.com>
+	 <1407000807.1835.14.camel@joe-AO725>
+	 <CAFo99gZrTd5+Z_XK+CmhF8ROPZSLGZvwzuwQSwFz5_kGHTAn8w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4c51cb005b29e6329d7e598bf835689b230817c9
-Gitweb:     http://git.kernel.org/tip/4c51cb005b29e6329d7e598bf835689b230817c9
-Author:     Dan Carpenter <dan.carpenter@oracle.com>
-AuthorDate: Fri, 1 Aug 2014 11:27:15 +0300
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Sat, 2 Aug 2014 16:52:17 -0700
+On Sun, 2014-08-03 at 01:13 +0200, Rickard Strandqvist wrote:
+> 2014-08-02 19:33 GMT+02:00 Joe Perches <joe@perches.com>:
+> > On Sat, 2014-08-02 at 11:55 -0500, Shirish Pargaonkar wrote:
+> >> Acked-by: Shirish Pargaonkar <spargaonkar@suse.com>
+> > []
+> >> > diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
+> > []
+> >> > @@ -307,7 +307,7 @@ int calc_lanman_hash(const char *password, const char *cryptkey, bool encrypt,
+> >> >
+> >> >         memset(password_with_pad, 0, CIFS_ENCPWD_SIZE);
+> >> >         if (password)
+> >> > -               strncpy(password_with_pad, password, CIFS_ENCPWD_SIZE);
+> >> > +               strncpy(password_with_pad, password, CIFS_ENCPWD_SIZE - 1);
+> >
+> >
+> > Is this always correct?
+[]
+> Because password_with_pad gets set to all zeros above, the character,
+> I do not guarantee a copy terminating null.
+> Unless it is so that you do not want any terminating null.
 
-x86/pmc_atom: Silence shift wrapping warnings in pmc_sleep_tmr_show()
+That's the question for Steve and cifs people.
 
-I don't know if we really need 64 bits here but these variables are
-declared as u64 and it can't hurt to cast this so we prevent any shift
-wrapping.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Aubrey Li <aubrey.li@linux.intel.com>
-Link: http://lkml.kernel.org/r/20140801082715.GE28869@mwanda
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/pmc_atom.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-index 0d92ef6..0c424a6 100644
---- a/arch/x86/kernel/pmc_atom.c
-+++ b/arch/x86/kernel/pmc_atom.c
-@@ -174,11 +174,11 @@ static int pmc_sleep_tmr_show(struct seq_file *s, void *unused)
- 	struct pmc_dev *pmc = s->private;
- 	u64 s0ir_tmr, s0i1_tmr, s0i2_tmr, s0i3_tmr, s0_tmr;
- 
--	s0ir_tmr = pmc_reg_read(pmc, PMC_S0IR_TMR) << PMC_TMR_SHIFT;
--	s0i1_tmr = pmc_reg_read(pmc, PMC_S0I1_TMR) << PMC_TMR_SHIFT;
--	s0i2_tmr = pmc_reg_read(pmc, PMC_S0I2_TMR) << PMC_TMR_SHIFT;
--	s0i3_tmr = pmc_reg_read(pmc, PMC_S0I3_TMR) << PMC_TMR_SHIFT;
--	s0_tmr = pmc_reg_read(pmc, PMC_S0_TMR) << PMC_TMR_SHIFT;
-+	s0ir_tmr = (u64)pmc_reg_read(pmc, PMC_S0IR_TMR) << PMC_TMR_SHIFT;
-+	s0i1_tmr = (u64)pmc_reg_read(pmc, PMC_S0I1_TMR) << PMC_TMR_SHIFT;
-+	s0i2_tmr = (u64)pmc_reg_read(pmc, PMC_S0I2_TMR) << PMC_TMR_SHIFT;
-+	s0i3_tmr = (u64)pmc_reg_read(pmc, PMC_S0I3_TMR) << PMC_TMR_SHIFT;
-+	s0_tmr = (u64)pmc_reg_read(pmc, PMC_S0_TMR) << PMC_TMR_SHIFT;
- 
- 	seq_printf(s, "S0IR Residency:\t%lldus\n", s0ir_tmr);
- 	seq_printf(s, "S0I1 Residency:\t%lldus\n", s0i1_tmr);
