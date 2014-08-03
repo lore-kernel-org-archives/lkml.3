@@ -1,224 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150AbaHCVs5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 17:48:57 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:34049 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622AbaHCVsz (ORCPT
+	id S1752198AbaHCWDg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 18:03:36 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:41247 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622AbaHCWDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 17:48:55 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>, linux-scsi@vger.kernel.org
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] target: target_core_transport.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sun,  3 Aug 2014 23:50:22 +0200
-Message-Id: <1407102622-8806-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 3 Aug 2014 18:03:35 -0400
+Date: Sun, 3 Aug 2014 15:03:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140803220327.GG8101@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140731215445.GA21933@linux.vnet.ibm.com>
+ <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140801141144.GA30293@redhat.com>
+ <20140801182837.GI4784@linux.vnet.ibm.com>
+ <20140801184059.GB10718@redhat.com>
+ <20140802230020.GD8101@linux.vnet.ibm.com>
+ <20140803125758.GA671@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140803125758.GA671@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080322-6688-0000-0000-000003BDA605
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ensures that the string is null-terminate in connection with the
-use of strncpy. Optimized code by replacing unnecessary sprintf
-with strlcat and more, and simultaneously guarantees that the
-string does not get bigger than sizeof.
+On Sun, Aug 03, 2014 at 02:57:58PM +0200, Oleg Nesterov wrote:
+> On 08/02, Paul E. McKenney wrote:
+> >
+> > On Fri, Aug 01, 2014 at 08:40:59PM +0200, Oleg Nesterov wrote:
+> > > On 08/01, Paul E. McKenney wrote:
+> > > >
+> > > > On Fri, Aug 01, 2014 at 04:11:44PM +0200, Oleg Nesterov wrote:
+> > > > > Not sure this makes any sense, but perhaps we can check for the new
+> > > > > callbacks and start the next gp. IOW, the main loop roughly does
+> > > > >
+> > > > > 	for (;;) {
+> > > > > 		list = rcu_tasks_cbs_head;
+> > > > > 		rcu_tasks_cbs_head = NULL;
+> > > > >
+> > > > > 		if (!list)
+> > > > > 			sleep();
+> > > > >
+> > > > > 		synchronize_sched();
+> > > > >
+> > > > > 		wait_for_rcu_tasks_holdout();
+> > > > >
+> > > > > 		synchronize_sched();
+> > > > >
+> > > > > 		process_callbacks(list);
+> > > > > 	}
+> > > > >
+> > > > > we can "join" 2 synchronize_sched's and do
+> > > > >
+> > > > > 	ready_list = NULL;
+> > > > > 	for (;;) {
+> > > > > 		list = rcu_tasks_cbs_head;
+> > > > > 		rcu_tasks_cbs_head = NULL;
+> > > > >
+> > > > > 		if (!list && !ready_list)
+> > > > > 			sleep();
+> > > > >
+> > > > > 		synchronize_sched();
+> > > > >
+> > > > > 		if (ready_list) {
+> > > > > 			process_callbacks(ready_list);
+> > > > > 			ready_list = NULL;
+> > > > > 		}
+> > > > >
+> > > > > 		if (!list)
+> > > > > 			continue;
+> > > > >
+> > > > > 		wait_for_rcu_tasks_holdout();
+> > > > > 		ready_list = list;
+> > > > > 	}
+> > > >
+> > > > The lack of barriers for the updates I am checking mean that I really
+> > > > do need a synchronize_sched() on either side of the grace-period wait.
+> > >
+> > > Yes,
+> > >
+> > > > The grace period needs to guarantee that anything that happened on any
+> > > > CPU before the start of the grace period happens before anything that
+> > > > happens on any CPU after the end of the grace period.  If I leave off
+> > > > either synchronize_sched(), we lose this guarantee.
+> > >
+> > > But the 2nd variant still has synchronize_sched() on both sides?
+> >
+> > Your second variant above?  Unless it is in wait_for_rcu_tasks_holdouts(),
+> > I am not seeing it.
+> 
+> I guess I probably misunderstood you from the very beginning. And now I am
+> curious what exactly I missed...
+> 
+> The code above doesn't do process_callbacks() after wait_for_rcu_tasks_holdout(),
+> it does this only after another synchronize_sched(). The only difference is that
+> we dequeue the next generation of the pending rcu_tasks_cbs_head callbacks.
+> 
+> IOW. Lets look at the current code. Suppose that synchronize_rcu_tasks() is
+> called when rcu_tasks_kthread() sleeps in wait_for_rcu_tasks_holdout(). In
+> this case the new wakeme_after_rcu callback will sit in rcu_tasks_cbs_head
+> until rcu_tasks_kthread() does the 2nd synchronize_sched() + process_callbacks().
+> Only after that it will be dequeued and rcu_tasks_kthread() will start another gp.
+> 
+> This means that we have 3 synchronize_sched()'s before synchronize_rcu_tasks()
+> returns.
+> 
+> Do we really need this? With the 2nd variant the new callback will be dequeud
+> right after wait_for_rcu_tasks_holdout(), and we only have 2 necessary
+> synchronize_sched()'s around wait_for_rcu_tasks_holdout().
+> 
+> But it seems that I missed something else. Could you please spell?
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/target/target_core_transport.c |   86 ++++++++++++++++----------------
- 1 file changed, 44 insertions(+), 42 deletions(-)
+You missed nothing.  I missed the fact that you rolled the loop, using
+ready_list and list.
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 7fa62fc..1dd1181 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -809,50 +809,51 @@ void transport_dump_vpd_proto_id(
- 	unsigned char *p_buf,
- 	int p_buf_len)
- {
--	unsigned char buf[VPD_TMP_BUF_SIZE];
- 	int len;
--
--	memset(buf, 0, VPD_TMP_BUF_SIZE);
--	len = sprintf(buf, "T10 VPD Protocol Identifier: ");
-+	unsigned char buf[VPD_TMP_BUF_SIZE] = "T10 VPD Protocol Identifier: ";
- 
- 	switch (vpd->protocol_identifier) {
- 	case 0x00:
--		sprintf(buf+len, "Fibre Channel\n");
-+		strlcat(buf, "Fibre Channel\n", sizeof(buf));
- 		break;
- 	case 0x10:
--		sprintf(buf+len, "Parallel SCSI\n");
-+		strlcat(buf, "Parallel SCSI\n", sizeof(buf));
- 		break;
- 	case 0x20:
--		sprintf(buf+len, "SSA\n");
-+		strlcat(buf, "SSA\n", sizeof(buf));
- 		break;
- 	case 0x30:
--		sprintf(buf+len, "IEEE 1394\n");
-+		strlcat(buf, "IEEE 1394\n", sizeof(buf));
- 		break;
- 	case 0x40:
--		sprintf(buf+len, "SCSI Remote Direct Memory Access"
--				" Protocol\n");
-+		strlcat(buf, "SCSI Remote Direct Memory Access Protocol\n",
-+				sizeof(buf));
- 		break;
- 	case 0x50:
--		sprintf(buf+len, "Internet SCSI (iSCSI)\n");
-+		strlcat(buf, "Internet SCSI (iSCSI)\n", sizeof(buf));
- 		break;
- 	case 0x60:
--		sprintf(buf+len, "SAS Serial SCSI Protocol\n");
-+		strlcat(buf, "SAS Serial SCSI Protocol\n", sizeof(buf));
- 		break;
- 	case 0x70:
--		sprintf(buf+len, "Automation/Drive Interface Transport"
--				" Protocol\n");
-+		strlcat(buf, "Automation/Drive Interface Transport Protocol\n",
-+				sizeof(buf));
- 		break;
- 	case 0x80:
--		sprintf(buf+len, "AT Attachment Interface ATA/ATAPI\n");
-+		strlcat(buf, "AT Attachment Interface ATA/ATAPI\n",
-+				sizeof(buf));
- 		break;
- 	default:
--		sprintf(buf+len, "Unknown 0x%02x\n",
-+		len = strlen(buf);
-+		snprintf(&buf[len], sizeof(buf) - len, "Unknown 0x%02x\n",
- 				vpd->protocol_identifier);
- 		break;
- 	}
- 
--	if (p_buf)
-+	if (p_buf) {
- 		strncpy(p_buf, buf, p_buf_len);
-+		p_buf[p_buf_len - 1] = '\0';
-+	}
- 	else
- 		pr_debug("%s", buf);
- }
-@@ -878,31 +879,33 @@ int transport_dump_vpd_assoc(
- 	unsigned char *p_buf,
- 	int p_buf_len)
- {
--	unsigned char buf[VPD_TMP_BUF_SIZE];
-+	unsigned char buf[VPD_TMP_BUF_SIZE] =
-+					"T10 VPD Identifier Association: ";
- 	int ret = 0;
- 	int len;
- 
--	memset(buf, 0, VPD_TMP_BUF_SIZE);
--	len = sprintf(buf, "T10 VPD Identifier Association: ");
--
- 	switch (vpd->association) {
- 	case 0x00:
--		sprintf(buf+len, "addressed logical unit\n");
-+		strlcat(buf, "addressed logical unit\n", sizeof(buf));
- 		break;
- 	case 0x10:
--		sprintf(buf+len, "target port\n");
-+		strlcat(buf, "target port\n", sizeof(buf));
- 		break;
- 	case 0x20:
--		sprintf(buf+len, "SCSI target device\n");
-+		strlcat(buf, "SCSI target device\n", sizeof(buf));
- 		break;
- 	default:
--		sprintf(buf+len, "Unknown 0x%02x\n", vpd->association);
-+		len = strlen(buf);
-+		snprintf(&buf[len], sizeof(buf) - len, "Unknown 0x%02x\n",
-+				vpd->association);
- 		ret = -EINVAL;
- 		break;
- 	}
- 
--	if (p_buf)
-+	if (p_buf) {
- 		strncpy(p_buf, buf, p_buf_len);
-+		p_buf[p_buf_len - 1] = '\0';
-+	}
- 	else
- 		pr_debug("%s", buf);
- 
-@@ -926,34 +929,32 @@ int transport_dump_vpd_ident_type(
- 	unsigned char *p_buf,
- 	int p_buf_len)
- {
--	unsigned char buf[VPD_TMP_BUF_SIZE];
-+	unsigned char buf[VPD_TMP_BUF_SIZE] = "T10 VPD Identifier Type: ";
- 	int ret = 0;
- 	int len;
- 
--	memset(buf, 0, VPD_TMP_BUF_SIZE);
--	len = sprintf(buf, "T10 VPD Identifier Type: ");
--
- 	switch (vpd->device_identifier_type) {
- 	case 0x00:
--		sprintf(buf+len, "Vendor specific\n");
-+		strlcat(buf, "Vendor specific\n", sizeof(buf));
- 		break;
- 	case 0x01:
--		sprintf(buf+len, "T10 Vendor ID based\n");
-+		strlcat(buf, "T10 Vendor ID based\n", sizeof(buf));
- 		break;
- 	case 0x02:
--		sprintf(buf+len, "EUI-64 based\n");
-+		strlcat(buf, "EUI-64 based\n", sizeof(buf));
- 		break;
- 	case 0x03:
--		sprintf(buf+len, "NAA\n");
-+		strlcat(buf, "NAA\n", sizeof(buf));
- 		break;
- 	case 0x04:
--		sprintf(buf+len, "Relative target port identifier\n");
-+		strlcat(buf, "Relative target port identifier\n", sizeof(buf));
- 		break;
- 	case 0x08:
--		sprintf(buf+len, "SCSI name string\n");
-+		strlcat(buf, "SCSI name string\n", sizeof(buf));
- 		break;
- 	default:
--		sprintf(buf+len, "Unsupported: 0x%02x\n",
-+		len = strlen(len);
-+		snprintf(&buf[len], sizeof(buf) - len, "Unsupported: 0x%02x\n",
- 				vpd->device_identifier_type);
- 		ret = -EINVAL;
- 		break;
-@@ -990,8 +991,6 @@ int transport_dump_vpd_ident(
- 	unsigned char buf[VPD_TMP_BUF_SIZE];
- 	int ret = 0;
- 
--	memset(buf, 0, VPD_TMP_BUF_SIZE);
--
- 	switch (vpd->device_identifier_code_set) {
- 	case 0x01: /* Binary */
- 		snprintf(buf, sizeof(buf),
-@@ -1009,14 +1008,17 @@ int transport_dump_vpd_ident(
- 			&vpd->device_identifier[0]);
- 		break;
- 	default:
--		sprintf(buf, "T10 VPD Device Identifier encoding unsupported:"
--			" 0x%02x", vpd->device_identifier_code_set);
-+		snprintf(buf, sizeof(buf),
-+			"T10 VPD Device Identifier encoding unsupported: 0x%02x",
-+			vpd->device_identifier_code_set);
- 		ret = -EINVAL;
- 		break;
- 	}
- 
--	if (p_buf)
-+	if (p_buf) {
- 		strncpy(p_buf, buf, p_buf_len);
-+		p_buf[p_buf_len - 1] = '\0';
-+	}
- 	else
- 		pr_debug("%s", buf);
- 
--- 
-1.7.10.4
+If I understand correctly, your goal is to remove a synchronize_sched()
+worth of latency from the overall RCU-tasks callback latency.  Or am I
+still confused?
+
+							Thanx, Paul
 
