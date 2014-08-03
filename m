@@ -1,695 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800AbaHCT7V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 15:59:21 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:53160 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbaHCT7T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 15:59:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <53DCE329.4030106@xs4all.nl>
-References: <53DCE329.4030106@xs4all.nl>
-Date: Sun, 3 Aug 2014 15:59:18 -0400
-Message-ID: <CAPDOMVg8aaio0OGrGwgxN1hixNkCTJ3xYQBjSq=34Zf=8SBnKw@mail.gmail.com>
-Subject: Re: 3.15.6 USB issue with pwc cam
-From: Nick Krause <xerofoify@gmail.com>
-To: Udo van den Heuvel <udovdh@xs4all.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751914AbaHCUrG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 16:47:06 -0400
+Received: from mx02.posteo.de ([89.146.194.165]:42229 "EHLO posteo.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751603AbaHCUrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Aug 2014 16:47:04 -0400
+From: Martin Kepplinger <martink@posteo.de>
+To: gregkh@linuxfoundation.org
+Cc: andreas.dilger@intel.com, oleg.drokin@intel.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Martin Kepplinger <martink@posteo.de>
+Subject: [PATCH] staging: lustre: use NULL instead of 0 for non-integers
+Date: Sun,  3 Aug 2014 22:45:36 +0200
+Message-Id: <1407098737-27911-1-git-send-email-martink@posteo.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 2, 2014 at 9:10 AM, Udo van den Heuvel <udovdh@xs4all.nl> wrote:
-> Hello,
->
-> I moved a PWC webcam to a USB3 port, and this happened:
->
-> [53008.911811] usb 5-2: new full-speed USB device number 2 using xhci_hcd
-> [53009.213504] usb 5-2: New USB device found, idVendor=0471, idProduct=0311
-> [53009.213514] usb 5-2: New USB device strings: Mfr=0, Product=0,
-> SerialNumber=1
-> [53009.213519] usb 5-2: SerialNumber: 01690000A5000000
-> [53009.215547] pwc: Philips PCVC740K (ToUCam Pro)/PCVC840 (ToUCam II)
-> USB webcam detected.
-> [53009.846698] pwc: Registered as video0.
-> [53009.846814] input: PWC snapshot button as
-> /devices/pci0000:00/0000:00:07.0/0000:02:00.0/usb5/5-2/input/input7
-> [53009.847233] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53009.847242] usb 5-2: Not enough bandwidth for altsetting 1
-> [53009.847275] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53009.847285] usb 5-2: Not enough bandwidth for altsetting 2
-> [53009.847317] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53009.847323] usb 5-2: Not enough bandwidth for altsetting 3
-> [53009.847355] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53009.847360] usb 5-2: Not enough bandwidth for altsetting 4
-> [53010.004876] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.004890] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.004896] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.004960] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.004988] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.004992] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.005066] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.005075] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.005079] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.005530] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.005540] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.005544] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.006438] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.006446] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.006450] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.007453] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.007461] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.007465] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.007567] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.007574] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.007578] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.007681] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.007689] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.007695] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.008126] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.008135] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.008140] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.008798] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.008808] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.008812] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.009576] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.009583] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.009588] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.009680] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.009689] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.009697] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.009978] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.009986] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.009990] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.010705] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.010716] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.010725] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.011350] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.011360] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.011366] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.012643] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.012655] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.012660] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.012758] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.012766] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.012771] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.013017] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.013025] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.013031] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.013793] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.013798] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.013803] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.014096] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.014102] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.014106] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.025999] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.026007] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.026010] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.026072] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.026075] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.026077] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.026119] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.026122] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.026125] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.026388] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.026392] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.026393] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.026588] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.026591] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.026592] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.026872] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.026876] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.026878] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.026908] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.026911] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.026912] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.026949] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.026951] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.026952] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.027119] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.027121] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.027122] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.027279] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.027281] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.027283] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.027550] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.027554] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.027556] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.027594] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.027597] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.027598] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.027675] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.027677] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.027679] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.027870] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.027874] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.027876] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.028157] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.028161] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.028163] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.028662] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.028666] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.028668] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.028709] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.028711] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.028713] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.028794] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.028797] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.028799] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.029075] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.029078] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.029079] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.029439] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.029442] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.029444] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.038066] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.038073] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.038075] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.038107] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.038110] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.038111] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.038148] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.038151] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.038153] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.038437] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.038441] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.038443] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.038617] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.038620] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.038621] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.038890] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.038894] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.038896] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.038928] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.038930] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.038932] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.038964] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.038966] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.038968] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.039140] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.039142] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.039144] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.039296] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.039299] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.039300] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.039598] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.039601] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.039603] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.039654] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.039657] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.039658] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.039772] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.039775] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.039777] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.040044] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.040049] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.040051] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.040331] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.040334] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.040336] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.040838] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.040841] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.040843] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.040884] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.040886] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.040888] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.040971] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.040973] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.040975] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.041207] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.041209] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.041211] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.041450] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.041454] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.041455] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.050772] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.050788] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.050791] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.050825] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.050837] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.050839] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.050879] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.050882] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.050884] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.051166] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.051170] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.051172] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.051408] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.051412] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.051414] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.051805] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.051809] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.051811] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.051842] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.051845] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.051847] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.051880] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.051883] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.051885] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.052174] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.052177] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.052179] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.052390] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.052393] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.052395] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.052783] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.052787] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.052789] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.052887] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.052890] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.052892] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.052982] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.052984] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.052986] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.053262] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.053264] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.053266] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.053556] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.053559] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.053561] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.054205] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.054210] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.054212] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.054256] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.054259] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.054261] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.054355] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.054358] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.054360] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.054612] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.054615] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.054617] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.054845] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.054848] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.054850] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.064272] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.064280] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.064283] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.064320] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.064324] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.064326] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.064369] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.064373] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.064375] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.064694] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.064698] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.064701] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.064921] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.064925] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.064927] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.065241] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.065245] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.065248] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.065281] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.065285] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.065287] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.065330] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.065333] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.065335] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.065611] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.065628] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.065634] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.066072] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.066078] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.066081] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.066528] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.066533] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.066535] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.066590] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.066594] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.066598] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.066707] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.066710] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.066713] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.067095] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.067100] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.067103] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.067457] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.067465] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.067470] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.068139] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.068144] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.068147] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.068230] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.068233] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.068236] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.068350] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.068354] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.068356] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.068659] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.068663] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.068665] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.068980] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.068985] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.068988] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.078360] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.078366] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.078368] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.078398] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.078400] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.078402] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.078498] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.078501] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.078503] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.078770] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.078774] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.078777] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.079011] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.079015] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.079017] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.079321] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.079324] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.079325] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.079356] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.079359] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.079361] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.079394] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.079396] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.079398] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.079661] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.079663] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.079665] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.079820] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.079822] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.079823] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.080214] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.080218] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.080219] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.080264] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.080266] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.080268] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.080355] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.080357] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.080359] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.080561] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.080563] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.080564] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.080746] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.080748] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.080749] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.081155] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.081158] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.081160] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.081197] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.081199] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.081201] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.081274] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.081276] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.081278] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.081470] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.081473] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.081474] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53010.081701] xhci_hcd 0000:02:00.0: ERROR: unexpected command
-> completion code 0x11.
-> [53010.081706] usb 5-2: Not enough bandwidth for altsetting 1
-> [53010.081710] usb 5-2: 2:1: usb_set_interface failed (-22)
-> [53063.286759] ------------[ cut here ]------------
-> [53063.286783] WARNING: CPU: 2 PID: 3282 at
-> drivers/media/v4l2-core/videobuf2-core.c:2011
-> __vb2_queue_cancel+0x102/0x170 [videobuf2_core]()
-> [53063.286786] Modules linked in: bnep bluetooth fuse edac_core
-> cpufreq_userspace nf_conntrack_netbios_ns nf_conntrack_broadcast
-> ip6t_REJECT ipt_REJECT xt_tcpudp nf_conntrack_ipv6 nf_defrag_ipv6
-> xt_conntrack iptable_filter ipt_MASQUERADE iptable_nat nf_conntrack_ipv4
-> nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack ip6table_filter
-> ip6_tables ip_tables x_tables eeprom it87 hwmon_vid ext2 ppdev kvm_amd
-> kvm snd_usb_audio snd_usbmidi_lib snd_hwdep snd_rawmidi microcode
-> k10temp parport_serial pwc parport_pc videobuf2_vmalloc videobuf2_memops
-> v4l2_common parport videobuf2_core i2c_piix4 snd_hda_codec_realtek
-> videodev evdev cp210x snd_hda_codec_generic snd_hda_intel cdc_acm
-> usbserial snd_hda_controller snd_hda_codec snd_seq snd_seq_device
-> snd_pcm snd_timer snd button acpi_cpufreq nfsd auth_rpcgss oid_registry
-> [53063.286844]  nfs_acl lockd binfmt_misc sunrpc autofs4 hid_generic
-> usbhid radeon fbcon ehci_pci bitblit softcursor ehci_hcd font ohci_pci
-> ohci_hcd cfbfillrect cfbimgblt cfbcopyarea i2c_algo_bit backlight sr_mod
-> cdrom drm_kms_helper ttm drm xhci_hcd fb fbdev
-> [53063.286876] CPU: 2 PID: 3282 Comm: skype Not tainted 3.15.6 #5
-> [53063.286879] Hardware name: Gigabyte Technology Co., Ltd. To be filled
-> by O.E.M./F2A85X-UP4, BIOS F5a 04/30/2013
-> [53063.286882]  0000000000000000 000000001e19c613 ffffffff814f1fd3
-> 0000000000000000
-> [53063.286887]  ffffffff81069fc1 0000000000000000 0000000040045613
-> ffff880316167500
-> [53063.286892]  ffff88042ca30300 ffff8803cf337c48 ffffffffa0446832
-> ffff88042ca30000
-> [53063.286897] Call Trace:
-> [53063.286907]  [<ffffffff814f1fd3>] ? dump_stack+0x4a/0x75
-> [53063.286914]  [<ffffffff81069fc1>] ? warn_slowpath_common+0x81/0xb0
-> [53063.286924]  [<ffffffffa0446832>] ? __vb2_queue_cancel+0x102/0x170
-> [videobuf2_core]
-> [53063.286933]  [<ffffffffa044853d>] ? vb2_internal_streamoff+0x1d/0x50
-> [videobuf2_core]
-> [53063.286944]  [<ffffffffa0423163>] ? __video_do_ioctl+0x2f3/0x380
-> [videodev]
-> [53063.286957]  [<ffffffffa0422bc0>] ? video_usercopy+0x1f0/0x490 [videodev]
-> [53063.286967]  [<ffffffffa0422e70>] ? video_ioctl2+0x10/0x10 [videodev]
-> [53063.286974]  [<ffffffff810bffbb>] ? futex_wait_queue_me+0xdb/0x140
-> [53063.286983]  [<ffffffffa041e7df>] ? v4l2_ioctl+0x11f/0x160 [videodev]
-> [53063.286993]  [<ffffffffa042c7b6>] ? do_video_ioctl+0x246/0x1330
-> [videodev]
-> [53063.286998]  [<ffffffff810c0b9c>] ? futex_wake+0x7c/0x160
-> [53063.287003]  [<ffffffff810c280c>] ? do_futex+0x12c/0xb00
-> [53063.287008]  [<ffffffff814f714e>] ? _raw_spin_unlock_irq+0xe/0x30
-> [53063.287013]  [<ffffffff8108e3be>] ? finish_task_switch+0x3e/0xe0
-> [53063.287022]  [<ffffffffa042d922>] ? v4l2_compat_ioctl32+0x82/0xb8
-> [videodev]
-> [53063.287028]  [<ffffffff81185f32>] ? compat_SyS_ioctl+0x132/0x1120
-> [53063.287034]  [<ffffffff810b5e1d>] ? ktime_get_ts+0x3d/0xd0
-> [53063.287039]  [<ffffffff81085aa8>] ? posix_ktime_get_ts+0x8/0x10
-> [53063.287043]  [<ffffffff81086960>] ? SyS_clock_gettime+0x60/0x80
-> [53063.287049]  [<ffffffff814f9405>] ? cstar_dispatch+0x7/0x1a
-> [53063.287052] ---[ end trace 03072f5e82f277f5 ]---
-> [53063.287055] ------------[ cut here ]------------
-> [53063.287063] WARNING: CPU: 2 PID: 3282 at
-> drivers/media/v4l2-core/videobuf2-core.c:1095
-> vb2_buffer_done+0x17f/0x1a0 [videobuf2_core]()
-> [53063.287066] Modules linked in: bnep bluetooth fuse edac_core
-> cpufreq_userspace nf_conntrack_netbios_ns nf_conntrack_broadcast
-> ip6t_REJECT ipt_REJECT xt_tcpudp nf_conntrack_ipv6 nf_defrag_ipv6
-> xt_conntrack iptable_filter ipt_MASQUERADE iptable_nat nf_conntrack_ipv4
-> nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack ip6table_filter
-> ip6_tables ip_tables x_tables eeprom it87 hwmon_vid ext2 ppdev kvm_amd
-> kvm snd_usb_audio snd_usbmidi_lib snd_hwdep snd_rawmidi microcode
-> k10temp parport_serial pwc parport_pc videobuf2_vmalloc videobuf2_memops
-> v4l2_common parport videobuf2_core i2c_piix4 snd_hda_codec_realtek
-> videodev evdev cp210x snd_hda_codec_generic snd_hda_intel cdc_acm
-> usbserial snd_hda_controller snd_hda_codec snd_seq snd_seq_device
-> snd_pcm snd_timer snd button acpi_cpufreq nfsd auth_rpcgss oid_registry
-> [53063.287118]  nfs_acl lockd binfmt_misc sunrpc autofs4 hid_generic
-> usbhid radeon fbcon ehci_pci bitblit softcursor ehci_hcd font ohci_pci
-> ohci_hcd cfbfillrect cfbimgblt cfbcopyarea i2c_algo_bit backlight sr_mod
-> cdrom drm_kms_helper ttm drm xhci_hcd fb fbdev
-> [53063.287143] CPU: 2 PID: 3282 Comm: skype Tainted: G        W
-> 3.15.6 #5
-> [53063.287146] Hardware name: Gigabyte Technology Co., Ltd. To be filled
-> by O.E.M./F2A85X-UP4, BIOS F5a 04/30/2013
-> [53063.287148]  0000000000000000 000000001e19c613 ffffffff814f1fd3
-> 0000000000000000
-> [53063.287153]  ffffffff81069fc1 0000000000000000 ffff88040cc27c00
-> ffff88042ca30300
-> [53063.287157]  0000000000000003 ffff8803cf337c48 ffffffffa04460af
-> 0000000000000000
-> [53063.287161] Call Trace:
-> [53063.287167]  [<ffffffff814f1fd3>] ? dump_stack+0x4a/0x75
-> [53063.287172]  [<ffffffff81069fc1>] ? warn_slowpath_common+0x81/0xb0
-> [53063.287181]  [<ffffffffa04460af>] ? vb2_buffer_done+0x17f/0x1a0
-> [videobuf2_core]
-> [53063.287189]  [<ffffffffa044686e>] ? __vb2_queue_cancel+0x13e/0x170
-> [videobuf2_core]
-> [53063.287197]  [<ffffffffa044853d>] ?f+0x1d/0x50
-> [videobuf2_core] vb2_internal_streamof
-> [53063.287207]  [<ffffffffa0423163>] ? __video_do_ioctl+0x2f3/0x380
-> [videodev]
-> [53063.287219]  [<ffffffffa0422bc0>] ? video_usercopy+0x1f0/0x490 [videodev]
-> [53063.287229]  [<ffffffffa0422e70>] ? video_ioctl2+0x10/0x10 [videodev]
-> [53063.287234]  [<ffffffff810bffbb>] ? futex_wait_queue_me+0xdb/0x140
-> [53063.287244]  [<ffffffffa041e7df>] ? v4l2_ioctl+0x11f/0x160 [videodev]
-> [53063.287253]  [<ffffffffa042c7b6>] ? do_video_ioctl+0x246/0x1330
-> [videodev]
-> [53063.287259]  [<ffffffff810c0b9c>] ? futex_wake+0x7c/0x160
-> [53063.287263]  [<ffffffff810c280c>] ? do_futex+0x12c/0xb00
-> [53063.287268]  [<ffffffff814f714e>] ? _raw_spin_unlock_irq+0xe/0x30
-> [53063.287272]  [<ffffffff8108e3be>] ? finish_task_switch+0x3e/0xe0
-> [53063.287281]  [<ffffffffa042d922>] ? v4l2_compat_ioctl32+0x82/0xb8
-> [videodev]
-> [53063.287286]  [<ffffffff81185f32>] ? compat_SyS_ioctl+0x132/0x1120
-> [53063.287291]  [<ffffffff810b5e1d>] ? ktime_get_ts+0x3d/0xd0
-> [53063.287295]  [<ffffffff81085aa8>] ? posix_ktime_get_ts+0x8/0x10
-> [53063.287299]  [<ffffffff81086960>] ? SyS_clock_gettime+0x60/0x80
-> [53063.287305]  [<ffffffff814f9405>] ? cstar_dispatch+0x7/0x1a
-> [53063.287308] ---[ end trace 03072f5e82f277f6 ]---
->
->
->
-> At the end I checked the video settings in skype.
-> What went wrong?
-> How to fix?
->
->
-> Kind regards,
-> Udo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This fixes sparse errors where 0 is used for non-integers.
 
-Udo,
-I am adding the mailing list as there are people who are experts in
-this part of the kernel who
-known more then me. I am going to explain my trace of this to you and
-add it below for
-the other developers to read about the issue here.
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
+---
+applies to -next20140802
 
-1.  The first part of the trace is going to vb2_internal_streamoff and
-in this function we are calling the second function
-of the trace which is vb2_buffer_done.
-2. In function ,vb2_buffer_done we have a few WARN ONS and now to we
-need to find the correct one
-3. Since we are calling the function with the state,
-VB2_BUF_STATE_ERROR  we are tracked to the first
-if statement here as we are not streaming at this point
+ drivers/staging/lustre/lnet/lnet/api-ni.c          |    4 +-
+ drivers/staging/lustre/lustre/fld/fld_request.c    |    2 +-
+ drivers/staging/lustre/lustre/llite/llite_lib.c    |    2 +-
+ drivers/staging/lustre/lustre/llite/lproc_llite.c  |    2 +-
+ drivers/staging/lustre/lustre/mdc/lproc_mdc.c      |   44 ++++++++++----------
+ drivers/staging/lustre/lustre/mgc/mgc_request.c    |    2 +-
+ .../lustre/lustre/obdclass/linux/linux-module.c    |    2 +-
+ drivers/staging/lustre/lustre/obdclass/llog_test.c |    4 +-
+ .../staging/lustre/lustre/obdclass/obd_config.c    |    4 +-
+ .../staging/lustre/lustre/obdecho/echo_client.c    |    2 +-
+ drivers/staging/lustre/lustre/osc/osc_request.c    |    6 +--
+ 11 files changed, 37 insertions(+), 37 deletions(-)
 
-if (WARN_ON(vb->state != VB2_BUF_STATE_ACTIVE))
- return;
-We will hit your warn on and print out your message. This seems to be
-correct at least to me but let's see what the other developers state
-about my trace.
+diff --git a/drivers/staging/lustre/lnet/lnet/api-ni.c b/drivers/staging/lustre/lnet/lnet/api-ni.c
+index f4a2c65..b28734a 100644
+--- a/drivers/staging/lustre/lnet/lnet/api-ni.c
++++ b/drivers/staging/lustre/lnet/lnet/api-ni.c
+@@ -1662,7 +1662,7 @@ lnet_destroy_ping_info(void)
+ int
+ lnet_ping_target_init(void)
+ {
+-	lnet_md_t	 md = {0};
++	lnet_md_t	 md = { NULL };
+ 	lnet_handle_me_t  meh;
+ 	lnet_process_id_t id;
+ 	int	       rc;
+@@ -1770,7 +1770,7 @@ lnet_ping (lnet_process_id_t id, int timeout_ms, lnet_process_id_t *ids, int n_i
+ 	lnet_handle_eq_t     eqh;
+ 	lnet_handle_md_t     mdh;
+ 	lnet_event_t	 event;
+-	lnet_md_t	    md = {0};
++	lnet_md_t	    md = { NULL };
+ 	int		  which;
+ 	int		  unlinked = 0;
+ 	int		  replied = 0;
+diff --git a/drivers/staging/lustre/lustre/fld/fld_request.c b/drivers/staging/lustre/lustre/fld/fld_request.c
+index 4efded9..8e512f9 100644
+--- a/drivers/staging/lustre/lustre/fld/fld_request.c
++++ b/drivers/staging/lustre/lustre/fld/fld_request.c
+@@ -168,7 +168,7 @@ struct lu_fld_hash fld_hash[] = {
+ 		.fh_scan_func = fld_rrb_scan
+ 	},
+ 	{
+-		0,
++		NULL,
+ 	}
+ };
+ 
+diff --git a/drivers/staging/lustre/lustre/llite/llite_lib.c b/drivers/staging/lustre/lustre/llite/llite_lib.c
+index e0d8f15..0367f5a 100644
+--- a/drivers/staging/lustre/lustre/llite/llite_lib.c
++++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
+@@ -152,7 +152,7 @@ static void ll_free_sbi(struct super_block *sb)
+ static int client_common_fill_super(struct super_block *sb, char *md, char *dt,
+ 				    struct vfsmount *mnt)
+ {
+-	struct inode *root = 0;
++	struct inode *root = NULL;
+ 	struct ll_sb_info *sbi = ll_s2sbi(sb);
+ 	struct obd_device *obd;
+ 	struct obd_capa *oc = NULL;
+diff --git a/drivers/staging/lustre/lustre/llite/lproc_llite.c b/drivers/staging/lustre/lustre/llite/lproc_llite.c
+index 13586c5..77f68b5 100644
+--- a/drivers/staging/lustre/lustre/llite/lproc_llite.c
++++ b/drivers/staging/lustre/lustre/llite/lproc_llite.c
+@@ -843,7 +843,7 @@ static struct lprocfs_vars lprocfs_llite_obd_vars[] = {
+ 	{ "default_cookiesize", &ll_defult_cookiesize_fops, NULL, 0 },
+ 	{ "sbi_flags",	      &ll_sbi_flags_fops, NULL, 0 },
+ 	{ "xattr_cache",      &ll_xattr_cache_fops, NULL, 0 },
+-	{ 0 }
++	{ NULL }
+ };
+ 
+ #define MAX_STRING_SIZE 128
+diff --git a/drivers/staging/lustre/lustre/mdc/lproc_mdc.c b/drivers/staging/lustre/lustre/mdc/lproc_mdc.c
+index e6af825..f266e95 100644
+--- a/drivers/staging/lustre/lustre/mdc/lproc_mdc.c
++++ b/drivers/staging/lustre/lustre/mdc/lproc_mdc.c
+@@ -172,39 +172,39 @@ LPROC_SEQ_FOPS_RW_TYPE(mdc, import);
+ LPROC_SEQ_FOPS_RW_TYPE(mdc, pinger_recov);
+ 
+ static struct lprocfs_vars lprocfs_mdc_obd_vars[] = {
+-	{ "uuid",	    &mdc_uuid_fops,		0, 0 },
+-	{ "ping",	    &mdc_ping_fops,		0, 0222 },
+-	{ "connect_flags",  &mdc_connect_flags_fops,	0, 0 },
+-	{ "blocksize",      &mdc_blksize_fops,		0, 0 },
+-	{ "kbytestotal",    &mdc_kbytestotal_fops,	0, 0 },
+-	{ "kbytesfree",     &mdc_kbytesfree_fops,	0, 0 },
+-	{ "kbytesavail",    &mdc_kbytesavail_fops,	0, 0 },
+-	{ "filestotal",     &mdc_filestotal_fops,	0, 0 },
+-	{ "filesfree",      &mdc_filesfree_fops,	0, 0 },
+-	/*{ "filegroups",      lprocfs_rd_filegroups,  0, 0 },*/
+-	{ "mds_server_uuid", &mdc_server_uuid_fops,	0, 0 },
+-	{ "mds_conn_uuid",  &mdc_conn_uuid_fops,	0, 0 },
++	{ "uuid",	    &mdc_uuid_fops,		NULL, 0 },
++	{ "ping",	    &mdc_ping_fops,		NULL, 0222 },
++	{ "connect_flags",  &mdc_connect_flags_fops,	NULL, 0 },
++	{ "blocksize",      &mdc_blksize_fops,		NULL, 0 },
++	{ "kbytestotal",    &mdc_kbytestotal_fops,	NULL, 0 },
++	{ "kbytesfree",     &mdc_kbytesfree_fops,	NULL, 0 },
++	{ "kbytesavail",    &mdc_kbytesavail_fops,	NULL, 0 },
++	{ "filestotal",     &mdc_filestotal_fops,	NULL, 0 },
++	{ "filesfree",      &mdc_filesfree_fops,	NULL, 0 },
++	/*{ "filegroups",      lprocfs_rd_filegroups,  NULL, 0 },*/
++	{ "mds_server_uuid", &mdc_server_uuid_fops,	NULL, 0 },
++	{ "mds_conn_uuid",  &mdc_conn_uuid_fops,	NULL, 0 },
+ 	/*
+ 	 * FIXME: below proc entry is provided, but not in used, instead
+ 	 * sbi->sb_md_brw_size is used, the per obd variable should be used
+ 	 * when CMD is enabled, and dir pages are managed in MDC layer.
+ 	 * Remember to enable proc write function.
+ 	 */
+-	{ "max_pages_per_rpc",  &mdc_obd_max_pages_per_rpc_fops, 0, 0 },
+-	{ "max_rpcs_in_flight", &mdc_max_rpcs_in_flight_fops, 0, 0 },
+-	{ "timeouts",		&mdc_timeouts_fops,    0, 0 },
+-	{ "import",		&mdc_import_fops, 0 },
+-	{ "state",		&mdc_state_fops, 0, 0 },
+-	{ "hsm_nl",		&mdc_kuc_fops, 0, 0200 },
+-	{ "pinger_recov",	&mdc_pinger_recov_fops, 0, 0 },
+-	{ 0 }
++	{ "max_pages_per_rpc",  &mdc_obd_max_pages_per_rpc_fops, NULL, 0 },
++	{ "max_rpcs_in_flight", &mdc_max_rpcs_in_flight_fops, NULL, 0 },
++	{ "timeouts",		&mdc_timeouts_fops,    NULL, 0 },
++	{ "import",		&mdc_import_fops, NULL, 0 },
++	{ "state",		&mdc_state_fops, NULL, 0 },
++	{ "hsm_nl",		&mdc_kuc_fops, NULL, 0200 },
++	{ "pinger_recov",	&mdc_pinger_recov_fops, NULL, 0 },
++	{ NULL }
+ };
+ 
+ LPROC_SEQ_FOPS_RO_TYPE(mdc, numrefs);
+ 
+ static struct lprocfs_vars lprocfs_mdc_module_vars[] = {
+-	{ "num_refs",	&mdc_numrefs_fops,     0, 0 },
+-	{ 0 }
++	{ "num_refs",	&mdc_numrefs_fops,     NULL, 0 },
++	{ NULL }
+ };
+ 
+ void lprocfs_mdc_init_vars(struct lprocfs_static_vars *lvars)
+diff --git a/drivers/staging/lustre/lustre/mgc/mgc_request.c b/drivers/staging/lustre/lustre/mgc/mgc_request.c
+index 46a7d76..f520591 100644
+--- a/drivers/staging/lustre/lustre/mgc/mgc_request.c
++++ b/drivers/staging/lustre/lustre/mgc/mgc_request.c
+@@ -197,7 +197,7 @@ struct config_llog_data *do_config_log_add(struct obd_device *obd,
+ 	int		      rc;
+ 
+ 	CDEBUG(D_MGC, "do adding config log %s:%p\n", logname,
+-	       cfg ? cfg->cfg_instance : 0);
++	       cfg ? cfg->cfg_instance : NULL);
+ 
+ 	OBD_ALLOC(cld, sizeof(*cld) + strlen(logname) + 1);
+ 	if (!cld)
+diff --git a/drivers/staging/lustre/lustre/obdclass/linux/linux-module.c b/drivers/staging/lustre/lustre/obdclass/linux/linux-module.c
+index 1de1c65..9ce3d36 100644
+--- a/drivers/staging/lustre/lustre/obdclass/linux/linux-module.c
++++ b/drivers/staging/lustre/lustre/obdclass/linux/linux-module.c
+@@ -328,7 +328,7 @@ struct lprocfs_vars lprocfs_base[] = {
+ 	{ "jobid_var", &obd_proc_jobid_var_fops },
+ 	{ .name =	"jobid_name",
+ 	  .fops =	&obd_proc_jobid_name_fops},
+-	{ 0 }
++	{ NULL }
+ };
+ 
+ static void *obd_device_list_seq_start(struct seq_file *p, loff_t *pos)
+diff --git a/drivers/staging/lustre/lustre/obdclass/llog_test.c b/drivers/staging/lustre/lustre/obdclass/llog_test.c
+index 6791d02..1acd867 100644
+--- a/drivers/staging/lustre/lustre/obdclass/llog_test.c
++++ b/drivers/staging/lustre/lustre/obdclass/llog_test.c
+@@ -940,8 +940,8 @@ cleanup_ctxt:
+ }
+ 
+ #if defined (CONFIG_PROC_FS)
+-static struct lprocfs_vars lprocfs_llog_test_obd_vars[] = { {0} };
+-static struct lprocfs_vars lprocfs_llog_test_module_vars[] = { {0} };
++static struct lprocfs_vars lprocfs_llog_test_obd_vars[] = { {NULL} };
++static struct lprocfs_vars lprocfs_llog_test_module_vars[] = { {NULL} };
+ static void lprocfs_llog_test_init_vars(struct lprocfs_static_vars *lvars)
+ {
+     lvars->module_vars  = lprocfs_llog_test_module_vars;
+diff --git a/drivers/staging/lustre/lustre/obdclass/obd_config.c b/drivers/staging/lustre/lustre/obdclass/obd_config.c
+index 3acb1a8..d4410a2 100644
+--- a/drivers/staging/lustre/lustre/obdclass/obd_config.c
++++ b/drivers/staging/lustre/lustre/obdclass/obd_config.c
+@@ -1161,7 +1161,7 @@ int class_process_config(struct lustre_cfg *lcfg)
+ 		char *tmp;
+ 		/* llite has no obd */
+ 		if ((class_match_param(lustre_cfg_string(lcfg, 1),
+-				       PARAM_LLITE, 0) == 0) &&
++				       PARAM_LLITE, NULL) == 0) &&
+ 		    client_process_config) {
+ 			err = (*client_process_config)(lcfg);
+ 			GOTO(out, err);
+@@ -1303,7 +1303,7 @@ int class_process_proc_param(char *prefix, struct lprocfs_vars *lvars,
+ 		/* Search proc entries */
+ 		while (lvars[j].name) {
+ 			var = &lvars[j];
+-			if (class_match_param(key, (char *)var->name, 0) == 0 &&
++			if (class_match_param(key, (char *)var->name, NULL) == 0 &&
+ 			    keylen == strlen(var->name)) {
+ 				matched++;
+ 				rc = -EROFS;
+diff --git a/drivers/staging/lustre/lustre/obdecho/echo_client.c b/drivers/staging/lustre/lustre/obdecho/echo_client.c
+index b3428d9..f1847f3 100644
+--- a/drivers/staging/lustre/lustre/obdecho/echo_client.c
++++ b/drivers/staging/lustre/lustre/obdecho/echo_client.c
+@@ -3113,7 +3113,7 @@ static struct obd_ops echo_client_obd_ops = {
+ 
+ int echo_client_init(void)
+ {
+-	struct lprocfs_static_vars lvars = { 0 };
++	struct lprocfs_static_vars lvars = { NULL };
+ 	int rc;
+ 
+ 	lprocfs_echo_init_vars(&lvars);
+diff --git a/drivers/staging/lustre/lustre/osc/osc_request.c b/drivers/staging/lustre/lustre/osc/osc_request.c
+index 5028e77..fb0d9fb 100644
+--- a/drivers/staging/lustre/lustre/osc/osc_request.c
++++ b/drivers/staging/lustre/lustre/osc/osc_request.c
+@@ -3421,7 +3421,7 @@ static int brw_queue_work(const struct lu_env *env, void *data)
+ 
+ int osc_setup(struct obd_device *obd, struct lustre_cfg *lcfg)
+ {
+-	struct lprocfs_static_vars lvars = { 0 };
++	struct lprocfs_static_vars lvars = { NULL };
+ 	struct client_obd	  *cli = &obd->u.cli;
+ 	void		       *handler;
+ 	int			rc;
+@@ -3545,7 +3545,7 @@ int osc_cleanup(struct obd_device *obd)
+ 
+ int osc_process_config_base(struct obd_device *obd, struct lustre_cfg *lcfg)
+ {
+-	struct lprocfs_static_vars lvars = { 0 };
++	struct lprocfs_static_vars lvars = { NULL };
+ 	int rc = 0;
+ 
+ 	lprocfs_osc_init_vars(&lvars);
+@@ -3612,7 +3612,7 @@ extern struct lock_class_key osc_ast_guard_class;
+ 
+ int __init osc_init(void)
+ {
+-	struct lprocfs_static_vars lvars = { 0 };
++	struct lprocfs_static_vars lvars = { NULL };
+ 	int rc;
+ 
+ 	/* print an address of _any_ initialized kernel symbol from this
+-- 
+1.7.10.4
 
-As for the other developers on the list seems to a miswritten call
-before be are streaming this queue of data and I would recommend
-moving the lines
-
-q->streaming = 0;
-q->start_streaming_called = 0;
-q->queued_count = 0;
-before the for loop that calls vb2_buffer_done inside it's self. I am
-not sure if this is a correct fix through as I am new but if it is I
-will write the patch
-and sent it to the usb mailing list.
-Regards Nick
