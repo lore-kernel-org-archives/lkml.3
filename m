@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714AbaHCNQc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 09:16:32 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54970 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752160AbaHCNQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 09:16:31 -0400
-Message-ID: <53DE3629.2020706@kernel.org>
-Date: Sun, 03 Aug 2014 09:16:25 -0400
-From: Sasha Levin <sashal@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752818AbaHCNWz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 09:22:55 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:55387 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570AbaHCNWy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Aug 2014 09:22:54 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <alpine.DEB.2.02.1408031243500.2000@localhost6.localdomain6>
+References: <20140803095658.GA6753@himangi-Dell> <2af09d4e-10c7-4887-a29c-0d31b0ac6493@email.android.com> <alpine.DEB.2.02.1408031243500.2000@localhost6.localdomain6>
 MIME-Version: 1.0
-To: Rostislav Lisovy <lisovy@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-CC: Nicholas Krause <xerofoify@gmail.com>
-Subject: Re: [PATCH] ARM: PCI: Use PCI_CLASS_* defines for PCI class
-References: <1406904671-19197-1-git-send-email-lisovy@gmail.com>
-In-Reply-To: <1406904671-19197-1-git-send-email-lisovy@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] staging: iio: ad9832: Use devm_iio_device_register
+From: Jonathan Cameron <jic23@kernel.org>
+Date: Sun, 03 Aug 2014 14:22:45 +0100
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Himangi Saraogi <himangi774@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <c6110228-a107-4a63-9e09-620b688d7fc1@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2014 10:51 AM, Rostislav Lisovy wrote:
-> Signed-off-by: Rostislav Lisovy <lisovy@gmail.com>
-> ---
->  arch/arm/kernel/bios32.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-> index 17a26c1..e511ad1 100644
-> --- a/arch/arm/kernel/bios32.c
-> +++ b/arch/arm/kernel/bios32.c
-> @@ -255,10 +255,9 @@ static void pci_fixup_it8152(struct pci_dev *dev)
->  {
->  	int i;
->  	/* fixup for ITE 8152 devices */
-> -	/* FIXME: add defines for class 0x68000 and 0x80103 */
->  	if ((dev->class >> 8) == PCI_CLASS_BRIDGE_HOST ||
-> -	    dev->class == 0x68000 ||
-> -	    dev->class == 0x80103) {
-> +	    dev->class == (PCI_CLASS_BRIDGE_OTHER << 8) ||
-> +	    dev->class == ((PCI_CLASS_SYSTEM_DMA << 8) | 0x03)) {
->  		for (i = 0; i < PCI_NUM_RESOURCES; i++) {
->  			dev->resource[i].start = 0;
->  			dev->resource[i].end   = 0;
-> 
-
-Care to explain how your new code is equivalent to the old one?
 
 
-Thanks,
-Sasha
+On August 3, 2014 11:45:00 AM GMT+01:00, Julia Lawall <julia.lawall@lip6.fr> wrote:
+>
+>
+>On Sun, 3 Aug 2014, Jonathan Cameron wrote:
+>
+>> 
+>> 
+>> On August 3, 2014 10:56:58 AM GMT+01:00, Himangi Saraogi
+><himangi774@gmail.com> wrote:
+>> >This patch introduces the use of devm_iio_device_register and does
+>away
+>> >with the unregister in the remove function.
+>> >
+>> And changes the resulting ordering so the regulator disable occurs
+>before the user
+>>  space interface has been removed by the unregister. 
+>> 
+>> Please be very wary of using devm_iio_register. It is only correct if
+>the remove function does nothing else.
+>
+>I wonder if there could be a way to document these constraints?
+Perhaps though the simple rule of not doing anything that results in the remove sequence
+ not being the mirror image of the probe covers most cases.  Whilst there are safe
+ ways to break this rule they make the code less obviously correct and so arguably
+ should not be used anyway.
+>
+>julia
+>
+>> Jonathan
+>> >Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+>> >Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+>> >---
+>> > drivers/staging/iio/frequency/ad9832.c | 3 +--
+>> > 1 file changed, 1 insertion(+), 2 deletions(-)
+>> >
+>> >diff --git a/drivers/staging/iio/frequency/ad9832.c
+>> >b/drivers/staging/iio/frequency/ad9832.c
+>> >index cf68159..8a72c78 100644
+>> >--- a/drivers/staging/iio/frequency/ad9832.c
+>> >+++ b/drivers/staging/iio/frequency/ad9832.c
+>> >@@ -304,7 +304,7 @@ static int ad9832_probe(struct spi_device *spi)
+>> > 	if (ret)
+>> > 		goto error_disable_reg;
+>> > 
+>> >-	ret = iio_device_register(indio_dev);
+>> >+	ret = devm_iio_device_register(&spi->dev, indio_dev);
+>> > 	if (ret)
+>> > 		goto error_disable_reg;
+>> > 
+>> >@@ -322,7 +322,6 @@ static int ad9832_remove(struct spi_device *spi)
+>> > 	struct iio_dev *indio_dev = spi_get_drvdata(spi);
+>> > 	struct ad9832_state *st = iio_priv(indio_dev);
+>> > 
+>> >-	iio_device_unregister(indio_dev);
+>> > 	if (!IS_ERR(st->reg))
+>> > 		regulator_disable(st->reg);
+>> > 
+>> 
+>> -- 
+>> Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+>> 
+
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
