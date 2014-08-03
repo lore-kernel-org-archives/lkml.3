@@ -1,114 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886AbaHCC1A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Aug 2014 22:27:00 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:35637 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911AbaHCC06 (ORCPT
+	id S1754904AbaHCChI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Aug 2014 22:37:08 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:63094 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911AbaHCChG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 22:26:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407026806.1835.21.camel@joe-AO725>
-References: <1407018043-648-1-git-send-email-hans@hanshq.net> <1407026806.1835.21.camel@joe-AO725>
-From: Steve French <smfrench@gmail.com>
-Date: Sat, 2 Aug 2014 21:26:37 -0500
-Message-ID: <CAH2r5msfV4qCvL+g_moRDnusX+OefomGQ3AQQjcLtWKUeHZO9w@mail.gmail.com>
-Subject: Re: [PATCH 1/1] cris: fix %d confusingly prefixed with 0x in format string
-To: Joe Perches <joe@perches.com>
-Cc: Hans Wennborg <hans@hanshq.net>, starvik@axis.com,
-        linux-cris-kernel@axis.com, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors <kernel-janitors@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, devel <devel@driverdev.osuosl.org>,
-        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=UTF-8
+	Sat, 2 Aug 2014 22:37:06 -0400
+Message-ID: <1407033419.17812.2.camel@phoenix>
+Subject: [PATCH 1/2] gpu: ipu-v3: Select GENERIC_IRQ_CHIP to fix build error
+From: Axel Lin <axel.lin@ingics.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 03 Aug 2014 10:36:59 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for pointing this out.  I fixed the instances of this that you
-spotted in the cifs.ko driver (pushed to cifs-2.6.git for-next) and
-noted that you pointed it out in the commit message.
+This driver uses GENERIC_IRQ_CHIP, so it needs to select GENERIC_IRQ_CHIP to
+avoid build error.
 
-http://git.samba.org/?p=sfrench/cifs-2.6.git;a=commit;h=59b04c5df75bd715002bb535930ae1982a739269
+Fixes below build errors:
+ERROR: "irq_alloc_domain_generic_chips" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
+ERROR: "irq_gc_mask_clr_bit" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
+ERROR: "irq_gc_mask_set_bit" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
+ERROR: "irq_generic_chip_ops" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
+ERROR: "irq_gc_ack_set_bit" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
+ERROR: "irq_get_domain_generic_chip" [drivers/gpu/ipu-v3/imx-ipu-v3.ko] undefined!
+make[1]: *** [__modpost] Error 1
+make: *** [modules] Error 2
 
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/gpu/ipu-v3/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-
-On Sat, Aug 2, 2014 at 7:46 PM, Joe Perches <joe@perches.com> wrote:
-> On Sat, 2014-08-02 at 15:20 -0700, Hans Wennborg wrote:
->> Signed-off-by: Hans Wennborg <hans@hanshq.net>
->> ---
->>  arch/cris/arch-v32/drivers/cryptocop.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/cris/arch-v32/drivers/cryptocop.c b/arch/cris/arch-v32/drivers/cryptocop.c
-> []
->> @@ -3155,7 +3155,7 @@ static void print_dma_descriptors(struct cryptocop_int_operation *iop)
->>       printk("print_dma_descriptors start\n");
->>
->>       printk("iop:\n");
->> -     printk("\tsid: 0x%lld\n", iop->sid);
->> +     printk("\tsid: 0x%llx\n", iop->sid);
->>
->>       printk("\tcdesc_out: 0x%p\n", iop->cdesc_out);
->>       printk("\tcdesc_in: 0x%p\n", iop->cdesc_in);
->
-> Thanks.
->
-> This is a surprisingly common error:
->
-> $ /usr/bin/git grep -P '0x\%(?!ull\b|ul\b|u\b|lu\b|llu\b|llux\b|lux\b|lx\b|lluX\b|luX\b|lX\b)[ul]*[ud]'
-> arch/arm/mach-omap2/id.c:               pr_warn("%s: unknown idcode=0x%08x (hawkeye=0x%08x,rev=0x%d)\n",
-> arch/cris/arch-v32/drivers/cryptocop.c: printk("\tsid: 0x%lld\n", iop->sid);
-> drivers/atm/eni.c:                      return sprintf(page,"tx[%d]:    0x%ld-0x%ld "
-> drivers/atm/eni.c:                              length += sprintf(page+length,"0x%ld-0x%ld "
-> drivers/block/DAC960.c:         DAC960_Error("IO port 0x%d busy for Controller at\n",
-> drivers/block/DAC960.c:         DAC960_Error("IO port 0x%d busy for Controller at\n",
-> drivers/block/cciss.c:  dev_dbg(&h->pdev->dev, "   Max outstanding commands = 0x%d\n",
-> drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c:        mfc_debug(2, "stream buf addr: 0x%08lx, size: 0x%d\n",
-> drivers/mfd/htc-i2cpld.c:       snprintf(client->name, I2C_NAME_SIZE, "Chip_0x%d", client->addr);
-> drivers/mfd/omap-usb-host.c:                     "USB HOST Rev:0x%d not recognized, assuming %d ports\n",
-> drivers/misc/sgi-gru/grumain.c: gru_dbg(grudev, "gid %d, gts %p, gms %p, ctxnum 0x%d, asidmap 0x%lx\n",
-> drivers/net/ethernet/smsc/smc911x.c:    DBG(SMC_DEBUG_MISC, dev, "phy_id1=0x%x, phy_id2=0x%x phyaddr=0x%d\n",
-> drivers/net/wireless/ath/ath6kl/init.c:                            "found reserved ram size ie 0x%d\n",
-> drivers/net/wireless/ath/ath6kl/main.c:         ath6kl_err("failed to write 0x%x during diagnose window to 0x%d\n",
-> drivers/net/wireless/iwlegacy/4965-mac.c:                       IL_ERR("failed setting tx power (0x%d).\n", ret);
-> drivers/net/wireless/rtlwifi/pci.c:                              "more desc left, wake skb_queue@%d, ring->idx = %d, skb_queue_len = 0x%d\n",
-> drivers/net/wireless/rtlwifi/pci.c:                              "No more TX desc@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
-> drivers/net/wireless/rtlwifi/pci.c:                      "less desc left, stop skb_queue@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
-> drivers/net/wireless/rtlwifi/rtl8192de/phy.c:            "MCSTxPowerLevelOriginalOffset[%d][%d] = 0x%ulx\n",
-> drivers/net/wireless/rtlwifi/rtl8192de/phy.c:                   "ver 1 set RF-A, 5G,    0x28 = 0x%ulx !!\n", u4tmp);
-> drivers/net/wireless/rtlwifi/rtl8192de/phy.c:                   "ver 3 set RF-B, 2G, 0x28 = 0x%ulx !!\n", u4tmp);
-> drivers/net/wireless/rtlwifi/rtl8192de/phy.c:                   "ver 3 set RF-B, 2G, 0x28 = 0x%ulx !!\n",
-> drivers/parisc/dino.c:          printk(KERN_ERR "DINO: Hey! Someone took my MMIO space (0x%ld)!\n",
-> drivers/scsi/hpsa.c:    dev_info(dev, "   Max outstanding commands = 0x%d\n",
-> drivers/staging/nokia_h4p/nokia_core.c:         dev_err(info->dev, "Cannot get GPIO line 0x%d",
-> drivers/staging/rtl8192ee/pci.c:                                 ("more desc left, wake skb_queue@%d,ring->idx = %d, skb_queue_len = 0x%d\n",
-> drivers/staging/rtl8192ee/pci.c:                                 ("No more TX desc@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
-> drivers/staging/rtl8192ee/pci.c:                         ("less desc left, stop skb_queue@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
-> drivers/staging/rtl8821ae/pci.c:                                         "skb_queue_len = 0x%d\n",
-> drivers/staging/rtl8821ae/pci.c:                                  "idx = %d, skb_queue_len = 0x%d\n",
-> drivers/staging/rtl8821ae/pci.c:                          "idx = %d, skb_queue_len = 0x%d\n",
-> fs/cifs/cifs_debug.c:                                   "\n\tPathComponentMax: %d Status: 0x%d",
-> fs/cifs/misc.c:                 cifs_dbg(FYI, "notify err 0x%d\n",
-> fs/cifs/misc.c: cifs_dbg(FYI, "oplock type 0x%d level 0x%d\n",
-> fs/cifs/smb2misc.c:             cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
-> fs/cifs/smb2misc.c:             cifs_dbg(FYI, "lease key match, lease break 0x%d\n",
-> fs/cifs/smb2misc.c:     cifs_dbg(FYI, "oplock level 0x%d\n", rsp->OplockLevel);
-> sound/firewire/fireworks/fireworks_proc.c:                          "phys in grp[0x%d]: type 0x%d, count 0x%d\n",
-> sound/firewire/fireworks/fireworks_proc.c:                          "phys out grps[0x%d]: type 0x%d, count 0x%d\n",
-> sound/pci/riptide/riptide.c:    snd_printdd("sent mixer %d: 0x%d 0x%d\n", num, rval, lval);
-> sound/pci/riptide/riptide.c:    snd_printdd("got mixer %d: 0x%d 0x%d\n", num, *rval, *lval);
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
+diff --git a/drivers/gpu/ipu-v3/Kconfig b/drivers/gpu/ipu-v3/Kconfig
+index 2f228a2..01864a5 100644
+--- a/drivers/gpu/ipu-v3/Kconfig
++++ b/drivers/gpu/ipu-v3/Kconfig
+@@ -2,6 +2,7 @@ config IMX_IPUV3_CORE
+ 	tristate "IPUv3 core support"
+ 	depends on SOC_IMX5 || SOC_IMX6Q || SOC_IMX6SL || ARCH_MULTIPLATFORM
+ 	depends on RESET_CONTROLLER
++	select GENERIC_IRQ_CHIP
+ 	help
+ 	  Choose this if you have a i.MX5/6 system and want to use the Image
+ 	  Processing Unit. This option only enables IPU base support.
 -- 
-Thanks,
+1.9.1
 
-Steve
+
+
