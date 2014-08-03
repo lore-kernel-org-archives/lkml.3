@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaHCWDg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 18:03:36 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:41247 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622AbaHCWDf (ORCPT
+	id S1752540AbaHCWFn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 18:05:43 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:46999 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769AbaHCWFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 18:03:35 -0400
-Date: Sun, 3 Aug 2014 15:03:27 -0700
+	Sun, 3 Aug 2014 18:05:42 -0400
+Date: Sun, 3 Aug 2014 15:05:35 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
@@ -17,120 +17,92 @@ Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
         fweisbec@gmail.com, bobby.prani@gmail.com
 Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140803220327.GG8101@linux.vnet.ibm.com>
+Message-ID: <20140803220535.GH8101@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <20140731215445.GA21933@linux.vnet.ibm.com>
  <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140801141144.GA30293@redhat.com>
- <20140801182837.GI4784@linux.vnet.ibm.com>
- <20140801184059.GB10718@redhat.com>
- <20140802230020.GD8101@linux.vnet.ibm.com>
- <20140803125758.GA671@redhat.com>
+ <20140802145616.GA18195@redhat.com>
+ <20140802225757.GB8101@linux.vnet.ibm.com>
+ <20140803133318.GB671@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140803125758.GA671@redhat.com>
+In-Reply-To: <20140803133318.GB671@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080322-6688-0000-0000-000003BDA605
+x-cbid: 14080322-7164-0000-0000-00000390332F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 03, 2014 at 02:57:58PM +0200, Oleg Nesterov wrote:
+On Sun, Aug 03, 2014 at 03:33:18PM +0200, Oleg Nesterov wrote:
 > On 08/02, Paul E. McKenney wrote:
 > >
-> > On Fri, Aug 01, 2014 at 08:40:59PM +0200, Oleg Nesterov wrote:
-> > > On 08/01, Paul E. McKenney wrote:
+> > On Sat, Aug 02, 2014 at 04:56:16PM +0200, Oleg Nesterov wrote:
+> > > On 07/31, Paul E. McKenney wrote:
 > > > >
-> > > > On Fri, Aug 01, 2014 at 04:11:44PM +0200, Oleg Nesterov wrote:
-> > > > > Not sure this makes any sense, but perhaps we can check for the new
-> > > > > callbacks and start the next gp. IOW, the main loop roughly does
-> > > > >
-> > > > > 	for (;;) {
-> > > > > 		list = rcu_tasks_cbs_head;
-> > > > > 		rcu_tasks_cbs_head = NULL;
-> > > > >
-> > > > > 		if (!list)
-> > > > > 			sleep();
-> > > > >
-> > > > > 		synchronize_sched();
-> > > > >
-> > > > > 		wait_for_rcu_tasks_holdout();
-> > > > >
-> > > > > 		synchronize_sched();
-> > > > >
-> > > > > 		process_callbacks(list);
-> > > > > 	}
-> > > > >
-> > > > > we can "join" 2 synchronize_sched's and do
-> > > > >
-> > > > > 	ready_list = NULL;
-> > > > > 	for (;;) {
-> > > > > 		list = rcu_tasks_cbs_head;
-> > > > > 		rcu_tasks_cbs_head = NULL;
-> > > > >
-> > > > > 		if (!list && !ready_list)
-> > > > > 			sleep();
-> > > > >
-> > > > > 		synchronize_sched();
-> > > > >
-> > > > > 		if (ready_list) {
-> > > > > 			process_callbacks(ready_list);
-> > > > > 			ready_list = NULL;
-> > > > > 		}
-> > > > >
-> > > > > 		if (!list)
-> > > > > 			continue;
-> > > > >
-> > > > > 		wait_for_rcu_tasks_holdout();
-> > > > > 		ready_list = list;
-> > > > > 	}
-> > > >
-> > > > The lack of barriers for the updates I am checking mean that I really
-> > > > do need a synchronize_sched() on either side of the grace-period wait.
+> > > > +		rcu_read_lock();
+> > > > +		for_each_process_thread(g, t) {
+> > > > +			if (t != current && ACCESS_ONCE(t->on_rq) &&
+> > > > +			    !is_idle_task(t)) {
 > > >
-> > > Yes,
-> > >
-> > > > The grace period needs to guarantee that anything that happened on any
-> > > > CPU before the start of the grace period happens before anything that
-> > > > happens on any CPU after the end of the grace period.  If I leave off
-> > > > either synchronize_sched(), we lose this guarantee.
-> > >
-> > > But the 2nd variant still has synchronize_sched() on both sides?
+> > > I didn't notice this check before, but it is not needed. for_each_process()
+> > > can see the idle threads, there are not on process/thread lists.
+>     ^^^^^^^
+> 
+> argh, I mean't "can't see" of course...
+> 
+> > Good to know.  Any other important tasks I am missing?
+> 
+> Nothing else.
+
+Whew!  ;-)
+
+> > I am guessing that I need to do something like this:
 > >
-> > Your second variant above?  Unless it is in wait_for_rcu_tasks_holdouts(),
-> > I am not seeing it.
+> > 	for_each_process(g) {
+> > 		/* Do build step. */
+> > 		for_each_thread(g, t) {
+> > 			if (g == t)
+> > 				continue;
+> > 			/* Do build step. */
+> > 		}
+> > 	}
 > 
-> I guess I probably misunderstood you from the very beginning. And now I am
-> curious what exactly I missed...
+> Sorry, I don't understand... This is equivalent to
 > 
-> The code above doesn't do process_callbacks() after wait_for_rcu_tasks_holdout(),
-> it does this only after another synchronize_sched(). The only difference is that
-> we dequeue the next generation of the pending rcu_tasks_cbs_head callbacks.
-> 
-> IOW. Lets look at the current code. Suppose that synchronize_rcu_tasks() is
-> called when rcu_tasks_kthread() sleeps in wait_for_rcu_tasks_holdout(). In
-> this case the new wakeme_after_rcu callback will sit in rcu_tasks_cbs_head
-> until rcu_tasks_kthread() does the 2nd synchronize_sched() + process_callbacks().
-> Only after that it will be dequeued and rcu_tasks_kthread() will start another gp.
-> 
-> This means that we have 3 synchronize_sched()'s before synchronize_rcu_tasks()
-> returns.
-> 
-> Do we really need this? With the 2nd variant the new callback will be dequeud
-> right after wait_for_rcu_tasks_holdout(), and we only have 2 necessary
-> synchronize_sched()'s around wait_for_rcu_tasks_holdout().
-> 
-> But it seems that I missed something else. Could you please spell?
+> 	for_each_process_thread(g, t) {
+> 		/* Do build step. */
+> 	}
 
-You missed nothing.  I missed the fact that you rolled the loop, using
-ready_list and list.
+OK, got it.
 
-If I understand correctly, your goal is to remove a synchronize_sched()
-worth of latency from the overall RCU-tasks callback latency.  Or am I
-still confused?
+> > Your point about exiting tasks I get, and I believe I can solve it.
+> > I am hoping that the above sort of construction takes care of the
+> > idle threads.
+> 
+> It is simple to find the idle threads, just
+> 
+> 	for_each_cpu(cpu) {
+> 		do_something(cpu_rq(cpu)->idle);
+> 	}
+> 
+> but it is not clear to me what else you need to do with the idle threads.
+> Probably not too much, they mostly run under preempt_disable().
+
+OK, looks easy enough.  And yes, one good question is what, if anything,
+we need to do with the idle threads.
+
+> > I might also need to do something to handle changes in
+> > process/thread hierarchy -- but hopefully without having to read-acquire
+> > the task-list lock.
+> 
+> It seems that you need another global list, a task should be visible on that
+> list until exit_rcu().
+
+As in create another global list that all tasks are added to when created
+and then remved from when they exit?
 
 							Thanx, Paul
 
