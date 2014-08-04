@@ -1,129 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078AbaHDJ1y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 05:27:54 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16781 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417AbaHDJ1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 05:27:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,796,1400050800"; 
-   d="scan'208";a="579664820"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Boon Leong Ong <boon.leong.ong@intel.com>
-Subject: [PATCH] USB: pch_udc: USB gadget device support for Intel Quark X1000
-Date: Mon,  4 Aug 2014 10:22:54 -0700
-Message-Id: <1407172974-22485-1-git-send-email-alvin.chen@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752117AbaHDJ2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 05:28:09 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:42334 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518AbaHDJ2H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 05:28:07 -0400
+Subject: [PATCH v1.3 9/18] arcmsr: modify printing adapter model number and
+ F/W messages
+From: Ching Huang <ching2048@areca.com.tw>
+To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Aug 2014 17:27:58 +0800
+Message-ID: <1407144478.4756.67.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+From: Ching Huang <ching2048@areca.com.tw>
 
-This patch is to enable the USB gadget device for Intel Quark X1000
+Adjust printing order of adapter model name and firmware version.
 
-Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-Signed-off-by: Bing Niu <bing.niu@intel.com>
-Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+Signed-off-by: Ching Huang <ching2048@areca.com.tw>
 ---
- drivers/usb/gadget/udc/Kconfig   |    3 ++-
- drivers/usb/gadget/udc/pch_udc.c |   22 +++++++++++++++++++---
- 2 files changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/gadget/udc/Kconfig b/drivers/usb/gadget/udc/Kconfig
-index 5151f94..34ebaa6 100644
---- a/drivers/usb/gadget/udc/Kconfig
-+++ b/drivers/usb/gadget/udc/Kconfig
-@@ -332,7 +332,7 @@ config USB_GOKU
- 	   gadget drivers to also be dynamically linked.
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-04 16:44:44.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-04 16:44:50.000000000 +0800
+@@ -2226,10 +2226,10 @@ static bool arcmsr_get_hba_config(struct
+ 		iop_device_map++;
+ 		count--;
+ 	}
+-	printk(KERN_NOTICE "Areca RAID Controller%d: F/W %s & Model %s\n", 
++	pr_notice("Areca RAID Controller%d: Model %s, F/W %s\n",
+ 		acb->host->host_no,
+-		acb->firm_version,
+-		acb->firm_model);
++		acb->firm_model,
++		acb->firm_version);
+ 	acb->signature = readl(&reg->message_rwbuffer[0]);
+ 	acb->firm_request_len = readl(&reg->message_rwbuffer[1]);
+ 	acb->firm_numbers_queue = readl(&reg->message_rwbuffer[2]);
+@@ -2302,10 +2302,10 @@ static bool arcmsr_get_hbb_config(struct
+ 		count--;
+ 	}
+ 	
+-	printk(KERN_NOTICE "Areca RAID Controller%d: F/W %s & Model %s\n",
++	pr_notice("Areca RAID Controller%d: Model %s, F/W %s\n",
+ 		acb->host->host_no,
+-		acb->firm_version,
+-		acb->firm_model);
++		acb->firm_model,
++		acb->firm_version);
  
- config USB_EG20T
--	tristate "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7831) UDC"
-+	tristate "Intel QUARK X1000/EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7831) UDC"
- 	depends on PCI
- 	help
- 	  This is a USB device driver for EG20T PCH.
-@@ -353,6 +353,7 @@ config USB_EG20T
- 	  ML7213/ML7831 is companion chip for Intel Atom E6xx series.
- 	  ML7213/ML7831 is completely compatible for Intel EG20T PCH.
- 
-+	  This driver can be used with Intel's Quark X1000 SOC platform
- #
- # LAST -- dummy/emulated controller
- #
-diff --git a/drivers/usb/gadget/udc/pch_udc.c b/drivers/usb/gadget/udc/pch_udc.c
-index eb8c3be..460d953 100644
---- a/drivers/usb/gadget/udc/pch_udc.c
-+++ b/drivers/usb/gadget/udc/pch_udc.c
-@@ -343,6 +343,7 @@ struct pch_vbus_gpio_data {
-  * @setup_data:		Received setup data
-  * @phys_addr:		of device memory
-  * @base_addr:		for mapped device memory
-+ * @bar:		Indicates which PCI BAR for USB regs
-  * @irq:		IRQ line for the device
-  * @cfg_data:		current cfg, intf, and alt in use
-  * @vbus_gpio:		GPIO informaton for detecting VBUS
-@@ -370,14 +371,17 @@ struct pch_udc_dev {
- 	struct usb_ctrlrequest		setup_data;
- 	unsigned long			phys_addr;
- 	void __iomem			*base_addr;
-+	unsigned			bar;
- 	unsigned			irq;
- 	struct pch_udc_cfg_data		cfg_data;
- 	struct pch_vbus_gpio_data	vbus_gpio;
- };
- #define to_pch_udc(g)	(container_of((g), struct pch_udc_dev, gadget))
- 
-+#define PCH_UDC_PCI_BAR_QUARK_X1000	0
- #define PCH_UDC_PCI_BAR			1
- #define PCI_DEVICE_ID_INTEL_EG20T_UDC	0x8808
-+#define PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC	0x0939
- #define PCI_VENDOR_ID_ROHM		0x10DB
- #define PCI_DEVICE_ID_ML7213_IOH_UDC	0x801D
- #define PCI_DEVICE_ID_ML7831_IOH_UDC	0x8808
-@@ -3076,7 +3080,7 @@ static void pch_udc_remove(struct pci_dev *pdev)
- 		iounmap(dev->base_addr);
- 	if (dev->mem_region)
- 		release_mem_region(dev->phys_addr,
--				   pci_resource_len(pdev, PCH_UDC_PCI_BAR));
-+				   pci_resource_len(pdev, dev->bar));
- 	if (dev->active)
- 		pci_disable_device(pdev);
- 	kfree(dev);
-@@ -3144,9 +3148,15 @@ static int pch_udc_probe(struct pci_dev *pdev,
- 	dev->active = 1;
- 	pci_set_drvdata(pdev, dev);
- 
-+	/* Determine BAR based on PCI ID */
-+	if (id->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC)
-+		dev->bar = PCH_UDC_PCI_BAR_QUARK_X1000;
-+	else
-+		dev->bar = PCH_UDC_PCI_BAR;
-+
- 	/* PCI resource allocation */
--	resource = pci_resource_start(pdev, 1);
--	len = pci_resource_len(pdev, 1);
-+	resource = pci_resource_start(pdev, dev->bar);
-+	len = pci_resource_len(pdev, dev->bar);
- 
- 	if (!request_mem_region(resource, len, KBUILD_MODNAME)) {
- 		dev_err(&pdev->dev, "%s: pci device used already\n", __func__);
-@@ -3212,6 +3222,12 @@ finished:
- 
- static const struct pci_device_id pch_udc_pcidev_id[] = {
- 	{
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL,
-+			   PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC),
-+		.class = (PCI_CLASS_SERIAL_USB << 8) | 0xfe,
-+		.class_mask = 0xffffffff,
-+	},
-+	{
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_EG20T_UDC),
- 		.class = (PCI_CLASS_SERIAL_USB << 8) | 0xfe,
- 		.class_mask = 0xffffffff,
--- 
-1.7.9.5
+ 	acb->signature = readl(&reg->message_rwbuffer[1]);
+ 	/*firm_signature,1,00-03*/
+@@ -2368,10 +2368,10 @@ static bool arcmsr_get_hbc_config(struct
+ 		iop_firm_version++;
+ 		count--;
+ 	}
+-	printk(KERN_NOTICE "Areca RAID Controller%d: F/W %s & Model %s\n",
++	pr_notice("Areca RAID Controller%d: Model %s, F/W %s\n",
+ 		pACB->host->host_no,
+-		pACB->firm_version,
+-		pACB->firm_model);
++		pACB->firm_model,
++		pACB->firm_version);
+ 	pACB->firm_request_len = readl(&reg->msgcode_rwbuffer[1]);   /*firm_request_len,1,04-07*/
+ 	pACB->firm_numbers_queue = readl(&reg->msgcode_rwbuffer[2]); /*firm_numbers_queue,2,08-11*/
+ 	pACB->firm_sdram_size = readl(&reg->msgcode_rwbuffer[3]);    /*firm_sdram_size,3,12-15*/
+
 
