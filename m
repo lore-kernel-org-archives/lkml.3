@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282AbaHDXbk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 19:31:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56369 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515AbaHDXbj (ORCPT
+	id S1753314AbaHDXdS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 19:33:18 -0400
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:54174 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752515AbaHDXdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 19:31:39 -0400
-Date: Mon, 4 Aug 2014 16:31:14 -0700
-From: tip-bot for Matt Fleming <tipbot@zytor.com>
-Message-ID: <tip-b16d8c231e4d03fefc7de1b8b62bad5659ee8070@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, bp@suse.de,
-        matt.fleming@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, matt.fleming@intel.com, bp@suse.de,
-        hpa@linux.intel.com
-In-Reply-To: <1407193939-27813-1-git-send-email-matt@console-pimps.org>
-References: <1407193939-27813-1-git-send-email-matt@console-pimps.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/efi] x86/efi:
-  Fix 3DNow optimization build failure in EFI stub
-Git-Commit-ID: b16d8c231e4d03fefc7de1b8b62bad5659ee8070
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 4 Aug 2014 19:33:17 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <53DF7F34.5030201@compro.net>
+References: <166070137.57941.1406779444750.JavaMail.root@mx2.compro.net>
+	<53DA3A2D.90403@compro.net>
+	<1598413764.80217.1406848485858.JavaMail.root@mx2.compro.net>
+	<53DF7F34.5030201@compro.net>
+Date: Tue, 5 Aug 2014 08:33:16 +0900
+Message-ID: <CAHb8M2DkfnkrsjLciSvS=_0GM4wn1dC33ExUWS7nYG=mnNH+Xg@mail.gmail.com>
+Subject: Re: [PATCH V2] staging: dgap: introduce dgap_cleanup_nodes()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Mark Hounschell <markh@compro.net>, Greg KH <gregkh@linuxfoundation.org>
+Cc: Lidza Louina <lidza.louina@gmail.com>,
+        driverdev-devel@linuxdriverproject.org,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b16d8c231e4d03fefc7de1b8b62bad5659ee8070
-Gitweb:     http://git.kernel.org/tip/b16d8c231e4d03fefc7de1b8b62bad5659ee8070
-Author:     Matt Fleming <matt.fleming@intel.com>
-AuthorDate: Tue, 5 Aug 2014 00:12:19 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 4 Aug 2014 16:26:46 -0700
+Hi, Mark and Greg.
 
-x86/efi: Fix 3DNow optimization build failure in EFI stub
+Thanks for testing. :-)
 
-Building a 32-bit kernel with CONFIG_X86_USE_3DNOW and CONFIG_EFI_STUB
-leads to the following build error,
+Greg, is this patch possible to merge to your staging tree?
+Please check for me.
+patch : https://lkml.org/lkml/2014/7/31/2
 
-  drivers/firmware/efi/libstub/lib.a(efi-stub-helper.o): In function `efi_relocate_kernel':
-  efi-stub-helper.c:(.text+0xda5): undefined reference to `_mmx_memcpy'
+Thanks.
 
-This is due to the fact that the EFI boot stub pulls in the 3DNow
-optimized versions of the memcpy() prototype from
-arch/x86/include/asm/string_32.h, even though the _mmx_memcpy()
-implementation isn't available in the EFI stub.
+regards,
+Daeseok Youn.
 
-For now, predicate CONFIG_EFI_STUB on !CONFIG_X86_USE_3DNOW. This is
-most definitely a temporary fix. A complete solution will involve
-selectively including kernel headers/symbols into the early-boot
-execution environment of the EFI boot stub, i.e. something analogous to
-the way that the _SETUP symbol is used.
-
-Previous attempts have been made to fix this kind of problem, though
-none seem to have ever been merged,
-
-  http://lkml.kernel.org/r/20120329104822.GA17233@x1.osrc.amd.com
-
-Clearly, this problem has been around for a long time.
-
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Cc: Borislav Petkov <bp@suse.de>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Link: http://lkml.kernel.org/r/1407193939-27813-1-git-send-email-matt@console-pimps.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 801ed36..7ea8aaa 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1536,7 +1536,7 @@ config EFI
- 
- config EFI_STUB
-        bool "EFI stub support"
--       depends on EFI
-+       depends on EFI && !X86_USE_3DNOW
-        ---help---
-           This kernel feature allows a bzImage to be loaded directly
- 	  by EFI firmware without the use of a bootloader.
+2014-08-04 21:40 GMT+09:00 Mark Hounschell <markh@compro.net>:
+> On 07/31/2014 07:14 PM, DaeSeok Youn wrote:
+>>
+>> Hi, Mark
+>>
+>> 2014-07-31 21:44 GMT+09:00 Mark Hounschell <markh@compro.net>:
+>>>
+>>> On 07/31/2014 12:02 AM, Daeseok Youn wrote:
+>>>
+>>>>
+>>>> When a configration file is parsed with dgap_parsefile(),
+>>>> makes nodes for saving configrations for board.
+>>>>
+>>>> Making a node will allocate node memory and strings for saving
+>>>> configrations with kstrdup().
+>>>>
+>>>> So these are freed when dgap is unloaded or failed to initialize.
+>>>>
+>>>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>>>> ---
+>>>> V2: Do not need to free for NULLNODE.
+>>>>
+>>>> I have been too busy to solve this issue, sorry for late.
+>>>>
+>>>> Mark, Can you test this patch? I try to make simple module which is
+>>>> testing dgap_parsefile() and dgap_cleanup_nodes().
+>>>>
+>>>
+>>> I'll be happy to, but I can't do it until Monday. I'm not where the
+>>> hardware
+>>> is until then.
+>>
+>> That's OK. :-)
+>>
+>
+> After applying this patch I am still able to load and unload the driver at
+> will, and it still works for me.
+>
+> Regards
+> Mark
+>
