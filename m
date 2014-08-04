@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaHDNvR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 09:51:17 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51761 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581AbaHDNvO (ORCPT
+	id S1752578AbaHDNvN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 09:51:13 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:34395 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581AbaHDNvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 09:51:14 -0400
-Date: Mon, 4 Aug 2014 06:51:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140804135104.GN8101@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140731215445.GA21933@linux.vnet.ibm.com>
- <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140802145616.GA18195@redhat.com>
- <20140802225757.GB8101@linux.vnet.ibm.com>
- <20140803133318.GB671@redhat.com>
- <20140803220535.GH8101@linux.vnet.ibm.com>
- <53DED5D1.6030504@cn.fujitsu.com>
- <20140804010938.GI8101@linux.vnet.ibm.com>
- <20140804132525.GA18722@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140804132525.GA18722@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080413-1344-0000-0000-0000033C52D6
+	Mon, 4 Aug 2014 09:51:12 -0400
+From: Kever Yang <kever.yang@rock-chips.com>
+To: Paul Zimmerman <paulz@synopsys.com>
+Cc: dianders@chromium.org, Heiko Stuebner <heiko@sntech.de>,
+        linux-arm-kernel@vger.kernel.org, addy.ke@rock-chips.com,
+        cf@rock-chips.com, xjq@rock-chips.com, olof@lixom.net,
+        sonnyrao@chromium.org, wulf@rock-chips.com, lyz@rock-chips.com,
+        jg1.han@samsung.com, hj@rock-chips.com, huangtao@rock-chips.com,
+        Kever Yang <kever.yang@rock-chips.com>, devicetree@vger.kernel.org,
+        Matt Porter <mporter@linaro.org>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        linux-usb@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCH v3 0/2] Patches to add dr_mode for dwc2
+Date: Mon,  4 Aug 2014 21:45:40 +0800
+Message-Id: <1407159942-7063-1-git-send-email-kever.yang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 03:25:25PM +0200, Oleg Nesterov wrote:
-> On 08/03, Paul E. McKenney wrote:
-> >
-> > On Mon, Aug 04, 2014 at 08:37:37AM +0800, Lai Jiangshan wrote:
-> > > An alternative solution:
-> > > srcu_read_lock() before exit_notify(), srcu_read_unlock() after the last preempt_disable()
-> > > in the do_exit, and synchronize_srcu() in rcu_tasks_kthread().
-> >
-> > That is a good way to synchronize with the exiting tasks, and I will
-> > probably that that approach.
-> >
-> > I -thought- that Oleg was concerned about safely building the list to
-> > start with, though.
-> 
-> But for_each_process_thread() under rcu_read_lock() should work except
-> it can miss the exiting tasks.
-> 
-> So it seems that the clever Lai's trick should solve the problem.
+These two patches enable the dr_mode for the dwc2 usb
+controller.  These are split from the patch series adding
+rk3288 dwc2 support.
 
-Cool!  Lai's trick seems to be doing well in early testing, so keeping
-fingers firmly crossed.  ;-)
+Changes in v3:
+- fix the odd spacing in dwc2_hsotg struct
+- From Jingoo's suggestion:
+    change the commit message
 
-							Thanx, Paul
+Changes in v2:
+- Split out dr_mode and rk3288 bindings.
+- put spaces around '+' operator
+- expand the comment for dr_mode
+- handle dr_mode is USB_DR_MODE_OTG
+
+Kever Yang (2):
+  Documentation: dt-bindings: add dt binding info for dwc2 dr_mode
+  usb: dwc2: add 'mode' which based on Kconfig select or dts setting
+
+ Documentation/devicetree/bindings/usb/dwc2.txt |  2 ++
+ drivers/usb/dwc2/core.c                        | 18 ++++++++++++++++++
+ drivers/usb/dwc2/core.h                        |  5 +++++
+ drivers/usb/dwc2/platform.c                    | 12 ++++++++++++
+ 4 files changed, 37 insertions(+)
+
+-- 
+1.9.1
 
