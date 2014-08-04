@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864AbaHDNWY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 09:22:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40964 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752799AbaHDNWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 09:22:23 -0400
-Date: Mon, 4 Aug 2014 15:22:40 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH] bridge: remove a useless comment
-Message-ID: <1407158554-17384-1-git-send-email-mst@redhat.com>
+	id S1752891AbaHDNWs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 09:22:48 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:56886 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078AbaHDNWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 09:22:47 -0400
+Date: Mon, 4 Aug 2014 09:22:42 -0400
+From: Jeff Layton <jlayton@poochiereds.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] please pull file locking changes for v3.17
+Message-ID: <20140804092242.020fbbc8@tlielax.poochiereds.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Mutt-Fcc: =sent
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 6cbdceeb1cb12c7d620161925a8c3e81daadb2e4
-    bridge: Dump vlan information from a bridge port
-introduced a comment in an attempt to explain the
-code logic. The comment is unfinished so it confuses more
-than it explains, remove it.
+The following changes since commit 1795cd9b3a91d4b5473c97f491d63892442212ab:
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- net/bridge/br_netlink.c | 1 -
- 1 file changed, 1 deletion(-)
+  Linux 3.16-rc5 (2014-07-13 14:04:33 -0700)
 
-diff --git a/net/bridge/br_netlink.c b/net/bridge/br_netlink.c
-index 26edb51..cb5fcf6 100644
---- a/net/bridge/br_netlink.c
-+++ b/net/bridge/br_netlink.c
-@@ -208,7 +208,6 @@ int br_getlink(struct sk_buff *skb, u32 pid, u32 seq,
- 	int err = 0;
- 	struct net_bridge_port *port = br_port_get_rtnl(dev);
- 
--	/* not a bridge port and  */
- 	if (!port && !(filter_mask & RTEXT_FILTER_BRVLAN))
- 		goto out;
- 
+are available in the git repository at:
+
+  git://git.samba.org/jlayton/linux.git tags/locks-v3.17-1
+
+for you to fetch changes up to 73a8f5f7e6350766102fe8fb85048f7f8f0cb5f7:
+
+  locks: purge fl_owner_t from fs/locks.c (2014-07-13 21:39:07 -0400)
+
+----------------------------------------------------------------
+(from the branch description for linux-next local branch)
+
+linux-next branch
+
+File locking related changes for v3.17 (pile #1)
+
+Just a couple of changes from Christoph to start us down the road toward
+getting rid of the fl_owner_t typedef.
+
+----------------------------------------------------------------
+Christoph Hellwig (2):
+      locks: typedef fl_owner_t to void *
+      locks: purge fl_owner_t from fs/locks.c
+
+ fs/locks.c         | 26 +++++++++++++-------------
+ include/linux/fs.h |  2 +-
+ 2 files changed, 14 insertions(+), 14 deletions(-)
+
 -- 
-MST
+Jeff Layton <jlayton@poochiereds.net>
