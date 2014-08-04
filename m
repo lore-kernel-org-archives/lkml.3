@@ -1,110 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264AbaHDOOW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 10:14:22 -0400
-Received: from mail-am1lrp0015.outbound.protection.outlook.com ([213.199.154.15]:41376
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752097AbaHDOOV convert rfc822-to-8bit (ORCPT
+	id S1752608AbaHDOPR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 10:15:17 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:53128 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465AbaHDOPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 10:14:21 -0400
-From: Dotan Barak <dotanb@mellanox.com>
-To: Joe Perches <joe@perches.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: checkpatch.pl report about "Missing blank line after
- declarations" in a structure definition
-Thread-Topic: checkpatch.pl report about "Missing blank line after
- declarations" in a structure definition
-Thread-Index: Ac+v1hsr1olRx4GsR0yoGKahVltZOwAEuFMAAAD6CqA=
-Date: Mon, 4 Aug 2014 14:14:16 +0000
-Message-ID: <e68ad593255b4094a79de9b22cbc2a7a@DB3PR05MB380.eurprd05.prod.outlook.com>
-References: <3219ba81002f41d99c8651755dc2a920@DB3PR05MB380.eurprd05.prod.outlook.com>
- <1407159342.16152.63.camel@joe-AO725>
-In-Reply-To: <1407159342.16152.63.camel@joe-AO725>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [193.47.165.251]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 0293D40691
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(41574002)(377424004)(52604005)(51704005)(199002)(189002)(24454002)(19580405001)(74662001)(106356001)(83322001)(19580395003)(85852003)(81342001)(33646002)(83072002)(66066001)(80022001)(81542001)(50986999)(64706001)(110136001)(87936001)(105586002)(86362001)(76176999)(99396002)(76576001)(15975445006)(101416001)(2656002)(46102001)(74502001)(77982001)(20776003)(95666004)(4396001)(76482001)(54356999)(85306004)(74316001)(79102001)(107046002)(21056001)(24736002)(108616003);DIR:OUT;SFP:;SCL:1;SRVR:DB3PR05MB378;H:DB3PR05MB380.eurprd05.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 4 Aug 2014 10:15:15 -0400
+Date: Mon, 4 Aug 2014 10:15:11 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>
+Subject: [GIT PULL] cgroup changes for v3.17-rc1
+Message-ID: <20140804141511.GC26230@htj.dyndns.org>
 MIME-Version: 1.0
-X-OriginatorOrg: Mellanox.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe.
+Hello, Linus.
 
-The patch that you mentioned solved most of the issues, thanks!
+Mostly changes to get the v2 interface ready.  The core features are
+mostly ready now and I think it's reasonable to expect to drop the
+devel mask in one or two devel cycles at least for a subset of
+controllers.
 
-However, there is still one more warning of this type within a struct declaration.
+* cgroup added a controller dependency mechanism so that block cgroup
+  can depend on memory cgroup.  This will be used to finally support
+  IO provisioning on the writeback traffic, which is currently being
+  implemented.
 
-# ./checkpatch.pl --file --no-tree ../include/linux/mlx5/driver.h
+* The v2 interface now uses a separate table so that the interface
+  files for the new interface are explicitly declared in one place.
+  Each controller will explicitly review and add the files for the new
+  interface.
 
-WARNING: Missing a blank line after declarations
-#508: FILE: ../include/linux/mlx5/driver.h:508:
-+       struct mlx5_uuar_info   uuari;
-+       MLX5_DECLARE_DOORBELL_LOCK(cq_uar_lock);
+* cpuset is getting ready for the hierarchical behavior which is in
+  the similar style with other controllers so that an ancestor's
+  configuration change doesn't change the descendants' configurations
+  irreversibly and processes aren't silently migrated when a CPU or
+  node goes down.
 
+All the changes are to the new interface and no behavior changed for
+the multiple hierarchies.
 
-<snip start>
-struct mlx5_priv {
-        char                    name[MLX5_MAX_NAME_LEN];
-        struct mlx5_eq_table    eq_table;
-        struct mlx5_uuar_info   uuari;
-        MLX5_DECLARE_DOORBELL_LOCK(cq_uar_lock);
+Thanks.
 
-        /* pages stuff */
-        struct workqueue_struct *pg_wq;
-        struct rb_root          page_root;
-        int                     fw_pages;
-        int                     reg_pages;
-        struct list_head        free_list;
+The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
 
-<snip end>
+  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
 
+are available in the git repository at:
 
-Thanks
-Dotan
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.17
 
-> -----Original Message-----
-> From: Joe Perches [mailto:joe@perches.com]
-> Sent: Monday, August 04, 2014 4:36 PM
-> To: Dotan Barak
-> Cc: linux-kernel@vger.kernel.org
-> Subject: Re: checkpatch.pl report about "Missing blank line after
-> declarations" in a structure definition
-> 
-> On Mon, 2014-08-04 at 11:20 +0000, Dotan Barak wrote:
-> > Hi Joe.
-> >
-> > Thanks for fixing the issue that I reported about.
-> >
-> > It seems that even after your fix, there is still a false warning of "Missing
-> blank line after declarations".
-> >
-> > I executed checkpatch.pl on a header file that exists in the Linux tree:
-> > # ./checkpatch.pl --file --no-tree ../include/linux/mlx5/cq.h
-> >
-> > And got the following warning:
-> >
-> > WARNING: Missing a blank line after declarations
-> > #49: FILE: ../include/linux/mlx5/cq.h:49:
-> > +       int                     irqn;
-> > +       void (*comp)            (struct mlx5_core_cq *);
-> []
-> > As you can see, this is a structure definition and IMHO the warning above is
-> false.
-> 
-> The version in Linus' tree has a defect where this test doesn't recognize
-> function pointer declarations.
-> 
-> This is fixed in -next since June, but it takes awhile to get into Linus' tree.
-> 
-> https://lkml.org/lkml/2014/6/6/426
-> 
+for you to fetch changes up to a13812683f1118ee4deed88d8d9bc2c268358b2e:
 
+  cpuset: fix the WARN_ON() in update_nodemasks_hier() (2014-07-30 11:26:58 -0400)
+
+----------------------------------------------------------------
+Li Zefan (13):
+      cpuset: add cs->effective_cpus and cs->effective_mems
+      cpuset: update cpuset->effective_{cpus,mems} at hotplug
+      cpuset: update cs->effective_{cpus, mems} when config changes
+      cpuset: inherit ancestor's masks if effective_{cpus, mems} becomes empty
+      cpuset: use effective cpumask to build sched domains
+      cpuset: initialize top_cpuset's configured masks at mount
+      cpuset: apply cs->effective_{cpus,mems}
+      cpuset: make cs->{cpus, mems}_allowed as user-configured masks
+      cpuset: refactor cpuset_hotplug_update_tasks()
+      cpuset: enable onlined cpu/node in effective masks
+      cpuset: allow writing offlined masks to cpuset.cpus/mems
+      cpuset: export effective masks to userspace
+      cpuset: fix the WARN_ON() in update_nodemasks_hier()
+
+Tejun Heo (16):
+      cgroup: reorganize cgroup_subtree_control_write()
+      cgroup: introduce cgroup->subtree_control
+      cgroup: make interface files visible iff enabled on cgroup->subtree_control
+      cgroup: implement cgroup_subsys->css_reset()
+      cgroup: implement cgroup_subsys->depends_on
+      blkcg, memcg: make blkcg depend on memcg on the default hierarchy
+      cgroup: remove CGRP_ROOT_OPTION_MASK
+      cgroup: make interface file "cgroup.sane_behavior" legacy-only
+      cgroup: remove sane_behavior support on non-default hierarchies
+      cgroup: clean up sane_behavior handling
+      cgroup: split cgroup_base_files[] into cgroup_{dfl|legacy}_base_files[]
+      cgroup: rename cgroup_subsys->base_cftypes to ->legacy_cftypes
+      cgroup: replace cgroup_add_cftypes() with cgroup_add_legacy_cftypes()
+      cgroup: distinguish the default and legacy hierarchies when handling cftypes
+      cgroup: make CFTYPE_ONLY_ON_DFL and CFTYPE_NO_ internal to cgroup core
+      cgroup: initialize cgrp_dfl_root_inhibit_ss_mask from !->dfl_files test
+
+ Documentation/cgroups/cgroups.txt           |  14 +
+ Documentation/cgroups/unified-hierarchy.txt |  35 +-
+ block/blk-cgroup.c                          |  13 +-
+ block/blk-throttle.c                        |   6 +-
+ include/linux/cgroup.h                      | 165 ++++-----
+ kernel/cgroup.c                             | 453 +++++++++++++++++--------
+ kernel/cgroup_freezer.c                     |   2 +-
+ kernel/cpuset.c                             | 500 +++++++++++++++++-----------
+ kernel/sched/core.c                         |   2 +-
+ kernel/sched/cpuacct.c                      |   2 +-
+ mm/hugetlb_cgroup.c                         |   5 +-
+ mm/memcontrol.c                             |  37 +-
+ net/core/netclassid_cgroup.c                |   2 +-
+ net/core/netprio_cgroup.c                   |   2 +-
+ net/ipv4/tcp_memcontrol.c                   |   2 +-
+ security/device_cgroup.c                    |   2 +-
+ 16 files changed, 806 insertions(+), 436 deletions(-)
+
+-- 
+tejun
