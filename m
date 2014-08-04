@@ -1,124 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaHDRj2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:39:28 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:62494 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441AbaHDRjL (ORCPT
+	id S1751611AbaHDRqB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:46:01 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:17554 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831AbaHDRp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 13:39:11 -0400
-Date: Mon, 4 Aug 2014 10:39:07 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Matt Porter <mporter@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, Gregory Fong <gregory.0xf0@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Marc Carino <marc.ceeeee@gmail.com>
-Subject: Re: [PATCH v8 01/11] ARM: brcmstb: add infrastructure for ARM-based
- Broadcom STB SoCs
-Message-ID: <20140804173907.GU3711@ld-irv-0074>
-References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
- <1405976886-27807-2-git-send-email-computersforpeace@gmail.com>
- <20140802081924.GW30282@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140802081924.GW30282@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Aug 2014 13:45:59 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-49-53dfc6d5c129
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        b.zolnierkie@samsung.com
+Subject: [PATCH v4 0/5] ARM: EXYNOS: cpuidle: fix AFTR mode on boards with
+ secure firmware enabled
+Date: Mon, 04 Aug 2014 19:45:40 +0200
+Message-id: <1407174345-31213-1-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t9jAd2rx+4HG+zbzWWxccZ6Vot5n2Ut
+	ehdcZbM42/SG3eL9oWfMFpseX2O1uLxrDpvF594jjBYzzu9jsjhz+hKrxck/vYwW62e8ZrHY
+	+NXDgdfjzrU9bB6bl9R73P73mNljy9V2Fo++LasYPT5vkgtgi+KySUnNySxLLdK3S+DK6Jub
+	WrBWtGLulKfMDYzNQl2MnBwSAiYSW5ffZoewxSQu3FvP1sXIxSEksIhR4uOr2cwQTheTxI49
+	DxhBqtgErCQmtq8Cs0UE1CR6Fm9lBCliFtjLLLG0exPYKGGBFIkVJ1cwg9gsAqoSaz71soHY
+	vAIeEtNv/GGCWKco0f1sAtsERu4FjAyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYLD7Jn0
+	DsZVDRaHGAU4GJV4eAXU7gcLsSaWFVfmHmKU4GBWEuGtOwAU4k1JrKxKLcqPLyrNSS0+xCjN
+	waIkznuw1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwCi101085entLPNVwZ27jd1Szsk7GhzccLS3
+	QvPEtoMBnienht5JkRf6tqc04NHmrQy7TlhEfPt9T9L0dJ4YQ2Sba7Gr/QnO6ppNN5jO83st
+	6d+pbu709tt8v1Lrc9rBTHve7DV9IHBp0rPu0GVefrW55opZ65asithjdMZUjlX9Zfm611Hy
+	5kosxRmJhlrMRcWJAOS30rIvAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 02, 2014 at 09:19:24AM +0100, Russell King wrote:
-> Here's some more comments on this.
-> 
-> On Mon, Jul 21, 2014 at 02:07:56PM -0700, Brian Norris wrote:
-> > +static void brcmstb_cpu_die(u32 cpu)
-> > +{
-> > +	v7_exit_coherency_flush(all);
-> 
-> This is ultimately what causes my builds to break:
-> 
-> /tmp/ccSPowmq.s:171: Error: selected processor does not support ARM mode `isb '
-> /tmp/ccSPowmq.s:177: Error: selected processor does not support ARM mode `isb '
-> /tmp/ccSPowmq.s:178: Error: selected processor does not support ARM mode `dsb '
-> make[2]: *** [arch/arm/mach-bcm/platsmp-brcmstb.o] Error 1
-> 
-> It seems that v7_exit_coherency_flush() can only be used with code which
-> is ARMv7 only.
+Hi,
 
-Yes, I noticed this already, and I proposed a solution:
+This patch series adds support for AFTR idle mode on boards with
+secure firmware enabled and allows EXYNOS cpuidle driver usage on
+Exynos4x12 SoCs.
 
-  http://article.gmane.org/gmane.linux.drivers.devicetree/84517
+It has been tested on Trats2 board (using Exynos4412 SoC with secure
+firmware enabled) on which AFTR mode reduces power consumption by ~12%
+when EXYNOS cpuidle driver is enabled (in both cases the default
+exynos_defconfig config is used and CPU1-3 are offlined).
 
-> > +	/* Prevent all interrupts from reaching this CPU. */
-> > +	arch_local_irq_disable();
-> 
-> Why do you think it is necessary to disable interrupts here?  Where
-> have they been re-enabled since this bit of generic code:
-> 
-> void __ref cpu_die(void)
-> {
->         unsigned int cpu = smp_processor_id();
-> 
->         idle_task_exit();
-> 
->         local_irq_disable();
-> 
-> and why arch_local_irq_disable() at that?  Even if interrupts were
-> enabled prior to your call to arch_local_irq_disable(), what do you
-> think would be the effect of receiving an interrupt after you've
-> exited coherency?
+Depends on:
+- next-20140804 branch of linux-next kernel tree
+- [PATCH v4][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35192.html)
+- [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34282.html)
 
-This mistake was already noted. No need for the extra IRQ disable.
+Changes since v3:
+- rebased on top of next-20140804 +
+  [PATCH v4][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35192.html)
+  [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34282.html)
+- (re-)added patch fixing S5P_CENTRAL_SEQ_OPTION register setup
 
-(http://article.gmane.org/gmane.linux.drivers.devicetree/84516)
+Changes since v2:
+- rebased on top of next-20140708 +
+  [PATCH 5/6] ARM: EXYNOS: Fix suspend/resume sequencies
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32809.html)
+  [with rejects fixed]
+  [PATCH 6/6] ARM: EXYNOS: Register cpuidle device only on Exynos4210 and 5250
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32808.html)
+  [PATCH 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32991.html)
+  [with rejects fixed in patch #2]
+- addressed review comments from Tomasz Figa and Daniel Lezcano
 
-> > +
-> > +	/*
-> > +	 * Final full barrier to ensure everything before this instruction has
-> > +	 * quiesced.
-> > +	 */
-> > +	isb();
-> > +	dsb();
-> 
-> If the call to arch_local_irq_disable() is removed, and
-> v7_exit_coherency_flush() is fixed, then this is not required, because
-> v7_exit_coherency_flush() already does this at the very end.
+Changes since v1:
+- synced against next-20140602
+- added missing Acked-by-s
 
-Right. Will drop.
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
-> > +
-> > +	per_cpu_sw_state_wr(cpu, 0);
-> > +
-> > +	/* Sit and wait to die */
-> > +	wfi();
-> > +
-> > +	/* We should never get here... */
-> > +	panic("Spurious interrupt on CPU %d received!\n", cpu);
-> 
-> You really should /not/ be calling panic here, because that uses data
-> shared with the CPUs which are still coherent.  This is akin to doing
-> DMA into bits of the kernel space without dealing with the cache
-> coherency issues.
 
-OK.
+Bartlomiej Zolnierkiewicz (5):
+  ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_* macros by static inlines
+  ARM: EXYNOS: add AFTR mode support to firmware do_idle method
+  ARM: EXYNOS: cpuidle: add secure firmware support to AFTR mode code
+  ARM: EXYNOS: PM: fix register setup for AFTR mode code
+  ARM: EXYNOS: cpuidle: allow driver usage on Exynos4x12 SoCs
 
-> Moreover, if you read the comments on
-> v7_exit_coherency_flush() about ldrex/strex, which are two instructions
-> spinlocks use, you'll see that ldrex/strex must not be executed, which
-> means you can't call any function which uses spinlocks.  That rules
-> out printk() et.al.  printascii is fine, but that's only available when
-> the low level debug stuff is enabled.
+ arch/arm/include/asm/firmware.h |  2 +-
+ arch/arm/mach-exynos/common.h   |  5 ++++
+ arch/arm/mach-exynos/exynos.c   |  4 ++-
+ arch/arm/mach-exynos/firmware.c | 33 ++++++++++++++++-------
+ arch/arm/mach-exynos/pm.c       | 60 ++++++++++++++++++++++++-----------------
+ 5 files changed, 69 insertions(+), 35 deletions(-)
 
-OK, so I'll drop the panic(). printascii doesn't look extremely useful,
-but I suppose we could use it for debugging. Seems like a while (1) loop
-might be a suitable replacement. If we get this far, we'll likely get
-locked up trying to power this CPU off anyway, so it'll be apparent that
-there was power-down failure.
+-- 
+1.8.2.3
 
-Thanks,
-Brian
