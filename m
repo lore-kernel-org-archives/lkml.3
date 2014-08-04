@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182AbaHDI4w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 04:56:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54768 "EHLO mx2.suse.de"
+	id S1752270AbaHDI45 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 04:56:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54738 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751980AbaHDI4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 04:56:07 -0400
+	id S1751935AbaHDI4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 04:56:06 -0400
 From: Vlastimil Babka <vbabka@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Vlastimil Babka <vbabka@suse.cz>,
         Michal Nazarewicz <mina86@mina86.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: [PATCH v6 12/13] mm: rename allocflags_to_migratetype for clarity
-Date: Mon,  4 Aug 2014 10:55:23 +0200
-Message-Id: <1407142524-2025-13-git-send-email-vbabka@suse.cz>
+Subject: [PATCH v6 08/13] mm, compaction: periodically drop lock and restore IRQs in scanners
+Date: Mon,  4 Aug 2014 10:55:19 +0200
+Message-Id: <1407142524-2025-9-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1407142524-2025-1-git-send-email-vbabka@suse.cz>
 References: <1407142524-2025-1-git-send-email-vbabka@suse.cz>
@@ -26,96 +27,247 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Rientjes <rientjes@google.com>
+Compaction scanners regularly check for lock contention and need_resched()
+through the compact_checklock_irqsave() function. However, if there is no
+contention, the lock can be held and IRQ disabled for potentially long time.
 
-The page allocator has gfp flags (like __GFP_WAIT) and alloc flags (like
-ALLOC_CPUSET) that have separate semantics.
+This has been addressed by commit b2eef8c0d091 ("mm: compaction: minimise the
+time IRQs are disabled while isolating pages for migration") for the migration
+scanner. However, the refactoring done by commit 2a1402aa044b ("mm: compaction:
+acquire the zone->lru_lock as late as possible") has changed the conditions so
+that the lock is dropped only when there's contention on the lock or
+need_resched() is true. Also, need_resched() is checked only when the lock is
+already held. The comment "give a chance to irqs before checking need_resched"
+is therefore misleading, as IRQs remain disabled when the check is done.
 
-The function allocflags_to_migratetype() actually takes gfp flags, not alloc
-flags, and returns a migratetype.  Rename it to gfpflags_to_migratetype().
+This patch restores the behavior intended by commit b2eef8c0d091 and also tries
+to better balance and make more deterministic the time spent by checking for
+contention vs the time the scanners might run between the checks. It also
+avoids situations where checking has not been done often enough before. The
+result should be avoiding both too frequent and too infrequent contention
+checking, and especially the potentially long-running scans with IRQs disabled
+and no checking of need_resched() or for fatal signal pending, which can happen
+when many consecutive pages or pageblocks fail the preliminary tests and do not
+reach the later call site to compact_checklock_irqsave(), as explained below.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
+Before the patch:
+
+In the migration scanner, compact_checklock_irqsave() was called each loop, if
+reached. If not reached, some lower-frequency checking could still be done if
+the lock was already held, but this would not result in aborting contended
+async compaction until reaching compact_checklock_irqsave() or end of
+pageblock. In the free scanner, it was similar but completely without the
+periodical checking, so lock can be potentially held until reaching the end of
+pageblock.
+
+After the patch, in both scanners:
+
+The periodical check is done as the first thing in the loop on each
+SWAP_CLUSTER_MAX aligned pfn, using the new compact_unlock_should_abort()
+function, which always unlocks the lock (if locked) and aborts async compaction
+if scheduling is needed. It also aborts any type of compaction when a fatal
+signal is pending.
+
+The compact_checklock_irqsave() function is replaced with a slightly different
+compact_trylock_irqsave(). The biggest difference is that the function is not
+called at all if the lock is already held. The periodical need_resched()
+checking is left solely to compact_unlock_should_abort(). The lock contention
+avoidance for async compaction is achieved by the periodical unlock by
+compact_unlock_should_abort() and by using trylock in compact_trylock_irqsave()
+and aborting when trylock fails. Sync compaction does not use trylock.
+
 Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Acked-by: Minchan Kim <minchan@kernel.org>
 Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Cc: Christoph Lameter <cl@linux.com>
 Cc: Rik van Riel <riel@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
 ---
- include/linux/gfp.h | 2 +-
- mm/compaction.c     | 4 ++--
- mm/page_alloc.c     | 6 +++---
- 3 files changed, 6 insertions(+), 6 deletions(-)
+ mm/compaction.c | 119 ++++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 72 insertions(+), 47 deletions(-)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 5e7219d..41b30fd 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -156,7 +156,7 @@ struct vm_area_struct;
- #define GFP_DMA32	__GFP_DMA32
- 
- /* Convert GFP flags to their corresponding migrate type */
--static inline int allocflags_to_migratetype(gfp_t gfp_flags)
-+static inline int gfpflags_to_migratetype(const gfp_t gfp_flags)
- {
- 	WARN_ON((gfp_flags & GFP_MOVABLE_MASK) == GFP_MOVABLE_MASK);
- 
 diff --git a/mm/compaction.c b/mm/compaction.c
-index dc24f1b..f5270ae 100644
+index 862c69a..bb2484f 100644
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -1242,7 +1242,7 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
- 		.nr_freepages = 0,
- 		.nr_migratepages = 0,
- 		.order = order,
--		.migratetype = allocflags_to_migratetype(gfp_mask),
-+		.migratetype = gfpflags_to_migratetype(gfp_mask),
- 		.zone = zone,
- 		.mode = mode,
- 	};
-@@ -1294,7 +1294,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 		return COMPACT_SKIPPED;
+@@ -223,61 +223,72 @@ static void update_pageblock_skip(struct compact_control *cc,
+ }
+ #endif /* CONFIG_COMPACTION */
  
- #ifdef CONFIG_CMA
--	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
-+	if (gfpflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- #endif
- 	/* Compact each zone in the list */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 23a1e06..e0e786f 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2523,7 +2523,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 			alloc_flags |= ALLOC_NO_WATERMARKS;
+-static int should_release_lock(spinlock_t *lock)
++/*
++ * Compaction requires the taking of some coarse locks that are potentially
++ * very heavily contended. For async compaction, back out if the lock cannot
++ * be taken immediately. For sync compaction, spin on the lock if needed.
++ *
++ * Returns true if the lock is held
++ * Returns false if the lock is not held and compaction should abort
++ */
++static bool compact_trylock_irqsave(spinlock_t *lock, unsigned long *flags,
++						struct compact_control *cc)
+ {
+-	/*
+-	 * Sched contention has higher priority here as we may potentially
+-	 * have to abort whole compaction ASAP. Returning with lock contention
+-	 * means we will try another zone, and further decisions are
+-	 * influenced only when all zones are lock contended. That means
+-	 * potentially missing a lock contention is less critical.
+-	 */
+-	if (need_resched())
+-		return COMPACT_CONTENDED_SCHED;
+-	else if (spin_is_contended(lock))
+-		return COMPACT_CONTENDED_LOCK;
++	if (cc->mode == MIGRATE_ASYNC) {
++		if (!spin_trylock_irqsave(lock, *flags)) {
++			cc->contended = COMPACT_CONTENDED_LOCK;
++			return false;
++		}
++	} else {
++		spin_lock_irqsave(lock, *flags);
++	}
+ 
+-	return COMPACT_CONTENDED_NONE;
++	return true;
+ }
+ 
+ /*
+  * Compaction requires the taking of some coarse locks that are potentially
+- * very heavily contended. Check if the process needs to be scheduled or
+- * if the lock is contended. For async compaction, back out in the event
+- * if contention is severe. For sync compaction, schedule.
++ * very heavily contended. The lock should be periodically unlocked to avoid
++ * having disabled IRQs for a long time, even when there is nobody waiting on
++ * the lock. It might also be that allowing the IRQs will result in
++ * need_resched() becoming true. If scheduling is needed, async compaction
++ * aborts. Sync compaction schedules.
++ * Either compaction type will also abort if a fatal signal is pending.
++ * In either case if the lock was locked, it is dropped and not regained.
+  *
+- * Returns true if the lock is held.
+- * Returns false if the lock is released and compaction should abort
++ * Returns true if compaction should abort due to fatal signal pending, or
++ *		async compaction due to need_resched()
++ * Returns false when compaction can continue (sync compaction might have
++ *		scheduled)
+  */
+-static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+-				      bool locked, struct compact_control *cc)
++static bool compact_unlock_should_abort(spinlock_t *lock,
++		unsigned long flags, bool *locked, struct compact_control *cc)
+ {
+-	int contended = should_release_lock(lock);
++	if (*locked) {
++		spin_unlock_irqrestore(lock, flags);
++		*locked = false;
++	}
+ 
+-	if (contended) {
+-		if (locked) {
+-			spin_unlock_irqrestore(lock, *flags);
+-			locked = false;
+-		}
++	if (fatal_signal_pending(current)) {
++		cc->contended = COMPACT_CONTENDED_SCHED;
++		return true;
++	}
+ 
+-		/* async aborts if taking too long or contended */
++	if (need_resched()) {
+ 		if (cc->mode == MIGRATE_ASYNC) {
+-			cc->contended = contended;
+-			return false;
++			cc->contended = COMPACT_CONTENDED_SCHED;
++			return true;
+ 		}
+-
+ 		cond_resched();
  	}
- #ifdef CONFIG_CMA
--	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
-+	if (gfpflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- #endif
- 	return alloc_flags;
-@@ -2786,7 +2786,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
- 	struct zone *preferred_zone;
- 	struct zoneref *preferred_zoneref;
- 	struct page *page = NULL;
--	int migratetype = allocflags_to_migratetype(gfp_mask);
-+	int migratetype = gfpflags_to_migratetype(gfp_mask);
- 	unsigned int cpuset_mems_cookie;
- 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
- 	int classzone_idx;
-@@ -2820,7 +2820,7 @@ retry_cpuset:
- 	classzone_idx = zonelist_zone_idx(preferred_zoneref);
  
- #ifdef CONFIG_CMA
--	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
-+	if (gfpflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- #endif
- 	/* First allocation attempt */
+-	if (!locked)
+-		spin_lock_irqsave(lock, *flags);
+-	return true;
++	return false;
+ }
+ 
+ /*
+  * Aside from avoiding lock contention, compaction also periodically checks
+  * need_resched() and either schedules in sync compaction or aborts async
+- * compaction. This is similar to what compact_checklock_irqsave() does, but
++ * compaction. This is similar to what compact_unlock_should_abort() does, but
+  * is used where no lock is concerned.
+  *
+  * Returns false when no scheduling was needed, or sync compaction scheduled.
+@@ -336,6 +347,16 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 		int isolated, i;
+ 		struct page *page = cursor;
+ 
++		/*
++		 * Periodically drop the lock (if held) regardless of its
++		 * contention, to give chance to IRQs. Abort if fatal signal
++		 * pending or async compaction detects need_resched()
++		 */
++		if (!(blockpfn % SWAP_CLUSTER_MAX)
++		    && compact_unlock_should_abort(&cc->zone->lock, flags,
++								&locked, cc))
++			break;
++
+ 		nr_scanned++;
+ 		if (!pfn_valid_within(blockpfn))
+ 			goto isolate_fail;
+@@ -353,8 +374,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 		 * spin on the lock and we acquire the lock as late as
+ 		 * possible.
+ 		 */
+-		locked = compact_checklock_irqsave(&cc->zone->lock, &flags,
+-								locked, cc);
++		if (!locked)
++			locked = compact_trylock_irqsave(&cc->zone->lock,
++								&flags, cc);
+ 		if (!locked)
+ 			break;
+ 
+@@ -552,13 +574,15 @@ isolate_migratepages_block(struct compact_control *cc, unsigned long low_pfn,
+ 
+ 	/* Time to isolate some pages for migration */
+ 	for (; low_pfn < end_pfn; low_pfn++) {
+-		/* give a chance to irqs before checking need_resched() */
+-		if (locked && !(low_pfn % SWAP_CLUSTER_MAX)) {
+-			if (should_release_lock(&zone->lru_lock)) {
+-				spin_unlock_irqrestore(&zone->lru_lock, flags);
+-				locked = false;
+-			}
+-		}
++		/*
++		 * Periodically drop the lock (if held) regardless of its
++		 * contention, to give chance to IRQs. Abort async compaction
++		 * if contended.
++		 */
++		if (!(low_pfn % SWAP_CLUSTER_MAX)
++		    && compact_unlock_should_abort(&zone->lru_lock, flags,
++								&locked, cc))
++			break;
+ 
+ 		if (!pfn_valid_within(low_pfn))
+ 			continue;
+@@ -620,10 +644,11 @@ isolate_migratepages_block(struct compact_control *cc, unsigned long low_pfn,
+ 		    page_count(page) > page_mapcount(page))
+ 			continue;
+ 
+-		/* Check if it is ok to still hold the lock */
+-		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
+-								locked, cc);
+-		if (!locked || fatal_signal_pending(current))
++		/* If the lock is not held, try to take it */
++		if (!locked)
++			locked = compact_trylock_irqsave(&zone->lru_lock,
++								&flags, cc);
++		if (!locked)
+ 			break;
+ 
+ 		/* Recheck PageLRU and PageTransHuge under lock */
 -- 
 1.8.4.5
 
