@@ -1,107 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588AbaHDNUf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 09:20:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63686 "EHLO mx1.redhat.com"
+	id S1752864AbaHDNWY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 09:22:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40964 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752338AbaHDNUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 09:20:33 -0400
-From: Denys Vlasenko <dvlasenk@redhat.com>
+	id S1752799AbaHDNWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 09:22:23 -0400
+Date: Mon, 4 Aug 2014 15:22:40 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 2/6] x86: open-code register save/restore in trace_hardirqs thunks
-Date: Mon,  4 Aug 2014 15:19:42 +0200
-Message-Id: <1407158386-6201-3-git-send-email-dvlasenk@redhat.com>
-In-Reply-To: <1407158386-6201-1-git-send-email-dvlasenk@redhat.com>
-References: <1407158386-6201-1-git-send-email-dvlasenk@redhat.com>
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: [PATCH] bridge: remove a useless comment
+Message-ID: <1407158554-17384-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a preparatory patch for change in "struct pt_regs"
-handling in entry_64.S.
+commit 6cbdceeb1cb12c7d620161925a8c3e81daadb2e4
+    bridge: Dump vlan information from a bridge port
+introduced a comment in an attempt to explain the
+code logic. The comment is unfinished so it confuses more
+than it explains, remove it.
 
-trace_hardirqs thunks were (ab)using a part of pt_regs
-handling code, namely SAVE_ARGS/RESTORE_ARGS macros,
-to save/restore registers across C function calls.
-
-Since SAVE_ARGS is going to be changed, open-code
-register saving/restoring here.
-
-Incidentally, this removes a bit of dead code:
-one SAVE_ARGS was just to emit a CFI annotation,
-but it also generated unreachable assembly insns.
-
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Andy Lutomirski <luto@amacapital.net>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: X86 ML <x86@kernel.org>
-CC: Alexei Starovoitov <ast@plumgrid.com>
-CC: Will Drewry <wad@chromium.org>
-CC: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/x86/lib/thunk_64.S | 29 ++++++++++++++++++++++++-----
- 1 file changed, 24 insertions(+), 5 deletions(-)
+ net/bridge/br_netlink.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
-index 92d9fea..c1c9131 100644
---- a/arch/x86/lib/thunk_64.S
-+++ b/arch/x86/lib/thunk_64.S
-@@ -16,10 +16,20 @@
- \name:
- 	CFI_STARTPROC
+diff --git a/net/bridge/br_netlink.c b/net/bridge/br_netlink.c
+index 26edb51..cb5fcf6 100644
+--- a/net/bridge/br_netlink.c
++++ b/net/bridge/br_netlink.c
+@@ -208,7 +208,6 @@ int br_getlink(struct sk_buff *skb, u32 pid, u32 seq,
+ 	int err = 0;
+ 	struct net_bridge_port *port = br_port_get_rtnl(dev);
  
--	/* this one pushes 9 elems, the next one would be %rIP */
--	SAVE_ARGS
-+	subq  $9*8, %rsp
-+	CFI_ADJUST_CFA_OFFSET 9*8
-+	movq_cfi rdi, 8*8
-+	movq_cfi rsi, 7*8
-+	movq_cfi rdx, 6*8
-+	movq_cfi rcx, 5*8
-+	movq_cfi rax, 4*8
-+	movq_cfi r8,  3*8
-+	movq_cfi r9,  2*8
-+	movq_cfi r10, 1*8
-+	movq_cfi r11, 0*8
+-	/* not a bridge port and  */
+ 	if (!port && !(filter_mask & RTEXT_FILTER_BRVLAN))
+ 		goto out;
  
- 	.if \put_ret_addr_in_rdi
-+	/* 9*8(%rsp) is return addr on stack */
- 	movq_cfi_restore 9*8, rdi
- 	.endif
- 
-@@ -38,11 +48,20 @@
- 	THUNK lockdep_sys_exit_thunk,lockdep_sys_exit
- #endif
- 
--	/* SAVE_ARGS below is used only for the .cfi directives it contains. */
- 	CFI_STARTPROC
--	SAVE_ARGS
-+	CFI_ADJUST_CFA_OFFSET 9*8
- restore:
--	RESTORE_ARGS
-+	movq_cfi_restore 0*8, r11
-+	movq_cfi_restore 1*8, r10
-+	movq_cfi_restore 2*8, r9
-+	movq_cfi_restore 3*8, r8
-+	movq_cfi_restore 4*8, rax
-+	movq_cfi_restore 5*8, rcx
-+	movq_cfi_restore 6*8, rdx
-+	movq_cfi_restore 7*8, rsi
-+	movq_cfi_restore 8*8, rdi
-+	addq 9*8, %rsp
-+	CFI_ADJUST_CFA_OFFSET -9*8
- 	ret
- 	CFI_ENDPROC
- 	_ASM_NOKPROBE(restore)
 -- 
-1.8.1.4
-
+MST
