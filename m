@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802AbaHDOqi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 10:46:38 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:53249 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653AbaHDOqg (ORCPT
+	id S1752891AbaHDOrA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 10:47:00 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:64309 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653AbaHDOq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 10:46:36 -0400
-Date: Mon, 4 Aug 2014 16:46:43 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: mark yao <yzq@rock-chips.com>
-Cc: heiko@sntech.de, Rob Clark <robdclark@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, David Airlie <airlied@linux.ie>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>, huangtao@rock-chips.com,
-        devicetree@vger.kernel.org, zwl@rock-chips.com, cym@rock-chips.com,
-        linux-doc@vger.kernel.org, xw@rock-chips.com,
-        linux-api@vger.kernel.org, zyw@rock-chips.com,
-        zhangqing@rock-chips.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, kever.yang@rock-chips.com,
-        cf@rock-chips.com, xjq@rock-chips.com, xxm@rock-chips.com,
-        yxj@rock-chips.com, wxt@rock-chips.com, kfx@rock-chips.com
-Subject: Re: [PATCH 1/9] drm: Add drm driver for Rockchip Socs
-Message-ID: <20140804144643.GV8727@phenom.ffwll.local>
-Mail-Followup-To: mark yao <yzq@rock-chips.com>, heiko@sntech.de,
-	Rob Clark <robdclark@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Kumar Gala <galak@codeaurora.org>,
-	Randy Dunlap <rdunlap@infradead.org>,
-	David Airlie <airlied@linux.ie>,
-	Grant Likely <grant.likely@linaro.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	John Stultz <john.stultz@linaro.org>,
-	Rom Lemarchand <romlem@google.com>, huangtao@rock-chips.com,
-	devicetree@vger.kernel.org, zwl@rock-chips.com, cym@rock-chips.com,
-	linux-doc@vger.kernel.org, xw@rock-chips.com,
-	linux-api@vger.kernel.org, zyw@rock-chips.com,
-	zhangqing@rock-chips.com, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, kever.yang@rock-chips.com,
-	cf@rock-chips.com, xjq@rock-chips.com, xxm@rock-chips.com,
-	yxj@rock-chips.com, wxt@rock-chips.com, kfx@rock-chips.com
-References: <1407127274-1356-1-git-send-email-mark.yao@rock-chips.com>
- <1407127507-1612-1-git-send-email-yzq@rock-chips.com>
+	Mon, 4 Aug 2014 10:46:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Yijing Wang <wangyijing@huawei.com>
+Subject: Re: [RFC PATCH 00/11] Refactor MSI to support Non-PCI device
+Date: Mon, 4 Aug 2014 16:45:50 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Paul.Mundt@huawei.com, Marc Zyngier <marc.zyngier@arm.com>,
+        linux-pci@vger.kernel.org,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        virtualization@lists.linux-foundation.org,
+        Xinwei Hu <huxinwei@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Wuyun <wuyun.wu@huawei.com>
+References: <1406344128-27055-1-git-send-email-wangyijing@huawei.com> <201408011516.26253.arnd@arndb.de> <53DEFECB.3030201@huawei.com>
+In-Reply-To: <53DEFECB.3030201@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407127507-1612-1-git-send-email-yzq@rock-chips.com>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201408041645.50566.arnd@arndb.de>
+X-Provags-ID: V02:K0:WVmIIseUFfDPmrKgXtg3oVrQ4d994uFuQdJIKW6vExu
+ Aonmf5hjUA3CBcaR3PiJwJYwBytdKPyrKByxsXTGYni2eNfp88
+ OEtBqScZapd9b7TFui5PHeY9bCUlHlvZriY16xRJpUDCnMA9kp
+ 2VjhDGta75251NOcG5ROOiifihVaAUuVpY2Z9/f5ZEInw70ITE
+ civ6Lh/ONrLZFk+25A4mDa/mZe20U8ndH1xrnVhWSbzeO7rz+T
+ JV19sY98Cr3aKJApiLTZuI66tTx1FHdx6t/P1LCN6iNJ8scxcQ
+ Fe74PXpUAJ3H3j4Wcc0F1CkRSZRQ5flDS7rVZJaSH9pR4IshHF
+ Pbf+nWy1ouY6r5cqGE/LMA/P1A0XjcrUnY/HMprj1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 12:45:07PM +0800, mark yao wrote:
-> This patch is a DRM Driver for Rockchip Socs, driver provides an abstraction
-> for the graphics hardware, such as lcd controller and connector interface.
+On Monday 04 August 2014, Yijing Wang wrote:
+> I have another question is some drivers will request more than one
+> MSI/MSI-X IRQ, and the driver will use them to process different things.
+> Eg. network driver generally uses one of them to process trivial network thins,
+> and others to transmit/receive data.
 > 
-> Signed-off-by: mark yao <yzq@rock-chips.com>
-> ---
+> So, in this case, it seems to driver need to touch the IRQ numbers.
+> 
+> wr-linux:~ # cat /proc/interrupts
+>             CPU0       CPU1       CPU2     ....      CPU17      CPU18      CPU19      CPU20      CPU21      CPU22      CPU23
+>  ......
+>  100:          0          0          0               0          0          0          0          0          0          0  IR-PCI-MSI-edge      eth0
+>  101:          2          0          0               0          0          0  302830488          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-0
+>  102:        110          0          0               0          0  360675897          0          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-1
+>  103:        109          0          0               0          0          0          0          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-2
+>  104:        107          0          0         9678933          0          0          0          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-3
+>  105:        107          0          0               0  357838258          0          0          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-4
+>  106:        115          0          0               0          0          0          0          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-5
+>  107:        114          0          0               0          0          0          0  337866096          0          0  IR-PCI-MSI-edge      eth0-TxRx-6
+>  108:  373801199          0          0               0          0          0          0          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-7
+> 
 
-Just a quick drive-by comment below, don't consider this a full review by
-far ;-)
+I think in this example, you just need to request eight interrupts, and pass a
+different data pointer each time, pointing to the napi_struct of each of the
+NIC queues. The driver has no need to deal with the IRQ number at all,
+and I would be surprised if it cared today.
 
-> +static int lcdc_bind(struct device *dev, struct device *master, void *data)
-> +{
-> +	struct drm_device *drm_dev = data;
-> +	struct rockchip_drm_private *private = drm_dev->dev_private;
-> +	struct lcdc_context *ctx = dev_get_drvdata(dev);
-> +	struct drm_crtc *crtc;
-> +
-> +	ctx->drm_dev = drm_dev;
-> +
-> +	ctx->pipe = rockchip_drm_pipe_get(dev);
-> +	ctx->dpms = DRM_MODE_DPMS_OFF;
-> +	crtc = &ctx->crtc;
-> +
-> +	private->crtc[ctx->pipe] = crtc;
-> +	ctx->plane = rockchip_plane_init(drm_dev, 1 << ctx->pipe, true);
-> +	drm_crtc_init(drm_dev, crtc, &rockchip_crtc_funcs);
-
-This function is deprecated, please use the _with_planes versions so that
-this new driver supports universal planes properly.
-
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+	Arnd
