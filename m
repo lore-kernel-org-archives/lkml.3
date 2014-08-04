@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699AbaHDM1e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 08:27:34 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:41671 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637AbaHDM1d (ORCPT
+	id S1752723AbaHDM1i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 08:27:38 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60944 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988AbaHDM1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 08:27:33 -0400
-Date: Mon, 4 Aug 2014 13:27:28 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: P J P <ppandit@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: 3.12 to 3.13 boot regression bisected - still applies to 3.16
-Message-ID: <20140804122728.GH15082@console-pimps.org>
-References: <20140804113435.34ed8c76@pluto>
+	Mon, 4 Aug 2014 08:27:36 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: <nsekhar@ti.com>, <joelf@ti.com>
+CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+Subject: [PATCH] ARM: edma: Fix configuration parsing for SoCs with multiple eDMA3 CC
+Date: Mon, 4 Aug 2014 15:26:56 +0300
+Message-ID: <1407155216-20267-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 2.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140804113435.34ed8c76@pluto>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 04 Aug, at 11:34:35AM, Bruno Prémont wrote:
-> Hi,
-> 
-> Since 3.13 kernels with built-in initrd fail to boot on Fujitsu hardware
-> in EFI mode (efi stub) though the exact same kernel binary does boot in
-> BIOS mode (grub).
-> Interestingly EFI kernels with different config do boot under VMWare.
-> 
-> Your patch "initramfs: read CONFIG_RD_ variables for initramfs
-> compression" is the trigger.
-> 
-> 
-> Is something missing in EFI stub or why do things behave differently?
+The edma_setup_from_hw() should know about the CC number when parsing the
+CCCFG register - when it reads the register to be precise. The base
+addresses for CCs stored in an array and we need to provide the correct id
+to edma_read() in order to read the correct register.
+
+Cc: <stable@vger.kernel.org> # 3.16
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ arch/arm/common/edma.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index 88099175fc56..d86771abbf57 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -1443,14 +1443,14 @@ void edma_assign_channel_eventq(unsigned channel, enum dma_event_q eventq_no)
+ EXPORT_SYMBOL(edma_assign_channel_eventq);
  
-Nuts. I suspect it's an EFI boot stub bug. Have you definitely tried out
-3.16? In particular the following commit might make a difference,
-
-  commit c7fb93ec51d4
-  Author: Michael Brown <mbrown@fensystems.co.uk>
-  Date:   Thu Jul 10 12:26:20 2014 +0100
-
-      x86/efi: Include a .bss section within the PE/COFF headers
-    
-      The PE/COFF headers currently describe only the initialised-data
-      portions of the image, and result in no space being allocated for the
-      uninitialised-data portions.  Consequently, the EFI boot stub will end
-      up overwriting unexpected areas of memory, with unpredictable results.
-    
-      Fix by including a .bss section in the PE/COFF headers (functionally
-      equivalent to the init_size field in the bzImage header).
-    
-      Signed-off-by: Michael Brown <mbrown@fensystems.co.uk>
-      Cc: Thomas Bächler <thomas@archlinux.org>
-      Cc: Josh Boyer <jwboyer@fedoraproject.org>
-      Cc: <stable@vger.kernel.org>
-      Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-
-
-> Looking at compiled kernel with and without this patch the resulting
-> bzImage is similar in size but in build directory I get:
-
-Could you send me the initrd image? I'd like to try and reproduce this
-on my end, even though I regularly boot with a built-in initrd.
-
+ static int edma_setup_from_hw(struct device *dev, struct edma_soc_info *pdata,
+-			      struct edma *edma_cc)
++			      struct edma *edma_cc, int cc_id)
+ {
+ 	int i;
+ 	u32 value, cccfg;
+ 	s8 (*queue_priority_map)[2];
+ 
+ 	/* Decode the eDMA3 configuration from CCCFG register */
+-	cccfg = edma_read(0, EDMA_CCCFG);
++	cccfg = edma_read(cc_id, EDMA_CCCFG);
+ 
+ 	value = GET_NUM_REGN(cccfg);
+ 	edma_cc->num_region = BIT(value);
+@@ -1464,7 +1464,8 @@ static int edma_setup_from_hw(struct device *dev, struct edma_soc_info *pdata,
+ 	value = GET_NUM_EVQUE(cccfg);
+ 	edma_cc->num_tc = value + 1;
+ 
+-	dev_dbg(dev, "eDMA3 HW configuration (cccfg: 0x%08x):\n", cccfg);
++	dev_dbg(dev, "eDMA3 CC%d HW configuration (cccfg: 0x%08x):\n", cc_id,
++		cccfg);
+ 	dev_dbg(dev, "num_region: %u\n", edma_cc->num_region);
+ 	dev_dbg(dev, "num_channel: %u\n", edma_cc->num_channels);
+ 	dev_dbg(dev, "num_slot: %u\n", edma_cc->num_slots);
+@@ -1684,7 +1685,7 @@ static int edma_probe(struct platform_device *pdev)
+ 			return -ENOMEM;
+ 
+ 		/* Get eDMA3 configuration from IP */
+-		ret = edma_setup_from_hw(dev, info[j], edma_cc[j]);
++		ret = edma_setup_from_hw(dev, info[j], edma_cc[j], j);
+ 		if (ret)
+ 			return ret;
+ 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+2.0.2
+
