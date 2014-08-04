@@ -1,120 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbaHDPXn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 11:23:43 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:40904 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaHDPXl (ORCPT
+	id S1752550AbaHDP0l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 11:26:41 -0400
+Received: from smtprelay0060.hostedemail.com ([216.40.44.60]:34210 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751125AbaHDP0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 11:23:41 -0400
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-X-Google-Original-From: "Lee, Chun-Yi" <jlee@suse.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>
-Cc: Takashi Iwai <tiwai@suse.de>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [PATCH v2] Hibernate: check unsafe page should not in e820 reserved region
-Date: Mon,  4 Aug 2014 23:23:21 +0800
-Message-Id: <1407165801-24648-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.8.4.5
+	Mon, 4 Aug 2014 11:26:40 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3870:3871:3872:3873:3874:4321:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: eyes48_913f2b077165e
+X-Filterd-Recvd-Size: 1876
+Message-ID: <1407165996.16152.75.camel@joe-AO725>
+Subject: Re: checkpatch.pl report about "Missing blank line after
+ declarations" in a structure definition
+From: Joe Perches <joe@perches.com>
+To: Dotan Barak <dotanb@mellanox.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 04 Aug 2014 08:26:36 -0700
+In-Reply-To: <3b44a1bc344f40feb7c8119a4b102494@DB3PR05MB380.eurprd05.prod.outlook.com>
+References: <3219ba81002f41d99c8651755dc2a920@DB3PR05MB380.eurprd05.prod.outlook.com>
+	 <1407159342.16152.63.camel@joe-AO725>
+	 <e68ad593255b4094a79de9b22cbc2a7a@DB3PR05MB380.eurprd05.prod.outlook.com>
+	 <1407162439.16152.67.camel@joe-AO725>
+	 <f95137f9228a4f08ba391f9640237d28@DB3PR05MB380.eurprd05.prod.outlook.com>
+	 <1407165075.16152.70.camel@joe-AO725>
+	 <3b44a1bc344f40feb7c8119a4b102494@DB3PR05MB380.eurprd05.prod.outlook.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the machine doesn't well handle the e820 persistent when hibernate
-resuming, then it may causes page fault when writing image to snapshot
-buffer:
+On Mon, 2014-08-04 at 15:19 +0000, Dotan Barak wrote:
+> In our code (I take it as an example), we used  MLX5_DECLARE_DOORBELL_LOCK,
+> So I guess that the regular expression that you mentioned will fail on it
+> (because the "_" is not allowed to be repeated).
+> 
+> So, I would change it a little bit to allow people to use underscore as a word separator.
+[]
+> > Maybe:
+> > 
+> > (?:$Storage\s+)(?:[A-Z_][A-Z0-9]+_){0,2}(?:DEFINE|DECLARE)(?:_[A-Z0-9]+){1,2}
 
-[   17.929495] BUG: unable to handle kernel paging request at ffff880069d4f000
-[   17.933469] IP: [<ffffffff810a1cf0>] load_image_lzo+0x810/0xe40
-[   17.933469] PGD 2194067 PUD 77ffff067 PMD 2197067 PTE 0
-[   17.933469] Oops: 0002 [#1] SMP
-...
+What I suggested should allow any of:
 
-The ffff880069d4f000 page is in e820 reserved region of resume boot
-kernel:
+	DECLARE_FOO
+	_FOO_DEFINE_BAR
+	FOO_BAR_DEFINE_BAZ
+	FOO_BAR_DECLARE_BAZ_QUX
 
-[    0.000000] BIOS-e820: [mem 0x0000000069d4f000-0x0000000069e12fff] reserved
-...
-[    0.000000] PM: Registered nosave memory: [mem 0x69d4f000-0x69e12fff]
-
-So snapshot.c mark the pfn to forbidden pages map. But, this
-page is also in the memory bitmap in snapshot image because it's an
-original page used by image kernel, so it will also mark as an
-unsafe(free) page in prepare_image().
-
-That means the page in e820 when resuming mark as "forbidden" and
-"free", it causes get_buffer() treat it as an allocated unsafe page.
-Then snapshot_write_next() return this page to load_image, load_image
-writing content to this address, but this page didn't really allocated
-. So, we got page fault.
-
-Although the root cause is from BIOS, I think aggressive check and
-significant message in kernel will better then a page fault for
-issue tracking, especially when serial console unavailable.
-
-This patch adds code in mark_unsafe_pages() for check does free pages in
-nosave region. If so, then it print message and return fault to stop whole
-S4 resume process:
-
-[    8.166004] PM: Image loading progress:   0%
-[    8.658717] PM: 0x6796c000 in e820 nosave region: [mem 0x6796c000-0x6796cfff]
-[    8.918737] PM: Read 2511940 kbytes in 1.04 seconds (2415.32 MB/s)
-[    8.926633] PM: Error -14 resuming
-[    8.933534] PM: Failed to load hibernation image, recovering.
-
-v2:
- + removed empty check of nosave_regions list.
- + fixed the typo of "region" in code for error message and patch comment.
-
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Takashi Iwai <tiwai@suse.de>
-Acked-by: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- kernel/power/snapshot.c | 21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
-index 4fc5c32..c4b8093 100644
---- a/kernel/power/snapshot.c
-+++ b/kernel/power/snapshot.c
-@@ -954,6 +954,25 @@ static void mark_nosave_pages(struct memory_bitmap *bm)
- 	}
- }
- 
-+static bool is_nosave_page(unsigned long pfn)
-+{
-+	struct nosave_region *region;
-+
-+	list_for_each_entry(region, &nosave_regions, list) {
-+		if (pfn >= region->start_pfn && pfn < region->end_pfn) {
-+			pr_err("PM: %#010llx in e820 nosave region: "
-+			       "[mem %#010llx-%#010llx]\n",
-+			       (unsigned long long) pfn << PAGE_SHIFT,
-+			       (unsigned long long) region->start_pfn << PAGE_SHIFT,
-+			       ((unsigned long long) region->end_pfn << PAGE_SHIFT)
-+					- 1);
-+			return true;
-+		}
-+	}
-+
-+	return false;
-+}
-+
- /**
-  *	create_basic_memory_bitmaps - create bitmaps needed for marking page
-  *	frames that should not be saved and free page frames.  The pointers
-@@ -2015,7 +2034,7 @@ static int mark_unsafe_pages(struct memory_bitmap *bm)
- 	do {
- 		pfn = memory_bm_next_pfn(bm);
- 		if (likely(pfn != BM_END_OF_MAP)) {
--			if (likely(pfn_valid(pfn)))
-+			if (likely(pfn_valid(pfn)) && !is_nosave_page(pfn))
- 				swsusp_set_page_free(pfn_to_page(pfn));
- 			else
- 				return -EFAULT;
--- 
-1.8.4.5
+where FOO/BAR/BAZ/QUX can also have digits
 
