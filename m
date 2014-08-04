@@ -1,70 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaHDWwb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 18:52:31 -0400
-Received: from smtprelay0112.hostedemail.com ([216.40.44.112]:50395 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753208AbaHDWwU (ORCPT
+	id S1753294AbaHDWy6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 18:54:58 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:62136 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaHDWy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 18:52:20 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 30,2,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:966:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2124:2196:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3871:3874:4321:4385:5007:7652:7903:9040:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12555:12679:12740:13069:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: waste95_6b8578b86f751
-X-Filterd-Recvd-Size: 2657
-Message-ID: <1407192737.16152.83.camel@joe-AO725>
-Subject: Re: [PATCH] Staging: rtl8188eu: Lines over 80 characters fixed.
-From: Joe Perches <joe@perches.com>
-To: Adrian Remonda <adrianremonda@gmail.com>
-Cc: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Mon, 04 Aug 2014 15:52:17 -0700
-In-Reply-To: <1407192303-23519-1-git-send-email-adrianremonda@gmail.com>
-References: <1407192303-23519-1-git-send-email-adrianremonda@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	Mon, 4 Aug 2014 18:54:56 -0400
+Date: Tue, 5 Aug 2014 02:54:52 +0400
+From: Dmitry Popov <ixaphire@qrator.net>
+To: "David S. Miller" <davem@davemloft.net>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH net-next] tcp: md5: check md5 signature without socket lock
+Message-Id: <20140805025452.1a5bec4ad0d0c5a30a22a589@qrator.net>
+X-Mailer: Sylpheed 3.4.2 (GTK+ 2.24.24; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-08-05 at 00:45 +0200, Adrian Remonda wrote:
-> This is a patch to the hal/rtl8188eu_recv.c file that fixes up a "line
-> over 80 characters" warning found by the checkpatch.pl tool.
-[]
-> diff --git a/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c b/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
-> index f25c87c..8be4819 100644
-> --- a/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
-> +++ b/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
-> @@ -41,15 +41,19 @@ int	rtl8188eu_init_recv_priv(struct adapter *padapter)
->  	/* init recv_buf */
->  	_rtw_init_queue(&precvpriv->free_recv_buf_queue);
->  
-> -	precvpriv->pallocated_recv_buf = kzalloc(NR_RECVBUFF * sizeof(struct recv_buf) + 4, GFP_KERNEL);
-> +	precvpriv->pallocated_recv_buf =
-> +		kzalloc(NR_RECVBUFF * sizeof(struct recv_buf) + 4, GFP_KERNEL);
->  	if (precvpriv->pallocated_recv_buf == NULL) {
->  		res = _FAIL;
-> -		RT_TRACE(_module_rtl871x_recv_c_, _drv_err_, ("alloc recv_buf fail!\n"));
-> +		RT_TRACE(_module_rtl871x_recv_c_, _drv_err_,
-> +				("alloc recv_buf fail!\n"));
->  		goto exit;
->  	}
-> -	memset(precvpriv->pallocated_recv_buf, 0, NR_RECVBUFF * sizeof(struct recv_buf) + 4);
-> +	memset(precvpriv->pallocated_recv_buf, 0,
-> +			NR_RECVBUFF * sizeof(struct recv_buf) + 4);
->  
-> -	precvpriv->precv_buf = (u8 *)N_BYTE_ALIGMENT((size_t)(precvpriv->pallocated_recv_buf), 4);
-> +	precvpriv->precv_buf = (u8 *)N_BYTE_ALIGMENT((size_t)
-> +			(precvpriv->pallocated_recv_buf), 4);
+Since a8afca032 (tcp: md5: protects md5sig_info with RCU) tcp_md5_do_lookup
+doesn't require socket lock, rcu_read_lock is enough. Therefore socket lock is
+no longer required for tcp_v{4,6}_inbound_md5_hash too, so we can move these
+calls (wrapped with rcu_read_{,un}lock) outside of bh_{,un}lock_sock: 
+from tcp_v{4,6}_do_rcv to tcp_v{4,6}_rcv.
 
-Several bits of this are not nice.
-
-the +4 seems senseless.
-zalloc followed by a memset(,0,) is senseless.
-N_BYTE_ALIGNMENT seems senseless as alloc is
-suitable for any alignmet.
-
-btw: The merge window is open, please be patient
-with any staging patch during the merge window.
-
+Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+---
+ net/ipv4/tcp_ipv4.c | 36 +++++++++++++++++++++++++-----------
+ net/ipv6/tcp_ipv6.c | 25 +++++++++++++++++++------
+ 2 files changed, 44 insertions(+), 17 deletions(-)
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 77cccda..f2779b1 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1182,7 +1182,8 @@ clear_hash_noput:
+ }
+ EXPORT_SYMBOL(tcp_v4_md5_hash_skb);
+ 
+-static bool tcp_v4_inbound_md5_hash(struct sock *sk, const struct sk_buff *skb)
++static bool __tcp_v4_inbound_md5_hash(struct sock *sk,
++				      const struct sk_buff *skb)
+ {
+ 	/*
+ 	 * This gets called for each TCP segment that arrives
+@@ -1235,6 +1236,17 @@ static bool tcp_v4_inbound_md5_hash(struct sock *sk, const struct sk_buff *skb)
+ 	return false;
+ }
+ 
++static bool tcp_v4_inbound_md5_hash(struct sock *sk, const struct sk_buff *skb)
++{
++	bool ret;
++
++	rcu_read_lock();
++	ret = __tcp_v4_inbound_md5_hash(sk, skb);
++	rcu_read_unlock();
++
++	return ret;
++}
++
+ #endif
+ 
+ struct request_sock_ops tcp_request_sock_ops __read_mostly = {
+@@ -1539,16 +1551,6 @@ static struct sock *tcp_v4_hnd_req(struct sock *sk, struct sk_buff *skb)
+ int tcp_v4_do_rcv(struct sock *sk, struct sk_buff *skb)
+ {
+ 	struct sock *rsk;
+-#ifdef CONFIG_TCP_MD5SIG
+-	/*
+-	 * We really want to reject the packet as early as possible
+-	 * if:
+-	 *  o We're expecting an MD5'd packet and this is no MD5 tcp option
+-	 *  o There is an MD5 option and we're not expecting one
+-	 */
+-	if (tcp_v4_inbound_md5_hash(sk, skb))
+-		goto discard;
+-#endif
+ 
+ 	if (sk->sk_state == TCP_ESTABLISHED) { /* Fast path */
+ 		struct dst_entry *dst = sk->sk_rx_dst;
+@@ -1751,6 +1753,18 @@ process:
+ 
+ 	if (!xfrm4_policy_check(sk, XFRM_POLICY_IN, skb))
+ 		goto discard_and_relse;
++
++#ifdef CONFIG_TCP_MD5SIG
++	/*
++	 * We really want to reject the packet as early as possible
++	 * if:
++	 *  o We're expecting an MD5'd packet and this is no MD5 tcp option
++	 *  o There is an MD5 option and we're not expecting one
++	 */
++	if (tcp_v4_inbound_md5_hash(sk, skb))
++		goto discard_and_relse;
++#endif
++
+ 	nf_reset(skb);
+ 
+ 	if (sk_filter(sk, skb))
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index 229239a..226a237 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -676,7 +676,8 @@ clear_hash_noput:
+ 	return 1;
+ }
+ 
+-static int tcp_v6_inbound_md5_hash(struct sock *sk, const struct sk_buff *skb)
++static int __tcp_v6_inbound_md5_hash(struct sock *sk,
++				     const struct sk_buff *skb)
+ {
+ 	const __u8 *hash_location = NULL;
+ 	struct tcp_md5sig_key *hash_expected;
+@@ -716,6 +717,18 @@ static int tcp_v6_inbound_md5_hash(struct sock *sk, const struct sk_buff *skb)
+ 	}
+ 	return 0;
+ }
++
++static int tcp_v6_inbound_md5_hash(struct sock *sk, const struct sk_buff *skb)
++{
++	int ret;
++
++	rcu_read_lock();
++	ret = __tcp_v6_inbound_md5_hash(sk, skb);
++	rcu_read_unlock();
++
++	return ret;
++}
++
+ #endif
+ 
+ struct request_sock_ops tcp6_request_sock_ops __read_mostly = {
+@@ -1346,11 +1359,6 @@ static int tcp_v6_do_rcv(struct sock *sk, struct sk_buff *skb)
+ 	if (skb->protocol == htons(ETH_P_IP))
+ 		return tcp_v4_do_rcv(sk, skb);
+ 
+-#ifdef CONFIG_TCP_MD5SIG
+-	if (tcp_v6_inbound_md5_hash(sk, skb))
+-		goto discard;
+-#endif
+-
+ 	if (sk_filter(sk, skb))
+ 		goto discard;
+ 
+@@ -1523,6 +1531,11 @@ process:
+ 	if (!xfrm6_policy_check(sk, XFRM_POLICY_IN, skb))
+ 		goto discard_and_relse;
+ 
++#ifdef CONFIG_TCP_MD5SIG
++	if (tcp_v6_inbound_md5_hash(sk, skb))
++		goto discard_and_relse;
++#endif
++
+ 	if (sk_filter(sk, skb))
+ 		goto discard_and_relse;
+ 
