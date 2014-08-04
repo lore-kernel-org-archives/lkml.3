@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767AbaHDAVU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 20:21:20 -0400
-Received: from s87.loopia.se ([194.9.94.112]:35871 "EHLO s87.loopia.se"
+	id S1753841AbaHDAVa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 20:21:30 -0400
+Received: from s87.loopia.se ([194.9.94.112]:35896 "EHLO s87.loopia.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753722AbaHDAVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 20:21:17 -0400
+	id S1753792AbaHDAV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Aug 2014 20:21:26 -0400
 X-Spam-Flag: NO
 X-Spam-Score: -1
 From: Hans Wennborg <hans@hanshq.net>
-To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+To: clemens@ladisch.de, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
 Cc: Hans Wennborg <hans@hanshq.net>
-Subject: [PATCH 17/19] staging: rtl8821ae: fix %d confusingly prefixed with 0x in format strings
-Date: Sun,  3 Aug 2014 17:21:06 -0700
-Message-Id: <1407111666-15274-1-git-send-email-hans@hanshq.net>
+Subject: [PATCH 18/19] sound: fireworks: fix %d confusingly prefixed with 0x in format strings
+Date: Sun,  3 Aug 2014 17:21:16 -0700
+Message-Id: <1407111676-15309-1-git-send-email-hans@hanshq.net>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,40 +22,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Hans Wennborg <hans@hanshq.net>
 ---
- drivers/staging/rtl8821ae/pci.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ sound/firewire/fireworks/fireworks_proc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/rtl8821ae/pci.c b/drivers/staging/rtl8821ae/pci.c
-index 26d7b2f..b818788 100644
---- a/drivers/staging/rtl8821ae/pci.c
-+++ b/drivers/staging/rtl8821ae/pci.c
-@@ -662,7 +662,7 @@ static void _rtl_pci_tx_isr(struct ieee80211_hw *hw, int prio)
- 			RT_TRACE(COMP_ERR, DBG_LOUD,
- 					("more desc left, wake"
- 					 "skb_queue@%d,ring->idx = %d,"
--					 "skb_queue_len = 0x%d\n",
-+					 "skb_queue_len = 0x%x\n",
- 					 prio, ring->idx,
- 					 skb_queue_len(&ring->queue)));
- 
-@@ -1650,7 +1650,7 @@ static int rtl_pci_tx(struct ieee80211_hw *hw,
- 		if ((own == 1) && (hw_queue != BEACON_QUEUE)) {
- 			RT_TRACE(COMP_ERR, DBG_WARNING,
- 				 ("No more TX desc@%d, ring->idx = %d,"
--				  "idx = %d, skb_queue_len = 0x%d\n",
-+				  "idx = %d, skb_queue_len = 0x%x\n",
- 				  hw_queue, ring->idx, idx,
- 				  skb_queue_len(&ring->queue)));
- 
-@@ -1695,7 +1695,7 @@ static int rtl_pci_tx(struct ieee80211_hw *hw,
- 		RT_TRACE(COMP_ERR, DBG_LOUD,
- 			 ("less desc left, stop skb_queue@%d, "
- 			  "ring->idx = %d,"
--			  "idx = %d, skb_queue_len = 0x%d\n",
-+			  "idx = %d, skb_queue_len = 0x%x\n",
- 			  hw_queue, ring->idx, idx,
- 			  skb_queue_len(&ring->queue)));
- 
+diff --git a/sound/firewire/fireworks/fireworks_proc.c b/sound/firewire/fireworks/fireworks_proc.c
+index f29d4aa..02bf394 100644
+--- a/sound/firewire/fireworks/fireworks_proc.c
++++ b/sound/firewire/fireworks/fireworks_proc.c
+@@ -64,7 +64,7 @@ proc_read_hwinfo(struct snd_info_entry *entry, struct snd_info_buffer *buffer)
+ 		    hwinfo->phys_in_grp_count);
+ 	for (i = 0; i < hwinfo->phys_in_grp_count; i++) {
+ 		snd_iprintf(buffer,
+-			    "phys in grp[0x%d]: type 0x%d, count 0x%d\n",
++			    "phys in grp[0x%d]: type 0x%d, count 0x%x\n",
+ 			    i, hwinfo->phys_out_grps[i].type,
+ 			    hwinfo->phys_out_grps[i].count);
+ 	}
+@@ -73,7 +73,7 @@ proc_read_hwinfo(struct snd_info_entry *entry, struct snd_info_buffer *buffer)
+ 		    hwinfo->phys_out_grp_count);
+ 	for (i = 0; i < hwinfo->phys_out_grp_count; i++) {
+ 		snd_iprintf(buffer,
+-			    "phys out grps[0x%d]: type 0x%d, count 0x%d\n",
++			    "phys out grps[0x%d]: type 0x%d, count 0x%x\n",
+ 			    i, hwinfo->phys_out_grps[i].type,
+ 			    hwinfo->phys_out_grps[i].count);
+ 	}
 -- 
 2.0.0.526.g5318336
 
