@@ -1,311 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653AbaHDLOf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 07:14:35 -0400
-Received: from mx02.posteo.de ([89.146.194.165]:60897 "EHLO posteo.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751887AbaHDLOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 07:14:34 -0400
-From: Martin Kepplinger <martink@posteo.de>
-To: dan.carpenter@oracle.com
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        m.chehab@samsung.com, Martin Kepplinger <martink@posteo.de>
-Subject: [PATCHv3] staging: media: as102: replace custom dprintk() with dev_dbg()
-Date: Mon,  4 Aug 2014 13:13:16 +0200
-Message-Id: <1407150796-29909-1-git-send-email-martink@posteo.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20140804104016.GQ4804@mwanda>
-References: <20140804104016.GQ4804@mwanda>
+	id S1752713AbaHDLPH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 07:15:07 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:59970 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752163AbaHDLPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 07:15:04 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: driverdev-devel@linuxdriverproject.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 15/18 v2] staging: comedi: amplc_pci224: put board indices in PCI driver_data
+Date: Mon,  4 Aug 2014 12:14:28 +0100
+Message-Id: <1407150868-2489-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1406814475-5923-1-git-send-email-abbotti@mev.co.uk>
+References: <1406814475-5923-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove dprintk() and replace it with dev_dbg() or pr_debug()
-in order to use the common kernel coding style.
+The `driver_data` member value from the matched entry of the PCI module
+device table `amplc_pci224_pci_table[]` is passed through to our comedi
+"auto_attach" handler, `pci224_auto_attach()`.  Use that to index
+directly into our static board data array `pci224_boards[]` instead of
+calling `pci224_find_pci_board()` to search for the entry matching the
+PCI device ID.  That function can be removed.  The `devid` and `model`
+members of `struct pci224_board` are no longer needed either and can be
+removed.
 
-Signed-off-by: Martin Kepplinger <martink@posteo.de>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
-Thanks for looking at it. So this doesn't add anything and actually does
-what it says. If I haven't understood what you meant, or if I should try
-to add struct_device info, I'll look again in a few hours.
+v2: Use C99 syntax for amplc_pci224_pci_table[] initializer.  Thanks to
+Hartley for finding that!
+---
+ drivers/staging/comedi/drivers/amplc_pci224.c | 52 ++++++++++-----------------
+ 1 file changed, 18 insertions(+), 34 deletions(-)
 
- drivers/staging/media/as102/as102_drv.c     |   15 +++++-----
- drivers/staging/media/as102/as102_drv.h     |    7 -----
- drivers/staging/media/as102/as102_fe.c      |   25 +++++++---------
- drivers/staging/media/as102/as102_usb_drv.c |   41 ++++++++++++++++-----------
- 4 files changed, 41 insertions(+), 47 deletions(-)
-
-diff --git a/drivers/staging/media/as102/as102_drv.c b/drivers/staging/media/as102/as102_drv.c
-index 09d64cd..e0ee618 100644
---- a/drivers/staging/media/as102/as102_drv.c
-+++ b/drivers/staging/media/as102/as102_drv.c
-@@ -31,10 +31,6 @@
- #include "as102_fw.h"
- #include "dvbdev.h"
+diff --git a/drivers/staging/comedi/drivers/amplc_pci224.c b/drivers/staging/comedi/drivers/amplc_pci224.c
+index bcef9e6..675bbe8 100644
+--- a/drivers/staging/comedi/drivers/amplc_pci224.c
++++ b/drivers/staging/comedi/drivers/amplc_pci224.c
+@@ -351,8 +351,6 @@ enum pci224_model { pci224_model, pci234_model };
  
--int as102_debug;
--module_param_named(debug, as102_debug, int, 0644);
--MODULE_PARM_DESC(debug, "Turn on/off debugging (default: off)");
--
- int dual_tuner;
- module_param_named(dual_tuner, dual_tuner, int, 0644);
- MODULE_PARM_DESC(dual_tuner, "Activate Dual-Tuner config (default: off)");
-@@ -74,7 +70,8 @@ static void as102_stop_stream(struct as102_dev_t *dev)
- 			return;
+ struct pci224_board {
+ 	const char *name;
+-	unsigned short devid;
+-	enum pci224_model model;
+ 	unsigned int ao_chans;
+ 	unsigned int ao_bits;
+ 	const struct comedi_lrange *ao_range;
+@@ -361,20 +359,16 @@ struct pci224_board {
+ };
  
- 		if (as10x_cmd_stop_streaming(bus_adap) < 0)
--			dprintk(debug, "as10x_cmd_stop_streaming failed\n");
-+			dev_dbg(&dev->bus_adap.usb_dev->dev,
-+				"as10x_cmd_stop_streaming failed\n");
- 
- 		mutex_unlock(&dev->bus_adap.lock);
- 	}
-@@ -112,14 +109,16 @@ static int as10x_pid_filter(struct as102_dev_t *dev,
- 	int ret = -EFAULT;
- 
- 	if (mutex_lock_interruptible(&dev->bus_adap.lock)) {
--		dprintk(debug, "mutex_lock_interruptible(lock) failed !\n");
-+		dev_dbg(&dev->bus_adap.usb_dev->dev,
-+			"amutex_lock_interruptible(lock) failed !\n");
- 		return -EBUSY;
- 	}
- 
- 	switch (onoff) {
- 	case 0:
- 		ret = as10x_cmd_del_PID_filter(bus_adap, (uint16_t) pid);
--		dprintk(debug, "DEL_PID_FILTER([%02d] 0x%04x) ret = %d\n",
-+		dev_dbg(&dev->bus_adap.usb_dev->dev,
-+			"DEL_PID_FILTER([%02d] 0x%04x) ret = %d\n",
- 			index, pid, ret);
- 		break;
- 	case 1:
-@@ -131,7 +130,7 @@ static int as10x_pid_filter(struct as102_dev_t *dev,
- 		filter.pid = pid;
- 
- 		ret = as10x_cmd_add_PID_filter(bus_adap, &filter);
--		dprintk(debug,
-+		dev_dbg(&dev->bus_adap.usb_dev->dev,
- 			"ADD_PID_FILTER([%02d -> %02d], 0x%04x) ret = %d\n",
- 			index, filter.idx, filter.pid, ret);
- 		break;
-diff --git a/drivers/staging/media/as102/as102_drv.h b/drivers/staging/media/as102/as102_drv.h
-index a06837d..49d0c42 100644
---- a/drivers/staging/media/as102/as102_drv.h
-+++ b/drivers/staging/media/as102/as102_drv.h
-@@ -27,17 +27,10 @@
- #define DRIVER_FULL_NAME "Abilis Systems as10x usb driver"
- #define DRIVER_NAME "as10x_usb"
- 
--extern int as102_debug;
- #define debug	as102_debug
- extern struct usb_driver as102_usb_driver;
- extern int elna_enable;
- 
--#define dprintk(debug, args...) \
--	do { if (debug) {	\
--		pr_debug("%s: ", __func__);	\
--		printk(args);	\
--	} } while (0)
--
- #define AS102_DEVICE_MAJOR	192
- 
- #define AS102_USB_BUF_SIZE	512
-diff --git a/drivers/staging/media/as102/as102_fe.c b/drivers/staging/media/as102/as102_fe.c
-index b686b76..67e55b8 100644
---- a/drivers/staging/media/as102/as102_fe.c
-+++ b/drivers/staging/media/as102/as102_fe.c
-@@ -46,7 +46,8 @@ static int as102_fe_set_frontend(struct dvb_frontend *fe)
- 	/* send abilis command: SET_TUNE */
- 	ret =  as10x_cmd_set_tune(&dev->bus_adap, &tune_args);
- 	if (ret != 0)
--		dprintk(debug, "as10x_cmd_set_tune failed. (err = %d)\n", ret);
-+		dev_dbg(&dev->bus_adap.usb_dev->dev,
-+			"as10x_cmd_set_tune failed. (err = %d)\n", ret);
- 
- 	mutex_unlock(&dev->bus_adap.lock);
- 
-@@ -81,13 +82,6 @@ static int as102_fe_get_frontend(struct dvb_frontend *fe)
- static int as102_fe_get_tune_settings(struct dvb_frontend *fe,
- 			struct dvb_frontend_tune_settings *settings) {
- 
--#if 0
--	dprintk(debug, "step_size    = %d\n", settings->step_size);
--	dprintk(debug, "max_drift    = %d\n", settings->max_drift);
--	dprintk(debug, "min_delay_ms = %d -> %d\n", settings->min_delay_ms,
--		1000);
--#endif
--
- 	settings->min_delay_ms = 1000;
- 
- 	return 0;
-@@ -110,7 +104,8 @@ static int as102_fe_read_status(struct dvb_frontend *fe, fe_status_t *status)
- 	/* send abilis command: GET_TUNE_STATUS */
- 	ret = as10x_cmd_get_tune_status(&dev->bus_adap, &tstate);
- 	if (ret < 0) {
--		dprintk(debug, "as10x_cmd_get_tune_status failed (err = %d)\n",
-+		dev_dbg(&dev->bus_adap.usb_dev->dev,
-+			"as10x_cmd_get_tune_status failed (err = %d)\n",
- 			ret);
- 		goto out;
- 	}
-@@ -133,7 +128,8 @@ static int as102_fe_read_status(struct dvb_frontend *fe, fe_status_t *status)
- 		*status = TUNE_STATUS_NOT_TUNED;
- 	}
- 
--	dprintk(debug, "tuner status: 0x%02x, strength %d, per: %d, ber: %d\n",
-+	dev_dbg(&dev->bus_adap.usb_dev->dev,
-+			"tuner status: 0x%02x, strength %d, per: %d, ber: %d\n",
- 			tstate.tune_state, tstate.signal_strength,
- 			tstate.PER, tstate.BER);
- 
-@@ -141,10 +137,10 @@ static int as102_fe_read_status(struct dvb_frontend *fe, fe_status_t *status)
- 		if (as10x_cmd_get_demod_stats(&dev->bus_adap,
- 			(struct as10x_demod_stats *) &dev->demod_stats) < 0) {
- 			memset(&dev->demod_stats, 0, sizeof(dev->demod_stats));
--			dprintk(debug,
-+			dev_dbg(&dev->bus_adap.usb_dev->dev,
- 				"as10x_cmd_get_demod_stats failed (probably not tuned)\n");
- 		} else {
--			dprintk(debug,
-+			dev_dbg(&dev->bus_adap.usb_dev->dev,
- 				"demod status: fc: 0x%08x, bad fc: 0x%08x, "
- 				"bytes corrected: 0x%08x , MER: 0x%04x\n",
- 				dev->demod_stats.frame_count,
-@@ -531,7 +527,7 @@ static void as102_fe_copy_tune_parameters(struct as10x_tune_args *tune_args,
- 		break;
- 	}
- 
--	dprintk(debug, "tuner parameters: freq: %d  bw: 0x%02x  gi: 0x%02x\n",
-+	pr_debug("as102: tuner parameters: freq: %d  bw: 0x%02x  gi: 0x%02x\n",
- 			params->frequency,
- 			tune_args->bandwidth,
- 			tune_args->guard_interval);
-@@ -556,8 +552,7 @@ static void as102_fe_copy_tune_parameters(struct as10x_tune_args *tune_args,
- 			   as102_fe_get_code_rate(params->code_rate_LP);
- 		}
- 
--		dprintk(debug,
--			"\thierarchy: 0x%02x  selected: %s  code_rate_%s: 0x%02x\n",
-+		pr_debug("as102: \thierarchy: 0x%02x  selected: %s  code_rate_%s: 0x%02x\n",
- 			tune_args->hierarchy,
- 			tune_args->hier_select == HIER_HIGH_PRIORITY ?
- 			"HP" : "LP",
-diff --git a/drivers/staging/media/as102/as102_usb_drv.c b/drivers/staging/media/as102/as102_usb_drv.c
-index e6f6278..86f83b9 100644
---- a/drivers/staging/media/as102/as102_usb_drv.c
-+++ b/drivers/staging/media/as102/as102_usb_drv.c
-@@ -104,21 +104,22 @@ static int as102_usb_xfer_cmd(struct as10x_bus_adapter_t *bus_adap,
- 				      send_buf, send_buf_len,
- 				      USB_CTRL_SET_TIMEOUT /* 200 */);
- 		if (ret < 0) {
--			dprintk(debug, "usb_control_msg(send) failed, err %i\n",
--					ret);
-+			dev_dbg(&bus_adap->usb_dev->dev,
-+				"usb_control_msg(send) failed, err %i\n", ret);
- 			return ret;
- 		}
- 
- 		if (ret != send_buf_len) {
--			dprintk(debug, "only wrote %d of %d bytes\n",
--					ret, send_buf_len);
-+			dev_dbg(&bus_adap->usb_dev->dev,
-+			"only wrote %d of %d bytes\n", ret, send_buf_len);
- 			return -1;
- 		}
- 	}
- 
- 	if (recv_buf != NULL) {
- #ifdef TRACE
--		dprintk(debug, "want to read: %d bytes\n", recv_buf_len);
-+		dev_dbg(bus_adap->usb_dev->dev,
-+			"want to read: %d bytes\n", recv_buf_len);
- #endif
- 		ret = usb_control_msg(bus_adap->usb_dev,
- 				      usb_rcvctrlpipe(bus_adap->usb_dev, 0),
-@@ -130,12 +131,13 @@ static int as102_usb_xfer_cmd(struct as10x_bus_adapter_t *bus_adap,
- 				      recv_buf, recv_buf_len,
- 				      USB_CTRL_GET_TIMEOUT /* 200 */);
- 		if (ret < 0) {
--			dprintk(debug, "usb_control_msg(recv) failed, err %i\n",
--					ret);
-+			dev_dbg(&bus_adap->usb_dev->dev,
-+				"usb_control_msg(recv) failed, err %i\n", ret);
- 			return ret;
- 		}
- #ifdef TRACE
--		dprintk(debug, "read %d bytes\n", recv_buf_len);
-+		dev_dbg(bus_adap->usb_dev->dev,
-+			"read %d bytes\n", recv_buf_len);
- #endif
- 	}
- 
-@@ -153,13 +155,14 @@ static int as102_send_ep1(struct as10x_bus_adapter_t *bus_adap,
- 			   usb_sndbulkpipe(bus_adap->usb_dev, 1),
- 			   send_buf, send_buf_len, &actual_len, 200);
- 	if (ret) {
--		dprintk(debug, "usb_bulk_msg(send) failed, err %i\n", ret);
-+		dev_dbg(&bus_adap->usb_dev->dev,
-+			"usb_bulk_msg(send) failed, err %i\n", ret);
- 		return ret;
- 	}
- 
- 	if (actual_len != send_buf_len) {
--		dprintk(debug, "only wrote %d of %d bytes\n",
--				actual_len, send_buf_len);
-+		dev_dbg(&bus_adap->usb_dev->dev, "only wrote %d of %d bytes\n",
-+			actual_len, send_buf_len);
- 		return -1;
- 	}
- 	return ret ? ret : actual_len;
-@@ -177,13 +180,14 @@ static int as102_read_ep2(struct as10x_bus_adapter_t *bus_adap,
- 			   usb_rcvbulkpipe(bus_adap->usb_dev, 2),
- 			   recv_buf, recv_buf_len, &actual_len, 200);
- 	if (ret) {
--		dprintk(debug, "usb_bulk_msg(recv) failed, err %i\n", ret);
-+		dev_dbg(&bus_adap->usb_dev->dev,
-+			"usb_bulk_msg(recv) failed, err %i\n", ret);
- 		return ret;
- 	}
- 
- 	if (actual_len != recv_buf_len) {
--		dprintk(debug, "only read %d of %d bytes\n",
--				actual_len, recv_buf_len);
-+		dev_dbg(&bus_adap->usb_dev->dev, "only read %d of %d bytes\n",
-+			actual_len, recv_buf_len);
- 		return -1;
- 	}
- 	return ret ? ret : actual_len;
-@@ -211,7 +215,8 @@ static int as102_submit_urb_stream(struct as102_dev_t *dev, struct urb *urb)
- 
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err)
--		dprintk(debug, "%s: usb_submit_urb failed\n", __func__);
-+		dev_dbg(&urb->dev->dev,
-+			"%s: usb_submit_urb failed\n", __func__);
- 
- 	return err;
+ static const struct pci224_board pci224_boards[] = {
+-	{
++	[pci224_model] = {
+ 		.name		= "pci224",
+-		.devid		= PCI_DEVICE_ID_AMPLICON_PCI224,
+-		.model		= pci224_model,
+ 		.ao_chans	= 16,
+ 		.ao_bits	= 12,
+ 		.ao_range	= &range_pci224,
+ 		.ao_hwrange	= &hwrange_pci224[0],
+ 		.ao_range_check	= &range_check_pci224[0],
+ 	},
+-	{
++	[pci234_model] = {
+ 		.name		= "pci234",
+-		.devid		= PCI_DEVICE_ID_AMPLICON_PCI234,
+-		.model		= pci234_model,
+ 		.ao_chans	= 4,
+ 		.ao_bits	= 16,
+ 		.ao_range	= &range_pci234,
+@@ -1071,20 +1065,6 @@ static irqreturn_t pci224_interrupt(int irq, void *d)
  }
-@@ -256,7 +261,8 @@ static int as102_alloc_usb_stream_buffer(struct as102_dev_t *dev)
- 				       GFP_KERNEL,
- 				       &dev->dma_addr);
- 	if (!dev->stream) {
--		dprintk(debug, "%s: usb_buffer_alloc failed\n", __func__);
-+		dev_dbg(&dev->bus_adap.usb_dev->dev,
-+			"%s: usb_buffer_alloc failed\n", __func__);
+ 
+ /*
+- * This function looks for a board matching the supplied PCI device.
+- */
+-static const struct pci224_board
+-*pci224_find_pci_board(struct pci_dev *pci_dev)
+-{
+-	int i;
+-
+-	for (i = 0; i < ARRAY_SIZE(pci224_boards); i++)
+-		if (pci_dev->device == pci224_boards[i].devid)
+-			return &pci224_boards[i];
+-	return NULL;
+-}
+-
+-/*
+  * Common part of attach and auto_attach.
+  */
+ static int pci224_attach_common(struct comedi_device *dev,
+@@ -1162,8 +1142,6 @@ static int pci224_attach_common(struct comedi_device *dev,
+ 	s->cancel = pci224_ao_cancel;
+ 	s->munge = pci224_ao_munge;
+ 
+-	dev->board_name = thisboard->name;
+-
+ 	if (irq) {
+ 		ret = request_irq(irq, pci224_interrupt, IRQF_SHARED,
+ 				  dev->board_name, dev);
+@@ -1179,23 +1157,29 @@ static int pci224_attach_common(struct comedi_device *dev,
+ }
+ 
+ static int
+-pci224_auto_attach(struct comedi_device *dev, unsigned long context_unused)
++pci224_auto_attach(struct comedi_device *dev, unsigned long context_model)
+ {
+ 	struct pci_dev *pci_dev = comedi_to_pci_dev(dev);
++	const struct pci224_board *thisboard = NULL;
+ 	struct pci224_private *devpriv;
+ 
+-	dev_info(dev->class_dev, "attach pci %s\n", pci_name(pci_dev));
++	if (context_model < ARRAY_SIZE(pci224_boards))
++		thisboard = &pci224_boards[context_model];
++	if (!thisboard || !thisboard->name) {
++		dev_err(dev->class_dev,
++			"amplc_pci224: BUG! cannot determine board type!\n");
++		return -EINVAL;
++	}
++	dev->board_ptr = thisboard;
++	dev->board_name = thisboard->name;
++
++	dev_info(dev->class_dev, "amplc_pci224: attach pci %s - %s\n",
++		 pci_name(pci_dev), dev->board_name);
+ 
+ 	devpriv = comedi_alloc_devpriv(dev, sizeof(*devpriv));
+ 	if (!devpriv)
  		return -ENOMEM;
- 	}
  
-@@ -268,7 +274,8 @@ static int as102_alloc_usb_stream_buffer(struct as102_dev_t *dev)
+-	dev->board_ptr = pci224_find_pci_board(pci_dev);
+-	if (dev->board_ptr == NULL) {
+-		dev_err(dev->class_dev,
+-			"BUG! cannot determine board type!\n");
+-		return -EINVAL;
+-	}
+ 	return pci224_attach_common(dev, pci_dev);
+ }
  
- 		urb = usb_alloc_urb(0, GFP_ATOMIC);
- 		if (urb == NULL) {
--			dprintk(debug, "%s: usb_alloc_urb failed\n", __func__);
-+			dev_dbg(&dev->bus_adap.usb_dev->dev,
-+				"%s: usb_alloc_urb failed\n", __func__);
- 			as102_free_usb_stream_buffer(dev);
- 			return -ENOMEM;
- 		}
+@@ -1231,8 +1215,8 @@ static int amplc_pci224_pci_probe(struct pci_dev *dev,
+ }
+ 
+ static const struct pci_device_id amplc_pci224_pci_table[] = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI224) },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI234) },
++	{ PCI_VDEVICE(AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI224), pci224_model },
++	{ PCI_VDEVICE(AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI234), pci234_model },
+ 	{ 0 }
+ };
+ MODULE_DEVICE_TABLE(pci, amplc_pci224_pci_table);
 -- 
-1.7.10.4
+2.0.0
 
