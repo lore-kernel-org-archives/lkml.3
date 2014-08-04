@@ -1,99 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920AbaHDP3V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 11:29:21 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:47432 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880AbaHDP3S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 11:29:18 -0400
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>
-Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
-        Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH v2 03/18] ARM64 / ACPI: Introduce lowlevel suspend function
-Date: Mon,  4 Aug 2014 23:28:10 +0800
-Message-Id: <1407166105-17675-4-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>
+	id S1752974AbaHDP30 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 11:29:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9170 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752880AbaHDP3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 11:29:22 -0400
+Date: Mon, 4 Aug 2014 11:29:00 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v2 1/3] mm/hugetlb: take refcount under page table lock
+ in follow_huge_pmd()
+Message-ID: <20140804152900.GA29316@nhori.bos.redhat.com>
+References: <1406914663-8631-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20140801145358.0d673fc05235d941ca9dec0e@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140801145358.0d673fc05235d941ca9dec0e@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Graeme Gregory <graeme.gregory@linaro.org>
+On Fri, Aug 01, 2014 at 02:53:58PM -0700, Andrew Morton wrote:
+...
+> > --- mmotm-2014-07-22-15-58.orig/mm/hugetlb.c
+> > +++ mmotm-2014-07-22-15-58/mm/hugetlb.c
+> > @@ -3687,6 +3687,33 @@ follow_huge_pud(struct mm_struct *mm, unsigned long address,
+> >  
+> >  #endif /* CONFIG_ARCH_WANT_GENERAL_HUGETLB */
+> >  
+> > +struct page *follow_huge_pmd_lock(struct vm_area_struct *vma,
+> > +				unsigned long address, pmd_t *pmd, int flags)
+> 
+> Some documentation here wouldn't hurt.  Why it exists, what it does. 
+> And especially: any preconditions to calling it (ie: locking).
 
-acpi_wakeup_address is used on x86 as the address bios jumps into
-when machine wakes up from suspend. As arm64 does not have such a
-bios this mechanism will be provided by other means. But the define
-is still required inside the acpi core.
+Sorry, I missed this comment.
+How about this?
 
-Introduce a null stub for acpi_suspend_lowlevel as this is also
-required by core. This will be filled in when standards are
-defined for arm64 ACPI global power states.
-
-Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
----
- arch/arm64/include/asm/acpi.h |   12 ++++++++++++
- arch/arm64/kernel/acpi.c      |    7 +++++++
- 2 files changed, 19 insertions(+)
-
-diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-index e06da63..6400312 100644
---- a/arch/arm64/include/asm/acpi.h
-+++ b/arch/arm64/include/asm/acpi.h
-@@ -40,6 +40,18 @@ static inline bool acpi_has_cpu_in_madt(void)
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 1da7ca2e2a02..923465c0b47f 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -3693,6 +3693,14 @@ follow_huge_pud(struct mm_struct *mm, unsigned long address,
  
- static inline void arch_fix_phys_package_id(int num, u32 slot) { }
+ #endif /* CONFIG_ARCH_WANT_GENERAL_HUGETLB */
  
-+/* Low-level suspend routine.
-+ *
-+ * ACPI S-states for ARM64 have to be defined
-+ * and approved before doing anything else, maybe
-+ * we need update the ACPI spec, here we
-+ * just introduce function and macro needed by
-+ * ACPI core as IA64 did, and revisit them when
-+ * the spec is ready.
-+ */
-+extern int (*acpi_suspend_lowlevel)(void);
-+#define acpi_wakeup_address 0
-+
- #endif /* CONFIG_ACPI */
- 
- #endif /*_ASM_ACPI_H*/
-diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
-index 395778c..9cf9127 100644
---- a/arch/arm64/kernel/acpi.c
-+++ b/arch/arm64/kernel/acpi.c
-@@ -67,3 +67,10 @@ void __init acpi_boot_table_init(void)
- 		return;
- 	}
- }
-+
 +/*
-+ * acpi_suspend_lowlevel() - save kernel state and suspend.
-+ *
-+ * TBD when ARM/ARM64 starts to support suspend...
++ * This function calls the architecture dependent variant follow_huge_pmd()
++ * with holding page table lock depending on FOLL_GET.
++ * Whether hugepage migration is supported or not, follow() can be called
++ * with FOLL_GET from do_move_page_to_node_array(), so we need do this in
++ * common code.
++ * Should be called under read mmap_sem.
 + */
-+int (*acpi_suspend_lowlevel)(void) = NULL;
--- 
-1.7.9.5
-
+ struct page *follow_huge_pmd_lock(struct vm_area_struct *vma,
+ 				unsigned long address, pmd_t *pmd, int flags)
+ {
