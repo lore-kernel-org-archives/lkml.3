@@ -1,61 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211AbaHDJpB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 05:45:01 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54533 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550AbaHDJo7 (ORCPT
+	id S1751776AbaHDJvR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 05:51:17 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:60774 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375AbaHDJvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 05:44:59 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>
-CC: <balbi@ti.com>, <ming.lei@canonical.com>, <mwelling@emacinc.com>,
-        <stefan@herbrechtsmeier.net>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>,
-        "[3.8+]" <stable@vger.kernel.org>
-Subject: [PATCH] usb: hub: Prevent hub autosuspend if usbcore.autosuspend is -1
-Date: Mon, 4 Aug 2014 12:44:46 +0300
-Message-ID: <1407145486-14013-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 4 Aug 2014 05:51:15 -0400
+Subject: [PATCH v1.3 12/18] arcmsr: revise allocation of second
+ dma_coherent_handle for type B adapter
+From: Ching Huang <ching2048@areca.com.tw>
+To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Aug 2014 17:51:07 +0800
+Message-ID: <1407145867.4756.88.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If user specifies that USB autosuspend must be disabled by module
-parameter "usbcore.autosuspend=-1" then we must prevent
-autosuspend of USB hub devices as well.
+From: Ching Huang <ching2048@areca.com.tw>
 
-commit 596d789a211d introduced in v3.8 changed the original behaivour
-and stopped respecting the usbcore.autosuspend parameter for hubs.
+This modification is for consistency with up-coming adapter type D.
+They have similar H/W and S/W structure.
 
-Fixes: 596d789a211d "USB: set hub's default autosuspend delay as 0"
-
-Cc: [3.8+] <stable@vger.kernel.org>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Ching Huang <ching2048@areca.com.tw>
 ---
- drivers/usb/core/hub.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 0e950ad..a287cd5 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1728,8 +1728,12 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
- 	 * - Change autosuspend delay of hub can avoid unnecessary auto
- 	 *   suspend timer for hub, also may decrease power consumption
- 	 *   of USB bus.
-+	 *
-+	 * - If user has indicated to prevent autosuspend by passing
-+	 *   usbcore.autosuspend = -1 then keep autosuspend disabled.
- 	 */
--	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
-+	if (hdev->dev.power.autosuspend_delay >= 0)
-+		pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
+diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+--- a/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:27:38.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:28:38.000000000 +0800
+@@ -507,6 +507,7 @@ struct AdapterControlBlock
+ 	#define ACB_ADAPTER_TYPE_B            0x00000002	/* hbb M IOP */
+ 	#define ACB_ADAPTER_TYPE_C            0x00000004	/* hbc P IOP */
+ 	#define ACB_ADAPTER_TYPE_D            0x00000008	/* hbd A IOP */
++	u32				roundup_ccbsize;
+ 	struct pci_dev *		pdev;
+ 	struct Scsi_Host *		host;
+ 	unsigned long			vir2phy_offset;
+@@ -563,6 +564,7 @@ struct AdapterControlBlock
+ 	dma_addr_t			dma_coherent_handle;
+ 	/* dma_coherent_handle used for memory free */
+ 	dma_addr_t				dma_coherent_handle2;
++	void				*dma_coherent2;
+ 	unsigned int				uncache_size;
+ 	uint8_t				rqbuffer[ARCMSR_MAX_QBUFFER];
+ 	/* data collection buffer for read from 80331 */
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-04 16:45:18.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-04 16:45:26.000000000 +0800
+@@ -183,13 +183,10 @@ static struct pci_driver arcmsr_pci_driv
+ static void arcmsr_free_mu(struct AdapterControlBlock *acb)
+ {
+ 	switch (acb->adapter_type) {
+-	case ACB_ADAPTER_TYPE_A:
+-	case ACB_ADAPTER_TYPE_C:
+-		break;
+ 	case ACB_ADAPTER_TYPE_B:{
+-		dma_free_coherent(&acb->pdev->dev,
+-			sizeof(struct MessageUnit_B),
+-			acb->pmuB, acb->dma_coherent_handle2);
++		dma_free_coherent(&acb->pdev->dev, acb->roundup_ccbsize,
++			acb->dma_coherent2, acb->dma_coherent_handle2);
++		break;
+ 	}
+ 	}
+ }
+@@ -2254,12 +2251,15 @@ static bool arcmsr_hbaB_get_config(struc
+ 	char __iomem *iop_device_map;
+ 	/*firm_version,21,84-99*/
+ 	int count;
+-	dma_coherent = dma_alloc_coherent(&pdev->dev, sizeof(struct MessageUnit_B), &dma_coherent_handle, GFP_KERNEL);
++
++	acb->roundup_ccbsize = roundup(sizeof(struct MessageUnit_B), 32);
++	dma_coherent = dma_alloc_coherent(&pdev->dev, acb->roundup_ccbsize, &dma_coherent_handle, GFP_KERNEL);
+ 	if (!dma_coherent){
+ 		printk(KERN_NOTICE "arcmsr%d: dma_alloc_coherent got error for hbb mu\n", acb->host->host_no);
+ 		return false;
+ 	}
+ 	acb->dma_coherent_handle2 = dma_coherent_handle;
++	acb->dma_coherent2 = dma_coherent;
+ 	reg = (struct MessageUnit_B *)dma_coherent;
+ 	acb->pmuB = reg;
+ 	reg->drv2iop_doorbell= (uint32_t __iomem *)((unsigned long)acb->mem_base0 + ARCMSR_DRV2IOP_DOORBELL);
+@@ -2605,6 +2605,7 @@ static int arcmsr_polling_ccbdone(struct
+ static int arcmsr_iop_confirm(struct AdapterControlBlock *acb)
+ {
+ 	uint32_t cdb_phyaddr, cdb_phyaddr_hi32;
++	dma_addr_t dma_coherent_handle;
  
  	/*
- 	 * Hubs have proper suspend/resume support, except for root hubs
--- 
-1.8.3.2
+ 	********************************************************************
+@@ -2612,8 +2613,16 @@ static int arcmsr_iop_confirm(struct Ada
+ 	** if freeccb.HighPart is not zero
+ 	********************************************************************
+ 	*/
+-	cdb_phyaddr = lower_32_bits(acb->dma_coherent_handle);
+-	cdb_phyaddr_hi32 = upper_32_bits(acb->dma_coherent_handle);
++	switch (acb->adapter_type) {
++		case ACB_ADAPTER_TYPE_B:
++			dma_coherent_handle = acb->dma_coherent_handle2;
++			break;
++		default:
++			dma_coherent_handle = acb->dma_coherent_handle;
++			break;
++	}
++	cdb_phyaddr = lower_32_bits(dma_coherent_handle);
++	cdb_phyaddr_hi32 = upper_32_bits(dma_coherent_handle);
+ 	acb->cdb_phyaddr_hi32 = cdb_phyaddr_hi32;
+ 	/*
+ 	***********************************************************************
+@@ -2641,7 +2650,6 @@ static int arcmsr_iop_confirm(struct Ada
+ 		break;
+ 
+ 	case ACB_ADAPTER_TYPE_B: {
+-		unsigned long post_queue_phyaddr;
+ 		uint32_t __iomem *rwbuffer;
+ 
+ 		struct MessageUnit_B *reg = acb->pmuB;
+@@ -2653,16 +2661,15 @@ static int arcmsr_iop_confirm(struct Ada
+ 				acb->host->host_no);
+ 			return 1;
+ 		}
+-		post_queue_phyaddr = acb->dma_coherent_handle2;
+ 		rwbuffer = reg->message_rwbuffer;
+ 		/* driver "set config" signature */
+ 		writel(ARCMSR_SIGNATURE_SET_CONFIG, rwbuffer++);
+ 		/* normal should be zero */
+ 		writel(cdb_phyaddr_hi32, rwbuffer++);
+ 		/* postQ size (256 + 8)*4	 */
+-		writel(post_queue_phyaddr, rwbuffer++);
++		writel(cdb_phyaddr, rwbuffer++);
+ 		/* doneQ size (256 + 8)*4	 */
+-		writel(post_queue_phyaddr + 1056, rwbuffer++);
++		writel(cdb_phyaddr + 1056, rwbuffer++);
+ 		/* ccb maxQ size must be --> [(256 + 8)*4]*/
+ 		writel(1056, rwbuffer);
+ 
+
 
