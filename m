@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159AbaHDOpY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 10:45:24 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:34537 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886AbaHDOpW (ORCPT
+	id S1752391AbaHDOp5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 10:45:57 -0400
+Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:4383
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750999AbaHDOp4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 10:45:22 -0400
+	Mon, 4 Aug 2014 10:45:56 -0400
+X-WSS-ID: 0N9SEBU-08-P1M-02
+X-M-MSG: 
+Message-ID: <53DF9C88.6060107@amd.com>
+Date: Mon, 4 Aug 2014 16:45:28 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <53DF98D7.7030106@gmail.com>
-References: <Pine.LNX.4.44L0.1408041007330.1169-100000@iolanthe.rowland.org>
-	<53DF98D7.7030106@gmail.com>
-Date: Mon, 4 Aug 2014 16:45:21 +0200
-Message-ID: <CAFLxGvyob4hxW36McgCY=DjnoWqdGt7xzyugyUq0sT++_VXD=A@mail.gmail.com>
-Subject: Re: Kernel Debugging Support
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Austin S Hemmelgarn <ahferroin7@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Nick Krause <xerofoify@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>, <airlied@linux.ie>
+CC: <thellstrom@vmware.com>, <nouveau@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
+        <bskeggs@redhat.com>, <alexander.deucher@amd.com>
+Subject: Re: [PATCH 09/19] drm/radeon: handle lockup in delayed work, v2
+References: <20140731153245.15061.63023.stgit@patser>
+ <20140731153342.15061.54264.stgit@patser> <53DBC1EC.1010001@amd.com>
+ <53DBD269.80807@canonical.com> <53DF462B.2060102@amd.com>
+ <53DF4A7D.3040505@canonical.com> <53DF7516.2010408@amd.com>
+ <53DF8BF2.4000309@canonical.com> <53DF9AC4.3010700@amd.com>
+ <53DF9B58.8000403@canonical.com>
+In-Reply-To: <53DF9B58.8000403@canonical.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Originating-IP: [10.224.152.188]
+Content-Transfer-Encoding: 8BIT
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(199002)(189002)(377424004)(51704005)(81342001)(105586002)(74502001)(76482001)(31966008)(74662001)(95666004)(65956001)(80022001)(65806001)(84676001)(47776003)(20776003)(86362001)(83506001)(77982001)(81542001)(83322001)(85306004)(93886004)(85202003)(106466001)(50466002)(107046002)(21056001)(65816999)(23676002)(97736001)(54356999)(76176999)(87266999)(36756003)(99396002)(50986999)(68736004)(33656002)(87936001)(64126003)(80316001)(46102001)(64706001)(102836001)(101416001)(79102001)(85852003)(83072002)(92726001)(44976005)(92566001)(4396001)(85182001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR02MB034;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0293D40691
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Christian.Koenig@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 4, 2014 at 4:29 PM, Austin S Hemmelgarn
-<ahferroin7@gmail.com> wrote:
-> On 2014-08-04 10:21, Alan Stern wrote:
->> On Mon, 4 Aug 2014, Austin S Hemmelgarn wrote:
+Am 04.08.2014 um 16:40 schrieb Maarten Lankhorst:
+> op 04-08-14 16:37, Christian König schreef:
+>>> It'a pain to deal with gpu reset.
+>> Yeah, well that's nothing new.
 >>
->>> On 2014-08-02 09:48, Alan Stern wrote:
->>>> On Sat, 2 Aug 2014, Nick Krause wrote:
->>>>
->>>>> Hey Sharp,
->>>>> After reading around seems people want support for usb debugging in
->>>>> kgdb or other usb based solutions.
->>>>> If you and the other developers are able to help me out a bit as I am
->>>>> new I can definitively write this
->>>>> area of kgdb support.
->>>>
->>>> Doesn't kgdb already support USB for debugging?
->>>>
->>>> Alan Stern
->>>
->>> AFAICT, on x86 it only supports using either a console capable serial
->>> port (so you could do that over USB if you have USB serial console
->>> support built-in, but most people I know don't compile that in, and in
->>> fact that is the only reason that i compile USB serial support in
->>> instead of making it a module), and an AT compatible keyboard with any
->>> console option.
+>>> I've now tried other solutions but that would mean reverting to the old style during gpu lockup recovery, and only running the delayed work when !lockup.
+>>> But this meant that the timeout was useless to add. I think the cleanest is keeping the v2 patch, because potentially any waiting code can be called during lockup recovery.
+>> The lockup code itself should never call any waiting code and V2 doesn't seem to handle a couple of cases correctly either.
 >>
->> What about with a USB debugging device (CONFIG_EARLY_PRINTK_DBGP)?
->> That's how debugging over USB is _supposed_ to be done.
-> Yes, except those are really expensive, and on some it's pretty easy if
-> you don't know what you are doing to really screw things up.
+>> How about moving the fence waiting out of the reset code?
+> What cases did I miss then?
+>
+> I'm curious how you want to move the fence waiting out of reset, when there are so many places that could potentially wait, like radeon_ib_get can call radeon_sa_bo_new which can do a wait, or radeon_ring_alloc that can wait on radeon_fence_wait_next, etc.
 
-All you need is a Computer with an UDC. Linux has a debugport gadget.
+The IB test itself doesn't needs to be protected by the exclusive lock. 
+Only everything between radeon_save_bios_scratch_regs and 
+radeon_ring_restore.
 
--- 
-Thanks,
-//richard
+Christian.
