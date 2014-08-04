@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549AbaHDQ7P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:59:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56565 "EHLO
+	id S1753534AbaHDQ7O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:59:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56572 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752013AbaHDQt4 (ORCPT
+	by vger.kernel.org with ESMTP id S1752019AbaHDQt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:56 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Michael Cree" <mcree@orcon.net.nz>,
-        "=?UTF-8?Q?Ra=C3=BAl=20?=Porcel" <armin76@gentoo.org>,
-        "Matt Turner" <mattst88@gmail.com>
+CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
+        "Jean Delvare" <jdelvare@suse.de>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.550321139@decadent.org.uk>
+Message-ID: <lsq.1407170912.757421271@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 77/94] alpha: add io{read,write}{16,32}be functions
+Subject: [PATCH 3.2 41/94] hwmon: (emc2103) Clamp limits instead of
+ bailing out
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,38 +32,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Cree <mcree@orcon.net.nz>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 25534eb7707821b796fd84f7115367e02f36aa60 upstream.
+commit f6c2dd20108c35e30e2c1f3c6142d189451a626b upstream.
 
-These functions are used in some PCI drivers with big-endian
-MMIO space.
+It is customary to clamp limits instead of bailing out with an error
+if a configured limit is out of the range supported by the driver.
+This simplifies limit configuration, since the user will not typically
+know chip and/or driver specific limits.
 
-Admittedly it is almost certain that no one this side of the
-Moon would use such a card in an Alpha but it does get us
-closer to being able to build allyesconfig or allmodconfig,
-and it enables the Debian default generic config to build.
-
-Tested-by: Raúl Porcel <armin76@gentoo.org>
-Signed-off-by: Michael Cree <mcree@orcon.net.nz>
-Signed-off-by: Matt Turner <mattst88@gmail.com>
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/alpha/include/asm/io.h | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/hwmon/emc2103.c | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
---- a/arch/alpha/include/asm/io.h
-+++ b/arch/alpha/include/asm/io.h
-@@ -490,6 +490,11 @@ extern inline void writeq(u64 b, volatil
- }
- #endif
+--- a/drivers/hwmon/emc2103.c
++++ b/drivers/hwmon/emc2103.c
+@@ -248,9 +248,7 @@ static ssize_t set_temp_min(struct devic
+ 	if (result < 0)
+ 		return -EINVAL;
  
-+#define ioread16be(p) be16_to_cpu(ioread16(p))
-+#define ioread32be(p) be32_to_cpu(ioread32(p))
-+#define iowrite16be(v,p) iowrite16(cpu_to_be16(v), (p))
-+#define iowrite32be(v,p) iowrite32(cpu_to_be32(v), (p))
-+
- #define inb_p		inb
- #define inw_p		inw
- #define inl_p		inl
+-	val = DIV_ROUND_CLOSEST(val, 1000);
+-	if ((val < -63) || (val > 127))
+-		return -EINVAL;
++	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
+ 
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_min[nr] = val;
+@@ -272,9 +270,7 @@ static ssize_t set_temp_max(struct devic
+ 	if (result < 0)
+ 		return -EINVAL;
+ 
+-	val = DIV_ROUND_CLOSEST(val, 1000);
+-	if ((val < -63) || (val > 127))
+-		return -EINVAL;
++	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
+ 
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_max[nr] = val;
+@@ -386,15 +382,14 @@ static ssize_t set_fan_target(struct dev
+ {
+ 	struct emc2103_data *data = emc2103_update_device(dev);
+ 	struct i2c_client *client = to_i2c_client(dev);
+-	long rpm_target;
++	unsigned long rpm_target;
+ 
+-	int result = strict_strtol(buf, 10, &rpm_target);
++	int result = kstrtoul(buf, 10, &rpm_target);
+ 	if (result < 0)
+ 		return -EINVAL;
+ 
+ 	/* Datasheet states 16384 as maximum RPM target (table 3.2) */
+-	if ((rpm_target < 0) || (rpm_target > 16384))
+-		return -EINVAL;
++	rpm_target = clamp_val(rpm_target, 0, 16384);
+ 
+ 	mutex_lock(&data->update_lock);
+ 
 
