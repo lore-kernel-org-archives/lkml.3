@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaHDXi2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 19:38:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34887 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380AbaHDXi0 (ORCPT
+	id S1753306AbaHDXrQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 19:47:16 -0400
+Received: from mdfmta010.mxout.tch.inty.net ([91.221.169.51]:43688 "EHLO
+	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752723AbaHDXrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 19:38:26 -0400
-Date: Mon, 4 Aug 2014 16:38:26 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: DaeSeok Youn <daeseok.youn@gmail.com>
-Cc: Mark Hounschell <markh@compro.net>, devel <devel@driverdev.osuosl.org>,
-        Lidza Louina <lidza.louina@gmail.com>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH V2] staging: dgap: introduce dgap_cleanup_nodes()
-Message-ID: <20140804233826.GA20456@kroah.com>
-References: <166070137.57941.1406779444750.JavaMail.root@mx2.compro.net>
- <53DA3A2D.90403@compro.net>
- <1598413764.80217.1406848485858.JavaMail.root@mx2.compro.net>
- <53DF7F34.5030201@compro.net>
- <CAHb8M2DkfnkrsjLciSvS=_0GM4wn1dC33ExUWS7nYG=mnNH+Xg@mail.gmail.com>
+	Mon, 4 Aug 2014 19:47:15 -0400
+X-Greylist: delayed 322 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Aug 2014 19:47:15 EDT
+Message-ID: <53E01A3D.8070504@ramsay1.demon.co.uk>
+Date: Tue, 05 Aug 2014 00:41:49 +0100
+From: Ramsay Jones <ramsay@ramsay1.demon.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHb8M2DkfnkrsjLciSvS=_0GM4wn1dC33ExUWS7nYG=mnNH+Xg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Junio C Hamano <gitster@pobox.com>, git@vger.kernel.org
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git v2.1.0-rc1
+References: <xmqqy4v3q43r.fsf@gitster.dls.corp.google.com>
+In-Reply-To: <xmqqy4v3q43r.fsf@gitster.dls.corp.google.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-MDF-HostID: 19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 08:33:16AM +0900, DaeSeok Youn wrote:
-> Hi, Mark and Greg.
+On 04/08/14 23:31, Junio C Hamano wrote:
+> v2.1.0-rc1, the first release candidate Git for v2.1, is now
+
+[snip]
+
 > 
-> Thanks for testing. :-)
-> 
-> Greg, is this patch possible to merge to your staging tree?
-> Please check for me.
-> patch : https://lkml.org/lkml/2014/7/31/2
+>  * The leaf function to check validity of a refname format has been
+>    micro-optimized, using SSE2 instructions when available.  A few
+>    breakages during its development have been caught and fixed already
+>    but there might remain some more still; please test and report if
+>    you find any.
 
-It's the middle of the merge window, I can't do anything until after
-3.17-rc1 is out.  So wait until then, I'll pick up the patch at that
-point in time, it's still in my "to-apply" queue.
+This has been removed.
 
-thanks,
+ATB,
+Ramsay Jones
 
-greg k-h
+
+
