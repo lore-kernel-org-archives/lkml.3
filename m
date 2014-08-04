@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170AbaHDRSb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:18:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34613 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351AbaHDRS2 (ORCPT
+	id S1754227AbaHDRSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:18:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56448 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751692AbaHDQty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 13:18:28 -0400
-Date: Mon, 4 Aug 2014 19:18:14 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH?] x86: reimplement ___preempt_schedule*() using THUNK
- helpers
-Message-ID: <20140804171814.GU19379@twins.programming.kicks-ass.net>
-References: <1407158386-6201-1-git-send-email-dvlasenk@redhat.com>
- <1407158386-6201-5-git-send-email-dvlasenk@redhat.com>
- <20140804170519.GA17466@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bTEFy8KkmVf9O7nJ"
+	Mon, 4 Aug 2014 12:49:54 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <20140804170519.GA17466@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Johan Hovold" <johan@kernel.org>,
+        "Mike Remski" <mremski@mutualink.net>
+Date: Mon, 04 Aug 2014 17:48:31 +0100
+Message-ID: <lsq.1407170911.962639714@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 07/94] USB: ftdi_sio: fix null deref at port probe
+In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.2.62-rc1 review patch.  If anyone has any objections, please let me know.
 
---bTEFy8KkmVf9O7nJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Mon, Aug 04, 2014 at 07:05:19PM +0200, Oleg Nesterov wrote:
-> Hmm. This part looks fine, but with or without this patch this all is
-> suboptimal, we do not need SAVE_ALL unless I missed something. Can't we
-> simply kill preempt.S ?
->=20
-> Peter, what do you think?
+From: Johan Hovold <johan@kernel.org>
 
-HPA right, not me? I'm never sure on these details, if hpa thinks its
-fine, I'm good.
+commit aea1ae8760314e072bf1b773521e9de5d5dda10d upstream.
 
---bTEFy8KkmVf9O7nJ
-Content-Type: application/pgp-signature
+Fix NULL-pointer dereference when probing an interface with no
+endpoints.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+These devices have two bulk endpoints per interface, but this avoids
+crashing the kernel if a user forces a non-FTDI device to be probed.
 
-iQIcBAEBAgAGBQJT38BSAAoJEHZH4aRLwOS6MLwP/2LfcqXCoOAy6n40bjQj0zug
-kD4AlCVNLqAntuA+L9pdlKkv9ve0CboepbVX0JFH+tXdfQJPoWdzNZIkKWsolgFI
-OicsgBtzrrTnQKGC1BYfxJ9OGfLY+ti2pKEG4UT61egKUg3jlCvLqyu/ql337xNM
-R1FdcvuwOqfnTwkWhYMgBKAm7wLQ7UKJUN1i7jAquaKnKJEUs3xA+pAwfHT7hXvf
-u/qQ0Fvmoei9YRtgC7QkMRRA639Ba0uddMjZfDHABH63Au7xqiWwP5GF85t4MIbG
-rIlyDmw+DuDzf2nVFFMKrRXLlIn47pEyXG5ErhUcLm3n+sAB9Z9GEY+MbA0EQmlM
-529YchLkTYCz68SfoUU5wB5fbH2wpVbwG2lFO5OEUuHG1UToS24v46xiOfUs7fKw
-o3jmHF/d97CcYKECN+qy3mh3LiFXz8/+SnR78qsmNQyjw4NlsKu9unaCcjzTcibT
-rSrgEOZ9UC7u9VojAZFizktwuPPhyZwCIRzxX6mkb9zAfzny3PcdUlCPu0NPQjMJ
-c5XmVjrpQo1MDF5HEeLdFLUOdCme4ddv9J2iQB/U0nlBmo0orgiQSU7wy9KRzST6
-wc77SInpymgqR55/G3xEL7iZ6hR79dXp27Tw8fJbI8xAN5lWh59fAnEq1S/DmKZ9
-XOHKmhGegeQJcGE+qw4g
-=wMs8
------END PGP SIGNATURE-----
+Note that the iterator variable was made unsigned in order to avoid
+a maybe-uninitialized compiler warning for ep_desc after the loop.
 
---bTEFy8KkmVf9O7nJ--
+Fixes: 895f28badce9 ("USB: ftdi_sio: fix hi-speed device packet size
+calculation")
+
+Reported-by: Mike Remski <mremski@mutualink.net>
+Tested-by: Mike Remski <mremski@mutualink.net>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/usb/serial/ftdi_sio.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -1591,14 +1591,17 @@ static void ftdi_set_max_packet_size(str
+ 	struct usb_device *udev = serial->dev;
+ 
+ 	struct usb_interface *interface = serial->interface;
+-	struct usb_endpoint_descriptor *ep_desc = &interface->cur_altsetting->endpoint[1].desc;
++	struct usb_endpoint_descriptor *ep_desc;
+ 
+ 	unsigned num_endpoints;
+-	int i;
++	unsigned i;
+ 
+ 	num_endpoints = interface->cur_altsetting->desc.bNumEndpoints;
+ 	dev_info(&udev->dev, "Number of endpoints %d\n", num_endpoints);
+ 
++	if (!num_endpoints)
++		return;
++
+ 	/* NOTE: some customers have programmed FT232R/FT245R devices
+ 	 * with an endpoint size of 0 - not good.  In this case, we
+ 	 * want to override the endpoint descriptor setting and use a
+
