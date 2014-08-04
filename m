@@ -1,78 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121AbaHDToJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 15:44:09 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:56049 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456AbaHDToH (ORCPT
+	id S1752363AbaHDTrI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 15:47:08 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45268 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaHDTrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 15:44:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140804212354.74b97cd7@endymion.delvare>
-References: <53DFCFC9.6060307@gmail.com>
-	<20140804212354.74b97cd7@endymion.delvare>
-Date: Mon, 4 Aug 2014 21:44:04 +0200
-X-Google-Sender-Auth: 4liCxeoasPTpC3A9y9dmQOVohZ4
-Message-ID: <CAMuHMdVGgW11UziFieCgXT7mSNA=_QgOaGAt42kEXqU9CUgqxA@mail.gmail.com>
-Subject: Re: [PATCH] drivers/isdn/hisax/Kconfig: Let HISAX_NETJET skip
- microblaze architecture
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: Chen Gang <gang.chen.5i5j@gmail.com>, Karsten Keil <isdn@linux-pingi.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Simek <monstr@monstr.eu>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 4 Aug 2014 15:47:07 -0400
+Date: Mon, 04 Aug 2014 12:47:05 -0700 (PDT)
+Message-Id: <20140804.124705.982661414906553098.davem@davemloft.net>
+To: mst@redhat.com
+Cc: linux-kernel@vger.kernel.org, stephen@networkplumber.org,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] bridge: remove a useless comment
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1407158554-17384-1-git-send-email-mst@redhat.com>
+References: <1407158554-17384-1-git-send-email-mst@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 04 Aug 2014 12:47:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 4, 2014 at 9:23 PM, Jean Delvare <jdelvare@suse.de> wrote:
->> --- a/drivers/isdn/hisax/Kconfig
->> +++ b/drivers/isdn/hisax/Kconfig
->> @@ -237,7 +237,7 @@ config HISAX_MIC
->>
->>  config HISAX_NETJET
->>       bool "NETjet card"
->> -     depends on PCI && (BROKEN || !(PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
->> +     depends on PCI && (BROKEN || !(PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN) || MICROBLAZE))
->>       depends on VIRT_TO_BUS
->>       help
->>         This enables HiSax support for the NetJet from Traverse
->> @@ -249,7 +249,7 @@ config HISAX_NETJET
->>
->>  config HISAX_NETJET_U
->>       bool "NETspider U card"
->> -     depends on PCI && (BROKEN || !(PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
->> +     depends on PCI && (BROKEN || !(PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN) || MICROBLAZE))
->>       depends on VIRT_TO_BUS
->>       help
->>         This enables HiSax support for the Netspider U interface ISDN card
->
-> Fine with me, however the list is getting long. It would be better if
-> we could depend on a functional symbol rather than a negated list of
-> architectures. Would it make sense to have CONFIG_CPU_LITTLE_ENDIAN
-> defined on all little-endian architectures, so that driver can depend
-> on that if needed?
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Mon, 4 Aug 2014 15:22:40 +0200
 
-Yes, that idea pops up once in a while.
+> commit 6cbdceeb1cb12c7d620161925a8c3e81daadb2e4
+>     bridge: Dump vlan information from a bridge port
+> introduced a comment in an attempt to explain the
+> code logic. The comment is unfinished so it confuses more
+> than it explains, remove it.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-BTW, these days little endian PPC is also supported by Linux...
-
-> Alternatively, it might make more sense to list the architectures where
-> these drivers are actually used in practice. I guess that's X86, maybe
-> ARM and IA64, and that's all?
-
-|| COMPILE_TEST ....
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Applied, thanks.
