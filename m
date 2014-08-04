@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654AbaHDRNe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:13:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56483 "EHLO
+	id S1754123AbaHDROb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:14:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56467 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751826AbaHDQty (ORCPT
+	by vger.kernel.org with ESMTP id S1751742AbaHDQty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:54 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.798095690@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Mathias Nyman" <mathias.nyman@linux.intel.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Lu Baolu" <baolu.lu@linux.intel.com>
+Date: Mon, 04 Aug 2014 17:48:31 +0100
+Message-ID: <lsq.1407170911.367600766@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 79/94] x86-32, espfix: Remove filter for espfix32 due
- to race
+Subject: [PATCH 3.2 10/94] xhci: clear root port wake on bits if
+ controller isn't wake-up capable
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,35 +33,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Lu Baolu <baolu.lu@linux.intel.com>
 
-commit 246f2d2ee1d715e1077fc47d61c394569c8ee692 upstream.
+commit ff8cbf250b448aac35589f6075082c3fcad8a8fe upstream.
 
-It is not safe to use LAR to filter when to go down the espfix path,
-because the LDT is per-process (rather than per-thread) and another
-thread might change the descriptors behind our back.  Fortunately it
-is always *safe* (if a bit slow) to go down the espfix path, and a
-32-bit LDT stack segment is extremely rare.
+When xHCI PCI host is suspended, if do_wakeup is false in xhci_pci_suspend,
+xhci_bus_suspend needs to clear all root port wake on bits. Otherwise some Intel
+platforms may get a spurious wakeup, even if PCI PME# is disabled.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
+This patch should be back-ported to kernels as old as 2.6.37, that
+contains the commit 9777e3ce907d4cb5a513902a87ecd03b52499569
+"USB: xHCI: bus power management implementation".
+
+Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/entry_32.S | 5 -----
- 1 file changed, 5 deletions(-)
+ drivers/usb/host/xhci-hub.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -553,11 +553,6 @@ ENTRY(iret_exc)
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -21,6 +21,7 @@
+  */
  
- 	CFI_RESTORE_STATE
- ldt_ss:
--	larl PT_OLDSS(%esp), %eax
--	jnz restore_nocheck
--	testl $0x00400000, %eax		# returning to 32bit stack?
--	jnz restore_nocheck		# allright, normal return
--
- #ifdef CONFIG_PARAVIRT
- 	/*
- 	 * The kernel can't run on a non-flat stack if paravirt mode
+ #include <linux/gfp.h>
++#include <linux/device.h>
+ #include <asm/unaligned.h>
+ 
+ #include "xhci.h"
+@@ -993,7 +994,9 @@ int xhci_bus_suspend(struct usb_hcd *hcd
+ 			t2 |= PORT_LINK_STROBE | XDEV_U3;
+ 			set_bit(port_index, &bus_state->bus_suspended);
+ 		}
+-		if (hcd->self.root_hub->do_remote_wakeup) {
++		if (hcd->self.root_hub->do_remote_wakeup
++				&& device_may_wakeup(hcd->self.controller)) {
++
+ 			if (t1 & PORT_CONNECT) {
+ 				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
+ 				t2 &= ~PORT_WKCONN_E;
 
