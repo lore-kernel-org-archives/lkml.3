@@ -1,427 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaHDTgE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 15:36:04 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:39269 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708AbaHDTgA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 15:36:00 -0400
+	id S1752675AbaHDTi2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 15:38:28 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:36687 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752227AbaHDTi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 15:38:26 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: mark yao <yzq@rock-chips.com>
+Cc: Rob Clark <robdclark@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, David Airlie <airlied@linux.ie>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, zwl@rock-chips.com, xxm@rock-chips.com,
+        huangtao@rock-chips.com, kever.yang@rock-chips.com,
+        zhangqing@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com
+Subject: Re: [PATCH 8/9] Add devicetree bindings for Rockchip Soc EDP
+Date: Mon, 04 Aug 2014 21:39:34 +0200
+Message-ID: <4758549.OE3inCP7ZI@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1407128159-1930-1-git-send-email-yzq@rock-chips.com>
+References: <1407127274-1356-1-git-send-email-mark.yao@rock-chips.com> <1407128159-1930-1-git-send-email-yzq@rock-chips.com>
 MIME-Version: 1.0
-In-Reply-To: <1407177340-29359-1-git-send-email-john.stultz@linaro.org>
-References: <CAGXu5jKD5X4ZZreierjWsB659pXJgc9eXJX==Wm+-R22nKY+xQ@mail.gmail.com>
-	<1407177340-29359-1-git-send-email-john.stultz@linaro.org>
-Date: Mon, 4 Aug 2014 12:35:57 -0700
-X-Google-Sender-Auth: KApeg_mqZC87N1NL7ov55yGXexA
-Message-ID: <CAGXu5jLS1SGo9dsoYAbjNOSJ-oCHpy_UD-_1Me+jhRGMu7TAZA@mail.gmail.com>
-Subject: Re: [PATCH] time: Rename udelay_test.c to test_udelay.c
-From: Kees Cook <keescook@chromium.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        David Riley <davidriley@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 4, 2014 at 11:35 AM, John Stultz <john.stultz@linaro.org> wrote:
-> Kees requested that this test module be renamed for consistency sake,
-> so this patch renames the udelay_test.c file (recently added to
-> tip/timers/core for 3.17) to test_udelay.c
->
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Greg KH <greg@kroah.com>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Linux-Next <linux-next@vger.kernel.org>
-> Cc: David Riley <davidriley@chromium.org>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
-
-Thank you! :)
-
-Acked-by: Kees Cook <keescook@chromium.org>
-
--Kees
-
+Am Montag, 4. August 2014, 12:55:59 schrieb mark yao:
+> Signed-off-by: mark yao <yzq@rock-chips.com>
 > ---
->  kernel/time/Makefile      |   2 +-
->  kernel/time/test_udelay.c | 168 ++++++++++++++++++++++++++++++++++++++++++++++
->  kernel/time/udelay_test.c | 168 ----------------------------------------------
->  3 files changed, 169 insertions(+), 169 deletions(-)
->  create mode 100644 kernel/time/test_udelay.c
->  delete mode 100644 kernel/time/udelay_test.c
->
-> diff --git a/kernel/time/Makefile b/kernel/time/Makefile
-> index 7347426..f622cf2 100644
-> --- a/kernel/time/Makefile
-> +++ b/kernel/time/Makefile
-> @@ -13,7 +13,7 @@ obj-$(CONFIG_TICK_ONESHOT)                    += tick-oneshot.o
->  obj-$(CONFIG_TICK_ONESHOT)                     += tick-sched.o
->  obj-$(CONFIG_TIMER_STATS)                      += timer_stats.o
->  obj-$(CONFIG_DEBUG_FS)                         += timekeeping_debug.o
-> -obj-$(CONFIG_TEST_UDELAY)                      += udelay_test.o
-> +obj-$(CONFIG_TEST_UDELAY)                      += test_udelay.o
->
->  $(obj)/time.o: $(obj)/timeconst.h
->
-> diff --git a/kernel/time/test_udelay.c b/kernel/time/test_udelay.c
-> new file mode 100644
-> index 0000000..e622ba3
-> --- /dev/null
-> +++ b/kernel/time/test_udelay.c
-> @@ -0,0 +1,168 @@
-> +/*
-> + * udelay() test kernel module
-> + *
-> + * Test is executed by writing and reading to /sys/kernel/debug/udelay_test
-> + * Tests are configured by writing: USECS ITERATIONS
-> + * Tests are executed by reading from the same file.
-> + * Specifying usecs of 0 or negative values will run multiples tests.
-> + *
-> + * Copyright (C) 2014 Google, Inc.
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
+>  .../devicetree/bindings/video/rockchip-panel.txt   |   34
+> ++++++++++++++++++++ 1 file changed, 34 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/video/rockchip-panel.txt
+> b/Documentation/devicetree/bindings/video/rockchip-panel.txt index
+> f599806..f6d80f6 100644
+> --- a/Documentation/devicetree/bindings/video/rockchip-panel.txt
+> +++ b/Documentation/devicetree/bindings/video/rockchip-panel.txt
+> @@ -80,3 +80,37 @@ Example:
+>  		rockchip,data-width = <24>;
+>  		rockchip,panel = <&panel>;
+>  	};
 > +
-> +#include <linux/debugfs.h>
-> +#include <linux/delay.h>
-> +#include <linux/ktime.h>
-> +#include <linux/module.h>
-> +#include <linux/uaccess.h>
+> +Rockchip RK3288 EDP interface
+> +================================
+> +Required properties:
+> +-compatible: "rockchip,rk3288-edp";
 > +
-> +#define DEFAULT_ITERATIONS 100
+> +- reg: physical base address of the controller and length
+> +- clocks: from common clock binding: handle to dp clock.
+> +	of memory mapped region.
+> +- clock-names: from common clock binding:
+> +	Required elements: "clk_edp"
+> +			"clk_edp_24m"
+> +			"clk_edp_24m_parent"
+> +			"pclk_edp"
+> +- rockchip,grf: this soc should set GRF regs, so need get grf here.
+> +- resets: Must contain an entry for each entry in reset-names.
+> +	See ../reset/reset.txt for details.
+> +- reset-names: Must include the following entries:
+> +  - edp
+> +- rockchip,panel: required a panel node
 > +
-> +#define DEBUGFS_FILENAME "udelay_test"
-> +
-> +static DEFINE_MUTEX(udelay_test_lock);
-> +static struct dentry *udelay_test_debugfs_file;
-> +static int udelay_test_usecs;
-> +static int udelay_test_iterations = DEFAULT_ITERATIONS;
-> +
-> +static int udelay_test_single(struct seq_file *s, int usecs, uint32_t iters)
-> +{
-> +       int min = 0, max = 0, fail_count = 0;
-> +       uint64_t sum = 0;
-> +       uint64_t avg;
-> +       int i;
-> +       /* Allow udelay to be up to 0.5% fast */
-> +       int allowed_error_ns = usecs * 5;
-> +
-> +       for (i = 0; i < iters; ++i) {
-> +               struct timespec ts1, ts2;
-> +               int time_passed;
-> +
-> +               ktime_get_ts(&ts1);
-> +               udelay(usecs);
-> +               ktime_get_ts(&ts2);
-> +               time_passed = timespec_to_ns(&ts2) - timespec_to_ns(&ts1);
-> +
-> +               if (i == 0 || time_passed < min)
-> +                       min = time_passed;
-> +               if (i == 0 || time_passed > max)
-> +                       max = time_passed;
-> +               if ((time_passed + allowed_error_ns) / 1000 < usecs)
-> +                       ++fail_count;
-> +               WARN_ON(time_passed < 0);
-> +               sum += time_passed;
-> +       }
-> +
-> +       avg = sum;
-> +       do_div(avg, iters);
-> +       seq_printf(s, "%d usecs x %d: exp=%d allowed=%d min=%d avg=%lld max=%d",
-> +                       usecs, iters, usecs * 1000,
-> +                       (usecs * 1000) - allowed_error_ns, min, avg, max);
-> +       if (fail_count)
-> +               seq_printf(s, " FAIL=%d", fail_count);
-> +       seq_puts(s, "\n");
-> +
-> +       return 0;
-> +}
-> +
-> +static int udelay_test_show(struct seq_file *s, void *v)
-> +{
-> +       int usecs;
-> +       int iters;
-> +       int ret = 0;
-> +
-> +       mutex_lock(&udelay_test_lock);
-> +       usecs = udelay_test_usecs;
-> +       iters = udelay_test_iterations;
-> +       mutex_unlock(&udelay_test_lock);
-> +
-> +       if (usecs > 0 && iters > 0) {
-> +               return udelay_test_single(s, usecs, iters);
-> +       } else if (usecs == 0) {
-> +               struct timespec ts;
-> +
-> +               ktime_get_ts(&ts);
-> +               seq_printf(s, "udelay() test (lpj=%ld kt=%ld.%09ld)\n",
-> +                               loops_per_jiffy, ts.tv_sec, ts.tv_nsec);
-> +               seq_puts(s, "usage:\n");
-> +               seq_puts(s, "echo USECS [ITERS] > " DEBUGFS_FILENAME "\n");
-> +               seq_puts(s, "cat " DEBUGFS_FILENAME "\n");
-> +       }
-> +
-> +       return ret;
-> +}
-> +
-> +static int udelay_test_open(struct inode *inode, struct file *file)
-> +{
-> +       return single_open(file, udelay_test_show, inode->i_private);
-> +}
-> +
-> +static ssize_t udelay_test_write(struct file *file, const char __user *buf,
-> +               size_t count, loff_t *pos)
-> +{
-> +       char lbuf[32];
-> +       int ret;
-> +       int usecs;
-> +       int iters;
-> +
-> +       if (count >= sizeof(lbuf))
-> +               return -EINVAL;
-> +
-> +       if (copy_from_user(lbuf, buf, count))
-> +               return -EFAULT;
-> +       lbuf[count] = '\0';
-> +
-> +       ret = sscanf(lbuf, "%d %d", &usecs, &iters);
-> +       if (ret < 1)
-> +               return -EINVAL;
-> +       else if (ret < 2)
-> +               iters = DEFAULT_ITERATIONS;
-> +
-> +       mutex_lock(&udelay_test_lock);
-> +       udelay_test_usecs = usecs;
-> +       udelay_test_iterations = iters;
-> +       mutex_unlock(&udelay_test_lock);
-> +
-> +       return count;
-> +}
-> +
-> +static const struct file_operations udelay_test_debugfs_ops = {
-> +       .owner = THIS_MODULE,
-> +       .open = udelay_test_open,
-> +       .read = seq_read,
-> +       .write = udelay_test_write,
-> +       .llseek = seq_lseek,
-> +       .release = single_release,
-> +};
-> +
-> +static int __init udelay_test_init(void)
-> +{
-> +       mutex_lock(&udelay_test_lock);
-> +       udelay_test_debugfs_file = debugfs_create_file(DEBUGFS_FILENAME,
-> +                       S_IRUSR, NULL, NULL, &udelay_test_debugfs_ops);
-> +       mutex_unlock(&udelay_test_lock);
-> +
-> +       return 0;
-> +}
-> +
-> +module_init(udelay_test_init);
-> +
-> +static void __exit udelay_test_exit(void)
-> +{
-> +       mutex_lock(&udelay_test_lock);
-> +       debugfs_remove(udelay_test_debugfs_file);
-> +       mutex_unlock(&udelay_test_lock);
-> +}
-> +
-> +module_exit(udelay_test_exit);
-> +
-> +MODULE_AUTHOR("David Riley <davidriley@chromium.org>");
-> +MODULE_LICENSE("GPL");
-> diff --git a/kernel/time/udelay_test.c b/kernel/time/udelay_test.c
-> deleted file mode 100644
-> index e622ba3..0000000
-> --- a/kernel/time/udelay_test.c
-> +++ /dev/null
-> @@ -1,168 +0,0 @@
-> -/*
-> - * udelay() test kernel module
-> - *
-> - * Test is executed by writing and reading to /sys/kernel/debug/udelay_test
-> - * Tests are configured by writing: USECS ITERATIONS
-> - * Tests are executed by reading from the same file.
-> - * Specifying usecs of 0 or negative values will run multiples tests.
-> - *
-> - * Copyright (C) 2014 Google, Inc.
-> - *
-> - * This software is licensed under the terms of the GNU General Public
-> - * License version 2, as published by the Free Software Foundation, and
-> - * may be copied, distributed, and modified under those terms.
-> - *
-> - * This program is distributed in the hope that it will be useful,
-> - * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> - * GNU General Public License for more details.
-> - */
-> -
-> -#include <linux/debugfs.h>
-> -#include <linux/delay.h>
-> -#include <linux/ktime.h>
-> -#include <linux/module.h>
-> -#include <linux/uaccess.h>
-> -
-> -#define DEFAULT_ITERATIONS 100
-> -
-> -#define DEBUGFS_FILENAME "udelay_test"
-> -
-> -static DEFINE_MUTEX(udelay_test_lock);
-> -static struct dentry *udelay_test_debugfs_file;
-> -static int udelay_test_usecs;
-> -static int udelay_test_iterations = DEFAULT_ITERATIONS;
-> -
-> -static int udelay_test_single(struct seq_file *s, int usecs, uint32_t iters)
-> -{
-> -       int min = 0, max = 0, fail_count = 0;
-> -       uint64_t sum = 0;
-> -       uint64_t avg;
-> -       int i;
-> -       /* Allow udelay to be up to 0.5% fast */
-> -       int allowed_error_ns = usecs * 5;
-> -
-> -       for (i = 0; i < iters; ++i) {
-> -               struct timespec ts1, ts2;
-> -               int time_passed;
-> -
-> -               ktime_get_ts(&ts1);
-> -               udelay(usecs);
-> -               ktime_get_ts(&ts2);
-> -               time_passed = timespec_to_ns(&ts2) - timespec_to_ns(&ts1);
-> -
-> -               if (i == 0 || time_passed < min)
-> -                       min = time_passed;
-> -               if (i == 0 || time_passed > max)
-> -                       max = time_passed;
-> -               if ((time_passed + allowed_error_ns) / 1000 < usecs)
-> -                       ++fail_count;
-> -               WARN_ON(time_passed < 0);
-> -               sum += time_passed;
-> -       }
-> -
-> -       avg = sum;
-> -       do_div(avg, iters);
-> -       seq_printf(s, "%d usecs x %d: exp=%d allowed=%d min=%d avg=%lld max=%d",
-> -                       usecs, iters, usecs * 1000,
-> -                       (usecs * 1000) - allowed_error_ns, min, avg, max);
-> -       if (fail_count)
-> -               seq_printf(s, " FAIL=%d", fail_count);
-> -       seq_puts(s, "\n");
-> -
-> -       return 0;
-> -}
-> -
-> -static int udelay_test_show(struct seq_file *s, void *v)
-> -{
-> -       int usecs;
-> -       int iters;
-> -       int ret = 0;
-> -
-> -       mutex_lock(&udelay_test_lock);
-> -       usecs = udelay_test_usecs;
-> -       iters = udelay_test_iterations;
-> -       mutex_unlock(&udelay_test_lock);
-> -
-> -       if (usecs > 0 && iters > 0) {
-> -               return udelay_test_single(s, usecs, iters);
-> -       } else if (usecs == 0) {
-> -               struct timespec ts;
-> -
-> -               ktime_get_ts(&ts);
-> -               seq_printf(s, "udelay() test (lpj=%ld kt=%ld.%09ld)\n",
-> -                               loops_per_jiffy, ts.tv_sec, ts.tv_nsec);
-> -               seq_puts(s, "usage:\n");
-> -               seq_puts(s, "echo USECS [ITERS] > " DEBUGFS_FILENAME "\n");
-> -               seq_puts(s, "cat " DEBUGFS_FILENAME "\n");
-> -       }
-> -
-> -       return ret;
-> -}
-> -
-> -static int udelay_test_open(struct inode *inode, struct file *file)
-> -{
-> -       return single_open(file, udelay_test_show, inode->i_private);
-> -}
-> -
-> -static ssize_t udelay_test_write(struct file *file, const char __user *buf,
-> -               size_t count, loff_t *pos)
-> -{
-> -       char lbuf[32];
-> -       int ret;
-> -       int usecs;
-> -       int iters;
-> -
-> -       if (count >= sizeof(lbuf))
-> -               return -EINVAL;
-> -
-> -       if (copy_from_user(lbuf, buf, count))
-> -               return -EFAULT;
-> -       lbuf[count] = '\0';
-> -
-> -       ret = sscanf(lbuf, "%d %d", &usecs, &iters);
-> -       if (ret < 1)
-> -               return -EINVAL;
-> -       else if (ret < 2)
-> -               iters = DEFAULT_ITERATIONS;
-> -
-> -       mutex_lock(&udelay_test_lock);
-> -       udelay_test_usecs = usecs;
-> -       udelay_test_iterations = iters;
-> -       mutex_unlock(&udelay_test_lock);
-> -
-> -       return count;
-> -}
-> -
-> -static const struct file_operations udelay_test_debugfs_ops = {
-> -       .owner = THIS_MODULE,
-> -       .open = udelay_test_open,
-> -       .read = seq_read,
-> -       .write = udelay_test_write,
-> -       .llseek = seq_lseek,
-> -       .release = single_release,
-> -};
-> -
-> -static int __init udelay_test_init(void)
-> -{
-> -       mutex_lock(&udelay_test_lock);
-> -       udelay_test_debugfs_file = debugfs_create_file(DEBUGFS_FILENAME,
-> -                       S_IRUSR, NULL, NULL, &udelay_test_debugfs_ops);
-> -       mutex_unlock(&udelay_test_lock);
-> -
-> -       return 0;
-> -}
-> -
-> -module_init(udelay_test_init);
-> -
-> -static void __exit udelay_test_exit(void)
-> -{
-> -       mutex_lock(&udelay_test_lock);
-> -       debugfs_remove(udelay_test_debugfs_file);
-> -       mutex_unlock(&udelay_test_lock);
-> -}
-> -
-> -module_exit(udelay_test_exit);
-> -
-> -MODULE_AUTHOR("David Riley <davidriley@chromium.org>");
-> -MODULE_LICENSE("GPL");
-> --
-> 1.9.1
->
+> +Example:
+> +	edp: edp@ff970000 {
+> +		compatible = "rockchip,rk3288-edp";
+> +                reg = <0xff970000 0x4000>;
+> +                interrupts = <GIC_SPI 98 IRQ_TYPE_LEVEL_HIGH>;
+> +                clocks = <&cru SCLK_EDP>, <&cru SCLK_EDP_24M>, <&cru
+> PCLK_EDP_CTRL>, <&xin24m>; +                clock-names = "clk_edp",
+> "clk_edp_24m", "pclk_edp", "clk_edp_24m_parent"; +
+
+clk_epd_24m_parent is not part of the hardware, so instead of referencing the 
+target-parent as part of the device clocks, the new
+	"clk: Support for clock parents and rates assigned from device tree"
+should be used for setting the target parent - so the re-parenting code should 
+also move out of the driver.
+
+This commit [0] is part of the clk-pull request and thus will most likely be 
+part of 3.17.
+
+
+Heiko
+
+[0] 
+http://git.linaro.org/people/mike.turquette/linux.git/commitdiff/86be408bfbd846fab3c4ac21d6f9298bd2e4b790?hp=09575693a2511b5ddae0105546e0d9cefc936e34
 
 
 
--- 
-Kees Cook
-Chrome OS Security
+> +                rockchip,grf = <&grf>;
+> +                resets = <&cru 111>;
+> +                reset-names = "edp";
+> +		rockchip,panel = <&panel>;
+> +	};
+
