@@ -1,129 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaHDKko (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 06:40:44 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:17750 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752610AbaHDKkm (ORCPT
+	id S1752546AbaHDKj5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 06:39:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33291 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216AbaHDKjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 06:40:42 -0400
-Date: Mon, 4 Aug 2014 13:40:16 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Martin Kepplinger <martink@posteo.de>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        m.chehab@samsung.com
-Subject: Re: [PATCHv2] staging: media: as102: replace custom dprintk() with
- dev_dbg()
-Message-ID: <20140804104016.GQ4804@mwanda>
-References: <20140804091023.GP4856@mwanda>
- <1407147434-27732-1-git-send-email-martink@posteo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407147434-27732-1-git-send-email-martink@posteo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 4 Aug 2014 06:39:54 -0400
+Message-Id: <20140804103537.628164803@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 04 Aug 2014 12:30:30 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@kernel.org, oleg@redhat.com, torvalds@linux-foundation.org
+Cc: tglx@linutronix.de, ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Peter Zijlstra <peterz@infradead.org>
+Subject: [RFC][PATCH 5/7] tty: Deal with nested sleeps
+References: <20140804103025.478913141@infradead.org>
+Content-Disposition: inline; filename=peterz-might_sleep-tty.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On thinking about it some more the proper way to redo this would have
-been to remove the bogus check.  Also a couple trivial things below.
+n_tty_{read,write} are wait loops with sleeps in. Wait loops rely on
+task_struct::state and sleeps do too, since that's the only means of
+actually sleeping. Therefore the nested sleeps destroy the wait loop
+state and the wait loop breaks the sleep functions that assume
+TASK_RUNNING (mutex_lock).
 
-On Mon, Aug 04, 2014 at 12:17:14PM +0200, Martin Kepplinger wrote:
-> @@ -82,10 +83,17 @@ static int as102_fe_get_tune_settings(struct dvb_frontend *fe,
->  			struct dvb_frontend_tune_settings *settings) {
->  
->  #if 0
-> -	dprintk(debug, "step_size    = %d\n", settings->step_size);
-> -	dprintk(debug, "max_drift    = %d\n", settings->max_drift);
-> -	dprintk(debug, "min_delay_ms = %d -> %d\n", settings->min_delay_ms,
-> -		1000);
-> +	struct as102_dev_t *dev;
-> +
-> +	dev = (struct as102_dev_t *) fe->tuner_priv;
-> +	if (dev == NULL)
-> +		return -EINVAL;
+Fix this by using the new woken_wake_function and wait_woken() stuff,
+which registers wakeups in wait and thereby allows shrinking the
+task_state::state changes to the actual sleep part.
 
-This doesn't make sense.  Why are we crapping out just because we can't
-print some useless debug info?
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ drivers/tty/n_tty.c |   17 +++++------------
+ 1 file changed, 5 insertions(+), 12 deletions(-)
 
-Debugging code annoys me because of stuff like this.  Debugging code is
-buggier than normal code because it never gets tested.  It complicates
-the code.  People think they are helping when they add lots of debug
-code, but normally they are just making the situation worse.
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -2123,7 +2123,7 @@ static ssize_t n_tty_read(struct tty_str
+ {
+ 	struct n_tty_data *ldata = tty->disc_data;
+ 	unsigned char __user *b = buf;
+-	DECLARE_WAITQUEUE(wait, current);
++	DEFINE_WAIT_FUNC(wait, woken_wake_function);
+ 	int c;
+ 	int minimum, time;
+ 	ssize_t retval = 0;
+@@ -2186,10 +2186,6 @@ static ssize_t n_tty_read(struct tty_str
+ 			nr--;
+ 			break;
+ 		}
+-		/* This statement must be first before checking for input
+-		   so that any interrupt will set the state back to
+-		   TASK_RUNNING. */
+-		set_current_state(TASK_INTERRUPTIBLE);
+ 
+ 		if (((minimum - (b - buf)) < ldata->minimum_to_wake) &&
+ 		    ((minimum - (b - buf)) >= 1))
+@@ -2220,13 +2216,13 @@ static ssize_t n_tty_read(struct tty_str
+ 				n_tty_set_room(tty);
+ 				up_read(&tty->termios_rwsem);
+ 
+-				timeout = schedule_timeout(timeout);
++				timeout = wait_woken(&wait, TASK_INTERRUPTIBLE,
++						     timeout);
+ 
+ 				down_read(&tty->termios_rwsem);
+ 				continue;
+ 			}
+ 		}
+-		__set_current_state(TASK_RUNNING);
+ 
+ 		/* Deal with packet mode. */
+ 		if (packet && b == buf) {
+@@ -2273,7 +2269,6 @@ static ssize_t n_tty_read(struct tty_str
+ 
+ 	mutex_unlock(&ldata->atomic_read_lock);
+ 
+-	__set_current_state(TASK_RUNNING);
+ 	if (b - buf)
+ 		retval = b - buf;
+ 
+@@ -2306,7 +2301,7 @@ static ssize_t n_tty_write(struct tty_st
+ 			   const unsigned char *buf, size_t nr)
+ {
+ 	const unsigned char *b = buf;
+-	DECLARE_WAITQUEUE(wait, current);
++	DEFINE_WAIT_FUNC(wait, woken_wake_function);
+ 	int c;
+ 	ssize_t retval = 0;
+ 
+@@ -2324,7 +2319,6 @@ static ssize_t n_tty_write(struct tty_st
+ 
+ 	add_wait_queue(&tty->write_wait, &wait);
+ 	while (1) {
+-		set_current_state(TASK_INTERRUPTIBLE);
+ 		if (signal_pending(current)) {
+ 			retval = -ERESTARTSYS;
+ 			break;
+@@ -2378,12 +2372,11 @@ static ssize_t n_tty_write(struct tty_st
+ 		}
+ 		up_read(&tty->termios_rwsem);
+ 
+-		schedule();
++		wait_woken(&wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+ 
+ 		down_read(&tty->termios_rwsem);
+ 	}
+ break_out:
+-	__set_current_state(TASK_RUNNING);
+ 	remove_wait_queue(&tty->write_wait, &wait);
+ 	if (b - buf != nr && tty->fasync)
+ 		set_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
 
-Also it bloats the kernel a bit.
 
-Just remove this whole block because it is ifdef 0.
-
-> +	dev_dbg(&dev->bus_adap.usb_dev->dev,
-> +		"step_size    = %d\n", settings->step_size);
-> +	dev_dbg(&dev->bus_adap.usb_dev->dev,
-> +		"max_drift    = %d\n", settings->max_drift);
-> +	dev_dbg(&dev->bus_adap.usb_dev->dev,
-> +		"min_delay_ms = %d -> %d\n", settings->min_delay_ms, 1000);
->  #endif
->  
->  	settings->min_delay_ms = 1000;
-> @@ -141,10 +151,10 @@ static int as102_fe_read_status(struct dvb_frontend *fe, fe_status_t *status)
->  		if (as10x_cmd_get_demod_stats(&dev->bus_adap,
->  			(struct as10x_demod_stats *) &dev->demod_stats) < 0) {
->  			memset(&dev->demod_stats, 0, sizeof(dev->demod_stats));
-> -			dprintk(debug,
-> -				"as10x_cmd_get_demod_stats failed (probably not tuned)\n");
-> +			dev_dbg(&dev->bus_adap.usb_dev->dev,
-> +			"as10x_cmd_get_demod_stats failed (probably not tuned)\n");
-
-This isn't indented correctly.
-
->  		} else {
-> -			dprintk(debug,
-> +			dev_dbg(&dev->bus_adap.usb_dev->dev,
->  				"demod status: fc: 0x%08x, bad fc: 0x%08x, "
->  				"bytes corrected: 0x%08x , MER: 0x%04x\n",
->  				dev->demod_stats.frame_count,
-> @@ -447,6 +457,15 @@ static uint8_t as102_fe_get_code_rate(fe_code_rate_t arg)
->  static void as102_fe_copy_tune_parameters(struct as10x_tune_args *tune_args,
->  			  struct dtv_frontend_properties *params)
->  {
-> +	struct dvb_frontend *fe;
-> +	struct as102_dev_t *dev;
-> +
-> +	fe = container_of(params, struct dvb_frontend, dtv_property_cache);
-> +	dev = (struct as102_dev_t *) fe->tuner_priv;
-> +	if (dev == NULL)
-> +		pr_err("as102: No device found\n");
-
-This condition is never true.  Don't add tests if you know the answer.
-
-> +	else
-> +		dev_err(&dev->bus_adap.usb_dev->dev, "No device found\n");
->  
->  	/* set frequency */
->  	tune_args->freq = params->frequency / 1000;
-> @@ -531,10 +550,18 @@ static void as102_fe_copy_tune_parameters(struct as10x_tune_args *tune_args,
->  		break;
->  	}
->  
-> -	dprintk(debug, "tuner parameters: freq: %d  bw: 0x%02x  gi: 0x%02x\n",
-> +	if (dev) {
-> +		dev_dbg(&dev->bus_adap.usb_dev->dev,
-> +		"tuner parameters: freq: %d  bw: 0x%02x  gi: 0x%02x\n",
-> +			params->frequency,
-> +			tune_args->bandwidth,
-> +			tune_args->guard_interval);
-> +	} else {
-> +	pr_debug("as102: tuner parameters: freq: %d  bw: 0x%02x  gi: 0x%02x\n",
->  			params->frequency,
->  			tune_args->bandwidth,
->  			tune_args->guard_interval);
-> +	}
-
-
-This isn't indented correctly.  I wish checkpatch.pl would catch that...
-Anyway, the else side can be removed as explained earlier.
-
-regards,
-dan carpenter
