@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223AbaHDQx4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:53:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56622 "EHLO
+	id S1753441AbaHDQzk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:55:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56605 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752178AbaHDQt5 (ORCPT
+	by vger.kernel.org with ESMTP id S1752133AbaHDQt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:57 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Barton Xu" <tank.xuhan@gmail.com>,
-        "Steffen Weber" <steffen.weber@gmail.com>,
-        "Arthur Chen" <axchen@nvidia.com>, "Lv Zheng" <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: akpm@linux-foundation.org, "Martin Lau" <kafai@fb.com>,
+        "Chris Mason" <clm@fb.com>, "Steven Rostedt" <rostedt@goodmis.org>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.944125690@decadent.org.uk>
+Message-ID: <lsq.1407170912.520974333@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 36/94] ACPI / EC: Fix race condition in
- ec_transaction_completed()
+Subject: [PATCH 3.2 48/94] ring-buffer: Fix polling on trace_pipe
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,134 +31,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Martin Lau <kafai@fb.com>
 
-commit c0d653412fc8450370167a3268b78fc772ff9c87 upstream.
+commit 97b8ee845393701edc06e27ccec2876ff9596019 upstream.
 
-There is a race condition in ec_transaction_completed().
+ring_buffer_poll_wait() should always put the poll_table to its wait_queue
+even there is immediate data available.  Otherwise, the following epoll and
+read sequence will eventually hang forever:
 
-When ec_transaction_completed() is called in the GPE handler, it could
-return true because of (ec->curr == NULL). Then the wake_up() invocation
-could complete the next command unexpectedly since there is no lock between
-the 2 invocations. With the previous cleanup, the IBF=0 waiter race need
-not be handled any more. It's now safe to return a flag from
-advance_condition() to indicate the requirement of wakeup, the flag is
-returned from a locked context.
+1. Put some data to make the trace_pipe ring_buffer read ready first
+2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
+3. epoll_wait()
+4. read(trace_pipe_fd) till EAGAIN
+5. Add some more data to the trace_pipe ring_buffer
+6. epoll_wait() -> this epoll_wait() will block forever
 
-The ec_transaction_completed() is now only invoked by the ec_poll() where
-the ec->curr is ensured to be different from NULL.
+~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
+  ring_buffer_poll_wait() returns immediately without adding poll_table,
+  which has poll_table->_qproc pointing to ep_poll_callback(), to its
+  wait_queue.
+~ During the epoll_wait() call in step 3 and step 6,
+  ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
+  because the poll_table->_qproc is NULL and it is how epoll works.
+~ When there is new data available in step 6, ring_buffer does not know
+  it has to call ep_poll_callback() because it is not in its wait queue.
+  Hence, block forever.
 
-After cleaning up, the EVT_SCI=1 check should be moved out of the wakeup
-condition so that an EVT_SCI raised with (ec->curr == NULL) can trigger a
-QR_SC command.
+Other poll implementation seems to call poll_wait() unconditionally as the very
+first thing to do.  For example, tcp_poll() in tcp.c.
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
-Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
-Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
-Reported-by: Barton Xu <tank.xuhan@gmail.com>
-Tested-by: Steffen Weber <steffen.weber@gmail.com>
-Tested-by: Arthur Chen <axchen@nvidia.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[bwh: Backported to 3.2: adjust context]
+Link: http://lkml.kernel.org/p/20140610060637.GA14045@devbig242.prn2.facebook.com
+
+Fixes: 2a2cc8f7c4d0 "ftrace: allow the event pipe to be polled"
+Reviewed-by: Chris Mason <clm@fb.com>
+Signed-off-by: Martin Lau <kafai@fb.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[bwh: Backported to 3.2: the poll implementation looks rather different
+ but does have a conditional return before and after the poll_wait() call;
+ delete the return before it.]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/ec.c | 30 +++++++++++++++++-------------
- 1 file changed, 17 insertions(+), 13 deletions(-)
+ kernel/trace/ring_buffer.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -165,16 +165,17 @@ static int ec_transaction_completed(stru
- 	unsigned long flags;
- 	int ret = 0;
- 	spin_lock_irqsave(&ec->curr_lock, flags);
--	if (!ec->curr || (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
-+	if (ec->curr && (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
- 		ret = 1;
- 	spin_unlock_irqrestore(&ec->curr_lock, flags);
- 	return ret;
- }
- 
--static void advance_transaction(struct acpi_ec *ec)
-+static bool advance_transaction(struct acpi_ec *ec)
- {
- 	struct transaction *t;
- 	u8 status;
-+	bool wakeup = false;
- 
- 	pr_debug(PREFIX "===== %s =====\n", in_interrupt() ? "IRQ" : "TASK");
- 	status = acpi_ec_read_status(ec);
-@@ -190,21 +191,25 @@ static void advance_transaction(struct a
- 		} else if (t->rlen > t->ri) {
- 			if ((status & ACPI_EC_FLAG_OBF) == 1) {
- 				t->rdata[t->ri++] = acpi_ec_read_data(ec);
--				if (t->rlen == t->ri)
-+				if (t->rlen == t->ri) {
- 					t->flags |= ACPI_EC_COMMAND_COMPLETE;
-+					wakeup = true;
-+				}
- 			} else
- 				goto err;
- 		} else if (t->wlen == t->wi &&
--			   (status & ACPI_EC_FLAG_IBF) == 0)
-+			   (status & ACPI_EC_FLAG_IBF) == 0) {
- 			t->flags |= ACPI_EC_COMMAND_COMPLETE;
--		return;
-+			wakeup = true;
-+		}
-+		return wakeup;
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3244,8 +3244,6 @@ tracing_poll_pipe(struct file *filp, pol
+ 		 */
+ 		return POLLIN | POLLRDNORM;
  	} else {
- 		if ((status & ACPI_EC_FLAG_IBF) == 0) {
- 			acpi_ec_write_cmd(ec, t->command);
- 			t->flags |= ACPI_EC_COMMAND_POLL;
- 		} else
- 			goto err;
--		return;
-+		return wakeup;
- 	}
- err:
- 	/*
-@@ -215,13 +220,14 @@ err:
- 		if (in_interrupt() && t)
- 			++t->irq_count;
- 	}
-+	return wakeup;
- }
- 
- static void start_transaction(struct acpi_ec *ec)
- {
- 	ec->curr->irq_count = ec->curr->wi = ec->curr->ri = 0;
- 	ec->curr->flags = 0;
--	advance_transaction(ec);
-+	(void)advance_transaction(ec);
- }
- 
- static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
-@@ -255,7 +261,7 @@ static int ec_poll(struct acpi_ec *ec)
- 					return 0;
- 			}
- 			spin_lock_irqsave(&ec->curr_lock, flags);
--			advance_transaction(ec);
-+			(void)advance_transaction(ec);
- 			spin_unlock_irqrestore(&ec->curr_lock, flags);
- 		} while (time_before(jiffies, delay));
- 		pr_debug(PREFIX "controller reset, restart transaction\n");
-@@ -644,12 +650,10 @@ static u32 acpi_ec_gpe_handler(acpi_hand
- 	struct acpi_ec *ec = data;
- 
- 	spin_lock_irqsave(&ec->curr_lock, flags);
--	advance_transaction(ec);
--	spin_unlock_irqrestore(&ec->curr_lock, flags);
--	if (ec_transaction_completed(ec)) {
-+	if (advance_transaction(ec))
- 		wake_up(&ec->wait);
--		ec_check_sci(ec, acpi_ec_read_status(ec));
--	}
-+	spin_unlock_irqrestore(&ec->curr_lock, flags);
-+	ec_check_sci(ec, acpi_ec_read_status(ec));
- 	return ACPI_INTERRUPT_HANDLED | ACPI_REENABLE_GPE;
- }
- 
+-		if (!trace_empty(iter))
+-			return POLLIN | POLLRDNORM;
+ 		poll_wait(filp, &trace_wait, poll_table);
+ 		if (!trace_empty(iter))
+ 			return POLLIN | POLLRDNORM;
 
