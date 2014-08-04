@@ -1,124 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaHDJ3P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 05:29:15 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:12325 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375AbaHDJ3O (ORCPT
+	id S1751988AbaHDJbP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 05:31:15 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:60330 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181AbaHDJbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 05:29:14 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 04 Aug 2014 02:20:36 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        David Herrmann <dh.herrmann@gmail.com>
-CC: <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v2] drm/ttm: expose CPU address of DMA-allocated pages
-Date: Mon, 4 Aug 2014 18:28:54 +0900
-Message-ID: <1407144534-2494-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.0.3
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 4 Aug 2014 05:31:14 -0400
+Message-ID: <1407144668.21386.8.camel@umadbro>
+Subject: Re: [PATCH] ARM: PCI: Use PCI_CLASS_* defines for PCI class
+From: Rostislav Lisovy <lisovy@gmail.com>
+To: Sasha Levin <sashal@kernel.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Nicholas Krause <xerofoify@gmail.com>
+Date: Mon, 04 Aug 2014 11:31:08 +0200
+In-Reply-To: <53DE3629.2020706@kernel.org>
+References: <1406904671-19197-1-git-send-email-lisovy@gmail.com>
+	 <53DE3629.2020706@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pages allocated using the DMA API have a coherent memory mapping. Make
-this mapping visible to drivers so they can decide to use it instead of
-creating their own redundant one.
+On Sun, 2014-08-03 at 09:16 -0400, Sasha Levin wrote:
+> > -     /* FIXME: add defines for class 0x68000 and 0x80103 */
+> >       if ((dev->class >> 8) == PCI_CLASS_BRIDGE_HOST ||
+> > -         dev->class == 0x68000 ||
+> > -         dev->class == 0x80103) {
+> > +         dev->class == (PCI_CLASS_BRIDGE_OTHER << 8) ||
+> > +         dev->class == ((PCI_CLASS_SYSTEM_DMA << 8) | 0x03)) {
+> >               for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+> >                       dev->resource[i].start = 0;
+> >                       dev->resource[i].end   = 0;
+> > 
+> 
+> Care to explain how your new code is equivalent to the old one?
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-Acked-by: David Airlie <airlied@linux.ie>
----
-Changes since v1:
-- Perform only one allocation for pages, CPU and DMA addresses
-- Added David's ack
+The header file include/linux/pci_ids.h defines
+#define PCI_CLASS_BRIDGE_OTHER          0x0680
+#define PCI_CLASS_SYSTEM_DMA            0x0801
 
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |  2 ++
- drivers/gpu/drm/ttm/ttm_tt.c             | 13 ++++++++-----
- include/drm/ttm/ttm_bo_driver.h          |  2 ++
- 3 files changed, 12 insertions(+), 5 deletions(-)
+((struct pci_dev*)dev)->class
+corresponds to the 3 bytes Class code in the PCI Configuration space
+header -- 1B Base class, 1B Sub-class, 1B Reg-level interface.
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index fb8259f69839..0301fac5badd 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -847,6 +847,7 @@ static int ttm_dma_pool_get_pages(struct dma_pool *pool,
- 	if (count) {
- 		d_page = list_first_entry(&pool->free_list, struct dma_page, page_list);
- 		ttm->pages[index] = d_page->p;
-+		ttm_dma->cpu_address[index] = d_page->vaddr;
- 		ttm_dma->dma_address[index] = d_page->dma;
- 		list_move_tail(&d_page->page_list, &ttm_dma->pages_list);
- 		r = 0;
-@@ -978,6 +979,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
- 	INIT_LIST_HEAD(&ttm_dma->pages_list);
- 	for (i = 0; i < ttm->num_pages; i++) {
- 		ttm->pages[i] = NULL;
-+		ttm_dma->cpu_address[i] = 0;
- 		ttm_dma->dma_address[i] = 0;
- 	}
- 
-diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
-index 75f319090043..bf080abc86d1 100644
---- a/drivers/gpu/drm/ttm/ttm_tt.c
-+++ b/drivers/gpu/drm/ttm/ttm_tt.c
-@@ -55,9 +55,12 @@ static void ttm_tt_alloc_page_directory(struct ttm_tt *ttm)
- 
- static void ttm_dma_tt_alloc_page_directory(struct ttm_dma_tt *ttm)
- {
--	ttm->ttm.pages = drm_calloc_large(ttm->ttm.num_pages, sizeof(void*));
--	ttm->dma_address = drm_calloc_large(ttm->ttm.num_pages,
--					    sizeof(*ttm->dma_address));
-+	ttm->ttm.pages = drm_calloc_large(ttm->ttm.num_pages,
-+					  sizeof(*ttm->ttm.pages) +
-+					  sizeof(*ttm->dma_address) +
-+					  sizeof(*ttm->cpu_address));
-+	ttm->cpu_address = (void *) (ttm->ttm.pages + ttm->ttm.num_pages);
-+	ttm->dma_address = (void *) (ttm->cpu_address + ttm->ttm.num_pages);
- }
- 
- #ifdef CONFIG_X86
-@@ -228,7 +231,7 @@ int ttm_dma_tt_init(struct ttm_dma_tt *ttm_dma, struct ttm_bo_device *bdev,
- 
- 	INIT_LIST_HEAD(&ttm_dma->pages_list);
- 	ttm_dma_tt_alloc_page_directory(ttm_dma);
--	if (!ttm->pages || !ttm_dma->dma_address) {
-+	if (!ttm->pages) {
- 		ttm_tt_destroy(ttm);
- 		pr_err("Failed allocating page table\n");
- 		return -ENOMEM;
-@@ -243,7 +246,7 @@ void ttm_dma_tt_fini(struct ttm_dma_tt *ttm_dma)
- 
- 	drm_free_large(ttm->pages);
- 	ttm->pages = NULL;
--	drm_free_large(ttm_dma->dma_address);
-+	ttm_dma->cpu_address = NULL;
- 	ttm_dma->dma_address = NULL;
- }
- EXPORT_SYMBOL(ttm_dma_tt_fini);
-diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
-index 202f0a7171e8..1d9f0f1ff52d 100644
---- a/include/drm/ttm/ttm_bo_driver.h
-+++ b/include/drm/ttm/ttm_bo_driver.h
-@@ -133,6 +133,7 @@ struct ttm_tt {
-  * struct ttm_dma_tt
-  *
-  * @ttm: Base ttm_tt struct.
-+ * @cpu_address: The CPU address of the pages
-  * @dma_address: The DMA (bus) addresses of the pages
-  * @pages_list: used by some page allocation backend
-  *
-@@ -142,6 +143,7 @@ struct ttm_tt {
-  */
- struct ttm_dma_tt {
- 	struct ttm_tt ttm;
-+	void **cpu_address;
- 	dma_addr_t *dma_address;
- 	struct list_head pages_list;
- };
--- 
-2.0.3
+In that case
+(PCI_CLASS_BRIDGE_OTHER << 8)
+is equivalent to 0x68000 (imagine the leading zero)
+and
+((PCI_CLASS_SYSTEM_DMA << 8) | 0x03))
+is equivalent to 0x80103.
+
+Best regards;
+Rostislav
+
 
