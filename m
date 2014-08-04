@@ -1,49 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131AbaHDPLU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 11:11:20 -0400
-Received: from smtprelay0129.hostedemail.com ([216.40.44.129]:54797 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750949AbaHDPLT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 11:11:19 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3868:3871:3872:3874:4321:5007:7652:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: aunt97_b43b7b023d02
-X-Filterd-Recvd-Size: 1667
-Message-ID: <1407165075.16152.70.camel@joe-AO725>
-Subject: Re: checkpatch.pl report about "Missing blank line after
- declarations" in a structure definition
-From: Joe Perches <joe@perches.com>
-To: Dotan Barak <dotanb@mellanox.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 04 Aug 2014 08:11:15 -0700
-In-Reply-To: <f95137f9228a4f08ba391f9640237d28@DB3PR05MB380.eurprd05.prod.outlook.com>
-References: <3219ba81002f41d99c8651755dc2a920@DB3PR05MB380.eurprd05.prod.outlook.com>
-	 <1407159342.16152.63.camel@joe-AO725>
-	 <e68ad593255b4094a79de9b22cbc2a7a@DB3PR05MB380.eurprd05.prod.outlook.com>
-	 <1407162439.16152.67.camel@joe-AO725>
-	 <f95137f9228a4f08ba391f9640237d28@DB3PR05MB380.eurprd05.prod.outlook.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752263AbaHDPNX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 11:13:23 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:16594 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751194AbaHDPNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 11:13:21 -0400
+X-IronPort-AV: E=Sophos;i="5.01,799,1400025600"; 
+   d="scan'208";a="158530645"
+Message-ID: <53DFA30E.2000301@citrix.com>
+Date: Mon, 4 Aug 2014 16:13:18 +0100
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+CC: <netdev@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen-netback: Turn off the carrier if the
+ guest is not able to receive
+References: <1406749849-4356-1-git-send-email-zoltan.kiss@citrix.com> <1406749849-4356-2-git-send-email-zoltan.kiss@citrix.com> <53DF8C24.6030709@citrix.com>
+In-Reply-To: <53DF8C24.6030709@citrix.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-04 at 14:50 +0000, Dotan Barak wrote:
-> I think that allowing a prefix is reasonable (to allow modules to add more flexibility).
-> I tried the suggested change and it still didn't work for me.
-> 
-> The following change worked for me:
-> (?:$Storage\s+)?[A-Z0-9_]*(?:DECLARE|DEFINE)_[A-Z_]*\s*\(|
-> 
-> But, maybe it is better to be even more general and allow:
-> (?:$Storage\s+)?[A-Z0-9_]*(?:DECLARE|DEFINE)_[ A-Z0-9_]*\s*\(|
+On 04/08/14 14:35, David Vrabel wrote:
+> On 30/07/14 20:50, Zoltan Kiss wrote:
+>> Currently when the guest is not able to receive more packets, qdisc layer starts
+>> a timer, and when it goes off, qdisc is started again to deliver a packet again.
+>> This is a very slow way to drain the queues, consumes unnecessary resources and
+>> slows down other guests shutdown.
+>> This patch change the behaviour by turning the carrier off when that timer
+>> fires, so all the packets are freed up which were stucked waiting for that vif.
+>> Instead of the rx_queue_purge bool it uses the VIF_STATUS_RX_PURGE_EVENT bit to
+>> signal the thread that either the timout happened or an RX interrupt arrived, so
+>> the thread can check what it should do. It also disables NAPI, so the guest
+>> can't transmit, but leaves the interrupts on, so it can resurrect.
+>
+> I don't think you should disable NAPI, particularly since you have to
+> fiddle with the bits directly instead of usign the API to do so.
+Since then I've found a much better way, see xenvif_poll.
+>
+> I looked at some hardware drivers and none of them disabled NAPI -- they
+> just allow it to naturally end once hardware queues are drained.
+>
+> netback is a little different as a frontend could stop processing
+> to-guest packets but continue sending from-guest ones.  I don't see any
+> problem with allowing this.
+Yes, that might be the case. Just a hunch tells me that could be wrong, 
+but I couldn't come up with a scenario to prove it. Let's hear other's 
+opinion about it:
+Is it good or bad if a guest interface with carrier off still keeps 
+sending packets towards the backend? Hardware drivers are trusted that 
+when carrier goes down there won't be new packets (apart from a few 
+still in the receive queue of the driver), so NAPI will be automatically 
+descheduled. But in this scenario the guest could still post new packets 
+on the ring, and they will be received unless NAPI is explicitly 
+descheduled.
 
-Maybe:
-
-(?:$Storage\s+)(?:[A-Z_][A-Z0-9]+_){0,2}(?:DEFINE|DECLARE)(?:_[A-Z0-9]+){1,2}
-
+>
+>> @@ -1955,24 +1955,78 @@ int xenvif_kthread_guest_rx(void *data)
+>>   		 */
+>>   		if (unlikely(queue->vif->disabled && queue->id == 0))
+>>   			xenvif_carrier_off(queue->vif);
+>> +		else if (unlikely(test_and_clear_bit(QUEUE_STATUS_RX_PURGE_EVENT,
+>> +						     &queue->status))) {
+>> +			/* Either the last unsuccesful skb or at least 1 slot
+>> +			 * should fit
+>> +			 */
+>> +			int needed = queue->rx_last_skb_slots ?
+>> +				     queue->rx_last_skb_slots : 1;
+>>
+>> -		if (kthread_should_stop())
+>> -			break;
+>> -
+>> -		if (queue->rx_queue_purge) {
+>> +			/* It is assumed that if the guest post new
+>> +			 * slots after this, the RX interrupt will set
+>> +			 * the bit and wake up the thread again
+>> +			 */
+>> +			set_bit(QUEUE_STATUS_RX_STALLED, &queue->status);
+>
+> This big if needs to go in a new function.
+>
+> David
+>
 
