@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466AbaHDQuR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:50:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56586 "EHLO
+	id S1753209AbaHDQxN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:53:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56618 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752053AbaHDQt5 (ORCPT
+	by vger.kernel.org with ESMTP id S1752198AbaHDQt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:49:57 -0400
+	Mon, 4 Aug 2014 12:49:58 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ivan Djelic" <ivan.djelic@parrot.com>,
-        "Nicolas Pitre" <nico@linaro.org>,
-        "Russell King" <rmk+kernel@arm.linux.org.uk>,
-        "Dirk Behme" <dirk.behme@gmail.com>
+CC: akpm@linux-foundation.org, "Barton Xu" <tank.xuhan@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Lv Zheng" <lv.zheng@intel.com>,
+        "Steffen Weber" <steffen.weber@gmail.com>,
+        "Arthur Chen" <axchen@nvidia.com>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.784757721@decadent.org.uk>
+Message-ID: <lsq.1407170912.605195981@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 86/94] ARM: 7668/1: fix memset-related crashes caused
- by recent GCC (4.7.2) optimizations
+Subject: [PATCH 3.2 34/94] ACPI / EC: Add asynchronous command byte write
+ support
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,255 +35,218 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ivan Djelic <ivan.djelic@parrot.com>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit 455bd4c430b0c0a361f38e8658a0d6cb469942b5 upstream.
+commit f92fca0060fc4dc9227342d0072d75df98c1e5a5 upstream.
 
-Recent GCC versions (e.g. GCC-4.7.2) perform optimizations based on
-assumptions about the implementation of memset and similar functions.
-The current ARM optimized memset code does not return the value of
-its first argument, as is usually expected from standard implementations.
+Move the first command byte write into advance_transaction() so that all
+EC register accesses that can affect the command processing state machine
+can happen in this asynchronous state machine advancement function.
 
-For instance in the following function:
+The advance_transaction() function then can be a complete implementation
+of an asyncrhonous transaction for a single command so that:
+ 1. The first command byte can be written in the interrupt context;
+ 2. The command completion waiter can also be used to wait the first command
+    byte's timeout;
+ 3. In BURST mode, the follow-up command bytes can be written in the
+    interrupt context directly, so that it doesn't need to return to the
+    task context. Returning to the task context reduces the throughput of
+    the BURST mode and in the worst cases where the system workload is very
+    high, this leads to the hardware driven automatic BURST mode exit.
 
-void debug_mutex_lock_common(struct mutex *lock, struct mutex_waiter *waiter)
-{
-	memset(waiter, MUTEX_DEBUG_INIT, sizeof(*waiter));
-	waiter->magic = waiter;
-	INIT_LIST_HEAD(&waiter->list);
-}
+In order not to increase memory consumption, convert 'done' into 'flags'
+to contain multiple indications:
+ 1. ACPI_EC_COMMAND_COMPLETE: converting from original 'done' condition,
+    indicating the completion of the command transaction.
+ 2. ACPI_EC_COMMAND_POLL: indicating the availability of writing the first
+    command byte. A new command can utilize this flag to compete for the
+    right of accessing the underlying hardware. There is a follow-up bug
+    fix that has utilized this new flag.
 
-compiled as:
+The 2 flags are important because it also reflects a key concept of IO
+programs' design used in the system softwares. Normally an IO program
+running in the kernel should first be implemented in the asynchronous way.
+And the 2 flags are the most common way to implement its synchronous
+operations on top of the asynchronous operations:
+1. POLL: This flag can be used to block until the asynchronous operations
+         can happen.
+2. COMPLETE: This flag can be used to block until the asynchronous
+             operations have completed.
+By constructing code cleanly in this way, many difficult problems can be
+solved smoothly.
 
-800554d0 <debug_mutex_lock_common>:
-800554d0:       e92d4008        push    {r3, lr}
-800554d4:       e1a00001        mov     r0, r1
-800554d8:       e3a02010        mov     r2, #16 ; 0x10
-800554dc:       e3a01011        mov     r1, #17 ; 0x11
-800554e0:       eb04426e        bl      80165ea0 <memset>
-800554e4:       e1a03000        mov     r3, r0
-800554e8:       e583000c        str     r0, [r3, #12]
-800554ec:       e5830000        str     r0, [r3]
-800554f0:       e5830004        str     r0, [r3, #4]
-800554f4:       e8bd8008        pop     {r3, pc}
-
-GCC assumes memset returns the value of pointer 'waiter' in register r0; causing
-register/memory corruptions.
-
-This patch fixes the return value of the assembly version of memset.
-It adds a 'mov' instruction and merges an additional load+store into
-existing load/store instructions.
-For ease of review, here is a breakdown of the patch into 4 simple steps:
-
-Step 1
-======
-Perform the following substitutions:
-ip -> r8, then
-r0 -> ip,
-and insert 'mov ip, r0' as the first statement of the function.
-At this point, we have a memset() implementation returning the proper result,
-but corrupting r8 on some paths (the ones that were using ip).
-
-Step 2
-======
-Make sure r8 is saved and restored when (! CALGN(1)+0) == 1:
-
-save r8:
--       str     lr, [sp, #-4]!
-+       stmfd   sp!, {r8, lr}
-
-and restore r8 on both exit paths:
--       ldmeqfd sp!, {pc}               @ Now <64 bytes to go.
-+       ldmeqfd sp!, {r8, pc}           @ Now <64 bytes to go.
-(...)
-        tst     r2, #16
-        stmneia ip!, {r1, r3, r8, lr}
--       ldr     lr, [sp], #4
-+       ldmfd   sp!, {r8, lr}
-
-Step 3
-======
-Make sure r8 is saved and restored when (! CALGN(1)+0) == 0:
-
-save r8:
--       stmfd   sp!, {r4-r7, lr}
-+       stmfd   sp!, {r4-r8, lr}
-
-and restore r8 on both exit paths:
-        bgt     3b
--       ldmeqfd sp!, {r4-r7, pc}
-+       ldmeqfd sp!, {r4-r8, pc}
-(...)
-        tst     r2, #16
-        stmneia ip!, {r4-r7}
--       ldmfd   sp!, {r4-r7, lr}
-+       ldmfd   sp!, {r4-r8, lr}
-
-Step 4
-======
-Rewrite register list "r4-r7, r8" as "r4-r8".
-
-Signed-off-by: Ivan Djelic <ivan.djelic@parrot.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Dirk Behme <dirk.behme@gmail.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
+Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
+Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
+Reported-by: Barton Xu <tank.xuhan@gmail.com>
+Tested-by: Steffen Weber <steffen.weber@gmail.com>
+Tested-by: Arthur Chen <axchen@nvidia.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - s/ec->lock/ec->curr_lock/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/lib/memset.S | 85 ++++++++++++++++++++++++++-------------------------
- 1 file changed, 44 insertions(+), 41 deletions(-)
+ drivers/acpi/ec.c | 83 ++++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 48 insertions(+), 35 deletions(-)
 
-diff --git a/arch/arm/lib/memset.S b/arch/arm/lib/memset.S
-index 650d5923..d912e73 100644
---- a/arch/arm/lib/memset.S
-+++ b/arch/arm/lib/memset.S
-@@ -19,9 +19,9 @@
- 1:	subs	r2, r2, #4		@ 1 do we have enough
- 	blt	5f			@ 1 bytes to align with?
- 	cmp	r3, #2			@ 1
--	strltb	r1, [r0], #1		@ 1
--	strleb	r1, [r0], #1		@ 1
--	strb	r1, [r0], #1		@ 1
-+	strltb	r1, [ip], #1		@ 1
-+	strleb	r1, [ip], #1		@ 1
-+	strb	r1, [ip], #1		@ 1
- 	add	r2, r2, r3		@ 1 (r2 = r2 - (4 - r3))
- /*
-  * The pointer is now aligned and the length is adjusted.  Try doing the
-@@ -29,10 +29,14 @@
-  */
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -81,6 +81,9 @@ enum {
+ 	EC_FLAGS_BLOCKED,		/* Transactions are blocked */
+ };
  
- ENTRY(memset)
--	ands	r3, r0, #3		@ 1 unaligned?
-+/*
-+ * Preserve the contents of r0 for the return value.
-+ */
-+	mov	ip, r0
-+	ands	r3, ip, #3		@ 1 unaligned?
- 	bne	1b			@ 1
- /*
-- * we know that the pointer in r0 is aligned to a word boundary.
-+ * we know that the pointer in ip is aligned to a word boundary.
-  */
- 	orr	r1, r1, r1, lsl #8
- 	orr	r1, r1, r1, lsl #16
-@@ -43,29 +47,28 @@ ENTRY(memset)
- #if ! CALGN(1)+0
++#define ACPI_EC_COMMAND_POLL		0x01 /* Available for command byte */
++#define ACPI_EC_COMMAND_COMPLETE	0x02 /* Completed last byte */
++
+ /* ec.c is compiled in acpi namespace so this shows up as acpi.ec_delay param */
+ static unsigned int ec_delay __read_mostly = ACPI_EC_DELAY;
+ module_param(ec_delay, uint, 0644);
+@@ -116,7 +119,7 @@ struct transaction {
+ 	u8 ri;
+ 	u8 wlen;
+ 	u8 rlen;
+-	bool done;
++	u8 flags;
+ };
  
- /*
-- * We need an extra register for this loop - save the return address and
-- * use the LR
-+ * We need 2 extra registers for this loop - use r8 and the LR
-  */
--	str	lr, [sp, #-4]!
--	mov	ip, r1
-+	stmfd	sp!, {r8, lr}
-+	mov	r8, r1
- 	mov	lr, r1
+ struct acpi_ec *boot_ec, *first_ec;
+@@ -157,63 +160,68 @@ static inline void acpi_ec_write_data(st
+ 	outb(data, ec->data_addr);
+ }
  
- 2:	subs	r2, r2, #64
--	stmgeia	r0!, {r1, r3, ip, lr}	@ 64 bytes at a time.
--	stmgeia	r0!, {r1, r3, ip, lr}
--	stmgeia	r0!, {r1, r3, ip, lr}
--	stmgeia	r0!, {r1, r3, ip, lr}
-+	stmgeia	ip!, {r1, r3, r8, lr}	@ 64 bytes at a time.
-+	stmgeia	ip!, {r1, r3, r8, lr}
-+	stmgeia	ip!, {r1, r3, r8, lr}
-+	stmgeia	ip!, {r1, r3, r8, lr}
- 	bgt	2b
--	ldmeqfd	sp!, {pc}		@ Now <64 bytes to go.
-+	ldmeqfd	sp!, {r8, pc}		@ Now <64 bytes to go.
- /*
-  * No need to correct the count; we're only testing bits from now on
-  */
- 	tst	r2, #32
--	stmneia	r0!, {r1, r3, ip, lr}
--	stmneia	r0!, {r1, r3, ip, lr}
-+	stmneia	ip!, {r1, r3, r8, lr}
-+	stmneia	ip!, {r1, r3, r8, lr}
- 	tst	r2, #16
--	stmneia	r0!, {r1, r3, ip, lr}
--	ldr	lr, [sp], #4
-+	stmneia	ip!, {r1, r3, r8, lr}
-+	ldmfd	sp!, {r8, lr}
+-static int ec_transaction_done(struct acpi_ec *ec)
++static int ec_transaction_completed(struct acpi_ec *ec)
+ {
+ 	unsigned long flags;
+ 	int ret = 0;
+ 	spin_lock_irqsave(&ec->curr_lock, flags);
+-	if (!ec->curr || ec->curr->done)
++	if (!ec->curr || (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
+ 		ret = 1;
+ 	spin_unlock_irqrestore(&ec->curr_lock, flags);
+ 	return ret;
+ }
  
- #else
+-static void start_transaction(struct acpi_ec *ec)
+-{
+-	ec->curr->irq_count = ec->curr->wi = ec->curr->ri = 0;
+-	ec->curr->done = false;
+-	acpi_ec_write_cmd(ec, ec->curr->command);
+-}
+-
+ static void advance_transaction(struct acpi_ec *ec)
+ {
+-	unsigned long flags;
+ 	struct transaction *t;
+ 	u8 status;
  
-@@ -74,54 +77,54 @@ ENTRY(memset)
-  * whole cache lines at once.
-  */
+-	spin_lock_irqsave(&ec->curr_lock, flags);
+ 	pr_debug(PREFIX "===== %s =====\n", in_interrupt() ? "IRQ" : "TASK");
+ 	status = acpi_ec_read_status(ec);
+ 	t = ec->curr;
+ 	if (!t)
+-		goto unlock;
+-	if (t->wlen > t->wi) {
+-		if ((status & ACPI_EC_FLAG_IBF) == 0)
+-			acpi_ec_write_data(ec,
+-				t->wdata[t->wi++]);
+-		else
+-			goto err;
+-	} else if (t->rlen > t->ri) {
+-		if ((status & ACPI_EC_FLAG_OBF) == 1) {
+-			t->rdata[t->ri++] = acpi_ec_read_data(ec);
+-			if (t->rlen == t->ri)
+-				t->done = true;
++		goto err;
++	if (t->flags & ACPI_EC_COMMAND_POLL) {
++		if (t->wlen > t->wi) {
++			if ((status & ACPI_EC_FLAG_IBF) == 0)
++				acpi_ec_write_data(ec, t->wdata[t->wi++]);
++			else
++				goto err;
++		} else if (t->rlen > t->ri) {
++			if ((status & ACPI_EC_FLAG_OBF) == 1) {
++				t->rdata[t->ri++] = acpi_ec_read_data(ec);
++				if (t->rlen == t->ri)
++					t->flags |= ACPI_EC_COMMAND_COMPLETE;
++			} else
++				goto err;
++		} else if (t->wlen == t->wi &&
++			   (status & ACPI_EC_FLAG_IBF) == 0)
++			t->flags |= ACPI_EC_COMMAND_COMPLETE;
++		return;
++	} else {
++		if ((status & ACPI_EC_FLAG_IBF) == 0) {
++			acpi_ec_write_cmd(ec, t->command);
++			t->flags |= ACPI_EC_COMMAND_POLL;
+ 		} else
+ 			goto err;
+-	} else if (t->wlen == t->wi &&
+-		   (status & ACPI_EC_FLAG_IBF) == 0)
+-		t->done = true;
+-	goto unlock;
++		return;
++	}
+ err:
+ 	/*
+ 	 * If SCI bit is set, then don't think it's a false IRQ
+ 	 * otherwise will take a not handled IRQ as a false one.
+ 	 */
+-	if (in_interrupt() && !(status & ACPI_EC_FLAG_SCI))
+-		++t->irq_count;
++	if (!(status & ACPI_EC_FLAG_SCI)) {
++		if (in_interrupt() && t)
++			++t->irq_count;
++	}
++}
  
--	stmfd	sp!, {r4-r7, lr}
-+	stmfd	sp!, {r4-r8, lr}
- 	mov	r4, r1
- 	mov	r5, r1
- 	mov	r6, r1
- 	mov	r7, r1
--	mov	ip, r1
-+	mov	r8, r1
- 	mov	lr, r1
+-unlock:
+-	spin_unlock_irqrestore(&ec->curr_lock, flags);
++static void start_transaction(struct acpi_ec *ec)
++{
++	ec->curr->irq_count = ec->curr->wi = ec->curr->ri = 0;
++	ec->curr->flags = 0;
++	advance_transaction(ec);
+ }
  
- 	cmp	r2, #96
--	tstgt	r0, #31
-+	tstgt	ip, #31
- 	ble	3f
+ static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
+@@ -238,15 +246,17 @@ static int ec_poll(struct acpi_ec *ec)
+ 			/* don't sleep with disabled interrupts */
+ 			if (EC_FLAGS_MSI || irqs_disabled()) {
+ 				udelay(ACPI_EC_MSI_UDELAY);
+-				if (ec_transaction_done(ec))
++				if (ec_transaction_completed(ec))
+ 					return 0;
+ 			} else {
+ 				if (wait_event_timeout(ec->wait,
+-						ec_transaction_done(ec),
++						ec_transaction_completed(ec),
+ 						msecs_to_jiffies(1)))
+ 					return 0;
+ 			}
++			spin_lock_irqsave(&ec->curr_lock, flags);
+ 			advance_transaction(ec);
++			spin_unlock_irqrestore(&ec->curr_lock, flags);
+ 		} while (time_before(jiffies, delay));
+ 		pr_debug(PREFIX "controller reset, restart transaction\n");
+ 		spin_lock_irqsave(&ec->curr_lock, flags);
+@@ -654,10 +664,13 @@ static int ec_check_sci(struct acpi_ec *
+ static u32 acpi_ec_gpe_handler(acpi_handle gpe_device,
+ 	u32 gpe_number, void *data)
+ {
++	unsigned long flags;
+ 	struct acpi_ec *ec = data;
  
--	and	ip, r0, #31
--	rsb	ip, ip, #32
--	sub	r2, r2, ip
--	movs	ip, ip, lsl #(32 - 4)
--	stmcsia	r0!, {r4, r5, r6, r7}
--	stmmiia	r0!, {r4, r5}
--	tst	ip, #(1 << 30)
--	mov	ip, r1
--	strne	r1, [r0], #4
-+	and	r8, ip, #31
-+	rsb	r8, r8, #32
-+	sub	r2, r2, r8
-+	movs	r8, r8, lsl #(32 - 4)
-+	stmcsia	ip!, {r4, r5, r6, r7}
-+	stmmiia	ip!, {r4, r5}
-+	tst	r8, #(1 << 30)
-+	mov	r8, r1
-+	strne	r1, [ip], #4
- 
- 3:	subs	r2, r2, #64
--	stmgeia	r0!, {r1, r3-r7, ip, lr}
--	stmgeia	r0!, {r1, r3-r7, ip, lr}
-+	stmgeia	ip!, {r1, r3-r8, lr}
-+	stmgeia	ip!, {r1, r3-r8, lr}
- 	bgt	3b
--	ldmeqfd	sp!, {r4-r7, pc}
-+	ldmeqfd	sp!, {r4-r8, pc}
- 
- 	tst	r2, #32
--	stmneia	r0!, {r1, r3-r7, ip, lr}
-+	stmneia	ip!, {r1, r3-r8, lr}
- 	tst	r2, #16
--	stmneia	r0!, {r4-r7}
--	ldmfd	sp!, {r4-r7, lr}
-+	stmneia	ip!, {r4-r7}
-+	ldmfd	sp!, {r4-r8, lr}
- 
- #endif
- 
- 4:	tst	r2, #8
--	stmneia	r0!, {r1, r3}
-+	stmneia	ip!, {r1, r3}
- 	tst	r2, #4
--	strne	r1, [r0], #4
-+	strne	r1, [ip], #4
- /*
-  * When we get here, we've got less than 4 bytes to zero.  We
-  * may have an unaligned pointer as well.
-  */
- 5:	tst	r2, #2
--	strneb	r1, [r0], #1
--	strneb	r1, [r0], #1
-+	strneb	r1, [ip], #1
-+	strneb	r1, [ip], #1
- 	tst	r2, #1
--	strneb	r1, [r0], #1
-+	strneb	r1, [ip], #1
- 	mov	pc, lr
- ENDPROC(memset)
++	spin_lock_irqsave(&ec->curr_lock, flags);
+ 	advance_transaction(ec);
+-	if (ec_transaction_done(ec) &&
++	spin_unlock_irqrestore(&ec->curr_lock, flags);
++	if (ec_transaction_completed(ec) &&
+ 	    (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF) == 0) {
+ 		wake_up(&ec->wait);
+ 		ec_check_sci(ec, acpi_ec_read_status(ec));
 
