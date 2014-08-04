@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbaHDN2K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 09:28:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16285 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751242AbaHDN2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 09:28:08 -0400
-Date: Mon, 4 Aug 2014 15:25:25 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140804132525.GA18722@redhat.com>
-References: <20140731215445.GA21933@linux.vnet.ibm.com> <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com> <20140802145616.GA18195@redhat.com> <20140802225757.GB8101@linux.vnet.ibm.com> <20140803133318.GB671@redhat.com> <20140803220535.GH8101@linux.vnet.ibm.com> <53DED5D1.6030504@cn.fujitsu.com> <20140804010938.GI8101@linux.vnet.ibm.com>
+	id S1752316AbaHDN3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 09:29:50 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:20365 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752117AbaHDN3t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 09:29:49 -0400
+Message-ID: <53DF8AC8.3010708@fb.com>
+Date: Mon, 4 Aug 2014 09:29:44 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140804010938.GI8101@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Nick Krause <xerofoify@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
+	<linux-btrfs@vger.kernel.org>
+Subject: Re: Work Queue for btrfs compression writes
+References: <CAPDOMVjJHbCwDVyKQ+Vuse7G76FLSLq69Ja4kmopDbjtEb_Zkw@mail.gmail.com>
+In-Reply-To: <CAPDOMVjJHbCwDVyKQ+Vuse7G76FLSLq69Ja4kmopDbjtEb_Zkw@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-04_01:2014-08-04,2014-08-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.11910480882216e-13 kscore.compositescore=0
+ circleOfTrustscore=1749.24041094204 compositescore=0.324642340081358
+ urlsuspect_oldscore=0.324642340081358 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.324642340081358 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1408040161
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03, Paul E. McKenney wrote:
->
-> On Mon, Aug 04, 2014 at 08:37:37AM +0800, Lai Jiangshan wrote:
-> > An alternative solution:
-> > srcu_read_lock() before exit_notify(), srcu_read_unlock() after the last preempt_disable()
-> > in the do_exit, and synchronize_srcu() in rcu_tasks_kthread().
->
-> That is a good way to synchronize with the exiting tasks, and I will
-> probably that that approach.
->
-> I -thought- that Oleg was concerned about safely building the list to
-> start with, though.
+On 07/29/2014 11:54 PM, Nick Krause wrote:
+> Hey Guys ,
+> I am new to   reading  and writing  kernel code.I got interested in
+> writing code for btrfs as it seems to
+> need more work then other file systems and this seems other then
+> drivers, a good use of time on my part.
+> I interested in helping improving the compression of btrfs by using  a
+> set of threads using work queues like XFS
+> or reads and keeping the page cache after reading compressed blocks as
+> these seem to be a great way to improve
+> on  compression performance mostly with large partitions of compressed
+> data. I am not asking you to write the code
+> for me but as I am new a little guidance and help would be greatly
+> appreciated as this seems like too much work for just a newbie.
 
-But for_each_process_thread() under rcu_read_lock() should work except
-it can miss the exiting tasks.
+[ Back from vacation ]
 
-So it seems that the clever Lai's trick should solve the problem.
+Reading through the thread, I don't see anyone mentioning that btrfs
+already funnels most compression through helper threads in the kernel
+workqueues.
 
-Oleg.
+There is also an ordering component that submits the compressed bios to
+disk (for writes) in the same order they were created.  This lets us
+scatter compression across N cpus, but not introduce seeks if they make
+progress at different rates.
+
+-chris
 
