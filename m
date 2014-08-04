@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588AbaHDQSY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:18:24 -0400
-Received: from mail.kernel.org ([198.145.19.201]:38726 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840AbaHDQSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:18:22 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, kvm@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/33] perf kvm stat: Properly show submicrosecond times
-Date: Mon,  4 Aug 2014 13:17:15 -0300
-Message-Id: <1407169064-25625-5-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1407169064-25625-1-git-send-email-acme@kernel.org>
-References: <1407169064-25625-1-git-send-email-acme@kernel.org>
+	id S1751558AbaHDQ3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:29:09 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:39230 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827AbaHDQ3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 12:29:08 -0400
+Date: Mon, 4 Aug 2014 09:29:04 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: <lichunhe@huawei.com>
+Cc: <vyasevic@redhat.com>, <xiyou.wangcong@gmail.com>,
+        <makita.toshiaki@lab.ntt.co.jp>, <mst@redhat.com>,
+        <ebiederm@xmission.com>, <f.fainelli@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <wuyunfei@huawei.com>,
+        <qianhuibin@huawei.com>
+Subject: Re: [PATCH net/next] bridge:Add rcu read lock when delete br port
+Message-ID: <20140804092904.16654a4c@haswell.linuxnetplumber.net>
+In-Reply-To: <1407123476-9720-1-git-send-email-lichunhe@huawei.com>
+References: <1407123476-9720-1-git-send-email-lichunhe@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+On Mon, 4 Aug 2014 11:37:56 +0800
+<lichunhe@huawei.com> wrote:
 
-For lots of exits the min time (and sometimes max) is 0 or 1. Lets
-increase the accurancy similar to what the average field alread does.
+> From: Chunhe Li <lichunhe@huawei.com>
+> 
+> In the br_hanle_frame function has a bug, when the bridge receive packets
+> which go througth the br_handle_frame, get the net_bridge_port pointer "p",
+> but don't check NULL pointer to use it. If somebody delete the bridge port
+> at the same time, will call a NULL pointer, trigger kernel panic. I see the
+> del_nbp comments, call del_nbp should via RCU, but the caller don't do this.
+> 
+> following steps will make bug happened
+> 1.start vm and add the vm interface to a bridge br0,for example,
+> brctl addbr br0 tap0
+> 
+> 2.configuer vm interface and br0 same ip subnet, vm ping br0.
+> 
+> 3.add and delete the vm interface port for endless loop.
+> 
+> Signed-off-by: Chunhe Li <lichunhe@huawei.com>
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org
-Link: http://lkml.kernel.org/r/1406805231-10675-2-git-send-email-borntraeger@de.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-kvm.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 43367eb00510..fe92dfdeab46 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -592,8 +592,8 @@ static void print_result(struct perf_kvm_stat *kvm)
- 	pr_info("%9s ", "Samples%");
- 
- 	pr_info("%9s ", "Time%");
--	pr_info("%10s ", "Min Time");
--	pr_info("%10s ", "Max Time");
-+	pr_info("%11s ", "Min Time");
-+	pr_info("%11s ", "Max Time");
- 	pr_info("%16s ", "Avg time");
- 	pr_info("\n\n");
- 
-@@ -610,8 +610,8 @@ static void print_result(struct perf_kvm_stat *kvm)
- 		pr_info("%10llu ", (unsigned long long)ecount);
- 		pr_info("%8.2f%% ", (double)ecount / kvm->total_count * 100);
- 		pr_info("%8.2f%% ", (double)etime / kvm->total_time * 100);
--		pr_info("%8" PRIu64 "us ", min / 1000);
--		pr_info("%8" PRIu64 "us ", max / 1000);
-+		pr_info("%9.2fus ", (double)min / 1e3);
-+		pr_info("%9.2fus ", (double)max / 1e3);
- 		pr_info("%9.2fus ( +-%7.2f%% )", (double)etime / ecount/1e3,
- 			kvm_event_rel_stddev(vcpu, event));
- 		pr_info("\n");
--- 
-1.9.3
-
+This is safe because:
+ 1. br_dev_delete is called with RTNL mutex therefore it is safe with other add/delete
+    RCU does not block anything
+ 2. br_handle_frame is called with RCU lock (in frame rx)
+ 3. port is not freed until after grace period
