@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaHDNUh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 09:20:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18958 "EHLO mx1.redhat.com"
+	id S1752780AbaHDNUp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 09:20:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50775 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752338AbaHDNUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 09:20:35 -0400
+	id S1752339AbaHDNUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 09:20:42 -0400
 From: Denys Vlasenko <dvlasenk@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
@@ -14,18 +14,31 @@ Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
         Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
         Kees Cook <keescook@chromium.org>
-Subject: [PATCH 1/6] x86: entry_64.S: delete unused code
-Date: Mon,  4 Aug 2014 15:19:41 +0200
-Message-Id: <1407158386-6201-2-git-send-email-dvlasenk@redhat.com>
-In-Reply-To: <1407158386-6201-1-git-send-email-dvlasenk@redhat.com>
-References: <1407158386-6201-1-git-send-email-dvlasenk@redhat.com>
+Subject: [PATCH 0/6 v2] x86: entry_64.S: always allocate complete "struct pt_regs"
+Date: Mon,  4 Aug 2014 15:19:40 +0200
+Message-Id: <1407158386-6201-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A define, two macros and an unreferenced bit of assembly are gone.
+Version 2 of the patchset.
 
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+Changes since v1 (mainly in patch 4/6):
+= Reverted changes to "partial pt_regs saving" on interrupt path.
+= Folded PARTIAL_FRAME macro into DEFAULT_FRAME. Patch v1
+  had a bug (incorrect dwarf debug info generation).
+= Corrected more comments.
+= Added use of SAVE_* macros to error_entry and save_paranoid.
+= Added another cleanup rename patch.
+
+TODO:
+= error_entry and save_paranoid have different CFI decorations.
+  At least one of them is likely to be wrong...
+= Move save_paranoid closer to the callers.
+= "idtentry" macro uses a subroutine to factor out a largish
+  common code block. "interrupt" macro inlines a similar
+  block every time (~20 instances). Maybe factor it out?
+
 CC: Oleg Nesterov <oleg@redhat.com>
 CC: "H. Peter Anvin" <hpa@zytor.com>
 CC: Andy Lutomirski <luto@amacapital.net>
@@ -35,75 +48,26 @@ CC: Alexei Starovoitov <ast@plumgrid.com>
 CC: Will Drewry <wad@chromium.org>
 CC: Kees Cook <keescook@chromium.org>
 CC: linux-kernel@vger.kernel.org
----
- arch/x86/include/asm/calling.h |  1 -
- arch/x86/kernel/entry_64.S     | 34 ----------------------------------
- 2 files changed, 35 deletions(-)
 
-diff --git a/arch/x86/include/asm/calling.h b/arch/x86/include/asm/calling.h
-index cb4c73b..e176cea 100644
---- a/arch/x86/include/asm/calling.h
-+++ b/arch/x86/include/asm/calling.h
-@@ -83,7 +83,6 @@ For 32-bit we have the following conventions - kernel is built with
- #define SS		160
- 
- #define ARGOFFSET	R11
--#define SWFRAME		ORIG_RAX
- 
- 	.macro SAVE_ARGS addskip=0, save_rcx=1, save_r891011=1
- 	subq  $9*8+\addskip, %rsp
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b25ca96..dbfd037 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -155,27 +155,6 @@ ENDPROC(native_usergs_sysret64)
- 	movq \tmp,R11+\offset(%rsp)
- 	.endm
- 
--	.macro FAKE_STACK_FRAME child_rip
--	/* push in order ss, rsp, eflags, cs, rip */
--	xorl %eax, %eax
--	pushq_cfi $__KERNEL_DS /* ss */
--	/*CFI_REL_OFFSET	ss,0*/
--	pushq_cfi %rax /* rsp */
--	CFI_REL_OFFSET	rsp,0
--	pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED) /* eflags - interrupts on */
--	/*CFI_REL_OFFSET	rflags,0*/
--	pushq_cfi $__KERNEL_CS /* cs */
--	/*CFI_REL_OFFSET	cs,0*/
--	pushq_cfi \child_rip /* rip */
--	CFI_REL_OFFSET	rip,0
--	pushq_cfi %rax /* orig rax */
--	.endm
--
--	.macro UNFAKE_STACK_FRAME
--	addq $8*6, %rsp
--	CFI_ADJUST_CFA_OFFSET	-(6*8)
--	.endm
--
- /*
-  * initial frame state for interrupts (and exceptions without error code)
-  */
-@@ -640,19 +619,6 @@ END(\label)
- 	FORK_LIKE  vfork
- 	FIXED_FRAME stub_iopl, sys_iopl
- 
--ENTRY(ptregscall_common)
--	DEFAULT_FRAME 1 8	/* offset 8: return address */
--	RESTORE_TOP_OF_STACK %r11, 8
--	movq_cfi_restore R15+8, r15
--	movq_cfi_restore R14+8, r14
--	movq_cfi_restore R13+8, r13
--	movq_cfi_restore R12+8, r12
--	movq_cfi_restore RBP+8, rbp
--	movq_cfi_restore RBX+8, rbx
--	ret $REST_SKIP		/* pop extended registers */
--	CFI_ENDPROC
--END(ptregscall_common)
--
- ENTRY(stub_execve)
- 	CFI_STARTPROC
- 	addq $8, %rsp
+Denys Vlasenko (6):
+  x86: entry_64.S: delete unused code
+  x86: open-code register save/restore in trace_hardirqs thunks
+  x86: entry_64.S: fold SAVE_ARGS_IRQ macro into its sole user
+  x86: entry_64.S: always allocate complete "struct pt_regs"
+  x86: mass removal of ARGOFFSET
+  x86: rename some macros and labels, no code changes
+
+ arch/x86/ia32/ia32entry.S              | 175 +++++++++--------
+ arch/x86/include/asm/calling.h         | 216 ++++++++++----------
+ arch/x86/include/asm/irqflags.h        |   4 +-
+ arch/x86/include/asm/ptrace.h          |  13 +-
+ arch/x86/include/uapi/asm/ptrace-abi.h |  16 +-
+ arch/x86/include/uapi/asm/ptrace.h     |  13 +-
+ arch/x86/kernel/entry_64.S             | 349 +++++++++++++--------------------
+ arch/x86/kernel/preempt.S              |  16 +-
+ arch/x86/lib/thunk_64.S                |  29 ++-
+ 9 files changed, 395 insertions(+), 436 deletions(-)
+
 -- 
 1.8.1.4
 
