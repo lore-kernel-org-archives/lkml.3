@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916AbaHDUsb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 16:48:31 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59313 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbaHDUs2 (ORCPT
+	id S1752020AbaHDUwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 16:52:36 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:47496 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbaHDUwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 16:48:28 -0400
-Date: Mon, 4 Aug 2014 22:48:24 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-doc@vger.kernel.org,
-        Davidlohr Bueso <davidlohr@hp.com>, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH 1/7] locking/rwsem: don't resched at the end of
- optimistic spinning
-Message-ID: <20140804204824.GT3935@laptop>
-References: <1407119782-41119-1-git-send-email-Waiman.Long@hp.com>
- <1407119782-41119-2-git-send-email-Waiman.Long@hp.com>
- <20140804075528.GI9918@twins.programming.kicks-ass.net>
- <53DFD2B3.3090101@hp.com>
+	Mon, 4 Aug 2014 16:52:34 -0400
+From: bsegall@google.com
+To: Jason Low <jason.low2@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Waiman Long <Waiman.Long@hp.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Rik van Riel <riel@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Chegu Vinod <chegu_vinod@hp.com>, Scott J Norton <scott.norton@hp.com>,
+        pjt@google.com
+Subject: Re: [PATCH] sched: Reduce contention in update_cfs_rq_blocked_load
+References: <1407184118.11407.11.camel@j-VirtualBox>
+Date: Mon, 04 Aug 2014 13:52:31 -0700
+In-Reply-To: <1407184118.11407.11.camel@j-VirtualBox> (Jason Low's message of
+	"Mon, 04 Aug 2014 13:28:38 -0700")
+Message-ID: <xm264mxsugds.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53DFD2B3.3090101@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 02:36:35PM -0400, Waiman Long wrote:
-> On 08/04/2014 03:55 AM, Peter Zijlstra wrote:
-> >On Sun, Aug 03, 2014 at 10:36:16PM -0400, Waiman Long wrote:
-> >>For a fully preemptive kernel, a call to preempt_enable() could
-> >>potentially trigger a task rescheduling event. In the case of rwsem
-> >>optimistic spinning, the task has either gotten the lock or is going
-> >>to sleep soon. So there is no point to do rescheduling here.
-> >Uh what? Why shouldn't we preempt if we've gotten the lock? What if a
-> >FIFO task just woke up?
-> 
-> I didn't mean that we shouldn't preempt if there is a higher priority task.
-> I am sure that there will be other preemption points along the way that a
-> higher priority task can take over the CPU. I just want to say that doing it
-> here may not be the best place especially if the task is going to sleep
-> soon.
-> 
-> If you think this patch does not make sense, I can remove it as other
-> patches in the set has no dependency on this one.
+Jason Low <jason.low2@hp.com> writes:
 
-Yeah, its actively harmful, you delay preemption by an unspecified
-amount of time in case of the spin-acquire. We've had such bugs in -rt
-and they're not fun.
+> When running workloads on 2+ socket systems, based on perf profiles, the
+> update_cfs_rq_blocked_load function constantly shows up as taking up a
+> noticeable % of run time. This is especially apparent on an 8 socket
+> machine. For example, when running the AIM7 custom workload, we see:
+>
+>    4.18%        reaim  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
+>
+> Much of the contention is in __update_cfs_rq_tg_load_contrib when we
+> update the tg load contribution stats.  However, it turns out that in many
+> cases, they don't need to be updated and "tg_contrib" is 0.
+>
+> This patch adds a check in __update_cfs_rq_tg_load_contrib to skip updating
+> tg load contribution stats when nothing needs to be updated. This reduces the
+> cacheline contention that would be unnecessary. In the above case, with the
+> patch, perf reports the total time spent in this function went down by more
+> than a factor of 3x:
+>
+>    1.18%        reaim  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
+>
+> Signed-off-by: Jason Low <jason.low2@hp.com>
+Reviewed-by: Ben Segall <bsegall@google.com>
 
-Basically the only time you should use no_resched is if the very next
-statement is schedule().
+That said, it might be better to remove force_update for this function,
+or make it just reduce the minimum to /64 or something. If the test is
+easy to run it would be good to see what it's like just removing the
+force_update param for this function to see if it's worth worrying
+about or if the zero case catches ~all the perf gain. Paul, your thoughts?
+
+> ---
+>  kernel/sched/fair.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index bfa3c86..8d4cc72 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2377,6 +2377,9 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+>  	tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
+>  	tg_contrib -= cfs_rq->tg_load_contrib;
+>  
+> +	if (!tg_contrib)
+> +		return;
+> +
+>  	if (force_update || abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
+>  		atomic_long_add(tg_contrib, &tg->load_avg);
+>  		cfs_rq->tg_load_contrib += tg_contrib;
