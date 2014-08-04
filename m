@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756AbaHDMhg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 08:37:36 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:44226 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117AbaHDMhe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 08:37:34 -0400
-Date: Mon, 4 Aug 2014 05:37:27 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140804123727.GJ8101@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140731215445.GA21933@linux.vnet.ibm.com>
- <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <53DEE1CD.4000705@cn.fujitsu.com>
- <20140804074620.GH9918@twins.programming.kicks-ass.net>
- <53DF41ED.2020508@cn.fujitsu.com>
- <20140804115043.GA31903@linux.vnet.ibm.com>
- <20140804122515.GR19379@twins.programming.kicks-ass.net>
+	id S1752329AbaHDMkX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 08:40:23 -0400
+Received: from mx2.comprocs.com ([12.186.155.30]:55153 "HELO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751249AbaHDMkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 08:40:22 -0400
+X-BYPSHEADER: 2868287
+X-SMScore: -200
+Message-ID: <53DF7F34.5030201@compro.net>
+Date: Mon, 04 Aug 2014 08:40:20 -0400
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140804122515.GR19379@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080412-0928-0000-0000-000003DD0AB5
+To: DaeSeok Youn <daeseok.youn@gmail.com>
+CC: Lidza Louina <lidza.louina@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH V2] staging: dgap: introduce dgap_cleanup_nodes()
+References: <166070137.57941.1406779444750.JavaMail.root@mx2.compro.net>	<53DA3A2D.90403@compro.net> <1598413764.80217.1406848485858.JavaMail.root@mx2.compro.net>
+In-Reply-To: <1598413764.80217.1406848485858.JavaMail.root@mx2.compro.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 02:25:15PM +0200, Peter Zijlstra wrote:
-> On Mon, Aug 04, 2014 at 04:50:44AM -0700, Paul E. McKenney wrote:
-> > OK, I will bite...
-> > 
-> > What kinds of tasks are on a runqueue, but neither ->on_cpu nor
-> > PREEMPT_ACTIVE?
-> 
-> Userspace tasks, they don't necessarily get PREEMPT_ACTIVE when
-> preempted. Now obviously you're not _that_ interested in userspace tasks
-> for this, so that might be ok.
+On 07/31/2014 07:14 PM, DaeSeok Youn wrote:
+> Hi, Mark
+>
+> 2014-07-31 21:44 GMT+09:00 Mark Hounschell <markh@compro.net>:
+>> On 07/31/2014 12:02 AM, Daeseok Youn wrote:
+>>>
+>>> When a configration file is parsed with dgap_parsefile(),
+>>> makes nodes for saving configrations for board.
+>>>
+>>> Making a node will allocate node memory and strings for saving
+>>> configrations with kstrdup().
+>>>
+>>> So these are freed when dgap is unloaded or failed to initialize.
+>>>
+>>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>>> ---
+>>> V2: Do not need to free for NULLNODE.
+>>>
+>>> I have been too busy to solve this issue, sorry for late.
+>>>
+>>> Mark, Can you test this patch? I try to make simple module which is
+>>> testing dgap_parsefile() and dgap_cleanup_nodes().
+>>>
+>>
+>> I'll be happy to, but I can't do it until Monday. I'm not where the hardware
+>> is until then.
+> That's OK. :-)
+>
 
-Right, I detect userspace tasks using RCU's scheduling-clock handler.
-(And code to handle the NO_HZ_FULL case is under construction.)
+After applying this patch I am still able to load and unload the driver 
+at will, and it still works for me.
 
-> But the main point was, you cannot use ->on_cpu or PREEMPT_ACTIVE
-> without holding rq->lock.
-
-OK, got it.
-
-							Thanx, Paul
+Regards
+Mark
 
