@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212AbaHDWsD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 18:48:03 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:54116 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843AbaHDWsB (ORCPT
+	id S1753222AbaHDWt6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 18:49:58 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:32813 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaHDWt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 18:48:01 -0400
-Date: Mon, 4 Aug 2014 15:47:57 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: bpqw <bpqw@micron.com>
-Cc: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "b32955@freescale.com" <b32955@freescale.com>,
-        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
-        "ron@debian.org" <ron@debian.org>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        "ezequiel.garcia@free-electrons.com" 
-	<ezequiel.garcia@free-electrons.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Subject: [PATCH 1/1] mtd:nand:fix nand_lock/unlock() function
-Message-ID: <20140804224757.GH3711@ld-irv-0074>
-References: <CB9F11E856CFD04BB18EC1C68F2598931B1112@NTXXIAMBX01.xacn.micron.com>
- <20140728061006.GC3095@norris-Latitude-E6410>
- <CB9F11E856CFD04BB18EC1C68F2598931B1342@NTXXIAMBX01.xacn.micron.com>
+	Mon, 4 Aug 2014 18:49:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CB9F11E856CFD04BB18EC1C68F2598931B1342@NTXXIAMBX01.xacn.micron.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844C411C@US01WEMBX2.internal.synopsys.com>
+References: <CAPDOMVj5nifG8VQBB_UzNESBc+arxpCQ5sEOAYdb6Rr-KkDSHw@mail.gmail.com>
+	<20140804164633.GA28436@xanatos>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C4028@US01WEMBX2.internal.synopsys.com>
+	<58974.1407180184@turing-police.cc.vt.edu>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C4061@US01WEMBX2.internal.synopsys.com>
+	<62334.1407184063@turing-police.cc.vt.edu>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C411C@US01WEMBX2.internal.synopsys.com>
+Date: Mon, 4 Aug 2014 18:49:56 -0400
+Message-ID: <CAPDOMViK3ZzeDhNMi9oX_s8kZG45BGPwbmZeoT4u-nqg2rgwSg@mail.gmail.com>
+Subject: Re: Kernel Debugging Support
+From: Nick Krause <xerofoify@gmail.com>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Cc: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "Nyman, Mathias" <mathias.nyman@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Aug 4, 2014 at 5:55 PM, Paul Zimmerman
+<Paul.Zimmerman@synopsys.com> wrote:
+>> From: Valdis.Kletnieks@vt.edu [mailto:Valdis.Kletnieks@vt.edu]
+>> Sent: Monday, August 04, 2014 1:28 PM
+>>
+>> On Mon, 04 Aug 2014 19:40:15 -0000, Paul Zimmerman said:
+>>
+>> > Ah, you didn't read far enough down the page :)
+>>
+>> I'm willing to bet a large pizza with everything but anchovies that
+>> out in the real world, a lot of implementors didn't read further either. :)
+>
+> Nah, I won't take that bet :)
+>
+>> > So I have to believe there are a *lot* of systems out there that do support xHCI debug.
+>>
+>> Possibly. But enough to make an actual critical mass to motivate somebody
+>> to write code? Or do you get more bang-for-buck by fixing kgdb to support
+>> debugging over Ethernet?
+>
+> Well, code to support the xHCI debug capability has been written, see
+> http://marc.info/?l=linux-usb&m=135948845511047. But I did not get
+> approval from my management to spend the time needed to integrate this
+> into the kernel's kgdb support.
+>
+> Nick, if you are still interested in this, you could take a look at the
+> above code, and see if you can work out how to modify it to make it work
+> with kgdb. But you will need a PC that has a debug-capable xHCI
+> controller in order to test it. If you have PC or laptop with USB 3.0
+> built-in that has the Windows 8 logo, I think there's a good chance you
+> already have one. Or, according to
+> http://pete.akeo.ie/2011/08/do-necrenesas-upd720200-based-usb-30.html,
+> plug-in USB 3.0 host cards that use the newer Renesas uPD720201 chipset
+> also have the debug capability.
+>
+> Note that the above patch is against a pretty old kernel (3.6), so the
+> first thing you would need to do is forward-port it to work on the
+> latest kernel. As a plus, that would give you some real experience
+> working with kernel code, which everyone seems to agree you need ;)
+>
+> --
+> Paul
+>
 
-On Mon, Jul 28, 2014 at 07:46:51AM +0000, bpqw wrote:
-> >> Do nand reset before write protect check If we want to check the WP# 
-> >> low or high through STATUS READ and check bit 7, we must reset the 
-> >> device, other operation (eg.erase/program a locked block) can also 
-> >> clear the bit 7 of status register.
-> >This description doesn't really tell me why we need this patch.
-> If we want to use the lock/unlock function, we must confirm the WP# is high, if the WP# is low, the write protect is provided by WP#, we don't need LOKC/UNLOCK function.
-> So before we use the LOCK/UNLOCK function we must confirm the WP# is high.
-> We can check the WP# is high or low through READ STATUS and check the bit 7, but this only correct when we READ STATUS directly after RESET or Power On.
-> If we don't add this patch, We can't check the WP# high or low just through READ STATUS and check bit7. 
-> 
-> >First of all, where is the 'lock' sequence specified? I see the commit that introduced nand_lock() (without any users) which says Micron parts support it, but I don't see it documented in the datasheet:
-> The LOCK/UNLOCK feature not apply all micron nand, only 1.8V device have this feature.
-> 
-> >  commit 7d70f334ad2bf1b3aaa1f0699c0f442e14bcc9e0
-> >  Author: Vimal Singh <vimal.newwork@gmail.com>
-> >  Date:   Mon Feb 8 15:50:49 2010 +0530
-> 
-> >      mtd: nand: add lock/unlock routines
-> 
-> >Now, supposing this is documented somewhere, are you seeing some kind of out-of-spec behavior? Is this a controller quirk you're seeing? Why should I need to reset the chip? I would presume that 
-> 
-> >  chip->cmdfunc(mtd, NAND_CMD_STATUS, -1, -1);
-> 
-> >would refresh the status properly. Is that not the case?
-> chip->cmdfunc(mtd, NAND_CMD_STATUS, -1, -1) can refresh the status properly, but we must do some operation to trigger it.
-> For example if we do rease/program operation to a block that is locked, then READ STATUS, the bit 7 will be 0 that indicate the device is write protect.
-> Then if we do erase/program operation to another block that is unlocked, the bit 7 of READ STATUS will be 1 indicate that the device is not write protect.
-> 
-> Now if we don't do any operation just through chip->cmdfunc(mtd, NAND_CMD_STATUS, -1, -1); to check the WP# is high or low.
-> Suppose we check the bit 7 of READ STATUS is 0 then we judge the WP# is low (write protect), but in this case the WP# may be high if we do erase/program operation to a locked block.
-
-Thanks for the explanations. I think the patch is probably OK, then. Can
-you send a new version with a more complete description in the commit
-message?
-
-Brian
+Paul ,
+My computer is rather old now as of Sandy Bridge days, so I probably
+can't test the patch
+on my own machine. However I will look at the code and see if I can
+forward port it
+against the usb git tree I have a current version of. In addition I
+would like the new xhci
+maintainers information in  order to send out a patch with the
+Maintainer for xhci updated.
+Regards Nick
