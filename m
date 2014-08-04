@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbaHDI4z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 04:56:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54754 "EHLO mx2.suse.de"
+	id S1752207AbaHDI4x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 04:56:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54753 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751946AbaHDI4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751948AbaHDI4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 04:56:06 -0400
 From: Vlastimil Babka <vbabka@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Vlastimil Babka <vbabka@suse.cz>,
         Michal Nazarewicz <mina86@mina86.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v6 10/13] mm, compaction: remember position within pageblock in free pages scanner
-Date: Mon,  4 Aug 2014 10:55:21 +0200
-Message-Id: <1407142524-2025-11-git-send-email-vbabka@suse.cz>
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: [PATCH v6 09/13] mm, compaction: skip rechecks when lock was already held
+Date: Mon,  4 Aug 2014 10:55:20 +0200
+Message-Id: <1407142524-2025-10-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1407142524-2025-1-git-send-email-vbabka@suse.cz>
 References: <1407142524-2025-1-git-send-email-vbabka@suse.cz>
@@ -26,157 +27,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike the migration scanner, the free scanner remembers the beginning of the
-last scanned pageblock in cc->free_pfn. It might be therefore rescanning pages
-uselessly when called several times during single compaction. This might have
-been useful when pages were returned to the buddy allocator after a failed
-migration, but this is no longer the case.
+Compaction scanners try to lock zone locks as late as possible by checking
+many page or pageblock properties opportunistically without lock and skipping
+them if not unsuitable. For pages that pass the initial checks, some properties
+have to be checked again safely under lock. However, if the lock was already
+held from a previous iteration in the initial checks, the rechecks are
+unnecessary.
 
-This patch changes the meaning of cc->free_pfn so that if it points to a
-middle of a pageblock, that pageblock is scanned only from cc->free_pfn to the
-end. isolate_freepages_block() will record the pfn of the last page it looked
-at, which is then used to update cc->free_pfn.
-
-In the mmtests stress-highalloc benchmark, this has resulted in lowering the
-ratio between pages scanned by both scanners, from 2.5 free pages per migrate
-page, to 2.25 free pages per migrate page, without affecting success rates.
-
-With __GFP_NO_KSWAPD allocations, this appears to result in a worse ratio (2.1
-instead of 1.8), but page migration successes increased by 10%, so this could
-mean that more useful work can be done until need_resched() aborts this kind
-of compaction.
+This patch therefore skips the rechecks when the lock was already held. This is
+now possible to do, since we don't (potentially) drop and reacquire the lock
+between the initial checks and the safe rechecks anymore.
 
 Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: David Rientjes <rientjes@google.com>
 Acked-by: Minchan Kim <minchan@kernel.org>
 Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Cc: Michal Nazarewicz <mina86@mina86.com>
 Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Cc: Christoph Lameter <cl@linux.com>
 Cc: Rik van Riel <riel@redhat.com>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Acked-by: David Rientjes <rientjes@google.com>
 ---
- mm/compaction.c | 39 ++++++++++++++++++++++++++++++---------
- 1 file changed, 30 insertions(+), 9 deletions(-)
+ mm/compaction.c | 53 +++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 31 insertions(+), 22 deletions(-)
 
 diff --git a/mm/compaction.c b/mm/compaction.c
-index 98e687b..817f3aa 100644
+index bb2484f..98e687b 100644
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -330,7 +330,7 @@ static bool suitable_migration_target(struct page *page)
-  * (even though it may still end up isolating some pages).
-  */
- static unsigned long isolate_freepages_block(struct compact_control *cc,
--				unsigned long blockpfn,
-+				unsigned long *start_pfn,
- 				unsigned long end_pfn,
- 				struct list_head *freelist,
- 				bool strict)
-@@ -339,6 +339,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 	struct page *cursor, *valid_page = NULL;
- 	unsigned long flags;
- 	bool locked = false;
-+	unsigned long blockpfn = *start_pfn;
- 
- 	cursor = pfn_to_page(blockpfn);
- 
-@@ -412,6 +413,9 @@ isolate_fail:
- 			break;
- 	}
- 
-+	/* Record how far we have got within the block */
-+	*start_pfn = blockpfn;
-+
- 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
- 
- 	/*
-@@ -460,14 +464,16 @@ isolate_freepages_range(struct compact_control *cc,
- 
- 	for (; pfn < end_pfn; pfn += isolated,
- 				block_end_pfn += pageblock_nr_pages) {
-+		/* Protect pfn from changing by isolate_freepages_block */
-+		unsigned long isolate_start_pfn = pfn;
- 
- 		block_end_pfn = min(block_end_pfn, end_pfn);
- 
- 		if (!pageblock_pfn_to_page(pfn, block_end_pfn, cc->zone))
- 			break;
- 
--		isolated = isolate_freepages_block(cc, pfn, block_end_pfn,
--						   &freelist, true);
-+		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
-+						block_end_pfn, &freelist, true);
+@@ -367,22 +367,30 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 			goto isolate_fail;
  
  		/*
- 		 * In strict mode, isolate_freepages_block() returns 0 if
-@@ -770,6 +776,7 @@ static void isolate_freepages(struct compact_control *cc)
- 	struct zone *zone = cc->zone;
- 	struct page *page;
- 	unsigned long block_start_pfn;	/* start of current pageblock */
-+	unsigned long isolate_start_pfn; /* exact pfn we start at */
- 	unsigned long block_end_pfn;	/* end of current pageblock */
- 	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
- 	int nr_freepages = cc->nr_freepages;
-@@ -778,14 +785,15 @@ static void isolate_freepages(struct compact_control *cc)
- 	/*
- 	 * Initialise the free scanner. The starting point is where we last
- 	 * successfully isolated from, zone-cached value, or the end of the
--	 * zone when isolating for the first time. We need this aligned to
--	 * the pageblock boundary, because we do
-+	 * zone when isolating for the first time. For looping we also need
-+	 * this pfn aligned down to the pageblock boundary, because we do
- 	 * block_start_pfn -= pageblock_nr_pages in the for loop.
- 	 * For ending point, take care when isolating in last pageblock of a
- 	 * a zone which ends in the middle of a pageblock.
- 	 * The low boundary is the end of the pageblock the migration scanner
- 	 * is using.
- 	 */
-+	isolate_start_pfn = cc->free_pfn;
- 	block_start_pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
- 	block_end_pfn = min(block_start_pfn + pageblock_nr_pages,
- 						zone_end_pfn(zone));
-@@ -798,7 +806,8 @@ static void isolate_freepages(struct compact_control *cc)
- 	 */
- 	for (; block_start_pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
- 				block_end_pfn = block_start_pfn,
--				block_start_pfn -= pageblock_nr_pages) {
-+				block_start_pfn -= pageblock_nr_pages,
-+				isolate_start_pfn = block_start_pfn) {
- 		unsigned long isolated;
+-		 * The zone lock must be held to isolate freepages.
+-		 * Unfortunately this is a very coarse lock and can be
+-		 * heavily contended if there are parallel allocations
+-		 * or parallel compactions. For async compaction do not
+-		 * spin on the lock and we acquire the lock as late as
+-		 * possible.
++		 * If we already hold the lock, we can skip some rechecking.
++		 * Note that if we hold the lock now, checked_pageblock was
++		 * already set in some previous iteration (or strict is true),
++		 * so it is correct to skip the suitable migration target
++		 * recheck as well.
+ 		 */
+-		if (!locked)
++		if (!locked) {
++			/*
++			 * The zone lock must be held to isolate freepages.
++			 * Unfortunately this is a very coarse lock and can be
++			 * heavily contended if there are parallel allocations
++			 * or parallel compactions. For async compaction do not
++			 * spin on the lock and we acquire the lock as late as
++			 * possible.
++			 */
+ 			locked = compact_trylock_irqsave(&cc->zone->lock,
+ 								&flags, cc);
+-		if (!locked)
+-			break;
++			if (!locked)
++				break;
  
- 		/*
-@@ -823,13 +832,25 @@ static void isolate_freepages(struct compact_control *cc)
- 		if (!isolation_suitable(cc, page))
+-		/* Recheck this is a buddy page under lock */
+-		if (!PageBuddy(page))
+-			goto isolate_fail;
++			/* Recheck this is a buddy page under lock */
++			if (!PageBuddy(page))
++				goto isolate_fail;
++		}
+ 
+ 		/* Found a free page, break it into order-0 pages */
+ 		isolated = split_free_page(page);
+@@ -644,19 +652,20 @@ isolate_migratepages_block(struct compact_control *cc, unsigned long low_pfn,
+ 		    page_count(page) > page_mapcount(page))
  			continue;
  
--		/* Found a block suitable for isolating free pages from */
--		cc->free_pfn = block_start_pfn;
--		isolated = isolate_freepages_block(cc, block_start_pfn,
-+		/* Found a block suitable for isolating free pages from. */
-+		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
- 					block_end_pfn, freelist, false);
- 		nr_freepages += isolated;
+-		/* If the lock is not held, try to take it */
+-		if (!locked)
++		/* If we already hold the lock, we can skip some rechecking */
++		if (!locked) {
+ 			locked = compact_trylock_irqsave(&zone->lru_lock,
+ 								&flags, cc);
+-		if (!locked)
+-			break;
++			if (!locked)
++				break;
  
- 		/*
-+		 * Remember where the free scanner should restart next time,
-+		 * which is where isolate_freepages_block() left off.
-+		 * But if it scanned the whole pageblock, isolate_start_pfn
-+		 * now points at block_end_pfn, which is the start of the next
-+		 * pageblock.
-+		 * In that case we will however want to restart at the start
-+		 * of the previous pageblock.
-+		 */
-+		cc->free_pfn = (isolate_start_pfn < block_end_pfn) ?
-+				isolate_start_pfn :
-+				block_start_pfn - pageblock_nr_pages;
-+
-+		/*
- 		 * Set a flag that we successfully isolated in this pageblock.
- 		 * In the next loop iteration, zone->compact_cached_free_pfn
- 		 * will not be updated and thus it will effectively contain the
+-		/* Recheck PageLRU and PageTransHuge under lock */
+-		if (!PageLRU(page))
+-			continue;
+-		if (PageTransHuge(page)) {
+-			low_pfn += (1 << compound_order(page)) - 1;
+-			continue;
++			/* Recheck PageLRU and PageTransHuge under lock */
++			if (!PageLRU(page))
++				continue;
++			if (PageTransHuge(page)) {
++				low_pfn += (1 << compound_order(page)) - 1;
++				continue;
++			}
+ 		}
+ 
+ 		lruvec = mem_cgroup_page_lruvec(page, zone);
 -- 
 1.8.4.5
 
