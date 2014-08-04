@@ -1,90 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751441AbaHDHTQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 03:19:16 -0400
-Received: from ozlabs.org ([103.22.144.67]:45218 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750986AbaHDHTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 03:19:14 -0400
-Date: Mon, 4 Aug 2014 17:19:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Weston Andros Adamson <dros@primarydata.com>,
-        NeilBrown <neilb@suse.de>
-Subject: linux-next: manual merge of the tip tree with the nfs tree
-Message-ID: <20140804171906.2c2b4470@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1751506AbaHDHWC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 03:22:02 -0400
+Received: from dehamd003.servertools24.de ([31.47.254.18]:58308 "EHLO
+	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750986AbaHDHWA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 03:22:00 -0400
+Message-ID: <53DF345A.3000205@ladisch.de>
+Date: Mon, 04 Aug 2014 09:20:58 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64;
+	rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/jo/HQGV9uQXJiyc2xyjFfMl"; protocol="application/pgp-signature"
+To: Hans Wennborg <hans@hanshq.net>
+CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/19] alsa: riptide: fix %d confusingly prefixed with
+	0x in format strings
+References: <1407111685-15351-1-git-send-email-hans@hanshq.net>
+In-Reply-To: <1407111685-15351-1-git-send-email-hans@hanshq.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-PPP-Message-ID: <20140804072002.880949.17637@dehamd003.servertools24.de>
+X-PPP-Vhost: ladisch.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/jo/HQGV9uQXJiyc2xyjFfMl
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hans Wennborg wrote:
+> Signed-off-by: Hans Wennborg <hans@hanshq.net>
+> ---
+>  sound/firewire/fireworks/fireworks_proc.c | 4 ++--
+>  sound/pci/riptide/riptide.c               | 4 ++--
 
-Hi all,
+The fireworks patch got split.
 
-Today's linux-next merge of the tip tree got a conflict in
-fs/nfs/pagelist.c between commit e7029206ff43 ("nfs: check
-wait_on_bit_lock err in page_group_lock") from the nfs tree and commit
-743162013d40 ("sched: Remove proliferation of wait_on_bit() action
-functions") from the tip tree.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc fs/nfs/pagelist.c
-index 9425118e91d7,0be5050638f7..000000000000
---- a/fs/nfs/pagelist.c
-+++ b/fs/nfs/pagelist.c
-@@@ -158,14 -149,8 +152,13 @@@ nfs_page_group_lock(struct nfs_page *re
- =20
-  	WARN_ON_ONCE(head !=3D head->wb_head);
- =20
- -	wait_on_bit_lock(&head->wb_flags, PG_HEADLOCK,
- +	do {
- +		ret =3D wait_on_bit_lock(&head->wb_flags, PG_HEADLOCK,
-- 			nfs_wait_bit_uninterruptible,
-  			TASK_UNINTERRUPTIBLE);
- +	} while (wait && ret !=3D 0);
- +
- +	WARN_ON_ONCE(ret > 0);
- +	return ret;
-  }
- =20
-  /*
-
---Sig_/jo/HQGV9uQXJiyc2xyjFfMl
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT3zPvAAoJEMDTa8Ir7ZwVucoP+wWii1fEHNL0NxlIsbH/G46l
-CB2/9JoMY0ohjXgDmLHeUttXj1ZclvkRO8NWFpEdEhg0kb46d2e5TN/yhOdFudWv
-sNnzlsxbp8n3M/EAZ0WHNNfuZY1kLIP4Vt+dML7BHceiyvj4U7x6A196/qLUa9sq
-gKBeTFxZj8ziGkHAGujnP3qXa04L5clZxb4/YfD1uIxAZAQOJme6wjj4i/kC55P6
-1GZrVRo1SdZQs5FyYPdQAzCviSWyScPjJA0QwXfidlIEdlYIdfU3QR6CaoCJ3C7A
-TbRrQMAJI0faFyhxhlsXJhNW0qnWoXhAqzI2z14r0jZChhUMuSE6k5ASIWR+60dg
-Vi13W1Bnw7WRl/vP31p0r7Z8R8DGR218qIxDA6nKUo3SNjR2MGebnW23fqhJP65S
-4ukc01nJyY2jCYHi98E7iWUg3RD/iKT8zwOMdFDoshhexRiQ+S1ZqpQzqbtEZ4MM
-lc+HEGUXgNeX0mEoVfHaFQ5LM/vEC/uL59Hh/eXvnLS0LE5BChngq/Z1NJOEbbTB
-DdViIGhQMdedRXmhFEpPiSR4bnE9EiogEijLCfQtQBOE7ZNJQS7FTNHOfedyRIZk
-JogBpJV853ZKKmUPQf7RShUaaoLDR1WVGIOW9svTaSUR2bwRsq+IvVuqHQ2SzvMX
-oV1PlW7+FV/TRa0q74bQ
-=qYhd
------END PGP SIGNATURE-----
-
---Sig_/jo/HQGV9uQXJiyc2xyjFfMl--
+Regards,
+Clemens
