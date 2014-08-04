@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaHDMcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 08:32:15 -0400
-Received: from imta21.fe.bosch.de ([139.15.243.226]:42911 "EHLO
-	imta21.fe.bosch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249AbaHDMcL convert rfc822-to-8bit (ORCPT
+	id S1752737AbaHDMcn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 08:32:43 -0400
+Received: from imta22.fe.bosch.de ([139.15.243.26]:42921 "EHLO
+	imta22.fe.bosch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637AbaHDMcl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 08:32:11 -0400
-X-Greylist: delayed 509 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Aug 2014 08:32:08 EDT
+	Mon, 4 Aug 2014 08:32:41 -0400
+X-Greylist: delayed 336 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Aug 2014 08:32:38 EDT
 From: "Koehrer Mathias (ETAS/ESW5)" <mathias.koehrer@etas.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vget.kernel.org" <netdev@vget.kernel.org>
-Subject: PROBLEM: Running ptpd2 using an Intel 82572EI (e1000e) leads to a
- kernel oops (3.12.26)
-Thread-Topic: PROBLEM: Running ptpd2 using an Intel 82572EI (e1000e) leads
+To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: PROBLEM: [x86] Running ptpd2 using an Intel 82572EI (e1000e) leads
  to a kernel oops (3.12.26)
-Thread-Index: Ac+v3JuYuSpi6khcQ7u+s32WIBUecA==
-Date: Mon, 4 Aug 2014 12:22:49 +0000
-Message-ID: <af07a299dc05486387acbb84f7a4a78e@FE-MBX1012.de.bosch.com>
+Thread-Topic: PROBLEM: [x86] Running ptpd2 using an Intel 82572EI (e1000e)
+ leads to a kernel oops (3.12.26)
+Thread-Index: Ac+v3yzc3cSLCNWNSz2wcfBA1YE8+g==
+Date: Mon, 4 Aug 2014 12:26:08 +0000
+Message-ID: <50f83e65cecd4882b22887858bfdf484@FE-MBX1012.de.bosch.com>
 Accept-Language: de-DE, en-US
 Content-Language: de-DE
 X-MS-Has-Attach: 
@@ -4393,3 +4393,7 @@ ehci_hcd 57445 1 ehci_pci, Live 0xf802c000
        (please look in /proc and include all information that you
        think to be relevant):
 [X.] Other notes, patches, fixes, workarounds:
+
+
+
+
