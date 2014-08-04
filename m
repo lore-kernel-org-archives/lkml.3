@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaHDNzA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 09:55:00 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:59887 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650AbaHDNy7 (ORCPT
+	id S1752716AbaHDN44 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 09:56:56 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:65269 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801AbaHDN4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 09:54:59 -0400
-Date: Mon, 4 Aug 2014 14:54:52 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: P J P <ppandit@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: 3.12 to 3.13 boot regression bisected - still applies to 3.16
-Message-ID: <20140804135452.GJ15082@console-pimps.org>
-References: <20140804113435.34ed8c76@pluto>
- <20140804122728.GH15082@console-pimps.org>
- <20140804150627.4563b6a7@pluto>
+	Mon, 4 Aug 2014 09:56:54 -0400
+Date: Mon, 4 Aug 2014 09:56:51 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [GIT PULL] workqueue changes for v3.17-rc1
+Message-ID: <20140804135651.GA26230@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140804150627.4563b6a7@pluto>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 04 Aug, at 03:06:27PM, Bruno Prémont wrote:
-> 
-> Yes, I did as I have seen that patch flying by, but it did not help
-> (I tried at 3.16-rc7).
- 
-:-( Thanks for testing.
+Hello, Linus.
 
-> On 3.16-rc7 I even tried adding earlyprintk=efi,keep, console=efi,
-> ignore_loglevel and added some efi_printk() in EFI stub (in the spirit
-> of https://bugzilla.kernel.org/show_bug.cgi?id=68761)
-> The last message I get is my efi_printk() right before exiting boot
-> services. Without my efi_printk() there is no output at all.
-> 
-> Then system reboots.
+Lai has been doing a lot of cleanups of workqueue and kthread_work.
+No significant behavior change.  Just a lot of cleanups all over the
+place.  Some are a bit invasive but overall nothing too dangerous.
 
-OK, so the fact that the system reboots suggests that the boot
-stub/kernel caused a fault.
- 
-> There is no output on serial console either (via BMC),
-> (earlycon=uart,io,0x3f8,115200 or earlyprintk=serial,ttyS0,115200)
-> 
-> 
-> I even tried without initrd (setting CONFIG_INITRAMFS_SOURCE="")
-> and got the same end-result.
+Thanks.
 
-Oh that's interesting.
+The following changes since commit ebe06187bf2aec10d537ce4595e416035367d703:
 
-> I could share a slightly modified one, replacing the
-> contained /etc/passwd. It's about 16MiB in size due to RAID controller
-> management blobs for recovery. Except for that it just tries to find
-> ROOT partition, setting up dmcrypt if needed.
- 
-This shouldn't be necessary if you can reproduce the issue without an
-initrd as you stated above.
+  epoll: fix use-after-free in eventpoll_release_file (2014-06-16 17:21:59 -1000)
 
-> Any hint on how to find out what fails would be nice!
-> initrd issues tend not to be easy to debug (it would help if initrd
-> issues could be reported at the time kernel tries to start init - e.g.
-> when console outputs are up and running).
+are available in the git repository at:
 
-I don't think this is necessarily an initrd issue.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.17
 
-The way that I would debug this is to insert while(1); into strategic
-places. Yes, it's lame and time consuming, but it's effective.
+for you to fetch changes up to 95847e1bd34c0de86039408b24a05f07e788061d:
 
-My first suggestion would be setup_arch(). In particular, because your
-machine is resetting, I'd guess that the kernel's early trap handlers
-haven't yet been installed.
+  kthread_work: remove the unused wait_queue_head (2014-07-28 14:16:30 -0400)
 
-So throw a,
+----------------------------------------------------------------
+Lai Jiangshan (20):
+      workqueue: use "pool->cpu < 0" to stand for an unbound pool
+      workqueue: remove the empty check in too_many_workers()
+      workqueue: use schedule_timeout_interruptible() instead of open code
+      workqueue: remove useless WARN_ON_ONCE()
+      workqueue: clear leftover flags when detached
+      workqueue: sanity check pool->cpu in wq_worker_sleeping()
+      workqueue: clear POOL_DISASSOCIATED in rebind_workers()
+      workqueue: stronger test in process_one_work()
+      workqueue: reuse the already calculated pwq in try_to_grab_pending()
+      workqueue: alloc struct worker on its local node
+      workqueue: wake regular worker if need_more_worker() when rescuer leave the pool
+      workqueue: remove an unneeded UNBOUND test before waking up the next worker
+      workqueue: remove @wakeup from worker_set_flags()
+      workqueue: unfold start_worker() into create_worker()
+      workqueue: move rescuer pool detachment to the end
+      workqueue: remove the stale comment in pwq_unbound_release_workfn()
+      workqueue: remove the misnamed out_unlock label in get_unbound_pool()
+      workqueue: use nr_node_ids instead of wq_numa_tbl_len
+      kthread_work: wake up worker only when the worker is idle
+      kthread_work: remove the unused wait_queue_head
 
-	while (1);
-
-in there and see if you can get your machine to hang instead of reset.
-If it doesn't hang, the reset occurs earlier in boot - work backwards.
-If it does hang then you know that execution gets at least that far -
-work forwards. Like I said, lame but effective.
-
-Meanwhile I'm going to go and stare at the EFI boot stub code and
-instrument OVMF to check for more memory corruption bugs like the one
-Michael found in commit c7fb93ec51d4 ("x86/efi: Include a .bss section
-within the PE/COFF headers").
+ include/linux/kthread.h |  13 +---
+ kernel/kthread.c        |   2 +-
+ kernel/workqueue.c      | 200 +++++++++++++++---------------------------------
+ 3 files changed, 64 insertions(+), 151 deletions(-)
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+tejun
