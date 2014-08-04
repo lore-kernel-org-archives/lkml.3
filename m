@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940AbaHDTVw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 15:21:52 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:49691 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085AbaHDTVG (ORCPT
+	id S1752888AbaHDTVv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 15:21:51 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:34434 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121AbaHDTVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 15:21:06 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -15,119 +15,112 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v4 tip/core/rcu 06/11] rcutorture: Add torture tests for RCU-tasks
-Date: Mon,  4 Aug 2014 12:20:49 -0700
-Message-Id: <1407180054-19805-6-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v4 tip/core/rcu 03/11] rcu: Add synchronous grace-period waiting for RCU-tasks
+Date: Mon,  4 Aug 2014 12:20:46 -0700
+Message-Id: <1407180054-19805-3-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1407180054-19805-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140804192017.GA18337@linux.vnet.ibm.com>
  <1407180054-19805-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080419-8236-0000-0000-000004592211
+x-cbid: 14080419-1542-0000-0000-000003C08E29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit adds torture tests for RCU-tasks.  It also fixes a bug that
-would segfault for an RCU flavor lacking a callback-barrier function.
+It turns out to be easier to add the synchronous grace-period waiting
+functions to RCU-tasks than to work around their absense in rcutorture,
+so this commit adds them.  The key point is that the existence of
+call_rcu_tasks() means that rcutorture needs an rcu_barrier_tasks().
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- include/linux/rcupdate.h |  1 +
- kernel/rcu/rcutorture.c  | 50 +++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 50 insertions(+), 1 deletion(-)
+ include/linux/rcupdate.h |  2 ++
+ kernel/rcu/update.c      | 55 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 57 insertions(+)
 
 diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index e6aea256ad39..f504f797c9c8 100644
+index ac87f587a1c1..1f073af940a5 100644
 --- a/include/linux/rcupdate.h
 +++ b/include/linux/rcupdate.h
-@@ -55,6 +55,7 @@ enum rcutorture_type {
- 	RCU_FLAVOR,
- 	RCU_BH_FLAVOR,
- 	RCU_SCHED_FLAVOR,
-+	RCU_TASKS_FLAVOR,
- 	SRCU_FLAVOR,
- 	INVALID_RCU_FLAVOR
- };
-diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-index febe07062ac5..52423f2c74da 100644
---- a/kernel/rcu/rcutorture.c
-+++ b/kernel/rcu/rcutorture.c
-@@ -601,6 +601,52 @@ static struct rcu_torture_ops sched_ops = {
- 	.name		= "sched"
- };
+@@ -216,6 +216,8 @@ void synchronize_sched(void);
+  * memory ordering guarantees.
+  */
+ void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
++void synchronize_rcu_tasks(void);
++void rcu_barrier_tasks(void);
  
-+#ifdef CONFIG_TASKS_RCU
-+
-+/*
-+ * Definitions for RCU-tasks torture testing.
+ #ifdef CONFIG_PREEMPT_RCU
+ 
+diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+index d9295de7b172..6c54c898a6f9 100644
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -384,6 +384,61 @@ void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
+ }
+ EXPORT_SYMBOL_GPL(call_rcu_tasks);
+ 
++/**
++ * synchronize_rcu_tasks - wait until an rcu-tasks grace period has elapsed.
++ *
++ * Control will return to the caller some time after a full rcu-tasks
++ * grace period has elapsed, in other words after all currently
++ * executing rcu-tasks read-side critical sections have elapsed.  These
++ * read-side critical sections are delimited by calls to schedule(),
++ * cond_resched_rcu_qs(), idle execution, userspace execution, calls
++ * to synchronize_rcu_tasks(), and (in theory, anyway) cond_resched().
++ *
++ * This is a very specialized primitive, intended only for a few uses in
++ * tracing and other situations requiring manipulation of function
++ * preambles and profiling hooks.  The synchronize_rcu_tasks() function
++ * is not (yet) intended for heavy use from multiple CPUs.
++ *
++ * Note that this guarantee implies further memory-ordering guarantees.
++ * On systems with more than one CPU, when synchronize_rcu_tasks() returns,
++ * each CPU is guaranteed to have executed a full memory barrier since the
++ * end of its last RCU-tasks read-side critical section whose beginning
++ * preceded the call to synchronize_rcu_tasks().  In addition, each CPU
++ * having an RCU-tasks read-side critical section that extends beyond
++ * the return from synchronize_rcu_tasks() is guaranteed to have executed
++ * a full memory barrier after the beginning of synchronize_rcu_tasks()
++ * and before the beginning of that RCU-tasks read-side critical section.
++ * Note that these guarantees include CPUs that are offline, idle, or
++ * executing in user mode, as well as CPUs that are executing in the kernel.
++ *
++ * Furthermore, if CPU A invoked synchronize_rcu_tasks(), which returned
++ * to its caller on CPU B, then both CPU A and CPU B are guaranteed
++ * to have executed a full memory barrier during the execution of
++ * synchronize_rcu_tasks() -- even if CPU A and CPU B are the same CPU
++ * (but again only if the system has more than one CPU).
 + */
-+
-+static int tasks_torture_read_lock(void)
++void synchronize_rcu_tasks(void)
 +{
-+	return 0;
++	/* Complain if the scheduler has not started.  */
++	rcu_lockdep_assert(!rcu_scheduler_active,
++			   "synchronize_rcu_tasks called too soon");
++
++	/* Wait for the grace period. */
++	wait_rcu_gp(call_rcu_tasks);
 +}
 +
-+static void tasks_torture_read_unlock(int idx)
++/**
++ * rcu_barrier_tasks - Wait for in-flight call_rcu_tasks() callbacks.
++ *
++ * Although the current implementation is guaranteed to wait, it is not
++ * obligated to, for example, if there are no pending callbacks.
++ */
++void rcu_barrier_tasks(void)
 +{
++	/* There is only one callback queue, so this is easy.  ;-) */
++	synchronize_rcu_tasks();
 +}
 +
-+static void rcu_tasks_torture_deferred_free(struct rcu_torture *p)
-+{
-+	call_rcu_tasks(&p->rtort_rcu, rcu_torture_cb);
-+}
-+
-+static struct rcu_torture_ops tasks_ops = {
-+	.ttype		= RCU_TASKS_FLAVOR,
-+	.init		= rcu_sync_torture_init,
-+	.readlock	= tasks_torture_read_lock,
-+	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
-+	.readunlock	= tasks_torture_read_unlock,
-+	.completed	= rcu_no_completed,
-+	.deferred_free	= rcu_tasks_torture_deferred_free,
-+	.sync		= synchronize_rcu_tasks,
-+	.exp_sync	= synchronize_rcu_tasks,
-+	.call		= call_rcu_tasks,
-+	.cb_barrier	= rcu_barrier_tasks,
-+	.fqs		= NULL,
-+	.stats		= NULL,
-+	.irq_capable	= 1,
-+	.name		= "tasks"
-+};
-+
-+#define RCUTORTURE_TASKS_OPS &tasks_ops,
-+
-+#else /* #ifdef CONFIG_TASKS_RCU */
-+
-+#define RCUTORTURE_TASKS_OPS
-+
-+#endif /* #else #ifdef CONFIG_TASKS_RCU */
-+
- /*
-  * RCU torture priority-boost testing.  Runs one real-time thread per
-  * CPU for moderate bursts, repeatedly registering RCU callbacks and
-@@ -1295,7 +1341,8 @@ static int rcu_torture_barrier_cbs(void *arg)
- 		if (atomic_dec_and_test(&barrier_cbs_count))
- 			wake_up(&barrier_wq);
- 	} while (!torture_must_stop());
--	cur_ops->cb_barrier();
-+	if (cur_ops->cb_barrier != NULL)
-+		cur_ops->cb_barrier();
- 	destroy_rcu_head_on_stack(&rcu);
- 	torture_kthread_stopping("rcu_torture_barrier_cbs");
- 	return 0;
-@@ -1534,6 +1581,7 @@ rcu_torture_init(void)
- 	int firsterr = 0;
- 	static struct rcu_torture_ops *torture_ops[] = {
- 		&rcu_ops, &rcu_bh_ops, &rcu_busted_ops, &srcu_ops, &sched_ops,
-+		RCUTORTURE_TASKS_OPS
- 	};
- 
- 	if (!torture_init_begin(torture_type, verbose, &rcutorture_runnable))
+ /* See if tasks are still holding out, complain if so. */
+ static void check_holdout_task(struct task_struct *t)
+ {
 -- 
 1.8.1.5
 
