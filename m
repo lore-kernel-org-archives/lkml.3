@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078AbaHDVUW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 17:20:22 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:35000 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328AbaHDVUU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 17:20:20 -0400
-Message-ID: <1407187217.11985.14.camel@j-VirtualBox>
-Subject: Re: [PATCH 3/7] locking/rwsem: check for active writer/spinner
- before wakeup
-From: Jason Low <jason.low2@hp.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Date: Mon, 04 Aug 2014 14:20:17 -0700
-In-Reply-To: <1407119782-41119-4-git-send-email-Waiman.Long@hp.com>
-References: <1407119782-41119-1-git-send-email-Waiman.Long@hp.com>
-	 <1407119782-41119-4-git-send-email-Waiman.Long@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752866AbaHDVX0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 17:23:26 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48463 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131AbaHDVXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 17:23:25 -0400
+Date: Mon, 4 Aug 2014 23:23:21 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH 4/5] x86: entry_64.S: always allocate complete "struct
+ pt_regs"
+Message-ID: <20140804212321.GC5545@pd.tnic>
+References: <1406904498-21647-1-git-send-email-dvlasenk@redhat.com>
+ <1406904498-21647-4-git-send-email-dvlasenk@redhat.com>
+ <CALCETrWA6SL52SOM3yifvc0Pjz-HTOvs8G8fXo9TqF5v=0eTzw@mail.gmail.com>
+ <CAK1hOcOwD0cpVWZEV8FP40y9149feUdaxoszQC+wWQfAwU4MNQ@mail.gmail.com>
+ <CALCETrV6rap+rZirLsMmdzML9rSKnWEmq-ACNLLGYgKtT-K6uA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALCETrV6rap+rZirLsMmdzML9rSKnWEmq-ACNLLGYgKtT-K6uA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-08-03 at 22:36 -0400, Waiman Long wrote:
-> On a highly contended rwsem, spinlock contention due to the slow
-> rwsem_wake() call can be a significant portion of the total CPU cycles
-> used. With writer lock stealing and writer optimistic spinning, there
-> is also a pretty good chance that the lock may have been stolen
-> before the waker wakes up the waiters. The woken tasks, if any,
-> will have to go back to sleep again.
-> 
-> This patch adds checking code at the beginning of the rwsem_wake()
-> and __rwsem_do_wake() function to look for spinner and active
-> writer respectively.  The presence of an active writer will abort the
-> wakeup operation.  The presence of a spinner will still allow wakeup
-> operation to proceed as long as the trylock operation succeeds. This
-> strikes a good balance between excessive spinlock contention especially
-> when there are a lot of active readers and a lot of failed fastpath
-> operations because there are tasks waiting in the queue.
-> 
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> ---
->  include/linux/osq_lock.h    |    5 ++++
->  kernel/locking/rwsem-xadd.c |   57 ++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 61 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/osq_lock.h b/include/linux/osq_lock.h
-> index 90230d5..79db546 100644
-> --- a/include/linux/osq_lock.h
-> +++ b/include/linux/osq_lock.h
-> @@ -24,4 +24,9 @@ static inline void osq_lock_init(struct optimistic_spin_queue *lock)
->  	atomic_set(&lock->tail, OSQ_UNLOCKED_VAL);
->  }
->  
-> +static inline bool osq_has_spinner(struct optimistic_spin_queue *lock)
-> +{
-> +	return atomic_read(&lock->tail) != OSQ_UNLOCKED_VAL;
-> +}
+On Tue, Aug 05, 2014 at 06:03:24AM +0900, Andy Lutomirski wrote:
+> (It's too bad that there's no unlocked xchg; this could be faster if
+> we had one.
 
-Like with other locks, should we make this "osq_is_locked"? We can still
-add the rwsem has_spinner() abstractions which makes use of
-osq_is_locked() if we want.
+There is - just put both operands in registers. :-)
 
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
