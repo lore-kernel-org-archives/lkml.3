@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338AbaHDOHY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 10:07:24 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:55146 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751581AbaHDOHW (ORCPT
+	id S1752636AbaHDOJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 10:09:29 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34660 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801AbaHDOJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 10:07:22 -0400
-Date: Mon, 4 Aug 2014 10:07:21 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Roger Quadros <rogerq@ti.com>
-cc: gregkh@linuxfoundation.org, <balbi@ti.com>, <ming.lei@canonical.com>,
-        <mwelling@emacinc.com>, <stefan@herbrechtsmeier.net>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "[3.8+]" <stable@vger.kernel.org>
-Subject: Re: [PATCH] usb: hub: Prevent hub autosuspend if usbcore.autosuspend
- is -1
-In-Reply-To: <1407145486-14013-1-git-send-email-rogerq@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1408041006530.1169-100000@iolanthe.rowland.org>
+	Mon, 4 Aug 2014 10:09:28 -0400
+Date: Mon, 4 Aug 2014 16:09:25 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: "Alasdair G. Kergon" <agk@redhat.com>, Mike Snitzer <msnitzer@redhat.com>,
+        Jonathan Brassow <jbrassow@redhat.com>,
+        Edward Thornber <thornber@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
+        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/15] block copy: initial XCOPY offload support
+Message-ID: <20140804140925.GA24261@amd.pavel.ucw.cz>
+References: <alpine.LRH.2.02.1407151531140.14632@file01.intranet.prod.int.rdu2.redhat.com>
+ <alpine.LRH.2.02.1407151534180.14632@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1407151534180.14632@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Aug 2014, Roger Quadros wrote:
-
-> If user specifies that USB autosuspend must be disabled by module
-> parameter "usbcore.autosuspend=-1" then we must prevent
-> autosuspend of USB hub devices as well.
+On Tue 2014-07-15 15:34:47, Mikulas Patocka wrote:
+> This is Martin Petersen's xcopy patch
+> (https://git.kernel.org/cgit/linux/kernel/git/mkp/linux.git/commit/?h=xcopy&id=0bdeed274e16b3038a851552188512071974eea8)
+> with some bug fixes, ported to the current kernel.
 > 
-> commit 596d789a211d introduced in v3.8 changed the original behaivour
-> and stopped respecting the usbcore.autosuspend parameter for hubs.
+> This patch makes it possible to use the SCSI XCOPY command.
 > 
-> Fixes: 596d789a211d "USB: set hub's default autosuspend delay as 0"
+> We create a bio that has REQ_COPY flag in bi_rw and a bi_copy structure
+> that defines the source device. The target device is defined in the
+> bi_bdev and bi_iter.bi_sector.
 > 
-> Cc: [3.8+] <stable@vger.kernel.org>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> There is a new BLKCOPY ioctl that makes it possible to use XCOPY from
+> userspace. The ioctl argument is a pointer to an array of four uint64_t
+> values.
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+But it is there only for block devices, right?
 
+Is there plan to enable tools such as /bin/cp to use XCOPY?
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
