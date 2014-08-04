@@ -1,68 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632AbaHDUQm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 16:16:42 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59962 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714AbaHDUQl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 16:16:41 -0400
-Message-ID: <53DFEA25.5070206@codeaurora.org>
-Date: Mon, 04 Aug 2014 13:16:37 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Prarit Bhargava <prarit@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        =?UTF-8?B?Um9iZXJ0IFNjaMO2bmU=?= <robert.schoene@tu-dresden.de>
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
- to be held for duration of changing governors [v2]
-References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org> <53DAA749.5080506@redhat.com> <53DAA95B.2040505@codeaurora.org> <53DAB038.3050007@redhat.com> <53DABFA6.6090503@codeaurora.org> <53DACA26.1000908@redhat.com> <53DAE592.2030909@codeaurora.org> <53DB6B81.6050400@redhat.com> <53DBCBE8.6010809@codeaurora.org> <CAKohpom0KycrB8qJDM7yEOHOn76J1sEe90CG+JXERJMcxKnOJA@mail.gmail.com> <53DF7BC4.9070500@redhat.com> <CAKohpomEQ__Q4xTaBgHJyE0Meu4au-cXKCAKCqHWTHLRL+R5OA@mail.gmail.com>
-In-Reply-To: <CAKohpomEQ__Q4xTaBgHJyE0Meu4au-cXKCAKCqHWTHLRL+R5OA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752296AbaHDUQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 16:16:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47134 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751798AbaHDUQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 16:16:56 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: X86 ML <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86, CPU: Call verify_cpu after having entered long mode
+Date: Mon,  4 Aug 2014 22:16:53 +0200
+Message-Id: <1407183413-14408-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2014 06:38 AM, Viresh Kumar wrote:
-> On 4 August 2014 17:55, Prarit Bhargava <prarit@redhat.com> wrote:
->> The issue is the collision between the setup & teardown of the policy's governor
->> sysfs files.
->>
->> On creation the kernel does:
->>
->> down_write(&policy->rwsem)
->> mutex_lock(kernfs_mutex) <- note this is similar to the "old" sysfs_mutex.
->>
->> The opposite happens on a governor switch, specifically the existing governor's
->> exit, and then we get a lockdep warning.
->
-> Okay, probably a bit more clarity is what I was looking for. Suppose we try
-> to change governor, now tell me what will happen.
->
-Viresh, I have a good understanding of what's going on. I was planning 
-to fix this after the rest of my patches are done. Didn't want to keep 
-too many outstanding unaccepted patches.
+From: Borislav Petkov <bp@suse.de>
 
-The problem is when between one thread trying to cat a governor's file 
-(say, sampling_rate) vs the governor getting a POLICY_EXIT.
+When we get loaded by a 64-bit bootloader, kernel entry point is
+startup_64 in head_64.S. We don't trust any and all bootloaders for
+fiddling with CPU configuration so we go ahead and massage each CPU
+again into how we'd like it configured.
 
-In the read thread, the sysfs lock is grabbed first and then the policy 
-lock is grabbed next. When the governor gets the POLICY_EXIT, we call it 
-with the policy lock held and the governor tries to do sysfs remove 
-which tries to grab the sysfs lock. Classic deadlock.
+For that, make verify_cpu() callable in 64-bit mode too.
 
-Could you please look at my policy free/remove patches? If you can do 
-that, I can work on a fix for this. It might also be simpler to fix 
-after my patch series (not sure, might be).
+Requested-by: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/head_64.S    |  8 ++++++++
+ arch/x86/kernel/verify_cpu.S | 12 +++++++-----
+ 2 files changed, 15 insertions(+), 5 deletions(-)
 
-Thanks,
-Saravana
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index a468c0a65c42..26b5c0dd0f72 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -65,6 +65,9 @@ startup_64:
+ 	 * tables and then reload them.
+ 	 */
+ 
++	/* Sanitize CPU configuration */
++	call verify_cpu
++
+ 	/*
+ 	 * Compute the delta between the address I am compiled to run at and the
+ 	 * address I am actually running at.
+@@ -174,6 +177,9 @@ ENTRY(secondary_startup_64)
+ 	 * after the boot processor executes this code.
+ 	 */
+ 
++	/* Sanitize CPU configuration */
++	call verify_cpu
++
+ 	movq	$(init_level4_pgt - __START_KERNEL_map), %rax
+ 1:
+ 
+@@ -288,6 +294,8 @@ ENTRY(secondary_startup_64)
+ 	pushq	%rax		# target address in negative space
+ 	lretq
+ 
++#include "verify_cpu.S"
++
+ #ifdef CONFIG_HOTPLUG_CPU
+ /*
+  * Boot CPU0 entry point. It's called from play_dead(). Everything has been set
+diff --git a/arch/x86/kernel/verify_cpu.S b/arch/x86/kernel/verify_cpu.S
+index b9242bacbe59..c6f6603af2ff 100644
+--- a/arch/x86/kernel/verify_cpu.S
++++ b/arch/x86/kernel/verify_cpu.S
+@@ -34,10 +34,11 @@
+ #include <asm/msr-index.h>
+ 
+ verify_cpu:
+-	pushfl				# Save caller passed flags
+-	pushl	$0			# Kill any dangerous flags
+-	popfl
++	pushf				# Save caller passed flags
++	push	$0			# Kill any dangerous flags
++	popf
+ 
++#ifndef __x86_64__
+ 	pushfl				# standard way to check for cpuid
+ 	popl	%eax
+ 	movl	%eax,%ebx
+@@ -53,6 +54,7 @@ verify_cpu:
+ 	cpuid
+ 	cmpl	$0x1,%eax
+ 	jb	verify_cpu_no_longmode	# no cpuid 1
++#endif
+ 
+ 	xor	%di,%di
+ 	cmpl	$0x68747541,%ebx	# AuthenticAMD
+@@ -130,10 +132,10 @@ verify_cpu_sse_test:
+ 	jmp	verify_cpu_sse_test	# try again
+ 
+ verify_cpu_no_longmode:
+-	popfl				# Restore caller passed flags
++	popf				# Restore caller passed flags
+ 	movl $1,%eax
+ 	ret
+ verify_cpu_sse_ok:
+-	popfl				# Restore caller passed flags
++	popf				# Restore caller passed flags
+ 	xorl %eax, %eax
+ 	ret
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+2.0.0
+
