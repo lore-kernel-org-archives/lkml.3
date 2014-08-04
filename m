@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661AbaHDRC3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:02:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56560 "EHLO
+	id S1753642AbaHDRC2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:02:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56562 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751963AbaHDQt4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751967AbaHDQt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:56 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alex Shi" <alex.shi@intel.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Ingo Molnar" <mingo@elte.hu>
+CC: akpm@linux-foundation.org, "Johan Hovold" <johan@kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Bert Vermeulen" <bert@biot.com>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.176299469@decadent.org.uk>
+Message-ID: <lsq.1407170912.487436574@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 49/94] include/linux/math64.h: add div64_ul()
+Subject: [PATCH 3.2 43/94] USB: ftdi_sio: Add extra PID.
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,46 +32,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Shi <alex.shi@intel.com>
+From: Bert Vermeulen <bert@biot.com>
 
-commit c2853c8df57f49620d26f317d7d43347c29bfc2e upstream.
+commit 5a7fbe7e9ea0b1b9d7ffdba64db1faa3a259164c upstream.
 
-There is div64_long() to handle the s64/long division, but no mocro do
-u64/ul division.  It is necessary in some scenarios, so add this
-function.
+This patch adds PID 0x0003 to the VID 0x128d (Testo). At least the
+Testo 435-4 uses this, likely other gear as well.
 
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bert Vermeulen <bert@biot.com>
+Cc: Johan Hovold <johan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/math64.h | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     | 3 ++-
+ drivers/usb/serial/ftdi_sio_ids.h | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/math64.h b/include/linux/math64.h
-index b8ba855..2913b86 100644
---- a/include/linux/math64.h
-+++ b/include/linux/math64.h
-@@ -6,7 +6,8 @@
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -731,7 +731,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
+-	{ USB_DEVICE(TESTO_VID, TESTO_USB_INTERFACE_PID) },
++	{ USB_DEVICE(TESTO_VID, TESTO_1_PID) },
++	{ USB_DEVICE(TESTO_VID, TESTO_3_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_GAMMA_SCOUT_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TACTRIX_OPENPORT_13M_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TACTRIX_OPENPORT_13S_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -798,7 +798,8 @@
+  * Submitted by Colin Leroy
+  */
+ #define TESTO_VID			0x128D
+-#define TESTO_USB_INTERFACE_PID		0x0001
++#define TESTO_1_PID			0x0001
++#define TESTO_3_PID			0x0003
  
- #if BITS_PER_LONG == 64
- 
--#define div64_long(x,y) div64_s64((x),(y))
-+#define div64_long(x, y) div64_s64((x), (y))
-+#define div64_ul(x, y)   div64_u64((x), (y))
- 
- /**
-  * div_u64_rem - unsigned 64bit divide with 32bit divisor with remainder
-@@ -47,7 +48,8 @@ static inline s64 div64_s64(s64 dividend, s64 divisor)
- 
- #elif BITS_PER_LONG == 32
- 
--#define div64_long(x,y) div_s64((x),(y))
-+#define div64_long(x, y) div_s64((x), (y))
-+#define div64_ul(x, y)   div_u64((x), (y))
- 
- #ifndef div_u64_rem
- static inline u64 div_u64_rem(u64 dividend, u32 divisor, u32 *remainder)
+ /*
+  * Mobility Electronics products.
 
