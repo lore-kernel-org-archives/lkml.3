@@ -1,67 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713AbaHDIzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 04:55:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37316 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470AbaHDIzc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 04:55:32 -0400
-Message-ID: <53DF4A7D.3040505@canonical.com>
-Date: Mon, 04 Aug 2014 10:55:25 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>,
-        airlied@linux.ie
-CC: thellstrom@vmware.com, nouveau@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        bskeggs@redhat.com, alexander.deucher@amd.com
-Subject: Re: [PATCH 09/19] drm/radeon: handle lockup in delayed work, v2
-References: <20140731153245.15061.63023.stgit@patser> <20140731153342.15061.54264.stgit@patser> <53DBC1EC.1010001@amd.com> <53DBD269.80807@canonical.com> <53DF462B.2060102@amd.com>
-In-Reply-To: <53DF462B.2060102@amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752041AbaHDI4I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 04:56:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54698 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751867AbaHDI4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 04:56:03 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: [PATCH v6 00/13] compaction: balancing overhead and success rates
+Date: Mon,  4 Aug 2014 10:55:11 +0200
+Message-Id: <1407142524-2025-1-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-op 04-08-14 10:36, Christian König schreef:
-> Hi Maarten,
->
-> Sorry for the delay. I've got way to much todo recently.
->
-> Am 01.08.2014 um 19:46 schrieb Maarten Lankhorst:
->>
->> On 01-08-14 18:35, Christian König wrote:
->>> Am 31.07.2014 um 17:33 schrieb Maarten Lankhorst:
->>>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->>>> ---
->>>> V1 had a nasty bug breaking gpu lockup recovery. The fix is not
->>>> allowing radeon_fence_driver_check_lockup to take exclusive_lock,
->>>> and kill it during lockup recovery instead.
->>> That looks like the delayed work starts running as soon as we submit a fence, and not when it's needed for waiting.
->>>
->>> Since it's a backup for failing IRQs I would rather put it into radeon_irq_kms.c and start/stop it when the IRQs are started/stoped.
->> The delayed work is not just for failing irq's, it's also the handler that's used to detect lockups, which is why I trigger after processing fences, and reset the timer after processing.
->
-> The idea was turning the delayed work on and off when we turn the irq on and off as well, processing of the delayed work handler can still happen in radeon_fence.c
->
->>
->> Specifically what happened was this scenario:
->>
->> - lock up occurs
->> - write lock taken by gpu_reset
->> - delayed work runs, tries to acquire read lock, blocks
->> - gpu_reset tries to cancel delayed work synchronously
->> - has to wait for delayed work to finish -> deadlock
->
-> Why do you want to disable the work item from the lockup handler in the first place?
->
-> Just take the exclusive lock in the work item, when it concurrently runs with the lockup handler it will just block for the lockup handler to complete.
-With the delayed work radeon_fence_wait no longer handles unreliable interrupts itself, so it has to run from the lockup handler.
-But an alternative solution could be adding a radeon_fence_wait_timeout, ignore the timeout and check if fence is signaled on timeout.
-This would probably be a cleaner solution.
+Based on next-20140801.
 
-~Maarten
+The v6 of the series has been reduced of the page capture patch due to
+relatively less review and concerns by Joonsoo. I'll do that as a new
+series with some more variants being tested. Hopefully this will increase
+the chance of the remaining patches being accepted.
+
+Otherwise, there's new Acked-by's by DavidR and three patches were discussed
+(apologies for messing up linux-mm CC in v5, but at least lkml was OK) and
+changed as follows:
+
+Patch 2: Joonsoo spotted (thanks!) that new value for COMPACT_SKIPPED changed
+         outcome for callers of compaction_suitable() who treat the return
+         value as bool. This is now fixed. Some of the comments in those
+         callers have been also made more accurate. I also realized that the
+         same problem would apply to the did_some_progress output parameter of
+         __alloc_pages_direct_compact(), and to my surprise the caller does
+         not check it anyway, although it's not obvious. Removed it completely
+         to avoid further confusion.
+         
+         Joonsoo also wondered why defer_compaction() is needed when allocation
+         fails in __alloc_pages_direct_compact(). Turns out it is needed until
+         a mismatch in watermark checking is resolved in further series.
+         Otherwise DMA zone wouldn't be properly deferred.
+
+Patch 5: David spotted a stupid mistake in changelog (thanks!) and also
+         wondered about some aspects of migration scanner that the patch
+         has to touch. However they are not introduced by the patch and
+         changing them should be done separate patches for bisectability
+         concerns. And this series is already large enough.
+
+Patch 6: David pointed out that pageblock_within_zone() isn't the best name
+         for a function that returns a struct page* pointer and not a bool.
+         Tried renaming to pageblock_pfn_to_page() which however doesn't
+         say anything about the checks being made. Still better than an
+         overly long name I guess.
+
+Patch 7: David suggested some improvements, most importantly a better way to
+         determine the "all zones lock contended" bit, and to use GFP_TRANSHUGE
+         instead of plain __GFP_NO_KSWAPD to more accurately restrict the
+         decisions to THP allocations only.
+
+David Rientjes (2):
+  mm: rename allocflags_to_migratetype for clarity
+  mm, compaction: pass gfp mask to compact_control
+
+Vlastimil Babka (11):
+  mm, THP: don't hold mmap_sem in khugepaged when allocating THP
+  mm, compaction: defer each zone individually instead of preferred zone
+  mm, compaction: do not count compact_stall if all zones skipped
+    compaction
+  mm, compaction: do not recheck suitable_migration_target under lock
+  mm, compaction: move pageblock checks up from
+    isolate_migratepages_range()
+  mm, compaction: reduce zone checking frequency in the migration
+    scanner
+  mm, compaction: khugepaged should not give up due to need_resched()
+  mm, compaction: periodically drop lock and restore IRQs in scanners
+  mm, compaction: skip rechecks when lock was already held
+  mm, compaction: remember position within pageblock in free pages
+    scanner
+  mm, compaction: skip buddy pages by their order in the migrate scanner
+
+ include/linux/compaction.h |  24 +-
+ include/linux/gfp.h        |   2 +-
+ mm/compaction.c            | 651 ++++++++++++++++++++++++++++++---------------
+ mm/huge_memory.c           |  20 +-
+ mm/internal.h              |  26 +-
+ mm/page_alloc.c            | 144 ++++++----
+ mm/vmscan.c                |  14 +-
+ 7 files changed, 578 insertions(+), 303 deletions(-)
+
+-- 
+1.8.4.5
 
