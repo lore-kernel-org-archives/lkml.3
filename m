@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357AbaHDI6N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 04:58:13 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37191 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179AbaHDI6K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 04:58:10 -0400
-Date: Mon, 4 Aug 2014 09:57:31 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: NeilBrown <neilb@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, Ian Kent <raven@themaw.net>,
-        autofs@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH - V2] VFS: allow ->d_manage() to declare -EISDIR in
- rcu_walk mode.
-Message-ID: <20140804085731.GP18016@ZenIV.linux.org.uk>
-References: <20140730160833.5eac00ec@notabene.brown>
- <20140801083318.GA4907@mwanda>
- <20140801184815.22dd193f@notabene.brown>
- <20140804170629.5b2c9013@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140804170629.5b2c9013@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752483AbaHDI6q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 04:58:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54723 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751927AbaHDI4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 04:56:05 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: [PATCH v6 04/13] mm, compaction: do not recheck suitable_migration_target under lock
+Date: Mon,  4 Aug 2014 10:55:15 +0200
+Message-Id: <1407142524-2025-5-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1407142524-2025-1-git-send-email-vbabka@suse.cz>
+References: <1407142524-2025-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 05:06:29PM +1000, NeilBrown wrote:
-> 
-> In REF-walk mode, ->d_manage can return -EISDIR to indicate
-> that the dentry is not really a mount trap (or even a mount point)
-> and that any mounts or any DCACHE_NEED_AUTOMOUNT flag should be
-> ignored.
-> 
-> RCU-walk mode doesn't currently support this, so if there is a dentry
-> with DCACHE_NEED_AUTOMOUNT set but which shouldn't be a mount-trap,
-> lookup_fast() will always drop in REF-walk mode.
-> 
-> With this patch, an -EISDIR from ->d_manage will always cause mounts
-> and automounts to be ignored, both in REF-walk and RCU-walk.
+isolate_freepages_block() rechecks if the pageblock is suitable to be a target
+for migration after it has taken the zone->lock. However, the check has been
+optimized to occur only once per pageblock, and compact_checklock_irqsave()
+might be dropping and reacquiring lock, which means somebody else might have
+changed the pageblock's migratetype meanwhile.
 
-In queue.  Right now I'm trying to linearize the damn acct fixes from late
-April, needed to get Eric's umount-on-rmdir series into the mix safely ;-/
-Hopefully I'll have something pushable by Tuesday; your patch definitely
-will be in the pile.
+Furthermore, nothing prevents the migratetype to change right after
+isolate_freepages_block() has finished isolating. Given how imperfect this is,
+it's simpler to just rely on the check done in isolate_freepages() without
+lock, and not pretend that the recheck under lock guarantees anything. It is
+just a heuristic after all.
+
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ mm/compaction.c | 13 -------------
+ 1 file changed, 13 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 68803c8..9484a4f 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -276,7 +276,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 	struct page *cursor, *valid_page = NULL;
+ 	unsigned long flags;
+ 	bool locked = false;
+-	bool checked_pageblock = false;
+ 
+ 	cursor = pfn_to_page(blockpfn);
+ 
+@@ -307,18 +306,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 		if (!locked)
+ 			break;
+ 
+-		/* Recheck this is a suitable migration target under lock */
+-		if (!strict && !checked_pageblock) {
+-			/*
+-			 * We need to check suitability of pageblock only once
+-			 * and this isolate_freepages_block() is called with
+-			 * pageblock range, so just check once is sufficient.
+-			 */
+-			checked_pageblock = true;
+-			if (!suitable_migration_target(page))
+-				break;
+-		}
+-
+ 		/* Recheck this is a buddy page under lock */
+ 		if (!PageBuddy(page))
+ 			goto isolate_fail;
+-- 
+1.8.4.5
+
