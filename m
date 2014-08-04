@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807AbaHDREa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:04:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56522 "EHLO
+	id S1753791AbaHDRE2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:04:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56538 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751919AbaHDQt4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751944AbaHDQt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:56 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Eric Dumazet" <edumazet@google.com>,
+CC: akpm@linux-foundation.org,
+        "=?UTF-8?q?Manuel=20Sch=C3=B6lling?=" <manuel.schoelling@gmx.de>,
         "David S. Miller" <davem@davemloft.net>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.370860048@decadent.org.uk>
+Message-ID: <lsq.1407170912.416070207@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 63/94] ipv4: fix buffer overflow in ip_options_compile()
+Subject: [PATCH 3.2 61/94] dns_resolver: assure that dns_query() result is
+  null-terminated
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,83 +33,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Manuel Schölling <manuel.schoelling@gmx.de>
 
-[ Upstream commit 10ec9472f05b45c94db3c854d22581a20b97db41 ]
+[ Upstream commit 84a7c0b1db1c17d5ded8d3800228a608e1070b40 ]
 
-There is a benign buffer overflow in ip_options_compile spotted by
-AddressSanitizer[1] :
+dns_query() credulously assumes that keys are null-terminated and
+returns a copy of a memory block that is off by one.
 
-Its benign because we always can access one extra byte in skb->head
-(because header is followed by struct skb_shared_info), and in this case
-this byte is not even used.
-
-[28504.910798] ==================================================================
-[28504.912046] AddressSanitizer: heap-buffer-overflow in ip_options_compile
-[28504.913170] Read of size 1 by thread T15843:
-[28504.914026]  [<ffffffff81802f91>] ip_options_compile+0x121/0x9c0
-[28504.915394]  [<ffffffff81804a0d>] ip_options_get_from_user+0xad/0x120
-[28504.916843]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
-[28504.918175]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
-[28504.919490]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
-[28504.920835]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
-[28504.922208]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
-[28504.923459]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
-[28504.924722]
-[28504.925106] Allocated by thread T15843:
-[28504.925815]  [<ffffffff81804995>] ip_options_get_from_user+0x35/0x120
-[28504.926884]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
-[28504.927975]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
-[28504.929175]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
-[28504.930400]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
-[28504.931677]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
-[28504.932851]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
-[28504.934018]
-[28504.934377] The buggy address ffff880026382828 is located 0 bytes to the right
-[28504.934377]  of 40-byte region [ffff880026382800, ffff880026382828)
-[28504.937144]
-[28504.937474] Memory state around the buggy address:
-[28504.938430]  ffff880026382300: ........ rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.939884]  ffff880026382400: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.941294]  ffff880026382500: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.942504]  ffff880026382600: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.943483]  ffff880026382700: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.944511] >ffff880026382800: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.945573]                         ^
-[28504.946277]  ffff880026382900: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.094949]  ffff880026382a00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.096114]  ffff880026382b00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.097116]  ffff880026382c00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.098472]  ffff880026382d00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.099804] Legend:
-[28505.100269]  f - 8 freed bytes
-[28505.100884]  r - 8 redzone bytes
-[28505.101649]  . - 8 allocated bytes
-[28505.102406]  x=1..7 - x allocated bytes + (8-x) redzone bytes
-[28505.103637] ==================================================================
-
-[1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/ip_options.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ net/dns_resolver/dns_query.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv4/ip_options.c b/net/ipv4/ip_options.c
-index 40eb4fc..08623e2 100644
---- a/net/ipv4/ip_options.c
-+++ b/net/ipv4/ip_options.c
-@@ -277,6 +277,10 @@ int ip_options_compile(struct net *net,
- 			optptr++;
- 			continue;
- 		}
-+		if (unlikely(l < 2)) {
-+			pp_ptr = optptr;
-+			goto error;
-+		}
- 		optlen = optptr[1];
- 		if (optlen<2 || optlen>l) {
- 			pp_ptr = optptr;
+diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+index c32be29..ede0e2d 100644
+--- a/net/dns_resolver/dns_query.c
++++ b/net/dns_resolver/dns_query.c
+@@ -150,7 +150,9 @@ int dns_query(const char *type, const char *name, size_t namelen,
+ 	if (!*_result)
+ 		goto put;
+ 
+-	memcpy(*_result, upayload->data, len + 1);
++	memcpy(*_result, upayload->data, len);
++	*_result[len] = '\0';
++
+ 	if (_expiry)
+ 		*_expiry = rkey->expiry;
+ 
 
