@@ -1,193 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaHDO3d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 10:29:33 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40680 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121AbaHDO3c (ORCPT
+	id S1752897AbaHDO3w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 10:29:52 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:44026 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752783AbaHDO3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 10:29:32 -0400
-Message-ID: <53DF9865.9060407@pengutronix.de>
-Date: Mon, 04 Aug 2014 16:27:49 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Mon, 4 Aug 2014 10:29:50 -0400
+Message-ID: <53DF98D7.7030106@gmail.com>
+Date: Mon, 04 Aug 2014 10:29:43 -0400
+From: Austin S Hemmelgarn <ahferroin7@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Stefan Agner <stefan@agner.ch>
-CC: shawn.guo@freescale.com, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-can@vger.kernel.org
-Subject: Re: [PATCH v3 4/4] can: flexcan: add vf610 support for FlexCAN
-References: <cover.1405428166.git.stefan@agner.ch> <ff2ea1726b13dc2ffa3519ce9244f3633cf1420d.1405428166.git.stefan@agner.ch> <53C5398F.2000005@pengutronix.de> <1b8a8ca03b4a160027a79b722f697e25@agner.ch> <601adb6fe47279c115c1cc607365a00e@agner.ch> <53D25C9D.5080803@pengutronix.de> <e88108c655e2c16dc9cf6c4194547e73@agner.ch> <53D67A46.3060202@pengutronix.de> <b815c5c1f7faed334d1ed5370d51c180@agner.ch> <53D8DB3D.7030403@pengutronix.de> <cd33e1b365502ec0cb3b5bee6dc4fb61@agner.ch>
-In-Reply-To: <cd33e1b365502ec0cb3b5bee6dc4fb61@agner.ch>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Nick Krause <xerofoify@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: Kernel Debugging Support
+References: <Pine.LNX.4.44L0.1408041007330.1169-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1408041007330.1169-100000@iolanthe.rowland.org>
 X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="tJgfE2X7QWStTT1sEo467AWFTmKMwOUi3"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+x-hashcash: 1:21:140804:stern@rowland.harvard.edu::62b535ff11dd2cd2c178594628ef4028:9f83658e816e88e8
+x-hashcash: 1:21:140804:xerofoify@gmail.com::840b76157ba27ab63817200cd5d59c3:152ada9771d93022
+x-hashcash: 1:21:140804:linux-kernel@vger.kernel.org::73972b13bb82297753e319babfb279ee:772702cb7b35544e
+x-hashcash: 1:21:140804:linux-usb@vger.kernel.org::97ccdd06a439765fc46e135212274aa9:856599720f712480
+x-stampprotocols: hashcash:1:17;mbound:0:10:3000:5000
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms060102010609040400050700"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---tJgfE2X7QWStTT1sEo467AWFTmKMwOUi3
-Content-Type: text/plain; charset=UTF-8
+This is a cryptographically signed message in MIME format.
+
+--------------ms060102010609040400050700
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On 08/04/2014 03:43 PM, Stefan Agner wrote:
-[...]
-
->> Thanks for the test, so far looks promising :) With this setup the oth=
-er
->> CAN node repeats the CAN frame until it's ACKed. Because there is no
->> node with a compatible bitrate, there is no ACking CAN node.
->>
->> Can you add a third CAN node to the network. The second and third node=
-
->> should use the same bitrate, while your vf610 uses a different one. Wi=
-th
->> the new setup it should take more than one frame until the vf610 goes
->> into error warning and even more frames to error passive. This way we
->> can see it the error warning interrupt is connected or not. The error
->> counters should increase with each "wrong" bitrate frame it sees, you
->> can check with:
->>
->>     ip -details link show can0
->>
->> The output looks like this:
->>
->>> 4: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNO=
-WN mode DEFAULT qlen 10
->>>     link/can
->>>     can state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0
->>                               ^^^^^^^^^^^^^^^^^^^^^^
->>>     bitrate 1000000 sample-point 0.750
->>>     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
->>>     sja1000: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
->>>     clock 8000000
->>
->> When one of the berr-counter crosses 96 (and stays below 128) a warnin=
-g
->> interrupt should be generated.
+On 2014-08-04 10:21, Alan Stern wrote:
+> On Mon, 4 Aug 2014, Austin S Hemmelgarn wrote:
 >=20
-> Ok, created this setup, could successfully communicate with all three
-> nodes. I then set the Vybrid to half of the bitrate. When I send a fram=
-e
-> from Vybrid, the berr-counter tx immediately ends up at 128 and the
-> device is in ERROR-PASSIVE:
+>> On 2014-08-02 09:48, Alan Stern wrote:
+>>> On Sat, 2 Aug 2014, Nick Krause wrote:
+>>>
+>>>> Hey Sharp,
+>>>> After reading around seems people want support for usb debugging in
+>>>> kgdb or other usb based solutions.
+>>>> If you and the other developers are able to help me out a bit as I a=
+m
+>>>> new I can definitively write this
+>>>> area of kgdb support.
+>>>
+>>> Doesn't kgdb already support USB for debugging?
+>>>
+>>> Alan Stern
+>>
+>> AFAICT, on x86 it only supports using either a console capable serial
+>> port (so you could do that over USB if you have USB serial console
+>> support built-in, but most people I know don't compile that in, and in=
 
-This is expected.
+>> fact that is the only reason that i compile USB serial support in
+>> instead of making it a module), and an AT compatible keyboard with any=
 
-> root@colibri-vf:~# ip -details link show can1
-> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
-
-> mode DEFAULT group default qlen 10
->     link/can  promiscuity 0=20
->     can state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0=20
->     bitrate 124990 sample-point 0.739=20
->     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
->     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
->     clock 83368421
-            ^^^^^^^^
-
-BTW: the can core has a really weird clock rate, have a look at the
-datasheet if you manage to route a 24 MHz clock (or another multiple of
-8MHz) to the flexcan core. I had a quick glance at the datasheet, if I
-understand it correctly the Fast OSC clock runs with 24 MHz.
-
-> root@colibri-vf:~# cansend can1 1F334455#1122334455667788
-> interface =3D can1, family =3D 29, type =3D 3, proto =3D 1
-> root@colibri-vf:~# [  818.886664] flexcan_irq, esr=3D00062242
-> [  818.890365] flexcan_irq, ctrl=3D1c3dac57
+>> console option.
 >=20
-> root@colibri-vf:~# ip -details link show can1
-> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
-
-> mode DEFAULT group default qlen 10
->     link/can  promiscuity 0=20
->     can state ERROR-PASSIVE (berr-counter tx 128 rx 0) restart-ms 0=20
->     bitrate 124990 sample-point 0.739=20
->     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
->     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
->     clock 83368421
+> What about with a USB debugging device (CONFIG_EARLY_PRINTK_DBGP)? =20
+> That's how debugging over USB is _supposed_ to be done.
+Yes, except those are really expensive, and on some it's pretty easy if
+you don't know what you are doing to really screw things up.
 >=20
+>>  It would be really nice to have USB keyboard support in
+>> there so that you don't have to reboot with special options and extra
+>> hardware plugged in to get to the debugger, although doing something
+>> that supports more than just the HID boot protocol will probably be tr=
+icky.
 >=20
-> When I send the frames from another device on the bus, I can see the rx=
-
-> count incrementing by one on each frame I send. As you expected, the
-> device changes to ERROR-WARNING when crossing the 96 frame boundary:
-
-This is correct
-
-> root@colibri-vf:~# ip -details link show can1
-> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
-
-> mode DEFAULT group default qlen 10
->     link/can  promiscuity 0=20
->     can state ERROR-ACTIVE (berr-counter tx 0 rx 92) restart-ms 0=20
->     bitrate 124990 sample-point 0.739=20
->     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
->     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
->     clock 83368421
-> root@colibri-vf:~# [  448.331150] flexcan_irq, esr=3D0005050a
-> [  448.334851] flexcan_irq, ctrl=3D1c3dac57
-> ip -details link show can1
-> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
-
-> mode DEFAULT group default qlen 10
->     link/can  promiscuity 0=20
->     can state ERROR-WARNING (berr-counter tx 0 rx 102) restart-ms 0=20
->     bitrate 124990 sample-point 0.739=20
->     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
->     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
->     clock 83368421
-
-> However, once reaching 128, I don't get another interrupt and the devic=
-e
-> stays in ERROR-WARNING:
-
-The contents of the esr reg would be interesting, especially the
-FLT_CONF part.
-
-> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
-
-> mode DEFAULT group default qlen 10
->     link/can  promiscuity 0=20
->     can state ERROR-WARNING (berr-counter tx 0 rx 128) restart-ms 0=20
->     bitrate 124990 sample-point 0.739=20
->     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
->     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
->     clock 83368421
+> Is there some reason why kgdb doesn't simply use the kernel's input=20
+> layer?  If there is, that same reason probably prevents it from using=20
+> USB.
 >=20
-> Is this the expected behavior on receive?
-
-No, it should go into error passive if one of the error counters have >
-127. Maybe this is an error onthe vf610, maybe it's a general flexcan
-problem.
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+I believe it's to minimize the in-kernel dependencies.
 
 
---tJgfE2X7QWStTT1sEo467AWFTmKMwOUi3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+--------------ms060102010609040400050700
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
 
-iEYEARECAAYFAlPfmGUACgkQjTAFq1RaXHMnIgCgjzXvqCiZRIF9dachBnnzPkMw
-x9EAnR0dNgTwcK+k2Zd5jOtYmu56nk5i
-=r/U2
------END PGP SIGNATURE-----
-
---tJgfE2X7QWStTT1sEo467AWFTmKMwOUi3--
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIGuDCC
+BrQwggScoAMCAQICAw8BRDANBgkqhkiG9w0BAQ0FADB5MRAwDgYDVQQKEwdSb290IENBMR4w
+HAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5vcmcxIjAgBgNVBAMTGUNBIENlcnQgU2lnbmlu
+ZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEWEnN1cHBvcnRAY2FjZXJ0Lm9yZzAeFw0xNDA1
+MTIxNDEwMzJaFw0xNDExMDgxNDEwMzJaMGMxGDAWBgNVBAMTD0NBY2VydCBXb1QgVXNlcjEj
+MCEGCSqGSIb3DQEJARYUYWhmZXJyb2luN0BnbWFpbC5jb20xIjAgBgkqhkiG9w0BCQEWE2Fo
+ZW1tZWxnQG9oaW9ndC5jb20wggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQDbLUaL
+Gs4JTdU7sgr0MzD57CMUAv307ddC9pxooDMN3PiUvzEd5kLtBCh8KDB1wbMdfm4hte2rDd+j
+hM1tIq67BvNbdDPztOcBZwT2/3OVyyG4B1ddCqUyt03zGKw6Y34eHNfapsZiiItX0GBNfjHU
+Wv+WDo+XNha/WmGSSMv21HkftF9XA1KC9Bpr9JJI23MKK7T2g/7b3KoGZlx3ekLIJsF5B7+B
+DMPPDqOHQbRnccyOHEMyhM13g6WoAbU+3aKYc+C/9UsYtDV+xlvBLWagky1acstD5wOA35V6
+uDRbUhD+vOjuMRMCj9jJOIYqa6AeSagBjxRnisJr0RFzQ4f+NjGCHPaFTvRvbkiXh4q22doT
+0SxbNBUm7B9ANugIOtS9/VQhTWKDi//WTqZQ7Ecl4yVJbMCUg/iaRHMCGS41vqMICPszRidW
+rL04NwS9D2cREEY1y/xrNo0ZvKPZu6tLhxhPf7w+5rsN3+wWxGaR1hNpnVUT9AeacLKZO6W9
+FsRT3Unkr91IhQATHTKYr4EAkjN/5lgvA+sxp5TxxsUnoJYrD8IHf8aYfJsAHMleBwx4xSeZ
+tw/n5iIjJjFZq9IRZ1zQhK62p+a5vJ2vlJHjTgavhQrfb1pUOjbqsnI4ndQ5hNosL9el4Kxq
+Yko+HsxVEmSwSsjq6cV2L3oz0z8NUwIDAQABo4IBWTCCAVUwDAYDVR0TAQH/BAIwADBWBglg
+hkgBhvhCAQ0ESRZHVG8gZ2V0IHlvdXIgb3duIGNlcnRpZmljYXRlIGZvciBGUkVFIGhlYWQg
+b3ZlciB0byBodHRwOi8vd3d3LkNBY2VydC5vcmcwDgYDVR0PAQH/BAQDAgOoMEAGA1UdJQQ5
+MDcGCCsGAQUFBwMEBggrBgEFBQcDAgYKKwYBBAGCNwoDBAYKKwYBBAGCNwoDAwYJYIZIAYb4
+QgQBMDIGCCsGAQUFBwEBBCYwJDAiBggrBgEFBQcwAYYWaHR0cDovL29jc3AuY2FjZXJ0Lm9y
+ZzAxBgNVHR8EKjAoMCagJKAihiBodHRwOi8vY3JsLmNhY2VydC5vcmcvcmV2b2tlLmNybDA0
+BgNVHREELTArgRRhaGZlcnJvaW43QGdtYWlsLmNvbYETYWhlbW1lbGdAb2hpb2d0LmNvbTAN
+BgkqhkiG9w0BAQ0FAAOCAgEAIokFPcW8+cO2Clu0Ei+ehAmQRBHfV5RWJ8aMVLXOCfiJX0ch
+IjVSIt6I3uQaR4J1ZIAjCSPkbpfZQDaLoGFI5j8aYEQhOeKxrvOMzY9/aSUYabCJIhE/sX64
+klFV0bzm+PR9cDMWeQ9BoZf0m8UROPSfDnrjEk+p04hGg3pAZMcSwCzxdb604NHjgHJmf2xG
+UQVzQgC6Ek/BKat0xuPTuPmtPv9OicK75CPmLZKYW3rFpCD6bhb1mm+ROcCNhniRY2LYm9YN
+QdlHQUzTFqj0tvuYrzNI3LNV4PjEfN8z6omPCT2Rq8/uKLseN+m8F0ioqm+cphqpmzKoDUpN
+nePLkqDFUFWCeWRxSjBTy4IMVUfdNXriVGihH8hyIICQiOfmmBOzhzUifdomJuTGtoXRuHVT
+R2f/YdrJrLnKI4f+Othdp7F3KhB4c6JiOnTEH5J8n9q3rFjt4MPRwcjIHMhmF5nZVQlgxEMo
+1cPCmvG1D9tcgXbH79jjqydo9SDXhzLQob7axkzGRY96IstNcvoQ/UNsdPPfFMYlHtGz4TxT
+DhBjv4ERskGmKBZrfmxkXkcuTV/gcykct6Xvw9YXb8WTL4qSYHSYk9fReVLgE/L4RBUpX2JJ
+QvIR0AJLER165/aZlQXZtuJjnfxJtJTJZZ+Gor9h0G2kuR5Dy0JuYdBO4t4xggShMIIEnQIB
+ATCBgDB5MRAwDgYDVQQKEwdSb290IENBMR4wHAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5v
+cmcxIjAgBgNVBAMTGUNBIENlcnQgU2lnbmluZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEW
+EnN1cHBvcnRAY2FjZXJ0Lm9yZwIDDwFEMAkGBSsOAwIaBQCgggH1MBgGCSqGSIb3DQEJAzEL
+BgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTE0MDgwNDE0Mjk0M1owIwYJKoZIhvcNAQkE
+MRYEFKMBpKLjNrP3Urhywd+BkkGKw+tOMGwGCSqGSIb3DQEJDzFfMF0wCwYJYIZIAWUDBAEq
+MAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwIC
+AUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgwgZEGCSsGAQQBgjcQBDGBgzCBgDB5MRAwDgYD
+VQQKEwdSb290IENBMR4wHAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5vcmcxIjAgBgNVBAMT
+GUNBIENlcnQgU2lnbmluZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEWEnN1cHBvcnRAY2Fj
+ZXJ0Lm9yZwIDDwFEMIGTBgsqhkiG9w0BCRACCzGBg6CBgDB5MRAwDgYDVQQKEwdSb290IENB
+MR4wHAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5vcmcxIjAgBgNVBAMTGUNBIENlcnQgU2ln
+bmluZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEWEnN1cHBvcnRAY2FjZXJ0Lm9yZwIDDwFE
+MA0GCSqGSIb3DQEBAQUABIICAGNUnZHjZsmAOBgzd3VYRRjSUGJzGE4r6yai8Rx6h8iGo6ct
+vFNALmvtY4qozmgX1j0uj/Z5GK5Ti4zKQUCgpVuUf0ITkO3odFx5KUGv9EU3LY1P5lnGQQVI
+ZYW3UjDmzUEKlkZZUnM0CDmHDBHw8Jr6ddMIEa137ygADPBcC75LufPRrg0UoLouzI03RAIx
+BS2FlaPVFqyRpKOMfUwIMjT6uZDvyAhZ7ma4IzRkC4ZmMlJ5y6symNWriN/cBROv6LsYlfK8
+8AK6izNiIu3wxMwlOlT/4x77K09ohVIdQI8RDK0GmbVcReCo+LX4EIejdOvcbCON9mZYPfOg
+I9Hd/dRaRlEBS/DlFAAFQldzZ0KBDUmvJPQtsvQfNsGyrEPaJnQhBomUNL4H4BJLWWUj42ml
+XwKVpgTeEyVHObmkUX78Itk2KHa8FhsTfhLq+oMdLOgjwtyc7F10asqdNxg723ZSs2ihpILa
+8iRMi0VXxCm+st4odgiuy8t2YpOjmtBhRC35bwhh81zrgiqNATlY44DzO2WSg7Qa8jdtoIsu
+M463D1OWw3rO+F65ZDY/4Rp1602tR5eCO9FBRVxJ82WaYFRp0QMsIFoCeKus7tP847hKNfni
+U6+bcBK+Z25m73l5pxKWaYR6TJO6Q+TQzp7JU+JNCgJyJDyiSB6BLE/g4evkAAAAAAAA
+--------------ms060102010609040400050700--
