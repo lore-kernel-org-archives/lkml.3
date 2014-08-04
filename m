@@ -1,276 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311AbaHDPcN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 11:32:13 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:54942 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaHDPcI (ORCPT
+	id S1753118AbaHDPdc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 11:33:32 -0400
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:49178
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752561AbaHDPa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 11:32:08 -0400
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>
-Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
-        Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH v2 18/18] Documentation: ACPI for ARM64
-Date: Mon,  4 Aug 2014 23:28:25 +0800
-Message-Id: <1407166105-17675-19-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>
+	Mon, 4 Aug 2014 11:30:29 -0400
+Date: Mon, 4 Aug 2014 10:30:26 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Pranith Kumar <bobby.prani@gmail.com>
+cc: Randy Dunlap <rdunlap@infradead.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 1/1] doc: this_cpu_ops.txt: clarify remote accesses
+ of per cpu areas
+In-Reply-To: <alpine.DEB.2.11.1408040952050.8248@gentwo.org>
+Message-ID: <alpine.DEB.2.11.1408041029170.9511@gentwo.org>
+References: <1407029436-26671-1-git-send-email-bobby.prani@gmail.com> <alpine.DEB.2.11.1408040952050.8248@gentwo.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Graeme Gregory <graeme.gregory@linaro.org>
+I updated the descriptions a bit more. Here is a patch with additional
+changes to merge.
 
-Add documentation for the guidelines of how to use ACPI
-on ARM64.
 
-Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
----
- Documentation/arm64/arm-acpi.txt |  215 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 215 insertions(+)
- create mode 100644 Documentation/arm64/arm-acpi.txt
+Subject: doc: Update description of this_cpu_ops
 
-diff --git a/Documentation/arm64/arm-acpi.txt b/Documentation/arm64/arm-acpi.txt
-new file mode 100644
-index 0000000..a6e14a2
---- /dev/null
-+++ b/Documentation/arm64/arm-acpi.txt
-@@ -0,0 +1,215 @@
-+ACPI on ARMv8 Servers
-+---------------------
+Update the description for per cpu operations to clarify use cases
+if this_cpu operations and add considerations for remote access.
+
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/Documentation/this_cpu_ops.txt
+===================================================================
+--- linux.orig/Documentation/this_cpu_ops.txt	2014-08-04 10:03:30.669924060 -0500
++++ linux/Documentation/this_cpu_ops.txt	2014-08-04 10:29:08.860592601 -0500
+@@ -2,26 +2,26 @@
+ -------------------
+
+ this_cpu operations are a way of optimizing access to per cpu
+-variables associated with the *currently* executing processor through
+-the use of segment registers (or a dedicated register where the cpu
+-permanently stored the beginning of the per cpu area for a specific
+-processor).
++variables associated with the *currently* executing processor. This is
++done through the use of segment registers (or a dedicated register where
++the cpu permanently stored the beginning of the per cpu	area for a
++specific processor).
+
+-The this_cpu operations add a per cpu variable offset to the processor
++this_cpu operations add a per cpu variable offset to the processor
+ specific percpu base and encode that operation in the instruction
+ operating on the per cpu variable.
+
+-This means there are no atomicity issues between the calculation of
++This means that there are no atomicity issues between the calculation of
+ the offset and the operation on the data. Therefore it is not
+-necessary to disable preempt or interrupts to ensure that the
++necessary to disable preemption or interrupts to ensure that the
+ processor is not changed between the calculation of the address and
+ the operation on the data.
+
+ Read-modify-write operations are of particular interest. Frequently
+ processors have special lower latency instructions that can operate
+-without the typical synchronization overhead but still provide some
+-sort of relaxed atomicity guarantee. The x86 for example can execute
+-RMV (Read Modify Write) instructions like inc/dec/cmpxchg without the
++without the typical synchronization overhead, but still provide some
++sort of relaxed atomicity guarantees. The x86, for example, can execute
++RMW (Read Modify Write) instructions like inc/dec/cmpxchg without the
+ lock prefix and the associated latency penalty.
+
+ Access to the variable without the lock prefix is not synchronized but
+@@ -30,6 +30,38 @@
+ processor should be accessing that variable and therefore there are no
+ concurrency issues with other processors in the system.
+
++Please note that accesses by remote processors to a per cpu area are
++exceptional situations and may impact performance and/or correctness
++(remote write operations) of local RMV operations via this_cpu_*.
 +
-+ACPI can be used for ARMv8 general purpose servers designed to follow
-+the SBSA specification (currently available to people with an ARM login at
-+http://silver.arm.com).
++The main use of the this_cpu operations has been to optimize counter
++operations.
 +
-+The kernel will implement minimum ACPI version is 5.1 + errata as released by
-+the UEFI Forum, which is available at <http://www.uefi.org/acpi/specs>.
++The following this_cpu() operations with implied preemption protection
++are defined. These operations can be used without worrying about
++preemption and interrupts.
 +
-+If the machine does not meet the requirements of the SBSA, or cannot be
-+described in the required ACPI specifications then it is likely that Device Tree
-+(DT) is more suitable for the hardware.
++	this_cpu_add()
++	this_cpu_read(pcp)
++	this_cpu_write(pcp, val)
++	this_cpu_add(pcp, val)
++	this_cpu_and(pcp, val)
++	this_cpu_or(pcp, val)
++	this_cpu_add_return(pcp, val)
++	this_cpu_xchg(pcp, nval)
++	this_cpu_cmpxchg(pcp, oval, nval)
++	this_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++	this_cpu_sub(pcp, val)
++	this_cpu_inc(pcp)
++	this_cpu_dec(pcp)
++	this_cpu_sub_return(pcp, val)
++	this_cpu_inc_return(pcp)
++	this_cpu_dec_return(pcp)
 +
-+Relationship with Device Tree
-+-----------------------------
 +
-+ACPI support in drivers and subsystems for ARMv8 should never be mutually
-+exclusive with DT support at compile time.
-+
-+At boot time the kernel will only use one description method depending on
-+parameters passed from the bootloader (including kernel bootargs).
-+
-+Regardless of whether DT or ACPI is used, the kernel must always be capable
-+of booting with either scheme (in kernels with both schemes enabled at compile
-+time).
-+
-+When booting using ACPI tables the /chosen node in DT will still be parsed
-+to extract the kernel command line and initrd path. No other section of
-+the DT will be used.
-+
-+Booting using ACPI tables
-+-------------------------
-+
-+Currently, the only defined method to pass ACPI tables to the kernel on ARMv8
-+is via the UEFI system configuration table.
-+
-+The UEFI implementation MUST set the ACPI_20_TABLE_GUID to point to the
-+RSDP table (the table with the ACPI signature "RSD PTR ").
-+
-+The pointer to the RSDP table will be retrieved from EFI by the ACPI core.
-+
-+Processing of ACPI tables may be disabled by passing acpi=off on the kernel
-+command line.
-+
-+DO use an XSDT; RSDTs are deprecated and should not be used on arm64. They
-+only allow for 32-bit addresses.
-+
-+DO NOT use the 32-bit address fields in the FADT; they are deprecated. The
-+64-bit alternatives MUST be used.
-+
-+The minimum set of tables MUST include RSDP, XSDT, FACS, FADT, DSDT, MADT
-+and GTDT. If PCI is used the MCFG table MUST also be present.
-+
-+ACPI Detection
-+--------------
-+
-+Drivers should determine their probe() type by checking for ACPI_HANDLE,
-+or .of_node, or other information in the device structure. This is
-+detailed further in the "Driver Recommendations" section.
-+
-+In non-driver code If the presence of ACPI needs to be detected at runtime,
-+then check the value of acpi_disabled. If CONFIG_ACPI not being set,
-+acpi_disabled will always be 1.
-+
-+Device Enumeration
-+------------------
-+
-+Device descriptions in ACPI should use standard recognized ACPI interfaces.
-+These are far simpler than the information provided via Device Tree. Drivers
-+should take into account this simplicity and work with sensible defaults.
-+
-+On no account should a Device Tree attempt to be replicated in ASL using such
-+constructs as Name(KEY0, "Value1") type constructs. Additional driver specific
-+data should be passed in the appropriate _DSM (ACPI Section 9.14.1) method or
-+_DSD (ACPI Section 6.2.5).
-+
-+This data should be rare and not OS specific. For x86 ACPI has taken to
-+identifying itself as Windows because it was found that only one path was
-+routinely tested. For ARMv8 it would be preferable to have only one well
-+tested path.
-+
-+_DSD covers more than the generic server case and care should be taken not to
-+replicate highly specific embedded behaviour from DT into generic servers.
-+
-+Common _DSD bindings should be submitted to ASWG to be included in the
-+document :-
-+
-+http://www.uefi.org/sites/default/files/resources/_DSD-implementation-guide-toplevel.htm
-+
-+If these bindings are mirrored from DT care should be taken to ensure they are
-+reviewed as DT bindings before submission to limit divergance in bindings.
-+
-+Programmable Power Control Resources
++Inner working of this_cpu operations
 +------------------------------------
 +
-+Programmable power control resources include such resources as voltage/current
-+providers (regulators) and clock sources.
-+
-+For power control of these resources they should be represented with Power
-+Resource Objects (ACPI Section 7.1). The ACPI core will then handle correctly
-+enabling/disabling of resources as they are needed.
-+
-+The ACPI 5.1 specification does not contain any standard binding for these
-+objects to enable programmable levels or rates so this should be avoided if
-+possible and the resources set to appropriate levels by the firmware. If this is
-+not possible then any manipulation should be abstracted in ASL.
-+
-+Each device in ACPI has D-states and these can be controlled through
-+the optional methods _PS0..._PS3 where _PS0 is full on and _PS3 is full off.
-+
-+If either _PS0 or _PS3 is implemented, then the other method must also be
-+implemented.
-+
-+If a device requires usage or setup of a power resource when on, the ASL
-+should organize that it is allocated/enabled using the _PS0 method.
-+
-+Resources allocated/enabled in the _PS0 method should be disabled/de-allocated
-+in the _PS3 method.
-+
-+Such code in _PS? methods will of course be very platform specific but
-+should allow the driver to operate the device without special non-standard
-+values being read from ASL. Further, abstracting the use of these resources
-+allows hardware revisions without requiring updates to the kernel.
-+
-+Clocks
-+------
-+
-+Like clocks that are part of the power resources there is no standard way
-+to represent a clock tree in ACPI 5.1 in a similar manner to how it is
-+described in DT.
-+
-+Devices affected by this include things like UARTs, SoC driven LCD displays,
-+etc.
-+
-+The firmware (for example, UEFI) should initialize these clocks to fixed working
-+values before the kernel is executed.
-+
-+Driver Recommendations
-+----------------------
-+
-+DO NOT remove any FDT handling when adding ACPI support for a driver. Different
-+systems may use the same device.
-+
-+DO try and keep complex sections of ACPI and DT functionality separate. This
-+may mean a patch to break out some complex DT to another function before
-+the patch to add ACPI. This may happen in other functions but is most likely
-+in probe function. This gives a clearer flow of data for reviewing driver
-+source.
-+
-+probe() :-
-+
-+static int device_probe_dt(struct platform_device *pdev)
-+{
-+	/* DT specific functionality */
-+	...
-+}
-+
-+static int device_probe_acpi(struct platform_device *pdev)
-+{
-+	/* ACPI specific functionality */
-+	...
-+}
-+
-+static int device_probe(stuct platform_device *pdev)
-+{
-+	...
-+	struct device_node node = pdev->dev.of_node;
-+	...
-+
-+	if (node)
-+		ret = device_probe_dt(pdev);
-+	else if (ACPI_HANDLE(&pdev->dev))
-+		ret = device_probe_acpi(pdev);
-+	else
-+		/* other initialization */
-+		...
-+	/* Continue with any generic probe operations */
-+	...
-+}
-+
-+DO keep the MODULE_DEVICE_TABLE entries together in the driver to make it clear
-+the different names the driver is probed for, both from DT and from ACPI.
-+
-+module device tables :-
-+
-+static struct of_device_id virtio_mmio_match[] = {
-+        { .compatible = "virtio,mmio", },
-+        { }
-+};
-+MODULE_DEVICE_TABLE(of, virtio_mmio_match);
-+
-+static const struct acpi_device_id virtio_mmio_acpi_match[] = {
-+        { "LNRO0005", },
-+        { }
-+};
-+MODULE_DEVICE_TABLE(acpi, virtio_mmio_acpi_match);
-+
-+ASWG
-+----
-+
-+The following areas are not yet well defined for ARM in the current ACPI
-+specification and are expected to be worked through in the UEFI ACPI
-+Specification Working Group (ASWG) <http://www.uefi.org/workinggroups>.
-+Participation in this group is open to all UEFI members.
-+
-+	- ACPI based CPU topology
-+	- ACPI based Power management
-+	- CPU idle control based on PSCI
-+	- CPU performance control (CPPC)
-+
-+No code shall be accepted into the kernel unless it complies with the released
-+standards from UEFI ASWG. If there are features missing from ACPI to make it
-+function on a platform, ECRs should be submitted to ASWG and go through the
-+approval process.
--- 
-1.7.9.5
+ On x86 the fs: or the gs: segment registers contain the base of the
+ per cpu area. It is then possible to simply use the segment override
+ to relocate a per cpu relative address to the proper per cpu area for
+@@ -53,17 +85,16 @@
+ prevent the kernel from moving the thread to a different processor
+ while the calculation is performed.
 
+-The main use of the this_cpu operations has been to optimize counter
+-operations.
++Consider the following this_cpu operation:
+
+ 	this_cpu_inc(x)
+
+-results in the following single instruction (no lock prefix!)
++The above results in the following single instruction (no lock prefix!)
+
+ 	inc gs:[x]
+
+ instead of the following operations required if there is no segment
+-register.
++register:
+
+ 	int *y;
+ 	int cpu;
+@@ -88,7 +119,7 @@
+ the same code paths.  Since each processor has its own per cpu
+ variables no concurrent cacheline updates take place. The price that
+ has to be paid for this optimization is the need to add up the per cpu
+-counters when the value of the counter is needed.
++counters when the value of a counter is needed.
+
+
+ Special operations:
+@@ -100,9 +131,14 @@
+ of the per cpu variable that belongs to the currently executing
+ processor.  this_cpu_ptr avoids multiple steps that the common
+ get_cpu/put_cpu sequence requires. No processor number is
+-available. Instead the offset of the local per cpu area is simply
++available. Instead, the offset of the local per cpu area is simply
+ added to the percpu offset.
+
++Note that this operation is usually used in a code segment when
++preemption has been disabled. The pointer is then used to
++access local per cpu data in a critical section. When preemption
++is reenabled this pointer is usually no longer useful since it may
++no longer point to per cpu data of the current processor.
+
+
+ Per cpu variables and offsets
+@@ -118,15 +154,16 @@
+ operations is invalid and will generally be treated like a NULL
+ pointer dereference.
+
+-In the context of per cpu operations
++	DEFINE_PER_CPU(int, x);
+
+-	x is a per cpu variable. Most this_cpu operations take a cpu
+-	variable.
++In the context of per cpu operations the above implies that x is a per
++cpu variable. Most this_cpu operations take a cpu variable.
+
+-	&x is the *offset* a per cpu variable. this_cpu_ptr() takes
+-	the offset of a per cpu variable which makes this look a bit
+-	strange.
++	int __percpu *p = &x;
+
++&x and hence p is the *offset* of a per cpu variable. this_cpu_ptr()
++takes the offset of a per cpu variable which makes this look a bit
++strange.
+
+
+ Operations on a field of a per cpu structure
+@@ -152,7 +189,7 @@
+
+ 	struct s __percpu *ps = &p;
+
+-	z = this_cpu_dec(ps->m);
++	this_cpu_dec(ps->m);
+
+ 	z = this_cpu_inc_return(ps->n);
+
+@@ -172,16 +209,39 @@
+ Variants of this_cpu ops
+ -------------------------
+
+-this_cpu ops are interrupt safe. Some architecture do not support
++this_cpu ops are interrupt safe. Some architectures do not support
+ these per cpu local operations. In that case the operation must be
+ replaced by code that disables interrupts, then does the operations
+ that are guaranteed to be atomic and then reenable interrupts. Doing
+ so is expensive. If there are other reasons why the scheduler cannot
+ change the processor we are executing on then there is no reason to
+-disable interrupts. For that purpose the __this_cpu operations are
+-provided. For example.
++disable interrupts. For that purpose the following __this_cpu operations
++are provided.
++
++These operations have no guarantee against concurrent interrupts or
++preemption. If a per cpu variable is not used in an interrupt context
++and the scheduler cannot preempt, then they are safe. If any interrupts
++still occur while an operation is in progress and if the interrupt too
++modifies the variable, then RMW actions can not be guaranteed to be
++safe.
++
++	__this_cpu_add()
++	__this_cpu_read(pcp)
++	__this_cpu_write(pcp, val)
++	__this_cpu_add(pcp, val)
++	__this_cpu_and(pcp, val)
++	__this_cpu_or(pcp, val)
++	__this_cpu_add_return(pcp, val)
++	__this_cpu_xchg(pcp, nval)
++	__this_cpu_cmpxchg(pcp, oval, nval)
++	__this_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++	__this_cpu_sub(pcp, val)
++	__this_cpu_inc(pcp)
++	__this_cpu_dec(pcp)
++	__this_cpu_sub_return(pcp, val)
++	__this_cpu_inc_return(pcp)
++	__this_cpu_dec_return(pcp)
+
+-	__this_cpu_inc(x);
+
+ Will increment x and will not fallback to code that disables
+ interrupts on platforms that cannot accomplish atomicity through
+@@ -189,12 +249,12 @@
+ instruction.
+
+
+-
+ &this_cpu_ptr(pp)->n vs this_cpu_ptr(&pp->n)
+ --------------------------------------------
+
+ The first operation takes the offset and forms an address and then
+-adds the offset of the n field.
++adds the offset of the n field. This may result in two add
++instructions emitted by the compiler.
+
+ The second one first adds the two offsets and then does the
+ relocation.  IMHO the second form looks cleaner and has an easier time
+@@ -202,4 +262,73 @@
+ this_cpu_read() and friends are used.
+
+
+-Christoph Lameter, April 3rd, 2013
++Remote access to per cpu data
++------------------------------
++
++Per cpu data structures are designed to be used by one cpu exclusively.
++If you use the variables as intended, this_cpu_ops() are guaranteed to
++be "atomic" as no other CPU has access to these data structures.
++
++There are special cases where you might need to access per cpu data
++structures remotely. It is usually safe to do a remote read access
++and that is frequently done to summarize counters. Remote write access
++something which could be problematic because this_cpu ops do not
++have lock semantics. A remote write may interfere with a this_cpu
++RMV operation.
++
++Remote write accesses to percpu data structures are highly discouraged
++unless absolutely necessary. Please consider using an IPI to wake up
++the remote CPU and perform the update to its per cpu area.
++
++To access per-cpu data structure remotely, typically the per_cpu_ptr()
++function is used:
++
++
++	DEFINE_PER_CPU(struct data, datap);
++
++	struct data *p = per_cpu_ptr(&datap, cpu);
++
++This makes it explicit that we are getting ready to access a percpu
++area remotely.
++
++You can also do the following to convert the datap offset to an address
++
++	struct data *p = this_cpu_ptr(&datap);
++
++but, passing of pointers calculated via this_cpu_ptr to other cpus is
++unusual and should be avoided.
++
++Remote access are typically only for reading the status of another cpus
++per cppu data. Write accesses can cause unique problems due to the
++relaxed synchronization requirements for this_cpu operations.
++
++One example that illustrates some concerns with write operations is
++the following scenario that occurs because two per cpu variables
++share a cacheline but the relaxed synchronization is applied to
++only one process updating the cacheline.
++
++Consider the following example
++
++
++	struct test {
++		atomic_t a;
++		int b;
++	};
++
++	DEFINE_PER_CPU(struct test, onecacheline);
++
++There is some concern about what would happen if the field 'a' is updated
++remotely from one processor and the local processor would use this_cpu ops
++to update field b. Care should be taken that such simultaneous accesses to
++data within the same cache line are avoided. Also costly synchronization
++may be necessary. IPIs are generally recommeded in such scenarios instead
++of a remote write to the per cpu area of another processor.
++
++Even in cases where the remote writes are rare, please bear in
++mind that a remote write will evict the cache line from the processor
++that most likely will access it. If the processor wakes up and finds a
++missing local cache line of a per cpu area, its performance and hence
++the wake up times will be affected.
++
++Christoph Lameter, August 4th, 2014
++Pranith Kumar, Aug 2nd, 2014
