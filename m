@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017AbaHDRMd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:12:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56494 "EHLO
+	id S1754002AbaHDRMb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:12:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56489 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751840AbaHDQty (ORCPT
+	by vger.kernel.org with ESMTP id S1751847AbaHDQty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:54 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+CC: akpm@linux-foundation.org, "Kevin Hao" <haokexin@gmail.com>,
+        "Tejun Heo" <tj@kernel.org>, "Dan Williams" <dan.j.williams@intel.com>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.51189586@decadent.org.uk>
+Message-ID: <lsq.1407170912.261111339@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 84/94] crypto: testmgr - update LZO compression test
- vectors
+Subject: [PATCH 3.2 91/94] libata: support the ata host which implements a
+ queue depth less than 32
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,78 +32,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+From: Kevin Hao <haokexin@gmail.com>
 
-commit 0ec7382036922be063b515b2a3f1d6f7a607392c upstream.
+commit 1871ee134b73fb4cadab75752a7152ed2813c751 upstream.
 
-Update the LZO compression test vectors according to the latest compressor
-version.
+The sata on fsl mpc8315e is broken after the commit 8a4aeec8d2d6
+("libata/ahci: accommodate tag ordered controllers"). The reason is
+that the ata controller on this SoC only implement a queue depth of
+16. When issuing the commands in tag order, all the commands in tag
+16 ~ 31 are mapped to tag 0 unconditionally and then causes the sata
+malfunction. It makes no senses to use a 32 queue in software while
+the hardware has less queue depth. So consider the queue depth
+implemented by the hardware when requesting a command tag.
 
-Signed-off-by: Markus F.X.J. Oberhumer <markus@oberhumer.com>
+Fixes: 8a4aeec8d2d6 ("libata/ahci: accommodate tag ordered controllers")
+Signed-off-by: Kevin Hao <haokexin@gmail.com>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- crypto/testmgr.h | 38 ++++++++++++++++++++------------------
- 1 file changed, 20 insertions(+), 18 deletions(-)
+ drivers/ata/libata-core.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
---- a/crypto/testmgr.h
-+++ b/crypto/testmgr.h
-@@ -10428,38 +10428,40 @@ static struct pcomp_testvec zlib_decomp_
- static struct comp_testvec lzo_comp_tv_template[] = {
- 	{
- 		.inlen	= 70,
--		.outlen	= 46,
-+		.outlen	= 57,
- 		.input	= "Join us now and share the software "
- 			"Join us now and share the software ",
- 		.output	= "\x00\x0d\x4a\x6f\x69\x6e\x20\x75"
--			"\x73\x20\x6e\x6f\x77\x20\x61\x6e"
--			"\x64\x20\x73\x68\x61\x72\x65\x20"
--			"\x74\x68\x65\x20\x73\x6f\x66\x74"
--			"\x77\x70\x01\x01\x4a\x6f\x69\x6e"
--			"\x3d\x88\x00\x11\x00\x00",
-+			  "\x73\x20\x6e\x6f\x77\x20\x61\x6e"
-+			  "\x64\x20\x73\x68\x61\x72\x65\x20"
-+			  "\x74\x68\x65\x20\x73\x6f\x66\x74"
-+			  "\x77\x70\x01\x32\x88\x00\x0c\x65"
-+			  "\x20\x74\x68\x65\x20\x73\x6f\x66"
-+			  "\x74\x77\x61\x72\x65\x20\x11\x00"
-+			  "\x00",
- 	}, {
- 		.inlen	= 159,
--		.outlen	= 133,
-+		.outlen	= 131,
- 		.input	= "This document describes a compression method based on the LZO "
- 			"compression algorithm.  This document defines the application of "
- 			"the LZO algorithm used in UBIFS.",
--		.output	= "\x00\x2b\x54\x68\x69\x73\x20\x64"
-+		.output	= "\x00\x2c\x54\x68\x69\x73\x20\x64"
- 			  "\x6f\x63\x75\x6d\x65\x6e\x74\x20"
- 			  "\x64\x65\x73\x63\x72\x69\x62\x65"
- 			  "\x73\x20\x61\x20\x63\x6f\x6d\x70"
- 			  "\x72\x65\x73\x73\x69\x6f\x6e\x20"
- 			  "\x6d\x65\x74\x68\x6f\x64\x20\x62"
- 			  "\x61\x73\x65\x64\x20\x6f\x6e\x20"
--			  "\x74\x68\x65\x20\x4c\x5a\x4f\x2b"
--			  "\x8c\x00\x0d\x61\x6c\x67\x6f\x72"
--			  "\x69\x74\x68\x6d\x2e\x20\x20\x54"
--			  "\x68\x69\x73\x2a\x54\x01\x02\x66"
--			  "\x69\x6e\x65\x73\x94\x06\x05\x61"
--			  "\x70\x70\x6c\x69\x63\x61\x74\x76"
--			  "\x0a\x6f\x66\x88\x02\x60\x09\x27"
--			  "\xf0\x00\x0c\x20\x75\x73\x65\x64"
--			  "\x20\x69\x6e\x20\x55\x42\x49\x46"
--			  "\x53\x2e\x11\x00\x00",
-+			  "\x74\x68\x65\x20\x4c\x5a\x4f\x20"
-+			  "\x2a\x8c\x00\x09\x61\x6c\x67\x6f"
-+			  "\x72\x69\x74\x68\x6d\x2e\x20\x20"
-+			  "\x2e\x54\x01\x03\x66\x69\x6e\x65"
-+			  "\x73\x20\x74\x06\x05\x61\x70\x70"
-+			  "\x6c\x69\x63\x61\x74\x76\x0a\x6f"
-+			  "\x66\x88\x02\x60\x09\x27\xf0\x00"
-+			  "\x0c\x20\x75\x73\x65\x64\x20\x69"
-+			  "\x6e\x20\x55\x42\x49\x46\x53\x2e"
-+			  "\x11\x00\x00",
- 	},
- };
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4711,6 +4711,10 @@ void swap_buf_le16(u16 *buf, unsigned in
+  *	ata_qc_new - Request an available ATA command, for queueing
+  *	@ap: target port
+  *
++ *	Some ATA host controllers may implement a queue depth which is less
++ *	than ATA_MAX_QUEUE. So we shouldn't allocate a tag which is beyond
++ *	the hardware limitation.
++ *
+  *	LOCKING:
+  *	None.
+  */
+@@ -4718,14 +4722,16 @@ void swap_buf_le16(u16 *buf, unsigned in
+ static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
+ {
+ 	struct ata_queued_cmd *qc = NULL;
+-	unsigned int i, tag;
++	unsigned int i, tag, max_queue;
++
++	max_queue = ap->scsi_host->can_queue;
  
+ 	/* no command while frozen */
+ 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
+ 		return NULL;
+ 
+-	for (i = 0; i < ATA_MAX_QUEUE; i++) {
+-		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
++	for (i = 0, tag = ap->last_tag + 1; i < max_queue; i++, tag++) {
++		tag = tag < max_queue ? tag : 0;
+ 
+ 		/* the last tag is reserved for internal command. */
+ 		if (tag == ATA_TAG_INTERNAL)
+@@ -5998,6 +6004,16 @@ int ata_host_register(struct ata_host *h
+ {
+ 	int i, rc;
+ 
++	/*
++	 * The max queue supported by hardware must not be greater than
++	 * ATA_MAX_QUEUE.
++	 */
++	if (sht->can_queue > ATA_MAX_QUEUE) {
++		dev_err(host->dev, "BUG: the hardware max queue is too large\n");
++		WARN_ON(1);
++		return -EINVAL;
++	}
++
+ 	/* host must have been started */
+ 	if (!(host->flags & ATA_HOST_STARTED)) {
+ 		dev_err(host->dev, "BUG: trying to register unstarted host\n");
 
