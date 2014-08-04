@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655AbaHDIfB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 04:35:01 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:53852 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934AbaHDIe7 (ORCPT
+	id S1751794AbaHDIhK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 04:37:10 -0400
+Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:50166
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751108AbaHDIhI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 04:34:59 -0400
-Message-ID: <53DF45AA.8080809@mentor.com>
-Date: Mon, 4 Aug 2014 14:04:50 +0530
-From: Vignesh Raman <Vignesh_Raman@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 4 Aug 2014 04:37:08 -0400
+X-WSS-ID: 0N9RX9O-08-3J1-02
+X-M-MSG: 
+Message-ID: <53DF462B.2060102@amd.com>
+Date: Mon, 4 Aug 2014 10:36:59 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: <dan.j.williams@intel.com>, <dmaengine@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <Jiada_Wang@mentor.com>
-Subject: Re: [PATCH 2/2] dma: imx-sdma: Adding tasklet_kill() in sdma_remove
- function.
-References: <1406725875-9171-1-git-send-email-Vignesh_Raman@mentor.com> <1406725875-9171-3-git-send-email-Vignesh_Raman@mentor.com> <20140731120205.GT8181@intel.com> <53DB9EFD.4040107@mentor.com> <20140801164524.GC8181@intel.com>
-In-Reply-To: <20140801164524.GC8181@intel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [137.202.0.76]
-X-OriginalArrivalTime: 04 Aug 2014 08:34:58.0566 (UTC) FILETIME=[F9BE0260:01CFAFBE]
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>, <airlied@linux.ie>
+CC: <thellstrom@vmware.com>, <nouveau@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
+        <bskeggs@redhat.com>, <alexander.deucher@amd.com>
+Subject: Re: [PATCH 09/19] drm/radeon: handle lockup in delayed work, v2
+References: <20140731153245.15061.63023.stgit@patser>
+ <20140731153342.15061.54264.stgit@patser> <53DBC1EC.1010001@amd.com>
+ <53DBD269.80807@canonical.com>
+In-Reply-To: <53DBD269.80807@canonical.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Originating-IP: [10.224.152.180]
+Content-Transfer-Encoding: 8BIT
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(24454002)(51704005)(377424004)(189002)(199002)(85182001)(50986999)(102836001)(87936001)(83506001)(87266999)(76176999)(46102001)(54356999)(33656002)(84676001)(65816999)(31966008)(74662001)(99396002)(23676002)(74502001)(36756003)(68736004)(20776003)(47776003)(64706001)(64126003)(19580395003)(76482001)(44976005)(50466002)(83322001)(80316001)(19580405001)(81542001)(4396001)(97736001)(81342001)(65956001)(86362001)(80022001)(59896001)(77982001)(92726001)(92566001)(101416001)(79102001)(83072002)(85852003)(95666004)(93886004)(85306004)(105586002)(21056001)(85202003)(106466001)(107046002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR02MB033;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0293D40691
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Christian.Koenig@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 August 2014 10:15 PM, Vinod Koul wrote:
-> On Fri, Aug 01, 2014 at 07:36:53PM +0530, Vignesh Raman wrote:
->> On Thursday 31 July 2014 05:32 PM, Vinod Koul wrote:
->>> On Wed, Jul 30, 2014 at 06:41:15PM +0530, Vignesh Raman wrote:
->>>> Several dma drivers calls tasklet_kill() in remove function. This is missing in
->>>> imx driver, so adding tasklet_kill() in sdma_remove function.
->>> And why should we do that ?
->>>
->> This is done because all running tasklets should be killed on remove.
-> 
-> And what prevents is from mentioning this in changelog!
-> 
+Hi Maarten,
 
-I should have mentioned in the Changelog but missed it, sorry about
-that. I will add it and send updated version.
+Sorry for the delay. I've got way to much todo recently.
+
+Am 01.08.2014 um 19:46 schrieb Maarten Lankhorst:
+>
+> On 01-08-14 18:35, Christian König wrote:
+>> Am 31.07.2014 um 17:33 schrieb Maarten Lankhorst:
+>>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>>> ---
+>>> V1 had a nasty bug breaking gpu lockup recovery. The fix is not
+>>> allowing radeon_fence_driver_check_lockup to take exclusive_lock,
+>>> and kill it during lockup recovery instead.
+>> That looks like the delayed work starts running as soon as we submit a fence, and not when it's needed for waiting.
+>>
+>> Since it's a backup for failing IRQs I would rather put it into radeon_irq_kms.c and start/stop it when the IRQs are started/stoped.
+> The delayed work is not just for failing irq's, it's also the handler that's used to detect lockups, which is why I trigger after processing fences, and reset the timer after processing.
+
+The idea was turning the delayed work on and off when we turn the irq on 
+and off as well, processing of the delayed work handler can still happen 
+in radeon_fence.c
+
+>
+> Specifically what happened was this scenario:
+>
+> - lock up occurs
+> - write lock taken by gpu_reset
+> - delayed work runs, tries to acquire read lock, blocks
+> - gpu_reset tries to cancel delayed work synchronously
+> - has to wait for delayed work to finish -> deadlock
+
+Why do you want to disable the work item from the lockup handler in the 
+first place?
+
+Just take the exclusive lock in the work item, when it concurrently runs 
+with the lockup handler it will just block for the lockup handler to 
+complete.
 
 Regards,
-Vignesh.
+Christian.
+
+> ~Maarten
+
