@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267AbaHDQUf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:20:35 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39385 "EHLO mail.kernel.org"
+	id S1753295AbaHDQUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:20:49 -0400
+Received: from mail.kernel.org ([198.145.19.201]:39461 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751882AbaHDQUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:20:31 -0400
+	id S1751341AbaHDQUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 12:20:42 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        William Cohen <wcohen@redhat.com>,
+        Yann Droneaud <ydroneaud@opteya.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 21/33] perf tools: Allow out of order messages in forced flush
-Date: Mon,  4 Aug 2014 13:17:32 -0300
-Message-Id: <1407169064-25625-22-git-send-email-acme@kernel.org>
+Subject: [PATCH 22/33] perf tools: Show better error message in case we fail to open counters due to EBUSY error
+Date: Mon,  4 Aug 2014 13:17:33 -0300
+Message-Id: <1407169064-25625-23-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1407169064-25625-1-git-send-email-acme@kernel.org>
 References: <1407169064-25625-1-git-send-email-acme@kernel.org>
@@ -28,111 +30,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@kernel.org>
 
-In forced flush (OE_FLUSH__HALF) we break the rules of the flush
-timestamp via PERF_RECORD_FINISHED_ROUND event, so we could get out of
-order event.
+Showing better error message in case we fail to open counters due to the
+EBUSY error. If we detect oprofile daemon process running, we now
+display following message for EBUSY error:
 
-Do not force error in this case plus changing the output warning to use
-WARN_ONCE.
+  $ perf record ls
+  Error:
+  The PMU counters are busy/taken by another profiler.
+  We found oprofile daemon running, please stop it and try again.
+
+In case oprofiled was not detected the current error message stays:
+
+  $ perf record ls
+  Error:
+  The sys_perf_event_open() syscall returned with 16 (Device or resource busy) for event (cycles).
+  /bin/dmesg may provide additional information.
+  No CONFIG_PERF_EVENTS=y kernel support configured?
+
+Also changing PERF_FLAG_FD_CLOEXEC detection code not to display error
+in case of EBUSY error, as it currently does:
+
+  $ perf record ls
+  Error:
+  perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error 16 (Device or resource busy)
+  perf_event_open(..., 0) failed unexpectedly with error 16 (Device or resource busy)
+  The PMU counters are busy/taken by another profiler.
+  We found oprofile daemon running, please stop it and try again.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-8q8794a8nlmpd1u8xrqmcyd2@git.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: William Cohen <wcohen@redhat.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>
+Link: http://lkml.kernel.org/r/1406908014-8312-1-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/ordered-events.c |  4 ++++
- tools/perf/util/ordered-events.h |  2 ++
- tools/perf/util/session.c        | 12 +++++++++---
- 3 files changed, 15 insertions(+), 3 deletions(-)
+ tools/perf/util/cloexec.c |  4 ++--
+ tools/perf/util/evsel.c   |  6 ++++++
+ tools/perf/util/util.c    | 36 ++++++++++++++++++++++++++++++++++++
+ tools/perf/util/util.h    |  1 +
+ 4 files changed, 45 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
-index 8a8aeab8e7ec..706ce1a66169 100644
---- a/tools/perf/util/ordered-events.c
-+++ b/tools/perf/util/ordered-events.c
-@@ -169,6 +169,7 @@ int ordered_events__flush(struct perf_session *s, struct perf_tool *tool,
- {
- 	struct ordered_events *oe = &s->ordered_events;
- 	static const char * const str[] = {
-+		"NONE",
- 		"FINAL",
- 		"ROUND",
- 		"HALF ",
-@@ -198,6 +199,7 @@ int ordered_events__flush(struct perf_session *s, struct perf_tool *tool,
+diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
+index c5d05ec17220..dede0c388ed4 100644
+--- a/tools/perf/util/cloexec.c
++++ b/tools/perf/util/cloexec.c
+@@ -25,7 +25,7 @@ static int perf_flag_probe(void)
+ 		return 1;
  	}
  
- 	case OE_FLUSH__ROUND:
-+	case OE_FLUSH__NONE:
+-	WARN_ONCE(err != EINVAL,
++	WARN_ONCE(err != EINVAL && err != EBUSY,
+ 		  "perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error %d (%s)\n",
+ 		  err, strerror(err));
+ 
+@@ -33,7 +33,7 @@ static int perf_flag_probe(void)
+ 	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
+ 	err = errno;
+ 
+-	if (WARN_ONCE(fd < 0,
++	if (WARN_ONCE(fd < 0 && err != EBUSY,
+ 		      "perf_event_open(..., 0) failed unexpectedly with error %d (%s)\n",
+ 		      err, strerror(err)))
+ 		return -1;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 92e5235f5377..0c8919decac8 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -2039,6 +2039,12 @@ int perf_evsel__open_strerror(struct perf_evsel *evsel, struct target *target,
+ 	"No APIC? If so then you can boot the kernel with the \"lapic\" boot parameter to force-enable it.");
+ #endif
+ 		break;
++	case EBUSY:
++		if (find_process("oprofiled"))
++			return scnprintf(msg, size,
++	"The PMU counters are busy/taken by another profiler.\n"
++	"We found oprofile daemon running, please stop it and try again.");
++		break;
  	default:
  		break;
- 	};
-@@ -211,6 +213,8 @@ int ordered_events__flush(struct perf_session *s, struct perf_tool *tool,
- 	if (!err) {
- 		if (how == OE_FLUSH__ROUND)
- 			oe->next_flush = oe->max_timestamp;
-+
-+		oe->last_flush_type = how;
  	}
- 
- 	pr_oe_time(oe->next_flush, "next_flush - ordered_events__flush POST %s, nr_events %u\n",
-diff --git a/tools/perf/util/ordered-events.h b/tools/perf/util/ordered-events.h
-index 2ce847fb48a5..3b2f20542a01 100644
---- a/tools/perf/util/ordered-events.h
-+++ b/tools/perf/util/ordered-events.h
-@@ -14,6 +14,7 @@ struct ordered_event {
- };
- 
- enum oe_flush {
-+	OE_FLUSH__NONE,
- 	OE_FLUSH__FINAL,
- 	OE_FLUSH__ROUND,
- 	OE_FLUSH__HALF,
-@@ -32,6 +33,7 @@ struct ordered_events {
- 	struct ordered_event	*last;
- 	int			buffer_idx;
- 	unsigned int		nr_events;
-+	enum oe_flush		last_flush_type;
- };
- 
- struct ordered_event *ordered_events__new(struct ordered_events *oe, u64 timestamp);
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 462be2749462..7e27f1eb260c 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -14,6 +14,7 @@
- #include "util.h"
- #include "cpumap.h"
- #include "perf_regs.h"
-+#include "asm/bug.h"
- 
- static int perf_session__open(struct perf_session *session)
- {
-@@ -500,10 +501,15 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 		return -ETIME;
- 
- 	if (timestamp < oe->last_flush) {
--		printf("Warning: Timestamp below last timeslice flush\n");
-+		WARN_ONCE(1, "Timestamp below last timeslice flush\n");
-+
- 		pr_oe_time(timestamp,      "out of order event");
--		pr_oe_time(oe->last_flush, "last flush");
--		return -EINVAL;
-+		pr_oe_time(oe->last_flush, "last flush, last_flush_type %d\n",
-+			   oe->last_flush_type);
-+
-+		/* We could get out of order messages after forced flush. */
-+		if (oe->last_flush_type != OE_FLUSH__HALF)
-+			return -EINVAL;
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index e52e7461911b..b82a93cb1694 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -536,3 +536,39 @@ void mem_bswap_64(void *src, int byte_size)
+ 		++m;
  	}
+ }
++
++bool find_process(const char *name)
++{
++	size_t len = strlen(name);
++	DIR *dir;
++	struct dirent *d;
++	int ret = -1;
++
++	dir = opendir(procfs__mountpoint());
++	if (!dir)
++		return -1;
++
++	/* Walk through the directory. */
++	while (ret && (d = readdir(dir)) != NULL) {
++		char path[PATH_MAX];
++		char *data;
++		size_t size;
++
++		if ((d->d_type != DT_DIR) ||
++		     !strcmp(".", d->d_name) ||
++		     !strcmp("..", d->d_name))
++			continue;
++
++		scnprintf(path, sizeof(path), "%s/%s/comm",
++			  procfs__mountpoint(), d->d_name);
++
++		if (filename__read_str(path, &data, &size))
++			continue;
++
++		ret = strncmp(name, data, len);
++		free(data);
++	}
++
++	closedir(dir);
++	return ret ? false : true;
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 38af77550c75..03a1ea2266b8 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -346,4 +346,5 @@ void mem_bswap_64(void *src, int byte_size);
+ void mem_bswap_32(void *src, int byte_size);
  
- 	new = ordered_events__new(oe, timestamp);
+ const char *get_filename_for_perf_kvm(void);
++bool find_process(const char *name);
+ #endif /* GIT_COMPAT_UTIL_H */
 -- 
 1.9.3
 
