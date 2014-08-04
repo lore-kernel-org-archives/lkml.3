@@ -1,66 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424AbaHDH3C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 03:29:02 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:48470 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaHDH27 (ORCPT
+	id S1751536AbaHDHcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 03:32:04 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:41564 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750986AbaHDHcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 03:28:59 -0400
+	Mon, 4 Aug 2014 03:32:02 -0400
+X-IronPort-AV: E=Sophos;i="5.04,260,1406563200"; 
+   d="scan'208";a="34137678"
+Message-ID: <53DF3746.4020909@cn.fujitsu.com>
+Date: Mon, 4 Aug 2014 15:33:26 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <CAKszPguooNOt_o=22sTvxKqa=XX-hzt+6UL1LbAx4TvS35CgCA@mail.gmail.com>
-References: <CAKszPguooNOt_o=22sTvxKqa=XX-hzt+6UL1LbAx4TvS35CgCA@mail.gmail.com>
-From: Claudio Bizzarri <claudio.bizzarri@gmail.com>
-Date: Mon, 4 Aug 2014 09:28:38 +0200
-Message-ID: <CAKszPgtUbViQuw9y-QHNmW5dA-2g5AQHchpNnY1OtH5ZUrTQqw@mail.gmail.com>
-Subject: Re: Kernel 3.16.0 USB crash
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: David Rientjes <rientjes@google.com>
+CC: <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        <stable@kernel.org>
+Subject: Re: [PATCH] smpboot: add missing get_online_cpus() when register
+References: <1406777421-12830-1-git-send-email-laijs@cn.fujitsu.com> <alpine.DEB.2.02.1408011448220.11532@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1408011448220.11532@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 08/02/2014 05:54 AM, David Rientjes wrote:
+> On Thu, 31 Jul 2014, Lai Jiangshan wrote:
+> 
+>> If the smpboot_register_percpu_thread() is called after smpboot_create_threads()
+>> but before __cpu_up(), the smpboot thread of the online-ing CPU is not created,
+>> and it results a bug.  So we use get_online_cpus() to prevent it.
+>>
+> 
+> Do you have an example of the bug to include?  
 
-Ive installed latest kernel-ppa 3.16.0 version. When I attach my USB
-3.0 external drive I've a complete system crash. Here the latest
-/var/log/syslog lines before complete lockdown of my computer.
+Sorry, no, I don't have.
 
-With kernel 3.14.14 it works perfectly. Please tell me how I can help
-developer to eliminate this bug.
+> Maintainers are going to 
+> need to understand the implications of the problem before the 
+> stable@kernel.org annotation is warranted.
 
-C
+It is possible that smpboot_register_percpu_thread() can be called
+any time in current kernel.  Repeating the module ehca and check while
+repeating online/offline the CPUs, the bug is possible to hit.  I have not such
+devices to test.
 
-Aug  4 08:50:51 hp850ssd kernel: [ 1059.143641] usb 3-2: new
-SuperSpeed USB device number 3 using xhci_hcd
-Aug  4 08:50:51 hp850ssd kernel: [ 1059.160151] usb 3-2: New USB
-device found, idVendor=152d, idProduct=0567
-Aug  4 08:50:51 hp850ssd kernel: [ 1059.160156] usb 3-2: New USB
-device strings: Mfr=10, Product=11, SerialNumber=5
-Aug  4 08:50:51 hp850ssd kernel: [ 1059.160159] usb 3-2: Product: USB
-to ATA/ATAPI Bridge
-Aug  4 08:50:51 hp850ssd kernel: [ 1059.160161] usb 3-2: Manufacturer: JMicron
-Aug  4 08:50:51 hp850ssd kernel: [ 1059.160163] usb 3-2: SerialNumber:
-152D00539000
-Aug  4 08:50:51 hp850ssd mtp-probe: checking bus 3, device 3:
-"/sys/devices/pci0000:00/0000:00:14.0/usb3/3-2"
-Aug  4 08:50:51 hp850ssd mtp-probe: bus: 3, device: 3 was not an MTP device
-Aug  4 08:50:51 hp850ssd kernel: [ 1059.677172] usbcore: registered
-new interface driver usb-storage
-Aug  4 08:50:51 hp850ssd kernel: [ 1059.680316] scsi2 : uas
-Aug  4 08:50:51 hp850ssd kernel: [ 1059.680442] usbcore: registered
-new interface driver uas
-Aug  4 08:50:55 hp850ssd kernel: [ 1063.680229] scsi 2:0:0:0:
-Direct-Access     JMicron  Generic          0100 PQ: 0 ANSI: 6
-Aug  4 08:50:55 hp850ssd kernel: [ 1063.683453] sd 2:0:0:0: Attached
-scsi generic sg1 type 0
-Aug  4 08:50:55 hp850ssd kernel: [ 1063.684084] sd 2:0:0:0: [sdb]
-976773168 512-byte logical blocks: (500 GB/465 GiB)
-Aug  4 08:50:55 hp850ssd kernel: [ 1063.684091] sd 2:0:0:0: [sdb]
-4096-byte physical blocks
-Aug  4 08:50:55 hp850ssd kernel: [ 1063.687278] sd 2:0:0:0: [sdb]
-Write Protect is off
-Aug  4 08:50:55 hp850ssd kernel: [ 1063.687288] sd 2:0:0:0: [sdb] Mode
-Sense: 67 00 10 08
-Aug  4 08:50:55 hp850ssd kernel: [ 1063.688585] sd 2:0:0:0: [sdb]
-Write cache: enabled, read cache: enabled, supports DPO and FUA
+Let Thomas make the choice.
+
+> 
+>> smpboot_unregister_percpu_thread() travels all possible CPU, it doesn't need
+>> get_online_cpus() which is removed in the patch.
+>>
+>> CC: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> CC: stable@kernel.org
+>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+>> ---
+>>  kernel/smpboot.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/smpboot.c b/kernel/smpboot.c
+>> index eb89e18..8adab87 100644
+>> --- a/kernel/smpboot.c
+>> +++ b/kernel/smpboot.c
+>> @@ -279,6 +279,7 @@ int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread)
+>>  	unsigned int cpu;
+>>  	int ret = 0;
+>>  
+>> +	get_online_cpus();
+>>  	mutex_lock(&smpboot_threads_lock);
+>>  	for_each_online_cpu(cpu) {
+>>  		ret = __smpboot_create_thread(plug_thread, cpu);
+>> @@ -291,6 +292,7 @@ int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread)
+>>  	list_add(&plug_thread->list, &hotplug_threads);
+>>  out:
+>>  	mutex_unlock(&smpboot_threads_lock);
+>> +	put_online_cpus();
+>>  	return ret;
+>>  }
+> 
+> I think the {get,put}_online_cpus() pair should be nested inside the 
+> smpboot_threads_lock for better lock ordering since not all cases 
+> smpboot_threads_lock will require it.
+> 
+> That way, you can also do put_online_cpus() before 
+> smpboot_destroy_threads(), which you have already proven doesn't need it:
+> 
+> @@ -280,14 +280,17 @@ int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread)
+>  	int ret = 0;
+>  
+>  	mutex_lock(&smpboot_threads_lock);
+> +	get_online_cpus();
+
+get_online_cpus() can't be nested in smpboot_threads_lock.
+
+
+>  	for_each_online_cpu(cpu) {
+>  		ret = __smpboot_create_thread(plug_thread, cpu);
+>  		if (ret) {
+> +			put_online_cpus();
+>  			smpboot_destroy_threads(plug_thread);
+>  			goto out;
+>  		}
+>  		smpboot_unpark_thread(plug_thread, cpu);
+>  	}
+> +	put_online_cpus();
+>  	list_add(&plug_thread->list, &hotplug_threads);
+>  out:
+>  	mutex_unlock(&smpboot_threads_lock);
+> 
+>>  EXPORT_SYMBOL_GPL(smpboot_register_percpu_thread);
+>> @@ -303,11 +305,9 @@ EXPORT_SYMBOL_GPL(smpboot_register_percpu_thread);
+>>   */
+>>  void smpboot_unregister_percpu_thread(struct smp_hotplug_thread *plug_thread)
+>>  {
+>> -	get_online_cpus();
+>>  	mutex_lock(&smpboot_threads_lock);
+>>  	list_del(&plug_thread->list);
+>>  	smpboot_destroy_threads(plug_thread);
+>>  	mutex_unlock(&smpboot_threads_lock);
+>> -	put_online_cpus();
+>>  }
+>>  EXPORT_SYMBOL_GPL(smpboot_unregister_percpu_thread);
+> 
+> This makes sense.
+> .
+> 
+
