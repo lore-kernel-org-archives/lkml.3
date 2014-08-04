@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990AbaHDRMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:12:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56492 "EHLO
+	id S1754017AbaHDRMd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:12:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56494 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751841AbaHDQty (ORCPT
+	by vger.kernel.org with ESMTP id S1751840AbaHDQty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:54 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -14,15 +14,12 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Alan Stern" <stern@rowland.harvard.edu>,
-        "Wang, Yu" <yu.y.wang@intel.com>,
-        "Mathias Nyman" <mathias.nyman@linux.intel.com>
-Date: Mon, 04 Aug 2014 17:48:31 +0100
-Message-ID: <lsq.1407170911.922083401@decadent.org.uk>
+        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Date: Mon, 04 Aug 2014 17:48:32 +0100
+Message-ID: <lsq.1407170912.51189586@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 11/94] xhci: Fix runtime suspended xhci from blocking
- system suspend.
+Subject: [PATCH 3.2 84/94] crypto: testmgr - update LZO compression test
+ vectors
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,85 +32,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Wang, Yu" <yu.y.wang@intel.com>
+From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
 
-commit d6236f6d1d885aa19d1cd7317346fe795227a3cc upstream.
+commit 0ec7382036922be063b515b2a3f1d6f7a607392c upstream.
 
-The system suspend flow as following:
-1, Freeze all user processes and kenrel threads.
+Update the LZO compression test vectors according to the latest compressor
+version.
 
-2, Try to suspend all devices.
-
-2.1, If pci device is in RPM suspended state, then pci driver will try
-to resume it to RPM active state in the prepare stage.
-
-2.2, xhci_resume function calls usb_hcd_resume_root_hub to queue two
-workqueue items to resume usb2&usb3 roothub devices.
-
-2.3, Call suspend callbacks of devices.
-
-2.3.1, All suspend callbacks of all hcd's children, including
-roothub devices are called.
-
-2.3.2, Finally, hcd_pci_suspend callback is called.
-
-Due to workqueue threads were already frozen in step 1, the workqueue
-items can't be scheduled, and the roothub devices can't be resumed in
-this flow. The HCD_FLAG_WAKEUP_PENDING flag which is set in
-usb_hcd_resume_root_hub won't be cleared. Finally,
-hcd_pci_suspend will return -EBUSY, and system suspend fails.
-
-The reason why this issue doesn't show up very often is due to that
-choose_wakeup will be called in step 2.3.1. In step 2.3.1, if
-udev->do_remote_wakeup is not equal to device_may_wakeup(&udev->dev), then
-udev will resume to RPM active for changing the wakeup settings. This
-has been a lucky hit which hides this issue.
-
-For some special xHCI controllers which have no USB2 port, then roothub
-will not match hub driver due to probe failed. Then its
-do_remote_wakeup will be set to zero, and we won't be as lucky.
-
-xhci driver doesn't need to resume roothub devices everytime like in
-the above case. It's only needed when there are pending event TRBs.
-
-This patch should be back-ported to kernels as old as 3.2, that
-contains the commit f69e3120df82391a0ee8118e0a156239a06b2afb
-"USB: XHCI: resume root hubs when the controller resumes"
-
-Signed-off-by: Wang, Yu <yu.y.wang@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-[use readl() instead of removed xhci_readl(), reword commit message -Mathias]
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Markus F.X.J. Oberhumer <markus@oberhumer.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ crypto/testmgr.h | 38 ++++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -946,7 +946,7 @@ int xhci_suspend(struct xhci_hcd *xhci)
-  */
- int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
- {
--	u32			command, temp = 0;
-+	u32			command, temp = 0, status;
- 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
- 	struct usb_hcd		*secondary_hcd;
- 	int			retval = 0;
-@@ -1070,8 +1070,12 @@ int xhci_resume(struct xhci_hcd *xhci, b
+--- a/crypto/testmgr.h
++++ b/crypto/testmgr.h
+@@ -10428,38 +10428,40 @@ static struct pcomp_testvec zlib_decomp_
+ static struct comp_testvec lzo_comp_tv_template[] = {
+ 	{
+ 		.inlen	= 70,
+-		.outlen	= 46,
++		.outlen	= 57,
+ 		.input	= "Join us now and share the software "
+ 			"Join us now and share the software ",
+ 		.output	= "\x00\x0d\x4a\x6f\x69\x6e\x20\x75"
+-			"\x73\x20\x6e\x6f\x77\x20\x61\x6e"
+-			"\x64\x20\x73\x68\x61\x72\x65\x20"
+-			"\x74\x68\x65\x20\x73\x6f\x66\x74"
+-			"\x77\x70\x01\x01\x4a\x6f\x69\x6e"
+-			"\x3d\x88\x00\x11\x00\x00",
++			  "\x73\x20\x6e\x6f\x77\x20\x61\x6e"
++			  "\x64\x20\x73\x68\x61\x72\x65\x20"
++			  "\x74\x68\x65\x20\x73\x6f\x66\x74"
++			  "\x77\x70\x01\x32\x88\x00\x0c\x65"
++			  "\x20\x74\x68\x65\x20\x73\x6f\x66"
++			  "\x74\x77\x61\x72\x65\x20\x11\x00"
++			  "\x00",
+ 	}, {
+ 		.inlen	= 159,
+-		.outlen	= 133,
++		.outlen	= 131,
+ 		.input	= "This document describes a compression method based on the LZO "
+ 			"compression algorithm.  This document defines the application of "
+ 			"the LZO algorithm used in UBIFS.",
+-		.output	= "\x00\x2b\x54\x68\x69\x73\x20\x64"
++		.output	= "\x00\x2c\x54\x68\x69\x73\x20\x64"
+ 			  "\x6f\x63\x75\x6d\x65\x6e\x74\x20"
+ 			  "\x64\x65\x73\x63\x72\x69\x62\x65"
+ 			  "\x73\x20\x61\x20\x63\x6f\x6d\x70"
+ 			  "\x72\x65\x73\x73\x69\x6f\x6e\x20"
+ 			  "\x6d\x65\x74\x68\x6f\x64\x20\x62"
+ 			  "\x61\x73\x65\x64\x20\x6f\x6e\x20"
+-			  "\x74\x68\x65\x20\x4c\x5a\x4f\x2b"
+-			  "\x8c\x00\x0d\x61\x6c\x67\x6f\x72"
+-			  "\x69\x74\x68\x6d\x2e\x20\x20\x54"
+-			  "\x68\x69\x73\x2a\x54\x01\x02\x66"
+-			  "\x69\x6e\x65\x73\x94\x06\x05\x61"
+-			  "\x70\x70\x6c\x69\x63\x61\x74\x76"
+-			  "\x0a\x6f\x66\x88\x02\x60\x09\x27"
+-			  "\xf0\x00\x0c\x20\x75\x73\x65\x64"
+-			  "\x20\x69\x6e\x20\x55\x42\x49\x46"
+-			  "\x53\x2e\x11\x00\x00",
++			  "\x74\x68\x65\x20\x4c\x5a\x4f\x20"
++			  "\x2a\x8c\x00\x09\x61\x6c\x67\x6f"
++			  "\x72\x69\x74\x68\x6d\x2e\x20\x20"
++			  "\x2e\x54\x01\x03\x66\x69\x6e\x65"
++			  "\x73\x20\x74\x06\x05\x61\x70\x70"
++			  "\x6c\x69\x63\x61\x74\x76\x0a\x6f"
++			  "\x66\x88\x02\x60\x09\x27\xf0\x00"
++			  "\x0c\x20\x75\x73\x65\x64\x20\x69"
++			  "\x6e\x20\x55\x42\x49\x46\x53\x2e"
++			  "\x11\x00\x00",
+ 	},
+ };
  
-  done:
- 	if (retval == 0) {
--		usb_hcd_resume_root_hub(hcd);
--		usb_hcd_resume_root_hub(xhci->shared_hcd);
-+		/* Resume root hubs only when have pending events. */
-+		status = readl(&xhci->op_regs->status);
-+		if (status & STS_EINT) {
-+			usb_hcd_resume_root_hub(hcd);
-+			usb_hcd_resume_root_hub(xhci->shared_hcd);
-+		}
- 	}
- 
- 	/*
 
