@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759AbaHDRQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:16:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56460 "EHLO
+	id S1753242AbaHDRQw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:16:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56463 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751717AbaHDQty (ORCPT
+	by vger.kernel.org with ESMTP id S1751724AbaHDQty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:54 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Catalin Marinas" <catalin.marinas@arm.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
-Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.768535142@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Paolo Bonzini" <pbonzini@redhat.com>,
+        "Nadav Amit" <namit@cs.technion.ac.il>
+Date: Mon, 04 Aug 2014 17:48:31 +0100
+Message-ID: <lsq.1407170911.275906277@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 90/94] mm: kmemleak: avoid false negatives on
- vmalloc'ed objects
+Subject: [PATCH 3.2 04/94] KVM: x86: Increase the number of fixed MTRR
+ regs to 10
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,72 +32,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Nadav Amit <namit@cs.technion.ac.il>
 
-commit 7f88f88f83ed609650a01b18572e605ea50cd163 upstream.
+commit 682367c494869008eb89ef733f196e99415ae862 upstream.
 
-Commit 248ac0e1943a ("mm/vmalloc: remove guard page from between vmap
-blocks") had the side effect of making vmap_area.va_end member point to
-the next vmap_area.va_start.  This was creating an artificial reference
-to vmalloc'ed objects and kmemleak was rarely reporting vmalloc() leaks.
+Recent Intel CPUs have 10 variable range MTRRs. Since operating systems
+sometime make assumptions on CPUs while they ignore capability MSRs, it is
+better for KVM to be consistent with recent CPUs. Reporting more MTRRs than
+actually supported has no functional implications.
 
-This patch marks the vmap_area containing pointers explicitly and
-reduces the min ref_count to 2 as vm_struct still contains a reference
-to the vmalloc'ed object.  The kmemleak add_scan_area() function has
-been improved to allow a SIZE_MAX argument covering the rest of the
-object (for simpler calling sites).
-
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/kmemleak.c |  4 +++-
- mm/vmalloc.c  | 14 ++++++++++----
- 2 files changed, 13 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/kvm_host.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -744,7 +744,9 @@ static void add_scan_area(unsigned long
- 	}
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -98,7 +98,7 @@
+ #define KVM_REFILL_PAGES 25
+ #define KVM_MAX_CPUID_ENTRIES 80
+ #define KVM_NR_FIXED_MTRR_REGION 88
+-#define KVM_NR_VAR_MTRR 8
++#define KVM_NR_VAR_MTRR 10
  
- 	spin_lock_irqsave(&object->lock, flags);
--	if (ptr + size > object->pointer + object->size) {
-+	if (size == SIZE_MAX) {
-+		size = object->pointer + object->size - ptr;
-+	} else if (ptr + size > object->pointer + object->size) {
- 		kmemleak_warn("Scan area larger than object 0x%08lx\n", ptr);
- 		dump_object_info(object);
- 		kmem_cache_free(scan_area_cache, area);
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -349,6 +349,12 @@ static struct vmap_area *alloc_vmap_area
- 	if (unlikely(!va))
- 		return ERR_PTR(-ENOMEM);
- 
-+	/*
-+	 * Only scan the relevant parts containing pointers to other objects
-+	 * to avoid false negatives.
-+	 */
-+	kmemleak_scan_area(&va->rb_node, SIZE_MAX, gfp_mask & GFP_RECLAIM_MASK);
-+
- retry:
- 	spin_lock(&vmap_area_lock);
- 	/*
-@@ -1644,11 +1650,11 @@ void *__vmalloc_node_range(unsigned long
- 	insert_vmalloc_vmlist(area);
- 
- 	/*
--	 * A ref_count = 3 is needed because the vm_struct and vmap_area
--	 * structures allocated in the __get_vm_area_node() function contain
--	 * references to the virtual address of the vmalloc'ed block.
-+	 * A ref_count = 2 is needed because vm_struct allocated in
-+	 * __get_vm_area_node() contains a reference to the virtual address of
-+	 * the vmalloc'ed block.
- 	 */
--	kmemleak_alloc(addr, real_size, 3, gfp_mask);
-+	kmemleak_alloc(addr, real_size, 2, gfp_mask);
- 
- 	return addr;
+ #define ASYNC_PF_PER_VCPU 64
  
 
