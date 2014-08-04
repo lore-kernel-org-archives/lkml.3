@@ -1,118 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407AbaHDKeN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 06:34:13 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:49750 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349AbaHDKeK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 06:34:10 -0400
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-X-Google-Original-From: "Lee, Chun-Yi" <jlee@suse.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [PATCH] Hibernate: check unsafe page should not in e820 reserved region
-Date: Mon,  4 Aug 2014 18:33:16 +0800
-Message-Id: <1407148396-21405-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.8.4.5
+	id S1752215AbaHDKg1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 06:36:27 -0400
+Received: from ozlabs.org ([103.22.144.67]:49669 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752059AbaHDKgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 06:36:25 -0400
+Date: Mon, 4 Aug 2014 20:36:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alexander Graf <agraf@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the kvm-ppc tree
+Message-ID: <20140804203618.67a5ba54@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/DB91MxlzTSFlys+U=FBcQ7n"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the machine doesn't well handle the e820 persistent when hibernate
-resuming, then it may causes page fault when writing image to snapshot
-buffer:
+--Sig_/DB91MxlzTSFlys+U=FBcQ7n
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-[   17.929495] BUG: unable to handle kernel paging request at ffff880069d4f000
-[   17.933469] IP: [<ffffffff810a1cf0>] load_image_lzo+0x810/0xe40
-[   17.933469] PGD 2194067 PUD 77ffff067 PMD 2197067 PTE 0
-[   17.933469] Oops: 0002 [#1] SMP
-...
+Hi Alexander,
 
-The ffff880069d4f000 page is in e820 reserved region of resume boot
-kernel:
+After merging the kvm-ppc tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-[    0.000000] BIOS-e820: [mem 0x0000000069d4f000-0x0000000069e12fff] reserved
-...
-[    0.000000] PM: Registered nosave memory: [mem 0x69d4f000-0x69e12fff]
+arch/powerpc/kvm/kvm-pr.o:(__tracepoints+0xa8): multiple definition of `__t=
+racepoint_kvm_ppc_instr'
+arch/powerpc/kvm/kvm.o:(__tracepoints+0x1c0): first defined here
 
-So snapshot.c mark the pfn to forbidden pages map. But, this
-page is also in the memory bitmap in snapshot image because it's an
-original page used by image kernel, so it will also mark as an
-unsafe(free) page in prepare_image().
+Caused by commit 29577fc00ba4 ("KVM: PPC: HV: Remove generic
+instruction emulation").  I note that this commit has no Reviewed-by,
+Tested-by or Acked-by tags and only one Signed-off-by tag.
 
-That means the page in e820 when resuming mark as "forbidden" and
-"free", it causes get_buffer() treat it as an allocated unsafe page.
-Then snapshot_write_next() return this page to load_image, load_image
-writing content to this address, but this page didn't really allocated
-. So, we got page fault.
+I have reverted that commit for today.
 
-Although the root cause is from BIOS, I think aggressive check and
-significant message in kernel will better then a page fault for
-issue tracking, especially when serial console unavailable.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-This patch adds code in mark_unsafe_pages() for check does free pages in
-nosave region. If so, then it print message and return fault to stop whole
-S4 resume process:
+--Sig_/DB91MxlzTSFlys+U=FBcQ7n
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-[    8.166004] PM: Image loading progress:   0%
-[    8.658717] PM: 0x6796c000 in e820 nosave regsion: [mem 0x6796c000-0x6796cfff]
-[    8.918737] PM: Read 2511940 kbytes in 1.04 seconds (2415.32 MB/s)
-[    8.926633] PM: Error -14 resuming
-[    8.933534] PM: Failed to load hibernation image, recovering.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- kernel/power/snapshot.c | 24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+iQIcBAEBCAAGBQJT32ImAAoJEMDTa8Ir7ZwVmpAQAI9qaZRTQRMlPCLziVd/Rp4e
+95I0uHZzUrhQPST3MD17BiABmT+h7H+IWJ5Jex7URLHiO2m0NPMOLw0/kTs26/k3
+xiidKi/N2zkdfG+UBJkeS3Cx+yRIiYbilW4TeHALkLWp85FYlOGT5NBaRs4tNjO9
+BslBYcyMFeBHZ+OmyZOiHKiMlg9UygM1KksCv527GTHKZ6EnxtnKnWfWCH2TnYrV
++Q/L0K4UbVzjRBEMimgsXUhyDz1dLXgEPrG9CaJAVfOvYuecSMM/6bbMVjtvQFqQ
+5FqykXsF5BbXoA9BugmQ5d+qV+QozsJkeo1ycEryf2+Wx3IfCPRn8IuBh8Baz2yc
+z3uGZB3yikQ7q76oED8JynVqQo23ltxvJpHr7QzoIyiRdY+uliHM6rNtceR40H+Q
+42uraqJ/n8wAIqrrWNqK+DGsAim31JSPNPBnQ8S5jOrUmNrrTzUxOmhhnKzjvucM
+v1U8w1XI2qZSKM490kPLpELleGlSjlSAEdFmM+E+xAyG2pp3C8WnqEaZioWJuq2n
+XsVXLzfVBYTzv29ugbD8EOby/34zri1WlHTzGjrT1P+Ixvh5rQKPL3iiQxNSCmRS
+QdZOooWmGfqjyBXHih4R+UdgiliqeyH01a5GCxqh8X67ZQpeoLgGsMMeSuaB/XX4
+cvv+vzRZWAnNUMCMSv5J
+=2Gbn
+-----END PGP SIGNATURE-----
 
-diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
-index 98c3b34..e6db5a8 100644
---- a/kernel/power/snapshot.c
-+++ b/kernel/power/snapshot.c
-@@ -730,6 +730,28 @@ static void mark_nosave_pages(struct memory_bitmap *bm)
- 	}
- }
- 
-+static bool is_nosave_page(unsigned long pfn)
-+{
-+	struct nosave_region *region;
-+
-+	if (list_empty(&nosave_regions))
-+		return 0;
-+
-+	list_for_each_entry(region, &nosave_regions, list) {
-+		if (pfn >= region->start_pfn && pfn < region->end_pfn) {
-+			pr_err("PM: %#010llx in e820 nosave regsion: "
-+			       "[mem %#010llx-%#010llx]\n",
-+			       (unsigned long long) pfn << PAGE_SHIFT,
-+			       (unsigned long long) region->start_pfn << PAGE_SHIFT,
-+			       ((unsigned long long) region->end_pfn << PAGE_SHIFT)
-+					- 1);
-+			return true;
-+		}
-+	}
-+
-+	return false;
-+}
-+
- /**
-  *	create_basic_memory_bitmaps - create bitmaps needed for marking page
-  *	frames that should not be saved and free page frames.  The pointers
-@@ -1769,7 +1791,7 @@ static int mark_unsafe_pages(struct memory_bitmap *bm)
- 	do {
- 		pfn = memory_bm_next_pfn(bm);
- 		if (likely(pfn != BM_END_OF_MAP)) {
--			if (likely(pfn_valid(pfn)))
-+			if (likely(pfn_valid(pfn)) && !is_nosave_page(pfn))
- 				swsusp_set_page_free(pfn_to_page(pfn));
- 			else
- 				return -EFAULT;
--- 
-1.8.4.5
-
+--Sig_/DB91MxlzTSFlys+U=FBcQ7n--
