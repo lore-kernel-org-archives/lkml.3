@@ -1,55 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963AbaHDS1H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 14:27:07 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:56357 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973AbaHDS1F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 14:27:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGXu5jKD5X4ZZreierjWsB659pXJgc9eXJX==Wm+-R22nKY+xQ@mail.gmail.com>
-References: <20140731170735.5cf2062b@canb.auug.org.au>
-	<20140801002017.GA2945@kroah.com>
-	<CAGXu5jKD5X4ZZreierjWsB659pXJgc9eXJX==Wm+-R22nKY+xQ@mail.gmail.com>
-Date: Mon, 4 Aug 2014 11:27:03 -0700
-Message-ID: <CALAqxLUgeyn6MobUQ=wrQRBjfBPF7OHTSxJuSsYeYKC-U2KMGA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the driver-core tree with the tip tree
-From: John Stultz <john.stultz@linaro.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Riley <davidriley@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751831AbaHDSbH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 14:31:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57400 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751046AbaHDSbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 14:31:04 -0400
+Message-ID: <1407177057.9447.2.camel@dcbw.local>
+Subject: Re: [PATCH] net/usb/hso: Add support for Option GTM671WFS
+From: Dan Williams <dcbw@redhat.com>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Jan Dumon <j.dumon@option.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 04 Aug 2014 13:30:57 -0500
+In-Reply-To: <CAPybu_0E3P0f0dXwx7Ak=ZduWHbRXVMh4SJf9q22Je6yc3AWNg@mail.gmail.com>
+References: <1407143509-27683-1-git-send-email-ricardo.ribalda@gmail.com>
+	 <CAPybu_0E3P0f0dXwx7Ak=ZduWHbRXVMh4SJf9q22Je6yc3AWNg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 1, 2014 at 4:38 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Thu, Jul 31, 2014 at 8:20 PM, Greg KH <greg@kroah.com> wrote:
->> On Thu, Jul 31, 2014 at 05:07:35PM +1000, Stephen Rothwell wrote:
->>> Hi Greg,
->>>
->>> Today's linux-next merge of the driver-core tree got a conflict in
->>> lib/Kconfig.debug between commit e704f93af5a0 ("kernel: time: Add
->>> udelay_test module to validate udelay") from the tip tree and commit
->>> 0a8adf584759 ("test: add firmware_class loader test") from the
->>> driver-core tree.
->>>
->>> I fixed it up (see below) and can carry the fix as necessary (no action
->>> is required).
->>
->> Looks good, thanks.
->
-> For keeping things regularized, could this module instead be named
-> "test_udelay", to match the rest of most of the test modules?
-> (Starting with "test_".)
+On Mon, 2014-08-04 at 11:20 +0200, Ricardo Ribalda Delgado wrote:
+> Suggested-by: Dan Williams <dcbw@redhat.com>
 
-Sure. I'll spin up a patch to change it and will submit here shortly.
+Before we apply this patch though, can you grab for the following for
+me?
 
-thanks
--john
+cat /sys/class/tty/*/hsotype
+
+and lets see if the firmware actually responds.  Also, do you get an
+'hso0' network interface as reported by ifconfig or /sbin/ip?  If you
+do, then lets do some additional verification to ensure it should be
+driven by 'hso' instead of option.
+
+Dan
+
+> On Mon, Aug 4, 2014 at 11:11 AM, Ricardo Ribalda Delgado
+> <ricardo.ribalda@gmail.com> wrote:
+> > After this patch:
+> >
+> > [ 32.985530] hso: drivers/net/usb/hso.c: Option Wireless
+> > [ 33.000452] hso 2-1.4:1.7: Not our interface
+> > [ 33.001849] usbcore: registered new interface driver hso
+> >
+> > root@qt5022:~# ls /dev/ttyHS*
+> > /dev/ttyHS0  /dev/ttyHS1  /dev/ttyHS2  /dev/ttyHS3  /dev/ttyHS4
+> > /dev/ttyHS5
+> >
+> > root@qt5022:~# lsusb -d 0af0: -vvv
+> >
+> > Bus 002 Device 003: ID 0af0:9200 Option
+> > Device Descriptor:
+> >   bLength                18
+> >   bDescriptorType         1
+> >   bcdUSB               2.00
+> >   bDeviceClass          255 Vendor Specific Class
+> >   bDeviceSubClass       255 Vendor Specific Subclass
+> >   bDeviceProtocol       255 Vendor Specific Protocol
+> >   bMaxPacketSize0        64
+> >   idVendor           0x0af0 Option
+> >   idProduct          0x9200
+> >   bcdDevice            0.00
+> >   iManufacturer           3 Option N.V.
+> >   iProduct                2 Globetrotter HSUPA Modem
+> >   iSerial                 0
+> >   bNumConfigurations      1
+> >   Configuration Descriptor:
+> >     bLength                 9
+> >     bDescriptorType         2
+> >     wTotalLength          200
+> >     bNumInterfaces          8
+> >     bConfigurationValue     1
+> >     iConfiguration          1 Option Configuration
+> >     bmAttributes         0xe0
+> >       Self Powered
+> >       Remote Wakeup
+> >     MaxPower              100mA
+> >     Interface Descriptor:
+> >       bLength                 9
+> >       bDescriptorType         4
+> >       bInterfaceNumber        0
+> >       bAlternateSetting       0
+> >       bNumEndpoints           2
+> >       bInterfaceClass       255 Vendor Specific Class
+> >       bInterfaceSubClass    255 Vendor Specific Subclass
+> >       bInterfaceProtocol    255 Vendor Specific Protocol
+> >       iInterface              0
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x81  EP 1 IN
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x01  EP 1 OUT
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >     Interface Descriptor:
+> >       bLength                 9
+> >       bDescriptorType         4
+> >       bInterfaceNumber        1
+> >       bAlternateSetting       0
+> >       bNumEndpoints           2
+> >       bInterfaceClass       255 Vendor Specific Class
+> >       bInterfaceSubClass    255 Vendor Specific Subclass
+> >       bInterfaceProtocol    255 Vendor Specific Protocol
+> >       iInterface              0
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x82  EP 2 IN
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x02  EP 2 OUT
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >     Interface Descriptor:
+> >       bLength                 9
+> >       bDescriptorType         4
+> >       bInterfaceNumber        2
+> >       bAlternateSetting       0
+> >       bNumEndpoints           2
+> >       bInterfaceClass       255 Vendor Specific Class
+> >       bInterfaceSubClass    255 Vendor Specific Subclass
+> >       bInterfaceProtocol    255 Vendor Specific Protocol
+> >       iInterface              0
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x83  EP 3 IN
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x03  EP 3 OUT
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >     Interface Descriptor:
+> >       bLength                 9
+> >       bDescriptorType         4
+> >       bInterfaceNumber        3
+> >       bAlternateSetting       0
+> >       bNumEndpoints           2
+> >       bInterfaceClass       255 Vendor Specific Class
+> >       bInterfaceSubClass    255 Vendor Specific Subclass
+> >       bInterfaceProtocol    255 Vendor Specific Protocol
+> >       iInterface              0
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x84  EP 4 IN
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x04  EP 4 OUT
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >     Interface Descriptor:
+> >       bLength                 9
+> >       bDescriptorType         4
+> >       bInterfaceNumber        4
+> >       bAlternateSetting       0
+> >       bNumEndpoints           2
+> >       bInterfaceClass       255 Vendor Specific Class
+> >       bInterfaceSubClass    255 Vendor Specific Subclass
+> >       bInterfaceProtocol    255 Vendor Specific Protocol
+> >       iInterface              0
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x85  EP 5 IN
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x05  EP 5 OUT
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >     Interface Descriptor:
+> >       bLength                 9
+> >       bDescriptorType         4
+> >       bInterfaceNumber        5
+> >       bAlternateSetting       0
+> >       bNumEndpoints           2
+> >       bInterfaceClass       255 Vendor Specific Class
+> >       bInterfaceSubClass    255 Vendor Specific Subclass
+> >       bInterfaceProtocol    255 Vendor Specific Protocol
+> >       iInterface              0
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x06  EP 6 OUT
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x86  EP 6 IN
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >     Interface Descriptor:
+> >       bLength                 9
+> >       bDescriptorType         4
+> >       bInterfaceNumber        6
+> >       bAlternateSetting       0
+> >       bNumEndpoints           3
+> >       bInterfaceClass       255 Vendor Specific Class
+> >       bInterfaceSubClass    255 Vendor Specific Subclass
+> >       bInterfaceProtocol    255 Vendor Specific Protocol
+> >       iInterface              0
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x87  EP 7 IN
+> >         bmAttributes            3
+> >           Transfer Type            Interrupt
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0040  1x 64 bytes
+> >         bInterval               5
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x88  EP 8 IN
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x07  EP 7 OUT
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval              32
+> >     Interface Descriptor:
+> >       bLength                 9
+> >       bDescriptorType         4
+> >       bInterfaceNumber        7
+> >       bAlternateSetting       0
+> >       bNumEndpoints           2
+> >       bInterfaceClass         8 Mass Storage
+> >       bInterfaceSubClass      6 SCSI
+> >       bInterfaceProtocol     80 Bulk-Only
+> >       iInterface              0
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x08  EP 8 OUT
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval               1
+> >       Endpoint Descriptor:
+> >         bLength                 7
+> >         bDescriptorType         5
+> >         bEndpointAddress     0x89  EP 9 IN
+> >         bmAttributes            2
+> >           Transfer Type            Bulk
+> >           Synch Type               None
+> >           Usage Type               Data
+> >         wMaxPacketSize     0x0200  1x 512 bytes
+> >         bInterval               1
+> > Device Qualifier (for other device speed):
+> >   bLength                10
+> >   bDescriptorType         6
+> >   bcdUSB               2.00
+> >   bDeviceClass          255 Vendor Specific Class
+> >   bDeviceSubClass       255 Vendor Specific Subclass
+> >   bDeviceProtocol       255 Vendor Specific Protocol
+> >   bMaxPacketSize0        64
+> >   bNumConfigurations      1
+> > Device Status:     0x0001
+> >   Self Powered
+> >
+> > Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> > ---
+> >  drivers/net/usb/hso.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> > diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
+> > index a3a0586..eb12261 100644
+> > --- a/drivers/net/usb/hso.c
+> > +++ b/drivers/net/usb/hso.c
+> > @@ -469,6 +469,7 @@ static const struct usb_device_id hso_ids[] = {
+> >         {USB_DEVICE(0x0af0, 0x8800)},
+> >         {USB_DEVICE(0x0af0, 0x8900)},
+> >         {USB_DEVICE(0x0af0, 0x9000)},
+> > +       {USB_DEVICE(0x0af0, 0x9200)},           /* Option GTM671WFS */
+> >         {USB_DEVICE(0x0af0, 0xd035)},
+> >         {USB_DEVICE(0x0af0, 0xd055)},
+> >         {USB_DEVICE(0x0af0, 0xd155)},
+> > --
+> > 2.0.1
+> >
+> 
+> 
+> 
+
+
