@@ -1,174 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583AbaHDLbI (ORCPT <rfc822;w@1wt.eu>);
+	id S1752601AbaHDLbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 07:31:22 -0400
+Received: from ozlabs.org ([103.22.144.67]:60759 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752398AbaHDLbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 07:31:08 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:44991 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706AbaHDLbG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 07:31:06 -0400
-Message-ID: <53DF6EFC.30705@arm.com>
-Date: Mon, 04 Aug 2014 12:31:08 +0100
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+Date: Mon, 4 Aug 2014 21:30:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [ANNOUNCE] scsi patch queue tree updated
+Message-ID: <20140804213059.32fd25d5@canb.auug.org.au>
+In-Reply-To: <20140804111147.GA29148@infradead.org>
+References: <20140708134003.GA7790@infradead.org>
+	<20140801122042.GA10771@infradead.org>
+	<1406925121.2654.21.camel@jarvis>
+	<20140804111147.GA29148@infradead.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-CC: "bruno@wolff.to" <bruno@wolff.to>, Michael Ellerman <michaele@au1.ibm.com>,
-        "jwboyer@redhat.com" <jwboyer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peterz@infrdead.org" <peterz@infrdead.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: scheduler crash on Power
-References: <20140730072242.GA21516@us.ibm.com> <53DA2F15.1070605@arm.com>	 <20140801212447.GA25435@us.ibm.com> <1407122432.2286.0.camel@concordia>
-In-Reply-To: <1407122432.2286.0.camel@concordia>
-X-OriginalArrivalTime: 04 Aug 2014 11:31:02.0574 (UTC) FILETIME=[9261B4E0:01CFAFD7]
-X-MC-Unique: 114080412310304901
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/S2m_v7CTfu.nspbtMti_29+"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/14 04:20, Michael Ellerman wrote:
-> On Fri, 2014-08-01 at 14:24 -0700, Sukadev Bhattiprolu wrote:
->> Dietmar Eggemann [dietmar.eggemann@arm.com] wrote:
->> | > ltcbrazos2-lp07 login: [  181.915974] ------------[ cut here ]------------
->> | > [  181.915991] WARNING: at ../kernel/sched/core.c:5881
->> | 
->> | This warning indicates the problem. One of the struct sched_domains does
->> | not have it's groups member set.
->> | 
->> | And its happening during a rebuild of the sched domain hierarchy, not
->> | during the initial build.
->> | 
->> | You could run your system with the following patch-let (on top of
->> | https://lkml.org/lkml/2014/7/17/288)  w/ and w/o the perf related
->> | patches (w/ CONFIG_SCHED_DEBUG enabled).
->> | 
->> | @@ -5882,6 +5882,9 @@ static void init_sched_groups_capacity(int cpu,
->> | struct sched_domain *sd)
->> |  {
->> |         struct sched_group *sg = sd->groups;
->> | 
->> | +#ifdef CONFIG_SCHED_DEBUG
->> | +       printk("sd name: %s span: %pc\n", sd->name, sd->span);
->> | +#endif
->> |         WARN_ON(!sg);
->> | 
->> |         do {
->> | 
->> | This will show if the rebuild of the sched domain hierarchy happens on
->> | both systems and hopefully indicate for which sched_domain the
->> | sd->groups is not set.
->>
->> Thanks for the patch. It appears that the NUMA sched domain does not
->> have the sd->groups set - snippet of the error (with your patch and
->> Peter's patch)
->>
->> [  181.914494] build_sched_groups: got group c000000006da0000 with cpus: 
->> [  181.914498] build_sched_groups: got group c0000000dd830000 with cpus: 
->> [  181.915234] sd name: SMT span: 8-15
->> [  181.915239] sd name: DIE span: 0-7
->> [  181.915242] sd name: NUMA span: 0-15
->> [  181.915250] ------------[ cut here ]------------
->> [  181.915253] WARNING: at ../kernel/sched/core.c:5891
->>
->> Patched code:
->>
->> 	5884 static void init_sched_groups_capacity(int cpu, struct sched_domain *sd)
->> 	5885 {
->> 	5886         struct sched_group *sg = sd->groups;
->> 	5887 
->> 	5888 #ifdef CONFIG_SCHED_DEBUG
->> 	5889         printk("sd name: %s span: %pc\n", sd->name, sd->span);
->> 	5890 #endif
->> 	5891         WARN_ON(!sg);
->>
->> Complete log below.
->>
->> I was able to bisect it down to this patch in the 24x7 patchset
->>
->> 	https://lkml.org/lkml/2014/5/27/804
->>
->> I replaced the kfree(page) calls in the patch with
->> kmem_cache_free(hv_page_cache, page).
->>
->> The problem sems to disappear if the call to create_events_from_catalog()
->> in hv_24x7_init() is skipped. I am continuing to debug the 24x7 patch.
-> 
-> Is that patch just clobbering memory it doesn't own and corrupting the
-> scheduler data structures?
+--Sig_/S2m_v7CTfu.nspbtMti_29+
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Quite likely. When the system comes up initially, it has SMT and DIE
-sched domain level:
+Hi Christoph,
 
-...
-[    0.033832] build_sched_groups: got group c0000000e7d50000 with cpus:
-[    0.033835] build_sched_groups: got group c0000000e7d80000 with cpus:
-[    0.033844] sd name: SMT span: 8-15
-[    0.033847] sd name: DIE span: 0-15  <-- !!!
-[    0.033850] sd name: SMT span: 8-15
-[    0.033853] sd name: DIE span: 0-15
-...
+On Mon, 4 Aug 2014 04:11:47 -0700 Christoph Hellwig <hch@infradead.org> wro=
+te:
+>
+> On Fri, Aug 01, 2014 at 04:32:01PM -0400, James Bottomley wrote:
+> > On Fri, 2014-08-01 at 05:20 -0700, Christoph Hellwig wrote:
+> > > I've pushed out updates to both the core-for-3.17 and drivers-for-3.17
+> > > branches.
+> >=20
+> > So I'm afraid we missed the last -next build on these, so they can't go
+> > in with the early SCSI pull.  I'm open to doing one mid merge window,
+> > but Linus tends not to like that.
 
-and the cpu mask of DIE spans all CPUs '0-15'.
+You realise that neither of these in linux-next as the scsi-core and
+scsi-drivers trees had for-3.16 branches in the last round.  I assume I
+should just drop these trees completely from linux-next?
 
-Then during the rebuild of the sched domain hierarchy, this looks very
-different:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-...
-[  181.914494] build_sched_groups: got group c000000006da0000 with cpus:
-[  181.914498] build_sched_groups: got group c0000000dd830000 with cpus:
-[  181.915234] sd name: SMT span: 8-15
-[  181.915239] sd name: DIE span: 0-7   <-- !!!
-[  181.915242] sd name: NUMA span: 0-15
-...
+--Sig_/S2m_v7CTfu.nspbtMti_29+
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-The cpu mask of the DIE level is all the sudden '0-7', which is clearly
-wrong.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-So I suspect that sched_domain_mask_f mask function for the DIE level
-'cpu_cpu_mask()' returns a wrong value during this rebuild.
+iQIcBAEBCAAGBQJT3275AAoJEMDTa8Ir7ZwVYQgP/13DQel5TjiFqhV1jhqQWk/b
+5ejgNVJFVMScQsQZoLfxhpn43uj+x4m1ihWPAj50Ou3W4oIQLyE5uQqpaf1mRC+o
+CiMngaKahIje9WPYODjYzAvi5j5hu9YeUtrk4pgBjwcUmfsS6basNrmvnJu20VEl
+6s39WiDHgRa01Bc7yx8ks0r9W4K47lxD8m8GQ8/j12GdA74leeB2NRQM5ttpoubk
+oUJu0viVbZ86dPEIiJaPle7fJJNhBCJId/vuIjvEEI1lRrzSl02wtk0Wn8Egtf+Q
+Mu1tvm+f83EXeG5AQa+zOQTLaDmm0QWOR5y2SFvZUU+0ODSgUGM6fROaVATfjKfq
+9OVqBxaCwD2CZYy2gLR27Cs/JRO8m437kzDwH+SVCwHevR1t1uenIa+8fp0SJGlp
+ykuGJlGc7z8gsCpsyv/yg5/dWnQuO/cu3cfgpfFZ+wVzrfqrOPmVf+wZdMRv/t+1
+fAsiQ8mT+PU6HxXCWHA3ywH2ZjEorVCllkpnP3has8I0TdYMKAffJWxesioVynZx
+00z06RShec1bUhux9DrTI4d4qurMs6kjQsFVR9z4dhdLyZVqnYF5kYkE3N9BvdYG
+cgLVC1+707ANpetqSueDuE/Q6oF6PH1JKsbUVDvdpY/UdMpLgac5/jzbfJWc6VeV
+nYD3834HeBjIVG2QVr5P
+=rotR
+-----END PGP SIGNATURE-----
 
-Could be checked with this little patch-let:
-
-@@ -6467,6 +6467,12 @@ struct sched_domain *build_sched_domain(struct
-sched_domain_topology_level *tl,
-        if (!sd)
-                return child;
-
-+       printk("%s: cpu: %d level: %s cpu_map: %pc tl->mask: %pc\n",
-+                       __func__,
-+                       cpu, tl->name,
-+                       cpu_map,
-+                       tl->mask(cpu));
-+
-        cpumask_and(sched_domain_span(sd), cpu_map, tl->mask(cpu));
-        if (child) {
-                sd->level = child->level + 1;
-
-
-Should give you something similar like:
-
-...
-build_sched_domain: cpu: 0 level: GMC cpu_map: 0-4 tl->mask: 0
-build_sched_domain: cpu: 0 level: MC cpu_map: 0-4 tl->mask: 0-1
-build_sched_domain: cpu: 0 level: DIE cpu_map: 0-4 tl->mask: 0-4
-build_sched_domain: cpu: 1 level: GMC cpu_map: 0-4 tl->mask: 1
-build_sched_domain: cpu: 1 level: MC cpu_map: 0-4 tl->mask: 0-1
-build_sched_domain: cpu: 1 level: DIE cpu_map: 0-4 tl->mask: 0-4
-...
-
-> 
-> cheers
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
+--Sig_/S2m_v7CTfu.nspbtMti_29+--
