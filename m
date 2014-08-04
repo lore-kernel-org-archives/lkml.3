@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102AbaHDVDr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 17:03:47 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:54379 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063AbaHDVDq (ORCPT
+	id S1753161AbaHDVEe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 17:04:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35234 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330AbaHDVEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 17:03:46 -0400
+	Mon, 4 Aug 2014 17:04:33 -0400
+Date: Mon, 4 Aug 2014 23:04:27 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Ben Segall <bsegall@google.com>, Waiman Long <Waiman.Long@hp.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Rik van Riel <riel@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Chegu Vinod <chegu_vinod@hp.com>, Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH] sched: Reduce contention in update_cfs_rq_blocked_load
+Message-ID: <20140804210427.GV3935@laptop>
+References: <1407184118.11407.11.camel@j-VirtualBox>
 MIME-Version: 1.0
-In-Reply-To: <CAK1hOcOwD0cpVWZEV8FP40y9149feUdaxoszQC+wWQfAwU4MNQ@mail.gmail.com>
-References: <1406904498-21647-1-git-send-email-dvlasenk@redhat.com>
- <1406904498-21647-4-git-send-email-dvlasenk@redhat.com> <CALCETrWA6SL52SOM3yifvc0Pjz-HTOvs8G8fXo9TqF5v=0eTzw@mail.gmail.com>
- <CAK1hOcOwD0cpVWZEV8FP40y9149feUdaxoszQC+wWQfAwU4MNQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 5 Aug 2014 06:03:24 +0900
-Message-ID: <CALCETrV6rap+rZirLsMmdzML9rSKnWEmq-ACNLLGYgKtT-K6uA@mail.gmail.com>
-Subject: Re: [PATCH 4/5] x86: entry_64.S: always allocate complete "struct pt_regs"
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407184118.11407.11.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 4, 2014 at 11:28 PM, Denys Vlasenko
-<vda.linux@googlemail.com> wrote:
-> On Fri, Aug 1, 2014 at 7:04 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Fri, Aug 1, 2014 at 7:48 AM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
->>> 64-bit code was using six stack slots fewer by not saving/restoring
->>> registers which a callee-preserved according to C ABI,
->>> and not allocating space for them
->>
->> This is great.
->>
->> Next up: remove FIXUP/RESTORE_TOP_OF_STACK? :)  Maybe I'll give that a shot.
->
-> I'm yet at the stage "what that stuff does anyway?" and at
-> "why do we need percpu old_rsp thingy?" in particular.
+On Mon, Aug 04, 2014 at 01:28:38PM -0700, Jason Low wrote:
+> When running workloads on 2+ socket systems, based on perf profiles, the
+> update_cfs_rq_blocked_load function constantly shows up as taking up a
+> noticeable % of run time. This is especially apparent on an 8 socket
+> machine. For example, when running the AIM7 custom workload, we see:
+> 
+>    4.18%        reaim  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
+> 
+> Much of the contention is in __update_cfs_rq_tg_load_contrib when we
+> update the tg load contribution stats.  However, it turns out that in many
+> cases, they don't need to be updated and "tg_contrib" is 0.
+> 
+> This patch adds a check in __update_cfs_rq_tg_load_contrib to skip updating
+> tg load contribution stats when nothing needs to be updated. This reduces the
+> cacheline contention that would be unnecessary. In the above case, with the
+> patch, perf reports the total time spent in this function went down by more
+> than a factor of 3x:
+> 
+>    1.18%        reaim  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
+> 
 
-On x86_64, the syscall instruction has no effect on rsp.  That means
-that the entry point starts out with no stack.  There are no free
-registers whatsoever at the entry point.
-
-That means that the entry code needs to do swapgs, stash rsp somewhere
-relative to gs, and then load the kernel's rsp.  old_rsp is the spot
-used for this.
-
-Now the kernel does an optimization that is, I think, very much not
-worth it.  The kernel doesn't bother sticking the old rsp value into
-pt_regs (saving two instructions on fast path entries) and doesn't
-initialize the SS, CS, RCX, and EFLAGS fields in pt_regs, saving four
-more instructions.
-
-To make this optimization work, the whole FIXUP/RESTORE_TOP_OF_STACK
-dance is needed, and there's the usersp crap in the context switch
-code, and current_user_stack_pointer(), and probably even more crap
-that I haven't noticed.  And I sure hope that nothing in the *compat*
-syscall path touches current_user_stack_pointer(), because the compat
-code doesn't seem to use old_rsp.
-
-I think this should all be ripped out.  The only real difficulty will
-be that the sysret code needs to restore rsp itself, so the sysret
-path will end up needing two more instructions.  Removing all of the
-TOP_OF_STACK stuff will add ten instructions to fast path syscalls,
-and I wouldn't be surprised if this adds considerably fewer than ten
-cycles on any modern chip.
-
-(It's too bad that there's no unlocked xchg; this could be faster if
-we had one.  It's also too bad that the syscall ABI didn't choose some
-register to unconditionally set to zero, which would have given us the
-single scratch register we'd need to avoid this whole mess in the
-first place.)
-
---Andy
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Supposedly adding something like __cacheline_aligned to
+task_group::load_avg is also rumoured to help.
