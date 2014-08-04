@@ -1,975 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204AbaHDKIY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 06:08:24 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:37889 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599AbaHDKIW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 06:08:22 -0400
-Subject: [PATCH v1.3 13/18] arcmsr: fix ioctl data read/write error for
- adapter type C
-From: Ching Huang <ching2048@areca.com.tw>
-To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Aug 2014 18:08:13 +0800
-Message-ID: <1407146893.4756.95.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
+	id S1752159AbaHDKKD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 06:10:03 -0400
+Received: from mga14.intel.com ([192.55.52.115]:49377 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751650AbaHDKKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 06:10:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="367587502"
+Date: Mon, 4 Aug 2014 18:11:22 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] KVM: nVMX: nested TPR shadow/threshold emulation
+Message-ID: <20140804101122.GA9754@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1406880570-9746-1-git-send-email-wanpeng.li@linux.intel.com>
+ <53DB5849.2070508@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53DB5849.2070508@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching Huang <ching2048@areca.com.tw>
+Hi Paolo,
+On Fri, Aug 01, 2014 at 11:05:13AM +0200, Paolo Bonzini wrote:
+>Il 01/08/2014 10:09, Wanpeng Li ha scritto:
+>> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=61411
+>> 
+>> TPR shadow/threshold feature is important to speed up the Windows guest.
+>> Besides, it is a must feature for certain VMM.
+>> 
+>> We map virtual APIC page address and TPR threshold from L1 VMCS. If
+>> TPR_BELOW_THRESHOLD VM exit is triggered by L2 guest and L1 interested
+>> in, we inject it into L1 VMM for handling.
+>> 
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> ---
+>> v1 -> v2:
+>>  * don't take L0's "virtualize APIC accesses" setting into account
+>>  * virtual_apic_page do exactly the same thing that is done for apic_access_page
+>>  * add the tpr threshold field to the read-write fields for shadow VMCS
+>> 
+>>  arch/x86/kvm/vmx.c | 33 +++++++++++++++++++++++++++++++--
+>>  1 file changed, 31 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+>> index a3845b8..0e6e95e 100644
+>> --- a/arch/x86/kvm/vmx.c
+>> +++ b/arch/x86/kvm/vmx.c
+>> @@ -379,6 +379,7 @@ struct nested_vmx {
+>>  	 * we must keep them pinned while L2 runs.
+>>  	 */
+>>  	struct page *apic_access_page;
+>> +	struct page *virtual_apic_page;
+>>  	u64 msr_ia32_feature_control;
+>>  
+>>  	struct hrtimer preemption_timer;
+>> @@ -533,6 +534,7 @@ static int max_shadow_read_only_fields =
+>>  	ARRAY_SIZE(shadow_read_only_fields);
+>>  
+>>  static unsigned long shadow_read_write_fields[] = {
+>> +	TPR_THRESHOLD,
+>>  	GUEST_RIP,
+>>  	GUEST_RSP,
+>>  	GUEST_CR0,
+>> @@ -2331,7 +2333,7 @@ static __init void nested_vmx_setup_ctls_msrs(void)
+>>  		CPU_BASED_MOV_DR_EXITING | CPU_BASED_UNCOND_IO_EXITING |
+>>  		CPU_BASED_USE_IO_BITMAPS | CPU_BASED_MONITOR_EXITING |
+>>  		CPU_BASED_RDPMC_EXITING | CPU_BASED_RDTSC_EXITING |
+>> -		CPU_BASED_PAUSE_EXITING |
+>> +		CPU_BASED_PAUSE_EXITING | CPU_BASED_TPR_SHADOW |
+>>  		CPU_BASED_ACTIVATE_SECONDARY_CONTROLS;
+>>  	/*
+>>  	 * We can allow some features even when not supported by the
+>> @@ -6149,6 +6151,10 @@ static void free_nested(struct vcpu_vmx *vmx)
+>>  		nested_release_page(vmx->nested.apic_access_page);
+>>  		vmx->nested.apic_access_page = 0;
+>>  	}
+>> +	if (vmx->nested.virtual_apic_page) {
+>> +		nested_release_page(vmx->nested.virtual_apic_page);
+>> +		vmx->nested.virtual_apic_page = 0;
+>> +	}
+>>  
+>>  	nested_free_all_saved_vmcss(vmx);
+>>  }
+>> @@ -6937,7 +6943,7 @@ static bool nested_vmx_exit_handled(struct kvm_vcpu *vcpu)
+>>  	case EXIT_REASON_MCE_DURING_VMENTRY:
+>>  		return 0;
+>>  	case EXIT_REASON_TPR_BELOW_THRESHOLD:
+>> -		return 1;
+>> +		return nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW);
+>>  	case EXIT_REASON_APIC_ACCESS:
+>>  		return nested_cpu_has2(vmcs12,
+>>  			SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES);
+>> @@ -7058,6 +7064,9 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
+>>  
+>>  static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
+>>  {
+>> +	if (is_guest_mode(vcpu))
+>> +		return;
+>> +
+>>  	if (irr == -1 || tpr < irr) {
+>>  		vmcs_write32(TPR_THRESHOLD, 0);
+>>  		return;
+>> @@ -8025,6 +8034,22 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+>>  	exec_control &= ~CPU_BASED_VIRTUAL_NMI_PENDING;
+>>  	exec_control &= ~CPU_BASED_TPR_SHADOW;
+>>  	exec_control |= vmcs12->cpu_based_vm_exec_control;
+>> +
+>> +	if (exec_control & CPU_BASED_TPR_SHADOW) {
+>> +		if (vmx->nested.virtual_apic_page)
+>> +			nested_release_page(vmx->nested.virtual_apic_page);
+>> +		vmx->nested.virtual_apic_page =
+>> +		   nested_get_page(vcpu, vmcs12->virtual_apic_page_addr);
+>> +		if (!vmx->nested.virtual_apic_page)
+>> +			exec_control &=
+>> +				~CPU_BASED_TPR_SHADOW;
+>
+>This will cause L1 to miss exits when L2 writes to CR8.  I think the
+>only sensible thing to do if this happens is fail the vmentry.
+>
+>The problem is that while the APIC access page field is used to trap
+>reads/writes to the APIC access page itself, here the processor will
+>read/write the virtual APIC page when L2 does CR8 accesses.
 
-Rewrite ioctl entry and its relate functions.
-This patch fix ioctl data read/write error and change data I/O access from byte to Dword.
+How about add this:
 
-Signed-off-by: Ching Huang <ching2048@areca.com.tw>
----
++	if (!(exec_control & CPU_BASED_TPR_SHADOW) &&
++		!((exec_control & CPU_BASED_CR8_LOAD_EXITING) &&
++			(exec_control & CPU_BASED_CR8_STORE_EXITING)))
++				nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
++
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_attr.c b/drivers/scsi/arcmsr/arcmsr_attr.c
---- a/drivers/scsi/arcmsr/arcmsr_attr.c	2014-02-06 17:47:24.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_attr.c	2014-04-29 17:10:42.000000000 +0800
-@@ -70,40 +70,75 @@ static ssize_t arcmsr_sysfs_iop_message_
- 	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
- 	uint8_t *pQbuffer,*ptmpQbuffer;
- 	int32_t allxfer_len = 0;
-+	unsigned long flags;
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EACCES;
- 
- 	/* do message unit read. */
- 	ptmpQbuffer = (uint8_t *)buf;
--	while ((acb->rqbuf_firstindex != acb->rqbuf_lastindex)
--		&& (allxfer_len < 1031)) {
-+	spin_lock_irqsave(&acb->rqbuffer_lock, flags);
-+	if (acb->rqbuf_firstindex != acb->rqbuf_lastindex) {
- 		pQbuffer = &acb->rqbuffer[acb->rqbuf_firstindex];
--		memcpy(ptmpQbuffer, pQbuffer, 1);
--		acb->rqbuf_firstindex++;
--		acb->rqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
--		ptmpQbuffer++;
--		allxfer_len++;
-+		if (acb->rqbuf_firstindex > acb->rqbuf_lastindex) {
-+			if ((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex) >= 1032) {
-+				memcpy(ptmpQbuffer, pQbuffer, 1032);
-+				acb->rqbuf_firstindex += 1032;
-+				acb->rqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
-+				allxfer_len = 1032;
-+			} else {
-+				if (((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex)
-+					+ acb->rqbuf_lastindex) > 1032) {
-+					memcpy(ptmpQbuffer, pQbuffer,
-+						ARCMSR_MAX_QBUFFER
-+						- acb->rqbuf_firstindex);
-+					ptmpQbuffer += ARCMSR_MAX_QBUFFER
-+						- acb->rqbuf_firstindex;
-+					memcpy(ptmpQbuffer, acb->rqbuffer, 1032
-+						- (ARCMSR_MAX_QBUFFER -
-+						acb->rqbuf_firstindex));
-+					acb->rqbuf_firstindex = 1032 -
-+						(ARCMSR_MAX_QBUFFER -
-+						acb->rqbuf_firstindex);
-+					allxfer_len = 1032;
-+				} else {
-+					memcpy(ptmpQbuffer, pQbuffer,
-+						ARCMSR_MAX_QBUFFER -
-+						acb->rqbuf_firstindex);
-+					ptmpQbuffer += ARCMSR_MAX_QBUFFER -
-+						acb->rqbuf_firstindex;
-+					memcpy(ptmpQbuffer, acb->rqbuffer,
-+						acb->rqbuf_lastindex);
-+					allxfer_len = ARCMSR_MAX_QBUFFER -
-+						acb->rqbuf_firstindex +
-+						acb->rqbuf_lastindex;
-+					acb->rqbuf_firstindex =
-+						acb->rqbuf_lastindex;
-+				}
-+			}
-+		} else {
-+			if ((acb->rqbuf_lastindex - acb->rqbuf_firstindex) > 1032) {
-+				memcpy(ptmpQbuffer, pQbuffer, 1032);
-+				acb->rqbuf_firstindex += 1032;
-+				allxfer_len = 1032;
-+			} else {
-+				memcpy(ptmpQbuffer, pQbuffer, acb->rqbuf_lastindex
-+					- acb->rqbuf_firstindex);
-+				allxfer_len = acb->rqbuf_lastindex -
-+					acb->rqbuf_firstindex;
-+				acb->rqbuf_firstindex = acb->rqbuf_lastindex;
-+			}
-+		}
- 	}
- 	if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
- 		struct QBUFFER __iomem *prbuffer;
--		uint8_t __iomem *iop_data;
--		int32_t iop_len;
--
- 		acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
- 		prbuffer = arcmsr_get_iop_rqbuffer(acb);
--		iop_data = prbuffer->data;
--		iop_len = readl(&prbuffer->data_len);
--		while (iop_len > 0) {
--			acb->rqbuffer[acb->rqbuf_lastindex] = readb(iop_data);
--			acb->rqbuf_lastindex++;
--			acb->rqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
--			iop_data++;
--			iop_len--;
--		}
--		arcmsr_iop_message_read(acb);
-+		if (arcmsr_Read_iop_rqbuffer_data(acb, prbuffer) == 0)
-+			acb->acb_flags |= ACB_F_IOPDATA_OVERFLOW;
- 	}
--	return (allxfer_len);
-+	spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);
-+	return allxfer_len;
- }
- 
- static ssize_t arcmsr_sysfs_iop_message_write(struct file *filp,
-@@ -117,6 +152,7 @@ static ssize_t arcmsr_sysfs_iop_message_
- 	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
- 	int32_t my_empty_len, user_len, wqbuf_firstindex, wqbuf_lastindex;
- 	uint8_t *pQbuffer, *ptmpuserbuffer;
-+	unsigned long flags;
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EACCES;
-@@ -125,18 +161,19 @@ static ssize_t arcmsr_sysfs_iop_message_
- 	/* do message unit write. */
- 	ptmpuserbuffer = (uint8_t *)buf;
- 	user_len = (int32_t)count;
-+	spin_lock_irqsave(&acb->wqbuffer_lock, flags);
- 	wqbuf_lastindex = acb->wqbuf_lastindex;
- 	wqbuf_firstindex = acb->wqbuf_firstindex;
- 	if (wqbuf_lastindex != wqbuf_firstindex) {
--		arcmsr_post_ioctldata2iop(acb);
-+		arcmsr_write_ioctldata2iop(acb);
-+		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
- 		return 0;	/*need retry*/
- 	} else {
- 		my_empty_len = (wqbuf_firstindex-wqbuf_lastindex - 1)
--				&(ARCMSR_MAX_QBUFFER - 1);
-+			&(ARCMSR_MAX_QBUFFER - 1);
- 		if (my_empty_len >= user_len) {
- 			while (user_len > 0) {
--				pQbuffer =
--				&acb->wqbuffer[acb->wqbuf_lastindex];
-+				pQbuffer = &acb->wqbuffer[acb->wqbuf_lastindex];
- 				memcpy(pQbuffer, ptmpuserbuffer, 1);
- 				acb->wqbuf_lastindex++;
- 				acb->wqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
-@@ -146,10 +183,12 @@ static ssize_t arcmsr_sysfs_iop_message_
- 			if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_CLEARED) {
- 				acb->acb_flags &=
- 					~ACB_F_MESSAGE_WQBUFFER_CLEARED;
--				arcmsr_post_ioctldata2iop(acb);
-+				arcmsr_write_ioctldata2iop(acb);
- 			}
-+			spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
- 			return count;
- 		} else {
-+			spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
- 			return 0;	/*need retry*/
- 		}
- 	}
-@@ -165,22 +204,24 @@ static ssize_t arcmsr_sysfs_iop_message_
- 	struct Scsi_Host *host = class_to_shost(dev);
- 	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
- 	uint8_t *pQbuffer;
-+	unsigned long flags;
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EACCES;
- 
--	if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
--		acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
--		arcmsr_iop_message_read(acb);
--	}
-+	arcmsr_clear_iop2drv_rqueue_buffer(acb);
- 	acb->acb_flags |=
- 		(ACB_F_MESSAGE_WQBUFFER_CLEARED
- 		| ACB_F_MESSAGE_RQBUFFER_CLEARED
- 		| ACB_F_MESSAGE_WQBUFFER_READED);
-+	spin_lock_irqsave(&acb->rqbuffer_lock, flags);
- 	acb->rqbuf_firstindex = 0;
- 	acb->rqbuf_lastindex = 0;
-+	spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);
-+	spin_lock_irqsave(&acb->wqbuffer_lock, flags);
- 	acb->wqbuf_firstindex = 0;
- 	acb->wqbuf_lastindex = 0;
-+	spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
- 	pQbuffer = acb->rqbuffer;
- 	memset(pQbuffer, 0, sizeof (struct QBUFFER));
- 	pQbuffer = acb->wqbuffer;
-diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
---- a/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:28:38.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:28:58.000000000 +0800
-@@ -518,6 +518,8 @@ struct AdapterControlBlock
- 	uint32_t			reg_mu_acc_handle0;
- 	spinlock_t                      			eh_lock;
- 	spinlock_t                      			ccblist_lock;
-+	spinlock_t			rqbuffer_lock;
-+	spinlock_t			wqbuffer_lock;
- 	union {
- 		struct MessageUnit_A __iomem *pmuA;
- 		struct MessageUnit_B 	*pmuB;
-@@ -693,8 +695,10 @@ struct SENSE_DATA
- #define     ARCMSR_MU_OUTBOUND_MESSAGE0_INTMASKENABLE               0x01
- #define     ARCMSR_MU_OUTBOUND_ALL_INTMASKENABLE                    0x1F
- 
--extern void arcmsr_post_ioctldata2iop(struct AdapterControlBlock *);
--extern void arcmsr_iop_message_read(struct AdapterControlBlock *);
-+extern void arcmsr_write_ioctldata2iop(struct AdapterControlBlock *);
-+extern uint32_t arcmsr_Read_iop_rqbuffer_data(struct AdapterControlBlock *,
-+	struct QBUFFER __iomem *);
-+extern void arcmsr_clear_iop2drv_rqueue_buffer(struct AdapterControlBlock *);
- extern struct QBUFFER __iomem *arcmsr_get_iop_rqbuffer(struct AdapterControlBlock *);
- extern struct device_attribute *arcmsr_host_attrs[];
- extern int arcmsr_alloc_sysfs_attr(struct AdapterControlBlock *);
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-04 16:45:26.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-04 16:46:30.000000000 +0800
-@@ -666,6 +666,8 @@ static int arcmsr_probe(struct pci_dev *
- 	}
- 	spin_lock_init(&acb->eh_lock);
- 	spin_lock_init(&acb->ccblist_lock);
-+	spin_lock_init(&acb->rqbuffer_lock);
-+	spin_lock_init(&acb->wqbuffer_lock);
- 	acb->acb_flags |= (ACB_F_MESSAGE_WQBUFFER_CLEARED |
- 			ACB_F_MESSAGE_RQBUFFER_CLEARED |
- 			ACB_F_MESSAGE_WQBUFFER_READED);
-@@ -1465,68 +1467,174 @@ static struct QBUFFER __iomem *arcmsr_ge
- 	return pqbuffer;
- }
- 
--static void arcmsr_iop2drv_data_wrote_handle(struct AdapterControlBlock *acb)
--{
--	struct QBUFFER __iomem *prbuffer;
--	struct QBUFFER *pQbuffer;
--	uint8_t __iomem *iop_data;
--	int32_t my_empty_len, iop_len, rqbuf_firstindex, rqbuf_lastindex;
--	rqbuf_lastindex = acb->rqbuf_lastindex;
--	rqbuf_firstindex = acb->rqbuf_firstindex;
--	prbuffer = arcmsr_get_iop_rqbuffer(acb);
--	iop_data = (uint8_t __iomem *)prbuffer->data;
--	iop_len = prbuffer->data_len;
--	my_empty_len = (rqbuf_firstindex - rqbuf_lastindex - 1) & (ARCMSR_MAX_QBUFFER - 1);
-+static uint32_t arcmsr_Read_iop_rqbuffer_in_DWORD(struct AdapterControlBlock *acb,
-+	struct QBUFFER __iomem *prbuffer) {
- 
--	if (my_empty_len >= iop_len)
--	{
--		while (iop_len > 0) {
--			pQbuffer = (struct QBUFFER *)&acb->rqbuffer[rqbuf_lastindex];
--			memcpy(pQbuffer, iop_data, 1);
--			rqbuf_lastindex++;
--			rqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
-+	uint8_t *pQbuffer;
-+	uint8_t *buf1 = NULL;
-+	uint32_t __iomem *iop_data;
-+	uint32_t iop_len, data_len, *buf2 = NULL;
-+
-+	iop_data = (uint32_t __iomem *)prbuffer->data;
-+	iop_len = readl(&prbuffer->data_len);
-+	if (iop_len > 0) {
-+		buf1 = kmalloc(128, GFP_ATOMIC);
-+		buf2 = (uint32_t *)buf1;
-+		if (buf1 == NULL)
-+			return 0;
-+		data_len = iop_len;
-+		while (data_len >= 4) {
-+			*buf2++ = readl(iop_data);
- 			iop_data++;
--			iop_len--;
-+			data_len -= 4;
- 		}
--		acb->rqbuf_lastindex = rqbuf_lastindex;
--		arcmsr_iop_message_read(acb);
-+		if (data_len)
-+			*buf2 = readl(iop_data);
-+		buf2 = (uint32_t *)buf1;
-+	}
-+	while (iop_len > 0) {
-+		pQbuffer = &acb->rqbuffer[acb->rqbuf_lastindex];
-+		*pQbuffer = *buf1;
-+		acb->rqbuf_lastindex++;
-+		/* if last, index number set it to 0 */
-+		acb->rqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
-+		buf1++;
-+		iop_len--;
-+	}
-+	if (buf2)
-+		kfree(buf2);
-+	/* let IOP know data has been read */
-+	arcmsr_iop_message_read(acb);
-+	return 1;
-+}
-+
-+uint32_t
-+arcmsr_Read_iop_rqbuffer_data(struct AdapterControlBlock *acb,
-+	struct QBUFFER __iomem *prbuffer) {
-+
-+	uint8_t *pQbuffer;
-+	uint8_t __iomem *iop_data;
-+	uint32_t iop_len;
-+
-+	if (acb->adapter_type & ACB_ADAPTER_TYPE_C)
-+		return arcmsr_Read_iop_rqbuffer_in_DWORD(acb, prbuffer);
-+	iop_data = (uint8_t __iomem *)prbuffer->data;
-+	iop_len = readl(&prbuffer->data_len);
-+	while (iop_len > 0) {
-+		pQbuffer = &acb->rqbuffer[acb->rqbuf_lastindex];
-+		*pQbuffer = readb(iop_data);
-+		acb->rqbuf_lastindex++;
-+		acb->rqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
-+		iop_data++;
-+		iop_len--;
- 	}
-+	arcmsr_iop_message_read(acb);
-+	return 1;
-+}
-+
-+static void arcmsr_iop2drv_data_wrote_handle(struct AdapterControlBlock *acb)
-+{
-+	unsigned long flags;
-+	struct QBUFFER __iomem  *prbuffer;
-+	int32_t buf_empty_len;
- 
--	else {
-+	spin_lock_irqsave(&acb->rqbuffer_lock, flags);
-+	prbuffer = arcmsr_get_iop_rqbuffer(acb);
-+	buf_empty_len = (acb->rqbuf_lastindex - acb->rqbuf_firstindex - 1) &
-+		(ARCMSR_MAX_QBUFFER - 1);
-+	if (buf_empty_len >= readl(&prbuffer->data_len)) {
-+		if (arcmsr_Read_iop_rqbuffer_data(acb, prbuffer) == 0)
-+			acb->acb_flags |= ACB_F_IOPDATA_OVERFLOW;
-+	} else
- 		acb->acb_flags |= ACB_F_IOPDATA_OVERFLOW;
-+	spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);
-+}
-+
-+static void arcmsr_write_ioctldata2iop_in_DWORD(struct AdapterControlBlock *acb)
-+{
-+	uint8_t *pQbuffer;
-+	struct QBUFFER __iomem *pwbuffer;
-+	uint8_t *buf1 = NULL;
-+	uint32_t __iomem *iop_data;
-+	uint32_t allxfer_len = 0, data_len, *buf2 = NULL, data;
-+
-+	if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_READED) {
-+		buf1 = kmalloc(128, GFP_ATOMIC);
-+		buf2 = (uint32_t *)buf1;
-+		if (buf1 == NULL)
-+			return;
-+
-+		acb->acb_flags &= (~ACB_F_MESSAGE_WQBUFFER_READED);
-+		pwbuffer = arcmsr_get_iop_wqbuffer(acb);
-+		iop_data = (uint32_t __iomem *)pwbuffer->data;
-+		while ((acb->wqbuf_firstindex != acb->wqbuf_lastindex)
-+			&& (allxfer_len < 124)) {
-+			pQbuffer = &acb->wqbuffer[acb->wqbuf_firstindex];
-+			*buf1 = *pQbuffer;
-+			acb->wqbuf_firstindex++;
-+			acb->wqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
-+			buf1++;
-+			allxfer_len++;
-+		}
-+		data_len = allxfer_len;
-+		buf1 = (uint8_t *)buf2;
-+		while (data_len >= 4) {
-+			data = *buf2++;
-+			writel(data, iop_data);
-+			iop_data++;
-+			data_len -= 4;
-+		}
-+		if (data_len) {
-+			data = *buf2;
-+			writel(data, iop_data);
-+		}
-+		writel(allxfer_len, &pwbuffer->data_len);
-+		kfree(buf1);
-+		arcmsr_iop_message_wrote(acb);
- 	}
- }
- 
--static void arcmsr_iop2drv_data_read_handle(struct AdapterControlBlock *acb)
-+void
-+arcmsr_write_ioctldata2iop(struct AdapterControlBlock *acb)
- {
--	acb->acb_flags |= ACB_F_MESSAGE_WQBUFFER_READED;
--	if (acb->wqbuf_firstindex != acb->wqbuf_lastindex) {
--		uint8_t *pQbuffer;
--		struct QBUFFER __iomem *pwbuffer;
--		uint8_t __iomem *iop_data;
--		int32_t allxfer_len = 0;
-+	uint8_t *pQbuffer;
-+	struct QBUFFER __iomem *pwbuffer;
-+	uint8_t __iomem *iop_data;
-+	int32_t allxfer_len = 0;
- 
-+	if (acb->adapter_type & ACB_ADAPTER_TYPE_C) {
-+		arcmsr_write_ioctldata2iop_in_DWORD(acb);
-+		return;
-+	}
-+	if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_READED) {
- 		acb->acb_flags &= (~ACB_F_MESSAGE_WQBUFFER_READED);
- 		pwbuffer = arcmsr_get_iop_wqbuffer(acb);
- 		iop_data = (uint8_t __iomem *)pwbuffer->data;
--
--		while ((acb->wqbuf_firstindex != acb->wqbuf_lastindex) && \
--							(allxfer_len < 124)) {
-+		while ((acb->wqbuf_firstindex != acb->wqbuf_lastindex)
-+			&& (allxfer_len < 124)) {
- 			pQbuffer = &acb->wqbuffer[acb->wqbuf_firstindex];
--			memcpy(iop_data, pQbuffer, 1);
-+			writeb(*pQbuffer, iop_data);
- 			acb->wqbuf_firstindex++;
- 			acb->wqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
- 			iop_data++;
- 			allxfer_len++;
- 		}
--		pwbuffer->data_len = allxfer_len;
--
-+		writel(allxfer_len, &pwbuffer->data_len);
- 		arcmsr_iop_message_wrote(acb);
- 	}
-+}
- 
--	if (acb->wqbuf_firstindex == acb->wqbuf_lastindex) {
-+static void arcmsr_iop2drv_data_read_handle(struct AdapterControlBlock *acb)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&acb->wqbuffer_lock, flags);
-+	acb->acb_flags |= ACB_F_MESSAGE_WQBUFFER_READED;
-+	if (acb->wqbuf_firstindex != acb->wqbuf_lastindex)
-+		arcmsr_write_ioctldata2iop(acb);
-+	if (acb->wqbuf_firstindex == acb->wqbuf_lastindex)
- 		acb->acb_flags |= ACB_F_MESSAGE_WQBUFFER_CLEARED;
--	}
-+	spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
- }
- 
- static void arcmsr_hbaA_doorbell_isr(struct AdapterControlBlock *acb)
-@@ -1784,296 +1892,344 @@ static void arcmsr_iop_parking(struct Ad
- 	}
- }
- 
--void arcmsr_post_ioctldata2iop(struct AdapterControlBlock *acb)
-+
-+void arcmsr_clear_iop2drv_rqueue_buffer(struct AdapterControlBlock *acb)
- {
--	int32_t wqbuf_firstindex, wqbuf_lastindex;
--	uint8_t *pQbuffer;
--	struct QBUFFER __iomem *pwbuffer;
--	uint8_t __iomem *iop_data;
--	int32_t allxfer_len = 0;
--	pwbuffer = arcmsr_get_iop_wqbuffer(acb);
--	iop_data = (uint8_t __iomem *)pwbuffer->data;
--	if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_READED) {
--		acb->acb_flags &= (~ACB_F_MESSAGE_WQBUFFER_READED);
--		wqbuf_firstindex = acb->wqbuf_firstindex;
--		wqbuf_lastindex = acb->wqbuf_lastindex;
--		while ((wqbuf_firstindex != wqbuf_lastindex) && (allxfer_len < 124)) {
--			pQbuffer = &acb->wqbuffer[wqbuf_firstindex];
--			memcpy(iop_data, pQbuffer, 1);
--			wqbuf_firstindex++;
--			wqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
--			iop_data++;
--			allxfer_len++;
-+	uint32_t	i;
-+
-+	if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
-+		for (i = 0; i < 15; i++) {
-+			if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
-+				acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
-+				acb->rqbuf_firstindex = 0;
-+				acb->rqbuf_lastindex = 0;
-+				arcmsr_iop_message_read(acb);
-+				mdelay(30);
-+			} else if (acb->rqbuf_firstindex != acb->rqbuf_lastindex) {
-+				acb->rqbuf_firstindex = 0;
-+				acb->rqbuf_lastindex = 0;
-+				mdelay(30);
-+			} else
-+				break;
- 		}
--		acb->wqbuf_firstindex = wqbuf_firstindex;
--		pwbuffer->data_len = allxfer_len;
--		arcmsr_iop_message_wrote(acb);
- 	}
- }
- 
--static int arcmsr_iop_message_xfer(struct AdapterControlBlock *acb,
--					struct scsi_cmnd *cmd)
-+static int arcmsr_iop_message_xfer(struct AdapterControlBlock *acb, struct scsi_cmnd *cmd)
- {
--	struct CMD_MESSAGE_FIELD *pcmdmessagefld;
--	int retvalue = 0, transfer_len = 0;
- 	char *buffer;
-+	unsigned short use_sg;
-+	int retvalue = 0, transfer_len = 0;
-+	unsigned long flags;
-+	struct CMD_MESSAGE_FIELD *pcmdmessagefld;
-+	uint32_t controlcode = (uint32_t)cmd->cmnd[5] << 24 |
-+		(uint32_t)cmd->cmnd[6] << 16 |
-+		(uint32_t)cmd->cmnd[7] << 8 |
-+		(uint32_t)cmd->cmnd[8];
- 	struct scatterlist *sg;
--	uint32_t controlcode = (uint32_t ) cmd->cmnd[5] << 24 |
--						(uint32_t ) cmd->cmnd[6] << 16 |
--						(uint32_t ) cmd->cmnd[7] << 8  |
--						(uint32_t ) cmd->cmnd[8];
--						/* 4 bytes: Areca io control code */
-+
-+	use_sg = scsi_sg_count(cmd);
- 	sg = scsi_sglist(cmd);
- 	buffer = kmap_atomic(sg_page(sg)) + sg->offset;
--	if (scsi_sg_count(cmd) > 1) {
-+	if (use_sg > 1) {
- 		retvalue = ARCMSR_MESSAGE_FAIL;
- 		goto message_out;
- 	}
- 	transfer_len += sg->length;
--
- 	if (transfer_len > sizeof(struct CMD_MESSAGE_FIELD)) {
- 		retvalue = ARCMSR_MESSAGE_FAIL;
-+		pr_info("%s: ARCMSR_MESSAGE_FAIL!\n", __func__);
- 		goto message_out;
- 	}
--	pcmdmessagefld = (struct CMD_MESSAGE_FIELD *) buffer;
--	switch(controlcode) {
--
-+	pcmdmessagefld = (struct CMD_MESSAGE_FIELD *)buffer;
-+	switch (controlcode) {
- 	case ARCMSR_MESSAGE_READ_RQBUFFER: {
- 		unsigned char *ver_addr;
- 		uint8_t *pQbuffer, *ptmpQbuffer;
--		int32_t allxfer_len = 0;
--
-+		uint32_t allxfer_len = 0;
- 		ver_addr = kmalloc(1032, GFP_ATOMIC);
- 		if (!ver_addr) {
- 			retvalue = ARCMSR_MESSAGE_FAIL;
-+			pr_info("%s: memory not enough!\n", __func__);
- 			goto message_out;
- 		}
--				
- 		ptmpQbuffer = ver_addr;
--		while ((acb->rqbuf_firstindex != acb->rqbuf_lastindex)
--			&& (allxfer_len < 1031)) {
-+		spin_lock_irqsave(&acb->rqbuffer_lock, flags);
-+		if (acb->rqbuf_firstindex != acb->rqbuf_lastindex) {
- 			pQbuffer = &acb->rqbuffer[acb->rqbuf_firstindex];
--			memcpy(ptmpQbuffer, pQbuffer, 1);
--			acb->rqbuf_firstindex++;
--			acb->rqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
--			ptmpQbuffer++;
--			allxfer_len++;
-+			if (acb->rqbuf_firstindex > acb->rqbuf_lastindex) {
-+				if ((ARCMSR_MAX_QBUFFER -
-+					acb->rqbuf_firstindex) >= 1032) {
-+					memcpy(ptmpQbuffer, pQbuffer, 1032);
-+					acb->rqbuf_firstindex += 1032;
-+					acb->rqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
-+					allxfer_len = 1032;
-+				} else {
-+					if (((ARCMSR_MAX_QBUFFER -
-+						acb->rqbuf_firstindex) +
-+						acb->rqbuf_lastindex) > 1032) {
-+						memcpy(ptmpQbuffer,
-+							pQbuffer, ARCMSR_MAX_QBUFFER
-+							- acb->rqbuf_firstindex);
-+						ptmpQbuffer +=
-+							ARCMSR_MAX_QBUFFER -
-+							acb->rqbuf_firstindex;
-+						memcpy(ptmpQbuffer,
-+							acb->rqbuffer, 1032 -
-+							(ARCMSR_MAX_QBUFFER
-+							- acb->rqbuf_firstindex));
-+						acb->rqbuf_firstindex =
-+							1032 - (ARCMSR_MAX_QBUFFER
-+							- acb->rqbuf_firstindex);
-+						allxfer_len = 1032;
-+					} else {
-+						memcpy(ptmpQbuffer,
-+							pQbuffer, ARCMSR_MAX_QBUFFER
-+							- acb->rqbuf_firstindex);
-+						ptmpQbuffer +=
-+							ARCMSR_MAX_QBUFFER -
-+							acb->rqbuf_firstindex;
-+						memcpy(ptmpQbuffer,
-+							acb->rqbuffer,
-+							acb->rqbuf_lastindex);
-+						allxfer_len = ARCMSR_MAX_QBUFFER
-+							- acb->rqbuf_firstindex +
-+							acb->rqbuf_lastindex;
-+						acb->rqbuf_firstindex =
-+							acb->rqbuf_lastindex;
-+					}
-+				}
-+			} else {
-+				if ((acb->rqbuf_lastindex -
-+					acb->rqbuf_firstindex) > 1032) {
-+					memcpy(ptmpQbuffer, pQbuffer, 1032);
-+					acb->rqbuf_firstindex += 1032;
-+					allxfer_len = 1032;
-+				} else {
-+					memcpy(ptmpQbuffer, pQbuffer,
-+						acb->rqbuf_lastindex -
-+						acb->rqbuf_firstindex);
-+					allxfer_len = acb->rqbuf_lastindex
-+						- acb->rqbuf_firstindex;
-+					acb->rqbuf_firstindex =
-+						acb->rqbuf_lastindex;
-+				}
-+			}
- 		}
-+		memcpy(pcmdmessagefld->messagedatabuffer, ver_addr,
-+			allxfer_len);
- 		if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
--
- 			struct QBUFFER __iomem *prbuffer;
--			uint8_t __iomem *iop_data;
--			int32_t iop_len;
--
- 			acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
- 			prbuffer = arcmsr_get_iop_rqbuffer(acb);
--			iop_data = prbuffer->data;
--			iop_len = readl(&prbuffer->data_len);
--			while (iop_len > 0) {
--				acb->rqbuffer[acb->rqbuf_lastindex] = readb(iop_data);
--				acb->rqbuf_lastindex++;
--				acb->rqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
--				iop_data++;
--				iop_len--;
--			}
--			arcmsr_iop_message_read(acb);
--		}
--		memcpy(pcmdmessagefld->messagedatabuffer, ver_addr, allxfer_len);
--		pcmdmessagefld->cmdmessage.Length = allxfer_len;
--		if(acb->fw_flag == FW_DEADLOCK) {
--			pcmdmessagefld->cmdmessage.ReturnCode = ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
--		}else{
--			pcmdmessagefld->cmdmessage.ReturnCode = ARCMSR_MESSAGE_RETURNCODE_OK;
-+			if (arcmsr_Read_iop_rqbuffer_data(acb, prbuffer) == 0)
-+				acb->acb_flags |= ACB_F_IOPDATA_OVERFLOW;
- 		}
-+		spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);
- 		kfree(ver_addr);
--		}
-+		pcmdmessagefld->cmdmessage.Length = allxfer_len;
-+		if (acb->fw_flag == FW_DEADLOCK)
-+			pcmdmessagefld->cmdmessage.ReturnCode =
-+				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
-+		else
-+			pcmdmessagefld->cmdmessage.ReturnCode =
-+				ARCMSR_MESSAGE_RETURNCODE_OK;
- 		break;
--
-+	}
- 	case ARCMSR_MESSAGE_WRITE_WQBUFFER: {
- 		unsigned char *ver_addr;
- 		int32_t my_empty_len, user_len, wqbuf_firstindex, wqbuf_lastindex;
- 		uint8_t *pQbuffer, *ptmpuserbuffer;
--
- 		ver_addr = kmalloc(1032, GFP_ATOMIC);
- 		if (!ver_addr) {
- 			retvalue = ARCMSR_MESSAGE_FAIL;
- 			goto message_out;
- 		}
--		if(acb->fw_flag == FW_DEADLOCK) {
--			pcmdmessagefld->cmdmessage.ReturnCode = 
--			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
--		}else{
--			pcmdmessagefld->cmdmessage.ReturnCode = 
--			ARCMSR_MESSAGE_RETURNCODE_OK;
--		}
- 		ptmpuserbuffer = ver_addr;
- 		user_len = pcmdmessagefld->cmdmessage.Length;
--		memcpy(ptmpuserbuffer, pcmdmessagefld->messagedatabuffer, user_len);
-+		memcpy(ptmpuserbuffer,
-+			pcmdmessagefld->messagedatabuffer, user_len);
-+		spin_lock_irqsave(&acb->wqbuffer_lock, flags);
- 		wqbuf_lastindex = acb->wqbuf_lastindex;
- 		wqbuf_firstindex = acb->wqbuf_firstindex;
- 		if (wqbuf_lastindex != wqbuf_firstindex) {
- 			struct SENSE_DATA *sensebuffer =
- 				(struct SENSE_DATA *)cmd->sense_buffer;
--			arcmsr_post_ioctldata2iop(acb);
-+			arcmsr_write_ioctldata2iop(acb);
- 			/* has error report sensedata */
--			sensebuffer->ErrorCode = 0x70;
-+			sensebuffer->ErrorCode = SCSI_SENSE_CURRENT_ERRORS;
- 			sensebuffer->SenseKey = ILLEGAL_REQUEST;
- 			sensebuffer->AdditionalSenseLength = 0x0A;
- 			sensebuffer->AdditionalSenseCode = 0x20;
- 			sensebuffer->Valid = 1;
- 			retvalue = ARCMSR_MESSAGE_FAIL;
- 		} else {
--			my_empty_len = (wqbuf_firstindex-wqbuf_lastindex - 1)
--				&(ARCMSR_MAX_QBUFFER - 1);
-+			my_empty_len = (wqbuf_firstindex - wqbuf_lastindex - 1)
-+				& (ARCMSR_MAX_QBUFFER - 1);
- 			if (my_empty_len >= user_len) {
- 				while (user_len > 0) {
--					pQbuffer =
--					&acb->wqbuffer[acb->wqbuf_lastindex];
--					memcpy(pQbuffer, ptmpuserbuffer, 1);
--					acb->wqbuf_lastindex++;
--					acb->wqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
--					ptmpuserbuffer++;
--					user_len--;
-+					pQbuffer = &acb->wqbuffer[acb->wqbuf_lastindex];
-+					if ((acb->wqbuf_lastindex + user_len)
-+						> ARCMSR_MAX_QBUFFER) {
-+						memcpy(pQbuffer, ptmpuserbuffer,
-+							ARCMSR_MAX_QBUFFER -
-+							acb->wqbuf_lastindex);
-+						ptmpuserbuffer +=
-+							(ARCMSR_MAX_QBUFFER
-+							- acb->wqbuf_lastindex);
-+						user_len -= (ARCMSR_MAX_QBUFFER
-+							- acb->wqbuf_lastindex);
-+						acb->wqbuf_lastindex = 0;
-+					} else {
-+						memcpy(pQbuffer, ptmpuserbuffer,
-+							user_len);
-+						acb->wqbuf_lastindex += user_len;
-+						acb->wqbuf_lastindex %=
-+							ARCMSR_MAX_QBUFFER;
-+						user_len = 0;
-+					}
- 				}
--				if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_CLEARED) {
-+				if (acb->acb_flags &
-+					ACB_F_MESSAGE_WQBUFFER_CLEARED) {
- 					acb->acb_flags &=
- 						~ACB_F_MESSAGE_WQBUFFER_CLEARED;
--					arcmsr_post_ioctldata2iop(acb);
-+					arcmsr_write_ioctldata2iop(acb);
- 				}
- 			} else {
--				/* has error report sensedata */
- 				struct SENSE_DATA *sensebuffer =
- 					(struct SENSE_DATA *)cmd->sense_buffer;
--				sensebuffer->ErrorCode = 0x70;
-+				/* has error report sensedata */
-+				sensebuffer->ErrorCode =
-+					SCSI_SENSE_CURRENT_ERRORS;
- 				sensebuffer->SenseKey = ILLEGAL_REQUEST;
- 				sensebuffer->AdditionalSenseLength = 0x0A;
- 				sensebuffer->AdditionalSenseCode = 0x20;
- 				sensebuffer->Valid = 1;
- 				retvalue = ARCMSR_MESSAGE_FAIL;
- 			}
--			}
--			kfree(ver_addr);
- 		}
-+		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
-+		kfree(ver_addr);
-+		if (acb->fw_flag == FW_DEADLOCK)
-+			pcmdmessagefld->cmdmessage.ReturnCode =
-+				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
-+		else
-+			pcmdmessagefld->cmdmessage.ReturnCode =
-+				ARCMSR_MESSAGE_RETURNCODE_OK;
- 		break;
--
-+	}
- 	case ARCMSR_MESSAGE_CLEAR_RQBUFFER: {
- 		uint8_t *pQbuffer = acb->rqbuffer;
--		if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
--			acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
--			arcmsr_iop_message_read(acb);
--		}
-+
-+		arcmsr_clear_iop2drv_rqueue_buffer(acb);
-+		spin_lock_irqsave(&acb->rqbuffer_lock, flags);
- 		acb->acb_flags |= ACB_F_MESSAGE_RQBUFFER_CLEARED;
- 		acb->rqbuf_firstindex = 0;
- 		acb->rqbuf_lastindex = 0;
- 		memset(pQbuffer, 0, ARCMSR_MAX_QBUFFER);
--		if(acb->fw_flag == FW_DEADLOCK) {
-+		spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);
-+		if (acb->fw_flag == FW_DEADLOCK)
- 			pcmdmessagefld->cmdmessage.ReturnCode =
--			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
--		}else{
-+				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
-+		else
- 			pcmdmessagefld->cmdmessage.ReturnCode =
--			ARCMSR_MESSAGE_RETURNCODE_OK;
--		}
--		}
-+				ARCMSR_MESSAGE_RETURNCODE_OK;
- 		break;
--
-+	}
- 	case ARCMSR_MESSAGE_CLEAR_WQBUFFER: {
- 		uint8_t *pQbuffer = acb->wqbuffer;
--		if(acb->fw_flag == FW_DEADLOCK) {
--			pcmdmessagefld->cmdmessage.ReturnCode =
--			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
--		}else{
--			pcmdmessagefld->cmdmessage.ReturnCode =
--			ARCMSR_MESSAGE_RETURNCODE_OK;
--		}
--
--		if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
--			acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
--			arcmsr_iop_message_read(acb);
--		}
--		acb->acb_flags |=
--			(ACB_F_MESSAGE_WQBUFFER_CLEARED |
--				ACB_F_MESSAGE_WQBUFFER_READED);
-+		spin_lock_irqsave(&acb->wqbuffer_lock, flags);
-+		acb->acb_flags |= (ACB_F_MESSAGE_WQBUFFER_CLEARED |
-+			ACB_F_MESSAGE_WQBUFFER_READED);
- 		acb->wqbuf_firstindex = 0;
- 		acb->wqbuf_lastindex = 0;
- 		memset(pQbuffer, 0, ARCMSR_MAX_QBUFFER);
--		}
-+		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
-+		if (acb->fw_flag == FW_DEADLOCK)
-+			pcmdmessagefld->cmdmessage.ReturnCode =
-+				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
-+		else
-+			pcmdmessagefld->cmdmessage.ReturnCode =
-+				ARCMSR_MESSAGE_RETURNCODE_OK;
- 		break;
--
-+	}
- 	case ARCMSR_MESSAGE_CLEAR_ALLQBUFFER: {
- 		uint8_t *pQbuffer;
--
--		if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
--			acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
--			arcmsr_iop_message_read(acb);
--		}
--		acb->acb_flags |=
--			(ACB_F_MESSAGE_WQBUFFER_CLEARED
--			| ACB_F_MESSAGE_RQBUFFER_CLEARED
--			| ACB_F_MESSAGE_WQBUFFER_READED);
-+		arcmsr_clear_iop2drv_rqueue_buffer(acb);
-+		spin_lock_irqsave(&acb->rqbuffer_lock, flags);
-+		acb->acb_flags |= ACB_F_MESSAGE_RQBUFFER_CLEARED;
- 		acb->rqbuf_firstindex = 0;
- 		acb->rqbuf_lastindex = 0;
--		acb->wqbuf_firstindex = 0;
--		acb->wqbuf_lastindex = 0;
- 		pQbuffer = acb->rqbuffer;
- 		memset(pQbuffer, 0, sizeof(struct QBUFFER));
-+		spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);
-+		spin_lock_irqsave(&acb->wqbuffer_lock, flags);
-+		acb->acb_flags |= (ACB_F_MESSAGE_WQBUFFER_CLEARED |
-+			ACB_F_MESSAGE_WQBUFFER_READED);
-+		acb->wqbuf_firstindex = 0;
-+		acb->wqbuf_lastindex = 0;
- 		pQbuffer = acb->wqbuffer;
- 		memset(pQbuffer, 0, sizeof(struct QBUFFER));
--		if(acb->fw_flag == FW_DEADLOCK) {
-+		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
-+		if (acb->fw_flag == FW_DEADLOCK)
- 			pcmdmessagefld->cmdmessage.ReturnCode =
--			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
--		}else{
-+				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
-+		else
- 			pcmdmessagefld->cmdmessage.ReturnCode =
--			ARCMSR_MESSAGE_RETURNCODE_OK;
--		}
--		}
-+				ARCMSR_MESSAGE_RETURNCODE_OK;
- 		break;
--
-+	}
- 	case ARCMSR_MESSAGE_RETURN_CODE_3F: {
--		if(acb->fw_flag == FW_DEADLOCK) {
-+		if (acb->fw_flag == FW_DEADLOCK)
- 			pcmdmessagefld->cmdmessage.ReturnCode =
--			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
--		}else{
-+				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
-+		else
- 			pcmdmessagefld->cmdmessage.ReturnCode =
--			ARCMSR_MESSAGE_RETURNCODE_3F;
--		}
-+				ARCMSR_MESSAGE_RETURNCODE_3F;
- 		break;
--		}
-+	}
- 	case ARCMSR_MESSAGE_SAY_HELLO: {
- 		int8_t *hello_string = "Hello! I am ARCMSR";
--		if(acb->fw_flag == FW_DEADLOCK) {
-+		if (acb->fw_flag == FW_DEADLOCK)
- 			pcmdmessagefld->cmdmessage.ReturnCode =
--			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
--		}else{
-+				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
-+		else
- 			pcmdmessagefld->cmdmessage.ReturnCode =
--			ARCMSR_MESSAGE_RETURNCODE_OK;
--		}
--		memcpy(pcmdmessagefld->messagedatabuffer, hello_string
--			, (int16_t)strlen(hello_string));
--		}
-+				ARCMSR_MESSAGE_RETURNCODE_OK;
-+		memcpy(pcmdmessagefld->messagedatabuffer,
-+			hello_string, (int16_t)strlen(hello_string));
- 		break;
--
--	case ARCMSR_MESSAGE_SAY_GOODBYE:
--		if(acb->fw_flag == FW_DEADLOCK) {
-+	}
-+	case ARCMSR_MESSAGE_SAY_GOODBYE: {
-+		if (acb->fw_flag == FW_DEADLOCK)
- 			pcmdmessagefld->cmdmessage.ReturnCode =
--			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
--		}
-+				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
-+		else
-+			pcmdmessagefld->cmdmessage.ReturnCode =
-+				ARCMSR_MESSAGE_RETURNCODE_OK;
- 		arcmsr_iop_parking(acb);
- 		break;
--
--	case ARCMSR_MESSAGE_FLUSH_ADAPTER_CACHE:
--		if(acb->fw_flag == FW_DEADLOCK) {
-+	}
-+	case ARCMSR_MESSAGE_FLUSH_ADAPTER_CACHE: {
-+		if (acb->fw_flag == FW_DEADLOCK)
- 			pcmdmessagefld->cmdmessage.ReturnCode =
--			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
--		}
-+				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
-+		else
-+			pcmdmessagefld->cmdmessage.ReturnCode =
-+				ARCMSR_MESSAGE_RETURNCODE_OK;
- 		arcmsr_flush_adapter_cache(acb);
- 		break;
--
-+	}
- 	default:
- 		retvalue = ARCMSR_MESSAGE_FAIL;
-+		pr_info("%s: unknown controlcode!\n", __func__);
-+	}
-+message_out:
-+	if (use_sg) {
-+		struct scatterlist *sg;
-+		sg = scsi_sglist(cmd);
-+		kunmap_atomic(buffer - sg->offset);
- 	}
--	message_out:
--	sg = scsi_sglist(cmd);
--	kunmap_atomic(buffer - sg->offset);
- 	return retvalue;
- }
- 
+Regards,
+Wanpeng Li 
 
-
+>
+>Paolo
+>> +		else
+>> +			vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
+>> +				page_to_phys(vmx->nested.virtual_apic_page));
+>> +
+>> +		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
+>> +	}
+>> +
+>>  	/*
+>>  	 * Merging of IO and MSR bitmaps not currently supported.
+>>  	 * Rather, exit every time.
+>> @@ -8793,6 +8818,10 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
+>>  		nested_release_page(vmx->nested.apic_access_page);
+>>  		vmx->nested.apic_access_page = 0;
+>>  	}
+>> +	if (vmx->nested.virtual_apic_page) {
+>> +		nested_release_page(vmx->nested.virtual_apic_page);
+>> +		vmx->nested.virtual_apic_page = 0;
+>> +	}
+>>  
+>>  	/*
+>>  	 * Exiting from L2 to L1, we're now back to L1 which thinks it just
+>> 
