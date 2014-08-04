@@ -1,56 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618AbaHDNM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 09:12:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52214 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751117AbaHDNM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 09:12:56 -0400
-Date: Mon, 4 Aug 2014 15:12:49 +0200
-From: Karel Zak <kzak@redhat.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-api@vger.kernel.org,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [REVIEW][PATCH 0/4] /proc/thread-self
-Message-ID: <20140804131249.GD6923@x2.net.home>
-References: <87oaw5caq1.fsf@x220.int.ebiederm.org>
- <1406860795.3036.3.camel@buesod1.americas.hpqcorp.net>
+	id S1752734AbaHDNNz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 09:13:55 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:42614 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752263AbaHDNNy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 09:13:54 -0400
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Eric Auger <eric.auger@linaro.org>
+Cc: "kvmarm\@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: Re: [RFC PATCH 7/9] KVM: arm: vgic: allow dynamic mapping of physical/virtual interrupts
+In-Reply-To: <53DE0584.2040405@linaro.org> (Eric Auger's message of "Sun, 3
+	Aug 2014 10:48:52 +0100")
+Organization: ARM Ltd
+References: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com>
+	<1403688530-23273-8-git-send-email-marc.zyngier@arm.com>
+	<53DE0584.2040405@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Date: Mon, 04 Aug 2014 14:13:35 +0100
+Message-ID: <87bns0gzy8.fsf@approximate.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406860795.3036.3.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 07:39:55PM -0700, Davidlohr Bueso wrote:
-> On Thu, 2014-07-31 at 17:30 -0700, Eric W. Biederman wrote:
-> > This is small chance changing /proc/net and /proc/mounts will cause
-> > userspace regressions (although nothing has shown up in my testing) if
-> > that happens we can just point the change that moves them from
-> > /proc/self/... to /proc/thread-self/...
-> 
-> Isn't breaking userspace a no no, no matter what? At least some
-> util-linux programs makes use of both /proc/mounts and /proc/net.
+On Sun, Aug 03 2014 at 10:48:52 am BST, Eric Auger <eric.auger@linaro.org> wrote:
+> On 06/25/2014 11:28 AM, Marc Zyngier wrote:
+>> In order to be able to feed physical interrupts to a guest, we need
+>> to be able to establish the virtual-physical mapping between the two
+>> worlds.
+>> 
+>> As we try to keep the injection interface simple, find out what the
+>> physical interrupt is (if any) when we actually build the LR.
+>> 
+>> The mapping is kept in a rbtree, indexed by virtual interrupts.
+>
+> Hi Marc,
+>
+> I suspect there is a piece missing here related to bitmap state
+> management. When using maintenance IRQ, in process_maintenance we cleared
+> - dist->irq_pending (and new dist->irq_level)
+> - vcpu->irq_queued
+>
+> Now this does not exist anymore for forwarded irqs, when a subsequent
+> IRQ will be injected, vgic_update_irq_pending will fail in injecting the
+> IRQ because the states are reflecting the IRQ is still in progress.
+>
+> Since I have a modified version of your code, using Christoffer patches
+> I may have missed some modifications you did but at least on my side I
+> was forced to add bitmap clearing.
+>
+> It is not clear to me where to put that code however. Since user-side
+> can inject an IRQ while the previous one is not completed at guest and
+> host level, it cannot be in update_irq_pending - or we shall prevent the
+> user from injecting fwd IRQs - .
 
-Frankly, I don't care about /proc/mount, this file is more about backward
-compatibility than about any real informations ;-)
+Interesting. Indeed, userspace shouldn't be allowed to inject a
+forwarded interrupt (or actually the virtual interrupt that matches the
+physical one). This interrupt is now under complete control of the
+kernel, and shouldn't triggered by userspace.
 
-The really important file is /proc/self/mountinfo. We use this file on
-many places including shared libs and it seems (according to Eric's
-suggestion), that the right think will be to update the libs to use
-/proc/thread-self/mountinfo.
+Now, it is completely possible that we're missing something here (or
+actually doing too much).
 
+> In my case (VFIO/IRQFD), by construction I only inject a new forwarded
+> IRQ when the previous one was completed so I could put it in the irqfd
+> injection function. But even irqfd is injected through eventfd trigger.
+> We shall forbid the user-side to trigger that eventfd in place of the
+> VFIO driver. What do you think?
 
-Note that I like the idea to have the magic symlink to access thread
-specific /proc stuff. It's definitely nice thing for userspace.
+Yup. userspace can't interfere with a forwarded interrupt, that's way
+too dangerous.
 
-    Karel
+> A question related to guest kill. Cannot it happen the guest sometimes
+> does not complete the vIRQ before exiting? Currently I observe cases
+> where when I launch qemu-system after a kill, forwarded irqs do not work
+> properly. I am not yet sure this is the cause of my problem but just in
+> case, can the host write into GICV_EOIR in place of guest?
 
+It is quite possible that the interrupt is left active when the guest is
+killed, which would tend to indicate that we need a way to cleanup
+behind us. It should be enough to clear the active bit, shouldn't it?
+
+> Besides those problems, the patch works in my test environment
+
+Thanks for testing!
+
+	M.
 -- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Jazz is not dead. It just smells funny.
