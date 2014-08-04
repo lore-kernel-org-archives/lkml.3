@@ -1,54 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638AbaHDQwb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:52:31 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36605 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750990AbaHDQw3 (ORCPT
+	id S1752466AbaHDQuR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:50:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56586 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752053AbaHDQt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:52:29 -0400
-Date: Mon, 4 Aug 2014 17:52:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-Cc: Arend van Spriel <arend@broadcom.com>, brudley@broadcom.com,
-        Franky Lin <frankyl@broadcom.com>, meuleman@broadcom.com,
-        linville@tuxdriver.com, pieterpg@broadcom.com, dekim@broadcom.com,
-        mcgrof@do-not-panic.com, antonio@open-mesh.com,
-        johannes.berg@intel.com, linux-wireless@vger.kernel.org,
-        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] brcmfmac: prevent watchdog from interfering with
-	scanning and connecting
-Message-ID: <20140804165202.GG30282@n2100.arm.linux.org.uk>
-References: <539E8559.3010601@linux.intel.com> <539EA79C.7010206@broadcom.com> <53A30F96.3010206@linux.intel.com> <53A311E4.301@broadcom.com> <53CCC44C.2070507@linux.intel.com> <53D124B3.7030807@linux.intel.com> <53DFB6A1.7040900@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 4 Aug 2014 12:49:57 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <53DFB6A1.7040900@linux.intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Ivan Djelic" <ivan.djelic@parrot.com>,
+        "Nicolas Pitre" <nico@linaro.org>,
+        "Russell King" <rmk+kernel@arm.linux.org.uk>,
+        "Dirk Behme" <dirk.behme@gmail.com>
+Date: Mon, 04 Aug 2014 17:48:32 +0100
+Message-ID: <lsq.1407170912.784757721@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 86/94] ARM: 7668/1: fix memset-related crashes caused
+ by recent GCC (4.7.2) optimizations
+In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 12:36:49AM +0800, Fu, Zhonghui wrote:
-> Hi, Arend
-> 
-> I investigated this issue, and its root cause is still that sdio
-> controller can't receive interrupts from WiFi chip on sdio bus when
-> sdio controller is in runtime suspend status. I am running 3.16-rc5
-> linux kernel on ASUS T100TA tablet, and using sdhci-acpi driver.
+3.2.62-rc1 review patch.  If anyone has any objections, please let me know.
 
-That's the root cause.  I fixed this with the Freescale i.MX SD driver
-which is now able to report pending SDIO interrupts while runtime PM
-suspended.
+------------------
 
-Other host drivers probably need fixing too, or having runtime PM
-disabled on them - if you can't receive SDIO interrupts while runtime
-PM suspended, then entering runtime PM while you have a SDIO device
-attached is a bug.
+From: Ivan Djelic <ivan.djelic@parrot.com>
 
-This is something for the MMC people to deal with rather than Arend.
+commit 455bd4c430b0c0a361f38e8658a0d6cb469942b5 upstream.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Recent GCC versions (e.g. GCC-4.7.2) perform optimizations based on
+assumptions about the implementation of memset and similar functions.
+The current ARM optimized memset code does not return the value of
+its first argument, as is usually expected from standard implementations.
+
+For instance in the following function:
+
+void debug_mutex_lock_common(struct mutex *lock, struct mutex_waiter *waiter)
+{
+	memset(waiter, MUTEX_DEBUG_INIT, sizeof(*waiter));
+	waiter->magic = waiter;
+	INIT_LIST_HEAD(&waiter->list);
+}
+
+compiled as:
+
+800554d0 <debug_mutex_lock_common>:
+800554d0:       e92d4008        push    {r3, lr}
+800554d4:       e1a00001        mov     r0, r1
+800554d8:       e3a02010        mov     r2, #16 ; 0x10
+800554dc:       e3a01011        mov     r1, #17 ; 0x11
+800554e0:       eb04426e        bl      80165ea0 <memset>
+800554e4:       e1a03000        mov     r3, r0
+800554e8:       e583000c        str     r0, [r3, #12]
+800554ec:       e5830000        str     r0, [r3]
+800554f0:       e5830004        str     r0, [r3, #4]
+800554f4:       e8bd8008        pop     {r3, pc}
+
+GCC assumes memset returns the value of pointer 'waiter' in register r0; causing
+register/memory corruptions.
+
+This patch fixes the return value of the assembly version of memset.
+It adds a 'mov' instruction and merges an additional load+store into
+existing load/store instructions.
+For ease of review, here is a breakdown of the patch into 4 simple steps:
+
+Step 1
+======
+Perform the following substitutions:
+ip -> r8, then
+r0 -> ip,
+and insert 'mov ip, r0' as the first statement of the function.
+At this point, we have a memset() implementation returning the proper result,
+but corrupting r8 on some paths (the ones that were using ip).
+
+Step 2
+======
+Make sure r8 is saved and restored when (! CALGN(1)+0) == 1:
+
+save r8:
+-       str     lr, [sp, #-4]!
++       stmfd   sp!, {r8, lr}
+
+and restore r8 on both exit paths:
+-       ldmeqfd sp!, {pc}               @ Now <64 bytes to go.
++       ldmeqfd sp!, {r8, pc}           @ Now <64 bytes to go.
+(...)
+        tst     r2, #16
+        stmneia ip!, {r1, r3, r8, lr}
+-       ldr     lr, [sp], #4
++       ldmfd   sp!, {r8, lr}
+
+Step 3
+======
+Make sure r8 is saved and restored when (! CALGN(1)+0) == 0:
+
+save r8:
+-       stmfd   sp!, {r4-r7, lr}
++       stmfd   sp!, {r4-r8, lr}
+
+and restore r8 on both exit paths:
+        bgt     3b
+-       ldmeqfd sp!, {r4-r7, pc}
++       ldmeqfd sp!, {r4-r8, pc}
+(...)
+        tst     r2, #16
+        stmneia ip!, {r4-r7}
+-       ldmfd   sp!, {r4-r7, lr}
++       ldmfd   sp!, {r4-r8, lr}
+
+Step 4
+======
+Rewrite register list "r4-r7, r8" as "r4-r8".
+
+Signed-off-by: Ivan Djelic <ivan.djelic@parrot.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Dirk Behme <dirk.behme@gmail.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/arm/lib/memset.S | 85 ++++++++++++++++++++++++++-------------------------
+ 1 file changed, 44 insertions(+), 41 deletions(-)
+
+diff --git a/arch/arm/lib/memset.S b/arch/arm/lib/memset.S
+index 650d5923..d912e73 100644
+--- a/arch/arm/lib/memset.S
++++ b/arch/arm/lib/memset.S
+@@ -19,9 +19,9 @@
+ 1:	subs	r2, r2, #4		@ 1 do we have enough
+ 	blt	5f			@ 1 bytes to align with?
+ 	cmp	r3, #2			@ 1
+-	strltb	r1, [r0], #1		@ 1
+-	strleb	r1, [r0], #1		@ 1
+-	strb	r1, [r0], #1		@ 1
++	strltb	r1, [ip], #1		@ 1
++	strleb	r1, [ip], #1		@ 1
++	strb	r1, [ip], #1		@ 1
+ 	add	r2, r2, r3		@ 1 (r2 = r2 - (4 - r3))
+ /*
+  * The pointer is now aligned and the length is adjusted.  Try doing the
+@@ -29,10 +29,14 @@
+  */
+ 
+ ENTRY(memset)
+-	ands	r3, r0, #3		@ 1 unaligned?
++/*
++ * Preserve the contents of r0 for the return value.
++ */
++	mov	ip, r0
++	ands	r3, ip, #3		@ 1 unaligned?
+ 	bne	1b			@ 1
+ /*
+- * we know that the pointer in r0 is aligned to a word boundary.
++ * we know that the pointer in ip is aligned to a word boundary.
+  */
+ 	orr	r1, r1, r1, lsl #8
+ 	orr	r1, r1, r1, lsl #16
+@@ -43,29 +47,28 @@ ENTRY(memset)
+ #if ! CALGN(1)+0
+ 
+ /*
+- * We need an extra register for this loop - save the return address and
+- * use the LR
++ * We need 2 extra registers for this loop - use r8 and the LR
+  */
+-	str	lr, [sp, #-4]!
+-	mov	ip, r1
++	stmfd	sp!, {r8, lr}
++	mov	r8, r1
+ 	mov	lr, r1
+ 
+ 2:	subs	r2, r2, #64
+-	stmgeia	r0!, {r1, r3, ip, lr}	@ 64 bytes at a time.
+-	stmgeia	r0!, {r1, r3, ip, lr}
+-	stmgeia	r0!, {r1, r3, ip, lr}
+-	stmgeia	r0!, {r1, r3, ip, lr}
++	stmgeia	ip!, {r1, r3, r8, lr}	@ 64 bytes at a time.
++	stmgeia	ip!, {r1, r3, r8, lr}
++	stmgeia	ip!, {r1, r3, r8, lr}
++	stmgeia	ip!, {r1, r3, r8, lr}
+ 	bgt	2b
+-	ldmeqfd	sp!, {pc}		@ Now <64 bytes to go.
++	ldmeqfd	sp!, {r8, pc}		@ Now <64 bytes to go.
+ /*
+  * No need to correct the count; we're only testing bits from now on
+  */
+ 	tst	r2, #32
+-	stmneia	r0!, {r1, r3, ip, lr}
+-	stmneia	r0!, {r1, r3, ip, lr}
++	stmneia	ip!, {r1, r3, r8, lr}
++	stmneia	ip!, {r1, r3, r8, lr}
+ 	tst	r2, #16
+-	stmneia	r0!, {r1, r3, ip, lr}
+-	ldr	lr, [sp], #4
++	stmneia	ip!, {r1, r3, r8, lr}
++	ldmfd	sp!, {r8, lr}
+ 
+ #else
+ 
+@@ -74,54 +77,54 @@ ENTRY(memset)
+  * whole cache lines at once.
+  */
+ 
+-	stmfd	sp!, {r4-r7, lr}
++	stmfd	sp!, {r4-r8, lr}
+ 	mov	r4, r1
+ 	mov	r5, r1
+ 	mov	r6, r1
+ 	mov	r7, r1
+-	mov	ip, r1
++	mov	r8, r1
+ 	mov	lr, r1
+ 
+ 	cmp	r2, #96
+-	tstgt	r0, #31
++	tstgt	ip, #31
+ 	ble	3f
+ 
+-	and	ip, r0, #31
+-	rsb	ip, ip, #32
+-	sub	r2, r2, ip
+-	movs	ip, ip, lsl #(32 - 4)
+-	stmcsia	r0!, {r4, r5, r6, r7}
+-	stmmiia	r0!, {r4, r5}
+-	tst	ip, #(1 << 30)
+-	mov	ip, r1
+-	strne	r1, [r0], #4
++	and	r8, ip, #31
++	rsb	r8, r8, #32
++	sub	r2, r2, r8
++	movs	r8, r8, lsl #(32 - 4)
++	stmcsia	ip!, {r4, r5, r6, r7}
++	stmmiia	ip!, {r4, r5}
++	tst	r8, #(1 << 30)
++	mov	r8, r1
++	strne	r1, [ip], #4
+ 
+ 3:	subs	r2, r2, #64
+-	stmgeia	r0!, {r1, r3-r7, ip, lr}
+-	stmgeia	r0!, {r1, r3-r7, ip, lr}
++	stmgeia	ip!, {r1, r3-r8, lr}
++	stmgeia	ip!, {r1, r3-r8, lr}
+ 	bgt	3b
+-	ldmeqfd	sp!, {r4-r7, pc}
++	ldmeqfd	sp!, {r4-r8, pc}
+ 
+ 	tst	r2, #32
+-	stmneia	r0!, {r1, r3-r7, ip, lr}
++	stmneia	ip!, {r1, r3-r8, lr}
+ 	tst	r2, #16
+-	stmneia	r0!, {r4-r7}
+-	ldmfd	sp!, {r4-r7, lr}
++	stmneia	ip!, {r4-r7}
++	ldmfd	sp!, {r4-r8, lr}
+ 
+ #endif
+ 
+ 4:	tst	r2, #8
+-	stmneia	r0!, {r1, r3}
++	stmneia	ip!, {r1, r3}
+ 	tst	r2, #4
+-	strne	r1, [r0], #4
++	strne	r1, [ip], #4
+ /*
+  * When we get here, we've got less than 4 bytes to zero.  We
+  * may have an unaligned pointer as well.
+  */
+ 5:	tst	r2, #2
+-	strneb	r1, [r0], #1
+-	strneb	r1, [r0], #1
++	strneb	r1, [ip], #1
++	strneb	r1, [ip], #1
+ 	tst	r2, #1
+-	strneb	r1, [r0], #1
++	strneb	r1, [ip], #1
+ 	mov	pc, lr
+ ENDPROC(memset)
+
