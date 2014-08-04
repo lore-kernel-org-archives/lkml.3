@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbaHDGaj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 02:30:39 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:37086 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaHDGah (ORCPT
+	id S1751446AbaHDGfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 02:35:25 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:3983 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044AbaHDGfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 02:30:37 -0400
+	Mon, 4 Aug 2014 02:35:24 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 03 Aug 2014 23:26:46 -0700
+Message-ID: <53DF29A8.1030604@nvidia.com>
+Date: Mon, 4 Aug 2014 09:35:20 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140804162633.2d2e8604@canb.auug.org.au>
-References: <20140804162633.2d2e8604@canb.auug.org.au>
-Date: Sun, 3 Aug 2014 23:30:35 -0700
-Message-ID: <CAMEtUuxgmUB=MLMjLBpjmb7nQ6nPE2spkmgFVoXDu5Fq6cFYyw@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the security tree with the net-next tree
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: James Morris <jmorris@namei.org>, David Miller <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: tegra: Implement memory-controller clock
+References: <1406894945-32069-1-git-send-email-thierry.reding@gmail.com>
+In-Reply-To: <1406894945-32069-1-git-send-email-thierry.reding@gmail.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 3, 2014 at 11:26 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi James,
->
-> Today's linux-next merge of the security tree got a conflict in
-> kernel/seccomp.c between commit 7ae457c1e5b4 ("net: filter: split
-> 'struct sk_filter' into socket and bpf parts") from the net-next tree
-> and commits c8bee430dc52 ("seccomp: split filter prep from check and
-> apply") and 3ba2530cc06e ("seccomp: allow mode setting across threads")
-> from the security tree.
->
-> I fixed it up (I hope - see below) and can carry the fix as necessary
-> (no action is required).
+I'm curious why you used emc_mux as the parent clock? (I don't really 
+understand why this clock exists, and my EMC series removes it). Using 
+'emc' would be compatible with the EMC series :)
 
-Looks correct. Thanks.
-Will double check during merge window.
+A minor one: the MC clock should probably be always enabled.
+
+Apart from these:
+
+Reviewed-by: Mikko Perttunen <mperttunen@nvidia.com>
+Tested-by: Mikko Perttunen <mperttunen@nvidia.com>
+
+Cheers,
+Mikko
+
+On 01/08/14 15:09, Thierry Reding wrote:
+> From: Thierry Reding <treding@nvidia.com>
+>
+> The memory controller clock runs either at half or the same frequency as
+> the EMC clock.
+>
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ...
