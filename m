@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789AbaHDNCi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 09:02:38 -0400
-Received: from smtprelay06.ispgateway.de ([80.67.31.95]:50971 "EHLO
+	id S1752809AbaHDNCl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 09:02:41 -0400
+Received: from smtprelay06.ispgateway.de ([80.67.31.102]:40082 "EHLO
 	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409AbaHDNCg (ORCPT
+	with ESMTP id S1751409AbaHDNCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 09:02:36 -0400
+	Mon, 4 Aug 2014 09:02:39 -0400
 From: Christoph Jaeger <email@christophjaeger.info>
 To: shigekatsu.tateno@atmel.com, gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Christoph Jaeger <email@christophjaeger.info>
-Subject: [PATCH 07/10] staging: ozwpan: Use slab cache for oz_urb_link allocation
-Date: Mon,  4 Aug 2014 14:54:53 +0200
-Message-Id: <1407156896-3246-8-git-send-email-email@christophjaeger.info>
+Subject: [PATCH 09/10] staging: ozwpan: Use slab cache for oz_tx_frame allocation
+Date: Mon,  4 Aug 2014 14:54:55 +0200
+Message-Id: <1407156896-3246-10-git-send-email-email@christophjaeger.info>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1407156896-3246-1-git-send-email-email@christophjaeger.info>
 References: <1407156896-3246-1-git-send-email-email@christophjaeger.info>
@@ -26,142 +26,159 @@ Use a slab cache rather than rolling our own free list.
 
 Signed-off-by: Christoph Jaeger <email@christophjaeger.info>
 ---
- drivers/staging/ozwpan/ozhcd.c | 70 ++++++++----------------------------------
- 1 file changed, 12 insertions(+), 58 deletions(-)
+ drivers/staging/ozwpan/ozpd.c    | 43 +++++++---------------------------------
+ drivers/staging/ozwpan/ozpd.h    |  3 +--
+ drivers/staging/ozwpan/ozproto.c |  8 ++++++++
+ drivers/staging/ozwpan/ozproto.h |  1 +
+ 4 files changed, 17 insertions(+), 38 deletions(-)
 
-diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
-index 30bd928..3b603c5 100644
---- a/drivers/staging/ozwpan/ozhcd.c
-+++ b/drivers/staging/ozwpan/ozhcd.c
-@@ -45,10 +45,6 @@
-  */
- #define OZ_PLAT_DEV_NAME	"ozwpan"
+diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
+index c6fddb8..8048ea3 100644
+--- a/drivers/staging/ozwpan/ozpd.c
++++ b/drivers/staging/ozwpan/ozpd.c
+@@ -21,8 +21,6 @@
+ #include <linux/uaccess.h>
+ #include <net/psnap.h>
  
--/* Maximum number of free urb links that can be kept in the pool.
-- */
--#define OZ_MAX_LINK_POOL_SIZE	16
+-#define OZ_MAX_TX_POOL_SIZE	6
 -
- /* Get endpoint object from the containing link.
+ static struct oz_tx_frame *oz_tx_frame_alloc(struct oz_pd *pd);
+ static void oz_tx_frame_free(struct oz_pd *pd, struct oz_tx_frame *f);
+ static void oz_tx_isoc_free(struct oz_pd *pd, struct oz_tx_frame *f);
+@@ -177,13 +175,6 @@ static void oz_pd_free(struct work_struct *work)
+ 		e = e->next;
+ 		kfree(fwell);
+ 	}
+-	/* Deallocate all frames in tx pool.
+-	 */
+-	while (pd->tx_pool) {
+-		e = pd->tx_pool;
+-		pd->tx_pool = e->next;
+-		kfree(container_of(e, struct oz_tx_frame, link));
+-	}
+ 	if (pd->net_dev)
+ 		dev_put(pd->net_dev);
+ 	kfree(pd);
+@@ -333,18 +324,10 @@ int oz_pd_sleep(struct oz_pd *pd)
   */
- #define ep_from_link(__e) container_of((__e), struct oz_endpoint, link)
-@@ -75,6 +71,8 @@ struct oz_urb_link {
- 	unsigned submit_counter;
- };
- 
-+static struct kmem_cache *oz_urb_link_cache;
-+
- /* Holds state information about a USB endpoint.
-  */
- #define OZ_EP_BUFFER_SIZE_ISOC  (1024 * 24)
-@@ -198,9 +196,6 @@ static struct platform_device *g_plat_dev;
- static struct oz_hcd *g_ozhcd;
- static DEFINE_SPINLOCK(g_hcdlock);	/* Guards g_ozhcd. */
- static const char g_hcd_name[] = "Ozmo WPAN";
--static struct list_head *g_link_pool;
--static int g_link_pool_size;
--static DEFINE_SPINLOCK(g_link_lock);
- static DEFINE_SPINLOCK(g_tasklet_lock);
- static struct tasklet_struct g_urb_process_tasklet;
- static struct tasklet_struct g_urb_cancel_tasklet;
-@@ -265,68 +260,22 @@ static int oz_get_port_from_addr(struct oz_hcd *ozhcd, u8 bus_addr)
- }
- 
- /*
-- * Allocates an urb link, first trying the pool but going to heap if empty.
-  * Context: any
-  */
- static struct oz_urb_link *oz_alloc_urb_link(void)
+ static struct oz_tx_frame *oz_tx_frame_alloc(struct oz_pd *pd)
  {
--	struct oz_urb_link *urbl = NULL;
--	unsigned long irq_state;
--
--	spin_lock_irqsave(&g_link_lock, irq_state);
--	if (g_link_pool) {
--		urbl = container_of(g_link_pool, struct oz_urb_link, link);
--		g_link_pool = urbl->link.next;
--		--g_link_pool_size;
--	}
--	spin_unlock_irqrestore(&g_link_lock, irq_state);
--	if (urbl == NULL)
--		urbl = kmalloc(sizeof(struct oz_urb_link), GFP_ATOMIC);
--	return urbl;
-+	return kmem_cache_alloc(oz_urb_link_cache, GFP_ATOMIC);
- }
+-	struct oz_tx_frame *f = NULL;
++	struct oz_tx_frame *f;
  
- /*
-- * Frees an urb link by putting it in the pool if there is enough space or
-- * deallocating it to heap otherwise.
-  * Context: any
-  */
- static void oz_free_urb_link(struct oz_urb_link *urbl)
+-	spin_lock_bh(&pd->tx_frame_lock);
+-	if (pd->tx_pool) {
+-		f = container_of(pd->tx_pool, struct oz_tx_frame, link);
+-		pd->tx_pool = pd->tx_pool->next;
+-		pd->tx_pool_count--;
+-	}
+-	spin_unlock_bh(&pd->tx_frame_lock);
+-	if (f == NULL)
+-		f = kmalloc(sizeof(struct oz_tx_frame), GFP_ATOMIC);
+-	if (f) {
++	f = kmem_cache_alloc(oz_tx_frame_cache, GFP_ATOMIC);
++	if (likely(f)) {
+ 		f->total_size = sizeof(struct oz_hdr);
+ 		INIT_LIST_HEAD(&f->link);
+ 		INIT_LIST_HEAD(&f->elt_list);
+@@ -359,13 +342,9 @@ static void oz_tx_isoc_free(struct oz_pd *pd, struct oz_tx_frame *f)
  {
--	if (urbl) {
--		unsigned long irq_state;
--
--		spin_lock_irqsave(&g_link_lock, irq_state);
--		if (g_link_pool_size < OZ_MAX_LINK_POOL_SIZE) {
--			urbl->link.next = g_link_pool;
--			g_link_pool = &urbl->link;
--			urbl = NULL;
--			g_link_pool_size++;
--		}
--		spin_unlock_irqrestore(&g_link_lock, irq_state);
--		kfree(urbl);
+ 	pd->nb_queued_isoc_frames--;
+ 	list_del_init(&f->link);
+-	if (pd->tx_pool_count < OZ_MAX_TX_POOL_SIZE) {
+-		f->link.next = pd->tx_pool;
+-		pd->tx_pool = &f->link;
+-		pd->tx_pool_count++;
+-	} else {
+-		kfree(f);
 -	}
--}
--
--/*
-- * Deallocates all the urb links in the pool.
-- * Context: unknown
-- */
--static void oz_empty_link_pool(void)
--{
--	struct list_head *e;
--	unsigned long irq_state;
-+	if (unlikely(!urbl))
-+		return;
- 
--	spin_lock_irqsave(&g_link_lock, irq_state);
--	e = g_link_pool;
--	g_link_pool = NULL;
--	g_link_pool_size = 0;
--	spin_unlock_irqrestore(&g_link_lock, irq_state);
--	while (e) {
--		struct oz_urb_link *urbl =
--			container_of(e, struct oz_urb_link, link);
--		e = e->next;
--		kfree(urbl);
++
++	kmem_cache_free(oz_tx_frame_cache, f);
++
+ 	oz_dbg(TX_FRAMES, "Releasing ISOC Frame isoc_nb= %d\n",
+ 	       pd->nb_queued_isoc_frames);
+ }
+@@ -375,15 +354,7 @@ static void oz_tx_isoc_free(struct oz_pd *pd, struct oz_tx_frame *f)
+  */
+ static void oz_tx_frame_free(struct oz_pd *pd, struct oz_tx_frame *f)
+ {
+-	spin_lock_bh(&pd->tx_frame_lock);
+-	if (pd->tx_pool_count < OZ_MAX_TX_POOL_SIZE) {
+-		f->link.next = pd->tx_pool;
+-		pd->tx_pool = &f->link;
+-		pd->tx_pool_count++;
+-		f = NULL;
 -	}
-+	kmem_cache_free(oz_urb_link_cache, urbl);
+-	spin_unlock_bh(&pd->tx_frame_lock);
+-	kfree(f);
++	kmem_cache_free(oz_tx_frame_cache, f);
  }
  
  /*
-@@ -2311,7 +2260,6 @@ static int oz_plat_remove(struct platform_device *dev)
- 	oz_dbg(ON, "Removing hcd\n");
- 	usb_remove_hcd(hcd);
- 	usb_put_hcd(hcd);
--	oz_empty_link_pool();
- 	return 0;
+diff --git a/drivers/staging/ozwpan/ozpd.h b/drivers/staging/ozwpan/ozpd.h
+index 43a26ea..212fab0 100644
+--- a/drivers/staging/ozwpan/ozpd.h
++++ b/drivers/staging/ozwpan/ozpd.h
+@@ -90,8 +90,6 @@ struct oz_pd {
+ 	unsigned	max_stream_buffering;
+ 	int		nb_queued_frames;
+ 	int		nb_queued_isoc_frames;
+-	struct list_head *tx_pool;
+-	int		tx_pool_count;
+ 	spinlock_t	tx_frame_lock;
+ 	struct list_head *last_sent_frame;
+ 	struct list_head tx_queue;
+@@ -131,5 +129,6 @@ void oz_apps_init(void);
+ void oz_apps_term(void);
+ 
+ extern struct kmem_cache *oz_elt_info_cache;
++extern struct kmem_cache *oz_tx_frame_cache;
+ 
+ #endif /* Sentry */
+diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
+index 00d245b..c1fb442 100644
+--- a/drivers/staging/ozwpan/ozproto.c
++++ b/drivers/staging/ozwpan/ozproto.c
+@@ -53,6 +53,7 @@ static u16 g_apps = 0x1;
+ static int g_processing_rx;
+ 
+ struct kmem_cache *oz_elt_info_cache;
++struct kmem_cache *oz_tx_frame_cache;
+ 
+ /*
+  * Context: softirq-serialized
+@@ -483,6 +484,7 @@ void oz_protocol_term(void)
+ 	spin_unlock_bh(&g_polling_lock);
+ 	oz_dbg(ON, "Protocol stopped\n");
+ 
++	kmem_cache_destroy(oz_tx_frame_cache);
+ 	kmem_cache_destroy(oz_elt_info_cache);
  }
  
-@@ -2341,6 +2289,11 @@ int oz_hcd_init(void)
+@@ -771,6 +773,12 @@ int oz_protocol_init(char *devs)
+ 	if (unlikely(!oz_elt_info_cache))
+ 		return -ENOMEM;
  
- 	if (usb_disabled())
- 		return -ENODEV;
-+
-+	oz_urb_link_cache = KMEM_CACHE(oz_urb_link, 0);
-+	if (unlikely(!oz_urb_link_cache))
++	oz_tx_frame_cache = KMEM_CACHE(oz_tx_frame, 0);
++	if (unlikely(!oz_tx_frame_cache)) {
++		kmem_cache_destroy(oz_elt_info_cache);
 +		return -ENOMEM;
++	}
 +
- 	tasklet_init(&g_urb_process_tasklet, oz_urb_process_tasklet, 0);
- 	tasklet_init(&g_urb_cancel_tasklet, oz_urb_cancel_tasklet, 0);
- 	err = platform_driver_register(&g_oz_plat_drv);
-@@ -2380,4 +2333,5 @@ void oz_hcd_term(void)
- 	platform_device_unregister(g_plat_dev);
- 	platform_driver_unregister(&g_oz_plat_drv);
- 	oz_dbg(ON, "Pending urbs:%d\n", atomic_read(&g_pending_urbs));
-+	kmem_cache_destroy(oz_urb_link_cache);
- }
+ 	skb_queue_head_init(&g_rx_queue);
+ 	if (devs[0] == '*') {
+ 		oz_binding_add(NULL);
+diff --git a/drivers/staging/ozwpan/ozproto.h b/drivers/staging/ozwpan/ozproto.h
+index b0f7459..73cc69b 100644
+--- a/drivers/staging/ozwpan/ozproto.h
++++ b/drivers/staging/ozwpan/ozproto.h
+@@ -66,5 +66,6 @@ int oz_get_pd_status_list(char *pd_list, int max_count);
+ int oz_get_binding_list(char *buf, int max_if);
+ 
+ extern struct kmem_cache *oz_elt_info_cache;
++extern struct kmem_cache *oz_tx_frame_cache;
+ 
+ #endif /* _OZPROTO_H */
 -- 
 1.9.1
 
