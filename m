@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723AbaHDM1i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 08:27:38 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60944 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaHDM1g (ORCPT
+	id S1752550AbaHDMaG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 08:30:06 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:37235 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaHDMaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 08:27:36 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: <nsekhar@ti.com>, <joelf@ti.com>
-CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-Subject: [PATCH] ARM: edma: Fix configuration parsing for SoCs with multiple eDMA3 CC
-Date: Mon, 4 Aug 2014 15:26:56 +0300
-Message-ID: <1407155216-20267-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 2.0.2
+	Mon, 4 Aug 2014 08:30:04 -0400
+Date: Mon, 4 Aug 2014 14:29:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/apic changes for v3.17
+Message-ID: <20140804122954.GA27756@gmail.com>
+References: <20140804113402.GA25437@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140804113402.GA25437@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The edma_setup_from_hw() should know about the CC number when parsing the
-CCCFG register - when it reads the register to be precise. The base
-addresses for CCs stored in an array and we need to provide the correct id
-to edma_read() in order to read the correct register.
 
-Cc: <stable@vger.kernel.org> # 3.16
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- arch/arm/common/edma.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-index 88099175fc56..d86771abbf57 100644
---- a/arch/arm/common/edma.c
-+++ b/arch/arm/common/edma.c
-@@ -1443,14 +1443,14 @@ void edma_assign_channel_eventq(unsigned channel, enum dma_event_q eventq_no)
- EXPORT_SYMBOL(edma_assign_channel_eventq);
- 
- static int edma_setup_from_hw(struct device *dev, struct edma_soc_info *pdata,
--			      struct edma *edma_cc)
-+			      struct edma *edma_cc, int cc_id)
- {
- 	int i;
- 	u32 value, cccfg;
- 	s8 (*queue_priority_map)[2];
- 
- 	/* Decode the eDMA3 configuration from CCCFG register */
--	cccfg = edma_read(0, EDMA_CCCFG);
-+	cccfg = edma_read(cc_id, EDMA_CCCFG);
- 
- 	value = GET_NUM_REGN(cccfg);
- 	edma_cc->num_region = BIT(value);
-@@ -1464,7 +1464,8 @@ static int edma_setup_from_hw(struct device *dev, struct edma_soc_info *pdata,
- 	value = GET_NUM_EVQUE(cccfg);
- 	edma_cc->num_tc = value + 1;
- 
--	dev_dbg(dev, "eDMA3 HW configuration (cccfg: 0x%08x):\n", cccfg);
-+	dev_dbg(dev, "eDMA3 CC%d HW configuration (cccfg: 0x%08x):\n", cc_id,
-+		cccfg);
- 	dev_dbg(dev, "num_region: %u\n", edma_cc->num_region);
- 	dev_dbg(dev, "num_channel: %u\n", edma_cc->num_channels);
- 	dev_dbg(dev, "num_slot: %u\n", edma_cc->num_slots);
-@@ -1684,7 +1685,7 @@ static int edma_probe(struct platform_device *pdev)
- 			return -ENOMEM;
- 
- 		/* Get eDMA3 configuration from IP */
--		ret = edma_setup_from_hw(dev, info[j], edma_cc[j]);
-+		ret = edma_setup_from_hw(dev, info[j], edma_cc[j], j);
- 		if (ret)
- 			return ret;
- 
--- 
-2.0.2
+> Linus,
+> 
+> Please pull the latest x86-apic-for-linus git tree from:
+> 
+>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-apic-for-linus
+> 
+>    # HEAD: 5e3bf215f4f2efc0af89e6dbc5da789744aeb5d7 x86/apic/vsmp: Make is_vsmp_box() static
+> 
+> 
+> The main changes in this cycle are:
+> 
+>     * Remove obsolete APIC driver abstractions. (David Rientjes)
+> 
+>     * Use the irqdomain facilities to dynamically allocate IRQs for 
+>       IOAPICs. This is a prerequisite to enable IOAPIC hotplug 
+>       support, and it also frees up wasted vectors. (Jiang Liu)
+> 
+>     * Misc fixlets.
 
+Linus, please hold off on pulling this tree for the time being - I 
+thought it's regression free, but Boris just told me that he is still 
+seeing unsolved regressions with it.
+
+Sorry about this, I will resend it once it's all known-good.
+
+Thanks,
+
+	Ingo
