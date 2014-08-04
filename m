@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753AbaHDREZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:04:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56523 "EHLO
+	id S1753738AbaHDREX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:04:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56542 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751902AbaHDQt4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751949AbaHDQt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:56 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Daniel Borkmann" <dborkman@redhat.com>
+CC: akpm@linux-foundation.org, "Alan Stern" <stern@rowland.harvard.edu>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Gavin Guo" <gavin.guo@canonical.com>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.905897111@decadent.org.uk>
+Message-ID: <lsq.1407170912.984799135@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 59/94] net: sctp: fix information leaks in ulpevent layer
+Subject: [PATCH 3.2 54/94] usb: Check if port status is equal to RxDetect
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,257 +32,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Gavin Guo <gavin.guo@canonical.com>
 
-[ Upstream commit 8f2e5ae40ec193bc0a0ed99e95315c3eebca84ea ]
+commit bb86cf569bbd7ad4dce581a37c7fbd748057e9dc upstream.
 
-While working on some other SCTP code, I noticed that some
-structures shared with user space are leaking uninitialized
-stack or heap buffer. In particular, struct sctp_sndrcvinfo
-has a 2 bytes hole between .sinfo_flags and .sinfo_ppid that
-remains unfilled by us in sctp_ulpevent_read_sndrcvinfo() when
-putting this into cmsg. But also struct sctp_remote_error
-contains a 2 bytes hole that we don't fill but place into a skb
-through skb_copy_expand() via sctp_ulpevent_make_remote_error().
+When using USB 3.0 pen drive with the [AMD] FCH USB XHCI Controller
+[1022:7814], the second hotplugging will experience the USB 3.0 pen
+drive is recognized as high-speed device. After bisecting the kernel,
+I found the commit number 41e7e056cdc662f704fa9262e5c6e213b4ab45dd
+(USB: Allow USB 3.0 ports to be disabled.) causes the bug. After doing
+some experiments, the bug can be fixed by avoiding executing the function
+hub_usb3_port_disable(). Because the port status with [AMD] FCH USB
+XHCI Controlleris [1022:7814] is already in RxDetect
+(I tried printing out the port status before setting to Disabled state),
+it's reasonable to check the port status before really executing
+hub_usb3_port_disable().
 
-Both structures are defined by the IETF in RFC6458:
-
-* Section 5.3.2. SCTP Header Information Structure:
-
-  The sctp_sndrcvinfo structure is defined below:
-
-  struct sctp_sndrcvinfo {
-    uint16_t sinfo_stream;
-    uint16_t sinfo_ssn;
-    uint16_t sinfo_flags;
-    <-- 2 bytes hole  -->
-    uint32_t sinfo_ppid;
-    uint32_t sinfo_context;
-    uint32_t sinfo_timetolive;
-    uint32_t sinfo_tsn;
-    uint32_t sinfo_cumtsn;
-    sctp_assoc_t sinfo_assoc_id;
-  };
-
-* 6.1.3. SCTP_REMOTE_ERROR:
-
-  A remote peer may send an Operation Error message to its peer.
-  This message indicates a variety of error conditions on an
-  association. The entire ERROR chunk as it appears on the wire
-  is included in an SCTP_REMOTE_ERROR event. Please refer to the
-  SCTP specification [RFC4960] and any extensions for a list of
-  possible error formats. An SCTP error notification has the
-  following format:
-
-  struct sctp_remote_error {
-    uint16_t sre_type;
-    uint16_t sre_flags;
-    uint32_t sre_length;
-    uint16_t sre_error;
-    <-- 2 bytes hole  -->
-    sctp_assoc_t sre_assoc_id;
-    uint8_t  sre_data[];
-  };
-
-Fix this by setting both to 0 before filling them out. We also
-have other structures shared between user and kernel space in
-SCTP that contains holes (e.g. struct sctp_paddrthlds), but we
-copy that buffer over from user space first and thus don't need
-to care about it in that cases.
-
-While at it, we can also remove lengthy comments copied from
-the draft, instead, we update the comment with the correct RFC
-number where one can look it up.
-
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: 41e7e056cdc6 (USB: Allow USB 3.0 ports to be disabled.)
+Signed-off-by: Gavin Guo <gavin.guo@canonical.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: use hub device as context for dev_dbg(),
+ as hub ports are not devices in their own right]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sctp/ulpevent.c | 122 +++++++---------------------------------------------
- 1 file changed, 15 insertions(+), 107 deletions(-)
+ drivers/usb/core/hub.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/net/sctp/ulpevent.c b/net/sctp/ulpevent.c
-index 8a84017..57da447 100644
---- a/net/sctp/ulpevent.c
-+++ b/net/sctp/ulpevent.c
-@@ -373,9 +373,10 @@ fail:
-  * specification [SCTP] and any extensions for a list of possible
-  * error formats.
-  */
--struct sctp_ulpevent *sctp_ulpevent_make_remote_error(
--	const struct sctp_association *asoc, struct sctp_chunk *chunk,
--	__u16 flags, gfp_t gfp)
-+struct sctp_ulpevent *
-+sctp_ulpevent_make_remote_error(const struct sctp_association *asoc,
-+				struct sctp_chunk *chunk, __u16 flags,
-+				gfp_t gfp)
- {
- 	struct sctp_ulpevent *event;
- 	struct sctp_remote_error *sre;
-@@ -394,8 +395,7 @@ struct sctp_ulpevent *sctp_ulpevent_make_remote_error(
- 	/* Copy the skb to a new skb with room for us to prepend
- 	 * notification with.
- 	 */
--	skb = skb_copy_expand(chunk->skb, sizeof(struct sctp_remote_error),
--			      0, gfp);
-+	skb = skb_copy_expand(chunk->skb, sizeof(*sre), 0, gfp);
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -655,6 +655,26 @@ static int hub_usb3_port_disable(struct
+ 	if (!hub_is_superspeed(hub->hdev))
+ 		return -EINVAL;
  
- 	/* Pull off the rest of the cause TLV from the chunk.  */
- 	skb_pull(chunk->skb, elen);
-@@ -406,62 +406,21 @@ struct sctp_ulpevent *sctp_ulpevent_make_remote_error(
- 	event = sctp_skb2event(skb);
- 	sctp_ulpevent_init(event, MSG_NOTIFICATION, skb->truesize);
- 
--	sre = (struct sctp_remote_error *)
--		skb_push(skb, sizeof(struct sctp_remote_error));
-+	sre = (struct sctp_remote_error *) skb_push(skb, sizeof(*sre));
- 
- 	/* Trim the buffer to the right length.  */
--	skb_trim(skb, sizeof(struct sctp_remote_error) + elen);
-+	skb_trim(skb, sizeof(*sre) + elen);
- 
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_type:
--	 *   It should be SCTP_REMOTE_ERROR.
--	 */
-+	/* RFC6458, Section 6.1.3. SCTP_REMOTE_ERROR */
-+	memset(sre, 0, sizeof(*sre));
- 	sre->sre_type = SCTP_REMOTE_ERROR;
--
--	/*
--	 * Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_flags: 16 bits (unsigned integer)
--	 *   Currently unused.
--	 */
- 	sre->sre_flags = 0;
--
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_length: sizeof (__u32)
--	 *
--	 * This field is the total length of the notification data,
--	 * including the notification header.
--	 */
- 	sre->sre_length = skb->len;
--
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_error: 16 bits (unsigned integer)
--	 * This value represents one of the Operational Error causes defined in
--	 * the SCTP specification, in network byte order.
--	 */
- 	sre->sre_error = cause;
--
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_assoc_id: sizeof (sctp_assoc_t)
--	 *
--	 * The association id field, holds the identifier for the association.
--	 * All notifications for a given association have the same association
--	 * identifier.  For TCP style socket, this field is ignored.
--	 */
- 	sctp_ulpevent_set_owner(event, asoc);
- 	sre->sre_assoc_id = sctp_assoc2id(asoc);
- 
- 	return event;
--
- fail:
- 	return NULL;
- }
-@@ -904,7 +863,9 @@ __u16 sctp_ulpevent_get_notification_type(const struct sctp_ulpevent *event)
- 	return notification->sn_header.sn_type;
- }
- 
--/* Copy out the sndrcvinfo into a msghdr.  */
-+/* RFC6458, Section 5.3.2. SCTP Header Information Structure
-+ * (SCTP_SNDRCV, DEPRECATED)
-+ */
- void sctp_ulpevent_read_sndrcvinfo(const struct sctp_ulpevent *event,
- 				   struct msghdr *msghdr)
- {
-@@ -913,74 +874,21 @@ void sctp_ulpevent_read_sndrcvinfo(const struct sctp_ulpevent *event,
- 	if (sctp_ulpevent_is_notification(event))
- 		return;
- 
--	/* Sockets API Extensions for SCTP
--	 * Section 5.2.2 SCTP Header Information Structure (SCTP_SNDRCV)
--	 *
--	 * sinfo_stream: 16 bits (unsigned integer)
--	 *
--	 * For recvmsg() the SCTP stack places the message's stream number in
--	 * this value.
--	*/
-+	memset(&sinfo, 0, sizeof(sinfo));
- 	sinfo.sinfo_stream = event->stream;
--	/* sinfo_ssn: 16 bits (unsigned integer)
--	 *
--	 * For recvmsg() this value contains the stream sequence number that
--	 * the remote endpoint placed in the DATA chunk.  For fragmented
--	 * messages this is the same number for all deliveries of the message
--	 * (if more than one recvmsg() is needed to read the message).
--	 */
- 	sinfo.sinfo_ssn = event->ssn;
--	/* sinfo_ppid: 32 bits (unsigned integer)
--	 *
--	 * In recvmsg() this value is
--	 * the same information that was passed by the upper layer in the peer
--	 * application.  Please note that byte order issues are NOT accounted
--	 * for and this information is passed opaquely by the SCTP stack from
--	 * one end to the other.
--	 */
- 	sinfo.sinfo_ppid = event->ppid;
--	/* sinfo_flags: 16 bits (unsigned integer)
--	 *
--	 * This field may contain any of the following flags and is composed of
--	 * a bitwise OR of these values.
--	 *
--	 * recvmsg() flags:
--	 *
--	 * SCTP_UNORDERED - This flag is present when the message was sent
--	 *                 non-ordered.
--	 */
- 	sinfo.sinfo_flags = event->flags;
--	/* sinfo_tsn: 32 bit (unsigned integer)
--	 *
--	 * For the receiving side, this field holds a TSN that was
--	 * assigned to one of the SCTP Data Chunks.
--	 */
- 	sinfo.sinfo_tsn = event->tsn;
--	/* sinfo_cumtsn: 32 bit (unsigned integer)
--	 *
--	 * This field will hold the current cumulative TSN as
--	 * known by the underlying SCTP layer.  Note this field is
--	 * ignored when sending and only valid for a receive
--	 * operation when sinfo_flags are set to SCTP_UNORDERED.
--	 */
- 	sinfo.sinfo_cumtsn = event->cumtsn;
--	/* sinfo_assoc_id: sizeof (sctp_assoc_t)
--	 *
--	 * The association handle field, sinfo_assoc_id, holds the identifier
--	 * for the association announced in the COMMUNICATION_UP notification.
--	 * All notifications for a given association have the same identifier.
--	 * Ignored for one-to-one style sockets.
--	 */
- 	sinfo.sinfo_assoc_id = sctp_assoc2id(event->asoc);
--
--	/* context value that is set via SCTP_CONTEXT socket option. */
-+	/* Context value that is set via SCTP_CONTEXT socket option. */
- 	sinfo.sinfo_context = event->asoc->default_rcv_context;
--
- 	/* These fields are not used while receiving. */
- 	sinfo.sinfo_timetolive = 0;
- 
- 	put_cmsg(msghdr, IPPROTO_SCTP, SCTP_SNDRCV,
--		 sizeof(struct sctp_sndrcvinfo), (void *)&sinfo);
-+		 sizeof(sinfo), &sinfo);
- }
- 
- /* Do accounting for bytes received and hold a reference to the association
++	ret = hub_port_status(hub, port1, &portstatus, &portchange);
++	if (ret < 0)
++		return ret;
++
++	/*
++	 * USB controller Advanced Micro Devices, Inc. [AMD] FCH USB XHCI
++	 * Controller [1022:7814] will have spurious result making the following
++	 * usb 3.0 device hotplugging route to the 2.0 root hub and recognized
++	 * as high-speed device if we set the usb 3.0 port link state to
++	 * Disabled. Since it's already in USB_SS_PORT_LS_RX_DETECT state, we
++	 * check the state here to avoid the bug.
++	 */
++	if ((portstatus & USB_PORT_STAT_LINK_STATE) ==
++				USB_SS_PORT_LS_RX_DETECT) {
++		dev_dbg(hub->intfdev,
++			"Not disabling port %d; link state is RxDetect\n",
++			port1);
++		return ret;
++	}
++
+ 	ret = hub_set_port_link_state(hub, port1, USB_SS_PORT_LS_SS_DISABLED);
+ 	if (ret) {
+ 		dev_err(hub->intfdev, "cannot disable port %d (err = %d)\n",
 
