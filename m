@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123AbaHDP3z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 11:29:55 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:61330 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074AbaHDP3v (ORCPT
+	id S1753138AbaHDPaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 11:30:07 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:62876 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634AbaHDPaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 11:29:51 -0400
+	Mon, 4 Aug 2014 11:30:02 -0400
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: Catalin Marinas <catalin.marinas@arm.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -29,9 +29,9 @@ Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
         linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
         Hanjun Guo <hanjun.guo@linaro.org>,
         Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: [PATCH v2 06/18] ARM64 / ACPI: Parse MADT to map logical cpu to MPIDR and get cpu_possible/present_map
-Date: Mon,  4 Aug 2014 23:28:13 +0800
-Message-Id: <1407166105-17675-7-git-send-email-hanjun.guo@linaro.org>
+Subject: [PATCH v2 07/18] ACPI / table: Print GIC information when MADT is parsed
+Date: Mon,  4 Aug 2014 23:28:14 +0800
+Message-Id: <1407166105-17675-8-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>
 References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>
@@ -39,222 +39,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MADT contains the information for MPIDR which is essential for
-SMP initialization, parse the GIC cpu interface structures to
-get the MPIDR value and map it to cpu_logical_map(), and add
-enabled cpu with valid MPIDR into cpu_possible_map and
-cpu_present_map.
+When MADT is parsed, print GIC information to make the boot
+log look pretty.
 
 Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 ---
- arch/arm64/include/asm/acpi.h |    2 +
- arch/arm64/kernel/acpi.c      |  129 ++++++++++++++++++++++++++++++++++++++++-
- arch/arm64/kernel/smp.c       |   10 +++-
- 3 files changed, 138 insertions(+), 3 deletions(-)
+ drivers/acpi/tables.c |   39 ++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 38 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-index 6e04868..e877967 100644
---- a/arch/arm64/include/asm/acpi.h
-+++ b/arch/arm64/include/asm/acpi.h
-@@ -64,6 +64,8 @@ static inline void arch_fix_phys_package_id(int num, u32 slot) { }
- extern int (*acpi_suspend_lowlevel)(void);
- #define acpi_wakeup_address 0
+diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+index 6d5a6cd..77f8bb1 100644
+--- a/drivers/acpi/tables.c
++++ b/drivers/acpi/tables.c
+@@ -183,6 +183,44 @@ void acpi_table_print_madt_entry(struct acpi_subtable_header *header)
+ 		}
+ 		break;
  
-+#define MAX_GIC_CPU_INTERFACE 65535
++	case ACPI_MADT_TYPE_GENERIC_INTERRUPT:
++		{
++			struct acpi_madt_generic_interrupt *p =
++				(struct acpi_madt_generic_interrupt *)header;
++			pr_info("GICC (acpi_id[0x%04x] address[0x%08llx] MPDIR[0x%llx] %s)\n",
++				p->uid, p->base_address, p->arm_mpidr,
++				(p->flags & ACPI_MADT_ENABLED) ? "enabled" : "disabled");
 +
- #endif /* CONFIG_ACPI */
- 
- #endif /*_ASM_ACPI_H*/
-diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
-index 69a315d..9e07d99 100644
---- a/arch/arm64/kernel/acpi.c
-+++ b/arch/arm64/kernel/acpi.c
-@@ -22,6 +22,9 @@
- #include <linux/bootmem.h>
- #include <linux/smp.h>
- 
-+#include <asm/smp_plat.h>
-+#include <asm/cputype.h>
-+
- int acpi_noirq;			/* skip ACPI IRQ initialization */
- int acpi_disabled;
- EXPORT_SYMBOL(acpi_disabled);
-@@ -29,6 +32,8 @@ EXPORT_SYMBOL(acpi_disabled);
- int acpi_pci_disabled;		/* skip ACPI PCI scan and IRQ initialization */
- EXPORT_SYMBOL(acpi_pci_disabled);
- 
-+static int enabled_cpus;	/* Processors (GICC) with enabled flag in MADT */
-+
- /*
-  * __acpi_map_table() will be called before page_init(), so early_ioremap()
-  * or early_memremap() should be called here to for ACPI table mapping.
-@@ -49,6 +54,122 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
- 	early_memunmap(map, size);
- }
- 
-+/**
-+ * acpi_register_gic_cpu_interface - register a gic cpu interface and
-+ * generates a logical cpu number
-+ * @mpidr: CPU's hardware id to register, MPIDR represented in MADT
-+ * @enabled: this cpu is enabled or not
-+ *
-+ * Returns the logical cpu number which maps to the gic cpu interface
-+ */
-+static int acpi_register_gic_cpu_interface(u64 mpidr, u8 enabled)
-+{
-+	int cpu;
-+
-+	if (mpidr == INVALID_HWID) {
-+		pr_info("Skip invalid cpu hardware ID\n");
-+		return -EINVAL;
-+	}
-+
-+	total_cpus++;
-+	if (!enabled)
-+		return -EINVAL;
-+
-+	if (enabled_cpus >=  NR_CPUS) {
-+		pr_warn("NR_CPUS limit of %d reached, Processor %d/0x%llx ignored.\n",
-+			NR_CPUS, total_cpus, mpidr);
-+		return -EINVAL;
-+	}
-+
-+	/* If it is the first CPU, no need to check duplicate MPIDRs */
-+	if (!enabled_cpus)
-+		goto skip_mpidr_check;
-+
-+	/*
-+	 * Duplicate MPIDRs are a recipe for disaster. Scan
-+	 * all initialized entries and check for
-+	 * duplicates. If any is found just ignore the CPU.
-+	 */
-+	for_each_present_cpu(cpu) {
-+		if (cpu_logical_map(cpu) == mpidr) {
-+			pr_err("Firmware bug, duplicate CPU MPIDR: 0x%llx in MADT\n",
-+			       mpidr);
-+			return -EINVAL;
 +		}
-+	}
++		break;
 +
-+skip_mpidr_check:
-+	enabled_cpus++;
++	case ACPI_MADT_TYPE_GENERIC_DISTRIBUTOR:
++		{
++			struct acpi_madt_generic_distributor *p =
++				(struct acpi_madt_generic_distributor *)header;
++			pr_info("GIC Distributor (gic_id[0x%04x] address[0x%08llx] gsi_base[%d])\n",
++				p->gic_id, p->base_address, p->global_irq_base);
++		}
++		break;
 +
-+	/* allocate a logical cpu id for the new comer */
-+	if (cpu_logical_map(0) == mpidr) {
-+		/*
-+		 * boot_cpu_init() already hold bit 0 in cpu_present_mask
-+		 * for BSP, no need to allocate again.
-+		 */
-+		cpu = 0;
-+	} else {
-+		cpu = cpumask_next_zero(-1, cpu_present_mask);
-+	}
++	case ACPI_MADT_TYPE_GENERIC_MSI_FRAME:
++		{
++			struct acpi_madt_generic_msi_frame *p =
++				(struct acpi_madt_generic_msi_frame *)header;
++			pr_info("GIC MSI Frame (msi_fame_id[%d] address[0x%08llx])\n",
++				p->msi_frame_id, p->base_address);
++		}
++		break;
 +
-+	/* map the logical cpu id to cpu MPIDR */
-+	cpu_logical_map(cpu) = mpidr;
++	case ACPI_MADT_TYPE_GENERIC_REDISTRIBUTOR:
++		{
++			struct acpi_madt_generic_redistributor *p =
++				(struct acpi_madt_generic_redistributor *)header;
++			pr_info("GIC Redistributor (address[0x%08llx] region_size[0x%x])\n",
++				p->base_address, p->length);
++		}
++		break;
 +
-+	set_cpu_possible(cpu, true);
-+	set_cpu_present(cpu, true);
-+
-+	return cpu;
-+}
-+
-+static int __init
-+acpi_parse_gic_cpu_interface(struct acpi_subtable_header *header,
-+				const unsigned long end)
-+{
-+	struct acpi_madt_generic_interrupt *processor;
-+
-+	processor = (struct acpi_madt_generic_interrupt *)header;
-+
-+	if (BAD_MADT_ENTRY(processor, end))
-+		return -EINVAL;
-+
-+	acpi_table_print_madt_entry(header);
-+
-+	acpi_register_gic_cpu_interface(processor->arm_mpidr,
-+		processor->flags & ACPI_MADT_ENABLED);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Parse GIC cpu interface related entries in MADT
-+ * returns 0 on success, < 0 on error
-+ */
-+static int __init acpi_parse_madt_gic_cpu_interface_entries(void)
-+{
-+	int count;
-+
-+	/*
-+	 * do a partial walk of MADT to determine how many CPUs
-+	 * we have including disabled CPUs, and get information
-+	 * we need for SMP init
-+	 */
-+	count = acpi_table_parse_madt(ACPI_MADT_TYPE_GENERIC_INTERRUPT,
-+			acpi_parse_gic_cpu_interface, MAX_GIC_CPU_INTERFACE);
-+
-+	if (!count) {
-+		pr_err("No GIC CPU interface entries present\n");
-+		return -ENODEV;
-+	} else if (count < 0) {
-+		pr_err("Error parsing GIC CPU interface entry\n");
-+		return count;
-+	}
-+
-+	/* Make boot-up look pretty */
-+	pr_info("%d CPUs enabled, %d CPUs total\n", enabled_cpus, total_cpus);
-+
-+	return 0;
-+}
-+
- static int __init acpi_parse_fadt(struct acpi_table_header *table)
- {
- 	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
-@@ -99,8 +220,12 @@ int __init acpi_boot_init(void)
- 		return -ENODEV;
- 
- 	err = acpi_table_parse(ACPI_SIG_FADT, acpi_parse_fadt);
--	if (err)
--		pr_err("Can't find FADT\n");
-+	if (err) {
-+		pr_err("Can't find FADT or error happened during parsing FADT\n");
-+		return err;
-+	}
-+
-+	err = acpi_parse_madt_gic_cpu_interface_entries();
- 
- 	return err;
- }
-diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-index 40f38f4..8f1d37c 100644
---- a/arch/arm64/kernel/smp.c
-+++ b/arch/arm64/kernel/smp.c
-@@ -36,6 +36,7 @@
- #include <linux/completion.h>
- #include <linux/of.h>
- #include <linux/irq_work.h>
-+#include <linux/acpi.h>
- 
- #include <asm/atomic.h>
- #include <asm/cacheflush.h>
-@@ -458,7 +459,14 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
- 		if (err)
- 			continue;
- 
--		set_cpu_present(cpu, true);
-+		/*
-+		 * In ACPI mode, cpu_present_map was initialised when
-+		 * MADT table was parsed which before this function
-+		 * is called.
-+		 */
-+		if (acpi_disabled)
-+			set_cpu_present(cpu, true);
-+
- 		max_cpus--;
+ 	default:
+ 		pr_warn("Found unsupported MADT entry (type = 0x%x)\n",
+ 			header->type);
+@@ -190,7 +228,6 @@ void acpi_table_print_madt_entry(struct acpi_subtable_header *header)
  	}
  }
+ 
+-
+ int __init
+ acpi_table_parse_entries(char *id,
+ 			     unsigned long table_size,
 -- 
 1.7.9.5
 
