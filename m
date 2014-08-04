@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbaHDAdw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 20:33:52 -0400
-Received: from smtprelay0092.hostedemail.com ([216.40.44.92]:58391 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751622AbaHDAdu (ORCPT
+	id S1753097AbaHDAgP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 20:36:15 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:48820 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751871AbaHDAgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 20:33:50 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1461:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1801:2110:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:4384:4605:5007:6119:7652:7903:9040:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12555:12740:13095:13161:13229:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rul
-X-HE-Tag: dolls12_3e2222f04aa15
-X-Filterd-Recvd-Size: 3707
-Message-ID: <1407112425.16152.10.camel@joe-AO725>
-Subject: Re: [PATCH 1/1] cris: fix %d confusingly prefixed with 0x in format
- string
-From: Joe Perches <joe@perches.com>
-To: Hans Wennborg <hans@hanshq.net>
-Cc: starvik@axis.com, linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
-        kernel-janitors <kernel-janitors@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, devel <devel@driverdev.osuosl.org>,
-        linux-cifs@vger.kernel.org, alsa-devel@alsa-project.org
-Date: Sun, 03 Aug 2014 17:33:45 -0700
-In-Reply-To: <53DED2E9.5090205@hanshq.net>
-References: <1407018043-648-1-git-send-email-hans@hanshq.net>
-	 <1407026806.1835.21.camel@joe-AO725> <53DD8E17.1@hanshq.net>
-	 <1407046215.1835.24.camel@joe-AO725> <53DED2E9.5090205@hanshq.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Sun, 3 Aug 2014 20:36:14 -0400
+X-IronPort-AV: E=Sophos;i="5.04,258,1406563200"; 
+   d="scan'208";a="34121744"
+Message-ID: <53DED5D1.6030504@cn.fujitsu.com>
+Date: Mon, 4 Aug 2014 08:37:37 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: <paulmck@linux.vnet.ibm.com>
+CC: Oleg Nesterov <oleg@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <mingo@kernel.org>, <dipankar@in.ibm.com>, <akpm@linux-foundation.org>,
+        <mathieu.desnoyers@efficios.com>, <josh@joshtriplett.org>,
+        <tglx@linutronix.de>, <peterz@infradead.org>, <rostedt@goodmis.org>,
+        <dhowells@redhat.com>, <edumazet@google.com>, <dvhart@linux.intel.com>,
+        <fweisbec@gmail.com>, <bobby.prani@gmail.com>
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+References: <20140731215445.GA21933@linux.vnet.ibm.com> <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com> <20140802145616.GA18195@redhat.com> <20140802225757.GB8101@linux.vnet.ibm.com> <20140803133318.GB671@redhat.com> <20140803220535.GH8101@linux.vnet.ibm.com>
+In-Reply-To: <20140803220535.GH8101@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-08-03 at 17:25 -0700, Hans Wennborg wrote:
-> On 08/02/2014 11:10 PM, Joe Perches wrote:
-> > On Sat, 2014-08-02 at 18:19 -0700, Hans Wennborg wrote:
-> >> Yes, I have a patch for a bunch of these, but I figured it would be
-> >> easier to get it merged if I split it up. (Complete kernel newbie here.)
-> >
-> > You as a kernel newbie did good, thanks.
-> >
-> > A small tip would be to do all of them in a single series
-> > cc'ing each individual patch to the appropriate maintainers
-> > and mailing lists.
+On 08/04/2014 06:05 AM, Paul E. McKenney wrote:
+> On Sun, Aug 03, 2014 at 03:33:18PM +0200, Oleg Nesterov wrote:
+>> On 08/02, Paul E. McKenney wrote:
+>>>
+>>> On Sat, Aug 02, 2014 at 04:56:16PM +0200, Oleg Nesterov wrote:
+>>>> On 07/31, Paul E. McKenney wrote:
+>>>>>
+>>>>> +		rcu_read_lock();
+>>>>> +		for_each_process_thread(g, t) {
+>>>>> +			if (t != current && ACCESS_ONCE(t->on_rq) &&
+>>>>> +			    !is_idle_task(t)) {
+>>>>
+>>>> I didn't notice this check before, but it is not needed. for_each_process()
+>>>> can see the idle threads, there are not on process/thread lists.
+>>     ^^^^^^^
+>>
+>> argh, I mean't "can't see" of course...
+>>
+>>> Good to know.  Any other important tasks I am missing?
+>>
+>> Nothing else.
 > 
-> Thanks for the advice! I have split up and sent out the big patch as a 
-> series, with hopefully the right folks CC'd.
+> Whew!  ;-)
+> 
+>>> I am guessing that I need to do something like this:
+>>>
+>>> 	for_each_process(g) {
+>>> 		/* Do build step. */
+>>> 		for_each_thread(g, t) {
+>>> 			if (g == t)
+>>> 				continue;
+>>> 			/* Do build step. */
+>>> 		}
+>>> 	}
+>>
+>> Sorry, I don't understand... This is equivalent to
+>>
+>> 	for_each_process_thread(g, t) {
+>> 		/* Do build step. */
+>> 	}
+> 
+> OK, got it.
+> 
+>>> Your point about exiting tasks I get, and I believe I can solve it.
+>>> I am hoping that the above sort of construction takes care of the
+>>> idle threads.
+>>
+>> It is simple to find the idle threads, just
+>>
+>> 	for_each_cpu(cpu) {
+>> 		do_something(cpu_rq(cpu)->idle);
+>> 	}
+>>
+>> but it is not clear to me what else you need to do with the idle threads.
+>> Probably not too much, they mostly run under preempt_disable().
+> 
+> OK, looks easy enough.  And yes, one good question is what, if anything,
+> we need to do with the idle threads.
+> 
+>>> I might also need to do something to handle changes in
+>>> process/thread hierarchy -- but hopefully without having to read-acquire
+>>> the task-list lock.
+>>
+>> It seems that you need another global list, a task should be visible on that
+>> list until exit_rcu().
+> 
+> As in create another global list that all tasks are added to when created
+> and then remved from when they exit?
 
-Another nice thing to do is to use git format-patch --cover-letter
-so that you can use a [PATCH 0/n] introductory description too.
+An alternative solution:
+srcu_read_lock() before exit_notify(), srcu_read_unlock() after the last preempt_disable()
+in the do_exit, and synchronize_srcu() in rcu_tasks_kthread().
 
-Other than that, nice job, thanks.
 
-Perhaps now you can do the "0x%u" variants.
 
-$ /usr/bin/git grep -P '0x\%(?!ullx\b|ullX\b|llux\b|lux\b|ulx\b|ulX\b|lx\b|lluX\b|luX\b|lX\b)[ul]*[u]'
-drivers/iommu/arm-smmu.c:                                   "Unexpected context fault (fsr 0x%u)\n",
-drivers/net/vmxnet3/vmxnet3_drv.c:                              "txd[%u]: 0x%llu %u %u\n",
-drivers/net/wireless/mwifiex/cfg80211.c:                wiphy_dbg(wiphy, "info: ongoing ROC, cookie = 0x%llu\n",
-drivers/pinctrl/pinctrl-at91.c:         dev_dbg(dev, "pio%c%d configured as periph%c with conf = 0x%lu\n",
-drivers/pinctrl/pinctrl-at91.c:         dev_dbg(dev, "pio%c%d configured as gpio with conf = 0x%lu\n",
-drivers/scsi/cxgbi/libcxgbi.c:          "csk 0x%p,%u,0x%lu,%u, seq %u, wup %u, thre %u, %u.\n",
-drivers/scsi/qla2xxx/qla_target.c:          "dif check TGT cdb 0x%x lba 0x%llu: [Actual|Expected] Ref Tag[0x%x|0x%x], App Tag [0x%x|0x%x], Guard [0x%x|0x%x]\n",
-drivers/usb/musb/ux500_dma.c:           "packet_sz=%d, mode=%d, dma_addr=0x%llu, len=%d is_tx=%d\n",
-fs/exofs/dir.c:         "offset=%lu, inode=0x%llu, rec_len=%d, name_len=%d\n",
-fs/xfs/xfs_discard.c:    "discard failed for extent [0x%llu,%u], error %d",
-sound/soc/atmel/atmel_ssc_dai.c:        pr_debug("atmel_ssc_startup: SSC_SR=0x%u\n",
-
-There are some more with specific format lengths too:
-
-arch/sparc/kernel/smp_32.c:             printk(KERN_NOTICE "No MID found for CPU%d at node 0x%08d", id, cpu_node);
-drivers/mfd/rtsx_usb.c: dev_dbg(&intf->dev, "%s called with pm message 0x%04u\n",
-drivers/net/wireless/rtlwifi/rtl8192de/fw.c:             "Polling FW ready fail!! REG_MCUFWDL:0x%08ul\n",
-drivers/tty/moxa.c:                     printk(KERN_INFO "MOXA isa board found at 0x%.8lu and "
-
-cheers, Joe
 
