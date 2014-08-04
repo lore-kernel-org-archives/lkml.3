@@ -1,64 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514AbaHDRIV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:08:21 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:45529 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaHDRIT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 13:08:19 -0400
+	id S1753552AbaHDRI3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:08:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13938 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753316AbaHDRIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 13:08:25 -0400
+Date: Mon, 4 Aug 2014 19:05:19 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH?] x86: reimplement ___preempt_schedule*() using THUNK
+	helpers
+Message-ID: <20140804170519.GA17466@redhat.com>
+References: <1407158386-6201-1-git-send-email-dvlasenk@redhat.com> <1407158386-6201-5-git-send-email-dvlasenk@redhat.com>
 MIME-Version: 1.0
-From: Pranith Kumar <pranith@gatech.edu>
-Date: Mon, 4 Aug 2014 13:07:47 -0400
-X-Google-Sender-Auth: SaOmkyQyHze-IW03G98WgtiN9wU
-Message-ID: <CAJhHMCADiEsUC7GsYF7=qMNEyRJerfhC5zh7WQPgkQ0gJn5=5A@mail.gmail.com>
-Subject: Question regarding "Control Dependencies" in memory-barriers.txt
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407158386-6201-5-git-send-email-dvlasenk@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The section "Control Dependencies" in memory-barriers.txt has the
-following text:
+On 08/04, Denys Vlasenko wrote:
+>
+> --- a/arch/x86/kernel/preempt.S
+> +++ b/arch/x86/kernel/preempt.S
+> @@ -6,9 +6,13 @@
+>
+>  ENTRY(___preempt_schedule)
+>  	CFI_STARTPROC
+> -	SAVE_ALL
+> +	ALLOC_PTREGS_ON_STACK
+> +	SAVE_C_REGS
+> +	SAVE_EXTRA_REGS
+>  	call preempt_schedule
+> -	RESTORE_ALL
+> +	RESTORE_EXTRA_REGS
+> +	RESTORE_C_REGS
+> +	REMOVE_PTREGS_FROM_STACK
+>  	ret
+>  	CFI_ENDPROC
+>
+> @@ -16,9 +20,13 @@ ENTRY(___preempt_schedule)
+>
+>  ENTRY(___preempt_schedule_context)
+>  	CFI_STARTPROC
+> -	SAVE_ALL
+> +	ALLOC_PTREGS_ON_STACK
+> +	SAVE_C_REGS
+> +	SAVE_EXTRA_REGS
+>  	call preempt_schedule_context
+> -	RESTORE_ALL
+> +	RESTORE_EXTRA_REGS
+> +	RESTORE_C_REGS
+> +	REMOVE_PTREGS_FROM_STACK
+>  	ret
+>  	CFI_ENDPROC
 
-662 In addition, you need to be careful what you do with the local variable 'q',
-663 otherwise the compiler might be able to guess the value and again remove
-664 the needed conditional.  For example:
-665
-666         q = ACCESS_ONCE(a);
-667         if (q % MAX) {
-668                 barrier();
-669                 ACCESS_ONCE(b) = p;
-670                 do_something();
-671         } else {
-672                 barrier();
-673                 ACCESS_ONCE(b) = p;
-674                 do_something_else();
-675         }
-676
-677 If MAX is defined to be 1, then the compiler knows that (q % MAX) is
-678 equal to zero, in which case the compiler is within its rights to
-679 transform the above code into the following:
-680
-681         q = ACCESS_ONCE(a);
-682         ACCESS_ONCE(b) = p;
-683         do_something_else();
+Hmm. This part looks fine, but with or without this patch this all is
+suboptimal, we do not need SAVE_ALL unless I missed something. Can't we
+simply kill preempt.S ?
 
-Given that there is an explicit barrier() in both the branches of
-if/else statement, how can the above transformation happen? The
-compiler cannot just remove the barrier(), right?
+Peter, what do you think?
 
-I think it will transform to the following if MAX is defined to 1:
+Oleg.
 
-q = ACCESS_ONCE(a);
-barrier();
-ACCESS_ONCE(b) = p;
-do_something_else();
+----------------------------------------------------------------------------
+Subject: [PATCH] x86: reimplement ___preempt_schedule*() using THUNK helpers
 
-and hence the ordering will be preserved. What am I missing here?
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 047f9ff..3f5d657 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -39,8 +39,6 @@ obj-y			+= tsc.o tsc_msr.o io_delay.o rtc.o
+ obj-y			+= pci-iommu_table.o
+ obj-y			+= resource.o
+ 
+-obj-$(CONFIG_PREEMPT)	+= preempt.o
+-
+ obj-y				+= process.o
+ obj-y				+= i387.o xsave.o
+ obj-y				+= ptrace.o
+diff --git a/arch/x86/kernel/preempt.S b/arch/x86/kernel/preempt.S
+deleted file mode 100644
+index ca7f0d5..0000000
+--- a/arch/x86/kernel/preempt.S
++++ /dev/null
+@@ -1,25 +0,0 @@
+-
+-#include <linux/linkage.h>
+-#include <asm/dwarf2.h>
+-#include <asm/asm.h>
+-#include <asm/calling.h>
+-
+-ENTRY(___preempt_schedule)
+-	CFI_STARTPROC
+-	SAVE_ALL
+-	call preempt_schedule
+-	RESTORE_ALL
+-	ret
+-	CFI_ENDPROC
+-
+-#ifdef CONFIG_CONTEXT_TRACKING
+-
+-ENTRY(___preempt_schedule_context)
+-	CFI_STARTPROC
+-	SAVE_ALL
+-	call preempt_schedule_context
+-	RESTORE_ALL
+-	ret
+-	CFI_ENDPROC
+-
+-#endif
+diff --git a/arch/x86/lib/thunk_32.S b/arch/x86/lib/thunk_32.S
+index 28f85c9..dc2b8fd 100644
+--- a/arch/x86/lib/thunk_32.S
++++ b/arch/x86/lib/thunk_32.S
+@@ -7,7 +7,6 @@
+ 	#include <linux/linkage.h>
+ 	#include <asm/asm.h>
+ 
+-#ifdef CONFIG_TRACE_IRQFLAGS
+ 	/* put return address in eax (arg1) */
+ 	.macro thunk_ra name,func
+ 	.globl \name
+@@ -25,6 +24,15 @@
+ 	_ASM_NOKPROBE(\name)
+ 	.endm
+ 
++#ifdef CONFIG_TRACE_IRQFLAGS
+ 	thunk_ra trace_hardirqs_on_thunk,trace_hardirqs_on_caller
+ 	thunk_ra trace_hardirqs_off_thunk,trace_hardirqs_off_caller
+ #endif
++
++#ifdef CONFIG_PREEMPT
++	THUNK ___preempt_schedule, preempt_schedule
++#ifdef CONFIG_CONTEXT_TRACKING
++	THUNK ___preempt_schedule_context, preempt_schedule_context
++#endif
++#endif
++
+diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
+index 92d9fea..b30b5eb 100644
+--- a/arch/x86/lib/thunk_64.S
++++ b/arch/x86/lib/thunk_64.S
+@@ -38,6 +38,13 @@
+ 	THUNK lockdep_sys_exit_thunk,lockdep_sys_exit
+ #endif
+ 
++#ifdef CONFIG_PREEMPT
++	THUNK ___preempt_schedule, preempt_schedule
++#ifdef CONFIG_CONTEXT_TRACKING
++	THUNK ___preempt_schedule_context, preempt_schedule_context
++#endif
++#endif
++
+ 	/* SAVE_ARGS below is used only for the .cfi directives it contains. */
+ 	CFI_STARTPROC
+ 	SAVE_ARGS
 
--- 
-Pranith
