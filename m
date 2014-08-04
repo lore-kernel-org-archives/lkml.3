@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958AbaHDUMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 16:12:42 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:21210 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311AbaHDUMk (ORCPT
+	id S1752191AbaHDUNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 16:13:34 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:41035 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311AbaHDUNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 16:12:40 -0400
-X-IronPort-AV: E=Sophos;i="5.01,800,1400050800"; 
-   d="scan'208";a="41513486"
-Message-ID: <53DFE933.2080805@broadcom.com>
-Date: Mon, 4 Aug 2014 22:12:35 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>, <brudley@broadcom.com>,
-        Franky Lin <frankyl@broadcom.com>, <meuleman@broadcom.com>,
-        <linville@tuxdriver.com>, <pieterpg@broadcom.com>,
-        <dekim@broadcom.com>, <mcgrof@do-not-panic.com>,
-        <antonio@open-mesh.com>, <johannes.berg@intel.com>,
-        <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH] brcmfmac: prevent watchdog from interfering with	scanning
- and connecting
-References: <539E8559.3010601@linux.intel.com> <539EA79C.7010206@broadcom.com> <53A30F96.3010206@linux.intel.com> <53A311E4.301@broadcom.com> <53CCC44C.2070507@linux.intel.com> <53D124B3.7030807@linux.intel.com> <53DFB6A1.7040900@linux.intel.com> <20140804165202.GG30282@n2100.arm.linux.org.uk>
-In-Reply-To: <20140804165202.GG30282@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Aug 2014 16:13:32 -0400
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: benh@kernel.crashing.org, paulus@samba.org, mpe@ellerman.id.au,
+        akpm@linux-foundation.org, srivatsa.bhat@linux.vnet.ibm.com,
+        sfr@canb.auug.org.au, qiuxishi@huawei.com, wangyun@linux.vnet.ibm.com,
+        qiudayu@linux.vnet.ibm.com, joe@perches.com, alistair@popple.id.au,
+        rcj@linux.vnet.ibm.com
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: [PATCH] arch/powerpc/mm/numa.c: Fix break placement
+Date: Mon,  4 Aug 2014 23:13:10 +0300
+Message-Id: <1407183190-1397-1-git-send-email-andrey.krieger.utkin@gmail.com>
+X-Mailer: git-send-email 1.8.5.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/14 18:52, Russell King - ARM Linux wrote:
-> On Tue, Aug 05, 2014 at 12:36:49AM +0800, Fu, Zhonghui wrote:
->> Hi, Arend
->>
->> I investigated this issue, and its root cause is still that sdio
->> controller can't receive interrupts from WiFi chip on sdio bus when
->> sdio controller is in runtime suspend status. I am running 3.16-rc5
->> linux kernel on ASUS T100TA tablet, and using sdhci-acpi driver.
->
-> That's the root cause.  I fixed this with the Freescale i.MX SD driver
-> which is now able to report pending SDIO interrupts while runtime PM
-> suspended.
->
-> Other host drivers probably need fixing too, or having runtime PM
-> disabled on them - if you can't receive SDIO interrupts while runtime
-> PM suspended, then entering runtime PM while you have a SDIO device
-> attached is a bug.
->
-> This is something for the MMC people to deal with rather than Arend.
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81631
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+---
+ arch/powerpc/mm/numa.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Occasionally, the itch is there to fix mmc code, but this looks a bit 
-tricky. The fun starts in sdio.c:mmc_attach_sdio():
-
-	/*
-	 * Enable runtime PM only if supported by host+card+board
-	 */
-	if (host->caps & MMC_CAP_POWER_OFF_CARD) {
-		/*
-		 * Let runtime PM core know our card is active
-		 */
-		err = pm_runtime_set_active(&card->dev);
-		if (err)
-			goto remove;
-
-		/*
-		 * Enable runtime PM for this card
-		 */
-		pm_runtime_enable(&card->dev);
-	}
-
-The comment above the if statement seems to be stating the right idea, 
-but the code only looks at the host controller capability flags.
-
-Regards,
-Arend
+diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+index 3b181b2..d3e9a78 100644
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -611,8 +611,8 @@ static int cpu_numa_callback(struct notifier_block *nfb, unsigned long action,
+ 	case CPU_UP_CANCELED:
+ 	case CPU_UP_CANCELED_FROZEN:
+ 		unmap_cpu_from_node(lcpu);
+-		break;
+ 		ret = NOTIFY_OK;
++		break;
+ #endif
+ 	}
+ 	return ret;
+-- 
+1.8.5.5
 
