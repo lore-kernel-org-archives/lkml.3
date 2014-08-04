@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294AbaHDFD1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 01:03:27 -0400
-Received: from smtp-vbr13.xs4all.nl ([194.109.24.33]:3803 "EHLO
-	smtp-vbr13.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921AbaHDFDZ (ORCPT
+	id S1751123AbaHDFEf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 01:04:35 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:34273 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaHDFEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 01:03:25 -0400
-Message-ID: <53DF1412.9010506@xs4all.nl>
-Date: Mon, 04 Aug 2014 07:03:14 +0200
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Mon, 4 Aug 2014 01:04:33 -0400
 MIME-Version: 1.0
-To: Nicholas Krause <xerofoify@gmail.com>, udovdh@xs4all.nl
-CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] v4l2: Change call of function in videobuf2-core.c
-References: <1407122751-30689-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1407122751-30689-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAAVeFuK0qe9Hi8OZv9pJjZYFZB_DexPJOD-D2=4DSG==7nHkJg@mail.gmail.com>
+References: <1406299116-28492-1-git-send-email-acourbot@nvidia.com>
+ <CACRpkdZLXr7mTD4H1VXQPqrwZ3gcjU7CtehOK1-1_=L1J3OnfQ@mail.gmail.com> <CAAVeFuK0qe9Hi8OZv9pJjZYFZB_DexPJOD-D2=4DSG==7nHkJg@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Mon, 4 Aug 2014 14:04:12 +0900
+Message-ID: <CAAVeFuJm6EOseDow9Mr27FaqucdARaQvXTb3FxA13kqnRw3a3w@mail.gmail.com>
+Subject: Re: [PATCH] gpio: add flags argument to gpiod_get*() functions
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, Mark Brown <broonie@kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2014 05:25 AM, Nicholas Krause wrote:
-> This patch changes the call of vb2_buffer_core to use VB2_BUFFER_STATE_ACTIVE
-> inside the for instead of not setting in correctly to VB2_BUFFER_STATE_ERROR.
-> 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+On Thu, Jul 31, 2014 at 12:43 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Mon, Jul 28, 2014 at 7:30 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Fri, Jul 25, 2014 at 4:38 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>>
+>>> The huge majority of GPIOs have their direction and initial value set
+>>> right after being obtained by one of the gpiod_get() functions. The
+>>> integer GPIO API had gpio_request_one() that took a convenience flags
+>>> parameter allowing to specify an direction and value applied to the
+>>> returned GPIO. This feature greatly simplifies client code and ensures
+>>> errors are always handled properly.
+>>>
+>>> A similar feature has been requested for the gpiod API. Since setting
+>>> the direction of a GPIO is so often the very next action done after
+>>> obtaining its descriptor, we prefer to extend the existing functions
+>>> instead of introducing new functions that would raise the
+>>> number of gpiod getters to 16 (!).
+>>>
+>>> The drawback of this approach is that all gpiod clients need to be
+>>> updated. To limit the pain, temporary macros are introduced that allow
+>>> gpiod_get*() to be called with or without the extra flags argument. They
+>>> will be removed once all consumer code has been updated.
+>>>
+>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>>> ---
+>>> This dude can be applied harmlessly to the GPIO tree - then I will go
+>>> after every gpiod user to update the calls to gpiod_get*() before
+>>> removing the macros in consumer.h.
+>>
+>> OK I trust you. Patch applied with Broonie's review tag.
+>
+> Thanks! Unfortunately it is still not in -next due to a build error...
+>
+>> Just so we don't forget how we should move forward: Alex what do
+>> you think about adding a drivers/gpio/TODO.TXT file outlining the
+>> overall plan of the gpiod refactoring and clean-up work?
+>
+> I have such a file locally - I'm not sure if checking it into the
+> kernel tree is relevant though. Sounds more like the task of a wiki
+> page.
 
-Dunno what's going on here after reading Dave Airlie's reply, but:
-
-Nacked-by: Hans Verkuil <hans.verkuil@cisco.com>
-
-It's clearly wrong and if you get here at all you have a driver bug anyway. That
-WARN_ON is there for a reason. Your driver isn't returning buffers correctly in
-stop_streaming or in start_streaming if start_streaming fails with an error.
-
-Regards,
-
-	Hans
-
-> ---
->  drivers/media/v4l2-core/videobuf2-core.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
-> index 7c4489c..08e478b 100644
-> --- a/drivers/media/v4l2-core/videobuf2-core.c
-> +++ b/drivers/media/v4l2-core/videobuf2-core.c
-> @@ -2115,7 +2115,7 @@ static void __vb2_queue_cancel(struct vb2_queue *q)
->  	if (WARN_ON(atomic_read(&q->owned_by_drv_count))) {
->  		for (i = 0; i < q->num_buffers; ++i)
->  			if (q->bufs[i]->state == VB2_BUF_STATE_ACTIVE)
-> -				vb2_buffer_done(q->bufs[i], VB2_BUF_STATE_ERROR);
-> +				vb2_buffer_done(q->bufs[i], VB2_BUF_STATE_ACTIVE);
->  		/* Must be zero now */
->  		WARN_ON(atomic_read(&q->owned_by_drv_count));
->  	}
-> 
-
+FWIW I have posted a small list of stuff I intent to do shortly:
+https://gist.github.com/Gnurou/a62915acbfe0d0d4a671
