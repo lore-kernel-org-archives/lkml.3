@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002AbaHDRMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:12:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56489 "EHLO
+	id S1753496AbaHDRM3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:12:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56490 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751847AbaHDQty (ORCPT
+	by vger.kernel.org with ESMTP id S1751843AbaHDQty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:54 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Kevin Hao" <haokexin@gmail.com>,
-        "Tejun Heo" <tj@kernel.org>, "Dan Williams" <dan.j.williams@intel.com>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.261111339@decadent.org.uk>
+Message-ID: <lsq.1407170912.631598640@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 91/94] libata: support the ata host which implements a
- queue depth less than 32
+Subject: [PATCH 3.2 80/94] applicom: dereferencing NULL on error path
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,76 +32,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin Hao <haokexin@gmail.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 1871ee134b73fb4cadab75752a7152ed2813c751 upstream.
+commit 8bab797c6e5724a43b7666ad70860712365cdb71 upstream.
 
-The sata on fsl mpc8315e is broken after the commit 8a4aeec8d2d6
-("libata/ahci: accommodate tag ordered controllers"). The reason is
-that the ata controller on this SoC only implement a queue depth of
-16. When issuing the commands in tag order, all the commands in tag
-16 ~ 31 are mapped to tag 0 unconditionally and then causes the sata
-malfunction. It makes no senses to use a 32 queue in software while
-the hardware has less queue depth. So consider the queue depth
-implemented by the hardware when requesting a command tag.
+This is a static checker fix.  The "dev" variable is always NULL after
+the while statement so we would be dereferencing a NULL pointer here.
 
-Fixes: 8a4aeec8d2d6 ("libata/ahci: accommodate tag ordered controllers")
-Signed-off-by: Kevin Hao <haokexin@gmail.com>
-Acked-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: 819a3eba4233 ('[PATCH] applicom: fix error handling')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/libata-core.c | 22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ drivers/char/applicom.c | 1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4711,6 +4711,10 @@ void swap_buf_le16(u16 *buf, unsigned in
-  *	ata_qc_new - Request an available ATA command, for queueing
-  *	@ap: target port
-  *
-+ *	Some ATA host controllers may implement a queue depth which is less
-+ *	than ATA_MAX_QUEUE. So we shouldn't allocate a tag which is beyond
-+ *	the hardware limitation.
-+ *
-  *	LOCKING:
-  *	None.
-  */
-@@ -4718,14 +4722,16 @@ void swap_buf_le16(u16 *buf, unsigned in
- static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
- {
- 	struct ata_queued_cmd *qc = NULL;
--	unsigned int i, tag;
-+	unsigned int i, tag, max_queue;
-+
-+	max_queue = ap->scsi_host->can_queue;
+diff --git a/drivers/char/applicom.c b/drivers/char/applicom.c
+index 974321a..1479030 100644
+--- a/drivers/char/applicom.c
++++ b/drivers/char/applicom.c
+@@ -345,7 +345,6 @@ out:
+ 			free_irq(apbs[i].irq, &dummy);
+ 		iounmap(apbs[i].RamIO);
+ 	}
+-	pci_disable_device(dev);
+ 	return ret;
+ }
  
- 	/* no command while frozen */
- 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
- 		return NULL;
- 
--	for (i = 0; i < ATA_MAX_QUEUE; i++) {
--		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
-+	for (i = 0, tag = ap->last_tag + 1; i < max_queue; i++, tag++) {
-+		tag = tag < max_queue ? tag : 0;
- 
- 		/* the last tag is reserved for internal command. */
- 		if (tag == ATA_TAG_INTERNAL)
-@@ -5998,6 +6004,16 @@ int ata_host_register(struct ata_host *h
- {
- 	int i, rc;
- 
-+	/*
-+	 * The max queue supported by hardware must not be greater than
-+	 * ATA_MAX_QUEUE.
-+	 */
-+	if (sht->can_queue > ATA_MAX_QUEUE) {
-+		dev_err(host->dev, "BUG: the hardware max queue is too large\n");
-+		WARN_ON(1);
-+		return -EINVAL;
-+	}
-+
- 	/* host must have been started */
- 	if (!(host->flags & ATA_HOST_STARTED)) {
- 		dev_err(host->dev, "BUG: trying to register unstarted host\n");
 
