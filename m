@@ -1,83 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751794AbaHDIhK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 04:37:10 -0400
-Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:50166
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751108AbaHDIhI convert rfc822-to-8bit (ORCPT
+	id S1751586AbaHDIkw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 04:40:52 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:57667 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaHDIkv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 04:37:08 -0400
-X-WSS-ID: 0N9RX9O-08-3J1-02
-X-M-MSG: 
-Message-ID: <53DF462B.2060102@amd.com>
-Date: Mon, 4 Aug 2014 10:36:59 +0200
-From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 4 Aug 2014 04:40:51 -0400
 MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>, <airlied@linux.ie>
-CC: <thellstrom@vmware.com>, <nouveau@lists.freedesktop.org>,
-        <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
-        <bskeggs@redhat.com>, <alexander.deucher@amd.com>
-Subject: Re: [PATCH 09/19] drm/radeon: handle lockup in delayed work, v2
-References: <20140731153245.15061.63023.stgit@patser>
- <20140731153342.15061.54264.stgit@patser> <53DBC1EC.1010001@amd.com>
- <53DBD269.80807@canonical.com>
-In-Reply-To: <53DBD269.80807@canonical.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-X-Originating-IP: [10.224.152.180]
+In-Reply-To: <87ha1v6ewb.fsf@x220.int.ebiederm.org>
+References: <1406728756-32443-1-git-send-email-richard@sigma-star.at>
+	<53D959A7.5070702@nod.at>
+	<53DAC069.7070606@nod.at>
+	<20140801154448.GE24719@ram.oc3035372033.ibm.com>
+	<53DBE894.3020900@nod.at>
+	<87ha1v6ewb.fsf@x220.int.ebiederm.org>
+Date: Mon, 4 Aug 2014 10:40:50 +0200
+Message-ID: <CAFLxGvzbdON+fbsG=0iwOv5m_hbQ2=Pz=Ec-AHq728FTNcx4iw@mail.gmail.com>
+Subject: Re: MNT_DETACH and mount namespace issue
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Richard Weinberger <richard@nod.at>, Ram Pai <linuxram@us.ibm.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Jeff Mahoney <jeffm@suse.com>, sahne@0x90.at,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(24454002)(51704005)(377424004)(189002)(199002)(85182001)(50986999)(102836001)(87936001)(83506001)(87266999)(76176999)(46102001)(54356999)(33656002)(84676001)(65816999)(31966008)(74662001)(99396002)(23676002)(74502001)(36756003)(68736004)(20776003)(47776003)(64706001)(64126003)(19580395003)(76482001)(44976005)(50466002)(83322001)(80316001)(19580405001)(81542001)(4396001)(97736001)(81342001)(65956001)(86362001)(80022001)(59896001)(77982001)(92726001)(92566001)(101416001)(79102001)(83072002)(85852003)(95666004)(93886004)(85306004)(105586002)(21056001)(85202003)(106466001)(107046002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR02MB033;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0293D40691
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Christian.Koenig@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maarten,
-
-Sorry for the delay. I've got way to much todo recently.
-
-Am 01.08.2014 um 19:46 schrieb Maarten Lankhorst:
+On Sat, Aug 2, 2014 at 12:09 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Richard Weinberger <richard@nod.at> writes:
 >
-> On 01-08-14 18:35, Christian König wrote:
->> Am 31.07.2014 um 17:33 schrieb Maarten Lankhorst:
->>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->>> ---
->>> V1 had a nasty bug breaking gpu lockup recovery. The fix is not
->>> allowing radeon_fence_driver_check_lockup to take exclusive_lock,
->>> and kill it during lockup recovery instead.
->> That looks like the delayed work starts running as soon as we submit a fence, and not when it's needed for waiting.
+>> Am 01.08.2014 17:44, schrieb Ram Pai:
+>>> On Fri, Aug 01, 2014 at 12:17:13AM +0200, Richard Weinberger wrote:
+>>>> Am 30.07.2014 22:46, schrieb Richard Weinberger:
+>>>>> Am 30.07.2014 15:59, schrieb Richard Weinberger:
+>>>>>> If we use the plain list_empty() we might not see the
+>>>>>> hlist_del_init_rcu() and therefore miss one member of the
+>>>>>> list.
+>>>>>>
+>>>>>> It fixes the following issue:
+>>>>>> $ unshare -m /usr/bin/sleep 10000 &
+>>>>>> $ mkdir -p foo/proc
+>>>>>> $ mount -t proc none foo/proc
+>>>>>> $ mount -t binfmt_misc none foo/proc/sys/fs/binfmt_misc
+>>>>>> $ umount -l foo/proc
+>>>>>> $ rmdir foo/proc
+>>>>>> rmdir: failed to remove ‘foo/proc’: Device or resource busy
+>>>>>
+>>>>> Although my fix was wrong, the issue is real, it seems to exist for a very long
+>>>>> time. Just was able to reproduce it on 2.6.32.
+>>>>> Please note that you need a shared root subtree to trigger the issue.
+>>>>> i.e. mount --shared /
+>>>>> Maybe this is why nobody noticed it so far as only systemd distros
+>>>>> have the root subtree shared by default.
+>>>>>
+>>>>> I hit the issue on openSUSE 13.1 where an application creates a chroot environment
+>>>>> and then lazy umounts /proc.
+>>>>> It happened on very few machines. An analysis showed that only boxes with an OpenVPN tunnel
+>>>>> were affected. This did not make any sense until I discovered that the OpenVPN systemd
+>>>>> service file has set "PrivateTmp=true". This setting creates
+>>>>> a mount namespace for the said service...
+>>>>>
+>>>>> In __propagate_umount() the following piece of code is interesting:
+>>>>>
+>>>>>  /*
+>>>>>  * umount the child only if the child has no
+>>>>>  * other children
+>>>>>  */
+>>>>> if (child && list_empty(&child->mnt_mounts)) {
+>>>>>         hlist_del_init_rcu(&child->mnt_hash);
+>>>>>         hlist_add_before_rcu(&child->mnt_hash, &mnt->mnt_hash);
+>>>>> }
+>>>>>
+>>>>> child->mnt_mounts is non-empty for the "proc" although the "binfmt_misc"
+>>>>> subtree was removed.
+>>>>> I'm not sure whether this is only one more symptom or the main culprit.
+>>>>
+>>>> CC'ing Ram Pai.
+>>>>
+>>>> Ram, you are the author of the said code. Can you please explain why we need that
+>>>> list_empty() check?
+>>>> To my (limited) understanding of VFS, the following change should be fine to fix the issue:
+>>>
+>>> We had made a rule then, that busy vfsmounts cannot be lazily unmounted
+>>> **implicitly**. Propagated unmounts are implicit unmounts, and if such
+>>> implicit vfsmounts have child-mounts than obviously they are busy, and
+>>> hence they cannot be lazy-unmounted implicitly.
+>>>
+>>> the list_empty() is checking for no child-mounts on the vfsmount before
+>>> letting it unmount.
+>>>
+>>> We did not want a bunch of mounts disappear without the users knowledge.
+>>> Hence we made the above rule.
+>>>
+>>> Al Viro, will have more insights into this.
 >>
->> Since it's a backup for failing IRQs I would rather put it into radeon_irq_kms.c and start/stop it when the IRQs are started/stoped.
-> The delayed work is not just for failing irq's, it's also the handler that's used to detect lockups, which is why I trigger after processing fences, and reset the timer after processing.
-
-The idea was turning the delayed work on and off when we turn the irq on 
-and off as well, processing of the delayed work handler can still happen 
-in radeon_fence.c
-
+>> Hmm, with the root subtree shared by default this policy will be problematic and
+>> lead to problems.
+>> As I observe on openSUSE 13.1.
+>>
+>> Al, what do you think?
 >
-> Specifically what happened was this scenario:
+> I have a pending patchset that causes the rmdir to cause all of the
+> mounts to go away.  It has passed review and has not been merged only
+> because of stack overflow concerns (which I have not had time to fully
+> address).
 >
-> - lock up occurs
-> - write lock taken by gpu_reset
-> - delayed work runs, tries to acquire read lock, blocks
-> - gpu_reset tries to cancel delayed work synchronously
-> - has to wait for delayed work to finish -> deadlock
+> Sigh.  It badly breaks unix semantics for rmdir unlink with no mounts in
+> the local namespace to fail, and it introduces as denial of service
+> attack from unprivielged users.
 
-Why do you want to disable the work item from the lockup handler in the 
-first place?
+Thanks for the pointer!
+I fear your patch series is nothing we can easily feed into -stable.
+Is this really the only acceptable solution?
 
-Just take the exclusive lock in the work item, when it concurrently runs 
-with the lockup handler it will just block for the lockup handler to 
-complete.
+The thing is, users get already bitten by that.
+i.e. run openSUSE's KIWI tool on a machine where a systemd service
+with PrivateTmp=yes is installed
+and you'll end up with a stale mount point.
+KIWI creates a chroot, populates /proc, lazily unmounts it later and
+then fails to remove the temporary chroot directory
+because of EBUSY.
 
-Regards,
-Christian.
-
-> ~Maarten
-
+-- 
+Thanks,
+//richard
