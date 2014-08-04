@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797AbaHDQ4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:56:34 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:53392 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294AbaHDQ4b (ORCPT
+	id S1753364AbaHDQzd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:55:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56633 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752157AbaHDQt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:56:31 -0400
-Date: Mon, 4 Aug 2014 09:56:27 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Matt Porter <mporter@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, Gregory Fong <gregory.0xf0@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Marc Carino <marc.ceeeee@gmail.com>
-Subject: Re: [PATCH v8 03/11] ARM: brcmstb: add debug UART for earlyprintk
- support
-Message-ID: <20140804165627.GT3711@ld-irv-0074>
-References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
- <1405976886-27807-4-git-send-email-computersforpeace@gmail.com>
- <20140802083040.GY30282@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 4 Aug 2014 12:49:57 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <20140802083040.GY30282@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Theodore Ts'o" <tytso@mit.edu>,
+        "Eric Sandeen" <sandeen@redhat.com>
+Date: Mon, 04 Aug 2014 17:48:32 +0100
+Message-ID: <lsq.1407170912.603528683@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 27/94] ext4: disable synchronous transaction batching
+ if max_batch_time==0
+In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 02, 2014 at 09:30:40AM +0100, Russell King wrote:
-> On Mon, Jul 21, 2014 at 02:07:58PM -0700, Brian Norris wrote:
-> > From: Marc Carino <marc.ceeeee@gmail.com>
-> > 
-> > Add the UART definitions needed to support earlyprintk on brcmstb machines.
-> > 
-> > Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
-> > Acked-by: Florian Fainelli <f.fainelli@gmail.com>
-> > Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-> 
-> I noticed that you sent this to the patch system.  I asked Olof last
-> night whether he had anything in arm-soc touching Kconfig.debug, and
-> he does (a number of other platforms have updated it.)  This means
-> that if I apply it to my tree, it may conflict, so I'm reluctant to
-> take it.
+3.2.62-rc1 review patch.  If anyone has any objections, please let me know.
 
-OK... Matt told me that such patches go through you. So which is it?
-Should all Kconfig.debug patches go through the arm-soc route?
+------------------
 
-Brian
+From: Eric Sandeen <sandeen@redhat.com>
+
+commit 5dd214248f94d430d70e9230bda72f2654ac88a8 upstream.
+
+The mount manpage says of the max_batch_time option,
+
+	This optimization can be turned off entirely
+	by setting max_batch_time to 0.
+
+But the code doesn't do that.  So fix the code to do
+that.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+[bwh: Backported to 3.2: option parsing looks different]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ fs/ext4/super.c       | 2 --
+ fs/jbd2/transaction.c | 5 ++++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1663,8 +1663,6 @@ static int parse_options(char *options,
+ 				return 0;
+ 			if (option < 0)
+ 				return 0;
+-			if (option == 0)
+-				option = EXT4_DEF_MAX_BATCH_TIME;
+ 			sbi->s_max_batch_time = option;
+ 			break;
+ 		case Opt_min_batch_time:
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -1388,9 +1388,12 @@ int jbd2_journal_stop(handle_t *handle)
+ 	 * to perform a synchronous write.  We do this to detect the
+ 	 * case where a single process is doing a stream of sync
+ 	 * writes.  No point in waiting for joiners in that case.
++	 *
++	 * Setting max_batch_time to 0 disables this completely.
+ 	 */
+ 	pid = current->pid;
+-	if (handle->h_sync && journal->j_last_sync_writer != pid) {
++	if (handle->h_sync && journal->j_last_sync_writer != pid &&
++	    journal->j_max_batch_time) {
+ 		u64 commit_time, trans_time;
+ 
+ 		journal->j_last_sync_writer = pid;
+
