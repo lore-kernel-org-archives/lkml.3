@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbaHDUZo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 16:25:44 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:58750
+	id S1752615AbaHDUZv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 16:25:51 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:58763
 	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881AbaHDUZn (ORCPT
+	with ESMTP id S1752356AbaHDUZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 16:25:43 -0400
-Date: Mon, 4 Aug 2014 22:25:41 +0200
+	Mon, 4 Aug 2014 16:25:49 -0400
+Date: Mon, 4 Aug 2014 22:25:48 +0200
 From: "Serge E. Hallyn" <serge@hallyn.com>
 To: Cyrill Gorcunov <gorcunov@openvz.org>
 Cc: linux-kernel@vger.kernel.org, keescook@chromium.org, tj@kernel.org,
@@ -15,26 +15,20 @@ Cc: linux-kernel@vger.kernel.org, keescook@chromium.org, tj@kernel.org,
         hpa@zytor.com, serge.hallyn@canonical.com, xemul@parallels.com,
         segoon@openwall.com, kamezawa.hiroyu@jp.fujitsu.com,
         mtk.manpages@gmail.com, jln@google.com
-Subject: Re: [patch 1/4] mm: Introduce check_data_rlimit helper, v2
-Message-ID: <20140804202541.GB27304@mail.hallyn.com>
+Subject: Re: [patch 2/4] mm: Use may_adjust_brk helper
+Message-ID: <20140804202548.GC27304@mail.hallyn.com>
 References: <20140804172255.109539743@openvz.org>
- <20140804172610.714056240@openvz.org>
+ <20140804172610.795642714@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140804172610.714056240@openvz.org>
+In-Reply-To: <20140804172610.795642714@openvz.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Quoting Cyrill Gorcunov (gorcunov@openvz.org):
-> To eliminate code duplication lets introduce check_data_rlimit
-> helper which we will use in brk() and prctl() syscalls.
-> 
-> v2 (serge.hallyn@):
->  - need to check against RLIM_INFINITY rather than RLIMIT_DATA
-> 
 > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 > Cc: Kees Cook <keescook@chromium.org>
 > Cc: Tejun Heo <tj@kernel.org>
@@ -52,42 +46,71 @@ Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 > Cc: Michael Kerrisk <mtk.manpages@gmail.com>
 > Cc: Julien Tinnes <jln@google.com>
 > ---
->  include/linux/mm.h |   15 +++++++++++++++
->  1 file changed, 15 insertions(+)
+>  kernel/sys.c |   11 ++++-------
+>  mm/mmap.c    |    7 +++----
+>  2 files changed, 7 insertions(+), 11 deletions(-)
 > 
-> Index: linux-2.6.git/include/linux/mm.h
+> Index: linux-2.6.git/kernel/sys.c
 > ===================================================================
-> --- linux-2.6.git.orig/include/linux/mm.h
-> +++ linux-2.6.git/include/linux/mm.h
-> @@ -18,6 +18,7 @@
->  #include <linux/pfn.h>
->  #include <linux/bit_spinlock.h>
->  #include <linux/shrinker.h>
-> +#include <linux/resource.h>
+> --- linux-2.6.git.orig/kernel/sys.c
+> +++ linux-2.6.git/kernel/sys.c
+> @@ -1693,7 +1693,6 @@ exit:
+>  static int prctl_set_mm(int opt, unsigned long addr,
+>  			unsigned long arg4, unsigned long arg5)
+>  {
+> -	unsigned long rlim = rlimit(RLIMIT_DATA);
+>  	struct mm_struct *mm = current->mm;
+>  	struct vm_area_struct *vma;
+>  	int error;
+> @@ -1733,9 +1732,8 @@ static int prctl_set_mm(int opt, unsigne
+>  		if (addr <= mm->end_data)
+>  			goto out;
 >  
->  struct mempolicy;
->  struct anon_vma;
-> @@ -1780,6 +1781,20 @@ extern struct vm_area_struct *copy_vma(s
->  	bool *need_rmap_locks);
->  extern void exit_mmap(struct mm_struct *);
+> -		if (rlim < RLIM_INFINITY &&
+> -		    (mm->brk - addr) +
+> -		    (mm->end_data - mm->start_data) > rlim)
+> +		if (check_data_rlimit(rlimit(RLIMIT_DATA), mm->brk, addr,
+> +				      mm->end_data, mm->start_data))
+>  			goto out;
 >  
-> +static inline int check_data_rlimit(unsigned long rlim,
-> +				    unsigned long new,
-> +				    unsigned long start,
-> +				    unsigned long end_data,
-> +				    unsigned long start_data)
-> +{
-> +	if (rlim < RLIM_INFINITY) {
-> +		if (((new - start) + (end_data - start_data)) > rlim)
-> +			return -ENOSPC;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  extern int mm_take_all_locks(struct mm_struct *mm);
->  extern void mm_drop_all_locks(struct mm_struct *mm);
+>  		mm->start_brk = addr;
+> @@ -1745,9 +1743,8 @@ static int prctl_set_mm(int opt, unsigne
+>  		if (addr <= mm->end_data)
+>  			goto out;
 >  
+> -		if (rlim < RLIM_INFINITY &&
+> -		    (addr - mm->start_brk) +
+> -		    (mm->end_data - mm->start_data) > rlim)
+> +		if (check_data_rlimit(rlimit(RLIMIT_DATA), addr, mm->start_brk,
+> +				      mm->end_data, mm->start_data))
+>  			goto out;
+>  
+>  		mm->brk = addr;
+> Index: linux-2.6.git/mm/mmap.c
+> ===================================================================
+> --- linux-2.6.git.orig/mm/mmap.c
+> +++ linux-2.6.git/mm/mmap.c
+> @@ -263,7 +263,7 @@ static unsigned long do_brk(unsigned lon
+>  
+>  SYSCALL_DEFINE1(brk, unsigned long, brk)
+>  {
+> -	unsigned long rlim, retval;
+> +	unsigned long retval;
+>  	unsigned long newbrk, oldbrk;
+>  	struct mm_struct *mm = current->mm;
+>  	unsigned long min_brk;
+> @@ -293,9 +293,8 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
+>  	 * segment grow beyond its set limit the in case where the limit is
+>  	 * not page aligned -Ram Gupta
+>  	 */
+> -	rlim = rlimit(RLIMIT_DATA);
+> -	if (rlim < RLIM_INFINITY && (brk - mm->start_brk) +
+> -			(mm->end_data - mm->start_data) > rlim)
+> +	if (check_data_rlimit(rlimit(RLIMIT_DATA), brk, mm->start_brk,
+> +			      mm->end_data, mm->start_data))
+>  		goto out;
+>  
+>  	newbrk = PAGE_ALIGN(brk);
 > 
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
