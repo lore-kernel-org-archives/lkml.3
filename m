@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186AbaHDXLK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 19:11:10 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:54035 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaHDXLI (ORCPT
+	id S1753245AbaHDXM0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 19:12:26 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:62897 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752897AbaHDXMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 19:11:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844C415A@US01WEMBX2.internal.synopsys.com>
-References: <CAPDOMVj5nifG8VQBB_UzNESBc+arxpCQ5sEOAYdb6Rr-KkDSHw@mail.gmail.com>
-	<20140804164633.GA28436@xanatos>
-	<A2CA0424C0A6F04399FB9E1CD98E0304844C4028@US01WEMBX2.internal.synopsys.com>
-	<58974.1407180184@turing-police.cc.vt.edu>
-	<A2CA0424C0A6F04399FB9E1CD98E0304844C4061@US01WEMBX2.internal.synopsys.com>
-	<62334.1407184063@turing-police.cc.vt.edu>
-	<A2CA0424C0A6F04399FB9E1CD98E0304844C411C@US01WEMBX2.internal.synopsys.com>
-	<CAPDOMViK3ZzeDhNMi9oX_s8kZG45BGPwbmZeoT4u-nqg2rgwSg@mail.gmail.com>
-	<A2CA0424C0A6F04399FB9E1CD98E0304844C415A@US01WEMBX2.internal.synopsys.com>
-Date: Mon, 4 Aug 2014 19:11:07 -0400
-Message-ID: <CAPDOMVjy9DzNVMg__MP7-0VAXYojDuGr6v+SoNfj3hhBKyHMYA@mail.gmail.com>
-Subject: Re: Kernel Debugging Support
-From: Nick Krause <xerofoify@gmail.com>
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-Cc: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "Nyman, Mathias" <mathias.nyman@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 4 Aug 2014 19:12:25 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v2] x86/efi: Fix 3DNow optimization build failure in EFI stub
+Date: Tue,  5 Aug 2014 00:12:19 +0100
+Message-Id: <1407193939-27813-1-git-send-email-matt@console-pimps.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 4, 2014 at 7:03 PM, Paul Zimmerman
-<Paul.Zimmerman@synopsys.com> wrote:
->> From: Nick Krause [mailto:xerofoify@gmail.com]
->> Sent: Monday, August 04, 2014 3:50 PM
->>
->> On Mon, Aug 4, 2014 at 5:55 PM, Paul Zimmerman
->> <Paul.Zimmerman@synopsys.com> wrote:
->> >> From: Valdis.Kletnieks@vt.edu [mailto:Valdis.Kletnieks@vt.edu]
->> >> Sent: Monday, August 04, 2014 1:28 PM
->> >>
->> >> On Mon, 04 Aug 2014 19:40:15 -0000, Paul Zimmerman said:
->> >>
->> >> > Ah, you didn't read far enough down the page :)
->> >>
->> >> I'm willing to bet a large pizza with everything but anchovies that
->> >> out in the real world, a lot of implementors didn't read further either. :)
->> >
->> > Nah, I won't take that bet :)
->> >
->> >> > So I have to believe there are a *lot* of systems out there that do support xHCI debug.
->> >>
->> >> Possibly. But enough to make an actual critical mass to motivate somebody
->> >> to write code? Or do you get more bang-for-buck by fixing kgdb to support
->> >> debugging over Ethernet?
->> >
->> > Well, code to support the xHCI debug capability has been written, see
->> > http://marc.info/?l=linux-usb&m=135948845511047. But I did not get
->> > approval from my management to spend the time needed to integrate this
->> > into the kernel's kgdb support.
->> >
->> > Nick, if you are still interested in this, you could take a look at the
->> > above code, and see if you can work out how to modify it to make it work
->> > with kgdb. But you will need a PC that has a debug-capable xHCI
->> > controller in order to test it. If you have PC or laptop with USB 3.0
->> > built-in that has the Windows 8 logo, I think there's a good chance you
->> > already have one. Or, according to
->> > http://pete.akeo.ie/2011/08/do-necrenesas-upd720200-based-usb-30.html,
->> > plug-in USB 3.0 host cards that use the newer Renesas uPD720201 chipset
->> > also have the debug capability.
->> >
->> > Note that the above patch is against a pretty old kernel (3.6), so the
->> > first thing you would need to do is forward-port it to work on the
->> > latest kernel. As a plus, that would give you some real experience
->> > working with kernel code, which everyone seems to agree you need ;)
->> >
->> > --
->> > Paul
->> >
->>
->> Paul ,
->> My computer is rather old now as of Sandy Bridge days, so I probably
->> can't test the patch
->> on my own machine. However I will look at the code and see if I can
->> forward port it
->> against the usb git tree I have a current version of. In addition I
->> would like the new xhci
->> maintainers information in  order to send out a patch with the
->> Maintainer for xhci updated.
->
-> Sarah already told you who the new maintainer is, and then CCed him
-> on this thread. Hint: There is a file name 'MAINTAINERS' in the root
-> of the kernel tree, which tells you who the maintainers are for all of
-> the subsystems. Please read Documentation/SubmittingPatches, it has a
-> lot of information like this that you need to know.
->
-> --
-> Paul
->
-Thanks I will read this file and thanks for the information. I known
-where the file is I will
-add the information then.
-Regards Nick
+From: Matt Fleming <matt.fleming@intel.com>
+
+Building a 32-bit kernel with CONFIG_X86_USE_3DNOW and CONFIG_EFI_STUB
+leads to the following build error,
+
+  drivers/firmware/efi/libstub/lib.a(efi-stub-helper.o): In function `efi_relocate_kernel':
+  efi-stub-helper.c:(.text+0xda5): undefined reference to `_mmx_memcpy'
+
+This is due to the fact that the EFI boot stub pulls in the 3DNow
+optimized versions of the memcpy() prototype from
+arch/x86/include/asm/string_32.h, even though the _mmx_memcpy()
+implementation isn't available in the EFI stub.
+
+For now, predicate CONFIG_EFI_STUB on !CONFIG_X86_USE_3DNOW. This is
+most definitely a temporary fix. A complete solution will involve
+selectively including kernel headers/symbols into the early-boot
+execution environment of the EFI boot stub, i.e. something analogous to
+the way that the _SETUP symbol is used.
+
+Previous attempts have been made to fix this kind of problem, though
+none seem to have ever been merged,
+
+  http://lkml.kernel.org/r/20120329104822.GA17233@x1.osrc.amd.com
+
+Clearly, this problem has been around for a long time.
+
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+
+---
+
+v2: Only disallow CONFIG_X86_USE_3DNOW for EFI_STUB, not for the EFI
+runtime services.
+ 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 801ed36c2e49..7ea8aaaab7fc 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1536,7 +1536,7 @@ config EFI
+ 
+ config EFI_STUB
+        bool "EFI stub support"
+-       depends on EFI
++       depends on EFI && !X86_USE_3DNOW
+        ---help---
+           This kernel feature allows a bzImage to be loaded directly
+ 	  by EFI firmware without the use of a bootloader.
+-- 
+1.9.0
+
