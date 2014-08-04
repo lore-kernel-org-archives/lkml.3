@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586AbaHDJXN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 05:23:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55366 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751108AbaHDJXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 05:23:11 -0400
-Date: Mon, 4 Aug 2014 11:23:09 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dexuan Cui <decui@microsoft.com>
-cc: gregkh@linuxfoundation.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
-        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-        kys@microsoft.com, haiyangz@microsoft.com
-Subject: Re: [PATCH] HID: hyperv: register as a wakeup source
-In-Reply-To: <1406903201-7210-1-git-send-email-decui@microsoft.com>
-Message-ID: <alpine.LNX.2.00.1408041122550.1368@pobox.suse.cz>
-References: <1406903201-7210-1-git-send-email-decui@microsoft.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751801AbaHDJXv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 05:23:51 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:64287 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643AbaHDJXs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 05:23:48 -0400
+Subject: [PATCH v1.3 8/18] arcmsr: remove calling
+ arcmsr_hbb_enable_driver_mode
+From: Ching Huang <ching2048@areca.com.tw>
+To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Aug 2014 17:23:39 +0800
+Message-ID: <1407144219.4756.62.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Aug 2014, Dexuan Cui wrote:
+From: Ching Huang <ching2048@areca.com.tw>
 
-> With this patch, we can move the mouse to wake up the VM after the VM executes
-> "echo freeze > /sys/power/state".
-> 
-> This addresses part of https://bugzilla.redhat.com/show_bug.cgi?id=1086100
-> 
-> Cc: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Dexuan Cui <decui@microsoft.com>
+Remove calling arcmsr_hbb_enable_driver_mode by in-line code.
 
-Applied, thanks.
+Signed-off-by: Ching Huang <ching2048@areca.com.tw>
+---
 
-> ---
->  drivers/hid/hid-hyperv.c | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/drivers/hid/hid-hyperv.c b/drivers/hid/hid-hyperv.c
-> index f52dbcb..31fad64 100644
-> --- a/drivers/hid/hid-hyperv.c
-> +++ b/drivers/hid/hid-hyperv.c
-> @@ -308,6 +308,9 @@ static void mousevsc_on_receive(struct hv_device *device,
->  		memcpy(input_dev->input_buf, input_report->buffer, len);
->  		hid_input_report(input_dev->hid_device, HID_INPUT_REPORT,
->  				 input_dev->input_buf, len, 1);
-> +
-> +		pm_wakeup_event(&input_dev->device->device, 0);
-> +
->  		break;
->  	default:
->  		pr_err("unsupported hid msg type - type %d len %d",
-> @@ -549,6 +552,8 @@ static int mousevsc_probe(struct hv_device *device,
->  		goto probe_err2;
->  	}
->  
-> +	device_init_wakeup(&device->device, true);
-> +
->  	input_dev->connected = true;
->  	input_dev->init_complete = true;
->  
-> @@ -571,6 +576,7 @@ static int mousevsc_remove(struct hv_device *dev)
->  {
->  	struct mousevsc_dev *input_dev = hv_get_drvdata(dev);
->  
-> +	device_init_wakeup(&dev->device, false);
->  	vmbus_close(dev->channel);
->  	hid_hw_stop(input_dev->hid_device);
->  	hid_destroy_device(input_dev->hid_device);
-> -- 
-> 1.9.1
-> 
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-04 16:43:06.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-04 16:44:44.000000000 +0800
+@@ -875,17 +875,6 @@ static uint8_t arcmsr_abort_allcmd(struc
+ 	return rtnval;
+ }
+ 
+-static bool arcmsr_hbb_enable_driver_mode(struct AdapterControlBlock *pacb)
+-{
+-	struct MessageUnit_B *reg = pacb->pmuB;
+-	writel(ARCMSR_MESSAGE_START_DRIVER_MODE, reg->drv2iop_doorbell);
+-	if (!arcmsr_hbb_wait_msgint_ready(pacb)) {
+-		printk(KERN_ERR "arcmsr%d: can't set driver mode. \n", pacb->host->host_no);
+-		return false;
+-	}
+-    	return true;
+-}
+-
+ static void arcmsr_pci_unmap_dma(struct CommandControlBlock *ccb)
+ {
+ 	struct scsi_cmnd *pcmd = ccb->pcmd;
+@@ -2683,7 +2672,12 @@ static int arcmsr_iop_confirm(struct Ada
+ 			timeout \n",acb->host->host_no);
+ 			return 1;
+ 		}
+-		arcmsr_hbb_enable_driver_mode(acb);
++		writel(ARCMSR_MESSAGE_START_DRIVER_MODE, reg->drv2iop_doorbell);
++		if (!arcmsr_hbb_wait_msgint_ready(acb)) {
++			pr_err("arcmsr%d: can't set driver mode.\n",
++				acb->host->host_no);
++			return 1;
++		}
+ 		}
+ 		break;
+ 	case ACB_ADAPTER_TYPE_C: {
 
--- 
-Jiri Kosina
-SUSE Labs
+
+
