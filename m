@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891AbaHDOrA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 10:47:00 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:64309 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653AbaHDOq6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 10:46:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Yijing Wang <wangyijing@huawei.com>
-Subject: Re: [RFC PATCH 00/11] Refactor MSI to support Non-PCI device
-Date: Mon, 4 Aug 2014 16:45:50 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Paul.Mundt@huawei.com, Marc Zyngier <marc.zyngier@arm.com>,
-        linux-pci@vger.kernel.org,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        virtualization@lists.linux-foundation.org,
-        Xinwei Hu <huxinwei@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Wuyun <wuyun.wu@huawei.com>
-References: <1406344128-27055-1-git-send-email-wangyijing@huawei.com> <201408011516.26253.arnd@arndb.de> <53DEFECB.3030201@huawei.com>
-In-Reply-To: <53DEFECB.3030201@huawei.com>
+	id S1752917AbaHDOr1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 10:47:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35554 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271AbaHDOrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 10:47:25 -0400
+Message-ID: <53DF9CC6.3090003@redhat.com>
+Date: Mon, 04 Aug 2014 10:46:30 -0400
+From: "Carlos O'Donell" <carlos@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: futex(2) man page update help request
+References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de> <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com> <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de> <53752157.9070803@gmail.com>
+In-Reply-To: <53752157.9070803@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201408041645.50566.arnd@arndb.de>
-X-Provags-ID: V02:K0:WVmIIseUFfDPmrKgXtg3oVrQ4d994uFuQdJIKW6vExu
- Aonmf5hjUA3CBcaR3PiJwJYwBytdKPyrKByxsXTGYni2eNfp88
- OEtBqScZapd9b7TFui5PHeY9bCUlHlvZriY16xRJpUDCnMA9kp
- 2VjhDGta75251NOcG5ROOiifihVaAUuVpY2Z9/f5ZEInw70ITE
- civ6Lh/ONrLZFk+25A4mDa/mZe20U8ndH1xrnVhWSbzeO7rz+T
- JV19sY98Cr3aKJApiLTZuI66tTx1FHdx6t/P1LCN6iNJ8scxcQ
- Fe74PXpUAJ3H3j4Wcc0F1CkRSZRQ5flDS7rVZJaSH9pR4IshHF
- Pbf+nWy1ouY6r5cqGE/LMA/P1A0XjcrUnY/HMprj1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 04 August 2014, Yijing Wang wrote:
-> I have another question is some drivers will request more than one
-> MSI/MSI-X IRQ, and the driver will use them to process different things.
-> Eg. network driver generally uses one of them to process trivial network thins,
-> and others to transmit/receive data.
+On 05/15/2014 04:19 PM, Michael Kerrisk (man-pages) wrote:
+> On 05/15/2014 04:14 PM, Thomas Gleixner wrote:
+>> On Thu, 15 May 2014, Michael Kerrisk (man-pages) wrote:
+>>> And that universe would love to have your documentation of
+>>> FUTEX_WAKE_BITSET and FUTEX_WAIT_BITSET ;-),
+>>
+>> I give you almost the full treatment, but I leave REQUEUE_PI to Darren
+>> and FUTEX_WAKE_OP to Jakub. :)
 > 
-> So, in this case, it seems to driver need to touch the IRQ numbers.
-> 
-> wr-linux:~ # cat /proc/interrupts
->             CPU0       CPU1       CPU2     ....      CPU17      CPU18      CPU19      CPU20      CPU21      CPU22      CPU23
->  ......
->  100:          0          0          0               0          0          0          0          0          0          0  IR-PCI-MSI-edge      eth0
->  101:          2          0          0               0          0          0  302830488          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-0
->  102:        110          0          0               0          0  360675897          0          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-1
->  103:        109          0          0               0          0          0          0          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-2
->  104:        107          0          0         9678933          0          0          0          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-3
->  105:        107          0          0               0  357838258          0          0          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-4
->  106:        115          0          0               0          0          0          0          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-5
->  107:        114          0          0               0          0          0          0  337866096          0          0  IR-PCI-MSI-edge      eth0-TxRx-6
->  108:  373801199          0          0               0          0          0          0          0          0          0  IR-PCI-MSI-edge      eth0-TxRx-7
-> 
+> Thanks Thomas--that's fantastic! Hopefully, Darren and Jakub fill in those
+> missing pieces...
 
-I think in this example, you just need to request eight interrupts, and pass a
-different data pointer each time, pointing to the napi_struct of each of the
-NIC queues. The driver has no need to deal with the IRQ number at all,
-and I would be surprised if it cared today.
+Michael,
 
-	Arnd
+Do you need any help getting these additional futex error codes
+into the linux kernel man pages project? Thomas provided the
+missing bits and Darren commented... what else do we need?
+
+I'm asking because I want to point other Red Hat engineers at
+these pages to say: "these are the canonical error codes." 
+
+We're trying to cleanup the userspace side of things.
+
+Cheers,
+Carlos.
+
