@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829AbaHDRRn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:17:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56457 "EHLO
+	id S1753863AbaHDRRl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:17:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56456 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751708AbaHDQty (ORCPT
+	by vger.kernel.org with ESMTP id S1751709AbaHDQty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:54 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Paolo Bonzini" <pbonzini@redhat.com>,
-        "Valentine Sinitsyn" <valentine.sinitsyn@gmail.com>
+CC: akpm@linux-foundation.org, "Michal Nazarewicz" <mina86@mina86.com>,
+        "Felipe Balbi" <balbi@ti.com>
 Date: Mon, 04 Aug 2014 17:48:31 +0100
-Message-ID: <lsq.1407170911.704814241@decadent.org.uk>
+Message-ID: <lsq.1407170911.532055220@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 05/94] KVM: x86: preserve the high 32-bits of the PAT
- register
+Subject: [PATCH 3.2 06/94] usb: gadget: f_fs: fix NULL pointer dereference
+ when there are no strings
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,30 +32,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Michal Nazarewicz <mina86@mina86.com>
 
-commit 7cb060a91c0efc5ff94f83c6df3ed705e143cdb9 upstream.
+commit f0688c8b81d2ea239c3fb0b848f623b579238d99 upstream.
 
-KVM does not really do much with the PAT, so this went unnoticed for a
-long time.  It is exposed however if you try to do rdmsr on the PAT
-register.
+If the descriptors do not need any strings and user space sends empty
+set of strings, the ffs->stringtabs field remains NULL.  Thus
+*ffs->stringtabs in functionfs_bind leads to a NULL pointer
+dereferenece.
 
-Reported-by: Valentine Sinitsyn <valentine.sinitsyn@gmail.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+The bug was introduced by commit [fd7c9a007f: “use usb_string_ids_n()”].
+
+While at it, remove double initialisation of lang local variable in
+that function.
+
+ffs->strings_count does not need to be checked in any way since in
+the above scenario it will remain zero and usb_string_ids_n() is
+a no-operation when colled with 0 argument.
+
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/include/asm/kvm_host.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/gadget/f_fs.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -418,7 +418,7 @@ struct kvm_vcpu_arch {
- 	bool nmi_injected;    /* Trying to inject an NMI this entry */
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -1376,11 +1376,13 @@ static int functionfs_bind(struct ffs_da
+ 	ffs->ep0req->context = ffs;
  
- 	struct mtrr_state_type mtrr_state;
--	u32 pat;
-+	u64 pat;
+ 	lang = ffs->stringtabs;
+-	for (lang = ffs->stringtabs; *lang; ++lang) {
+-		struct usb_string *str = (*lang)->strings;
+-		int id = first_id;
+-		for (; str->s; ++id, ++str)
+-			str->id = id;
++	if (lang) {
++		for (; *lang; ++lang) {
++			struct usb_string *str = (*lang)->strings;
++			int id = first_id;
++			for (; str->s; ++id, ++str)
++				str->id = id;
++		}
+ 	}
  
- 	int switch_db_regs;
- 	unsigned long db[KVM_NR_DB_REGS];
+ 	ffs->gadget = cdev->gadget;
 
