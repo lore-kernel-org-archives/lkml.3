@@ -1,62 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391AbaHDOp5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 10:45:57 -0400
-Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:4383
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750999AbaHDOp4 convert rfc822-to-8bit (ORCPT
+	id S1752802AbaHDOqi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 10:46:38 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:53249 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653AbaHDOqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 10:45:56 -0400
-X-WSS-ID: 0N9SEBU-08-P1M-02
-X-M-MSG: 
-Message-ID: <53DF9C88.6060107@amd.com>
-Date: Mon, 4 Aug 2014 16:45:28 +0200
-From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 4 Aug 2014 10:46:36 -0400
+Date: Mon, 4 Aug 2014 16:46:43 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: mark yao <yzq@rock-chips.com>
+Cc: heiko@sntech.de, Rob Clark <robdclark@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, David Airlie <airlied@linux.ie>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>, huangtao@rock-chips.com,
+        devicetree@vger.kernel.org, zwl@rock-chips.com, cym@rock-chips.com,
+        linux-doc@vger.kernel.org, xw@rock-chips.com,
+        linux-api@vger.kernel.org, zyw@rock-chips.com,
+        zhangqing@rock-chips.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, kever.yang@rock-chips.com,
+        cf@rock-chips.com, xjq@rock-chips.com, xxm@rock-chips.com,
+        yxj@rock-chips.com, wxt@rock-chips.com, kfx@rock-chips.com
+Subject: Re: [PATCH 1/9] drm: Add drm driver for Rockchip Socs
+Message-ID: <20140804144643.GV8727@phenom.ffwll.local>
+Mail-Followup-To: mark yao <yzq@rock-chips.com>, heiko@sntech.de,
+	Rob Clark <robdclark@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+	Pawel Moll <pawel.moll@arm.com>,
+	Mark Rutland <mark.rutland@arm.com>,
+	Ian Campbell <ijc+devicetree@hellion.org.uk>,
+	Kumar Gala <galak@codeaurora.org>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	David Airlie <airlied@linux.ie>,
+	Grant Likely <grant.likely@linaro.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	John Stultz <john.stultz@linaro.org>,
+	Rom Lemarchand <romlem@google.com>, huangtao@rock-chips.com,
+	devicetree@vger.kernel.org, zwl@rock-chips.com, cym@rock-chips.com,
+	linux-doc@vger.kernel.org, xw@rock-chips.com,
+	linux-api@vger.kernel.org, zyw@rock-chips.com,
+	zhangqing@rock-chips.com, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org, kever.yang@rock-chips.com,
+	cf@rock-chips.com, xjq@rock-chips.com, xxm@rock-chips.com,
+	yxj@rock-chips.com, wxt@rock-chips.com, kfx@rock-chips.com
+References: <1407127274-1356-1-git-send-email-mark.yao@rock-chips.com>
+ <1407127507-1612-1-git-send-email-yzq@rock-chips.com>
 MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>, <airlied@linux.ie>
-CC: <thellstrom@vmware.com>, <nouveau@lists.freedesktop.org>,
-        <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
-        <bskeggs@redhat.com>, <alexander.deucher@amd.com>
-Subject: Re: [PATCH 09/19] drm/radeon: handle lockup in delayed work, v2
-References: <20140731153245.15061.63023.stgit@patser>
- <20140731153342.15061.54264.stgit@patser> <53DBC1EC.1010001@amd.com>
- <53DBD269.80807@canonical.com> <53DF462B.2060102@amd.com>
- <53DF4A7D.3040505@canonical.com> <53DF7516.2010408@amd.com>
- <53DF8BF2.4000309@canonical.com> <53DF9AC4.3010700@amd.com>
- <53DF9B58.8000403@canonical.com>
-In-Reply-To: <53DF9B58.8000403@canonical.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-X-Originating-IP: [10.224.152.188]
-Content-Transfer-Encoding: 8BIT
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(199002)(189002)(377424004)(51704005)(81342001)(105586002)(74502001)(76482001)(31966008)(74662001)(95666004)(65956001)(80022001)(65806001)(84676001)(47776003)(20776003)(86362001)(83506001)(77982001)(81542001)(83322001)(85306004)(93886004)(85202003)(106466001)(50466002)(107046002)(21056001)(65816999)(23676002)(97736001)(54356999)(76176999)(87266999)(36756003)(99396002)(50986999)(68736004)(33656002)(87936001)(64126003)(80316001)(46102001)(64706001)(102836001)(101416001)(79102001)(85852003)(83072002)(92726001)(44976005)(92566001)(4396001)(85182001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR02MB034;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0293D40691
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Christian.Koenig@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407127507-1612-1-git-send-email-yzq@rock-chips.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 04.08.2014 um 16:40 schrieb Maarten Lankhorst:
-> op 04-08-14 16:37, Christian König schreef:
->>> It'a pain to deal with gpu reset.
->> Yeah, well that's nothing new.
->>
->>> I've now tried other solutions but that would mean reverting to the old style during gpu lockup recovery, and only running the delayed work when !lockup.
->>> But this meant that the timeout was useless to add. I think the cleanest is keeping the v2 patch, because potentially any waiting code can be called during lockup recovery.
->> The lockup code itself should never call any waiting code and V2 doesn't seem to handle a couple of cases correctly either.
->>
->> How about moving the fence waiting out of the reset code?
-> What cases did I miss then?
->
-> I'm curious how you want to move the fence waiting out of reset, when there are so many places that could potentially wait, like radeon_ib_get can call radeon_sa_bo_new which can do a wait, or radeon_ring_alloc that can wait on radeon_fence_wait_next, etc.
+On Mon, Aug 04, 2014 at 12:45:07PM +0800, mark yao wrote:
+> This patch is a DRM Driver for Rockchip Socs, driver provides an abstraction
+> for the graphics hardware, such as lcd controller and connector interface.
+> 
+> Signed-off-by: mark yao <yzq@rock-chips.com>
+> ---
 
-The IB test itself doesn't needs to be protected by the exclusive lock. 
-Only everything between radeon_save_bios_scratch_regs and 
-radeon_ring_restore.
+Just a quick drive-by comment below, don't consider this a full review by
+far ;-)
 
-Christian.
+> +static int lcdc_bind(struct device *dev, struct device *master, void *data)
+> +{
+> +	struct drm_device *drm_dev = data;
+> +	struct rockchip_drm_private *private = drm_dev->dev_private;
+> +	struct lcdc_context *ctx = dev_get_drvdata(dev);
+> +	struct drm_crtc *crtc;
+> +
+> +	ctx->drm_dev = drm_dev;
+> +
+> +	ctx->pipe = rockchip_drm_pipe_get(dev);
+> +	ctx->dpms = DRM_MODE_DPMS_OFF;
+> +	crtc = &ctx->crtc;
+> +
+> +	private->crtc[ctx->pipe] = crtc;
+> +	ctx->plane = rockchip_plane_init(drm_dev, 1 << ctx->pipe, true);
+> +	drm_crtc_init(drm_dev, crtc, &rockchip_crtc_funcs);
+
+This function is deprecated, please use the _with_planes versions so that
+this new driver supports universal planes properly.
+
+Thanks, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
