@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612AbaHDRNf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:13:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56484 "EHLO
+	id S1753654AbaHDRNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:13:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56483 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751830AbaHDQty (ORCPT
+	by vger.kernel.org with ESMTP id S1751826AbaHDQty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:54 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org
+CC: akpm@linux-foundation.org, "H. Peter Anvin" <hpa@linux.intel.com>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.391500084@decadent.org.uk>
+Message-ID: <lsq.1407170912.798095690@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 76/94] score: Add missing #include <linux/export.h>
+Subject: [PATCH 3.2 79/94] x86-32, espfix: Remove filter for espfix32 due
+ to race
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,32 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-There is no upstream commit for this, as arch/score/kernel/init_task.c
-has been replaced by generic code and <linux/export.h> is included
-indirectly by arch/score/mm/init.c.
+commit 246f2d2ee1d715e1077fc47d61c394569c8ee692 upstream.
 
+It is not safe to use LAR to filter when to go down the espfix path,
+because the LDT is per-process (rather than per-thread) and another
+thread might change the descriptors behind our back.  Fortunately it
+is always *safe* (if a bit slow) to go down the espfix path, and a
+32-bit LDT stack segment is extremely rare.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/arch/score/kernel/init_task.c
-+++ b/arch/score/kernel/init_task.c
-@@ -23,6 +23,7 @@
+ arch/x86/kernel/entry_32.S | 5 -----
+ 1 file changed, 5 deletions(-)
+
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -553,11 +553,6 @@ ENTRY(iret_exc)
  
- #include <linux/init_task.h>
- #include <linux/mqueue.h>
-+#include <linux/export.h>
- 
- static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
- static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
---- a/arch/score/mm/init.c
-+++ b/arch/score/mm/init.c
-@@ -34,6 +34,7 @@
- #include <linux/proc_fs.h>
- #include <linux/sched.h>
- #include <linux/initrd.h>
-+#include <linux/export.h>
- 
- #include <asm/sections.h>
- #include <asm/tlb.h>
+ 	CFI_RESTORE_STATE
+ ldt_ss:
+-	larl PT_OLDSS(%esp), %eax
+-	jnz restore_nocheck
+-	testl $0x00400000, %eax		# returning to 32bit stack?
+-	jnz restore_nocheck		# allright, normal return
+-
+ #ifdef CONFIG_PARAVIRT
+ 	/*
+ 	 * The kernel can't run on a non-flat stack if paravirt mode
 
