@@ -1,71 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428AbaHDGZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 02:25:59 -0400
-Received: from ozlabs.org ([103.22.144.67]:54527 "EHLO ozlabs.org"
+	id S1751513AbaHDG0h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 02:26:37 -0400
+Received: from ozlabs.org ([103.22.144.67]:50320 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053AbaHDGZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 02:25:58 -0400
-Date: Mon, 4 Aug 2014 16:25:49 +1000
+	id S1751053AbaHDG0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 02:26:35 -0400
+Date: Mon, 4 Aug 2014 16:26:33 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Morris <jmorris@namei.org>
+To: James Morris <jmorris@namei.org>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Moore <pmoore@redhat.com>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: linux-next: build warning after merge of the security tree
-Message-ID: <20140804162549.28c9889d@canb.auug.org.au>
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: linux-next: manual merge of the security tree with the net-next
+ tree
+Message-ID: <20140804162633.2d2e8604@canb.auug.org.au>
 X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/HbtxpO+evLniD+aWqn_4kmv"; protocol="application/pgp-signature"
+ boundary="Sig_/vtrPX82f5i4WSq0LU4aSVVo"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/HbtxpO+evLniD+aWqn_4kmv
+--Sig_/vtrPX82f5i4WSq0LU4aSVVo
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
 Hi James,
 
-After merging the security tree, today's linux-next build (powerpc ppc64_de=
-fconfig)
-produced this warning:
+Today's linux-next merge of the security tree got a conflict in
+kernel/seccomp.c between commit 7ae457c1e5b4 ("net: filter: split
+'struct sk_filter' into socket and bpf parts") from the net-next tree
+and commits c8bee430dc52 ("seccomp: split filter prep from check and
+apply") and 3ba2530cc06e ("seccomp: allow mode setting across threads")
+from the security tree.
 
-In file included from include/net/cipso_ipv4.h:41:0,
-                 from net/ipv4/sysctl_net_ipv4.c:24:
-include/net/netlabel.h:527:12: warning: 'netlbl_catmap_setlong' defined but=
- not used [-Wunused-function]
- static int netlbl_catmap_setlong(struct netlbl_lsm_catmap **catmap,
-            ^
-
-Introduced by commit 4b8feff251da ("netlabel: fix the horribly broken
-catmap functions").
+I fixed it up (I hope - see below) and can carry the fix as necessary
+(no action is required).
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Sig_/HbtxpO+evLniD+aWqn_4kmv
+diff --cc kernel/seccomp.c
+index 2f3fa2cc2eac,74f460179171..000000000000
+--- a/kernel/seccomp.c
++++ b/kernel/seccomp.c
+@@@ -186,8 -191,8 +191,8 @@@ static u32 seccomp_run_filters(int sysc
+  	 * All filters in the list are evaluated and the lowest BPF return
+  	 * value always takes priority (ignoring the DATA).
+  	 */
+- 	for (f =3D current->seccomp.filter; f; f =3D f->prev) {
++ 	for (; f; f =3D f->prev) {
+ -		u32 cur_ret =3D SK_RUN_FILTER(f->prog, (void *)&sd);
+ +		u32 cur_ret =3D BPF_PROG_RUN(f->prog, (void *)&sd);
+ =20
+  		if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
+  			ret =3D cur_ret;
+@@@ -273,15 -408,9 +408,9 @@@ static struct seccomp_filter *seccomp_p
+  	atomic_set(&filter->usage, 1);
+  	filter->prog->len =3D new_len;
+ =20
+ -	sk_filter_select_runtime(filter->prog);
+ +	bpf_prog_select_runtime(filter->prog);
+ =20
+- 	/*
+- 	 * If there is an existing filter, make it the prev and don't drop its
+- 	 * task reference.
+- 	 */
+- 	filter->prev =3D current->seccomp.filter;
+- 	current->seccomp.filter =3D filter;
+- 	return 0;
++ 	return filter;
+ =20
+  free_filter_prog:
+  	kfree(filter->prog);
+@@@ -329,6 -506,14 +506,14 @@@ void get_seccomp_filter(struct task_str
+  	atomic_inc(&orig->usage);
+  }
+ =20
++ static inline void seccomp_filter_free(struct seccomp_filter *filter)
++ {
++ 	if (filter) {
+ -		sk_filter_free(filter->prog);
+++		bpf_prog_free(filter->prog);
++ 		kfree(filter);
++ 	}
++ }
++=20
+  /* put_seccomp_filter - decrements the ref count of tsk->seccomp.filter */
+  void put_seccomp_filter(struct task_struct *tsk)
+  {
+
+--Sig_/vtrPX82f5i4WSq0LU4aSVVo
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBCAAGBQJT3ydzAAoJEMDTa8Ir7ZwVRmkP/1uwVTFvoRtYR0njV9wnqg6M
-dVZEW6Btgu1FHhPTbqgHP3+xPAoF9oQ7s0ml90l7aentIdd0UIELrrpO58m8mIdu
-DLGnQk4sBg4cse9M2rPa2wvibMfzZpGc1F3nsGIog1LEZmjZ9kmlZjuXNdG5D+ky
-fl7DGts7Q2ONXd7gZsRvi533eIc0IzcQLI2MJ/K0daWpMv1V/0xbjCXwqIHckBqJ
-3uZswHQfMNe07O74lXXVx+WT69NRuDBZ39Wd6bDEKS5W09gGLADjrebyi4zmDNV8
-/1fDZ+QauTXz5Ls0vu6kySuCBcoOaSs92WsUokSFMkMgxzGDkJZOfg1xHKulYhbe
-YXPewL5bmS0M8PfD7fBRJI8ckPks2hDv+PlHBv/Ui0nOh4fA4KoHij+6JP2+t3P4
-jlZZlNV39T32Fv1AMk2XGyNtlxfaKBDU4vl3nZmBTyEf5M/vzM30kHFZHNDGOG4W
-yT3/q8m5zaQIxKXdvfpPdXmuW2HRERHFDQA8Zq/MIupP5qo4+YI3rBfJTQ/Diy+E
-iPzRDwI8Q6XNiIivfjVD4aFFVq50LOZ8hXpWcY9ajnt/1fEXD+CnVd+RLfx6TYlm
-O5xDcuYAOzOG9hW2eGao3ae3/okHlbV4xfgP0n6Ul75QHLWG01cfAp1f1RlPeZu8
-8C6vLURMqEkvlw0Rs28W
-=Acn5
+iQIcBAEBCAAGBQJT3yeZAAoJEMDTa8Ir7ZwVyewP/2EthRDIbSfzL7/tGh+xAPyb
+VIw1AIYS14wR5elLKRlaOCoDQvUqiFD5fX3VmMvja+sJpaJbHrRVNLhMdLTbk6pu
+dpr8HrvdOazRRuJzTsuPk+z92D0YNYrWLPEiQFBnxxpsAxlfH5MKXtLHiwInKpv7
+BZgOkzY2TkQxcp8YTz5UCKNNRuFa8vX8wd1mnDO2LIPnOY+Y0r52Cp45JpvqgCP2
+0TM+CuxOs+5Dbx7cLN/gqx0iCl+XyiqudC7TkjwTrY4FIL4c9AlMHg4iaHStoXSf
+VZi/WmKZVaCBbHuDlQnf9ns2V6oWR55wsKW/jisO7x4He3BqssC3CNSxymNJ9Xgs
++vgne0pq+WAWua+FV8ESUsqUcHGVDW2kBbGMCn4oQHRGeYYOI+dDVtwhZ1/kQxZq
+TVFrtNRQLUg9OWlemV1hIIBDAaYLOz9D4h55sgCPp5pP2uOZwTXTpV/NDX+333/Z
+z7r6Ba6RRdsYEolBX/IxXaEHR1iZyYxCEZ8mTC319g4/F3ewhhROnbl8TuPaAIYs
+Axz+F7GxhxShB3CPwI4b2WfwcacTQfUgHY23UzJJLtuAH8BE28KQiD3ZTniUi2Ik
+D7RJuXqsCUMMNhABv9ixcyPfHNoau4ZriDT/1wld6uX9girpTNcuud1Kj+raLljd
+cRT0CC4Ynueqy7z3WCJ0
+=CkHw
 -----END PGP SIGNATURE-----
 
---Sig_/HbtxpO+evLniD+aWqn_4kmv--
+--Sig_/vtrPX82f5i4WSq0LU4aSVVo--
