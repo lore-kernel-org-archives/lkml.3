@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaHDTVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 15:21:15 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:45841 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaHDTVL (ORCPT
+	id S1752301AbaHDTVH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 15:21:07 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:54095 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902AbaHDTVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 15:21:11 -0400
+	Mon, 4 Aug 2014 15:21:04 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,88 +15,138 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v4 tip/core/rcu 10/11] documentation: Add verbiage on RCU-tasks stall warning messages
-Date: Mon,  4 Aug 2014 12:20:53 -0700
-Message-Id: <1407180054-19805-10-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v4 tip/core/rcu 04/11] rcu: Make TASKS_RCU handle tasks that are almost done exiting
+Date: Mon,  4 Aug 2014 12:20:47 -0700
+Message-Id: <1407180054-19805-4-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1407180054-19805-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140804192017.GA18337@linux.vnet.ibm.com>
  <1407180054-19805-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080419-0928-0000-0000-000003DFB0CD
+x-cbid: 14080419-0928-0000-0000-000003D6C9E7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit documents RCU-tasks stall warning messages and also describes
-when to use the new cond_resched_rcu_qs() API.
+Once a task has passed exit_notify() in the do_exit() code path, it
+is no longer on the task lists, and is therefore no longer visible
+to rcu_tasks_kthread().  This means that an almost-exited task might
+be preempted while within a trampoline, and this task won't be waited
+on by rcu_tasks_kthread().  This commit fixes this bug by adding an
+srcu_struct.  An exiting task does srcu_read_lock() just before calling
+exit_notify(), and does the corresponding srcu_read_unlock() after
+doing the final preempt_disable().  This means that rcu_tasks_kthread()
+can do synchronize_srcu() to wait for all mostly-exited tasks to reach
+their final preempt_disable() region, and then use synchronize_sched()
+to wait for those tasks to finish exiting.
 
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Suggested-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/stallwarn.txt | 33 ++++++++++++++++++++++++---------
- 1 file changed, 24 insertions(+), 9 deletions(-)
+ include/linux/rcupdate.h |  3 +++
+ kernel/exit.c            |  3 +++
+ kernel/rcu/update.c      | 21 +++++++++++++++++++++
+ 3 files changed, 27 insertions(+)
 
-diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
-index 68fe3ad27015..ef5a2fd4ff70 100644
---- a/Documentation/RCU/stallwarn.txt
-+++ b/Documentation/RCU/stallwarn.txt
-@@ -56,8 +56,20 @@ RCU_STALL_RAT_DELAY
- 	two jiffies.  (This is a cpp macro, not a kernel configuration
- 	parameter.)
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 1f073af940a5..e6aea256ad39 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -321,6 +321,8 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
+  * macro rather than an inline function to avoid #include hell.
+  */
+ #ifdef CONFIG_TASKS_RCU
++#define TASKS_RCU(x) x
++extern struct srcu_struct tasks_rcu_exit_srcu;
+ #define rcu_note_voluntary_context_switch(t) \
+ 	do { \
+ 		preempt_disable(); /* Exclude synchronize_sched(); */ \
+@@ -329,6 +331,7 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
+ 		preempt_enable(); \
+ 	} while (0)
+ #else /* #ifdef CONFIG_TASKS_RCU */
++#define TASKS_RCU(x) do { } while (0)
+ #define rcu_note_voluntary_context_switch(t)	do { } while (0)
+ #endif /* #else #ifdef CONFIG_TASKS_RCU */
  
--When a CPU detects that it is stalling, it will print a message similar
--to the following:
-+rcupdate.rcu_task_stall_timeout
+diff --git a/kernel/exit.c b/kernel/exit.c
+index e5c4668f1799..3684fdb6294b 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -663,6 +663,7 @@ void do_exit(long code)
+ {
+ 	struct task_struct *tsk = current;
+ 	int group_dead;
++	TASKS_RCU(int tasks_rcu_i);
+ 
+ 	profile_task_exit(tsk);
+ 
+@@ -772,6 +773,7 @@ void do_exit(long code)
+ 	 */
+ 	flush_ptrace_hw_breakpoint(tsk);
+ 
++	TASKS_RCU(tasks_rcu_i = srcu_read_lock(&tasks_rcu_exit_srcu));
+ 	exit_notify(tsk, group_dead);
+ 	proc_exit_connector(tsk);
+ #ifdef CONFIG_NUMA
+@@ -811,6 +813,7 @@ void do_exit(long code)
+ 	if (tsk->nr_dirtied)
+ 		__this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
+ 	exit_rcu();
++	TASKS_RCU(srcu_read_unlock(&tasks_rcu_exit_srcu, tasks_rcu_i));
+ 
+ 	/*
+ 	 * The setting of TASK_RUNNING by try_to_wake_up() may be delayed
+diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+index 6c54c898a6f9..bf5c15a0d72d 100644
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -370,6 +370,13 @@ static struct rcu_head *rcu_tasks_cbs_head;
+ static struct rcu_head **rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
+ static DEFINE_RAW_SPINLOCK(rcu_tasks_cbs_lock);
+ 
++/* Track exiting tasks in order to allow them to be waited for. */
++DEFINE_SRCU(tasks_rcu_exit_srcu);
 +
-+	This boot/sysfs parameter controls the RCU-tasks stall warning
-+	interval.  A value of zero or less suppresses RCU-tasks stall
-+	warnings.  A positive value sets the stall-warning interval
-+	in jiffies.  An RCU-tasks stall warning starts wtih the line:
++/* Control stall timeouts.  Disable with <= 0, otherwise jiffies till stall. */
++static int rcu_task_stall_timeout __read_mostly = HZ * 60 * 3;
++module_param(rcu_task_stall_timeout, int, 0644);
 +
-+		INFO: rcu_tasks detected stalls on tasks:
+ /* Post an RCU-tasks callback. */
+ void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
+ {
+@@ -522,6 +529,15 @@ static int __noreturn rcu_tasks_kthread(void *arg)
+ 		rcu_read_unlock();
+ 
+ 		/*
++		 * Wait for tasks that are in the process of exiting.
++		 * This does only part of the job, ensuring that all
++		 * tasks that were previously exiting reach the point
++		 * where they have disabled preemption, allowing the
++		 * later synchronize_sched() to finish the job.
++		 */
++		synchronize_srcu(&tasks_rcu_exit_srcu);
 +
-+	And continues with the output of sched_show_task() for each
-+	task stalling the current RCU-tasks grace period.
-+
-+For non-RCU-tasks flavors of RCU, when a CPU detects that it is stalling,
-+it will print a message similar to the following:
++		/*
+ 		 * Each pass through the following loop scans the list
+ 		 * of holdout tasks, removing any that are no longer
+ 		 * holdouts.  When the list is empty, we are done.
+@@ -550,6 +566,11 @@ static int __noreturn rcu_tasks_kthread(void *arg)
+ 		 * ->rcu_tasks_holdout accesses to be within the grace
+ 		 * period, avoiding the need for memory barriers for
+ 		 * ->rcu_tasks_holdout accesses.
++		 *
++		 * In addition, this synchronize_sched() waits for exiting
++		 * tasks to complete their final preempt_disable() region
++		 * of execution, cleaning up after the synchronize_srcu()
++		 * above.
+ 		 */
+ 		synchronize_sched();
  
- INFO: rcu_sched_state detected stall on CPU 5 (t=2500 jiffies)
- 
-@@ -174,8 +186,12 @@ o	A CPU looping with preemption disabled.  This condition can
- o	A CPU looping with bottom halves disabled.  This condition can
- 	result in RCU-sched and RCU-bh stalls.
- 
--o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the kernel
--	without invoking schedule().
-+o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the
-+	kernel without invoking schedule().  Note that cond_resched()
-+	does not necessarily prevent RCU CPU stall warnings.  Therefore,
-+	if the looping in the kernel is really expected and desirable
-+	behavior, you might need to replace some of the cond_resched()
-+	calls with calls to cond_resched_rcu_qs().
- 
- o	A CPU-bound real-time task in a CONFIG_PREEMPT kernel, which might
- 	happen to preempt a low-priority task in the middle of an RCU
-@@ -208,11 +224,10 @@ o	A hardware failure.  This is quite unlikely, but has occurred
- 	This resulted in a series of RCU CPU stall warnings, eventually
- 	leading the realization that the CPU had failed.
- 
--The RCU, RCU-sched, and RCU-bh implementations have CPU stall warning.
--SRCU does not have its own CPU stall warnings, but its calls to
--synchronize_sched() will result in RCU-sched detecting RCU-sched-related
--CPU stalls.  Please note that RCU only detects CPU stalls when there is
--a grace period in progress.  No grace period, no CPU stall warnings.
-+The RCU, RCU-sched, RCU-bh, and RCU-tasks implementations have CPU stall
-+warning.  Note that SRCU does -not- have CPU stall warnings.  Please note
-+that RCU only detects CPU stalls when there is a grace period in progress.
-+No grace period, no CPU stall warnings.
- 
- To diagnose the cause of the stall, inspect the stack traces.
- The offending function will usually be near the top of the stack.
 -- 
 1.8.1.5
 
