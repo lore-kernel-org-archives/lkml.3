@@ -1,136 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317AbaHDXVA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 19:21:00 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:39674 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218AbaHDXU6 (ORCPT
+	id S1753338AbaHDXWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 19:22:42 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38805 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156AbaHDXWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 19:20:58 -0400
+	Mon, 4 Aug 2014 19:22:41 -0400
+Message-ID: <53E015BF.4060701@codeaurora.org>
+Date: Mon, 04 Aug 2014 16:22:39 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1407144534-2494-1-git-send-email-acourbot@nvidia.com>
-References: <1407144534-2494-1-git-send-email-acourbot@nvidia.com>
-Date: Tue, 5 Aug 2014 09:20:57 +1000
-Message-ID: <CACAvsv56MLoHMiQ8grnhN5V3QBW22-GQGeLAHwAwfaAkYsrNoQ@mail.gmail.com>
-Subject: Re: [PATCH v2] drm/ttm: expose CPU address of DMA-allocated pages
-From: Ben Skeggs <skeggsb@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] irqchip: gic: Allow gic_arch_extn hooks to call into
+ scheduler
+References: <1407191616-31829-1-git-send-email-sboyd@codeaurora.org> <alpine.LFD.2.11.1408041858570.6061@knanqh.ubzr>
+In-Reply-To: <alpine.LFD.2.11.1408041858570.6061@knanqh.ubzr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 4, 2014 at 7:28 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> Pages allocated using the DMA API have a coherent memory mapping. Make
-> this mapping visible to drivers so they can decide to use it instead of
-> creating their own redundant one.
-I've picked this up in nouveau's linux-3.17 staging branch as per
-Dave's request.
+On 08/04/14 16:20, Nicolas Pitre wrote:
+> On Mon, 4 Aug 2014, Stephen Boyd wrote:
+>
+>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>> index 7c131cf7cc13..824c1e2ac403 100644
+>> --- a/drivers/irqchip/irq-gic.c
+>> +++ b/drivers/irqchip/irq-gic.c
+>> @@ -72,6 +72,8 @@ struct gic_chip_data {
+>>  };
+>>  
+>>  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+>> +/* Synchronize switching CPU interface and sending SGIs */
+>> +static DEFINE_RAW_SPINLOCK(gic_sgi_lock);
+> I'd suggest moving this below gic_cpu_map[] definition for the comment 
+> block right above it to also apply to this lock.
 
-Thanks Alex,
-Ben.
-
+Ok.
 
 >
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> Acked-by: David Airlie <airlied@linux.ie>
-> ---
-> Changes since v1:
-> - Perform only one allocation for pages, CPU and DMA addresses
-> - Added David's ack
+>>  
+>>  /*
+>>   * The GIC mapping of CPU interfaces does not necessarily match
+>> @@ -658,7 +660,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>>  	int cpu;
+>>  	unsigned long flags, map = 0;
+>>  
+>> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
+>> +	raw_spin_lock_irqsave(&gic_sgi_lock, flags);
+>>  
+>>  	/* Convert our logical CPU mask into a physical one. */
+>>  	for_each_cpu(cpu, mask)
+>> @@ -673,7 +675,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>>  	/* this always happens on GIC0 */
+>>  	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
+>>  
+>> -	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
+>> +	raw_spin_unlock_irqrestore(&gic_sgi_lock, flags);
+>>  }
+>>  #endif
+>>  
+>> @@ -742,6 +744,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
+>>  	cur_target_mask = 0x01010101 << cur_cpu_id;
+>>  	ror_val = (cur_cpu_id - new_cpu_id) & 31;
+>>  
+>> +	raw_spin_lock(&gic_sgi_lock);
+>>  	raw_spin_lock(&irq_controller_lock);
+> According to your call trace, you would now take irq_controller_lock and 
+> then gic_sgi_lock.  Here you're doing it in the opposite order with an 
+> AB-BA deadlock potential.  I'd suggest reversing them here.
 >
->  drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |  2 ++
->  drivers/gpu/drm/ttm/ttm_tt.c             | 13 ++++++++-----
->  include/drm/ttm/ttm_bo_driver.h          |  2 ++
->  3 files changed, 12 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-> index fb8259f69839..0301fac5badd 100644
-> --- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-> +++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-> @@ -847,6 +847,7 @@ static int ttm_dma_pool_get_pages(struct dma_pool *pool,
->         if (count) {
->                 d_page = list_first_entry(&pool->free_list, struct dma_page, page_list);
->                 ttm->pages[index] = d_page->p;
-> +               ttm_dma->cpu_address[index] = d_page->vaddr;
->                 ttm_dma->dma_address[index] = d_page->dma;
->                 list_move_tail(&d_page->page_list, &ttm_dma->pages_list);
->                 r = 0;
-> @@ -978,6 +979,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
->         INIT_LIST_HEAD(&ttm_dma->pages_list);
->         for (i = 0; i < ttm->num_pages; i++) {
->                 ttm->pages[i] = NULL;
-> +               ttm_dma->cpu_address[i] = 0;
->                 ttm_dma->dma_address[i] = 0;
->         }
->
-> diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
-> index 75f319090043..bf080abc86d1 100644
-> --- a/drivers/gpu/drm/ttm/ttm_tt.c
-> +++ b/drivers/gpu/drm/ttm/ttm_tt.c
-> @@ -55,9 +55,12 @@ static void ttm_tt_alloc_page_directory(struct ttm_tt *ttm)
->
->  static void ttm_dma_tt_alloc_page_directory(struct ttm_dma_tt *ttm)
->  {
-> -       ttm->ttm.pages = drm_calloc_large(ttm->ttm.num_pages, sizeof(void*));
-> -       ttm->dma_address = drm_calloc_large(ttm->ttm.num_pages,
-> -                                           sizeof(*ttm->dma_address));
-> +       ttm->ttm.pages = drm_calloc_large(ttm->ttm.num_pages,
-> +                                         sizeof(*ttm->ttm.pages) +
-> +                                         sizeof(*ttm->dma_address) +
-> +                                         sizeof(*ttm->cpu_address));
-> +       ttm->cpu_address = (void *) (ttm->ttm.pages + ttm->ttm.num_pages);
-> +       ttm->dma_address = (void *) (ttm->cpu_address + ttm->ttm.num_pages);
->  }
->
->  #ifdef CONFIG_X86
-> @@ -228,7 +231,7 @@ int ttm_dma_tt_init(struct ttm_dma_tt *ttm_dma, struct ttm_bo_device *bdev,
->
->         INIT_LIST_HEAD(&ttm_dma->pages_list);
->         ttm_dma_tt_alloc_page_directory(ttm_dma);
-> -       if (!ttm->pages || !ttm_dma->dma_address) {
-> +       if (!ttm->pages) {
->                 ttm_tt_destroy(ttm);
->                 pr_err("Failed allocating page table\n");
->                 return -ENOMEM;
-> @@ -243,7 +246,7 @@ void ttm_dma_tt_fini(struct ttm_dma_tt *ttm_dma)
->
->         drm_free_large(ttm->pages);
->         ttm->pages = NULL;
-> -       drm_free_large(ttm_dma->dma_address);
-> +       ttm_dma->cpu_address = NULL;
->         ttm_dma->dma_address = NULL;
->  }
->  EXPORT_SYMBOL(ttm_dma_tt_fini);
-> diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
-> index 202f0a7171e8..1d9f0f1ff52d 100644
-> --- a/include/drm/ttm/ttm_bo_driver.h
-> +++ b/include/drm/ttm/ttm_bo_driver.h
-> @@ -133,6 +133,7 @@ struct ttm_tt {
->   * struct ttm_dma_tt
->   *
->   * @ttm: Base ttm_tt struct.
-> + * @cpu_address: The CPU address of the pages
->   * @dma_address: The DMA (bus) addresses of the pages
->   * @pages_list: used by some page allocation backend
->   *
-> @@ -142,6 +143,7 @@ struct ttm_tt {
->   */
->  struct ttm_dma_tt {
->         struct ttm_tt ttm;
-> +       void **cpu_address;
->         dma_addr_t *dma_address;
->         struct list_head pages_list;
->  };
-> --
-> 2.0.3
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+
+Ah thanks. I guess I didn't see it on lockdep because this code never
+runs. Actually I don't think we need to hold it across this piece of
+code at all. See v2.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
