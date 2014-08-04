@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263AbaHDPNX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 11:13:23 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:16594 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751194AbaHDPNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 11:13:21 -0400
-X-IronPort-AV: E=Sophos;i="5.01,799,1400025600"; 
-   d="scan'208";a="158530645"
-Message-ID: <53DFA30E.2000301@citrix.com>
-Date: Mon, 4 Aug 2014 16:13:18 +0100
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752332AbaHDPQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 11:16:29 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22867 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaHDPQ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 11:16:27 -0400
+Date: Mon, 4 Aug 2014 11:15:35 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Vitaly Kuznetsov <vkuznets@redhat.com>, xen-devel@lists.xenproject.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 1/4] xen PVonHVM: use E820_Reserved area for
+ shared_info
+Message-ID: <20140804151535.GG19853@laptop.dumpdata.com>
+References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
+ <1405431640-649-2-git-send-email-vkuznets@redhat.com>
+ <53D65112.7080801@citrix.com>
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-CC: <netdev@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen-netback: Turn off the carrier if the
- guest is not able to receive
-References: <1406749849-4356-1-git-send-email-zoltan.kiss@citrix.com> <1406749849-4356-2-git-send-email-zoltan.kiss@citrix.com> <53DF8C24.6030709@citrix.com>
-In-Reply-To: <53DF8C24.6030709@citrix.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53D65112.7080801@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/14 14:35, David Vrabel wrote:
-> On 30/07/14 20:50, Zoltan Kiss wrote:
->> Currently when the guest is not able to receive more packets, qdisc layer starts
->> a timer, and when it goes off, qdisc is started again to deliver a packet again.
->> This is a very slow way to drain the queues, consumes unnecessary resources and
->> slows down other guests shutdown.
->> This patch change the behaviour by turning the carrier off when that timer
->> fires, so all the packets are freed up which were stucked waiting for that vif.
->> Instead of the rx_queue_purge bool it uses the VIF_STATUS_RX_PURGE_EVENT bit to
->> signal the thread that either the timout happened or an RX interrupt arrived, so
->> the thread can check what it should do. It also disables NAPI, so the guest
->> can't transmit, but leaves the interrupts on, so it can resurrect.
->
-> I don't think you should disable NAPI, particularly since you have to
-> fiddle with the bits directly instead of usign the API to do so.
-Since then I've found a much better way, see xenvif_poll.
->
-> I looked at some hardware drivers and none of them disabled NAPI -- they
-> just allow it to naturally end once hardware queues are drained.
->
-> netback is a little different as a frontend could stop processing
-> to-guest packets but continue sending from-guest ones.  I don't see any
-> problem with allowing this.
-Yes, that might be the case. Just a hunch tells me that could be wrong, 
-but I couldn't come up with a scenario to prove it. Let's hear other's 
-opinion about it:
-Is it good or bad if a guest interface with carrier off still keeps 
-sending packets towards the backend? Hardware drivers are trusted that 
-when carrier goes down there won't be new packets (apart from a few 
-still in the receive queue of the driver), so NAPI will be automatically 
-descheduled. But in this scenario the guest could still post new packets 
-on the ring, and they will be received unless NAPI is explicitly 
-descheduled.
+On Mon, Jul 28, 2014 at 02:33:06PM +0100, David Vrabel wrote:
+> On 15/07/14 14:40, Vitaly Kuznetsov wrote:
+> > From: Olaf Hering <olaf@aepfle.de>
+> > 
+> > This is a respin of 00e37bdb0113a98408de42db85be002f21dbffd3
+> > ("xen PVonHVM: move shared_info to MMIO before kexec").
+> > 
+> > Currently kexec in a PVonHVM guest fails with a triple fault because the
+> > new kernel overwrites the shared info page. The exact failure depends on
+> > the size of the kernel image. This patch moves the pfn from RAM into an
+> > E820 reserved memory area.
+> > 
+> > The pfn containing the shared_info is located somewhere in RAM. This will
+> > cause trouble if the current kernel is doing a kexec boot into a new
+> > kernel. The new kernel (and its startup code) can not know where the pfn
+> > is, so it can not reserve the page. The hypervisor will continue to update
+> > the pfn, and as a result memory corruption occours in the new kernel.
+> > 
+> > The toolstack marks the memory area FC000000-FFFFFFFF as reserved in the
+> > E820 map. Within that range newer toolstacks (4.3+) will keep 1MB
+> > starting from FE700000 as reserved for guest use. Older Xen4 toolstacks
+> > will usually not allocate areas up to FE700000, so FE700000 is expected
+> > to work also with older toolstacks.
+> > 
+> > In Xen3 there is no reserved area at a fixed location. If the guest is
+> > started on such old hosts the shared_info page will be placed in RAM. As
+> > a result kexec can not be used.
+> > 
+> > Signed-off-by: Olaf Hering <olaf@aepfle.de>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > (cherry picked from commit 9d02b43dee0d7fb18dfb13a00915550b1a3daa9f)
+> 
+> Is this a useful commit to give?  Isn't it one of Konrad's random trees?
 
->
->> @@ -1955,24 +1955,78 @@ int xenvif_kthread_guest_rx(void *data)
->>   		 */
->>   		if (unlikely(queue->vif->disabled && queue->id == 0))
->>   			xenvif_carrier_off(queue->vif);
->> +		else if (unlikely(test_and_clear_bit(QUEUE_STATUS_RX_PURGE_EVENT,
->> +						     &queue->status))) {
->> +			/* Either the last unsuccesful skb or at least 1 slot
->> +			 * should fit
->> +			 */
->> +			int needed = queue->rx_last_skb_slots ?
->> +				     queue->rx_last_skb_slots : 1;
->>
->> -		if (kthread_should_stop())
->> -			break;
->> -
->> -		if (queue->rx_queue_purge) {
->> +			/* It is assumed that if the guest post new
->> +			 * slots after this, the RX interrupt will set
->> +			 * the bit and wake up the thread again
->> +			 */
->> +			set_bit(QUEUE_STATUS_RX_STALLED, &queue->status);
->
-> This big if needs to go in a new function.
->
-> David
->
+Actually it is from upstream. That patch was reverted at certain point.
 
+Perhaps just mention that it was added in, then reverted, and now after
+a year or so, added back in with the fix.
