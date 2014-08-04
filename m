@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaHDQxL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:53:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56671 "EHLO
+	id S1753169AbaHDQxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:53:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56685 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752219AbaHDQt6 (ORCPT
+	by vger.kernel.org with ESMTP id S1752276AbaHDQt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:49:58 -0400
+	Mon, 4 Aug 2014 12:49:59 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Pavel Machek" <pavel@ucw.cz>,
-        "Andreas Dilger" <adilger@dilger.ca>, "Theodore Ts'o" <tytso@mit.edu>
-Date: Mon, 04 Aug 2014 17:48:31 +0100
-Message-ID: <lsq.1407170911.74476308@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Guan Xuetao" <gxt@mprc.pku.edu.cn>,
+        "Jonas Bonn" <jonas@southpole.se>, "Arnd Bergmann" <arnd@arndb.de>
+Date: Mon, 04 Aug 2014 17:48:32 +0100
+Message-ID: <lsq.1407170912.229441953@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 26/94] ext4: clarify error count warning messages
+Subject: [PATCH 3.2 73/94] unicore32: add ioremap_nocache definition
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,44 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
 
-commit ae0f78de2c43b6fadd007c231a352b13b5be8ed2 upstream.
+commit a50e4213e71adc7dde0d514aabd8af7275fee39f upstream.
 
-Make it clear that values printed are times, and that it is error
-since last fsck. Also add note about fsck version required.
+Bugfix for following error messages:
+lib/iomap.c: In function 'pci_iomap':
+lib/iomap.c:274: error: implicit declaration of function 'ioremap_nocache'
+lib/iomap.c:274: warning: return makes pointer from integer without a cast
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Andreas Dilger <adilger@dilger.ca>
+Also see commit <f1ecc69838a2d7c8a3e1909f637d4083c071777d>
+  it will hide the ioremap_nocache function for systems with an MMU
+
+Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Jonas Bonn <jonas@southpole.se>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/super.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/unicore32/include/asm/io.h | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2726,10 +2726,11 @@ static void print_daily_error_info(unsig
- 	es = sbi->s_es;
+--- a/arch/unicore32/include/asm/io.h
++++ b/arch/unicore32/include/asm/io.h
+@@ -37,6 +37,7 @@ extern void __uc32_iounmap(volatile void
+  */
+ #define ioremap(cookie, size)		__uc32_ioremap(cookie, size)
+ #define ioremap_cached(cookie, size)	__uc32_ioremap_cached(cookie, size)
++#define ioremap_nocache(cookie, size)	__uc32_ioremap(cookie, size)
+ #define iounmap(cookie)			__uc32_iounmap(cookie)
  
- 	if (es->s_error_count)
--		ext4_msg(sb, KERN_NOTICE, "error count: %u",
-+		/* fsck newer than v1.41.13 is needed to clean this condition. */
-+		ext4_msg(sb, KERN_NOTICE, "error count since last fsck: %u",
- 			 le32_to_cpu(es->s_error_count));
- 	if (es->s_first_error_time) {
--		printk(KERN_NOTICE "EXT4-fs (%s): initial error at %u: %.*s:%d",
-+		printk(KERN_NOTICE "EXT4-fs (%s): initial error at time %u: %.*s:%d",
- 		       sb->s_id, le32_to_cpu(es->s_first_error_time),
- 		       (int) sizeof(es->s_first_error_func),
- 		       es->s_first_error_func,
-@@ -2743,7 +2744,7 @@ static void print_daily_error_info(unsig
- 		printk("\n");
- 	}
- 	if (es->s_last_error_time) {
--		printk(KERN_NOTICE "EXT4-fs (%s): last error at %u: %.*s:%d",
-+		printk(KERN_NOTICE "EXT4-fs (%s): last error at time %u: %.*s:%d",
- 		       sb->s_id, le32_to_cpu(es->s_last_error_time),
- 		       (int) sizeof(es->s_last_error_func),
- 		       es->s_last_error_func,
+ /*
 
