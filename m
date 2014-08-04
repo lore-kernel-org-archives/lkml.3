@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141AbaHDROd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:14:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56464 "EHLO
+	id S1754106AbaHDROa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:14:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56472 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751746AbaHDQty (ORCPT
+	by vger.kernel.org with ESMTP id S1751756AbaHDQty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:54 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Roland Dreier" <roland@purestorage.com>
-Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.285626990@decadent.org.uk>
+CC: akpm@linux-foundation.org, "NeilBrown" <neilb@suse.de>,
+        "Bill" <billstuff2001@sbcglobal.net>
+Date: Mon, 04 Aug 2014 17:48:31 +0100
+Message-ID: <lsq.1407170911.18251879@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 82/94] x86, ioremap: Speed up check for RAM pages
+Subject: [PATCH 3.2 20/94] md: flush writes before starting a recovery.
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,76 +31,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: NeilBrown <neilb@suse.de>
 
-commit c81c8a1eeede61e92a15103748c23d100880cc8a upstream.
+commit 133d4527eab8d199a62eee6bd433f0776842df2e upstream.
 
-In __ioremap_caller() (the guts of ioremap), we loop over the range of
-pfns being remapped and checks each one individually with page_is_ram().
-For large ioremaps, this can be very slow.  For example, we have a
-device with a 256 GiB PCI BAR, and ioremapping this BAR can take 20+
-seconds -- sometimes long enough to trigger the soft lockup detector!
+When we write to a degraded array which has a bitmap, we
+make sure the relevant bit in the bitmap remains set when
+the write completes (so a 're-add' can quickly rebuilt a
+temporarily-missing device).
 
-Internally, page_is_ram() calls walk_system_ram_range() on a single
-page.  Instead, we can make a single call to walk_system_ram_range()
-from __ioremap_caller(), and do our further checks only for any RAM
-pages that we find.  For the common case of MMIO, this saves an enormous
-amount of work, since the range being ioremapped doesn't intersect
-system RAM at all.
+If, immediately after such a write starts, we incorporate a spare,
+commence recovery, and skip over the region where the write is
+happening (because the 'needs recovery' flag isn't set yet),
+then that write will not get to the new device.
 
-With this change, ioremap on our 256 GiB BAR takes less than 1 second.
+Once the recovery finishes the new device will be trusted, but will
+have incorrect data, leading to possible corruption.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Link: http://lkml.kernel.org/r/1399054721-1331-1-git-send-email-roland@kernel.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+We cannot set the 'needs recovery' flag when we start the write as we
+do not know easily if the write will be "degraded" or not.  That
+depends on details of the particular raid level and particular write
+request.
+
+This patch fixes a corruption issue of long standing and so it
+suitable for any -stable kernel.  It applied correctly to 3.0 at
+least and will minor editing to earlier kernels.
+
+Reported-by: Bill <billstuff2001@sbcglobal.net>
+Tested-by: Bill <billstuff2001@sbcglobal.net>
+Link: http://lkml.kernel.org/r/53A518BB.60709@sbcglobal.net
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/mm/ioremap.c | 26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
+ drivers/md/md.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index 597ac15..bc7527e 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -50,6 +50,21 @@ int ioremap_change_attr(unsigned long vaddr, unsigned long size,
- 	return err;
- }
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7144,6 +7144,19 @@ void md_do_sync(struct mddev *mddev)
+ 			    rdev->recovery_offset < j)
+ 				j = rdev->recovery_offset;
+ 		rcu_read_unlock();
++
++		/* If there is a bitmap, we need to make sure all
++		 * writes that started before we added a spare
++		 * complete before we start doing a recovery.
++		 * Otherwise the write might complete and (via
++		 * bitmap_endwrite) set a bit in the bitmap after the
++		 * recovery has checked that bit and skipped that
++		 * region.
++		 */
++		if (mddev->bitmap) {
++			mddev->pers->quiesce(mddev, 1);
++			mddev->pers->quiesce(mddev, 0);
++		}
+ 	}
  
-+static int __ioremap_check_ram(unsigned long start_pfn, unsigned long nr_pages,
-+			       void *arg)
-+{
-+	unsigned long i;
-+
-+	for (i = 0; i < nr_pages; ++i)
-+		if (pfn_valid(start_pfn + i) &&
-+		    !PageReserved(pfn_to_page(start_pfn + i)))
-+			return 1;
-+
-+	WARN_ONCE(1, "ioremap on RAM pfn 0x%lx\n", start_pfn);
-+
-+	return 0;
-+}
-+
- /*
-  * Remap an arbitrary physical address space into the kernel virtual
-  * address space. Needed when the kernel wants to access high addresses
-@@ -93,14 +108,11 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
- 	/*
- 	 * Don't allow anybody to remap normal RAM that we're using..
- 	 */
-+	pfn      = phys_addr >> PAGE_SHIFT;
- 	last_pfn = last_addr >> PAGE_SHIFT;
--	for (pfn = phys_addr >> PAGE_SHIFT; pfn <= last_pfn; pfn++) {
--		int is_ram = page_is_ram(pfn);
--
--		if (is_ram && pfn_valid(pfn) && !PageReserved(pfn_to_page(pfn)))
--			return NULL;
--		WARN_ON_ONCE(is_ram);
--	}
-+	if (walk_system_ram_range(pfn, last_pfn - pfn + 1, NULL,
-+				  __ioremap_check_ram) == 1)
-+		return NULL;
- 
- 	/*
- 	 * Mappings have to be page-aligned
+ 	printk(KERN_INFO "md: %s of RAID array %s\n", desc, mdname(mddev));
 
