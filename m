@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551AbaHDGiA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 02:38:00 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:57979 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053AbaHDGh6 (ORCPT
+	id S1751599AbaHDGlM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 02:41:12 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51779 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288AbaHDGlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 02:37:58 -0400
+	Mon, 4 Aug 2014 02:41:11 -0400
 X-Original-SENDERIP: 10.177.220.145
 X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 4 Aug 2014 15:45:06 +0900
+Date: Mon, 4 Aug 2014 15:48:23 +0900
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v5 02/14] mm, compaction: defer each zone individually
- instead of preferred zone
-Message-ID: <20140804064505.GA22835@js1304-P5Q-DELUXE>
-References: <1406553101-29326-1-git-send-email-vbabka@suse.cz>
- <1406553101-29326-3-git-send-email-vbabka@suse.cz>
- <20140729063840.GA1610@js1304-P5Q-DELUXE>
- <53D76592.10105@suse.cz>
- <53D91BC9.7080506@suse.cz>
- <53DB54FB.6050100@suse.cz>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Christoph Lameter <cl@gentwo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Matt Mackall <mpm@selenic.com>, Gilad Ben-Yossef <gilad@benyossef.com>,
+        Jens Axboe <axboe@fb.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: kernel: smp: WARNING at kernel/smp.c:673
+Message-ID: <20140804064823.GB22835@js1304-P5Q-DELUXE>
+References: <53DEF67E.8090004@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53DB54FB.6050100@suse.cz>
+In-Reply-To: <53DEF67E.8090004@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 10:51:07AM +0200, Vlastimil Babka wrote:
-> On 07/30/2014 06:22 PM, Vlastimil Babka wrote:
-> >On 07/29/2014 11:12 AM, Vlastimil Babka wrote:
-> >>On 07/29/2014 08:38 AM, Joonsoo Kim wrote:
-> >>>
-> >>>I still don't understand why defer_compaction() is needed here.
-> >>>defer_compaction() is intended for not struggling doing compaction on
-> >>>the zone where we already have tried compaction and found that it
-> >>>isn't suitable for compaction. Allocation failure doesn't tell us
-> >>>that we have tried compaction for all the zone range so we shouldn't
-> >>>make a decision here to defer compaction on this zone carelessly.
-> >>
-> >>OK I can remove that, it should make the code nicer anyway.
-> >
-> >Weird, that removal of this defer_compaction() call seems ho have
-> >quadrupled compact_stall and compact_fail counts. The scanner pages
-> >counters however increased by only 10% so that could indicate the
-> >problem is occuring only in a small zone such as DMA. Could be another
-> >case of mismatch between watermark checking in compaction and
-> >allocation? Perhaps the lack of proper classzone_idx in the compaction
-> >check? Sigh.
+On Sun, Aug 03, 2014 at 10:57:02PM -0400, Sasha Levin wrote:
+> Hi all,
 > 
-> Yep so it was the DMA zone returning COMPACT_PARTIAL from the
-> compaction_suitable() check done at the very beginning of
-> compact_zone(). The meaning of that is "the allocation should
-> succeed without compaction", so compaction is not done at all. Yet
-> the COMPACT_PARTIAL return value means it counts as a stall, even
-> with the patch that doesn't count COMPACT_SKIPPED as stalls.
-> The watermark check in try_to_compact_pages() also apparently
-> succeeds as the compaction is not being deferred. With deferral
-> removed from __alloc_pages_direct_compact(), this zone will be
-> attempted uselessly each time, and deferred_compaction is
-> practically never reported back.
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel, I've stumbled on the following spew:
 > 
-> So for now I think it would be best to leave the defer_compaction()
-> call in __alloc_pages_direct_compact() as it is. Fixing this in a
-> better way would require more investigation (I guess the lack of
-> classzone_idx in compaction makes the difference for the watermark
-> checks here) and another patch(es), which I'll attempt, but I don't
-> want to further grow this series with new patches right now.
+> 
+> [ 1226.701012] WARNING: CPU: 6 PID: 8624 at kernel/smp.c:673 on_each_cpu_cond+0x27f/0x2f0()
+> [ 1226.703128] Modules linked in:
+> [ 1226.703955] CPU: 6 PID: 8624 Comm: trinity-c26 Tainted: G        W      3.16.0-rc7-next-20140801-sasha-00047-gd6ce559 #991
+> [ 1226.706792]  ffff881b2e8a3000 0000000023830039 0000000000000000 ffff881b2e8a3000
+> [ 1226.708179]  ffff881ada5b3978 ffffffffa1ee96b4 0000000000000000 ffff881ada5b39b8
+> [ 1226.709610]  ffffffff9d1ce5ba ffffffff9d2c0ddf 000000000000001b ffff8807d7608000
+> [ 1226.710966] Call Trace:
+> [ 1226.711417] dump_stack (lib/dump_stack.c:52)
+> [ 1226.712311] warn_slowpath_common (kernel/panic.c:432)
+> [ 1226.715425] warn_slowpath_null (kernel/panic.c:466)
+> [ 1226.716436] on_each_cpu_cond (kernel/smp.c:673 (discriminator 3))
+> [ 1226.720821] __kmem_cache_shrink (mm/slub.c:3420)
+> [ 1226.722711] slab_memory_callback (mm/slub.c:3464 mm/slub.c:3556)
+> [ 1226.723925] notifier_call_chain (kernel/notifier.c:93)
+> [ 1226.725244] __blocking_notifier_call_chain (kernel/notifier.c:319)
+> [ 1226.726310] blocking_notifier_call_chain (kernel/notifier.c:329)
+> [ 1226.727263] memory_notify (drivers/base/memory.c:177)
+> [ 1226.728210] __offline_pages.constprop.23 (include/linux/notifier.h:179 mm/memory_hotplug.c:1682)
+> [ 1226.731896] offline_pages (mm/memory_hotplug.c:1787)
+> [ 1226.733095] memory_subsys_offline (drivers/base/memory.c:267 drivers/base/memory.c:304)
+> [ 1226.735208] device_offline (drivers/base/core.c:1428)
+> [ 1226.736966] online_store (drivers/base/core.c:451 (discriminator 2))
+> [ 1226.737720] dev_attr_store (drivers/base/core.c:138)
+> [ 1226.739986] sysfs_kf_write (fs/sysfs/file.c:116)
+> [ 1226.742105] kernfs_fop_write (fs/kernfs/file.c:308)
+> [ 1226.743058] do_loop_readv_writev (fs/read_write.c:708)
+> [ 1226.745095] do_readv_writev (fs/read_write.c:840)
+> [ 1226.752769] vfs_writev (fs/read_write.c:879)
+> [ 1226.753755] SyS_writev (fs/read_write.c:911 fs/read_write.c:903)
+> [ 1226.754660] tracesys (arch/x86/kernel/entry_64.S:541)
+> 
+> No time to dig too much into this today, will work on it tomorrow.
 
-Okay. compaction has many inconsistent watermark check so we cannot
-easily understand how/why it works. Cleaning it up looks really good
-topic to investigate. :)
+I think that that WARN_ON_ONCE() in kernel/smp.c:673 is wrong.
+smp_call_function_single() returns 0 if success so it should be
+WARN_ON_ONCE(ret) rather than WARN_ON_ONCE(!ret).
 
 Thanks.
