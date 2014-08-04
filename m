@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681AbaHDHzl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 03:55:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60873 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206AbaHDHzj (ORCPT
+	id S1751746AbaHDH4g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 03:56:36 -0400
+Received: from smtprelay0145.hostedemail.com ([216.40.44.145]:53714 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751136AbaHDH4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 03:55:39 -0400
-Date: Mon, 4 Aug 2014 09:55:28 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-doc@vger.kernel.org,
-        Davidlohr Bueso <davidlohr@hp.com>, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH 1/7] locking/rwsem: don't resched at the end of
- optimistic spinning
-Message-ID: <20140804075528.GI9918@twins.programming.kicks-ass.net>
-References: <1407119782-41119-1-git-send-email-Waiman.Long@hp.com>
- <1407119782-41119-2-git-send-email-Waiman.Long@hp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vzhXYRv6YJrvJIA1"
-Content-Disposition: inline
-In-Reply-To: <1407119782-41119-2-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 4 Aug 2014 03:56:35 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3867:3871:3872:4321:5007:7652:7903:8957:9010:9012:9592:10004:10400:10848:11026:11658:11914:12043:12296:12438:12517:12519:12555:13069:13221:13229:13311:13357:14093:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bat21_9099bfaf4b310
+X-Filterd-Recvd-Size: 2298
+Message-ID: <1407138992.16152.53.camel@joe-AO725>
+Subject: [PATCH] checkpatch: Add uninitialized_var to the declaration_macro
+ list
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dotan Barak <dotanb@mellanox.com>, Andy Whitcroft <apw@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 04 Aug 2014 00:56:32 -0700
+In-Reply-To: <9084ad9a17844ed898132853d161b495@DB3PR05MB380.eurprd05.prod.outlook.com>
+References: <9084ad9a17844ed898132853d161b495@DB3PR05MB380.eurprd05.prod.outlook.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Using uninitialized_var reports a false positive for
+"Missing blank line after declarations".
 
---vzhXYRv6YJrvJIA1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Fix it by adding uninitialized_var to the $declaration_macros
+exceptions list.
 
-On Sun, Aug 03, 2014 at 10:36:16PM -0400, Waiman Long wrote:
-> For a fully preemptive kernel, a call to preempt_enable() could
-> potentially trigger a task rescheduling event. In the case of rwsem
-> optimistic spinning, the task has either gotten the lock or is going
-> to sleep soon. So there is no point to do rescheduling here.
+Move the macro list after $Type is declared.
 
-Uh what? Why shouldn't we preempt if we've gotten the lock? What if a
-FIFO task just woke up?=20
+Signed-off-by: Joe Perches <joe@perches.com>
+Reported-by: Dotan Barak <dotanb@mellanox.com>
+---
+ scripts/checkpatch.pl | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---vzhXYRv6YJrvJIA1
-Content-Type: application/pgp-signature
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index da74e65..99cce04 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -423,11 +423,6 @@ foreach my $entry (@mode_permission_funcs) {
+ 	$mode_perms_search .= $entry->[0];
+ }
+ 
+-our $declaration_macros = qr{(?x:
+-	(?:$Storage\s+)?(?:DECLARE|DEFINE)_[A-Z]+\s*\(|
+-	(?:$Storage\s+)?LIST_HEAD\s*\(
+-)};
+-
+ our $allowed_asm_includes = qr{(?x:
+ 	irq|
+ 	memory
+@@ -490,6 +485,12 @@ our $balanced_parens = qr/(\((?:[^\(\)]++|(?-1))*\))/;
+ our $LvalOrFunc	= qr{((?:[\&\*]\s*)?$Lval)\s*($balanced_parens{0,1})\s*};
+ our $FuncArg = qr{$Typecast{0,1}($LvalOrFunc|$Constant)};
+ 
++our $declaration_macros = qr{(?x:
++	(?:$Storage\s+)?(?:DECLARE|DEFINE)_[A-Z]+\s*\(|
++	(?:$Storage\s+)?LIST_HEAD\s*\(|
++	(?:$Storage\s+)?$Type\s+uninitialized_var\s*\(
++)};
++
+ sub deparenthesize {
+ 	my ($string) = @_;
+ 	return "" if (!defined($string));
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJT3zxwAAoJEHZH4aRLwOS6RYMP/RKT7ZtZg1Gg4KJhJJHMgXcg
-SbnhqX5QJdJxu4KZ9w9KqmODKp6zUdBUI1Y70Qg/Xhafrkqcpt2qnfShfITQGaVk
-smm1gje+0ZAZzQeW01Hj1bZcj6WIRVoFVcXMsNvO+bamtyI4oOrGlSOggo8XI6+h
-NZW8YZClw4Ui5qy+OiOCBToU41XI/eUka7Y5QTU3FR5cNL4W0e0TMCmgSlfleIWt
-J20HdykK7arBfOGew1DQ3/Uau/lAb1X+YZIWtYes1g76wLXAoteGVOHCsGoeNk6o
-5SsPVq9diI33wd4jseZ/3co87R2gPxabmmQLFQOnhMgI/wdisKux4GTv1FWyENsW
-+IfeF2ZvssuYvcT6fyGWncuosNeQTMlf9r4b/xDzr47f3xugQaLv3KPy2QowVTEG
-jVTuNyh2sKs8V9EWgdzpTzrk5XaIudoqnAwYHYNkh22zYv/5pTogScSMWPEFd9ZT
-KH808BZ4A0B/wsbeqhf23MRyPv7f049bg4V7sq/lWdxDB9OvSUa+hPnKKBd1FYde
-e+jllWEE33X4iDuxBY41bUOGOIuuMTPdFe7qlCe25PWUF8hLe8us9w/UF1ra6xHD
-ByzdJDvCa6PxknJmRNayQOR8iSNkQ/7QFpnS7dyMRpU49DWwjgAG9QIpwYVTpWQu
-vuIEWMl/YIvIiqJi5Kuy
-=upai
------END PGP SIGNATURE-----
-
---vzhXYRv6YJrvJIA1--
