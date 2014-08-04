@@ -1,208 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458AbaHDMEH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 08:04:07 -0400
-Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:53155 "EHLO
-	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751947AbaHDMEF (ORCPT
+	id S1752098AbaHDMJV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 08:09:21 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:43717 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003AbaHDMJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 08:04:05 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Joerg Roedel <joro@8bytes.org>, Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH] iommu/msm: Switch to using managed resources
-Date: Mon,  4 Aug 2014 17:37:37 +0530
-Message-Id: <1407154057-25440-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 4 Aug 2014 08:09:19 -0400
+From: Eric Auger <eric.auger@linaro.org>
+To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        paulus@samba.org
+Subject: [RFC PATCH] ARM: KVM: add irqfd support
+Date: Mon,  4 Aug 2014 14:08:22 +0200
+Message-Id: <1407154102-26459-1-git-send-email-eric.auger@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This switches the driver to using managed resources to simplify error
-handling and to do away with remove function.
+This patch enables irqfd on ARM.
 
-CC: Stepan Moskovchenko <stepanm@codeaurora.org>
-CC: Joerg Roedel <joro@8bytes.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+irqfd framework enables to inject a virtual IRQ into a guest upon an
+eventfd trigger. User-side uses KVM_IRQFD VM ioctl to provide KVM with
+a kvm_irqfd struct that associates a VM, an eventfd, an IRQ number
+(aka. the gsi). When an actor signals the eventfd (typically a VFIO
+platform driver), the kvm irqfd subsystem injects the provided virtual
+IRQ into the guest.
+
+The gsi must correspond to a shared peripheral interrupt (SPI), ie the
+GIC interrupt ID is gsi+32.
+
+CONFIG_HAVE_KVM_EVENTFD and CONFIG_HAVE_KVM_IRQFD are turned on.
+
+No IRQ routing table is used thanks to Paul Mackerras' patch serie:
+"IRQFD without IRQ routing, enabled for XICS"
+(https://www.mail-archive.com/kvm@vger.kernel.org/msg104478.html)
+
+Signed-off-by: Eric Auger <eric.auger@linaro.org>
+
 ---
- drivers/iommu/msm_iommu_dev.c |   76 +++++++++++------------------------------
- 1 file changed, 19 insertions(+), 57 deletions(-)
 
-diff --git a/drivers/iommu/msm_iommu_dev.c b/drivers/iommu/msm_iommu_dev.c
-index 61def7cb..38a538f 100644
---- a/drivers/iommu/msm_iommu_dev.c
-+++ b/drivers/iommu/msm_iommu_dev.c
-@@ -140,39 +140,29 @@ static int msm_iommu_probe(struct platform_device *pdev)
- 		return 0;
+This patch would deprecate the previous patch featuring GSI routing
+(https://patches.linaro.org/32261/)
+
+irqchip.c and irq_comm.c are not used at all.
+
+This RFC applies on top of Christoffer Dall's serie
+arm/arm64: KVM: Various VGIC cleanups and improvements
+https://lists.cs.columbia.edu/pipermail/kvmarm/2014-June/009979.html
+
+All pieces can be found on git://git.linaro.org/people/eric.auger/linux.git
+branch irqfd_integ_v4
+
+This work was tested with Calxeda Midway xgmac main interrupt with
+qemu-system-arm and QEMU VFIO platform device.
+---
+ Documentation/virtual/kvm/api.txt |  5 +++-
+ arch/arm/include/uapi/asm/kvm.h   |  3 +++
+ arch/arm/kvm/Kconfig              |  3 ++-
+ arch/arm/kvm/Makefile             |  2 +-
+ arch/arm/kvm/irq.h                | 25 ++++++++++++++++++
+ virt/kvm/arm/vgic.c               | 54 ++++++++++++++++++++++++++++++++++++---
+ 6 files changed, 85 insertions(+), 7 deletions(-)
+ create mode 100644 arch/arm/kvm/irq.h
+
+diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+index 0fe3649..04310d9 100644
+--- a/Documentation/virtual/kvm/api.txt
++++ b/Documentation/virtual/kvm/api.txt
+@@ -2132,7 +2132,7 @@ into the hash PTE second double word).
+ 4.75 KVM_IRQFD
+ 
+ Capability: KVM_CAP_IRQFD
+-Architectures: x86 s390
++Architectures: x86 s390 arm
+ Type: vm ioctl
+ Parameters: struct kvm_irqfd (in)
+ Returns: 0 on success, -1 on error
+@@ -2158,6 +2158,9 @@ Note that closing the resamplefd is not sufficient to disable the
+ irqfd.  The KVM_IRQFD_FLAG_RESAMPLE is only necessary on assignment
+ and need not be specified with KVM_IRQFD_FLAG_DEASSIGN.
+ 
++On ARM/arm64 the injected must be a shared peripheral interrupt (SPI).
++This means the programmed GIC interrupt ID is gsi+32.
++
+ 4.76 KVM_PPC_ALLOCATE_HTAB
+ 
+ Capability: KVM_CAP_PPC_ALLOC_HTAB
+diff --git a/arch/arm/include/uapi/asm/kvm.h b/arch/arm/include/uapi/asm/kvm.h
+index e6ebdd3..3034c66 100644
+--- a/arch/arm/include/uapi/asm/kvm.h
++++ b/arch/arm/include/uapi/asm/kvm.h
+@@ -194,6 +194,9 @@ struct kvm_arch_memory_slot {
+ /* Highest supported SPI, from VGIC_NR_IRQS */
+ #define KVM_ARM_IRQ_GIC_MAX		127
+ 
++/* One single KVM irqchip, ie. the VGIC */
++#define KVM_NR_IRQCHIPS          1
++
+ /* PSCI interface */
+ #define KVM_PSCI_FN_BASE		0x95c1ba5e
+ #define KVM_PSCI_FN(n)			(KVM_PSCI_FN_BASE + (n))
+diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
+index 4be5bb1..7800261 100644
+--- a/arch/arm/kvm/Kconfig
++++ b/arch/arm/kvm/Kconfig
+@@ -24,6 +24,7 @@ config KVM
+ 	select KVM_MMIO
+ 	select KVM_ARM_HOST
+ 	depends on ARM_VIRT_EXT && ARM_LPAE && !CPU_BIG_ENDIAN
++	select HAVE_KVM_EVENTFD
+ 	---help---
+ 	  Support hosting virtualized guest machines. You will also
+ 	  need to select one or more of the processor modules below.
+@@ -55,7 +56,7 @@ config KVM_ARM_MAX_VCPUS
+ config KVM_ARM_VGIC
+ 	bool "KVM support for Virtual GIC"
+ 	depends on KVM_ARM_HOST && OF
+-	select HAVE_KVM_IRQCHIP
++	select HAVE_KVM_IRQFD
+ 	default y
+ 	---help---
+ 	  Adds support for a hardware assisted, in-kernel GIC emulation.
+diff --git a/arch/arm/kvm/Makefile b/arch/arm/kvm/Makefile
+index 789bca9..2fa2f82 100644
+--- a/arch/arm/kvm/Makefile
++++ b/arch/arm/kvm/Makefile
+@@ -15,7 +15,7 @@ AFLAGS_init.o := -Wa,-march=armv7-a$(plus_virt)
+ AFLAGS_interrupts.o := -Wa,-march=armv7-a$(plus_virt)
+ 
+ KVM := ../../../virt/kvm
+-kvm-arm-y = $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o
++kvm-arm-y = $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o $(KVM)/eventfd.o
+ 
+ obj-y += kvm-arm.o init.o interrupts.o
+ obj-y += arm.o handle_exit.o guest.o mmu.o emulate.o reset.o
+diff --git a/arch/arm/kvm/irq.h b/arch/arm/kvm/irq.h
+new file mode 100644
+index 0000000..1275d91
+--- /dev/null
++++ b/arch/arm/kvm/irq.h
+@@ -0,0 +1,25 @@
++/*
++ * Copyright (C) 2014 Linaro Ltd.
++ * Authors: Eric Auger <eric.auger@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __IRQ_H
++#define __IRQ_H
++
++#include <linux/kvm_host.h>
++/*
++ * Placeholder for irqchip and irq/msi routing declarations
++ * included in irqchip.c
++ */
++
++#endif
+diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+index 123030b..907e735 100644
+--- a/virt/kvm/arm/vgic.c
++++ b/virt/kvm/arm/vgic.c
+@@ -1259,7 +1259,10 @@ epilog:
+ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
+ {
+ 	struct vgic_cpu *vgic_cpu = &vcpu->arch.vgic_cpu;
++	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
+ 	bool level_pending = false;
++	struct kvm *kvm = vcpu->kvm;
++	int is_assigned_irq;
+ 
+ 	kvm_debug("MISR = %08x\n", vgic_cpu->vgic_misr);
+ 
+@@ -1273,6 +1276,7 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
+ 		for_each_set_bit(lr, (unsigned long *)vgic_cpu->vgic_eisr,
+ 				 vgic_cpu->nr_lr) {
+ 			irq = vgic_cpu->vgic_lr[lr] & GICH_LR_VIRTUALID;
++			spin_lock(&dist->lock);
+ 			BUG_ON(vgic_irq_is_edge(vcpu, irq));
+ 
+ 			vgic_irq_clear_queued(vcpu, irq);
+@@ -1285,6 +1289,17 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
+ 			 * interrupt.
+ 			 */
+ 			vgic_dist_irq_clear_soft_pend(vcpu, irq);
++			spin_unlock(&dist->lock);
++
++			is_assigned_irq = kvm_irq_has_notifier(kvm, 0,
++						irq - VGIC_NR_PRIVATE_IRQS);
++
++			if (is_assigned_irq) {
++				kvm_debug("EOI irqchip routed vIRQ %d\n", irq);
++				kvm_notify_acked_irq(kvm, 0,
++					irq - VGIC_NR_PRIVATE_IRQS);
++			}
++			spin_lock(&dist->lock);
+ 
+ 			/* Any additional pending interrupt? */
+ 			if (vgic_dist_irq_get_level(vcpu, irq)) {
+@@ -1305,6 +1320,7 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
+ 			 */
+ 			set_bit(lr, (unsigned long *)vgic_cpu->vgic_elrsr);
+ 			vgic_cpu->vgic_lr[lr] &= ~GICH_LR_ACTIVE_BIT;
++			spin_unlock(&dist->lock);
+ 		}
  	}
  
--	drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
--
--	if (!drvdata) {
--		ret = -ENOMEM;
--		goto fail;
--	}
-+	if (!iommu_dev)
-+		return -ENOMEM;
- 
--	if (!iommu_dev) {
--		ret = -ENODEV;
--		goto fail;
--	}
-+	drvdata = devm_kzalloc(&pdev->dev, sizeof(*drvdata), GFP_KERNEL);
-+	if (!drvdata)
-+		return -ENOMEM;
- 
--	iommu_pclk = clk_get(NULL, "smmu_pclk");
--	if (IS_ERR(iommu_pclk)) {
--		ret = -ENODEV;
--		goto fail;
--	}
-+	iommu_pclk = devm_clk_get(&pdev->dev, "smmu_pclk");
-+	if (IS_ERR(iommu_pclk))
-+		return -ENODEV;
- 
- 	ret = clk_prepare_enable(iommu_pclk);
- 	if (ret)
--		goto fail_enable;
--
--	iommu_clk = clk_get(&pdev->dev, "iommu_clk");
-+		return ret;
- 
-+	iommu_clk = devm_clk_get(&pdev->dev, "iommu_clk");
- 	if (!IS_ERR(iommu_clk))	{
- 		if (clk_get_rate(iommu_clk) == 0)
- 			clk_set_rate(iommu_clk, 1);
- 
- 		ret = clk_prepare_enable(iommu_clk);
--		if (ret) {
--			clk_put(iommu_clk);
-+		if (ret)
- 			goto fail_pclk;
--		}
- 	} else
- 		iommu_clk = NULL;
- 
-@@ -205,14 +195,13 @@ static int msm_iommu_probe(struct platform_device *pdev)
- 		goto fail_clk;
- 	}
- 
--	ret = request_irq(irq, msm_iommu_fault_handler, 0,
-+	ret = devm_request_irq(&pdev->dev, irq, msm_iommu_fault_handler, 0,
- 			"msm_iommu_secure_irpt_handler", drvdata);
- 	if (ret) {
- 		pr_err("Request IRQ %d failed with ret=%d\n", irq, ret);
- 		goto fail_clk;
- 	}
- 
--
- 	drvdata->pclk = iommu_pclk;
- 	drvdata->clk = iommu_clk;
- 	drvdata->base = regs_base;
-@@ -231,16 +220,10 @@ static int msm_iommu_probe(struct platform_device *pdev)
- 
- 	return 0;
- fail_clk:
--	if (iommu_clk) {
-+	if (iommu_clk)
- 		clk_disable(iommu_clk);
--		clk_put(iommu_clk);
--	}
- fail_pclk:
- 	clk_disable_unprepare(iommu_pclk);
--fail_enable:
--	clk_put(iommu_pclk);
--fail:
--	kfree(drvdata);
- 	return ret;
+@@ -1344,8 +1360,10 @@ static void __kvm_vgic_sync_hwstate(struct kvm_vcpu *vcpu)
+ 	/* Check if we still have something up our sleeve... */
+ 	pending = find_first_zero_bit((unsigned long *)vgic_cpu->vgic_elrsr,
+ 				      vgic_cpu->nr_lr);
++	spin_lock(&dist->lock);
+ 	if (level_pending || pending < vgic_cpu->nr_lr)
+ 		set_bit(vcpu->vcpu_id, &dist->irq_pending_on_cpu);
++	spin_unlock(&dist->lock);
  }
  
-@@ -250,14 +233,9 @@ static int msm_iommu_remove(struct platform_device *pdev)
+ void kvm_vgic_flush_hwstate(struct kvm_vcpu *vcpu)
+@@ -1362,14 +1380,10 @@ void kvm_vgic_flush_hwstate(struct kvm_vcpu *vcpu)
  
- 	drv = platform_get_drvdata(pdev);
- 	if (drv) {
--		if (drv->clk) {
-+		if (drv->clk)
- 			clk_unprepare(drv->clk);
--			clk_put(drv->clk);
--		}
- 		clk_unprepare(drv->pclk);
--		clk_put(drv->pclk);
--		memset(drv, 0, sizeof(*drv));
--		kfree(drv);
- 	}
- 	return 0;
- }
-@@ -276,7 +254,8 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
- 	if (!drvdata)
- 		return -ENODEV;
- 
--	ctx_drvdata = kzalloc(sizeof(*ctx_drvdata), GFP_KERNEL);
-+	ctx_drvdata = devm_kzalloc(&pdev->dev, sizeof(*ctx_drvdata),
-+				   GFP_KERNEL);
- 	if (!ctx_drvdata)
- 		return -ENOMEM;
- 
-@@ -288,14 +267,12 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
- 
- 	ret = clk_prepare_enable(drvdata->pclk);
- 	if (ret)
--		goto fail;
-+		return ret;
- 
- 	if (drvdata->clk) {
- 		ret = clk_prepare_enable(drvdata->clk);
--		if (ret) {
-+		if (ret)
- 			clk_disable_unprepare(drvdata->pclk);
--			goto fail;
--		}
- 	}
- 
- 	/* Program the M2V tables for this context */
-@@ -329,20 +306,6 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
- 
- 	dev_info(&pdev->dev, "context %s using bank %d\n", c->name, c->num);
- 	return 0;
--fail:
--	kfree(ctx_drvdata);
--	return ret;
--}
+ void kvm_vgic_sync_hwstate(struct kvm_vcpu *vcpu)
+ {
+-	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
 -
--static int msm_iommu_ctx_remove(struct platform_device *pdev)
--{
--	struct msm_iommu_ctx_drvdata *drv = NULL;
--	drv = platform_get_drvdata(pdev);
--	if (drv) {
--		memset(drv, 0, sizeof(struct msm_iommu_ctx_drvdata));
--		kfree(drv);
--	}
--	return 0;
+ 	if (!irqchip_in_kernel(vcpu->kvm))
+ 		return;
+ 
+-	spin_lock(&dist->lock);
+ 	__kvm_vgic_sync_hwstate(vcpu);
+-	spin_unlock(&dist->lock);
  }
  
- static struct platform_driver msm_iommu_driver = {
-@@ -350,7 +313,7 @@ static struct platform_driver msm_iommu_driver = {
- 		.name	= "msm_iommu",
- 	},
- 	.probe		= msm_iommu_probe,
--	.remove		= msm_iommu_remove,
-+	.remove         = msm_iommu_remove,
+ int kvm_vgic_vcpu_pending_irq(struct kvm_vcpu *vcpu)
+@@ -2146,3 +2160,35 @@ struct kvm_device_ops kvm_arm_vgic_v2_ops = {
+ 	.get_attr = vgic_get_attr,
+ 	.has_attr = vgic_has_attr,
  };
- 
- static struct platform_driver msm_iommu_ctx_driver = {
-@@ -358,7 +321,6 @@ static struct platform_driver msm_iommu_ctx_driver = {
- 		.name	= "msm_iommu_ctx",
- 	},
- 	.probe		= msm_iommu_ctx_probe,
--	.remove		= msm_iommu_ctx_remove,
- };
- 
- static int __init msm_iommu_driver_init(void)
++
++int kvm_irq_map_gsi(struct kvm *kvm,
++		    struct kvm_kernel_irq_routing_entry *entries, int gsi)
++{
++	return gsi;
++}
++
++int kvm_irq_map_chip_pin(struct kvm *kvm, unsigned irqchip, unsigned pin)
++{
++	return pin;
++}
++
++int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level,
++		bool line_status)
++{
++	int r = -EINVAL;
++	unsigned int spi = irq + VGIC_NR_PRIVATE_IRQS;
++
++	if (spi > KVM_ARM_IRQ_GIC_MAX)
++		return r;
++
++	kvm_debug("Inject irqchip routed vIRQ %d\n", irq);
++	r = kvm_vgic_inject_irq(kvm, 0, spi, level);
++	return r;
++}
++
++/* MSI not implemented yet */
++int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
++		struct kvm *kvm, int irq_source_id, int level, bool line_status)
++{
++	return 0;
++}
 -- 
-1.7.9.5
+1.9.1
 
