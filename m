@@ -1,98 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520AbaHDGh2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 02:37:28 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44429 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044AbaHDGh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 02:37:27 -0400
-Message-ID: <53DF2A05.3060207@ti.com>
-Date: Mon, 4 Aug 2014 09:36:53 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751551AbaHDGiA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 02:38:00 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:57979 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaHDGh6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 02:37:58 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 4 Aug 2014 15:45:06 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v5 02/14] mm, compaction: defer each zone individually
+ instead of preferred zone
+Message-ID: <20140804064505.GA22835@js1304-P5Q-DELUXE>
+References: <1406553101-29326-1-git-send-email-vbabka@suse.cz>
+ <1406553101-29326-3-git-send-email-vbabka@suse.cz>
+ <20140729063840.GA1610@js1304-P5Q-DELUXE>
+ <53D76592.10105@suse.cz>
+ <53D91BC9.7080506@suse.cz>
+ <53DB54FB.6050100@suse.cz>
 MIME-Version: 1.0
-To: Dexuan Cui <decui@microsoft.com>
-CC: <gregkh@linuxfoundation.org>, <plagnioj@jcrosoft.com>,
-        <dan.carpenter@oracle.com>, <linux-kernel@vger.kernel.org>,
-        <driverdev-devel@linuxdriverproject.org>,
-        <linux-fbdev@vger.kernel.org>, <olaf@aepfle.de>, <apw@canonical.com>,
-        <jasowang@redhat.com>, <kys@microsoft.com>, <haiyangz@microsoft.com>
-Subject: Re: [PATCH v4] video: hyperv: hyperv_fb: refresh the VM screen by
- force on VM panic
-References: <1406892474-6548-1-git-send-email-decui@microsoft.com>
-In-Reply-To: <1406892474-6548-1-git-send-email-decui@microsoft.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="87h5WCtpSfgrwPTiokn44Ut1araeajKNn"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53DB54FB.6050100@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---87h5WCtpSfgrwPTiokn44Ut1araeajKNn
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Fri, Aug 01, 2014 at 10:51:07AM +0200, Vlastimil Babka wrote:
+> On 07/30/2014 06:22 PM, Vlastimil Babka wrote:
+> >On 07/29/2014 11:12 AM, Vlastimil Babka wrote:
+> >>On 07/29/2014 08:38 AM, Joonsoo Kim wrote:
+> >>>
+> >>>I still don't understand why defer_compaction() is needed here.
+> >>>defer_compaction() is intended for not struggling doing compaction on
+> >>>the zone where we already have tried compaction and found that it
+> >>>isn't suitable for compaction. Allocation failure doesn't tell us
+> >>>that we have tried compaction for all the zone range so we shouldn't
+> >>>make a decision here to defer compaction on this zone carelessly.
+> >>
+> >>OK I can remove that, it should make the code nicer anyway.
+> >
+> >Weird, that removal of this defer_compaction() call seems ho have
+> >quadrupled compact_stall and compact_fail counts. The scanner pages
+> >counters however increased by only 10% so that could indicate the
+> >problem is occuring only in a small zone such as DMA. Could be another
+> >case of mismatch between watermark checking in compaction and
+> >allocation? Perhaps the lack of proper classzone_idx in the compaction
+> >check? Sigh.
+> 
+> Yep so it was the DMA zone returning COMPACT_PARTIAL from the
+> compaction_suitable() check done at the very beginning of
+> compact_zone(). The meaning of that is "the allocation should
+> succeed without compaction", so compaction is not done at all. Yet
+> the COMPACT_PARTIAL return value means it counts as a stall, even
+> with the patch that doesn't count COMPACT_SKIPPED as stalls.
+> The watermark check in try_to_compact_pages() also apparently
+> succeeds as the compaction is not being deferred. With deferral
+> removed from __alloc_pages_direct_compact(), this zone will be
+> attempted uselessly each time, and deferred_compaction is
+> practically never reported back.
+> 
+> So for now I think it would be best to leave the defer_compaction()
+> call in __alloc_pages_direct_compact() as it is. Fixing this in a
+> better way would require more investigation (I guess the lack of
+> classzone_idx in compaction makes the difference for the watermark
+> checks here) and another patch(es), which I'll attempt, but I don't
+> want to further grow this series with new patches right now.
 
-On 01/08/14 14:27, Dexuan Cui wrote:
-> Currently the VSC has no chance to notify the VSP of the dirty rectangl=
-e on VM
-> panic because the notification work is done in a workqueue, and in pani=
-c() the
-> kernel typically ends up in an infinite loop, and a typical kernel conf=
-ig has
-> CONFIG_PREEMPT_VOLUNTARY=3Dy and CONFIG_PREEMPT is not set, so a contex=
-t switch
-> can't happen in panic() and the workqueue won't have a chance to run. A=
-s a
-> result, the VM Connection window can't refresh until it's closed and we=
+Okay. compaction has many inconsistent watermark check so we cannot
+easily understand how/why it works. Cleaning it up looks really good
+topic to investigate. :)
 
-> re-connect to the VM.
->=20
-> We can register a handler on panic_notifier_list: the handler can notif=
-y
-> the VSC and switch the framebuffer driver to a "synchronous mode", mean=
-ing
-> the VSC flushes any future framebuffer change to the VSP immediately.
->=20
-> v2: removed the MS-TFS line in the commit message
-> v3: remove some 'unlikely' markings
-> v4: avoid global variables as Tomi Valkeinen suggested
->=20
-> Cc: Haiyang Zhang <haiyangz@microsoft.com>
-> Signed-off-by: Dexuan Cui <decui@microsoft.com>
-> ---
->  drivers/video/fbdev/hyperv_fb.c | 62 +++++++++++++++++++++++++++++++++=
-++++++--
->  1 file changed, 59 insertions(+), 3 deletions(-)
-
-Thanks, looks fine to me. Queuing for 3.17.
-
- Tomi
-
-
-
-
---87h5WCtpSfgrwPTiokn44Ut1araeajKNn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT3yoJAAoJEPo9qoy8lh71IzMP/2iwStdsFdIrQHpt2SBSFL0J
-Y9n1/4lPdP6ONkjEeUJHnWabcu5phEi6gfcI9+OiRGsABrDpzEckX9sg1F1LuKJW
-ByDNx1v3g+Tk3gq6/ea3OmLVBXSGZrFOgzmQmpvTSwBHA9lHAGwz+PZ4CDtXn0GW
-gHK6rnKisJUWStWy55XSZFMV52944M9hLriWP5aM44cJz06HAIdvT8UZalEYdBnn
-IxlurE2PP9aVEj0DcWAJs+uSeeCuiLwhLfNH54rfK3BwOmnWjsj7Oj1mn4Vfhztn
-ZzehAIv4OcI0MBtu/YCiHbd+40ulq1CDr3R6zZdm4338w8N7GRU9AXj2WpY5ZO3I
-s+x+98kLX4W5RwISOXBhdWphtcpqKdrfitOS9rBTxDl3VV2tv4Zs+WEQWmKzzZyL
-aFVMVsPmiKLYYMmvCayd+s9CuKma7Q8vK1JdI5OPNMNObaVODZylweddnGVOLSNT
-dk7hg0TeZV50wPgZOvdOrM7z0duZ2HLA76KnhYBaKnku596GQu1Oyfz2/xKGdM7L
-T2vOr8lqZ/VQNUxyj/92o3/6S4ExKkVUsJ/D7MuS5+zEjVNOr/oKLrbY40ldDipz
-Q/S8OlFTejbQbHiiTDWPFBWcjyL20SCx6BQh6ltYnNUTj3FzBLHn/BeZUEiGUN7p
-xYxt/rQKH+Rq+EwbHrGw
-=Y9f3
------END PGP SIGNATURE-----
-
---87h5WCtpSfgrwPTiokn44Ut1araeajKNn--
+Thanks.
