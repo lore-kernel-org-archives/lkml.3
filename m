@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751076AbaHDE0P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 00:26:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52071 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714AbaHDE0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 00:26:14 -0400
-From: jgross@suse.com
-To: James.Bottomley@HansenPartnership.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH V3] Save command pool address of Scsi_Host
-Date: Mon,  4 Aug 2014 06:26:09 +0200
-Message-Id: <1407126369-16543-1-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 1.8.4.5
+	id S1751386AbaHDE2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 00:28:21 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:10884 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaHDE2U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 00:28:20 -0400
+From: Liu Hua <sdu.liu@huawei.com>
+To: <Marc.Zyngier@arm.com>, <will.deacon@arm.com>
+CC: <nicolas.pitre@linaro.org>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <peifeiyue@huawei.com>, <liusdu@126.com>, <wangnan0@huawei.com>,
+        <ebiederm@xmission.com>, Liu Hua <sdu.liu@huawei.com>
+Subject: [PATCH V2 0/1] irqchip: GIC: check and clear GIC interupt active state
+Date: Mon, 4 Aug 2014 12:17:39 +0800
+Message-ID: <1407125860-37718-1-git-send-email-sdu.liu@huawei.com>
+X-Mailer: git-send-email 1.9.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020204.53DF0BE1.0072,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: 080e987910c090976d518192da4c5550
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Juergen Gross <jgross@suse.com>
+For this version of GIC codes, kernel assumes that all the interrupt
+status of GIC is inactive. So the kernel does not check this when 
+booting.
 
-If a scsi host driver specifies .cmd_len in it's scsi_host_template, a driver's
-private command pool is needed. scsi_find_host_cmd_pool() will locate it, but
-scsi_alloc_host_cmd_pool() isn't saving the pool address in the host template.
+This is no problem on must sitations. But when kdump is deplayed.
+And a panic occurs when an interrupt is being handled (may be PPI 
+). We have no chance to write relative bit to GICC_EOIR. So this 
+interrupt remains active. And GIC will not deliver this type 
+interrupt to cpu interface. And the capture kernel may  fail to boot
+becase of lacking of certain interrupt (such as timer interupt).
 
-This will result in an access error when the host is removed.
+I have test this patch on arma9el(GIC v1), arma15el and arma15eb(GIC v2) 
+platforms. And the tests passed.
 
-Avoid the problem by saving the address of a new allocated command pool where
-it is expected and delete it again when the pool is destroyed.
+changes from V1:
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
----
- drivers/scsi/scsi.c | 19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+  - used for_each_set_bit instead of find_next_bit
+  - removed the GIC version indentifying codes.
+  - used one way to inactive GIC interupt states for all GIC version
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index 88d46fe..11ea502 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -351,11 +351,12 @@ scsi_find_host_cmd_pool(struct Scsi_Host *shost)
- }
- 
- static void
--scsi_free_host_cmd_pool(struct scsi_host_cmd_pool *pool)
-+scsi_free_host_cmd_pool(struct scsi_host_cmd_pool **pool)
- {
--	kfree(pool->sense_name);
--	kfree(pool->cmd_name);
--	kfree(pool);
-+	kfree(pool[0]->sense_name);
-+	kfree(pool[0]->cmd_name);
-+	kfree(pool[0]);
-+	pool[0] = NULL;
- }
- 
- static struct scsi_host_cmd_pool *
-@@ -371,7 +372,7 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
- 	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
- 	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->name);
- 	if (!pool->cmd_name || !pool->sense_name) {
--		scsi_free_host_cmd_pool(pool);
-+		scsi_free_host_cmd_pool(&pool);
- 		return NULL;
- 	}
- 
-@@ -380,6 +381,10 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
- 		pool->slab_flags |= SLAB_CACHE_DMA;
- 		pool->gfp_mask = __GFP_DMA;
- 	}
-+
-+	if (hostt->cmd_size)
-+		hostt->cmd_pool = pool;
-+
- 	return pool;
- }
- 
-@@ -425,7 +430,7 @@ out_free_slab:
- 	kmem_cache_destroy(pool->cmd_slab);
- out_free_pool:
- 	if (hostt->cmd_size)
--		scsi_free_host_cmd_pool(pool);
-+		scsi_free_host_cmd_pool(&hostt->cmd_pool);
- 	goto out;
- }
- 
-@@ -448,7 +453,7 @@ static void scsi_put_host_cmd_pool(struct Scsi_Host *shost)
- 		kmem_cache_destroy(pool->cmd_slab);
- 		kmem_cache_destroy(pool->sense_slab);
- 		if (hostt->cmd_size)
--			scsi_free_host_cmd_pool(pool);
-+			scsi_free_host_cmd_pool(&hostt->cmd_pool);
- 	}
- 	mutex_unlock(&host_cmd_pool_mutex);
- }
+Liu Hua (1):
+  GIC: introduce method to deactive interupts
+
+ drivers/irqchip/irq-gic.c | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
 -- 
-1.8.4.5
+1.9.0
 
