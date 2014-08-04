@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863AbaHDRRl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:17:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56456 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751709AbaHDQty (ORCPT
+	id S1754170AbaHDRSb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:18:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34613 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753351AbaHDRS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:49:54 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Mon, 4 Aug 2014 13:18:28 -0400
+Date: Mon, 4 Aug 2014 19:18:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH?] x86: reimplement ___preempt_schedule*() using THUNK
+ helpers
+Message-ID: <20140804171814.GU19379@twins.programming.kicks-ass.net>
+References: <1407158386-6201-1-git-send-email-dvlasenk@redhat.com>
+ <1407158386-6201-5-git-send-email-dvlasenk@redhat.com>
+ <20140804170519.GA17466@redhat.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Michal Nazarewicz" <mina86@mina86.com>,
-        "Felipe Balbi" <balbi@ti.com>
-Date: Mon, 04 Aug 2014 17:48:31 +0100
-Message-ID: <lsq.1407170911.532055220@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 06/94] usb: gadget: f_fs: fix NULL pointer dereference
- when there are no strings
-In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bTEFy8KkmVf9O7nJ"
+Content-Disposition: inline
+In-Reply-To: <20140804170519.GA17466@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.62-rc1 review patch.  If anyone has any objections, please let me know.
 
-------------------
+--bTEFy8KkmVf9O7nJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Michal Nazarewicz <mina86@mina86.com>
+On Mon, Aug 04, 2014 at 07:05:19PM +0200, Oleg Nesterov wrote:
+> Hmm. This part looks fine, but with or without this patch this all is
+> suboptimal, we do not need SAVE_ALL unless I missed something. Can't we
+> simply kill preempt.S ?
+>=20
+> Peter, what do you think?
 
-commit f0688c8b81d2ea239c3fb0b848f623b579238d99 upstream.
+HPA right, not me? I'm never sure on these details, if hpa thinks its
+fine, I'm good.
 
-If the descriptors do not need any strings and user space sends empty
-set of strings, the ffs->stringtabs field remains NULL.  Thus
-*ffs->stringtabs in functionfs_bind leads to a NULL pointer
-dereferenece.
+--bTEFy8KkmVf9O7nJ
+Content-Type: application/pgp-signature
 
-The bug was introduced by commit [fd7c9a007f: “use usb_string_ids_n()”].
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-While at it, remove double initialisation of lang local variable in
-that function.
+iQIcBAEBAgAGBQJT38BSAAoJEHZH4aRLwOS6MLwP/2LfcqXCoOAy6n40bjQj0zug
+kD4AlCVNLqAntuA+L9pdlKkv9ve0CboepbVX0JFH+tXdfQJPoWdzNZIkKWsolgFI
+OicsgBtzrrTnQKGC1BYfxJ9OGfLY+ti2pKEG4UT61egKUg3jlCvLqyu/ql337xNM
+R1FdcvuwOqfnTwkWhYMgBKAm7wLQ7UKJUN1i7jAquaKnKJEUs3xA+pAwfHT7hXvf
+u/qQ0Fvmoei9YRtgC7QkMRRA639Ba0uddMjZfDHABH63Au7xqiWwP5GF85t4MIbG
+rIlyDmw+DuDzf2nVFFMKrRXLlIn47pEyXG5ErhUcLm3n+sAB9Z9GEY+MbA0EQmlM
+529YchLkTYCz68SfoUU5wB5fbH2wpVbwG2lFO5OEUuHG1UToS24v46xiOfUs7fKw
+o3jmHF/d97CcYKECN+qy3mh3LiFXz8/+SnR78qsmNQyjw4NlsKu9unaCcjzTcibT
+rSrgEOZ9UC7u9VojAZFizktwuPPhyZwCIRzxX6mkb9zAfzny3PcdUlCPu0NPQjMJ
+c5XmVjrpQo1MDF5HEeLdFLUOdCme4ddv9J2iQB/U0nlBmo0orgiQSU7wy9KRzST6
+wc77SInpymgqR55/G3xEL7iZ6hR79dXp27Tw8fJbI8xAN5lWh59fAnEq1S/DmKZ9
+XOHKmhGegeQJcGE+qw4g
+=wMs8
+-----END PGP SIGNATURE-----
 
-ffs->strings_count does not need to be checked in any way since in
-the above scenario it will remain zero and usb_string_ids_n() is
-a no-operation when colled with 0 argument.
-
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/usb/gadget/f_fs.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -1376,11 +1376,13 @@ static int functionfs_bind(struct ffs_da
- 	ffs->ep0req->context = ffs;
- 
- 	lang = ffs->stringtabs;
--	for (lang = ffs->stringtabs; *lang; ++lang) {
--		struct usb_string *str = (*lang)->strings;
--		int id = first_id;
--		for (; str->s; ++id, ++str)
--			str->id = id;
-+	if (lang) {
-+		for (; *lang; ++lang) {
-+			struct usb_string *str = (*lang)->strings;
-+			int id = first_id;
-+			for (; str->s; ++id, ++str)
-+				str->id = id;
-+		}
- 	}
- 
- 	ffs->gadget = cdev->gadget;
-
+--bTEFy8KkmVf9O7nJ--
