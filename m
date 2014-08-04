@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbaHDBXg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 21:23:36 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:43396 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193AbaHDBXf (ORCPT
+	id S1753105AbaHDB1a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 21:27:30 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:2053 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752628AbaHDB13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 21:23:35 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s741N2iv024343, This message is accepted by code: ctloc85258
-Message-ID: <53DEE078.2060506@realsil.com.cn>
-Date: Mon, 4 Aug 2014 09:23:04 +0800
-From: micky <micky_ching@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sun, 3 Aug 2014 21:27:29 -0400
+X-IronPort-AV: E=Sophos;i="5.04,258,1406563200"; 
+   d="scan'208";a="34122938"
+Message-ID: <53DEE1CD.4000705@cn.fujitsu.com>
+Date: Mon, 4 Aug 2014 09:28:45 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Fabio Falzoi <fabio.falzoi84@gmail.com>
-CC: <gregkh@linuxfoundation.org>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>, <joe@perches.com>,
-        <dan.carpenter@oracle.com>, <wei_wang@realsil.com.cn>
-Subject: Re: [PATCH v5 3/4] Staging: rts5208: Use dev_dbg and %*phspecifiertodump memory
-References: <1406672155-13187-1-git-send-email-fabio.falzoi84@gmail.com> <1406672155-13187-4-git-send-email-fabio.falzoi84@gmail.com> <53D84FE3.9040709@realsil.com.cn> <20140801175526.GA19125@PippoloLaptop>
-In-Reply-To: <20140801175526.GA19125@PippoloLaptop>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, <peterz@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <mingo@kernel.org>, <dipankar@in.ibm.com>,
+        <akpm@linux-foundation.org>, <mathieu.desnoyers@efficios.com>,
+        <josh@joshtriplett.org>, <tglx@linutronix.de>, <rostedt@goodmis.org>,
+        <dhowells@redhat.com>, <edumazet@google.com>, <dvhart@linux.intel.com>,
+        <fweisbec@gmail.com>, <oleg@redhat.com>, <bobby.prani@gmail.com>
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+References: <20140731215445.GA21933@linux.vnet.ibm.com> <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.29.41.103]
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2014 01:55 AM, Fabio Falzoi wrote:
-> On Wed, Jul 30, 2014 at 09:52:35AM +0800, micky wrote:
->> Documentation/printk-formats.txt
->>
->> Raw buffer as a hex string:
->> 	%*ph	00 01 02  ...  3f
->> 	%*phC	00:01:02: ... :3f
->> 	%*phD	00-01-02- ... -3f
->> 	%*phN	000102 ... 3f
->>
->> 	For printing a small buffers (up to 64 bytes long) as a hex string with
->> 	certain separator. For the larger buffers consider to use
->> 	print_hex_dump().
->>
->>
->> Since we can't make sure the cnt value, it is not good use "%*ph",
->> because it must make cnt <= 64.
->> dw_len * 4  <= 64 ?
-> Hi Micky,
->
-> I think that in these two cases we can rely on print_hex_dump_bytes that
-> doesn't have the dev_dbg limit on buffer size.
-> Let me know what you think about it. If you agree, I can send a new version
-> for patches 3/4 and 4/4, since the first two have already been merged in the
-> linux-next tree by Greg.
-Hi Fabio,
+On 08/01/2014 05:55 AM, Paul E. McKenney wrote:
+> +		rcu_read_lock();
+> +		for_each_process_thread(g, t) {
+> +			if (t != current && ACCESS_ONCE(t->on_rq) &&
+> +			    !is_idle_task(t)) {
+> +				get_task_struct(t);
+> +				t->rcu_tasks_nvcsw = ACCESS_ONCE(t->nvcsw);
+> +				ACCESS_ONCE(t->rcu_tasks_holdout) = 1;
+> +				list_add(&t->rcu_tasks_holdout_list,
+> +					 &rcu_tasks_holdouts);
 
-I think it is good, Thanks.
-
-Best Regards,
-micky
-> Regards,
-> Fabio
-> .
->
-
+This loop will collect all the runnable tasks.  It is too much tasks.
+Is it possible to collect only on_cpu tasks or PREEMPT_ACTIVE tasks?
+It seems hard to achieve it.
