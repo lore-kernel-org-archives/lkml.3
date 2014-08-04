@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826AbaHDUFC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 16:05:02 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:55351 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaHDUE7 (ORCPT
+	id S1751958AbaHDUMm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 16:12:42 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:21210 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311AbaHDUMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 16:04:59 -0400
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: m.chehab@samsung.com, dan.carpenter@oracle.com, mkrufky@linuxtv.org,
-        dcb314@hotmail.com
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH] drivers/media/dvb-frontends/stv0900_sw.c: Fix break placement
-Date: Mon,  4 Aug 2014 23:04:52 +0300
-Message-Id: <1407182692-1234-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-Mailer: git-send-email 1.8.5.5
+	Mon, 4 Aug 2014 16:12:40 -0400
+X-IronPort-AV: E=Sophos;i="5.01,800,1400050800"; 
+   d="scan'208";a="41513486"
+Message-ID: <53DFE933.2080805@broadcom.com>
+Date: Mon, 4 Aug 2014 22:12:35 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>, <brudley@broadcom.com>,
+        Franky Lin <frankyl@broadcom.com>, <meuleman@broadcom.com>,
+        <linville@tuxdriver.com>, <pieterpg@broadcom.com>,
+        <dekim@broadcom.com>, <mcgrof@do-not-panic.com>,
+        <antonio@open-mesh.com>, <johannes.berg@intel.com>,
+        <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH] brcmfmac: prevent watchdog from interfering with	scanning
+ and connecting
+References: <539E8559.3010601@linux.intel.com> <539EA79C.7010206@broadcom.com> <53A30F96.3010206@linux.intel.com> <53A311E4.301@broadcom.com> <53CCC44C.2070507@linux.intel.com> <53D124B3.7030807@linux.intel.com> <53DFB6A1.7040900@linux.intel.com> <20140804165202.GG30282@n2100.arm.linux.org.uk>
+In-Reply-To: <20140804165202.GG30282@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81621
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
----
- drivers/media/dvb-frontends/stv0900_sw.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+On 08/04/14 18:52, Russell King - ARM Linux wrote:
+> On Tue, Aug 05, 2014 at 12:36:49AM +0800, Fu, Zhonghui wrote:
+>> Hi, Arend
+>>
+>> I investigated this issue, and its root cause is still that sdio
+>> controller can't receive interrupts from WiFi chip on sdio bus when
+>> sdio controller is in runtime suspend status. I am running 3.16-rc5
+>> linux kernel on ASUS T100TA tablet, and using sdhci-acpi driver.
+>
+> That's the root cause.  I fixed this with the Freescale i.MX SD driver
+> which is now able to report pending SDIO interrupts while runtime PM
+> suspended.
+>
+> Other host drivers probably need fixing too, or having runtime PM
+> disabled on them - if you can't receive SDIO interrupts while runtime
+> PM suspended, then entering runtime PM while you have a SDIO device
+> attached is a bug.
+>
+> This is something for the MMC people to deal with rather than Arend.
 
-diff --git a/drivers/media/dvb-frontends/stv0900_sw.c b/drivers/media/dvb-frontends/stv0900_sw.c
-index 4ce1d26..a0a7b16 100644
---- a/drivers/media/dvb-frontends/stv0900_sw.c
-+++ b/drivers/media/dvb-frontends/stv0900_sw.c
-@@ -1733,9 +1733,10 @@ static void stv0900_set_search_standard(struct stv0900_internal *intp,
- 		break;
- 	case STV0900_SEARCH_DSS:
- 		dprintk("Search Standard = DSS\n");
--	case STV0900_SEARCH_DVBS2:
- 		break;
-+	case STV0900_SEARCH_DVBS2:
- 		dprintk("Search Standard = DVBS2\n");
-+		break;
- 	case STV0900_AUTO_SEARCH:
- 	default:
- 		dprintk("Search Standard = AUTO\n");
--- 
-1.8.5.5
+Occasionally, the itch is there to fix mmc code, but this looks a bit 
+tricky. The fun starts in sdio.c:mmc_attach_sdio():
+
+	/*
+	 * Enable runtime PM only if supported by host+card+board
+	 */
+	if (host->caps & MMC_CAP_POWER_OFF_CARD) {
+		/*
+		 * Let runtime PM core know our card is active
+		 */
+		err = pm_runtime_set_active(&card->dev);
+		if (err)
+			goto remove;
+
+		/*
+		 * Enable runtime PM for this card
+		 */
+		pm_runtime_enable(&card->dev);
+	}
+
+The comment above the if statement seems to be stating the right idea, 
+but the code only looks at the host controller capability flags.
+
+Regards,
+Arend
 
