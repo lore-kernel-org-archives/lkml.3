@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573AbaHDQuT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:50:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56598 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752113AbaHDQt5 (ORCPT
+	id S1751638AbaHDQwb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:52:31 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36605 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750990AbaHDQw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:49:57 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Mon, 4 Aug 2014 12:52:29 -0400
+Date: Mon, 4 Aug 2014 17:52:02 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+Cc: Arend van Spriel <arend@broadcom.com>, brudley@broadcom.com,
+        Franky Lin <frankyl@broadcom.com>, meuleman@broadcom.com,
+        linville@tuxdriver.com, pieterpg@broadcom.com, dekim@broadcom.com,
+        mcgrof@do-not-panic.com, antonio@open-mesh.com,
+        johannes.berg@intel.com, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] brcmfmac: prevent watchdog from interfering with
+	scanning and connecting
+Message-ID: <20140804165202.GG30282@n2100.arm.linux.org.uk>
+References: <539E8559.3010601@linux.intel.com> <539EA79C.7010206@broadcom.com> <53A30F96.3010206@linux.intel.com> <53A311E4.301@broadcom.com> <53CCC44C.2070507@linux.intel.com> <53D124B3.7030807@linux.intel.com> <53DFB6A1.7040900@linux.intel.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Feng Tang" <feng.tang@intel.com>
-Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.755420222@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 33/94] ACPI / EC: Don't count a SCI interrupt as a
- false one
-In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53DFB6A1.7040900@linux.intel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.62-rc1 review patch.  If anyone has any objections, please let me know.
+On Tue, Aug 05, 2014 at 12:36:49AM +0800, Fu, Zhonghui wrote:
+> Hi, Arend
+> 
+> I investigated this issue, and its root cause is still that sdio
+> controller can't receive interrupts from WiFi chip on sdio bus when
+> sdio controller is in runtime suspend status. I am running 3.16-rc5
+> linux kernel on ASUS T100TA tablet, and using sdhci-acpi driver.
 
-------------------
+That's the root cause.  I fixed this with the Freescale i.MX SD driver
+which is now able to report pending SDIO interrupts while runtime PM
+suspended.
 
-From: Feng Tang <feng.tang@intel.com>
+Other host drivers probably need fixing too, or having runtime PM
+disabled on them - if you can't receive SDIO interrupts while runtime
+PM suspended, then entering runtime PM while you have a SDIO device
+attached is a bug.
 
-commit a3cd8d2789c2e265e09377f260e7d2ac9cec81bb upstream.
+This is something for the MMC people to deal with rather than Arend.
 
-Currently when advance_transaction() is called in EC interrupt handler,
-if there is nothing driver can do with the interrupt, it will be taken
-as a false one.
-
-But this is not always true, as there may be a SCI EC interrupt fired
-during normal read/write operation, which should not be counted as a
-false one. This patch fixes the problem.
-
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/acpi/ec.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -205,9 +205,13 @@ static void advance_transaction(struct a
- 		t->done = true;
- 	goto unlock;
- err:
--	/* false interrupt, state didn't change */
--	if (in_interrupt())
-+	/*
-+	 * If SCI bit is set, then don't think it's a false IRQ
-+	 * otherwise will take a not handled IRQ as a false one.
-+	 */
-+	if (in_interrupt() && !(status & ACPI_EC_FLAG_SCI))
- 		++t->irq_count;
-+
- unlock:
- 	spin_unlock_irqrestore(&ec->curr_lock, flags);
- }
-
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
