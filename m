@@ -1,23 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686AbaHDAFu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 20:05:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54273 "EHLO
+	id S1753010AbaHDAIK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 20:08:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54282 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751871AbaHDAFs (ORCPT
+	by vger.kernel.org with ESMTP id S1751203AbaHDAII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 20:05:48 -0400
-Message-ID: <1407110740.8341.8.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: Linux 3.4.95 breaks LZO tests (additional pull needed)
+	Sun, 3 Aug 2014 20:08:08 -0400
+Message-ID: <1407110877.8341.10.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3.8 107/116] hugetlb: fix copy_hugetlb_page_range() to
+ handle migration/hwpoisoned entry
 From: Ben Hutchings <ben@decadent.org.uk>
-To: Derrick Pallas <pallas@meraki.com>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Derrick Pallas <derrick@pallas.us>
-Date: Mon, 04 Aug 2014 01:05:40 +0100
-In-Reply-To: <CAFqNYV4_yW60oKmb4edH8CQtFiyT491eWOPheBrDse9j-jCYZg@mail.gmail.com>
-References: <CAFqNYV4_yW60oKmb4edH8CQtFiyT491eWOPheBrDse9j-jCYZg@mail.gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Kamal Mostafa <kamal@canonical.com>, Jiri Slaby <jslaby@suse.cz>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 04 Aug 2014 01:07:57 +0100
+In-Reply-To: <alpine.LSU.2.11.1407231659330.2093@eggly.anvils>
+References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
+	 <1406067727-19683-108-git-send-email-kamal@canonical.com>
+	 <alpine.LSU.2.11.1407221608040.3128@eggly.anvils>
+	 <1406149325.3612.33.camel@fourier>
+	 <alpine.LSU.2.11.1407231659330.2093@eggly.anvils>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-AS3AZRFIuT0gz1u+oe63"
+	protocol="application/pgp-signature"; boundary="=-WBJRxAInj2M7yQS+2ezO"
 X-Mailer: Evolution 3.12.2-1+b1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 192.168.4.249
@@ -28,19 +39,48 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-AS3AZRFIuT0gz1u+oe63
+--=-WBJRxAInj2M7yQS+2ezO
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2014-07-17 at 20:57 -0700, Derrick Pallas wrote:
-> An LZO update was backported in Linux 3.4.95 but fails to work if
-> crypto tests are enabled. It turns out that
-> 0ec7382036922be063b515b2a3f1d6
-> f7a607392c, which updates the test vectors, did not come along for the
-> ride. Thanks, ~Derrick
+On Wed, 2014-07-23 at 17:07 -0700, Hugh Dickins wrote:
+> On Wed, 23 Jul 2014, Kamal Mostafa wrote:
+> > On Tue, 2014-07-22 at 16:08 -0700, Hugh Dickins wrote:
+> > > On Tue, 22 Jul 2014, Kamal Mostafa wrote:
+> > >=20
+> > > > 3.8.13.27 -stable review patch.  If anyone has any objections, plea=
+se let me know.
+> > > >=20
+> > > > ------------------
+> > > >=20
+> > > > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > > >=20
+> > > > commit 4a705fef986231a3e7a6b1a6d3c37025f021f49f upstream.
+> > > >=20
+> > > > There's a race between fork() and hugepage migration, as a result w=
+e try
+> > > > [...]
+> > >=20
+> > > Please drop this one for now: other -stables have carried it, but it
+> > > was found last week to contain a bug of its own, arguably worse than
+> > > what it's fixing.  Naoya-san has done the fix for that, it's in mmotm
+> > > and should make its way to Linus probably this week: so please hold
+> > > this back until that can join it - thanks.
+> > >=20
+> > > Hugh
+> >=20
+> > OK, I've dropped it from the 3.8-stable queue, and will watch for the
+> > fix to land.  Thanks very much, Hugh!
+>=20
+> commit 0253d634e0803a8376a0d88efee0bf523d8673f9
+> Author: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Date:   Wed Jul 23 14:00:19 2014 -0700
+> mm: hugetlb: fix copy_hugetlb_page_range()
+>=20
+> is now in Linus's tree: so the original patch is good to go into
+> your -stables, so long as you add 0253d634e080 on top.
 
-As this is also true of 3.2.61, I've queued it up for the next update to
-3.2.
+I've now queued up "mm: hugetlb: fix copy_hugetlb_page_range()" for 3.2.
 
 Ben.
 
@@ -48,26 +88,26 @@ Ben.
 Ben Hutchings
 Tomorrow will be cancelled due to lack of interest.
 
---=-AS3AZRFIuT0gz1u+oe63
+--=-WBJRxAInj2M7yQS+2ezO
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIVAwUAU97OVOe/yOyVhhEJAQrjvRAAylDOoxDEOZRvtUWEOG4EfktU0nFDA95G
-iSkhAE/qOOL8+eeziAx5B8jzpN467UzY9MrcY9k/b49duiqusI+LAE9oQtHDXtOT
-thv+I0yqlr9UhHnX+Q0gzjqXwHnTa1jXqAk5v1oC/8vI8ht1Y/42mLATm+0ixqk5
-SVVOmS0f0EjpQDFOygo0YfuLcH7fxaYHc6CC7DR2E/sbO3UfrYyrgrr2EupJXrVi
-D5ofuqEbL39C+s+qbRJg4jZdNoJjvOQIs9EBWa6TtbqHJJJ0qm3DA3pUGRL8IiKi
-fIJIxnkLxeWQG6hTnGeLcXsITzh0FIQ/Q9LkNwox+gSGVVXM5rMn2sSxXBcAYYJu
-qpmyiD0slC8fdZJB6QPGVX355fKYqo/kJ1/gZLpB160I7zyrpaiwGwyb9vLglemJ
-ZjCsw5/avIGh7LIqzfio/6a9TuN0BLTJf+c2dicXcujg3wGhaAjf9DWqorsiKs4x
-ZAoFiwysr/ULGBJcH6N/uSFxBV/bB+rd3O10AsuHAY9m8dtvSpn15u05HM31mgnM
-D1MwKBNK4lwbxv3FRhEFDykKIVX1GdNftXhDnUZHbpe81r7m2IJ61Rg5bIyJuW40
-CvB10Z/J4irvWJHJnFgFTBHv+DPYJTnXvE4iri1ildfCA0e9RNyGO98fR9MhL2Gs
-bLhjzmsyxD8=
-=mz42
+iQIVAwUAU97O3ue/yOyVhhEJAQqE3Q/7BJqCyKkwE6S93/UQfdzMOO9N50Mhp+nU
+c5c5xpLbk9Rin2fljAV21/6Y2bHQzphwCOmfoShweOyDXZoIn22/xyQnvpzOAOwP
+t5L8USAPm5pWgtZClIU1QX5OfupHo+QlnMetQlDaBFXZsbRWbNIpAoSLrK8rir9x
+W50AXN+sp7xme0ARJ91T88gvE6DK8RAlvSBp2p2Jpav7rLMto2dstcoTZ9j6laR4
+ySqG1bNK/vDCzxmXQ+LeSlZB6Vok8fFVZiyiFrswaRoWHaMDQWACgqV3c8fUNZF+
+dLhPLX4+hkiQsnqoWNLpCiHzPMOOnhfPOga/bImrQg4hOY13hSx/GVv/9DOJwawa
+b+JucqAYU/MK9sQp9CFJSGO6qcLlVZERJmJNWQeTJmhhsgMJG0j8cLzHNmftd+Le
+04hKiBkESCvSJWUz9YrW4Dl8Pp+x0kKw1EeFXs1Rs7RIW/XulO2enhe2sKKuqJH+
+omXApkp4QEzx/rS6tvWgbz0745EG03nPyPjtij6TLk4JbRjFVTWTDOYFMl2EVLDQ
+SP/neUKUL3KZq/Hc1wm1WJPoks+tO8YB4vJ+ocAFWcfQ+kc1HpKJnFFEMzlXcfOh
+CZo+TRD8ATIRm05B1ln+lwClP6bwlbMa10kc+Hmwou3gs4t3nBc/dltWPc+RoIhL
+EJX8YEgCrfE=
+=57/3
 -----END PGP SIGNATURE-----
 
---=-AS3AZRFIuT0gz1u+oe63--
+--=-WBJRxAInj2M7yQS+2ezO--
