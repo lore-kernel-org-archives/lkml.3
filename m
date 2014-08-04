@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350AbaHDERh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 00:17:37 -0400
-Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:5657
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751294AbaHDERf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 00:17:35 -0400
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: <broonie@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <timur@tabi.org>
-Subject: [PATCH 1/2] ASoC: fsl_sarc_dma: Check pair before using it
-Date: Mon, 4 Aug 2014 12:19:48 +0800
-Message-ID: <5a5ffb6219ec5ade81511be9dfbdbeef311f1a16.1407125653.git.nicoleotsuka@gmail.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <cover.1407125653.git.nicoleotsuka@gmail.com>
-References: <cover.1407125653.git.nicoleotsuka@gmail.com>
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130515994383914693;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009002)(6009001)(189002)(199002)(77156001)(80022001)(55446002)(19580405001)(4396001)(93916002)(50226001)(81342001)(6806004)(31966008)(81442001)(19580395003)(77982001)(81156004)(105596002)(87936001)(79102001)(68736004)(61266001)(73972005)(46102001)(82202001)(74662001)(48376002)(50986999)(64706001)(87572001)(76176999)(92566001)(107046002)(21056001)(81542001)(229853001)(73392001)(102836001)(110136001)(36756003)(44976005)(89996001)(62966002)(26826002)(88136002)(92726001)(74502001)(99396002)(33646002)(106466001)(86362001)(69596002)(104166001)(20776003)(97736001)(2351001)(84676001)(47776003)(85306004)(95666004)(85852003)(50466002)(87286001)(104016003)(83072002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB357;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+	id S1751327AbaHDETC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 00:19:02 -0400
+Received: from ozlabs.org ([103.22.144.67]:52121 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750881AbaHDETA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 00:19:00 -0400
+Date: Mon, 4 Aug 2014 14:18:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?U3TDqXBoYW5l?= Marchesin <marcheu@chromium.org>
+Subject: linux-next: build failure after merge of the drm-tegra tree
+Message-ID: <20140804141832.442adee8@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:UriScan:;
-X-Forefront-PRVS: 0293D40691
-Authentication-Results: spf=softfail (sender IP is 192.88.158.2)
- smtp.mailfrom=nicoleotsuka@gmail.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/GQ4OTh+virfOB6rSznuJe7F"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch 3117bb3109dc: "ASoC: fsl_asrc: Add ASRC ASoC CPU DAI and
-platform drivers" from Jul 29, 2014, leads to the following Smatch
-complaint:
+--Sig_/GQ4OTh+virfOB6rSznuJe7F
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-sound/soc/fsl/fsl_asrc_dma.c:304 fsl_asrc_dma_shutdown()
-warn: variable dereferenced before check 'pair' (see line 302)
+Hi Thierry,
 
-sound/soc/fsl/fsl_asrc_dma.c
-301          struct fsl_asrc_pair *pair = runtime->private_data;
-302          struct fsl_asrc *asrc_priv = pair->asrc_priv;
-                                          ^^^^^^^^^^^^^^^
-                                            Dereference.
+After merging the drm-tegra tree, today's linux-next build (arm
+multi_v7_defconfig) failed like this:
 
-303
-304          if (pair && asrc_priv->pair[pair->index] == pair)
-                 ^^^^
-                Check.
+In file included from include/asm-generic/bug.h:13:0,
+                 from arch/arm/include/asm/bug.h:61,
+                 from include/linux/bug.h:4,
+                 from include/linux/scatterlist.h:5,
+                 from include/linux/dma-buf.h:29,
+                 from drivers/gpu/drm/tegra/gem.c:16:
+drivers/gpu/drm/tegra/gem.c: In function 'tegra_bo_dumb_create':
+drivers/gpu/drm/tegra/gem.c:265:39: error: dereferencing pointer to incompl=
+ete type
+  min_pitch =3D round_up(min_pitch, tegra->pitch_align);
+                                       ^
+include/linux/kernel.h:62:46: note: in definition of macro '__round_mask'
+ #define __round_mask(x, y) ((__typeof__(x))((y)-1))
+                                              ^
+drivers/gpu/drm/tegra/gem.c:265:14: note: in expansion of macro 'round_up'
+  min_pitch =3D round_up(min_pitch, tegra->pitch_align);
+              ^
+drivers/gpu/drm/tegra/dc.c: In function 'tegra_dc_init':
+drivers/gpu/drm/tegra/dc.c:1300:29: error: 'tegra' undeclared (first use in=
+ this function)
+  if (dc->soc->pitch_align > tegra->pitch_align)
+                             ^
+drivers/gpu/drm/tegra/dc.c:1300:29: note: each undeclared identifier is rep=
+orted only once for each function it appears in
 
-305                  asrc_priv->pair[pair->index] = NULL;
-306
+Caused by commit 26861f43da4e ("drm/tegra: Properly align stride for
+framebuffers").
 
-So we just let the driver check pair before using it.
+I have used the drm-tegra tree from next-20140801 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
----
- sound/soc/fsl/fsl_asrc_dma.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+--Sig_/GQ4OTh+virfOB6rSznuJe7F
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-diff --git a/sound/soc/fsl/fsl_asrc_dma.c b/sound/soc/fsl/fsl_asrc_dma.c
-index 5b1e73e..ffc000b 100644
---- a/sound/soc/fsl/fsl_asrc_dma.c
-+++ b/sound/soc/fsl/fsl_asrc_dma.c
-@@ -299,9 +299,14 @@ static int fsl_asrc_dma_shutdown(struct snd_pcm_substream *substream)
- {
- 	struct snd_pcm_runtime *runtime = substream->runtime;
- 	struct fsl_asrc_pair *pair = runtime->private_data;
--	struct fsl_asrc *asrc_priv = pair->asrc_priv;
-+	struct fsl_asrc *asrc_priv;
-+
-+	if (!pair)
-+		return 0;
-+
-+	asrc_priv = pair->asrc_priv;
- 
--	if (pair && asrc_priv->pair[pair->index] == pair)
-+	if (asrc_priv->pair[pair->index] == pair)
- 		asrc_priv->pair[pair->index] = NULL;
- 
- 	kfree(pair);
--- 
-1.8.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBCAAGBQJT3wmxAAoJEMDTa8Ir7ZwVeLMP/1ta9lVyiKm9RLeOzo8lTFuq
+5H/uXsq7/ehVPz7K2Vf3c/udmI+enGYa80E28jLC6c480RkHhJNEtLIY5mzG94D6
+HBd1jKR1fZIL/Ryojt0POokDrefCUeGqsTlUVnQjYaxSW+r7EkznBJLjCXiiQg/W
+1+LJahXt93iyCR+YJW73lfN5gSJQg6SBu3riMHK/yYQdgDKeTtVKxb1ew4KQid8Q
+xy7XPS+ZOLYzdSMXiwt99vyIn3Yhk1RkqvKEH1GvA08/vEhlWGTnm+QZvhrOXfbb
+CLF8gld2a8EH4BR1MhcOlF9rVaMOZM57jGAIJX1Mt6nKPE/phXVBIRZsWfo+iZQD
+sx/x1L/d/zzcKUFjZiz09HKM+i4MMePU0MO2Z66qOAq0lmomAd4gzfXR+ZyNc7fY
+MaaHhKhDEa7gR0sl5m0KhR8pTl90/s8Pga4vUJ+csDmnrdc4uxAGq9WG/QxXBHhv
+XkJI1lhIcCN68dXpGB/qoYnH+2kRICRb5QrsrmxzLbjozl77sH7jCakRfUwNzuIf
+OoWG7ygjaYu40+nygpC0nEwkYDBTN8K/ftPLnDayFB9qyP/etC2yFDZopL3EIpdv
+ld+VZwSKI+Wyf1pIQF4QsAG3Z5Pbd3+aTQdPR/IMSZnIs3AG0tKvyShBdT3AzS7n
+0uSnIe1EXXsGLPqa3fTD
+=WZXb
+-----END PGP SIGNATURE-----
+
+--Sig_/GQ4OTh+virfOB6rSznuJe7F--
