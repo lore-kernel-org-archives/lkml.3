@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720AbaHDREV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:04:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56544 "EHLO
+	id S1753698AbaHDRET (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:04:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56549 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751544AbaHDQt4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751957AbaHDQt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:56 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Axel Lin" <axel.lin@ingics.com>,
-        "Guenter Roeck" <linux@roeck-us.net>
+CC: akpm@linux-foundation.org, "Jeff Kirsher" <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Aaron Brown" <aaron.f.brown@intel.com>,
+        "Stefan Assmann" <sassmann@kpanic.de>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.480620970@decadent.org.uk>
+Message-ID: <lsq.1407170912.767968892@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 52/94] hwmon: (adt7470) Fix writes to temperature
- limit registers
+Subject: [PATCH 3.2 44/94] igb: do a reset on SR-IOV re-init if device is down
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,53 +33,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Stefan Assmann <sassmann@kpanic.de>
 
-commit de12d6f4b10b21854441f5242dcb29ea96181e58 upstream.
+commit 76252723e88681628a3dbb9c09c963e095476f73 upstream.
 
-Temperature limit registers are signed. Limits therefore need
-to be clamped to (-128, 127) degrees C and not to (0, 255)
-degrees C.
+To properly re-initialize SR-IOV it is necessary to reset the device
+even if it is already down. Not doing this may result in Tx unit hangs.
 
-Without this fix, writing a limit of 128 degrees C sets the
-actual limit to -128 degrees C.
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Axel Lin <axel.lin@ingics.com>
-[bwh: Backported to 3.2: driver was using SENSORS_LIMIT(), which we can
- replace with clamp_val()]
+Signed-off-by: Stefan Assmann <sassmann@kpanic.de>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/adt7470.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/intel/igb/igb_main.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/hwmon/adt7470.c
-+++ b/drivers/hwmon/adt7470.c
-@@ -515,7 +515,7 @@ static ssize_t set_temp_min(struct devic
- 		return -EINVAL;
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -6610,6 +6610,8 @@ static int __igb_shutdown(struct pci_dev
  
- 	temp = DIV_ROUND_CLOSEST(temp, 1000);
--	temp = SENSORS_LIMIT(temp, 0, 255);
-+	temp = clamp_val(temp, -128, 127);
+ 	if (netif_running(netdev))
+ 		igb_close(netdev);
++	else
++		igb_reset(adapter);
  
- 	mutex_lock(&data->lock);
- 	data->temp_min[attr->index] = temp;
-@@ -549,7 +549,7 @@ static ssize_t set_temp_max(struct devic
- 		return -EINVAL;
+ 	igb_clear_interrupt_scheme(adapter);
  
- 	temp = DIV_ROUND_CLOSEST(temp, 1000);
--	temp = SENSORS_LIMIT(temp, 0, 255);
-+	temp = clamp_val(temp, -128, 127);
- 
- 	mutex_lock(&data->lock);
- 	data->temp_max[attr->index] = temp;
-@@ -826,7 +826,7 @@ static ssize_t set_pwm_tmin(struct devic
- 		return -EINVAL;
- 
- 	temp = DIV_ROUND_CLOSEST(temp, 1000);
--	temp = SENSORS_LIMIT(temp, 0, 255);
-+	temp = clamp_val(temp, -128, 127);
- 
- 	mutex_lock(&data->lock);
- 	data->pwm_tmin[attr->index] = temp;
 
