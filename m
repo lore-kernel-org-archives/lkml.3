@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbaHDPQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 11:16:29 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22867 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaHDPQ1 (ORCPT
+	id S1752246AbaHDPUE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 11:20:04 -0400
+Received: from mail-db3lrp0080.outbound.protection.outlook.com ([213.199.154.80]:6287
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751495AbaHDPUD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 11:16:27 -0400
-Date: Mon, 4 Aug 2014 11:15:35 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Vitaly Kuznetsov <vkuznets@redhat.com>, xen-devel@lists.xenproject.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 1/4] xen PVonHVM: use E820_Reserved area for
- shared_info
-Message-ID: <20140804151535.GG19853@laptop.dumpdata.com>
-References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
- <1405431640-649-2-git-send-email-vkuznets@redhat.com>
- <53D65112.7080801@citrix.com>
+	Mon, 4 Aug 2014 11:20:03 -0400
+From: Dotan Barak <dotanb@mellanox.com>
+To: Joe Perches <joe@perches.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: checkpatch.pl report about "Missing blank line after
+ declarations" in a structure definition
+Thread-Topic: checkpatch.pl report about "Missing blank line after
+ declarations" in a structure definition
+Thread-Index: Ac+v1hsr1olRx4GsR0yoGKahVltZOwAEuFMAAAD6CqAAANNzgAAAjzTwAAD5l4AAADX+UA==
+Date: Mon, 4 Aug 2014 15:19:58 +0000
+Message-ID: <3b44a1bc344f40feb7c8119a4b102494@DB3PR05MB380.eurprd05.prod.outlook.com>
+References: <3219ba81002f41d99c8651755dc2a920@DB3PR05MB380.eurprd05.prod.outlook.com>
+	 <1407159342.16152.63.camel@joe-AO725>
+	 <e68ad593255b4094a79de9b22cbc2a7a@DB3PR05MB380.eurprd05.prod.outlook.com>
+	 <1407162439.16152.67.camel@joe-AO725>
+	 <f95137f9228a4f08ba391f9640237d28@DB3PR05MB380.eurprd05.prod.outlook.com>
+ <1407165075.16152.70.camel@joe-AO725>
+In-Reply-To: <1407165075.16152.70.camel@joe-AO725>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [193.47.165.251]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 0293D40691
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(199002)(189002)(54356999)(83322001)(106356001)(74502001)(76176999)(64706001)(105586002)(21056001)(31966008)(110136001)(101416001)(74662001)(80022001)(76576001)(76482001)(20776003)(81342001)(66066001)(46102001)(77982001)(2656002)(95666004)(86362001)(92566001)(107046002)(4396001)(50986999)(33646002)(87936001)(83072002)(99396002)(74316001)(85852003)(81542001)(79102001)(85306004)(93886004)(24736002)(108616003);DIR:OUT;SFP:;SCL:1;SRVR:DB3PR05MB379;H:DB3PR05MB380.eurprd05.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D65112.7080801@citrix.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-OriginatorOrg: Mellanox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 02:33:06PM +0100, David Vrabel wrote:
-> On 15/07/14 14:40, Vitaly Kuznetsov wrote:
-> > From: Olaf Hering <olaf@aepfle.de>
-> > 
-> > This is a respin of 00e37bdb0113a98408de42db85be002f21dbffd3
-> > ("xen PVonHVM: move shared_info to MMIO before kexec").
-> > 
-> > Currently kexec in a PVonHVM guest fails with a triple fault because the
-> > new kernel overwrites the shared info page. The exact failure depends on
-> > the size of the kernel image. This patch moves the pfn from RAM into an
-> > E820 reserved memory area.
-> > 
-> > The pfn containing the shared_info is located somewhere in RAM. This will
-> > cause trouble if the current kernel is doing a kexec boot into a new
-> > kernel. The new kernel (and its startup code) can not know where the pfn
-> > is, so it can not reserve the page. The hypervisor will continue to update
-> > the pfn, and as a result memory corruption occours in the new kernel.
-> > 
-> > The toolstack marks the memory area FC000000-FFFFFFFF as reserved in the
-> > E820 map. Within that range newer toolstacks (4.3+) will keep 1MB
-> > starting from FE700000 as reserved for guest use. Older Xen4 toolstacks
-> > will usually not allocate areas up to FE700000, so FE700000 is expected
-> > to work also with older toolstacks.
-> > 
-> > In Xen3 there is no reserved area at a fixed location. If the guest is
-> > started on such old hosts the shared_info page will be placed in RAM. As
-> > a result kexec can not be used.
-> > 
-> > Signed-off-by: Olaf Hering <olaf@aepfle.de>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > (cherry picked from commit 9d02b43dee0d7fb18dfb13a00915550b1a3daa9f)
+In our code (I take it as an example), we used  MLX5_DECLARE_DOORBELL_LOCK,
+So I guess that the regular expression that you mentioned will fail on it
+(because the "_" is not allowed to be repeated).
+
+So, I would change it a little bit to allow people to use underscore as a word separator.
+
+Thanks
+Dotan
+
+> >
+> > The following change worked for me:
+> > (?:$Storage\s+)?[A-Z0-9_]*(?:DECLARE|DEFINE)_[A-Z_]*\s*\(|
+> >
+> > But, maybe it is better to be even more general and allow:
+> > (?:$Storage\s+)?[A-Z0-9_]*(?:DECLARE|DEFINE)_[ A-Z0-9_]*\s*\(|
 > 
-> Is this a useful commit to give?  Isn't it one of Konrad's random trees?
+> Maybe:
+> 
+> (?:$Storage\s+)(?:[A-Z_][A-Z0-9]+_){0,2}(?:DEFINE|DECLARE)(?:_[A-Z0-
+> 9]+){1,2}
+> 
 
-Actually it is from upstream. That patch was reverted at certain point.
-
-Perhaps just mention that it was added in, then reverted, and now after
-a year or so, added back in with the fix.
