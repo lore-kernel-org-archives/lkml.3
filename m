@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884AbaHDQSi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:18:38 -0400
-Received: from mail.kernel.org ([198.145.19.201]:38798 "EHLO mail.kernel.org"
+	id S1752970AbaHDQSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:18:50 -0400
+Received: from mail.kernel.org ([198.145.19.201]:38832 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752681AbaHDQSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:18:34 -0400
+	id S1752890AbaHDQSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 12:18:47 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/33] perf tools: Rename ordered_samples bool to ordered_events
-Date: Mon,  4 Aug 2014 13:17:17 -0300
-Message-Id: <1407169064-25625-7-git-send-email-acme@kernel.org>
+Subject: [PATCH 08/33] perf tools: Rename ordered_events members
+Date: Mon,  4 Aug 2014 13:17:19 -0300
+Message-Id: <1407169064-25625-9-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1407169064-25625-1-git-send-email-acme@kernel.org>
 References: <1407169064-25625-1-git-send-email-acme@kernel.org>
@@ -28,8 +28,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@kernel.org>
 
-The time ordering is generic for all kinds of events, so using generic
-name 'ordered_events' for ordered_samples bool in perf_tool struct.
+Rename 'struct ordered_events' members to fit better the ordered events
+style.
 
 No functional change was intended.
 
@@ -43,246 +43,207 @@ Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-07mrqzcuhsks9wfmxrzsvemz@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-v0eb2hsmrxbolnoawu5fn92z@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-annotate.c  |  2 +-
- tools/perf/builtin-diff.c      |  2 +-
- tools/perf/builtin-inject.c    |  2 +-
- tools/perf/builtin-kmem.c      |  2 +-
- tools/perf/builtin-kvm.c       |  4 ++--
- tools/perf/builtin-lock.c      |  2 +-
- tools/perf/builtin-mem.c       |  2 +-
- tools/perf/builtin-report.c    |  2 +-
- tools/perf/builtin-sched.c     |  2 +-
- tools/perf/builtin-script.c    |  2 +-
- tools/perf/builtin-timechart.c |  2 +-
- tools/perf/builtin-trace.c     |  2 +-
- tools/perf/util/session.c      | 10 +++++-----
- tools/perf/util/tool.h         |  2 +-
- 14 files changed, 19 insertions(+), 19 deletions(-)
+ tools/perf/util/session.c | 86 +++++++++++++++++++++++------------------------
+ tools/perf/util/session.h | 12 +++----
+ 2 files changed, 48 insertions(+), 50 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 1ec429fef2be..952b5ece6740 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -297,7 +297,7 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.comm	= perf_event__process_comm,
- 			.exit	= perf_event__process_exit,
- 			.fork	= perf_event__process_fork,
--			.ordered_samples = true,
-+			.ordered_events = true,
- 			.ordering_requires_timestamps = true,
- 		},
- 	};
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 9a5a035cb426..c10cc44bae19 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -360,7 +360,7 @@ static struct perf_tool tool = {
- 	.exit	= perf_event__process_exit,
- 	.fork	= perf_event__process_fork,
- 	.lost	= perf_event__process_lost,
--	.ordered_samples = true,
-+	.ordered_events = true,
- 	.ordering_requires_timestamps = true,
- };
- 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 9a02807387d6..ee875cca13b1 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -366,7 +366,7 @@ static int __cmd_inject(struct perf_inject *inject)
- 	} else if (inject->sched_stat) {
- 		struct perf_evsel *evsel;
- 
--		inject->tool.ordered_samples = true;
-+		inject->tool.ordered_events = true;
- 
- 		evlist__for_each(session->evlist, evsel) {
- 			const char *name = perf_evsel__name(evsel);
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index bef3376bfaf3..b5721116713b 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -256,7 +256,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- static struct perf_tool perf_kmem = {
- 	.sample		 = process_sample_event,
- 	.comm		 = perf_event__process_comm,
--	.ordered_samples = true,
-+	.ordered_events	 = true,
- };
- 
- static double fragmentation(unsigned long n_req, unsigned long n_alloc)
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index fe92dfdeab46..a05f43592e0a 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1058,7 +1058,7 @@ static int read_events(struct perf_kvm_stat *kvm)
- 	struct perf_tool eops = {
- 		.sample			= process_sample_event,
- 		.comm			= perf_event__process_comm,
--		.ordered_samples	= true,
-+		.ordered_events		= true,
- 	};
- 	struct perf_data_file file = {
- 		.path = kvm->file_name,
-@@ -1311,7 +1311,7 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
- 	kvm->tool.exit   = perf_event__process_exit;
- 	kvm->tool.fork   = perf_event__process_fork;
- 	kvm->tool.lost   = process_lost_event;
--	kvm->tool.ordered_samples = true;
-+	kvm->tool.ordered_events = true;
- 	perf_tool__fill_defaults(&kvm->tool);
- 
- 	/* set defaults */
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index 6148afc995c6..c8122d323621 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -852,7 +852,7 @@ static int __cmd_report(bool display_info)
- 	struct perf_tool eops = {
- 		.sample		 = process_sample_event,
- 		.comm		 = perf_event__process_comm,
--		.ordered_samples = true,
-+		.ordered_events	 = true,
- 	};
- 	struct perf_data_file file = {
- 		.path = input_name,
-diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
-index 4a1a6c94a5eb..80e57c84adef 100644
---- a/tools/perf/builtin-mem.c
-+++ b/tools/perf/builtin-mem.c
-@@ -194,7 +194,7 @@ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.lost		= perf_event__process_lost,
- 			.fork		= perf_event__process_fork,
- 			.build_id	= perf_event__process_build_id,
--			.ordered_samples = true,
-+			.ordered_events	= true,
- 		},
- 		.input_name		 = "perf.data",
- 	};
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 21d830bafff3..c72cc5a12144 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -578,7 +578,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.attr		 = perf_event__process_attr,
- 			.tracing_data	 = perf_event__process_tracing_data,
- 			.build_id	 = perf_event__process_build_id,
--			.ordered_samples = true,
-+			.ordered_events	 = true,
- 			.ordering_requires_timestamps = true,
- 		},
- 		.max_stack		 = PERF_MAX_STACK_DEPTH,
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index f83c08c0dd87..7c16aeb6b675 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1662,7 +1662,7 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.comm		 = perf_event__process_comm,
- 			.lost		 = perf_event__process_lost,
- 			.fork		 = perf_sched__process_fork_event,
--			.ordered_samples = true,
-+			.ordered_events = true,
- 		},
- 		.cmp_pid	      = LIST_HEAD_INIT(sched.cmp_pid),
- 		.sort_list	      = LIST_HEAD_INIT(sched.sort_list),
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index f57035b89c15..868c17d09762 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -1488,7 +1488,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.attr		 = process_attr,
- 			.tracing_data	 = perf_event__process_tracing_data,
- 			.build_id	 = perf_event__process_build_id,
--			.ordered_samples = true,
-+			.ordered_events	 = true,
- 			.ordering_requires_timestamps = true,
- 		},
- 	};
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 2f1a5220c090..912e3b5bb22b 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -1920,7 +1920,7 @@ int cmd_timechart(int argc, const char **argv,
- 			.fork		 = process_fork_event,
- 			.exit		 = process_exit_event,
- 			.sample		 = process_sample_event,
--			.ordered_samples = true,
-+			.ordered_events	 = true,
- 		},
- 		.proc_num = 15,
- 		.min_time = 1000000,
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index a6c375224f46..36ae51d61be2 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -2209,7 +2209,7 @@ static int trace__replay(struct trace *trace)
- 	trace->tool.tracing_data = perf_event__process_tracing_data;
- 	trace->tool.build_id	  = perf_event__process_build_id;
- 
--	trace->tool.ordered_samples = true;
-+	trace->tool.ordered_events = true;
- 	trace->tool.ordering_requires_timestamps = true;
- 
- 	/* add tid to output */
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 88dfef70c13d..a2c97ff1aa6a 100644
+index 6570282a7625..619778ef5b58 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -104,9 +104,9 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
- 	}
+@@ -75,8 +75,8 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
+ 		goto out;
  
- 	if (tool && tool->ordering_requires_timestamps &&
--	    tool->ordered_samples && !perf_evlist__sample_id_all(session->evlist)) {
-+	    tool->ordered_events && !perf_evlist__sample_id_all(session->evlist)) {
- 		dump_printf("WARNING: No sample_id_all support, falling back to unordered processing\n");
--		tool->ordered_samples = false;
-+		tool->ordered_events = false;
- 	}
+ 	session->repipe = repipe;
+-	INIT_LIST_HEAD(&session->ordered_events.samples);
+-	INIT_LIST_HEAD(&session->ordered_events.sample_cache);
++	INIT_LIST_HEAD(&session->ordered_events.events);
++	INIT_LIST_HEAD(&session->ordered_events.cache);
+ 	INIT_LIST_HEAD(&session->ordered_events.to_free);
+ 	machines__init(&session->machines);
  
- 	return session;
-@@ -238,7 +238,7 @@ void perf_tool__fill_defaults(struct perf_tool *tool)
- 	if (tool->build_id == NULL)
- 		tool->build_id = process_finished_round_stub;
- 	if (tool->finished_round == NULL) {
--		if (tool->ordered_samples)
-+		if (tool->ordered_events)
- 			tool->finished_round = process_finished_round;
- 		else
- 			tool->finished_round = process_finished_round_stub;
-@@ -483,7 +483,7 @@ static int flush_sample_queue(struct perf_session *s,
+@@ -474,11 +474,11 @@ static int ordered_events__flush(struct perf_session *s,
+ 				 struct perf_tool *tool)
+ {
+ 	struct ordered_events *oe = &s->ordered_events;
+-	struct list_head *head = &oe->samples;
++	struct list_head *head = &oe->events;
+ 	struct ordered_event *tmp, *iter;
+ 	struct perf_sample sample;
+ 	u64 limit = oe->next_flush;
+-	u64 last_ts = oe->last_sample ? oe->last_sample->timestamp : 0ULL;
++	u64 last_ts = oe->last ? oe->last->timestamp : 0ULL;
+ 	bool show_progress = limit == ULLONG_MAX;
  	struct ui_progress prog;
  	int ret;
- 
--	if (!tool->ordered_samples || !limit)
-+	if (!tool->ordered_events || !limit)
+@@ -487,7 +487,7 @@ static int ordered_events__flush(struct perf_session *s,
  		return 0;
  
  	if (show_progress)
-@@ -1062,7 +1062,7 @@ static s64 perf_session__process_event(struct perf_session *session,
- 	if (ret)
- 		return ret;
+-		ui_progress__init(&prog, oe->nr_samples, "Processing time ordered events...");
++		ui_progress__init(&prog, oe->nr_events, "Processing time ordered events...");
  
--	if (tool->ordered_samples) {
-+	if (tool->ordered_events) {
- 		ret = perf_session_queue_event(session, event, &sample,
- 					       file_offset);
- 		if (ret != -ETIME)
-diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
-index 4385816d3d49..f11636966a0f 100644
---- a/tools/perf/util/tool.h
-+++ b/tools/perf/util/tool.h
-@@ -40,7 +40,7 @@ struct perf_tool {
- 	event_op2	tracing_data;
- 	event_op2	finished_round,
- 			build_id;
--	bool		ordered_samples;
-+	bool		ordered_events;
- 	bool		ordering_requires_timestamps;
+ 	list_for_each_entry_safe(iter, tmp, head, list) {
+ 		if (session_done())
+@@ -508,19 +508,17 @@ static int ordered_events__flush(struct perf_session *s,
+ 
+ 		oe->last_flush = iter->timestamp;
+ 		list_del(&iter->list);
+-		list_add(&iter->list, &oe->sample_cache);
+-		oe->nr_samples--;
++		list_add(&iter->list, &oe->cache);
++		oe->nr_events--;
+ 
+ 		if (show_progress)
+ 			ui_progress__update(&prog, 1);
+ 	}
+ 
+-	if (list_empty(head)) {
+-		oe->last_sample = NULL;
+-	} else if (last_ts <= limit) {
+-		oe->last_sample =
+-			list_entry(head->prev, struct ordered_event, list);
+-	}
++	if (list_empty(head))
++		oe->last = NULL;
++	else if (last_ts <= limit)
++		oe->last = list_entry(head->prev, struct ordered_event, list);
+ 
+ 	return 0;
+ }
+@@ -579,45 +577,45 @@ static int process_finished_round(struct perf_tool *tool,
+ static void __queue_event(struct ordered_event *new, struct perf_session *s)
+ {
+ 	struct ordered_events *oe = &s->ordered_events;
+-	struct ordered_event *sample = oe->last_sample;
++	struct ordered_event *last = oe->last;
+ 	u64 timestamp = new->timestamp;
+ 	struct list_head *p;
+ 
+-	++oe->nr_samples;
+-	oe->last_sample = new;
++	++oe->nr_events;
++	oe->last = new;
+ 
+-	if (!sample) {
+-		list_add(&new->list, &oe->samples);
++	if (!last) {
++		list_add(&new->list, &oe->events);
+ 		oe->max_timestamp = timestamp;
+ 		return;
+ 	}
+ 
+ 	/*
+-	 * last_sample might point to some random place in the list as it's
++	 * last event might point to some random place in the list as it's
+ 	 * the last queued event. We expect that the new event is close to
+ 	 * this.
+ 	 */
+-	if (sample->timestamp <= timestamp) {
+-		while (sample->timestamp <= timestamp) {
+-			p = sample->list.next;
+-			if (p == &oe->samples) {
+-				list_add_tail(&new->list, &oe->samples);
++	if (last->timestamp <= timestamp) {
++		while (last->timestamp <= timestamp) {
++			p = last->list.next;
++			if (p == &oe->events) {
++				list_add_tail(&new->list, &oe->events);
+ 				oe->max_timestamp = timestamp;
+ 				return;
+ 			}
+-			sample = list_entry(p, struct ordered_event, list);
++			last = list_entry(p, struct ordered_event, list);
+ 		}
+-		list_add_tail(&new->list, &sample->list);
++		list_add_tail(&new->list, &last->list);
+ 	} else {
+-		while (sample->timestamp > timestamp) {
+-			p = sample->list.prev;
+-			if (p == &oe->samples) {
+-				list_add(&new->list, &oe->samples);
++		while (last->timestamp > timestamp) {
++			p = last->list.prev;
++			if (p == &oe->events) {
++				list_add(&new->list, &oe->events);
+ 				return;
+ 			}
+-			sample = list_entry(p, struct ordered_event, list);
++			last = list_entry(p, struct ordered_event, list);
+ 		}
+-		list_add(&new->list, &sample->list);
++		list_add(&new->list, &last->list);
+ 	}
+ }
+ 
+@@ -627,7 +625,7 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+ 				    struct perf_sample *sample, u64 file_offset)
+ {
+ 	struct ordered_events *oe = &s->ordered_events;
+-	struct list_head *sc = &oe->sample_cache;
++	struct list_head *cache = &oe->cache;
+ 	u64 timestamp = sample->time;
+ 	struct ordered_event *new;
+ 
+@@ -639,20 +637,20 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (!list_empty(sc)) {
+-		new = list_entry(sc->next, struct ordered_event, list);
++	if (!list_empty(cache)) {
++		new = list_entry(cache->next, struct ordered_event, list);
+ 		list_del(&new->list);
+-	} else if (oe->sample_buffer) {
+-		new = oe->sample_buffer + oe->sample_buffer_idx;
+-		if (++oe->sample_buffer_idx == MAX_SAMPLE_BUFFER)
+-			oe->sample_buffer = NULL;
++	} else if (oe->buffer) {
++		new = oe->buffer + oe->buffer_idx;
++		if (++oe->buffer_idx == MAX_SAMPLE_BUFFER)
++			oe->buffer = NULL;
+ 	} else {
+-		oe->sample_buffer = malloc(MAX_SAMPLE_BUFFER * sizeof(*new));
+-		if (!oe->sample_buffer)
++		oe->buffer = malloc(MAX_SAMPLE_BUFFER * sizeof(*new));
++		if (!oe->buffer)
+ 			return -ENOMEM;
+-		list_add(&oe->sample_buffer->list, &oe->to_free);
+-		oe->sample_buffer_idx = 2;
+-		new = oe->sample_buffer + 1;
++		list_add(&oe->buffer->list, &oe->to_free);
++		oe->buffer_idx = 2;
++		new = oe->buffer + 1;
+ 	}
+ 
+ 	new->timestamp = timestamp;
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index f6baf935917a..419eb50e1cd3 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -20,13 +20,13 @@ struct ordered_events {
+ 	u64			last_flush;
+ 	u64			next_flush;
+ 	u64			max_timestamp;
+-	struct list_head	samples;
+-	struct list_head	sample_cache;
++	struct list_head	events;
++	struct list_head	cache;
+ 	struct list_head	to_free;
+-	struct ordered_event	*sample_buffer;
+-	struct ordered_event	*last_sample;
+-	int			sample_buffer_idx;
+-	unsigned int		nr_samples;
++	struct ordered_event	*buffer;
++	struct ordered_event	*last;
++	int			buffer_idx;
++	unsigned int		nr_events;
  };
  
+ struct perf_session {
 -- 
 1.9.3
 
