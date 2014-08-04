@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413AbaHDRCZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:02:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56557 "EHLO
+	id S1753202AbaHDRCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:02:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56545 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751997AbaHDQt4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751996AbaHDQt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:56 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Guan Xuetao" <gxt@mprc.pku.edu.cn>,
-        "Fengguang Wu" <fengguang.wu@intel.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
+CC: akpm@linux-foundation.org, "Jean Delvare" <jdelvare@suse.de>,
+        "Axel Lin" <axel.lin@ingics.com>, "Guenter Roeck" <linux@roeck-us.net>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.374235193@decadent.org.uk>
+Message-ID: <lsq.1407170912.508446849@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 74/94] unicore32: select generic atomic64_t support
+Subject: [PATCH 3.2 38/94] hwmon: (adm1031) Fix writes to limit registers
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,30 +31,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fengguang Wu <fengguang.wu@intel.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 82e54a6aaf8aec971fb16afa3a4404e238a1b98b upstream.
+commit 145e74a4e5022225adb84f4e5d4fff7938475c35 upstream.
 
-It's required for the core fs/namespace.c and many other basic features.
+Upper limit for write operations to temperature limit registers
+was clamped to a fractional value. However, limit registers do
+not support fractional values. As a result, upper limits of 127.5
+degrees C or higher resulted in a rounded limit of 128 degrees C.
+Since limit registers are signed, this was stored as -128 degrees C.
+Clamp limits to (-55, +127) degrees C to solve the problem.
 
-Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Value on writes to auto_temp[12]_min and auto_temp[12]_max were not
+clamped at all, but masked. As a result, out-of-range writes resulted
+in a more or less arbitrary limit. Clamp those attributes to (0, 127)
+degrees C for more predictable results.
+
+Cc: Axel Lin <axel.lin@ingics.com>
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Driver was using SENSORS_LIMIT(), which we can replace with clamp_val()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/unicore32/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/hwmon/adm1031.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/arch/unicore32/Kconfig
-+++ b/arch/unicore32/Kconfig
-@@ -6,6 +6,7 @@ config UNICORE32
- 	select HAVE_DMA_ATTRS
- 	select HAVE_KERNEL_GZIP
- 	select HAVE_KERNEL_BZIP2
-+	select GENERIC_ATOMIC64
- 	select HAVE_KERNEL_LZO
- 	select HAVE_KERNEL_LZMA
- 	select GENERIC_FIND_FIRST_BIT
+--- a/drivers/hwmon/adm1031.c
++++ b/drivers/hwmon/adm1031.c
+@@ -352,6 +352,7 @@ set_auto_temp_min(struct device *dev, st
+ 	int nr = to_sensor_dev_attr(attr)->index;
+ 	int val = simple_strtol(buf, NULL, 10);
+ 
++	val = clamp_val(val, 0, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->auto_temp[nr] = AUTO_TEMP_MIN_TO_REG(val, data->auto_temp[nr]);
+ 	adm1031_write_value(client, ADM1031_REG_AUTO_TEMP(nr),
+@@ -376,6 +377,7 @@ set_auto_temp_max(struct device *dev, st
+ 	int nr = to_sensor_dev_attr(attr)->index;
+ 	int val = simple_strtol(buf, NULL, 10);
+ 
++	val = clamp_val(val, 0, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_max[nr] = AUTO_TEMP_MAX_TO_REG(val, data->auto_temp[nr], data->pwm[nr]);
+ 	adm1031_write_value(client, ADM1031_REG_AUTO_TEMP(nr),
+@@ -651,7 +653,7 @@ static ssize_t set_temp_min(struct devic
+ 	int val;
+ 
+ 	val = simple_strtol(buf, NULL, 10);
+-	val = SENSORS_LIMIT(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_min[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_MIN(nr),
+@@ -668,7 +670,7 @@ static ssize_t set_temp_max(struct devic
+ 	int val;
+ 
+ 	val = simple_strtol(buf, NULL, 10);
+-	val = SENSORS_LIMIT(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_max[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_MAX(nr),
+@@ -685,7 +687,7 @@ static ssize_t set_temp_crit(struct devi
+ 	int val;
+ 
+ 	val = simple_strtol(buf, NULL, 10);
+-	val = SENSORS_LIMIT(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_crit[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_CRIT(nr),
 
