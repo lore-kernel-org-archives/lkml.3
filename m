@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345AbaHDGNj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 02:13:39 -0400
-Received: from sabertooth02.qualcomm.com ([65.197.215.38]:34996 "EHLO
-	sabertooth02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbaHDGNh (ORCPT
+	id S1751397AbaHDGQY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 02:16:24 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:58642 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaHDGQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 02:13:37 -0400
-X-IronPort-AV: E=McAfee;i="5600,1067,7519"; a="72298084"
-X-IronPort-AV: E=Sophos;i="5.01,796,1400050800"; 
-   d="scan'208";a="778689641"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: Himangi Saraogi <himangi774@gmail.com>
-CC: "John W. Linville" <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Julia Lawall <julia.lawall@lip6.fr>,
-        <ath6kl@lists.infradead.org>
-Subject: Re: [PATCH] ath6kl: convert a driver to use module_usb_driver()
-References: <20140801161115.GA13979@himangi-Dell>
-Date: Mon, 4 Aug 2014 09:13:26 +0300
-In-Reply-To: <20140801161115.GA13979@himangi-Dell> (Himangi Saraogi's message
-	of "Fri, 1 Aug 2014 21:41:15 +0530")
-Message-ID: <8738dc6aux.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Mon, 4 Aug 2014 02:16:23 -0400
+Date: Mon, 4 Aug 2014 08:13:23 +0200
+From: Veaceslav Falico <vfalico@gmail.com>
+To: lichunhe@huawei.com
+Cc: j.vosburgh@gmail.com, andy@greyhouse.net, linux-kernel@vger.kernel.org,
+        dingtianhong@huawei.com, qianhuibin@huawei.com
+Subject: Re: [PATCH net/net-next] bonding:Don't received packets if bonding
+ is not up
+Message-ID: <20140804061322.GA9348@mikrodark.usersys.redhat.com>
+References: <1407122113-3184-1-git-send-email-lichunhe@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [172.30.48.1]
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <1407122113-3184-1-git-send-email-lichunhe@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Himangi Saraogi <himangi774@gmail.com> writes:
-
-> This converts a driver in drivers/net/* to use the
-> module_usb_driver() macro which makes the code smaller and a
-> bit simpler.
+On Mon, Aug 04, 2014 at 11:15:13AM +0800, lichunhe@huawei.com wrote:
+>From: Chunhe Li <lichunhe@huawei.com>
 >
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+>If the bonding device is down, it should not receive packets
+>to network stack or other upper flow stack.
 
-Thanks, applied.
+This breaks arp monitoring and 802.3ad modes, as they won't ever come up.
 
--- 
-Kalle Valo
+Also, please cc netdev next times.
+
+>
+>Signed-off-by: Chunhe Li <lichunhe@huawei.com>
+>---
+> drivers/net/bonding/bond_main.c | 9 ++++++---
+> 1 file changed, 6 insertions(+), 3 deletions(-)
+>
+>diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+>index 701f86c..48a127b 100644
+>--- a/drivers/net/bonding/bond_main.c
+>+++ b/drivers/net/bonding/bond_main.c
+>@@ -1110,6 +1110,12 @@ static rx_handler_result_t bond_handle_frame(struct sk_buff **pskb)
+> 	int (*recv_probe)(const struct sk_buff *, struct bonding *,
+> 			  struct slave *);
+> 	int ret = RX_HANDLER_ANOTHER;
+>+
+>+	slave = bond_slave_get_rcu(skb->dev);
+>+	bond = slave->bond;
+>+
+>+	if (unlikely(!(bond->dev->flags & IFF_UP)))
+>+		return RX_HANDLER_PASS;
+>
+> 	skb = skb_share_check(skb, GFP_ATOMIC);
+> 	if (unlikely(!skb))
+>@@ -1117,9 +1123,6 @@ static rx_handler_result_t bond_handle_frame(struct sk_buff **pskb)
+>
+> 	*pskb = skb;
+>
+>-	slave = bond_slave_get_rcu(skb->dev);
+>-	bond = slave->bond;
+>-
+> 	recv_probe = ACCESS_ONCE(bond->recv_probe);
+> 	if (recv_probe) {
+> 		ret = recv_probe(skb, bond, slave);
+>-- 
+>1.9.2.0
+>
+>
