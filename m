@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132AbaHDRNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:13:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56486 "EHLO
+	id S1752612AbaHDRNf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:13:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56484 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751818AbaHDQty (ORCPT
+	by vger.kernel.org with ESMTP id S1751830AbaHDQty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:54 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,11 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jiang Liu" <jiang.liu@huawei.com>,
-        "Jiang Liu" <liuj97@gmail.com>,
-        "Chen Liqin" <liqin.chen@sunplusct.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Lennox Wu" <lennox.wu@gmail.com>
+CC: akpm@linux-foundation.org
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.620415844@decadent.org.uk>
+Message-ID: <lsq.1407170912.391500084@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 78/94] score: normalize global variables exported by
- vmlinux.lds
+Subject: [PATCH 3.2 76/94] score: Add missing #include <linux/export.h>
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,32 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <liuj97@gmail.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit ae49b83dcacfb69e22092cab688c415c2f2d870c upstream.
+There is no upstream commit for this, as arch/score/kernel/init_task.c
+has been replaced by generic code and <linux/export.h> is included
+indirectly by arch/score/mm/init.c.
 
-Generate mandatory global variables _sdata in file vmlinux.lds.
-
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/score/kernel/vmlinux.lds.S | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/score/kernel/vmlinux.lds.S b/arch/score/kernel/vmlinux.lds.S
-index eebcbaa..7274b5c 100644
---- a/arch/score/kernel/vmlinux.lds.S
-+++ b/arch/score/kernel/vmlinux.lds.S
-@@ -49,6 +49,7 @@ SECTIONS
- 	}
+--- a/arch/score/kernel/init_task.c
++++ b/arch/score/kernel/init_task.c
+@@ -23,6 +23,7 @@
  
- 	. = ALIGN(16);
-+	_sdata =  .;			/* Start of data section */
- 	RODATA
+ #include <linux/init_task.h>
+ #include <linux/mqueue.h>
++#include <linux/export.h>
  
- 	EXCEPTION_TABLE(16)
+ static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
+ static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
+--- a/arch/score/mm/init.c
++++ b/arch/score/mm/init.c
+@@ -34,6 +34,7 @@
+ #include <linux/proc_fs.h>
+ #include <linux/sched.h>
+ #include <linux/initrd.h>
++#include <linux/export.h>
+ 
+ #include <asm/sections.h>
+ #include <asm/tlb.h>
 
