@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823AbaHDREc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:04:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56533 "EHLO
+	id S1753807AbaHDREa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:04:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56522 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751939AbaHDQt4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751919AbaHDQt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:56 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Yuchung Cheng" <ycheng@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric Dumazet" <edumazet@google.com>,
-        "Neal Cardwell" <ncardwell@google.com>,
-        "Ilpo Jarvinen" <ilpo.jarvinen@helsinki.fi>
+CC: akpm@linux-foundation.org, "Eric Dumazet" <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.200263161@decadent.org.uk>
+Message-ID: <lsq.1407170912.370860048@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 55/94] tcp: fix tcp_match_skb_to_sack() for unaligned
- SACK at  end of an skb
+Subject: [PATCH 3.2 63/94] ipv4: fix buffer overflow in ip_options_compile()
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,66 +31,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 2cd0d743b05e87445c54ca124a9916f22f16742e ]
+[ Upstream commit 10ec9472f05b45c94db3c854d22581a20b97db41 ]
 
-If there is an MSS change (or misbehaving receiver) that causes a SACK
-to arrive that covers the end of an skb but is less than one MSS, then
-tcp_match_skb_to_sack() was rounding up pkt_len to the full length of
-the skb ("Round if necessary..."), then chopping all bytes off the skb
-and creating a zero-byte skb in the write queue.
+There is a benign buffer overflow in ip_options_compile spotted by
+AddressSanitizer[1] :
 
-This was visible now because the recently simplified TLP logic in
-bef1909ee3ed1c ("tcp: fixing TLP's FIN recovery") could find that 0-byte
-skb at the end of the write queue, and now that we do not check that
-skb's length we could send it as a TLP probe.
+Its benign because we always can access one extra byte in skb->head
+(because header is followed by struct skb_shared_info), and in this case
+this byte is not even used.
 
-Consider the following example scenario:
+[28504.910798] ==================================================================
+[28504.912046] AddressSanitizer: heap-buffer-overflow in ip_options_compile
+[28504.913170] Read of size 1 by thread T15843:
+[28504.914026]  [<ffffffff81802f91>] ip_options_compile+0x121/0x9c0
+[28504.915394]  [<ffffffff81804a0d>] ip_options_get_from_user+0xad/0x120
+[28504.916843]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
+[28504.918175]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
+[28504.919490]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
+[28504.920835]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
+[28504.922208]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
+[28504.923459]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
+[28504.924722]
+[28504.925106] Allocated by thread T15843:
+[28504.925815]  [<ffffffff81804995>] ip_options_get_from_user+0x35/0x120
+[28504.926884]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
+[28504.927975]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
+[28504.929175]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
+[28504.930400]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
+[28504.931677]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
+[28504.932851]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
+[28504.934018]
+[28504.934377] The buggy address ffff880026382828 is located 0 bytes to the right
+[28504.934377]  of 40-byte region [ffff880026382800, ffff880026382828)
+[28504.937144]
+[28504.937474] Memory state around the buggy address:
+[28504.938430]  ffff880026382300: ........ rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.939884]  ffff880026382400: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.941294]  ffff880026382500: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.942504]  ffff880026382600: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.943483]  ffff880026382700: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.944511] >ffff880026382800: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.945573]                         ^
+[28504.946277]  ffff880026382900: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.094949]  ffff880026382a00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.096114]  ffff880026382b00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.097116]  ffff880026382c00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.098472]  ffff880026382d00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.099804] Legend:
+[28505.100269]  f - 8 freed bytes
+[28505.100884]  r - 8 redzone bytes
+[28505.101649]  . - 8 allocated bytes
+[28505.102406]  x=1..7 - x allocated bytes + (8-x) redzone bytes
+[28505.103637] ==================================================================
 
- mss: 1000
- skb: seq: 0 end_seq: 4000  len: 4000
- SACK: start_seq: 3999 end_seq: 4000
+[1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
 
-The tcp_match_skb_to_sack() code will compute:
-
- in_sack = false
- pkt_len = start_seq - TCP_SKB_CB(skb)->seq = 3999 - 0 = 3999
- new_len = (pkt_len / mss) * mss = (3999/1000)*1000 = 3000
- new_len += mss = 4000
-
-Previously we would find the new_len > skb->len check failing, so we
-would fall through and set pkt_len = new_len = 4000 and chop off
-pkt_len of 4000 from the 4000-byte skb, leaving a 0-byte segment
-afterward in the write queue.
-
-With this new commit, we notice that the new new_len >= skb->len check
-succeeds, so that we return without trying to fragment.
-
-Fixes: adb92db857ee ("tcp: Make SACK code to split only at mss boundaries")
-Reported-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Ilpo Jarvinen <ilpo.jarvinen@helsinki.fi>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/tcp_input.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/ip_options.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index c1ed01e..afe6886 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1305,7 +1305,7 @@ static int tcp_match_skb_to_sack(struct sock *sk, struct sk_buff *skb,
- 			unsigned int new_len = (pkt_len / mss) * mss;
- 			if (!in_sack && new_len < pkt_len) {
- 				new_len += mss;
--				if (new_len > skb->len)
-+				if (new_len >= skb->len)
- 					return 0;
- 			}
- 			pkt_len = new_len;
+diff --git a/net/ipv4/ip_options.c b/net/ipv4/ip_options.c
+index 40eb4fc..08623e2 100644
+--- a/net/ipv4/ip_options.c
++++ b/net/ipv4/ip_options.c
+@@ -277,6 +277,10 @@ int ip_options_compile(struct net *net,
+ 			optptr++;
+ 			continue;
+ 		}
++		if (unlikely(l < 2)) {
++			pp_ptr = optptr;
++			goto error;
++		}
+ 		optlen = optptr[1];
+ 		if (optlen<2 || optlen>l) {
+ 			pp_ptr = optptr;
 
