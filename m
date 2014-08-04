@@ -1,106 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaHDMBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 08:01:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58008 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003AbaHDMBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 08:01:08 -0400
-Message-ID: <53DF7600.70400@suse.com>
-Date: Mon, 04 Aug 2014 14:01:04 +0200
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752367AbaHDMCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 08:02:36 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:49851 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373AbaHDMCd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 08:02:33 -0400
+Date: Mon, 4 Aug 2014 05:02:25 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mips@linux-mips.org, linux-arch@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Alexei Starovoitov <ast@plumgrid.com>, hpa@zytor.com
+Subject: Re: TIF_NOHZ can escape nonhz mask? (Was: [PATCH v3 6/8] x86:	Split
+ syscall_trace_enter into two phases)
+Message-ID: <20140804120225.GA32378@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140728192209.GA26017@localhost.localdomain>
+ <20140729175414.GA3289@redhat.com>
+ <20140730163516.GC18158@localhost.localdomain>
+ <20140730174630.GA30862@redhat.com>
+ <20140731003034.GA32078@localhost.localdomain>
+ <20140731160353.GA14772@redhat.com>
+ <20140731171329.GD7842@localhost.localdomain>
+ <20140731181230.GA18695@redhat.com>
+ <20140731184729.GA12296@localhost.localdomain>
+ <20140802173024.GB22510@redhat.com>
 MIME-Version: 1.0
-To: Boaz Harrosh <openosd@gmail.com>, James.Bottomley@HansenPartnership.com,
-        hch@infradead.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5] Save command pool address of Scsi_Host
-References: <1407151802-27198-1-git-send-email-jgross@suse.com> <53DF7361.7000103@gmail.com>
-In-Reply-To: <53DF7361.7000103@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140802173024.GB22510@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080412-9332-0000-0000-00000195A6B2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2014 01:49 PM, Boaz Harrosh wrote:
-> On 08/04/2014 02:30 PM, jgross@suse.com wrote:
->> From: Juergen Gross <jgross@suse.com>
->>
->> If a scsi host driver specifies .cmd_len in it's scsi_host_template, a driver's
->> private command pool is needed. scsi_find_host_cmd_pool() will locate it, but
->> scsi_alloc_host_cmd_pool() isn't saving the pool address in the host template.
->>
->> This will result in an access error when the host is removed.
->>
->> Avoid the problem by saving the address of a new allocated command pool where
->> it is expected.
->>
->> Signed-off-by: Juergen Gross <jgross@suse.com>
->> ---
->>   drivers/scsi/scsi.c | 12 ++++++++++--
->>   1 file changed, 10 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
->> index 88d46fe..b0cef5b 100644
->> --- a/drivers/scsi/scsi.c
->> +++ b/drivers/scsi/scsi.c
->> @@ -380,6 +380,10 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
->>   		pool->slab_flags |= SLAB_CACHE_DMA;
->>   		pool->gfp_mask = __GFP_DMA;
->>   	}
->> +
->> +	if (hostt->cmd_size)
->> +		hostt->cmd_pool = pool;
->> +
->>   	return pool;
->>   }
->>
->> @@ -424,8 +428,10 @@ out:
->>   out_free_slab:
->>   	kmem_cache_destroy(pool->cmd_slab);
->>   out_free_pool:
->> -	if (hostt->cmd_size)
->> +	if (hostt->cmd_size) {
->>   		scsi_free_host_cmd_pool(pool);
->
-> I disagree I liked the V4 version better. It is much nicer on the review
-> that we NULL the same one we pass in with no need for context that's outside
-> of this scope
+On Sat, Aug 02, 2014 at 07:30:24PM +0200, Oleg Nesterov wrote:
+> On 07/31, Frederic Weisbecker wrote:
+> >
+> > On Thu, Jul 31, 2014 at 08:12:30PM +0200, Oleg Nesterov wrote:
+> > > > >
+> > > > > Yes sure. But context_tracking_cpu_set() is called by init task with PID 1, not
+> > > > > by "swapper".
+> > > >
+> > > > Are you sure? It's called from start_kernel() which is init/0.
+> > >
+> > > But do_initcalls() is called by kernel_init(), this is the init process which is
+> > > going to exec /sbin/init later.
+> > >
+> > > But this doesn't really matter,
+> >
+> > Yeah but tick_nohz_init() is not an initcall, it's a function called from start_kernel(),
+> > before initcalls.
+> 
+> Ah, indeed, and context_tracking_init() too. Even better, so we only need
+> 
+> 	--- x/kernel/context_tracking.c
+> 	+++ x/kernel/context_tracking.c
+> 	@@ -30,8 +30,10 @@ EXPORT_SYMBOL_GPL(context_tracking_enabl
+> 	 DEFINE_PER_CPU(struct context_tracking, context_tracking);
+> 	 EXPORT_SYMBOL_GPL(context_tracking);
+> 	 
+> 	-void context_tracking_cpu_set(int cpu)
+> 	+void __init context_tracking_cpu_set(int cpu)
+> 	 {
+> 	+	/* Called by "swapper" thread, all threads will inherit this flag */
+> 	+	set_thread_flag(TIF_NOHZ);
+> 		if (!per_cpu(context_tracking.active, cpu)) {
+> 			per_cpu(context_tracking.active, cpu) = true;
+> 			static_key_slow_inc(&context_tracking_enabled);
+> 
+> and now we can kill context_tracking_task_switch() ?
+> 
+> > > Yes, yes, this doesn't really matter. We can even add set(TIF_NOHZ) at the start
+> > > of start_kernel(). The question is, I still can't understand why do we want to
+> > > have the global TIF_NOHZ.
+> >
+> > Because then the flags is inherited in forks. It's better than inheriting it on
+> > context switch due to context switch being called much more often than fork.
+> 
+> This is clear, that is why I suggested this. Just we didn't understand each other,
+> when I said "global TIF_NOHZ" I meant the current situtation when every (running)
+> task has this bit set anyway. Sorry for confusion.
+> 
+> > No, because preempt_schedule_irq() does the ctx_state save and restore with
+> > exception_enter/exception_exit.
+> 
+> Thanks again. Can't understand how I managed to miss that exception_enter/exit
+> in preempt_schedule_*.
+> 
+> Damn. And after I spent more time, I don't have any idea how to make this
+> tracking cheaper.
 
-:-)
+Mike Galbraith's profiles showed that timekeeping was one of the most
+expensive operations.  Would it make sense to have the option of statistical
+jiffy-based accounting?  The idea would be to sample the jiffies counter
+at each context switch, and charge the time to whoever happens to be running
+when the jiffies counter increments.
 
-I'm fine with either version.
-
-Juergen
-
->
-> Just my $0.017
-> Boaz
->
->> +		hostt->cmd_pool = NULL;
->> +	}
->>   	goto out;
->>   }
->>
->> @@ -447,8 +453,10 @@ static void scsi_put_host_cmd_pool(struct Scsi_Host *shost)
->>   	if (!--pool->users) {
->>   		kmem_cache_destroy(pool->cmd_slab);
->>   		kmem_cache_destroy(pool->sense_slab);
->> -		if (hostt->cmd_size)
->> +		if (hostt->cmd_size) {
->>   			scsi_free_host_cmd_pool(pool);
->> +			hostt->cmd_pool = NULL;
->> +		}
->>   	}
->>   	mutex_unlock(&host_cmd_pool_mutex);
->>   }
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+							Thanx, Paul
 
