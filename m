@@ -1,160 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519AbaHDI7E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 04:59:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54699 "EHLO mx2.suse.de"
+	id S1751959AbaHDJBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 05:01:41 -0400
+Received: from mga14.intel.com ([192.55.52.115]:39415 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751903AbaHDI4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 04:56:03 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>, Minchan Kim <minchan@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: [PATCH v6 03/13] mm, compaction: do not count compact_stall if all zones skipped compaction
-Date: Mon,  4 Aug 2014 10:55:14 +0200
-Message-Id: <1407142524-2025-4-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1407142524-2025-1-git-send-email-vbabka@suse.cz>
-References: <1407142524-2025-1-git-send-email-vbabka@suse.cz>
+	id S1751551AbaHDJBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 05:01:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="367559750"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        toshi.kani@hp.com, imammedo@redhat.com, bp@alien8.de,
+        jan.kiszka@siemens.com, tianyu.lan@intel.com
+Cc: mingo@kernel.org, huawei.libin@huawei.com, prarit@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] X86/CPU: Avoid 100ms sleep for cpu offline  during S3
+Date: Mon,  4 Aug 2014 16:59:02 +0800
+Message-Id: <1407142742-29202-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The compact_stall vmstat counter counts the number of allocations stalled by
-direct compaction. It does not count when all attempted zones had deferred
-compaction, but it does count when all zones skipped compaction. The skipping
-is decided based on very early check of compaction_suitable(), based on
-watermarks and memory fragmentation. Therefore it makes sense not to count
-skipped compactions as stalls. Moreover, compact_success or compact_fail is
-also already not being counted when compaction was skipped, so this patch
-changes the compact_stall counting to match the other two.
+Some test result shows cpu offline consumes more than 100ms during S3.
+After some researchs, found native_cpu_die() would fall into 100ms
+sleep if cpu idle loop thread marked cpu state slower. What native_cpu_die()
+does is that poll cpu state and wait for 100ms if cpu state hasn't been marked
+to DEAD. The 100ms sleep doesn't make sense. To avoid such long sleep, this
+patch is to add struct completion to each cpu, wait for the completion
+in the native_cpu_die() and wakeup the completion when the cpu state is
+marked to DEAD.
 
-Additionally, restructure __alloc_pages_direct_compact() code for better
-readability.
-
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 ---
- mm/page_alloc.c | 76 +++++++++++++++++++++++++++++++--------------------------
- 1 file changed, 41 insertions(+), 35 deletions(-)
+ arch/x86/kernel/smpboot.c | 26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index e8affbf..f1586bc 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2300,7 +2300,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- {
- 	struct zone *last_compact_zone = NULL;
- 	unsigned long compact_result;
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 5492798..15d9d9f 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -102,6 +102,9 @@ DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
+ DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
+ EXPORT_PER_CPU_SYMBOL(cpu_info);
+ 
++DEFINE_PER_CPU(struct completion, die_complete);
++
++
+ atomic_t init_deasserted;
+ 
+ /*
+@@ -1331,7 +1334,7 @@ int native_cpu_disable(void)
+ 		return ret;
+ 
+ 	clear_local_APIC();
 -
-+	struct page *page;
- 
- 	if (!order)
- 		return NULL;
-@@ -2312,49 +2312,55 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 						&last_compact_zone);
- 	current->flags &= ~PF_MEMALLOC;
- 
--	if (compact_result > COMPACT_DEFERRED)
--		count_vm_event(COMPACTSTALL);
--	else
-+	switch (compact_result) {
-+	case COMPACT_DEFERRED:
- 		*deferred_compaction = true;
-+		/* fall-through */
-+	case COMPACT_SKIPPED:
-+		return NULL;
-+	default:
-+		break;
-+	}
- 
--	if (compact_result > COMPACT_SKIPPED) {
--		struct page *page;
-+	/*
-+	 * At least in one zone compaction wasn't deferred or skipped, so let's
-+	 * count a compaction stall
-+	 */
-+	count_vm_event(COMPACTSTALL);
- 
--		/* Page migration frees to the PCP lists but we want merging */
--		drain_pages(get_cpu());
--		put_cpu();
-+	/* Page migration frees to the PCP lists but we want merging */
-+	drain_pages(get_cpu());
-+	put_cpu();
- 
--		page = get_page_from_freelist(gfp_mask, nodemask,
--				order, zonelist, high_zoneidx,
--				alloc_flags & ~ALLOC_NO_WATERMARKS,
--				preferred_zone, classzone_idx, migratetype);
-+	page = get_page_from_freelist(gfp_mask, nodemask,
-+			order, zonelist, high_zoneidx,
-+			alloc_flags & ~ALLOC_NO_WATERMARKS,
-+			preferred_zone, classzone_idx, migratetype);
- 
--		if (page) {
--			struct zone *zone = page_zone(page);
-+	if (page) {
-+		struct zone *zone = page_zone(page);
- 
--			zone->compact_blockskip_flush = false;
--			compaction_defer_reset(zone, order, true);
--			count_vm_event(COMPACTSUCCESS);
--			return page;
--		}
-+		zone->compact_blockskip_flush = false;
-+		compaction_defer_reset(zone, order, true);
-+		count_vm_event(COMPACTSUCCESS);
-+		return page;
-+	}
- 
--		/*
--		 * last_compact_zone is where try_to_compact_pages thought
--		 * allocation should succeed, so it did not defer compaction.
--		 * But now we know that it didn't succeed, so we do the defer.
--		 */
--		if (last_compact_zone && mode != MIGRATE_ASYNC)
--			defer_compaction(last_compact_zone, order);
-+	/*
-+	 * last_compact_zone is where try_to_compact_pages thought allocation
-+	 * should succeed, so it did not defer compaction. But here we know
-+	 * that it didn't succeed, so we do the defer.
-+	 */
-+	if (last_compact_zone && mode != MIGRATE_ASYNC)
-+		defer_compaction(last_compact_zone, order);
- 
--		/*
--		 * It's bad if compaction run occurs and fails.
--		 * The most likely reason is that pages exist,
--		 * but not enough to satisfy watermarks.
--		 */
--		count_vm_event(COMPACTFAIL);
-+	/*
-+	 * It's bad if compaction run occurs and fails. The most likely reason
-+	 * is that pages exist, but not enough to satisfy watermarks.
-+	 */
-+	count_vm_event(COMPACTFAIL);
- 
--		cond_resched();
--	}
-+	cond_resched();
- 
- 	return NULL;
++	init_completion(&per_cpu(die_complete, smp_processor_id()));
+ 	cpu_disable_common();
+ 	return 0;
  }
+@@ -1339,18 +1342,16 @@ int native_cpu_disable(void)
+ void native_cpu_die(unsigned int cpu)
+ {
+ 	/* We don't do anything here: idle task is faking death itself. */
+-	unsigned int i;
++	wait_for_completion_timeout(&per_cpu(die_complete, cpu),
++			msecs_to_jiffies(1000));
+ 
+-	for (i = 0; i < 10; i++) {
+-		/* They ack this in play_dead by setting CPU_DEAD */
+-		if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
+-			if (system_state == SYSTEM_RUNNING)
+-				pr_info("CPU %u is now offline\n", cpu);
+-			return;
+-		}
+-		msleep(100);
+-	}
+-	pr_err("CPU %u didn't die...\n", cpu);
++	/* They ack this in play_dead by setting CPU_DEAD */
++	if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
++		if (system_state == SYSTEM_RUNNING)
++			pr_info("CPU %u is now offline\n", cpu);
++		return;
++	} else
++		pr_err("CPU %u didn't die...\n", cpu);
+ }
+ 
+ void play_dead_common(void)
+@@ -1362,6 +1363,7 @@ void play_dead_common(void)
+ 	mb();
+ 	/* Ack it */
+ 	__this_cpu_write(cpu_state, CPU_DEAD);
++	complete(&per_cpu(die_complete, smp_processor_id()));
+ 
+ 	/*
+ 	 * With physical CPU hotplug, we should halt the cpu
 -- 
-1.8.4.5
+1.8.4.rc0.1.g8f6a3e5.dirty
 
