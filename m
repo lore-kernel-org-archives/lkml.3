@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301AbaHDTVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 15:21:07 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:54095 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902AbaHDTVE (ORCPT
+	id S1752940AbaHDTVw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 15:21:52 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:49691 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085AbaHDTVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 15:21:04 -0400
+	Mon, 4 Aug 2014 15:21:06 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,138 +15,119 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v4 tip/core/rcu 04/11] rcu: Make TASKS_RCU handle tasks that are almost done exiting
-Date: Mon,  4 Aug 2014 12:20:47 -0700
-Message-Id: <1407180054-19805-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v4 tip/core/rcu 06/11] rcutorture: Add torture tests for RCU-tasks
+Date: Mon,  4 Aug 2014 12:20:49 -0700
+Message-Id: <1407180054-19805-6-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1407180054-19805-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140804192017.GA18337@linux.vnet.ibm.com>
  <1407180054-19805-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080419-0928-0000-0000-000003D6C9E7
+x-cbid: 14080419-8236-0000-0000-000004592211
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Once a task has passed exit_notify() in the do_exit() code path, it
-is no longer on the task lists, and is therefore no longer visible
-to rcu_tasks_kthread().  This means that an almost-exited task might
-be preempted while within a trampoline, and this task won't be waited
-on by rcu_tasks_kthread().  This commit fixes this bug by adding an
-srcu_struct.  An exiting task does srcu_read_lock() just before calling
-exit_notify(), and does the corresponding srcu_read_unlock() after
-doing the final preempt_disable().  This means that rcu_tasks_kthread()
-can do synchronize_srcu() to wait for all mostly-exited tasks to reach
-their final preempt_disable() region, and then use synchronize_sched()
-to wait for those tasks to finish exiting.
+This commit adds torture tests for RCU-tasks.  It also fixes a bug that
+would segfault for an RCU flavor lacking a callback-barrier function.
 
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Suggested-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- include/linux/rcupdate.h |  3 +++
- kernel/exit.c            |  3 +++
- kernel/rcu/update.c      | 21 +++++++++++++++++++++
- 3 files changed, 27 insertions(+)
+ include/linux/rcupdate.h |  1 +
+ kernel/rcu/rcutorture.c  | 50 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 50 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 1f073af940a5..e6aea256ad39 100644
+index e6aea256ad39..f504f797c9c8 100644
 --- a/include/linux/rcupdate.h
 +++ b/include/linux/rcupdate.h
-@@ -321,6 +321,8 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
-  * macro rather than an inline function to avoid #include hell.
-  */
- #ifdef CONFIG_TASKS_RCU
-+#define TASKS_RCU(x) x
-+extern struct srcu_struct tasks_rcu_exit_srcu;
- #define rcu_note_voluntary_context_switch(t) \
- 	do { \
- 		preempt_disable(); /* Exclude synchronize_sched(); */ \
-@@ -329,6 +331,7 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
- 		preempt_enable(); \
- 	} while (0)
- #else /* #ifdef CONFIG_TASKS_RCU */
-+#define TASKS_RCU(x) do { } while (0)
- #define rcu_note_voluntary_context_switch(t)	do { } while (0)
- #endif /* #else #ifdef CONFIG_TASKS_RCU */
+@@ -55,6 +55,7 @@ enum rcutorture_type {
+ 	RCU_FLAVOR,
+ 	RCU_BH_FLAVOR,
+ 	RCU_SCHED_FLAVOR,
++	RCU_TASKS_FLAVOR,
+ 	SRCU_FLAVOR,
+ 	INVALID_RCU_FLAVOR
+ };
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index febe07062ac5..52423f2c74da 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -601,6 +601,52 @@ static struct rcu_torture_ops sched_ops = {
+ 	.name		= "sched"
+ };
  
-diff --git a/kernel/exit.c b/kernel/exit.c
-index e5c4668f1799..3684fdb6294b 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -663,6 +663,7 @@ void do_exit(long code)
- {
- 	struct task_struct *tsk = current;
- 	int group_dead;
-+	TASKS_RCU(int tasks_rcu_i);
- 
- 	profile_task_exit(tsk);
- 
-@@ -772,6 +773,7 @@ void do_exit(long code)
- 	 */
- 	flush_ptrace_hw_breakpoint(tsk);
- 
-+	TASKS_RCU(tasks_rcu_i = srcu_read_lock(&tasks_rcu_exit_srcu));
- 	exit_notify(tsk, group_dead);
- 	proc_exit_connector(tsk);
- #ifdef CONFIG_NUMA
-@@ -811,6 +813,7 @@ void do_exit(long code)
- 	if (tsk->nr_dirtied)
- 		__this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
- 	exit_rcu();
-+	TASKS_RCU(srcu_read_unlock(&tasks_rcu_exit_srcu, tasks_rcu_i));
- 
- 	/*
- 	 * The setting of TASK_RUNNING by try_to_wake_up() may be delayed
-diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index 6c54c898a6f9..bf5c15a0d72d 100644
---- a/kernel/rcu/update.c
-+++ b/kernel/rcu/update.c
-@@ -370,6 +370,13 @@ static struct rcu_head *rcu_tasks_cbs_head;
- static struct rcu_head **rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
- static DEFINE_RAW_SPINLOCK(rcu_tasks_cbs_lock);
- 
-+/* Track exiting tasks in order to allow them to be waited for. */
-+DEFINE_SRCU(tasks_rcu_exit_srcu);
++#ifdef CONFIG_TASKS_RCU
 +
-+/* Control stall timeouts.  Disable with <= 0, otherwise jiffies till stall. */
-+static int rcu_task_stall_timeout __read_mostly = HZ * 60 * 3;
-+module_param(rcu_task_stall_timeout, int, 0644);
++/*
++ * Definitions for RCU-tasks torture testing.
++ */
 +
- /* Post an RCU-tasks callback. */
- void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
- {
-@@ -522,6 +529,15 @@ static int __noreturn rcu_tasks_kthread(void *arg)
- 		rcu_read_unlock();
- 
- 		/*
-+		 * Wait for tasks that are in the process of exiting.
-+		 * This does only part of the job, ensuring that all
-+		 * tasks that were previously exiting reach the point
-+		 * where they have disabled preemption, allowing the
-+		 * later synchronize_sched() to finish the job.
-+		 */
-+		synchronize_srcu(&tasks_rcu_exit_srcu);
++static int tasks_torture_read_lock(void)
++{
++	return 0;
++}
 +
-+		/*
- 		 * Each pass through the following loop scans the list
- 		 * of holdout tasks, removing any that are no longer
- 		 * holdouts.  When the list is empty, we are done.
-@@ -550,6 +566,11 @@ static int __noreturn rcu_tasks_kthread(void *arg)
- 		 * ->rcu_tasks_holdout accesses to be within the grace
- 		 * period, avoiding the need for memory barriers for
- 		 * ->rcu_tasks_holdout accesses.
-+		 *
-+		 * In addition, this synchronize_sched() waits for exiting
-+		 * tasks to complete their final preempt_disable() region
-+		 * of execution, cleaning up after the synchronize_srcu()
-+		 * above.
- 		 */
- 		synchronize_sched();
++static void tasks_torture_read_unlock(int idx)
++{
++}
++
++static void rcu_tasks_torture_deferred_free(struct rcu_torture *p)
++{
++	call_rcu_tasks(&p->rtort_rcu, rcu_torture_cb);
++}
++
++static struct rcu_torture_ops tasks_ops = {
++	.ttype		= RCU_TASKS_FLAVOR,
++	.init		= rcu_sync_torture_init,
++	.readlock	= tasks_torture_read_lock,
++	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
++	.readunlock	= tasks_torture_read_unlock,
++	.completed	= rcu_no_completed,
++	.deferred_free	= rcu_tasks_torture_deferred_free,
++	.sync		= synchronize_rcu_tasks,
++	.exp_sync	= synchronize_rcu_tasks,
++	.call		= call_rcu_tasks,
++	.cb_barrier	= rcu_barrier_tasks,
++	.fqs		= NULL,
++	.stats		= NULL,
++	.irq_capable	= 1,
++	.name		= "tasks"
++};
++
++#define RCUTORTURE_TASKS_OPS &tasks_ops,
++
++#else /* #ifdef CONFIG_TASKS_RCU */
++
++#define RCUTORTURE_TASKS_OPS
++
++#endif /* #else #ifdef CONFIG_TASKS_RCU */
++
+ /*
+  * RCU torture priority-boost testing.  Runs one real-time thread per
+  * CPU for moderate bursts, repeatedly registering RCU callbacks and
+@@ -1295,7 +1341,8 @@ static int rcu_torture_barrier_cbs(void *arg)
+ 		if (atomic_dec_and_test(&barrier_cbs_count))
+ 			wake_up(&barrier_wq);
+ 	} while (!torture_must_stop());
+-	cur_ops->cb_barrier();
++	if (cur_ops->cb_barrier != NULL)
++		cur_ops->cb_barrier();
+ 	destroy_rcu_head_on_stack(&rcu);
+ 	torture_kthread_stopping("rcu_torture_barrier_cbs");
+ 	return 0;
+@@ -1534,6 +1581,7 @@ rcu_torture_init(void)
+ 	int firsterr = 0;
+ 	static struct rcu_torture_ops *torture_ops[] = {
+ 		&rcu_ops, &rcu_bh_ops, &rcu_busted_ops, &srcu_ops, &sched_ops,
++		RCUTORTURE_TASKS_OPS
+ 	};
  
+ 	if (!torture_init_begin(torture_type, verbose, &rcutorture_runnable))
 -- 
 1.8.1.5
 
