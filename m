@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaHDMZm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 08:25:42 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:47328 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaHDMZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 08:25:41 -0400
-Date: Mon, 4 Aug 2014 14:25:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140804122515.GR19379@twins.programming.kicks-ass.net>
-References: <20140731215445.GA21933@linux.vnet.ibm.com>
- <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <53DEE1CD.4000705@cn.fujitsu.com>
- <20140804074620.GH9918@twins.programming.kicks-ass.net>
- <53DF41ED.2020508@cn.fujitsu.com>
- <20140804115043.GA31903@linux.vnet.ibm.com>
+	id S1752665AbaHDMZx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 08:25:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35061 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752385AbaHDMZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 08:25:50 -0400
+Message-ID: <53DF7BC4.9070500@redhat.com>
+Date: Mon, 04 Aug 2014 08:25:40 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RMnrteHbcZy6jON6"
-Content-Disposition: inline
-In-Reply-To: <20140804115043.GA31903@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        =?UTF-8?B?Um9iZXJ0IFNjaMO2bmU=?= <robert.schoene@tu-dresden.de>
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
+ to be held for duration of changing governors [v2]
+References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org> <53DAA749.5080506@redhat.com> <53DAA95B.2040505@codeaurora.org> <53DAB038.3050007@redhat.com> <53DABFA6.6090503@codeaurora.org> <53DACA26.1000908@redhat.com> <53DAE592.2030909@codeaurora.org> <53DB6B81.6050400@redhat.com> <53DBCBE8.6010809@codeaurora.org> <CAKohpom0KycrB8qJDM7yEOHOn76J1sEe90CG+JXERJMcxKnOJA@mail.gmail.com>
+In-Reply-To: <CAKohpom0KycrB8qJDM7yEOHOn76J1sEe90CG+JXERJMcxKnOJA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---RMnrteHbcZy6jON6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, Aug 04, 2014 at 04:50:44AM -0700, Paul E. McKenney wrote:
-> OK, I will bite...
->=20
-> What kinds of tasks are on a runqueue, but neither ->on_cpu nor
-> PREEMPT_ACTIVE?
+On 08/04/2014 06:36 AM, Viresh Kumar wrote:
+> Sorry for the delay guys, was away :(
+> 
+>>
+>>   Possible unsafe locking scenario:
+>>
+>>         CPU0                    CPU1
+>>         ----                    ----
+>>    lock(&policy->rwsem);
+>>                                 lock(s_active#9);
+>>                                 lock(&policy->rwsem);
+>>    lock(s_active#9);
+>>
+> 
+> Thanks for coming to my rescue Stephen :), I was quite sure I got this
+> with ondemand
+> as well..
 
-Userspace tasks, they don't necessarily get PREEMPT_ACTIVE when
-preempted. Now obviously you're not _that_ interested in userspace tasks
-for this, so that might be ok.
+Yeah, I'm confused by it a bit because I wasn't able to reproduce it.  But I've
+got some pretty clear instructions on how to do it.
 
-But the main point was, you cannot use ->on_cpu or PREEMPT_ACTIVE
-without holding rq->lock.
+> 
+> I will be looking very closely at the code now to see what's going wrong.
+> And btw, does anybody here has the exact understanding of why this
+> lockdep does happen? I mean what was the real problem for which we
 
---RMnrteHbcZy6jON6
-Content-Type: application/pgp-signature
+The issue is the collision between the setup & teardown of the policy's governor
+sysfs files.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+On creation the kernel does:
 
-iQIcBAEBAgAGBQJT33urAAoJEHZH4aRLwOS6WEAQALQaqEOWCoK2lAcUtGNrwmUX
-sx6Tjn1GFRfCmBC7D0B9mJn19ehIdFcx1+ZrxcHmsRC4r0eA0XaVCjsnXeEJaYwu
-FJFO3x539C7NoDtDOau3h8j/jZDpOxSp4VCGK/8vVzbyaAy25eeteFsMwBJiRyks
-AbR+8GoXVOBdMVp7jfqEOCshUf4xtkxbPKW0AEKSJMARghCkULqDRdLgpSx7XyHf
-A3nzqQrxdc2Q/ct1TJ0mZF2FPyGDW6v7nYLVov+ZOMOipt2r0/MYVqrzCo0RMUJ4
-Nld7HRUjMIItDJ3U12FehxEucHYp7Addx+6qSYHi/yF6w0K1EEQGKPvi+yem6EKb
-mdE1fC7h5isV4S7f7RkmzOaDbt1V3EwUn5mS1W/S3T9TISvKAqourzfIhii5mJLl
-cwZ7gRja3QTXUy8+BE/xu//oxyESt+h2eUKu61nFzP7u2SpdoaTWSPkoyxurMxd5
-TTn8kczNy1whVNI0l9mullpDkm3tg8JO6K2OxZSVMr9gdqp4oEqjEgwx9/ecEZy/
-8WG1hbX+/dsHcCxxVmQCT7gPUsZoZjuzXTqTb6z1Km3oBoiTklRiNHp5nfHcXI9z
-aK3XWAqlKuYM+PPNqp+AhlGbsrICfdy8b1blSAh78bK+pyqdpQhz1AtUf9Y/H/Fv
-h753YMjWnI7bLIZyGlsu
-=woGM
------END PGP SIGNATURE-----
+down_write(&policy->rwsem)
+mutex_lock(kernfs_mutex) <- note this is similar to the "old" sysfs_mutex.
 
---RMnrteHbcZy6jON6--
+The opposite happens on a governor switch, specifically the existing governor's
+exit, and then we get a lockdep warning.
+
+I tried to reproduce with the instructions but was unable to ... ut that was on
+Friday ;) and I'm going to try again this morning.  I've also ping'd some of the
+engineers here in the office who are working on ARM to get access to a system to
+do further analysis and testing.
+
+I'll ping back later in the day with some results.
+
+Sorry I don't have a better answer or solution yet, Viresh.
+
+P.
