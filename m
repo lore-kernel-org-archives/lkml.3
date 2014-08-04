@@ -1,119 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbaHDUZv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 16:25:51 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:58763
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356AbaHDUZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 16:25:49 -0400
-Date: Mon, 4 Aug 2014 22:25:48 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org, tj@kernel.org,
-        akpm@linux-foundation.org, avagin@openvz.org, ebiederm@xmission.com,
-        hpa@zytor.com, serge.hallyn@canonical.com, xemul@parallels.com,
-        segoon@openwall.com, kamezawa.hiroyu@jp.fujitsu.com,
-        mtk.manpages@gmail.com, jln@google.com
-Subject: Re: [patch 2/4] mm: Use may_adjust_brk helper
-Message-ID: <20140804202548.GC27304@mail.hallyn.com>
-References: <20140804172255.109539743@openvz.org>
- <20140804172610.795642714@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140804172610.795642714@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752364AbaHDU15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 16:27:57 -0400
+Received: from omr2.cc.vt.edu ([198.82.141.100]:52393 "EHLO omr2.cc.vt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750881AbaHDU1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 16:27:55 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "Nyman, Mathias" <mathias.nyman@intel.com>,
+        Nick Krause <xerofoify@gmail.com>
+Subject: Re: Kernel Debugging Support
+In-Reply-To: Your message of "Mon, 04 Aug 2014 19:40:15 -0000."
+             <A2CA0424C0A6F04399FB9E1CD98E0304844C4061@US01WEMBX2.internal.synopsys.com>
+From: Valdis.Kletnieks@vt.edu
+References: <CAPDOMVj5nifG8VQBB_UzNESBc+arxpCQ5sEOAYdb6Rr-KkDSHw@mail.gmail.com> <20140804164633.GA28436@xanatos> <A2CA0424C0A6F04399FB9E1CD98E0304844C4028@US01WEMBX2.internal.synopsys.com> <58974.1407180184@turing-police.cc.vt.edu>
+            <A2CA0424C0A6F04399FB9E1CD98E0304844C4061@US01WEMBX2.internal.synopsys.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1407184063_2589P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 04 Aug 2014 16:27:43 -0400
+Message-ID: <62334.1407184063@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Cyrill Gorcunov (gorcunov@openvz.org):
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Andrew Vagin <avagin@openvz.org>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+--==_Exmh_1407184063_2589P
+Content-Type: text/plain; charset=us-ascii
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+On Mon, 04 Aug 2014 19:40:15 -0000, Paul Zimmerman said:
 
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Vasiliy Kulikov <segoon@openwall.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-> Cc: Julien Tinnes <jln@google.com>
-> ---
->  kernel/sys.c |   11 ++++-------
->  mm/mmap.c    |    7 +++----
->  2 files changed, 7 insertions(+), 11 deletions(-)
-> 
-> Index: linux-2.6.git/kernel/sys.c
-> ===================================================================
-> --- linux-2.6.git.orig/kernel/sys.c
-> +++ linux-2.6.git/kernel/sys.c
-> @@ -1693,7 +1693,6 @@ exit:
->  static int prctl_set_mm(int opt, unsigned long addr,
->  			unsigned long arg4, unsigned long arg5)
->  {
-> -	unsigned long rlim = rlimit(RLIMIT_DATA);
->  	struct mm_struct *mm = current->mm;
->  	struct vm_area_struct *vma;
->  	int error;
-> @@ -1733,9 +1732,8 @@ static int prctl_set_mm(int opt, unsigne
->  		if (addr <= mm->end_data)
->  			goto out;
->  
-> -		if (rlim < RLIM_INFINITY &&
-> -		    (mm->brk - addr) +
-> -		    (mm->end_data - mm->start_data) > rlim)
-> +		if (check_data_rlimit(rlimit(RLIMIT_DATA), mm->brk, addr,
-> +				      mm->end_data, mm->start_data))
->  			goto out;
->  
->  		mm->start_brk = addr;
-> @@ -1745,9 +1743,8 @@ static int prctl_set_mm(int opt, unsigne
->  		if (addr <= mm->end_data)
->  			goto out;
->  
-> -		if (rlim < RLIM_INFINITY &&
-> -		    (addr - mm->start_brk) +
-> -		    (mm->end_data - mm->start_data) > rlim)
-> +		if (check_data_rlimit(rlimit(RLIMIT_DATA), addr, mm->start_brk,
-> +				      mm->end_data, mm->start_data))
->  			goto out;
->  
->  		mm->brk = addr;
-> Index: linux-2.6.git/mm/mmap.c
-> ===================================================================
-> --- linux-2.6.git.orig/mm/mmap.c
-> +++ linux-2.6.git/mm/mmap.c
-> @@ -263,7 +263,7 @@ static unsigned long do_brk(unsigned lon
->  
->  SYSCALL_DEFINE1(brk, unsigned long, brk)
->  {
-> -	unsigned long rlim, retval;
-> +	unsigned long retval;
->  	unsigned long newbrk, oldbrk;
->  	struct mm_struct *mm = current->mm;
->  	unsigned long min_brk;
-> @@ -293,9 +293,8 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
->  	 * segment grow beyond its set limit the in case where the limit is
->  	 * not page aligned -Ram Gupta
->  	 */
-> -	rlim = rlimit(RLIMIT_DATA);
-> -	if (rlim < RLIM_INFINITY && (brk - mm->start_brk) +
-> -			(mm->end_data - mm->start_data) > rlim)
-> +	if (check_data_rlimit(rlimit(RLIMIT_DATA), brk, mm->start_brk,
-> +			      mm->end_data, mm->start_data))
->  		goto out;
->  
->  	newbrk = PAGE_ALIGN(brk);
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Ah, you didn't read far enough down the page :)
+
+I'm willing to bet a large pizza with everything but anchovies that
+out in the real world, a lot of implementors didn't read further either. :)
+
+> So I have to believe there are a *lot* of systems out there that do support xHCI debug.
+
+Possibly. But enough to make an actual critical mass to motivate somebody
+to write code? Or do you get more bang-for-buck by fixing kgdb to support
+debugging over Ethernet?
+
+
+--==_Exmh_1407184063_2589P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBU9/svwdmEQWDXROgAQJcIQ//YRd69yEXlQe2puizDj/svak+H1iG/xsh
+FjI3I4iV8rQ7Q7N+aI8omwZHukZmB97MmitrcLZ7ouJYnBjDTOyuAekw3vPyRMVh
+10qcOtdW3l+YPE+o6k6N8wvYl5FPBI5sSyOYBudUJCkU1nZNtwHrN8NtUW1tCuYm
+F92vJT2S7kpSB2/RyufRiU0jqGQlchhCYmmgCR5URF98ztLsIJ76RVh3mS23ZMS9
++WYKdOEpgeN/n+hHzeVpsoYeIPfXd7glnrWAsfLXJgKWEoDvRg354ifn281iyaBJ
+XxLtM9wTB5KJzeCP8QW1Xc3LX4NdiWlygfmE47SxxQca4iMxwX5+ohnkVVlCu2se
+tjH/w9cQR58GBi+F3fMI9P8hugh+uBrTsP4Nk/0M2PDPapYzAvBOPgG4YpzI76Iz
+FmNhNkvoRnV5wc++JyVotlI3zYSsDyiEqEvQ+CixIWbVWnWVsbq977ueJCA5VpZj
+Nj9UtB6lE48+r6/oTVEEBFMpmXUKmKBsBFC1upmcHcNGmZTtjxGlo2J6Tck4jxgf
+43fdlyfR0nsyrSsngsdPcZ3buaSELI81onMYMXes0DqNuuDVIDk8RoPRWYNqyQAO
+Nh0BnLIQTPMeqH8iD9Wb9EINnp/9O5thbrhG1nu8gVMc2LLBPAFNrD9lAZlZ2/X3
+OI8e5OZzq6U=
+=51w+
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1407184063_2589P--
