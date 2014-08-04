@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749AbaHDMgp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 08:36:45 -0400
-Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:59287
-	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788AbaHDMgn (ORCPT
+	id S1752756AbaHDMhg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 08:37:36 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:44226 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117AbaHDMhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 08:36:43 -0400
-References: <1404914112-7298-1-git-send-email-alex.bennee@linaro.org> <53DA7583.2030504@redhat.com> <CAFEAcA9cT617t8JqOXtuO-wQ5xg5T3Sw_DUHB1fpPD6g3SSNaQ@mail.gmail.com> <53DA7B28.701@redhat.com> <20140804121655.GE524@cbox>
-From: Alex =?utf-8?Q?Benn=C3=A9e?= <alex.bennee@linaro.org>
-To: Christoffer Dall <christoffer.dall@linaro.org>
-Cc: Alex Bennee <alex@bennee.com>, Peter Maydell <peter.maydell@linaro.org>,
-        kvm-devel <kvm@vger.kernel.org>, Gleb Natapov <gleb@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        "kvmarm\@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH] arm64: KVM: export current vcpu->pause state via pseudo regs
-Date: Mon, 04 Aug 2014 13:35:15 +0100
-In-reply-to: <20140804121655.GE524@cbox>
-Message-ID: <877g2ol9dh.fsf@linaro.org>
+	Mon, 4 Aug 2014 08:37:34 -0400
+Date: Mon, 4 Aug 2014 05:37:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140804123727.GJ8101@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140731215445.GA21933@linux.vnet.ibm.com>
+ <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <53DEE1CD.4000705@cn.fujitsu.com>
+ <20140804074620.GH9918@twins.programming.kicks-ass.net>
+ <53DF41ED.2020508@cn.fujitsu.com>
+ <20140804115043.GA31903@linux.vnet.ibm.com>
+ <20140804122515.GR19379@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 127.0.0.1
-X-SA-Exim-Mail-From: alex.bennee@linaro.org
-X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140804122515.GR19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080412-0928-0000-0000-000003DD0AB5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 04, 2014 at 02:25:15PM +0200, Peter Zijlstra wrote:
+> On Mon, Aug 04, 2014 at 04:50:44AM -0700, Paul E. McKenney wrote:
+> > OK, I will bite...
+> > 
+> > What kinds of tasks are on a runqueue, but neither ->on_cpu nor
+> > PREEMPT_ACTIVE?
+> 
+> Userspace tasks, they don't necessarily get PREEMPT_ACTIVE when
+> preempted. Now obviously you're not _that_ interested in userspace tasks
+> for this, so that might be ok.
 
-Christoffer Dall writes:
+Right, I detect userspace tasks using RCU's scheduling-clock handler.
+(And code to handle the NO_HZ_FULL case is under construction.)
 
-> On Thu, Jul 31, 2014 at 07:21:44PM +0200, Paolo Bonzini wrote:
->> Il 31/07/2014 19:04, Peter Maydell ha scritto:
->> > On 31 July 2014 17:57, Paolo Bonzini <pbonzini@redhat.com> wrote:
->> >> Il 09/07/2014 15:55, Alex Bennée ha scritto:
-<snip>
->> 
->> No, it's not.  It's just the state of the CPU, s390 will be using it too.
->> 
->> On x86 the states are uninitialized (UNINITIALIZED), stopped
->> (INIT_RECEIVED), running (RUNNABLE), halted (HALTED).  CPU 0 starts in
->> RUNNABLE state, other CPUs start in UNINITIALIZED state.  There are
->> x86-specific cases (uninitialized) and x86-isms (the INIT_RECEIVED
->> name), but the idea is widely applicable.
->> 
-> Alex, I think it makes perfect sense to use GET/SET_MP_STATE, will you
-> revise the patch?
+> But the main point was, you cannot use ->on_cpu or PREEMPT_ACTIVE
+> without holding rq->lock.
 
-I agree we should use the API that is explicitly for this so I'm looking
-at re-doing the patch now.
+OK, got it.
 
->
-> (Don't forget to update the documentation to reflect it is now supported
-> on ARM, and which states are used to represent what there.)
->
-> Thanks,
-> -Christoffer
+							Thanx, Paul
 
--- 
-Alex Bennée
