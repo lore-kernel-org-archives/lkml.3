@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690AbaHDNdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 09:33:38 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:33542 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373AbaHDNdg (ORCPT
+	id S1752730AbaHDNew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 09:34:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38781 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972AbaHDNev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 09:33:36 -0400
+	Mon, 4 Aug 2014 09:34:51 -0400
+Message-ID: <53DF8BF2.4000309@canonical.com>
+Date: Mon, 04 Aug 2014 15:34:42 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <760230076.57448.1406841700324.open-xchange@webmail.nmp.skynet.be>
-References: <760230076.57448.1406841700324.open-xchange@webmail.nmp.skynet.be>
-Date: Mon, 4 Aug 2014 15:33:34 +0200
-X-Google-Sender-Auth: JWc27UD49SHJ-eb7_vdguHO8rro
-Message-ID: <CAMuHMdW=zbGnTEY0EnaNU_Z1hRjaF0QaKR8C-6qVJt_bQkpr1A@mail.gmail.com>
-Subject: Re: SH 7619 CHCR values
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: Richard Weinberger <richard@nod.at>, Paul Bolle <pebolle@tiscali.nl>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>,
+        airlied@linux.ie
+CC: thellstrom@vmware.com, nouveau@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        bskeggs@redhat.com, alexander.deucher@amd.com
+Subject: Re: [PATCH 09/19] drm/radeon: handle lockup in delayed work, v2
+References: <20140731153245.15061.63023.stgit@patser> <20140731153342.15061.54264.stgit@patser> <53DBC1EC.1010001@amd.com> <53DBD269.80807@canonical.com> <53DF462B.2060102@amd.com> <53DF4A7D.3040505@canonical.com> <53DF7516.2010408@amd.com>
+In-Reply-To: <53DF7516.2010408@amd.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 31, 2014 at 11:21 PM, Fabian Frederick <fabf@skynet.be> wrote:
->  Could you tell me where I could find SH 7619 CHCR values in order to solve the
-> following errors ?
+Hey,
+
+op 04-08-14 13:57, Christian König schreef:
+> Am 04.08.2014 um 10:55 schrieb Maarten Lankhorst:
+>> op 04-08-14 10:36, Christian König schreef:
+>>> Hi Maarten,
+>>>
+>>> Sorry for the delay. I've got way to much todo recently.
+>>>
+>>> Am 01.08.2014 um 19:46 schrieb Maarten Lankhorst:
+>>>> On 01-08-14 18:35, Christian König wrote:
+>>>>> Am 31.07.2014 um 17:33 schrieb Maarten Lankhorst:
+>>>>>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>>>>>> ---
+>>>>>> V1 had a nasty bug breaking gpu lockup recovery. The fix is not
+>>>>>> allowing radeon_fence_driver_check_lockup to take exclusive_lock,
+>>>>>> and kill it during lockup recovery instead.
+>>>>> That looks like the delayed work starts running as soon as we submit a fence, and not when it's needed for waiting.
+>>>>>
+>>>>> Since it's a backup for failing IRQs I would rather put it into radeon_irq_kms.c and start/stop it when the IRQs are started/stoped.
+>>>> The delayed work is not just for failing irq's, it's also the handler that's used to detect lockups, which is why I trigger after processing fences, and reset the timer after processing.
+>>> The idea was turning the delayed work on and off when we turn the irq on and off as well, processing of the delayed work handler can still happen in radeon_fence.c
+>>>
+>>>> Specifically what happened was this scenario:
+>>>>
+>>>> - lock up occurs
+>>>> - write lock taken by gpu_reset
+>>>> - delayed work runs, tries to acquire read lock, blocks
+>>>> - gpu_reset tries to cancel delayed work synchronously
+>>>> - has to wait for delayed work to finish -> deadlock
+>>> Why do you want to disable the work item from the lockup handler in the first place?
+>>>
+>>> Just take the exclusive lock in the work item, when it concurrently runs with the lockup handler it will just block for the lockup handler to complete.
+>> With the delayed work radeon_fence_wait no longer handles unreliable interrupts itself, so it has to run from the lockup handler.
+>> But an alternative solution could be adding a radeon_fence_wait_timeout, ignore the timeout and check if fence is signaled on timeout.
+>> This would probably be a cleaner solution.
 >
-> arch/sh/drivers/dma/dma-sh.c: In function 'calc_xmit_shift':
-> arch/sh/drivers/dma/dma-sh.c:97:21: error: 'CHCR_TS_LOW_MASK' undeclared (first
-> use in this function)
-> arch/sh/drivers/dma/dma-sh.c:97:21: note: each undeclared identifier is reported
-> only once for each function it appears in
-> arch/sh/drivers/dma/dma-sh.c:97:42: error: 'CHCR_TS_LOW_SHIFT' undeclared (first
-> use in this function)
-> arch/sh/drivers/dma/dma-sh.c:98:12: error: 'CHCR_TS_HIGH_MASK' undeclared (first
-> use in this function)
-> arch/sh/drivers/dma/dma-sh.c:98:34: error: 'CHCR_TS_HIGH_SHIFT' undeclared
-> (first use in this function)
-> arch/sh/drivers/dma/dma-sh.c: In function 'sh_dmac_configure_channel':
-> arch/sh/drivers/dma/dma-sh.c:145:10: error: 'CHCR_TS_LOW_SHIFT' undeclared
-> (first use in this function)
-> arch/sh/drivers/dma/dma-sh.c:145:10: error: 'CHCR_TS_HIGH_SHIFT' undeclared
-> (first use in this function)
->
-> I guess it should be added in a new dma-register.h in arch/sh/include/cpu-sh2 ?
+> Yeah, agree. Manually specifying a timeout in the fence wait on lockup handling sounds like the best alternative to me.
+It'a pain to deal with gpu reset.
 
-Google told me:
-http://www.alldatasheet.com/datasheet-pdf/pdf/249585/RENESAS/SH7619.html
+I've now tried other solutions but that would mean reverting to the old style during gpu lockup recovery, and only running the delayed work when !lockup.
+But this meant that the timeout was useless to add. I think the cleanest is keeping the v2 patch, because potentially any waiting code can be called during lockup recovery.
 
-The values seem to be the same as for sh3.
+~Maarten
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
