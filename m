@@ -1,122 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853AbaHDBJq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 21:09:46 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:44662 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904AbaHDBJp (ORCPT
+	id S1752992AbaHDBXg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 21:23:36 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:43396 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193AbaHDBXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 21:09:45 -0400
-Date: Sun, 3 Aug 2014 18:09:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140804010938.GI8101@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140731215445.GA21933@linux.vnet.ibm.com>
- <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140802145616.GA18195@redhat.com>
- <20140802225757.GB8101@linux.vnet.ibm.com>
- <20140803133318.GB671@redhat.com>
- <20140803220535.GH8101@linux.vnet.ibm.com>
- <53DED5D1.6030504@cn.fujitsu.com>
+	Sun, 3 Aug 2014 21:23:35 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s741N2iv024343, This message is accepted by code: ctloc85258
+Message-ID: <53DEE078.2060506@realsil.com.cn>
+Date: Mon, 4 Aug 2014 09:23:04 +0800
+From: micky <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53DED5D1.6030504@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080401-6688-0000-0000-000003BE2722
+To: Fabio Falzoi <fabio.falzoi84@gmail.com>
+CC: <gregkh@linuxfoundation.org>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>, <joe@perches.com>,
+        <dan.carpenter@oracle.com>, <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH v5 3/4] Staging: rts5208: Use dev_dbg and %*phspecifiertodump memory
+References: <1406672155-13187-1-git-send-email-fabio.falzoi84@gmail.com> <1406672155-13187-4-git-send-email-fabio.falzoi84@gmail.com> <53D84FE3.9040709@realsil.com.cn> <20140801175526.GA19125@PippoloLaptop>
+In-Reply-To: <20140801175526.GA19125@PippoloLaptop>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 08:37:37AM +0800, Lai Jiangshan wrote:
-> On 08/04/2014 06:05 AM, Paul E. McKenney wrote:
-> > On Sun, Aug 03, 2014 at 03:33:18PM +0200, Oleg Nesterov wrote:
-> >> On 08/02, Paul E. McKenney wrote:
-> >>>
-> >>> On Sat, Aug 02, 2014 at 04:56:16PM +0200, Oleg Nesterov wrote:
-> >>>> On 07/31, Paul E. McKenney wrote:
-> >>>>>
-> >>>>> +		rcu_read_lock();
-> >>>>> +		for_each_process_thread(g, t) {
-> >>>>> +			if (t != current && ACCESS_ONCE(t->on_rq) &&
-> >>>>> +			    !is_idle_task(t)) {
-> >>>>
-> >>>> I didn't notice this check before, but it is not needed. for_each_process()
-> >>>> can see the idle threads, there are not on process/thread lists.
-> >>     ^^^^^^^
-> >>
-> >> argh, I mean't "can't see" of course...
-> >>
-> >>> Good to know.  Any other important tasks I am missing?
-> >>
-> >> Nothing else.
-> > 
-> > Whew!  ;-)
-> > 
-> >>> I am guessing that I need to do something like this:
-> >>>
-> >>> 	for_each_process(g) {
-> >>> 		/* Do build step. */
-> >>> 		for_each_thread(g, t) {
-> >>> 			if (g == t)
-> >>> 				continue;
-> >>> 			/* Do build step. */
-> >>> 		}
-> >>> 	}
-> >>
-> >> Sorry, I don't understand... This is equivalent to
-> >>
-> >> 	for_each_process_thread(g, t) {
-> >> 		/* Do build step. */
-> >> 	}
-> > 
-> > OK, got it.
-> > 
-> >>> Your point about exiting tasks I get, and I believe I can solve it.
-> >>> I am hoping that the above sort of construction takes care of the
-> >>> idle threads.
-> >>
-> >> It is simple to find the idle threads, just
-> >>
-> >> 	for_each_cpu(cpu) {
-> >> 		do_something(cpu_rq(cpu)->idle);
-> >> 	}
-> >>
-> >> but it is not clear to me what else you need to do with the idle threads.
-> >> Probably not too much, they mostly run under preempt_disable().
-> > 
-> > OK, looks easy enough.  And yes, one good question is what, if anything,
-> > we need to do with the idle threads.
-> > 
-> >>> I might also need to do something to handle changes in
-> >>> process/thread hierarchy -- but hopefully without having to read-acquire
-> >>> the task-list lock.
-> >>
-> >> It seems that you need another global list, a task should be visible on that
-> >> list until exit_rcu().
-> > 
-> > As in create another global list that all tasks are added to when created
-> > and then remved from when they exit?
-> 
-> An alternative solution:
-> srcu_read_lock() before exit_notify(), srcu_read_unlock() after the last preempt_disable()
-> in the do_exit, and synchronize_srcu() in rcu_tasks_kthread().
+On 08/02/2014 01:55 AM, Fabio Falzoi wrote:
+> On Wed, Jul 30, 2014 at 09:52:35AM +0800, micky wrote:
+>> Documentation/printk-formats.txt
+>>
+>> Raw buffer as a hex string:
+>> 	%*ph	00 01 02  ...  3f
+>> 	%*phC	00:01:02: ... :3f
+>> 	%*phD	00-01-02- ... -3f
+>> 	%*phN	000102 ... 3f
+>>
+>> 	For printing a small buffers (up to 64 bytes long) as a hex string with
+>> 	certain separator. For the larger buffers consider to use
+>> 	print_hex_dump().
+>>
+>>
+>> Since we can't make sure the cnt value, it is not good use "%*ph",
+>> because it must make cnt <= 64.
+>> dw_len * 4  <= 64 ?
+> Hi Micky,
+>
+> I think that in these two cases we can rely on print_hex_dump_bytes that
+> doesn't have the dev_dbg limit on buffer size.
+> Let me know what you think about it. If you agree, I can send a new version
+> for patches 3/4 and 4/4, since the first two have already been merged in the
+> linux-next tree by Greg.
+Hi Fabio,
 
-That is a good way to synchronize with the exiting tasks, and I will
-probably that that approach.
+I think it is good, Thanks.
 
-I -thought- that Oleg was concerned about safely building the list to
-start with, though.
-
-							Thanx, Paul
+Best Regards,
+micky
+> Regards,
+> Fabio
+> .
+>
 
