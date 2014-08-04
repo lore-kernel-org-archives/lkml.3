@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662AbaHDAVC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 20:21:02 -0400
-Received: from s87.loopia.se ([194.9.94.112]:35755 "EHLO s87.loopia.se"
+	id S1753719AbaHDAVM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 20:21:12 -0400
+Received: from s87.loopia.se ([194.9.94.112]:35835 "EHLO s87.loopia.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753616AbaHDAVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 20:21:00 -0400
+	id S1753672AbaHDAVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Aug 2014 20:21:08 -0400
 X-Spam-Flag: NO
 X-Spam-Score: -1
 From: Hans Wennborg <hans@hanshq.net>
 To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
 Cc: Hans Wennborg <hans@hanshq.net>
-Subject: [PATCH 15/19] staging: nokia_h4p: fix %d confusingly prefixed with 0x in format string
-Date: Sun,  3 Aug 2014 17:20:49 -0700
-Message-Id: <1407111649-15159-1-git-send-email-hans@hanshq.net>
+Subject: [PATCH 16/19] staging: rtl8192ee: fix %d confusingly prefixed with 0x in format strings
+Date: Sun,  3 Aug 2014 17:20:58 -0700
+Message-Id: <1407111658-15236-1-git-send-email-hans@hanshq.net>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,22 +22,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Hans Wennborg <hans@hanshq.net>
 ---
- drivers/staging/nokia_h4p/nokia_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/rtl8192ee/pci.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/nokia_h4p/nokia_core.c b/drivers/staging/nokia_h4p/nokia_core.c
-index 775e1d0..240da0c 100644
---- a/drivers/staging/nokia_h4p/nokia_core.c
-+++ b/drivers/staging/nokia_h4p/nokia_core.c
-@@ -1113,7 +1113,7 @@ static int hci_h4p_probe(struct platform_device *pdev)
- 				    GPIOF_OUT_INIT_LOW, "bt_wakeup");
+diff --git a/drivers/staging/rtl8192ee/pci.c b/drivers/staging/rtl8192ee/pci.c
+index 0215aef..349e636 100644
+--- a/drivers/staging/rtl8192ee/pci.c
++++ b/drivers/staging/rtl8192ee/pci.c
+@@ -649,7 +649,7 @@ static void _rtl_pci_tx_isr(struct ieee80211_hw *hw, int prio)
  
- 	if (err < 0) {
--		dev_err(info->dev, "Cannot get GPIO line 0x%d",
-+		dev_err(info->dev, "Cannot get GPIO line 0x%x",
- 			info->bt_wakeup_gpio);
- 		return err;
- 	}
+ 		if ((ring->entries - skb_queue_len(&ring->queue)) == 2) {
+ 			RT_TRACE(COMP_ERR, DBG_LOUD,
+-				 ("more desc left, wake skb_queue@%d,ring->idx = %d, skb_queue_len = 0x%d\n",
++				 ("more desc left, wake skb_queue@%d,ring->idx = %d, skb_queue_len = 0x%x\n",
+ 					 prio, ring->idx,
+ 					 skb_queue_len(&ring->queue)));
+ 
+@@ -1628,7 +1628,7 @@ static int rtl_pci_tx(struct ieee80211_hw *hw,
+ 
+ 		if ((own == 1) && (hw_queue != BEACON_QUEUE)) {
+ 			RT_TRACE(COMP_ERR, DBG_WARNING,
+-				 ("No more TX desc@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
++				 ("No more TX desc@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%x\n",
+ 				  hw_queue, ring->idx, idx,
+ 				  skb_queue_len(&ring->queue)));
+ 
+@@ -1670,7 +1670,7 @@ static int rtl_pci_tx(struct ieee80211_hw *hw,
+ 	if ((ring->entries - skb_queue_len(&ring->queue)) < 2 &&
+ 	    hw_queue != BEACON_QUEUE) {
+ 		RT_TRACE(COMP_ERR, DBG_LOUD,
+-			 ("less desc left, stop skb_queue@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%d\n",
++			 ("less desc left, stop skb_queue@%d, ring->idx = %d, idx = %d, skb_queue_len = 0x%x\n",
+ 			  hw_queue, ring->idx, idx,
+ 			  skb_queue_len(&ring->queue)));
+ 
 -- 
 2.0.0.526.g5318336
 
