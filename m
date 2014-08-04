@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853AbaHDDjW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 23:39:22 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:31577 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaHDDjV (ORCPT
+	id S1752001AbaHDDq5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 23:46:57 -0400
+Received: from mail.windriver.com ([147.11.1.11]:44159 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360AbaHDDqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 23:39:21 -0400
-From: <lichunhe@huawei.com>
-To: <vyasevic@redhat.com>, <xiyou.wangcong@gmail.com>,
-        <makita.toshiaki@lab.ntt.co.jp>, <mst@redhat.com>,
-        <stephen@networkplumber.org>, <ebiederm@xmission.com>,
-        <f.fainelli@gmail.com>, <linux-kernel@vger.kernel.org>
-CC: <wuyunfei@huawei.com>, <qianhuibin@huawei.com>,
-        Chunhe Li <lichunhe@huawei.com>
-Subject: [PATCH net/next] bridge:Add rcu read lock when delete br port
-Date: Mon, 4 Aug 2014 11:37:56 +0800
-Message-ID: <1407123476-9720-1-git-send-email-lichunhe@huawei.com>
-X-Mailer: git-send-email 1.9.2.msysgit.0
+	Sun, 3 Aug 2014 23:46:55 -0400
+Message-ID: <53DF0204.6000904@windriver.com>
+Date: Mon, 4 Aug 2014 11:46:12 +0800
+From: "Yang,Wei" <Wei.Yang@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.177.26.106]
-X-CFilter-Loop: Reflected
+To: <Wei.Yang@windriver.com>, <ralf@linux-mips.org>
+CC: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1] MIPS:KDUMP: set a right value to kexec_indirection_page
+ variable
+References: <1406806949-27039-1-git-send-email-Wei.Yang@windriver.com>
+In-Reply-To: <1406806949-27039-1-git-send-email-Wei.Yang@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.162.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chunhe Li <lichunhe@huawei.com>
+ping.
 
-In the br_hanle_frame function has a bug, when the bridge receive packets
-which go througth the br_handle_frame, get the net_bridge_port pointer "p",
-but don't check NULL pointer to use it. If somebody delete the bridge port
-at the same time, will call a NULL pointer, trigger kernel panic. I see the
-del_nbp comments, call del_nbp should via RCU, but the caller don't do this.
-
-following steps will make bug happened
-1.start vm and add the vm interface to a bridge br0,for example,
-brctl addbr br0 tap0
-
-2.configuer vm interface and br0 same ip subnet, vm ping br0.
-
-3.add and delete the vm interface port for endless loop.
-
-Signed-off-by: Chunhe Li <lichunhe@huawei.com>
----
- net/bridge/br_if.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
-index 3eca3fd..91c611d 100644
---- a/net/bridge/br_if.c
-+++ b/net/bridge/br_if.c
-@@ -274,9 +274,11 @@ void br_dev_delete(struct net_device *dev, struct list_head *head)
- 	struct net_bridge *br = netdev_priv(dev);
- 	struct net_bridge_port *p, *n;
- 
-+	rcu_read_lock();
- 	list_for_each_entry_safe(p, n, &br->port_list, list) {
- 		del_nbp(p);
- 	}
-+	rcu_read_unlock();
- 
- 	br_fdb_delete_by_port(br, NULL, 1);
- 
-@@ -550,7 +552,9 @@ int br_del_if(struct net_bridge *br, struct net_device *dev)
- 	 * there still maybe an alternate path for netconsole to use;
- 	 * therefore there is no reason for a NETDEV_RELEASE event.
- 	 */
-+	rcu_read_lock();
- 	del_nbp(p);
-+	rcu_read_unlock();
- 
- 	spin_lock_bh(&br->lock);
- 	changed_addr = br_stp_recalculate_bridge_id(br);
--- 
-1.9.2.0
-
+BR,
+Wei
+On 07/31/2014 07:42 PM, Wei.Yang@windriver.com wrote:
+> From: Yang Wei <Wei.Yang@windriver.com>
+>
+> Since there is not indirection page in crash type, so the vaule of the head
+> field of kimage structure is not equal to the address of indirection page but
+> IND_DONE. so we have to set kexec_indirection_page variable to the address of
+> the head field of image structure.
+>
+> Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
+>
+>            Hi Ralf,
+>
+> 		  Please help me take a look at this patch, I have already verified it on Cavium 6100EVB board.
+>
+> 		  Thanks
+> 		  Wei
+> ---
+>   arch/mips/kernel/machine_kexec.c |    9 +++++++--
+>   1 file changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/mips/kernel/machine_kexec.c b/arch/mips/kernel/machine_kexec.c
+> index 992e184..531b70d 100644
+> --- a/arch/mips/kernel/machine_kexec.c
+> +++ b/arch/mips/kernel/machine_kexec.c
+> @@ -71,8 +71,13 @@ machine_kexec(struct kimage *image)
+>   	kexec_start_address =
+>   		(unsigned long) phys_to_virt(image->start);
+>   
+> -	kexec_indirection_page =
+> -		(unsigned long) phys_to_virt(image->head & PAGE_MASK);
+> +	if (image->type == KEXEC_TYPE_DEFAULT) {
+> +		kexec_indirection_page =
+> +			(unsigned long) phys_to_virt(image->head & PAGE_MASK);
+> +	} else {
+> +		kexec_indirection_page = (unsigned long)&image->head;
+> +	}
+> +	
+>   
+>   	memcpy((void*)reboot_code_buffer, relocate_new_kernel,
+>   	       relocate_new_kernel_size);
 
