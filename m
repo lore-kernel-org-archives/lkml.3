@@ -1,130 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693AbaHDUWK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 16:22:10 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:58678
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714AbaHDUWJ (ORCPT
+	id S1752133AbaHDUYq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 16:24:46 -0400
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:48378 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881AbaHDUYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 16:22:09 -0400
-Date: Mon, 4 Aug 2014 22:22:07 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org, tj@kernel.org,
-        akpm@linux-foundation.org, avagin@openvz.org, ebiederm@xmission.com,
-        hpa@zytor.com, serge.hallyn@canonical.com, xemul@parallels.com,
-        segoon@openwall.com, kamezawa.hiroyu@jp.fujitsu.com,
-        mtk.manpages@gmail.com, jln@google.com
-Subject: Re: [patch 3/4] prctl: PR_SET_MM -- Factor out mmap_sem when update
- mm::exe_file
-Message-ID: <20140804202207.GA27304@mail.hallyn.com>
-References: <20140804172255.109539743@openvz.org>
- <20140804172610.881395126@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140804172610.881395126@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Aug 2014 16:24:44 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: heiko@sntech.de
+Cc: olof@lixom.net, Sonny Rao <sonnyrao@chromium.org>,
+        linux-arm-kernel@lists.infradead.org, kever.yang@rock-chips.com,
+        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dts: Fix the sort ordering of EHCI and HSIC in rk3288.dtsi
+Date: Mon,  4 Aug 2014 13:24:38 -0700
+Message-Id: <1407183878-17734-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Cyrill Gorcunov (gorcunov@openvz.org):
-> Instead of taking mm->mmap_sem inside prctl_set_mm_exe_file move
-> it out of and rename the helper to prctl_set_mm_exe_file_locked.
-> This will allow to reuse this function in a next patch.
-> 
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Andrew Vagin <avagin@openvz.org>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+The EHCI and HSIC device tree nodes were added in the wrong place.
+Fix them.
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+---
+I split this out from Kever's series so it can land.  The merge
+conflict with his patch shouldn't be too hard to resolve.  Sorry for
+messing up the sort order when I originally sent out the USB patches.
+:(
 
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Vasiliy Kulikov <segoon@openwall.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-> Cc: Julien Tinnes <jln@google.com>
-> ---
->  kernel/sys.c |   21 +++++++++++----------
->  1 file changed, 11 insertions(+), 10 deletions(-)
-> 
-> Index: linux-2.6.git/kernel/sys.c
-> ===================================================================
-> --- linux-2.6.git.orig/kernel/sys.c
-> +++ linux-2.6.git/kernel/sys.c
-> @@ -1628,12 +1628,14 @@ SYSCALL_DEFINE1(umask, int, mask)
->  	return mask;
->  }
->  
-> -static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
-> +static int prctl_set_mm_exe_file_locked(struct mm_struct *mm, unsigned int fd)
->  {
->  	struct fd exe;
->  	struct inode *inode;
->  	int err;
->  
-> +	VM_BUG_ON(!rwsem_is_locked(&mm->mmap_sem));
-> +
->  	exe = fdget(fd);
->  	if (!exe.file)
->  		return -EBADF;
-> @@ -1654,8 +1656,6 @@ static int prctl_set_mm_exe_file(struct
->  	if (err)
->  		goto exit;
->  
-> -	down_write(&mm->mmap_sem);
-> -
->  	/*
->  	 * Forbid mm->exe_file change if old file still mapped.
->  	 */
-> @@ -1667,7 +1667,7 @@ static int prctl_set_mm_exe_file(struct
->  			if (vma->vm_file &&
->  			    path_equal(&vma->vm_file->f_path,
->  				       &mm->exe_file->f_path))
-> -				goto exit_unlock;
-> +				goto exit;
->  	}
->  
->  	/*
-> @@ -1678,13 +1678,10 @@ static int prctl_set_mm_exe_file(struct
->  	 */
->  	err = -EPERM;
->  	if (test_and_set_bit(MMF_EXE_FILE_CHANGED, &mm->flags))
-> -		goto exit_unlock;
-> +		goto exit;
->  
->  	err = 0;
->  	set_mm_exe_file(mm, exe.file);	/* this grabs a reference to exe.file */
-> -exit_unlock:
-> -	up_write(&mm->mmap_sem);
-> -
->  exit:
->  	fdput(exe);
->  	return err;
-> @@ -1703,8 +1700,12 @@ static int prctl_set_mm(int opt, unsigne
->  	if (!capable(CAP_SYS_RESOURCE))
->  		return -EPERM;
->  
-> -	if (opt == PR_SET_MM_EXE_FILE)
-> -		return prctl_set_mm_exe_file(mm, (unsigned int)addr);
-> +	if (opt == PR_SET_MM_EXE_FILE) {
-> +		down_write(&mm->mmap_sem);
-> +		error = prctl_set_mm_exe_file_locked(mm, (unsigned int)addr);
-> +		up_write(&mm->mmap_sem);
-> +		return error;
-> +	}
->  
->  	if (addr >= TASK_SIZE || addr < mmap_min_addr)
->  		return -EINVAL;
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ arch/arm/boot/dts/rk3288.dtsi | 40 ++++++++++++++++++++--------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
+
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index e7cb008..5950b0a 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -195,6 +195,26 @@
+ 		status = "disabled";
+ 	};
+ 
++	usb_host0_ehci: usb@ff500000 {
++		compatible = "generic-ehci";
++		reg = <0xff500000 0x100>;
++		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru HCLK_USBHOST0>;
++		clock-names = "usbhost";
++		status = "disabled";
++	};
++
++	/* NOTE: ohci@ff520000 doesn't actually work on hardware */
++
++	usb_hsic: usb@ff5c0000 {
++		compatible = "generic-ehci";
++		reg = <0xff5c0000 0x100>;
++		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru HCLK_HSIC>;
++		clock-names = "usbhost";
++		status = "disabled";
++	};
++
+ 	i2c0: i2c@ff650000 {
+ 		compatible = "rockchip,rk3288-i2c";
+ 		reg = <0xff650000 0x1000>;
+@@ -251,26 +271,6 @@
+ 		status = "disabled";
+ 	};
+ 
+-	usb_host0_ehci: usb@ff500000 {
+-		compatible = "generic-ehci";
+-		reg = <0xff500000 0x100>;
+-		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+-		clocks = <&cru HCLK_USBHOST0>;
+-		clock-names = "usbhost";
+-		status = "disabled";
+-	};
+-
+-	/* NOTE: ohci@ff520000 doesn't actually work on hardware */
+-
+-	usb_hsic: usb@ff5c0000 {
+-		compatible = "generic-ehci";
+-		reg = <0xff5c0000 0x100>;
+-		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
+-		clocks = <&cru HCLK_HSIC>;
+-		clock-names = "usbhost";
+-		status = "disabled";
+-	};
+-
+ 	gic: interrupt-controller@ffc01000 {
+ 		compatible = "arm,gic-400";
+ 		interrupt-controller;
+-- 
+2.0.0.526.g5318336
+
