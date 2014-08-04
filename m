@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680AbaHDSgl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 14:36:41 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:45039 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428AbaHDSgj (ORCPT
+	id S1752850AbaHDSgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 14:36:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60730 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428AbaHDSgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 14:36:39 -0400
-Message-ID: <53DFD2B3.3090101@hp.com>
-Date: Mon, 04 Aug 2014 14:36:35 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Mon, 4 Aug 2014 14:36:51 -0400
+Date: Mon, 4 Aug 2014 11:36:50 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kiran Padwal <kiran.padwal@smartplayin.com>
+Cc: davidb@codeaurora.org, dwalker@fifo99.com, bryanh@codeaurora.org,
+        sboyd@codeaurora.org, jslaby@suse.cz, linux-arm-msm@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty: serial: msm: fix checkpatch warnings
+Message-ID: <20140804183650.GB19594@kroah.com>
+References: <1407162046-29729-1-git-send-email-kiran.padwal@smartplayin.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-doc@vger.kernel.org,
-        Davidlohr Bueso <davidlohr@hp.com>, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH 1/7] locking/rwsem: don't resched at the end of optimistic
- spinning
-References: <1407119782-41119-1-git-send-email-Waiman.Long@hp.com> <1407119782-41119-2-git-send-email-Waiman.Long@hp.com> <20140804075528.GI9918@twins.programming.kicks-ass.net>
-In-Reply-To: <20140804075528.GI9918@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407162046-29729-1-git-send-email-kiran.padwal@smartplayin.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2014 03:55 AM, Peter Zijlstra wrote:
-> On Sun, Aug 03, 2014 at 10:36:16PM -0400, Waiman Long wrote:
->> For a fully preemptive kernel, a call to preempt_enable() could
->> potentially trigger a task rescheduling event. In the case of rwsem
->> optimistic spinning, the task has either gotten the lock or is going
->> to sleep soon. So there is no point to do rescheduling here.
-> Uh what? Why shouldn't we preempt if we've gotten the lock? What if a
-> FIFO task just woke up?
+On Mon, Aug 04, 2014 at 07:50:46PM +0530, Kiran Padwal wrote:
+> This patch fixes the following checkpatch.pl warning:
+> 
+> WARNING: braces {} are not necessary for any arm of this statement
+> 
+> WARNING: Missing a blank line after declarations
+> 
+> WARNING: Prefer [subsystem eg: netdev]_err([subsystem]dev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+> 
+> WARNING: Prefer [subsystem eg: netdev]_info([subsystem]dev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+> 
+> WARNING: else is not generally useful after a break or return
+> 
+> WARNING: void function return statements are not generally useful
+> 
+> Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+> ---
+>  drivers/tty/serial/msm_serial.c |   26 +++++++++++---------------
+>  1 file changed, 11 insertions(+), 15 deletions(-)
 
-I didn't mean that we shouldn't preempt if there is a higher priority 
-task. I am sure that there will be other preemption points along the way 
-that a higher priority task can take over the CPU. I just want to say 
-that doing it here may not be the best place especially if the task is 
-going to sleep soon.
+That's a lot of different things all mushed into one patch.  Please
+break this up into "one change per patch" so we can review it better.
 
-If you think this patch does not make sense, I can remove it as other 
-patches in the set has no dependency on this one.
+thanks,
 
--Longman
+greg k-h
