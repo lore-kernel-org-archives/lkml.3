@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797AbaHDUsZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 16:48:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35174 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbaHDUsY (ORCPT
+	id S1752916AbaHDUsb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 16:48:31 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:59313 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbaHDUs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 16:48:24 -0400
-Message-ID: <53DFF18B.5080509@infradead.org>
-Date: Mon, 04 Aug 2014 13:48:11 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 4 Aug 2014 16:48:28 -0400
+Date: Mon, 4 Aug 2014 22:48:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-doc@vger.kernel.org,
+        Davidlohr Bueso <davidlohr@hp.com>, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH 1/7] locking/rwsem: don't resched at the end of
+ optimistic spinning
+Message-ID: <20140804204824.GT3935@laptop>
+References: <1407119782-41119-1-git-send-email-Waiman.Long@hp.com>
+ <1407119782-41119-2-git-send-email-Waiman.Long@hp.com>
+ <20140804075528.GI9918@twins.programming.kicks-ass.net>
+ <53DFD2B3.3090101@hp.com>
 MIME-Version: 1.0
-To: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>
-CC: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Charles.Garcia-Tobin@arm.com,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH v2 18/18] Documentation: ACPI for ARM64
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-19-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1407166105-17675-19-git-send-email-hanjun.guo@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53DFD2B3.3090101@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/14 08:28, Hanjun Guo wrote:
-> From: Graeme Gregory <graeme.gregory@linaro.org>
+On Mon, Aug 04, 2014 at 02:36:35PM -0400, Waiman Long wrote:
+> On 08/04/2014 03:55 AM, Peter Zijlstra wrote:
+> >On Sun, Aug 03, 2014 at 10:36:16PM -0400, Waiman Long wrote:
+> >>For a fully preemptive kernel, a call to preempt_enable() could
+> >>potentially trigger a task rescheduling event. In the case of rwsem
+> >>optimistic spinning, the task has either gotten the lock or is going
+> >>to sleep soon. So there is no point to do rescheduling here.
+> >Uh what? Why shouldn't we preempt if we've gotten the lock? What if a
+> >FIFO task just woke up?
 > 
-> Add documentation for the guidelines of how to use ACPI
-> on ARM64.
+> I didn't mean that we shouldn't preempt if there is a higher priority task.
+> I am sure that there will be other preemption points along the way that a
+> higher priority task can take over the CPU. I just want to say that doing it
+> here may not be the best place especially if the task is going to sleep
+> soon.
 > 
-> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  Documentation/arm64/arm-acpi.txt |  215 ++++++++++++++++++++++++++++++++++++++
->  1 file changed, 215 insertions(+)
->  create mode 100644 Documentation/arm64/arm-acpi.txt
-> 
-> diff --git a/Documentation/arm64/arm-acpi.txt b/Documentation/arm64/arm-acpi.txt
-> new file mode 100644
-> index 0000000..a6e14a2
-> --- /dev/null
-> +++ b/Documentation/arm64/arm-acpi.txt
-> @@ -0,0 +1,215 @@
-> +ACPI on ARMv8 Servers
-> +---------------------
-> +
+> If you think this patch does not make sense, I can remove it as other
+> patches in the set has no dependency on this one.
 
-...
+Yeah, its actively harmful, you delay preemption by an unspecified
+amount of time in case of the spin-acquire. We've had such bugs in -rt
+and they're not fun.
 
-> +
-> +ACPI Detection
-> +--------------
-> +
-> +Drivers should determine their probe() type by checking for ACPI_HANDLE,
-> +or .of_node, or other information in the device structure. This is
-> +detailed further in the "Driver Recommendations" section.
-> +
-> +In non-driver code If the presence of ACPI needs to be detected at runtime,
-> +then check the value of acpi_disabled. If CONFIG_ACPI not being set,
-
-                                          If CONFIG_ACPI is not set,
-
-> +acpi_disabled will always be 1.
-> +
-> +Device Enumeration
-> +------------------
-
-
--- 
-~Randy
+Basically the only time you should use no_resched is if the very next
+statement is schedule().
