@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751397AbaHDHRL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 03:17:11 -0400
-Received: from smtp-out-033.synserver.de ([212.40.185.33]:1052 "EHLO
-	smtp-out-031.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751223AbaHDHRJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 03:17:09 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 5386
-Message-ID: <53DF336B.6000802@metafoo.de>
-Date: Mon, 04 Aug 2014 09:16:59 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	id S1751441AbaHDHTQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 03:19:16 -0400
+Received: from ozlabs.org ([103.22.144.67]:45218 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750986AbaHDHTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 03:19:14 -0400
+Date: Mon, 4 Aug 2014 17:19:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Weston Andros Adamson <dros@primarydata.com>,
+        NeilBrown <neilb@suse.de>
+Subject: linux-next: manual merge of the tip tree with the nfs tree
+Message-ID: <20140804171906.2c2b4470@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dmaengine@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        =?ISO-8859-1?Q?Antoine_T=E9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        laurent.pinchart@ideasonboard.com, ludovic.desroches@atmel.com,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
- dma controller API
-References: <20140730160607.GM8181@intel.com> <20140731074440.GY3952@lukather> <53DA3A48.8070900@metafoo.de> <20140731161331.GD3952@lukather> <53DA74B3.6060502@metafoo.de> <20140731173730.GH3952@lukather> <53DB490A.5040709@metafoo.de> <20140801085707.GI3952@lukather> <20140801171551.GG8181@intel.com> <53DBD7CD.3030103@metafoo.de> <20140802151352.GL3952@lukather>
-In-Reply-To: <20140802151352.GL3952@lukather>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/jo/HQGV9uQXJiyc2xyjFfMl"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2014 05:13 PM, Maxime Ripard wrote:
-> On Fri, Aug 01, 2014 at 08:09:17PM +0200, Lars-Peter Clausen wrote:
->> On 08/01/2014 07:15 PM, Vinod Koul wrote:
->>> On Fri, Aug 01, 2014 at 10:57:07AM +0200, Maxime Ripard wrote:
->>>> On Fri, Aug 01, 2014 at 10:00:10AM +0200, Lars-Peter Clausen wrote:
->>>>> On 07/31/2014 07:37 PM, Maxime Ripard wrote:
->>>>>> On Thu, Jul 31, 2014 at 06:54:11PM +0200, Lars-Peter Clausen wrote:
->>>>>>> On 07/31/2014 06:13 PM, Maxime Ripard wrote:
->>>>>>> [...]
->>>>>>>>  From what you're saying, and judging from the drivers that already
->>>>>>>> implement it, can't it be moved directly to the framework itself ?
->>>>>>>>
->>>>>>>
->>>>>>> What exactly do you mean by moving it directly to the framework? The
->>>>>>> slave_caps API is part of the DMAengine framework.
->>>>>>
->>>>>> Not its implementation, which is defined by each and every driver,
->>>>>> while the behaviour of device_slave_caps is rather generic.
->>>>>>
->>>>>
->>>>> Do you mean something like adding a dma_slave_caps struct field to
->>>>> the DMA channel that gets initialized when the channel is created
->>>>> and then remove the callback? That makes some sense.
->>>>
->>>> I was rather thinking into something like:
->>>>    - Splitting device_control into independant functions
->>> I like this part :)
->>
->> I started working on this a while ago by splitting out the
->> slave_config functionality into its own callback. Haven't managed to
->> finalize it since it wasn't really top priority.
->
-> He, I've done the same yesterday... Do you plan on submitting it soon,
-> or should I keep going?
+--Sig_/jo/HQGV9uQXJiyc2xyjFfMl
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The plan was to submit it eventually. But if you already did it as well, go 
-for it.
+Hi all,
 
-- Lars
+Today's linux-next merge of the tip tree got a conflict in
+fs/nfs/pagelist.c between commit e7029206ff43 ("nfs: check
+wait_on_bit_lock err in page_group_lock") from the nfs tree and commit
+743162013d40 ("sched: Remove proliferation of wait_on_bit() action
+functions") from the tip tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/nfs/pagelist.c
+index 9425118e91d7,0be5050638f7..000000000000
+--- a/fs/nfs/pagelist.c
++++ b/fs/nfs/pagelist.c
+@@@ -158,14 -149,8 +152,13 @@@ nfs_page_group_lock(struct nfs_page *re
+ =20
+  	WARN_ON_ONCE(head !=3D head->wb_head);
+ =20
+ -	wait_on_bit_lock(&head->wb_flags, PG_HEADLOCK,
+ +	do {
+ +		ret =3D wait_on_bit_lock(&head->wb_flags, PG_HEADLOCK,
+- 			nfs_wait_bit_uninterruptible,
+  			TASK_UNINTERRUPTIBLE);
+ +	} while (wait && ret !=3D 0);
+ +
+ +	WARN_ON_ONCE(ret > 0);
+ +	return ret;
+  }
+ =20
+  /*
+
+--Sig_/jo/HQGV9uQXJiyc2xyjFfMl
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT3zPvAAoJEMDTa8Ir7ZwVucoP+wWii1fEHNL0NxlIsbH/G46l
+CB2/9JoMY0ohjXgDmLHeUttXj1ZclvkRO8NWFpEdEhg0kb46d2e5TN/yhOdFudWv
+sNnzlsxbp8n3M/EAZ0WHNNfuZY1kLIP4Vt+dML7BHceiyvj4U7x6A196/qLUa9sq
+gKBeTFxZj8ziGkHAGujnP3qXa04L5clZxb4/YfD1uIxAZAQOJme6wjj4i/kC55P6
+1GZrVRo1SdZQs5FyYPdQAzCviSWyScPjJA0QwXfidlIEdlYIdfU3QR6CaoCJ3C7A
+TbRrQMAJI0faFyhxhlsXJhNW0qnWoXhAqzI2z14r0jZChhUMuSE6k5ASIWR+60dg
+Vi13W1Bnw7WRl/vP31p0r7Z8R8DGR218qIxDA6nKUo3SNjR2MGebnW23fqhJP65S
+4ukc01nJyY2jCYHi98E7iWUg3RD/iKT8zwOMdFDoshhexRiQ+S1ZqpQzqbtEZ4MM
+lc+HEGUXgNeX0mEoVfHaFQ5LM/vEC/uL59Hh/eXvnLS0LE5BChngq/Z1NJOEbbTB
+DdViIGhQMdedRXmhFEpPiSR4bnE9EiogEijLCfQtQBOE7ZNJQS7FTNHOfedyRIZk
+JogBpJV853ZKKmUPQf7RShUaaoLDR1WVGIOW9svTaSUR2bwRsq+IvVuqHQ2SzvMX
+oV1PlW7+FV/TRa0q74bQ
+=qYhd
+-----END PGP SIGNATURE-----
+
+--Sig_/jo/HQGV9uQXJiyc2xyjFfMl--
