@@ -1,59 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaHDVPL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 17:15:11 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58305 "EHLO zene.cmpxchg.org"
+	id S1753145AbaHDVPx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 17:15:53 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58311 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751959AbaHDVPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 17:15:08 -0400
+	id S1752513AbaHDVPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 17:15:11 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
         linux-mm@kvack.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 0/4] mm: memcontrol: populate unified hierarchy interface
-Date: Mon,  4 Aug 2014 17:14:53 -0400
-Message-Id: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 3/4] mm: memcontrol: add memory.max to default hierarchy
+Date: Mon,  4 Aug 2014 17:14:56 -0400
+Message-Id: <1407186897-21048-4-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 2.0.3
+In-Reply-To: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
+References: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+There are cases where a strict upper limit on a memcg is required, for
+example, when containers are rented out and interference between them
+can not be tolerated.
 
-the ongoing versioning of the cgroup user interface gives us a chance
-to clean up the memcg control interface and fix a lot of
-inconsistencies and ugliness that crept in over time.
+Provide memory.max, a limit that can not be breached and will trigger
+group-internal OOM killing once page reclaim can no longer enforce it.
 
-This series adds a minimal set of control files to the new memcg
-interface to get basic memcg functionality going in unified hierarchy:
+This can be combined with the high limit, to create a window in which
+allocating tasks are throttled to approach the strict maximum limit
+gracefully and with opportunity for the user or admin to intervene.
 
-- memory.current: a read-only file that shows current memory usage.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ Documentation/cgroups/unified-hierarchy.txt |  4 ++++
+ mm/memcontrol.c                             | 35 +++++++++++++++++++++++++++++
+ 2 files changed, 39 insertions(+)
 
-- memory.high: a file that allows setting a high limit on the memory
-  usage.  This is an elastic limit, which is enforced via direct
-  reclaim, so allocators are throttled once it's reached, but it can
-  be exceeded and does not trigger OOM kills.  This should be a much
-  more suitable default upper boundary for the majority of use cases
-  that are better off with some elasticity than with sudden OOM kills.
-
-- memory.max: a file that allows setting a maximum limit on memory
-  usage which is ultimately enforced by OOM killing tasks in the
-  group.  This is for setups that want strict isolation at the cost of
-  task death above a certain point.  However, even those can still
-  combine the max limit with the high limit to approach OOM situations
-  gracefully and with time to intervene.
-
-- memory.vmstat: vmstat-style per-memcg statistics.  Very minimal for
-  now (lru stats, allocations and frees, faults), but fixing
-  fundamental issues of the old memory.stat file, including gross
-  misnomers like pgpgin/pgpgout for pages charged/uncharged etc.
-
- Documentation/cgroups/unified-hierarchy.txt |  18 +++
- include/linux/res_counter.h                 |  29 +++++
- include/linux/swap.h                        |   3 +-
- kernel/res_counter.c                        |   3 +
- mm/memcontrol.c                             | 177 +++++++++++++++++++++++++---
- mm/vmscan.c                                 |   3 +-
- 6 files changed, 216 insertions(+), 17 deletions(-)
+diff --git a/Documentation/cgroups/unified-hierarchy.txt b/Documentation/cgroups/unified-hierarchy.txt
+index fd4f7f6847f6..6c52c926810f 100644
+--- a/Documentation/cgroups/unified-hierarchy.txt
++++ b/Documentation/cgroups/unified-hierarchy.txt
+@@ -334,6 +334,10 @@ supported and the interface files "release_agent" and
+ - memory.usage_in_bytes is renamed to memory.current to be in line
+   with the new naming scheme
+ 
++- memory.max provides a hard upper limit as a last-resort backup to
++  memory.high for situations with aggressive isolation requirements.
++
++
+ 5. Planned Changes
+ 
+ 5-1. CAP for resource control
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 5a64fa96c08a..461834c86b94 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6306,6 +6306,36 @@ static ssize_t memory_high_write(struct kernfs_open_file *of,
+ 	return nbytes;
+ }
+ 
++static u64 memory_max_read(struct cgroup_subsys_state *css,
++			   struct cftype *cft)
++{
++	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
++
++	return res_counter_read_u64(&memcg->res, RES_LIMIT);
++}
++
++static ssize_t memory_max_write(struct kernfs_open_file *of,
++				char *buf, size_t nbytes, loff_t off)
++{
++	struct mem_cgroup *memcg = mem_cgroup_from_css(of_css(of));
++	u64 max;
++	int ret;
++
++	if (mem_cgroup_is_root(memcg))
++		return -EINVAL;
++
++	buf = strim(buf);
++	ret = res_counter_memparse_write_strategy(buf, &max);
++	if (ret)
++		return ret;
++
++	ret = mem_cgroup_resize_limit(memcg, max);
++	if (ret)
++		return ret;
++
++	return nbytes;
++}
++
+ static struct cftype memory_files[] = {
+ 	{
+ 		.name = "current",
+@@ -6316,6 +6346,11 @@ static struct cftype memory_files[] = {
+ 		.read_u64 = memory_high_read,
+ 		.write = memory_high_write,
+ 	},
++	{
++		.name = "max",
++		.read_u64 = memory_max_read,
++		.write = memory_max_write,
++	},
+ };
+ 
+ struct cgroup_subsys memory_cgrp_subsys = {
+-- 
+2.0.3
 
