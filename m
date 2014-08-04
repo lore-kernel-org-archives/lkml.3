@@ -1,136 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060AbaHDWdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 18:33:41 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37188 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753120AbaHDWdk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 18:33:40 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>
-Subject: [PATCH] irqchip: gic: Allow gic_arch_extn hooks to call into scheduler
-Date: Mon,  4 Aug 2014 15:33:36 -0700
-Message-Id: <1407191616-31829-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+	id S1753261AbaHDWfL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 18:35:11 -0400
+Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.28]:20941 "EHLO
+	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752354AbaHDWfJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 18:35:09 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+Subject: RE: [PATCH net-next] hyperv: Increase the buffer length for
+ netvsc_channel_cb()
+Thread-Topic: [PATCH net-next] hyperv: Increase the buffer length for
+ netvsc_channel_cb()
+Thread-Index: AQHPsBJfYkL6q23hfEu1qEkKi4J9ypvBdoEA//+R2/A=
+Date: Mon, 4 Aug 2014 22:34:55 +0000
+Message-ID: <14d84b7541894b16badd0513f581361a@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1407180825-21832-1-git-send-email-haiyangz@microsoft.com>
+ <20140804.150842.507300261765977637.davem@davemloft.net>
+In-Reply-To: <20140804.150842.507300261765977637.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(377454003)(199002)(189002)(164054003)(51704005)(13464003)(46406003)(31966008)(77982001)(74662001)(23726002)(74502001)(50466002)(86612001)(2009001)(97736001)(97756001)(4396001)(85852003)(83072002)(92566001)(99396002)(81342001)(64706001)(47776003)(20776003)(21056001)(79102001)(66066001)(80022001)(81542001)(84676001)(68736004)(87936001)(2656002)(44976005)(6806004)(19580405001)(83322001)(19580395003)(54356999)(77096999)(106466001)(85306004)(110136001)(76176999)(584604001)(33646002)(46102001)(107046002)(106116001)(76482001)(50986999)(24736002)(108616003);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUSR01MB589;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0293D40691
+Authentication-Results: spf=pass (sender IP is 131.107.159.99)
+ smtp.mailfrom=haiyangz@microsoft.com; 
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
-2012-04-12) introduced an acquisition of the irq_controller_lock
-in gic_raise_softirq() which can lead to a spinlock recursion if
-the gic_arch_extn hooks call into the scheduler (via complete()
-or wake_up(), etc.). This happens because gic_arch_extn hooks are
-normally called with the irq_controller_lock held and calling
-into the scheduler may cause us to call smp_send_reschedule()
-which will grab the irq_controller_lock again. Here's an example
-from a vendor kernel (note that the gic_arch_extn hook code here
-isn't actually in mainline):
 
-BUG: spinlock recursion on CPU#0, swapper/0/1
- lock: irq_controller_lock+0x0/0x18, .magic: dead4ead, .owner: sw
-er_cpu: 0
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.10-00430-g3d433c4e
 
-Call trace:
-[<ffffffc000087e1c>] dump_backtrace+0x0/0x140
-[<ffffffc000087f6c>] show_stack+0x10/0x1c
-[<ffffffc00064732c>] dump_stack+0x74/0xc4
-[<ffffffc0006446c0>] spin_dump+0x78/0x88
-[<ffffffc0006446f4>] spin_bug+0x24/0x34
-[<ffffffc0000d47d0>] do_raw_spin_lock+0x58/0x148
-[<ffffffc00064d398>] _raw_spin_lock_irqsave+0x24/0x38
-[<ffffffc0002c9d7c>] gic_raise_softirq+0x2c/0xbc
-[<ffffffc00008daa4>] smp_send_reschedule+0x34/0x40
-[<ffffffc0000c1e94>] try_to_wake_up+0x224/0x288
-[<ffffffc0000c1f4c>] default_wake_function+0xc/0x18
-[<ffffffc0000ceef0>] __wake_up_common+0x50/0x8c
-[<ffffffc0000cef3c>] __wake_up_locked+0x10/0x1c
-[<ffffffc0000cf734>] complete+0x3c/0x5c
-[<ffffffc0002f0e78>] msm_mpm_enable_irq_exclusive+0x1b8/0x1c8
-[<ffffffc0002f0f58>] __msm_mpm_enable_irq+0x4c/0x7c
-[<ffffffc0002f0f94>] msm_mpm_enable_irq+0xc/0x18
-[<ffffffc0002c9bb0>] gic_unmask_irq+0x40/0x7c
-[<ffffffc0000de5f4>] irq_enable+0x2c/0x48
-[<ffffffc0000de65c>] irq_startup+0x4c/0x74
-[<ffffffc0000dd2fc>] __setup_irq+0x264/0x3f0
-[<ffffffc0000dd5e0>] request_threaded_irq+0xcc/0x11c
-[<ffffffc0000df254>] devm_request_threaded_irq+0x68/0xb4
-[<ffffffc000471520>] msm_iommu_ctx_probe+0x124/0x2d4
-[<ffffffc000337374>] platform_drv_probe+0x20/0x54
-[<ffffffc00033598c>] driver_probe_device+0x158/0x340
-[<ffffffc000335c20>] __driver_attach+0x60/0x90
-[<ffffffc000333c9c>] bus_for_each_dev+0x6c/0x8c
-[<ffffffc000335304>] driver_attach+0x1c/0x28
-[<ffffffc000334f14>] bus_add_driver+0x120/0x204
-[<ffffffc0003362e4>] driver_register+0xbc/0x10c
-[<ffffffc000337348>] __platform_driver_register+0x5c/0x68
-[<ffffffc00094c478>] msm_iommu_driver_init+0x54/0x7c
-[<ffffffc0000813ec>] do_one_initcall+0xa4/0x130
-[<ffffffc00091d928>] kernel_init_freeable+0x138/0x1dc
-[<ffffffc000642578>] kernel_init+0xc/0xd4
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Monday, August 4, 2014 6:09 PM
+> To: Haiyang Zhang
+> Cc: netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net-next] hyperv: Increase the buffer length for
+> netvsc_channel_cb()
+> 
+> From: Haiyang Zhang <haiyangz@microsoft.com>
+> Date: Mon,  4 Aug 2014 12:33:45 -0700
+> 
+> > When the buffer is too small for a packet from VMBus, a bigger buffer
+> > will be allocated in netvsc_channel_cb() and retry reading the packet from
+> VMBus.
+> > Increasing this buffer size will reduce the retry overhead.
+> >
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Reviewed-by: Dexuan Cui <decui@microsoft.com>
+> 
+> Now netvsc_device is significantly larger than a page, you should probably
+> therefore allocate netvsc_device->cb_buffer indirectly instead of inlining it into
+> the structure.
 
-We really just want to synchronize the sending of an SGI with the
-update of the gic_cpu_map[], so introduce a new SGI lock that we
-can use to synchronize the two code paths.
-
-Cc: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/irqchip/irq-gic.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 7c131cf7cc13..824c1e2ac403 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -72,6 +72,8 @@ struct gic_chip_data {
- };
- 
- static DEFINE_RAW_SPINLOCK(irq_controller_lock);
-+/* Synchronize switching CPU interface and sending SGIs */
-+static DEFINE_RAW_SPINLOCK(gic_sgi_lock);
- 
- /*
-  * The GIC mapping of CPU interfaces does not necessarily match
-@@ -658,7 +660,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	int cpu;
- 	unsigned long flags, map = 0;
- 
--	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-+	raw_spin_lock_irqsave(&gic_sgi_lock, flags);
- 
- 	/* Convert our logical CPU mask into a physical one. */
- 	for_each_cpu(cpu, mask)
-@@ -673,7 +675,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	/* this always happens on GIC0 */
- 	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
- 
--	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
-+	raw_spin_unlock_irqrestore(&gic_sgi_lock, flags);
- }
- #endif
- 
-@@ -742,6 +744,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
- 	cur_target_mask = 0x01010101 << cur_cpu_id;
- 	ror_val = (cur_cpu_id - new_cpu_id) & 31;
- 
-+	raw_spin_lock(&gic_sgi_lock);
- 	raw_spin_lock(&irq_controller_lock);
- 
- 	/* Update the target interface for this logical CPU */
-@@ -763,6 +766,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
- 	}
- 
- 	raw_spin_unlock(&irq_controller_lock);
-+	raw_spin_unlock(&gic_sgi_lock);
- 
- 	/*
- 	 * Now let's migrate and clear any potential SGIs that might be
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+I will make this update.
+Thanks,
+- Haiyang
 
