@@ -1,105 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198AbaHDRBT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:01:19 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:49567 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479AbaHDQ7J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753489AbaHDQ7J (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 4 Aug 2014 12:59:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56581 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752044AbaHDQt4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 12:49:56 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-In-Reply-To: <20140804043541.GA4665@kroah.com>
-References: <CADYu30_FciG_aTTV4DFNdy+CdRChMYQ7pAGZGambE1F9s=ofYQ@mail.gmail.com>
-	<20140801192300.GB16085@kroah.com>
-	<CADYu30_o7rzERKEDe=eZiONp6n1ktMWPydMnXQjDeLrDFQh+vg@mail.gmail.com>
-	<20140801224127.GA11596@kroah.com>
-	<CADYu309eydkp83a1aMybHn5vyLLGBAmFDYeR59RRiC+mGc9w7w@mail.gmail.com>
-	<20140802023958.GA22728@kroah.com>
-	<CADYu30_EN78+1CdD=VF8gi-5H2Ot7ArKWq5DQ5HaptwTuL3C6A@mail.gmail.com>
-	<20140804043541.GA4665@kroah.com>
-Date: Mon, 4 Aug 2014 22:29:07 +0530
-Message-ID: <CADYu309azz-8XBXKL8fQLpju_7EVW8Xh3pb8nSjD6epMU=3zBQ@mail.gmail.com>
-Subject: Re: [Question: Drivers/base/core.c] Why dev->init_name = NULL in
- device_add function ?
-From: Aniroop Mathur <aniroop.mathur@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Miklos Szeredi" <mszeredi@suse.cz>
+Date: Mon, 04 Aug 2014 17:48:32 +0100
+Message-ID: <lsq.1407170912.314063850@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 40/94] fuse: handle large user and group ID
+In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 4, 2014 at 10:05 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Aug 04, 2014 at 12:24:06AM +0530, Aniroop Mathur wrote:
->> On Sat, Aug 2, 2014 at 8:09 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > On Sat, Aug 02, 2014 at 05:14:44AM +0530, Aniroop Mathur wrote:
->> >> >> So, overall output will be
->> >> >> /dev/input/event<x> --> /dev/input/event_accelerometer
->> >> >> sys/class/input/input<x> --> sys/class/input/accelerometer
->> >> >>
->> >> >> In short, input and event node names are set just by
->> >> >> adding one line, which i found quite efficient.
->> >> >> There is other way also to set name of event node but
->> >> >> it involves using extra variable and little more code,
->> >> >> So I am looking for best solution possible. :)
->> >> >
->> >> > Only use init_name for static struct devices, for a dynamic one, jsut
->> >> > set the name like everyone else does, how is that "more" code than
->> >> > anything else?
->> >> >
->> >>
->> >> Can you please elaborate what do you mean by static struct devices ?
->> >
->> > Exactly what you wrote there, 'static' is a C thing, right?
->> >
->> >> Can I consider embedded accelerometer, proximity, gyro sensor,
->> >> touch panel in android mobile devices as static devices ?
->> >
->> > Nope, because in my Android phone, I can yank out those and add new ones
->> > on the fly while the phone is running.  The kernel is fully dynamic that
->> > way.
->> >
->> >> Input subsystem is setting default name of input and event node.
->> >
->> > As it should.
->> >
->> >> This is the normal method everyone uses.
->> >
->> > And so should you :)
->> >
->> >> I do not want to use default name like event0, event4, input2, etc
->> >
->> > Yes, you really do.
->> >
->> >> My aim is to set name of input and event node through driver as desired.
->> >
->> > Nope, that's userspace's job, just use udev to rename the device node,
->> > or even better yet, create a symlink like /dev/input/by-id/ has if you
->> > really need more than that.
->> >
->> > Don't mess with kernel device names, we can't do that without breaking
->> > tons of things, there's a reason that we standardized on something,
->> > please use it.
->> >
->>
->> Okay, will follow the same. :)
->>
->> One last thing,
->> Why init_name will go away some day ?
->
-> Because you should never have a static struct device in the kernel.
-> It's a reference counted object that needs to always be dynamically
-> allocated in order to properly work.  Unfortunatly, there are some users
-> who have it allocated statically (on the stack) instead of dynamically
-> (on the heap).  I'll get rid of them someday, it's _way_ down my list of
-> things to do...
->
-> thanks,
->
-> greg k-h
+3.2.62-rc1 review patch.  If anyone has any objections, please let me know.
 
-Thank you so much for your support and answering my queries. :)
-Now, the thread has also been marked as solved.
+------------------
 
-Thanks,
-Aniroop
+From: Miklos Szeredi <mszeredi@suse.cz>
+
+commit 233a01fa9c4c7c41238537e8db8434667ff28a2f upstream.
+
+If the number in "user_id=N" or "group_id=N" mount options was larger than
+INT_MAX then fuse returned EINVAL.
+
+Fix this to handle all valid uid/gid values.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+[bwh: Backported to 3.2: no user namespace conversion]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ fs/fuse/inode.c | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
+
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -437,6 +437,17 @@ static const match_table_t tokens = {
+ 	{OPT_ERR,			NULL}
+ };
+ 
++static int fuse_match_uint(substring_t *s, unsigned int *res)
++{
++	int err = -ENOMEM;
++	char *buf = match_strdup(s);
++	if (buf) {
++		err = kstrtouint(buf, 10, res);
++		kfree(buf);
++	}
++	return err;
++}
++
+ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
+ {
+ 	char *p;
+@@ -447,6 +458,7 @@ static int parse_fuse_opt(char *opt, str
+ 	while ((p = strsep(&opt, ",")) != NULL) {
+ 		int token;
+ 		int value;
++		unsigned uv;
+ 		substring_t args[MAX_OPT_ARGS];
+ 		if (!*p)
+ 			continue;
+@@ -470,16 +482,16 @@ static int parse_fuse_opt(char *opt, str
+ 			break;
+ 
+ 		case OPT_USER_ID:
+-			if (match_int(&args[0], &value))
++			if (fuse_match_uint(&args[0], &uv))
+ 				return 0;
+-			d->user_id = value;
++			d->user_id = uv;
+ 			d->user_id_present = 1;
+ 			break;
+ 
+ 		case OPT_GROUP_ID:
+-			if (match_int(&args[0], &value))
++			if (fuse_match_uint(&args[0], &uv))
+ 				return 0;
+-			d->group_id = value;
++			d->group_id = uv;
+ 			d->group_id_present = 1;
+ 			break;
+ 
+
