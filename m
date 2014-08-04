@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140AbaHDQt4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:49:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56441 "EHLO
+	id S1753569AbaHDRJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:09:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56530 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751125AbaHDQty (ORCPT
+	by vger.kernel.org with ESMTP id S1751929AbaHDQt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:49:54 -0400
+	Mon, 4 Aug 2014 12:49:56 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David R. Piegdon" <lkml@p23q.org>,
-        "Tony Lindgren" <tony@atomide.com>
-Date: Mon, 04 Aug 2014 17:48:31 +0100
-Message-ID: <lsq.1407170911.886134225@decadent.org.uk>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Li RongQing" <roy.qing.li@gmail.com>,
+        "Eric Dumazet" <edumazet@google.com>
+Date: Mon, 04 Aug 2014 17:48:32 +0100
+Message-ID: <lsq.1407170912.332850068@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 03/94] ARM: OMAP2+: Fix parser-bug in platform muxing code
+Subject: [PATCH 3.2 56/94] 8021q: fix a potential memory leak
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,57 +32,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David R. Piegdon" <lkml@p23q.org>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-commit c021f241f4fab2bb4fc4120a38a828a03dd3f970 upstream.
+[ Upstream commit 916c1689a09bc1ca81f2d7a34876f8d35aadd11b ]
 
-Fix a parser-bug in the omap2 muxing code where muxtable-entries will be
-wrongly selected if the requested muxname is a *prefix* of their
-m0-entry and they have a matching mN-entry. Fix by additionally checking
-that the length of the m0_entry is equal.
+skb_cow called in vlan_reorder_header does not free the skb when it failed,
+and vlan_reorder_header returns NULL to reset original skb when it is called
+in vlan_untag, lead to a memory leak.
 
-For example muxing of "dss_data2.dss_data2" on omap32xx will fail
-because the prefix "dss_data2" will match the mux-entries "dss_data2" as
-well as "dss_data20", with the suffix "dss_data2" matching m0 (for
-dss_data2) and m4 (for dss_data20). Thus both are recognized as signal
-path candidates:
-
-Relevant muxentries from mux34xx.c:
-        _OMAP3_MUXENTRY(DSS_DATA20, 90,
-                "dss_data20", NULL, "mcspi3_somi", "dss_data2",
-                "gpio_90", NULL, NULL, "safe_mode"),
-        _OMAP3_MUXENTRY(DSS_DATA2, 72,
-                "dss_data2", NULL, NULL, NULL,
-                "gpio_72", NULL, NULL, "safe_mode"),
-
-This will result in a failure to mux the pin at all:
-
- _omap_mux_get_by_name: Multiple signal paths (2) for dss_data2.dss_data2
-
-Patch should apply to linus' latest master down to rather old linux-2.6
-trees.
-
-Signed-off-by: David R. Piegdon <lkml@p23q.org>
-[tony@atomide.com: updated description to include full description]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mach-omap2/mux.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/8021q/vlan_core.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-omap2/mux.c
-+++ b/arch/arm/mach-omap2/mux.c
-@@ -182,8 +182,10 @@ static int __init _omap_mux_get_by_name(
- 		m0_entry = mux->muxnames[0];
+diff --git a/net/8021q/vlan_core.c b/net/8021q/vlan_core.c
+index e860a4f..77d3532 100644
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -96,8 +96,11 @@ EXPORT_SYMBOL(vlan_dev_vlan_id);
  
- 		/* First check for full name in mode0.muxmode format */
--		if (mode0_len && strncmp(muxname, m0_entry, mode0_len))
--			continue;
-+		if (mode0_len)
-+			if (strncmp(muxname, m0_entry, mode0_len) ||
-+			    (strlen(m0_entry) != mode0_len))
-+				continue;
- 
- 		/* Then check for muxmode only */
- 		for (i = 0; i < OMAP_MUX_NR_MODES; i++) {
+ static struct sk_buff *vlan_reorder_header(struct sk_buff *skb)
+ {
+-	if (skb_cow(skb, skb_headroom(skb)) < 0)
++	if (skb_cow(skb, skb_headroom(skb)) < 0) {
++		kfree_skb(skb);
+ 		return NULL;
++	}
++
+ 	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
+ 	skb->mac_header += VLAN_HLEN;
+ 	return skb;
 
