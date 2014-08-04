@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655AbaHDNov (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 09:44:51 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:57566 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156AbaHDNou (ORCPT
+	id S1752748AbaHDNpK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 09:45:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33937 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687AbaHDNpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 09:44:50 -0400
+	Mon, 4 Aug 2014 09:45:09 -0400
+Date: Mon, 4 Aug 2014 15:44:55 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@kernel.org, oleg@redhat.com, torvalds@linux-foundation.org
+Cc: tglx@linutronix.de, ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
+        linux-kernel@vger.kernel.org, Eric Paris <eparis@parisplace.org>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC][PATCH 1/7] wait: Provide infrastructure to deal with
+ nested blocking
+Message-ID: <20140804134455.GT19379@twins.programming.kicks-ass.net>
+References: <20140804103025.478913141@infradead.org>
+ <20140804103537.356311360@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <CAPz6YkWO=cJSrPk2+Xy_Euxv9tMt6EHc-k+NTNAoPmVvxCE4-A@mail.gmail.com>
-References: <20140728144608.7d9ac736@canb.auug.org.au>
-	<CAPz6YkWO=cJSrPk2+Xy_Euxv9tMt6EHc-k+NTNAoPmVvxCE4-A@mail.gmail.com>
-Date: Mon, 4 Aug 2014 15:44:48 +0200
-Message-ID: <CAPDyKFq2isO+DKMuLT9Ud8B9reFZiVYKG6LL8ysF0ZTNGfY8Nw@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the mmc-uh tree
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Sonny Rao <sonnyrao@chromium.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3NSd1CguC5h5Rqw/"
+Content-Disposition: inline
+In-Reply-To: <20140804103537.356311360@infradead.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 July 2014 19:58, Sonny Rao <sonnyrao@chromium.org> wrote:
-> On Sun, Jul 27, 2014 at 9:46 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Hi Ulf,
->>
->> After merging the mmc-uh tree, today's linux-next build (arm
->> multi_v7_defconfig) failed like this:
->>
->> drivers/mmc/host/dw_mmc.c: In function 'dw_mci_reset':
->> drivers/mmc/host/dw_mmc.c:2262:3: error: implicit declaration of function 'dw_mci_idmac_reset' [-Werror=implicit-function-declaration]
->>    dw_mci_idmac_reset(host);
->>    ^
->
-> Hi, sorry about that.  It looks like it fails to build when
-> CONFIG_MMC_DW_IDMAC is not set.
-> I changed that bit of code from using #ifdef to using just C if
-> statement, but I think in this case the function being called doesn't
-> exist when CONFIG_MMC_DW_IDMAC is not set, so that was incorrect and
-> we should go back to using something like:
->
-> #if IS_ENABLED(CONFIG_MMC_DW_IDMAC)
->         /* It is also recommended that we reset and reprogram idmac */
->         dw_mci_idmac_reset(host);
-> #endif
->
->
-> Ulf, I can respin the patch if you'd like or feel free to fix it
-> yourself too.  Thanks.
 
-I haven't got the time to fix this yet, sorry.
+--3NSd1CguC5h5Rqw/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-It would simplify a bit if you respin the patch, so please do so.
+On Mon, Aug 04, 2014 at 12:30:26PM +0200, Peter Zijlstra wrote:
 
-Kind regards
-Uffe
+> +long wait_woken(wait_queue_t *wait, unsigned mode, long timeout)
+> +{
+> +	set_current_state(mode);
+> +	if (!(wait->flags & WQ_FLAG_WOKEN))
+> +		timeout = schedule_timeout(timeout);
+> +	else
+> +		wait->flags &= ~WQ_FLAG_WOKEN;
 
->
->
->>
->> Caused by commit 25f7dadbd982 ("mmc: dw_mmc: change to use recommended
->> reset procedure").
->>
->> I have used the mmc-uh tree from next-20140725 for today.
->> --
->> Cheers,
->> Stephen Rothwell                    sfr@canb.auug.org.au
+I just noticed that poll_schedule_timeout() uses set_mb() for clearing
+its triggered variable. But I'm not entirely sure I see why..
+
+> +	__set_current_state(TASK_RUNNING);
+> +
+> +	return timeout;
+> +}
+> +EXPORT_SYMBOL(wait_woken);
+> +
+> +int woken_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key)
+> +{
+> +	/*
+> +	 * Although this function is called under waitqueue lock, LOCK
+> +	 * doesn't imply write barrier and the users expect write
+> +	 * barrier semantics on wakeup functions.  The following
+> +	 * smp_wmb() is equivalent to smp_wmb() in try_to_wake_up()
+> +	 * and is paired with set_mb() in wait_woken().
+> +	 */
+> +	smp_wmb();
+> +	wait->flags |= WQ_FLAG_WOKEN;
+> +
+> +	return default_wake_function(wait, mode, sync, key);
+> +}
+> +EXPORT_SYMBOL(woken_wake_function);
+
+So possibly we could also use this for poll_schedule_timeout() and
+__pollwake().
+
+--3NSd1CguC5h5Rqw/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT345XAAoJEHZH4aRLwOS6K3UQAJ27DoD6sRp6Sg/ZNPQp54eR
+dgcACwFRWx9IWhDTJPh9HosAsNcnfJ4XaNVCE1c7PJtPX+s+onayUYGlYPSzeyAi
+q/gdlGMKyz0ki5lkiki9YrgSCQdFe3Srg6A0hbAPnMCPtART5iBBINiWiGLqlrZF
+ksXhZCBLF3B0v8aC/ymA5l4DHJXM8ZTdlIlgm2d9GKN7hTvW67CW243RxGeKDFC6
+KkeenDjhwLR4hUNQfHTTwRnCdvtbYM+ADYy34R6CO25S0cLV8E/+Y6h+xwaiW+Hy
+hkTAbB108r9aD5hcqs/0o55BMj7wqi+3FZ55Q5QXjmbWxctKthJWlAQhLfmRB5TI
+g5ef6cHKiF8tENDBs3awxorQzBBDkGCKMo3PBjOuAUBZ90oIqXLEOKdj130tSeH/
+BfcOd/E2smh51944D6+6k5OgeN9Cf4VJAxcC8WmvUfCJFl2u5vGxIUj+I78su2L1
+mEJrBxjM3Mq6lmJgJl50+O2TI59gG/0lZ6xqAvXyrXyzxbMwKAhys8fVV3FP/v8i
+kCW1lP4dT2/2NE9jdGODFhSvYB4N0rOXSG1IohIQOESMP0tI3nU0hMdpcerVEKFp
+2jmzpOeBM99gqAu8fW3OEwcqQpPwDEib43j8rRiDP422h2SbR1Dzf80jAgVrUDwa
+wiOgPspO0fOeQCgd0DWO
+=2uAS
+-----END PGP SIGNATURE-----
+
+--3NSd1CguC5h5Rqw/--
