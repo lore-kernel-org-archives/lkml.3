@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbaHDIzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 04:55:22 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:40079 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934AbaHDIzU (ORCPT
+	id S1751713AbaHDIzf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 04:55:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37316 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470AbaHDIzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 04:55:20 -0400
-Subject: [PATCH v2 6/18] arcmsr: precise checking adapter ID
-From: Ching Huang <ching2048@areca.com.tw>
-To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Aug 2014 16:55:12 +0800
-Message-ID: <1407142512.4756.54.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Aug 2014 04:55:32 -0400
+Message-ID: <53DF4A7D.3040505@canonical.com>
+Date: Mon, 04 Aug 2014 10:55:25 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>,
+        airlied@linux.ie
+CC: thellstrom@vmware.com, nouveau@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        bskeggs@redhat.com, alexander.deucher@amd.com
+Subject: Re: [PATCH 09/19] drm/radeon: handle lockup in delayed work, v2
+References: <20140731153245.15061.63023.stgit@patser> <20140731153342.15061.54264.stgit@patser> <53DBC1EC.1010001@amd.com> <53DBD269.80807@canonical.com> <53DF462B.2060102@amd.com>
+In-Reply-To: <53DF462B.2060102@amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching Huang <ching2048@areca.com.tw>
+op 04-08-14 10:36, Christian König schreef:
+> Hi Maarten,
+>
+> Sorry for the delay. I've got way to much todo recently.
+>
+> Am 01.08.2014 um 19:46 schrieb Maarten Lankhorst:
+>>
+>> On 01-08-14 18:35, Christian König wrote:
+>>> Am 31.07.2014 um 17:33 schrieb Maarten Lankhorst:
+>>>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>>>> ---
+>>>> V1 had a nasty bug breaking gpu lockup recovery. The fix is not
+>>>> allowing radeon_fence_driver_check_lockup to take exclusive_lock,
+>>>> and kill it during lockup recovery instead.
+>>> That looks like the delayed work starts running as soon as we submit a fence, and not when it's needed for waiting.
+>>>
+>>> Since it's a backup for failing IRQs I would rather put it into radeon_irq_kms.c and start/stop it when the IRQs are started/stoped.
+>> The delayed work is not just for failing irq's, it's also the handler that's used to detect lockups, which is why I trigger after processing fences, and reset the timer after processing.
+>
+> The idea was turning the delayed work on and off when we turn the irq on and off as well, processing of the delayed work handler can still happen in radeon_fence.c
+>
+>>
+>> Specifically what happened was this scenario:
+>>
+>> - lock up occurs
+>> - write lock taken by gpu_reset
+>> - delayed work runs, tries to acquire read lock, blocks
+>> - gpu_reset tries to cancel delayed work synchronously
+>> - has to wait for delayed work to finish -> deadlock
+>
+> Why do you want to disable the work item from the lockup handler in the first place?
+>
+> Just take the exclusive lock in the work item, when it concurrently runs with the lockup handler it will just block for the lockup handler to complete.
+With the delayed work radeon_fence_wait no longer handles unreliable interrupts itself, so it has to run from the lockup handler.
+But an alternative solution could be adding a radeon_fence_wait_timeout, ignore the timeout and check if fence is signaled on timeout.
+This would probably be a cleaner solution.
 
-This patch rewrites the arcmsr_define_adapter_type function to precisely check Areca adapter's ID.
-This can prevent an unknown adapter being used as a default adapter type by driver.
-
-Signed-off-by: Ching Huang <ching2048@areca.com.tw>
----
-
-Thanks for Christoph advice.
-
-
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-01 18:02:08.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-04 16:43:16.000000000 +0800
-@@ -295,24 +295,43 @@ static int arcmsr_bios_param(struct scsi
- 	return 0;
- }
- 
--static void arcmsr_define_adapter_type(struct AdapterControlBlock *acb)
-+static int arcmsr_define_adapter_type(struct AdapterControlBlock *acb)
- {
- 	struct pci_dev *pdev = acb->pdev;
- 	u16 dev_id;
--	pci_read_config_word(pdev, PCI_DEVICE_ID, &dev_id);
-+
-+	dev_id = pdev->device;
- 	acb->dev_id = dev_id;
- 	switch (dev_id) {
--	case 0x1880: {
-+	case 0x1880:
- 		acb->adapter_type = ACB_ADAPTER_TYPE_C;
--		}
- 		break;
--	case 0x1201: {
-+	case 0x1200:
-+	case 0x1201:
-+	case 0x1202:
- 		acb->adapter_type = ACB_ADAPTER_TYPE_B;
--		}
- 		break;
--
--	default: acb->adapter_type = ACB_ADAPTER_TYPE_A;
-+	case 0x1110:
-+	case 0x1120:
-+	case 0x1130:
-+	case 0x1160:
-+	case 0x1170:
-+	case 0x1210:
-+	case 0x1220:
-+	case 0x1230:
-+	case 0x1260:
-+	case 0x1270:
-+	case 0x1280:
-+	case 0x1380:
-+	case 0x1381:
-+	case 0x1680:
-+		acb->adapter_type = ACB_ADAPTER_TYPE_A;
-+		break;
-+	default:
-+		pr_notice("Unknown device ID = 0x%x\n", dev_id);
-+		return false;
- 	}
-+	return true;
- }
- 
- static uint8_t arcmsr_hba_wait_msgint_ready(struct AdapterControlBlock *acb)
-@@ -710,7 +729,9 @@ static int arcmsr_probe(struct pci_dev *
- 			ACB_F_MESSAGE_WQBUFFER_READED);
- 	acb->acb_flags &= ~ACB_F_SCSISTOPADAPTER;
- 	INIT_LIST_HEAD(&acb->ccb_free_list);
--	arcmsr_define_adapter_type(acb);
-+	error = arcmsr_define_adapter_type(acb);
-+	if (!error)
-+		goto pci_release_regs;
- 	error = arcmsr_remap_pciregion(acb);
- 	if(!error){
- 		goto pci_release_regs;
-
+~Maarten
 
