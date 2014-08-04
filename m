@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169AbaHDQxJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:53:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56685 "EHLO
+	id S1753266AbaHDQx7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:53:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56650 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752276AbaHDQt7 (ORCPT
+	by vger.kernel.org with ESMTP id S1752203AbaHDQt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:49:59 -0400
+	Mon, 4 Aug 2014 12:49:57 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Guan Xuetao" <gxt@mprc.pku.edu.cn>,
-        "Jonas Bonn" <jonas@southpole.se>, "Arnd Bergmann" <arnd@arndb.de>
-Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.229441953@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
+        "David Vrabel" <david.vrabel@citrix.com>
+Date: Mon, 04 Aug 2014 17:48:31 +0100
+Message-ID: <lsq.1407170911.274536002@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 73/94] unicore32: add ioremap_nocache definition
+Subject: [PATCH 3.2 21/94] xen/manage: fix potential deadlock when
+ resuming the console
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,34 +32,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit a50e4213e71adc7dde0d514aabd8af7275fee39f upstream.
+commit 1b6478231c6f5f844185acb32045cf195028cfce upstream.
 
-Bugfix for following error messages:
-lib/iomap.c: In function 'pci_iomap':
-lib/iomap.c:274: error: implicit declaration of function 'ioremap_nocache'
-lib/iomap.c:274: warning: return makes pointer from integer without a cast
+Calling xen_console_resume() in xen_suspend() causes a warning because
+it locks irq_mapping_update_lock (a mutex) and this may sleep.  If a
+userspace process is using the evtchn device then this mutex may be
+locked at the point of the stop_machine() call and
+xen_console_resume() would then deadlock.
 
-Also see commit <f1ecc69838a2d7c8a3e1909f637d4083c071777d>
-  it will hide the ioremap_nocache function for systems with an MMU
+Resuming the console after stop_machine() returns avoids this
+deadlock.
 
-Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Jonas Bonn <jonas@southpole.se>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/unicore32/include/asm/io.h | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/xen/manage.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/unicore32/include/asm/io.h
-+++ b/arch/unicore32/include/asm/io.h
-@@ -37,6 +37,7 @@ extern void __uc32_iounmap(volatile void
-  */
- #define ioremap(cookie, size)		__uc32_ioremap(cookie, size)
- #define ioremap_cached(cookie, size)	__uc32_ioremap_cached(cookie, size)
-+#define ioremap_nocache(cookie, size)	__uc32_ioremap(cookie, size)
- #define iounmap(cookie)			__uc32_iounmap(cookie)
+--- a/drivers/xen/manage.c
++++ b/drivers/xen/manage.c
+@@ -93,7 +93,6 @@ static int xen_suspend(void *data)
  
- /*
+ 	if (!si->cancelled) {
+ 		xen_irq_resume();
+-		xen_console_resume();
+ 		xen_timer_resume();
+ 	}
+ 
+@@ -149,6 +148,10 @@ static void do_suspend(void)
+ 
+ 	err = stop_machine(xen_suspend, &si, cpumask_of(0));
+ 
++	/* Resume console as early as possible. */
++	if (!si.cancelled)
++		xen_console_resume();
++
+ 	dpm_resume_noirq(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
+ 
+ 	if (err) {
 
