@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043AbaHDQ6a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:58:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56589 "EHLO
+	id S1753102AbaHDQ6c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:58:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56583 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752085AbaHDQt5 (ORCPT
+	by vger.kernel.org with ESMTP id S1752058AbaHDQt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:57 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Olof Johansson" <olof@lixom.net>,
-        "Aaron Durbin" <adurbin@chromium.org>,
+CC: akpm@linux-foundation.org,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Puneet Kumar" <puneetster@chromium.org>
+        "Lan Tianyu" <tianyu.lan@intel.com>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.98931941@decadent.org.uk>
+Message-ID: <lsq.1407170912.351054547@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 31/94] ACPI / EC: Ensure lock is acquired before
- accessing ec struct members
+Subject: [PATCH 3.2 37/94] ACPI / battery: Retry to get battery
+ information if failed during probing
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,42 +33,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Puneet Kumar <puneetster@chromium.org>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 36b15875a7819a2ec4cb5748ff7096ad7bd86cbb upstream.
+commit 75646e758a0ecbed5024454507d5be5b9ea9dcbf upstream.
 
-A bug was introduced by commit b76b51ba0cef ('ACPI / EC: Add more debug
-info and trivial code cleanup') that erroneously caused the struct member
-to be accessed before acquiring the required lock.  This change fixes
-it by ensuring the lock acquisition is done first.
+Some machines (eg. Lenovo Z480) ECs are not stable during boot up
+and causes battery driver fails to be loaded due to failure of getting
+battery information from EC sometimes. After several retries, the
+operation will work. This patch is to retry to get battery information 5
+times if the first try fails.
 
-Found by Aaron Durbin <adurbin@chromium.org>
-
-Fixes: b76b51ba0cef ('ACPI / EC: Add more debug info and trivial code cleanup')
-References: http://crbug.com/319019
-Signed-off-by: Puneet Kumar <puneetster@chromium.org>
-Reviewed-by: Aaron Durbin <adurbin@chromium.org>
-[olof: Commit message reworded a bit]
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=75581
+Reported-and-tested-by: naszar <naszar@ya.ru>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[bwh: Backported to 3.2: adjust context]
+[bwh: Backported to 3.2: acpi_battery_update() doesn't take a second parameter]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/ec.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/acpi/battery.c | 27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -178,9 +178,10 @@ static void start_transaction(struct acp
- static void advance_transaction(struct acpi_ec *ec, u8 status)
- {
- 	unsigned long flags;
--	struct transaction *t = ec->curr;
-+	struct transaction *t;
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -34,6 +34,7 @@
+ #include <linux/dmi.h>
+ #include <linux/slab.h>
+ #include <linux/suspend.h>
++#include <linux/delay.h>
+ #include <asm/unaligned.h>
  
- 	spin_lock_irqsave(&ec->curr_lock, flags);
-+	t = ec->curr;
- 	if (!t)
- 		goto unlock;
- 	if (t->wlen > t->wi) {
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+@@ -1055,6 +1056,28 @@ static int battery_notify(struct notifie
+ 	return 0;
+ }
+ 
++/*
++ * Some machines'(E,G Lenovo Z480) ECs are not stable
++ * during boot up and this causes battery driver fails to be
++ * probed due to failure of getting battery information
++ * from EC sometimes. After several retries, the operation
++ * may work. So add retry code here and 20ms sleep between
++ * every retries.
++ */
++static int acpi_battery_update_retry(struct acpi_battery *battery)
++{
++	int retry, ret;
++
++	for (retry = 5; retry; retry--) {
++		ret = acpi_battery_update(battery);
++		if (!ret)
++			break;
++
++		msleep(20);
++	}
++	return ret;
++}
++
+ static int acpi_battery_add(struct acpi_device *device)
+ {
+ 	int result = 0;
+@@ -1074,9 +1097,11 @@ static int acpi_battery_add(struct acpi_
+ 	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
+ 			"_BIX", &handle)))
+ 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+-	result = acpi_battery_update(battery);
++
++	result = acpi_battery_update_retry(battery);
+ 	if (result)
+ 		goto fail;
++
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+ 	result = acpi_battery_add_fs(device);
+ #endif
 
