@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426AbaHDQzi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:55:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56616 "EHLO
+	id S1753410AbaHDQzg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:55:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56611 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752136AbaHDQt5 (ORCPT
+	by vger.kernel.org with ESMTP id S1752134AbaHDQt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:57 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Matthew Wilcox" <matthew@wil.cx>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "James Bottomley" <JBottomley@Parallels.com>,
-        "Mikulas Patocka" <mpatocka@redhat.com>
+CC: akpm@linux-foundation.org, "Johan Hovold" <johan@kernel.org>,
+        "Bernd Wachter" <bernd.wachter@jolla.com>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.782701941@decadent.org.uk>
+Message-ID: <lsq.1407170912.644141700@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 81/94] sym53c8xx_2: Set DID_REQUEUE return code when
- aborting squeue
+Subject: [PATCH 3.2 29/94] usb: option: Add ID for Telewell TW-LTE 4G v2
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,55 +31,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Bernd Wachter <bernd.wachter@jolla.com>
 
-commit fd1232b214af43a973443aec6a2808f16ee5bf70 upstream.
+commit 3d28bd840b2d3981cd28caf5fe1df38f1344dd60 upstream.
 
-This patch fixes I/O errors with the sym53c8xx_2 driver when the disk
-returns QUEUE FULL status.
+Add ID of the Telewell 4G v2 hardware to option driver to get legacy
+serial interface working
 
-When the controller encounters an error (including QUEUE FULL or BUSY
-status), it aborts all not yet submitted requests in the function
-sym_dequeue_from_squeue.
-
-This function aborts them with DID_SOFT_ERROR.
-
-If the disk has full tag queue, the request that caused the overflow is
-aborted with QUEUE FULL status (and the scsi midlayer properly retries
-it until it is accepted by the disk), but the sym53c8xx_2 driver aborts
-the following requests with DID_SOFT_ERROR --- for them, the midlayer
-does just a few retries and then signals the error up to sd.
-
-The result is that disk returning QUEUE FULL causes request failures.
-
-The error was reproduced on 53c895 with COMPAQ BD03685A24 disk
-(rebranded ST336607LC) with command queue 48 or 64 tags.  The disk has
-64 tags, but under some access patterns it return QUEUE FULL when there
-are less than 64 pending tags.  The SCSI specification allows returning
-QUEUE FULL anytime and it is up to the host to retry.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bernd Wachter <bernd.wachter@jolla.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/sym53c8xx_2/sym_hipd.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/option.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/scsi/sym53c8xx_2/sym_hipd.c b/drivers/scsi/sym53c8xx_2/sym_hipd.c
-index d92fe40..6b349e3 100644
---- a/drivers/scsi/sym53c8xx_2/sym_hipd.c
-+++ b/drivers/scsi/sym53c8xx_2/sym_hipd.c
-@@ -3000,7 +3000,11 @@ sym_dequeue_from_squeue(struct sym_hcb *np, int i, int target, int lun, int task
- 		if ((target == -1 || cp->target == target) &&
- 		    (lun    == -1 || cp->lun    == lun)    &&
- 		    (task   == -1 || cp->tag    == task)) {
-+#ifdef SYM_OPT_HANDLE_DEVICE_QUEUEING
- 			sym_set_cam_status(cp->cmd, DID_SOFT_ERROR);
-+#else
-+			sym_set_cam_status(cp->cmd, DID_REQUEUE);
-+#endif
- 			sym_remque(&cp->link_ccbq);
- 			sym_insque_tail(&cp->link_ccbq, &np->comp_ccbq);
- 		}
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1498,6 +1498,8 @@ static const struct usb_device_id option
+ 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1426, 0xff, 0xff, 0xff),  /* ZTE MF91 */
+ 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1428, 0xff, 0xff, 0xff),  /* Telewell TW-LTE 4G v2 */
++		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1533, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1534, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1535, 0xff, 0xff, 0xff) },
 
