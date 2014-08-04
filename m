@@ -1,52 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536AbaHDUr6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 16:47:58 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:47192 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973AbaHDUr4 (ORCPT
+	id S1752797AbaHDUsZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 16:48:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35174 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbaHDUsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 16:47:56 -0400
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: davem@davemloft.net
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH] arch/sparc/math-emu/math_32.c: drop stray break operator
-Date: Mon,  4 Aug 2014 23:47:41 +0300
-Message-Id: <1407185261-1799-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-Mailer: git-send-email 1.8.5.5
+	Mon, 4 Aug 2014 16:48:24 -0400
+Message-ID: <53DFF18B.5080509@infradead.org>
+Date: Mon, 04 Aug 2014 13:48:11 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>
+CC: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v2 18/18] Documentation: ACPI for ARM64
+References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-19-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1407166105-17675-19-git-send-email-hanjun.guo@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit is a guesswork, but it seems to make sense to drop this
-break, as otherwise the following line is never executed and becomes
-dead code. And that following line actually saves the result of
-local calculation by the pointer given in function argument. So the
-proposed change makes sense if this code in the whole makes sense (but I
-am unable to analyze it in the whole).
+On 08/04/14 08:28, Hanjun Guo wrote:
+> From: Graeme Gregory <graeme.gregory@linaro.org>
+> 
+> Add documentation for the guidelines of how to use ACPI
+> on ARM64.
+> 
+> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  Documentation/arm64/arm-acpi.txt |  215 ++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 215 insertions(+)
+>  create mode 100644 Documentation/arm64/arm-acpi.txt
+> 
+> diff --git a/Documentation/arm64/arm-acpi.txt b/Documentation/arm64/arm-acpi.txt
+> new file mode 100644
+> index 0000000..a6e14a2
+> --- /dev/null
+> +++ b/Documentation/arm64/arm-acpi.txt
+> @@ -0,0 +1,215 @@
+> +ACPI on ARMv8 Servers
+> +---------------------
+> +
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81641
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
----
- arch/sparc/math-emu/math_32.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+...
 
-diff --git a/arch/sparc/math-emu/math_32.c b/arch/sparc/math-emu/math_32.c
-index aa4d55b..5ce8f2f 100644
---- a/arch/sparc/math-emu/math_32.c
-+++ b/arch/sparc/math-emu/math_32.c
-@@ -499,7 +499,7 @@ static int do_one_mathemu(u32 insn, unsigned long *pfsr, unsigned long *fregs)
- 		case 0: fsr = *pfsr;
- 			if (IR == -1) IR = 2;
- 			/* fcc is always fcc0 */
--			fsr &= ~0xc00; fsr |= (IR << 10); break;
-+			fsr &= ~0xc00; fsr |= (IR << 10);
- 			*pfsr = fsr;
- 			break;
- 		case 1: rd->s = IR; break;
+> +
+> +ACPI Detection
+> +--------------
+> +
+> +Drivers should determine their probe() type by checking for ACPI_HANDLE,
+> +or .of_node, or other information in the device structure. This is
+> +detailed further in the "Driver Recommendations" section.
+> +
+> +In non-driver code If the presence of ACPI needs to be detected at runtime,
+> +then check the value of acpi_disabled. If CONFIG_ACPI not being set,
+
+                                          If CONFIG_ACPI is not set,
+
+> +acpi_disabled will always be 1.
+> +
+> +Device Enumeration
+> +------------------
+
+
 -- 
-1.8.5.5
-
+~Randy
