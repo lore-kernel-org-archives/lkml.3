@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581AbaHDQ7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:59:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56563 "EHLO
+	id S1753565AbaHDQ7S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:59:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56547 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751998AbaHDQt4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751975AbaHDQt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:56 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,18 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Nicolas Pitre" <nicolas.pitre@linaro.org>,
-        "Russell King" <rmk+kernel@arm.linux.org.uk>,
-        "Alexander Holler" <holler@ahsoftware.de>,
-        "Nicolas Pitre" <nico@linaro.org>
-Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.493868595@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Linus Gasser" <list@markas-al-nour.org>,
+        "Maithili Hinge" <maithili@marvell.com>,
+        "Andrew Wiley" <wiley.andrew.j@gmail.com>,
+        "Bing Zhao" <bzhao@marvell.com>, "Xinming Hu" <huxm@marvell.com>,
+        "Amitkumar Karwar" <akarwar@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Avinash Patil" <patila@marvell.com>,
+        "Michael Hirsch" <hirsch@teufel.de>
+Date: Mon, 04 Aug 2014 17:48:31 +0100
+Message-ID: <lsq.1407170911.426732993@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 87/94] ARM: 7670/1: fix the memset fix
+Subject: [PATCH 3.2 15/94] mwifiex: fix Tx timeout issue
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,84 +37,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit 418df63adac56841ef6b0f1fcf435bc64d4ed177 upstream.
+commit d76744a93246eccdca1106037e8ee29debf48277 upstream.
 
-Commit 455bd4c430b0 ("ARM: 7668/1: fix memset-related crashes caused by
-recent GCC (4.7.2) optimizations") attempted to fix a compliance issue
-with the memset return value.  However the memset itself became broken
-by that patch for misaligned pointers.
+https://bugzilla.kernel.org/show_bug.cgi?id=70191
+https://bugzilla.kernel.org/show_bug.cgi?id=77581
 
-This fixes the above by branching over the entry code from the
-misaligned fixup code to avoid reloading the original pointer.
+It is observed that sometimes Tx packet is downloaded without
+adding driver's txpd header. This results in firmware parsing
+garbage data as packet length. Sometimes firmware is unable
+to read the packet if length comes out as invalid. This stops
+further traffic and timeout occurs.
 
-Also, because the function entry alignment is wrong in the Thumb mode
-compilation, that fixup code is moved to the end.
+The root cause is uninitialized fields in tx_info(skb->cb) of
+packet used to get garbage values. In this case if
+MWIFIEX_BUF_FLAG_REQUEUED_PKT flag is mistakenly set, txpd
+header was skipped. This patch makes sure that tx_info is
+correctly initialized to fix the problem.
 
-While at it, the entry instructions are slightly reworked to help dual
-issue pipelines.
-
-Signed-off-by: Nicolas Pitre <nico@linaro.org>
-Tested-by: Alexander Holler <holler@ahsoftware.de>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-by: Andrew Wiley <wiley.andrew.j@gmail.com>
+Reported-by: Linus Gasser <list@markas-al-nour.org>
+Reported-by: Michael Hirsch <hirsch@teufel.de>
+Tested-by: Xinming Hu <huxm@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Maithili Hinge <maithili@marvell.com>
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/lib/memset.S | 33 +++++++++++++--------------------
- 1 file changed, 13 insertions(+), 20 deletions(-)
+ drivers/net/wireless/mwifiex/main.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/lib/memset.S b/arch/arm/lib/memset.S
-index d912e73..94b0650 100644
---- a/arch/arm/lib/memset.S
-+++ b/arch/arm/lib/memset.S
-@@ -14,31 +14,15 @@
+--- a/drivers/net/wireless/mwifiex/main.c
++++ b/drivers/net/wireless/mwifiex/main.c
+@@ -458,6 +458,7 @@ mwifiex_hard_start_xmit(struct sk_buff *
+ 	}
  
- 	.text
- 	.align	5
--	.word	0
--
--1:	subs	r2, r2, #4		@ 1 do we have enough
--	blt	5f			@ 1 bytes to align with?
--	cmp	r3, #2			@ 1
--	strltb	r1, [ip], #1		@ 1
--	strleb	r1, [ip], #1		@ 1
--	strb	r1, [ip], #1		@ 1
--	add	r2, r2, r3		@ 1 (r2 = r2 - (4 - r3))
--/*
-- * The pointer is now aligned and the length is adjusted.  Try doing the
-- * memset again.
-- */
+ 	tx_info = MWIFIEX_SKB_TXCB(skb);
++	memset(tx_info, 0, sizeof(*tx_info));
+ 	tx_info->bss_index = priv->bss_index;
+ 	mwifiex_fill_buffer(skb);
  
- ENTRY(memset)
--/*
-- * Preserve the contents of r0 for the return value.
-- */
--	mov	ip, r0
--	ands	r3, ip, #3		@ 1 unaligned?
--	bne	1b			@ 1
-+	ands	r3, r0, #3		@ 1 unaligned?
-+	mov	ip, r0			@ preserve r0 as return value
-+	bne	6f			@ 1
- /*
-  * we know that the pointer in ip is aligned to a word boundary.
-  */
--	orr	r1, r1, r1, lsl #8
-+1:	orr	r1, r1, r1, lsl #8
- 	orr	r1, r1, r1, lsl #16
- 	mov	r3, r1
- 	cmp	r2, #16
-@@ -127,4 +111,13 @@ ENTRY(memset)
- 	tst	r2, #1
- 	strneb	r1, [ip], #1
- 	mov	pc, lr
-+
-+6:	subs	r2, r2, #4		@ 1 do we have enough
-+	blt	5b			@ 1 bytes to align with?
-+	cmp	r3, #2			@ 1
-+	strltb	r1, [ip], #1		@ 1
-+	strleb	r1, [ip], #1		@ 1
-+	strb	r1, [ip], #1		@ 1
-+	add	r2, r2, r3		@ 1 (r2 = r2 - (4 - r3))
-+	b	1b
- ENDPROC(memset)
 
