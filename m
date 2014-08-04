@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078AbaHDRFN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:05:13 -0400
-Received: from outrelay08.libero.it ([212.52.84.112]:47671 "EHLO
-	outrelay08.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417AbaHDRFJ (ORCPT
+	id S1753859AbaHDRFU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:05:20 -0400
+Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:16227
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752053AbaHDRFP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 13:05:09 -0400
-X-libjamoibt: 1823
-Message-ID: <53DFBE8D.5050707@inwind.it>
-Date: Mon, 04 Aug 2014 19:10:37 +0200
-From: Goffredo Baroncelli <kreijack@inwind.it>
-Reply-To: kreijack@inwind.it
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Mon, 4 Aug 2014 13:05:15 -0400
+X-WSS-ID: 0N9SKRY-08-ZQD-02
+X-M-MSG: 
+Message-ID: <53DFBD2E.5070001@amd.com>
+Date: Mon, 4 Aug 2014 19:04:46 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Jean Delvare <jdelvare@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: linux-kernel@vger.kernel.org, bryan@whatroute.net
-Subject: Re: [PATCH 3/4] Add the "verbose" module option.
-References: <1406901650-20841-1-git-send-email-kreijack@inwind.it>	 <1406901650-20841-4-git-send-email-kreijack@inwind.it>	 <20140803161223.0b26e4bc@endymion.delvare>	<53DE5179.3080402@gmail.com>	 <20140803175222.3433b646@endymion.delvare>  <53DE650E.4060909@gmail.com> <1407141986.4302.10.camel@chaos.site>
-In-Reply-To: <1407141986.4302.10.camel@chaos.site>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>, <airlied@linux.ie>
+CC: <thellstrom@vmware.com>, <nouveau@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
+        <bskeggs@redhat.com>, <alexander.deucher@amd.com>
+Subject: Re: [PATCH 09/19] drm/radeon: handle lockup in delayed work, v2
+References: <20140731153245.15061.63023.stgit@patser>
+ <20140731153342.15061.54264.stgit@patser> <53DBC1EC.1010001@amd.com>
+ <53DBD269.80807@canonical.com> <53DF462B.2060102@amd.com>
+ <53DF4A7D.3040505@canonical.com> <53DF7516.2010408@amd.com>
+ <53DF8BF2.4000309@canonical.com> <53DF9AC4.3010700@amd.com>
+ <53DF9B58.8000403@canonical.com> <53DF9C88.6060107@amd.com>
+ <53DF9F89.60202@canonical.com> <53DFA0EB.5040302@amd.com>
+ <53DFA210.2020603@canonical.com>
+In-Reply-To: <53DFA210.2020603@canonical.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Originating-IP: [10.224.152.188]
+Content-Transfer-Encoding: 8BIT
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(377424004)(199002)(189002)(51704005)(83322001)(44976005)(80316001)(80022001)(65956001)(65806001)(23676002)(76482001)(77982001)(97736001)(4396001)(81342001)(86362001)(64126003)(64706001)(50466002)(74662001)(74502001)(47776003)(20776003)(81542001)(31966008)(36756003)(46102001)(106466001)(68736004)(85202003)(92566001)(95666004)(101416001)(87936001)(85182001)(102836001)(85852003)(76176999)(54356999)(83072002)(105586002)(83506001)(50986999)(33656002)(85306004)(84676001)(92726001)(99396002)(21056001)(65816999)(93886004)(79102001)(87266999)(107046002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR02MB042;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0293D40691
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Christian.Koenig@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2014 10:46 AM, Jean Delvare wrote:
-> Le Sunday 03 August 2014 à 18:36 +0200, Goffredo Baroncelli a écrit :
->> On 08/03/2014 05:52 PM, Jean Delvare wrote:
->>> On Sun, 03 Aug 2014 17:12:57 +0200, Goffredo Baroncelli wrote:
->>>> On 08/03/2014 04:12 PM, Jean Delvare wrote:
->>>>>> +	    (verbose > 0 && level >= 0)) {
->>>>>> +		print_temp("CPU-temp: ", temp );
->>>>>> +		if (casetemp)
->>>>>> +			print_temp(", Case: ", casetemp );
->>>>>> +		if (level >= 0)
->>>>>> +			printk(", Fan: %d (tuned %+d)\n", 11-level,
->>>>>> +				x.fan_level-level );
->>>>>> +		else
->>>>>> +			printk(", Fan: %d (tuned +0)\n",x.fan_level);
+Am 04.08.2014 um 17:09 schrieb Maarten Lankhorst:
+> op 04-08-14 17:04, Christian König schreef:
+>> Am 04.08.2014 um 16:58 schrieb Maarten Lankhorst:
+>>> op 04-08-14 16:45, Christian König schreef:
+>>>> Am 04.08.2014 um 16:40 schrieb Maarten Lankhorst:
+>>>>> op 04-08-14 16:37, Christian König schreef:
+>>>>>>> It'a pain to deal with gpu reset.
+>>>>>> Yeah, well that's nothing new.
+>>>>>>
+>>>>>>> I've now tried other solutions but that would mean reverting to the old style during gpu lockup recovery, and only running the delayed work when !lockup.
+>>>>>>> But this meant that the timeout was useless to add. I think the cleanest is keeping the v2 patch, because potentially any waiting code can be called during lockup recovery.
+>>>>>> The lockup code itself should never call any waiting code and V2 doesn't seem to handle a couple of cases correctly either.
+>>>>>>
+>>>>>> How about moving the fence waiting out of the reset code?
+>>>>> What cases did I miss then?
 >>>>>
->>>>> I think you can do without the "tuned +0" which doesn't add much value.
->>>>
->>>> Me too. But the old driver does the same, so I preferred to 
->>>> leave it as is.
->>>
->>> I looked at the code again and no, I can't see the old code doing that.
->>> It has "tuned %+d" only in tune_fan() which is only called if
->>> level >= 0. The other printk (when tune_fan isn't called) doesn't have
->>> a "tuned" part.
->>
->> This is taken from an old log of a v3.2 kernel (no changes here):
->>
->> [  886.510879] CPU-temp: 55.4 C, Case: 33.1 C,  Fan: 0 (tuned -11)
->> [  910.522869] CPU-temp: 56.0 C, Case: 33.5 C,  Fan: 0 (tuned +0)
->> [  958.546880] CPU-temp: 57.0 C, Case: 34.1 C,  Fan: 3 (tuned +3)
->>
->> in the code if level <0, then there is no update in the log. But if
->> level >0 and level is equal to the previous one, this leads to
->> have "tuned +0"...
-> 
-> I agree with that.
-> 
->> But I have to be honest: I have not fully understand how 
->> "level" is computed.
-> 
-> I agree with that too :/
-> 
->> The printk without "(tuned %+d)" is never called because 
->> LOG_TEMP was #define(d) equal to 0.
-> 
-> And this is what your second printk is replacing. So it should not have
-> the "(tuned *)" either.
-> 
-I removed the printk(s) from tune_fan(); the ones leaved replaced 
-both the ones inside tune_fan() and the ones outside.
+>>>>> I'm curious how you want to move the fence waiting out of reset, when there are so many places that could potentially wait, like radeon_ib_get can call radeon_sa_bo_new which can do a wait, or radeon_ring_alloc that can wait on radeon_fence_wait_next, etc.
+>>>> The IB test itself doesn't needs to be protected by the exclusive lock. Only everything between radeon_save_bios_scratch_regs and radeon_ring_restore.
+>>> I'm not sure about that, what do you want to do if the ring tests fail? Do you have to retake the exclusive lock?
+>> Just set need_reset again and return -EAGAIN, that should have mostly the same effect as what we are doing right now.
+> Yeah, except for the locking the ttm delayed workqueue, but that bool should be easy to save/restore.
+> I think this could work.
 
-Anyway, Benjamin which is your opinion ? 
-For me is equal to remove or to leave "(tune +0)" (when the tuning is equal to 0).
-Jean think it is better to remove "(tune +0)" (when the tuning is equal to 0).
-So if you haven't any objection I will remove it.
+Actually you could activate the delayed workqueue much earlier as well.
 
--- 
-gpg @keyserver.linux.it: Goffredo Baroncelli (kreijackATinwind.it>
-Key fingerprint BBF5 1610 0B64 DAC6 5F7D  17B2 0EDA 9B37 8B82 E0B5
+Thinking more about it that sounds like a bug in the current code, 
+because we probably want the workqueue activated before waiting for the 
+fence.
+
+Christian.
+
+>
+> ~Maarten
+>
+
