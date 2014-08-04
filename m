@@ -1,159 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713AbaHDLPH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 07:15:07 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:59970 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752163AbaHDLPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 07:15:04 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 15/18 v2] staging: comedi: amplc_pci224: put board indices in PCI driver_data
-Date: Mon,  4 Aug 2014 12:14:28 +0100
-Message-Id: <1407150868-2489-1-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1406814475-5923-1-git-send-email-abbotti@mev.co.uk>
-References: <1406814475-5923-1-git-send-email-abbotti@mev.co.uk>
+	id S1752562AbaHDLQv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 07:16:51 -0400
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:53598 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752203AbaHDLQu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 07:16:50 -0400
+Date: Mon, 4 Aug 2014 07:16:38 -0400
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: Hans Wennborg <hans@hanshq.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/19] drivers: atm: fix %d confusingly prefixed with 0x
+ in format strings
+Message-ID: <20140804071638.32fd85ed@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <1407111500-14547-1-git-send-email-hans@hanshq.net>
+References: <1407111500-14547-1-git-send-email-hans@hanshq.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-NRLCMF-Spam-Score: () hits=-0.001
+X-NRLCMF-Virus-Scanned: No virus found
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The `driver_data` member value from the matched entry of the PCI module
-device table `amplc_pci224_pci_table[]` is passed through to our comedi
-"auto_attach" handler, `pci224_auto_attach()`.  Use that to index
-directly into our static board data array `pci224_boards[]` instead of
-calling `pci224_find_pci_board()` to search for the entry matching the
-PCI device ID.  That function can be removed.  The `devid` and `model`
-members of `struct pci224_board` are no longer needed either and can be
-removed.
+Acked-by: Chas Williams <chas@cmf.nrl.navy.mil>
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
-v2: Use C99 syntax for amplc_pci224_pci_table[] initializer.  Thanks to
-Hartley for finding that!
----
- drivers/staging/comedi/drivers/amplc_pci224.c | 52 ++++++++++-----------------
- 1 file changed, 18 insertions(+), 34 deletions(-)
+On Sun,  3 Aug 2014 17:18:20 -0700
+Hans Wennborg <hans@hanshq.net> wrote:
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pci224.c b/drivers/staging/comedi/drivers/amplc_pci224.c
-index bcef9e6..675bbe8 100644
---- a/drivers/staging/comedi/drivers/amplc_pci224.c
-+++ b/drivers/staging/comedi/drivers/amplc_pci224.c
-@@ -351,8 +351,6 @@ enum pci224_model { pci224_model, pci234_model };
- 
- struct pci224_board {
- 	const char *name;
--	unsigned short devid;
--	enum pci224_model model;
- 	unsigned int ao_chans;
- 	unsigned int ao_bits;
- 	const struct comedi_lrange *ao_range;
-@@ -361,20 +359,16 @@ struct pci224_board {
- };
- 
- static const struct pci224_board pci224_boards[] = {
--	{
-+	[pci224_model] = {
- 		.name		= "pci224",
--		.devid		= PCI_DEVICE_ID_AMPLICON_PCI224,
--		.model		= pci224_model,
- 		.ao_chans	= 16,
- 		.ao_bits	= 12,
- 		.ao_range	= &range_pci224,
- 		.ao_hwrange	= &hwrange_pci224[0],
- 		.ao_range_check	= &range_check_pci224[0],
- 	},
--	{
-+	[pci234_model] = {
- 		.name		= "pci234",
--		.devid		= PCI_DEVICE_ID_AMPLICON_PCI234,
--		.model		= pci234_model,
- 		.ao_chans	= 4,
- 		.ao_bits	= 16,
- 		.ao_range	= &range_pci234,
-@@ -1071,20 +1065,6 @@ static irqreturn_t pci224_interrupt(int irq, void *d)
- }
- 
- /*
-- * This function looks for a board matching the supplied PCI device.
-- */
--static const struct pci224_board
--*pci224_find_pci_board(struct pci_dev *pci_dev)
--{
--	int i;
--
--	for (i = 0; i < ARRAY_SIZE(pci224_boards); i++)
--		if (pci_dev->device == pci224_boards[i].devid)
--			return &pci224_boards[i];
--	return NULL;
--}
--
--/*
-  * Common part of attach and auto_attach.
-  */
- static int pci224_attach_common(struct comedi_device *dev,
-@@ -1162,8 +1142,6 @@ static int pci224_attach_common(struct comedi_device *dev,
- 	s->cancel = pci224_ao_cancel;
- 	s->munge = pci224_ao_munge;
- 
--	dev->board_name = thisboard->name;
--
- 	if (irq) {
- 		ret = request_irq(irq, pci224_interrupt, IRQF_SHARED,
- 				  dev->board_name, dev);
-@@ -1179,23 +1157,29 @@ static int pci224_attach_common(struct comedi_device *dev,
- }
- 
- static int
--pci224_auto_attach(struct comedi_device *dev, unsigned long context_unused)
-+pci224_auto_attach(struct comedi_device *dev, unsigned long context_model)
- {
- 	struct pci_dev *pci_dev = comedi_to_pci_dev(dev);
-+	const struct pci224_board *thisboard = NULL;
- 	struct pci224_private *devpriv;
- 
--	dev_info(dev->class_dev, "attach pci %s\n", pci_name(pci_dev));
-+	if (context_model < ARRAY_SIZE(pci224_boards))
-+		thisboard = &pci224_boards[context_model];
-+	if (!thisboard || !thisboard->name) {
-+		dev_err(dev->class_dev,
-+			"amplc_pci224: BUG! cannot determine board type!\n");
-+		return -EINVAL;
-+	}
-+	dev->board_ptr = thisboard;
-+	dev->board_name = thisboard->name;
-+
-+	dev_info(dev->class_dev, "amplc_pci224: attach pci %s - %s\n",
-+		 pci_name(pci_dev), dev->board_name);
- 
- 	devpriv = comedi_alloc_devpriv(dev, sizeof(*devpriv));
- 	if (!devpriv)
- 		return -ENOMEM;
- 
--	dev->board_ptr = pci224_find_pci_board(pci_dev);
--	if (dev->board_ptr == NULL) {
--		dev_err(dev->class_dev,
--			"BUG! cannot determine board type!\n");
--		return -EINVAL;
--	}
- 	return pci224_attach_common(dev, pci_dev);
- }
- 
-@@ -1231,8 +1215,8 @@ static int amplc_pci224_pci_probe(struct pci_dev *dev,
- }
- 
- static const struct pci_device_id amplc_pci224_pci_table[] = {
--	{ PCI_DEVICE(PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI224) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI234) },
-+	{ PCI_VDEVICE(AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI224), pci224_model },
-+	{ PCI_VDEVICE(AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI234), pci234_model },
- 	{ 0 }
- };
- MODULE_DEVICE_TABLE(pci, amplc_pci224_pci_table);
--- 
-2.0.0
+> Signed-off-by: Hans Wennborg <hans@hanshq.net>
+> ---
+>  drivers/atm/eni.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/atm/eni.c b/drivers/atm/eni.c
+> index b1955ba..d65975a 100644
+> --- a/drivers/atm/eni.c
+> +++ b/drivers/atm/eni.c
+> @@ -2155,7 +2155,7 @@ static int eni_proc_read(struct atm_dev *dev,loff_t *pos,char *page)
+>  
+>  		if (!tx->send) continue;
+>  		if (!--left) {
+> -			return sprintf(page,"tx[%d]:    0x%ld-0x%ld "
+> +			return sprintf(page, "tx[%d]:    0x%lx-0x%lx "
+>  			    "(%6ld bytes), rsv %d cps, shp %d cps%s\n",i,
+>  			    (unsigned long) (tx->send - eni_dev->ram),
+>  			    tx->send-eni_dev->ram+tx->words*4-1,tx->words*4,
+> @@ -2181,7 +2181,7 @@ static int eni_proc_read(struct atm_dev *dev,loff_t *pos,char *page)
+>  			if (--left) continue;
+>  			length = sprintf(page,"vcc %4d: ",vcc->vci);
+>  			if (eni_vcc->rx) {
+> -				length += sprintf(page+length,"0x%ld-0x%ld "
+> +				length += sprintf(page+length, "0x%lx-0x%lx "
+>  				    "(%6ld bytes)",
+>  				    (unsigned long) (eni_vcc->recv - eni_dev->ram),
+>  				    eni_vcc->recv-eni_dev->ram+eni_vcc->words*4-1,
 
