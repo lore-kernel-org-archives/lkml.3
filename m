@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704AbaHDDKb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Aug 2014 23:10:31 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:56986 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285AbaHDDKa (ORCPT
+	id S1751771AbaHDDQL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Aug 2014 23:16:11 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:62658 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929AbaHDDQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Aug 2014 23:10:30 -0400
-Subject: [PATCH -tip v2] [BUGFIX] kprobes: Skip kretprobe hit in NMI context
- to avoid deadlock
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Date: Mon, 04 Aug 2014 03:10:16 +0000
-Message-ID: <20140804031016.11433.65539.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.17-dirty
+	Sun, 3 Aug 2014 23:16:10 -0400
+From: <lichunhe@huawei.com>
+To: <j.vosburgh@gmail.com>, <vfalico@gmail.com>, <andy@greyhouse.net>,
+        <linux-kernel@vger.kernel.org>
+CC: <dingtianhong@huawei.com>, <qianhuibin@huawei.com>,
+        Chunhe Li <lichunhe@huawei.com>
+Subject: [PATCH net/net-next] bonding:Don't received packets if bonding is not up
+Date: Mon, 4 Aug 2014 11:15:13 +0800
+Message-ID: <1407122113-3184-1-git-send-email-lichunhe@huawei.com>
+X-Mailer: git-send-email 1.9.2.msysgit.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.177.26.106]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Skip kretprobe hit in NMI context, because if an NMI happens
-inside the critical section protected by kretprobe_table.lock
-and another(or same) kretprobe hit, pre_kretprobe_handler
-tries to lock kretprobe_table.lock again.
-Normal interrupts have no problem because they are disabled
-with the lock.
+From: Chunhe Li <lichunhe@huawei.com>
 
-Changes in v2:
- - Add unlikely for in_nmi.
- - Add a comment for nmissed counter.
+If the bonding device is down, it should not receive packets 
+to network stack or other upper flow stack.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Chunhe Li <lichunhe@huawei.com>
 ---
- kernel/kprobes.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/bonding/bond_main.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 734e9a7..138219b 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1778,6 +1778,16 @@ static int pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
- 	unsigned long hash, flags = 0;
- 	struct kretprobe_instance *ri;
- 
-+	/* To avoid deadlock, prohibit return probing in NMI context */
-+	if (unlikely(in_nmi())) {
-+		/*
-+		 * Do not get a lock. nmissed is not accurate.
-+		 * This just informs user some misses are happened.
-+		 */
-+		rp->nmissed++;
-+		return 0;
-+	}
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 701f86c..48a127b 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1110,6 +1110,12 @@ static rx_handler_result_t bond_handle_frame(struct sk_buff **pskb)
+ 	int (*recv_probe)(const struct sk_buff *, struct bonding *,
+ 			  struct slave *);
+ 	int ret = RX_HANDLER_ANOTHER;
 +
- 	/*TODO: consider to only swap the RA after the last pre_handler fired */
- 	hash = hash_ptr(current, KPROBE_HASH_BITS);
- 	raw_spin_lock_irqsave(&rp->lock, flags);
++	slave = bond_slave_get_rcu(skb->dev);
++	bond = slave->bond;
++
++	if (unlikely(!(bond->dev->flags & IFF_UP)))
++		return RX_HANDLER_PASS;
+ 
+ 	skb = skb_share_check(skb, GFP_ATOMIC);
+ 	if (unlikely(!skb))
+@@ -1117,9 +1123,6 @@ static rx_handler_result_t bond_handle_frame(struct sk_buff **pskb)
+ 
+ 	*pskb = skb;
+ 
+-	slave = bond_slave_get_rcu(skb->dev);
+-	bond = slave->bond;
+-
+ 	recv_probe = ACCESS_ONCE(bond->recv_probe);
+ 	if (recv_probe) {
+ 		ret = recv_probe(skb, bond, slave);
+-- 
+1.9.2.0
 
 
