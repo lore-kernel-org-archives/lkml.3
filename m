@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751375AbaHDEK4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 00:10:56 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:37181 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714AbaHDEKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 00:10:54 -0400
-Message-ID: <1407125450.4710.38.camel@j-VirtualBox>
-Subject: Re: [PATCH 2/7] locking/rwsem: more aggressive use of optimistic
- spinning
-From: Jason Low <jason.low2@hp.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Dave Chinner <david@fromorbit.com>
-Date: Sun, 03 Aug 2014 21:10:50 -0700
-In-Reply-To: <1407119782-41119-3-git-send-email-Waiman.Long@hp.com>
-References: <1407119782-41119-1-git-send-email-Waiman.Long@hp.com>
-	 <1407119782-41119-3-git-send-email-Waiman.Long@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751155AbaHDERU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 00:17:20 -0400
+Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:9194
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750820AbaHDERT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 00:17:19 -0400
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: <broonie@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <alsa-devel@alsa-project.org>, <timur@tabi.org>
+Subject: [PATCH 0/2] ASoC: fsl_asrc: Fix two dereferenced variable before check
+Date: Mon, 4 Aug 2014 12:19:47 +0800
+Message-ID: <cover.1407125653.git.nicoleotsuka@gmail.com>
+X-Mailer: git-send-email 1.8.4
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130515994357724463;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009002)(6009001)(189002)(199002)(64706001)(47776003)(6806004)(21056001)(77156001)(19580405001)(44976005)(36756003)(62966002)(50226001)(95666004)(73972005)(20776003)(82202001)(105596002)(19580395003)(80022001)(79102001)(81342001)(46102001)(61266001)(74502001)(97736001)(81156004)(55446002)(77982001)(48376002)(110136001)(69596002)(104166001)(87286001)(84676001)(87936001)(86362001)(99396002)(50986999)(2351001)(87572001)(107046002)(92566001)(81442001)(50466002)(88136002)(93916002)(81542001)(92726001)(74662001)(31966008)(102836001)(83072002)(4396001)(106466001)(85306004)(68736004)(229853001)(33646002)(89996001)(73392001)(104016003)(85852003)(26826002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB619;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0293D40691
+Authentication-Results: spf=softfail (sender IP is 192.88.158.2)
+ smtp.mailfrom=nicoleotsuka@gmail.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-08-03 at 22:36 -0400, Waiman Long wrote:
-> The rwsem_can_spin_on_owner() function currently allows optimistic
-> spinning only if the owner field is defined and is running. That is
-> too conservative as it will cause some tasks to miss the opportunity
-> of doing spinning in case the owner hasn't been able to set the owner
-> field in time or the lock has just become available.
-> 
-> This patch enables more aggressive use of optimistic spinning by
-> assuming that the lock is spinnable unless proved otherwise.
-> 
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> ---
->  kernel/locking/rwsem-xadd.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> index d058946..dce22b8 100644
-> --- a/kernel/locking/rwsem-xadd.c
-> +++ b/kernel/locking/rwsem-xadd.c
-> @@ -285,7 +285,7 @@ static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
->  static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
->  {
->  	struct task_struct *owner;
-> -	bool on_cpu = false;
-> +	bool on_cpu = true;	/* Assume spinnable unless proved not to be */
+These two patches fixes two warning of dereferenced variable reported by
+Dan Carpenter <dan.carpenter@oracle.com>
 
-Hi,
+Nicolin Chen (2):
+  ASoC: fsl_sarc_dma: Check pair before using it
+  ASoC: fsl_asrc: Don't access members of config before checking it
 
-So "on_cpu = true" was recently converted to "on_cpu = false" in order
-to address issues such as a 5x performance regression in the xfs_repair
-workload that was caused by the original rwsem optimistic spinning code.
+ sound/soc/fsl/fsl_asrc.c     | 9 ++++++---
+ sound/soc/fsl/fsl_asrc_dma.c | 9 +++++++--
+ 2 files changed, 13 insertions(+), 5 deletions(-)
 
-However, patch 4 in this patchset does address some of the problems with
-spinning when there are readers. CC'ing Dave Chinner, who did the
-testing with the xfs_repair workload.
+-- 
+1.8.4
 
