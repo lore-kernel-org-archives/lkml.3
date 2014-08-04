@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209AbaHDQxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:53:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56618 "EHLO
+	id S1753187AbaHDQxL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:53:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56671 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752198AbaHDQt6 (ORCPT
+	by vger.kernel.org with ESMTP id S1752219AbaHDQt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:58 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Barton Xu" <tank.xuhan@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Lv Zheng" <lv.zheng@intel.com>,
-        "Steffen Weber" <steffen.weber@gmail.com>,
-        "Arthur Chen" <axchen@nvidia.com>
-Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.605195981@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Pavel Machek" <pavel@ucw.cz>,
+        "Andreas Dilger" <adilger@dilger.ca>, "Theodore Ts'o" <tytso@mit.edu>
+Date: Mon, 04 Aug 2014 17:48:31 +0100
+Message-ID: <lsq.1407170911.74476308@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 34/94] ACPI / EC: Add asynchronous command byte write
- support
+Subject: [PATCH 3.2 26/94] ext4: clarify error count warning messages
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,218 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit f92fca0060fc4dc9227342d0072d75df98c1e5a5 upstream.
+commit ae0f78de2c43b6fadd007c231a352b13b5be8ed2 upstream.
 
-Move the first command byte write into advance_transaction() so that all
-EC register accesses that can affect the command processing state machine
-can happen in this asynchronous state machine advancement function.
+Make it clear that values printed are times, and that it is error
+since last fsck. Also add note about fsck version required.
 
-The advance_transaction() function then can be a complete implementation
-of an asyncrhonous transaction for a single command so that:
- 1. The first command byte can be written in the interrupt context;
- 2. The command completion waiter can also be used to wait the first command
-    byte's timeout;
- 3. In BURST mode, the follow-up command bytes can be written in the
-    interrupt context directly, so that it doesn't need to return to the
-    task context. Returning to the task context reduces the throughput of
-    the BURST mode and in the worst cases where the system workload is very
-    high, this leads to the hardware driven automatic BURST mode exit.
-
-In order not to increase memory consumption, convert 'done' into 'flags'
-to contain multiple indications:
- 1. ACPI_EC_COMMAND_COMPLETE: converting from original 'done' condition,
-    indicating the completion of the command transaction.
- 2. ACPI_EC_COMMAND_POLL: indicating the availability of writing the first
-    command byte. A new command can utilize this flag to compete for the
-    right of accessing the underlying hardware. There is a follow-up bug
-    fix that has utilized this new flag.
-
-The 2 flags are important because it also reflects a key concept of IO
-programs' design used in the system softwares. Normally an IO program
-running in the kernel should first be implemented in the asynchronous way.
-And the 2 flags are the most common way to implement its synchronous
-operations on top of the asynchronous operations:
-1. POLL: This flag can be used to block until the asynchronous operations
-         can happen.
-2. COMPLETE: This flag can be used to block until the asynchronous
-             operations have completed.
-By constructing code cleanly in this way, many difficult problems can be
-solved smoothly.
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
-Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
-Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
-Reported-by: Barton Xu <tank.xuhan@gmail.com>
-Tested-by: Steffen Weber <steffen.weber@gmail.com>
-Tested-by: Arthur Chen <axchen@nvidia.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - s/ec->lock/ec->curr_lock/]
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Andreas Dilger <adilger@dilger.ca>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/ec.c | 83 ++++++++++++++++++++++++++++++++-----------------------
- 1 file changed, 48 insertions(+), 35 deletions(-)
+ fs/ext4/super.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -81,6 +81,9 @@ enum {
- 	EC_FLAGS_BLOCKED,		/* Transactions are blocked */
- };
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2726,10 +2726,11 @@ static void print_daily_error_info(unsig
+ 	es = sbi->s_es;
  
-+#define ACPI_EC_COMMAND_POLL		0x01 /* Available for command byte */
-+#define ACPI_EC_COMMAND_COMPLETE	0x02 /* Completed last byte */
-+
- /* ec.c is compiled in acpi namespace so this shows up as acpi.ec_delay param */
- static unsigned int ec_delay __read_mostly = ACPI_EC_DELAY;
- module_param(ec_delay, uint, 0644);
-@@ -116,7 +119,7 @@ struct transaction {
- 	u8 ri;
- 	u8 wlen;
- 	u8 rlen;
--	bool done;
-+	u8 flags;
- };
- 
- struct acpi_ec *boot_ec, *first_ec;
-@@ -157,63 +160,68 @@ static inline void acpi_ec_write_data(st
- 	outb(data, ec->data_addr);
- }
- 
--static int ec_transaction_done(struct acpi_ec *ec)
-+static int ec_transaction_completed(struct acpi_ec *ec)
- {
- 	unsigned long flags;
- 	int ret = 0;
- 	spin_lock_irqsave(&ec->curr_lock, flags);
--	if (!ec->curr || ec->curr->done)
-+	if (!ec->curr || (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
- 		ret = 1;
- 	spin_unlock_irqrestore(&ec->curr_lock, flags);
- 	return ret;
- }
- 
--static void start_transaction(struct acpi_ec *ec)
--{
--	ec->curr->irq_count = ec->curr->wi = ec->curr->ri = 0;
--	ec->curr->done = false;
--	acpi_ec_write_cmd(ec, ec->curr->command);
--}
--
- static void advance_transaction(struct acpi_ec *ec)
- {
--	unsigned long flags;
- 	struct transaction *t;
- 	u8 status;
- 
--	spin_lock_irqsave(&ec->curr_lock, flags);
- 	pr_debug(PREFIX "===== %s =====\n", in_interrupt() ? "IRQ" : "TASK");
- 	status = acpi_ec_read_status(ec);
- 	t = ec->curr;
- 	if (!t)
--		goto unlock;
--	if (t->wlen > t->wi) {
--		if ((status & ACPI_EC_FLAG_IBF) == 0)
--			acpi_ec_write_data(ec,
--				t->wdata[t->wi++]);
--		else
--			goto err;
--	} else if (t->rlen > t->ri) {
--		if ((status & ACPI_EC_FLAG_OBF) == 1) {
--			t->rdata[t->ri++] = acpi_ec_read_data(ec);
--			if (t->rlen == t->ri)
--				t->done = true;
-+		goto err;
-+	if (t->flags & ACPI_EC_COMMAND_POLL) {
-+		if (t->wlen > t->wi) {
-+			if ((status & ACPI_EC_FLAG_IBF) == 0)
-+				acpi_ec_write_data(ec, t->wdata[t->wi++]);
-+			else
-+				goto err;
-+		} else if (t->rlen > t->ri) {
-+			if ((status & ACPI_EC_FLAG_OBF) == 1) {
-+				t->rdata[t->ri++] = acpi_ec_read_data(ec);
-+				if (t->rlen == t->ri)
-+					t->flags |= ACPI_EC_COMMAND_COMPLETE;
-+			} else
-+				goto err;
-+		} else if (t->wlen == t->wi &&
-+			   (status & ACPI_EC_FLAG_IBF) == 0)
-+			t->flags |= ACPI_EC_COMMAND_COMPLETE;
-+		return;
-+	} else {
-+		if ((status & ACPI_EC_FLAG_IBF) == 0) {
-+			acpi_ec_write_cmd(ec, t->command);
-+			t->flags |= ACPI_EC_COMMAND_POLL;
- 		} else
- 			goto err;
--	} else if (t->wlen == t->wi &&
--		   (status & ACPI_EC_FLAG_IBF) == 0)
--		t->done = true;
--	goto unlock;
-+		return;
-+	}
- err:
- 	/*
- 	 * If SCI bit is set, then don't think it's a false IRQ
- 	 * otherwise will take a not handled IRQ as a false one.
- 	 */
--	if (in_interrupt() && !(status & ACPI_EC_FLAG_SCI))
--		++t->irq_count;
-+	if (!(status & ACPI_EC_FLAG_SCI)) {
-+		if (in_interrupt() && t)
-+			++t->irq_count;
-+	}
-+}
- 
--unlock:
--	spin_unlock_irqrestore(&ec->curr_lock, flags);
-+static void start_transaction(struct acpi_ec *ec)
-+{
-+	ec->curr->irq_count = ec->curr->wi = ec->curr->ri = 0;
-+	ec->curr->flags = 0;
-+	advance_transaction(ec);
- }
- 
- static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
-@@ -238,15 +246,17 @@ static int ec_poll(struct acpi_ec *ec)
- 			/* don't sleep with disabled interrupts */
- 			if (EC_FLAGS_MSI || irqs_disabled()) {
- 				udelay(ACPI_EC_MSI_UDELAY);
--				if (ec_transaction_done(ec))
-+				if (ec_transaction_completed(ec))
- 					return 0;
- 			} else {
- 				if (wait_event_timeout(ec->wait,
--						ec_transaction_done(ec),
-+						ec_transaction_completed(ec),
- 						msecs_to_jiffies(1)))
- 					return 0;
- 			}
-+			spin_lock_irqsave(&ec->curr_lock, flags);
- 			advance_transaction(ec);
-+			spin_unlock_irqrestore(&ec->curr_lock, flags);
- 		} while (time_before(jiffies, delay));
- 		pr_debug(PREFIX "controller reset, restart transaction\n");
- 		spin_lock_irqsave(&ec->curr_lock, flags);
-@@ -654,10 +664,13 @@ static int ec_check_sci(struct acpi_ec *
- static u32 acpi_ec_gpe_handler(acpi_handle gpe_device,
- 	u32 gpe_number, void *data)
- {
-+	unsigned long flags;
- 	struct acpi_ec *ec = data;
- 
-+	spin_lock_irqsave(&ec->curr_lock, flags);
- 	advance_transaction(ec);
--	if (ec_transaction_done(ec) &&
-+	spin_unlock_irqrestore(&ec->curr_lock, flags);
-+	if (ec_transaction_completed(ec) &&
- 	    (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF) == 0) {
- 		wake_up(&ec->wait);
- 		ec_check_sci(ec, acpi_ec_read_status(ec));
+ 	if (es->s_error_count)
+-		ext4_msg(sb, KERN_NOTICE, "error count: %u",
++		/* fsck newer than v1.41.13 is needed to clean this condition. */
++		ext4_msg(sb, KERN_NOTICE, "error count since last fsck: %u",
+ 			 le32_to_cpu(es->s_error_count));
+ 	if (es->s_first_error_time) {
+-		printk(KERN_NOTICE "EXT4-fs (%s): initial error at %u: %.*s:%d",
++		printk(KERN_NOTICE "EXT4-fs (%s): initial error at time %u: %.*s:%d",
+ 		       sb->s_id, le32_to_cpu(es->s_first_error_time),
+ 		       (int) sizeof(es->s_first_error_func),
+ 		       es->s_first_error_func,
+@@ -2743,7 +2744,7 @@ static void print_daily_error_info(unsig
+ 		printk("\n");
+ 	}
+ 	if (es->s_last_error_time) {
+-		printk(KERN_NOTICE "EXT4-fs (%s): last error at %u: %.*s:%d",
++		printk(KERN_NOTICE "EXT4-fs (%s): last error at time %u: %.*s:%d",
+ 		       sb->s_id, le32_to_cpu(es->s_last_error_time),
+ 		       (int) sizeof(es->s_last_error_func),
+ 		       es->s_last_error_func,
 
