@@ -1,101 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133AbaHDUYq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 16:24:46 -0400
-Received: from mail-ob0-f202.google.com ([209.85.214.202]:48378 "EHLO
-	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881AbaHDUYo (ORCPT
+	id S1752284AbaHDUZo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 16:25:44 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:58750
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881AbaHDUZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 16:24:44 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: heiko@sntech.de
-Cc: olof@lixom.net, Sonny Rao <sonnyrao@chromium.org>,
-        linux-arm-kernel@lists.infradead.org, kever.yang@rock-chips.com,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dts: Fix the sort ordering of EHCI and HSIC in rk3288.dtsi
-Date: Mon,  4 Aug 2014 13:24:38 -0700
-Message-Id: <1407183878-17734-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	Mon, 4 Aug 2014 16:25:43 -0400
+Date: Mon, 4 Aug 2014 22:25:41 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, keescook@chromium.org, tj@kernel.org,
+        akpm@linux-foundation.org, avagin@openvz.org, ebiederm@xmission.com,
+        hpa@zytor.com, serge.hallyn@canonical.com, xemul@parallels.com,
+        segoon@openwall.com, kamezawa.hiroyu@jp.fujitsu.com,
+        mtk.manpages@gmail.com, jln@google.com
+Subject: Re: [patch 1/4] mm: Introduce check_data_rlimit helper, v2
+Message-ID: <20140804202541.GB27304@mail.hallyn.com>
+References: <20140804172255.109539743@openvz.org>
+ <20140804172610.714056240@openvz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140804172610.714056240@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EHCI and HSIC device tree nodes were added in the wrong place.
-Fix them.
+Quoting Cyrill Gorcunov (gorcunov@openvz.org):
+> To eliminate code duplication lets introduce check_data_rlimit
+> helper which we will use in brk() and prctl() syscalls.
+> 
+> v2 (serge.hallyn@):
+>  - need to check against RLIM_INFINITY rather than RLIMIT_DATA
+> 
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Andrew Vagin <avagin@openvz.org>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
----
-I split this out from Kever's series so it can land.  The merge
-conflict with his patch shouldn't be too hard to resolve.  Sorry for
-messing up the sort order when I originally sent out the USB patches.
-:(
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
- arch/arm/boot/dts/rk3288.dtsi | 40 ++++++++++++++++++++--------------------
- 1 file changed, 20 insertions(+), 20 deletions(-)
-
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index e7cb008..5950b0a 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -195,6 +195,26 @@
- 		status = "disabled";
- 	};
- 
-+	usb_host0_ehci: usb@ff500000 {
-+		compatible = "generic-ehci";
-+		reg = <0xff500000 0x100>;
-+		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru HCLK_USBHOST0>;
-+		clock-names = "usbhost";
-+		status = "disabled";
-+	};
-+
-+	/* NOTE: ohci@ff520000 doesn't actually work on hardware */
-+
-+	usb_hsic: usb@ff5c0000 {
-+		compatible = "generic-ehci";
-+		reg = <0xff5c0000 0x100>;
-+		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru HCLK_HSIC>;
-+		clock-names = "usbhost";
-+		status = "disabled";
-+	};
-+
- 	i2c0: i2c@ff650000 {
- 		compatible = "rockchip,rk3288-i2c";
- 		reg = <0xff650000 0x1000>;
-@@ -251,26 +271,6 @@
- 		status = "disabled";
- 	};
- 
--	usb_host0_ehci: usb@ff500000 {
--		compatible = "generic-ehci";
--		reg = <0xff500000 0x100>;
--		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&cru HCLK_USBHOST0>;
--		clock-names = "usbhost";
--		status = "disabled";
--	};
--
--	/* NOTE: ohci@ff520000 doesn't actually work on hardware */
--
--	usb_hsic: usb@ff5c0000 {
--		compatible = "generic-ehci";
--		reg = <0xff5c0000 0x100>;
--		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&cru HCLK_HSIC>;
--		clock-names = "usbhost";
--		status = "disabled";
--	};
--
- 	gic: interrupt-controller@ffc01000 {
- 		compatible = "arm,gic-400";
- 		interrupt-controller;
--- 
-2.0.0.526.g5318336
-
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Vasiliy Kulikov <segoon@openwall.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+> Cc: Julien Tinnes <jln@google.com>
+> ---
+>  include/linux/mm.h |   15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+> 
+> Index: linux-2.6.git/include/linux/mm.h
+> ===================================================================
+> --- linux-2.6.git.orig/include/linux/mm.h
+> +++ linux-2.6.git/include/linux/mm.h
+> @@ -18,6 +18,7 @@
+>  #include <linux/pfn.h>
+>  #include <linux/bit_spinlock.h>
+>  #include <linux/shrinker.h>
+> +#include <linux/resource.h>
+>  
+>  struct mempolicy;
+>  struct anon_vma;
+> @@ -1780,6 +1781,20 @@ extern struct vm_area_struct *copy_vma(s
+>  	bool *need_rmap_locks);
+>  extern void exit_mmap(struct mm_struct *);
+>  
+> +static inline int check_data_rlimit(unsigned long rlim,
+> +				    unsigned long new,
+> +				    unsigned long start,
+> +				    unsigned long end_data,
+> +				    unsigned long start_data)
+> +{
+> +	if (rlim < RLIM_INFINITY) {
+> +		if (((new - start) + (end_data - start_data)) > rlim)
+> +			return -ENOSPC;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  extern int mm_take_all_locks(struct mm_struct *mm);
+>  extern void mm_drop_all_locks(struct mm_struct *mm);
+>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
