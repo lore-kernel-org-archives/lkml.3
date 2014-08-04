@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbaHDPUE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 11:20:04 -0400
-Received: from mail-db3lrp0080.outbound.protection.outlook.com ([213.199.154.80]:6287
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751495AbaHDPUD convert rfc822-to-8bit (ORCPT
+	id S1752599AbaHDPVY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 11:21:24 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:33662 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125AbaHDPVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 11:20:03 -0400
-From: Dotan Barak <dotanb@mellanox.com>
-To: Joe Perches <joe@perches.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: checkpatch.pl report about "Missing blank line after
- declarations" in a structure definition
-Thread-Topic: checkpatch.pl report about "Missing blank line after
- declarations" in a structure definition
-Thread-Index: Ac+v1hsr1olRx4GsR0yoGKahVltZOwAEuFMAAAD6CqAAANNzgAAAjzTwAAD5l4AAADX+UA==
-Date: Mon, 4 Aug 2014 15:19:58 +0000
-Message-ID: <3b44a1bc344f40feb7c8119a4b102494@DB3PR05MB380.eurprd05.prod.outlook.com>
-References: <3219ba81002f41d99c8651755dc2a920@DB3PR05MB380.eurprd05.prod.outlook.com>
-	 <1407159342.16152.63.camel@joe-AO725>
-	 <e68ad593255b4094a79de9b22cbc2a7a@DB3PR05MB380.eurprd05.prod.outlook.com>
-	 <1407162439.16152.67.camel@joe-AO725>
-	 <f95137f9228a4f08ba391f9640237d28@DB3PR05MB380.eurprd05.prod.outlook.com>
- <1407165075.16152.70.camel@joe-AO725>
-In-Reply-To: <1407165075.16152.70.camel@joe-AO725>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [193.47.165.251]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 0293D40691
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(199002)(189002)(54356999)(83322001)(106356001)(74502001)(76176999)(64706001)(105586002)(21056001)(31966008)(110136001)(101416001)(74662001)(80022001)(76576001)(76482001)(20776003)(81342001)(66066001)(46102001)(77982001)(2656002)(95666004)(86362001)(92566001)(107046002)(4396001)(50986999)(33646002)(87936001)(83072002)(99396002)(74316001)(85852003)(81542001)(79102001)(85306004)(93886004)(24736002)(108616003);DIR:OUT;SFP:;SCL:1;SRVR:DB3PR05MB379;H:DB3PR05MB380.eurprd05.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 4 Aug 2014 11:21:21 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 2/2] of/clk: use "clkops-clocks" to specify clocks handled by clock_ops domain
+Date: Mon, 04 Aug 2014 17:21:49 +0200
+Message-ID: <1616494.8YxGyrZW3V@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAMuHMdVKDQz8q0b2UA7=1K8Qw4n3U0=M+mJyi5UQP7QZdC-JiQ@mail.gmail.com>
+References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be> <2717555.fiA6A86F65@avalon> <CAMuHMdVKDQz8q0b2UA7=1K8Qw4n3U0=M+mJyi5UQP7QZdC-JiQ@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: Mellanox.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In our code (I take it as an example), we used  MLX5_DECLARE_DOORBELL_LOCK,
-So I guess that the regular expression that you mentioned will fail on it
-(because the "_" is not allowed to be repeated).
+Hi Geert,
 
-So, I would change it a little bit to allow people to use underscore as a word separator.
+On Monday 04 August 2014 13:28:32 Geert Uytterhoeven wrote:
+> On Wed, Jul 30, 2014 at 2:06 AM, Laurent Pinchart wrote:
+> > The third option would require storing the clocks lists in device drivers.
+> > I believe this is our best option, as a trade-off between simplicity and
+> > versatility. Drivers that use runtime PM already need to enable it
+> > explicitly when probing devices. Passing a list of clock names to runtime
+> > PM at that point wouldn't complicate drivers much. When the clocks list
+> > isn't SoC- dependent it could be stored as static information. Otherwise
+> > it could be derived from DT (or any other source of hardware description)
+> > using C code, offering all the versatility we need.
+> > 
+> > The only drawback of this solution I can think of right now is that the
+> > runtime PM core couldn't manage device clocks before probing the device.
+> > Specifically device clocks couldn't be managed if no driver is loaded for
+> > that device. I somehow recall that someone raised this as being a
+> > problem, but I can't remember why.
+> 
+> Perhaps you're thinking of clocks that were enabled (by the boot loader or
+> implicit reset state) before running Linux, and aren't disabled?
 
-Thanks
-Dotan
+That wasn't the reason, I know that clk_disable_unused() takes care of that 
+problem (provided the clock drivers behave correctly, the commit you mention 
+below shows that's not always the case, but that's an unrelated issue).
 
-> >
-> > The following change worked for me:
-> > (?:$Storage\s+)?[A-Z0-9_]*(?:DECLARE|DEFINE)_[A-Z_]*\s*\(|
-> >
-> > But, maybe it is better to be even more general and allow:
-> > (?:$Storage\s+)?[A-Z0-9_]*(?:DECLARE|DEFINE)_[ A-Z0-9_]*\s*\(|
-> 
-> Maybe:
-> 
-> (?:$Storage\s+)(?:[A-Z_][A-Z0-9]+_){0,2}(?:DEFINE|DECLARE)(?:_[A-Z0-
-> 9]+){1,2}
-> 
+> That was fixed by commit bb178da701382a230e26d90cf94e8a24b280e0d9
+> ("clk: shmobile: mstp: Fix the is_enabled() operation").
+
+-- 
+Regards,
+
+Laurent Pinchart
 
