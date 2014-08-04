@@ -1,25 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853AbaHDQuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:50:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56602 "EHLO
+	id S1753063AbaHDQv3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:51:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56899 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752121AbaHDQt5 (ORCPT
+	by vger.kernel.org with ESMTP id S1751468AbaHDQvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:49:57 -0400
+	Mon, 4 Aug 2014 12:51:25 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Feng Tang" <feng.tang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: akpm@linux-foundation.org, "John David Anglin" <dave.anglin@bell.net>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Paul McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Mikulas Patocka" <mpatocka@redhat.com>,
+        "Catalin Marinas" <catalin.marinas@arm.com>,
+        "Waiman Long" <waiman.long@hp.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        "Davidlohr Bueso" <davidlohr@hp.com>,
+        "Vineet Gupta" <vgupta@synopsys.com>,
+        "Will Deacon" <will.deacon@arm.com>,
+        "Chris Metcalf" <cmetcalf@tilera.com>,
+        "David Miller" <davem@davemloft.net>,
+        "James Hogan" <james.hogan@imgtec.com>,
+        "James Bottomley" <James.Bottomley@hansenpartnership.com>,
+        "Peter Zijlstra" <peterz@infradead.org>,
+        "Ingo Molnar" <mingo@kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        sparclinux@vger.kernel.org, "Jason Low" <jason.low2@hp.com>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.975647202@decadent.org.uk>
+Message-ID: <lsq.1407170912.728427849@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 30/94] ACPI / EC: Add more debug info and trivial code
- cleanup
+Subject: [PATCH 3.2 51/94] locking/mutex: Disable optimistic spinning on
+ some architectures
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,109 +50,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Feng Tang <feng.tang@intel.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit b76b51ba0cef13980813373a548a12206e3cd3c9 upstream.
+commit 4badad352a6bb202ec68afa7a574c0bb961e5ebc upstream.
 
-Add more debug info for EC transaction debugging, like the interrupt
-status register value, the detail info of a EC transaction.
+The optimistic spin code assumes regular stores and cmpxchg() play nice;
+this is found to not be true for at least: parisc, sparc32, tile32,
+metag-lock1, arc-!llsc and hexagon.
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[bwh: Backported to 3.2: adjust context]
+There is further wreckage, but this in particular seemed easy to
+trigger, so blacklist this.
+
+Opt in for known good archs.
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: David Miller <davem@davemloft.net>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Vineet Gupta <vgupta@synopsys.com>
+Cc: Jason Low <jason.low2@hp.com>
+Cc: Waiman Long <waiman.long@hp.com>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: John David Anglin <dave.anglin@bell.net>
+Cc: James Hogan <james.hogan@imgtec.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: sparclinux@vger.kernel.org
+Link: http://lkml.kernel.org/r/20140606175316.GV13930@laptop.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Drop arm64 change]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/ec.c | 37 +++++++++++++++++++++----------------
- 1 file changed, 21 insertions(+), 16 deletions(-)
-
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -178,30 +178,32 @@ static void start_transaction(struct acp
- static void advance_transaction(struct acpi_ec *ec, u8 status)
- {
- 	unsigned long flags;
-+	struct transaction *t = ec->curr;
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1,6 +1,7 @@
+ config ARM
+ 	bool
+ 	default y
++	select ARCH_SUPPORTS_ATOMIC_RMW
+ 	select HAVE_DMA_API_DEBUG
+ 	select HAVE_IDE if PCI || ISA || PCMCIA
+ 	select HAVE_MEMBLOCK
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -137,6 +137,7 @@ config PPC
+ 	select HAVE_BPF_JIT if (PPC64 && NET)
+ 	select HAVE_ARCH_JUMP_LABEL
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
++	select ARCH_SUPPORTS_ATOMIC_RMW
+ 
+ config EARLY_PRINTK
+ 	bool
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -57,6 +57,7 @@ config SPARC64
+ 	select IRQ_PREFLOW_FASTEOI
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select HAVE_C_RECORDMCOUNT
++	select ARCH_SUPPORTS_ATOMIC_RMW
+ 
+ config ARCH_DEFCONFIG
+ 	string
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -75,6 +75,7 @@ config X86
+ 	select HAVE_BPF_JIT if (X86_64 && NET)
+ 	select CLKEVT_I8253
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
++	select ARCH_SUPPORTS_ATOMIC_RMW
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS)
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -198,5 +198,9 @@ config INLINE_WRITE_UNLOCK_IRQ
+ config INLINE_WRITE_UNLOCK_IRQRESTORE
+ 	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
+ 
++config ARCH_SUPPORTS_ATOMIC_RMW
++	bool
 +
- 	spin_lock_irqsave(&ec->curr_lock, flags);
--	if (!ec->curr)
-+	if (!t)
- 		goto unlock;
--	if (ec->curr->wlen > ec->curr->wi) {
-+	if (t->wlen > t->wi) {
- 		if ((status & ACPI_EC_FLAG_IBF) == 0)
- 			acpi_ec_write_data(ec,
--				ec->curr->wdata[ec->curr->wi++]);
-+				t->wdata[t->wi++]);
- 		else
- 			goto err;
--	} else if (ec->curr->rlen > ec->curr->ri) {
-+	} else if (t->rlen > t->ri) {
- 		if ((status & ACPI_EC_FLAG_OBF) == 1) {
--			ec->curr->rdata[ec->curr->ri++] = acpi_ec_read_data(ec);
--			if (ec->curr->rlen == ec->curr->ri)
--				ec->curr->done = true;
-+			t->rdata[t->ri++] = acpi_ec_read_data(ec);
-+			if (t->rlen == t->ri)
-+				t->done = true;
- 		} else
- 			goto err;
--	} else if (ec->curr->wlen == ec->curr->wi &&
-+	} else if (t->wlen == t->wi &&
- 		   (status & ACPI_EC_FLAG_IBF) == 0)
--		ec->curr->done = true;
-+		t->done = true;
- 	goto unlock;
- err:
- 	/* false interrupt, state didn't change */
- 	if (in_interrupt())
--		++ec->curr->irq_count;
-+		++t->irq_count;
- unlock:
- 	spin_unlock_irqrestore(&ec->curr_lock, flags);
- }
-@@ -311,7 +313,8 @@ static int acpi_ec_transaction(struct ac
- 		status = -ETIME;
- 		goto end;
- 	}
--	pr_debug(PREFIX "transaction start\n");
-+	pr_debug(PREFIX "transaction start (cmd=0x%02x, addr=0x%02x)\n",
-+			t->command, t->wdata ? t->wdata[0] : 0);
- 	/* disable GPE during transaction if storm is detected */
- 	if (test_bit(EC_FLAGS_GPE_STORM, &ec->flags)) {
- 		/* It has to be disabled, so that it doesn't trigger. */
-@@ -327,8 +330,9 @@ static int acpi_ec_transaction(struct ac
- 		/* It is safe to enable the GPE outside of the transaction. */
- 		acpi_enable_gpe(NULL, ec->gpe);
- 	} else if (t->irq_count > ec_storm_threshold) {
--		pr_info(PREFIX "GPE storm detected, "
--			"transactions will use polling mode\n");
-+		pr_info(PREFIX "GPE storm detected(%d GPEs), "
-+			"transactions will use polling mode\n",
-+			t->irq_count);
- 		set_bit(EC_FLAGS_GPE_STORM, &ec->flags);
- 	}
- 	pr_debug(PREFIX "transaction end\n");
-@@ -404,7 +408,7 @@ int ec_burst_disable(void)
- 
- EXPORT_SYMBOL(ec_burst_disable);
- 
--int ec_read(u8 addr, u8 * val)
-+int ec_read(u8 addr, u8 *val)
- {
- 	int err;
- 	u8 temp_data;
-@@ -643,10 +647,11 @@ static u32 acpi_ec_gpe_handler(acpi_hand
- 	u32 gpe_number, void *data)
- {
- 	struct acpi_ec *ec = data;
-+	u8 status = acpi_ec_read_status(ec);
- 
--	pr_debug(PREFIX "~~~> interrupt\n");
-+	pr_debug(PREFIX "~~~> interrupt, status:0x%02x\n", status);
- 
--	advance_transaction(ec, acpi_ec_read_status(ec));
-+	advance_transaction(ec, status);
- 	if (ec_transaction_done(ec) &&
- 	    (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF) == 0) {
- 		wake_up(&ec->wait);
+ config MUTEX_SPIN_ON_OWNER
+-	def_bool SMP && !DEBUG_MUTEXES
++	def_bool y
++	depends on SMP && !DEBUG_MUTEXES && ARCH_SUPPORTS_ATOMIC_RMW
 
