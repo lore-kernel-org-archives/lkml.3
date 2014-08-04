@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaHDNfg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 09:35:36 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:19349 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801AbaHDNfe (ORCPT
+	id S1752773AbaHDNfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 09:35:46 -0400
+Received: from smtprelay0250.hostedemail.com ([216.40.44.250]:45687 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751801AbaHDNfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 09:35:34 -0400
-X-IronPort-AV: E=Sophos;i="5.01,798,1400025600"; 
-   d="scan'208";a="159109115"
-Message-ID: <53DF8C24.6030709@citrix.com>
-Date: Mon, 4 Aug 2014 14:35:32 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Zoltan Kiss <zoltan.kiss@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-CC: <netdev@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen-netback: Turn off the carrier if the
- guest is not able to receive
-References: <1406749849-4356-1-git-send-email-zoltan.kiss@citrix.com> <1406749849-4356-2-git-send-email-zoltan.kiss@citrix.com>
-In-Reply-To: <1406749849-4356-2-git-send-email-zoltan.kiss@citrix.com>
+	Mon, 4 Aug 2014 09:35:45 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:1801:2393:2525:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4605:5007:7652:8985:9025:9121:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13069:13161:13229:13255:13311:13357:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: plot54_3207926782608
+X-Filterd-Recvd-Size: 1840
+Message-ID: <1407159342.16152.63.camel@joe-AO725>
+Subject: Re: checkpatch.pl report about "Missing blank line after
+ declarations" in a structure definition
+From: Joe Perches <joe@perches.com>
+To: Dotan Barak <dotanb@mellanox.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 04 Aug 2014 06:35:42 -0700
+In-Reply-To: <3219ba81002f41d99c8651755dc2a920@DB3PR05MB380.eurprd05.prod.outlook.com>
+References: <3219ba81002f41d99c8651755dc2a920@DB3PR05MB380.eurprd05.prod.outlook.com>
 Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/07/14 20:50, Zoltan Kiss wrote:
-> Currently when the guest is not able to receive more packets, qdisc layer starts
-> a timer, and when it goes off, qdisc is started again to deliver a packet again.
-> This is a very slow way to drain the queues, consumes unnecessary resources and
-> slows down other guests shutdown.
-> This patch change the behaviour by turning the carrier off when that timer
-> fires, so all the packets are freed up which were stucked waiting for that vif.
-> Instead of the rx_queue_purge bool it uses the VIF_STATUS_RX_PURGE_EVENT bit to
-> signal the thread that either the timout happened or an RX interrupt arrived, so
-> the thread can check what it should do. It also disables NAPI, so the guest
-> can't transmit, but leaves the interrupts on, so it can resurrect.
+On Mon, 2014-08-04 at 11:20 +0000, Dotan Barak wrote:
+> Hi Joe.
+> 
+> Thanks for fixing the issue that I reported about.
+> 
+> It seems that even after your fix, there is still a false warning of "Missing blank line after declarations".
+> 
+> I executed checkpatch.pl on a header file that exists in the Linux tree:
+> # ./checkpatch.pl --file --no-tree ../include/linux/mlx5/cq.h
+> 
+> And got the following warning:
+> 
+> WARNING: Missing a blank line after declarations
+> #49: FILE: ../include/linux/mlx5/cq.h:49:
+> +       int                     irqn;
+> +       void (*comp)            (struct mlx5_core_cq *);
+[]
+> As you can see, this is a structure definition and IMHO the warning above is false.
 
-I don't think you should disable NAPI, particularly since you have to
-fiddle with the bits directly instead of usign the API to do so.
+The version in Linus' tree has a defect where
+this test doesn't recognize function pointer
+declarations.
 
-I looked at some hardware drivers and none of them disabled NAPI -- they
-just allow it to naturally end once hardware queues are drained.
+This is fixed in -next since June, but it takes
+awhile to get into Linus' tree.
 
-netback is a little different as a frontend could stop processing
-to-guest packets but continue sending from-guest ones.  I don't see any
-problem with allowing this.
+https://lkml.org/lkml/2014/6/6/426
 
-> @@ -1955,24 +1955,78 @@ int xenvif_kthread_guest_rx(void *data)
->  		 */
->  		if (unlikely(queue->vif->disabled && queue->id == 0))
->  			xenvif_carrier_off(queue->vif);
-> +		else if (unlikely(test_and_clear_bit(QUEUE_STATUS_RX_PURGE_EVENT,
-> +						     &queue->status))) {
-> +			/* Either the last unsuccesful skb or at least 1 slot
-> +			 * should fit
-> +			 */
-> +			int needed = queue->rx_last_skb_slots ?
-> +				     queue->rx_last_skb_slots : 1;
->  
-> -		if (kthread_should_stop())
-> -			break;
-> -
-> -		if (queue->rx_queue_purge) {
-> +			/* It is assumed that if the guest post new
-> +			 * slots after this, the RX interrupt will set
-> +			 * the bit and wake up the thread again
-> +			 */
-> +			set_bit(QUEUE_STATUS_RX_STALLED, &queue->status);
 
-This big if needs to go in a new function.
-
-David
