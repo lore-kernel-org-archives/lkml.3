@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbaHDE25 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 00:28:57 -0400
-Received: from ozlabs.org ([103.22.144.67]:44633 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925AbaHDE24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 00:28:56 -0400
-Date: Mon, 4 Aug 2014 14:28:47 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Thierry Reding <treding@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the gpio tree
-Message-ID: <20140804142847.408921cf@canb.auug.org.au>
-In-Reply-To: <CAAVeFuJmHX351WQpEo43sQUf+4BHk9QRJqZfJMsgWf8AXH=_8w@mail.gmail.com>
-References: <20140729183153.0e77a6f6@canb.auug.org.au>
-	<20140729084237.GE31360@ulmo.nvidia.com>
-	<CAAVeFuJmHX351WQpEo43sQUf+4BHk9QRJqZfJMsgWf8AXH=_8w@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/bdGJJKDNvBDt9cNX4NpuqnW"; protocol="application/pgp-signature"
+	id S1751103AbaHDEmy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 00:42:54 -0400
+Received: from regular2.263xmail.com ([211.157.152.3]:43814 "EHLO
+	regular2.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaHDEmu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 00:42:50 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <f482964f44f390baf9d4052b183bb406>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: mark yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Rob Clark <robdclark@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, David Airlie <airlied@linux.ie>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, olof@lixom.net, djkurtz@chromium.org,
+        xjq@rock-chips.com, kfx@rock-chips.com, cym@rock-chips.com,
+        cf@rock-chips.com, zyw@rock-chips.com, zwl@rock-chips.com,
+        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
+        zhangqing@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, mark yao <yzq@rock-chips.com>
+Subject: [PATCH 0/9] Add drm driver for Rockchip Socs
+Date: Mon,  4 Aug 2014 12:41:14 +0800
+Message-Id: <1407127274-1356-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/bdGJJKDNvBDt9cNX4NpuqnW
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: mark yao <yzq@rock-chips.com>
 
-Hi Alexandre,
+This a series of patches is a DRM Driver for Rockchip Socs, driver provides
+an abstraction for the graphics hardware, as lcd controller and
+connector interface.
 
-On Mon, 4 Aug 2014 13:10:14 +0900 Alexandre Courbot <gnurou@gmail.com> wrot=
-e:
->
-> I have sent a patch to fix this. In the meantime, if the merge
-> conflict of the GPIO tree on board-paz00.c is solved by taking the
-> GPIO version, there is no build error.
->=20
-> There are a few important patches pending in the GPIO tree that should
-> undergo testing - Stephen, do you think you could resolve the conflict
-> that way to enable the latest GPIO tree to be tested again?
+add rk3288 lcd controller.
+add rk3288 lvds and rk3288 edp connector.
 
-No, but I will apply that fix patch in my merge of the gpio tree - just
-make sure it is applied to the gpio tree before Linus (Torvalds) is
-asked to pull it.
+Tested on rk3288 sdk board, use lvds or edp connector, boot and display OK
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+mark yao (9):
+  drm: Add drm driver for Rockchip Socs
+  Add devicetree bindings for panels used by the Rockchip DRM
+  drm: add driver for panels used by the Rockchip DRM
+  Add devicetree bindings for Rockchip lcd controller
+  drm: add Rockchip rk3288 lcd controller driver
+  Add devicetree bindings for Rockchip Soc LVDS
+  drm: add Rockchip Soc rk3288 lvds connector
+  Add devicetree bindings for Rockchip Soc EDP
+  drm: add Rockchip Soc rk3288 edp connector
 
---Sig_/bdGJJKDNvBDt9cNX4NpuqnW
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+-- 
+1.7.9.5
 
-iQIcBAEBCAAGBQJT3wwFAAoJEMDTa8Ir7ZwVlXkP/A185U/AtHzbqIFwN4YST3vH
-cbPuOn2EPB0OohgKO3gil5u6pb1hey1NKzHJbnQjgdU+lhDswSok/A+l5CCZqCiT
-z0PtQSGsSkOaZcQoTo21kfGUX0CdKZo0huGnOnflghcgNmCWwEY9MjQ2XSyvTE0n
-RrcNPbQceZz6A6lKNIRFI7yDBJexUjzSfqdbCo47XXlhkgaOsWWxe4IV2ILh5S0y
-EQuOPpBeSmLKp/asbdfMHoSWjCsBELL66l9skUkQbwZr+9Euqku3nuAurHdcLRMt
-8MP8Y3pxsqHubMuiI+IW+IM/KqWXDgCsiGow0s9iy6cGwnzc2vJRC/3OKbW9/dvx
-ExUgve2ua+pehVuiNXGCwnnq691wbrBlNLrPMRkzG4/BWaw9I+SxLYnX94RwMz4v
-0/4aX3ET0VY3yNFun1SQmUgO5dzrewKBJjLBF/B57AhoK7WCnlfgkcWbfRoLvCoN
-yIFoHu+wdJJcv22/ox6btwOxAylBiZDrZLH1p3UOfM1KlSSjttlz9bv8ud/11Buz
-SVMqtJnx8Pw0bLbxfYXSxdM8/BcfLVavV5kaHLNJA9WbgncQhqIPoHd3RBPY0X/z
-Jcp+9Ct58n/BP0e+/FtCoVErWSgvI/XP0hFSpHD+Ewpw7f71/+wm8J/1Ewe6jzLB
-rQZbTkP1tM3Z84EBEnq3
-=Oq6H
------END PGP SIGNATURE-----
 
---Sig_/bdGJJKDNvBDt9cNX4NpuqnW--
