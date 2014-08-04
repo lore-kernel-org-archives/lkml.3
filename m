@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216AbaHDUfQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 16:35:16 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58289 "EHLO zene.cmpxchg.org"
+	id S1752612AbaHDUf5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 16:35:57 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:24399 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714AbaHDUfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 16:35:14 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcontrol: clean up reclaim size variable use in try_charge()
-Date: Mon,  4 Aug 2014 16:35:02 -0400
-Message-Id: <1407184502-20818-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.0.3
+	id S1751328AbaHDUf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 16:35:56 -0400
+X-IronPort-AV: E=Sophos;i="5.01,800,1400025600"; 
+   d="scan'208";a="158637599"
+Date: Mon, 4 Aug 2014 21:35:54 +0100
+From: Wei Liu <wei.liu2@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: David Miller <davem@davemloft.net>, <konrad.wilk@oracle.com>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <wei.liu2@citrix.com>, <Ian.Campbell@citrix.com>,
+        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: Re: [PATCH] xen-netfront: Fix handling packets on compound pages
+ with skb_segment
+Message-ID: <20140804203554.GA23767@zion.uk.xensource.com>
+References: <1406726730-17994-1-git-send-email-zoltan.kiss@citrix.com>
+ <20140731.132520.1889577477638334755.davem@davemloft.net>
+ <53DFC2FE.8070105@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <53DFC2FE.8070105@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Charge reclaim and OOM currently use the charge batch variable, but
-batching is already disabled at that point.  To simplify the charge
-logic, the batch variable is reset to the original request size when
-reclaim is entered, so it's functionally equal, but it's misleading.
+On Mon, Aug 04, 2014 at 06:29:34PM +0100, Zoltan Kiss wrote:
+> On 31/07/14 21:25, David Miller wrote:
+> >From: Zoltan Kiss <zoltan.kiss@citrix.com>
+> >Date: Wed, 30 Jul 2014 14:25:30 +0100
+> >
+> >>There is a long known problem with the netfront/netback interface: if the guest
+> >>tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 ring slots,
+> >>it gets dropped. The reason is that netback maps these slots to a frag in the
+> >>frags array, which is limited by size. Having so many slots can occur since
+> >>compound pages were introduced, as the ring protocol slice them up into
+> >>individual (non-compound) page aligned slots. The theoretical worst case
+> >>scenario looks like this (note, skbs are limited to 64 Kb here):
+> >>linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page boundary,
+> >>using 2 slots
+> >>first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are at the
+> >>end and the beginning of a page, therefore they use 3 * 15 = 45 slots
+> >>last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 = 4 slots
+> >>Although I don't think this 51 slots skb can really happen, we need a solution
+> >>which can deal with every scenario. In real life there is only a few slots
+> >>overdue, but usually it causes the TCP stream to be blocked, as the retry will
+> >>most likely have the same buffer layout.
+> >>This patch solves this problem by slicing up the skb itself with the help of
+> >>skb_segment, and calling xennet_start_xmit again on the resulting packets. It
+> >>also works with the theoretical worst case, where there is a 3 level recursion.
+> >>The good thing is that skb_segment only copies the header part, the frags will
+> >>be just referenced again.
+> >>
+> >>Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> >
+> >This is a really scary change :-)
+> I admit that :)
+> >
+> >I definitely see some potential problem here.
+> >
+> >First of all, even in cases where it might "work", such as TCP, you
+> >are modifying the data stream.  The sizes are changing, the packet
+> >counts are different, and all of this will have side effects such as
+> >potentially harming TCP performance.
+> >
+> >Secondly, for something like UDP you can't just split the packet up
+> >like this, or for any other datagram protocol for that matter.
+> The netback/netfront interface currently only supports TSO and TSO6. That's
+> why I did the pktgen TCP patch
 
-Switch reclaim/OOM to nr_pages, which is the original request size.
+IMO if this approach is known to be broken in the future (say if we want
+to support UFO) we'd better avoid it.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8d65dadeec1b..ec4dcf1b9562 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2574,7 +2574,7 @@ retry:
- 
- 	nr_reclaimed = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
- 
--	if (mem_cgroup_margin(mem_over_limit) >= batch)
-+	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
- 		goto retry;
- 
- 	if (gfp_mask & __GFP_NORETRY)
-@@ -2588,7 +2588,7 @@ retry:
- 	 * unlikely to succeed so close to the limit, and we fall back
- 	 * to regular pages anyway in case of failure.
- 	 */
--	if (nr_reclaimed && batch <= (1 << PAGE_ALLOC_COSTLY_ORDER))
-+	if (nr_reclaimed && nr_pages <= (1 << PAGE_ALLOC_COSTLY_ORDER))
- 		goto retry;
- 	/*
- 	 * At task move, charge accounts can be doubly counted. So, it's
-@@ -2606,7 +2606,7 @@ retry:
- 	if (fatal_signal_pending(current))
- 		goto bypass;
- 
--	mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(batch));
-+	mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(nr_pages));
- nomem:
- 	if (!(gfp_mask & __GFP_NOFAIL))
- 		return -ENOMEM;
--- 
-2.0.3
-
+Wei.
