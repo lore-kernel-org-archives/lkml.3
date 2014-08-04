@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651AbaHDQuU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:50:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56591 "EHLO
+	id S1752573AbaHDQuT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:50:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752120AbaHDQt5 (ORCPT
+	by vger.kernel.org with ESMTP id S1752113AbaHDQt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:57 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Axel Lin" <axel.lin@ingics.com>,
-        "Guenter Roeck" <linux@roeck-us.net>
-Date: Mon, 04 Aug 2014 17:48:31 +0100
-Message-ID: <lsq.1407170911.12070490@decadent.org.uk>
+CC: akpm@linux-foundation.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Feng Tang" <feng.tang@intel.com>
+Date: Mon, 04 Aug 2014 17:48:32 +0100
+Message-ID: <lsq.1407170912.755420222@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 25/94] hwmon: (adm1029) Ensure the fan_div cache is
- updated in set_fan_div
+Subject: [PATCH 3.2 33/94] ACPI / EC: Don't count a SCI interrupt as a
+ false one
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,34 +33,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Feng Tang <feng.tang@intel.com>
 
-commit 1035a9e3e9c76b64a860a774f5b867d28d34acc2 upstream.
+commit a3cd8d2789c2e265e09377f260e7d2ac9cec81bb upstream.
 
-Writing to fanX_div does not clear the cache. As a result, reading
-from fanX_div may return the old value for up to two seconds
-after writing a new value.
+Currently when advance_transaction() is called in EC interrupt handler,
+if there is nothing driver can do with the interrupt, it will be taken
+as a false one.
 
-This patch ensures the fan_div cache is updated in set_fan_div().
+But this is not always true, as there may be a SCI EC interrupt fired
+during normal read/write operation, which should not be counted as a
+false one. This patch fixes the problem.
 
-Reported-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/adm1029.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/acpi/ec.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/hwmon/adm1029.c
-+++ b/drivers/hwmon/adm1029.c
-@@ -228,6 +228,9 @@ static ssize_t set_fan_div(struct device
- 	/* Update the value */
- 	reg = (reg & 0x3F) | (val << 6);
- 
-+	/* Update the cache */
-+	data->fan_div[attr->index] = reg;
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -205,9 +205,13 @@ static void advance_transaction(struct a
+ 		t->done = true;
+ 	goto unlock;
+ err:
+-	/* false interrupt, state didn't change */
+-	if (in_interrupt())
++	/*
++	 * If SCI bit is set, then don't think it's a false IRQ
++	 * otherwise will take a not handled IRQ as a false one.
++	 */
++	if (in_interrupt() && !(status & ACPI_EC_FLAG_SCI))
+ 		++t->irq_count;
 +
- 	/* Write value */
- 	i2c_smbus_write_byte_data(client,
- 				  ADM1029_REG_FAN_DIV[attr->index], reg);
+ unlock:
+ 	spin_unlock_irqrestore(&ec->curr_lock, flags);
+ }
 
