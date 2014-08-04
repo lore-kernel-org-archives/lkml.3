@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbaHDQza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:55:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56623 "EHLO
+	id S1753062AbaHDQz2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:55:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56613 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752189AbaHDQt5 (ORCPT
+	by vger.kernel.org with ESMTP id S1752192AbaHDQt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:57 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Arthur Chen" <axchen@nvidia.com>,
-        "Steffen Weber" <steffen.weber@gmail.com>,
-        "Lv Zheng" <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Barton Xu" <tank.xuhan@gmail.com>
+CC: akpm@linux-foundation.org, "Andras Kovacs" <andras@sth.sze.hu>,
+        "Johan Hovold" <johan@kernel.org>
 Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.435558478@decadent.org.uk>
+Message-ID: <lsq.1407170912.901641882@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 32/94] ACPI / EC: Avoid race condition related to
- advance_transaction()
+Subject: [PATCH 3.2 28/94] USB: cp210x: add support for Corsair usb dongle
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,93 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Andras Kovacs <andras@sth.sze.hu>
 
-commit 66b42b78bc1e816f92b662e8888c89195e4199e1 upstream.
+commit b9326057a3d8447f5d2e74a7b521ccf21add2ec0 upstream.
 
-The advance_transaction() will be invoked from the IRQ context GPE handler
-and the task context ec_poll(). The handling of this function is locked so
-that the EC state machine are ensured to be advanced sequentially.
+Corsair USB Dongles are shipped with Corsair AXi series PSUs.
+These are cp210x serial usb devices, so make driver detect these.
+I have a program, that can get information from these PSUs.
 
-But there is a problem. Before invoking advance_transaction(), EC_SC(R) is
-read. Then for advance_transaction(), there could be race condition around
-the lock from both contexts. The first one reading the register could fail
-this race and when it passes the stale register value to the state machine
-advancement code, the hardware condition is totally different from when
-the register is read. And the hardware accesses determined from the wrong
-hardware status can break the EC state machine. And there could be cases
-that the functionalities of the platform firmware are seriously affected.
-For example:
- 1. When 2 EC_DATA(W) writes compete the IBF=0, the 2nd EC_DATA(W) write may
-    be invalid due to IBF=1 after the 1st EC_DATA(W) write. Then the
-    hardware will either refuse to respond a next EC_SC(W) write of the next
-    command or discard the current WR_EC command when it receives a EC_SC(W)
-    write of the next command.
- 2. When 1 EC_SC(W) write and 1 EC_DATA(W) write compete the IBF=0, the
-    EC_DATA(W) write may be invalid due to IBF=1 after the EC_SC(W) write.
-    The next EC_DATA(R) could never be responded by the hardware. This is
-    the root cause of the reported issue.
+Tested with 2 different dongles shipped with Corsair AX860i and
+AX1200i units.
 
-Fix this issue by moving the EC_SC(R) access into the lock so that we can
-ensure that the state machine is advanced consistently.
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
-Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
-Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
-Reported-by: Barton Xu <tank.xuhan@gmail.com>
-Tested-by: Steffen Weber <steffen.weber@gmail.com>
-Tested-by: Arthur Chen <axchen@nvidia.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Use PREFIX in log message]
+Signed-off-by: Andras Kovacs <andras@sth.sze.hu>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/ec.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/usb/serial/cp210x.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -175,12 +175,15 @@ static void start_transaction(struct acp
- 	acpi_ec_write_cmd(ec, ec->curr->command);
- }
- 
--static void advance_transaction(struct acpi_ec *ec, u8 status)
-+static void advance_transaction(struct acpi_ec *ec)
- {
- 	unsigned long flags;
- 	struct transaction *t;
-+	u8 status;
- 
- 	spin_lock_irqsave(&ec->curr_lock, flags);
-+	pr_debug(PREFIX "===== %s =====\n", in_interrupt() ? "IRQ" : "TASK");
-+	status = acpi_ec_read_status(ec);
- 	t = ec->curr;
- 	if (!t)
- 		goto unlock;
-@@ -239,7 +242,7 @@ static int ec_poll(struct acpi_ec *ec)
- 						msecs_to_jiffies(1)))
- 					return 0;
- 			}
--			advance_transaction(ec, acpi_ec_read_status(ec));
-+			advance_transaction(ec);
- 		} while (time_before(jiffies, delay));
- 		pr_debug(PREFIX "controller reset, restart transaction\n");
- 		spin_lock_irqsave(&ec->curr_lock, flags);
-@@ -648,11 +651,8 @@ static u32 acpi_ec_gpe_handler(acpi_hand
- 	u32 gpe_number, void *data)
- {
- 	struct acpi_ec *ec = data;
--	u8 status = acpi_ec_read_status(ec);
--
--	pr_debug(PREFIX "~~~> interrupt, status:0x%02x\n", status);
- 
--	advance_transaction(ec, status);
-+	advance_transaction(ec);
- 	if (ec_transaction_done(ec) &&
- 	    (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF) == 0) {
- 		wake_up(&ec->wait);
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -159,6 +159,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
++	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
 
