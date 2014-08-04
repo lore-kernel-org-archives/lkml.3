@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507AbaHDKtk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 06:49:40 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61634 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854AbaHDKtj (ORCPT
+	id S1752553AbaHDKuZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 06:50:25 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:38453 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370AbaHDKuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 06:49:39 -0400
-MIME-Version: 1.0
-X-Originating-IP: [61.7.141.168]
-In-Reply-To: <20140804064823.GB22835@js1304-P5Q-DELUXE>
-References: <53DEF67E.8090004@oracle.com>
-	<20140804064823.GB22835@js1304-P5Q-DELUXE>
-Date: Mon, 4 Aug 2014 13:49:37 +0300
-Message-ID: <CAOtvUMdCwef63JcF7OgZJtLjjT0M_VoqYtRXX-Yp+UG7kFyWQA@mail.gmail.com>
-Subject: Re: kernel: smp: WARNING at kernel/smp.c:673
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, David Rientjes <rientjes@google.com>,
-        Christoph Lameter <cl@gentwo.org>, Dave Jones <davej@redhat.com>,
-        Matt Mackall <mpm@selenic.com>, Pekka Enberg <penberg@kernel.org>,
-        Jens Axboe <axboe@fb.com>, LKML <linux-kernel@vger.kernel.org>,
+	Mon, 4 Aug 2014 06:50:23 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Minchan Kim <minchan@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Minchan Kim <minchan@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v13 4/8] powerpc: add pmd_[dirty|mkclean] for THP
+In-Reply-To: <1405666386-15095-5-git-send-email-minchan@kernel.org>
+References: <1405666386-15095-1-git-send-email-minchan@kernel.org> <1405666386-15095-5-git-send-email-minchan@kernel.org>
+User-Agent: Notmuch/0.18.1+51~gbbbdf04 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 04 Aug 2014 16:20:07 +0530
+Message-ID: <87ppggedgg.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080410-1396-0000-0000-000000084708
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sasha and Kim,
+Minchan Kim <minchan@kernel.org> writes:
 
-I believe Kim is right and the WARN_ON_ONCE condition should be negated.
-Furthermore, I'm  pretty sure I'm the one to blame for this bug.
-
-Good catch and thank you both.
-
-(Un)fortunately, I'm in a vacation in an island resort in Thailand at
-the moment and the beer is much better than the Internet connection.
-
-I'll do my best to prepare, test and send a patch, but if someone
-beats me to it before my return in 10 days I will be happy to review.
-
-Many thanks,
-Gilad
-
-
-
-On Aug 4, 2014 1:41 PM, "Joonsoo Kim" <iamjoonsoo.kim@lge.com> wrote:
+> MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
+> overwrite of the contents since MADV_FREE syscall is called for
+> THP page.
 >
-> On Sun, Aug 03, 2014 at 10:57:02PM -0400, Sasha Levin wrote:
-> > Hi all,
-> >
-> > While fuzzing with trinity inside a KVM tools guest running the latest -next
-> > kernel, I've stumbled on the following spew:
-> >
-> >
-> > [ 1226.701012] WARNING: CPU: 6 PID: 8624 at kernel/smp.c:673 on_each_cpu_cond+0x27f/0x2f0()
-> > [ 1226.703128] Modules linked in:
-> > [ 1226.703955] CPU: 6 PID: 8624 Comm: trinity-c26 Tainted: G        W      3.16.0-rc7-next-20140801-sasha-00047-gd6ce559 #991
-> > [ 1226.706792]  ffff881b2e8a3000 0000000023830039 0000000000000000 ffff881b2e8a3000
-> > [ 1226.708179]  ffff881ada5b3978 ffffffffa1ee96b4 0000000000000000 ffff881ada5b39b8
-> > [ 1226.709610]  ffffffff9d1ce5ba ffffffff9d2c0ddf 000000000000001b ffff8807d7608000
-> > [ 1226.710966] Call Trace:
-> > [ 1226.711417] dump_stack (lib/dump_stack.c:52)
-> > [ 1226.712311] warn_slowpath_common (kernel/panic.c:432)
-> > [ 1226.715425] warn_slowpath_null (kernel/panic.c:466)
-> > [ 1226.716436] on_each_cpu_cond (kernel/smp.c:673 (discriminator 3))
-> > [ 1226.720821] __kmem_cache_shrink (mm/slub.c:3420)
-> > [ 1226.722711] slab_memory_callback (mm/slub.c:3464 mm/slub.c:3556)
-> > [ 1226.723925] notifier_call_chain (kernel/notifier.c:93)
-> > [ 1226.725244] __blocking_notifier_call_chain (kernel/notifier.c:319)
-> > [ 1226.726310] blocking_notifier_call_chain (kernel/notifier.c:329)
-> > [ 1226.727263] memory_notify (drivers/base/memory.c:177)
-> > [ 1226.728210] __offline_pages.constprop.23 (include/linux/notifier.h:179 mm/memory_hotplug.c:1682)
-> > [ 1226.731896] offline_pages (mm/memory_hotplug.c:1787)
-> > [ 1226.733095] memory_subsys_offline (drivers/base/memory.c:267 drivers/base/memory.c:304)
-> > [ 1226.735208] device_offline (drivers/base/core.c:1428)
-> > [ 1226.736966] online_store (drivers/base/core.c:451 (discriminator 2))
-> > [ 1226.737720] dev_attr_store (drivers/base/core.c:138)
-> > [ 1226.739986] sysfs_kf_write (fs/sysfs/file.c:116)
-> > [ 1226.742105] kernfs_fop_write (fs/kernfs/file.c:308)
-> > [ 1226.743058] do_loop_readv_writev (fs/read_write.c:708)
-> > [ 1226.745095] do_readv_writev (fs/read_write.c:840)
-> > [ 1226.752769] vfs_writev (fs/read_write.c:879)
-> > [ 1226.753755] SyS_writev (fs/read_write.c:911 fs/read_write.c:903)
-> > [ 1226.754660] tracesys (arch/x86/kernel/entry_64.S:541)
-> >
-> > No time to dig too much into this today, will work on it tomorrow.
+> This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
+> support.
 >
-> I think that that WARN_ON_ONCE() in kernel/smp.c:673 is wrong.
-> smp_call_function_single() returns 0 if success so it should be
-> WARN_ON_ONCE(ret) rather than WARN_ON_ONCE(!ret).
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> Cc: linuxppc-dev@lists.ozlabs.org
+
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  arch/powerpc/include/asm/pgtable-ppc64.h | 2 ++
+>  1 file changed, 2 insertions(+)
 >
-> Thanks.
+> diff --git a/arch/powerpc/include/asm/pgtable-ppc64.h b/arch/powerpc/include/asm/pgtable-ppc64.h
+> index eb9261024f51..c9a4bbe8e179 100644
+> --- a/arch/powerpc/include/asm/pgtable-ppc64.h
+> +++ b/arch/powerpc/include/asm/pgtable-ppc64.h
+> @@ -468,9 +468,11 @@ static inline pte_t *pmdp_ptep(pmd_t *pmd)
+>
+>  #define pmd_pfn(pmd)		pte_pfn(pmd_pte(pmd))
+>  #define pmd_young(pmd)		pte_young(pmd_pte(pmd))
+> +#define pmd_dirty(pmd)		pte_dirty(pmd_pte(pmd))
+>  #define pmd_mkold(pmd)		pte_pmd(pte_mkold(pmd_pte(pmd)))
+>  #define pmd_wrprotect(pmd)	pte_pmd(pte_wrprotect(pmd_pte(pmd)))
+>  #define pmd_mkdirty(pmd)	pte_pmd(pte_mkdirty(pmd_pte(pmd)))
+> +#define pmd_mkclean(pmd)	pte_pmd(pte_mkclean(pmd_pte(pmd)))
+>  #define pmd_mkyoung(pmd)	pte_pmd(pte_mkyoung(pmd_pte(pmd)))
+>  #define pmd_mkwrite(pmd)	pte_pmd(pte_mkwrite(pmd_pte(pmd)))
+>
+> -- 
+> 2.0.0
+
