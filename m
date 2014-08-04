@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaHDNwb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 09:52:31 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:52150 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176AbaHDNwa (ORCPT
+	id S1752640AbaHDNzA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 09:55:00 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:59887 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650AbaHDNy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 09:52:30 -0400
-Date: Mon, 4 Aug 2014 06:52:24 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140804135224.GA18824@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140731215445.GA21933@linux.vnet.ibm.com>
- <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140802145616.GA18195@redhat.com>
- <20140802225757.GB8101@linux.vnet.ibm.com>
- <20140803133318.GB671@redhat.com>
- <20140803220535.GH8101@linux.vnet.ibm.com>
- <53DED5D1.6030504@cn.fujitsu.com>
- <20140804010938.GI8101@linux.vnet.ibm.com>
- <20140804132525.GA18722@redhat.com>
- <20140804135104.GN8101@linux.vnet.ibm.com>
+	Mon, 4 Aug 2014 09:54:59 -0400
+Date: Mon, 4 Aug 2014 14:54:52 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: P J P <ppandit@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: 3.12 to 3.13 boot regression bisected - still applies to 3.16
+Message-ID: <20140804135452.GJ15082@console-pimps.org>
+References: <20140804113435.34ed8c76@pluto>
+ <20140804122728.GH15082@console-pimps.org>
+ <20140804150627.4563b6a7@pluto>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140804135104.GN8101@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140804150627.4563b6a7@pluto>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080413-1344-0000-0000-0000033C5419
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 06:51:04AM -0700, Paul E. McKenney wrote:
-> On Mon, Aug 04, 2014 at 03:25:25PM +0200, Oleg Nesterov wrote:
-> > On 08/03, Paul E. McKenney wrote:
-> > >
-> > > On Mon, Aug 04, 2014 at 08:37:37AM +0800, Lai Jiangshan wrote:
-> > > > An alternative solution:
-> > > > srcu_read_lock() before exit_notify(), srcu_read_unlock() after the last preempt_disable()
-> > > > in the do_exit, and synchronize_srcu() in rcu_tasks_kthread().
-> > >
-> > > That is a good way to synchronize with the exiting tasks, and I will
-> > > probably that that approach.
-> > >
-> > > I -thought- that Oleg was concerned about safely building the list to
-> > > start with, though.
-> > 
-> > But for_each_process_thread() under rcu_read_lock() should work except
-> > it can miss the exiting tasks.
-> > 
-> > So it seems that the clever Lai's trick should solve the problem.
+On Mon, 04 Aug, at 03:06:27PM, Bruno Prémont wrote:
 > 
-> Cool!  Lai's trick seems to be doing well in early testing, so keeping
-> fingers firmly crossed.  ;-)
+> Yes, I did as I have seen that patch flying by, but it did not help
+> (I tried at 3.16-rc7).
+ 
+:-( Thanks for testing.
 
-And the horrible thing is that my plan had been to use per-CPU reference
-counts for this purpose, which would of course have been sort of like
-re-implementing a special case of SRCU.
+> On 3.16-rc7 I even tried adding earlyprintk=efi,keep, console=efi,
+> ignore_loglevel and added some efi_printk() in EFI stub (in the spirit
+> of https://bugzilla.kernel.org/show_bug.cgi?id=68761)
+> The last message I get is my efi_printk() right before exiting boot
+> services. Without my efi_printk() there is no output at all.
+> 
+> Then system reboots.
 
-So we should all be thankful to Lai for his suggestion!  ;-)
+OK, so the fact that the system reboots suggests that the boot
+stub/kernel caused a fault.
+ 
+> There is no output on serial console either (via BMC),
+> (earlycon=uart,io,0x3f8,115200 or earlyprintk=serial,ttyS0,115200)
+> 
+> 
+> I even tried without initrd (setting CONFIG_INITRAMFS_SOURCE="")
+> and got the same end-result.
 
-							Thanx, Paul
+Oh that's interesting.
 
+> I could share a slightly modified one, replacing the
+> contained /etc/passwd. It's about 16MiB in size due to RAID controller
+> management blobs for recovery. Except for that it just tries to find
+> ROOT partition, setting up dmcrypt if needed.
+ 
+This shouldn't be necessary if you can reproduce the issue without an
+initrd as you stated above.
+
+> Any hint on how to find out what fails would be nice!
+> initrd issues tend not to be easy to debug (it would help if initrd
+> issues could be reported at the time kernel tries to start init - e.g.
+> when console outputs are up and running).
+
+I don't think this is necessarily an initrd issue.
+
+The way that I would debug this is to insert while(1); into strategic
+places. Yes, it's lame and time consuming, but it's effective.
+
+My first suggestion would be setup_arch(). In particular, because your
+machine is resetting, I'd guess that the kernel's early trap handlers
+haven't yet been installed.
+
+So throw a,
+
+	while (1);
+
+in there and see if you can get your machine to hang instead of reset.
+If it doesn't hang, the reset occurs earlier in boot - work backwards.
+If it does hang then you know that execution gets at least that far -
+work forwards. Like I said, lame but effective.
+
+Meanwhile I'm going to go and stare at the EFI boot stub code and
+instrument OVMF to check for more memory corruption bugs like the one
+Michael found in commit c7fb93ec51d4 ("x86/efi: Include a .bss section
+within the PE/COFF headers").
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
