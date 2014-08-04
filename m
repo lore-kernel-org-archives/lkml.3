@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429AbaHDRTq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:19:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56438 "EHLO
+	id S1753760AbaHDRTs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:19:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56439 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751684AbaHDQty (ORCPT
+	by vger.kernel.org with ESMTP id S1751681AbaHDQty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:54 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org
-Date: Mon, 04 Aug 2014 17:48:31 +0100
-Message-ID: <lsq.1407170911.284911304@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Takao Indoh" <indou.takao@jp.fujitsu.com>,
+        "Joerg Roedel" <joro@8bytes.org>,
+        "Yijing Wang" <wangyijing@huawei.com>
+Date: Mon, 04 Aug 2014 17:48:32 +0100
+Message-ID: <lsq.1407170912.791393803@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 01/94] Revert "net: ipv4: ip_forward: fix inverted
- local_df  test"
+Subject: [PATCH 3.2 94/94] iommu/vt-d: Disable translation if already enabled
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,34 +32,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
 
-This reverts commit 59d9f389df3cdf72833d5ee17c3fe959b6bdc792, which
-was commit ca6c5d4ad216d5942ae544bbf02503041bd802aa upstream.  It is a
-valid fix, but depends on sk_buff::local_df being set in all the right
-cases, which it wasn't in 3.2.  We need to defer it unless and until
-the other fixes are also backported to 3.2.y.
+commit 3a93c841c2b3b14824f7728dd74bd00a1cedb806 upstream.
 
+This patch disables translation(dma-remapping) before its initialization
+if it is already enabled.
+
+This is needed for kexec/kdump boot. If dma-remapping is enabled in the
+first kernel, it need to be disabled before initializing its page table
+during second kernel boot. Wei Hu also reported that this is needed
+when second kernel boots with intel_iommu=off.
+
+Basically iommu->gcmd is used to know whether translation is enabled or
+disabled, but it is always zero at boot time even when translation is
+enabled since iommu->gcmd is initialized without considering such a
+case. Therefor this patch synchronizes iommu->gcmd value with global
+command register when iommu structure is allocated.
+
+Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+[wyj: Backported to 3.4: adjust context]
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/ip_forward.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/iommu/dmar.c        | 11 ++++++++++-
+ drivers/iommu/intel-iommu.c | 15 +++++++++++++++
+ 2 files changed, 25 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/ip_forward.c
-+++ b/net/ipv4/ip_forward.c
-@@ -42,12 +42,12 @@
- static bool ip_may_fragment(const struct sk_buff *skb)
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -582,7 +582,7 @@ int alloc_iommu(struct dmar_drhd_unit *d
  {
- 	return unlikely((ip_hdr(skb)->frag_off & htons(IP_DF)) == 0) ||
--		skb->local_df;
-+	       !skb->local_df;
- }
+ 	struct intel_iommu *iommu;
+ 	int map_size;
+-	u32 ver;
++	u32 ver, sts;
+ 	static int iommu_allocated = 0;
+ 	int agaw = 0;
+ 	int msagaw = 0;
+@@ -652,6 +652,15 @@ int alloc_iommu(struct dmar_drhd_unit *d
+ 		(unsigned long long)iommu->cap,
+ 		(unsigned long long)iommu->ecap);
  
- static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
++	/* Reflect status in gcmd */
++	sts = readl(iommu->reg + DMAR_GSTS_REG);
++	if (sts & DMA_GSTS_IRES)
++		iommu->gcmd |= DMA_GCMD_IRE;
++	if (sts & DMA_GSTS_TES)
++		iommu->gcmd |= DMA_GCMD_TE;
++	if (sts & DMA_GSTS_QIES)
++		iommu->gcmd |= DMA_GCMD_QIE;
++
+ 	raw_spin_lock_init(&iommu->register_lock);
+ 
+ 	drhd->iommu = iommu;
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -3630,6 +3630,7 @@ static struct notifier_block device_nb =
+ int __init intel_iommu_init(void)
  {
--	if (skb->len <= mtu)
-+	if (skb->len <= mtu || skb->local_df)
- 		return false;
+ 	int ret = 0;
++	struct dmar_drhd_unit *drhd;
  
- 	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
+ 	/* VT-d is required for a TXT/tboot launch, so enforce that */
+ 	force_on = tboot_force_iommu();
+@@ -3640,6 +3641,20 @@ int __init intel_iommu_init(void)
+ 		return 	-ENODEV;
+ 	}
+ 
++	/*
++	 * Disable translation if already enabled prior to OS handover.
++	 */
++	for_each_drhd_unit(drhd) {
++		struct intel_iommu *iommu;
++
++		if (drhd->ignored)
++			continue;
++
++		iommu = drhd->iommu;
++		if (iommu->gcmd & DMA_GCMD_TE)
++			iommu_disable_translation(iommu);
++	}
++
+ 	if (dmar_dev_scope_init() < 0) {
+ 		if (force_on)
+ 			panic("tboot: Failed to initialize DMAR device scope\n");
 
