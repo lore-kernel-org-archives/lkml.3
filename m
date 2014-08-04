@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106AbaHDROa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:14:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56472 "EHLO
+	id S1754092AbaHDRO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:14:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56476 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751756AbaHDQty (ORCPT
+	by vger.kernel.org with ESMTP id S1751798AbaHDQty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Aug 2014 12:49:54 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "NeilBrown" <neilb@suse.de>,
-        "Bill" <billstuff2001@sbcglobal.net>
+CC: akpm@linux-foundation.org, "=?UTF-8?q?Bj=C3=B8rn=20Mork?=" <bjorn@mork.no>,
+        "Lars Melin" <larsm17@gmail.com>, "Johan Hovold" <johan@kernel.org>
 Date: Mon, 04 Aug 2014 17:48:31 +0100
-Message-ID: <lsq.1407170911.18251879@decadent.org.uk>
+Message-ID: <lsq.1407170911.268685485@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 20/94] md: flush writes before starting a recovery.
+Subject: [PATCH 3.2 08/94] usb: option: add/modify Olivetti Olicard modems
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,61 +31,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 133d4527eab8d199a62eee6bd433f0776842df2e upstream.
+commit b0ebef36e93703e59003ad6a1a20227e47714417 upstream.
 
-When we write to a degraded array which has a bitmap, we
-make sure the relevant bit in the bitmap remains set when
-the write completes (so a 're-add' can quickly rebuilt a
-temporarily-missing device).
+Adding a couple of Olivetti modems and blacklisting the net
+function on a couple which are already supported.
 
-If, immediately after such a write starts, we incorporate a spare,
-commence recovery, and skip over the region where the write is
-happening (because the 'needs recovery' flag isn't set yet),
-then that write will not get to the new device.
-
-Once the recovery finishes the new device will be trusted, but will
-have incorrect data, leading to possible corruption.
-
-We cannot set the 'needs recovery' flag when we start the write as we
-do not know easily if the write will be "degraded" or not.  That
-depends on details of the particular raid level and particular write
-request.
-
-This patch fixes a corruption issue of long standing and so it
-suitable for any -stable kernel.  It applied correctly to 3.0 at
-least and will minor editing to earlier kernels.
-
-Reported-by: Bill <billstuff2001@sbcglobal.net>
-Tested-by: Bill <billstuff2001@sbcglobal.net>
-Link: http://lkml.kernel.org/r/53A518BB.60709@sbcglobal.net
-Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-by: Lars Melin <larsm17@gmail.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/md.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/usb/serial/option.c | 22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -7144,6 +7144,19 @@ void md_do_sync(struct mddev *mddev)
- 			    rdev->recovery_offset < j)
- 				j = rdev->recovery_offset;
- 		rcu_read_unlock();
-+
-+		/* If there is a bitmap, we need to make sure all
-+		 * writes that started before we added a spare
-+		 * complete before we start doing a recovery.
-+		 * Otherwise the write might complete and (via
-+		 * bitmap_endwrite) set a bit in the bitmap after the
-+		 * recovery has checked that bit and skipped that
-+		 * region.
-+		 */
-+		if (mddev->bitmap) {
-+			mddev->pers->quiesce(mddev, 1);
-+			mddev->pers->quiesce(mddev, 0);
-+		}
- 	}
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -377,8 +377,12 @@ static void option_instat_callback(struc
+ /* Olivetti products */
+ #define OLIVETTI_VENDOR_ID			0x0b3c
+ #define OLIVETTI_PRODUCT_OLICARD100		0xc000
++#define OLIVETTI_PRODUCT_OLICARD120		0xc001
++#define OLIVETTI_PRODUCT_OLICARD140		0xc002
+ #define OLIVETTI_PRODUCT_OLICARD145		0xc003
++#define OLIVETTI_PRODUCT_OLICARD155		0xc004
+ #define OLIVETTI_PRODUCT_OLICARD200		0xc005
++#define OLIVETTI_PRODUCT_OLICARD160		0xc00a
+ #define OLIVETTI_PRODUCT_OLICARD500		0xc00b
  
- 	printk(KERN_INFO "md: %s of RAID array %s\n", desc, mdname(mddev));
+ /* Celot products */
+@@ -1631,15 +1635,21 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDMNET) },
+ 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, /* HC28 enumerates with Siemens or Cinterion VID depending on FW revision */
+ 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
+-
+-	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
++	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD120),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD140),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD145) },
++	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD155),
++		.driver_info = (kernel_ulong_t)&net_intf6_blacklist },
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200),
+-		.driver_info = (kernel_ulong_t)&net_intf6_blacklist
+-	},
++		.driver_info = (kernel_ulong_t)&net_intf6_blacklist },
++	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD160),
++		.driver_info = (kernel_ulong_t)&net_intf6_blacklist },
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD500),
+-		.driver_info = (kernel_ulong_t)&net_intf4_blacklist
+-	},
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM600) },
 
