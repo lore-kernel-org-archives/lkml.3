@@ -1,116 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773AbaHDMlL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 08:41:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42860 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752630AbaHDMlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 08:41:08 -0400
-Date: Mon, 4 Aug 2014 14:40:56 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: lichunhe@huawei.com
-Cc: vyasevic@redhat.com, xiyou.wangcong@gmail.com,
-        makita.toshiaki@lab.ntt.co.jp, stephen@networkplumber.org,
-        ebiederm@xmission.com, f.fainelli@gmail.com,
-        linux-kernel@vger.kernel.org, wuyunfei@huawei.com,
-        qianhuibin@huawei.com
-Subject: Re: [PATCH net/next] bridge:Add rcu read lock when delete br port
-Message-ID: <20140804124056.GD15491@redhat.com>
-References: <1407123476-9720-1-git-send-email-lichunhe@huawei.com>
+	id S1752726AbaHDMlK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 08:41:10 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:55268 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615AbaHDMlH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 08:41:07 -0400
+Date: Mon, 4 Aug 2014 21:39:56 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Sami Kerola <kerolasa@iki.fi>
+Cc: util-linux@vger.kernel.org, Timofey Titovets <nefelim4ag@gmail.com>,
+        Karel Zak <kzak@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: zram: device management utility needed
+Message-ID: <20140804123956.GB957@swordfish>
+References: <1406675682-8402-1-git-send-email-kerolasa@iki.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407123476-9720-1-git-send-email-lichunhe@huawei.com>
+In-Reply-To: <1406675682-8402-1-git-send-email-kerolasa@iki.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 11:37:56AM +0800, lichunhe@huawei.com wrote:
-> From: Chunhe Li <lichunhe@huawei.com>
+Cc Jerome
+
+Hello,
+
+my quick thoughts on the topic. first, I'm not against, and we might have
+something like this one day, but...
+
+On (07/30/14 00:14), Sami Kerola wrote:
+> Hello,
 > 
-> In the br_hanle_frame function has a bug, when the bridge receive packets
-> which go througth the br_handle_frame, get the net_bridge_port pointer "p",
-> but don't check NULL pointer to use it. If somebody delete the bridge port
-> at the same time, will call a NULL pointer, trigger kernel panic. I see the
-> del_nbp comments, call del_nbp should via RCU, but the caller don't do this.
-
-I don't see such a comment there.
-
-Are you talking about this line:
-        p = br_port_get_rcu(skb->dev);
-
-this is actually rx_handler_data.
-The reason it should not be NULL is
-explained here:
-
-void netdev_rx_handler_unregister(struct net_device *dev)
-{
-
-        ASSERT_RTNL();
-        RCU_INIT_POINTER(dev->rx_handler, NULL);
-        /* a reader seeing a non NULL rx_handler in a rcu_read_lock()
-         * section has a guarantee to see a non NULL rx_handler_data
-         * as well.
-         */
-        synchronize_net();
-        RCU_INIT_POINTER(dev->rx_handler_data, NULL);
-}
-EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
-
-
-
-> following steps will make bug happened
-> 1.start vm and add the vm interface to a bridge br0,for example,
-> brctl addbr br0 tap0
+> Not so long ago Timofey has reached both util-linux[1] and kernel[2]
+> contributors with intention to make zram device management too.  I think
+> the proposal is good, and there should be distribution independent tool
+> like that.  Also such command fits fairly well to a scope of util-linux
+> package.  But a tool is only as good as kernel support of it is.  This
+> mail is a bit about both.
 > 
-> 2.configuer vm interface and br0 same ip subnet, vm ping br0.
+> Existing proposal for zramctl[3], wrote by Timofey, does what I would
+> call great starting point.  It can resize zram device, select algorithm,
+> and set number of threads.  Unfortunately it cannot create or remove zram
+> devices.
 > 
-> 3.add and delete the vm interface port for endless loop.
+> The zram devices are not created by any sort of equipment appearing in a
+> bus so an method of creating new or removing existing devices will be
+> needed.  When the zram module is loaded it should create
+> /dev/zram-control device, that responds to ioctl() calls[4].  The calls
+> could be similar with /dev/loop-control[5], that allow adding or removing
+> specified device, and discover adding a free device.
 > 
-> Signed-off-by: Chunhe Li <lichunhe@huawei.com>
+> This proposal would not affect the current initialization of the zram
+> devices[6].  It would be an addition to manage zram devices after kernel
+> module is loaded, of course each device separately and individually.  At
+> the moment adding a device requires removing the existing devices[7],
+> which can mean data loss, and at least unnecessary hassle when performing
+> a device addition task.
 
-OK but apparently something else triggered the bug here.
-It might be a good idea to enable lockdep and rcu checks
-see if anything suspicious is reported.
+well, run-time data loss, assuming that fs has failed to read a page,
+because e.g. zram has mistakenly discarded it, I believe, is out of this
+topic. any other type of data loss is out of zram design. whenever user
+decides to umount/reboot/etc., it's his/her sole responsibility to keep
+the data, zram is not meant to help here.
 
+uninitialised or reset (when unneeded) device *must* be almost free:
+there are no zspool, fs, compression backend, etc. which means that
+one can pre-allocated as many devices as he needs and init/reset devices
+whenever required.
 
-> ---
->  net/bridge/br_if.c | 4 ++++
->  1 file changed, 4 insertions(+)
+so the problem seems to be "we can do A, but it doesn't look very
+convenient", rather than "we can't do A".
+
+	-ss
+
 > 
-> diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
-> index 3eca3fd..91c611d 100644
-> --- a/net/bridge/br_if.c
-> +++ b/net/bridge/br_if.c
-> @@ -274,9 +274,11 @@ void br_dev_delete(struct net_device *dev, struct list_head *head)
->  	struct net_bridge *br = netdev_priv(dev);
->  	struct net_bridge_port *p, *n;
->  
-> +	rcu_read_lock();
->  	list_for_each_entry_safe(p, n, &br->port_list, list) {
->  		del_nbp(p);
->  	}
-> +	rcu_read_unlock();
->  
->  	br_fdb_delete_by_port(br, NULL, 1);
->  
-> @@ -550,7 +552,9 @@ int br_del_if(struct net_bridge *br, struct net_device *dev)
->  	 * there still maybe an alternate path for netconsole to use;
->  	 * therefore there is no reason for a NETDEV_RELEASE event.
->  	 */
-> +	rcu_read_lock();
->  	del_nbp(p);
-> +	rcu_read_unlock();
->  
->  	spin_lock_bh(&br->lock);
->  	changed_addr = br_stp_recalculate_bridge_id(br);
-
-
-Does the problem disappear with this applied?
-I don't see how this would help. rcu locks do not synchronize
-against other readers.
-
-
+> But before getting too exited and asking for ioctl() allocation, or
+> thinking too much about code, does an overall plan like this make sense? 
+> Is there an alternative that would be better than /dev/zram-control +
+> ioctl()'s?  Any other comments, better proposal, and so on?
+> 
+> Finally, Hats off to Timofey, you got the ball rolling getting the zram
+> devices being dynamic someday in future.
+> 
+> [1] http://www.spinics.net/lists/util-linux-ng/index.html#09781
+> [2] https://lkml.org/lkml/2014/7/17/272
+> [3] http://www.spinics.net/lists/util-linux-ng/msg09900.html
+> [4] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/ioctl/ioctl-number.txt?id=31dab719fa50cf56d56d3dc25980fecd336f6ca8
+> [5] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/drivers/block/loop.c?id=31dab719fa50cf56d56d3dc25980fecd336f6ca8#n1757
+> [6] such as: modprobe zram num_devices=4
+> [7] requires 'rmmod zram' which is not possible if any zram device is busy
+> 
 > -- 
-> 1.9.2.0
+> Sami Kerola
+> http://www.iki.fi/kerolasa/
 > 
