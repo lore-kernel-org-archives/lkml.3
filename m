@@ -1,80 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859AbaHDRFU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:05:20 -0400
-Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:16227
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752053AbaHDRFP convert rfc822-to-8bit (ORCPT
+	id S1753856AbaHDREf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:04:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56520 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751913AbaHDQt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 13:05:15 -0400
-X-WSS-ID: 0N9SKRY-08-ZQD-02
-X-M-MSG: 
-Message-ID: <53DFBD2E.5070001@amd.com>
-Date: Mon, 4 Aug 2014 19:04:46 +0200
-From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 4 Aug 2014 12:49:56 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>, <airlied@linux.ie>
-CC: <thellstrom@vmware.com>, <nouveau@lists.freedesktop.org>,
-        <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
-        <bskeggs@redhat.com>, <alexander.deucher@amd.com>
-Subject: Re: [PATCH 09/19] drm/radeon: handle lockup in delayed work, v2
-References: <20140731153245.15061.63023.stgit@patser>
- <20140731153342.15061.54264.stgit@patser> <53DBC1EC.1010001@amd.com>
- <53DBD269.80807@canonical.com> <53DF462B.2060102@amd.com>
- <53DF4A7D.3040505@canonical.com> <53DF7516.2010408@amd.com>
- <53DF8BF2.4000309@canonical.com> <53DF9AC4.3010700@amd.com>
- <53DF9B58.8000403@canonical.com> <53DF9C88.6060107@amd.com>
- <53DF9F89.60202@canonical.com> <53DFA0EB.5040302@amd.com>
- <53DFA210.2020603@canonical.com>
-In-Reply-To: <53DFA210.2020603@canonical.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-X-Originating-IP: [10.224.152.188]
-Content-Transfer-Encoding: 8BIT
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(377424004)(199002)(189002)(51704005)(83322001)(44976005)(80316001)(80022001)(65956001)(65806001)(23676002)(76482001)(77982001)(97736001)(4396001)(81342001)(86362001)(64126003)(64706001)(50466002)(74662001)(74502001)(47776003)(20776003)(81542001)(31966008)(36756003)(46102001)(106466001)(68736004)(85202003)(92566001)(95666004)(101416001)(87936001)(85182001)(102836001)(85852003)(76176999)(54356999)(83072002)(105586002)(83506001)(50986999)(33656002)(85306004)(84676001)(92726001)(99396002)(21056001)(65816999)(93886004)(79102001)(87266999)(107046002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR02MB042;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0293D40691
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Christian.Koenig@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Michal Schmidt" <mschmidt@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Mon, 04 Aug 2014 17:48:32 +0100
+Message-ID: <lsq.1407170912.920871543@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 64/94] rtnetlink: fix userspace API breakage for
+ iproute2 < v3.9.0
+In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 04.08.2014 um 17:09 schrieb Maarten Lankhorst:
-> op 04-08-14 17:04, Christian König schreef:
->> Am 04.08.2014 um 16:58 schrieb Maarten Lankhorst:
->>> op 04-08-14 16:45, Christian König schreef:
->>>> Am 04.08.2014 um 16:40 schrieb Maarten Lankhorst:
->>>>> op 04-08-14 16:37, Christian König schreef:
->>>>>>> It'a pain to deal with gpu reset.
->>>>>> Yeah, well that's nothing new.
->>>>>>
->>>>>>> I've now tried other solutions but that would mean reverting to the old style during gpu lockup recovery, and only running the delayed work when !lockup.
->>>>>>> But this meant that the timeout was useless to add. I think the cleanest is keeping the v2 patch, because potentially any waiting code can be called during lockup recovery.
->>>>>> The lockup code itself should never call any waiting code and V2 doesn't seem to handle a couple of cases correctly either.
->>>>>>
->>>>>> How about moving the fence waiting out of the reset code?
->>>>> What cases did I miss then?
->>>>>
->>>>> I'm curious how you want to move the fence waiting out of reset, when there are so many places that could potentially wait, like radeon_ib_get can call radeon_sa_bo_new which can do a wait, or radeon_ring_alloc that can wait on radeon_fence_wait_next, etc.
->>>> The IB test itself doesn't needs to be protected by the exclusive lock. Only everything between radeon_save_bios_scratch_regs and radeon_ring_restore.
->>> I'm not sure about that, what do you want to do if the ring tests fail? Do you have to retake the exclusive lock?
->> Just set need_reset again and return -EAGAIN, that should have mostly the same effect as what we are doing right now.
-> Yeah, except for the locking the ttm delayed workqueue, but that bool should be easy to save/restore.
-> I think this could work.
+3.2.62-rc1 review patch.  If anyone has any objections, please let me know.
 
-Actually you could activate the delayed workqueue much earlier as well.
+------------------
 
-Thinking more about it that sounds like a bug in the current code, 
-because we probably want the workqueue activated before waiting for the 
-fence.
+From: Michal Schmidt <mschmidt@redhat.com>
 
-Christian.
+commit e5eca6d41f53db48edd8cf88a3f59d2c30227f8e upstream.
 
->
-> ~Maarten
->
+When running RHEL6 userspace on a current upstream kernel, "ip link"
+fails to show VF information.
+
+The reason is a kernel<->userspace API change introduced by commit
+88c5b5ce5cb57 ("rtnetlink: Call nlmsg_parse() with correct header length"),
+after which the kernel does not see iproute2's IFLA_EXT_MASK attribute
+in the netlink request.
+
+iproute2 adjusted for the API change in its commit 63338dca4513
+("libnetlink: Use ifinfomsg instead of rtgenmsg in rtnl_wilddump_req_filter").
+
+The problem has been noticed before:
+http://marc.info/?l=linux-netdev&m=136692296022182&w=2
+(Subject: Re: getting VF link info seems to be broken in 3.9-rc8)
+
+We can do better than tell those with old userspace to upgrade. We can
+recognize the old iproute2 in the kernel by checking the netlink message
+length. Even when including the IFLA_EXT_MASK attribute, its netlink
+message is shorter than struct ifinfomsg.
+
+With this patch "ip link" shows VF information in both old and new
+iproute2 versions.
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ net/core/rtnetlink.c | 22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
+
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1062,6 +1062,7 @@ static int rtnl_dump_ifinfo(struct sk_bu
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
+ 	int err;
++	int hdrlen;
+ 
+ 	s_h = cb->args[0];
+ 	s_idx = cb->args[1];
+@@ -1069,8 +1070,17 @@ static int rtnl_dump_ifinfo(struct sk_bu
+ 	rcu_read_lock();
+ 	cb->seq = net->dev_base_seq;
+ 
+-	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+-			ifla_policy) >= 0) {
++	/* A hack to preserve kernel<->userspace interface.
++	 * The correct header is ifinfomsg. It is consistent with rtnl_getlink.
++	 * However, before Linux v3.9 the code here assumed rtgenmsg and that's
++	 * what iproute2 < v3.9.0 used.
++	 * We can detect the old iproute2. Even including the IFLA_EXT_MASK
++	 * attribute, its netlink message is shorter than struct ifinfomsg.
++	 */
++	hdrlen = nlmsg_len(cb->nlh) < sizeof(struct ifinfomsg) ?
++		 sizeof(struct rtgenmsg) : sizeof(struct ifinfomsg);
++
++	if (nlmsg_parse(cb->nlh, hdrlen, tb, IFLA_MAX, ifla_policy) >= 0) {
+ 
+ 		if (tb[IFLA_EXT_MASK])
+ 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
+@@ -1917,9 +1927,13 @@ static u16 rtnl_calcit(struct sk_buff *s
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
+ 	u16 min_ifinfo_dump_size = 0;
++	int hdrlen;
++
++	/* Same kernel<->userspace interface hack as in rtnl_dump_ifinfo. */
++	hdrlen = nlmsg_len(nlh) < sizeof(struct ifinfomsg) ?
++		 sizeof(struct rtgenmsg) : sizeof(struct ifinfomsg);
+ 
+-	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+-			ifla_policy) >= 0) {
++	if (nlmsg_parse(nlh, hdrlen, tb, IFLA_MAX, ifla_policy) >= 0) {
+ 		if (tb[IFLA_EXT_MASK])
+ 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
+ 	}
 
