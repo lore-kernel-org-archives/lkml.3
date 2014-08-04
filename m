@@ -1,77 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599AbaHDGlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 02:41:12 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51779 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288AbaHDGlL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 02:41:11 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 4 Aug 2014 15:48:23 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Christoph Lameter <cl@gentwo.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Matt Mackall <mpm@selenic.com>, Gilad Ben-Yossef <gilad@benyossef.com>,
-        Jens Axboe <axboe@fb.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: kernel: smp: WARNING at kernel/smp.c:673
-Message-ID: <20140804064823.GB22835@js1304-P5Q-DELUXE>
-References: <53DEF67E.8090004@oracle.com>
+	id S1751630AbaHDGll (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 02:41:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47101 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751134AbaHDGlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 02:41:40 -0400
+Message-ID: <53DF2B0D.7060002@ti.com>
+Date: Mon, 4 Aug 2014 12:11:17 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53DEF67E.8090004@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yaniv Gardi <ygardi@codeaurora.org>
+CC: <linux-arm-msm@vger.kernel>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1] phy: extend APIs of the generic phy framework
+References: <1406810222-19365-1-git-send-email-ygardi@codeaurora.org>
+In-Reply-To: <1406810222-19365-1-git-send-email-ygardi@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 03, 2014 at 10:57:02PM -0400, Sasha Levin wrote:
-> Hi all,
-> 
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel, I've stumbled on the following spew:
-> 
-> 
-> [ 1226.701012] WARNING: CPU: 6 PID: 8624 at kernel/smp.c:673 on_each_cpu_cond+0x27f/0x2f0()
-> [ 1226.703128] Modules linked in:
-> [ 1226.703955] CPU: 6 PID: 8624 Comm: trinity-c26 Tainted: G        W      3.16.0-rc7-next-20140801-sasha-00047-gd6ce559 #991
-> [ 1226.706792]  ffff881b2e8a3000 0000000023830039 0000000000000000 ffff881b2e8a3000
-> [ 1226.708179]  ffff881ada5b3978 ffffffffa1ee96b4 0000000000000000 ffff881ada5b39b8
-> [ 1226.709610]  ffffffff9d1ce5ba ffffffff9d2c0ddf 000000000000001b ffff8807d7608000
-> [ 1226.710966] Call Trace:
-> [ 1226.711417] dump_stack (lib/dump_stack.c:52)
-> [ 1226.712311] warn_slowpath_common (kernel/panic.c:432)
-> [ 1226.715425] warn_slowpath_null (kernel/panic.c:466)
-> [ 1226.716436] on_each_cpu_cond (kernel/smp.c:673 (discriminator 3))
-> [ 1226.720821] __kmem_cache_shrink (mm/slub.c:3420)
-> [ 1226.722711] slab_memory_callback (mm/slub.c:3464 mm/slub.c:3556)
-> [ 1226.723925] notifier_call_chain (kernel/notifier.c:93)
-> [ 1226.725244] __blocking_notifier_call_chain (kernel/notifier.c:319)
-> [ 1226.726310] blocking_notifier_call_chain (kernel/notifier.c:329)
-> [ 1226.727263] memory_notify (drivers/base/memory.c:177)
-> [ 1226.728210] __offline_pages.constprop.23 (include/linux/notifier.h:179 mm/memory_hotplug.c:1682)
-> [ 1226.731896] offline_pages (mm/memory_hotplug.c:1787)
-> [ 1226.733095] memory_subsys_offline (drivers/base/memory.c:267 drivers/base/memory.c:304)
-> [ 1226.735208] device_offline (drivers/base/core.c:1428)
-> [ 1226.736966] online_store (drivers/base/core.c:451 (discriminator 2))
-> [ 1226.737720] dev_attr_store (drivers/base/core.c:138)
-> [ 1226.739986] sysfs_kf_write (fs/sysfs/file.c:116)
-> [ 1226.742105] kernfs_fop_write (fs/kernfs/file.c:308)
-> [ 1226.743058] do_loop_readv_writev (fs/read_write.c:708)
-> [ 1226.745095] do_readv_writev (fs/read_write.c:840)
-> [ 1226.752769] vfs_writev (fs/read_write.c:879)
-> [ 1226.753755] SyS_writev (fs/read_write.c:911 fs/read_write.c:903)
-> [ 1226.754660] tracesys (arch/x86/kernel/entry_64.S:541)
-> 
-> No time to dig too much into this today, will work on it tomorrow.
+Hi,
 
-I think that that WARN_ON_ONCE() in kernel/smp.c:673 is wrong.
-smp_call_function_single() returns 0 if success so it should be
-WARN_ON_ONCE(ret) rather than WARN_ON_ONCE(!ret).
+On Thursday 31 July 2014 06:07 PM, Yaniv Gardi wrote:
+> This change adds a few more APIs to the phy_ops structure:
+> advertise_quirks - API for setting the phy quirks
 
-Thanks.
+What are these phy quirks? An explanation on what you are are planning to do
+with these quirks might help.
+> suspend - API for the implementation of phy suspend sequence
+> resume - API for the implementation of phy resume sequence
+
+Why not use the existing pm_runtime's suspend/resume callbacks?
+
+> 
+> Change-Id: I44dd77f2603d20acb02ccb0cc0d20ade884f97c2
+Remove this..
+
+> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
+> ---
+>  Documentation/phy.txt   |  6 ++---
+>  drivers/phy/phy-core.c  | 58 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/phy/phy.h | 33 ++++++++++++++++++++++++++++
+>  3 files changed, 94 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/phy.txt b/Documentation/phy.txt
+> index c6594af..f0dc28e 100644
+> --- a/Documentation/phy.txt
+> +++ b/Documentation/phy.txt
+> @@ -63,9 +63,9 @@ struct phy *devm_phy_create(struct device *dev, struct device_node *node,
+>  The PHY drivers can use one of the above 2 APIs to create the PHY by passing
+>  the device pointer, phy ops and init_data.
+>  phy_ops is a set of function pointers for performing PHY operations such as
+> -init, exit, power_on and power_off. *init_data* is mandatory to get a reference
+> -to the PHY in the case of non-dt boot. See section *Board File Initialization*
+> -on how init_data should be used.
+> +init, exit, power_on and power_off, , suspend, resume and advertise_quirks.
+> +*init_data* is mandatory to get a reference to the PHY in the case of non-dt
+> +boot. See section *Board File Initialization* on how init_data should be used.
+>  
+>  Inorder to dereference the private data (in phy_ops), the phy provider driver
+>  can use phy_set_drvdata() after creating the PHY and use phy_get_drvdata() in
+> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+> index ff5eec5..77abaab 100644
+> --- a/drivers/phy/phy-core.c
+> +++ b/drivers/phy/phy-core.c
+> @@ -293,6 +293,64 @@ int phy_power_off(struct phy *phy)
+>  }
+>  EXPORT_SYMBOL_GPL(phy_power_off);
+>  
+> +int phy_suspend(struct phy *phy)
+> +{
+> +	int ret = 0;
+> +
+> +	if (!phy->ops->suspend)
+> +		return -ENOTSUPP;
+> +
+> +	mutex_lock(&phy->mutex);
+> +
+> +	if (--phy->resume_count == 0) {
+> +		ret =  phy->ops->suspend(phy);
+> +		if (ret) {
+> +			dev_err(&phy->dev, "phy suspend failed --> %d\n", ret);
+> +			/* reverting the resume_count since suspend failed */
+> +			phy->resume_count++;
+> +			goto out;
+> +		}
+> +	}
+> +out:
+> +	mutex_unlock(&phy->mutex);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(phy_suspend);
+> +
+> +int phy_resume(struct phy *phy)
+> +{
+> +	int ret = 0;
+> +
+> +	if (!phy->ops->resume)
+> +		return -ENOTSUPP;
+> +
+> +	mutex_lock(&phy->mutex);
+> +
+> +	if (phy->resume_count++ == 0) {
+> +		ret =  phy->ops->resume(phy);
+> +		if (ret) {
+> +			dev_err(&phy->dev, "phy resume failed --> %d\n", ret);
+> +			/* reverting the resume_count since resume failed */
+> +			phy->resume_count--;
+> +			goto out;
+> +		}
+> +	}
+> +out:
+> +	mutex_unlock(&phy->mutex);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(phy_resume);
+> +
+> +void phy_advertise_quirks(struct phy *phy)
+> +{
+> +	if (phy->ops->advertise_quirks) {
+> +		mutex_lock(&phy->mutex);
+> +		phy->ops->advertise_quirks(phy);
+> +		mutex_unlock(&phy->mutex);
+> +	}
+> +}
+> +EXPORT_SYMBOL(phy_advertise_quirks);
+> +
+>  /**
+>   * _of_phy_get() - lookup and obtain a reference to a phy by phandle
+>   * @np: device_node for which to get the phy
+> diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+> index 8cb6f81..5b96d65 100644
+> --- a/include/linux/phy/phy.h
+> +++ b/include/linux/phy/phy.h
+> @@ -28,6 +28,14 @@ struct phy;
+>   * @exit: operation to be performed while exiting
+>   * @power_on: powering on the phy
+>   * @power_off: powering off the phy
+> + * @advertise_quirks: setting specific phy quirks. this api is for an
+> +		      internal use of the device driver, and its
+> +		      purpose is to exteriorize the driver's phy quirks
+> +		      according to phy version (or other parameters),
+> +		      so further behaviour of the driver's phy is based
+> +		      on those quirks.
+
+Can you be more specific on what you do with this? This looks more like a
+candidate for flags than callback to me?
+
+Thanks
+Kishon
