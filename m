@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751253AbaHDEHH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 00:07:07 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:19108 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716AbaHDEHF (ORCPT
+	id S1751288AbaHDEHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 00:07:40 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:63945 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896AbaHDEHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 00:07:05 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 03 Aug 2014 20:58:27 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH] MAINTAINERS: update GPIO include files
-Date: Mon, 4 Aug 2014 13:06:58 +0900
-Message-ID: <1407125218-22026-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.0.3
-X-NVConfidentiality: public
+	Mon, 4 Aug 2014 00:07:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1407122751-30689-1-git-send-email-xerofoify@gmail.com>
+References: <1407122751-30689-1-git-send-email-xerofoify@gmail.com>
+Date: Mon, 4 Aug 2014 14:07:37 +1000
+Message-ID: <CAPM=9tzyJmisCMqUtfkyDJ1vPaSypb--_Rbeim-qRRSDJNmZag@mail.gmail.com>
+Subject: Re: [PATCH] v4l2: Change call of function in videobuf2-core.c
+From: Dave Airlie <airlied@gmail.com>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: udovdh@xs4all.nl, Linux Media Mailing List <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Files under include/linux/gpio/ were not reported as part of the GPIO
-subsystem. Fix this.
+On 4 August 2014 13:25, Nicholas Krause <xerofoify@gmail.com> wrote:
+> This patch changes the call of vb2_buffer_core to use VB2_BUFFER_STATE_ACTIVE
+> inside the for instead of not setting in correctly to VB2_BUFFER_STATE_ERROR.
+>
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- MAINTAINERS | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Please go back and read every mail sent to you in the last few weeks.
+then read them again, go nuts read them again.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 5e0d24dcb122..d9ca71a31101 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4031,7 +4031,8 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
- S:	Maintained
- F:	Documentation/gpio/
- F:	drivers/gpio/
--F:	include/linux/gpio*
-+F:	include/linux/gpio/
-+F:	include/linux/gpio.h
- F:	include/asm-generic/gpio.h
- 
- GRE DEMULTIPLEXER DRIVER
--- 
-2.0.3
+Still wondering where I'm going with this? read them again.
 
+then understand that I mean this in the nicest way possible. "please fuck off."
+
+you are wasting developers time.
+
+Dave.
