@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751194AbaHDEGN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 00:06:13 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:13466 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859AbaHDEGL (ORCPT
+	id S1751253AbaHDEHH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 00:07:07 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:19108 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaHDEHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 00:06:11 -0400
+	Mon, 4 Aug 2014 00:07:05 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 03 Aug 2014 20:53:33 -0700
+	by hqnvupgp08.nvidia.com on Sun, 03 Aug 2014 20:58:27 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Linus Walleij <linus.walleij@linaro.org>
-CC: Thierry Reding <treding@nvidia.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, <gnurou@gmail.com>,
-        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH] gpio: add missing includes in machine.h
-Date: Mon, 4 Aug 2014 13:05:56 +0900
-Message-ID: <1407125156-14269-1-git-send-email-acourbot@nvidia.com>
+CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH] MAINTAINERS: update GPIO include files
+Date: Mon, 4 Aug 2014 13:06:58 +0900
+Message-ID: <1407125218-22026-1-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 2.0.3
 X-NVConfidentiality: public
 MIME-Version: 1.0
@@ -26,30 +24,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-linux/types.h and linux/list.h should be included so the typed used in
-the header file are always properly declared.
+Files under include/linux/gpio/ were not reported as part of the GPIO
+subsystem. Fix this.
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Reported-by: Thierry Reding <treding@nvidia.com>
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- include/linux/gpio/machine.h | 3 +++
- 1 file changed, 3 insertions(+)
+ MAINTAINERS | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/gpio/machine.h b/include/linux/gpio/machine.h
-index b8ad87fab4ce..e2706140eaff 100644
---- a/include/linux/gpio/machine.h
-+++ b/include/linux/gpio/machine.h
-@@ -1,6 +1,9 @@
- #ifndef __LINUX_GPIO_MACHINE_H
- #define __LINUX_GPIO_MACHINE_H
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 5e0d24dcb122..d9ca71a31101 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4031,7 +4031,8 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
+ S:	Maintained
+ F:	Documentation/gpio/
+ F:	drivers/gpio/
+-F:	include/linux/gpio*
++F:	include/linux/gpio/
++F:	include/linux/gpio.h
+ F:	include/asm-generic/gpio.h
  
-+#include <linux/types.h>
-+#include <linux/list.h>
-+
- enum gpio_lookup_flags {
- 	GPIO_ACTIVE_HIGH = (0 << 0),
- 	GPIO_ACTIVE_LOW = (1 << 0),
+ GRE DEMULTIPLEXER DRIVER
 -- 
 2.0.3
 
