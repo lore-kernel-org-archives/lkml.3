@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562AbaHDLQv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 07:16:51 -0400
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:53598 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203AbaHDLQu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 07:16:50 -0400
-Date: Mon, 4 Aug 2014 07:16:38 -0400
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: Hans Wennborg <hans@hanshq.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/19] drivers: atm: fix %d confusingly prefixed with 0x
- in format strings
-Message-ID: <20140804071638.32fd85ed@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <1407111500-14547-1-git-send-email-hans@hanshq.net>
-References: <1407111500-14547-1-git-send-email-hans@hanshq.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S1752620AbaHDLRV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 07:17:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57134 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752049AbaHDLRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 07:17:20 -0400
+Message-ID: <53DF6BBD.2060206@suse.com>
+Date: Mon, 04 Aug 2014 13:17:17 +0200
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Christoph Hellwig <hch@infradead.org>
+CC: James.Bottomley@HansenPartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] Save command pool address of Scsi_Host
+References: <1407126369-16543-1-git-send-email-jgross@suse.com> <20140804110844.GC19109@infradead.org>
+In-Reply-To: <20140804110844.GC19109@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-NRLCMF-Spam-Score: () hits=-0.001
-X-NRLCMF-Virus-Scanned: No virus found
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Chas Williams <chas@cmf.nrl.navy.mil>
+On 08/04/2014 01:08 PM, Christoph Hellwig wrote:
+> On Mon, Aug 04, 2014 at 06:26:09AM +0200, jgross@suse.com wrote:
+>> From: Juergen Gross <jgross@suse.com>
+>>
+>> If a scsi host driver specifies .cmd_len in it's scsi_host_template, a driver's
+>> private command pool is needed. scsi_find_host_cmd_pool() will locate it, but
+>> scsi_alloc_host_cmd_pool() isn't saving the pool address in the host template.
+>>
+>> This will result in an access error when the host is removed.
+>>
+>> Avoid the problem by saving the address of a new allocated command pool where
+>> it is expected and delete it again when the pool is destroyed.
+>
+> I don't really like the double pointer passing - just NULLing out the
+> pointer in the caller where needed seems cleaner.
 
-On Sun,  3 Aug 2014 17:18:20 -0700
-Hans Wennborg <hans@hanshq.net> wrote:
+I wanted to avoid to spread this, but I don't mind doing it. V4 is
+coming...
 
-> Signed-off-by: Hans Wennborg <hans@hanshq.net>
-> ---
->  drivers/atm/eni.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/atm/eni.c b/drivers/atm/eni.c
-> index b1955ba..d65975a 100644
-> --- a/drivers/atm/eni.c
-> +++ b/drivers/atm/eni.c
-> @@ -2155,7 +2155,7 @@ static int eni_proc_read(struct atm_dev *dev,loff_t *pos,char *page)
->  
->  		if (!tx->send) continue;
->  		if (!--left) {
-> -			return sprintf(page,"tx[%d]:    0x%ld-0x%ld "
-> +			return sprintf(page, "tx[%d]:    0x%lx-0x%lx "
->  			    "(%6ld bytes), rsv %d cps, shp %d cps%s\n",i,
->  			    (unsigned long) (tx->send - eni_dev->ram),
->  			    tx->send-eni_dev->ram+tx->words*4-1,tx->words*4,
-> @@ -2181,7 +2181,7 @@ static int eni_proc_read(struct atm_dev *dev,loff_t *pos,char *page)
->  			if (--left) continue;
->  			length = sprintf(page,"vcc %4d: ",vcc->vci);
->  			if (eni_vcc->rx) {
-> -				length += sprintf(page+length,"0x%ld-0x%ld "
-> +				length += sprintf(page+length, "0x%lx-0x%lx "
->  				    "(%6ld bytes)",
->  				    (unsigned long) (eni_vcc->recv - eni_dev->ram),
->  				    eni_vcc->recv-eni_dev->ram+eni_vcc->words*4-1,
+
+Juergen
 
