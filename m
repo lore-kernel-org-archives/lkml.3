@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530AbaHDRER (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 13:04:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56543 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751611AbaHDQt4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752140AbaHDQt4 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 4 Aug 2014 12:49:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56441 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751125AbaHDQty (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 12:49:54 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Hugh Dickins" <hughd@google.com>,
-        "Guillaume Morin" <guillaume@morinfr.org>,
-        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>
-Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.840252952@decadent.org.uk>
+CC: akpm@linux-foundation.org, "David R. Piegdon" <lkml@p23q.org>,
+        "Tony Lindgren" <tony@atomide.com>
+Date: Mon, 04 Aug 2014 17:48:31 +0100
+Message-ID: <lsq.1407170911.886134225@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 85/94] mm: hugetlb: fix copy_hugetlb_page_range()
+Subject: [PATCH 3.2 03/94] ARM: OMAP2+: Fix parser-bug in platform muxing code
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,68 +31,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: "David R. Piegdon" <lkml@p23q.org>
 
-commit 0253d634e0803a8376a0d88efee0bf523d8673f9 upstream.
+commit c021f241f4fab2bb4fc4120a38a828a03dd3f970 upstream.
 
-Commit 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
-migration/hwpoisoned entry") changed the order of
-huge_ptep_set_wrprotect() and huge_ptep_get(), which leads to breakage
-in some workloads like hugepage-backed heap allocation via libhugetlbfs.
-This patch fixes it.
+Fix a parser-bug in the omap2 muxing code where muxtable-entries will be
+wrongly selected if the requested muxname is a *prefix* of their
+m0-entry and they have a matching mN-entry. Fix by additionally checking
+that the length of the m0_entry is equal.
 
-The test program for the problem is shown below:
+For example muxing of "dss_data2.dss_data2" on omap32xx will fail
+because the prefix "dss_data2" will match the mux-entries "dss_data2" as
+well as "dss_data20", with the suffix "dss_data2" matching m0 (for
+dss_data2) and m4 (for dss_data20). Thus both are recognized as signal
+path candidates:
 
-  $ cat heap.c
-  #include <unistd.h>
-  #include <stdlib.h>
-  #include <string.h>
+Relevant muxentries from mux34xx.c:
+        _OMAP3_MUXENTRY(DSS_DATA20, 90,
+                "dss_data20", NULL, "mcspi3_somi", "dss_data2",
+                "gpio_90", NULL, NULL, "safe_mode"),
+        _OMAP3_MUXENTRY(DSS_DATA2, 72,
+                "dss_data2", NULL, NULL, NULL,
+                "gpio_72", NULL, NULL, "safe_mode"),
 
-  #define HPS 0x200000
+This will result in a failure to mux the pin at all:
 
-  int main() {
-  	int i;
-  	char *p = malloc(HPS);
-  	memset(p, '1', HPS);
-  	for (i = 0; i < 5; i++) {
-  		if (!fork()) {
-  			memset(p, '2', HPS);
-  			p = malloc(HPS);
-  			memset(p, '3', HPS);
-  			free(p);
-  			return 0;
-  		}
-  	}
-  	sleep(1);
-  	free(p);
-  	return 0;
-  }
+ _omap_mux_get_by_name: Multiple signal paths (2) for dss_data2.dss_data2
 
-  $ export HUGETLB_MORECORE=yes ; export HUGETLB_NO_PREFAULT= ; hugectl --heap ./heap
+Patch should apply to linus' latest master down to rather old linux-2.6
+trees.
 
-Fixes 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
-migration/hwpoisoned entry"), so is applicable to -stable kernels which
-include it.
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reported-by: Guillaume Morin <guillaume@morinfr.org>
-Suggested-by: Guillaume Morin <guillaume@morinfr.org>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David R. Piegdon <lkml@p23q.org>
+[tony@atomide.com: updated description to include full description]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/hugetlb.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-omap2/mux.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2344,6 +2344,7 @@ int copy_hugetlb_page_range(struct mm_st
- 		} else {
- 			if (cow)
- 				huge_ptep_set_wrprotect(src, addr, src_pte);
-+			entry = huge_ptep_get(src_pte);
- 			ptepage = pte_page(entry);
- 			get_page(ptepage);
- 			page_dup_rmap(ptepage);
+--- a/arch/arm/mach-omap2/mux.c
++++ b/arch/arm/mach-omap2/mux.c
+@@ -182,8 +182,10 @@ static int __init _omap_mux_get_by_name(
+ 		m0_entry = mux->muxnames[0];
+ 
+ 		/* First check for full name in mode0.muxmode format */
+-		if (mode0_len && strncmp(muxname, m0_entry, mode0_len))
+-			continue;
++		if (mode0_len)
++			if (strncmp(muxname, m0_entry, mode0_len) ||
++			    (strlen(m0_entry) != mode0_len))
++				continue;
+ 
+ 		/* Then check for muxmode only */
+ 		for (i = 0; i < OMAP_MUX_NR_MODES; i++) {
 
