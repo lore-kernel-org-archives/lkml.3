@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaHDTHN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 15:07:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60850 "EHLO
+	id S1752536AbaHDTHl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 15:07:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60852 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417AbaHDTHK (ORCPT
+	with ESMTP id S1752085AbaHDTHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 15:07:10 -0400
-Date: Mon, 4 Aug 2014 12:07:09 -0700
+	Mon, 4 Aug 2014 15:07:39 -0400
+Date: Mon, 4 Aug 2014 12:07:38 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] char/misc driver patches for 3.17-rc1
-Message-ID: <20140804190709.GA27091@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [GIT PULL] Driver core patches for 3.17-rc1
+Message-ID: <20140804190738.GA27196@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,394 +22,205 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 1795cd9b3a91d4b5473c97f491d63892442212ab:
+The following changes since commit 9a3c4145af32125c5ee39c0272662b47307a8323:
 
-  Linux 3.16-rc5 (2014-07-13 14:04:33 -0700)
+  Linux 3.16-rc6 (2014-07-20 21:04:16 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.17-rc1
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.17-rc1
 
-for you to fetch changes up to 16eb2bfc65ef86d3ac6420d50ddc2c48f0023cee:
+for you to fetch changes up to 4e3a25b0274b8474f5ad46215a270785dd18265e:
 
-  Merge tag 'extcon-next-for-3.17' of git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon into char-misc-next (2014-07-27 23:11:14 -0700)
+  ARM: imx: Remove references to platform_bus in mxc code (2014-08-01 16:03:00 -0700)
 
 ----------------------------------------------------------------
-Char / Misc driver patches for 3.17-rc1
+Driver core patches for 3.17-rc1
 
-Here's the big driver misc / char pull request for 3.17-rc1.
+Here's the big driver-core pull request for 3.17-rc1.
 
-Lots of things in here, the thunderbolt support for Apple laptops, some
-other new drivers, testing fixes, and other good things.  All have been
-in linux-next for a long time.
+Largest thing in here is the dma-buf rework and fence code, that touched
+many different subsystems so it was agreed it should go through this
+tree to handle merge issues.  There's also some firmware loading
+updates, as well as tests added, and a few other tiny changes, the
+changelog has the details.
+
+All have been in linux-next for a long time.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Alexander Shiyan (4):
-      w1: mxc_w1: Fix incorrect "presence" status
-      w1: mxc_w1: Optimize mxc_w1_ds2_reset_bus()
-      w1: mxc_w1: Perform a software reset at startup
-      w1: mxc_w1: Optimize mxc_w1_ds2_touch_bit()
+Daniel Thompson (1):
+      Documentation: devres: Add devm_kmalloc() et al
 
-Alexander Usyskin (7):
-      mei: move from misc to char device
-      mei: add WPT second mei interface
-      mei: reset client connection state on timeout
-      mei: start disconnect request timer consistently
-      mei: don't schedule suspend in pm idle
-      mei: fix return value on disconnect timeout
-      mei: drop unused hw dependent fw status functions
+Dave Chiluk (1):
+      stable_kernel_rules: Add pointer to netdev-FAQ for network patches
 
-Andre Heider (1):
-      uio: uio_pruss: use struct device
+Dmitry Kasatkin (1):
+      firmware: read firmware size using i_size_read()
 
-Andreas Noever (23):
-      thunderbolt: Add initial cactus ridge NHI support
-      thunderbolt: Add control channel interface
-      thunderbolt: Setup control channel
-      thunderbolt: Add tb_regs.h
-      thunderbolt: Initialize root switch and ports
-      thunderbolt: Add thunderbolt capability handling
-      thunderbolt: Enable plug events
-      thunderbolt: Scan for downstream switches
-      thunderbolt: Handle hotplug events
-      thunderbolt: Add path setup code.
-      thunderbolt: Add support for simple pci tunnels
-      PCI: Add pci_fixup_suspend_late quirk pass
-      PCI: Suspend/resume quirks for Apple thunderbolt
-      thunderbolt: Read switch uid from EEPROM
-      thunderbolt: Add suspend/hibernate support
-      thunderbolt: Read port configuration from eeprom.
-      thunderbolt: Fix nontrivial endpoint devices.
-      thunderbolt: Add casts to prevent endianness warnings
-      thunderbolt: Fix header declaration of tb_find_cap
-      thunderbolt: Make enum tb_drom_entry_type unsigned
-      thunderbolt: Make tb_eeprom_get_drom_offset static
-      thunderbolt: select CRC32 in Kconfig
-      MAINTAINERS: Add thunderbolt driver
+Fabian Frederick (2):
+      firmware: replace ALIGN(PAGE_SIZE) by PAGE_ALIGN
+      kernfs: kernel-doc warning fix
 
-Andrey Utkin (1):
-      drivers/char/dsp56k.c: drop check for negativity of unsigned parameter
-
-Arnd Bergmann (6):
-      thunderbolt: add PCI dependency
-      thunderbolt: fix format string for size_t
-      w1: select crc16 library for ds2406
-      pcmcia: sa1100: H3100 and H3600 share a driver
-      pcmcia: pxa2xx: fix logic for lubbock
-      pcmcia: journada720: use sa1100 pin interfaces correctly
-
-Benoit Taine (1):
-      ipack: Replace DEFINE_PCI_DEVICE_TABLE macro use
-
-Chanwoo Choi (7):
-      extcon: Reorder the sequence of extcon device driver alphabetically
-      extcon: Set parent device of extcon device using prameter of devm_extcon_dev_allocate
-      Merge tag 'mfd-extcon-regulator-v3.17' of git://git.kernel.org/.../lee/mfd into extcon-next
-      extcon: sm5502: Add support new SM5502 extcon device driver
-      extcon: sm5502: Detect cable state after completing platform booting
-      extcon: sm5502: Change internal hardware switch according to cable type
-      dt-bindings: extcon: Add support for SM5502 MUIC device
-
-Charles Keepax (4):
-      extcon: arizona: Remove duplicate set of input parent device
-      extcon: arizona: Correct typo to disable regulation for button detection
-      extcon: arizona: Update manual headphone detection calculation
-      extcon: arizona: Get MICVDD against extcon device
-
-Dan Carpenter (3):
-      VME: remove duplicate CA91CX42_DCTL_VDW_M define
-      char: xilinx_hwicap: missing error code if ioremap() fails
-      mfd: vexpress: fix error handling vexpress_syscfg_regmap_init()
-
-Enric Balletbo i Serra (1):
-      drivers/misc/ti-st: Load firmware from ti-connectivity directory.
-
-Fabian Frederick (1):
-      drivers/misc/carma/carma-fpga.c: use PTR_ERR_OR_ZERO
-
-Federico Vaga (2):
-      ipoctal: protect only the real critical section
-      ipoctal: request_irq after configuration
-
-Fjodor Schelichow (3):
-      w1/slaves: use pr_* instead of printk
-      w1: use pr_* instead of printk
-      w1/masters: use pr_* instead of printk
+Geert Uytterhoeven (1):
+      Documentation: devres: Sort managed interfaces
 
 Greg Kroah-Hartman (4):
-      Merge 3.16-rc5 into char-misc-next
-      misc: remove DEFINE_PCI_DEVICE_TABLE usage
-      pcmcia: remove DEFINE_PCI_DEVICE_TABLE usage
-      Merge tag 'extcon-next-for-3.17' of git://git.kernel.org/.../chanwoo/extcon into char-misc-next
-
-Guenter Roeck (4):
-      i8k: Drop all labels
-      i8k: Add support for configurable maximum fan speed value
-      i8k: uapi: Introduce define for new highest fan speed
-      i8k: Add support for Dell Precision 490 and Latitude D520
-
-Himangi Saraogi (5):
-      thunderbolt: Correct the size argument to devm_kzalloc
-      thunderbolt: Use kcalloc
-      misc: mic: Introduce the managed version of ioremap
-      misc: bh1770glc: Use managed functions
-      misc: bh1780: Introduce the use of devm_kzalloc
-
-Jason Wang (1):
-      hyperv: remove meaningless pr_err() in vmbus_recvpacket_raw()
-
-Jean-Michel Hautbois (1):
-      Lattice ECP3 FPGA: Correct endianness
+      Merge branch 'component-for-driver' of git://ftp.arm.linux.org.uk/~rmk/linux-arm into driver-core-next
+      Merge 3.16-rc4 into driver-core-next
+      Merge branch 'component-for-driver' of git://ftp.arm.linux.org.uk/~rmk/linux-arm into work-next
+      Merge 3.16-rc6 into driver-core-next
 
 Jingoo Han (1):
-      extcon: Remove unnecessary OOM messages
+      devres: remove devm_request_and_ioremap()
 
-Kees Cook (1):
-      bsr: avoid format string leaking into device name
+Kees Cook (2):
+      doc: fix minor typos in firmware_class README
+      test: add firmware_class loader test
 
-Kleber Sacilotto de Souza (5):
-      GenWQE: Add sysfs interface for bitstream reload
-      GenWQE: Add support for EEH error recovery
-      GenWQE: Improve hardware error recovery
-      GenWQE: Increase driver version number
-      GenWQE: Remove unnecessary include
+Kim Phillips (1):
+      driver core: platform: add device binding path 'driver_override'
 
-Krzysztof Kozlowski (1):
-      extcon: palmas: Make of_device_id array const
+Luis R. Rodriguez (1):
+      firmware loader: inform direct failure when udev loader is disabled
 
-Nikesh Oswal (1):
-      extcon: arizona: Use extcon cable API with index of extcon cable instead of string
+Maarten Lankhorst (9):
+      dma-buf: move to drivers/dma-buf
+      fence: dma-buf cross-device synchronization (v18)
+      seqno-fence: Hardware dma-buf implementation of fencing (v6)
+      dma-buf: use reservation objects
+      android: convert sync to fence api, v6
+      reservation: add support for fences to enable cross-device synchronisation
+      dma-buf: add poll support, v3
+      reservation: update api and add some helpers
+      reservation: add suppport for read-only access using rcu
 
-Richard Fitzgerald (1):
-      extcon: arizona: support inverted jack detect switch
+Pawel Moll (2):
+      platform: Remove most references to platform_bus device
+      ARM: imx: Remove references to platform_bus in mxc code
 
-Robert Baldyga (2):
-      mfd: max77693: Remove unnecessary wrapper functions
-      mfd: max77693: Handle IRQs using regmap
+Peter Senna Tschudin (1):
+      staging: android: Cleanup style issues
 
-Robin van der Gracht (1):
-      ti-st: st-kim: Dont let probe fail when debugfs is disabled
+Rahul Bedarkar (1):
+      fs: debugfs: remove trailing whitespace
 
-Sachin Kamat (7):
-      thunderbolt: Fix build error in eeprom.c
-      thunderbolt: Fix build error in switch.c
-      thunderbolt: Use NULL instead of 0 in switch.c
-      thunderbolt: Use NULL instead of 0 in ctl.c
-      thunderbolt: Use NULL instead of 0 in nhi.c
-      thunderbolt: Staticize nhi_ids
-      spmi: Remove duplicate inclusion of module.h
+Russell King (4):
+      component: fix missed cleanup in case of devres failure
+      component: ignore multiple additions of the same component
+      component: add support for component match array
+      component: fix bug with legacy API
 
-Scott Alfter (1):
-      w1: new w1_ds2406 driver
+Shuah Khan (1):
+      firmware loader: Fix _request_firmware_load() return val for fw load abort
 
-Sebastian Ott (1):
-      misc/GenWQE: fix pci_enable_msi usage
+Steven Rostedt (1):
+      debugfs: Fix corrupted loop in debugfs_remove_recursive
 
-Shuah Khan (7):
-      tools: memory-hotplug fix unexpected operator error
-      tools: cpu-hotplug fix unexpected operator error
-      tools: fix mq_perf_tests compile warnings
-      tools: fix mq_open_tests compile warnings
-      tools: Fix mqueue Makefile compile linking order
-      tools: fix kcmp_test compile warnings
-      tools: selftests - create a separate hotplug target for full range test
+Takashi Iwai (1):
+      firmware loader: allow disabling of udev as firmware loader
 
-Siva Yerramreddy (7):
-      misc: mic: Add mic bus and dma driver documentation
-      misc: mic: add threaded irq support in host driver
-      misc: mic: add dma support in host driver
-      misc: mic: add threaded irq support in card driver
-      misc: mic: add dma support in card driver
-      misc: mic: add support for loading/unloading dma driver
-      dma: MIC X100 DMA Driver
+Yann Droneaud (1):
+      driver core/platform: remove unused implicit padding in platform_object
 
-Sudeep Dutt (2):
-      misc: mic: add a bus driver for virtual MIC devices
-      dma: Fix MIC X100 DMA Driver Kconfig option
-
-Terry Chia (1):
-      Add MODULE_DESCRIPTION to dummy-irq.c and lkdtm.c in drivers/misc
-
-Thomas Wood (1):
-      drivers/w1/w1_int.c: Fix style errors.
-
-Tomas Winkler (1):
-      mei: sysfs: add Documentation mei class attributes
-
-Wei Yongjun (1):
-      misc: vexpress: Fix sparse non static symbol warnings
-
-Yue Zhang (1):
-      Tools: hv: fix file overwriting of hv_fcopy_daemon
-
- Documentation/ABI/testing/sysfs-class-mei          |  16 +
- Documentation/ABI/testing/sysfs-driver-genwqe      |   9 +
- .../devicetree/bindings/extcon/extcon-sm5502.txt   |  23 +
- Documentation/mic/mic_overview.txt                 |  67 +-
- Documentation/mic/mpssd/mpss                       |  14 +-
- Documentation/w1/slaves/w1_ds2406                  |  25 +
- MAINTAINERS                                        |   5 +
- drivers/Kconfig                                    |   2 +
+ Documentation/ABI/testing/sysfs-bus-platform       |  20 +
+ Documentation/DocBook/device-drivers.tmpl          |   8 +-
+ Documentation/driver-model/devres.txt              | 112 +--
+ Documentation/firmware_class/README                |   6 +-
+ Documentation/stable_kernel_rules.txt              |   3 +
+ MAINTAINERS                                        |   4 +-
+ arch/arm/mach-bcm/board_bcm21664.c                 |   3 +-
+ arch/arm/mach-bcm/board_bcm281xx.c                 |   3 +-
+ arch/arm/mach-clps711x/board-edb7211.c             |   6 +-
+ arch/arm/mach-clps711x/board-p720t.c               |   6 +-
+ arch/arm/mach-imx/devices/devices.c                |   2 -
+ arch/arm/mach-imx/mach-mx27ads.c                   |   2 +-
+ arch/arm/mach-shmobile/board-ape6evm.c             |  14 +-
+ arch/arm/mach-shmobile/board-bockw.c               |  19 +-
+ arch/arm/mach-shmobile/board-genmai.c              |   5 +-
+ arch/arm/mach-shmobile/board-koelsch.c             |  26 +-
+ arch/arm/mach-shmobile/board-lager.c               |  34 +-
+ arch/arm/mach-shmobile/board-marzen.c              |   1 -
+ arch/arm/mach-shmobile/setup-r7s72100.c            |   2 +-
+ arch/arm/mach-shmobile/setup-r8a73a4.c             |   8 +-
+ arch/arm/mach-shmobile/setup-r8a7778.c             |  13 +-
+ arch/arm/mach-shmobile/setup-r8a7779.c             |   6 +-
+ arch/arm/mach-shmobile/setup-r8a7790.c             |  10 +-
+ arch/arm/mach-shmobile/setup-r8a7791.c             |   8 +-
+ arch/unicore32/kernel/puv3-core.c                  |   2 +-
+ arch/unicore32/kernel/puv3-nb0916.c                |   6 +-
  drivers/Makefile                                   |   1 +
- drivers/char/bsr.c                                 |   2 +-
- drivers/char/dsp56k.c                              |   2 +-
- drivers/char/i8k.c                                 | 123 ++--
- drivers/char/xilinx_hwicap/xilinx_hwicap.c         |   1 +
- drivers/dma/Kconfig                                |  18 +
- drivers/dma/Makefile                               |   1 +
- drivers/dma/mic_x100_dma.c                         | 774 +++++++++++++++++++++
- drivers/dma/mic_x100_dma.h                         | 286 ++++++++
- drivers/extcon/Kconfig                             |  38 +-
- drivers/extcon/Makefile                            |   7 +-
- drivers/extcon/extcon-adc-jack.c                   |   1 -
- drivers/extcon/extcon-arizona.c                    |  74 +-
- drivers/extcon/extcon-class.c                      |   2 +
- drivers/extcon/extcon-gpio.c                       |   1 -
- drivers/extcon/extcon-max14577.c                   |   5 +-
- drivers/extcon/extcon-max77693.c                   |  41 +-
- drivers/extcon/extcon-max8997.c                    |   5 +-
- drivers/extcon/extcon-palmas.c                     |   3 +-
- drivers/extcon/extcon-sm5502.c                     | 724 +++++++++++++++++++
- drivers/hv/channel.c                               |   6 +-
- drivers/ipack/carriers/tpci200.c                   |   2 +-
- drivers/ipack/devices/ipoctal.c                    |  20 +-
- drivers/mfd/Kconfig                                |   1 +
- drivers/mfd/Makefile                               |   2 +-
- drivers/mfd/max77693-irq.c                         | 336 ---------
- drivers/mfd/max77693.c                             | 210 ++++--
- drivers/misc/bh1770glc.c                           |  35 +-
- drivers/misc/bh1780gli.c                           |  33 +-
- drivers/misc/carma/carma-fpga.c                    |   5 +-
- drivers/misc/dummy-irq.c                           |   1 +
- drivers/misc/genwqe/Kconfig                        |   6 +
- drivers/misc/genwqe/card_base.c                    | 217 +++++-
- drivers/misc/genwqe/card_base.h                    |   2 +
- drivers/misc/genwqe/card_ddcb.c                    |  28 +-
- drivers/misc/genwqe/card_debugfs.c                 |   7 +
- drivers/misc/genwqe/card_dev.c                     |   5 +
- drivers/misc/genwqe/card_sysfs.c                   |  25 +
- drivers/misc/genwqe/card_utils.c                   |  20 +-
- drivers/misc/genwqe/genwqe_driver.h                |   2 +-
- drivers/misc/lattice-ecp3-config.c                 |  16 +-
- drivers/misc/lkdtm.c                               |   1 +
- drivers/misc/mei/client.c                          |  17 +-
- drivers/misc/mei/hw-me-regs.h                      |   1 +
- drivers/misc/mei/hw-me.c                           |  54 --
- drivers/misc/mei/hw-txe.c                          |  32 -
- drivers/misc/mei/main.c                            | 148 +++-
- drivers/misc/mei/mei_dev.h                         |  12 +-
- drivers/misc/mei/pci-me.c                          |   6 +-
- drivers/misc/mei/pci-txe.c                         |   4 +-
- drivers/misc/mic/Kconfig                           |  21 +-
- drivers/misc/mic/Makefile                          |   1 +
- drivers/misc/mic/bus/Makefile                      |   5 +
- drivers/misc/mic/bus/mic_bus.c                     | 218 ++++++
- drivers/misc/mic/card/mic_device.c                 |  23 +-
- drivers/misc/mic/card/mic_device.h                 |   9 +-
- drivers/misc/mic/card/mic_virtio.c                 |   7 +-
- drivers/misc/mic/card/mic_x100.c                   |  62 +-
- drivers/misc/mic/host/mic_boot.c                   |  83 ++-
- drivers/misc/mic/host/mic_device.h                 |  24 +
- drivers/misc/mic/host/mic_intr.c                   | 121 ++--
- drivers/misc/mic/host/mic_intr.h                   |  27 +-
- drivers/misc/mic/host/mic_main.c                   |   7 +-
- drivers/misc/mic/host/mic_virtio.c                 | 187 ++++-
- drivers/misc/mic/host/mic_virtio.h                 |  21 +-
- drivers/misc/mic/host/mic_x100.c                   |   8 +
- drivers/misc/ti-st/st_kim.c                        |   8 +-
- drivers/misc/vexpress-syscfg.c                     |   4 +-
- drivers/misc/vmw_vmci/vmci_guest.c                 |   2 +-
- drivers/pci/pci-driver.c                           |  18 +-
- drivers/pci/quirks.c                               | 104 +++
- drivers/pcmcia/Kconfig                             |   2 +-
- drivers/pcmcia/Makefile                            |   1 +
- drivers/pcmcia/bcm63xx_pcmcia.c                    |   2 +-
- drivers/pcmcia/i82092.c                            |   2 +-
- drivers/pcmcia/pd6729.c                            |   2 +-
- drivers/pcmcia/sa1111_jornada720.c                 |  10 +-
- drivers/pcmcia/vrc4173_cardu.c                     |   2 +-
- drivers/pcmcia/yenta_socket.c                      |   2 +-
- drivers/regulator/max77693.c                       |  12 +-
- drivers/spmi/spmi.c                                |   1 -
- drivers/thunderbolt/Kconfig                        |  13 +
- drivers/thunderbolt/Makefile                       |   3 +
- drivers/thunderbolt/cap.c                          | 116 +++
- drivers/thunderbolt/ctl.c                          | 731 +++++++++++++++++++
- drivers/thunderbolt/ctl.h                          |  75 ++
- drivers/thunderbolt/eeprom.c                       | 449 ++++++++++++
- drivers/thunderbolt/nhi.c                          | 675 ++++++++++++++++++
- drivers/thunderbolt/nhi.h                          | 114 +++
- drivers/thunderbolt/nhi_regs.h                     | 101 +++
- drivers/thunderbolt/path.c                         | 215 ++++++
- drivers/thunderbolt/switch.c                       | 507 ++++++++++++++
- drivers/thunderbolt/tb.c                           | 436 ++++++++++++
- drivers/thunderbolt/tb.h                           | 271 ++++++++
- drivers/thunderbolt/tb_regs.h                      | 213 ++++++
- drivers/thunderbolt/tunnel_pci.c                   | 232 ++++++
- drivers/thunderbolt/tunnel_pci.h                   |  30 +
- drivers/uio/uio_pruss.c                            |  37 +-
- drivers/vme/bridges/vme_ca91cx42.h                 |   1 -
- drivers/w1/masters/ds1wm.c                         |   2 +-
- drivers/w1/masters/ds2482.c                        |   2 +-
- drivers/w1/masters/ds2490.c                        |  50 +-
- drivers/w1/masters/mxc_w1.c                        |  64 +-
- drivers/w1/slaves/Kconfig                          |   8 +
- drivers/w1/slaves/Makefile                         |   1 +
- drivers/w1/slaves/w1_ds2406.c                      | 168 +++++
- drivers/w1/slaves/w1_ds2760.c                      |   3 +-
- drivers/w1/w1.c                                    |  10 +-
- drivers/w1/w1_family.c                             |   2 +-
- drivers/w1/w1_family.h                             |   1 +
- drivers/w1/w1_int.c                                |  19 +-
- drivers/w1/w1_log.h                                |   4 +-
- drivers/w1/w1_netlink.c                            |   3 +-
- include/asm-generic/vmlinux.lds.h                  |   3 +
- include/linux/extcon/sm5502.h                      | 287 ++++++++
- include/linux/mfd/arizona/pdata.h                  |   3 +
- include/linux/mfd/max77693-private.h               |  54 +-
- include/linux/mic_bus.h                            | 110 +++
- include/linux/pci.h                                |  12 +-
- include/uapi/linux/genwqe/genwqe_card.h            |   1 +
- include/uapi/linux/i8k.h                           |   3 +-
- tools/hv/hv_fcopy_daemon.c                         |   3 +-
- tools/testing/selftests/Makefile                   |  18 +
- tools/testing/selftests/README.txt                 |  27 +-
- tools/testing/selftests/cpu-hotplug/Makefile       |   3 +
- tools/testing/selftests/cpu-hotplug/on-off-test.sh |  52 +-
- tools/testing/selftests/kcmp/kcmp_test.c           |   2 +-
- tools/testing/selftests/memory-hotplug/Makefile    |   3 +
- .../selftests/memory-hotplug/on-off-test.sh        |   8 +
- tools/testing/selftests/mqueue/Makefile            |   4 +-
- tools/testing/selftests/mqueue/mq_open_tests.c     |  20 +-
- tools/testing/selftests/mqueue/mq_perf_tests.c     |  40 +-
- 140 files changed, 8646 insertions(+), 1083 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-class-mei
- create mode 100644 Documentation/devicetree/bindings/extcon/extcon-sm5502.txt
- create mode 100644 Documentation/w1/slaves/w1_ds2406
- create mode 100644 drivers/dma/mic_x100_dma.c
- create mode 100644 drivers/dma/mic_x100_dma.h
- create mode 100644 drivers/extcon/extcon-sm5502.c
- delete mode 100644 drivers/mfd/max77693-irq.c
- create mode 100644 drivers/misc/mic/bus/Makefile
- create mode 100644 drivers/misc/mic/bus/mic_bus.c
- create mode 100644 drivers/thunderbolt/Kconfig
- create mode 100644 drivers/thunderbolt/Makefile
- create mode 100644 drivers/thunderbolt/cap.c
- create mode 100644 drivers/thunderbolt/ctl.c
- create mode 100644 drivers/thunderbolt/ctl.h
- create mode 100644 drivers/thunderbolt/eeprom.c
- create mode 100644 drivers/thunderbolt/nhi.c
- create mode 100644 drivers/thunderbolt/nhi.h
- create mode 100644 drivers/thunderbolt/nhi_regs.h
- create mode 100644 drivers/thunderbolt/path.c
- create mode 100644 drivers/thunderbolt/switch.c
- create mode 100644 drivers/thunderbolt/tb.c
- create mode 100644 drivers/thunderbolt/tb.h
- create mode 100644 drivers/thunderbolt/tb_regs.h
- create mode 100644 drivers/thunderbolt/tunnel_pci.c
- create mode 100644 drivers/thunderbolt/tunnel_pci.h
- create mode 100644 drivers/w1/slaves/w1_ds2406.c
- create mode 100644 include/linux/extcon/sm5502.h
- create mode 100644 include/linux/mic_bus.h
+ drivers/base/Kconfig                               |  19 +-
+ drivers/base/Makefile                              |   1 -
+ drivers/base/component.c                           | 192 ++++-
+ drivers/base/firmware_class.c                      |  47 +-
+ drivers/base/platform.c                            |  51 +-
+ drivers/base/reservation.c                         |  39 -
+ drivers/bus/brcmstb_gisb.c                         |   6 +-
+ drivers/dma-buf/Makefile                           |   1 +
+ drivers/{base => dma-buf}/dma-buf.c                | 168 +++-
+ drivers/dma-buf/fence.c                            | 431 ++++++++++
+ drivers/dma-buf/reservation.c                      | 477 +++++++++++
+ drivers/dma-buf/seqno-fence.c                      |  73 ++
+ drivers/gpu/drm/armada/armada_crtc.c               |   8 +-
+ drivers/gpu/drm/armada/armada_gem.c                |   2 +-
+ drivers/gpu/drm/drm_prime.c                        |   8 +-
+ drivers/gpu/drm/exynos/exynos_drm_dmabuf.c         |   2 +-
+ drivers/gpu/drm/i915/i915_gem_dmabuf.c             |   3 +-
+ drivers/gpu/drm/nouveau/nouveau_drm.c              |   1 +
+ drivers/gpu/drm/nouveau/nouveau_gem.h              |   1 +
+ drivers/gpu/drm/nouveau/nouveau_prime.c            |   7 +
+ drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c          |   2 +-
+ drivers/gpu/drm/radeon/radeon_drv.c                |   2 +
+ drivers/gpu/drm/radeon/radeon_prime.c              |   8 +
+ drivers/gpu/drm/tegra/gem.c                        |   2 +-
+ drivers/gpu/drm/ttm/ttm_object.c                   |   2 +-
+ drivers/media/v4l2-core/videobuf2-dma-contig.c     |   2 +-
+ drivers/staging/android/Kconfig                    |   1 +
+ drivers/staging/android/Makefile                   |   2 +-
+ drivers/staging/android/ion/ion.c                  |   3 +-
+ drivers/staging/android/sw_sync.c                  |   6 +-
+ drivers/staging/android/sync.c                     | 913 +++++++--------------
+ drivers/staging/android/sync.h                     |  79 +-
+ drivers/staging/android/sync_debug.c               | 252 ++++++
+ drivers/staging/android/trace/sync.h               |  12 +-
+ fs/debugfs/file.c                                  |   2 +-
+ fs/debugfs/inode.c                                 |  39 +-
+ fs/kernfs/file.c                                   |   2 +-
+ include/drm/drmP.h                                 |   3 +
+ include/linux/component.h                          |   7 +
+ include/linux/device.h                             |   2 -
+ include/linux/dma-buf.h                            |  21 +-
+ include/linux/fence.h                              | 360 ++++++++
+ include/linux/firmware.h                           |  15 +-
+ include/linux/platform_device.h                    |   1 +
+ include/linux/reservation.h                        |  82 +-
+ include/linux/seqno-fence.h                        | 116 +++
+ include/trace/events/fence.h                       | 128 +++
+ lib/Kconfig.debug                                  |  13 +
+ lib/Makefile                                       |   1 +
+ lib/devres.c                                       |  28 -
+ lib/test_firmware.c                                | 117 +++
+ scripts/coccinelle/api/devm_ioremap_resource.cocci |  90 --
+ tools/testing/selftests/Makefile                   |   1 +
+ tools/testing/selftests/firmware/Makefile          |  27 +
+ tools/testing/selftests/firmware/fw_filesystem.sh  |  62 ++
+ tools/testing/selftests/firmware/fw_userhelper.sh  |  89 ++
+ 83 files changed, 3283 insertions(+), 1076 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-platform
+ delete mode 100644 drivers/base/reservation.c
+ create mode 100644 drivers/dma-buf/Makefile
+ rename drivers/{base => dma-buf}/dma-buf.c (81%)
+ create mode 100644 drivers/dma-buf/fence.c
+ create mode 100644 drivers/dma-buf/reservation.c
+ create mode 100644 drivers/dma-buf/seqno-fence.c
+ create mode 100644 drivers/staging/android/sync_debug.c
+ create mode 100644 include/linux/fence.h
+ create mode 100644 include/linux/seqno-fence.h
+ create mode 100644 include/trace/events/fence.h
+ create mode 100644 lib/test_firmware.c
+ delete mode 100644 scripts/coccinelle/api/devm_ioremap_resource.cocci
+ create mode 100644 tools/testing/selftests/firmware/Makefile
+ create mode 100644 tools/testing/selftests/firmware/fw_filesystem.sh
+ create mode 100644 tools/testing/selftests/firmware/fw_userhelper.sh
