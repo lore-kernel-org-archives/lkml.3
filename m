@@ -1,45 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924AbaHDJym (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 05:54:42 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:38117 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939AbaHDJyk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 05:54:40 -0400
+	id S1751972AbaHDJ5W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 05:57:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27039 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751642AbaHDJ5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 05:57:21 -0400
+Message-ID: <53DF58CA.5040807@redhat.com>
+Date: Mon, 04 Aug 2014 11:56:26 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <53D25081.1010209@redhat.com>
-References: <1406224491-3599-1-git-send-email-prarit@redhat.com>
-	<CAKohpomHj17A4e6Sh8JSz1HPbq9r8gXUJeZ20PQ=Mhu59Vt7ZQ@mail.gmail.com>
-	<53D24030.1010302@redhat.com>
-	<53D25081.1010209@redhat.com>
-Date: Mon, 4 Aug 2014 15:24:40 +0530
-Message-ID: <CAKohpoksKz5437Yds0Rk59Rgr+rdt=UcH421MjY2BhEbMjfwQw@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem to
- be held for duration of changing governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lenny Szubowicz <lszubowi@redhat.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] memcg, vmscan: Fix forced scan of anonymous pages
+References: <1406807385-5168-1-git-send-email-jmarchan@redhat.com> <1406807385-5168-3-git-send-email-jmarchan@redhat.com> <20140731123026.GE13561@dhcp22.suse.cz> <20140801184525.GK9952@cmpxchg.org> <20140801185251.GA31417@dhcp22.suse.cz>
+In-Reply-To: <20140801185251.GA31417@dhcp22.suse.cz>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="sWaQuwtFLxuSNcU7mRdWHsdRknOxaJgkM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 July 2014 18:11, Prarit Bhargava <prarit@redhat.com> wrote:
-> Okay -- I think I got it:  The above happens only with an *older* sysfs stack
-> which acquires a &buffer->mutex.  This no longer happens with the new sysfs
-> stack so the above change is still no longer necessary in mainline linux.git (at
-> least AFAICT).
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--sWaQuwtFLxuSNcU7mRdWHsdRknOxaJgkM
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Hmm, that's something new for me. Would it be possible to give some commits
-for reference where the behavior changed? This would be quite helpful once
-we face it again and need to come back to this thread :)
+On 08/01/2014 08:52 PM, Michal Hocko wrote:
+> On Fri 01-08-14 14:45:25, Johannes Weiner wrote:
+>> On Thu, Jul 31, 2014 at 02:30:26PM +0200, Michal Hocko wrote:
+>>> On Thu 31-07-14 13:49:45, Jerome Marchand wrote:
+>>>> @@ -1950,8 +1950,11 @@ static void get_scan_count(struct lruvec *lru=
+vec, int swappiness,
+>>>>  	 */
+>>>>  	if (global_reclaim(sc)) {
+>>>>  		unsigned long free =3D zone_page_state(zone, NR_FREE_PAGES);
+>>>> +		unsigned long zonefile =3D
+>>>> +			zone_page_state(zone, NR_LRU_BASE + LRU_ACTIVE_FILE) +
+>>>> +			zone_page_state(zone, NR_LRU_BASE + LRU_INACTIVE_FILE);
+>>>> =20
+>>>> -		if (unlikely(file + free <=3D high_wmark_pages(zone))) {
+>>>> +		if (unlikely(zonefile + free <=3D high_wmark_pages(zone))) {
+>>>>  			scan_balance =3D SCAN_ANON;
+>>>>  			goto out;
+>>>>  		}
+>>>
+>>> You could move file and anon further down when we actually use them.
 
-> In any case, the change still appears to be incorrect in that it breaks the
-> rwsem locking scheme of the cpufreq policy.  I'll do some additional testing on
-> various systems and get back to you in a few days.
+I missed that comment. Thanks for the cleanup Johannes!
 
-What about breaking rwsem locking scheme?
+>>
+>> Agreed with that.  Can we merge this into the original patch?
+>>
+>> ---
+>> From e49bef8d2751d9b27f1733e3e0eced325ffce700 Mon Sep 17 00:00:00 2001=
+
+>> From: Johannes Weiner <hannes@cmpxchg.org>
+>> Date: Fri, 1 Aug 2014 10:48:26 -0400
+>> Subject: [patch] memcg, vmscan: Fix forced scan of anonymous pages fix=
+ -
+>>  cleanups
+>>
+>> o Use enum zone_stat_item symbols directly to select zone stats,
+>>   rather than NR_LRU_BASE plus LRU index
+>>
+>> o scanned/rotated scaling is the only user of the lruvec anon/file
+>>   counters, so move the reads of those values to right before that
+>>
+>> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+>=20
+> Yes, please.
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+
+>=20
+> Thanks!
+>=20
+>> ---
+>>  mm/vmscan.c | 23 +++++++++++++----------
+>>  1 file changed, 13 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index b3f629bdf4fe..2836b5373b2e 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -1934,11 +1934,6 @@ static void get_scan_count(struct lruvec *lruve=
+c, int swappiness,
+>>  		goto out;
+>>  	}
+>> =20
+>> -	anon  =3D get_lru_size(lruvec, LRU_ACTIVE_ANON) +
+>> -		get_lru_size(lruvec, LRU_INACTIVE_ANON);
+>> -	file  =3D get_lru_size(lruvec, LRU_ACTIVE_FILE) +
+>> -		get_lru_size(lruvec, LRU_INACTIVE_FILE);
+>> -
+>>  	/*
+>>  	 * Prevent the reclaimer from falling into the cache trap: as
+>>  	 * cache pages start out inactive, every cache fault will tip
+>> @@ -1949,12 +1944,14 @@ static void get_scan_count(struct lruvec *lruv=
+ec, int swappiness,
+>>  	 * anon pages.  Try to detect this based on file LRU size.
+>>  	 */
+>>  	if (global_reclaim(sc)) {
+>> -		unsigned long free =3D zone_page_state(zone, NR_FREE_PAGES);
+>> -		unsigned long zonefile =3D
+>> -			zone_page_state(zone, NR_LRU_BASE + LRU_ACTIVE_FILE) +
+>> -			zone_page_state(zone, NR_LRU_BASE + LRU_INACTIVE_FILE);
+>> +		unsigned long zonefile;
+>> +		unsigned long zonefree;
+>> +
+>> +		zonefree =3D zone_page_state(zone, NR_FREE_PAGES);
+>> +		zonefile =3D zone_page_state(zone, NR_ACTIVE_FILE) +
+>> +			   zone_page_state(zone, NR_INACTIVE_FILE);
+>> =20
+>> -		if (unlikely(zonefile + free <=3D high_wmark_pages(zone))) {
+>> +		if (unlikely(zonefile + zonefree <=3D high_wmark_pages(zone))) {
+>>  			scan_balance =3D SCAN_ANON;
+>>  			goto out;
+>>  		}
+>> @@ -1989,6 +1986,12 @@ static void get_scan_count(struct lruvec *lruve=
+c, int swappiness,
+>>  	 *
+>>  	 * anon in [0], file in [1]
+>>  	 */
+>> +
+>> +	anon  =3D get_lru_size(lruvec, LRU_ACTIVE_ANON) +
+>> +		get_lru_size(lruvec, LRU_INACTIVE_ANON);
+>> +	file  =3D get_lru_size(lruvec, LRU_ACTIVE_FILE) +
+>> +		get_lru_size(lruvec, LRU_INACTIVE_FILE);
+>> +
+>>  	spin_lock_irq(&zone->lru_lock);
+>>  	if (unlikely(reclaim_stat->recent_scanned[0] > anon / 4)) {
+>>  		reclaim_stat->recent_scanned[0] /=3D 2;
+>> --=20
+>> 2.0.3
+>>
+>=20
+
+
+
+--sWaQuwtFLxuSNcU7mRdWHsdRknOxaJgkM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJT31jKAAoJEHTzHJCtsuoCsLYH+wT9LBc/khDWN8S5zvWxMe56
+XCrJna3N7eTNJd6afBKmyUUoHlMWQsq+AYTTsVaniKDfW1a3BePFAkfQ2DT6N6Af
+TRcVdApQe6gwntZ0ryPcG34Fb/RIYJZaaV0rLs011kp2U0I19sBBuvsDR0HZ+Yyj
+rlL7PoJujkMP6LN62pKA368uaztjQDdY6USt5HcdLcod9dfDeSixlpZkW9tMhLp/
+f1ceZCYpprT1HgApWzsJuZXX5uGx1b9eKBNn85DpfVhm/JdqupclScyHOadQfNA/
+j2GtET4XDdcpJ8eHqigP9+8gMItO+RWEWXzpIgDuc6WKhGc3PznpjRLc1JF5ZvU=
+=H74y
+-----END PGP SIGNATURE-----
+
+--sWaQuwtFLxuSNcU7mRdWHsdRknOxaJgkM--
