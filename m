@@ -1,209 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaHDJTe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 05:19:34 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:36749 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326AbaHDJTc (ORCPT
+	id S1751967AbaHDJUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 05:20:32 -0400
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:63732 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373AbaHDJUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 05:19:32 -0400
-Subject: [PATCH v1.3 7/18] arcmsr: revise messages_isr_bh_fn to remove
- duplicate code
-From: Ching Huang <ching2048@areca.com.tw>
-To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Aug 2014 17:19:24 +0800
-Message-ID: <1407143964.4756.58.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Aug 2014 05:20:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1407143509-27683-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1407143509-27683-1-git-send-email-ricardo.ribalda@gmail.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Mon, 4 Aug 2014 11:20:08 +0200
+Message-ID: <CAPybu_0E3P0f0dXwx7Ak=ZduWHbRXVMh4SJf9q22Je6yc3AWNg@mail.gmail.com>
+Subject: Re: [PATCH] net/usb/hso: Add support for Option GTM671WFS
+To: Jan Dumon <j.dumon@option.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Dan Williams <dcbw@redhat.com>
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching Huang <ching2048@areca.com.tw>
+Suggested-by: Dan Williams <dcbw@redhat.com>
 
-Revise message_isr_bh_fn to remove the duplicate code for each adapter type.
+On Mon, Aug 4, 2014 at 11:11 AM, Ricardo Ribalda Delgado
+<ricardo.ribalda@gmail.com> wrote:
+> After this patch:
+>
+> [ 32.985530] hso: drivers/net/usb/hso.c: Option Wireless
+> [ 33.000452] hso 2-1.4:1.7: Not our interface
+> [ 33.001849] usbcore: registered new interface driver hso
+>
+> root@qt5022:~# ls /dev/ttyHS*
+> /dev/ttyHS0  /dev/ttyHS1  /dev/ttyHS2  /dev/ttyHS3  /dev/ttyHS4
+> /dev/ttyHS5
+>
+> root@qt5022:~# lsusb -d 0af0: -vvv
+>
+> Bus 002 Device 003: ID 0af0:9200 Option
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               2.00
+>   bDeviceClass          255 Vendor Specific Class
+>   bDeviceSubClass       255 Vendor Specific Subclass
+>   bDeviceProtocol       255 Vendor Specific Protocol
+>   bMaxPacketSize0        64
+>   idVendor           0x0af0 Option
+>   idProduct          0x9200
+>   bcdDevice            0.00
+>   iManufacturer           3 Option N.V.
+>   iProduct                2 Globetrotter HSUPA Modem
+>   iSerial                 0
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength          200
+>     bNumInterfaces          8
+>     bConfigurationValue     1
+>     iConfiguration          1 Option Configuration
+>     bmAttributes         0xe0
+>       Self Powered
+>       Remote Wakeup
+>     MaxPower              100mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           2
+>       bInterfaceClass       255 Vendor Specific Class
+>       bInterfaceSubClass    255 Vendor Specific Subclass
+>       bInterfaceProtocol    255 Vendor Specific Protocol
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x01  EP 1 OUT
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       0
+>       bNumEndpoints           2
+>       bInterfaceClass       255 Vendor Specific Class
+>       bInterfaceSubClass    255 Vendor Specific Subclass
+>       bInterfaceProtocol    255 Vendor Specific Protocol
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x82  EP 2 IN
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x02  EP 2 OUT
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        2
+>       bAlternateSetting       0
+>       bNumEndpoints           2
+>       bInterfaceClass       255 Vendor Specific Class
+>       bInterfaceSubClass    255 Vendor Specific Subclass
+>       bInterfaceProtocol    255 Vendor Specific Protocol
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x83  EP 3 IN
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x03  EP 3 OUT
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        3
+>       bAlternateSetting       0
+>       bNumEndpoints           2
+>       bInterfaceClass       255 Vendor Specific Class
+>       bInterfaceSubClass    255 Vendor Specific Subclass
+>       bInterfaceProtocol    255 Vendor Specific Protocol
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x84  EP 4 IN
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x04  EP 4 OUT
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        4
+>       bAlternateSetting       0
+>       bNumEndpoints           2
+>       bInterfaceClass       255 Vendor Specific Class
+>       bInterfaceSubClass    255 Vendor Specific Subclass
+>       bInterfaceProtocol    255 Vendor Specific Protocol
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x85  EP 5 IN
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x05  EP 5 OUT
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        5
+>       bAlternateSetting       0
+>       bNumEndpoints           2
+>       bInterfaceClass       255 Vendor Specific Class
+>       bInterfaceSubClass    255 Vendor Specific Subclass
+>       bInterfaceProtocol    255 Vendor Specific Protocol
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x06  EP 6 OUT
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x86  EP 6 IN
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        6
+>       bAlternateSetting       0
+>       bNumEndpoints           3
+>       bInterfaceClass       255 Vendor Specific Class
+>       bInterfaceSubClass    255 Vendor Specific Subclass
+>       bInterfaceProtocol    255 Vendor Specific Protocol
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x87  EP 7 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0040  1x 64 bytes
+>         bInterval               5
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x88  EP 8 IN
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x07  EP 7 OUT
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval              32
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        7
+>       bAlternateSetting       0
+>       bNumEndpoints           2
+>       bInterfaceClass         8 Mass Storage
+>       bInterfaceSubClass      6 SCSI
+>       bInterfaceProtocol     80 Bulk-Only
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x08  EP 8 OUT
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval               1
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x89  EP 9 IN
+>         bmAttributes            2
+>           Transfer Type            Bulk
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0200  1x 512 bytes
+>         bInterval               1
+> Device Qualifier (for other device speed):
+>   bLength                10
+>   bDescriptorType         6
+>   bcdUSB               2.00
+>   bDeviceClass          255 Vendor Specific Class
+>   bDeviceSubClass       255 Vendor Specific Subclass
+>   bDeviceProtocol       255 Vendor Specific Protocol
+>   bMaxPacketSize0        64
+>   bNumConfigurations      1
+> Device Status:     0x0001
+>   Self Powered
+>
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>  drivers/net/usb/hso.c | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
+> index a3a0586..eb12261 100644
+> --- a/drivers/net/usb/hso.c
+> +++ b/drivers/net/usb/hso.c
+> @@ -469,6 +469,7 @@ static const struct usb_device_id hso_ids[] = {
+>         {USB_DEVICE(0x0af0, 0x8800)},
+>         {USB_DEVICE(0x0af0, 0x8900)},
+>         {USB_DEVICE(0x0af0, 0x9000)},
+> +       {USB_DEVICE(0x0af0, 0x9200)},           /* Option GTM671WFS */
+>         {USB_DEVICE(0x0af0, 0xd035)},
+>         {USB_DEVICE(0x0af0, 0xd055)},
+>         {USB_DEVICE(0x0af0, 0xd155)},
+> --
+> 2.0.1
+>
 
-Signed-off-by: Ching Huang <ching2048@areca.com.tw>
----
-
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-04 16:43:16.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-04 16:43:06.000000000 +0800
-@@ -511,120 +511,65 @@ static int arcmsr_alloc_ccb_pool(struct 
- 
- static void arcmsr_message_isr_bh_fn(struct work_struct *work) 
- {
--	struct AdapterControlBlock *acb = container_of(work,struct AdapterControlBlock, arcmsr_do_message_isr_bh);
--	switch (acb->adapter_type) {
--		case ACB_ADAPTER_TYPE_A: {
-+	struct AdapterControlBlock *acb = container_of(work,
-+		struct AdapterControlBlock, arcmsr_do_message_isr_bh);
-+	char *acb_dev_map = (char *)acb->device_map;
-+	uint32_t __iomem *signature = NULL;
-+	char __iomem *devicemap = NULL;
-+	int target, lun;
-+	struct scsi_device *psdev;
-+	char diff, temp;
- 
--			struct MessageUnit_A __iomem *reg  = acb->pmuA;
--			char *acb_dev_map = (char *)acb->device_map;
--			uint32_t __iomem *signature = (uint32_t __iomem*) (&reg->message_rwbuffer[0]);
--			char __iomem *devicemap = (char __iomem*) (&reg->message_rwbuffer[21]);
--			int target, lun;
--			struct scsi_device *psdev;
--			char diff;
--
--			atomic_inc(&acb->rq_map_token);
--			if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
--				for(target = 0; target < ARCMSR_MAX_TARGETID -1; target++) {
--					diff = (*acb_dev_map)^readb(devicemap);
--					if (diff != 0) {
--						char temp;
--						*acb_dev_map = readb(devicemap);
--						temp =*acb_dev_map;
--						for(lun = 0; lun < ARCMSR_MAX_TARGETLUN; lun++) {
--							if((temp & 0x01)==1 && (diff & 0x01) == 1) {	
--								scsi_add_device(acb->host, 0, target, lun);
--							}else if((temp & 0x01) == 0 && (diff & 0x01) == 1) {
--								psdev = scsi_device_lookup(acb->host, 0, target, lun);
--								if (psdev != NULL ) {
--									scsi_remove_device(psdev);
--									scsi_device_put(psdev);
--								}
--							}
--							temp >>= 1;
--							diff >>= 1;
--						}
--					}
--					devicemap++;
--					acb_dev_map++;
--				}
--			}
--			break;
-+	switch (acb->adapter_type) {
-+	case ACB_ADAPTER_TYPE_A: {
-+		struct MessageUnit_A __iomem *reg  = acb->pmuA;
-+		signature = (uint32_t __iomem *)(&reg->message_rwbuffer[0]);
-+		devicemap = (char __iomem *)(&reg->message_rwbuffer[21]);
-+		break;
- 		}
--
--		case ACB_ADAPTER_TYPE_B: {
--			struct MessageUnit_B *reg  = acb->pmuB;
--			char *acb_dev_map = (char *)acb->device_map;
--			uint32_t __iomem *signature = (uint32_t __iomem*)(&reg->message_rwbuffer[0]);
--			char __iomem *devicemap = (char __iomem*)(&reg->message_rwbuffer[21]);
--			int target, lun;
--			struct scsi_device *psdev;
--			char diff;
--
--			atomic_inc(&acb->rq_map_token);
--			if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
--				for(target = 0; target < ARCMSR_MAX_TARGETID -1; target++) {
--					diff = (*acb_dev_map)^readb(devicemap);
--					if (diff != 0) {
--						char temp;
--						*acb_dev_map = readb(devicemap);
--						temp =*acb_dev_map;
--						for(lun = 0; lun < ARCMSR_MAX_TARGETLUN; lun++) {
--							if((temp & 0x01)==1 && (diff & 0x01) == 1) {	
--								scsi_add_device(acb->host, 0, target, lun);
--							}else if((temp & 0x01) == 0 && (diff & 0x01) == 1) {
--								psdev = scsi_device_lookup(acb->host, 0, target, lun);
--								if (psdev != NULL ) {
--									scsi_remove_device(psdev);
--									scsi_device_put(psdev);
--								}
--							}
--							temp >>= 1;
--							diff >>= 1;
--						}
--					}
--					devicemap++;
--					acb_dev_map++;
--				}
--			}
-+	case ACB_ADAPTER_TYPE_B: {
-+		struct MessageUnit_B *reg  = acb->pmuB;
-+		signature = (uint32_t __iomem *)(&reg->message_rwbuffer[0]);
-+		devicemap = (char __iomem *)(&reg->message_rwbuffer[21]);
-+		break;
- 		}
-+	case ACB_ADAPTER_TYPE_C: {
-+		struct MessageUnit_C __iomem *reg  = acb->pmuC;
-+		signature = (uint32_t __iomem *)(&reg->msgcode_rwbuffer[0]);
-+		devicemap = (char __iomem *)(&reg->msgcode_rwbuffer[21]);
- 		break;
--		case ACB_ADAPTER_TYPE_C: {
--			struct MessageUnit_C *reg  = acb->pmuC;
--			char *acb_dev_map = (char *)acb->device_map;
--			uint32_t __iomem *signature = (uint32_t __iomem *)(&reg->msgcode_rwbuffer[0]);
--			char __iomem *devicemap = (char __iomem *)(&reg->msgcode_rwbuffer[21]);
--			int target, lun;
--			struct scsi_device *psdev;
--			char diff;
--
--			atomic_inc(&acb->rq_map_token);
--			if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
--				for (target = 0; target < ARCMSR_MAX_TARGETID - 1; target++) {
--					diff = (*acb_dev_map)^readb(devicemap);
--					if (diff != 0) {
--						char temp;
--						*acb_dev_map = readb(devicemap);
--						temp = *acb_dev_map;
--						for (lun = 0; lun < ARCMSR_MAX_TARGETLUN; lun++) {
--							if ((temp & 0x01) == 1 && (diff & 0x01) == 1) {
--								scsi_add_device(acb->host, 0, target, lun);
--							} else if ((temp & 0x01) == 0 && (diff & 0x01) == 1) {
--								psdev = scsi_device_lookup(acb->host, 0, target, lun);
--								if (psdev != NULL) {
--									scsi_remove_device(psdev);
--									scsi_device_put(psdev);
--								}
--							}
--							temp >>= 1;
--							diff >>= 1;
--						}
-+		}
-+	}
-+	atomic_inc(&acb->rq_map_token);
-+	if (readl(signature) != ARCMSR_SIGNATURE_GET_CONFIG)
-+		return;
-+	for (target = 0; target < ARCMSR_MAX_TARGETID - 1;
-+		target++) {
-+		temp = readb(devicemap);
-+		diff = (*acb_dev_map) ^ temp;
-+		if (diff != 0) {
-+			*acb_dev_map = temp;
-+			for (lun = 0; lun < ARCMSR_MAX_TARGETLUN;
-+				lun++) {
-+				if ((diff & 0x01) == 1 &&
-+					(temp & 0x01) == 1) {
-+					scsi_add_device(acb->host,
-+						0, target, lun);
-+				} else if ((diff & 0x01) == 1
-+					&& (temp & 0x01) == 0) {
-+					psdev = scsi_device_lookup(acb->host,
-+						0, target, lun);
-+					if (psdev != NULL) {
-+						scsi_remove_device(psdev);
-+						scsi_device_put(psdev);
- 					}
--					devicemap++;
--					acb_dev_map++;
- 				}
-+				temp >>= 1;
-+				diff >>= 1;
- 			}
- 		}
-+		devicemap++;
-+		acb_dev_map++;
- 	}
- }
- 
 
 
+-- 
+Ricardo Ribalda
