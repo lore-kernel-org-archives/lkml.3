@@ -1,72 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbaHDU2n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 16:28:43 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:5141 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbaHDU2m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 16:28:42 -0400
-Message-ID: <1407184118.11407.11.camel@j-VirtualBox>
-Subject: [PATCH] sched: Reduce contention in update_cfs_rq_blocked_load
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Jason Low <jason.low2@hp.com>
-Cc: linux-kernel@vger.kernel.org, Ben Segall <bsegall@google.com>,
-        Waiman Long <Waiman.Long@hp.com>, Mel Gorman <mgorman@suse.de>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Rik van Riel <riel@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Chegu Vinod <chegu_vinod@hp.com>, Scott J Norton <scott.norton@hp.com>
-Date: Mon, 04 Aug 2014 13:28:38 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751913AbaHDUeh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 16:34:37 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58285 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750881AbaHDUeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 16:34:36 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch] mm: memcontrol: avoid charge statistics churn during page migration
+Date: Mon,  4 Aug 2014 16:34:29 -0400
+Message-Id: <1407184469-20741-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When running workloads on 2+ socket systems, based on perf profiles, the
-update_cfs_rq_blocked_load function constantly shows up as taking up a
-noticeable % of run time. This is especially apparent on an 8 socket
-machine. For example, when running the AIM7 custom workload, we see:
+Charge migration currently disables IRQs twice to update the charge
+statistics for the old page and then again for the new page.
 
-   4.18%        reaim  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
+But migration is a seemless transition of a charge from one physical
+page to another one of the same size, so this should be a non-event
+from an accounting point of view.  Leave the statistics alone.
 
-Much of the contention is in __update_cfs_rq_tg_load_contrib when we
-update the tg load contribution stats.  However, it turns out that in many
-cases, they don't need to be updated and "tg_contrib" is 0.
-
-This patch adds a check in __update_cfs_rq_tg_load_contrib to skip updating
-tg load contribution stats when nothing needs to be updated. This reduces the
-cacheline contention that would be unnecessary. In the above case, with the
-patch, perf reports the total time spent in this function went down by more
-than a factor of 3x:
-
-   1.18%        reaim  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
-
-Signed-off-by: Jason Low <jason.low2@hp.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- kernel/sched/fair.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ mm/memcontrol.c | 35 ++++++++++-------------------------
+ 1 file changed, 10 insertions(+), 25 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bfa3c86..8d4cc72 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2377,6 +2377,9 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
- 	tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
- 	tg_contrib -= cfs_rq->tg_load_contrib;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 475ecadd9646..8d65dadeec1b 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2728,7 +2728,7 @@ static void unlock_page_lru(struct page *page, int isolated)
+ }
  
-+	if (!tg_contrib)
-+		return;
+ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
+-			  unsigned int nr_pages, bool lrucare)
++			  bool lrucare)
+ {
+ 	struct page_cgroup *pc = lookup_page_cgroup(page);
+ 	int isolated;
+@@ -2765,16 +2765,6 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
+ 
+ 	if (lrucare)
+ 		unlock_page_lru(page, isolated);
+-
+-	local_irq_disable();
+-	mem_cgroup_charge_statistics(memcg, page, nr_pages);
+-	/*
+-	 * "charge_statistics" updated event counter. Then, check it.
+-	 * Insert ancestor (and ancestor's ancestors), to softlimit RB-tree.
+-	 * if they exceeds softlimit.
+-	 */
+-	memcg_check_events(memcg, page);
+-	local_irq_enable();
+ }
+ 
+ static DEFINE_MUTEX(set_limit_mutex);
+@@ -6460,12 +6450,17 @@ void mem_cgroup_commit_charge(struct page *page, struct mem_cgroup *memcg,
+ 	if (!memcg)
+ 		return;
+ 
++	commit_charge(page, memcg, lrucare);
 +
- 	if (force_update || abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
- 		atomic_long_add(tg_contrib, &tg->load_avg);
- 		cfs_rq->tg_load_contrib += tg_contrib;
+ 	if (PageTransHuge(page)) {
+ 		nr_pages <<= compound_order(page);
+ 		VM_BUG_ON_PAGE(!PageTransHuge(page), page);
+ 	}
+ 
+-	commit_charge(page, memcg, nr_pages, lrucare);
++	local_irq_disable();
++	mem_cgroup_charge_statistics(memcg, page, nr_pages);
++	memcg_check_events(memcg, page);
++	local_irq_enable();
+ 
+ 	if (do_swap_account && PageSwapCache(page)) {
+ 		swp_entry_t entry = { .val = page_private(page) };
+@@ -6651,7 +6646,6 @@ void mem_cgroup_uncharge_list(struct list_head *page_list)
+ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+ 			bool lrucare)
+ {
+-	unsigned int nr_pages = 1;
+ 	struct page_cgroup *pc;
+ 	int isolated;
+ 
+@@ -6660,6 +6654,8 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+ 	VM_BUG_ON_PAGE(!lrucare && PageLRU(oldpage), oldpage);
+ 	VM_BUG_ON_PAGE(!lrucare && PageLRU(newpage), newpage);
+ 	VM_BUG_ON_PAGE(PageAnon(oldpage) != PageAnon(newpage), newpage);
++	VM_BUG_ON_PAGE(PageTransHuge(oldpage) != PageTransHuge(newpage),
++		       newpage);
+ 
+ 	if (mem_cgroup_disabled())
+ 		return;
+@@ -6677,12 +6673,6 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+ 	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
+ 	VM_BUG_ON_PAGE(do_swap_account && !(pc->flags & PCG_MEMSW), oldpage);
+ 
+-	if (PageTransHuge(oldpage)) {
+-		nr_pages <<= compound_order(oldpage);
+-		VM_BUG_ON_PAGE(!PageTransHuge(oldpage), oldpage);
+-		VM_BUG_ON_PAGE(!PageTransHuge(newpage), newpage);
+-	}
+-
+ 	if (lrucare)
+ 		lock_page_lru(oldpage, &isolated);
+ 
+@@ -6691,12 +6681,7 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+ 	if (lrucare)
+ 		unlock_page_lru(oldpage, isolated);
+ 
+-	local_irq_disable();
+-	mem_cgroup_charge_statistics(pc->mem_cgroup, oldpage, -nr_pages);
+-	memcg_check_events(pc->mem_cgroup, oldpage);
+-	local_irq_enable();
+-
+-	commit_charge(newpage, pc->mem_cgroup, nr_pages, lrucare);
++	commit_charge(newpage, pc->mem_cgroup, lrucare);
+ }
+ 
+ /*
 -- 
-1.7.1
-
-
+2.0.3
 
