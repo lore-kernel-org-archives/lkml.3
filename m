@@ -1,77 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaHDQ7L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:59:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56569 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752020AbaHDQt4 (ORCPT
+	id S1753198AbaHDRBT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 13:01:19 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:49567 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753479AbaHDQ7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:49:56 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Mon, 4 Aug 2014 12:59:09 -0400
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Andrey Utkin" <andrey.krieger.utkin@gmail.com>,
-        "Ed Martin" <edman007@edman007.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric Dumazet" <edumazet@google.com>
-Date: Mon, 04 Aug 2014 17:48:32 +0100
-Message-ID: <lsq.1407170912.956215747@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 58/94] appletalk: Fix socket referencing in skb
-In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20140804043541.GA4665@kroah.com>
+References: <CADYu30_FciG_aTTV4DFNdy+CdRChMYQ7pAGZGambE1F9s=ofYQ@mail.gmail.com>
+	<20140801192300.GB16085@kroah.com>
+	<CADYu30_o7rzERKEDe=eZiONp6n1ktMWPydMnXQjDeLrDFQh+vg@mail.gmail.com>
+	<20140801224127.GA11596@kroah.com>
+	<CADYu309eydkp83a1aMybHn5vyLLGBAmFDYeR59RRiC+mGc9w7w@mail.gmail.com>
+	<20140802023958.GA22728@kroah.com>
+	<CADYu30_EN78+1CdD=VF8gi-5H2Ot7ArKWq5DQ5HaptwTuL3C6A@mail.gmail.com>
+	<20140804043541.GA4665@kroah.com>
+Date: Mon, 4 Aug 2014 22:29:07 +0530
+Message-ID: <CADYu309azz-8XBXKL8fQLpju_7EVW8Xh3pb8nSjD6epMU=3zBQ@mail.gmail.com>
+Subject: Re: [Question: Drivers/base/core.c] Why dev->init_name = NULL in
+ device_add function ?
+From: Aniroop Mathur <aniroop.mathur@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.62-rc1 review patch.  If anyone has any objections, please let me know.
+On Mon, Aug 4, 2014 at 10:05 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Aug 04, 2014 at 12:24:06AM +0530, Aniroop Mathur wrote:
+>> On Sat, Aug 2, 2014 at 8:09 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > On Sat, Aug 02, 2014 at 05:14:44AM +0530, Aniroop Mathur wrote:
+>> >> >> So, overall output will be
+>> >> >> /dev/input/event<x> --> /dev/input/event_accelerometer
+>> >> >> sys/class/input/input<x> --> sys/class/input/accelerometer
+>> >> >>
+>> >> >> In short, input and event node names are set just by
+>> >> >> adding one line, which i found quite efficient.
+>> >> >> There is other way also to set name of event node but
+>> >> >> it involves using extra variable and little more code,
+>> >> >> So I am looking for best solution possible. :)
+>> >> >
+>> >> > Only use init_name for static struct devices, for a dynamic one, jsut
+>> >> > set the name like everyone else does, how is that "more" code than
+>> >> > anything else?
+>> >> >
+>> >>
+>> >> Can you please elaborate what do you mean by static struct devices ?
+>> >
+>> > Exactly what you wrote there, 'static' is a C thing, right?
+>> >
+>> >> Can I consider embedded accelerometer, proximity, gyro sensor,
+>> >> touch panel in android mobile devices as static devices ?
+>> >
+>> > Nope, because in my Android phone, I can yank out those and add new ones
+>> > on the fly while the phone is running.  The kernel is fully dynamic that
+>> > way.
+>> >
+>> >> Input subsystem is setting default name of input and event node.
+>> >
+>> > As it should.
+>> >
+>> >> This is the normal method everyone uses.
+>> >
+>> > And so should you :)
+>> >
+>> >> I do not want to use default name like event0, event4, input2, etc
+>> >
+>> > Yes, you really do.
+>> >
+>> >> My aim is to set name of input and event node through driver as desired.
+>> >
+>> > Nope, that's userspace's job, just use udev to rename the device node,
+>> > or even better yet, create a symlink like /dev/input/by-id/ has if you
+>> > really need more than that.
+>> >
+>> > Don't mess with kernel device names, we can't do that without breaking
+>> > tons of things, there's a reason that we standardized on something,
+>> > please use it.
+>> >
+>>
+>> Okay, will follow the same. :)
+>>
+>> One last thing,
+>> Why init_name will go away some day ?
+>
+> Because you should never have a static struct device in the kernel.
+> It's a reference counted object that needs to always be dynamically
+> allocated in order to properly work.  Unfortunatly, there are some users
+> who have it allocated statically (on the stack) instead of dynamically
+> (on the heap).  I'll get rid of them someday, it's _way_ down my list of
+> things to do...
+>
+> thanks,
+>
+> greg k-h
 
-------------------
+Thank you so much for your support and answering my queries. :)
+Now, the thread has also been marked as solved.
 
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-
-[ Upstream commit 36beddc272c111689f3042bf3d10a64d8a805f93 ]
-
-Setting just skb->sk without taking its reference and setting a
-destructor is invalid. However, in the places where this was done, skb
-is used in a way not requiring skb->sk setting. So dropping the setting
-of skb->sk.
-Thanks to Eric Dumazet <eric.dumazet@gmail.com> for correct solution.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79441
-Reported-by: Ed Martin <edman007@edman007.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- net/appletalk/ddp.c | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
-index 334d4cd..79aaac2 100644
---- a/net/appletalk/ddp.c
-+++ b/net/appletalk/ddp.c
-@@ -1494,8 +1494,6 @@ static int atalk_rcv(struct sk_buff *skb, struct net_device *dev,
- 		goto drop;
- 
- 	/* Queue packet (standard) */
--	skb->sk = sock;
--
- 	if (sock_queue_rcv_skb(sock, skb) < 0)
- 		goto drop;
- 
-@@ -1649,7 +1647,6 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 	if (!skb)
- 		goto out;
- 
--	skb->sk = sk;
- 	skb_reserve(skb, ddp_dl->header_length);
- 	skb_reserve(skb, dev->hard_header_len);
- 	skb->dev = dev;
-
+Thanks,
+Aniroop
