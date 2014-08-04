@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099AbaHDV1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 17:27:40 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:38726 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998AbaHDV1i (ORCPT
+	id S1753132AbaHDVi6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 17:38:58 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:45216 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063AbaHDVi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 17:27:38 -0400
-Message-ID: <1407187656.11985.20.camel@j-VirtualBox>
-Subject: Re: [PATCH] sched: Reduce contention in update_cfs_rq_blocked_load
-From: Jason Low <jason.low2@hp.com>
-To: bsegall@google.com
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Waiman Long <Waiman.Long@hp.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Rik van Riel <riel@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Chegu Vinod <chegu_vinod@hp.com>, Scott J Norton <scott.norton@hp.com>,
-        pjt@google.com
-Date: Mon, 04 Aug 2014 14:27:36 -0700
-In-Reply-To: <xm264mxsugds.fsf@sword-of-the-dawn.mtv.corp.google.com>
-References: <1407184118.11407.11.camel@j-VirtualBox>
-	 <xm264mxsugds.fsf@sword-of-the-dawn.mtv.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Mon, 4 Aug 2014 17:38:57 -0400
+Message-ID: <53DFFD28.2030502@oracle.com>
+Date: Mon, 04 Aug 2014 17:37:44 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Christoph Lameter <cl@gentwo.org>, akpm@linux-foundation.org
+CC: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org
+Subject: Re: vmstat: On demand vmstat workers V8
+References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <53D31101.8000107@oracle.com>
+In-Reply-To: <53D31101.8000107@oracle.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-04 at 13:52 -0700, bsegall@google.com wrote:
-> Jason Low <jason.low2@hp.com> writes:
+On 07/25/2014 10:22 PM, Sasha Levin wrote:
+> On 07/10/2014 10:04 AM, Christoph Lameter wrote:
+>> > This patch creates a vmstat shepherd worker that monitors the
+>> > per cpu differentials on all processors. If there are differentials
+>> > on a processor then a vmstat worker local to the processors
+>> > with the differentials is created. That worker will then start
+>> > folding the diffs in regular intervals. Should the worker
+>> > find that there is no work to be done then it will make the shepherd
+>> > worker monitor the differentials again.
+> Hi Christoph, all,
 > 
-> > When running workloads on 2+ socket systems, based on perf profiles, the
-> > update_cfs_rq_blocked_load function constantly shows up as taking up a
-> > noticeable % of run time. This is especially apparent on an 8 socket
-> > machine. For example, when running the AIM7 custom workload, we see:
-> >
-> >    4.18%        reaim  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
-> >
-> > Much of the contention is in __update_cfs_rq_tg_load_contrib when we
-> > update the tg load contribution stats.  However, it turns out that in many
-> > cases, they don't need to be updated and "tg_contrib" is 0.
-> >
-> > This patch adds a check in __update_cfs_rq_tg_load_contrib to skip updating
-> > tg load contribution stats when nothing needs to be updated. This reduces the
-> > cacheline contention that would be unnecessary. In the above case, with the
-> > patch, perf reports the total time spent in this function went down by more
-> > than a factor of 3x:
-> >
-> >    1.18%        reaim  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
-> >
-> > Signed-off-by: Jason Low <jason.low2@hp.com>
-> Reviewed-by: Ben Segall <bsegall@google.com>
-> 
-> That said, it might be better to remove force_update for this function,
-> or make it just reduce the minimum to /64 or something. If the test is
-> easy to run it would be good to see what it's like just removing the
-> force_update param for this function to see if it's worth worrying
-> about or if the zero case catches ~all the perf gain.
+> This patch doesn't interact well with my fuzzing setup. I'm seeing
+> the following:
 
-Sure, I can test that out too. I did notice when running another AIM7
-workload that !zero was the more common case, so this has the potential
-to further reduce contention.
-
->  Paul, your thoughts?
+I think we got sidetracked here a bit, I've noticed that this issue
+is still happening in -next and discussions here died out.
 
 
+Thanks,
+Sasha
