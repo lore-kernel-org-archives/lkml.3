@@ -1,48 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730AbaHDPtZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 11:49:25 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40168 "EHLO comal.ext.ti.com"
+	id S1752780AbaHDPuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 11:50:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17945 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498AbaHDPtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 11:49:22 -0400
-Message-ID: <53DFAB68.6020903@ti.com>
-Date: Mon, 4 Aug 2014 10:48:56 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751180AbaHDPuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 11:50:20 -0400
+Date: Mon, 4 Aug 2014 11:50:08 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: [PATCH] mm/hugetlb: remove unused argument of follow_huge_(pmd|pud)
+Message-ID: <20140804155008.GA9323@nhori.bos.redhat.com>
+References: <1406914663-8631-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20140801145358.0d673fc05235d941ca9dec0e@linux-foundation.org>
+ <20140801215845.GA18622@nhori.bos.redhat.com>
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: Dave Gerlach <d-gerlach@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Robert Tivy <rtivy@ti.com>
-Subject: Re: [PATCH 1/2] remoteproc: use a flag to detect the presence of
- IOMMU
-References: <1404836521-59637-1-git-send-email-s-anna@ti.com> <1404836521-59637-2-git-send-email-s-anna@ti.com> <CAK=Wgbawdik3ZB0Zbeaa7eXd7M+9ev9u713GcfOc4Gy0+O80Dg@mail.gmail.com> <53D7C769.6080500@ti.com> <CAK=Wgbbf5JNxzW16z=vXHi9D8Om1KnLEEr7hEw5T0oN7GuM=og@mail.gmail.com>
-In-Reply-To: <CAK=Wgbbf5JNxzW16z=vXHi9D8Om1KnLEEr7hEw5T0oN7GuM=og@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140801215845.GA18622@nhori.bos.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2014 06:50 AM, Ohad Ben-Cohen wrote:
-> On Tue, Jul 29, 2014 at 7:10 PM, Suman Anna <s-anna@ti.com> wrote:
->> We are trying to add a remoteproc driver for a small Cortex M3 called
->> the WkupM3 used for suspend/resume management on TI AM335/AM437x SoCs.
->> This processor does not have an MMU. Same is the case with another
->> processor subsystem PRU-ICSS on AM335/AM437x. All these are platform
->> devices, and the current iommu_present check will not scale for the same
->> kernel image to support OMAP4/OMAP5 and AM335/AM437x.
+On Fri, Aug 01, 2014 at 05:58:45PM -0400, Naoya Horiguchi wrote:
+...
+> > I can't find an implementation of follow_huge_pmd() which actually uses
+> > the fourth argument "write".  Zap?
 > 
-> That's perfect, thanks. Can you please add this use case description
-> to the commit log?
+> OK, I'll post it later.
 
-I kept the current description generic, but sure, I can add this
-specific usecase examples to the commit log. I will post the revised
-patches once rc1 is out.
+Here is the patch.
 
-regards
-Suman
+Thanks,
+Naoya Horiguchi
+---
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Mon, 4 Aug 2014 11:30:00 -0400
+Subject: [PATCH] mm/hugetlb: remove unused argument of follow_huge_(pmd|pud)
+
+There is no implementation of follow_huge_pmd() which actually uses
+the fourth argument "write". So let's zap it.
+
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ arch/ia64/mm/hugetlbpage.c    |  2 +-
+ arch/metag/mm/hugetlbpage.c   |  2 +-
+ arch/mips/mm/hugetlbpage.c    |  2 +-
+ arch/powerpc/mm/hugetlbpage.c |  2 +-
+ arch/s390/mm/hugetlbpage.c    |  2 +-
+ arch/sh/mm/hugetlbpage.c      |  2 +-
+ arch/sparc/mm/hugetlbpage.c   |  2 +-
+ arch/tile/mm/hugetlbpage.c    |  4 ++--
+ arch/x86/mm/hugetlbpage.c     |  2 +-
+ include/linux/hugetlb.h       |  8 ++++----
+ mm/gup.c                      |  2 +-
+ mm/hugetlb.c                  | 11 ++++-------
+ 12 files changed, 19 insertions(+), 22 deletions(-)
+
+diff --git a/arch/ia64/mm/hugetlbpage.c b/arch/ia64/mm/hugetlbpage.c
+index 76069c18ee42..d14ae6804106 100644
+--- a/arch/ia64/mm/hugetlbpage.c
++++ b/arch/ia64/mm/hugetlbpage.c
+@@ -115,7 +115,7 @@ int pud_huge(pud_t pud)
+ }
+ 
+ struct page *
+-follow_huge_pmd(struct mm_struct *mm, unsigned long address, pmd_t *pmd, int write)
++follow_huge_pmd(struct mm_struct *mm, unsigned long address, pmd_t *pmd)
+ {
+ 	return NULL;
+ }
+diff --git a/arch/metag/mm/hugetlbpage.c b/arch/metag/mm/hugetlbpage.c
+index 3c52fa6d0f8e..e2559b12f6aa 100644
+--- a/arch/metag/mm/hugetlbpage.c
++++ b/arch/metag/mm/hugetlbpage.c
+@@ -111,7 +111,7 @@ int pud_huge(pud_t pud)
+ }
+ 
+ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+-			     pmd_t *pmd, int write)
++			     pmd_t *pmd)
+ {
+ 	return NULL;
+ }
+diff --git a/arch/mips/mm/hugetlbpage.c b/arch/mips/mm/hugetlbpage.c
+index 4ec8ee10d371..690749184d0f 100644
+--- a/arch/mips/mm/hugetlbpage.c
++++ b/arch/mips/mm/hugetlbpage.c
+@@ -86,7 +86,7 @@ int pud_huge(pud_t pud)
+ 
+ struct page *
+ follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+-		pmd_t *pmd, int write)
++		pmd_t *pmd)
+ {
+ 	struct page *page;
+ 
+diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
+index 7e70ae968e5f..8339978033ad 100644
+--- a/arch/powerpc/mm/hugetlbpage.c
++++ b/arch/powerpc/mm/hugetlbpage.c
+@@ -700,7 +700,7 @@ follow_huge_addr(struct mm_struct *mm, unsigned long address, int write)
+ 
+ struct page *
+ follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+-		pmd_t *pmd, int write)
++		pmd_t *pmd)
+ {
+ 	BUG();
+ 	return NULL;
+diff --git a/arch/s390/mm/hugetlbpage.c b/arch/s390/mm/hugetlbpage.c
+index 0ff66a7e29bb..abbdee629790 100644
+--- a/arch/s390/mm/hugetlbpage.c
++++ b/arch/s390/mm/hugetlbpage.c
+@@ -221,7 +221,7 @@ int pud_huge(pud_t pud)
+ }
+ 
+ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+-			     pmd_t *pmdp, int write)
++			     pmd_t *pmdp)
+ {
+ 	struct page *page;
+ 
+diff --git a/arch/sh/mm/hugetlbpage.c b/arch/sh/mm/hugetlbpage.c
+index d7762349ea48..1f636ed3ffcd 100644
+--- a/arch/sh/mm/hugetlbpage.c
++++ b/arch/sh/mm/hugetlbpage.c
+@@ -84,7 +84,7 @@ int pud_huge(pud_t pud)
+ }
+ 
+ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+-			     pmd_t *pmd, int write)
++			     pmd_t *pmd)
+ {
+ 	return NULL;
+ }
+diff --git a/arch/sparc/mm/hugetlbpage.c b/arch/sparc/mm/hugetlbpage.c
+index d329537739c6..4cb2b4820bd5 100644
+--- a/arch/sparc/mm/hugetlbpage.c
++++ b/arch/sparc/mm/hugetlbpage.c
+@@ -232,7 +232,7 @@ int pud_huge(pud_t pud)
+ }
+ 
+ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+-			     pmd_t *pmd, int write)
++			     pmd_t *pmd)
+ {
+ 	return NULL;
+ }
+diff --git a/arch/tile/mm/hugetlbpage.c b/arch/tile/mm/hugetlbpage.c
+index e514899e1100..3c07a555b9b9 100644
+--- a/arch/tile/mm/hugetlbpage.c
++++ b/arch/tile/mm/hugetlbpage.c
+@@ -167,7 +167,7 @@ int pud_huge(pud_t pud)
+ }
+ 
+ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+-			     pmd_t *pmd, int write)
++			     pmd_t *pmd)
+ {
+ 	struct page *page;
+ 
+@@ -178,7 +178,7 @@ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+ }
+ 
+ struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
+-			     pud_t *pud, int write)
++			     pud_t *pud)
+ {
+ 	struct page *page;
+ 
+diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+index 8b977ebf9388..fc72bb59141c 100644
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -54,7 +54,7 @@ int pud_huge(pud_t pud)
+ 
+ struct page *
+ follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+-		pmd_t *pmd, int write)
++		pmd_t *pmd)
+ {
+ 	return NULL;
+ }
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 194834853d6f..3a8b338ff84a 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -98,9 +98,9 @@ int huge_pmd_unshare(struct mm_struct *mm, unsigned long *addr, pte_t *ptep);
+ struct page *follow_huge_addr(struct mm_struct *mm, unsigned long address,
+ 			      int write);
+ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+-				pmd_t *pmd, int write);
++				pmd_t *pmd);
+ struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
+-				pud_t *pud, int write);
++				pud_t *pud);
+ struct page *follow_huge_pmd_lock(struct vm_area_struct *vma,
+ 				unsigned long address, pmd_t *pmd, int flags);
+ int pmd_huge(pmd_t pmd);
+@@ -134,8 +134,8 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
+ static inline void hugetlb_show_meminfo(void)
+ {
+ }
+-#define follow_huge_pmd(mm, addr, pmd, write)	NULL
+-#define follow_huge_pud(mm, addr, pud, write)	NULL
++#define follow_huge_pmd(mm, addr, pmd)	NULL
++#define follow_huge_pud(mm, addr, pud)	NULL
+ #define follow_huge_pmd_lock(vma, addr, pmd, flags)	NULL
+ #define prepare_hugepage_range(file, addr, len)	(-EINVAL)
+ #define pmd_huge(x)	0
+diff --git a/mm/gup.c b/mm/gup.c
+index e4bd59efe686..57e394e33e66 100644
+--- a/mm/gup.c
++++ b/mm/gup.c
+@@ -165,7 +165,7 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
+ 	if (pud_huge(*pud) && vma->vm_flags & VM_HUGETLB) {
+ 		if (flags & FOLL_GET)
+ 			return NULL;
+-		page = follow_huge_pud(mm, address, pud, flags & FOLL_WRITE);
++		page = follow_huge_pud(mm, address, pud);
+ 		return page;
+ 	}
+ 	if (unlikely(pud_bad(*pud)))
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 923465c0b47f..4f6d1a4f5339 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -3657,8 +3657,7 @@ pte_t *huge_pte_offset(struct mm_struct *mm, unsigned long addr)
+ }
+ 
+ struct page *
+-follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+-		pmd_t *pmd, int write)
++follow_huge_pmd(struct mm_struct *mm, unsigned long address, pmd_t *pmd)
+ {
+ 	struct page *page;
+ 
+@@ -3669,8 +3668,7 @@ follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+ }
+ 
+ struct page *
+-follow_huge_pud(struct mm_struct *mm, unsigned long address,
+-		pud_t *pud, int write)
++follow_huge_pud(struct mm_struct *mm, unsigned long address, pud_t *pud)
+ {
+ 	struct page *page;
+ 
+@@ -3684,8 +3682,7 @@ follow_huge_pud(struct mm_struct *mm, unsigned long address,
+ 
+ /* Can be overriden by architectures */
+ struct page * __weak
+-follow_huge_pud(struct mm_struct *mm, unsigned long address,
+-	       pud_t *pud, int write)
++follow_huge_pud(struct mm_struct *mm, unsigned long address, pud_t *pud)
+ {
+ 	BUG();
+ 	return NULL;
+@@ -3710,7 +3707,7 @@ struct page *follow_huge_pmd_lock(struct vm_area_struct *vma,
+ 	if (flags & FOLL_GET)
+ 		ptl = huge_pte_lock(hstate_vma(vma), vma->vm_mm, (pte_t *)pmd);
+ 
+-	page = follow_huge_pmd(vma->vm_mm, address, pmd, flags & FOLL_WRITE);
++	page = follow_huge_pmd(vma->vm_mm, address, pmd);
+ 
+ 	if (flags & FOLL_GET) {
+ 		/*
+-- 
+1.9.3
 
