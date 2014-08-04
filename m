@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbaHDQt6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 12:49:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56435 "EHLO
+	id S1752944AbaHDQu2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 12:50:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56609 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750973AbaHDQty (ORCPT
+	by vger.kernel.org with ESMTP id S1752130AbaHDQt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 12:49:54 -0400
+	Mon, 4 Aug 2014 12:49:57 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org
+CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
+        "Don Zickus" <dzickus@redhat.com>,
+        "Peter Zijlstra" <peterz@infradead.org>,
+        "HATAYAMA Daisuke" <d.hatayama@jp.fujitsu.com>,
+        "Arnaldo Carvalho de Melo" <acme@kernel.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
 Date: Mon, 04 Aug 2014 17:48:31 +0100
-Message-ID: <lsq.1407170911.597937955@decadent.org.uk>
+Message-ID: <lsq.1407170911.861687531@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 02/94] Revert "net: ip, ipv6: handle gso skbs in
- forwarding path"
+Subject: [PATCH 3.2 19/94] perf/x86/intel: ignore CondChgd bit to avoid
+ false NMI handling
 In-Reply-To: <lsq.1407170911.107020799@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,164 +36,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 
-This reverts commit caa5344994778a2b4725b2d75c74430f76925e4a, which
-was commit fe6cc55f3a9a053482a76f5a6b2257cee51b4663 upstream.  In 3.2,
-the transport header length is not calculated in the forwarding path,
-so skb_gso_network_seglen() returns an incorrect result.  We also have
-problems due to the local_df flag not being set correctly.
+commit b292d7a10487aee6e74b1c18b8d95b92f40d4a4f upstream.
 
+Currently, any NMI is falsely handled by a NMI handler of NMI watchdog
+if CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR is set.
+
+For example, we use external NMI to make system panic to get crash
+dump, but in this case, the external NMI is falsely handled do to the
+issue.
+
+This commit deals with the issue simply by ignoring CondChgd bit.
+
+Here is explanation in detail.
+
+On x86 NMI watchdog uses performance monitoring feature to
+periodically signal NMI each time performance counter gets overflowed.
+
+intel_pmu_handle_irq() is called as a NMI_LOCAL handler from a NMI
+handler of NMI watchdog, perf_event_nmi_handler(). It identifies an
+owner of a given NMI by looking at overflow status bits in
+MSR_CORE_PERF_GLOBAL_STATUS MSR. If some of the bits are set, then it
+handles the given NMI as its own NMI.
+
+The problem is that the intel_pmu_handle_irq() doesn't distinguish
+CondChgd bit from other bits. Unlike the other status bits, CondChgd
+bit doesn't represent overflow status for performance counters. Thus,
+CondChgd bit cannot be thought of as a mark indicating a given NMI is
+NMI watchdog's.
+
+As a result, if CondChgd bit is set, any NMI is falsely handled by the
+NMI handler of NMI watchdog. Also, if type of the falsely handled NMI
+is either NMI_UNKNOWN, NMI_SERR or NMI_IO_CHECK, the corresponding
+action is never performed until CondChgd bit is cleared.
+
+I noticed this behavior on systems with Ivy Bridge processors: Intel
+Xeon CPU E5-2630 v2 and Intel Xeon CPU E7-8890 v2. On both systems,
+CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR has already been set
+in the beginning at boot. Then the CondChgd bit is immediately cleared
+by next wrmsr to MSR_CORE_PERF_GLOBAL_CTRL MSR and appears to remain
+0.
+
+On the other hand, on older processors such as Nehalem, Xeon E7540,
+CondChgd bit is not set in the beginning at boot.
+
+I'm not sure about exact behavior of CondChgd bit, in particular when
+this bit is set. Although I read Intel System Programmer's Manual to
+figure out that, the descriptions I found are:
+
+  In 18.9.1:
+
+  "The MSR_PERF_GLOBAL_STATUS MSR also provides a ¡sticky bit¢ to
+   indicate changes to the state of performancmonitoring hardware"
+
+  In Table 35-2 IA-32 Architectural MSRs
+
+  63 CondChg: status bits of this register has changed.
+
+These are different from the bahviour I see on the actual system as I
+explained above.
+
+At least, I think ignoring CondChgd bit should be enough for NMI
+watchdog perspective.
+
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Link: http://lkml.kernel.org/r/20140625.103503.409316067.d.hatayama@jp.fujitsu.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/skbuff.h | 17 -------------
- net/ipv4/ip_forward.c  | 68 ++------------------------------------------------
- net/ipv6/ip6_output.c  | 13 +---------
- 3 files changed, 3 insertions(+), 95 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2583,22 +2583,5 @@ static inline bool skb_is_recycleable(co
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1048,6 +1048,15 @@ again:
+ 	intel_pmu_lbr_read();
  
- 	return true;
- }
--
--/**
-- * skb_gso_network_seglen - Return length of individual segments of a gso packet
-- *
-- * @skb: GSO skb
-- *
-- * skb_gso_network_seglen is used to determine the real size of the
-- * individual segments, including Layer3 (IP, IPv6) and L4 headers (TCP/UDP).
-- *
-- * The MAC/L2 header is not accounted for.
-- */
--static inline unsigned int skb_gso_network_seglen(const struct sk_buff *skb)
--{
--	unsigned int hdr_len = skb_transport_header(skb) -
--			       skb_network_header(skb);
--	return hdr_len + skb_gso_transport_seglen(skb);
--}
- #endif	/* __KERNEL__ */
- #endif	/* _LINUX_SKBUFF_H */
---- a/net/ipv4/ip_forward.c
-+++ b/net/ipv4/ip_forward.c
-@@ -39,68 +39,6 @@
- #include <net/route.h>
- #include <net/xfrm.h>
- 
--static bool ip_may_fragment(const struct sk_buff *skb)
--{
--	return unlikely((ip_hdr(skb)->frag_off & htons(IP_DF)) == 0) ||
--	       !skb->local_df;
--}
--
--static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
--{
--	if (skb->len <= mtu || skb->local_df)
--		return false;
--
--	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
--		return false;
--
--	return true;
--}
--
--static bool ip_gso_exceeds_dst_mtu(const struct sk_buff *skb)
--{
--	unsigned int mtu;
--
--	if (skb->local_df || !skb_is_gso(skb))
--		return false;
--
--	mtu = dst_mtu(skb_dst(skb));
--
--	/* if seglen > mtu, do software segmentation for IP fragmentation on
--	 * output.  DF bit cannot be set since ip_forward would have sent
--	 * icmp error.
--	 */
--	return skb_gso_network_seglen(skb) > mtu;
--}
--
--/* called if GSO skb needs to be fragmented on forward */
--static int ip_forward_finish_gso(struct sk_buff *skb)
--{
--	struct sk_buff *segs;
--	int ret = 0;
--
--	segs = skb_gso_segment(skb, 0);
--	if (IS_ERR(segs)) {
--		kfree_skb(skb);
--		return -ENOMEM;
--	}
--
--	consume_skb(skb);
--
--	do {
--		struct sk_buff *nskb = segs->next;
--		int err;
--
--		segs->next = NULL;
--		err = dst_output(segs);
--
--		if (err && ret == 0)
--			ret = err;
--		segs = nskb;
--	} while (segs);
--
--	return ret;
--}
--
- static int ip_forward_finish(struct sk_buff *skb)
- {
- 	struct ip_options * opt	= &(IPCB(skb)->opt);
-@@ -110,9 +48,6 @@ static int ip_forward_finish(struct sk_b
- 	if (unlikely(opt->optlen))
- 		ip_forward_options(skb);
- 
--	if (ip_gso_exceeds_dst_mtu(skb))
--		return ip_forward_finish_gso(skb);
--
- 	return dst_output(skb);
- }
- 
-@@ -152,7 +87,8 @@ int ip_forward(struct sk_buff *skb)
- 	if (opt->is_strictroute && opt->nexthop != rt->rt_gateway)
- 		goto sr_failed;
- 
--	if (!ip_may_fragment(skb) && ip_exceeds_mtu(skb, dst_mtu(&rt->dst))) {
-+	if (unlikely(skb->len > dst_mtu(&rt->dst) && !skb_is_gso(skb) &&
-+		     (ip_hdr(skb)->frag_off & htons(IP_DF))) && !skb->local_df) {
- 		IP_INC_STATS(dev_net(rt->dst.dev), IPSTATS_MIB_FRAGFAILS);
- 		icmp_send(skb, ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED,
- 			  htonl(dst_mtu(&rt->dst)));
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -381,17 +381,6 @@ static inline int ip6_forward_finish(str
- 	return dst_output(skb);
- }
- 
--static bool ip6_pkt_too_big(const struct sk_buff *skb, unsigned int mtu)
--{
--	if (skb->len <= mtu || skb->local_df)
--		return false;
--
--	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
--		return false;
--
--	return true;
--}
--
- int ip6_forward(struct sk_buff *skb)
- {
- 	struct dst_entry *dst = skb_dst(skb);
-@@ -515,7 +504,7 @@ int ip6_forward(struct sk_buff *skb)
- 	if (mtu < IPV6_MIN_MTU)
- 		mtu = IPV6_MIN_MTU;
- 
--	if (ip6_pkt_too_big(skb, mtu)) {
-+	if (skb->len > mtu && !skb_is_gso(skb)) {
- 		/* Again, force OUTPUT device used as source address */
- 		skb->dev = dst->dev;
- 		icmpv6_send(skb, ICMPV6_PKT_TOOBIG, 0, mtu);
+ 	/*
++	 * CondChgd bit 63 doesn't mean any overflow status. Ignore
++	 * and clear the bit.
++	 */
++	if (__test_and_clear_bit(63, (unsigned long *)&status)) {
++		if (!status)
++			goto done;
++	}
++
++	/*
+ 	 * PEBS overflow sets bit 62 in the global status register
+ 	 */
+ 	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
 
