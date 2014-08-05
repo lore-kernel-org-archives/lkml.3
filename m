@@ -1,164 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648AbaHEOzL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 10:55:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34906 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755621AbaHEOzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 10:55:08 -0400
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 7/8] x86: rename some macros and labels, no code changes
-Date: Tue,  5 Aug 2014 16:52:33 +0200
-Message-Id: <1407250354-29525-8-git-send-email-dvlasenk@redhat.com>
-In-Reply-To: <1407250354-29525-1-git-send-email-dvlasenk@redhat.com>
-References: <1407250354-29525-1-git-send-email-dvlasenk@redhat.com>
+	id S1754766AbaHEO5v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 10:57:51 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36769 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549AbaHEO5u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 10:57:50 -0400
+Message-ID: <53E0F0E7.9000003@linutronix.de>
+Date: Tue, 05 Aug 2014 16:57:43 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: =?UTF-8?B?SsOpcsOpbWllIEdhbGFybmVhdQ==?= 
+	<jeremie.galarneau@efficios.com>
+CC: Jiri Olsa <jolsa@redhat.com>, namhyung.kim@lge.com,
+        linux-kernel@vger.kernel.org, acme@kernel.org,
+        "lttng-dev@lists.lttng.org" <lttng-dev@lists.lttng.org>,
+        tzanussi@gmail.com
+Subject: Re: [lttng-dev] [RFC] perf to ctf converter
+References: <20140603163640.GA16279@linutronix.de>	<20140714141533.GD17761@krava.redhat.com>	<53C9143C.1060905@linutronix.de> <CA+jJMxum9jFVZ9NN+FkHHQhwULDSCkxa=vbRpHZ-Es-ni57ffQ@mail.gmail.com>
+In-Reply-To: <CA+jJMxum9jFVZ9NN+FkHHQhwULDSCkxa=vbRpHZ-Es-ni57ffQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename LOAD_ARGS32 to RESTORE_REGS32 to match other RESTORE_* macros.
-The "ARGS" part was misleading anyway - we are restoring registers,
-not arguments.
+On 08/05/2014 04:51 PM, Jérémie Galarneau wrote:
+> FYI, I have made the changes and they are now upstream in Babeltrace as of
 
-Similarly, rename [retint_]restore_args to [retint_]restore_c_regs:
-at these labels, we restore registers clobbered by C ABI;
-rename int_restore_rest to int_restore_extra_regs.
+Thanks you. Let me wire that up…
 
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Andy Lutomirski <luto@amacapital.net>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: X86 ML <x86@kernel.org>
-CC: Alexei Starovoitov <ast@plumgrid.com>
-CC: Will Drewry <wad@chromium.org>
-CC: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org
----
- arch/x86/ia32/ia32entry.S  | 10 +++++-----
- arch/x86/kernel/entry_64.S | 16 ++++++++--------
- 2 files changed, 13 insertions(+), 13 deletions(-)
+> 
+> Regards,
+> Jérémie
 
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 20eba33..4402bbe 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -51,7 +51,7 @@
- 	.endm
- 
- 	/*
--	 * Reload arg registers from stack in case ptrace changed them.
-+	 * Reload registers from stack in case ptrace changed them.
- 	 * We don't reload %eax because syscall_trace_enter() returned
- 	 * the %rax value we should see.  Instead, we just truncate that
- 	 * value to 32 bits again as we did on entry from user mode.
-@@ -60,7 +60,7 @@
- 	 * If it's -1 to make us punt the syscall, then (u32)-1 is still
- 	 * an appropriately invalid value.
- 	 */
--	.macro LOAD_ARGS32 _r9=0
-+	.macro RESTORE_REGS32 _r9=0
- 	.if \_r9
- 	movl R9(%rsp),%r9d
- 	.endif
-@@ -247,7 +247,7 @@ sysenter_tracesys:
- 	movq	$-ENOSYS,RAX(%rsp)/* ptrace can change this for a bad syscall */
- 	movq	%rsp,%rdi        /* &pt_regs -> arg1 */
- 	call	syscall_trace_enter
--	LOAD_ARGS32	/* reload args from stack in case ptrace changed it */
-+	RESTORE_REGS32	/* reload regs from stack in case ptrace changed it */
- 	RESTORE_EXTRA_REGS
- 	cmpq	$(IA32_NR_syscalls-1),%rax
- 	ja	int_ret_from_sys_call /* sysenter_tracesys has set RAX(%rsp) */
-@@ -364,7 +364,7 @@ cstar_tracesys:
- 	movq $-ENOSYS,RAX(%rsp)	/* ptrace can change this for a bad syscall */
- 	movq %rsp,%rdi        /* &pt_regs -> arg1 */
- 	call syscall_trace_enter
--	LOAD_ARGS32 1	/* reload args from stack in case ptrace changed it */
-+	RESTORE_REGS32 1	/* reload regs from stack in case ptrace changed it */
- 	RESTORE_EXTRA_REGS
- 	xchgl %ebp,%r9d
- 	cmpq $(IA32_NR_syscalls-1),%rax
-@@ -442,7 +442,7 @@ ia32_tracesys:
- 	movq $-ENOSYS,RAX(%rsp)	/* ptrace can change this for a bad syscall */
- 	movq %rsp,%rdi        /* &pt_regs -> arg1 */
- 	call syscall_trace_enter
--	LOAD_ARGS32	/* reload args from stack in case ptrace changed it */
-+	RESTORE_REGS32	/* reload args from stack in case ptrace changed it */
- 	RESTORE_EXTRA_REGS
- 	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja  int_ret_from_sys_call	/* ia32_tracesys has set RAX(%rsp) */
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 8c6a01d..e9bbe02 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -62,7 +62,7 @@
- 
- 
- #ifndef CONFIG_PREEMPT
--#define retint_kernel retint_restore_args
-+#define retint_kernel retint_restore_c_regs
- #endif
- 
- #ifdef CONFIG_PARAVIRT
-@@ -494,7 +494,7 @@ int_check_syscall_exit_work:
- 	call syscall_trace_leave
- 	popq_cfi %rdi
- 	andl $~(_TIF_WORK_SYSCALL_EXIT|_TIF_SYSCALL_EMU),%edi
--	jmp int_restore_rest
-+	jmp int_restore_extra_regs
- 
- int_signal:
- 	testl $_TIF_DO_NOTIFY_MASK,%edx
-@@ -503,7 +503,7 @@ int_signal:
- 	xorl %esi,%esi		# oldset -> arg2
- 	call do_notify_resume
- 1:	movl $_TIF_WORK_MASK,%edi
--int_restore_rest:
-+int_restore_extra_regs:
- 	RESTORE_EXTRA_REGS
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
-@@ -742,15 +742,15 @@ retint_swapgs:		/* return to user-space */
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_IRETQ
- 	SWAPGS
--	jmp restore_args
-+	jmp restore_c_regs
- 
--retint_restore_args:	/* return to kernel space */
-+retint_restore_c_regs:	/* return to kernel space */
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	/*
- 	 * The iretq could re-enable interrupts:
- 	 */
- 	TRACE_IRQS_IRETQ
--restore_args:
-+restore_c_regs:
- 	RESTORE_C_REGS
- 	REMOVE_PTREGS_FROM_STACK 8
- 
-@@ -855,9 +855,9 @@ retint_signal:
- 	/* rcx:	 threadinfo. interrupts off. */
- ENTRY(retint_kernel)
- 	cmpl $0,PER_CPU_VAR(__preempt_count)
--	jnz  retint_restore_args
-+	jnz  retint_restore_c_regs
- 	bt   $9,EFLAGS(%rsp)	/* interrupts off? */
--	jnc  retint_restore_args
-+	jnc  retint_restore_c_regs
- 	call preempt_schedule_irq
- 	jmp exit_intr
- #endif
--- 
-1.8.1.4
-
+Sebastian
