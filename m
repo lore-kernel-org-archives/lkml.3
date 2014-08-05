@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604AbaHESQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:16:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52589 "EHLO
+	id S1755912AbaHESQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:16:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52637 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755473AbaHESQB (ORCPT
+	with ESMTP id S1755557AbaHESQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:16:01 -0400
+	Tue, 5 Aug 2014 14:16:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.10 10/27] timer: Fix lock inversion between hrtimer_bases.lock and scheduler locks
-Date: Tue,  5 Aug 2014 11:14:02 -0700
-Message-Id: <20140805181344.573216031@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Eric Dumazet <edumazet@google.com>, Arnaud Ebalard <arno@natisbad.org>,
+        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 21/27] net: mvneta: use per_cpu stats to fix an SMP lock up
+Date: Tue,  5 Aug 2014 11:14:13 -0700
+Message-Id: <20140805181344.893666223@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181344.268039690@linuxfoundation.org>
 References: <20140805181344.268039690@linuxfoundation.org>
@@ -29,249 +31,195 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: willy tarreau <w@1wt.eu>
 
-commit 504d58745c9ca28d33572e2d8a9990b43e06075d upstream.
+commit 74c41b048db1073a04827d7f39e95ac1935524cc upstream.
 
-clockevents_increase_min_delta() calls printk() from under
-hrtimer_bases.lock. That causes lock inversion on scheduler locks because
-printk() can call into the scheduler. Lockdep puts it as:
+Stats writers are mvneta_rx() and mvneta_tx(). They don't lock anything
+when they update the stats, and as a result, it randomly happens that
+the stats freeze on SMP if two updates happen during stats retrieval.
+This is very easily reproducible by starting two HTTP servers and binding
+each of them to a different CPU, then consulting /proc/net/dev in loops
+during transfers, the interface should immediately lock up. This issue
+also randomly happens upon link state changes during transfers, because
+the stats are collected in this situation, but it takes more attempts to
+reproduce it.
 
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.15.0-rc8-06195-g939f04b #2 Not tainted
--------------------------------------------------------
-trinity-main/74 is trying to acquire lock:
- (&port_lock_key){-.....}, at: [<811c60be>] serial8250_console_write+0x8c/0x10c
+The comments in netdevice.h suggest using per_cpu stats instead to get
+rid of this issue.
 
-but task is already holding lock:
- (hrtimer_bases.lock){-.-...}, at: [<8103caeb>] hrtimer_try_to_cancel+0x13/0x66
+This patch implements this. It merges both rx_stats and tx_stats into
+a single "stats" member with a single syncp. Both mvneta_rx() and
+mvneta_rx() now only update the a single CPU's counters.
 
-which lock already depends on the new lock.
+In turn, mvneta_get_stats64() does the summing by iterating over all CPUs
+to get their respective stats.
 
-the existing dependency chain (in reverse order) is:
+With this change, stats are still correct and no more lockup is encountered.
 
--> #5 (hrtimer_bases.lock){-.-...}:
-       [<8104a942>] lock_acquire+0x92/0x101
-       [<8142f11d>] _raw_spin_lock_irqsave+0x2e/0x3e
-       [<8103c918>] __hrtimer_start_range_ns+0x1c/0x197
-       [<8107ec20>] perf_swevent_start_hrtimer.part.41+0x7a/0x85
-       [<81080792>] task_clock_event_start+0x3a/0x3f
-       [<810807a4>] task_clock_event_add+0xd/0x14
-       [<8108259a>] event_sched_in+0xb6/0x17a
-       [<810826a2>] group_sched_in+0x44/0x122
-       [<81082885>] ctx_sched_in.isra.67+0x105/0x11f
-       [<810828e6>] perf_event_sched_in.isra.70+0x47/0x4b
-       [<81082bf6>] __perf_install_in_context+0x8b/0xa3
-       [<8107eb8e>] remote_function+0x12/0x2a
-       [<8105f5af>] smp_call_function_single+0x2d/0x53
-       [<8107e17d>] task_function_call+0x30/0x36
-       [<8107fb82>] perf_install_in_context+0x87/0xbb
-       [<810852c9>] SYSC_perf_event_open+0x5c6/0x701
-       [<810856f9>] SyS_perf_event_open+0x17/0x19
-       [<8142f8ee>] syscall_call+0x7/0xb
+Note that this bug was present since the first import of the mvneta
+driver.  It might make sense to backport it to some stable trees. If
+so, it depends on "d33dc73 net: mvneta: increase the 64-bit rx/tx stats
+out of the hot path".
 
--> #4 (&ctx->lock){......}:
-       [<8104a942>] lock_acquire+0x92/0x101
-       [<8142f04c>] _raw_spin_lock+0x21/0x30
-       [<81081df3>] __perf_event_task_sched_out+0x1dc/0x34f
-       [<8142cacc>] __schedule+0x4c6/0x4cb
-       [<8142cae0>] schedule+0xf/0x11
-       [<8142f9a6>] work_resched+0x5/0x30
-
--> #3 (&rq->lock){-.-.-.}:
-       [<8104a942>] lock_acquire+0x92/0x101
-       [<8142f04c>] _raw_spin_lock+0x21/0x30
-       [<81040873>] __task_rq_lock+0x33/0x3a
-       [<8104184c>] wake_up_new_task+0x25/0xc2
-       [<8102474b>] do_fork+0x15c/0x2a0
-       [<810248a9>] kernel_thread+0x1a/0x1f
-       [<814232a2>] rest_init+0x1a/0x10e
-       [<817af949>] start_kernel+0x303/0x308
-       [<817af2ab>] i386_start_kernel+0x79/0x7d
-
--> #2 (&p->pi_lock){-.-...}:
-       [<8104a942>] lock_acquire+0x92/0x101
-       [<8142f11d>] _raw_spin_lock_irqsave+0x2e/0x3e
-       [<810413dd>] try_to_wake_up+0x1d/0xd6
-       [<810414cd>] default_wake_function+0xb/0xd
-       [<810461f3>] __wake_up_common+0x39/0x59
-       [<81046346>] __wake_up+0x29/0x3b
-       [<811b8733>] tty_wakeup+0x49/0x51
-       [<811c3568>] uart_write_wakeup+0x17/0x19
-       [<811c5dc1>] serial8250_tx_chars+0xbc/0xfb
-       [<811c5f28>] serial8250_handle_irq+0x54/0x6a
-       [<811c5f57>] serial8250_default_handle_irq+0x19/0x1c
-       [<811c56d8>] serial8250_interrupt+0x38/0x9e
-       [<810510e7>] handle_irq_event_percpu+0x5f/0x1e2
-       [<81051296>] handle_irq_event+0x2c/0x43
-       [<81052cee>] handle_level_irq+0x57/0x80
-       [<81002a72>] handle_irq+0x46/0x5c
-       [<810027df>] do_IRQ+0x32/0x89
-       [<8143036e>] common_interrupt+0x2e/0x33
-       [<8142f23c>] _raw_spin_unlock_irqrestore+0x3f/0x49
-       [<811c25a4>] uart_start+0x2d/0x32
-       [<811c2c04>] uart_write+0xc7/0xd6
-       [<811bc6f6>] n_tty_write+0xb8/0x35e
-       [<811b9beb>] tty_write+0x163/0x1e4
-       [<811b9cd9>] redirected_tty_write+0x6d/0x75
-       [<810b6ed6>] vfs_write+0x75/0xb0
-       [<810b7265>] SyS_write+0x44/0x77
-       [<8142f8ee>] syscall_call+0x7/0xb
-
--> #1 (&tty->write_wait){-.....}:
-       [<8104a942>] lock_acquire+0x92/0x101
-       [<8142f11d>] _raw_spin_lock_irqsave+0x2e/0x3e
-       [<81046332>] __wake_up+0x15/0x3b
-       [<811b8733>] tty_wakeup+0x49/0x51
-       [<811c3568>] uart_write_wakeup+0x17/0x19
-       [<811c5dc1>] serial8250_tx_chars+0xbc/0xfb
-       [<811c5f28>] serial8250_handle_irq+0x54/0x6a
-       [<811c5f57>] serial8250_default_handle_irq+0x19/0x1c
-       [<811c56d8>] serial8250_interrupt+0x38/0x9e
-       [<810510e7>] handle_irq_event_percpu+0x5f/0x1e2
-       [<81051296>] handle_irq_event+0x2c/0x43
-       [<81052cee>] handle_level_irq+0x57/0x80
-       [<81002a72>] handle_irq+0x46/0x5c
-       [<810027df>] do_IRQ+0x32/0x89
-       [<8143036e>] common_interrupt+0x2e/0x33
-       [<8142f23c>] _raw_spin_unlock_irqrestore+0x3f/0x49
-       [<811c25a4>] uart_start+0x2d/0x32
-       [<811c2c04>] uart_write+0xc7/0xd6
-       [<811bc6f6>] n_tty_write+0xb8/0x35e
-       [<811b9beb>] tty_write+0x163/0x1e4
-       [<811b9cd9>] redirected_tty_write+0x6d/0x75
-       [<810b6ed6>] vfs_write+0x75/0xb0
-       [<810b7265>] SyS_write+0x44/0x77
-       [<8142f8ee>] syscall_call+0x7/0xb
-
--> #0 (&port_lock_key){-.....}:
-       [<8104a62d>] __lock_acquire+0x9ea/0xc6d
-       [<8104a942>] lock_acquire+0x92/0x101
-       [<8142f11d>] _raw_spin_lock_irqsave+0x2e/0x3e
-       [<811c60be>] serial8250_console_write+0x8c/0x10c
-       [<8104e402>] call_console_drivers.constprop.31+0x87/0x118
-       [<8104f5d5>] console_unlock+0x1d7/0x398
-       [<8104fb70>] vprintk_emit+0x3da/0x3e4
-       [<81425f76>] printk+0x17/0x19
-       [<8105bfa0>] clockevents_program_min_delta+0x104/0x116
-       [<8105c548>] clockevents_program_event+0xe7/0xf3
-       [<8105cc1c>] tick_program_event+0x1e/0x23
-       [<8103c43c>] hrtimer_force_reprogram+0x88/0x8f
-       [<8103c49e>] __remove_hrtimer+0x5b/0x79
-       [<8103cb21>] hrtimer_try_to_cancel+0x49/0x66
-       [<8103cb4b>] hrtimer_cancel+0xd/0x18
-       [<8107f102>] perf_swevent_cancel_hrtimer.part.60+0x2b/0x30
-       [<81080705>] task_clock_event_stop+0x20/0x64
-       [<81080756>] task_clock_event_del+0xd/0xf
-       [<81081350>] event_sched_out+0xab/0x11e
-       [<810813e0>] group_sched_out+0x1d/0x66
-       [<81081682>] ctx_sched_out+0xaf/0xbf
-       [<81081e04>] __perf_event_task_sched_out+0x1ed/0x34f
-       [<8142cacc>] __schedule+0x4c6/0x4cb
-       [<8142cae0>] schedule+0xf/0x11
-       [<8142f9a6>] work_resched+0x5/0x30
-
-other info that might help us debug this:
-
-Chain exists of:
-  &port_lock_key --> &ctx->lock --> hrtimer_bases.lock
-
- Possible unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(hrtimer_bases.lock);
-                               lock(&ctx->lock);
-                               lock(hrtimer_bases.lock);
-  lock(&port_lock_key);
-
- *** DEADLOCK ***
-
-4 locks held by trinity-main/74:
- #0:  (&rq->lock){-.-.-.}, at: [<8142c6f3>] __schedule+0xed/0x4cb
- #1:  (&ctx->lock){......}, at: [<81081df3>] __perf_event_task_sched_out+0x1dc/0x34f
- #2:  (hrtimer_bases.lock){-.-...}, at: [<8103caeb>] hrtimer_try_to_cancel+0x13/0x66
- #3:  (console_lock){+.+...}, at: [<8104fb5d>] vprintk_emit+0x3c7/0x3e4
-
-stack backtrace:
-CPU: 0 PID: 74 Comm: trinity-main Not tainted 3.15.0-rc8-06195-g939f04b #2
- 00000000 81c3a310 8b995c14 81426f69 8b995c44 81425a99 8161f671 8161f570
- 8161f538 8161f559 8161f538 8b995c78 8b142bb0 00000004 8b142fdc 8b142bb0
- 8b995ca8 8104a62d 8b142fac 000016f2 81c3a310 00000001 00000001 00000003
-Call Trace:
- [<81426f69>] dump_stack+0x16/0x18
- [<81425a99>] print_circular_bug+0x18f/0x19c
- [<8104a62d>] __lock_acquire+0x9ea/0xc6d
- [<8104a942>] lock_acquire+0x92/0x101
- [<811c60be>] ? serial8250_console_write+0x8c/0x10c
- [<811c6032>] ? wait_for_xmitr+0x76/0x76
- [<8142f11d>] _raw_spin_lock_irqsave+0x2e/0x3e
- [<811c60be>] ? serial8250_console_write+0x8c/0x10c
- [<811c60be>] serial8250_console_write+0x8c/0x10c
- [<8104af87>] ? lock_release+0x191/0x223
- [<811c6032>] ? wait_for_xmitr+0x76/0x76
- [<8104e402>] call_console_drivers.constprop.31+0x87/0x118
- [<8104f5d5>] console_unlock+0x1d7/0x398
- [<8104fb70>] vprintk_emit+0x3da/0x3e4
- [<81425f76>] printk+0x17/0x19
- [<8105bfa0>] clockevents_program_min_delta+0x104/0x116
- [<8105cc1c>] tick_program_event+0x1e/0x23
- [<8103c43c>] hrtimer_force_reprogram+0x88/0x8f
- [<8103c49e>] __remove_hrtimer+0x5b/0x79
- [<8103cb21>] hrtimer_try_to_cancel+0x49/0x66
- [<8103cb4b>] hrtimer_cancel+0xd/0x18
- [<8107f102>] perf_swevent_cancel_hrtimer.part.60+0x2b/0x30
- [<81080705>] task_clock_event_stop+0x20/0x64
- [<81080756>] task_clock_event_del+0xd/0xf
- [<81081350>] event_sched_out+0xab/0x11e
- [<810813e0>] group_sched_out+0x1d/0x66
- [<81081682>] ctx_sched_out+0xaf/0xbf
- [<81081e04>] __perf_event_task_sched_out+0x1ed/0x34f
- [<8104416d>] ? __dequeue_entity+0x23/0x27
- [<81044505>] ? pick_next_task_fair+0xb1/0x120
- [<8142cacc>] __schedule+0x4c6/0x4cb
- [<81047574>] ? trace_hardirqs_off_caller+0xd7/0x108
- [<810475b0>] ? trace_hardirqs_off+0xb/0xd
- [<81056346>] ? rcu_irq_exit+0x64/0x77
-
-Fix the problem by using printk_deferred() which does not call into the
-scheduler.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Reviewed-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Arnaud Ebalard <arno@natisbad.org>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[wt: port to 3.10 : u64_stats_init() does not exist in 3.10 and is not needed]
+Signed-off-by: Willy Tarreau <w@1wt.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/time/clockevents.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/marvell/mvneta.c |   78 +++++++++++++++++++++-------------
+ 1 file changed, 50 insertions(+), 28 deletions(-)
 
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -138,7 +138,8 @@ static int clockevents_increase_min_delt
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -219,10 +219,12 @@
+ 
+ #define MVNETA_RX_BUF_SIZE(pkt_size)   ((pkt_size) + NET_SKB_PAD)
+ 
+-struct mvneta_stats {
++struct mvneta_pcpu_stats {
+ 	struct	u64_stats_sync syncp;
+-	u64	packets;
+-	u64	bytes;
++	u64	rx_packets;
++	u64	rx_bytes;
++	u64	tx_packets;
++	u64	tx_bytes;
+ };
+ 
+ struct mvneta_port {
+@@ -248,8 +250,7 @@ struct mvneta_port {
+ 	u8 mcast_count[256];
+ 	u16 tx_ring_size;
+ 	u16 rx_ring_size;
+-	struct mvneta_stats tx_stats;
+-	struct mvneta_stats rx_stats;
++	struct mvneta_pcpu_stats *stats;
+ 
+ 	struct mii_bus *mii_bus;
+ 	struct phy_device *phy_dev;
+@@ -428,21 +429,29 @@ struct rtnl_link_stats64 *mvneta_get_sta
  {
- 	/* Nothing to do if we already reached the limit */
- 	if (dev->min_delta_ns >= MIN_DELTA_LIMIT) {
--		printk(KERN_WARNING "CE: Reprogramming failure. Giving up\n");
-+		printk_deferred(KERN_WARNING
-+				"CE: Reprogramming failure. Giving up\n");
- 		dev->next_event.tv64 = KTIME_MAX;
- 		return -ETIME;
+ 	struct mvneta_port *pp = netdev_priv(dev);
+ 	unsigned int start;
++	int cpu;
+ 
+-	memset(stats, 0, sizeof(struct rtnl_link_stats64));
+-
+-	do {
+-		start = u64_stats_fetch_begin_bh(&pp->rx_stats.syncp);
+-		stats->rx_packets = pp->rx_stats.packets;
+-		stats->rx_bytes	= pp->rx_stats.bytes;
+-	} while (u64_stats_fetch_retry_bh(&pp->rx_stats.syncp, start));
+-
+-
+-	do {
+-		start = u64_stats_fetch_begin_bh(&pp->tx_stats.syncp);
+-		stats->tx_packets = pp->tx_stats.packets;
+-		stats->tx_bytes	= pp->tx_stats.bytes;
+-	} while (u64_stats_fetch_retry_bh(&pp->tx_stats.syncp, start));
++	for_each_possible_cpu(cpu) {
++		struct mvneta_pcpu_stats *cpu_stats;
++		u64 rx_packets;
++		u64 rx_bytes;
++		u64 tx_packets;
++		u64 tx_bytes;
++
++		cpu_stats = per_cpu_ptr(pp->stats, cpu);
++		do {
++			start = u64_stats_fetch_begin_bh(&cpu_stats->syncp);
++			rx_packets = cpu_stats->rx_packets;
++			rx_bytes   = cpu_stats->rx_bytes;
++			tx_packets = cpu_stats->tx_packets;
++			tx_bytes   = cpu_stats->tx_bytes;
++		} while (u64_stats_fetch_retry_bh(&cpu_stats->syncp, start));
++
++		stats->rx_packets += rx_packets;
++		stats->rx_bytes   += rx_bytes;
++		stats->tx_packets += tx_packets;
++		stats->tx_bytes   += tx_bytes;
++	}
+ 
+ 	stats->rx_errors	= dev->stats.rx_errors;
+ 	stats->rx_dropped	= dev->stats.rx_dropped;
+@@ -1416,10 +1425,12 @@ static int mvneta_rx(struct mvneta_port
  	}
-@@ -151,9 +152,10 @@ static int clockevents_increase_min_delt
- 	if (dev->min_delta_ns > MIN_DELTA_LIMIT)
- 		dev->min_delta_ns = MIN_DELTA_LIMIT;
  
--	printk(KERN_WARNING "CE: %s increased min_delta_ns to %llu nsec\n",
--	       dev->name ? dev->name : "?",
--	       (unsigned long long) dev->min_delta_ns);
-+	printk_deferred(KERN_WARNING
-+			"CE: %s increased min_delta_ns to %llu nsec\n",
-+			dev->name ? dev->name : "?",
-+			(unsigned long long) dev->min_delta_ns);
- 	return 0;
- }
+ 	if (rcvd_pkts) {
+-		u64_stats_update_begin(&pp->rx_stats.syncp);
+-		pp->rx_stats.packets += rcvd_pkts;
+-		pp->rx_stats.bytes   += rcvd_bytes;
+-		u64_stats_update_end(&pp->rx_stats.syncp);
++		struct mvneta_pcpu_stats *stats = this_cpu_ptr(pp->stats);
++
++		u64_stats_update_begin(&stats->syncp);
++		stats->rx_packets += rcvd_pkts;
++		stats->rx_bytes   += rcvd_bytes;
++		u64_stats_update_end(&stats->syncp);
+ 	}
  
+ 	/* Update rxq management counters */
+@@ -1552,11 +1563,12 @@ static int mvneta_tx(struct sk_buff *skb
+ 
+ out:
+ 	if (frags > 0) {
+-		u64_stats_update_begin(&pp->tx_stats.syncp);
+-		pp->tx_stats.packets++;
+-		pp->tx_stats.bytes += skb->len;
+-		u64_stats_update_end(&pp->tx_stats.syncp);
++		struct mvneta_pcpu_stats *stats = this_cpu_ptr(pp->stats);
+ 
++		u64_stats_update_begin(&stats->syncp);
++		stats->tx_packets++;
++		stats->tx_bytes  += skb->len;
++		u64_stats_update_end(&stats->syncp);
+ 	} else {
+ 		dev->stats.tx_dropped++;
+ 		dev_kfree_skb_any(skb);
+@@ -2758,6 +2770,13 @@ static int mvneta_probe(struct platform_
+ 
+ 	clk_prepare_enable(pp->clk);
+ 
++	/* Alloc per-cpu stats */
++	pp->stats = alloc_percpu(struct mvneta_pcpu_stats);
++	if (!pp->stats) {
++		err = -ENOMEM;
++		goto err_clk;
++	}
++
+ 	pp->tx_done_timer.data = (unsigned long)dev;
+ 
+ 	pp->tx_ring_size = MVNETA_MAX_TXD;
+@@ -2769,7 +2788,7 @@ static int mvneta_probe(struct platform_
+ 	err = mvneta_init(pp, phy_addr);
+ 	if (err < 0) {
+ 		dev_err(&pdev->dev, "can't init eth hal\n");
+-		goto err_clk;
++		goto err_free_stats;
+ 	}
+ 	mvneta_port_power_up(pp, phy_mode);
+ 
+@@ -2798,6 +2817,8 @@ static int mvneta_probe(struct platform_
+ 
+ err_deinit:
+ 	mvneta_deinit(pp);
++err_free_stats:
++	free_percpu(pp->stats);
+ err_clk:
+ 	clk_disable_unprepare(pp->clk);
+ err_unmap:
+@@ -2818,6 +2839,7 @@ static int mvneta_remove(struct platform
+ 	unregister_netdev(dev);
+ 	mvneta_deinit(pp);
+ 	clk_disable_unprepare(pp->clk);
++	free_percpu(pp->stats);
+ 	iounmap(pp->base);
+ 	irq_dispose_mapping(dev->irq);
+ 	free_netdev(dev);
 
 
