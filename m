@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbaHEXNl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 19:13:41 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:39312 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbaHEXNj (ORCPT
+	id S1753729AbaHEXP0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 19:15:26 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60002 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaHEXPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 19:13:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140803173031.GQ18735@two.firstfloor.org>
-References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
-	<8738dm9t4z.fsf@tassilo.jf.intel.com>
-	<1406532289.5133.223.camel@marge.simpson.net>
-	<CA+80gGaohO-RaG0_tWZJEFzisrrBpgfiw-mxMrTfSK0N=k7gQA@mail.gmail.com>
-	<20140803173031.GQ18735@two.firstfloor.org>
-Date: Tue, 5 Aug 2014 16:13:38 -0700
-Message-ID: <CA+80gGb5gJax=+1eg=f3pMkxXU0NBWDCkxEtBV7iekgcd1QcTg@mail.gmail.com>
-Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
-From: Sergey Oboguev <oboguev.public@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, linux-kernel@vger.kernel.org,
-        khalid.aziz@oracle.com
-Content-Type: text/plain; charset=UTF-8
+	Tue, 5 Aug 2014 19:15:24 -0400
+Date: Tue, 05 Aug 2014 16:15:21 -0700 (PDT)
+Message-Id: <20140805.161521.1117004847394195837.davem@davemloft.net>
+To: zoltan.kiss@citrix.com
+Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, wei.liu2@citrix.com, Ian.Campbell@citrix.com,
+        paul.durrant@citrix.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Subject: Re: [PATCH] xen-netfront: Fix handling packets on compound pages
+ with skb_segment
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <53DFC2FE.8070105@citrix.com>
+References: <1406726730-17994-1-git-send-email-zoltan.kiss@citrix.com>
+	<20140731.132520.1889577477638334755.davem@davemloft.net>
+	<53DFC2FE.8070105@citrix.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 05 Aug 2014 16:15:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 3, 2014 at 10:30 AM, Andi Kleen <andi@firstfloor.org> wrote:
->> (One example might be virtual machine that runs guest operating system that is
->> not paravirtualized or can be paravirtualized only to a limited extent. The VM
->> might guess that preemption of VCPU thread that is processing events such as
->> IPI interrupts, clock interrupts or certain device interrupts is likely to
->> cause overall performance degradation due to other VCPUs spinning for an IPI
->> response or spinning waiting for a spinlock, and thought the general kinds of
->> these dependencies may be foreseen, but actual dependency chains between VCPUs
->> cannot be established at run time.)
->
-> PAUSE loop exiting (PLE) can handle it in limited fashion on VMs
-> even without paravirtualization.
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+Date: Mon, 4 Aug 2014 18:29:34 +0100
 
+> On 31/07/14 21:25, David Miller wrote:
+>> Secondly, for something like UDP you can't just split the packet up
+>> like this, or for any other datagram protocol for that matter.
+> The netback/netfront interface currently only supports TSO and
+> TSO6. That's why I did the pktgen TCP patch
 
-The key word is "limited". Sometimes the use of PLE can help to a limited
-indeed (see below) extent, and sometimes it can even be counter-productive,
-which in turn can also be mitigated (http://lwn.net/Articles/424960/) but again
-in a limited fashion.
+Do a sendfile() with MSG_MORE over UDP, I bet you can construct a
+sequence that violates your constraints too.
 
-This indeed is similar to the spinlock example discussed in the previous
-message. Similarly to PI/PE, the use of PLE and other spin-loop detection
-techniques is about trying to minimize the cost of after-
-inopportune-preemption actions to whatever (unavoidably limited, that's the key
-thing) extent they can be minimized, whereas priority protection is about the
-avoidance of incurring these costs in the first place.
+It doesn't make sense to focus on TSO, it's a fundamental issue.
 
-And then, x86 VMs is just one use case, whereas there are others with no PLE or
-similar recourses. DPRIO as a matter of fact happened to be conceived within
-the context of the project running legacy non-x86 OS that does not have pause
-in the loops, and the loops are scattered throughout the pre-existing binary
-code in huge numbers and are not pragmatically instrumentable. But this just
-exemplifies a general pattern of having to do with concurrency in a component
-being driven from or driving another component that is for practical purposes
-"set in stone" (3rd party, legacy, out of the scope of the project etc.)
+Packets can come from anywhere, and you have to be prepared to
+generically handle a MAX_SKB_FRAGS loaded SKB with arbitrary
+start/end/length fragment configurations.
 
-- Sergey
+> Currently netback limits each skb sent through to 18 slots, because it
+> has to map every grant ref to a frag. There was an idea to handle this
+> problem by removing this limit and let the backend coalesce the
+> scattered buffers into a brand new piece, but then the backend would
+> pay the price, and it would be huge as most of the packet should be
+> copied.
+
+18 slots means that even with linearization the maximum SKB size
+you can support is 64K.   (16 * 4096) == 64K, please one extra slot
+on each side for potential partial pages, gives us 18.
+
+> We haven't seen this problem very often, and it's also a bit hard to
+> reproduce (hence my frag offset-size pktgen patches), but we can't
+> afford the assumption that it won't happen very often.
+
+It's trivial to reproduce, I've already shown how one could trigger it
+_without_ TSO being involved at all.  I'll state it again:
+
+	Set TCP_CORK, or use MSG_MORE on the socket.  Do a sequence of
+	many 1 byte sendfile() requests over a file, skipping around
+	the offset on every call in order to prevent coalescing.
+
+	Clear TCP_CORK or MSG_MORE, you should see a MAX_SKB_FRAGS skb
+	end up in the driver transmit function.
+
+> The main concept in this solution is that if it turns out the packet
+> needs too many slots in start_xmit, pretend that netfront is not GSO
+> capable, and fall back to the software segmentation, which will result
+> in packets which can fit.
+
+This is the fundamental issue with your solution.  It is not a GSO
+problem.
+
+You therefore have to fully linearize the packet when you encounter
+this situation.
