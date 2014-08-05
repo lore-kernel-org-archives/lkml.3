@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923AbaHELfY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 07:35:24 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:45915 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743AbaHELfW (ORCPT
+	id S1753226AbaHELfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 07:35:43 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:57997 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026AbaHELfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 07:35:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407235148-31790-1-git-send-email-gautam.vivek@samsung.com>
-References: <1407235148-31790-1-git-send-email-gautam.vivek@samsung.com>
-Date: Tue, 5 Aug 2014 17:05:19 +0530
-Message-ID: <CAK5sBcGq1XzCkLz_f5q+5ik9shQSJ=pqzQkrtXbKzJFYfOUnPw@mail.gmail.com>
-Subject: Re: [PATCH RESEND] usb: ehci/ohci-exynos: Fix PHY getting sequence
-From: Sachin Kamat <spk.linux@gmail.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Jingoo Han <jg1.han@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 5 Aug 2014 07:35:41 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] rtc: tps65910: Fix potential NULL-pointer dereference
+Date: Tue,  5 Aug 2014 13:35:38 +0200
+Message-Id: <1407238538-13997-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vivek,
+From: Thierry Reding <treding@nvidia.com>
 
-On Tue, Aug 5, 2014 at 4:09 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> Since we want to keep support for both older usb-phys as well as the
-> newer generic phys, lets first get the generic PHYs and fallback to
-> older USB-PHYs only when we fail to get the former.
-> This should fix the issue with ehci-exynos and ohci-exynos, wherein
-> in the absence of SAMSUNG_USB2PHY config symbol, we end up getting
-> the NOP_USB_XCEIV phy when the same is enabled. And thus the PHYs
-> are not configured properly.
->
-> Reported-by: Sachin Kamat <sachin.kamat@samsung.com>
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Jingoo Han <jg1.han@samsung.com>
+The interrupt handler gets the driver data associated with the RTC
+device and doesn't check it for validity. This can cause a NULL pointer
+being dereferenced when and interrupt fires before the driver data was
+properly set up.
 
-Tested this patch on Exynos5250 based Arndale and Snow boards.
-Fixes the said issue. Thanks.
+Fix this by setting the driver data earlier (before the interrupt is
+requested).
 
-Tested-by: Sachin Kamat <sachin.kamat@samsung.com>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/rtc/rtc-tps65910.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/rtc/rtc-tps65910.c b/drivers/rtc/rtc-tps65910.c
+index 7af00208d637..2583349fbde5 100644
+--- a/drivers/rtc/rtc-tps65910.c
++++ b/drivers/rtc/rtc-tps65910.c
+@@ -258,6 +258,8 @@ static int tps65910_rtc_probe(struct platform_device *pdev)
+ 	if (ret < 0)
+ 		return ret;
+ 
++	platform_set_drvdata(pdev, tps_rtc);
++
+ 	irq  = platform_get_irq(pdev, 0);
+ 	if (irq <= 0) {
+ 		dev_warn(&pdev->dev, "Wake up is not possible as irq = %d\n",
+@@ -283,8 +285,6 @@ static int tps65910_rtc_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
+-	platform_set_drvdata(pdev, tps_rtc);
+-
+ 	return 0;
+ }
+ 
 -- 
-Regards,
-Sachin.
+2.0.4
+
