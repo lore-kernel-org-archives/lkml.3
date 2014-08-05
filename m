@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946AbaHEGib (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 02:38:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38417 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755920AbaHEGi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 02:38:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,804,1400050800"; 
-   d="scan'208";a="583509078"
-Date: Tue, 5 Aug 2014 09:38:25 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCHv2 5/6] base: platform: name the device already during
- allocation
-Message-ID: <20140805063824.GA21849@xps8300>
-References: <1401972778-5880-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1401972778-5880-6-git-send-email-heikki.krogerus@linux.intel.com>
- <53C3767A.9000203@ti.com>
- <20140714145543.GB11477@kroah.com>
+	id S1755969AbaHEGoC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 02:44:02 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:64154 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755920AbaHEGn7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 02:43:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140714145543.GB11477@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3848ac8b087052a65d890dcfe17e3af8.squirrel@www.codeaurora.org>
+References: <1406634362-811-1-git-send-email-prarit@redhat.com>
+	<2066166.pXm4lKLOID@vostro.rjw.lan>
+	<53DA8389.80804@redhat.com>
+	<1917362.abr2Y4p7vh@vostro.rjw.lan>
+	<53DA8A41.2030601@redhat.com>
+	<53DAA60B.6040802@codeaurora.org>
+	<53DAA749.5080506@redhat.com>
+	<53DAA95B.2040505@codeaurora.org>
+	<53DAB038.3050007@redhat.com>
+	<53DABFA6.6090503@codeaurora.org>
+	<53DACA26.1000908@redhat.com>
+	<53DAE592.2030909@codeaurora.org>
+	<53DB6B81.6050400@redhat.com>
+	<53DBCBE8.6010809@codeaurora.org>
+	<CAKohpom0KycrB8qJDM7yEOHOn76J1sEe90CG+JXERJMcxKnOJA@mail.gmail.com>
+	<53DF7BC4.9070500@redhat.com>
+	<CAKohpomEQ__Q4xTaBgHJyE0Meu4au-cXKCAKCqHWTHLRL+R5OA@mail.gmail.com>
+	<53DFEA25.5070206@codeaurora.org>
+	<CAKohpo=VJJFxKo5hNH3GNOZpjeHBc9fWORD9h7SThaFtkM__FA@mail.gmail.com>
+	<3848ac8b087052a65d890dcfe17e3af8.squirrel@www.codeaurora.org>
+Date: Tue, 5 Aug 2014 12:13:59 +0530
+Message-ID: <CAKohponNEpppfoZrbDZmdwXnPukzozOSw8YF1qDKNr7iJkZSqg@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem to
+ be held for duration of changing governors [v2]
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Prarit Bhargava <prarit@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        =?UTF-8?B?Um9iZXJ0IFNjaMODwrZuZQ==?= <robert.schoene@tu-dresden.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 07:55:43AM -0700, Greg Kroah-Hartman wrote:
-> > > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> > > index 9e9227e..e856bc4 100644
-> > > --- a/drivers/base/platform.c
-> > > +++ b/drivers/base/platform.c
-> > > @@ -177,11 +177,45 @@ struct platform_object {
-> > >   */
-> > >  void platform_device_put(struct platform_device *pdev)
-> > >  {
-> > > -	if (pdev)
-> > > -		put_device(&pdev->dev);
-> > > +	if (!pdev)
-> > > +		return;
-> > > +
-> > > +	if (pdev->id_auto) {
-> > > +		ida_simple_remove(&platform_devid_ida, pdev->id);
-> > > +		pdev->id = PLATFORM_DEVID_AUTO;
-> > > +	}
-> > > +
-> > > +	put_device(&pdev->dev);
-> > >  }
-> > >  EXPORT_SYMBOL_GPL(platform_device_put);
-> 
-> Why would a single call to this function remove an id?  That seems
-> really wrong, you should be able to call get and put on a device
-> numerous times, only the "last" reference should cause the device to be
-> cleaned up.
-> 
-> Shouldn't this be in the release function instead?
+On 5 August 2014 11:59,  <skannan@codeaurora.org> wrote:
+> Looks like Srivatsa has gone off the grid too. I'm hoping at least one of
+> you can do a review of my series. Come on guys, not everyone has to work
+> on the same patch/issue. :-(
 
-I'll fix this.
-
-Thanks Greg.
-
--- 
-heikki
+Srivatsa is currently going through some personal stuff. He is joining MIT
+for his Masters/Phd and so would be moving to US soon :)
