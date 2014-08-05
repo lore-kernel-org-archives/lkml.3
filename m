@@ -1,146 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272AbaHEAoA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 20:44:00 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:45963 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362AbaHEAn6 convert rfc822-to-8bit (ORCPT
+	id S1753327AbaHEAqf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 20:46:35 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:30598 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752583AbaHEAqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 20:43:58 -0400
-From: Lichunhe <lichunhe@huawei.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: "vyasevic@redhat.com" <vyasevic@redhat.com>,
-        "xiyou.wangcong@gmail.com" <xiyou.wangcong@gmail.com>,
-        "makita.toshiaki@lab.ntt.co.jp" <makita.toshiaki@lab.ntt.co.jp>,
-        "stephen@networkplumber.org" <stephen@networkplumber.org>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "f.fainelli@gmail.com" <f.fainelli@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wuyunfei <wuyunfei@huawei.com>,
-        "Qianhuibin (Huibin QIAN, Euler)" <qianhuibin@huawei.com>
-Subject: RE: [PATCH net/next] bridge:Add rcu read lock when delete br port
-Thread-Topic: [PATCH net/next] bridge:Add rcu read lock when delete br port
-Thread-Index: AQHPr5WFVDrzbGrcFUCN6HaVE6U4Gpu/3WQAgACmw5A=
-Date: Tue, 5 Aug 2014 00:43:09 +0000
-Message-ID: <ED104EF999716D4C84ED5EA6FAB8EEE128EF9725@SZXEMA509-MBX.china.huawei.com>
-References: <1407123476-9720-1-git-send-email-lichunhe@huawei.com>
- <20140804124056.GD15491@redhat.com>
-In-Reply-To: <20140804124056.GD15491@redhat.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.177.26.106]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 4 Aug 2014 20:46:34 -0400
+X-IronPort-AV: E=Sophos;i="5.04,265,1406563200"; 
+   d="scan'208";a="34178920"
+Message-ID: <53E029BB.2010200@cn.fujitsu.com>
+Date: Tue, 5 Aug 2014 08:47:55 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        <linux-kernel@vger.kernel.org>, <mingo@kernel.org>,
+        <dipankar@in.ibm.com>, <akpm@linux-foundation.org>,
+        <mathieu.desnoyers@efficios.com>, <josh@joshtriplett.org>,
+        <tglx@linutronix.de>, <rostedt@goodmis.org>, <dhowells@redhat.com>,
+        <edumazet@google.com>, <dvhart@linux.intel.com>, <fweisbec@gmail.com>,
+        <oleg@redhat.com>, <bobby.prani@gmail.com>
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+References: <20140731215445.GA21933@linux.vnet.ibm.com> <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com> <53DEE1CD.4000705@cn.fujitsu.com> <20140804074620.GH9918@twins.programming.kicks-ass.net> <53DF41ED.2020508@cn.fujitsu.com> <20140804115043.GA31903@linux.vnet.ibm.com> <20140804122515.GR19379@twins.programming.kicks-ass.net> <20140804145648.GE3588@twins.programming.kicks-ass.net>
+In-Reply-To: <20140804145648.GE3588@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Michael S. Tsirkin [mailto:mst@redhat.com]
->Sent: Monday, August 04, 2014 8:41 PM
->To: Lichunhe
->Cc: vyasevic@redhat.com; xiyou.wangcong@gmail.com;
->makita.toshiaki@lab.ntt.co.jp; stephen@networkplumber.org;
->ebiederm@xmission.com; f.fainelli@gmail.com; linux-kernel@vger.kernel.org;
->Wuyunfei; Qianhuibin (Huibin QIAN, Euler)
->Subject: Re: [PATCH net/next] bridge:Add rcu read lock when delete br port
->
->On Mon, Aug 04, 2014 at 11:37:56AM +0800, lichunhe@huawei.com wrote:
->> From: Chunhe Li <lichunhe@huawei.com>
+On 08/04/2014 10:56 PM, Peter Zijlstra wrote:
+> On Mon, Aug 04, 2014 at 02:25:15PM +0200, Peter Zijlstra wrote:
+>> On Mon, Aug 04, 2014 at 04:50:44AM -0700, Paul E. McKenney wrote:
+>>> OK, I will bite...
+>>>
+>>> What kinds of tasks are on a runqueue, but neither ->on_cpu nor
+>>> PREEMPT_ACTIVE?
 >>
->> In the br_hanle_frame function has a bug, when the bridge receive
->> packets which go througth the br_handle_frame, get the net_bridge_port
->> pointer "p", but don't check NULL pointer to use it. If somebody
->> delete the bridge port at the same time, will call a NULL pointer,
->> trigger kernel panic. I see the del_nbp comments, call del_nbp should via RCU,
->but the caller don't do this.
->
->I don't see such a comment there.
->
->Are you talking about this line:
->        p = br_port_get_rcu(skb->dev);
->
+>> Userspace tasks, they don't necessarily get PREEMPT_ACTIVE when
+>> preempted. Now obviously you're not _that_ interested in userspace tasks
+>> for this, so that might be ok.
+>>
+>> But the main point was, you cannot use ->on_cpu or PREEMPT_ACTIVE
+>> without holding rq->lock.
+> 
+> Hmm, maybe you can, we have the context switch in between setting
+> ->on_cpu and clearing PREEMPT_ACTIVE and vice-versa.
+> 
+> The context switch (obviously) provides a full barrier, so we might be
+> able to -- with careful consideration -- read these two separate values
+> and construct something usable from them.
+> 
+> Something like:
+> 
+> 	task_preempt_count(tsk) & PREEMPT_ACTIVE
+	the @tsk is running on_cpu, the above result is false.
+> 	smp_rmb();
+> 	tsk->on_cpu
+	now the @tsk is preempted, the above result also is false.
 
-Yes, this var "p" is NULL when the bug happened.
+	so it is useless if we fetch the preempt_count and on_cpu in two separated
+instructions.  Maybe it would work if we also take tsk->nivcsw in consideration.
+(I just noticed that tsk->n[i]vcsw are the version numbers for the tsk->on_cpu)
 
->this is actually rx_handler_data.
->The reason it should not be NULL is
->explained here:
->
->void netdev_rx_handler_unregister(struct net_device *dev) {
->
->        ASSERT_RTNL();
->        RCU_INIT_POINTER(dev->rx_handler, NULL);
->        /* a reader seeing a non NULL rx_handler in a rcu_read_lock()
->         * section has a guarantee to see a non NULL rx_handler_data
->         * as well.
->         */
->        synchronize_net();
->        RCU_INIT_POINTER(dev->rx_handler_data, NULL); }
->EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
->
->
->
->> following steps will make bug happened 1.start vm and add the vm
->> interface to a bridge br0,for example, brctl addbr br0 tap0
->>
->> 2.configuer vm interface and br0 same ip subnet, vm ping br0.
->>
->> 3.add and delete the vm interface port for endless loop.
->>
->> Signed-off-by: Chunhe Li <lichunhe@huawei.com>
->
->OK but apparently something else triggered the bug here.
->It might be a good idea to enable lockdep and rcu checks see if anything
->suspicious is reported.
->
->
->> ---
->>  net/bridge/br_if.c | 4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c index
->> 3eca3fd..91c611d 100644
->> --- a/net/bridge/br_if.c
->> +++ b/net/bridge/br_if.c
->> @@ -274,9 +274,11 @@ void br_dev_delete(struct net_device *dev, struct
->list_head *head)
->>  	struct net_bridge *br = netdev_priv(dev);
->>  	struct net_bridge_port *p, *n;
->>
->> +	rcu_read_lock();
->>  	list_for_each_entry_safe(p, n, &br->port_list, list) {
->>  		del_nbp(p);
->>  	}
->> +	rcu_read_unlock();
->>
->>  	br_fdb_delete_by_port(br, NULL, 1);
->>
->> @@ -550,7 +552,9 @@ int br_del_if(struct net_bridge *br, struct net_device
->*dev)
->>  	 * there still maybe an alternate path for netconsole to use;
->>  	 * therefore there is no reason for a NETDEV_RELEASE event.
->>  	 */
->> +	rcu_read_lock();
->>  	del_nbp(p);
->> +	rcu_read_unlock();
->>
->>  	spin_lock_bh(&br->lock);
->>  	changed_addr = br_stp_recalculate_bridge_id(br);
->
->
->Does the problem disappear with this applied?
->I don't see how this would help. rcu locks do not synchronize against other
->readers.
->
->
+bool task_on_cpu_or_preempted(tsk)
+{
+	unsigned long saved_nivcsw;
 
-Maybe I understand wrong, please ignore this patch, do you have better way to solve this problem?
+	saved_nivcsw = task->nivcsw;
+	if (tsk->on_cpu)
+		return true;
 
->> --
->> 1.9.2.0
->>
+	smp_rmb();
+
+	if (task_preempt_count(tsk) & PREEMPT_ACTIVE)
+		return true;
+
+	smp_rmb();
+
+	if (tsk->on_cpu || task->nivcsw != saved_nivcsw)
+		return true;
+
+	return false;
+}
+
+> 
+> And because we set PREEMPT_ACTIVE before clearing on_cpu, this should
+> race the right way (err towards the inclusive side).
+> 
+> Obviously that wants a big fat comment...
+
