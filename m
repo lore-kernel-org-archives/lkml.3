@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389AbaHEIoq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 04:44:46 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:47096 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757245AbaHEIon (ORCPT
+	id S932397AbaHEIpu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 04:45:50 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:41819 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757245AbaHEIps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 04:44:43 -0400
-Date: Tue, 5 Aug 2014 10:44:38 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <75613802.20140805104438@eikelenboom.it>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>, gregkh@linuxfoundation.org,
-        <boris.ostrovsky@oracle.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [PATCH v5] Fixes to Xen pciback for 3.17.
-In-Reply-To: <20140804184318.GB9009@laptop.dumpdata.com>
-References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com> <53DBB27D.2040203@citrix.com> <20140804184318.GB9009@laptop.dumpdata.com>
+	Tue, 5 Aug 2014 04:45:48 -0400
+Date: Tue, 5 Aug 2014 09:45:42 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: P J P <ppandit@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: 3.12 to 3.13 boot regression bisected - still applies to 3.16
+Message-ID: <20140805084542.GM15082@console-pimps.org>
+References: <20140804113435.34ed8c76@pluto>
+ <20140804122728.GH15082@console-pimps.org>
+ <20140804150627.4563b6a7@pluto>
+ <20140804135452.GJ15082@console-pimps.org>
+ <20140805100242.425e1093@pluto>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140805100242.425e1093@pluto>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 05 Aug, at 10:02:42AM, Bruno Prémont wrote:
+> 
+> I tried in setup_arch(), but system still keeps rebooting.
+> 
+> Working backwards I got to x86_64_start_kernel() in
+> arch/x86/kernel/head64.c but system is still rebooting.
+ 
+Thanks for doing this. I'm sure it was a major PITA ;-)
 
-Monday, August 4, 2014, 8:43:18 PM, you wrote:
+> Not sure what happens before x86_64_start_kernel() is called, it seems
+> to be called from ASM code in arch/x86/kernel/head_64.S.
+ 
+Yep. Roughly the code flow goes like this (chronologically),
 
-> On Fri, Aug 01, 2014 at 04:30:05PM +0100, David Vrabel wrote:
->> On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
->> > Greg: goto GHK
->> > 
->> > This is v5 version of patches to fix some issues in Xen PCIback.
->> 
->> Applied to devel/for-linus-3.17.
+  efi_pe_entry()	[arch/x86/boot/compressed/head_64.S]
+    efi_main()		[arch/x86/boot/compressed/eboot.c]
+  startup_64		[arch/x86/kernel/head_64.S]
+  secondary_startup64	[arch/x86/kernel/head_64.S]
+  x86_64_start_kernel()	[arch/x86/kernel/head64.c]
 
-> Thank you.
->> 
->> I dropped the stable Cc for #2 pending a final decision on whether it
->> really is a stable candidate.
+> > Meanwhile I'm going to go and stare at the EFI boot stub code and
+> > instrument OVMF to check for more memory corruption bugs like the one
+> > Michael found in commit c7fb93ec51d4 ("x86/efi: Include a .bss section
+> > within the PE/COFF headers").
+> 
+> If there are places between exit_boot() in
+> arch/x86/boot/compressed/eboot.c and x86_64_start_kernel() where I
+> should include such loops, please tell!
 
-> OK.
->> 
->> David
+I guess we need to verify efi_main() actually exits correctly. So a
+while (1); loop at the end of that function would be useful.
 
-Hi Konrad / David,
+Assuming that does actually hang, you get the fun of rummaging around in
+the early assembly code, where you can use something like this,
 
-This series still lacks a resolution on the sysfs /do_flr /reset,
-as a result the pci devices are not reset after shutdown of a guest.
-(no more pciback 0000:xx:xx.x: restoring config space at offset xxx)
+bruno:
+	hlt
+	jmp bruno
 
-So this series now introduces a regression to 3.16, which causes devices to malfunction 
-after a guest reboot or after assigning the devices to another guest.
+to try and force a hang.
 
-Apart from that .. i can't resist to remind the other issue with removing pci
-devices passed through to HVM guests related to the signaling via xenstore,
-described in:
+Could you also attach your .config? In particular I'm wondering whether
+you've got CONFIG_RELOCATBLE enabled.
 
-http://lists.xen.org/archives/html/xen-devel/2014-07/msg01875.html 
-
-
---
-Sander
-
-
+-- 
+Matt Fleming, Intel Open Source Technology Center
