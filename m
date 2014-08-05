@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbaHEO0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 10:26:25 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:23339 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671AbaHEO0X (ORCPT
+	id S1753611AbaHEO1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 10:27:12 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:46444 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090AbaHEO1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 10:26:23 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-7e-53e0e98dd720
-Message-id: <53E0E98F.5020706@samsung.com>
-Date: Tue, 05 Aug 2014 16:26:23 +0200
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.0
+	Tue, 5 Aug 2014 10:27:11 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-c7-53e0e9bde667
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Nicolas Pitre <nico@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: remove unused/deprecated read_cpuid_part_number()
+Date: Tue, 05 Aug 2014 16:27:06 +0200
+Message-id: <2694769.svrdKA2rqt@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
 MIME-version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 0/5] ARM: EXYNOS: cpuidle: fix AFTR mode on boards with
- secure firmware enabled
-References: <1407245666-20016-1-git-send-email-b.zolnierkie@samsung.com>
- <53E0E420.8060207@linaro.org>
-In-reply-to: <53E0E420.8060207@linaro.org>
-Content-type: text/plain; charset=utf-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t/xa7q9Lx8EG3z7y2qxccZ6Vot5n2Ut
-	Xr8wtOhdcJXN4mzTG3aL94eeMVtsenyN1eLyrjlsFp97jzBazDi/j8nizOlLrBYn//QyWqyf
-	8ZrFYuNXDwc+jzvX9rB5bF5S73H732Nmjy1X21k8+rasYvT4vEkugC2KyyYlNSezLLVI3y6B
-	K+Pb3cdsBQc5K75s/s7cwHiIvYuRk0NCwETi4uUbbBC2mMSFe+uBbC4OIYGljBLP/mxkh3A+
-	M0rcv7oQrINXQEti17rLYB0sAqoSnXsvgMXZBIwlNi9fAhYXFQiTePbrIBNEvaDEj8n3WEAG
-	iQj0MEr0d3SAFTELfGaSaJwrAGILC2RIPPp3gQXEFgKyN9x+zApicwIt27ZsDVS9mcSXl4dZ
-	IWx5ic1r3jJPYBSYhWTHLCRls5CULWBkXsUomlqaXFCclJ5rqFecmFtcmpeul5yfu4kREjFf
-	djAuPmZ1iFGAg1GJh9fg9N1gIdbEsuLK3EOMEhzMSiK87LcfBAvxpiRWVqUW5ccXleakFh9i
-	ZOLglGpgDP8dkvTPutN8yzmOr99Z9jY2nddg1I+8nRk84UdQmcKtKOED7GZRLo96tOSNuoKE
-	djxv8X/KeHDPTZEtDQrvWbQMJs8/28Nvm9Lvuqy3+rpbikzpsbksIR2VO/0+LTc4xHCr2qHz
-	E3vIvP9pZYdOXli9yf1bwI3nD3/Y9vb7zl93SuTrKxNzJZbijERDLeai4kQATeUykXYCAAA=
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t9jQd29Lx8EG7y+L2ex6fE1VovLu+aw
+	WUw/9pfNYvOHl2wOLB4tzT1sHneu7WHz2Lyk3uPzJrkAligum5TUnMyy1CJ9uwSujJvTJ7EX
+	NPFWXFq3gbmBsZm7i5GTQ0LAROLs+olMELaYxIV769m6GLk4hASmM0pMnnmXEcJpYZJYdOgM
+	O0gVm4CVxMT2VYwgtoiAnkTzxZlsIDazQKbEkqXPweLCAu4Sb79/B4uzCKhK9D1aDBbnFdCU
+	6Dl5HcwWFfCU2LF9JRtEXFDix+R7LBBz5CX27Z/KCmFrSazfeZxpAiPfLCRls5CUzUJStoCR
+	eRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcDA+k97BuKrB4hCjAAejEg+vgNr9YCHWxLLi
+	ytxDjBIczEoivOy3HwQL8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoE
+	k2Xi4JRqYDQTN9wnXnrkjXne1tYZx7I6VY6FV62WZtpd+yKER2ml8rY6D0+HWXu97v77ZfPQ
+	9k/XlO7zt97Kf9gWtnsh57+wvz1tTiVT9KTEes5bRkvWHfhSpl9dXxvEql+9Tnf3BoWlaj3H
+	uZiT0p4JL7294UPltqg5fz6dDYkRYlZ+r+sS8evH5J3z9imxFGckGmoxFxUnAgD5ox+0QgIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.08.2014 16:03, Daniel Lezcano wrote:
-> On 08/05/2014 03:34 PM, Bartlomiej Zolnierkiewicz wrote:
->> Hi,
->>
->> This patch series adds support for AFTR idle mode on boards with
->> secure firmware enabled and allows EXYNOS cpuidle driver usage on
->> Exynos4x12 SoCs.
->>
->> It has been tested on Trats2 board (using Exynos4412 SoC with secure
->> firmware enabled) on which AFTR mode reduces power consumption by ~12%
->> when EXYNOS cpuidle driver is enabled (in both cases the default
->> exynos_defconfig config is used and CPU1-3 are offlined).
->
-> As a sidenote:
->
-> On my odroid-U2:
->   * 4 cpus online -> 130 mA
->   * 3 cpus online -> 164 mA
->   * 2 cpus online -> 160 mA
->   * 1 cpu online  -> 157 mA
->
-> So were are consuming more when there are unplugged cpu ... any ideas ?
+Commit af040ffc9ba1 ("ARM: make it easier to check the CPU part
+number correctly") has left (now unused in the upstream tree and
+marked as deprecated) read_cpuid_part_number() while changing
+the way it works (using the old function with the definitions will
+now always evaluate as false).  This causes problems with porting
+older code to new kernels as the code compiles (with warnings but
+they are very easy to miss) but it can fail silently or work just
+fine depending on the used hardware.
 
-On which tree are you testing? Current next has ARMCLK down feature 
-enabled. ARMCLK down may stop working after hotunplugging CPU:
-http://www.spinics.net/lists/arm-kernel/msg352890.html
+Remove unused/deprecated read_cpuid_part_number() so developers
+have to update their code during build time instead of running into
+tricky runtime problems later.
 
-That was observed especially on Exynos4212 where ARMCLK down stops 
-working permanently. On Trats2 (Exynos4412) the clock down stopped only 
-a for short period after disabling CPU.
+Please see the commit af040ffc9ba1 for details on how to convert
+your old out-of-tree code to use read_cpuid_part() instead of
+read_cpuid_part_number().
 
-Best regards,
-Krzysztof
+Cc: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+---
+ arch/arm/include/asm/cputype.h |    5 -----
+ 1 file changed, 5 deletions(-)
 
-
+Index: b/arch/arm/include/asm/cputype.h
+===================================================================
+--- a/arch/arm/include/asm/cputype.h	2014-08-04 15:09:30.166988335 +0200
++++ b/arch/arm/include/asm/cputype.h	2014-08-05 15:40:03.793317783 +0200
+@@ -182,11 +182,6 @@ static inline unsigned int __attribute_c
+ 	return read_cpuid_id() & 0xff00fff0;
+ }
+ 
+-static inline unsigned int __attribute_const__ __deprecated read_cpuid_part_number(void)
+-{
+-	return read_cpuid_id() & 0xFFF0;
+-}
+-
+ static inline unsigned int __attribute_const__ xscale_cpu_arch_version(void)
+ {
+ 	return read_cpuid_id() & ARM_CPU_XSCALE_ARCH_MASK;
 
