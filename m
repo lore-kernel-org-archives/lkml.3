@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614AbaHESs4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:48:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52167 "EHLO
+	id S1756619AbaHEStZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:49:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52182 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754439AbaHESOL (ORCPT
+	with ESMTP id S1754416AbaHESOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:11 -0400
+	Tue, 5 Aug 2014 14:14:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.15 31/42] x86, espfix: Make it possible to disable 16-bit support
-Date: Tue,  5 Aug 2014 11:13:45 -0700
-Message-Id: <20140805181321.946115592@linuxfoundation.org>
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 3.15 30/42] x86, espfix: Make espfix64 a Kconfig option, fix UML
+Date: Tue,  5 Aug 2014 11:13:44 -0700
+Message-Id: <20140805181321.910429890@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -30,210 +31,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit 34273f41d57ee8d854dcd2a1d754cbb546cb548f upstream.
+commit 197725de65477bc8509b41388157c1a2283542bb upstream.
 
-Embedded systems, which may be very memory-size-sensitive, are
-extremely unlikely to ever encounter any 16-bit software, so make it
-a CONFIG_EXPERT option to turn off support for any 16-bit software
-whatsoever.
+Make espfix64 a hidden Kconfig option.  This fixes the x86-64 UML
+build which had broken due to the non-existence of init_espfix_bsp()
+in UML: since UML uses its own Kconfig, this option does not appear in
+the UML build.
 
+This also makes it possible to make support for 16-bit segments a
+configuration option, for the people who want to minimize the size of
+the kernel.
+
+Reported-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Richard Weinberger <richard@nod.at>
 Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Kconfig           |   23 ++++++++++++++++++-----
- arch/x86/kernel/entry_32.S |   12 ++++++++++++
- arch/x86/kernel/entry_64.S |    8 ++++++++
- arch/x86/kernel/ldt.c      |    5 +++++
- 4 files changed, 43 insertions(+), 5 deletions(-)
+ arch/x86/Kconfig          |    4 ++++
+ arch/x86/kernel/Makefile  |    2 +-
+ arch/x86/kernel/smpboot.c |    2 +-
+ init/main.c               |    2 +-
+ 4 files changed, 7 insertions(+), 3 deletions(-)
 
 --- a/arch/x86/Kconfig
 +++ b/arch/x86/Kconfig
-@@ -910,14 +910,27 @@ config VM86
- 	default y
- 	depends on X86_32
- 	---help---
--	  This option is required by programs like DOSEMU to run 16-bit legacy
--	  code on X86 processors. It also may be needed by software like
--	  XFree86 to initialize some video cards via BIOS. Disabling this
--	  option saves about 6k.
-+	  This option is required by programs like DOSEMU to run
-+	  16-bit real mode legacy code on x86 processors. It also may
-+	  be needed by software like XFree86 to initialize some video
-+	  cards via BIOS. Disabling this option saves about 6K.
-+
-+config X86_16BIT
-+	bool "Enable support for 16-bit segments" if EXPERT
-+	default y
-+	---help---
-+	  This option is required by programs like Wine to run 16-bit
-+	  protected mode legacy code on x86 processors.  Disabling
-+	  this option saves about 300 bytes on i386, or around 6K text
-+	  plus 16K runtime memory on x86-64,
-+
-+config X86_ESPFIX32
+@@ -915,6 +915,10 @@ config VM86
+ 	  XFree86 to initialize some video cards via BIOS. Disabling this
+ 	  option saves about 6k.
+ 
++config X86_ESPFIX64
 +	def_bool y
-+	depends on X86_16BIT && X86_32
- 
- config X86_ESPFIX64
- 	def_bool y
--	depends on X86_64
-+	depends on X86_16BIT && X86_64
- 
++	depends on X86_64
++
  config TOSHIBA
  	tristate "Toshiba Laptop support"
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -529,6 +529,7 @@ syscall_exit:
- restore_all:
- 	TRACE_IRQS_IRET
- restore_all_notrace:
-+#ifdef CONFIG_X86_ESPFIX32
- 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS, SS and CS
- 	# Warning: PT_OLDSS(%esp) contains the wrong/random values if we
- 	# are returning to the kernel.
-@@ -539,6 +540,7 @@ restore_all_notrace:
- 	cmpl $((SEGMENT_LDT << 8) | USER_RPL), %eax
- 	CFI_REMEMBER_STATE
- 	je ldt_ss			# returning to user-space with LDT SS
-+#endif
- restore_nocheck:
- 	RESTORE_REGS 4			# skip orig_eax/error_code
- irq_return:
-@@ -551,6 +553,7 @@ ENTRY(iret_exc)
- .previous
- 	_ASM_EXTABLE(irq_return,iret_exc)
- 
-+#ifdef CONFIG_X86_ESPFIX32
- 	CFI_RESTORE_STATE
- ldt_ss:
- #ifdef CONFIG_PARAVIRT
-@@ -594,6 +597,7 @@ ldt_ss:
- 	lss (%esp), %esp		/* switch to espfix segment */
- 	CFI_ADJUST_CFA_OFFSET -8
- 	jmp restore_nocheck
-+#endif
- 	CFI_ENDPROC
- ENDPROC(system_call)
- 
-@@ -706,6 +710,7 @@ END(syscall_badsys)
-  * the high word of the segment base from the GDT and swiches to the
-  * normal stack and adjusts ESP with the matching offset.
-  */
-+#ifdef CONFIG_X86_ESPFIX32
- 	/* fixup the stack */
- 	mov GDT_ESPFIX_SS + 4, %al /* bits 16..23 */
- 	mov GDT_ESPFIX_SS + 7, %ah /* bits 24..31 */
-@@ -715,8 +720,10 @@ END(syscall_badsys)
- 	pushl_cfi %eax
- 	lss (%esp), %esp		/* switch to the normal stack segment */
- 	CFI_ADJUST_CFA_OFFSET -8
-+#endif
- .endm
- .macro UNWIND_ESPFIX_STACK
-+#ifdef CONFIG_X86_ESPFIX32
- 	movl %ss, %eax
- 	/* see if on espfix stack */
- 	cmpw $__ESPFIX_SS, %ax
-@@ -727,6 +734,7 @@ END(syscall_badsys)
- 	/* switch to normal stack */
- 	FIXUP_ESPFIX_STACK
- 27:
-+#endif
- .endm
- 
- /*
-@@ -1357,11 +1365,13 @@ END(debug)
- ENTRY(nmi)
- 	RING0_INT_FRAME
- 	ASM_CLAC
-+#ifdef CONFIG_X86_ESPFIX32
- 	pushl_cfi %eax
- 	movl %ss, %eax
- 	cmpw $__ESPFIX_SS, %ax
- 	popl_cfi %eax
- 	je nmi_espfix_stack
-+#endif
- 	cmpl $ia32_sysenter_target,(%esp)
- 	je nmi_stack_fixup
- 	pushl_cfi %eax
-@@ -1401,6 +1411,7 @@ nmi_debug_stack_check:
- 	FIX_STACK 24, nmi_stack_correct, 1
- 	jmp nmi_stack_correct
- 
-+#ifdef CONFIG_X86_ESPFIX32
- nmi_espfix_stack:
- 	/* We have a RING0_INT_FRAME here.
- 	 *
-@@ -1422,6 +1433,7 @@ nmi_espfix_stack:
- 	lss 12+4(%esp), %esp		# back to espfix stack
- 	CFI_ADJUST_CFA_OFFSET -24
- 	jmp irq_return
-+#endif
- 	CFI_ENDPROC
- END(nmi)
- 
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1045,8 +1045,10 @@ irq_return:
- 	 * Are we returning to a stack segment from the LDT?  Note: in
- 	 * 64-bit mode SS:RSP on the exception stack is always valid.
+ 	depends on X86_32
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -29,7 +29,7 @@ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x86
+ obj-y			+= syscall_$(BITS).o vsyscall_gtod.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_64.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
+-obj-$(CONFIG_X86_64)	+= espfix_64.o
++obj-$(CONFIG_X86_ESPFIX64)	+= espfix_64.o
+ obj-$(CONFIG_SYSFS)	+= ksysfs.o
+ obj-y			+= bootflag.o e820.o
+ obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -246,7 +246,7 @@ static void notrace start_secondary(void
+ 	/*
+ 	 * Enable the espfix hack for this CPU
  	 */
+-#ifdef CONFIG_X86_64
 +#ifdef CONFIG_X86_ESPFIX64
- 	testb $4,(SS-RIP)(%rsp)
- 	jnz irq_return_ldt
-+#endif
- 
- irq_return_iret:
- 	INTERRUPT_RETURN
-@@ -1058,6 +1060,7 @@ ENTRY(native_iret)
- 	_ASM_EXTABLE(native_iret, bad_iret)
+ 	init_espfix_ap();
  #endif
  
+--- a/init/main.c
++++ b/init/main.c
+@@ -617,7 +617,7 @@ asmlinkage __visible void __init start_k
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		efi_enter_virtual_mode();
+ #endif
+-#ifdef CONFIG_X86_64
 +#ifdef CONFIG_X86_ESPFIX64
- irq_return_ldt:
- 	pushq_cfi %rax
- 	pushq_cfi %rdi
-@@ -1081,6 +1084,7 @@ irq_return_ldt:
- 	movq %rax,%rsp
- 	popq_cfi %rax
- 	jmp irq_return_iret
-+#endif
- 
- 	.section .fixup,"ax"
- bad_iret:
-@@ -1152,6 +1156,7 @@ END(common_interrupt)
- 	 * modify the stack to make it look like we just entered
- 	 * the #GP handler from user space, similar to bad_iret.
- 	 */
-+#ifdef CONFIG_X86_ESPFIX64
- 	ALIGN
- __do_double_fault:
- 	XCPT_FRAME 1 RDI+8
-@@ -1177,6 +1182,9 @@ __do_double_fault:
- 	retq
- 	CFI_ENDPROC
- END(__do_double_fault)
-+#else
-+# define __do_double_fault do_double_fault
-+#endif
- 
- /*
-  * End of kprobes section
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -229,6 +229,11 @@ static int write_ldt(void __user *ptr, u
- 		}
- 	}
- 
-+	if (!IS_ENABLED(CONFIG_X86_16BIT) && !ldt_info.seg_32bit) {
-+		error = -EINVAL;
-+		goto out_unlock;
-+	}
-+
- 	fill_ldt(&ldt, &ldt_info);
- 	if (oldmode)
- 		ldt.avl = 0;
+ 	/* Should be run before the first non-init thread is created */
+ 	init_espfix_bsp();
+ #endif
 
 
