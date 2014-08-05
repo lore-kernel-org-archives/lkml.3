@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636AbaHESOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:14:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52179 "EHLO
+	id S1754782AbaHESOU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:14:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403AbaHESOK (ORCPT
+	with ESMTP id S1754403AbaHESOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:10 -0400
+	Tue, 5 Aug 2014 14:14:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.15 29/42] x86, espfix: Fix broken header guard
-Date: Tue,  5 Aug 2014 11:13:43 -0700
-Message-Id: <20140805181321.881893273@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.15 20/42] iio: buffer: Fix demux table creation
+Date: Tue,  5 Aug 2014 11:13:34 -0700
+Message-Id: <20140805181321.624370921@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -29,27 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 20b68535cd27183ebd3651ff313afb2b97dac941 upstream.
+commit 61bd55ce1667809f022be88da77db17add90ea4e upstream.
 
-Header guard is #ifndef, not #ifdef...
+When creating the demux table we need to iterate over the selected scan mask for
+the buffer to get the samples which should be copied to destination buffer.
+Right now the code uses the mask which contains all active channels, which means
+the demux table contains entries which causes it to copy all the samples from
+source to destination buffer one by one without doing any demuxing.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/espfix.h |    2 +-
+ drivers/iio/industrialio-buffer.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/espfix.h
-+++ b/arch/x86/include/asm/espfix.h
-@@ -1,4 +1,4 @@
--#ifdef _ASM_X86_ESPFIX_H
-+#ifndef _ASM_X86_ESPFIX_H
- #define _ASM_X86_ESPFIX_H
+--- a/drivers/iio/industrialio-buffer.c
++++ b/drivers/iio/industrialio-buffer.c
+@@ -949,7 +949,7 @@ static int iio_buffer_update_demux(struc
  
- #ifdef CONFIG_X86_64
+ 	/* Now we have the two masks, work from least sig and build up sizes */
+ 	for_each_set_bit(out_ind,
+-			 indio_dev->active_scan_mask,
++			 buffer->scan_mask,
+ 			 indio_dev->masklength) {
+ 		in_ind = find_next_bit(indio_dev->active_scan_mask,
+ 				       indio_dev->masklength,
 
 
