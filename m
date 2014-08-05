@@ -1,123 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713AbaHENvF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 09:51:05 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:54995 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041AbaHENvC (ORCPT
+	id S1753828AbaHENwy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 09:52:54 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:21134 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752530AbaHENwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 09:51:02 -0400
-Message-ID: <53E0E13E.3@linaro.org>
-Date: Tue, 05 Aug 2014 15:50:54 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 5 Aug 2014 09:52:53 -0400
+Message-ID: <53E0E1AE.3050705@fb.com>
+Date: Tue, 5 Aug 2014 09:52:46 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-CC: Tomasz Figa <t.figa@samsung.com>, Sachin Kamat <sachin.kamat@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v5 0/5] ARM: EXYNOS: cpuidle: fix AFTR mode on boards
- with secure firmware enabled
-References: <1407245666-20016-1-git-send-email-b.zolnierkie@samsung.com>
-In-Reply-To: <1407245666-20016-1-git-send-email-b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: btrfs extents related oops.
+References: <20140805012845.GA7836@redhat.com> <20140805015758.GA9831@redhat.com> <53E0E057.1060007@fb.com>
+In-Reply-To: <53E0E057.1060007@fb.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-05_05:2014-08-05,2014-08-05,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.34687855868343e-08 kscore.compositescore=0
+ circleOfTrustscore=112.429318596174 compositescore=0.998981209195878
+ urlsuspect_oldscore=0.998981209195878 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.998981209195878 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1408050177
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2014 03:34 PM, Bartlomiej Zolnierkiewicz wrote:
-> Hi,
->
-> This patch series adds support for AFTR idle mode on boards with
-> secure firmware enabled and allows EXYNOS cpuidle driver usage on
-> Exynos4x12 SoCs.
->
-> It has been tested on Trats2 board (using Exynos4412 SoC with secure
-> firmware enabled) on which AFTR mode reduces power consumption by ~12%
-> when EXYNOS cpuidle driver is enabled (in both cases the default
-> exynos_defconfig config is used and CPU1-3 are offlined).
+On 08/05/2014 09:47 AM, Chris Mason wrote:
+> On 08/04/2014 09:57 PM, Dave Jones wrote:
+>> On Mon, Aug 04, 2014 at 09:28:45PM -0400, Dave Jones wrote:
+>>  > Possibly related to some changes I've been making to my fuzz tester today
+>>  > to operate on the same file from multiple threads.
+>>  > This was on v3.16-829-g98959948a7ba, but probably exists on earlier trees too
+>>  > given the lack of btrfs specific commits so far this merge window.
+>>
+>> reproducer:
+>>
+>> trinity -q -l off -c lseek -c write
+>>
+>> (Things also go very, very bad if you then try to umount that
+>>  partition - endless oopses, too mangled to parse).
+> 
+> So we're fuzzing lseek and btrfs goes crazy?  Looking.
 
-Hi Bartlomiej,
+Ugh, that's wrong in exciting ways.  Thanks Dave, I'll test a patch with
+trinity and get it in.
 
-I tested your patchset on an odroid-u2. When the cpuidle driver is 
-enabled and the cpu1-3 are offlined, the kernel hangs.
-
-If I disable the AFTR state on cpuidle, and offline the 1-3, it works as 
-expected. So there is something wrong with the AFTR on the odroid board.
-
-> Depends on:
-> - next-20140804 branch of linux-next kernel tree
-> - [PATCH v5][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
->    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35262.html)
-> - [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
->    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34282.html)
->
-> Changes since v4:
-> - rebased on top of next-20140804 +
->    [PATCH v5][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
->    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35262.html)
->    [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
->    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34282.html)
-> - call exynos_save_cp15() only on A9 type core (this is needed for the future
->    Exynos3250 SoC support)
->
-> Changes since v3:
-> - rebased on top of next-20140804 +
->    [PATCH v4][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
->    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35192.html)
->    [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
->    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34282.html)
-> - (re-)added patch fixing S5P_CENTRAL_SEQ_OPTION register setup
->
-> Changes since v2:
-> - rebased on top of next-20140708 +
->    [PATCH 5/6] ARM: EXYNOS: Fix suspend/resume sequencies
->    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32809.html)
->    [with rejects fixed]
->    [PATCH 6/6] ARM: EXYNOS: Register cpuidle device only on Exynos4210 and 5250
->    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32808.html)
->    [PATCH 0/2] Firmware-assisted suspend/resume of Exynos SoCs
->    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32991.html)
->    [with rejects fixed in patch #2]
-> - addressed review comments from Tomasz Figa and Daniel Lezcano
->
-> Changes since v1:
-> - synced against next-20140602
-> - added missing Acked-by-s
->
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->
->
-> Bartlomiej Zolnierkiewicz (5):
->    ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_* macros by static inlines
->    ARM: EXYNOS: add AFTR mode support to firmware do_idle method
->    ARM: EXYNOS: cpuidle: add secure firmware support to AFTR mode code
->    ARM: EXYNOS: PM: fix register setup for AFTR mode code
->    ARM: EXYNOS: cpuidle: allow driver usage on Exynos4x12 SoCs
->
->   arch/arm/include/asm/firmware.h |  2 +-
->   arch/arm/mach-exynos/common.h   |  5 ++++
->   arch/arm/mach-exynos/exynos.c   |  4 ++-
->   arch/arm/mach-exynos/firmware.c | 34 ++++++++++++++++-------
->   arch/arm/mach-exynos/pm.c       | 60 ++++++++++++++++++++++++-----------------
->   5 files changed, 70 insertions(+), 35 deletions(-)
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+-chris
