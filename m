@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350AbaHEM7A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 08:59:00 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:34582 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024AbaHEM66 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 08:58:58 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] swiotlb: Make linux/swiotlb.h standalone includable
-Date: Tue,  5 Aug 2014 14:58:51 +0200
-Message-Id: <1407243531-20538-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.4
+	id S1754668AbaHENAe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 09:00:34 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:23395 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754542AbaHENAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 09:00:33 -0400
+X-IronPort-AV: E=Sophos;i="5.01,804,1400025600"; 
+   d="scan'208";a="158864066"
+Message-ID: <53E0D56E.7020205@citrix.com>
+Date: Tue, 5 Aug 2014 14:00:30 +0100
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>, <wei.liu2@citrix.com>
+CC: <konrad.wilk@oracle.com>, <boris.ostrovsky@oracle.com>,
+        <david.vrabel@citrix.com>, <Ian.Campbell@citrix.com>,
+        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: Re: [PATCH] xen-netfront: Fix handling packets on compound pages
+ with skb_segment
+References: <20140801110246.GB17947@zion.uk.xensource.com>	<20140802.153337.1399638752235662112.davem@davemloft.net>	<20140803091110.GA7093@zion.uk.xensource.com> <20140804.152411.1486639478907964423.davem@davemloft.net>
+In-Reply-To: <20140804.152411.1486639478907964423.davem@davemloft.net>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On 04/08/14 23:24, David Miller wrote:
+> From: Wei Liu <wei.liu2@citrix.com>
+> Date: Sun, 3 Aug 2014 10:11:10 +0100
+>
+>> On Sat, Aug 02, 2014 at 03:33:37PM -0700, David Miller wrote:
+>>> From: Wei Liu <wei.liu2@citrix.com>
+>>> Date: Fri, 1 Aug 2014 12:02:46 +0100
+>>>
+>>>> On Thu, Jul 31, 2014 at 01:25:20PM -0700, David Miller wrote:
+>>>>> If you were to have a 64-slot TX queue, you ought to be able to handle
+>>>>> this theoretical 51 slot SKB.
+>>>>
+>>>> There's two problems:
+>>>> 1. IIRC a single page ring has 256 slots, allowing 64 slots packet
+>>>>     yields 4 in-flight packets in worst case.
+>>>> 2. Older netback could not handle this large number of slots and it's
+>>>>     likely to deem the frontend malicious.
+>>>>
+>>>> For #1, we don't actually care that much if guest screws itself by
+>>>> generating 64 slot packets. #2 is more concerning.
+>>>
+>>> How many slots can the older netback handle?
+>>
+>> I listed those two problems in the context "if we were to lift this
+>> limit in the latest net-next tree", so "older netback" actually refers
+>> to netback from 3.10 to 3.16.
+>>
+>> The current implementation allows the number of slots X:
+>>   1. X <= 18, valid packet
+>>   2. 18 < X < fatal_slot_count, dropped
+>>   3. X >= fatal_slot_count, malicious frontend
+>>
+>> fatal_slot_count has default value of 20.
+>
+> Given what I've seen so far, I think the only option is to linearize
+> the packet.
+I think that would have more performance penalty than calling 
+skb_gso_segment, but maybe I'm wrong.
+>
+> BTW, we do have a netdev->gso_max_segs tunable drivers can set, but
+> it might not cover all of the cases you need to handle.
+Indeed. Even a packet with one frag can be too scattered for us.
+>
+> Maybe we can create a similar tunable which triggers
+> skb_needs_linearize() in the transmit path.
+>
+> The advantage of such a tunable is that this can be worked with
+> inside of TCP to avoid creating such packets in the first place.
+>
+> For example, all of the MAX_SKB_FRAGS checks you see in net/ipv4/tcp.c
+> could be replaced with tests against this new tunable in struct netdevice.
+You would need to implement xennet_count_skb_frag_slots and count the 
+slots for every skb heading to a device with this tunable set. And not 
+just for TCP, but for any packet source.
+I think it would be better to check for that tunable in 
+dev_hard_start_xmit, and mask out the GSO bits in 'features' to force 
+segmentation there. That would do essentially the same as this patch, 
+but not in the netfront's start_xmit. One minor flaw is that it does one 
+round of segmentation only, which doesn't handle the theoretical worst case.
 
-This header file uses the enum dma_data_direction and struct page types
-without explicitly including the corresponding header files. This makes
-it rely on the includer to have included the proper headers before.
-
-To fix this, include linux/dma-direction.h and forward-declare struct
-page. The swiotlb_free() function is also annotated __init, therefore
-requires linux/init.h to be included as well.
-
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
-Alternatively rather than include linux/init.h for swiotlb_free() it
-should be possible to simply remove the annotation in the header since
-the implementation already has it and that's where it matters.
-
- include/linux/swiotlb.h | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index e7a018eaf3a2..017fced60242 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -1,10 +1,13 @@
- #ifndef __LINUX_SWIOTLB_H
- #define __LINUX_SWIOTLB_H
- 
-+#include <linux/dma-direction.h>
-+#include <linux/init.h>
- #include <linux/types.h>
- 
- struct device;
- struct dma_attrs;
-+struct page;
- struct scatterlist;
- 
- extern int swiotlb_force;
--- 
-2.0.4
-
+Zoli
