@@ -1,213 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951AbaHERKV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 13:10:21 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:41105 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753AbaHERKT (ORCPT
+	id S1756015AbaHERLV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 13:11:21 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:39304 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754753AbaHERLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 13:10:19 -0400
-Date: Tue, 5 Aug 2014 10:10:15 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-gpio@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [PATCH v2] gpiolib: Provide and export gpiod_export_name
-Message-ID: <20140805171015.GA10236@roeck-us.net>
-References: <1406308367-28758-1-git-send-email-linux@roeck-us.net>
+	Tue, 5 Aug 2014 13:11:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406308367-28758-1-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407252651-3539-1-git-send-email-oded.gabbay@amd.com>
+References: <1407252651-3539-1-git-send-email-oded.gabbay@amd.com>
+Date: Tue, 5 Aug 2014 19:11:18 +0200
+Message-ID: <CANq1E4RNvJ=BeZSGhfZD1rsj+zY9Gm5-pu_24k+35viNDGEdkQ@mail.gmail.com>
+Subject: Re: [PATCH v3 00/23] AMDKFD Kernel Driver
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Oded Gabbay <oded.gabbay@amd.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        David Airlie <airlied@linux.ie>,
+        =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <j.glisse@gmail.com>,
+        Alexander Deucher <alexdeucher@gmail.com>, Andrew.Lewycky@amd.com,
+        michel.daenzer@amd.com, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 10:12:47AM -0700, Guenter Roeck wrote:
-> gpiod_export_name is similar to gpiod_export, but lets the user
-> determine the name used to export a gpio pin.
-> 
-> Currently, the pin name is determined by the chip driver with
-> the 'names' array in the gpio_chip data structure, or it is set
-> to gpioX, where X is the pin number, if no name is provided by
-> the chip driver.
-> 
-> It is, however, desirable to be able to provide the pin name when
-> exporting the pin, for example from platform code. In other words,
-> it would be useful to move the naming decision from the pin provider
-> to the pin consumer. The gpio-pca953x driver provides this capability
-> as part of its platform data. Other drivers could be enhanced in a
-> similar way; however, this is not always possible or easy to accomplish.
-> For example, mfd client drivers such as gpio-ich already use platform
-> data to pass information from the mfd master driver to the client driver.
-> Overloading this platform data to also provide an array of gpio pin names
-> would be a challenge if not impossible.
-> 
-> The alternative to use gpiod_export_link is also not always desirable,
-> since it only creates a named link to a different directory, meaning
-> the named gpio pin is not available in /sys/class/gpio but only
-> in some platform specific directory and thus not as generic as possible
-> and/or useful.
-> 
-> A specific example for a use case is a gpio pin which reports AC power
-> loss to user space. Depending on the platform and platform variant,
-> the pin can be provided by various gpio chip drivers and pin numbers.
-> It would be very desirable to have a well defined location such as
-> /sys/class/gpio/ac_power_loss for this pin, so user space knows where
-> to find the attribute without knowledge of the underlying platform
-> variant or oher hardware details.
-> 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Hi
 
-Any comments / feedback ?
+On Tue, Aug 5, 2014 at 5:30 PM, Oded Gabbay <oded.gabbay@amd.com> wrote:
+> Hi,
+> Here is the v3 patch set of amdkfd.
+>
+> This version contains changes and fixes to code, as agreed on during the review
+> of the v2 patch set.
+>
+> The major changes are:
+>
+> - There are two new module parameters: # of processes and # of queues per
+>   process. The defaults, as agreed on in the v2 review, are 32 and 128
+>   respectively. This sets the default amount of GART address space that amdkfd
+>   requires to 3.5MB (3MB for userspace queues mqds and 0.5MB for other stuff,
+>   such as mqd for kernel queue, hpd for pipelines, etc.)
+>
+> - All the GART address space usage of amdkfd is done inside a single contiguous
+>   buffer that is allocated from system memory, and pinned to the start of the
+>   GART during the startup of amdkfd (which is just after the startup of
+>   radeon). The management of this buffer is done by the radeon sa manager.
+>   This buffer is not evict-able.
+>
+> - Mapping of doorbells is initiated by the userspace lib (by mmap syscall),
+>   instead of initiating it from inside an ioctl (using vm_mmap).
+>
+> - Removed ioctls for exclusive access to performance counters
+>
+> - Added documentation about the QCM (Queue Control Management), apertures and
+>   interfaces between amdkfd and radeon.
+>
+> Two important notes:
+>
+> - The topology patch has not been changed. Look at
+>   http://lists.freedesktop.org/archives/dri-devel/2014-July/065042.html
+>   for my response. I also put my answer as an explanation in the commit msg
+>   of the patch.
 
-Thanks,
-Guenter
+This patchset adds 10.000 lines and contains nearly 0 comments *why*
+stuff is added. Seriously, it is almost impossible to understand what
+you're doing. Can you please include a high-level introduction in the
+[0/X] cover-letter and include it in every series you send? A
+blog-post or something would also be fine. And yes, it's totally ok if
+this is 10k lines of plain-text.
 
-> ---
-> v2: Move name creation completely into gpiod_export().
->     Do not accept NULL name in gpiod_export_name().
-> 
->  Documentation/gpio/sysfs.txt  | 12 ++++++++----
->  drivers/gpio/gpiolib-sysfs.c  | 37 ++++++++++++++++++++++++++++---------
->  include/linux/gpio/consumer.h |  9 +++++++++
->  3 files changed, 45 insertions(+), 13 deletions(-)
-> 
-> diff --git a/Documentation/gpio/sysfs.txt b/Documentation/gpio/sysfs.txt
-> index c2c3a97..e59653a 100644
-> --- a/Documentation/gpio/sysfs.txt
-> +++ b/Documentation/gpio/sysfs.txt
-> @@ -125,7 +125,11 @@ requested using gpio_request():
->  	/* export the GPIO to userspace */
->  	int gpiod_export(struct gpio_desc *desc, bool direction_may_change);
->  
-> -	/* reverse gpio_export() */
-> +	/* export named GPIO to userspace */
-> +	int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
-> +			bool direction_may_change);
-> +
-> +	/* reverse gpiod_export() / gpiod_export_name() */
->  	void gpiod_unexport(struct gpio_desc *desc);
->  
->  	/* create a sysfs link to an exported GPIO node */
-> @@ -136,9 +140,9 @@ requested using gpio_request():
->  	int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value);
->  
->  After a kernel driver requests a GPIO, it may only be made available in
-> -the sysfs interface by gpiod_export(). The driver can control whether the
-> -signal direction may change. This helps drivers prevent userspace code
-> -from accidentally clobbering important system state.
-> +the sysfs interface by gpiod_export() or gpiod_export_name(). The driver
-> +can control whether the signal direction may change. This helps drivers
-> +prevent userspace code from accidentally clobbering important system state.
->  
->  This explicit exporting can help with debugging (by making some kinds
->  of experiments easier), or can provide an always-there interface that's
-> diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
-> index 5f2150b..0c86a0c 100644
-> --- a/drivers/gpio/gpiolib-sysfs.c
-> +++ b/drivers/gpio/gpiolib-sysfs.c
-> @@ -523,13 +523,12 @@ static struct class gpio_class = {
->   *
->   * Returns zero on success, else an error.
->   */
-> -int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
-> +int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
-> +		      bool direction_may_change)
->  {
->  	unsigned long		flags;
->  	int			status;
-> -	const char		*ioname = NULL;
->  	struct device		*dev;
-> -	int			offset;
->  
->  	/* can't export until sysfs is available ... */
->  	if (!gpio_class.p) {
-> @@ -542,6 +541,11 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
->  		return -EINVAL;
->  	}
->  
-> +	if (!ioname) {
-> +		pr_debug("%s: invalid ioname\n", __func__);
-> +		return -EINVAL;
-> +	}
-> +
->  	mutex_lock(&sysfs_lock);
->  
->  	spin_lock_irqsave(&gpio_lock, flags);
-> @@ -560,13 +564,8 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
->  		direction_may_change = false;
->  	spin_unlock_irqrestore(&gpio_lock, flags);
->  
-> -	offset = gpio_chip_hwgpio(desc);
-> -	if (desc->chip->names && desc->chip->names[offset])
-> -		ioname = desc->chip->names[offset];
-> -
->  	dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
-> -			    desc, ioname ? ioname : "gpio%u",
-> -			    desc_to_gpio(desc));
-> +			    desc, ioname, desc_to_gpio(desc));
->  	if (IS_ERR(dev)) {
->  		status = PTR_ERR(dev);
->  		goto fail_unlock;
-> @@ -600,6 +599,26 @@ fail_unlock:
->  	gpiod_dbg(desc, "%s: status %d\n", __func__, status);
->  	return status;
->  }
-> +EXPORT_SYMBOL_GPL(gpiod_export_name);
-> +
-> +int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
-> +{
-> +	const char *ioname;
-> +	int offset;
-> +
-> +	if (!desc) {
-> +		pr_debug("%s: invalid gpio descriptor\n", __func__);
-> +		return -EINVAL;
-> +	}
-> +
-> +	offset = gpio_chip_hwgpio(desc);
-> +	if (desc->chip->names && desc->chip->names[offset])
-> +		ioname = desc->chip->names[offset];
-> +	else
-> +		ioname = "gpio%u";
-> +
-> +	return gpiod_export_name(desc, ioname, direction_may_change);
-> +}
->  EXPORT_SYMBOL_GPL(gpiod_export);
->  
->  static int match_export(struct device *dev, const void *data)
-> diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
-> index 05e53cc..986da3e 100644
-> --- a/include/linux/gpio/consumer.h
-> +++ b/include/linux/gpio/consumer.h
-> @@ -260,6 +260,8 @@ static inline int desc_to_gpio(const struct gpio_desc *desc)
->  #if IS_ENABLED(CONFIG_GPIOLIB) && IS_ENABLED(CONFIG_GPIO_SYSFS)
->  
->  int gpiod_export(struct gpio_desc *desc, bool direction_may_change);
-> +int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
-> +		      bool direction_may_change);
->  int gpiod_export_link(struct device *dev, const char *name,
->  		      struct gpio_desc *desc);
->  int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value);
-> @@ -273,6 +275,13 @@ static inline int gpiod_export(struct gpio_desc *desc,
->  	return -ENOSYS;
->  }
->  
-> +static inline int gpiod_export_name(struct gpio_desc *desc,
-> +				    const char *ioname,
-> +				    bool direction_may_change)
-> +{
-> +	return -ENOSYS;
-> +}
-> +
->  static inline int gpiod_export_link(struct device *dev, const char *name,
->  				    struct gpio_desc *desc)
->  {
-> -- 
+Lets start with the basics:
+
+1) Why do you use kobject directly to expose the topology? Almost no
+other driver does that, why do you use it in amdkfd instead of "struct
+bus" and "struct device"? You totally lack uevent handling, sysfs
+hierarchy integration and more. If you'd use existing infrastructue
+instead of kobject directly, everything would work just fine.
+
+2) What kind of topology is exposed? Is it nested? How deep? How many
+items are usually expected? How does the sysfs tree (`tree
+/sys/..../topology`) look like on your machine? For people without the
+hardware it's nearly impossible to understand how this will look like.
+
+3) How is the interface supposed to be used? I can see one global
+char-dev where you can queue jobs by providing a GPU-ID. Why don't you
+create one char-dev *per* available GPU just like all other interfaces
+do? Why is this a separate thing instead of a drm_minor object that
+can be added per device as a separate interface to KMS and
+render-nodes? Where is the underlying "struct device" for those GPUs?
+
+4) Why is the topology static? FWIW, you allow runtime modifications,
+but I cannot see any notification mechanism for user-space? Again,
+using existing driver-core would provide all that for free.
+
+I really appreciate that you provided code instead of just ideas, but
+please describe why you do things the way they are. And please provide
+examples for people who do not have the hardware.
+
+Thanks
+David
+
+> - There are still some minor code style issues I need to fix. I didn't want
+>   to delay v3 any further but I will publish either v4 with those fixes,
+>   or just relevant patches if the whole patch set will be merged.
+>
+> For people who like to review using git, the v3 patch set is located at:
+> http://cgit.freedesktop.org/~gabbayo/linux/log/?h=kfd-next-3.17-v3
+>
+> In addition, I would like to announce that we have uploaded the userspace lib
+> that accompanies amdkfd. That lib is called "libhsakmt" and you can view it at:
+> http://cgit.freedesktop.org/~gabbayo/libhsakmt
+>
+> Alexey Skidanov (1):
+>   amdkfd: Implement the Get Process Aperture IOCTL
+>
+> Andrew Lewycky (3):
+>   amdkfd: Add basic modules to amdkfd
+>   amdkfd: Add interrupt handling module
+>   amdkfd: Implement the Set Memory Policy IOCTL
+>
+> Ben Goz (8):
+>   amdkfd: Add queue module
+>   amdkfd: Add mqd_manager module
+>   amdkfd: Add kernel queue module
+>   amdkfd: Add module parameter of scheduling policy
+>   amdkfd: Add packet manager module
+>   amdkfd: Add process queue manager module
+>   amdkfd: Add device queue manager module
+>   amdkfd: Implement the create/destroy/update queue IOCTLs
+>
+> Evgeny Pinchuk (2):
+>   amdkfd: Add topology module to amdkfd
+>   amdkfd: Implement the Get Clock Counters IOCTL
+>
+> Oded Gabbay (9):
+>   drm/radeon: reduce number of free VMIDs and pipes in KV
+>   drm/radeon/cik: Don't touch int of pipes 1-7
+>   drm/radeon: Report doorbell configuration to amdkfd
+>   drm/radeon: adding synchronization for GRBM GFX
+>   drm/radeon: Add radeon <--> amdkfd interface
+>   Update MAINTAINERS and CREDITS files with amdkfd info
+>   amdkfd: Add IOCTL set definitions of amdkfd
+>   amdkfd: Add amdkfd skeleton driver
+>   amdkfd: Add binding/unbinding calls to amd_iommu driver
+>
+>  CREDITS                                            |    7 +
+>  MAINTAINERS                                        |   10 +
+>  drivers/gpu/drm/radeon/Kconfig                     |    2 +
+>  drivers/gpu/drm/radeon/Makefile                    |    3 +
+>  drivers/gpu/drm/radeon/amdkfd/Kconfig              |   10 +
+>  drivers/gpu/drm/radeon/amdkfd/Makefile             |   14 +
+>  drivers/gpu/drm/radeon/amdkfd/cik_regs.h           |  220 ++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_aperture.c       |  350 ++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c        |  511 +++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_crat.h           |  294 +++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_device.c         |  300 +++++
+>  .../drm/radeon/amdkfd/kfd_device_queue_manager.c   |  989 ++++++++++++++++
+>  .../drm/radeon/amdkfd/kfd_device_queue_manager.h   |  144 +++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_doorbell.c       |  236 ++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_interrupt.c      |  161 +++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_kernel_queue.c   |  330 ++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_kernel_queue.h   |   66 ++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_module.c         |  147 +++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c    |  305 +++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h    |   88 ++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_packet_manager.c |  495 ++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_pasid.c          |   95 ++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_pm4_headers.h    |  682 +++++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_pm4_opcodes.h    |  107 ++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_priv.h           |  560 +++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_process.c        |  347 ++++++
+>  .../drm/radeon/amdkfd/kfd_process_queue_manager.c  |  346 ++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_queue.c          |   85 ++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_topology.c       | 1207 ++++++++++++++++++++
+>  drivers/gpu/drm/radeon/amdkfd/kfd_topology.h       |  168 +++
+>  drivers/gpu/drm/radeon/cik.c                       |  154 +--
+>  drivers/gpu/drm/radeon/cik_reg.h                   |   65 ++
+>  drivers/gpu/drm/radeon/cikd.h                      |   53 +-
+>  drivers/gpu/drm/radeon/radeon.h                    |   10 +
+>  drivers/gpu/drm/radeon/radeon_device.c             |   32 +
+>  drivers/gpu/drm/radeon/radeon_drv.c                |    5 +
+>  drivers/gpu/drm/radeon/radeon_kfd.c                |  525 +++++++++
+>  drivers/gpu/drm/radeon/radeon_kfd.h                |  177 +++
+>  drivers/gpu/drm/radeon/radeon_kms.c                |    7 +
+>  include/uapi/linux/kfd_ioctl.h                     |  126 ++
+>  40 files changed, 9338 insertions(+), 95 deletions(-)
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/Kconfig
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/Makefile
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/cik_regs.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_aperture.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_crat.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_device.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_device_queue_manager.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_device_queue_manager.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_doorbell.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_interrupt.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_kernel_queue.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_kernel_queue.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_module.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_packet_manager.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_pasid.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_pm4_headers.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_pm4_opcodes.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_process.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_process_queue_manager.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_queue.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_topology.c
+>  create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_topology.h
+>  create mode 100644 drivers/gpu/drm/radeon/radeon_kfd.c
+>  create mode 100644 drivers/gpu/drm/radeon/radeon_kfd.h
+>  create mode 100644 include/uapi/linux/kfd_ioctl.h
+>
+> --
 > 1.9.1
-> 
-> 
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
