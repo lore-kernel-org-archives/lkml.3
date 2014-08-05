@@ -1,91 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190AbaHEXzU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 19:55:20 -0400
-Received: from ring0.de ([5.45.105.125]:41809 "EHLO ring0.de"
+	id S1753841AbaHEX6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 19:58:55 -0400
+Received: from ozlabs.org ([103.22.144.67]:50127 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751217AbaHEXzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 19:55:18 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.1 DKIM_VALID_AU Message has a valid DKIM or DK signature from author's
-	*       domain
-	*  0.1 DKIM_SIGNED Message has a DKIM or DK signature, not necessarily
-	*      valid
-	* -0.1 DKIM_VALID Message has at least one valid DKIM or DK signature
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Wed, 6 Aug 2014 01:55:10 +0200
-From: Sebastian Reichel <sre@ring0.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] HSI changes for 3.17
-Message-ID: <20140805235510.GB4157@earth.universe>
+	id S1751179AbaHEX6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 19:58:53 -0400
+Date: Wed, 6 Aug 2014 09:58:45 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bob picco <bpicco@meloft.net>
+Subject: linux-next: manual merge of the sparc-next tree with the sparc tree
+Message-ID: <20140806095845.25491f00@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="qlTNgmc+xy1dBmNv"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/1pFgn4189QotAELIPQ12rP/"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/1pFgn4189QotAELIPQ12rP/
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
---qlTNgmc+xy1dBmNv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi David,
 
-The following changes since commit b357d7b58f379ebe8038cd97b6204f2f5c52220d:
+Today's linux-next merge of the sparc-next tree got a conflict in
+arch/sparc/mm/init_64.c between commit 4ca9a23765da ("sparc64: Guard
+against flushing openfirmware mappings") from the sparc tree and commit
+f6d4fb5cc047 ("sparc64 - add mem to iomem resource") from the
+sparc-next tree.
 
-  hsi: omap_ssi_port: use normal module refcounting (2014-06-05 00:59:05 +0200)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-are available in the git repository at:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sre/linux-hsi.git tags/hsi-for-3.17
+diff --cc arch/sparc/mm/init_64.c
+index 2cfb0f25e0ed,9f4f532e2627..000000000000
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@@ -2708,25 -2701,66 +2709,89 @@@ void hugetlb_setup(struct pt_regs *regs
+  }
+  #endif
+ =20
+ +#ifdef CONFIG_SMP
+ +#define do_flush_tlb_kernel_range	smp_flush_tlb_kernel_range
+ +#else
+ +#define do_flush_tlb_kernel_range	__flush_tlb_kernel_range
+ +#endif
+ +
+ +void flush_tlb_kernel_range(unsigned long start, unsigned long end)
+ +{
+ +	if (start < HI_OBP_ADDRESS && end > LOW_OBP_ADDRESS) {
+ +		if (start < LOW_OBP_ADDRESS) {
+ +			flush_tsb_kernel_range(start, LOW_OBP_ADDRESS);
+ +			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
+ +		}
+ +		if (end > HI_OBP_ADDRESS) {
+ +			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
+ +			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
+ +		}
+ +	} else {
+ +		flush_tsb_kernel_range(start, end);
+ +		do_flush_tlb_kernel_range(start, end);
+ +	}
+ +}
+++
++ static struct resource code_resource =3D {
++ 	.name	=3D "Kernel code",
++ 	.flags	=3D IORESOURCE_BUSY | IORESOURCE_MEM
++ };
++=20
++ static struct resource data_resource =3D {
++ 	.name	=3D "Kernel data",
++ 	.flags	=3D IORESOURCE_BUSY | IORESOURCE_MEM
++ };
++=20
++ static struct resource bss_resource =3D {
++ 	.name	=3D "Kernel bss",
++ 	.flags	=3D IORESOURCE_BUSY | IORESOURCE_MEM
++ };
++=20
++ static inline resource_size_t compute_kern_paddr(void *addr)
++ {
++ 	return (resource_size_t) (addr - KERNBASE + kern_base);
++ }
++=20
++ static void __init kernel_lds_init(void)
++ {
++ 	code_resource.start =3D compute_kern_paddr(_text);
++ 	code_resource.end   =3D compute_kern_paddr(_etext - 1);
++ 	data_resource.start =3D compute_kern_paddr(_etext);
++ 	data_resource.end   =3D compute_kern_paddr(_edata - 1);
++ 	bss_resource.start  =3D compute_kern_paddr(__bss_start);
++ 	bss_resource.end    =3D compute_kern_paddr(_end - 1);
++ }
++=20
++ static int __init report_memory(void)
++ {
++ 	int i;
++ 	struct resource *res;
++=20
++ 	kernel_lds_init();
++=20
++ 	for (i =3D 0; i < pavail_ents; i++) {
++ 		res =3D kzalloc(sizeof(struct resource), GFP_KERNEL);
++=20
++ 		if (!res) {
++ 			pr_warn("Failed to allocate source.\n");
++ 			break;
++ 		}
++=20
++ 		res->name =3D "System RAM";
++ 		res->start =3D pavail[i].phys_addr;
++ 		res->end =3D pavail[i].phys_addr + pavail[i].reg_size - 1;
++ 		res->flags =3D IORESOURCE_BUSY | IORESOURCE_MEM;
++=20
++ 		if (insert_resource(&iomem_resource, res) < 0) {
++ 			pr_warn("Resource insertion failed.\n");
++ 			break;
++ 		}
++=20
++ 		insert_resource(res, &code_resource);
++ 		insert_resource(res, &data_resource);
++ 		insert_resource(res, &bss_resource);
++ 	}
++=20
++ 	return 0;
++ }
++ device_initcall(report_memory);
 
-for you to fetch changes up to 3fd276e9c0d75538c3b5ed96d0ce36d227fdca95:
-
-  HSI: omap_ssi: Fix return value check in ssi_debug_add_ctrl() (2014-07-31 00:20:33 +0200)
-
-----------------------------------------------------------------
-HSI changes for the v3.17 series
-
- * misc. fixes in SSI related drivers
-
-----------------------------------------------------------------
-Andrey Utkin (1):
-      drivers/hsi/controllers/omap_ssi{,_port}.c: fix failure checks
-
-Wei Yongjun (3):
-      HSI: ssi_protocol: Fix sparse non static symbol warning
-      HSI: omap_ssi_port: Fix return value check in ssi_debug_add_port()
-      HSI: omap_ssi: Fix return value check in ssi_debug_add_ctrl()
-
- drivers/hsi/clients/ssi_protocol.c      |  2 +-
- drivers/hsi/controllers/omap_ssi.c      | 14 +++++++-------
- drivers/hsi/controllers/omap_ssi_port.c | 15 ++++++++-------
- 3 files changed, 16 insertions(+), 15 deletions(-)
-
---qlTNgmc+xy1dBmNv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--Sig_/1pFgn4189QotAELIPQ12rP/
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2
 
-iQIcBAEBCgAGBQJT4W7eAAoJENju1/PIO/qaQFIP/1Ok7lI7Aq+r6MrPYNbGS1rY
-BFPqGJSYMj4oLmmcmT0ldyaFKuCZUtqCYVT6lKFKwVfeggeTKQ69hy46VcmaPPm5
-VbQJVnAKlMj2B3LSNOVcwMpIjA1HlO53VXHpKBaEF8g2ucAxaYHDrpHZiAdclOrO
-0PO2xsLDzZwFpn/gDvo2YG0W4pZGs/UqBOe4kEqvRcOobI9Dd/VVVf2MJ3w1Tb3V
-DLCwOWsqmBBjWykIsVVbnQq8hs6D838qY4S2/rPrg5zB7CA9moGhDGr7Km1QsDGu
-SdNTVw9PNe57mWLWwtYXwrOnS8if/KEm6TIheVZlDqKBI/CeIx3kyq90nTUtACHB
-LhK6S8gOP8vyQMbHx3afmE9jpZuPwAJUhh1IqIWuNIf0QSVWkR3jNpDSsBB4dh++
-KQFhWCpAAG5iGRYIu9d2/qUUapn2Lo0iq9iZ1FE6pwTigs15Uckh+KVKRjq6tBjm
-bUkIoXOMBQ2ItmBVZpjwnSd62/bQXGmY3RfLqMMDbi8z4tR2GBOZuqvQyOyxQ8Ev
-GL2QWzaZGXAByLKw+r+3SooPIIawEDSxXt3NJhe0s1nJdYGYTx32E1wUuS7+0mKc
-l/+nNiYFuD7khPGMJjYP3WaKkH1LLo41IO0D0o4WtgOsAffGJFWyO/oi6oDbHT1j
-aP7Jgz5x83uyg0u3/iax
-=k5Nx
+iQIcBAEBCAAGBQJT4W+6AAoJEMDTa8Ir7ZwVcRYP/j/tqSA20IdbF4t5IPTb2dFa
+vWDKFl+T9YfcjIMRfI2r4r3aOlUu1qiMs+/ssR8Q+ilA12iV9XOgy1n9GQLH9LgL
+cFDIx06X6uUBvL3rZSkjtcRzARW6asdVksui+K9cbtR/fylkhxgkqDIKa112BSwR
+8UGoiH6lgsBG+CsVDtIITXU+MVWx8GWsyi0ycEn5HQTybiC1y1Y9RNYqK2PgHhhk
+sEs/dtlFBhZjJRw+CWI8YyWnq8uj6v5+Cpfx56gF+QKayfZBxBzHZ0fXB9HDyjtr
+LXmcCS03muGQU3Xjjo3v/uSc5q1j4ZeFl3mf1UxBSo1nbgY4QHrBcg9vljcYL13G
+pEdSO2tw63ModKjd7+E4bS6Ez/0T4FvGXe9eEOQnqpK+bx1jcQL+RIfDE5fIn5fR
+Nr9kHVB29f1a8Q09dJluYNQoLBNk/Vv1K4mSutWBfA3HaU0SjJ3USWr+LTdPplJI
+oz/vxQCM7lH6vEltheMSoO8bgJVRyXD7S4ruFPBnbx7fy2bih7AOanj34cHnW0Z7
+qzACODI8ZBz1UhmHWOP9Hkp1p/VMKavwDBMWIH/bN16/e9lI5nf2o7cQHd4n/TVd
+7MCh90vo8vkP6eh4ngIsSWHtn92DLlrArUq+i1+803EHSRMRAjO3wqkXrasCEQ8w
+YNmkV1ZlJDKyZqySnjYT
+=kB8G
 -----END PGP SIGNATURE-----
 
---qlTNgmc+xy1dBmNv--
+--Sig_/1pFgn4189QotAELIPQ12rP/--
