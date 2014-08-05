@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774AbaHESUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:20:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52534 "EHLO
+	id S1755837AbaHESU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:20:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52527 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755359AbaHESOx (ORCPT
+	with ESMTP id S1755185AbaHESOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:53 -0400
+	Tue, 5 Aug 2014 14:14:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Eric Dumazet <edumazet@google.com>, Arnaud Ebalard <arno@natisbad.org>,
-        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 20/27] net: mvneta: increase the 64-bit rx/tx stats out of the hot path
-Date: Tue,  5 Aug 2014 11:14:12 -0700
-Message-Id: <20140805181344.858785873@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 19/27] Revert "mac80211: move "bufferable MMPDU" check to fix AP mode scan"
+Date: Tue,  5 Aug 2014 11:14:11 -0700
+Message-Id: <20140805181344.830645713@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181344.268039690@linuxfoundation.org>
 References: <20140805181344.268039690@linuxfoundation.org>
@@ -31,64 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: willy tarreau <w@1wt.eu>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit dc4277dd41a80fd5f29a90412ea04bc3ba54fbf1 upstream.
+commit 08b9939997df30e42a228e1ecb97f99e9c8ea84e upstream.
 
-Better count packets and bytes in the stack and on 32 bit then
-accumulate them at the end for once. This saves two memory writes
-and two memory barriers per packet. The incoming packet rate was
-increased by 4.7% on the Openblocks AX3 thanks to this.
+This reverts commit 277d916fc2e959c3f106904116bb4f7b1148d47a as it was
+at least breaking iwlwifi by setting the IEEE80211_TX_CTL_NO_PS_BUFFER
+flag in all kinds of interface modes, not only for AP mode where it is
+appropriate.
 
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Reviewed-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Arnaud Ebalard <arno@natisbad.org>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+To avoid reintroducing the original problem, explicitly check for probe
+request frames in the multicast buffering code.
+
+Fixes: 277d916fc2e9 ("mac80211: move "bufferable MMPDU" check to fix AP mode scan")
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/net/ethernet/marvell/mvneta.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -1354,6 +1354,8 @@ static int mvneta_rx(struct mvneta_port
- {
- 	struct net_device *dev = pp->dev;
- 	int rx_done, rx_filled;
-+	u32 rcvd_pkts = 0;
-+	u32 rcvd_bytes = 0;
+---
+ net/mac80211/tx.c |   27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
+
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -398,6 +398,9 @@ ieee80211_tx_h_multicast_ps_buf(struct i
+ 	if (ieee80211_has_order(hdr->frame_control))
+ 		return TX_CONTINUE;
  
- 	/* Get number of received packets */
- 	rx_done = mvneta_rxq_busy_desc_num_get(pp, rxq);
-@@ -1391,10 +1393,8 @@ static int mvneta_rx(struct mvneta_port
- 
- 		rx_bytes = rx_desc->data_size -
- 			(ETH_FCS_LEN + MVNETA_MH_SIZE);
--		u64_stats_update_begin(&pp->rx_stats.syncp);
--		pp->rx_stats.packets++;
--		pp->rx_stats.bytes += rx_bytes;
--		u64_stats_update_end(&pp->rx_stats.syncp);
-+		rcvd_pkts++;
-+		rcvd_bytes += rx_bytes;
- 
- 		/* Linux processing */
- 		skb_reserve(skb, MVNETA_MH_SIZE);
-@@ -1415,6 +1415,13 @@ static int mvneta_rx(struct mvneta_port
- 		}
- 	}
- 
-+	if (rcvd_pkts) {
-+		u64_stats_update_begin(&pp->rx_stats.syncp);
-+		pp->rx_stats.packets += rcvd_pkts;
-+		pp->rx_stats.bytes   += rcvd_bytes;
-+		u64_stats_update_end(&pp->rx_stats.syncp);
-+	}
++	if (ieee80211_is_probe_req(hdr->frame_control))
++		return TX_CONTINUE;
 +
- 	/* Update rxq management counters */
- 	mvneta_rxq_desc_num_update(pp, rxq, rx_done, rx_filled);
+ 	/* no stations in PS mode */
+ 	if (!atomic_read(&ps->num_sta_ps))
+ 		return TX_CONTINUE;
+@@ -447,6 +450,7 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
+ {
+ 	struct sta_info *sta = tx->sta;
+ 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
++	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
+ 	struct ieee80211_local *local = tx->local;
  
+ 	if (unlikely(!sta))
+@@ -457,6 +461,15 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
+ 		     !(info->flags & IEEE80211_TX_CTL_NO_PS_BUFFER))) {
+ 		int ac = skb_get_queue_mapping(tx->skb);
+ 
++		/* only deauth, disassoc and action are bufferable MMPDUs */
++		if (ieee80211_is_mgmt(hdr->frame_control) &&
++		    !ieee80211_is_deauth(hdr->frame_control) &&
++		    !ieee80211_is_disassoc(hdr->frame_control) &&
++		    !ieee80211_is_action(hdr->frame_control)) {
++			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
++			return TX_CONTINUE;
++		}
++
+ 		ps_dbg(sta->sdata, "STA %pM aid %d: PS buffer for AC %d\n",
+ 		       sta->sta.addr, sta->sta.aid, ac);
+ 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
+@@ -514,22 +527,8 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
+ static ieee80211_tx_result debug_noinline
+ ieee80211_tx_h_ps_buf(struct ieee80211_tx_data *tx)
+ {
+-	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
+-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
+-
+ 	if (unlikely(tx->flags & IEEE80211_TX_PS_BUFFERED))
+ 		return TX_CONTINUE;
+-
+-	/* only deauth, disassoc and action are bufferable MMPDUs */
+-	if (ieee80211_is_mgmt(hdr->frame_control) &&
+-	    !ieee80211_is_deauth(hdr->frame_control) &&
+-	    !ieee80211_is_disassoc(hdr->frame_control) &&
+-	    !ieee80211_is_action(hdr->frame_control)) {
+-		if (tx->flags & IEEE80211_TX_UNICAST)
+-			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
+-		return TX_CONTINUE;
+-	}
+-
+ 	if (tx->flags & IEEE80211_TX_UNICAST)
+ 		return ieee80211_tx_h_unicast_ps_buf(tx);
+ 	else
 
 
