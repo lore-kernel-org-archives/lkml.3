@@ -1,158 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256AbaHEH3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 03:29:51 -0400
-Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:10512
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S932287AbaHEHaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 03:30:25 -0400
+Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:32754
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756470AbaHEH3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 03:29:49 -0400
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: <broonie@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <timur@tabi.org>,
-        <Li.Xiubo@freescale.com>, <devicetree@vger.kernel.org>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
-        <b42378@freescale.com>, <b02247@freescale.com>
-Subject: [PATCH] ASoC: fsl_sai: Add asynchronous mode support
-Date: Tue, 5 Aug 2014 15:32:05 +0800
-Message-ID: <1407223925-29678-1-git-send-email-nicoleotsuka@gmail.com>
-X-Mailer: git-send-email 1.8.4
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130516973700535240;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009002)(6009001)(199002)(189002)(110136001)(86362001)(81442001)(93916002)(46102001)(73972005)(33646002)(77982001)(26826002)(81542001)(48376002)(104016003)(80022001)(82202001)(50986999)(104166001)(61266001)(97736001)(47776003)(64706001)(87572001)(20776003)(92726001)(21056001)(81342001)(99396002)(107046002)(102836001)(19580405001)(19580395003)(2351001)(31966008)(36756003)(77156001)(6806004)(44976005)(229853001)(81156004)(106466001)(83072002)(85852003)(69596002)(68736004)(105596002)(55446002)(87286001)(87936001)(89996001)(85306004)(4396001)(88136002)(50226001)(84676001)(73392001)(50466002)(95666004)(79102001)(74502001)(74662001)(92566001)(62966002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB356;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+	id S932260AbaHEHaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 03:30:24 -0400
+Date: Tue, 5 Aug 2014 15:30:01 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Shengjiu Wang <shengjiu.wang@freescale.com>
+CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <Guangyu.Chen@freescale.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V1 3/3] ARM: imx6q: Add the clock route from external OSC
+ to ESAI clock
+Message-ID: <20140805073000.GI2167@dragon>
+References: <cover.1407148853.git.shengjiu.wang@freescale.com>
+ <f680e189741811194a8096c933b63a8b5ad83fae.1407148853.git.shengjiu.wang@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <f680e189741811194a8096c933b63a8b5ad83fae.1407148853.git.shengjiu.wang@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(979002)(6009001)(51704005)(189002)(199002)(24454002)(23726002)(4396001)(79102001)(46406003)(50466002)(76482001)(77982001)(46102001)(33716001)(83506001)(47776003)(20776003)(64706001)(80022001)(81342001)(84676001)(81542001)(83322001)(19580395003)(19580405001)(86362001)(21056001)(99396002)(74502001)(50986999)(54356999)(97756001)(97736001)(76176999)(68736004)(69596002)(74662001)(31966008)(105606002)(110136001)(107046002)(83072002)(92566001)(81156004)(106466001)(85852003)(85306004)(104016003)(92726001)(95666004)(26826002)(102836001)(6806004)(44976005)(87936001)(33656002)(57986006)(32563001)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB433;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
 X-Forefront-PRVS: 02945962BD
-Authentication-Results: spf=softfail (sender IP is 192.88.158.2)
- smtp.mailfrom=nicoleotsuka@gmail.com; 
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
+On Mon, Aug 04, 2014 at 07:11:15PM +0800, Shengjiu Wang wrote:
+> This patch mainly adds the clock route from external 24.576MHz OSC to internal
+> ESAI clock via analog clock2 PADs on the SoC and pll4 so that ESAI can get an
+> entirely synchronous clock source against CS42888.
+> 
+> [ 1, We found if using pll4 to generate a 24.576MHz from inernal 24.0MHz OSC,
+>   we would get noise during the audio playback via ESAI->CS42888 even though
+>   this generated clock's rate is equal to the external one statistically. It
+>   might be resulted from the tiny difference between two clock source, which
+>   might be crucial to the sensitive CODEC we use -- CS42888. So we here apply
+>   the old 3.0.35 way to feed ESAI the same clock source as CS42888.
+> 
+>   2, Ideally, we should use bypass mode for pll4 since we only need to get
+>   the raw rate (24.576MHz) while currently bypass mode in clk-pllv3.c isn't
+>   entirely supported: The clock rate would be fixed to 24.0MHz if setting to
+>   bypass, which would cause child clock get an incorrect rate and the driver
+>   who uses the child clock fail to derive a needed clock rate, and it might
+>   be dangerous to involve the clk-pllv3.c driver to this fix. Thus we here
+>   apply 3.0.35 way provisionally. ]
 
-SAI supports these operation modes:
-1) asynchronous mode
-   Both Tx and Rx are set to be asynchronous.
-2) synchronous mode (Rx sync with Tx)
-   Tx is set to be asynchronous, Rx is set to be synchronous.
-3) synchronous mode (Tx sync with Rx)
-   Rx is set to be asynchronous, Tx is set to be synchronous.
-4) synchronous mode (Tx/Rx sync with another SAI's Tx)
-5) synchronous mode (Tx/Rx sync with another SAI's Rx)
+Instead of hacking it around, I consider it's time to properly implement
+PLL bypass mode.  It's essentially just another multiplexer.
 
-* 4) and 5) are beyond this patch because they are related with another SAI.
+Shawn
 
-As the initial version of this SAI driver, it supported 2) as default while
-the others were totally missing.
-
-So this patch just adds supports for 1) and 3).
-
-Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
----
- .../devicetree/bindings/sound/fsl-sai.txt          | 16 ++++++++++++
- sound/soc/fsl/fsl_sai.c                            | 30 +++++++++++++++++++---
- sound/soc/fsl/fsl_sai.h                            |  4 +++
- 3 files changed, 46 insertions(+), 4 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/sound/fsl-sai.txt b/Documentation/devicetree/bindings/sound/fsl-sai.txt
-index 0f4e238..77864f4 100644
---- a/Documentation/devicetree/bindings/sound/fsl-sai.txt
-+++ b/Documentation/devicetree/bindings/sound/fsl-sai.txt
-@@ -24,6 +24,22 @@ Required properties:
- - big-endian-data: If this property is absent, the little endian mode will
-   be in use as default, or the big endian mode will be in use for all the
-   fifo data.
-+- fsl,sai-synchronous-rx: This is a boolean property. If present, indicating
-+  that SAI will work in the synchronous mode (sync Tx with Rx) which means
-+  both the transimitter and receiver will send and receive data by following
-+  receiver's bit clocks and frame sync clocks.
-+- fsl,sai-asynchronous: This is a boolean property. If present, indicating
-+  that SAI will work in the asynchronous mode, which means both transimitter
-+  and receiver will send and receive data by following their own bit clocks
-+  and frame sync clocks separately.
-+
-+Note:
-+- If both fsl,sai-asynchronous and fsl,sai-synchronous-rx are absent, the
-+  default synchronous mode (sync Rx with Tx) will be used, which means both
-+  transimitter and receiver will send and receive data by following clocks
-+  of transimitter.
-+- fsl,sai-asynchronous will be ignored if fsl,sai-synchronous-rx property is
-+  already present.
- 
- Example:
- sai2: sai@40031000 {
-diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
-index 9f10575..dc84f98 100644
---- a/sound/soc/fsl/fsl_sai.c
-+++ b/sound/soc/fsl/fsl_sai.c
-@@ -330,12 +330,14 @@ static int fsl_sai_trigger(struct snd_pcm_substream *substream, int cmd,
- 	u32 xcsr, count = 100;
- 
- 	/*
--	 * The transmitter bit clock and frame sync are to be
--	 * used by both the transmitter and receiver.
-+	 * Asynchronous mode: Clear SYNC for both Tx and Rx.
-+	 * Rx sync with Tx clocks: Clear SYNC for Tx, set it for Rx.
-+	 * Tx sync with Rx clocks: Clear SYNC for Rx, set it for Tx.
- 	 */
--	regmap_update_bits(sai->regmap, FSL_SAI_TCR2, FSL_SAI_CR2_SYNC, 0);
-+	regmap_update_bits(sai->regmap, FSL_SAI_TCR2, FSL_SAI_CR2_SYNC,
-+			   sai->synchronous[TX] ? FSL_SAI_CR2_SYNC : 0);
- 	regmap_update_bits(sai->regmap, FSL_SAI_RCR2, FSL_SAI_CR2_SYNC,
--			   FSL_SAI_CR2_SYNC);
-+			   sai->synchronous[RX] ? FSL_SAI_CR2_SYNC : 0);
- 
- 	/*
- 	 * It is recommended that the transmitter is the last enabled
-@@ -620,6 +622,26 @@ static int fsl_sai_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
-+	/* Sync Tx with Rx as default by following old DT binding */
-+	sai->synchronous[RX] = true;
-+	sai->synchronous[TX] = false;
-+	fsl_sai_dai.symmetric_rates = 1;
-+	fsl_sai_dai.symmetric_channels = 1;
-+	fsl_sai_dai.symmetric_samplebits = 1;
-+
-+	if (of_find_property(np, "fsl,sai-synchronous-rx", NULL)) {
-+		/* Sync Rx with Tx */
-+		sai->synchronous[RX] = false;
-+		sai->synchronous[TX] = true;
-+	} else if (of_find_property(np, "fsl,sai-asynchronous", NULL)) {
-+		/* Discard all settings for asynchronous mode */
-+		sai->synchronous[RX] = false;
-+		sai->synchronous[TX] = false;
-+		fsl_sai_dai.symmetric_rates = 0;
-+		fsl_sai_dai.symmetric_channels = 0;
-+		fsl_sai_dai.symmetric_samplebits = 0;
-+	}
-+
- 	sai->dma_params_rx.addr = res->start + FSL_SAI_RDR;
- 	sai->dma_params_tx.addr = res->start + FSL_SAI_TDR;
- 	sai->dma_params_rx.maxburst = FSL_SAI_MAXBURST_RX;
-diff --git a/sound/soc/fsl/fsl_sai.h b/sound/soc/fsl/fsl_sai.h
-index 0e6c9f5..c24d3fd 100644
---- a/sound/soc/fsl/fsl_sai.h
-+++ b/sound/soc/fsl/fsl_sai.h
-@@ -135,9 +135,13 @@ struct fsl_sai {
- 	bool big_endian_data;
- 	bool is_dsp_mode;
- 	bool sai_on_imx;
-+	bool synchronous[2];
- 
- 	struct snd_dmaengine_dai_dma_data dma_params_rx;
- 	struct snd_dmaengine_dai_dma_data dma_params_tx;
- };
- 
-+#define TX 1
-+#define RX 0
-+
- #endif /* __FSL_SAI_H */
--- 
-1.8.4
-
+> 
+>   Expected result:
+> 
+>   anaclk2                 0           1            24576000
+>    lvds2_in               0           1            24576000
+>     pll4_sel              0           1            24576000
+>      pll4_audio           0           1            786432000
+>       pll4_post_div       0           1            786432000
+>        pll4_audio_div     0           1            786432000
+>         esai_sel          0           1            786432000
+>          esai_pred        0           1            98304000
+>           esai_podf       0           1            24576000
+>            esai           0           1            24576000
+> 
+> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+> Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
+> ---
+>  arch/arm/mach-imx/clk-imx6q.c  |    5 +++++
+>  arch/arm/mach-imx/mach-imx6q.c |   28 ++++++++++++++++++++++++++++
+>  2 files changed, 33 insertions(+)
+> 
+> diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
+> index 927a062..2d3634f 100644
+> --- a/arch/arm/mach-imx/clk-imx6q.c
+> +++ b/arch/arm/mach-imx/clk-imx6q.c
+> @@ -413,6 +413,10 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+>  	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
+>  
+>  	clk_register_clkdev(clk[IMX6QDL_CLK_ENET_REF], "enet_ref", NULL);
+> +	clk_register_clkdev(clk[IMX6QDL_CLK_PLL4_AUDIO_DIV], "pll4_audio_div", NULL);
+> +	clk_register_clkdev(clk[IMX6QDL_CLK_PLL4_SEL], "pll4_sel", NULL);
+> +	clk_register_clkdev(clk[IMX6QDL_CLK_LVDS2_IN], "lvds2_in", NULL);
+> +	clk_register_clkdev(clk[IMX6QDL_CLK_ESAI_EXTAL], "esai_extal", NULL);
+>  
+>  	if ((imx_get_soc_revision() != IMX_CHIP_REVISION_1_0) ||
+>  	    cpu_is_imx6dl()) {
+> @@ -456,6 +460,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+>  
+>  	/* Audio-related clocks configuration */
+>  	clk_set_parent(clk[IMX6QDL_CLK_SPDIF_SEL], clk[IMX6QDL_CLK_PLL3_PFD3_454M]);
+> +	clk_set_parent(clk[IMX6QDL_CLK_ESAI_SEL], clk[IMX6QDL_CLK_PLL4_AUDIO_DIV]);
+>  
+>  	/* All existing boards with PCIe use LVDS1 */
+>  	if (IS_ENABLED(CONFIG_PCI_IMX6))
+> diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+> index d51c6e9..ea24a96 100644
+> --- a/arch/arm/mach-imx/mach-imx6q.c
+> +++ b/arch/arm/mach-imx/mach-imx6q.c
+> @@ -362,6 +362,28 @@ put_node:
+>  	of_node_put(np);
+>  }
+>  
+> +#define ESAI_AUDIO_MCLK 24576000
+> +
+> +static void __init imx6q_audio_lvds2_init(void)
+> +{
+> +        struct clk *pll4_sel, *lvds2_in, *pll4_audio_div, *esai_extal;
+> +
+> +        pll4_audio_div = clk_get_sys(NULL, "pll4_audio_div");
+> +        pll4_sel = clk_get_sys(NULL, "pll4_sel");
+> +        lvds2_in = clk_get_sys(NULL, "lvds2_in");
+> +        esai_extal = clk_get_sys(NULL, "esai_extal");
+> +        if (IS_ERR(pll4_audio_div) || IS_ERR(pll4_sel) ||
+> +            IS_ERR(lvds2_in) || IS_ERR(esai_extal))
+> +                return;
+> +
+> +        if (clk_get_rate(lvds2_in) != ESAI_AUDIO_MCLK)
+> +                return;
+> +
+> +        clk_set_parent(pll4_sel, lvds2_in);
+> +        clk_set_rate(pll4_audio_div, 786432000);
+> +        clk_set_rate(esai_extal, ESAI_AUDIO_MCLK);
+> +}
+> +
+>  static struct platform_device imx6q_cpufreq_pdev = {
+>  	.name = "imx6q-cpufreq",
+>  };
+> @@ -379,6 +401,12 @@ static void __init imx6q_init_late(void)
+>  		imx6q_opp_init();
+>  		platform_device_register(&imx6q_cpufreq_pdev);
+>  	}
+> +
+> +	if (of_machine_is_compatible("fsl,imx6q-sabreauto")
+> +		|| of_machine_is_compatible("fsl,imx6dl-sabreauto")) {
+> +		imx6q_audio_lvds2_init();
+> +	}
+> +
+>  }
+>  
+>  static void __init imx6q_map_io(void)
+> -- 
+> 1.7.9.5
+> 
