@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144AbaHESaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:30:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52708 "EHLO
+	id S932197AbaHESdE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:33:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52757 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756348AbaHES3z (ORCPT
+	with ESMTP id S932139AbaHESaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:29:55 -0400
+	Tue, 5 Aug 2014 14:30:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.4 12/19] x86, espfix: Make it possible to disable 16-bit support
-Date: Tue,  5 Aug 2014 11:29:36 -0700
-Message-Id: <20140805182934.403928412@linuxfoundation.org>
+        Sabrina Dubroca <sd@queasysnail.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Weilong Chen <chenweilong@huawei.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.4 19/19] ipv6: reallocate addrconf router for ipv6 address when lo device up
+Date: Tue,  5 Aug 2014 11:29:43 -0700
+Message-Id: <20140805182934.619752104@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805182934.022406678@linuxfoundation.org>
 References: <20140805182934.022406678@linuxfoundation.org>
@@ -28,212 +32,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-commit 34273f41d57ee8d854dcd2a1d754cbb546cb548f upstream.
+commit 33d99113b1102c2d2f8603b9ba72d89d915c13f5 upstream.
 
-Embedded systems, which may be very memory-size-sensitive, are
-extremely unlikely to ever encounter any 16-bit software, so make it
-a CONFIG_EXPERT option to turn off support for any 16-bit software
-whatsoever.
+commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f
+"net IPv6 : Fix broken IPv6 routing table after loopback down-up"
+allocates addrconf router for ipv6 address when lo device up.
+but commit a881ae1f625c599b460cc8f8a7fcb1c438f699ad
+"ipv6:don't call addrconf_dst_alloc again when enable lo" breaks
+this behavior.
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
+Since the addrconf router is moved to the garbage list when
+lo device down, we should release this router and rellocate
+a new one for ipv6 address when lo device up.
+
+This patch solves bug 67951 on bugzilla
+https://bugzilla.kernel.org/show_bug.cgi?id=67951
+
+change from v1:
+use ip6_rt_put to repleace ip6_del_rt, thanks Hannes!
+change code style, suggested by Sergei.
+
+CC: Sabrina Dubroca <sd@queasysnail.net>
+CC: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Reported-by: Weilong Chen <chenweilong@huawei.com>
+Signed-off-by: Weilong Chen <chenweilong@huawei.com>
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[weilong: s/ip6_rt_put/dst_release]
+Signed-off-by: Chen Weilong <chenweilong@huawei.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Kconfig           |   23 ++++++++++++++++++-----
- arch/x86/kernel/entry_32.S |   12 ++++++++++++
- arch/x86/kernel/entry_64.S |    8 ++++++++
- arch/x86/kernel/ldt.c      |    5 +++++
- 4 files changed, 43 insertions(+), 5 deletions(-)
+ net/ipv6/addrconf.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -915,14 +915,27 @@ config VM86
- 	default y
- 	depends on X86_32
- 	---help---
--	  This option is required by programs like DOSEMU to run 16-bit legacy
--	  code on X86 processors. It also may be needed by software like
--	  XFree86 to initialize some video cards via BIOS. Disabling this
--	  option saves about 6k.
-+	  This option is required by programs like DOSEMU to run
-+	  16-bit real mode legacy code on x86 processors. It also may
-+	  be needed by software like XFree86 to initialize some video
-+	  cards via BIOS. Disabling this option saves about 6K.
-+
-+config X86_16BIT
-+	bool "Enable support for 16-bit segments" if EXPERT
-+	default y
-+	---help---
-+	  This option is required by programs like Wine to run 16-bit
-+	  protected mode legacy code on x86 processors.  Disabling
-+	  this option saves about 300 bytes on i386, or around 6K text
-+	  plus 16K runtime memory on x86-64,
-+
-+config X86_ESPFIX32
-+	def_bool y
-+	depends on X86_16BIT && X86_32
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2438,8 +2438,18 @@ static void init_loopback(struct net_dev
+ 			if (sp_ifa->flags & (IFA_F_DADFAILED | IFA_F_TENTATIVE))
+ 				continue;
  
- config X86_ESPFIX64
- 	def_bool y
--	depends on X86_64
-+	depends on X86_16BIT && X86_64
+-			if (sp_ifa->rt)
+-				continue;
++			if (sp_ifa->rt) {
++				/* This dst has been added to garbage list when
++				 * lo device down, release this obsolete dst and
++				 * reallocate a new router for ifa.
++				 */
++				if (sp_ifa->rt->dst.obsolete > 0) {
++					dst_release(sp_ifa->rt);
++					sp_ifa->rt = NULL;
++				} else {
++					continue;
++				}
++			}
  
- config TOSHIBA
- 	tristate "Toshiba Laptop support"
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -525,6 +525,7 @@ syscall_exit:
- restore_all:
- 	TRACE_IRQS_IRET
- restore_all_notrace:
-+#ifdef CONFIG_X86_ESPFIX32
- 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS, SS and CS
- 	# Warning: PT_OLDSS(%esp) contains the wrong/random values if we
- 	# are returning to the kernel.
-@@ -535,6 +536,7 @@ restore_all_notrace:
- 	cmpl $((SEGMENT_LDT << 8) | USER_RPL), %eax
- 	CFI_REMEMBER_STATE
- 	je ldt_ss			# returning to user-space with LDT SS
-+#endif
- restore_nocheck:
- 	RESTORE_REGS 4			# skip orig_eax/error_code
- irq_return:
-@@ -550,6 +552,7 @@ ENTRY(iret_exc)
- 	.long irq_return,iret_exc
- .previous
+ 			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
  
-+#ifdef CONFIG_X86_ESPFIX32
- 	CFI_RESTORE_STATE
- ldt_ss:
- #ifdef CONFIG_PARAVIRT
-@@ -593,6 +596,7 @@ ldt_ss:
- 	lss (%esp), %esp		/* switch to espfix segment */
- 	CFI_ADJUST_CFA_OFFSET -8
- 	jmp restore_nocheck
-+#endif
- 	CFI_ENDPROC
- ENDPROC(system_call)
- 
-@@ -766,6 +770,7 @@ ENDPROC(ptregs_clone)
-  * the high word of the segment base from the GDT and swiches to the
-  * normal stack and adjusts ESP with the matching offset.
-  */
-+#ifdef CONFIG_X86_ESPFIX32
- 	/* fixup the stack */
- 	mov GDT_ESPFIX_SS + 4, %al /* bits 16..23 */
- 	mov GDT_ESPFIX_SS + 7, %ah /* bits 24..31 */
-@@ -775,8 +780,10 @@ ENDPROC(ptregs_clone)
- 	pushl_cfi %eax
- 	lss (%esp), %esp		/* switch to the normal stack segment */
- 	CFI_ADJUST_CFA_OFFSET -8
-+#endif
- .endm
- .macro UNWIND_ESPFIX_STACK
-+#ifdef CONFIG_X86_ESPFIX32
- 	movl %ss, %eax
- 	/* see if on espfix stack */
- 	cmpw $__ESPFIX_SS, %ax
-@@ -787,6 +794,7 @@ ENDPROC(ptregs_clone)
- 	/* switch to normal stack */
- 	FIXUP_ESPFIX_STACK
- 27:
-+#endif
- .endm
- 
- /*
-@@ -1318,11 +1326,13 @@ END(debug)
-  */
- ENTRY(nmi)
- 	RING0_INT_FRAME
-+#ifdef CONFIG_X86_ESPFIX32
- 	pushl_cfi %eax
- 	movl %ss, %eax
- 	cmpw $__ESPFIX_SS, %ax
- 	popl_cfi %eax
- 	je nmi_espfix_stack
-+#endif
- 	cmpl $ia32_sysenter_target,(%esp)
- 	je nmi_stack_fixup
- 	pushl_cfi %eax
-@@ -1362,6 +1372,7 @@ nmi_debug_stack_check:
- 	FIX_STACK 24, nmi_stack_correct, 1
- 	jmp nmi_stack_correct
- 
-+#ifdef CONFIG_X86_ESPFIX32
- nmi_espfix_stack:
- 	/* We have a RING0_INT_FRAME here.
- 	 *
-@@ -1383,6 +1394,7 @@ nmi_espfix_stack:
- 	lss 12+4(%esp), %esp		# back to espfix stack
- 	CFI_ADJUST_CFA_OFFSET -24
- 	jmp irq_return
-+#endif
- 	CFI_ENDPROC
- END(nmi)
- 
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -904,8 +904,10 @@ irq_return:
- 	 * Are we returning to a stack segment from the LDT?  Note: in
- 	 * 64-bit mode SS:RSP on the exception stack is always valid.
- 	 */
-+#ifdef CONFIG_X86_ESPFIX64
- 	testb $4,(SS-RIP)(%rsp)
- 	jnz irq_return_ldt
-+#endif
- 
- irq_return_iret:
- 	INTERRUPT_RETURN
-@@ -923,6 +925,7 @@ ENTRY(native_iret)
- 	.previous
- #endif
- 
-+#ifdef CONFIG_X86_ESPFIX64
- irq_return_ldt:
- 	pushq_cfi %rax
- 	pushq_cfi %rdi
-@@ -946,6 +949,7 @@ irq_return_ldt:
- 	movq %rax,%rsp
- 	popq_cfi %rax
- 	jmp irq_return_iret
-+#endif
- 
- 	.section .fixup,"ax"
- bad_iret:
-@@ -1019,6 +1023,7 @@ END(common_interrupt)
- 	 * modify the stack to make it look like we just entered
- 	 * the #GP handler from user space, similar to bad_iret.
- 	 */
-+#ifdef CONFIG_X86_ESPFIX64
- 	ALIGN
- __do_double_fault:
- 	XCPT_FRAME 1 RDI+8
-@@ -1044,6 +1049,9 @@ __do_double_fault:
- 	retq
- 	CFI_ENDPROC
- END(__do_double_fault)
-+#else
-+# define __do_double_fault do_double_fault
-+#endif
- 
- /*
-  * End of kprobes section
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -229,6 +229,11 @@ static int write_ldt(void __user *ptr, u
- 		}
- 	}
- 
-+	if (!IS_ENABLED(CONFIG_X86_16BIT) && !ldt_info.seg_32bit) {
-+		error = -EINVAL;
-+		goto out_unlock;
-+	}
-+
- 	fill_ldt(&ldt, &ldt_info);
- 	if (oldmode)
- 		ldt.avl = 0;
 
 
