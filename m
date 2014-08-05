@@ -1,49 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831AbaHEUR2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 16:17:28 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:46183 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533AbaHEUR0 (ORCPT
+	id S1753804AbaHEUY1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 16:24:27 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:63996 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585AbaHEUYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 16:17:26 -0400
-From: Lina Iyer <lina.iyer@linaro.org>
-X-Google-Original-From: Lina Iyer <Lina@linaro.org>
-Date: Tue, 5 Aug 2014 14:17:23 -0600 (MDT)
-X-X-Sender: Lina@ilina-mac
-To: Bjorn Andersson <bjorn@kryo.se>
-cc: Lina Iyer <lina.iyer@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 8/8] msm: scm: Move the scm driver to drivers/soc/qcom
-In-Reply-To: <CAJAp7OiXW1A-H4io2kST_Y6LdVP+EYkXoU3GaWTRt_+CyXruQA@mail.gmail.com>
-Message-ID: <alpine.OSX.2.03.1408051415360.89254@linaro.org>
-References: <1407202310-3359-1-git-send-email-sboyd@codeaurora.org> <1407202310-3359-9-git-send-email-sboyd@codeaurora.org> <alpine.OSX.2.03.1408042203100.87047@linaro.org> <CAJAp7OiXW1A-H4io2kST_Y6LdVP+EYkXoU3GaWTRt_+CyXruQA@mail.gmail.com>
-User-Agent: Alpine 2.03 (OSX 1266 2009-07-14)
+	Tue, 5 Aug 2014 16:24:25 -0400
+X-CheckPoint: {53E13D79-9-2100090A-C0000000}
+Message-ID: <53E13D78.6000903@tilera.com>
+Date: Tue, 5 Aug 2014 16:24:24 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "David S. Miller" <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch: tile: gxio: mpipe.c:  Cleaning up missing null-terminate
+ in conjunction with strncpy
+References: <1406383386-1400-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1406383386-1400-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.9.0.23]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 7/26/2014 10:03 AM, Rickard Strandqvist wrote:
+> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+
+While using strlcpy() instead of strncpy() and an explicit NUL termination
+is obviously an improvement, on reflection it doesn't feel like the best
+solution here - and likely in many similar APIs.  A partial string argument
+should not be passed on to other components; it's just an error by
+definition and should be treated that way.  While we could check the
+strlcpy() return value explicitly against the length, this is somewhat
+awkward as it requires naming the length twice, and also means we end
+up doing the copy pointlessly if we're about to return an error anyway.
+
+The following change includes Yet Another String Copy function; this may
+or may not be a fabulous idea, but at least it encapsulates the error
+checking in a way that seems like it makes the call sites cleaner.
 
 
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Tue, 5 Aug 2014 16:16:13 -0400
+Subject: [PATCH] tile: avoid errors from truncating long strings in mpipe gxio
 
-On Tue, 5 Aug 2014, Bjorn Andersson wrote:
+Using strncpy() will just silently truncate long strings; we should
+instead return an appropriate error.  Using strlcpy() would suffer from
+the same problem.  Instead, use strlen()+memcpy(), and add an
+error-checking step to make sure the lengths are reasonable.
 
-> On Mon, Aug 4, 2014 at 9:07 PM, Lina Iyer <lina.iyer@linaro.org> wrote:
-> > On Mon, 4 Aug 2014, Stephen Boyd wrote:
-> [...]
-> > Could we move scm-boot.c as well to drivers/soc/qcom and scm-boot.h to include/soc/qcom ?
-> 
-> Yes, we can do that.
-> 
-> But as of now we seem to only have one caller of this wrapper, so
-> maybe we could move the functionality into platsmp.c and drop the file
-> instead?
-I am working on cpuidle drivers for QCOM targets and would very much
-like the scm-boot to be accessible from drivers/soc/qcom.
+I called the convenience wrapper strscpy(), and a case could be made for
+making it more generic (possibly with a better name), but that seems
+outside the scope of this initial commit.
+
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+  arch/tile/gxio/mpipe.c | 30 +++++++++++++++++++++++++-----
+  1 file changed, 25 insertions(+), 5 deletions(-)
+
+diff --git a/arch/tile/gxio/mpipe.c b/arch/tile/gxio/mpipe.c
+index 5301a9ffbae1..8b3c201dfdb7 100644
+--- a/arch/tile/gxio/mpipe.c
++++ b/arch/tile/gxio/mpipe.c
+@@ -29,6 +29,25 @@
+  /* HACK: Avoid pointless "shadow" warnings. */
+  #define link link_shadow
+
++/*
++ * Use this routine to avoid copying too-long strings.  Unlike strncpy
++ * or strlcpy, we don't enable programmers who don't check return codes;
++ * partially-copied strings can be problematic.  The routine returns
++ * the total number of bytes copied (including the trailing NUL) or
++ * zero if the buffer wasn't big enough.
++ */
++static size_t strscpy(char *dest, const char *src, size_t size)
++{
++       size_t ret = strlen(src) + 1;
++       if (ret > size) {
++               if (size)
++                       dest[0] = '\0';
++               return 0;
++       }
++       memcpy(dest, src, ret);
++       return ret;
++}
++
+  int gxio_mpipe_init(gxio_mpipe_context_t *context, unsigned int mpipe_index)
+  {
+         char file[32];
+@@ -511,8 +530,8 @@ int gxio_mpipe_link_instance(const char *link_name)
+         if (!context)
+                 return GXIO_ERR_NO_DEVICE;
+
+-       strncpy(name.name, link_name, sizeof(name.name));
+-       name.name[GXIO_MPIPE_LINK_NAME_LEN - 1] = '\0';
++       if (strscpy(name.name, link_name, sizeof(name.name)) == 0)
++               return GXIO_ERR_NO_DEVICE;
+
+         return gxio_mpipe_info_instance_aux(context, name);
+  }
+@@ -529,7 +548,8 @@ int gxio_mpipe_link_enumerate_mac(int idx, char *link_name, uint8_t *link_mac)
+
+         rv = gxio_mpipe_info_enumerate_aux(context, idx, &name, &mac);
+         if (rv >= 0) {
+-               strncpy(link_name, name.name, sizeof(name.name));
++               if (strscpy(link_name, name.name, sizeof(name.name)) == 0)
++                       return GXIO_ERR_INVAL_MEMORY_SIZE;
+                 memcpy(link_mac, mac.mac, sizeof(mac.mac));
+         }
+
+@@ -545,8 +565,8 @@ int gxio_mpipe_link_open(gxio_mpipe_link_t *link,
+         _gxio_mpipe_link_name_t name;
+         int rv;
+
+-       strncpy(name.name, link_name, sizeof(name.name));
+-       name.name[GXIO_MPIPE_LINK_NAME_LEN - 1] = '\0';
++       if (strscpy(name.name, link_name, sizeof(name.name)) == 0)
++               return GXIO_ERR_NO_DEVICE;
+
+         rv = gxio_mpipe_link_open_aux(context, name, flags);
+         if (rv < 0)
+--
+1.8.3.1
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
