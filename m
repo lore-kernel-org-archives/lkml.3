@@ -1,124 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017AbaHENEm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 09:04:42 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:51615 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041AbaHENEk (ORCPT
+	id S1754367AbaHENGi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 09:06:38 -0400
+Received: from domine.madduck.net ([77.109.139.90]:49182 "EHLO
+	domine.madduck.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176AbaHENGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 09:04:40 -0400
+	Tue, 5 Aug 2014 09:06:37 -0400
+Date: Tue, 5 Aug 2014 15:06:32 +0200
+From: "martin f. krafft" <madduck@madduck.net>
+To: Austin S Hemmelgarn <ahferroin7@gmail.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: Disabling physical RAM regions for testing
+Message-ID: <20140805130632.GA18164@fishbowl.rw.madduck.net>
+Mail-Followup-To: Austin S Hemmelgarn <ahferroin7@gmail.com>,
+	linux kernel mailing list <linux-kernel@vger.kernel.org>
+References: <20140805114010.GA14521@fishbowl.rw.madduck.net>
+ <53E0CD59.10003@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1404079773.2619.4.camel@buesod1.americas.hpqcorp.net>
-References: <1403288473.10903.2.camel@buesod1.americas.hpqcorp.net>
-	<20140623065835.GF19860@laptop.programming.kicks-ass.net>
-	<1403622415.15523.4.camel@buesod1.americas.hpqcorp.net>
-	<20140625062510.GB4260@osiris>
-	<CA+55aFx3UQG42cYrUWrTDT9CnpnRwVta6C9N_0FH1wvyDMxPgw@mail.gmail.com>
-	<1404079773.2619.4.camel@buesod1.americas.hpqcorp.net>
-Date: Tue, 5 Aug 2014 15:04:38 +0200
-X-Google-Sender-Auth: -120F7BprIHW_ix0z1W8fET73f8
-Message-ID: <CAMuHMdX2ZCEd=J_Gpf-W+Zyqg27r4C6ULZgO=pg2houR-FXLvg@mail.gmail.com>
-Subject: Re: [PATCH v2] arch,locking: Ciao arch_mutex_cpu_relax()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
+Content-Disposition: inline
+In-Reply-To: <53E0CD59.10003@gmail.com>
+X-Motto: Keep the good times rollin'
+X-OS: Debian GNU/Linux jessie/sid kernel 3.14-1-amd64 x86_64
+X-Spamtrap: madduck.bogus@madduck.net
+X-Subliminal-Message: debian/rules!
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
 
-On Mon, Jun 30, 2014 at 12:09 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> From: Davidlohr Bueso <davidlohr@hp.com>
->
-> The arch_mutex_cpu_relax() function, introduced by 34b133f, is
-> hacky and ugly. It was added a few years ago to address the fact
-> that common cpu_relax() calls include yielding on s390, and thus
-> impact the optimistic spinning functionality of mutexes. Nowadays
-> we use this function well beyond mutexes: rwsem, qrwlock, mcs and
-> lockref. Since the macro that defines the call is in the mutex header,
-> any users must include mutex.h and the naming is misleading as well.
->
-> This patch (i) renames the call to cpu_relax_lowlatency  ("relax, but
-> only if you can do it with very low latency") and (ii) defines it in
-> each arch's asm/processor.h local header, just like for regular cpu_relax
-> functions. On all archs, except s390, cpu_relax_lowlatency is simply cpu_relax,
-> and thus we can take it out of mutex.h. While this can seem redundant,
-> I believe it is a good choice as it allows us to move out arch specific
-> logic from generic locking primitives and enables future(?) archs to
-> transparently define it, similarly to System Z.
->
-> Please note that these changes are only tested on x86-64.
->
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> ---
-> Changes from v1: Rename arch_cpu_relax to cpu_relax_lowlatency,
-> based on the purpose of the function, as suggested by Linus.
->
->  arch/alpha/include/asm/processor.h     | 1 +
->  arch/arc/include/asm/processor.h       | 2 ++
->  arch/arm/include/asm/processor.h       | 2 ++
->  arch/arm64/include/asm/processor.h     | 1 +
->  arch/avr32/include/asm/processor.h     | 1 +
->  arch/blackfin/include/asm/processor.h  | 2 +-
->  arch/c6x/include/asm/processor.h       | 1 +
->  arch/cris/include/asm/processor.h      | 1 +
->  arch/hexagon/include/asm/processor.h   | 1 +
->  arch/ia64/include/asm/processor.h      | 1 +
->  arch/m32r/include/asm/processor.h      | 1 +
->  arch/m68k/include/asm/processor.h      | 1 +
->  arch/metag/include/asm/processor.h     | 1 +
->  arch/mips/include/asm/processor.h      | 1 +
->  arch/mn10300/include/asm/processor.h   | 2 ++
->  arch/openrisc/include/asm/processor.h  | 1 +
->  arch/parisc/include/asm/processor.h    | 1 +
->  arch/powerpc/include/asm/processor.h   | 2 ++
->  arch/s390/include/asm/processor.h      | 2 +-
->  arch/score/include/asm/processor.h     | 1 +
->  arch/sh/include/asm/processor.h        | 1 +
->  arch/sparc/include/asm/processor_32.h  | 2 ++
->  arch/sparc/include/asm/processor_64.h  | 1 +
->  arch/tile/include/asm/processor.h      | 2 ++
->  arch/unicore32/include/asm/processor.h | 1 +
->  arch/x86/include/asm/processor.h       | 2 ++
->  arch/xtensa/include/asm/processor.h    | 1 +
->  include/linux/mutex.h                  | 4 ----
->  kernel/locking/mcs_spinlock.c          | 8 +++-----
->  kernel/locking/mcs_spinlock.h          | 4 ++--
->  kernel/locking/mutex.c                 | 4 ++--
->  kernel/locking/qrwlock.c               | 9 ++++-----
->  kernel/locking/rwsem-xadd.c            | 4 ++--
->  lib/lockref.c                          | 3 +--
->  34 files changed, 48 insertions(+), 24 deletions(-)
+--IS0zKkzwUGydFO0o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It looks like you forgot to update frv?  It's been failing on -next since a
-few days:
+also sprach Austin S Hemmelgarn <ahferroin7@gmail.com> [2014-08-05 14:26 +0=
+200]:
+> The e820 is probably not what you want to be looking at.  I would
+> suggest looking into memory hot-plug/hot-remove support, IIRC the
+> hot-remove support allows you to bring a bank offline.
 
-kernel/locking/mcs_spinlock.h:87:2: error: implicit declaration of
-function 'cpu_relax_lowlatency'
-[-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-kernel/locking/mcs_spinlock.h:87:2: error: implicit declaration of
-function 'cpu_relax_lowlatency'
-[-Werror=implicit-function-declaration]
-make[3]: *** [kernel/locking/mcs_spinlock.o] Error 1
-cc1: some warnings being treated as errors
-make[3]: *** [kernel/locking/mutex.o] Error 1
+Oh, good pointer, yeah, that would do and allow for online testing
+to some degree.
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/11616307/
+I found http://feishare.com/linux/memory-hotplug-in-linux and
+memory0 through memory69 in /sys/devices/system/memory, and only
+3 of those are "removable=3D=3D1".
 
-Gr{oetje,eeting}s,
+My goal is to bring one of the two 4Gb DIMMs offline, verify that
+the error I am seeing still exists, bring it back online and take
+the other offline.
 
-                        Geert
+How do I find out which memory to hot-remove?
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Am I right in assuming that I won't be able to remove
+one-then-the-other as some memory regions may not be movable?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--=20
+@martinkrafft | http://madduck.net/ | http://two.sentenc.es/
+=20
+"the scientific paper in its orthodox form does embody a totally
+ mistaken conception, even a travesty, of the nature of scientific
+ thought."
+                                                -- sir peter medawar
+=20
+spamtraps: madduck.bogus@madduck.net
+
+--IS0zKkzwUGydFO0o
+Content-Type: application/pgp-signature; name="digital_signature_gpg.asc"
+Content-Description: Digital signature (see http://martin-krafft.net/gpg/sig-policy/999bbcc4/current)
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQLvBAEBCgDZBQJT4NbPwBEaaHR0cDovL21hcnRpbi1rcmFmZnQubmV0L2dwZy9z
+aWctcG9saWN5LzU1Yzk4ODJkOTk5YmJjYzQvMjAxMTAxMjQxMTI1P3NoYTUxMnN1
+bT0xY2FkOTZmZDI3ZDMyMzNmNTNlMjI4NDk1MzM2NDgxMDdlNWVlOGQ1YmU2NTUy
+NTFkNzRjOGYxYzVjM2JjNDJmMjMwNGZhNTE1MTUwZjdiZDRkZDA1ZTk4MTk5MjRm
+MDQ5NTEzZWU5OTYyY2E3MTcwOWY4MWQ5NDUxNTg1MmJkOAAKCRBVyYgtmZu8xO/f
+D/9GKyPOy8UNvaP560DgZy4oXFi7DqpEtj/Areq+LlsVo6G3oz8ZBVybgSM2MlMu
+zcsisxcc1ZY5QKvh5K7nAxas6W9o6BvF+EOKRSSyj5xRxx1hYoY9P7KLT1vxOz2K
+nKZC/l7amAOLJIWyKvGGgCJCPVSGGbdyqlXttrwGDAGMIJqOirNTORTekzPi4Jca
+QiYqbKxCcRL2Q63aCNpVeFs2SG8KC9/AR6xRbokb9oY0DM0Fe05NeqlwXcTOSez4
+JUuSn7Hph/IPmymaQp5dt9fYfNCKNnl+589YcAy8iRPxUpNfd9uMFyv+1VL1IICj
+F3r9BzII9DhC/XUAJ4BcxgD8784zZgfjMPhJxWdoufLcdMnj70OCnmO7BezsX5IK
+TldrFJnbZkLKZ3MHWPsxmq3lBqt6PpQzJZd/QYfj9zxDWFf+3rgtXLkStMqqB8jE
+pnJbgbDpTpt/1Uc4VDkUgrgw0mans8kKgLpq6TMUpzboJMUhjLMbXdWE7CWrdWM+
+KxQsIPF5x+K4GyvUraO+1oSQeH/MWOYKFpLFpIZ8l0vKyzdJs2ePQEy+xLvvzB51
+QduyRdc8BNImIAzCeNLRjRK5YXo7cNV4DWfLgoegFMkexyU3p6FoSVNy6KZMc8cX
+vigczf7y/bzD+gJjqIMnsvN9HnSxoP5eiztYW91nIGr7XA==
+=SoA1
+-----END PGP SIGNATURE-----
+
+--IS0zKkzwUGydFO0o--
+
