@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906AbaHEKvu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 06:51:50 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:18343 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755037AbaHEKtJ (ORCPT
+	id S1755871AbaHEKvs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 06:51:48 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:9361 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755040AbaHEKtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Aug 2014 06:49:09 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-df-53e0b6a4a571
+X-AuditID: cbfec7f4-b7f156d0000063c7-db-53e0b6a3a028
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
@@ -24,95 +24,91 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Tomasz Figa <tomasz.figa@gmail.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 22/29] iommu: exynos: add support for binding more than one
- sysmmu to master device
-Date: Tue, 05 Aug 2014 12:47:50 +0200
-Message-id: <1407235677-26324-23-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH 21/29] iommu: exynos: remove unused functions, part 2
+Date: Tue, 05 Aug 2014 12:47:49 +0200
+Message-id: <1407235677-26324-22-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.9.2
 In-reply-to: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
 References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xq7pLtj0INvj3gd3i76Rj7BbNi9ez
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xq7qLtz0INtgyT9Di76Rj7BbNi9ez
 	WUy6P4HFYsF+a4vO2RvYLXoXXGWzONv0ht2ic+ISdosvVx4yWWx6fI3V4vKuOWwWM87vY7JY
 	e+Quu8Wp65/ZLP71HmS0OHP6EqvF/z072C0Ov2lntTjycDe7xapdfxgtbv/mcxD1eHJwHpPH
 	71+TGD12zrrL7jG7Yyarx6ZVnWwe++euYffYvKTe4/a/x8wek28sZ/S4cqKJ1aO3+R2bx5ar
-	7SwefVtWMXp83iQXwBfFZZOSmpNZllqkb5fAldG0/j1jwSfBirf9PawNjNf4uhg5OSQETCT+
-	/b/CDGGLSVy4t56ti5GLQ0hgKaPE+11nWUASQgJ9TBJTPmaA2GwChhJdb7vAikQEehkl+pt+
-	MIE4zALrWCX2914H6xAWSJXY1LwQzGYRUJVYur2dHcTmFfCUmHu3lxVinZzE/5crmEBsTqD4
-	4ZsHWCG2eUj83LCGfQIj7wJGhlWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIZHzZQfj4mNW
-	hxgFOBiVeHgNTt8NFmJNLCuuzD3EKMHBrCTCK7HmQbAQb0piZVVqUX58UWlOavEhRiYOTqkG
-	xhlu83WcuiUjEjQql2rVmRh1f2c8cOSq1zreadceMU5xq1J7ssaMx3jVy4PpL91sd++491zp
-	8CSF98yzWT2/efo+eeR8z95y1q2H/kZzDr/jO16u97bH5FGVga35808ra1493dtQk/8lxMDh
-	1WFGiQnT3DfmfEqwn9FrYvavxNvZcwbXS8cV1UosxRmJhlrMRcWJACi7Orp6AgAA
+	7SwefVtWMXp83iQXwBfFZZOSmpNZllqkb5fAlXFk5UKmgil8Ffv7VzM3MF7g7mLk5JAQMJHY
+	9OsyE4QtJnHh3nq2LkYuDiGBpYwSnfNvMUI4fUwST04uZAOpYhMwlOh62wVWJSLQyyjR3/SD
+	CcRhFljHKrG/9zoLSJWwgKvErNfTmLsYOThYBFQlZszTBQnzCnhKbH/fxgyxTk7i/8sVYKs5
+	geKHbx5gBbGFBDwkfm5Ywz6BkXcBI8MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJDI+bKD
+	cfExq0OMAhyMSjy8BqfvBguxJpYVV+YeYpTgYFYS4ZVY8yBYiDclsbIqtSg/vqg0J7X4ECMT
+	B6dUA6NPwrlIs2+uj7albUuTaMu7vzo1wXCP1kbfx/v1Wj/Kf3qQYciv7+Y/bR7D2WiLWqb8
+	qLjnhrx3P/mfu/M8JMmbxb9K+WD82zMyGc9lOg+wyb49NLV+q9Ga4y/1Ln/rXP4lgWua6T73
+	3DO5h+4YLXH4uea0rsaT+1093FeTL/z9rG25db7B5yolluKMREMt5qLiRAA3AZvwegIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for assigning more than one SYSMMU controller to
-the master device. This has been achieved simply by chaning the struct
-device pointer in struct exynos_iommu_owner into the list of struct
-sysmmu_drvdata of all controllers assigned to the given master device.
+After refactoring functions to use pointer to struct sysmmu_drvdata
+directly, some functions became useless and thus never used, so remove
+them completely.
 
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/iommu/exynos-iommu.c | 43 -------------------------------------------
+ 1 file changed, 43 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 674d1fb..46e0edc 100644
+index 018a615..674d1fb 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -187,7 +187,7 @@ static char *sysmmu_fault_name[SYSMMU_FAULTS_NUM] = {
+@@ -458,49 +458,6 @@ static int __sysmmu_enable(struct sysmmu_drvdata *data,
+ 	return ret;
+ }
  
- /* attached to dev.archdata.iommu of the master device */
- struct exynos_iommu_owner {
--	struct device *sysmmu;
-+	struct list_head clients;
- };
- 
- struct exynos_iommu_domain {
-@@ -208,6 +208,7 @@ struct sysmmu_drvdata {
- 	spinlock_t lock;
- 	struct iommu_domain *domain;
- 	struct list_head domain_node;
-+	struct list_head owner_node;
- 	phys_addr_t pgtable;
- 	int version;
- };
-@@ -695,8 +696,7 @@ static int exynos_iommu_attach_device(struct iommu_domain *domain,
- 	if (!has_sysmmu(dev))
- 		return -ENODEV;
- 
--	data = dev_get_drvdata(owner->sysmmu);
--	if (data) {
-+	list_for_each_entry(data, &owner->clients, owner_node) {
- 		ret = __sysmmu_enable(data, pagetable, domain);
- 		if (ret >= 0) {
- 			data->master = dev;
-@@ -724,7 +724,7 @@ static void exynos_iommu_detach_device(struct iommu_domain *domain,
- {
- 	struct exynos_iommu_domain *priv = domain->priv;
- 	phys_addr_t pagetable = virt_to_phys(priv->pgtable);
+-/* __exynos_sysmmu_enable: Enables System MMU
+- *
+- * returns -error if an error occurred and System MMU is not enabled,
+- * 0 if the System MMU has been just enabled and 1 if System MMU was already
+- * enabled before.
+- */
+-static int __exynos_sysmmu_enable(struct device *dev, phys_addr_t pgtable,
+-				  struct iommu_domain *domain)
+-{
+-	int ret = 0;
+-	unsigned long flags;
+-	struct exynos_iommu_owner *owner = dev->archdata.iommu;
 -	struct sysmmu_drvdata *data;
-+	struct sysmmu_drvdata *data, *next;
- 	unsigned long flags;
- 	int found = 0;
- 
-@@ -732,14 +732,13 @@ static void exynos_iommu_detach_device(struct iommu_domain *domain,
- 		return;
- 
- 	spin_lock_irqsave(&priv->lock, flags);
--	list_for_each_entry(data, &priv->clients, domain_node) {
-+	list_for_each_entry_safe(data, next, &priv->clients, domain_node) {
- 		if (data->master == dev) {
- 			if (__sysmmu_disable(data)) {
- 				data->master = NULL;
- 				list_del_init(&data->domain_node);
- 			}
- 			found = true;
--			break;
- 		}
- 	}
- 	spin_unlock_irqrestore(&priv->lock, flags);
+-
+-	BUG_ON(!has_sysmmu(dev));
+-
+-	data = dev_get_drvdata(owner->sysmmu);
+-
+-	ret = __sysmmu_enable(data, pgtable, domain);
+-	if (ret >= 0)
+-		data->master = dev;
+-
+-	return ret;
+-}
+-
+-static bool exynos_sysmmu_disable(struct device *dev)
+-{
+-	unsigned long flags;
+-	bool disabled = true;
+-	struct exynos_iommu_owner *owner = dev->archdata.iommu;
+-	struct sysmmu_drvdata *data;
+-
+-	BUG_ON(!has_sysmmu(dev));
+-
+-	data = dev_get_drvdata(owner->sysmmu);
+-
+-	disabled = __sysmmu_disable(data);
+-	if (disabled)
+-		data->master = NULL;
+-
+-	return disabled;
+-}
+-
+ static void __sysmmu_tlb_invalidate_flpdcache(struct sysmmu_drvdata *data,
+ 					      sysmmu_iova_t iova)
+ {
 -- 
 1.9.2
 
