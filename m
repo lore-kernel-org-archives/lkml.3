@@ -1,98 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaHELsP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 07:48:15 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:47168 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754562AbaHELsN (ORCPT
+	id S1754817AbaHELuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 07:50:14 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:40475 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753748AbaHELuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 07:48:13 -0400
-X-AuditID: cbfee691-b7f306d000003d81-59-53e0c47a2798
-Message-id: <4F887641414547418FB42327CF5E09DF@sisodomain.com>
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Jingoo Han <jg1.han@samsung.com>, linux-usb@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, sachin.kamat@samsung.com,
-        "'Alan Stern'" <stern@rowland.harvard.edu>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1407235148-31790-1-git-send-email-gautam.vivek@samsung.com>
- <000d01cfb09c$239a8670$6acf9350$%han@samsung.com>
-In-reply-to: <000d01cfb09c$239a8670$6acf9350$%han@samsung.com>
-Subject: Re: [PATCH RESEND] usb: ehci/ohci-exynos: Fix PHY getting sequence
-Date: Tue, 05 Aug 2014 17:14:26 +0530
-MIME-version: 1.0
-Content-type: text/plain; format=flowed; charset=iso-8859-1; reply-type=original
-Content-transfer-encoding: 7bit
-X-Priority: 3
-X-MSMail-priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MIMEOLE: Produced By Microsoft MimeOLE V14.0.8117.416
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsWyRsSkWrfqyINgg1MX9S2aF69ns7i88BKr
-	Re+Cq2wWmx5fY7W4vGsOm8WM8/uYLBYta2W2uHLpFJvFhN8X2Bw4PfbPXcPusXlJvcfsuz8Y
-	Pfq2rGL0+LxJLoA1issmJTUnsyy1SN8ugStj+v5NzAVdnBXnZq5nbmBcyt7FyMkhIWAiMWni
-	A2YIW0ziwr31bF2MXBxCAksZJfZdOcoKUzR7SwcjRGIRo0Tf7UYmCOc7UNWH10wgVbwCthLf
-	X1wDs9kEdCWa3u4C6uDgEBGwlzj2xBeknlmgi0mi+fIJsHVCAjUSZw8/Zwep4RSwk3i1QQ8k
-	LCzgLdH68zRYCYuAqsSsD11sEOMFJX5MvscCYjMLBEisnDibEcKWl9i85i3UB7wSM9qfskDY
-	khKre26BfckpICTRcbUT6hljiSn/lkLVm0tc3L4Z7BcJgV4OiTnT7zJCLBaQ+Db5EAvIbRIC
-	shKbDjDDzDy44gbLBEapWUhOmoXkpFlITlrAyLyKUTS1ILmgOCm9yFSvODG3uDQvXS85P3cT
-	IzDST/97NnEH4/0D1ocYk4FWTmSWEk3OByaKvJJ4Q2MzIwtTE1NjI3NLM9KElcR50x8lBQkJ
-	pCeWpGanphakFsUXleakFh9iZOLglGpgXD5FbvOaKamO9xVu3gnLZChZu9Rqb9e9Z1sqlZXe
-	NXKxWMu3navQvH//4K61RUV1i9XU5j/VDso/sf/S5ofxL9cuO8x7JO/bRy+PWXumaPgu+C19
-	U3qCw6VHnHksfmLxbK/ey/70WfrzefOaVMut157kfTtYeWWDxMtZQifeLTrEf+n8O88FE5iV
-	WIozEg21mIuKEwHhaB28CgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jAd2qIw+CDdZPVLdoXryezeLywkus
-	Fr0LrrJZbHp8jdXi8q45bBYzzu9jsli0rJXZ4sqlU2wWE35fYHPg9Ng/dw27x+Yl9R6z7/5g
-	9OjbsorR4/MmuQDWqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRb
-	JRefAF23zBygg5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGdP3b2Iu
-	6OKsODdzPXMD41L2LkZODgkBE4nZWzoYIWwxiQv31rN1MXJxCAksYpTou93IBOF8Z5TY9+E1
-	E0gVr4CtxPcX18BsNgFdiaa3u4C6OThEBOwljj3xBalnFuhikmi+fIIZpEZIoEbi7OHn7CA1
-	nAJ2Eq826IGEhQW8JVp/ngYrYRFQlZj1oYsNYrygxI/J91hAbGaBAImVE2czQtjyEpvXvGWG
-	OJRXYkb7UxYIW1Jidc8tsGc4BYQkOq52skLEjSWm/FsKVW8ucXH7ZqYJjCKzkKyYhWTFLCQr
-	FjAyr2IUTS1ILihOSs810itOzC0uzUvXS87P3cQITiPPpHcwrmqwOMQowMGoxMMroHY/WIg1
-	say4MvcQowQHs5II79NdD4KFeFMSK6tSi/Lji0pzUosPMZoCfTqRWUo0OR+Y4vJK4g2NTcxN
-	jU0tTSxMzCyVxHkPtloHCgmkJ5akZqemFqQWwfQxcXBKNTDOEHYTrr4mupPVIZlP8eHDOXfd
-	5ebw3r9UsFJaziAxnulfu5xk+Cvd0lN3+lb9sWnXC7UvNSrQs8tabLeWZ25tyKRZ0qv77JSn
-	60/Nufate0eu4qUfD+38om/Mmdp9/1mSSXzYj+8XqyfIvpgytdiy93G4geq686eTtpquaUmt
-	2PGw9I+mrqgSS3FGoqEWc1FxIgCCSSEFOQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 5 Aug 2014 07:50:12 -0400
+Message-ID: <53E0C498.6070608@gmail.com>
+Date: Tue, 05 Aug 2014 17:18:40 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+Organization: CDAC-HYD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Yuan Yao <yao.yuan@freescale.com>, wsa@the-dreams.de, marex@denx.de
+CC: LW@KARO-electronics.de, mark.rutland@arm.com, shawn.guo@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v6 1/2] i2c: imx: add DMA support for freescale i2c driver
+References: <1407232563-10856-1-git-send-email-yao.yuan@freescale.com> <1407232563-10856-2-git-send-email-yao.yuan@freescale.com>
+In-Reply-To: <1407232563-10856-2-git-send-email-yao.yuan@freescale.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jingoo,
+On 08/05/2014 03:26 PM, Yuan Yao wrote:
 
+(...)
 
-On Tuesday, August 05, 2014 4:28 PM, Jingoo Han wrote:
-> On Tuesday, August 05, 2014 7:39 PM, Vivek Gautam wrote:
->>
->> Since we want to keep support for both older usb-phys as well as the
->> newer generic phys, lets first get the generic PHYs and fallback to
->> older USB-PHYs only when we fail to get the former.
->> This should fix the issue with ehci-exynos and ohci-exynos, wherein
->> in the absence of SAMSUNG_USB2PHY config symbol, we end up getting
->> the NOP_USB_XCEIV phy when the same is enabled. And thus the PHYs
->> are not configured properly.
->>
->> Reported-by: Sachin Kamat <sachin.kamat@samsung.com>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> Cc: Alan Stern <stern@rowland.harvard.edu>
->> Cc: Jingoo Han <jg1.han@samsung.com>
->
-> Acked-by: Jingoo Han <jg1.han@samsung.com>
->
-> Right, we would get the generic PHYs first, then get the older
-> usb-phys. Then, the older one will be removed from the kernel.
+> +/* Functions for DMA support */
+> +static int i2c_imx_dma_request(struct imx_i2c_struct *i2c_imx,
+> +						dma_addr_t phy_addr)
 
-Right, I have a set of patches to remove the older phy support for Exynos 
-SoC series,
-keeping the support for S3C64XX, which I shall send soon.
+should match open parenthesis...
 
-[snip]
+static int i2c_imx_dma_request(struct imx_i2c_struct *i2c_imx,
+			       dma_addr_t phy_addr)
 
-Thanks
-Vivek Gautam 
+> +{
+> +	struct imx_i2c_dma *dma;
+> +	struct dma_slave_config dma_sconfig;
+> +	struct device *dev = &i2c_imx->adapter.dev;
+> +	int ret;
+> +
+> +	dma = devm_kzalloc(dev, sizeof(struct imx_i2c_dma), GFP_KERNEL);
+
+sizeof(*dma) ....?
+
+> +	if (!dma)
+> +		return -ENOMEM;
+> +
+> +	dma->chan_tx = dma_request_slave_channel(dev, "tx");
+> +	if (!dma->chan_tx) {
+> +		dev_dbg(dev, "can't request DMA tx channel\n");
+> +		ret = -ENODEV;
+> +		goto fail_al;
+> +	}
+> +
+> +	dma_sconfig.dst_addr = phy_addr +
+> +				(IMX_I2C_I2DR << i2c_imx->hwdata->regshift);
+> +	dma_sconfig.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+> +	dma_sconfig.dst_maxburst = 1;
+> +	dma_sconfig.direction = DMA_MEM_TO_DEV;
+> +	ret = dmaengine_slave_config(dma->chan_tx, &dma_sconfig);
+> +	if (ret < 0) {
+> +		dev_dbg(dev, "can't configure tx channel\n");
+> +		goto fail_tx;
+> +	}
+> +
+> +	dma->chan_rx = dma_request_slave_channel(dev, "rx");
+> +	if (!dma->chan_rx) {
+> +		dev_dbg(dev, "can't request DMA rx channel\n");
+> +		ret = -ENODEV;
+> +		goto fail_tx;
+> +	}
+> +
+> +	dma_sconfig.src_addr = phy_addr +
+> +				(IMX_I2C_I2DR << i2c_imx->hwdata->regshift);
+> +	dma_sconfig.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+> +	dma_sconfig.src_maxburst = 1;
+> +	dma_sconfig.direction = DMA_DEV_TO_MEM;
+> +	ret = dmaengine_slave_config(dma->chan_rx, &dma_sconfig);
+> +	if (ret < 0) {
+> +		dev_dbg(dev, "can't configure rx channel\n");
+> +		goto fail_rx;
+> +	}
+> +
+> +	i2c_imx->dma = dma;
+> +	init_completion(&dma->cmd_complete);
+> +	dev_info(dev, "using %s (tx) and %s (rx) for DMA transfers\n",
+> +		dma_chan_name(dma->chan_tx), dma_chan_name(dma->chan_rx));
+> +
+> +	return 0;
+> +
+> +fail_rx:
+> +	dma_release_channel(dma->chan_rx);
+> +fail_tx:
+> +	dma_release_channel(dma->chan_tx);
+> +fail_al:
+> +	devm_kfree(dev, dma);
+
+no need to use devm_kfree() if we use devm_kzalloc()...
+
+> +	dev_info(dev, "can't use DMA\n");
+> +
+> +	return ret;
+> +}
+> +
+> +static void i2c_imx_dma_callback(void *arg)
+> +{
+> +	struct imx_i2c_struct *i2c_imx = (struct imx_i2c_struct *)arg;
+> +	struct imx_i2c_dma *dma = i2c_imx->dma;
+> +
+> +	dma_unmap_single(dma->chan_using->device->dev, dma->dma_buf,
+> +			dma->dma_len, dma->dma_data_dir);
+> +	complete(&dma->cmd_complete);
+> +}
+> +
+> +static int i2c_imx_dma_xfer(struct imx_i2c_struct *i2c_imx,
+> +					struct i2c_msg *msgs)
+
+static int i2c_imx_dma_xfer(struct imx_i2c_struct *i2c_imx,
+			    struct i2c_msg *msgs)
+
+> +{
+> +	struct imx_i2c_dma *dma = i2c_imx->dma;
+> +	struct dma_async_tx_descriptor *txdesc;
+> +	struct device *dev = &i2c_imx->adapter.dev;
+> +	struct device *chan_dev = dma->chan_using->device->dev;
+> +
+> +	dma->dma_buf = dma_map_single(chan_dev, msgs->buf,
+> +					dma->dma_len, dma->dma_data_dir);
+
+dma_map_single(chan_dev, msgs->buf,
+	       dma->dma_len, dma->dma_data_dir);
+
+> +	if (dma_mapping_error(chan_dev, dma->dma_buf)) {
+> +		dev_err(dev, "DMA mapping failed\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	txdesc = dmaengine_prep_slave_single(dma->chan_using, dma->dma_buf,
+> +					dma->dma_len, dma->dma_transfer_dir,
+> +					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+
+  dmaengine_prep_slave_single(dma->chan_using, dma->dma_buf,
+			     dma->dma_len, dma->dma_transfer_dir,
+			     DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+
+> +	if (!txdesc) {
+> +		dev_err(dev, "Not able to get desc for DMA xfer\n");
+> +		dma_unmap_single(chan_dev, dma->dma_buf,
+> +					dma->dma_len, dma->dma_data_dir);
+> +		return -EINVAL;
+> +	}
+> +
+> +	txdesc->callback = i2c_imx_dma_callback;
+> +	txdesc->callback_param = i2c_imx;
+> +	dmaengine_submit(txdesc);
+> +	dma_async_issue_pending(dma->chan_using);
+> +
+> +	return 0;
+> +}
+> +
+> +static void i2c_imx_dma_free(struct imx_i2c_struct *i2c_imx)
+> +{
+> +	struct imx_i2c_dma *dma = i2c_imx->dma;
+> +
+> +	dma->dma_buf = 0;
+> +	dma->dma_len = 0;
+> +
+> +	dma_release_channel(dma->chan_tx);
+> +	dma->chan_tx = NULL;
+> +
+> +	dma_release_channel(dma->chan_rx);
+> +	dma->chan_rx = NULL;
+> +
+> +	dma->chan_using = NULL;
+> +}
+> +
+>   /** Functions for IMX I2C adapter driver ***************************************
+>   *******************************************************************************/
+>   
+> @@ -379,6 +530,7 @@ static int i2c_imx_start(struct imx_i2c_struct *i2c_imx)
+>   	i2c_imx->stopped = 0;
+>   
+>   	temp |= I2CR_IIEN | I2CR_MTX | I2CR_TXAK;
+> +	temp &= ~I2CR_DMAEN;
+>   	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
+>   	return result;
+>   }
+> @@ -432,6 +584,160 @@ static irqreturn_t i2c_imx_isr(int irq, void *dev_id)
+>   	return IRQ_NONE;
+>   }
+>   
+> +static int i2c_imx_dma_write(struct imx_i2c_struct *i2c_imx,
+> +					struct i2c_msg *msgs)
+
+static int i2c_imx_dma_write(struct imx_i2c_struct *i2c_imx,
+			     struct i2c_msg *msgs)
+
+run checkpatch.pl on this patch...
+
+-- 
+Regards,
+Varka Bhadram.
 
