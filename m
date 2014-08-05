@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208AbaHEPFz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 11:05:55 -0400
-Received: from mail-yk0-f177.google.com ([209.85.160.177]:49059 "EHLO
-	mail-yk0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549AbaHEPFx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 11:05:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140805145437.GL9918@twins.programming.kicks-ass.net>
-References: <1406659999-13974-1-git-send-email-Waiman.Long@hp.com>
-	<1406659999-13974-3-git-send-email-Waiman.Long@hp.com>
-	<20140805132837.GA19379@twins.programming.kicks-ass.net>
-	<CAKocOOMa89+Ej0rk-LyQLBcwDvLtsXq7x+oPwBMS1N61kKUwQg@mail.gmail.com>
-	<20140805144108.GK9918@twins.programming.kicks-ass.net>
-	<53E0EDD2.50600@canonical.com>
-	<20140805145437.GL9918@twins.programming.kicks-ass.net>
-Date: Tue, 5 Aug 2014 09:05:53 -0600
-Message-ID: <CAKocOOM=c2jaW_D27Z_iHoSzknp38j0gh_Exa3iTf5CzFkmPJA@mail.gmail.com>
-Subject: Re: [PATCH 2/2 v6] locking/selftest: Support queued rwlock
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Waiman Long <Waiman.Long@hp.com>,
-        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Scott J Norton <scott.norton@hp.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754885AbaHEPGL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 11:06:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59622 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754689AbaHEPGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 11:06:09 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
+        Przemo Firszt <przemo@firszt.eu>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [PATCH v4] Input - wacom: add copyright note and bump version to 2.0
+Date: Tue,  5 Aug 2014 11:05:43 -0400
+Message-Id: <1407251143-10044-1-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1406659385-3256-7-git-send-email-benjamin.tissoires@redhat.com>
+References: <1406659385-3256-7-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 5, 2014 at 8:54 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Aug 05, 2014 at 04:44:34PM +0200, Maarten Lankhorst wrote:
->> op 05-08-14 16:41, Peter Zijlstra schreef:
->
->> >> A bit off topic for this patch, however relevant for tests in general.
->> >> Is there a reason why these locking selftests need to be under lib?
->> >> Can they be consolidated under tools/testing/selftests?
->> > tools/ seems wrong as its very much not userspace.
->> Could be moved to kernel/locking though now that all other locking moved there. :-)
->
-> Yes, I suppose we could do that; IIRC the reason I left it where it is
-> is because there are more tests in lib/.
+Reviewed-by: Ping Cheng <pingc@wacom.com>
+Tested-by: Przemo Firszt <przemo@firszt.eu>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
 
-Maybe if tools doesn't sounds right, we could move testing from under tools
-and have it be testing
+changes in v4:
+- also update the DRIVER_VERSION macro
 
-We have several selftests spread around in the kernel tree. It makes it easier
-to pull them under a single make target devtest. I sent in a patch add devtest
-target that runs tests that are under tools/testing/selftests a couple of
-weeks ago, hopefully it will be included in 3.17. I am working towards pulling
-more kernel selftests that exist under this devtest umbrella. That is
-the motivation
-behind starting this conversation. :)
+Hi Dmitry,
 
--- Shuah
+if you could replace the v3 of this patch by this v4 in your pull request
+to Linus, that would be better. Ping notified me about this last Friday, so I
+kept her Rev-by.
+
+Cheers,
+Benjamin
+
+ drivers/hid/wacom.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/hid/wacom.h b/drivers/hid/wacom.h
+index 0b89ee7..8cc4406 100644
+--- a/drivers/hid/wacom.h
++++ b/drivers/hid/wacom.h
+@@ -12,6 +12,7 @@
+  *  Copyright (c) 2001 Frederic Lepied		<flepied@mandrakesoft.com>
+  *  Copyright (c) 2004 Panagiotis Issaris	<panagiotis.issaris@mech.kuleuven.ac.be>
+  *  Copyright (c) 2002-2011 Ping Cheng		<pingc@wacom.com>
++ *  Copyright (c) 2014 Benjamin Tissoires	<benjamin.tissoires@redhat.com>
+  *
+  *  ChangeLog:
+  *      v0.1 (vp)  - Initial release
+@@ -72,6 +73,8 @@
+  *      v1.52 (pc) - Query Wacom data upon system resume
+  *                 - add defines for features->type
+  *                 - add new devices (0x9F, 0xE2, and 0XE3)
++ *      v2.00 (bt) - conversion to a HID driver
++ *                 - integration of the Bluetooth devices
+  */
+ 
+ /*
+@@ -93,7 +96,7 @@
+ /*
+  * Version Information
+  */
+-#define DRIVER_VERSION "v1.53"
++#define DRIVER_VERSION "v2.00"
+ #define DRIVER_AUTHOR "Vojtech Pavlik <vojtech@ucw.cz>"
+ #define DRIVER_DESC "USB Wacom tablet driver"
+ #define DRIVER_LICENSE "GPL"
+-- 
+2.0.4
+
