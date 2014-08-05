@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226AbaHESOn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:14:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52427 "EHLO
+	id S1756092AbaHES17 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:27:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52451 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888AbaHESOk (ORCPT
+	with ESMTP id S1755211AbaHESOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:40 -0400
+	Tue, 5 Aug 2014 14:14:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Vitaly Kuznetsov <vkuznets@redhat.com>,
-        Steven Noonan <steven@uplinklabs.net>
-Subject: [PATCH 3.14 35/39] x86/xen: no need to explicitly register an NMI callback
-Date: Tue,  5 Aug 2014 11:14:12 -0700
-Message-Id: <20140805181337.097338620@linuxfoundation.org>
+        Antonio Quartulli <antonio@open-mesh.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.14 06/39] ath9k: fix aggregation session lockup
+Date: Tue,  5 Aug 2014 11:13:43 -0700
+Message-Id: <20140805181336.218014399@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
 References: <20140805181336.030349158@linuxfoundation.org>
@@ -30,52 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit ea9f9274bf4337ba7cbab241c780487651642d63 upstream.
+commit c01fac1c77a00227f706a1654317023e3f4ac7f0 upstream.
 
-Remove xen_enable_nmi() to fix a 64-bit guest crash when registering
-the NMI callback on Xen 3.1 and earlier.
+If an aggregation session fails, frames still end up in the driver queue
+with IEEE80211_TX_CTL_AMPDU set.
+This causes tx for the affected station/tid to stall, since
+ath_tx_get_tid_subframe returning packets to send.
 
-It's not needed since the NMI callback is set by a set_trap_table
-hypercall (in xen_load_idt() or xen_write_idt_entry()).
+Fix this by clearing IEEE80211_TX_CTL_AMPDU as long as no aggregation
+session is running.
 
-It's also broken since it only set the current VCPU's callback.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reported-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-Tested-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: Steven Noonan <steven@uplinklabs.net>
+Reported-by: Antonio Quartulli <antonio@open-mesh.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/setup.c |    9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ drivers/net/wireless/ath/ath9k/xmit.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -574,13 +574,7 @@ void xen_enable_syscall(void)
- 	}
- #endif /* CONFIG_X86_64 */
- }
--void xen_enable_nmi(void)
--{
--#ifdef CONFIG_X86_64
--	if (register_callback(CALLBACKTYPE_nmi, (char *)nmi))
--		BUG();
--#endif
--}
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -890,6 +890,15 @@ ath_tx_get_tid_subframe(struct ath_softc
+ 
+ 		tx_info = IEEE80211_SKB_CB(skb);
+ 		tx_info->flags &= ~IEEE80211_TX_CTL_CLEAR_PS_FILT;
 +
- void __init xen_pvmmu_arch_setup(void)
- {
- 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_4gb_segments);
-@@ -595,7 +589,6 @@ void __init xen_pvmmu_arch_setup(void)
- 
- 	xen_enable_sysenter();
- 	xen_enable_syscall();
--	xen_enable_nmi();
- }
- 
- /* This function is not called for HVM domains */
++		/*
++		 * No aggregation session is running, but there may be frames
++		 * from a previous session or a failed attempt in the queue.
++		 * Send them out as normal data frames
++		 */
++		if (!tid->active)
++			tx_info->flags &= ~IEEE80211_TX_CTL_AMPDU;
++
+ 		if (!(tx_info->flags & IEEE80211_TX_CTL_AMPDU)) {
+ 			bf->bf_state.bf_type = 0;
+ 			return bf;
 
 
