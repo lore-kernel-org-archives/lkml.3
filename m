@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073AbaHEXG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 19:06:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54605 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbaHEXG4 (ORCPT
+	id S1753634AbaHEXHM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 19:07:12 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:60526 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaHEXHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 19:06:56 -0400
-Date: Tue, 5 Aug 2014 16:06:54 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Pawel Moll <pawel.moll@arm.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "paul@pwsan.com" <paul@pwsan.com>, Arnd Bergmann <arnd@arndb.de>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] char: tile-srom: Remove reference to platform_bus
-Message-ID: <20140805230654.GA24614@kroah.com>
-References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>
- <1406298233-27876-2-git-send-email-pawel.moll@arm.com>
- <53DAA605.2030500@tilera.com>
- <1406913678.22529.46.camel@hornet>
- <53E139C8.9000502@tilera.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E139C8.9000502@tilera.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 5 Aug 2014 19:07:05 -0400
+X-AuditID: cbfec37a-b7f216d000000635-e7-53e1639795e2
+Message-id: <53E16394.7090400@samsung.com>
+Date: Tue, 05 Aug 2014 17:07:00 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.15 00/42] 3.15.9-stable review
+References: <20140805181321.018370988@linuxfoundation.org>
+In-reply-to: <20140805181321.018370988@linuxfoundation.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.6]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9hX93pyQ+DDQ6/k7SYs34Nm0Xz4vVs
+	Fpd3zWGzeLLwDJPF1FMTWCwWbHzEaPGo7y27A7vHzll32T1OzPjN4rF/7hog93sDu8fnTXIB
+	rFFcNimpOZllqUX6dglcGY2TD7EUPGCrmHpGsYFxHWsXIyeHhICJxLXznxkhbDGJC/fWs4HY
+	QgLLGCWaOkO7GLmA7F4miVnLJzFCOBsYJR4eu8QOUsUroCVxcd5WJhCbRUBV4uPsD2A2m4C6
+	xOfXO9ghJslJNC1ZzQxiiwpESBzoe8YK0Sso8WPyPRYQW0QgWGLt14VgC5gFVjFKXL+8HOwM
+	YaDzJveeZ4UYZCVxfesnsDingLXE0p7FYM3MQPbKSdsYIWx5ic1r3jJD1CtL/Ll8igniNQWJ
+	R1db2ScwisxCsnsWkvZZSNoXMDKvYhQrLU4uKE5KT60w1CtOzC0uzUvXS87P3cQIiaSqHYx3
+	vtocYhTgYFTi4c0wfRgsxJpYVlyZe4hRgoNZSYR3SzxQiDclsbIqtSg/vqg0J7X4ECMTB6dU
+	AyOr9daJB4JrTxlXTjFl14jQ6r+uFPnjooNV4sdzvXH9Oknb79qf2l744avWtZ33173dMv/X
+	D6MzUyepOSgpzdtivv/6jFMnrF9UPmzYGcH2VcXynkeQkvC92QkVzWWGup9Pr3ewUTnVz7pl
+	xaxr0+4udQ/m4+0Q/sS4jNX3d+VL58c9Ck+KphgpsRRnJBpqMRcVJwIA9D5k2YICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 04:08:40PM -0400, Chris Metcalf wrote:
-> On 8/1/2014 1:21 PM, Pawel Moll wrote:
-> >On Thu, 2014-07-31 at 21:24 +0100, Chris Metcalf wrote:
-> >>On 7/25/2014 10:23 AM, Pawel Moll wrote:
-> >>>The code was creating "srom" class devices using
-> >>>platform_bus as a parent. As they are not really
-> >>>platform devices, make them virtual, using NULL instead.
-> >>>
-> >>>Cc: Chris Metcalf<cmetcalf@tilera.com>
-> >>>Signed-off-by: Pawel Moll<pawel.moll@arm.com>
-> >>>---
-> >>>   drivers/char/tile-srom.c | 2 +-
-> >>>   1 file changed, 1 insertion(+), 1 deletion(-)
-> >>Can you clarify the point of this change a bit?
-> >Theoretically speaking there shouldn't be any need to export the
-> >platform bus root, as all devices should be registered via the platform
-> >API (platform_device_register & co.)
-> 
-> So, perhaps the right fix is to just use platform_device_register()
-> etc for this device, rather than making it virtual?
+On 08/05/2014 12:13 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.15.9 release.
+> There are 42 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Thu Aug  7 18:13:05 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.15.9-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-Sure, that's fine with me if you want to make it a platform device, but
-note that a platform device doesn't have a minor associated with it, you
-will have to still have your existing srom_class and the rest.  Right
-now you aren't creating any real "devices" in the kernel, other than the
-one you use for your minor number, which is not a "real" device.
+Compiled and booted on my test system. No dmesg regressions
+compared to previous 3.15.8
 
-struct srom_dev should be a platform device and then this will get
-"easier" overall, sorry I missed that when the original code was
-submitted.
+-- Shuah
 
-thanks,
-
-greg k-h
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
