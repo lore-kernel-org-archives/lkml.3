@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524AbaHESqc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:46:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52221 "EHLO
+	id S1756555AbaHESqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:46:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52195 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754692AbaHESOQ (ORCPT
+	with ESMTP id S1754584AbaHESOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:16 -0400
+	Tue, 5 Aug 2014 14:14:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.15 39/42] xtensa: add fixup for double exception raised in window overflow
-Date: Tue,  5 Aug 2014 11:13:53 -0700
-Message-Id: <20140805181322.180494134@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [PATCH 3.15 36/42] staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
+Date: Tue,  5 Aug 2014 11:13:50 -0700
+Message-Id: <20140805181322.094419960@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -28,262 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 17290231df16eeee5dfc198dbf5ee4b419996dcd upstream.
+commit 6cff1f6ad4c615319c1a146b2aa0af1043c5e9f5 upstream.
 
-There are two FIXMEs in the double exception handler 'for the extremely
-unlikely case'. This case gets hit by gcc during kernel build once in
-a few hours, resulting in an unrecoverable exception condition.
+WARNING: CPU: 0 PID: 929 at /home/apw/COD/linux/kernel/irq/handle.c:147 handle_irq_event_percpu+0x1d1/0x1e0()
+irq 17 handler device_intr+0x0/0xa80 [vt6655_stage] enabled interrupts
 
-Provide missing fixup routine to handle this case. Double exception
-literals now need 8 more bytes, add them to the linker script.
+Using spin_lock_irqsave appears to fix this.
 
-Also replace bbsi instructions with bbsi.l as we're branching depending
-on 8th and 7th LSB-based bits of exception address.
-
-This may be tested by adding the explicit DTLB invalidation to window
-overflow handlers, like the following:
-
-#    --- a/arch/xtensa/kernel/vectors.S
-#    +++ b/arch/xtensa/kernel/vectors.S
-#    @@ -592,6 +592,14 @@ ENDPROC(_WindowUnderflow4)
-#     ENTRY_ALIGN64(_WindowOverflow8)
-#
-#    	s32e	a0, a9, -16
-#    +	bbsi.l	a9, 31, 1f
-#    +	rsr	a0, ccount
-#    +	bbsi.l	a0, 4, 1f
-#    +	pdtlb	a0, a9
-#    +	idtlb	a0
-#    +	movi	a0, 9
-#    +	idtlb	a0
-#    +1:
-#    	l32e    a0, a1, -12
-#    	s32e    a2, a9,  -8
-#    	s32e    a1, a9, -12
-
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- arch/xtensa/kernel/vectors.S     |  158 +++++++++++++++++++++++++++++++++------
- arch/xtensa/kernel/vmlinux.lds.S |    4 
- 2 files changed, 138 insertions(+), 24 deletions(-)
 
---- a/arch/xtensa/kernel/vectors.S
-+++ b/arch/xtensa/kernel/vectors.S
-@@ -376,38 +376,42 @@ _DoubleExceptionVector_WindowOverflow:
- 	beqz	a2, 1f		# if at start of vector, don't restore
+---
+ drivers/staging/vt6655/device_main.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+--- a/drivers/staging/vt6655/device_main.c
++++ b/drivers/staging/vt6655/device_main.c
+@@ -2430,6 +2430,7 @@ static  irqreturn_t  device_intr(int irq
+ 	int             handled = 0;
+ 	unsigned char byData = 0;
+ 	int             ii = 0;
++	unsigned long flags;
+ //    unsigned char byRSSI;
  
- 	addi	a0, a0, -128
--	bbsi	a0, 8, 1f	# don't restore except for overflow 8 and 12
--	bbsi	a0, 7, 2f
-+	bbsi.l	a0, 8, 1f	# don't restore except for overflow 8 and 12
-+
-+	/*
-+	 * This fixup handler is for the extremely unlikely case where the
-+	 * overflow handler's reference thru a0 gets a hardware TLB refill
-+	 * that bumps out the (distinct, aliasing) TLB entry that mapped its
-+	 * prior references thru a9/a13, and where our reference now thru
-+	 * a9/a13 gets a 2nd-level miss exception (not hardware TLB refill).
-+	 */
-+	movi	a2, window_overflow_restore_a0_fixup
-+	s32i	a2, a3, EXC_TABLE_FIXUP
-+	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
-+	xsr	a3, excsave1
-+
-+	bbsi.l	a0, 7, 2f
+ 	MACvReadISR(pDevice->PortOffset, &pDevice->dwIsr);
+@@ -2455,7 +2456,8 @@ static  irqreturn_t  device_intr(int irq
  
- 	/*
- 	 * Restore a0 as saved by _WindowOverflow8().
--	 *
--	 * FIXME:  we really need a fixup handler for this L32E,
--	 * for the extremely unlikely case where the overflow handler's
--	 * reference thru a0 gets a hardware TLB refill that bumps out
--	 * the (distinct, aliasing) TLB entry that mapped its prior
--	 * references thru a9, and where our reference now thru a9
--	 * gets a 2nd-level miss exception (not hardware TLB refill).
- 	 */
+ 	handled = 1;
+ 	MACvIntDisable(pDevice->PortOffset);
+-	spin_lock_irq(&pDevice->lock);
++
++	spin_lock_irqsave(&pDevice->lock, flags);
  
--	l32e	a2, a9, -16
--	wsr	a2, depc	# replace the saved a0
--	j	1f
-+	l32e	a0, a9, -16
-+	wsr	a0, depc	# replace the saved a0
-+	j	3f
+ 	//Make sure current page is 0
+ 	VNSvInPortB(pDevice->PortOffset + MAC_REG_PAGE1SEL, &byOrgPageSel);
+@@ -2696,7 +2698,8 @@ static  irqreturn_t  device_intr(int irq
+ 		MACvSelectPage1(pDevice->PortOffset);
+ 	}
  
- 2:
- 	/*
- 	 * Restore a0 as saved by _WindowOverflow12().
--	 *
--	 * FIXME:  we really need a fixup handler for this L32E,
--	 * for the extremely unlikely case where the overflow handler's
--	 * reference thru a0 gets a hardware TLB refill that bumps out
--	 * the (distinct, aliasing) TLB entry that mapped its prior
--	 * references thru a13, and where our reference now thru a13
--	 * gets a 2nd-level miss exception (not hardware TLB refill).
- 	 */
+-	spin_unlock_irq(&pDevice->lock);
++	spin_unlock_irqrestore(&pDevice->lock, flags);
++
+ 	MACvIntEnable(pDevice->PortOffset, IMR_MASK_VALUE);
  
--	l32e	a2, a13, -16
--	wsr	a2, depc	# replace the saved a0
-+	l32e	a0, a13, -16
-+	wsr	a0, depc	# replace the saved a0
-+3:
-+	xsr	a3, excsave1
-+	movi	a0, 0
-+	s32i	a0, a3, EXC_TABLE_FIXUP
-+	s32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
- 1:
- 	/*
- 	 * Restore WindowBase while leaving all address registers restored.
-@@ -449,6 +453,7 @@ _DoubleExceptionVector_WindowOverflow:
- 
- 	s32i	a0, a2, PT_DEPC
- 
-+_DoubleExceptionVector_handle_exception:
- 	addx4	a0, a0, a3
- 	l32i	a0, a0, EXC_TABLE_FAST_USER
- 	xsr	a3, excsave1
-@@ -464,11 +469,120 @@ _DoubleExceptionVector_WindowOverflow:
- 	rotw	-3
- 	j	1b
- 
--	.end literal_prefix
- 
- ENDPROC(_DoubleExceptionVector)
- 
- /*
-+ * Fixup handler for TLB miss in double exception handler for window owerflow.
-+ * We get here with windowbase set to the window that was being spilled and
-+ * a0 trashed. a0 bit 7 determines if this is a call8 (bit clear) or call12
-+ * (bit set) window.
-+ *
-+ * We do the following here:
-+ * - go to the original window retaining a0 value;
-+ * - set up exception stack to return back to appropriate a0 restore code
-+ *   (we'll need to rotate window back and there's no place to save this
-+ *    information, use different return address for that);
-+ * - handle the exception;
-+ * - go to the window that was being spilled;
-+ * - set up window_overflow_restore_a0_fixup as a fixup routine;
-+ * - reload a0;
-+ * - restore the original window;
-+ * - reset the default fixup routine;
-+ * - return to user. By the time we get to this fixup handler all information
-+ *   about the conditions of the original double exception that happened in
-+ *   the window overflow handler is lost, so we just return to userspace to
-+ *   retry overflow from start.
-+ *
-+ * a0: value of depc, original value in depc
-+ * a2: trashed, original value in EXC_TABLE_DOUBLE_SAVE
-+ * a3: exctable, original value in excsave1
-+ */
-+
-+ENTRY(window_overflow_restore_a0_fixup)
-+
-+	rsr	a0, ps
-+	extui	a0, a0, PS_OWB_SHIFT, PS_OWB_WIDTH
-+	rsr	a2, windowbase
-+	sub	a0, a2, a0
-+	extui	a0, a0, 0, 3
-+	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
-+	xsr	a3, excsave1
-+
-+	_beqi	a0, 1, .Lhandle_1
-+	_beqi	a0, 3, .Lhandle_3
-+
-+	.macro	overflow_fixup_handle_exception_pane n
-+
-+	rsr	a0, depc
-+	rotw	-\n
-+
-+	xsr	a3, excsave1
-+	wsr	a2, depc
-+	l32i	a2, a3, EXC_TABLE_KSTK
-+	s32i	a0, a2, PT_AREG0
-+
-+	movi	a0, .Lrestore_\n
-+	s32i	a0, a2, PT_DEPC
-+	rsr	a0, exccause
-+	j	_DoubleExceptionVector_handle_exception
-+
-+	.endm
-+
-+	overflow_fixup_handle_exception_pane 2
-+.Lhandle_1:
-+	overflow_fixup_handle_exception_pane 1
-+.Lhandle_3:
-+	overflow_fixup_handle_exception_pane 3
-+
-+	.macro	overflow_fixup_restore_a0_pane n
-+
-+	rotw	\n
-+	/* Need to preserve a0 value here to be able to handle exception
-+	 * that may occur on a0 reload from stack. It may occur because
-+	 * TLB miss handler may not be atomic and pointer to page table
-+	 * may be lost before we get here. There are no free registers,
-+	 * so we need to use EXC_TABLE_DOUBLE_SAVE area.
-+	 */
-+	xsr	a3, excsave1
-+	s32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
-+	movi	a2, window_overflow_restore_a0_fixup
-+	s32i	a2, a3, EXC_TABLE_FIXUP
-+	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
-+	xsr	a3, excsave1
-+	bbsi.l	a0, 7, 1f
-+	l32e	a0, a9, -16
-+	j	2f
-+1:
-+	l32e	a0, a13, -16
-+2:
-+	rotw	-\n
-+
-+	.endm
-+
-+.Lrestore_2:
-+	overflow_fixup_restore_a0_pane 2
-+
-+.Lset_default_fixup:
-+	xsr	a3, excsave1
-+	s32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
-+	movi	a2, 0
-+	s32i	a2, a3, EXC_TABLE_FIXUP
-+	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
-+	xsr	a3, excsave1
-+	rfe
-+
-+.Lrestore_1:
-+	overflow_fixup_restore_a0_pane 1
-+	j	.Lset_default_fixup
-+.Lrestore_3:
-+	overflow_fixup_restore_a0_pane 3
-+	j	.Lset_default_fixup
-+
-+ENDPROC(window_overflow_restore_a0_fixup)
-+
-+	.end literal_prefix
-+/*
-  * Debug interrupt vector
-  *
-  * There is not much space here, so simply jump to another handler.
---- a/arch/xtensa/kernel/vmlinux.lds.S
-+++ b/arch/xtensa/kernel/vmlinux.lds.S
-@@ -269,13 +269,13 @@ SECTIONS
- 		  .UserExceptionVector.literal)
-   SECTION_VECTOR (_DoubleExceptionVector_literal,
- 		  .DoubleExceptionVector.literal,
--		  DOUBLEEXC_VECTOR_VADDR - 16,
-+		  DOUBLEEXC_VECTOR_VADDR - 40,
- 		  SIZEOF(.UserExceptionVector.text),
- 		  .UserExceptionVector.text)
-   SECTION_VECTOR (_DoubleExceptionVector_text,
- 		  .DoubleExceptionVector.text,
- 		  DOUBLEEXC_VECTOR_VADDR,
--		  32,
-+		  40,
- 		  .DoubleExceptionVector.literal)
- 
-   . = (LOADADDR( .DoubleExceptionVector.text ) + SIZEOF( .DoubleExceptionVector.text ) + 3) & ~ 3;
+ 	return IRQ_RETVAL(handled);
 
 
