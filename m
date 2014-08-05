@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530AbaHEDLh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 23:11:37 -0400
-Received: from imap.thunk.org ([74.207.234.97]:44578 "EHLO imap.thunk.org"
+	id S1753547AbaHEDOz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 23:14:55 -0400
+Received: from ozlabs.org ([103.22.144.67]:59532 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753169AbaHEDLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 23:11:35 -0400
-Date: Mon, 4 Aug 2014 23:11:32 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ext4 bug updates for 3.17
-Message-ID: <20140805031132.GA16323@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1753169AbaHEDOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 23:14:54 -0400
+Date: Tue, 5 Aug 2014 13:14:47 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: [GIT PULL] hwmon updates for 3.17
+Message-ID: <20140805131447.5cec84e5@canb.auug.org.au>
+In-Reply-To: <20140805022209.GA13813@roeck-us.net>
+References: <20140805022209.GA13813@roeck-us.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/cfbcMSHU=GMMa/UvwSxPV9p"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 1795cd9b3a91d4b5473c97f491d63892442212ab:
+--Sig_/cfbcMSHU=GMMa/UvwSxPV9p
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-  Linux 3.16-rc5 (2014-07-13 14:04:33 -0700)
+Hi Guenter,
 
-are available in the git repository at:
+On Mon, 4 Aug 2014 19:22:09 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
+>
+> Hi Linus,
+>=20
+> Please pull hwmon updates for Linux 3.17 from signed tag:
+>=20
+>     git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.gi=
+t hwmon-for-linus
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+This branch was rewritten (but not rebased) to add 5 commits at its
+start and 8 commits at its end since yesterday's linux-next.
 
-for you to fetch changes up to 86f0afd463215fc3e58020493482faa4ac3a4d69:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-  ext4: fix ext4_discard_allocated_blocks() if we can't allocate the pa struct (2014-07-30 22:17:17 -0400)
+--Sig_/cfbcMSHU=GMMa/UvwSxPV9p
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-----------------------------------------------------------------
-Bug fixes and clean ups for the 3.17 merge window
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-----------------------------------------------------------------
-Darrick J. Wong (1):
-      ext4: check inline directory before converting
+iQIcBAEBCAAGBQJT4EwrAAoJEMDTa8Ir7ZwVEGYP/0chSWzQR3HmuRd7B22nYH4K
+QWqsFFPD6ZmIcK3pF6ylgfCc9f3ivzhwULD70rRygfmF3AZeXetr1lO4cMmn0Aw7
+5ECMM6NaJoMTBeCm7UfN3fAey6Hh8OxWe8h78dQgS3RNvEkb5WuhASBRbYBUZDKs
+4cknq30PBAwEH3/RH5jth+P564SxsZSOJahXpuX6+jTlwL4QNT0JDacj1cyyv3eK
+8Qo9EKCjmJRBg+pDUghmtKlRz+k9HhZZ/cD8xB7bO+vaEK8D4KY/syyAAxjc86cB
+AB+CHtjFkvDZXUP/wyCslZennN56iea/M82VaV3wJDBmHeM4OxSk2VAxRr1LevDC
+7ZscCWQaXTpQMEjpU4drUUqDhexfo109jzV2XiCkxb2T2x9c/SmISWvvIMeN4l/L
+mZ+cB0Fol1INt5/9nzc+t0KNeLsFqy4NFdBocGMCNKKrU9Rw3rMm3jFYu0V+mZ7p
+t+IInrzbXjzj/yrS2FocvoeLnsiUqYYVDt3EUngnCYYHXLBgDfN1a2+k0a2JMfrK
+nNTRVJFzN/A6lSlRRQ8Avz+igycsVkGIkpeUGYSmLEBmQPOUSm4kH/Be6aZDj4iN
+3hZLdPnjzTth/OBiiqK1ugUYz212vjnwkvd61Qc28yRhYq02ScRcYISmDNQsudGJ
+DfTCJwjkVaHVD/O6vrwk
+=qAHe
+-----END PGP SIGNATURE-----
 
-Dmitry Monakhov (3):
-      ext4: add i_data_sem sanity check
-      ext4: use correct depth value
-      ext4: fix incorrect locking in move_extent_per_page
-
-Lukas Czerner (1):
-      ext4: fix punch hole on files with indirect mapping
-
-Namjae Jeon (1):
-      ext4: fix COLLAPSE RANGE test for bigalloc file systems
-
-Theodore Ts'o (3):
-      ext4: rearrange initialization to fix EXT4FS_DEBUG
-      ext4: remove metadata reservation checks
-      ext4: fix ext4_discard_allocated_blocks() if we can't allocate the pa struct
-
-Xiaoguang Wang (1):
-      ext4: fix wrong size computation in ext4_mb_normalize_request()
-
-Zhang Zhen (1):
-      ext4: remove readpage() check in ext4_mmap_file()
-
-Zheng Liu (1):
-      ext4: make ext4_has_inline_data() as a inline function
-
- fs/ext4/balloc.c      |   1 -
- fs/ext4/dir.c         |  25 ++++++
- fs/ext4/ext4.h        |  14 +++-
- fs/ext4/extents.c     |  14 ++--
- fs/ext4/file.c        |   4 -
- fs/ext4/indirect.c    | 281 +++++++++++++++++++++++++++++++++++++++++++++++------------------
- fs/ext4/inline.c      |  18 +++--
- fs/ext4/inode.c       | 130 ++----------------------------
- fs/ext4/mballoc.c     |  41 ++++++----
- fs/ext4/migrate.c     |   7 ++
- fs/ext4/move_extent.c |   3 +-
- fs/ext4/super.c       |  88 +++++++++------------
- 12 files changed, 333 insertions(+), 293 deletions(-)
+--Sig_/cfbcMSHU=GMMa/UvwSxPV9p--
