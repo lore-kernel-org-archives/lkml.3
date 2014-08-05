@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831AbaHEWXM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 18:23:12 -0400
-Received: from imap.thunk.org ([74.207.234.97]:46161 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752020AbaHEWXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 18:23:11 -0400
-Date: Tue, 5 Aug 2014 18:23:03 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Torsten Duwe <duwe@lst.de>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "H . Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] hwrng: Pass entropy to add_hwgenerator_randomness() in
- bits, not bytes
-Message-ID: <20140805222303.GB26399@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Torsten Duwe <duwe@lst.de>,
-	Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-	Matt Mackall <mpm@selenic.com>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	"H . Peter Anvin" <hpa@zytor.com>
-References: <1406326758-4516-1-git-send-email-sboyd@codeaurora.org>
- <20140728094929.GJ972@lst.de>
+	id S1753885AbaHEW06 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 18:26:58 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:44543 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866AbaHEW05 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 18:26:57 -0400
+Message-ID: <53E159F6.7080603@oracle.com>
+Date: Tue, 05 Aug 2014 18:25:58 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140728094929.GJ972@lst.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Christoph Lameter <cl@gentwo.org>
+CC: akpm@linux-foundation.org, Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org
+Subject: Re: vmstat: On demand vmstat workers V8
+References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <53D31101.8000107@oracle.com> <53DFFD28.2030502@oracle.com> <alpine.DEB.2.11.1408050950390.16902@gentwo.org>
+In-Reply-To: <alpine.DEB.2.11.1408050950390.16902@gentwo.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 11:49:29AM +0200, Torsten Duwe wrote:
-> On Fri, Jul 25, 2014 at 03:19:18PM -0700, Stephen Boyd wrote:
-> > rng_get_data() returns the number of bytes read from the hardware.
-> > The entropy argument to add_hwgenerator_randomness() is passed
-> > directly to credit_entropy_bits() so we should be passing the
-> > number of bits, not bytes here.
+On 08/05/2014 10:51 AM, Christoph Lameter wrote:
+> On Mon, 4 Aug 2014, Sasha Levin wrote:
 > 
-> Absolutely correct.
+>> On 07/25/2014 10:22 PM, Sasha Levin wrote:
+>>> On 07/10/2014 10:04 AM, Christoph Lameter wrote:
+>>>>> This patch creates a vmstat shepherd worker that monitors the
+>>>>> per cpu differentials on all processors. If there are differentials
+>>>>> on a processor then a vmstat worker local to the processors
+>>>>> with the differentials is created. That worker will then start
+>>>>> folding the diffs in regular intervals. Should the worker
+>>>>> find that there is no work to be done then it will make the shepherd
+>>>>> worker monitor the differentials again.
+>>> Hi Christoph, all,
+>>>
+>>> This patch doesn't interact well with my fuzzing setup. I'm seeing
+>>> the following:
+>>
+>> I think we got sidetracked here a bit, I've noticed that this issue
+>> is still happening in -next and discussions here died out.
 > 
-> Acked-by: Torsten Duwe <duwe@suse.de>
+> Ok I saw in another thread that this issue has gone away. Is there an
+> easy way to reproduce this on my system?
+> 
 
-Applied, thanks.
+I don't see the VM_BUG_ON anymore, but the cpu warnings are still there.
 
-					- Ted
+I can easily trigger it by cranking up the cpu hotplug code. Just try to
+frequently offline and online cpus, it should reproduce quickly.
+
+
+Thanks,
+Sasha
