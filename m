@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242AbaHEASp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 20:18:45 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:54455 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354AbaHEASo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 20:18:44 -0400
-Date: Mon, 4 Aug 2014 17:18:42 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch 2/3] mm, oom: remove unnecessary check for NULL
- zonelist
-In-Reply-To: <20140802181327.GL9952@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1408041710070.23228@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1407231814110.22326@chino.kir.corp.google.com> <alpine.DEB.2.02.1407231815090.22326@chino.kir.corp.google.com> <20140731152659.GB9952@cmpxchg.org> <alpine.DEB.2.02.1408010159500.4061@chino.kir.corp.google.com>
- <20140801133444.GH9952@cmpxchg.org> <alpine.DEB.2.02.1408011434330.11532@chino.kir.corp.google.com> <20140802181327.GL9952@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753240AbaHEAf6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 20:35:58 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34208 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752354AbaHEAf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 20:35:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,801,1400050800"; 
+   d="scan'208";a="553714198"
+From: Andi Kleen <andi@firstfloor.org>
+To: Daniel Hoffman <daniel_j_hoffman@inbox.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: What binutils version is needed for kernel LTO
+References: <E0D42739B2B.0000096Cdaniel_j_hoffman@inbox.com>
+Date: Mon, 04 Aug 2014 17:35:56 -0700
+In-Reply-To: <E0D42739B2B.0000096Cdaniel_j_hoffman@inbox.com> (Daniel
+	Hoffman's message of "Mon, 4 Aug 2014 15:09:45 -0800")
+Message-ID: <878un3wz6b.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2 Aug 2014, Johannes Weiner wrote:
+Daniel Hoffman <daniel_j_hoffman@inbox.com> writes:
 
-> > I see one concern: that panic_on_oom == 1 will not trigger on pagefault 
-> > when constrained by cpusets.  To address that, I'll state that, since 
-> > cpuset-constrained allocations are the allocation context for pagefaults,
-> > panic_on_oom == 1 should not trigger on pagefault when constrained by 
-> > cpusets.
-> 
-> I expressed my concern pretty clearly above: out_of_memory() wants the
-> zonelist that was used during the failed allocation, you are passing a
-> non-sensical value in there that only happens to have the same type.
-> 
+> I hate to ask it here but I cannot for the life of me compile linux
+> with these. It always kicks it back and says "scripts/Makefile.lto:76:
+> "WARNING: Too old linker version for kernel LTO. You need Linux
+> binutils. CONFIG_LTO disabled."". I am running the latest version from
+> Ubuntu and it matches up with the latest version from gnu.org. What do
+> I have to do?
 
-It's certainly meaningful, the particular zonelist chosen isn't important 
-because we don't care about the ordering and pagefaults are not going to 
-be using __GFP_THISNODE.  In this context, we only need to pass a zonelist 
-that includes all zones because constrained_alloc() tests if the 
-allocation is cpuset-constrained based on the gfp flags.  We'll get 
-CONSTRAINT_CPUSET in that case.
+See Documentation/lto-build.
 
-This is important because the behavior of panic_on_oom differs, as you 
-pointed out, depending on the constraint.  pagefault_out_of_memory(), with 
-my patch, will always get CONSTRAINT_CPUSET when needed and 
-check_panic_on_oom() will behave correctly now for cpusets.
+You need the Linux binutils from
+https://www.kernel.org/pub/linux/devel/binutils/
 
-> We simply don't have the right information at the end of the page
-> fault handler to respect constrained allocations.  Case in point:
-> nodemask is unset from pagefault_out_of_memory(), so we still kill
-> based on mempolicy even though check_panic_on_oom() says it wouldn't.
-> 
+-Andi
 
-That is, in fact, the only last bit of information we need in the 
-pagefault handler to make correct decisions.  It's important, too, since 
-if the vma of the faulting address is constrained by a mempolicy, we want 
-to avoid needless killing a process that has a mempolicy with a disjoint 
-set of nodes.
-
-> The code change is not an adequate solution for the problem we have
-> here and the changelog is an insult to everybody who wants to make
-> sense of this from the git history later on.
-> 
-
-We can also address mempolicies by modifying the page fault handler and 
-passing the vma and faulting address to make the correct panic_on_oom 
-decisions but also filter processes that have mempolicies that consist 
-solely of a disjoint set of nodes.  I'll post that patch series as well.
+-- 
+ak@linux.intel.com -- Speaking for myself only
