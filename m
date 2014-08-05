@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277AbaHELpr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 07:45:47 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:48709 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754092AbaHELpp (ORCPT
+	id S1754504AbaHELqy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 07:46:54 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:56448 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754366AbaHELqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 07:45:45 -0400
-Date: Tue, 5 Aug 2014 12:43:43 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org,
-        gregkh@linuxfoundation.org, jslaby@suse.cz, grant.likely@linaro.org,
-        heikki.krogerus@linux.intel.com, alan@linux.intel.com,
-        paul.gortmaker@windriver.com, asierra@xes-inc.com, mwelling@ieee.org,
-        dianders@chromium.org, m-karicheri2@ti.com, jschultz@xes-inc.com,
-        mingo@elte.hu, balbi@ti.com, heiko@sntech.de,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH 1/3] tty: serial: 8250: Add new capability for highspeed
- register
-Message-ID: <20140805124343.27ff9b32@alan.etchedpixels.co.uk>
-In-Reply-To: <1407236054-30994-2-git-send-email-matthias.bgg@gmail.com>
-References: <1407236054-30994-1-git-send-email-matthias.bgg@gmail.com>
-	<1407236054-30994-2-git-send-email-matthias.bgg@gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 5 Aug 2014 07:46:52 -0400
+Date: Tue, 5 Aug 2014 13:46:49 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+Subject: Re: [PATCH 3.15 33/37] Fix gcc-4.9.0 miscompilation of
+ load_balance() in scheduler
+Message-ID: <20140805114649.GA295@x4>
+References: <20140730014827.565626091@linuxfoundation.org>
+ <20140730014829.344302554@linuxfoundation.org>
+ <20140730065312.GA1652@laptop.redhat.com>
+ <CA+55aFzr_wJzt6RpojXpDo-ashV_N7sP+j7Ba0ND9mSpr7MKRQ@mail.gmail.com>
+ <CA+5PVA5FPD8hp_7=M-VNoUG1Mw9R0Xkn2Yo50eo28ojzrcB5Aw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA5FPD8hp_7=M-VNoUG1Mw9R0Xkn2Yo50eo28ojzrcB5Aw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  
->  	/*
-> +	 * Mediatek UARTs use an extra highspeed register (UART_MTK_HIGHS)
-> +	 *
-> +	 * We need to recalcualte the quot register, as the claculation depends
-> +	 * on the vaule in the highspeed register.
-> +	 *
-> +	 * Some baudrates are not supported by the chip, so we use the next
-> +	 * lower rate supported.
-> +	 *
-> +	 * If highspeed register is set to 3, we need to specify sample count
-> +	 * and sample point to increase accuracy. If not, we reset the
-> +	 * registers to their default values.
-> +	 */
+On 2014.08.05 at 07:31 -0400, Josh Boyer wrote:
+> Sorry to bring this back up after the fact, but it's important for a
+> number of things in various distros.  I don't disagree it should be
+> disabled by default, but making it unconditional is going to force the
+> distributions that care about perf, systemtap, and debuggers to
+> manually revert this.  That deviation is concerning because the
+> upstream kernel won't easily be buildable the same way distros build
+> it.
+> 
+> I'm happy to come up with a config option patch, but I'm not sure if
+> it would be accepted.  Is that a possibility at this point?
 
-Don't put stuff in the core driver core for your chip specific weirdness,
-wrap the termios method with your own in your driver code as a fair
-number of other 8250ish drivers do.
+Please note that https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61923
+isn't fixed yet. So it would be premature to manually revert Linus'
+patch yet. 
 
-If you do that then you don't need to waste a UART CAPS flag and you
-don't need to put anything in the core driver code.
+When PR61923 gets fixed (and backported) its testcase could be combined
+with the testcase Jakub posted earlier in this thread.
 
-Alan
+-- 
+Markus
