@@ -1,45 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865AbaHEQah (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 12:30:37 -0400
-Received: from smtp.pobox.com ([208.72.237.35]:55253 "EHLO smtp.pobox.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753276AbaHEQag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 12:30:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=rfkyINnjn/jKUPUkwLQhIixmVJNzPcHk
-	hyIGHqCnHi5G8uA1xIBuc53KqfMiEuLJHJOvUI9NkVjtMhhHE8pDdEngbEnZhTU/
-	dQZdRt6KNds/RS0abA6yDl2a7MpLdmV0gN/AmnkxWflfqa5d2bsaMhkUg75+algy
-	dtBTJKQ/HPA=
-From: Junio C Hamano <gitster@pobox.com>
-To: Ramsay Jones <ramsay@ramsay1.demon.co.uk>
-Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] Git v2.1.0-rc1
-References: <xmqqy4v3q43r.fsf@gitster.dls.corp.google.com>
-	<53E01A3D.8070504@ramsay1.demon.co.uk>
-Date: Tue, 05 Aug 2014 09:30:24 -0700
-In-Reply-To: <53E01A3D.8070504@ramsay1.demon.co.uk> (Ramsay Jones's message of
-	"Tue, 05 Aug 2014 00:41:49 +0100")
-Message-ID: <xmqqtx5qq4pr.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1755926AbaHEQas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 12:30:48 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:62592 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753276AbaHEQap (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 12:30:45 -0400
+Message-ID: <53E106B1.9040704@gmail.com>
+Date: Wed, 06 Aug 2014 00:30:41 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: CECD6D2C-1CBD-11E4-9B1D-9903E9FBB39C-77302942!pb-smtp0.pobox.com
+To: Geert Uytterhoeven <geert@linux-m68k.org>, Jean Delvare <jdelvare@suse.de>
+CC: Karsten Keil <isdn@linux-pingi.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] drivers/isdn/hisax/Kconfig: Let HISAX_NETJET skip microblaze
+ architecture
+References: <53DFCFC9.6060307@gmail.com>	<20140804212354.74b97cd7@endymion.delvare> <CAMuHMdVGgW11UziFieCgXT7mSNA=_QgOaGAt42kEXqU9CUgqxA@mail.gmail.com> <53E05BC9.3060500@gmail.com>
+In-Reply-To: <53E05BC9.3060500@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ramsay Jones <ramsay@ramsay1.demon.co.uk> writes:
+On 08/05/2014 12:21 PM, Chen Gang wrote:
+> 
+> 
+> On 08/05/2014 03:44 AM, Geert Uytterhoeven wrote:
+>> On Mon, Aug 4, 2014 at 9:23 PM, Jean Delvare <jdelvare@suse.de> wrote:
+>>>> --- a/drivers/isdn/hisax/Kconfig
+>>>> +++ b/drivers/isdn/hisax/Kconfig
+>>>> @@ -237,7 +237,7 @@ config HISAX_MIC
+>>>>
+>>>>  config HISAX_NETJET
+>>>>       bool "NETjet card"
+>>>> -     depends on PCI && (BROKEN || !(PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
+>>>> +     depends on PCI && (BROKEN || !(PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN) || MICROBLAZE))
+>>>>       depends on VIRT_TO_BUS
+>>>>       help
+>>>>         This enables HiSax support for the NetJet from Traverse
+>>>> @@ -249,7 +249,7 @@ config HISAX_NETJET
+>>>>
+>>>>  config HISAX_NETJET_U
+>>>>       bool "NETspider U card"
+>>>> -     depends on PCI && (BROKEN || !(PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
+>>>> +     depends on PCI && (BROKEN || !(PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN) || MICROBLAZE))
+>>>>       depends on VIRT_TO_BUS
+>>>>       help
+>>>>         This enables HiSax support for the Netspider U interface ISDN card
+>>>
+>>> Fine with me, however the list is getting long. It would be better if
+>>> we could depend on a functional symbol rather than a negated list of
+>>> architectures. Would it make sense to have CONFIG_CPU_LITTLE_ENDIAN
+>>> defined on all little-endian architectures, so that driver can depend
+>>> on that if needed?
+>>
+>> Yes, that idea pops up once in a while.
+>>
+>> BTW, these days little endian PPC is also supported by Linux...
+>>
+>>> Alternatively, it might make more sense to list the architectures where
+>>> these drivers are actually used in practice. I guess that's X86, maybe
+>>> ARM and IA64, and that's all?
+>>
+>> || COMPILE_TEST ....
+>>
+> 
 
-> On 04/08/14 23:31, Junio C Hamano wrote:
->> 
->>  * The leaf function to check validity of a refname format has been
->>    micro-optimized, using SSE2 instructions when available.  A few
->>    breakages during its development have been caught and fixed already
->>    but there might remain some more still; please test and report if
->>    you find any.
->
-> This has been removed.
+If no additional response within 3 days, I shall continue to try to send
+patch for it.
 
-Thanks for a reminder.  Will drop.
+Excuse me, I need additional thinking of for it, so I plan to send patch
+for discussing and review within next week end (2014-08-17).
+
+And welcome any members' ideas, suggestions and completions.
+
+Thanks.
+
+> OK, thanks, what all of you said sounds reasonable to me.
+> 
+> Hello Geert:
+> 
+> Could you help send the related patch for it?
+> 
+> 
+> Thanks.
+> 
+
+
+-- 
+Chen Gang
+
+Open share and attitude like air water and life which God blessed
