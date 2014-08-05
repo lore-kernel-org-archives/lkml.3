@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229AbaHEEDT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 00:03:19 -0400
-Received: from ozlabs.org ([103.22.144.67]:38112 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753492AbaHEEDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 00:03:18 -0400
-Date: Tue, 5 Aug 2014 14:03:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: is the kgdb tree still relevant?
-Message-ID: <20140805140307.3a208980@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1753911AbaHEEHe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 00:07:34 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:56425 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256AbaHEEHd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 00:07:33 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/8=D+qaqoPP=qjfzISv2ixip"; protocol="application/pgp-signature"
+In-Reply-To: <20140805131758.3afa6b0b@notabene.brown>
+References: <20140805131758.3afa6b0b@notabene.brown>
+Date: Mon, 4 Aug 2014 21:07:32 -0700
+X-Google-Sender-Auth: eH0aBeuQz2l5F7Wu1q_Q8Ho0A68
+Message-ID: <CA+55aFxDQ8fE16uKPfjU-nBnvfjWHz3ib5mo1BDn2=JKXVQQmQ@mail.gmail.com>
+Subject: Re: Is lockref_get_not_zero() really correct in dget_parent()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/8=D+qaqoPP=qjfzISv2ixip
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Aug 4, 2014 at 8:17 PM, NeilBrown <neilb@suse.de> wrote:
+>
+>  I've been looking at last year's change to dentry refcounting which sets the
+>  refcount to -128 (mark_dead()) when the dentry is gone.
+>
+>  As this is an "unsigned long" and there are several places where
+>  d_lockref.count is compared e.g. "> 1", I start feeling uncomfortable, as
+>  "-128" is greater than "1".
 
-Hi Jason,
+Anybody who checks the lockref count without holding the lock is
+pretty much buggy by definition. And if you hold the lock, you had
+better not ever see a negative (== large positive) number, because
+that would be all kinds of buggy too.
 
-I have noticed that the kgdb tree contains 10 commits the last of which
-was committed on March 3, 2013.  Should I drop this tree form
-linux-next?
+So I don't *think* that people who compare with "> 1" kind of things
+should be problematic. I wouldn't necessarily disagree with the notion
+of making a lockref be a signed entity, though. It started out
+unsigned, but it started out without that dead state too, so that
+unsigned thing can be considered a historical artifact rather than any
+real design decision.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Anyway, I think my argument is that anybody who actually looks at
+d_count() and might see that magic dead value is so fundamentally
+broken in other ways that I wouldn't worry too much about *that* part.
 
---Sig_/8=D+qaqoPP=qjfzISv2ixip
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+But your "lockref_get_not_zero()" thing is a different thing:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+>  That brings me to dget_parent().  It only has rcu_read_lock() protection, and
+>  yet uses lockref_get_not_zero().  This doesn't seem safe.
 
-iQIcBAEBCAAGBQJT4FeAAAoJEMDTa8Ir7ZwVHMMQAJcDzBBjoo7liFM6rWvrMry9
-ciI+mtWnDehlPILXJYEJ5cJkvjk8nHUtkXey3n6r2CAiRtAfGq5MiCVQZc0YWhqy
-Qyfpgj0eEdEBvaEx0ZHCbnXzNWprGLE6MfqUqrlkKjCqmWJadqENf2VNHfGhasnH
-nK7/TD4tyEOBwdc2bt5ZWj8eNn0LU8KsGFkgwWwEW/lCI6NugLAGN8utdm4BPSW7
-LyQC1+XImALnYDRj+5LKo2fquiRA5N+EudRFfzl6LzPW1whVdL+UZEXkOESizI3O
-jZOemYrq57GPePC8erwM17PP2V7pn2Byvqrs6bq+LVmbEZpej5nEDkLuiqS18+E7
-oN5lsKSt4GA3FIXnS6oNBv+tPUkJAG6uMEQ0xBhrzc8/aEvfNINElp8Cp9H/QAac
-KC/+2dhoEEbTPfyG5g8BEnS1N+MZXNUfYJdXCV4dOKInLd091OIFoYFEYPg3FQZt
-24B9kDGcZ/S9sIWA/WZ5YQOlkI171Ah6AtM4vMGS4PQz4pQn0gTQxf/AcHMwcGE7
-AY5Z3Ruhxk9aCu/NTqz1d4gpkFomAOw6I04PTFWhLheRLa2G1vstH4JxeStzTVyW
-OZNhx9FcqAUCbGnh+mvS7HGW2fa9EmcpNLqTJ+9M0Lc98Fm9//gV4bvWI+umYvrT
-cig/GHi1jqocSmiSC+oB
-=vGLd
------END PGP SIGNATURE-----
+Yes, agreed, it's ugly and wrong, and smells bad.
 
---Sig_/8=D+qaqoPP=qjfzISv2ixip--
+But I think it happens to be safe (because the re-checking of d_parent
+will fail if a rename and dput could have triggered it, and even the
+extraneous "dput()" is actually safe, because it won't cause the value
+to become zero, so nothing bad happens. But it *is* kind of subtle,
+and I do agree that it's *needlessly* so.
+
+So it might be a good idea to get rid of the "not zero" version
+entirely, and make the check be about being *active* (ie not zero, and
+not dead).
+
+The only user of lockref_get_not_zero() is that dget_parent() thing,
+so that should be easy.
+
+So renaming it to "lockref_get_active()", and changing the "not zero"
+test to check for "positive" and change the rtype of "count" to be
+signed, all sound like good things to me.
+
+But I don't actually think it's an active bug, it's just an "active
+horribly ugly and subtly working code". I guess in theory if you can
+get lots of CPU's triggering the race at the same time, the magic
+negative number could become zero and positive, but at that point I
+don't think we're really talking reality any more.
+
+Can somebody pick holes in that? Does somebody want to send in the
+cleanup patch?
+
+          Linus
