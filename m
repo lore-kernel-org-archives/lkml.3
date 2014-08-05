@@ -1,92 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668AbaHENAe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 09:00:34 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:23395 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754542AbaHENAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 09:00:33 -0400
-X-IronPort-AV: E=Sophos;i="5.01,804,1400025600"; 
-   d="scan'208";a="158864066"
-Message-ID: <53E0D56E.7020205@citrix.com>
-Date: Tue, 5 Aug 2014 14:00:30 +0100
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754017AbaHENEm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 09:04:42 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:51615 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753041AbaHENEk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 09:04:40 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, <wei.liu2@citrix.com>
-CC: <konrad.wilk@oracle.com>, <boris.ostrovsky@oracle.com>,
-        <david.vrabel@citrix.com>, <Ian.Campbell@citrix.com>,
-        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: Re: [PATCH] xen-netfront: Fix handling packets on compound pages
- with skb_segment
-References: <20140801110246.GB17947@zion.uk.xensource.com>	<20140802.153337.1399638752235662112.davem@davemloft.net>	<20140803091110.GA7093@zion.uk.xensource.com> <20140804.152411.1486639478907964423.davem@davemloft.net>
-In-Reply-To: <20140804.152411.1486639478907964423.davem@davemloft.net>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+In-Reply-To: <1404079773.2619.4.camel@buesod1.americas.hpqcorp.net>
+References: <1403288473.10903.2.camel@buesod1.americas.hpqcorp.net>
+	<20140623065835.GF19860@laptop.programming.kicks-ass.net>
+	<1403622415.15523.4.camel@buesod1.americas.hpqcorp.net>
+	<20140625062510.GB4260@osiris>
+	<CA+55aFx3UQG42cYrUWrTDT9CnpnRwVta6C9N_0FH1wvyDMxPgw@mail.gmail.com>
+	<1404079773.2619.4.camel@buesod1.americas.hpqcorp.net>
+Date: Tue, 5 Aug 2014 15:04:38 +0200
+X-Google-Sender-Auth: -120F7BprIHW_ix0z1W8fET73f8
+Message-ID: <CAMuHMdX2ZCEd=J_Gpf-W+Zyqg27r4C6ULZgO=pg2houR-FXLvg@mail.gmail.com>
+Subject: Re: [PATCH v2] arch,locking: Ciao arch_mutex_cpu_relax()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/14 23:24, David Miller wrote:
-> From: Wei Liu <wei.liu2@citrix.com>
-> Date: Sun, 3 Aug 2014 10:11:10 +0100
->
->> On Sat, Aug 02, 2014 at 03:33:37PM -0700, David Miller wrote:
->>> From: Wei Liu <wei.liu2@citrix.com>
->>> Date: Fri, 1 Aug 2014 12:02:46 +0100
->>>
->>>> On Thu, Jul 31, 2014 at 01:25:20PM -0700, David Miller wrote:
->>>>> If you were to have a 64-slot TX queue, you ought to be able to handle
->>>>> this theoretical 51 slot SKB.
->>>>
->>>> There's two problems:
->>>> 1. IIRC a single page ring has 256 slots, allowing 64 slots packet
->>>>     yields 4 in-flight packets in worst case.
->>>> 2. Older netback could not handle this large number of slots and it's
->>>>     likely to deem the frontend malicious.
->>>>
->>>> For #1, we don't actually care that much if guest screws itself by
->>>> generating 64 slot packets. #2 is more concerning.
->>>
->>> How many slots can the older netback handle?
->>
->> I listed those two problems in the context "if we were to lift this
->> limit in the latest net-next tree", so "older netback" actually refers
->> to netback from 3.10 to 3.16.
->>
->> The current implementation allows the number of slots X:
->>   1. X <= 18, valid packet
->>   2. 18 < X < fatal_slot_count, dropped
->>   3. X >= fatal_slot_count, malicious frontend
->>
->> fatal_slot_count has default value of 20.
->
-> Given what I've seen so far, I think the only option is to linearize
-> the packet.
-I think that would have more performance penalty than calling 
-skb_gso_segment, but maybe I'm wrong.
->
-> BTW, we do have a netdev->gso_max_segs tunable drivers can set, but
-> it might not cover all of the cases you need to handle.
-Indeed. Even a packet with one frag can be too scattered for us.
->
-> Maybe we can create a similar tunable which triggers
-> skb_needs_linearize() in the transmit path.
->
-> The advantage of such a tunable is that this can be worked with
-> inside of TCP to avoid creating such packets in the first place.
->
-> For example, all of the MAX_SKB_FRAGS checks you see in net/ipv4/tcp.c
-> could be replaced with tests against this new tunable in struct netdevice.
-You would need to implement xennet_count_skb_frag_slots and count the 
-slots for every skb heading to a device with this tunable set. And not 
-just for TCP, but for any packet source.
-I think it would be better to check for that tunable in 
-dev_hard_start_xmit, and mask out the GSO bits in 'features' to force 
-segmentation there. That would do essentially the same as this patch, 
-but not in the netfront's start_xmit. One minor flaw is that it does one 
-round of segmentation only, which doesn't handle the theoretical worst case.
+Hi David,
 
-Zoli
+On Mon, Jun 30, 2014 at 12:09 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> From: Davidlohr Bueso <davidlohr@hp.com>
+>
+> The arch_mutex_cpu_relax() function, introduced by 34b133f, is
+> hacky and ugly. It was added a few years ago to address the fact
+> that common cpu_relax() calls include yielding on s390, and thus
+> impact the optimistic spinning functionality of mutexes. Nowadays
+> we use this function well beyond mutexes: rwsem, qrwlock, mcs and
+> lockref. Since the macro that defines the call is in the mutex header,
+> any users must include mutex.h and the naming is misleading as well.
+>
+> This patch (i) renames the call to cpu_relax_lowlatency  ("relax, but
+> only if you can do it with very low latency") and (ii) defines it in
+> each arch's asm/processor.h local header, just like for regular cpu_relax
+> functions. On all archs, except s390, cpu_relax_lowlatency is simply cpu_relax,
+> and thus we can take it out of mutex.h. While this can seem redundant,
+> I believe it is a good choice as it allows us to move out arch specific
+> logic from generic locking primitives and enables future(?) archs to
+> transparently define it, similarly to System Z.
+>
+> Please note that these changes are only tested on x86-64.
+>
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+> Changes from v1: Rename arch_cpu_relax to cpu_relax_lowlatency,
+> based on the purpose of the function, as suggested by Linus.
+>
+>  arch/alpha/include/asm/processor.h     | 1 +
+>  arch/arc/include/asm/processor.h       | 2 ++
+>  arch/arm/include/asm/processor.h       | 2 ++
+>  arch/arm64/include/asm/processor.h     | 1 +
+>  arch/avr32/include/asm/processor.h     | 1 +
+>  arch/blackfin/include/asm/processor.h  | 2 +-
+>  arch/c6x/include/asm/processor.h       | 1 +
+>  arch/cris/include/asm/processor.h      | 1 +
+>  arch/hexagon/include/asm/processor.h   | 1 +
+>  arch/ia64/include/asm/processor.h      | 1 +
+>  arch/m32r/include/asm/processor.h      | 1 +
+>  arch/m68k/include/asm/processor.h      | 1 +
+>  arch/metag/include/asm/processor.h     | 1 +
+>  arch/mips/include/asm/processor.h      | 1 +
+>  arch/mn10300/include/asm/processor.h   | 2 ++
+>  arch/openrisc/include/asm/processor.h  | 1 +
+>  arch/parisc/include/asm/processor.h    | 1 +
+>  arch/powerpc/include/asm/processor.h   | 2 ++
+>  arch/s390/include/asm/processor.h      | 2 +-
+>  arch/score/include/asm/processor.h     | 1 +
+>  arch/sh/include/asm/processor.h        | 1 +
+>  arch/sparc/include/asm/processor_32.h  | 2 ++
+>  arch/sparc/include/asm/processor_64.h  | 1 +
+>  arch/tile/include/asm/processor.h      | 2 ++
+>  arch/unicore32/include/asm/processor.h | 1 +
+>  arch/x86/include/asm/processor.h       | 2 ++
+>  arch/xtensa/include/asm/processor.h    | 1 +
+>  include/linux/mutex.h                  | 4 ----
+>  kernel/locking/mcs_spinlock.c          | 8 +++-----
+>  kernel/locking/mcs_spinlock.h          | 4 ++--
+>  kernel/locking/mutex.c                 | 4 ++--
+>  kernel/locking/qrwlock.c               | 9 ++++-----
+>  kernel/locking/rwsem-xadd.c            | 4 ++--
+>  lib/lockref.c                          | 3 +--
+>  34 files changed, 48 insertions(+), 24 deletions(-)
+
+It looks like you forgot to update frv?  It's been failing on -next since a
+few days:
+
+kernel/locking/mcs_spinlock.h:87:2: error: implicit declaration of
+function 'cpu_relax_lowlatency'
+[-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+kernel/locking/mcs_spinlock.h:87:2: error: implicit declaration of
+function 'cpu_relax_lowlatency'
+[-Werror=implicit-function-declaration]
+make[3]: *** [kernel/locking/mcs_spinlock.o] Error 1
+cc1: some warnings being treated as errors
+make[3]: *** [kernel/locking/mutex.o] Error 1
+
+http://kisskb.ellerman.id.au/kisskb/buildresult/11616307/
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
