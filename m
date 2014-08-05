@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932588AbaHEIMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 04:12:19 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:39760 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757037AbaHEIMP (ORCPT
+	id S932610AbaHEIOL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 04:14:11 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:3846 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932590AbaHEIOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 04:12:15 -0400
-Date: Tue, 5 Aug 2014 12:12:11 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Vagin <avagin@parallels.com>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org, tj@kernel.org,
-        akpm@linux-foundation.org, avagin@openvz.org, ebiederm@xmission.com,
-        hpa@zytor.com, serge.hallyn@canonical.com, xemul@parallels.com,
-        segoon@openwall.com, kamezawa.hiroyu@jp.fujitsu.com,
-        mtk.manpages@gmail.com, jln@google.com
-Subject: Re: [patch 4/4] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP
- operation, v3
-Message-ID: <20140805081211.GM20553@moon>
-References: <20140804172255.109539743@openvz.org>
- <20140804172610.965949916@openvz.org>
- <20140805080852.GA32222@paralelels.com>
+	Tue, 5 Aug 2014 04:14:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 05 Aug 2014 01:01:23 -0700
+From: Mikko Perttunen <mperttunen@nvidia.com>
+To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>, Mikko Perttunen <mperttunen@nvidia.com>
+Subject: [PATCH 0/3] Thermal reset support in PMC
+Date: Tue, 5 Aug 2014 11:12:57 +0300
+Message-ID: <1407226380-747-1-git-send-email-mperttunen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140805080852.GA32222@paralelels.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 12:08:53PM +0400, Andrew Vagin wrote:
-> > 
-> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> > Cc: Kees Cook <keescook@chromium.org>
-> > Cc: Tejun Heo <tj@kernel.org>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Andrew Vagin <avagin@openvz.org>
-> 
-> Acked-by: Andrew Vagin <avagin@openvz.org>
-> 
-> I have tested this patch with criu. Everything work as expected.
+Hi,
 
-Thanks Andrew, Serge!
+this series adds support for hardware-triggered thermal reset to the PMC
+driver. Namely, it adds device tree properties for specifying the I2C
+command to be sent when thermtrip is triggered. It is to be noted
+that thermtrip won't be ever triggered without a soctherm driver to
+calibrate the sensors, but I'll follow up with that patch.
+
+pmc.c required some juggling around to make the match data usable in
+probe, since I didn't want to put the code into the initcall either, since
+the soctherm driver won't be initialized by that point anyway.
+
+Series tested on Jetson-TK1. Should work on Tegra30 and Tegra114 too.
+
+Thanks,
+Mikko
+
+Mikko Perttunen (3):
+  of: Add descriptions of thermtrip properties to Tegra PMC bindings
+  ARM: tegra: Add PMC thermtrip programming to Jetson TK1 device tree
+  ARM: tegra: Add thermal reset (thermtrip) support to PMC
+
+ .../bindings/arm/tegra/nvidia,tegra20-pmc.txt      |  13 +
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts          |   5 +
+ drivers/soc/tegra/pmc.c                            | 348 +++++++++++++--------
+ 3 files changed, 234 insertions(+), 132 deletions(-)
+
+-- 
+1.8.1.5
+
