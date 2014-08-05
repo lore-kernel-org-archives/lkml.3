@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837AbaHESOY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:14:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52266 "EHLO
+	id S1754965AbaHESOd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:14:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52280 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403AbaHESOV (ORCPT
+	with ESMTP id S1754788AbaHESOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:21 -0400
+	Tue, 5 Aug 2014 14:14:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.15 24/42] sched_clock: Avoid corrupting hrtimer tree during suspend
-Date: Tue,  5 Aug 2014 11:13:38 -0700
-Message-Id: <20140805181321.738445501@linuxfoundation.org>
+        Michal Hocko <mhocko@suse.cz>, Paul Furtado <paulfurtado91@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 12/39] memcg: oom_notify use-after-free fix
+Date: Tue,  5 Aug 2014 11:13:49 -0700
+Message-Id: <20140805181336.418882443@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
-References: <20140805181321.018370988@linuxfoundation.org>
+In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
+References: <20140805181336.030349158@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,60 +27,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit f723aa1817dd8f4fe005aab52ba70c8ab0ef9457 upstream.
+commit 2bcf2e92c3918ce62ab4e934256e47e9a16d19c3 upstream.
 
-During suspend we call sched_clock_poll() to update the epoch and
-accumulated time and reprogram the sched_clock_timer to fire
-before the next wrap-around time. Unfortunately,
-sched_clock_poll() doesn't restart the timer, instead it relies
-on the hrtimer layer to do that and during suspend we aren't
-calling that function from the hrtimer layer. Instead, we're
-reprogramming the expires time while the hrtimer is enqueued,
-which can cause the hrtimer tree to be corrupted. Furthermore, we
-restart the timer during suspend but we update the epoch during
-resume which seems counter-intuitive.
+Paul Furtado has reported the following GPF:
 
-Let's fix this by saving the accumulated state and canceling the
-timer during suspend. On resume we can update the epoch and
-restart the timer similar to what we would do if we were starting
-the clock for the first time.
+  general protection fault: 0000 [#1] SMP
+  Modules linked in: ipv6 dm_mod xen_netfront coretemp hwmon x86_pkg_temp_thermal crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 microcode pcspkr ext4 jbd2 mbcache raid0 xen_blkfront
+  CPU: 3 PID: 3062 Comm: java Not tainted 3.16.0-rc5 #1
+  task: ffff8801cfe8f170 ti: ffff8801d2ec4000 task.ti: ffff8801d2ec4000
+  RIP: e030:mem_cgroup_oom_synchronize+0x140/0x240
+  RSP: e02b:ffff8801d2ec7d48  EFLAGS: 00010283
+  RAX: 0000000000000001 RBX: ffff88009d633800 RCX: 000000000000000e
+  RDX: fffffffffffffffe RSI: ffff88009d630200 RDI: ffff88009d630200
+  RBP: ffff8801d2ec7da8 R08: 0000000000000012 R09: 00000000fffffffe
+  R10: 0000000000000000 R11: 0000000000000000 R12: ffff88009d633800
+  R13: ffff8801d2ec7d48 R14: dead000000100100 R15: ffff88009d633a30
+  FS:  00007f1748bb4700(0000) GS:ffff8801def80000(0000) knlGS:0000000000000000
+  CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 00007f4110300308 CR3: 00000000c05f7000 CR4: 0000000000002660
+  Call Trace:
+    pagefault_out_of_memory+0x18/0x90
+    mm_fault_error+0xa9/0x1a0
+    __do_page_fault+0x478/0x4c0
+    do_page_fault+0x2c/0x40
+    page_fault+0x28/0x30
+  Code: 44 00 00 48 89 df e8 40 ca ff ff 48 85 c0 49 89 c4 74 35 4c 8b b0 30 02 00 00 4c 8d b8 30 02 00 00 4d 39 fe 74 1b 0f 1f 44 00 00 <49> 8b 7e 10 be 01 00 00 00 e8 42 d2 04 00 4d 8b 36 4d 39 fe 75
+  RIP  mem_cgroup_oom_synchronize+0x140/0x240
 
-Fixes: a08ca5d1089d "sched_clock: Use an hrtimer instead of timer"
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Link: http://lkml.kernel.org/r/1406174630-23458-1-git-send-email-john.stultz@linaro.org
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Commit fb2a6fc56be6 ("mm: memcg: rework and document OOM waiting and
+wakeup") has moved mem_cgroup_oom_notify outside of memcg_oom_lock
+assuming it is protected by the hierarchical OOM-lock.
+
+Although this is true for the notification part the protection doesn't
+cover unregistration of event which can happen in parallel now so
+mem_cgroup_oom_notify can see already unlinked and/or freed
+mem_cgroup_eventfd_list.
+
+Fix this by using memcg_oom_lock also in mem_cgroup_oom_notify.
+
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=80881
+
+Fixes: fb2a6fc56be6 (mm: memcg: rework and document OOM waiting and wakeup)
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reported-by: Paul Furtado <paulfurtado91@gmail.com>
+Tested-by: Paul Furtado <paulfurtado91@gmail.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/sched_clock.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/memcontrol.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/kernel/time/sched_clock.c
-+++ b/kernel/time/sched_clock.c
-@@ -204,7 +204,8 @@ void __init sched_clock_postinit(void)
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5670,8 +5670,12 @@ static int mem_cgroup_oom_notify_cb(stru
+ {
+ 	struct mem_cgroup_eventfd_list *ev;
  
- static int sched_clock_suspend(void)
- {
--	sched_clock_poll(&sched_clock_timer);
-+	update_sched_clock();
-+	hrtimer_cancel(&sched_clock_timer);
- 	cd.suspended = true;
++	spin_lock(&memcg_oom_lock);
++
+ 	list_for_each_entry(ev, &memcg->oom_notify, list)
+ 		eventfd_signal(ev->eventfd, 1);
++
++	spin_unlock(&memcg_oom_lock);
  	return 0;
- }
-@@ -212,6 +213,7 @@ static int sched_clock_suspend(void)
- static void sched_clock_resume(void)
- {
- 	cd.epoch_cyc = read_sched_clock();
-+	hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL);
- 	cd.suspended = false;
  }
  
 
