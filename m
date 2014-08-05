@@ -1,58 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563AbaHELCz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 07:02:55 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:37256 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754214AbaHELCx (ORCPT
+	id S1756600AbaHELEb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 07:04:31 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:53041 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753054AbaHELE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 07:02:53 -0400
+	Tue, 5 Aug 2014 07:04:28 -0400
+Message-ID: <53E0BA31.1000708@redhat.com>
+Date: Tue, 05 Aug 2014 13:04:17 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <53E09467.8070905@denx.de>
-References: <20140802135204.GA7635@himangi-Dell>
-	<1406988450.383937334@f99.i.mail.ru>
-	<53E09467.8070905@denx.de>
-Date: Tue, 5 Aug 2014 13:02:52 +0200
-X-Google-Sender-Auth: aseFjioGcdcV8InMBtDth2TV33s
-Message-ID: <CAG9MbtLNoVhbFbnm25RSP02p60oF65Z-S80FhB=FVW7SrLu+Tg@mail.gmail.com>
-Subject: Re: [PATCH] can: mcp251x: Use dmam_alloc_coherent
-From: christian pellegrin <chripell@fsfe.org>
-To: Stefano Babic <sbabic@denx.de>
-Cc: Himangi Saraogi <himangi774@gmail.com>,
-        Alexander Shiyan <shc_work@mail.ru>, julia.lawall@lip6.fr,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freyes@suse.com
+Subject: Re: [PATCH v2 2/2] KVM: nVMX: fix acknowledge interrupt on exit when
+ APICv is in use
+References: <1407213744-24794-1-git-send-email-wanpeng.li@linux.intel.com> <1407213744-24794-2-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1407213744-24794-2-git-send-email-wanpeng.li@linux.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Il 05/08/2014 06:42, Wanpeng Li ha scritto:
+> After commit 77b0f5d (KVM: nVMX: Ack and write vector info to intr_info
+> if L1 asks us to), "Acknowledge interrupt on exit" behavior can be
+> emulated. To do so, KVM will ask the APIC for the interrupt vector if
+> during a nested vmexit if VM_EXIT_ACK_INTR_ON_EXIT is set.  With APICv,
+> kvm_get_apic_interrupt would return -1 and give the following WARNING:
+> 
+> Call Trace:
+>  [<ffffffff81493563>] dump_stack+0x49/0x5e
+>  [<ffffffff8103f0eb>] warn_slowpath_common+0x7c/0x96
+>  [<ffffffffa059709a>] ? nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
+>  [<ffffffff8103f11a>] warn_slowpath_null+0x15/0x17
+>  [<ffffffffa059709a>] nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
+>  [<ffffffffa0594295>] ? nested_vmx_exit_handled+0x6a/0x39e [kvm_intel]
+>  [<ffffffffa0537931>] ? kvm_apic_has_interrupt+0x80/0xd5 [kvm]
+>  [<ffffffffa05972ec>] vmx_check_nested_events+0xc3/0xd3 [kvm_intel]
+>  [<ffffffffa051ebe9>] inject_pending_event+0xd0/0x16e [kvm]
+>  [<ffffffffa051efa0>] vcpu_enter_guest+0x319/0x704 [kvm]
+> 
+> If enabling APIC-v, all interrupts to L1 are delivered through APIC-v.
+> But when L2 is running, external interrupt will casue L1 vmexit with
+> reason external interrupt. Then L1 will pick up the interrupt through
+> vmcs12. when L1 ack the interrupt, since the APIC-v is enabled when
+> L1 is running, so APIC-v hardware still will do vEOI updating. The problem
+> is that the interrupt is delivered not through APIC-v hardware, this means
+> SVI/RVI/vPPR are not setting, but hardware required them when doing vEOI
+> updating. The solution is that, when L1 tried to pick up the interrupt
+> from vmcs12, then hypervisor will help to update the SVI/RVI/vPPR to make
+> sure the following vEOI updating and vPPR updating corrently.
+>     
+> Also, since interrupt is delivered through vmcs12, so APIC-v hardware will
+> not cleare vIRR and hypervisor need to clear it before L1 running.
+> 
+> Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
+> Suggested-by: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+> Tested-by: Liu, RongrongX <rongrongx.liu@intel.com>
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+> v1 -> v2:
+>  * reusing kvm_get_apic_interrupt here (by modifying kvm_cpu_get_interrupt, 
+>    apic_set_isr and apic_clear_irr)
+> 
+>  arch/x86/kvm/irq.c   |  2 +-
+>  arch/x86/kvm/lapic.c | 52 +++++++++++++++++++++++++++++++++++++++-------------
+>  2 files changed, 40 insertions(+), 14 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/irq.c b/arch/x86/kvm/irq.c
+> index bd0da43..a1ec6a5 100644
+> --- a/arch/x86/kvm/irq.c
+> +++ b/arch/x86/kvm/irq.c
+> @@ -108,7 +108,7 @@ int kvm_cpu_get_interrupt(struct kvm_vcpu *v)
+>  
+>  	vector = kvm_cpu_get_extint(v);
+>  
+> -	if (kvm_apic_vid_enabled(v->kvm) || vector != -1)
+> +	if (vector != -1)
+>  		return vector;			/* PIC */
+>  
+>  	return kvm_get_apic_interrupt(v);	/* APIC */
+> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+> index 3855103..08e8a89 100644
+> --- a/arch/x86/kvm/lapic.c
+> +++ b/arch/x86/kvm/lapic.c
+> @@ -352,25 +352,46 @@ static inline int apic_find_highest_irr(struct kvm_lapic *apic)
+>  
+>  static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
+>  {
+> -	apic->irr_pending = false;
+> +	struct kvm_vcpu *vcpu;
+> +
+> +	vcpu = apic->vcpu;
+> +
+>  	apic_clear_vector(vec, apic->regs + APIC_IRR);
+> -	if (apic_search_irr(apic) != -1)
+> -		apic->irr_pending = true;
+> +	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
+> +		/* try to update RVI */
+> +		kvm_make_request(KVM_REQ_EVENT, vcpu);
+> +	else {
+> +		vec = apic_search_irr(apic);
+> +		apic->irr_pending = (vec != -1);
+> +	}
+>  }
+>  
+>  static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
+>  {
+> -	/* Note that we never get here with APIC virtualization enabled.  */
+> +	struct kvm_vcpu *vcpu;
+> +
+> +	if (__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
+> +		return;
+> +
+> +	vcpu = apic->vcpu;
+>  
+> -	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
+> -		++apic->isr_count;
+> -	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
+>  	/*
+> -	 * ISR (in service register) bit is set when injecting an interrupt.
+> -	 * The highest vector is injected. Thus the latest bit set matches
+> -	 * the highest bit in ISR.
+> +	 * With APIC virtualization enabled, all caching is disabled
+> +	 * because the processor can modify ISR under the hood.  Instead
+> +	 * just set SVI.
+>  	 */
+> -	apic->highest_isr_cache = vec;
+> +	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
+> +		kvm_x86_ops->hwapic_isr_update(vcpu->kvm, vec);
+> +	else {
+> +		++apic->isr_count;
+> +		BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
+> +		/*
+> +		 * ISR (in service register) bit is set when injecting an interrupt.
+> +		 * The highest vector is injected. Thus the latest bit set matches
+> +		 * the highest bit in ISR.
+> +		 */
+> +		apic->highest_isr_cache = vec;
+> +	}
+>  }
+>  
+>  static inline int apic_find_highest_isr(struct kvm_lapic *apic)
+> @@ -1627,11 +1648,16 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
+>  	int vector = kvm_apic_has_interrupt(vcpu);
+>  	struct kvm_lapic *apic = vcpu->arch.apic;
+>  
+> -	/* Note that we never get here with APIC virtualization enabled.  */
+> -
+>  	if (vector == -1)
+>  		return -1;
+>  
+> +	/*
+> +	 * We get here even with APIC virtualization enabled, if doing
+> +	 * nested virtualization and L1 runs with the "acknowledge interrupt
+> +	 * on exit" mode.  Then we cannot inject the interrupt via RVI,
+> +	 * because the process would deliver it through the IDT.
+> +	 */
+> +
+>  	apic_set_isr(vector, apic);
+>  	apic_update_ppr(apic);
+>  	apic_clear_irr(vector, apic);
+> 
 
-BTW the reason that use of DMA is selectable by a parameter is that on
-some architectures (for example the venerable S3C24x0) the cost for
-its setup is so high that it doesn't make sense for smaller transfers.
-I absolutely agree with Stefano and Alexander, the SPI master driver
-is in the best position to decide if DMA is worth or not.
+Thanks, this looks good.  Felipe, can you test this patch together with
+http://article.gmane.org/gmane.linux.kernel/1762356/raw please?
 
-
-On Tue, Aug 5, 2014 at 10:23 AM, Stefano Babic <sbabic@denx.de> wrote:
->> Just for information: On my opinion, all SPI DMA stuff should be going into SPI layer.
->> It is not a good idea to keep this into this driver.
->
-> If I can add my two cents, I agree with Alexander. An underlying SPI
-> (master) controller driver can or cannot support DMA transfer, and this
-> should be transparent to the CAN layer. The mcp251x driver works with
-> both of them, taking advantage when DMA is available.
-
-
-
-
--- 
-Christian Pellegrin, see http://www.evolware.org/chri/
-"Real Programmers don't play tennis, or any other sport which requires
-you to change clothes. Mountain climbing is OK, and Real Programmers
-wear their climbing boots to work in case a mountain should suddenly
-spring up in the middle of the computer room."
+Paolo
