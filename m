@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466AbaHEBdd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 21:33:33 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42802 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723AbaHEBdZ (ORCPT
+	id S1753543AbaHEBeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 21:34:07 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:64406 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357AbaHEBds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 21:33:25 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Kumar Gala <galak@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lina Iyer <lina.iyer@linaro.org>
-Subject: [PATCH 6/8] msm: scm: Add a feat version query API
-Date: Mon,  4 Aug 2014 18:31:48 -0700
-Message-Id: <1407202310-3359-7-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1407202310-3359-1-git-send-email-sboyd@codeaurora.org>
-References: <1407202310-3359-1-git-send-email-sboyd@codeaurora.org>
+	Mon, 4 Aug 2014 21:33:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140805001237.GA29701@xanatos>
+References: <CAPDOMVj5nifG8VQBB_UzNESBc+arxpCQ5sEOAYdb6Rr-KkDSHw@mail.gmail.com>
+	<20140804164633.GA28436@xanatos>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C4028@US01WEMBX2.internal.synopsys.com>
+	<58974.1407180184@turing-police.cc.vt.edu>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C4061@US01WEMBX2.internal.synopsys.com>
+	<62334.1407184063@turing-police.cc.vt.edu>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C411C@US01WEMBX2.internal.synopsys.com>
+	<CAPDOMViK3ZzeDhNMi9oX_s8kZG45BGPwbmZeoT4u-nqg2rgwSg@mail.gmail.com>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C415A@US01WEMBX2.internal.synopsys.com>
+	<CAPDOMVjy9DzNVMg__MP7-0VAXYojDuGr6v+SoNfj3hhBKyHMYA@mail.gmail.com>
+	<20140805001237.GA29701@xanatos>
+Date: Mon, 4 Aug 2014 21:33:47 -0400
+Message-ID: <CAPDOMVgE4P9e0mm6kxhzK01Sway5gx4FW9+GC9QkJ0AjNp2JoQ@mail.gmail.com>
+Subject: Re: Kernel Debugging Support
+From: Nick Krause <xerofoify@gmail.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "Nyman, Mathias" <mathias.nyman@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some users of SCM need to detect features and also detect if
-those features have certain versions available. Add this API.
+On Mon, Aug 4, 2014 at 8:12 PM, Sarah Sharp
+<sarah.a.sharp@linux.intel.com> wrote:
+> On Mon, Aug 04, 2014 at 07:11:07PM -0400, Nick Krause wrote:
+>> On Mon, Aug 4, 2014 at 7:03 PM, Paul Zimmerman
+>> <Paul.Zimmerman@synopsys.com> wrote:
+>> >> From: Nick Krause [mailto:xerofoify@gmail.com]
+>
+> [snip]
+>
+>> >> Paul ,
+>> >> My computer is rather old now as of Sandy Bridge days, so I probably
+>> >> can't test the patch
+>> >> on my own machine. However I will look at the code and see if I can
+>> >> forward port it
+>> >> against the usb git tree I have a current version of. In addition I
+>> >> would like the new xhci
+>> >> maintainers information in  order to send out a patch with the
+>> >> Maintainer for xhci updated.
+>> >
+>> > Sarah already told you who the new maintainer is, and then CCed him
+>> > on this thread. Hint: There is a file name 'MAINTAINERS' in the root
+>> > of the kernel tree, which tells you who the maintainers are for all of
+>> > the subsystems. Please read Documentation/SubmittingPatches, it has a
+>> > lot of information like this that you need to know.
+>> >
+>> > --
+>> > Paul
+>> >
+>> Thanks I will read this file and thanks for the information. I known
+>> where the file is I will
+>> add the information then.
+>
+> You may be looking at an older version of MAINTAINERS.  Mathias has only
+> been marked as the maintainer since 3.15.  Which kernel version are you
+> working on?
+>
+> Sarah Sharp
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mach-qcom/scm.c | 13 +++++++++++++
- arch/arm/mach-qcom/scm.h |  1 +
- 2 files changed, 14 insertions(+)
-
-diff --git a/arch/arm/mach-qcom/scm.c b/arch/arm/mach-qcom/scm.c
-index e80571f57ca4..7c62c03324f4 100644
---- a/arch/arm/mach-qcom/scm.c
-+++ b/arch/arm/mach-qcom/scm.c
-@@ -410,3 +410,16 @@ int scm_is_call_available(u32 svc_id, u32 cmd_id)
- 	return ret_val;
- }
- EXPORT_SYMBOL(scm_is_call_available);
-+
-+#define GET_FEAT_VERSION_CMD	3
-+int scm_get_feat_version(u32 feat)
-+{
-+	if (scm_is_call_available(SCM_SVC_INFO, GET_FEAT_VERSION_CMD)) {
-+		u32 version;
-+		if (!scm_call(SCM_SVC_INFO, GET_FEAT_VERSION_CMD, &feat,
-+				sizeof(feat), &version, sizeof(version)))
-+			return version;
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL(scm_get_feat_version);
-diff --git a/arch/arm/mach-qcom/scm.h b/arch/arm/mach-qcom/scm.h
-index f94c7279616a..6348b08524e7 100644
---- a/arch/arm/mach-qcom/scm.h
-+++ b/arch/arm/mach-qcom/scm.h
-@@ -26,5 +26,6 @@ extern s32 scm_call_atomic2(u32 svc, u32 cmd, u32 arg1, u32 arg2);
- 
- extern u32 scm_get_version(void);
- extern int scm_is_call_available(u32 svc_id, u32 cmd_id);
-+extern int scm_get_feat_version(u32 feat);
- 
- #endif
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Hey Sarah,
+Sorry about that but I am working on the latest tree from linus using
+git and I checked seems he is there,
+I didn't known it was updated.
+Sorry and Thanks Nick
