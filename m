@@ -1,156 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933051AbaHEJsd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 05:48:33 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:58842 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933035AbaHEJsc (ORCPT
+	id S933079AbaHEJwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 05:52:49 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37414 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933032AbaHEJws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 05:48:32 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan.kim@lge.com
-Date: Tue, 5 Aug 2014 18:48:59 +0900
-From: Minchan Kim <minchan.kim@lge.com>
-To: linux-mm@kvack.org
-Cc: Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org,
-        juno.choi@lge.com, Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [RFC 3/3] zram: limit memory size for zram
-Message-ID: <20140805094859.GE27993@bbox>
-References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
- <1407225723-23754-4-git-send-email-minchan@kernel.org>
+	Tue, 5 Aug 2014 05:52:48 -0400
+Message-ID: <53E0A95E.8040502@pengutronix.de>
+Date: Tue, 05 Aug 2014 11:52:30 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1407225723-23754-4-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefan Agner <stefan@agner.ch>
+CC: shawn.guo@freescale.com, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-can@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] can: flexcan: add vf610 support for FlexCAN
+References: <cover.1405428166.git.stefan@agner.ch> <ff2ea1726b13dc2ffa3519ce9244f3633cf1420d.1405428166.git.stefan@agner.ch> <53C5398F.2000005@pengutronix.de> <1b8a8ca03b4a160027a79b722f697e25@agner.ch> <601adb6fe47279c115c1cc607365a00e@agner.ch> <53D25C9D.5080803@pengutronix.de> <e88108c655e2c16dc9cf6c4194547e73@agner.ch> <53D67A46.3060202@pengutronix.de> <b815c5c1f7faed334d1ed5370d51c180@agner.ch> <53D8DB3D.7030403@pengutronix.de> <cd33e1b365502ec0cb3b5bee6dc4fb61@agner.ch> <53DF9865.9060407@pengutronix.de> <0baf18a56e6cee86cc02e0d2f4ac4d9e@agner.ch>
+In-Reply-To: <0baf18a56e6cee86cc02e0d2f4ac4d9e@agner.ch>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="wfDchHWMPCtF0wU37jVhkPPJw5IBvmgUS"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Another idea: we could define void zs_limit_mem(unsinged long nr_pages)
-in zsmalloc and put the limit in zs_pool via new API from zram so that
-zs_malloc could be failed as soon as it exceeds the limit.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--wfDchHWMPCtF0wU37jVhkPPJw5IBvmgUS
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-In the end, zram doesn't need to call zs_get_total_size_bytes on every
-write. It's more clean and right layer, IMHO.
+On 08/04/2014 06:01 PM, Stefan Agner wrote:
+> Am 2014-08-04 16:27, schrieb Marc Kleine-Budde:
+>> On 08/04/2014 03:43 PM, Stefan Agner wrote:
+>> [...]
+>>
+>>>> Thanks for the test, so far looks promising :) With this setup the o=
+ther
+>>>> CAN node repeats the CAN frame until it's ACKed. Because there is no=
 
-On Tue, Aug 05, 2014 at 05:02:03PM +0900, Minchan Kim wrote:
-> I have received a request several time from zram users.
-> They want to limit memory size for zram because zram can consume
-> lot of memory on system without limit so it makes memory management
-> control hard.
-> 
-> This patch adds new knob to limit memory of zram.
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  Documentation/blockdev/zram.txt |  1 +
->  drivers/block/zram/zram_drv.c   | 41 +++++++++++++++++++++++++++++++++++++++++
->  drivers/block/zram/zram_drv.h   |  1 +
->  3 files changed, 43 insertions(+)
-> 
-> diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-> index d24534bee763..fcb0561dfe2e 100644
-> --- a/Documentation/blockdev/zram.txt
-> +++ b/Documentation/blockdev/zram.txt
-> @@ -96,6 +96,7 @@ size of the disk when not in use so a huge zram is wasteful.
->  		compr_data_size
->  		mem_used_total
->  		mem_used_max
-> +		mem_limit
->  
->  7) Deactivate:
->  	swapoff /dev/zram0
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index a4d637b4db7d..47f68bbb2c44 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -137,6 +137,37 @@ static ssize_t max_comp_streams_show(struct device *dev,
->  	return scnprintf(buf, PAGE_SIZE, "%d\n", val);
->  }
->  
-> +static ssize_t mem_limit_show(struct device *dev,
-> +		struct device_attribute *attr, char *buf)
-> +{
-> +	u64 val;
-> +	struct zram *zram = dev_to_zram(dev);
-> +
-> +	down_read(&zram->init_lock);
-> +	val = zram->limit_bytes;
-> +	up_read(&zram->init_lock);
-> +
-> +	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
-> +}
-> +
-> +static ssize_t mem_limit_store(struct device *dev,
-> +		struct device_attribute *attr, const char *buf, size_t len)
-> +{
-> +	u64 limit;
-> +	struct zram *zram = dev_to_zram(dev);
-> +	int ret;
-> +
-> +	ret = kstrtoull(buf, 0, &limit);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	down_write(&zram->init_lock);
-> +	zram->limit_bytes = limit;
-> +	ret = len;
-> +	up_write(&zram->init_lock);
-> +	return ret;
-> +}
-> +
->  static ssize_t max_comp_streams_store(struct device *dev,
->  		struct device_attribute *attr, const char *buf, size_t len)
->  {
-> @@ -511,6 +542,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  		ret = -ENOMEM;
->  		goto out;
->  	}
-> +
-> +	if (zram->limit_bytes &&
-> +		zs_get_total_size_bytes(meta->mem_pool) >= zram->limit_bytes) {
-> +		zs_free(meta->mem_pool, handle);
-> +		ret = -ENOMEM;
-> +		goto out;
-> +	}
-> +
->  	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
->  
->  	if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
-> @@ -854,6 +893,7 @@ static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
->  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
->  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
->  static DEVICE_ATTR(mem_used_max, S_IRUGO, mem_used_max_show, NULL);
-> +static DEVICE_ATTR(mem_limit, S_IRUGO, mem_limit_show, mem_limit_store);
->  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
->  		max_comp_streams_show, max_comp_streams_store);
->  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
-> @@ -883,6 +923,7 @@ static struct attribute *zram_disk_attrs[] = {
->  	&dev_attr_compr_data_size.attr,
->  	&dev_attr_mem_used_total.attr,
->  	&dev_attr_mem_used_max.attr,
-> +	&dev_attr_mem_limit.attr,
->  	&dev_attr_max_comp_streams.attr,
->  	&dev_attr_comp_algorithm.attr,
->  	NULL,
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index 7f21c145e317..c0d497ff6efc 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -99,6 +99,7 @@ struct zram {
->  	 * we can store in a disk.
->  	 */
->  	u64 disksize;	/* bytes */
-> +	u64 limit_bytes;
->  	int max_comp_streams;
->  	struct zram_stats stats;
->  	char compressor[10];
-> -- 
-> 2.0.0
+>>>> node with a compatible bitrate, there is no ACking CAN node.
+>>>>
+>>>> Can you add a third CAN node to the network. The second and third no=
+de
+>>>> should use the same bitrate, while your vf610 uses a different one. =
+With
+>>>> the new setup it should take more than one frame until the vf610 goe=
+s
+>>>> into error warning and even more frames to error passive. This way w=
+e
+>>>> can see it the error warning interrupt is connected or not. The erro=
+r
+>>>> counters should increase with each "wrong" bitrate frame it sees, yo=
+u
+>>>> can check with:
+>>>>
+>>>>     ip -details link show can0
+>>>>
+>>>> The output looks like this:
+>>>>
+>>>>> 4: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNK=
+NOWN mode DEFAULT qlen 10
+>>>>>     link/can
+>>>>>     can state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0
+>>>>                               ^^^^^^^^^^^^^^^^^^^^^^
+>>>>>     bitrate 1000000 sample-point 0.750
+>>>>>     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+>>>>>     sja1000: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+>>>>>     clock 8000000
+>>>>
+>>>> When one of the berr-counter crosses 96 (and stays below 128) a warn=
+ing
+>>>> interrupt should be generated.
+>>>
+>>> Ok, created this setup, could successfully communicate with all three=
 
--- 
-Kind regards,
-Minchan Kim
+>>> nodes. I then set the Vybrid to half of the bitrate. When I send a fr=
+ame
+>>> from Vybrid, the berr-counter tx immediately ends up at 128 and the
+>>> device is in ERROR-PASSIVE:
+>>
+>> This is expected.
+>>
+>>> root@colibri-vf:~# ip -details link show can1
+>>> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNO=
+WN
+>>> mode DEFAULT group default qlen 10
+>>>     link/can  promiscuity 0
+>>>     can state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0
+>>>     bitrate 124990 sample-point 0.739
+>>>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>>>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>>>     clock 83368421
+>>             ^^^^^^^^
+>>
+>> BTW: the can core has a really weird clock rate, have a look at the
+>> datasheet if you manage to route a 24 MHz clock (or another multiple o=
+f
+>> 8MHz) to the flexcan core. I had a quick glance at the datasheet, if I=
+
+>> understand it correctly the Fast OSC clock runs with 24 MHz.
+>>
+>=20
+> This pinmux is actually part of the IPs CTRL register (see CLKSRC).
+> Currently this is set unconditionally to peripheral clock, which is on
+> my device 83.3 MHz (500MHz/6). This would be a bit bigger change. Just
+> thinking how to implement this.
+
+Sigh! I've missed the fact, that this bit is _inside_ the CAN core
+(again). On the mx53 and imx6 this bit was obsolete and the clock was
+selected outside of the CAN core.
+
+> Maybe we have to reference a third clock
+> "osc" and a device tree property fsl,can-clock-osc which one can choose=
+
+> between "osc" and "per" what do you think?
+
+Yes, but that's a different patch. I thought it would be as easy as on
+the mx53, where you just had to reconfigure the clock tree.
+
+>>> root@colibri-vf:~# cansend can1 1F334455#1122334455667788
+>>> interface =3D can1, family =3D 29, type =3D 3, proto =3D 1
+>>> root@colibri-vf:~# [  818.886664] flexcan_irq, esr=3D00062242
+>>> [  818.890365] flexcan_irq, ctrl=3D1c3dac57
+>>>
+>>> root@colibri-vf:~# ip -details link show can1
+>>> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNO=
+WN
+>>> mode DEFAULT group default qlen 10
+>>>     link/can  promiscuity 0
+>>>     can state ERROR-PASSIVE (berr-counter tx 128 rx 0) restart-ms 0
+>>>     bitrate 124990 sample-point 0.739
+>>>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>>>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>>>     clock 83368421
+>>>
+>>>
+>>> When I send the frames from another device on the bus, I can see the =
+rx
+>>> count incrementing by one on each frame I send. As you expected, the
+>>> device changes to ERROR-WARNING when crossing the 96 frame boundary:
+>>
+>> This is correct
+>>
+>=20
+> Just found out when using too high bitrate (500000 vs 125000), the erro=
+r
+> counter immediately goes up to 128 (or even beyond) and ends up in
+> ERROR-PASSIVE:
+
+Maybe there is a off-by-one error in the flexcan core, so that a rx
+error of 127 doesn't trigger an error passive interrupt.
+
+> # ip -details link show can1
+> [  292.164820] flexcan_get_berr_counter, esr=3D00000000
+> [  292.169715] flexcan_get_berr_counter, esr=3D00040190
+> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
+
+> mode DEFAULT group default qlen 10
+>     link/can  promiscuity 0
+>     can state ERROR-PASSIVE (berr-counter tx 0 rx 135) restart-ms 0
+>     bitrate 298811 sample-point 0.777
+>     tq 371 prop-seg 3 phase-seg1 3 phase-seg2 2 sjw 1
+>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>     clock 83368421
+
+[...]
+
+>>> However, once reaching 128, I don't get another interrupt and the dev=
+ice
+>>> stays in ERROR-WARNING:
+>>
+>> The contents of the esr reg would be interesting, especially the
+>> FLT_CONF part.
+
+> root@vybridvf61-v11:~# [  222.221651] flexcan_irq, esr=3D0005050a
+> [  222.225349] flexcan_irq, ctrl=3D1c3dac57
+
+> ip -details link show can1
+> [  223.791082] flexcan_get_berr_counter, esr=3D00000000
+> [  223.796246] flexcan_get_berr_counter, esr=3D00040180
+> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
+
+> mode DEFAULT group default qlen=20
+> 10
+>     link/can  promiscuity 0
+>     can state ERROR-WARNING (berr-counter tx 0 rx 96) restart-ms 0
+>     bitrate 124990 sample-point 0.739
+>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>     clock 83368421
+
+> root@vybridvf61-v11:~# ip -details link show can1
+> [  243.571175] flexcan_get_berr_counter, esr=3D00000000
+> [  243.576343] flexcan_get_berr_counter, esr=3D00040582
+> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
+
+> mode DEFAULT group default qlen=20
+> 10
+>     link/can  promiscuity 0
+>     can state ERROR-WARNING (berr-counter tx 0 rx 104) restart-ms 0
+>     bitrate 124990 sample-point 0.739
+>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>     clock 83368421
+>=20
+> ...
+>=20
+> root@vybridvf61-v11:~# ip -details link show can1
+> [  299.831192] flexcan_get_berr_counter, esr=3D00000000
+> [  299.836358] flexcan_get_berr_counter, esr=3D00040582
+> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
+
+> mode DEFAULT group default qlen 10
+>     link/can  promiscuity 0=20
+>     can state ERROR-WARNING (berr-counter tx 0 rx 126) restart-ms 0=20
+>     bitrate 124990 sample-point 0.739=20
+>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>     clock 83368421
+> root@vybridvf61-v11:~# ip -details link show can1
+> [  302.411025] flexcan_get_berr_counter, esr=3D00000000
+> [  302.416195] flexcan_get_berr_counter, esr=3D00040592
+> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
+
+> mode DEFAULT group default qlen 10
+>     link/can  promiscuity 0=20
+>     can state ERROR-WARNING (berr-counter tx 0 rx 128) restart-ms 0=20
+>     bitrate 124990 sample-point 0.739=20
+>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>     clock 83368421
+>=20
+> The FLTCONF is in Error Passive, however the stack did not received tha=
+t
+> information. I still have the printk in the interrupt, however I did no=
+t
+> get an interrupt here (while I get one when it switched to
+> ERROR-WARNING... But it looks like the ERRINT is still pending...
+
+According to the datasheet the ERRINT indicates a bit error (bit 10...15
+is set), not the error passive state.
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--wfDchHWMPCtF0wU37jVhkPPJw5IBvmgUS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlPgqV4ACgkQjTAFq1RaXHMeLwCghF2zPc1hvyICKf5HsIauFmV7
+mYMAnRAGCJfwI+o9S7s57t/11ylXh6Wz
+=SoBz
+-----END PGP SIGNATURE-----
+
+--wfDchHWMPCtF0wU37jVhkPPJw5IBvmgUS--
