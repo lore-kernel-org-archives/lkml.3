@@ -1,113 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478AbaHEEy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 00:54:27 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:36851 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121AbaHEEyY (ORCPT
+	id S1753700AbaHEE4R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 00:56:17 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:47846 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753621AbaHEE4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 00:54:24 -0400
-Message-ID: <1407214461.2566.14.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 4/7] locking/rwsem: threshold limited spinning for
- active readers
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Date: Mon, 04 Aug 2014 21:54:21 -0700
-In-Reply-To: <1407119782-41119-5-git-send-email-Waiman.Long@hp.com>
-References: <1407119782-41119-1-git-send-email-Waiman.Long@hp.com>
-	 <1407119782-41119-5-git-send-email-Waiman.Long@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Aug 2014 00:56:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140805045417.GA27012@loki.us-west-2.compute.internal>
+References: <20140805131758.3afa6b0b@notabene.brown>
+	<CA+55aFxDQ8fE16uKPfjU-nBnvfjWHz3ib5mo1BDn2=JKXVQQmQ@mail.gmail.com>
+	<20140805045417.GA27012@loki.us-west-2.compute.internal>
+Date: Mon, 4 Aug 2014 21:56:13 -0700
+Message-ID: <CAKbGBLha7c2aLLRxkAmXk6_P+g6Q3OMWVFSCLcyuE1YybCjmdg@mail.gmail.com>
+Subject: Re: Is lockref_get_not_zero() really correct in dget_parent()
+From: Steven Noonan <steven@uplinklabs.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: NeilBrown <neilb@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-08-03 at 22:36 -0400, Waiman Long wrote:
-> Even thought only the writers can perform optimistic spinning, there
-> is still a chance that readers may take the lock before a spinning
-> writer can get it. In that case, the owner field will be NULL and the
-> spinning writer can spin indefinitely until its time quantum expires
-> when some lock owning readers are not running.
+On Mon, Aug 4, 2014 at 9:54 PM, Steven Noonan <steven@uplinklabs.net> wrote:
+> On Mon, Aug 04, 2014 at 09:07:32PM -0700, Linus Torvalds wrote:
+>> On Mon, Aug 4, 2014 at 8:17 PM, NeilBrown <neilb@suse.de> wrote:
+>> >
+>> >  I've been looking at last year's change to dentry refcounting which sets the
+>> >  refcount to -128 (mark_dead()) when the dentry is gone.
+>> >
+>> >  As this is an "unsigned long" and there are several places where
+>> >  d_lockref.count is compared e.g. "> 1", I start feeling uncomfortable, as
+>> >  "-128" is greater than "1".
+>>
+>> Anybody who checks the lockref count without holding the lock is
+>> pretty much buggy by definition. And if you hold the lock, you had
+>> better not ever see a negative (== large positive) number, because
+>> that would be all kinds of buggy too.
+>>
+>> So I don't *think* that people who compare with "> 1" kind of things
+>> should be problematic. I wouldn't necessarily disagree with the notion
+>> of making a lockref be a signed entity, though. It started out
+>> unsigned, but it started out without that dead state too, so that
+>> unsigned thing can be considered a historical artifact rather than any
+>> real design decision.
+>>
+>> Anyway, I think my argument is that anybody who actually looks at
+>> d_count() and might see that magic dead value is so fundamentally
+>> broken in other ways that I wouldn't worry too much about *that* part.
+>>
+>> But your "lockref_get_not_zero()" thing is a different thing:
+>>
+>> >  That brings me to dget_parent().  It only has rcu_read_lock() protection, and
+>> >  yet uses lockref_get_not_zero().  This doesn't seem safe.
+>>
+>> Yes, agreed, it's ugly and wrong, and smells bad.
+>>
+>> But I think it happens to be safe (because the re-checking of d_parent
+>> will fail if a rename and dput could have triggered it, and even the
+>> extraneous "dput()" is actually safe, because it won't cause the value
+>> to become zero, so nothing bad happens. But it *is* kind of subtle,
+>> and I do agree that it's *needlessly* so.
+>>
+>> So it might be a good idea to get rid of the "not zero" version
+>> entirely, and make the check be about being *active* (ie not zero, and
+>> not dead).
+>>
+>> The only user of lockref_get_not_zero() is that dget_parent() thing,
+>> so that should be easy.
+>>
+>> So renaming it to "lockref_get_active()", and changing the "not zero"
+>> test to check for "positive" and change the rtype of "count" to be
+>> signed, all sound like good things to me.
+>>
+>> But I don't actually think it's an active bug, it's just an "active
+>> horribly ugly and subtly working code". I guess in theory if you can
+>> get lots of CPU's triggering the race at the same time, the magic
+>> negative number could become zero and positive, but at that point I
+>> don't think we're really talking reality any more.
+>>
+>> Can somebody pick holes in that? Does somebody want to send in the
+>> cleanup patch?
+>
+> How does this look?
+>
+>
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index e99c6f5..1e7dc31 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -479,7 +479,7 @@ static void __dentry_kill(struct dentry *dentry)
+>          * dentry_iput drops the locks, at which point nobody (except
+>          * transient RCU lookups) can reach this dentry.
+>          */
+> -       BUG_ON((int)dentry->d_lockref.count > 0);
+> +       BUG_ON(dentry->d_lockref.count > 0);
+>         this_cpu_dec(nr_dentry);
+>         if (dentry->d_op && dentry->d_op->d_release)
+>                 dentry->d_op->d_release(dentry);
+> @@ -532,7 +532,7 @@ static inline struct dentry *lock_parent(struct dentry *dentry)
+>         struct dentry *parent = dentry->d_parent;
+>         if (IS_ROOT(dentry))
+>                 return NULL;
+> -       if (unlikely((int)dentry->d_lockref.count < 0))
+> +       if (unlikely(dentry->d_lockref.count < 0))
+>                 return NULL;
+>         if (likely(spin_trylock(&parent->d_lock)))
+>                 return parent;
+> @@ -699,7 +699,7 @@ struct dentry *dget_parent(struct dentry *dentry)
+>          */
+>         rcu_read_lock();
+>         ret = ACCESS_ONCE(dentry->d_parent);
+> -       gotref = lockref_get_not_zero(&ret->d_lockref);
+> +       gotref = lockref_get_active(&ret->d_lockref);
+>         rcu_read_unlock();
+>         if (likely(gotref)) {
+>                 if (likely(ret == ACCESS_ONCE(dentry->d_parent)))
+> @@ -848,7 +848,7 @@ static void shrink_dentry_list(struct list_head *list)
+>                  * We found an inuse dentry which was not removed from
+>                  * the LRU because of laziness during lookup. Do not free it.
+>                  */
+> -               if ((int)dentry->d_lockref.count > 0) {
+> +               if (dentry->d_lockref.count > 0) {
+>                         spin_unlock(&dentry->d_lock);
+>                         if (parent)
+>                                 spin_unlock(&parent->d_lock);
+> diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
+> index aec7f73..d492f0e 100644
+> --- a/fs/gfs2/glock.c
+> +++ b/fs/gfs2/glock.c
+> @@ -1745,7 +1745,7 @@ void gfs2_dump_glock(struct seq_file *seq, const struct gfs2_glock *gl)
+>                   state2str(gl->gl_demote_state), dtime,
+>                   atomic_read(&gl->gl_ail_count),
+>                   atomic_read(&gl->gl_revokes),
+> -                 (int)gl->gl_lockref.count, gl->gl_hold_time);
+> +                 gl->gl_lockref.count, gl->gl_hold_time);
+>
+>         list_for_each_entry(gh, &gl->gl_holders, gh_list)
+>                 dump_holder(seq, gh);
 
-Right, now I understand where you were coming from in patch 3/7 ;)
+Er, grep failed me. The above delta to gfs2 is obviously bogus.
 
-> This patch tries to handle this special case by:
->  1) setting the owner field to a special value RWSEM_READ_OWNED
->     to indicate that the current or last owner is a reader.
->  2) seting a threshold on how many times (currently 100) spinning will
-     ^^setting
->     be done with active readers before giving up as there is no easy
->     way to determine if all of them are currently running.
-> 
-> By doing so, it tries to strike a balance between giving up too early
-> and losing potential performance gain and wasting too many precious
-> CPU cycles when some lock owning readers are not running.
-
-That's exactly why these kind of magic things aren't a good thing, much
-less in locking. And other alternatives are much more involved, creating
-more overhead, which can make the whole thing pretty much useless.
-
-Nor does the amount of times trying to spin strike me as the correct
-metric to determine such things. Instead something y cycles or time
-based.
-
-[...]
->  #ifdef CONFIG_RWSEM_SPIN_ON_OWNER
-> +/*
-> + * The owner field is set to RWSEM_READ_OWNED if the last owner(s) are
-> + * readers. It is not reset until a writer takes over and set it to its
-> + * task structure pointer or NULL when it frees the lock. So a value
-> + * of RWSEM_READ_OWNED doesn't mean it currently has active readers.
-> + */
-> +#define RWSEM_READ_OWNED	((struct task_struct *)-1)
-
-Looks rather weird...
-
->  #define __RWSEM_OPT_INIT(lockname) , .osq = OSQ_LOCK_UNLOCKED, .owner = NULL
->  #else
->  #define __RWSEM_OPT_INIT(lockname)
-> diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> index 9f71a67..576d4cd 100644
-> --- a/kernel/locking/rwsem-xadd.c
-> +++ b/kernel/locking/rwsem-xadd.c
-> @@ -304,6 +304,11 @@ static inline bool rwsem_try_write_lock(long count, struct rw_semaphore *sem)
->  
->  #ifdef CONFIG_RWSEM_SPIN_ON_OWNER
->  /*
-> + * Threshold for optimistic spinning on readers
-> + */
-> +#define RWSEM_READ_SPIN_THRESHOLD	100
-
-I dislike this for the same reasons they weren't welcomed in spinlocks.
-We don't know how it can impact workloads that have not been tested.
-
-[...]
->  static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
+> diff --git a/include/linux/lockref.h b/include/linux/lockref.h
+> index 4bfde0e..1a9827e 100644
+> --- a/include/linux/lockref.h
+> +++ b/include/linux/lockref.h
+> @@ -28,13 +28,13 @@ struct lockref {
+>  #endif
+>                 struct {
+>                         spinlock_t lock;
+> -                       unsigned int count;
+> +                       int count;
+>                 };
+>         };
+>  };
+>
+>  extern void lockref_get(struct lockref *);
+> -extern int lockref_get_not_zero(struct lockref *);
+> +extern int lockref_get_active(struct lockref *);
+>  extern int lockref_get_or_lock(struct lockref *);
+>  extern int lockref_put_or_lock(struct lockref *);
+>
+> diff --git a/lib/lockref.c b/lib/lockref.c
+> index f07a40d..7f30371 100644
+> --- a/lib/lockref.c
+> +++ b/lib/lockref.c
+> @@ -61,17 +61,18 @@ void lockref_get(struct lockref *lockref)
+>  EXPORT_SYMBOL(lockref_get);
+>
+>  /**
+> - * lockref_get_not_zero - Increments count unless the count is 0
+> + * lockref_get_active - Increments count unless the count is 0 or ref is dead
+>   * @lockref: pointer to lockref structure
+> - * Return: 1 if count updated successfully or 0 if count was zero
+> + * Return: 1 if count updated successfully or 0 if count was zero or lockref
+> + * was dead
+>   */
+> -int lockref_get_not_zero(struct lockref *lockref)
+> +int lockref_get_active(struct lockref *lockref)
 >  {
->  	struct task_struct *owner;
->  	bool taken = false;
-> +	int  read_spincnt = 0;
->  
->  	preempt_disable();
->  
-> @@ -397,8 +409,12 @@ static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
->  
->  	while (true) {
->  		owner = ACCESS_ONCE(sem->owner);
-> -		if (owner && !rwsem_spin_on_owner(sem, owner))
-> +		if (owner == RWSEM_READ_OWNED) {
-> +			if (++read_spincnt > RWSEM_READ_SPIN_THRESHOLD)
-> +				break;
-
-This is still a pretty fast-path and is going to affect writers, so we
-really want to keep it un-clobbered.
-
-Thanks,
-Davidlohr
-
+>         int retval;
+>
+>         CMPXCHG_LOOP(
+>                 new.count++;
+> -               if (!old.count)
+> +               if (old.count < 1)
+>                         return 0;
+>         ,
+>                 return 1;
+> @@ -79,14 +80,14 @@ int lockref_get_not_zero(struct lockref *lockref)
+>
+>         spin_lock(&lockref->lock);
+>         retval = 0;
+> -       if (lockref->count) {
+> +       if (lockref->count >= 1) {
+>                 lockref->count++;
+>                 retval = 1;
+>         }
+>         spin_unlock(&lockref->lock);
+>         return retval;
+>  }
+> -EXPORT_SYMBOL(lockref_get_not_zero);
+> +EXPORT_SYMBOL(lockref_get_active);
+>
+>  /**
+>   * lockref_get_or_lock - Increments count unless the count is 0
+> @@ -159,7 +160,7 @@ int lockref_get_not_dead(struct lockref *lockref)
+>
+>         CMPXCHG_LOOP(
+>                 new.count++;
+> -               if ((int)old.count < 0)
+> +               if (old.count < 0)
+>                         return 0;
+>         ,
+>                 return 1;
+> @@ -167,7 +168,7 @@ int lockref_get_not_dead(struct lockref *lockref)
+>
+>         spin_lock(&lockref->lock);
+>         retval = 0;
+> -       if ((int) lockref->count >= 0) {
+> +       if (lockref->count >= 0) {
+>                 lockref->count++;
+>                 retval = 1;
+>         }
+>
+>
+> I'm not too happy with the documentation string for lockref_get_active(), but
+> I believe the logic is at least right. There were a few places where 'count'
+> was being casted to a signed integer, and since this change turns 'count' into
+> a signed value anyway, I've stripped out the casts.
