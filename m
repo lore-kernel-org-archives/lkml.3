@@ -1,118 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190AbaHEH1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 03:27:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23126 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754234AbaHEH1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 03:27:43 -0400
-Date: Tue, 5 Aug 2014 09:27:13 +0200
-From: Mateusz Guzik <mguzik@redhat.com>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "Nyman, Mathias" <mathias.nyman@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        "manjunath.goudar" <manjunath.goudar@linaro.org>,
-        "jg1.han" <jg1.han@samsung.com>, davidm <davidm@egauge.net>,
-        Ksenia Ragiadakou <burzalodowa@gmail.com>,
-        hartleys <hartleys@visionengravers.com>,
-        "gregory.clement" <gregory.clement@free-electrons.com>,
-        oneukum <oneukum@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] xhci: Merge and Update debugging for patches from 3.6
- kernel tree
-Message-ID: <20140805072712.GA14966@mguzik>
-References: <1407214617-27317-1-git-send-email-xerofoify@gmail.com>
- <20140805054555.GA1920@kroah.com>
- <CAPDOMVg_Y7VgdM0ovcS=w7juBZ4n3xnV+kzbtzTxNZjEKzC3sA@mail.gmail.com>
+	id S932220AbaHEH2a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 03:28:30 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:36162 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754234AbaHEH23 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 03:28:29 -0400
+Date: Tue, 5 Aug 2014 09:28:13 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: mingo@kernel.org, oleg@redhat.com, torvalds@linux-foundation.org,
+        tglx@linutronix.de, ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
+        linux-kernel@vger.kernel.org, Eric Paris <eparis@parisplace.org>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>
+Subject: Re: [RFC][PATCH 4/7] inotify: Deal with nested sleeps
+Message-ID: <20140805072813.GW3935@laptop>
+References: <20140804103025.478913141@infradead.org>
+ <20140804103537.564978189@infradead.org>
+ <53E03FD3.5050705@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPDOMVg_Y7VgdM0ovcS=w7juBZ4n3xnV+kzbtzTxNZjEKzC3sA@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <53E03FD3.5050705@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 01:55:34AM -0400, Nick Krause wrote:
-> On Tue, Aug 5, 2014 at 1:45 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Tue, Aug 05, 2014 at 12:56:57AM -0400, Nicholas Krause wrote:
-> >> I am adding the fixes to the tree send for adding debugging to the kernel
-> >> tree from a patch sent in 2013 on the the 3.6 release. The patch adds
-> >> debugging over xhci capable debugging usb ports and needed to be updated
-> >> into the latest rc tree. The patch was first sent in this thread,
-> >> http://marc.info/?l=linux-usb&m=135948845511047.
-> >>
-> >> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> >
-> > If you send one more patch, I am going to have to ask vger.kernel.org to
-> > ban you from their servers.  You are actively bothering people and
-> > causing problems and wasting time.
-> >
-> > You have been told _numerous_ times to stop, yet you refuse to listen.
-> > You hold the record for getting kicked out of the Eudyptula challenge in
-> > a matter of hours, something no one else has ever had happen.  You
-> > ignore lots of very valid comments and suggestions, for no good reason.
-> > You flail about, making mistakes that are now starting to bother users,
-> > which is not acceptable at all.
-> >
-> > I will not respond to any more of your emails, and ask everyone else to
-> > now stop as well.
-> >
-> > good bye.
-> >
-> > *plonk*
-> >
-> > greg k-h
+On Tue, Aug 05, 2014 at 10:22:11AM +0800, Lai Jiangshan wrote:
+> I don't think this one needs nested sleeps.
 > 
-> Greg,
-> You haven't even checked my patch, our you just going to assume it's wrong?
+> diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
+> index cc423a3..1ca5888 100644
+> --- a/fs/notify/inotify/inotify_user.c
+> +++ b/fs/notify/inotify/inotify_user.c
+> @@ -233,15 +233,16 @@ static ssize_t inotify_read(struct file *file, char __user *buf,
+>  	group = file->private_data;
+>  
+>  	while (1) {
+> +		mutex_lock(&group->notification_mutex);
+>  		prepare_to_wait(&group->notification_waitq, &wait, TASK_INTERRUPTIBLE);
+>  
+> -		mutex_lock(&group->notification_mutex);
+>  		kevent = get_one_event(group, count);
+>  		mutex_unlock(&group->notification_mutex);
+>  
+>  		pr_debug("%s: group=%p kevent=%p\n", __func__, group, kevent);
+>  
+>  		if (kevent) {
+> +			__set_current_state(TASK_RUNNING);
+>  			ret = PTR_ERR(kevent);
+>  			if (IS_ERR(kevent))
+>  				break;
 
-
-I don't know this code and I'm not interested in changing that, so just I'm
-just pointing out obvious problems.
-
-1. You somehow managed to have changes like his all over the patch:
--#define TT_HS_OVERHEAD (31 + 94)
--#define TT_DMI_OVERHEAD (25 + 12)
-+#define TT_HS_OVERHEAD (31  94)
-+#define TT_DMI_OVERHEAD (25  12)
-
-Clearly, this will cause compilation problems. But maybe this weird
-corruption happened after you tested your patch?
-
-2.  In the original patch there were some additions to struct xhci_hcd,
-e.g. dbg_cap_reg.
-
-Let's look at a random user:
-+void xhci_teardown_dbg_cap(struct xhci_hcd *xhci, struct device *dev)
-+{
-+       u32 val;
-+
-+       xhci_dbg(xhci, "xhci_teardown_dbg_cap()\n");
-+       if (!xhci->dbg_cap_regs)
-+               return;
-
-xhci is a pointer to struct xhci_hcd.
-
-Except in your patch all these additions landed in struct xhci_dbg_cap_ctx,
-thus this could not possibly compile.
-
-But what's the most important thing here is this: writing a compilable
-patch is not a problem, writing a working patch is.
-
-Forward porting, like this one, demands that you:
-- understand the patch as applied to the original tree
-- understand current state of the tree and how it influences the patch
-
-As such, foward porting is typically not a task for beginners.
-
-I can only recommend one last time you leave the kernel alone for the
-time being and focus on userspace.
-
-There. This is my last reply, have fun.
-
--- 
-Mateusz Guzik
+Yeah, that'll probably work, but I'm not sure this the place to be
+creative like that though. But whatever the inotify people prefer
+really.
