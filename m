@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629AbaHEOl3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 10:41:29 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:47001 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885AbaHEOl2 (ORCPT
+	id S1755044AbaHEOmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 10:42:23 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:45452 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527AbaHEOmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 10:41:28 -0400
-Date: Tue, 5 Aug 2014 16:41:08 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Waiman Long <Waiman.Long@hp.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Scott J Norton <scott.norton@hp.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH 2/2 v6] locking/selftest: Support queued rwlock
-Message-ID: <20140805144108.GK9918@twins.programming.kicks-ass.net>
-References: <1406659999-13974-1-git-send-email-Waiman.Long@hp.com>
- <1406659999-13974-3-git-send-email-Waiman.Long@hp.com>
- <20140805132837.GA19379@twins.programming.kicks-ass.net>
- <CAKocOOMa89+Ej0rk-LyQLBcwDvLtsXq7x+oPwBMS1N61kKUwQg@mail.gmail.com>
+	Tue, 5 Aug 2014 10:42:21 -0400
+Message-ID: <53E0ED41.8030804@linux.vnet.ibm.com>
+Date: Tue, 05 Aug 2014 20:12:09 +0530
+From: Vishal Mansur <vmansur@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vnSC+wKlQbGVr9qh"
-Content-Disposition: inline
-In-Reply-To: <CAKocOOMa89+Ej0rk-LyQLBcwDvLtsXq7x+oPwBMS1N61kKUwQg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: gwshan@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        linuxppc-dev@lists.ozlabs.org
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] powerpc: non-GPL export for eeh_dev_check_failure
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080514-9574-0000-0000-00000073BF88
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+EEH kernel services are inconsistently exported by the 
+kernel. eeh_check_failure is exported for any use, but 
+eeh_dev_check_failure is exported only for GPL use. 
+While eeh_check_failure is implemented for a specific 
+purpose to be used by services such as readl, it is 
+not suited for a purpose where caller needs eeh status. 
+This functionality is provided by eeh_dev_check_failure.
 
---vnSC+wKlQbGVr9qh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch relaxes the export for eeh_dev_check_failure
+to make it consistent with eeh_check_failure() and 
+usable by non-GPL modules.
 
-On Tue, Aug 05, 2014 at 08:07:28AM -0600, Shuah Khan wrote:
-> On Tue, Aug 5, 2014 at 7:28 AM, Peter Zijlstra <peterz@infradead.org> wro=
-te:
->=20
-> > Maybe I wasn't clear; but I meant you should extend the lock tests to
-> > cover the full qrwlock semantics.
-> >
-> > That means we also need tests like:
-> >
-> >         RL(X1);
-> >         IRQ_ENTER();
-> >         RL(X2);
-> >         IRQ_EXIT();
-> >
-> > To fully validate that in_interrupt exception to fairness etc..
->=20
-> A bit off topic for this patch, however relevant for tests in general.
-> Is there a reason why these locking selftests need to be under lib?
-> Can they be consolidated under tools/testing/selftests?
+Signed-off-by: Vishal Mansur <vmansur@linux.vnet.ibm.com>
+---
+ arch/powerpc/kernel/eeh.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-tools/ seems wrong as its very much not userspace.
+diff --git a/arch/powerpc/kernel/eeh.c b/arch/powerpc/kernel/eeh.c
+index 86e2570..8689c30 100644
+--- a/arch/powerpc/kernel/eeh.c
++++ b/arch/powerpc/kernel/eeh.c
+@@ -496,8 +496,7 @@ dn_unlock:
+        eeh_serialize_unlock(flags);
+        return rc;
+ }
+-
+-EXPORT_SYMBOL_GPL(eeh_dev_check_failure);
++EXPORT_SYMBOL(eeh_dev_check_failure);
 
---vnSC+wKlQbGVr9qh
-Content-Type: application/pgp-signature
+ /**
+  * eeh_check_failure - Check if all 1's data is due to EEH slot freeze
+--
+2.0.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT4O0EAAoJEHZH4aRLwOS64nMQAKSO3DTEUEpe1fdcUCaX86vZ
-d34cf+OPL8pVF4hE9nn4p6BWKHYM+4CFtScfsiRGYxbywHT1s0v5bJ+n0Wut1cyP
-h7J8wa0eJXZaNQeg643TiOUDtnasD0K/UQ/A0CM/cPAdbWkKajr6+7U//AMVzjyL
-Qgr6ofLQBlcxpj/LR2PE1J+7GJO024piVmCFCnn/YjNifpKnhyPmcOjgtPfINS5H
-ClVQUE4QbvYbLbUDzOk0zyK0+JS+w9NH7/njUXrK+y/gvinR53d6TcvamnIbyx1Y
-XgTa9MwJ+5Ra1AsNGzJQ3bi00qqAk8rPetO/LrWqKDWO5GDjGH8Fu7Al5P7P+Zbd
-LcQIvkqKGNzfhmh6EI7TSGvrqYSy/Pn2DTM0k08ITca6PaYWaRFI0GhC41PO/jHZ
-6PhYi+XhnnDFSFHC9mpEH+7zOBUYxHiwR4qeweOz0lmpDRCEygOMqpEfRj2SeObB
-07uiFlSeMew7KBH0x/bJxZ921uHSjg9J671Ns/oADvmwknOgH5TzNPs7eVtE7t6r
-7rKDiyLnl+eHXvRVEmbJwZkOhLkhshcXYMniTXFYwN9UJBDNPLJ7jyAEBiDX1Ez9
-TQpa73Zz8KDrNg1rEIXdpfgjUzlFwsLovx0uSl2mw1Bcw7BjUNTytt/AyLhUp44V
-XACl//byikS2HlOF5Z8z
-=LhUk
------END PGP SIGNATURE-----
-
---vnSC+wKlQbGVr9qh--
