@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933135AbaHEKAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 06:00:41 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:58819 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933078AbaHEKAj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 06:00:39 -0400
-Message-ID: <53E0AB44.90804@imgtec.com>
-Date: Tue, 5 Aug 2014 11:00:36 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S933161AbaHEKKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 06:10:23 -0400
+Received: from smtp2.macqel.be ([109.135.2.61]:64720 "EHLO smtp2.macqel.be"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933145AbaHEKKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 06:10:22 -0400
+Date: Tue, 5 Aug 2014 12:10:11 +0200
+From: Philippe De Muyter <phdm@macqel.be>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Fabian Frederick <fabf@skynet.be>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] partitions: aix.c: off by one bug
+Message-ID: <20140805101010.GA24281@frolo.macqel>
+References: <20140805080959.GA13605@mwanda>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Alexander Graf <agraf@suse.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Paolo Bonzini" <pbonzini@redhat.com>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>
-Subject: Re: linux-next: manual merge of the kvm-ppc tree with the kvm tree
-References: <20140804180403.3cfdbadf@canb.auug.org.au>
-In-Reply-To: <20140804180403.3cfdbadf@canb.auug.org.au>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.101]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140805080959.GA13605@mwanda>
+User-Agent: Mutt/1.5.16 (2007-06-09)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Tue, Aug 05, 2014 at 11:09:59AM +0300, Dan Carpenter wrote:
+> The lvip[] array has "state->limit" elements so the condition here
+> should be >= instead of >.
+> 
+> Fixes: 6ceea22bbbc8 ('partitions: add aix lvm partition support files')
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/block/partitions/aix.c b/block/partitions/aix.c
+> index 0a6ed54..f3ed7b2 100644
+> --- a/block/partitions/aix.c
+> +++ b/block/partitions/aix.c
+> @@ -253,7 +253,7 @@ int aix_partition(struct parsed_partitions *state)
+>  				continue;
+>  			}
+>  			lv_ix = be16_to_cpu(p->lv_ix) - 1;
+> -			if (lv_ix > state->limit) {
+> +			if (lv_ix >= state->limit) {
+>  				cur_lv_ix = -1;
+>  				continue;
+>  			}
 
-On 04/08/14 09:04, Stephen Rothwell wrote:
->  +  PPC   | KVM_REG_PPC_LPCR              | 64
+Acked-by: Philippe De Muyter <phdm@macqel.be>
 
-I think due to a0840240c0c6 this one should be s/64/32/.
+Thanks
 
-> ++  PPC   | KVM_REG_PPC_LPCR_64		| 64
+Did you encounter the bug in real life, or only by code review ?
 
-And I suppose it'd be nice to replace tabs with spaces for consistency
-(since that's one of the things bf5590f37919 did).
+If this has a real risk to happen, a pr_warn would be welcome.
 
-How about this fixup patch?
+Philippe
 
-Cheers
-James
-
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index dc226e1867e1..2863f02b0efb 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -1895,8 +1895,8 @@ registers, find a list below:
-   PPC   | KVM_REG_PPC_PID               | 64
-   PPC   | KVM_REG_PPC_ACOP              | 64
-   PPC   | KVM_REG_PPC_VRSAVE            | 32
--  PPC   | KVM_REG_PPC_LPCR              | 64
--  PPC   | KVM_REG_PPC_LPCR_64		| 64
-+  PPC   | KVM_REG_PPC_LPCR              | 32
-+  PPC   | KVM_REG_PPC_LPCR_64           | 64
-   PPC   | KVM_REG_PPC_PPR               | 64
-   PPC   | KVM_REG_PPC_ARCH_COMPAT       | 32
-   PPC   | KVM_REG_PPC_DABRX             | 32
+-- 
+Philippe De Muyter +32 2 6101532 Macq SA rue de l'Aeronef 2 B-1140 Bruxelles
