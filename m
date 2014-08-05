@@ -1,187 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218AbaHEMjL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 08:39:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48257 "EHLO mx2.suse.de"
+	id S1754301AbaHEMj6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 08:39:58 -0400
+Received: from ozlabs.org ([103.22.144.67]:55668 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753758AbaHEMjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 08:39:09 -0400
-Message-ID: <53E0D069.3010202@suse.com>
-Date: Tue, 05 Aug 2014 14:39:05 +0200
-From: Felipe Reyes <freyes@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] KVM: nVMX: fix acknowledge interrupt on exit when
- APICv is in use
-References: <1407213744-24794-1-git-send-email-wanpeng.li@linux.intel.com> <1407213744-24794-2-git-send-email-wanpeng.li@linux.intel.com> <53E0BA31.1000708@redhat.com>
-In-Reply-To: <53E0BA31.1000708@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752136AbaHEMj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 08:39:57 -0400
+Message-ID: <1407242394.11569.2.camel@concordia>
+Subject: Re: [PATCH] arch/powerpc/mm/numa.c: Fix break placement
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>, paulus@samba.org,
+        akpm@linux-foundation.org, srivatsa.bhat@linux.vnet.ibm.com,
+        sfr@canb.auug.org.au, qiuxishi@huawei.com, wangyun@linux.vnet.ibm.com,
+        qiudayu@linux.vnet.ibm.com, joe@perches.com, alistair@popple.id.au,
+        rcj@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Date: Tue, 05 Aug 2014 22:39:54 +1000
+In-Reply-To: <1407230219.3073.5.camel@pasglop>
+References: <1407183190-1397-1-git-send-email-andrey.krieger.utkin@gmail.com>
+	 <1407230219.3073.5.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2014-08-05 at 19:16 +1000, Benjamin Herrenschmidt wrote:
+> On Mon, 2014-08-04 at 23:13 +0300, Andrey Utkin wrote:
+> > Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81631
+> > Reported-by: David Binderman <dcb314@hotmail.com>
+> > Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+> 
+> Thanks, I wonder how that managed to remain unnoticed for so long !
 
-On 08/05/2014 01:04 PM, Paolo Bonzini wrote:
-> Il 05/08/2014 06:42, Wanpeng Li ha scritto:
->> After commit 77b0f5d (KVM: nVMX: Ack and write vector info to intr_info
->> if L1 asks us to), "Acknowledge interrupt on exit" behavior can be
->> emulated. To do so, KVM will ask the APIC for the interrupt vector if
->> during a nested vmexit if VM_EXIT_ACK_INTR_ON_EXIT is set.  With APICv,
->> kvm_get_apic_interrupt would return -1 and give the following WARNING:
->>
->> Call Trace:
->>   [<ffffffff81493563>] dump_stack+0x49/0x5e
->>   [<ffffffff8103f0eb>] warn_slowpath_common+0x7c/0x96
->>   [<ffffffffa059709a>] ? nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
->>   [<ffffffff8103f11a>] warn_slowpath_null+0x15/0x17
->>   [<ffffffffa059709a>] nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
->>   [<ffffffffa0594295>] ? nested_vmx_exit_handled+0x6a/0x39e [kvm_intel]
->>   [<ffffffffa0537931>] ? kvm_apic_has_interrupt+0x80/0xd5 [kvm]
->>   [<ffffffffa05972ec>] vmx_check_nested_events+0xc3/0xd3 [kvm_intel]
->>   [<ffffffffa051ebe9>] inject_pending_event+0xd0/0x16e [kvm]
->>   [<ffffffffa051efa0>] vcpu_enter_guest+0x319/0x704 [kvm]
->>
->> If enabling APIC-v, all interrupts to L1 are delivered through APIC-v.
->> But when L2 is running, external interrupt will casue L1 vmexit with
->> reason external interrupt. Then L1 will pick up the interrupt through
->> vmcs12. when L1 ack the interrupt, since the APIC-v is enabled when
->> L1 is running, so APIC-v hardware still will do vEOI updating. The problem
->> is that the interrupt is delivered not through APIC-v hardware, this means
->> SVI/RVI/vPPR are not setting, but hardware required them when doing vEOI
->> updating. The solution is that, when L1 tried to pick up the interrupt
->> from vmcs12, then hypervisor will help to update the SVI/RVI/vPPR to make
->> sure the following vEOI updating and vPPR updating corrently.
->>
->> Also, since interrupt is delivered through vmcs12, so APIC-v hardware will
->> not cleare vIRR and hypervisor need to clear it before L1 running.
->>
->> Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
->> Suggested-by: "Zhang, Yang Z" <yang.z.zhang@intel.com>
->> Tested-by: Liu, RongrongX <rongrongx.liu@intel.com>
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> ---
->> v1 -> v2:
->>   * reusing kvm_get_apic_interrupt here (by modifying kvm_cpu_get_interrupt,
->>     apic_set_isr and apic_clear_irr)
->>
->>   arch/x86/kvm/irq.c   |  2 +-
->>   arch/x86/kvm/lapic.c | 52 +++++++++++++++++++++++++++++++++++++++-------------
->>   2 files changed, 40 insertions(+), 14 deletions(-)
->>
->> diff --git a/arch/x86/kvm/irq.c b/arch/x86/kvm/irq.c
->> index bd0da43..a1ec6a5 100644
->> --- a/arch/x86/kvm/irq.c
->> +++ b/arch/x86/kvm/irq.c
->> @@ -108,7 +108,7 @@ int kvm_cpu_get_interrupt(struct kvm_vcpu *v)
->>
->>   	vector = kvm_cpu_get_extint(v);
->>
->> -	if (kvm_apic_vid_enabled(v->kvm) || vector != -1)
->> +	if (vector != -1)
->>   		return vector;			/* PIC */
->>
->>   	return kvm_get_apic_interrupt(v);	/* APIC */
->> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
->> index 3855103..08e8a89 100644
->> --- a/arch/x86/kvm/lapic.c
->> +++ b/arch/x86/kvm/lapic.c
->> @@ -352,25 +352,46 @@ static inline int apic_find_highest_irr(struct kvm_lapic *apic)
->>
->>   static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
->>   {
->> -	apic->irr_pending = false;
->> +	struct kvm_vcpu *vcpu;
->> +
->> +	vcpu = apic->vcpu;
->> +
->>   	apic_clear_vector(vec, apic->regs + APIC_IRR);
->> -	if (apic_search_irr(apic) != -1)
->> -		apic->irr_pending = true;
->> +	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
->> +		/* try to update RVI */
->> +		kvm_make_request(KVM_REQ_EVENT, vcpu);
->> +	else {
->> +		vec = apic_search_irr(apic);
->> +		apic->irr_pending = (vec != -1);
->> +	}
->>   }
->>
->>   static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
->>   {
->> -	/* Note that we never get here with APIC virtualization enabled.  */
->> +	struct kvm_vcpu *vcpu;
->> +
->> +	if (__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
->> +		return;
->> +
->> +	vcpu = apic->vcpu;
->>
->> -	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
->> -		++apic->isr_count;
->> -	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
->>   	/*
->> -	 * ISR (in service register) bit is set when injecting an interrupt.
->> -	 * The highest vector is injected. Thus the latest bit set matches
->> -	 * the highest bit in ISR.
->> +	 * With APIC virtualization enabled, all caching is disabled
->> +	 * because the processor can modify ISR under the hood.  Instead
->> +	 * just set SVI.
->>   	 */
->> -	apic->highest_isr_cache = vec;
->> +	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
->> +		kvm_x86_ops->hwapic_isr_update(vcpu->kvm, vec);
->> +	else {
->> +		++apic->isr_count;
->> +		BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
->> +		/*
->> +		 * ISR (in service register) bit is set when injecting an interrupt.
->> +		 * The highest vector is injected. Thus the latest bit set matches
->> +		 * the highest bit in ISR.
->> +		 */
->> +		apic->highest_isr_cache = vec;
->> +	}
->>   }
->>
->>   static inline int apic_find_highest_isr(struct kvm_lapic *apic)
->> @@ -1627,11 +1648,16 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
->>   	int vector = kvm_apic_has_interrupt(vcpu);
->>   	struct kvm_lapic *apic = vcpu->arch.apic;
->>
->> -	/* Note that we never get here with APIC virtualization enabled.  */
->> -
->>   	if (vector == -1)
->>   		return -1;
->>
->> +	/*
->> +	 * We get here even with APIC virtualization enabled, if doing
->> +	 * nested virtualization and L1 runs with the "acknowledge interrupt
->> +	 * on exit" mode.  Then we cannot inject the interrupt via RVI,
->> +	 * because the process would deliver it through the IDT.
->> +	 */
->> +
->>   	apic_set_isr(vector, apic);
->>   	apic_update_ppr(apic);
->>   	apic_clear_irr(vector, apic);
->>
->
-> Thanks, this looks good.  Felipe, can you test this patch together with
-> http://article.gmane.org/gmane.linux.kernel/1762356/raw please?
->
-> Paolo
->
+1. No one tested it :)
+2. The code stupidly initialises ret at the beginning of the function, so the
+   compiler can't help us detect the unitialised usage.
+3. NOTIFY_OK and NOTIFY_DONE appear to be equivalent in practice.
 
-I checked that the bug was still there using the latest version of 
-linus' kernel (8e099d1) and it is, then I applied the patches you 
-indicated and the problem went away. So those 2 patches fix the problem 
-for me.
+cheers
 
-Best,
+
+
