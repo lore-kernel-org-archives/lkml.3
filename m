@@ -1,124 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389AbaHEL5L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 07:57:11 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:41999 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612AbaHEL5I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 07:57:08 -0400
-Message-ID: <53E0C633.7060600@gmail.com>
-Date: Tue, 05 Aug 2014 17:25:31 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-Organization: CDAC-HYD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753284AbaHEMAV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 08:00:21 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:57173 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751996AbaHEMAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 08:00:19 -0400
+Message-ID: <53E0C74A.2040108@mm-sol.com>
+Date: Tue, 05 Aug 2014 15:00:10 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Matthias Brugger <matthias.bgg@gmail.com>, linux-kernel@vger.kernel.org
-CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, gregkh@linuxfoundation.org, jslaby@suse.cz,
-        grant.likely@linaro.org, heikki.krogerus@linux.intel.com,
-        alan@linux.intel.com, paul.gortmaker@windriver.com,
-        asierra@xes-inc.com, mwelling@ieee.org, dianders@chromium.org,
-        m-karicheri2@ti.com, jschultz@xes-inc.com, mingo@elte.hu, balbi@ti.com,
-        heiko@sntech.de, devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH 2/3] tty: serial: 8250: Add Mediatek UART driver
-References: <1407236054-30994-1-git-send-email-matthias.bgg@gmail.com> <1407236054-30994-3-git-send-email-matthias.bgg@gmail.com>
-In-Reply-To: <1407236054-30994-3-git-send-email-matthias.bgg@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+CC: Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        David Collins <collinsd@codeaurora.org>
+Subject: Re: [PATCH v4 0/3] Support for Qualcomm QPNP PMIC's
+References: <1406903450-27283-1-git-send-email-svarbanov@mm-sol.com> <53E085C9.4090302@smartplayin.com>
+In-Reply-To: <53E085C9.4090302@smartplayin.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2014 04:24 PM, Matthias Brugger wrote:
+Hi Pramod,
 
-(...)
+On 08/05/2014 10:20 AM, Pramod Gurav wrote:
+> Hi Stanimir.
+> On Friday 01 August 2014 08:00 PM, Stanimir Varbanov wrote:
+>> Hello all,
+>>
+>> Changes since v3:
+>>  - rename the driver to qcom-spmi-pmic - suggested by David Collins
+>>  - spmi regmap config now initialize .fast_io to true
+>>  - added generalized comptatible string in DT binding document and driver
+>>  - I dropped the pm8921 rename patch for now, it will be subject of another
+>>    patchset later on.
+>>
+>> regards,
+>> Stan
+>>
+>> --------------------------------------------------------------------------------
+>>
+>> Changes since v2:
+>>  - 1/4 - added new line, signed-off-by / acked-by and module_authors.
+>>  - 3/4 - the subject has been changed.
+>>
+>> The previous v2 can be found at [1].
+>>
+>> I'm still waiting Acks for:
+>>  - 4/4 from Qualcomm folks.
+> 
+> If I am not missing something obvious, this patch needs to be resent as
+> it does not apply on top of patches in this series. I tried applying and
+> it fails in Kconfig.
 
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/serial_8250.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/clk.h>
-> +#include <linux/pm_runtime.h>
-> +#include "8250.h"
-> +
+I dropped 4/4 from v4. See above what has been changed since v3.
 
-Better if we have includes in alphabetical order..
-
-> +#define MTK_UART_RATE_FIX 0x0D /* UART Rate Fix Register */
-> +
-> +struct mtk8250_data {
-> +	int			line;
-> +	struct clk		*clk;
-> +};
-> +
-> +static void
-> +mtk8250_do_pm(struct uart_port *port, unsigned int state, unsigned int old)
-> +{
-> +	if (!state)
-> +		pm_runtime_get_sync(port->dev);
-> +
-> +	serial8250_do_pm(port, state, old);
-> +
-> +	if (state)
-> +		pm_runtime_put_sync_suspend(port->dev);
-> +}
-> +
-> +static int mtk8250_probe_of(struct uart_port *p,
-> +			   struct mtk8250_data *data)
-
-static int mtk8250_probe_of(struct uart_port *p,
-			    struct mtk8250_data *data)
-
-> +{
-> +	int err;
-> +	struct device_node	*np = p->dev->of_node;
-> +
-> +	data->clk = of_clk_get(np, 0);
-> +	if (IS_ERR(data->clk)) {
-> +		pr_warn("Can't get timer clock");
-
-missed terminating new line...
-
-> +		return PTR_ERR(data->clk);
-> +	}
-> +
-> +	err = clk_prepare_enable(data->clk);
-> +	if (err) {
-> +		pr_warn("Can't prepare clock");
-
-same...
-
-> +		clk_put(data->clk);
-> +		return err;
-> +	}
-> +	p->uartclk = clk_get_rate(data->clk);
-> +
-> +	return 0;
-> +}
-
-(...)
-
-> +static struct platform_driver mtk8250_platform_driver = {
-> +	.driver = {
-> +		.name		= "mt6577-uart",
-> +		.owner		= THIS_MODULE,
-
-No need to update this field...
-
-> +		.pm		= &mtk8250_pm_ops,
-> +		.of_match_table	= mtk8250_of_match,
-> +	},
-> +	.probe			= mtk8250_probe,
-> +	.remove			= mtk8250_remove,
-> +};
-> +module_platform_driver(mtk8250_platform_driver);
->
 -- 
-Regards,
-Varka Bhadram.
-
+regards,
+Stan
