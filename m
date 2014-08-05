@@ -1,103 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299AbaHEK65 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 06:58:57 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:18304 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754725AbaHEKsy (ORCPT
+	id S1756390AbaHELAO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 07:00:14 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:63111 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756343AbaHELAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 06:48:54 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-9c-53e0b692c947
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
-        Shaik Ameer Basha <shaik.ameer@samsung.com>,
-        Cho KyongHo <pullip.cho@samsung.com>, Joerg Roedel <joro@8bytes.org>,
-        Thierry Reding <treding@nvidia.com>, Olof Johansson <olof@lixom.net>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Herring <robh@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 02/29] ARM: Exynos: bind power domains earlier,
- on device creation
-Date: Tue, 05 Aug 2014 12:47:30 +0200
-Message-id: <1407235677-26324-3-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.9.2
-In-reply-to: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
-References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xq7qTtj0INtj6R83i76Rj7BbNi9ez
-	WUy6P4HFYsF+a4vO2RvYLXoXXGWzONv0ht2ic+ISdosvVx4yWWx6fI3V4vKuOWwWM87vY7JY
-	e+Quu8Wp65/ZLP71HmS0OHP6EqvF/z072C0Ov2lntTjycDe7xapdfxgtbv/mcxD1eHJwHpPH
-	71+TGD12zrrL7jG7Yyarx6ZVnWwe++euYffYvKTe4/a/x8wek28sZ/S4cqKJ1aO3+R2bx5ar
-	7SwefVtWMXp83iQXwBfFZZOSmpNZllqkb5fAlfFnxX2mgj6eipdrfzE2MHZydTFyckgImEi8
-	2HiMDcIWk7hwbz2QzcUhJLCUUWLOvhtQTh+TxLJnH5lAqtgEDCW63naBJUQEehkl+pt+MIE4
-	zALrWCX2915nAakSFgiRmLewEWwui4CqxL2l01lBbF4BD4m+Q/NYIfbJSfx/uQJsKqeAp8Th
-	mwfA4kJANT83rGGfwMi7gJFhFaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZI7HzZwbj4mNUh
-	RgEORiUeXoPTd4OFWBPLiitzDzFKcDArifBKrHkQLMSbklhZlVqUH19UmpNafIiRiYNTqoHR
-	cYF+5PZTlt3G+/r0H7hFhkQ3l+tcbL8W7tky+1m/bY5a60+9aTM9cy7J+j/y3vZq9fZbaSlh
-	C4X1Py+paXJ5N1dDKHP5pj2zqrarl2cbKi41nO/34/mfq+pdV56Zr3syxfTbn7plERd/8wUs
-	Sv+/ceaNmT8+X538qHDK37mapyP86wM0n970VmIpzkg01GIuKk4EAMYdoxF7AgAA
+	Tue, 5 Aug 2014 07:00:10 -0400
+Message-ID: <53E0B931.7010309@redhat.com>
+Date: Tue, 05 Aug 2014 13:00:01 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] KVM: nVMX: nested TPR shadow/threshold emulation
+References: <1407149907-13483-1-git-send-email-wanpeng.li@linux.intel.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AB505AB@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AB505AB@SHSMSX104.ccr.corp.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patches change initialization time of power domain driver from client
-device driver bind to device creation. This lets other core drivers to
-register power domain notifiers before client driver is bound.
+Il 05/08/2014 09:56, Zhang, Yang Z ha scritto:
+> Wanpeng Li wrote on 2014-08-04:
+>> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=61411
+>>
+>> TPR shadow/threshold feature is important to speed up the Windows guest.
+>> Besides, it is a must feature for certain VMM.
+>>
+>> We map virtual APIC page address and TPR threshold from L1 VMCS. If
+>> TPR_BELOW_THRESHOLD VM exit is triggered by L2 guest and L1 interested
+>> in, we inject it into L1 VMM for handling.
+>>
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> ---
+>> v2 -> v3:
+>>  * nested vm entry failure if both tpr shadow and cr8 exiting bits are not set
+>> v1 -> v2:
+>>  * don't take L0's "virtualize APIC accesses" setting into account
+>>  * virtual_apic_page do exactly the same thing that is done for
+>> apic_access_page
+>>  * add the tpr threshold field to the read-write fields for shadow VMCS
+>>
+>>  arch/x86/kvm/vmx.c | 38 ++++++++++++++++++++++++++++++++++++--
+>>  1 file changed, 36 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+>> index c604f3c..7a56e2c 100644
+>> --- a/arch/x86/kvm/vmx.c
+>> +++ b/arch/x86/kvm/vmx.c
+>> @@ -379,6 +379,7 @@ struct nested_vmx {
+>>  	 * we must keep them pinned while L2 runs.
+>>  	 */
+>>  	struct page *apic_access_page;
+>> +	struct page *virtual_apic_page;
+>>  	u64 msr_ia32_feature_control;
+>>
+>>  	struct hrtimer preemption_timer;
+>> @@ -533,6 +534,7 @@ static int max_shadow_read_only_fields =
+>>  	ARRAY_SIZE(shadow_read_only_fields);
+>>
+>>  static unsigned long shadow_read_write_fields[] = {
+>> +	TPR_THRESHOLD,
+>>  	GUEST_RIP,
+>>  	GUEST_RSP,
+>>  	GUEST_CR0,
+>> @@ -2330,7 +2332,7 @@ static __init void
+>> nested_vmx_setup_ctls_msrs(void)
+>>  		CPU_BASED_MOV_DR_EXITING |
+>> CPU_BASED_UNCOND_IO_EXITING |
+>>  		CPU_BASED_USE_IO_BITMAPS | CPU_BASED_MONITOR_EXITING |
+>>  		CPU_BASED_RDPMC_EXITING | CPU_BASED_RDTSC_EXITING |
+>> -		CPU_BASED_PAUSE_EXITING |
+>> +		CPU_BASED_PAUSE_EXITING | CPU_BASED_TPR_SHADOW |
+>>  		CPU_BASED_ACTIVATE_SECONDARY_CONTROLS;
+>>  	/*
+>>  	 * We can allow some features even when not supported by the
+>> @@ -6148,6 +6150,10 @@ static void free_nested(struct vcpu_vmx *vmx)
+>>  		nested_release_page(vmx->nested.apic_access_page);
+>>  		vmx->nested.apic_access_page = 0;
+>>  	}
+>> +	if (vmx->nested.virtual_apic_page) {
+>> +		nested_release_page(vmx->nested.virtual_apic_page);
+>> +		vmx->nested.virtual_apic_page = 0;
+>> +	}
+>>
+>>  	nested_free_all_saved_vmcss(vmx);
+>>  }
+>> @@ -6936,7 +6942,7 @@ static bool nested_vmx_exit_handled(struct
+>> kvm_vcpu *vcpu)
+>>  	case EXIT_REASON_MCE_DURING_VMENTRY:
+>>  		return 0;
+>>  	case EXIT_REASON_TPR_BELOW_THRESHOLD:
+>> -		return 1;
+>> +		return nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW);
+>>  	case EXIT_REASON_APIC_ACCESS:
+>>  		return nested_cpu_has2(vmcs12,
+>>  			SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES);
+>> @@ -7057,6 +7063,9 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
+>>
+>>  static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
+>>  {
+>> +	if (is_guest_mode(vcpu))
+>> +		return;
+>> +
+>>  	if (irr == -1 || tpr < irr) {
+>>  		vmcs_write32(TPR_THRESHOLD, 0);
+>>  		return;
+>> @@ -8024,6 +8033,27 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu,
+>> struct vmcs12 *vmcs12)
+>>  	exec_control &= ~CPU_BASED_VIRTUAL_NMI_PENDING;
+>>  	exec_control &= ~CPU_BASED_TPR_SHADOW;
+>>  	exec_control |= vmcs12->cpu_based_vm_exec_control;
+>> +
+>> +	if (exec_control & CPU_BASED_TPR_SHADOW) {
+>> +		if (vmx->nested.virtual_apic_page)
+>> +			nested_release_page(vmx->nested.virtual_apic_page);
+>> +		vmx->nested.virtual_apic_page =
+>> +		   nested_get_page(vcpu, vmcs12->virtual_apic_page_addr);
+>> +		if (!vmx->nested.virtual_apic_page)
+>> +			exec_control &=
+>> +				~CPU_BASED_TPR_SHADOW;
+>> +		else
+>> +			vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
+>> +				page_to_phys(vmx->nested.virtual_apic_page));
+>> +
+>> +		if (!(exec_control & CPU_BASED_TPR_SHADOW) &&
+>> +			!((exec_control & CPU_BASED_CR8_LOAD_EXITING) &&
+>> +				(exec_control & CPU_BASED_CR8_STORE_EXITING)))
+>> +			nested_vmx_failValid(vcpu,
+>> VMXERR_ENTRY_INVALID_CONTROL_FIELD);
+> 
+> I think this is not correct. The vmx->nested.virtual_apic_page may not valid due to two reasons:
+> 1. The virtual_apic_page_addr is not a valid gfn. In this case, the vmx failure must be injected to L1 unconditionally regardless of the setting of CR8 load/store exiting.
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
----
- arch/arm/mach-exynos/pm_domains.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+You're right that accesses to the APIC-access page may also end up
+writing to the virtual-APIC page.  Hence, if the "virtualize APIC
+accesses" setting is 1 in the secondary exec controls, you also have to
+fail the vmentry.
 
-diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
-index fd76e1b..1d368a2 100644
---- a/arch/arm/mach-exynos/pm_domains.c
-+++ b/arch/arm/mach-exynos/pm_domains.c
-@@ -159,13 +159,13 @@ static int exynos_pm_notifier_call(struct notifier_block *nb,
- 	struct device *dev = data;
- 
- 	switch (event) {
--	case BUS_NOTIFY_BIND_DRIVER:
-+	case BUS_NOTIFY_ADD_DEVICE:
- 		if (dev->of_node)
- 			exynos_read_domain_from_dt(dev);
- 
- 		break;
- 
--	case BUS_NOTIFY_UNBOUND_DRIVER:
-+	case BUS_NOTIFY_DEL_DEVICE:
- 		exynos_remove_device_from_domain(dev);
- 
- 		break;
-@@ -177,6 +177,13 @@ static struct notifier_block platform_nb = {
- 	.notifier_call = exynos_pm_notifier_call,
- };
- 
-+static int exynos_pm_domain_add(struct device *dev, void *priv)
-+{
-+	if (dev->of_node)
-+		exynos_read_domain_from_dt(dev);
-+	return 0;
-+}
-+
- static __init int exynos4_pm_init_power_domain(void)
- {
- 	struct platform_device *pdev;
-@@ -236,6 +243,7 @@ no_clk:
- 	}
- 
- 	bus_register_notifier(&platform_bus_type, &platform_nb);
-+	bus_for_each_dev(&platform_bus_type, NULL, NULL, exynos_pm_domain_add);
- 
- 	return 0;
- }
--- 
-1.9.2
+Doing it unconditionally is not correct, but it is the simplest thing to
+do and it would be okay with a comment, I think.
+
+> 2. The virtual_apic_page is swapped by L0. In this case, we should not inject failure to L1.
+
+This cannot happen, nested_get_page ends up calling hva_to_pfn with
+atomic==false, so the page would be swapped in and pinned.
+
+>> +
+>> +		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
+>> +	}
+> 
+> Miss else here:
+> If L2 owns the APIC and doesn't use TPR_SHADOW, we need to setup the
+> vmcs02 based on vmcs01. For example, if vmcs01 is using TPR_SHADOW, then
+> vmcs02 must set it. Also, we need to use vmcs01's virtual_apic_page and
+> TPR_THRESHOLD for vmcs02.
+
+What do you mean by "owns the APIC"?
+
+Paolo
 
