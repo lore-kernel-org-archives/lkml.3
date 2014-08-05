@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803AbaHETtF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 15:49:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39901 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753636AbaHETtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 15:49:04 -0400
-Date: Tue, 5 Aug 2014 21:46:28 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <levinsasha928@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/7] /proc/PID/*maps* fixes/cleanups
-Message-ID: <20140805194627.GA30693@redhat.com>
+	id S1754286AbaHETwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 15:52:25 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:42564 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754109AbaHETwW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 15:52:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1407256036-18658-1-git-send-email-bobby.prani@gmail.com>
+References: <1407256036-18658-1-git-send-email-bobby.prani@gmail.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Tue, 5 Aug 2014 15:51:50 -0400
+Message-ID: <CAJhHMCCGEXq17L4ovjOdRWuJ++ShDQTA4+H8VOTx=kF_Qd2Sag@mail.gmail.com>
+Subject: Re: [PATCH 1/1] staging: lustre: Remove circular dependency on header
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Joe Perches <joe@perches.com>, Oleg Drokin <green@linuxhacker.ru>,
+        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
+        open list <linux-kernel@vger.kernel.org>
+Cc: geert@linux-m68k.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes:
+Please note, this also fixes the following build error on sparc64
 
-	1-4: Update the changelogs, join "introduce the stable
-	     proc_maps_private->mm" and "change m_start() to rely on
-	     priv->mm" into a single "shift "priv->task = NULL" from
-	     m_start() to m_stop()".
+http://kisskb.ellerman.id.au/kisskb/buildresult/11607883/
 
-	     Resulting code is the same. Kirill and Cyrill, you seem
-	     to agree with these changes, I'll appreciate your acks.
+On Tue, Aug 5, 2014 at 12:27 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
+> The following patch fixes a build error on sparc32. I think it should go to
+> stable 3.16.
+>
+> Remove a circular dependency on atomic.h header file which leads to compilation
+> failure on sparc32 as reported here:
+> http://kisskb.ellerman.id.au/kisskb/buildresult/11340509/
+>
+> The specific dependency is as follows:
+>
+> In file included from arch/sparc/include/asm/smp_32.h:24:0,
+>                  from arch/sparc/include/asm/smp.h:6,
+>                  from arch/sparc/include/asm/switch_to_32.h:4,
+>                  from arch/sparc/include/asm/switch_to.h:6,
+>                  from arch/sparc/include/asm/ptrace.h:84,
+>                  from arch/sparc/include/asm/processor_32.h:16,
+>                  from arch/sparc/include/asm/processor.h:6,
+>                  from arch/sparc/include/asm/barrier_32.h:4,
+>                  from arch/sparc/include/asm/barrier.h:6,
+>                  from arch/sparc/include/asm/atomic_32.h:17,
+>                  from arch/sparc/include/asm/atomic.h:6,
+>                  from drivers/staging/lustre/lustre/obdclass/class_obd.c:38
+>
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> CC: stable@vger.kernel.org
+> ---
+>  drivers/staging/lustre/lustre/obdclass/class_obd.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/staging/lustre/lustre/obdclass/class_obd.c b/drivers/staging/lustre/lustre/obdclass/class_obd.c
+> index 8b19f3c..701c6a7 100644
+> --- a/drivers/staging/lustre/lustre/obdclass/class_obd.c
+> +++ b/drivers/staging/lustre/lustre/obdclass/class_obd.c
+> @@ -35,7 +35,7 @@
+>   */
+>
+>  #define DEBUG_SUBSYSTEM S_CLASS
+> -# include <asm/atomic.h>
+> +# include <linux/atomic.h>
+>
+>  #include "../include/obd_support.h"
+>  #include "../include/obd_class.h"
+> --
+> 1.9.1
+>
 
-	5-7: New. Seems to work, please review.
 
-Todo:
 
-	- Cleanup the tail_vma horror in m_start
-
-	- Update task_nommu.c in the same way
-
-	- Fix lock_trace() users
-
-Oleg.
-
- fs/proc/base.c     |   36 ++++++++------
- fs/proc/internal.h |    3 +
- fs/proc/task_mmu.c |  136 ++++++++++++++++++++++++++-------------------------
- 3 files changed, 93 insertions(+), 82 deletions(-)
-
+-- 
+Pranith
