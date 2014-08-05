@@ -1,68 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904AbaHEVqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 17:46:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:41931 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753830AbaHEVqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 17:46:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,807,1400050800"; 
-   d="scan'208";a="572195762"
-Date: Wed, 6 Aug 2014 05:46:24 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>, netdev@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: [setsockopt] WARNING: CPU: 0 PID: 1444 at kernel/sched/core.c:7088
- __might_sleep+0x51/0x16f()
-Message-ID: <20140805214624.GA9973@localhost>
+	id S1753957AbaHEVrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 17:47:00 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:52149 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753830AbaHEVq5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 17:46:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140806074430.102121ae@notabene.brown>
+References: <1407268348-25949-1-git-send-email-steven@uplinklabs.net>
+	<20140806074430.102121ae@notabene.brown>
+Date: Tue, 5 Aug 2014 14:46:55 -0700
+Message-ID: <CAKbGBLgh+qHu3zC=qD1CYRFbmdkci6GE-0MZ=wS3EqeQuh8YbQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] lockref: make lockref count signed
+From: Steven Noonan <steven@uplinklabs.net>
+To: NeilBrown <neilb@suse.de>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+On Tue, Aug 5, 2014 at 2:44 PM, NeilBrown <neilb@suse.de> wrote:
+> On Tue,  5 Aug 2014 12:52:27 -0700 Steven Noonan <steven@uplinklabs.net>
+> wrote:
+>
+>> There are numerous places where this is casted to a signed value anyway, for
+>> comparisons checking that the value hasn't been set to the 'dead' value of
+>> -128. This change turns the count value into a signed integer, which is how
+>> it's already being treated anyway. This reduces the chance for developer errors
+>> when making those comparisons.
+>>
+>> Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+>> Cc: NeilBrown <neilb@suse.de>
+>> Cc: Al Viro <viro@ZenIV.linux.org.uk>
+>> Signed-off-by: Steven Noonan <steven@uplinklabs.net>
+>
+> Thanks!  But you missed one "(int)" removal :-)
+>
+> fs/autofs4/root.c:              if ((int) d_count(active) <= 0)
 
-Here is a microcode/load_module error triggered by debug check commit
-64c2181bc433b17f04da8fe8592aa83cceac9606 ("sched: Debug nested sleeps"):
+Ahh, yeah. The return type of d_count() also needs to be fixed up.
+I'll send a new version in a few minutes...
 
-[main] Setsockopt(1 8 80d1000 4) on fd 21 [1:2:1]
-[main] Setsockopt(1 2f 80d1000 4) on fd 22 [4:2:60]
-[   14.027148] ------------[ cut here ]------------
-[   14.027864] WARNING: CPU: 0 PID: 210 at kernel/sched/core.c:7088 __might_sleep+0x40/0x68()
-[   14.029295] do not call blocking ops when !TASK_RUNNING; state=2 set at [<c144e379>] prepare_to_wait+0x35/0x56
-[   14.030590] Modules linked in:
-[   14.031136] CPU: 0 PID: 210 Comm: trinity-main Not tainted 3.16.0-02167-g254135e #972
-[   14.032263]  00000000 c0f4de4c c0f4de24 c196630c c0f4de3c c142f01a c1447632 c0f1dbb0
-[   14.033480]  00000002 b0066140 c0f4de54 c142f057 00000009 c0f4de4c c1b3bac8 c0f4de68
-[   14.034640]  c0f4de88 c1447632 c1b3bb12 00001bb0 c1b3bac8 00000002 c144e379 c144e379
-[   14.035983] Call Trace:
-[   14.036355]  [<c196630c>] dump_stack+0x16/0x18
-[   14.037005]  [<c142f01a>] warn_slowpath_common+0x55/0x6c
-[   14.037715]  [<c1447632>] ? __might_sleep+0x40/0x68
-[   14.038372]  [<c142f057>] warn_slowpath_fmt+0x26/0x2a
-[   14.039097]  [<c1447632>] __might_sleep+0x40/0x68
-[   14.039787]  [<c144e379>] ? prepare_to_wait+0x35/0x56
-[   14.040595]  [<c144e379>] ? prepare_to_wait+0x35/0x56
-[   14.041272]  [<c14a837e>] kmem_cache_alloc+0x39/0xb0
-[   14.041934]  [<c18fa2de>] ? __alloc_skb+0x3c/0x154
-[   14.042572]  [<c18fa2de>] __alloc_skb+0x3c/0x154
-[   14.043339]  [<c145117a>] ? mark_held_locks+0x44/0x60
-[   14.044141]  [<c1946093>] sigd_enq2+0x2a/0xff
-[   14.044836]  [<c1946188>] sigd_enq+0x20/0x2a
-[   14.045405]  [<c19467fb>] svc_listen+0x8b/0x11f
-[   14.046009]  [<c144e5a6>] ? __wake_up_sync+0xd/0xd
-[   14.046653]  [<c18f4132>] SyS_listen+0x37/0x51
-[   14.047423]  [<c18f4ce5>] SyS_socketcall+0x90/0x1c0
-[   14.048328]  [<c145136e>] ? trace_hardirqs_on+0xb/0xd
-[   14.049061]  [<c19729f6>] ? restore_all+0xf/0xf
-[   14.049665]  [<c19729bd>] syscall_call+0x7/0x7
-[   14.050253]  [<c1970000>] ? __ww_mutex_lock_interruptible+0x165/0x573
-[   14.051147] ---[ end trace 6f1365c63eafedde ]---
-[main] Setsockopt(1 2d 80d1000 f0) on fd 25 [1:1:1]
-
-Thanks,
-Fengguang
+> NeilBrown
+>
+>> ---
+>>  fs/dcache.c             | 6 +++---
+>>  include/linux/lockref.h | 2 +-
+>>  lib/lockref.c           | 4 ++--
+>>  3 files changed, 6 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/fs/dcache.c b/fs/dcache.c
+>> index 06f6585..f7a592e 100644
+>> --- a/fs/dcache.c
+>> +++ b/fs/dcache.c
+>> @@ -479,7 +479,7 @@ static void __dentry_kill(struct dentry *dentry)
+>>        * dentry_iput drops the locks, at which point nobody (except
+>>        * transient RCU lookups) can reach this dentry.
+>>        */
+>> -     BUG_ON((int)dentry->d_lockref.count > 0);
+>> +     BUG_ON(dentry->d_lockref.count > 0);
+>>       this_cpu_dec(nr_dentry);
+>>       if (dentry->d_op && dentry->d_op->d_release)
+>>               dentry->d_op->d_release(dentry);
+>> @@ -532,7 +532,7 @@ static inline struct dentry *lock_parent(struct dentry *dentry)
+>>       struct dentry *parent = dentry->d_parent;
+>>       if (IS_ROOT(dentry))
+>>               return NULL;
+>> -     if (unlikely((int)dentry->d_lockref.count < 0))
+>> +     if (unlikely(dentry->d_lockref.count < 0))
+>>               return NULL;
+>>       if (likely(spin_trylock(&parent->d_lock)))
+>>               return parent;
+>> @@ -848,7 +848,7 @@ static void shrink_dentry_list(struct list_head *list)
+>>                * We found an inuse dentry which was not removed from
+>>                * the LRU because of laziness during lookup. Do not free it.
+>>                */
+>> -             if ((int)dentry->d_lockref.count > 0) {
+>> +             if (dentry->d_lockref.count > 0) {
+>>                       spin_unlock(&dentry->d_lock);
+>>                       if (parent)
+>>                               spin_unlock(&parent->d_lock);
+>> diff --git a/include/linux/lockref.h b/include/linux/lockref.h
+>> index 4bfde0e..8558ff1 100644
+>> --- a/include/linux/lockref.h
+>> +++ b/include/linux/lockref.h
+>> @@ -28,7 +28,7 @@ struct lockref {
+>>  #endif
+>>               struct {
+>>                       spinlock_t lock;
+>> -                     unsigned int count;
+>> +                     int count;
+>>               };
+>>       };
+>>  };
+>> diff --git a/lib/lockref.c b/lib/lockref.c
+>> index d2233de..e4c4255 100644
+>> --- a/lib/lockref.c
+>> +++ b/lib/lockref.c
+>> @@ -158,7 +158,7 @@ int lockref_get_not_dead(struct lockref *lockref)
+>>
+>>       CMPXCHG_LOOP(
+>>               new.count++;
+>> -             if ((int)old.count < 0)
+>> +             if (old.count < 0)
+>>                       return 0;
+>>       ,
+>>               return 1;
+>> @@ -166,7 +166,7 @@ int lockref_get_not_dead(struct lockref *lockref)
+>>
+>>       spin_lock(&lockref->lock);
+>>       retval = 0;
+>> -     if ((int) lockref->count >= 0) {
+>> +     if (lockref->count >= 0) {
+>>               lockref->count++;
+>>               retval = 1;
+>>       }
+>
