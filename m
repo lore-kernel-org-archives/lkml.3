@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655AbaHELKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 07:10:12 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:63625 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931AbaHELKK (ORCPT
+	id S1755873AbaHELOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 07:14:15 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:32426 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754906AbaHELON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 07:10:10 -0400
+	Tue, 5 Aug 2014 07:14:13 -0400
+Date: Tue, 5 Aug 2014 14:13:51 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Christoph Jaeger <email@christophjaeger.info>
+Cc: shigekatsu.tateno@atmel.com, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/10] staging: ozwpan: Simplify app interface
+Message-ID: <20140805111351.GT4856@mwanda>
+References: <1407156896-3246-1-git-send-email-email@christophjaeger.info>
+ <1407156896-3246-7-git-send-email-email@christophjaeger.info>
 MIME-Version: 1.0
-In-Reply-To: <1407158386-6201-6-git-send-email-dvlasenk@redhat.com>
-References: <1407158386-6201-1-git-send-email-dvlasenk@redhat.com> <1407158386-6201-6-git-send-email-dvlasenk@redhat.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Tue, 5 Aug 2014 13:09:48 +0200
-Message-ID: <CAK1hOcPOaH9P0-XmcRZRwt=B1MYCtDCdiyA6AS=apSywWCv=Ng@mail.gmail.com>
-Subject: Re: [PATCH 5/6] x86: mass removal of ARGOFFSET
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407156896-3246-7-git-send-email-email@christophjaeger.info>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FYI: the patch is incomplete. arch/x86/ia32/ia32entry.S has a bug, fix is:
+On Mon, Aug 04, 2014 at 02:54:52PM +0200, Christoph Jaeger wrote:
+> Simplify the somewhat overcomplicated application interface; improves
+> readability and saves a bunch of lines.
+> 
+> Use designated struct initializers for clarity.
 
- sysexit_from_sys_call:
-        andl    $~TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-        /* clear IF, that popfq doesn't enable interrupts early */
--       andl  $~0x200,EFLAGS-R11(%rsp).
--       movl    RIP-R11(%rsp),%edx              /* User %eip */
-+       andl    $~0x200,EFLAGS-ARGOFFSET(%rsp)
-+       movl    RIP-ARGOFFSET(%rsp),%edx                /* User %eip */
-        CFI_REGISTER rip,rdx
-        RESTORE_ARGS 0,24,0,0,0,0
-        xorq    %r8,%r8
+I was worried this would change the API but it doesn't.  The patch looks
+ok.
 
-It went unnoticed for so long because
-these two constants are the same.
-Patch #4 changes ARGOFFSET to 0, but of course R11 stays the same,
-breaking this code.
+Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+
+regards,
+dan carpenter
+
