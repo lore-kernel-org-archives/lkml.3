@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057AbaHERLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 13:11:40 -0400
-Received: from tom.rz.uni-passau.de ([132.231.51.4]:45556 "EHLO
-	tom.rz.uni-passau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755028AbaHERLj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 13:11:39 -0400
-X-Greylist: delayed 482 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Aug 2014 13:11:39 EDT
-Date: Tue, 05 Aug 2014 17:02:28 +0000
-Message-ID: <20140805170228.Horde.UDhu7S4bHGrRsTA2-YDPoQ1@webmail.uni-passau.de>
-From: codeface <codeface@fim.uni-passau.de>
-To: linux-kernel@vger.kernel.org
-Subject: Linux Development Collaboration Patterns
-User-Agent: Internet Messaging Program (IMP) H5 (6.1.7)
-Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
+	id S1755855AbaHEROU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 13:14:20 -0400
+Received: from mga14.intel.com ([192.55.52.115]:6530 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754784AbaHEROS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 13:14:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="368283378"
+Message-ID: <53E110A9.6020204@intel.com>
+Date: Tue, 05 Aug 2014 20:13:13 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Disposition: inline
-X-purgate-ID: 151291::1407258214-00005F65-8103825C/0-0/0-0
-X-purgate-type: clean
-X-purgate-size: 1834
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate: clean
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 00/31] perf tools: Yet more preparation for call graph
+ from Intel BTS
+References: <1406786474-9306-1-git-send-email-adrian.hunter@intel.com> <20140804215816.GG13375@kernel.org>
+In-Reply-To: <20140804215816.GG13375@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 5/08/2014 12:58 a.m., Arnaldo Carvalho de Melo wrote:
+> Em Thu, Jul 31, 2014 at 09:00:43AM +0300, Adrian Hunter escreveu:
+>> Hi
+>>
+>> Here is the next selection of patches based on tip/perf/core.
+>>
+>> They can also be found here:
+>>
+>> 	http://git.infradead.org/users/ahunter/linux-perf.git/shortlog/refs/heads/for-acme
+>
+> Just FYI, did some processing today, what I picked I stashed on my
+> tmp.perf/core branch, will continue.
 
-Dear Linux Developers,
+Thank you!
 
-The University of Passau is currently studying the mechanisms that  
-contribute to effective collaboration in open-source projects so that  
-appropriate tools and techniques are created to support the needs of  
-open-source developers. To achieve this goal, we are evaluating the  
-usefulness of software archives (e.g., mailing lists, version-control  
-system, and bug tracker) to quantitatively model social relationships  
-and collaborative patterns in open-source projects. The culmination of  
-this effort is an open-source project called Codeface, which is a  
-framework and web front-end for analyzing social and technical aspects  
-of software development. To learn more about Codeface, please visit  
-http://siemens.github.io/codeface.
+>
+> But having something that actually uses all this stuff in 'perf test' is
+> something I'm missing...
+>
+> Things like using that set_tracking new API on a evlist with the
+> sched_switch, using it to track, then switching it off after moving the
+> tracking event to another event in the list, etc.
 
-We are now recruiting open-source developers to participate in a short  
-survey. The survey is composed of 4 questions and takes about *5  
-minutes* to complete. We ensure that all of your information will be  
-kept confidential and will only be used for scientific research  
-purposes. There is no commercial interest in the results. We are  
-merely interested in learning about your collaborative experiences as  
-an open-source developer.
-
-To access the survey, please click on the link below.
-http://rfhinf067.hs-regensburg.de:8080/login.html
-
-We highly appreciate your efforts, and we sincerely hope that you will  
-take the time to participate. Upon completion of the survey, you may  
-include your e-mail address so that we can send you the anonymized  
-survey results.
-
-We would also like to express our gratitude for support from Siemens  
-Corporate Research and University of Applied Sciences Regensburg.
-
-
-Sincerely,
-
-Mitchell Joblin
-
-PhD Student
-Department of Informatics and Mathematics
-University of Passau
+I will look at that.
