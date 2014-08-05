@@ -1,14 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933017AbaHEJqL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 05:46:11 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:49291 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757496AbaHEJqI (ORCPT
+	id S933033AbaHEJrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 05:47:49 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:54761 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757563AbaHEJrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 05:46:08 -0400
+	Tue, 5 Aug 2014 05:47:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140805103409.33afef2a@alan.etchedpixels.co.uk>
+References: <CAPybu_1Ma+7nGaS0e17HpPcM1vk6ANSFN3C8MNR=JxWrBBmMOA@mail.gmail.com>
+ <1406834546-23033-1-git-send-email-ricardo.ribalda@gmail.com>
+ <20140801132343.45153300@alan.etchedpixels.co.uk> <CAPybu_2U2jjyY_9gji41mUc5F4N+idDVNO=LAr3F5PpJ0JzYSg@mail.gmail.com>
+ <20140805103409.33afef2a@alan.etchedpixels.co.uk>
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Date: Tue, 5 Aug 2014 11:47:26 +0200
+Message-ID: <CAPybu_0CcmF0+Z8kE9A=uD7PvWeaC_ro8pF1NVNjuTMVcPgkMw@mail.gmail.com>
+Subject: Re: [PATCH 2/2 v2] serial: Add support for Fintek F81216A LPC to 4 UART
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
         Heikki Krogerus <heikki.krogerus@linux.intel.com>,
         Murali Karicheri <m-karicheri2@ti.com>,
@@ -16,112 +26,29 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Peter Hurley <peter@hurleysoftware.com>,
         Joe Schultz <jschultz@xes-inc.com>, Ingo Molnar <mingo@elte.hu>,
         Doug Anderson <dianders@chromium.org>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH 1/2 v2] serial/8250: Add support for RS485 IOCTLs
-Date: Tue,  5 Aug 2014 11:45:59 +0200
-Message-Id: <1407231959-18696-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 2.0.1
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allow the users of the 8250 infrastructure to define a
-handler for RS485 configration.
+Hello Alan
 
-If no handler is defined the 8250 driver will work as usual.
+> We really want to handle it at the tty layer I think not at serial_core.
+> I have a patch for that and I'm playing with it but it's taking longer
+> than I hoped.
+>
+> In the mean time I think your patch #1 is ok except for the trivial
+> item that I'd prefer the struct serial_rs485 was further down the struct
+> uart_8250_port. It's packed so that the bits you need most are in the
+> first cache line or two.
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
---
-v2:Change suggested by Alan "One Thousand Gnomes":
-- Move rs485 structure further down on the uart_8250_port structure
+I have just resend 1/2 with rs485 moved further down on the structure.
+Shall I also resend 2/2 (no changes)?
 
- drivers/tty/serial/8250/8250_core.c | 39 +++++++++++++++++++++++++++++++++++++
- include/linux/serial_8250.h         |  3 +++
- 2 files changed, 42 insertions(+)
+Regards!
 
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 1d42dba..b28ed1b 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -2843,6 +2843,42 @@ serial8250_verify_port(struct uart_port *port, struct serial_struct *ser)
- 	return 0;
- }
- 
-+static int serial8250_ioctl(struct uart_port *port, unsigned int cmd,
-+			   unsigned long arg)
-+{
-+	struct uart_8250_port *up =
-+		container_of(port, struct uart_8250_port, port);
-+	int ret;
-+	struct serial_rs485 rs485_config;
-+
-+	if (!up->rs485_config)
-+		return -ENOIOCTLCMD;
-+
-+	switch (cmd) {
-+	case TIOCSRS485:
-+		if (copy_from_user(&rs485_config, (void __user *)arg,
-+				   sizeof(rs485_config)))
-+			return -EFAULT;
-+
-+		ret = up->rs485_config(up, &rs485_config);
-+		if (ret)
-+			return ret;
-+
-+		memcpy(&up->rs485, &rs485_config, sizeof(rs485_config));
-+
-+		return 0;
-+	case TIOCGRS485:
-+		if (copy_to_user((void __user *)arg, &up->rs485,
-+				 sizeof(up->rs485)))
-+			return -EFAULT;
-+		return 0;
-+	default:
-+		break;
-+	}
-+
-+	return -ENOIOCTLCMD;
-+}
-+
- static const char *
- serial8250_type(struct uart_port *port)
- {
-@@ -2872,6 +2908,7 @@ static struct uart_ops serial8250_pops = {
- 	.request_port	= serial8250_request_port,
- 	.config_port	= serial8250_config_port,
- 	.verify_port	= serial8250_verify_port,
-+	.ioctl		= serial8250_ioctl,
- #ifdef CONFIG_CONSOLE_POLL
- 	.poll_get_char = serial8250_get_poll_char,
- 	.poll_put_char = serial8250_put_poll_char,
-@@ -3388,6 +3425,8 @@ int serial8250_register_8250_port(struct uart_8250_port *up)
- 		uart->port.fifosize	= up->port.fifosize;
- 		uart->tx_loadsz		= up->tx_loadsz;
- 		uart->capabilities	= up->capabilities;
-+		uart->rs485_config	= up->rs485_config;
-+		uart->rs485		= up->rs485;
- 
- 		/* Take tx_loadsz from fifosize if it wasn't set separately */
- 		if (uart->port.fifosize && !uart->tx_loadsz)
-diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
-index f93649e..6dd6717 100644
---- a/include/linux/serial_8250.h
-+++ b/include/linux/serial_8250.h
-@@ -96,10 +96,13 @@ struct uart_8250_port {
- 	unsigned char		msr_saved_flags;
- 
- 	struct uart_8250_dma	*dma;
-+	struct serial_rs485     rs485;
- 
- 	/* 8250 specific callbacks */
- 	int			(*dl_read)(struct uart_8250_port *);
- 	void			(*dl_write)(struct uart_8250_port *, int);
-+	int			(*rs485_config)(struct uart_8250_port *,
-+						struct serial_rs485 *rs485);
- };
- 
- static inline struct uart_8250_port *up_to_u8250p(struct uart_port *up)
+
+
 -- 
-2.0.1
-
+Ricardo Ribalda
