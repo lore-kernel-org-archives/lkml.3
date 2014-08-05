@@ -1,278 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731AbaHEBsx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 21:48:53 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:36021 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753706AbaHEBsv (ORCPT
+	id S1753783AbaHEBtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 21:49:10 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:53028 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290AbaHEBtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 21:48:51 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 5 Aug 2014 10:49:17 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Timofey Titovets <nefelim4ag@gmail.com>, linux-kernel@vger.kernel.org,
+	Mon, 4 Aug 2014 21:49:05 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH v3 RESEND] zram: auto add new devices on demand
-Message-ID: <20140805014917.GA27993@bbox>
-References: <53CCEF76.4040002@gmail.com>
- <20140729030021.GA22707@bbox>
- <20140730135831.GA1098@swordfish>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140730135831.GA1098@swordfish>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH v6 0/7] kernel: Add support for restart handler call chain
+Date: Mon,  4 Aug 2014 18:48:51 -0700
+Message-Id: <1407203338-12915-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 10:58:31PM +0900, Sergey Senozhatsky wrote:
-> Hello,
-> 
-> On (07/29/14 12:00), Minchan Kim wrote:
-> > Hello Timofey,
-> > 
-> > Sorry for late response and thanks for suggesting new feature.
-> > 
-> > First of all, I'd like to know your usecase.
-> > 
-> > I don't mean I am against this feature and I tend to agree it would
-> > be good if we can make new device dynamically but until now, I don't
-> > hear any requirement like that. So we need compelling usecase to
-> > justify maintainance overhead.
-> > 
-> > On Mon, Jul 21, 2014 at 01:46:14PM +0300, Timofey Titovets wrote:
-> > > From: Timofey Titovets <nefelim4ag@gmail.com>
-> > > 
-> > > This add supporting of auto allocate new zram devices on demand,
-> > > like loop devices
-> > > 
-> > > This working by following rules:
-> > > 	- Pre create zram devices specified by num_device
-> > > 	- if all device already in use -> add new free device
-> > > 
-> > > From v1 -> v2:
-> > > Delete useless variable 'ret', added documentation for explain new
-> > > zram behavior
-> > > 
-> > > From v2 -> v3
-> > > Delete logic to destroy not used devices, for avoid concurrency issues
-> > > Code refactoring for made patch small and clean as possible
-> > > Patch can pass the test:
-> > > 
-> > > #!/bin/sh
-> > > modprobe zram
-> > > while true; do
-> > >                 echo 10485760 > /sys/block/zram0/disksize&
-> > >                 echo 1 > /sys/block/zram0/reset&
-> > > done
-> > > 
-> > > Can be pulled from:
-> > > https://github.com/Nefelim4ag/linux.git
-> > > 
-> > > Tested on 3.15.5-2-ARCH, can be applied on any kernel version
-> > > after this patch 'zram: add LZ4 compression support' - https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=6e76668e415adf799839f0ab205142ad7002d260
-> > > 
-> > > ---
-> > > 
-> > > diff --git a/Documentation/blockdev/zram.txt
-> > > b/Documentation/blockdev/zram.txt
-> > > index 0595c3f..a090ac7 100644
-> > > --- a/Documentation/blockdev/zram.txt
-> > > +++ b/Documentation/blockdev/zram.txt
-> > > @@ -21,6 +21,9 @@ Following shows a typical sequence of steps for
-> > > using zram.
-> > >  	This creates 4 devices: /dev/zram{0,1,2,3}
-> > >  	(num_devices parameter is optional. Default: 1)
-> > > 
-> > > +	If all device in use kernel will create new zram device
-> > > +	(between num_devices and 31)
-> > > +
-> > >  2) Set max number of compression streams
-> > >  	Compression backend may use up to max_comp_streams compression streams,
-> > >  	thus allowing up to max_comp_streams concurrent compression operations.
-> > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > > index 089e72c..cc78779 100644
-> > > --- a/drivers/block/zram/zram_drv.c
-> > > +++ b/drivers/block/zram/zram_drv.c
-> > > @@ -43,6 +43,8 @@ static const char *default_compressor = "lzo";
-> > >  /* Module params (documentation at end) */
-> > >  static unsigned int num_devices = 1;
-> > > 
-> > > +static inline int zram_add_dev(void);
-> > > +
-> > >  #define ZRAM_ATTR_RO(name)						\
-> > >  static ssize_t zram_attr_##name##_show(struct device *d,		\
-> > >  				struct device_attribute *attr, char *b)	\
-> > > @@ -168,6 +170,7 @@ static ssize_t comp_algorithm_store(struct device *dev,
-> > >  		struct device_attribute *attr, const char *buf, size_t len)
-> > >  {
-> > >  	struct zram *zram = dev_to_zram(dev);
-> > > +
-> > 
-> > unnecessary change
-> > 
-> > >  	down_write(&zram->init_lock);
-> > >  	if (init_done(zram)) {
-> > >  		up_write(&zram->init_lock);
-> > > @@ -239,6 +242,7 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
-> > >  {
-> > >  	size_t num_pages;
-> > >  	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
-> > > +
-> > 
-> > Ditto
-> > 
-> > >  	if (!meta)
-> > >  		goto out;
-> > > 
-> > > @@ -374,6 +378,7 @@ static int zram_bvec_read(struct zram *zram,
-> > > struct bio_vec *bvec,
-> > >  	struct page *page;
-> > >  	unsigned char *user_mem, *uncmem = NULL;
-> > >  	struct zram_meta *meta = zram->meta;
-> > > +
-> > 
-> > Ditto
-> > 
-> > >  	page = bvec->bv_page;
-> > > 
-> > >  	read_lock(&meta->tb_lock);
-> > > @@ -607,6 +612,7 @@ static void zram_reset_device(struct zram *zram,
-> > > bool reset_capacity)
-> > >  	/* Free all pages that are still in this zram device */
-> > >  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
-> > >  		unsigned long handle = meta->table[index].handle;
-> > > +
-> > 
-> > Ditto
-> > 
-> > >  		if (!handle)
-> > >  			continue;
-> > > 
-> > > @@ -667,6 +673,7 @@ static ssize_t disksize_store(struct device *dev,
-> > >  	zram->disksize = disksize;
-> > >  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-> > >  	revalidate_disk(zram->disk);
-> > > +	zram_add_dev();
-> > 
-> > Why do you add new device unconditionally?
-> > Maybe we need new konb on sysfs or ioctl for adding new device?
-> > Any thought, guys?
-> 
-> 
-> speaking of the patch, frankly, I (almost) see no gain comparing to the
-> existing functionality.
-> 
-> speaking of the idea. well, I'm not 100% convinced yet. the use cases I
-> see around do not imply dynamic creation/resizing/etc. that said, I need to
-> think about it.
+Various drivers implement architecture and/or device specific means
+to restart (reset) the system. Various mechanisms have been implemented
+to support those schemes. The best known mechanism is arm_pm_restart,
+which is a function pointer to be set either from platform specific code
+or from drivers. Another mechanism is to use hardware watchdogs to issue
+a reset; this mechanism is used if there is no other method available
+to reset a board or system. Two examples are alim7101_wdt, which currently
+uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
+the arm_pm_restart function. Several other restart drivers for arm, all
+directly calling arm_pm_restart, are in the process of being integrated
+into the kernel. All those drivers would benefit from the new API.
 
-It didn't persuade me, either.
+The existing mechanisms have a number of drawbacks. Typically only one scheme
+to restart the system is supported (at least if arm_pm_restart is used).
+At least in theory there can be multiple means to restart the system, some of
+which may be less desirable (for example one mechanism may only reset the CPU,
+while another may reset the entire system). Using arm_pm_restart can also be
+racy if the function pointer is set from a driver, as the driver may be in
+the process of being unloaded when arm_pm_restart is called.
+Using the reboot notifier is always racy, as it is unknown if and when
+other functions using the reboot notifier have completed execution
+by the time the watchdog fires.
 
-Normally, distro have some config file for adding param at module loading
-like /etc/modules. So, I think it should be done in there if someone want
-to increase the number of zram devices.
+Introduce a system restart handler call chain to solve the described problems.
+This call chain is expected to be executed from the architecture specific
+machine_restart() function. Drivers providing system restart functionality
+(such as the watchdog drivers mentioned above) are expected to register
+with this call chain. By using the priority field in the notifier block,
+callers can control restart handler execution sequence and thus ensure that
+the restart handler with the optimal restart capabilities for a given system
+is called first.
 
+Since the first revision of this patchset, a number of separate patch
+submissions have been made which either depend on it or could make use of it.
 
-> 
-> if we end up adding this functionality I tend to vote for sysfs knob, just
-> because it seems to be more user friendly than writing some magic INTs to
-> ioctl-d fd.
-> 
-> 	-ss
-> > 
-> > >  	up_write(&zram->init_lock);
-> > >  	return len;
-> > > 
-> > > @@ -954,6 +961,34 @@ static void destroy_device(struct zram *zram)
-> > >  	blk_cleanup_queue(zram->queue);
-> > >  }
-> > > 
-> > > +/*
-> > > + * Automatically add empty zram device,
-> > > + * if all created devices already initialized
-> > > + */
-> > > +static inline int zram_add_dev(void)
-> > > +{
-> > > +	int dev_id;
-> > > +
-> > > +	for (dev_id = 0; dev_id < num_devices; dev_id++) {
-> > > +		if (!zram_devices[dev_id].disksize)
-> > > +			return 0;
-> > > +	}
-> > > +
-> > > +	if (max_num_devices <= num_devices) {
-> > > +		pr_warn("Can't add zram%u, max device number reached\n", num_devices);
-> > > +		return 1;
-> > > +	}
-> > > +
-> > > +	if (create_device(&zram_devices[num_devices], num_devices)) {
-> > > +		destroy_device(&zram_devices[num_devices]);
-> > > +		return 1;
-> > > +	}
-> > > +	pr_info("Created zram%u device\n", num_devices);
-> > > +	num_devices++;
-> > 
-> > Who protects num_devices race?
-> > 
-> > > +
-> > > +	return 0;
-> > > +}
-> > 
-> > There is only adding function. Where is removing function?
-> > 
-> > Sorry, I am on vacation tomorrow so pz, understand my late response.
-> > 
-> > > +
-> > >  static int __init zram_init(void)
-> > >  {
-> > >  	int ret, dev_id;
-> > > @@ -972,13 +1007,14 @@ static int __init zram_init(void)
-> > >  		goto out;
-> > >  	}
-> > > 
-> > > -	/* Allocate the device array and initialize each one */
-> > > -	zram_devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
-> > > +	/* Allocate the device array */
-> > > +	zram_devices = kcalloc(max_num_devices, sizeof(struct zram), GFP_KERNEL);
-> > >  	if (!zram_devices) {
-> > >  		ret = -ENOMEM;
-> > >  		goto unregister;
-> > >  	}
-> > > 
-> > > +	/* Initialise zram{0..num_devices} */
-> > >  	for (dev_id = 0; dev_id < num_devices; dev_id++) {
-> > >  		ret = create_device(&zram_devices[dev_id], dev_id);
-> > >  		if (ret)
-> > > @@ -1025,7 +1061,7 @@ module_init(zram_init);
-> > >  module_exit(zram_exit);
-> > > 
-> > >  module_param(num_devices, uint, 0);
-> > > -MODULE_PARM_DESC(num_devices, "Number of zram devices");
-> > > +MODULE_PARM_DESC(num_devices, "Number of pre created  zram devices");
-> > > 
-> > >  MODULE_LICENSE("Dual BSD/GPL");
-> > >  MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> > -- 
-> > Kind regards,
-> > Minchan Kim
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+http://www.spinics.net/linux/lists/arm-kernel/msg344796.html
+	registers three notifiers.
+https://lkml.org/lkml/2014/7/8/962
+	would benefit from it.
 
--- 
-Kind regards,
-Minchan Kim
+Patch 1 of this series implements the restart handler function. Patches 2 and 3
+implement calling the restart handler chain from arm and arm64 restart code.
+
+Patch 4 modifies the restart-poweroff driver to no longer call arm_pm_restart
+directly but machine_restart. This is done to avoid calling arm_pm_restart
+from more than one place. The change makes the driver architecture independent,
+so it would be possible to drop the arm dependency from its Kconfig entry.
+
+Patch 5 and 6 convert existing restart handlers in the watchdog subsystem
+to use the restart handler. Patch 7 unexports arm_pm_restart to ensure
+that no one gets the idea to implement a restart handler as module.
+
+The entire patch series, including additional patches depending on it,
+is available from
+https://git.kernel.org/cgit/linux/kernel/git/groeck/linux-staging.git/
+in branch 'restart-staging'.
+
+On a side note, I realize that the timing for sending this series is less
+than optimal, given that we have an open commit window. Letting it sit for
+two weeks collecting dust isn't optimal either, so I figure it may as well
+collect dust in public.
+
+---
+v6: Use atomic notifier call chain 
+    Rebased series to v3.16
+v5: Rebased series to v3.16-rc5
+    Function renames:
+    register_restart_notifier -> register_restart_handler
+    unregister_restart_notifier -> unregister_restart_handler
+    kernel_restart_notify -> do_kernel_restart
+v4: Document restart notifier priorities
+    Select 128 as default priority for newly introduced notifiers
+    Fix checkpatch warning (line too long) in moxart patch
+v3: Drop RFC.
+    Add kernel_restart_notify wrapper function to execute notifier
+    Improve documentation.
+    Move restart_notifier_list into kernel/reboot.c and make it static.
+v2: Add patch 4.
+    Only call blocking notifier call chain if arm_pm_restart was not set.
