@@ -1,101 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575AbaHEFOn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 01:14:43 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41829 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449AbaHEFOm (ORCPT
+	id S1754610AbaHEFai (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 01:30:38 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:39458 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775AbaHEFag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 01:14:42 -0400
-Date: Tue, 5 Aug 2014 06:14:39 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: NeilBrown <neilb@suse.de>, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Is lockref_get_not_zero() really correct in dget_parent()
-Message-ID: <20140805051439.GQ18016@ZenIV.linux.org.uk>
-References: <20140805131758.3afa6b0b@notabene.brown>
- <CA+55aFxDQ8fE16uKPfjU-nBnvfjWHz3ib5mo1BDn2=JKXVQQmQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxDQ8fE16uKPfjU-nBnvfjWHz3ib5mo1BDn2=JKXVQQmQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Aug 2014 01:30:36 -0400
+Message-ID: <1407216632.2566.22.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 4/7] locking/rwsem: threshold limited spinning for
+ active readers
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Date: Mon, 04 Aug 2014 22:30:32 -0700
+In-Reply-To: <1407214461.2566.14.camel@buesod1.americas.hpqcorp.net>
+References: <1407119782-41119-1-git-send-email-Waiman.Long@hp.com>
+	 <1407119782-41119-5-git-send-email-Waiman.Long@hp.com>
+	 <1407214461.2566.14.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 09:07:32PM -0700, Linus Torvalds wrote:
-
-> So renaming it to "lockref_get_active()", and changing the "not zero"
-> test to check for "positive" and change the rtype of "count" to be
-> signed, all sound like good things to me.
-
-Fine by me.  I can do that, unless somebody else beats me to that.
-
-> But I don't actually think it's an active bug, it's just an "active
-> horribly ugly and subtly working code". I guess in theory if you can
-> get lots of CPU's triggering the race at the same time, the magic
-> negative number could become zero and positive, but at that point I
-> don't think we're really talking reality any more.
+On Mon, 2014-08-04 at 21:54 -0700, Davidlohr Bueso wrote:
+> >  #ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+> > +/*
+> > + * The owner field is set to RWSEM_READ_OWNED if the last owner(s) are
+> > + * readers. It is not reset until a writer takes over and set it to its
+> > + * task structure pointer or NULL when it frees the lock. So a value
+> > + * of RWSEM_READ_OWNED doesn't mean it currently has active readers.
+> > + */
+> > +#define RWSEM_READ_OWNED	((struct task_struct *)-1)
 > 
-> Can somebody pick holes in that? Does somebody want to send in the
-> cleanup patch?
+> Looks rather weird...
 
-FWIW, dget_parent() has been a bloody annoyance - most of the callers used
-to be racy and looking through the current set...  Take a look at e.g.
-fs/btrfs/tree-log.c:check_parent_dirs_for_sync().  In the loop there we
-do
-                if (!parent || !parent->d_inode || sb != parent->d_inode->i_sb)
-                        break;
+Instead of populating owner when taking the reader lock, why not just
+leave it NULL. Then, we can differentiate between the owner being NULL
+either because it is taken by reader(s) or simply because it is not
+taken. So something like this:
 
-                if (IS_ROOT(parent))
-                        break;
+static inline bool rwsem_owner_is_reader(struct rw_semaphore *sem)
+{
+	return !sem->owner && rwsem_is_locked(sem));
+}
 
-                parent = dget_parent(parent);
-                dput(old_parent);
-                old_parent = parent;
-                inode = parent->d_inode;
-and it's so bogus it's not even funny.  What the hell is that code trying to
-check?  And while we are at it, can we race with renames there?
-
->From my reading of that code, most of it ought to have been under
-rcu_read_lock() and sod all that playing with refcounts.  Other
-btrfs users are not much nicer (who says, for instance, that result of
-check_parent_dirs_for_sync() will remain valid?)
-
-ecryptfs lock_parent(): AFAICS, all callers could do ecryptfs_dentry_to_lower()
-on dentry->d_parent instead of doing ecryptfs_dentry_to_lower(dentry) and
-then doing dget_parent() - the covering layer dentries have ->d_parent
-stabilized by ->i_mutex on said parents and we really, really don't want to
-run into the case when tree topologies go out of sync.  I.e. we want to grab
-->i_mutex on lower(parent), then check that it's equal to parent(lower) and,
-if it's at all possible that some joker has played with rename(2) on underlying
-layer mounted somewhere else, drop everything we'd taken and bugger off.
-
-XFS xfs_filestream_get_parent() is clearly bogus -
-        parent = dget_parent(dentry);
-        if (!parent)
-                goto out_dput;
-When does dget_parent() return NULL?
-
-And that's just from a quick grep.  The point is, dget_parent() is not a nice
-API - historically it's been abused more often than not and we keep playing
-whack-a-mole with it.  Sigh...
-
-Speaking of bogosities, apparently nobody has noticed that automagical
-turning BSD process accounting off upon r/o remounts of the filesystem
-hosting the log got broken several years ago.  Suppose we find an opened
-log when remounting.  OK, it gets closed, which means filp_close(...).
-Which means that actual closing that sucker will happen just before we
-return to userland.  Return with -EBUSY, since the filesystem still has
-a file opened for write when we get around to checking that...
-
-I have kinda-sorta fixes for that (basically, restoring the situation we
-used to have before delayed fput() and being damn careful about avoiding
-deadlocks), but I would really love to just rip that idiocy out.  IOW,
-just let it fail with -EBUSY in such cases, same as for any other write-opened
-file on that fs.
-
-That, BTW, is the most painful part of the acct series, so being able to
-drop it would be very nice.  Comments?
