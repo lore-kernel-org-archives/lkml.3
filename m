@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997AbaHESSA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:18:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52624 "EHLO
+	id S1756028AbaHESSe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:18:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52601 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755503AbaHESQF (ORCPT
+	with ESMTP id S1755478AbaHESQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:16:05 -0400
+	Tue, 5 Aug 2014 14:16:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Minfei Huang <huangminfei@ucloud.cn>, Joern Engel <joern@logfs.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 26/27] lib/btree.c: fix leak of whole btree nodes
-Date: Tue,  5 Aug 2014 11:14:18 -0700
-Message-Id: <20140805181345.038208785@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Arnaud Ebalard <arno@natisbad.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Willy Tarreau <w@1wt.eu>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 24/27] net: mvneta: replace Tx timer with a real interrupt
+Date: Tue,  5 Aug 2014 11:14:16 -0700
+Message-Id: <20140805181344.979737608@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181344.268039690@linuxfoundation.org>
 References: <20140805181344.268039690@linuxfoundation.org>
@@ -31,47 +32,215 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Minfei Huang <huangminfei@ucloud.cn>
+From: willy tarreau <w@1wt.eu>
 
-commit c75b53af2f0043aff500af0a6f878497bef41bca upstream.
+commit 71f6d1b31fb1f278a345a30a2180515adc7d80ae upstream.
 
-I use btree from 3.14-rc2 in my own module.  When the btree module is
-removed, a warning arises:
+Right now the mvneta driver doesn't handle Tx IRQ, and relies on two
+mechanisms to flush Tx descriptors : a flush at the end of mvneta_tx()
+and a timer. If a burst of packets is emitted faster than the device
+can send them, then the queue is stopped until next wake-up of the
+timer 10ms later. This causes jerky output traffic with bursts and
+pauses, making it difficult to reach line rate with very few streams.
 
- kmem_cache_destroy btree_node: Slab cache still has objects
- CPU: 13 PID: 9150 Comm: rmmod Tainted: GF          O 3.14.0-rc2 #1
- Hardware name: Inspur NF5270M3/NF5270M3, BIOS CHEETAH_2.1.3 09/10/2013
- Call Trace:
-   dump_stack+0x49/0x5d
-   kmem_cache_destroy+0xcf/0xe0
-   btree_module_exit+0x10/0x12 [btree]
-   SyS_delete_module+0x198/0x1f0
-   system_call_fastpath+0x16/0x1b
+A test on UDP traffic shows that it's not possible to go beyond 134
+Mbps / 12 kpps of outgoing traffic with 1500-bytes IP packets. Routed
+traffic tends to observe pauses as well if the traffic is bursty,
+making it even burstier after the wake-up.
 
-The cause is that it doesn't release the last btree node, when height = 1
-and fill = 1.
+It seems that this feature was inherited from the original driver but
+nothing there mentions any reason for not using the interrupt instead,
+which the chip supports.
 
-[akpm@linux-foundation.org: remove unneeded test of NULL]
-Signed-off-by: Minfei Huang <huangminfei@ucloud.cn>
-Cc: Joern Engel <joern@logfs.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Thus, this patch enables Tx interrupts and removes the timer. It does
+the two at once because it's not really possible to make the two
+mechanisms coexist, so a split patch doesn't make sense.
+
+First tests performed on a Mirabox (Armada 370) show that less CPU
+seems to be used when sending traffic. One reason might be that we now
+call the mvneta_tx_done_gbe() with a mask indicating which queues have
+been done instead of looping over all of them.
+
+The same UDP test above now happily reaches 987 Mbps / 87.7 kpps.
+Single-stream TCP traffic can now more easily reach line rate. HTTP
+transfers of 1 MB objects over a single connection went from 730 to
+840 Mbps. It is even possible to go significantly higher (>900 Mbps)
+by tweaking tcp_tso_win_divisor.
+
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Arnaud Ebalard <arno@natisbad.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Tested-by: Arnaud Ebalard <arno@natisbad.org>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/btree.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/marvell/mvneta.c |   72 +++++-----------------------------
+ 1 file changed, 12 insertions(+), 60 deletions(-)
 
---- a/lib/btree.c
-+++ b/lib/btree.c
-@@ -198,6 +198,7 @@ EXPORT_SYMBOL_GPL(btree_init);
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -214,9 +214,6 @@
+ #define MVNETA_RX_COAL_PKTS		32
+ #define MVNETA_RX_COAL_USEC		100
  
- void btree_destroy(struct btree_head *head)
- {
-+	mempool_free(head->node, head->mempool);
- 	mempool_destroy(head->mempool);
- 	head->mempool = NULL;
+-/* Timer */
+-#define MVNETA_TX_DONE_TIMER_PERIOD	10
+-
+ /* Napi polling weight */
+ #define MVNETA_RX_POLL_WEIGHT		64
+ 
+@@ -272,16 +269,11 @@ struct mvneta_port {
+ 	void __iomem *base;
+ 	struct mvneta_rx_queue *rxqs;
+ 	struct mvneta_tx_queue *txqs;
+-	struct timer_list tx_done_timer;
+ 	struct net_device *dev;
+ 
+ 	u32 cause_rx_tx;
+ 	struct napi_struct napi;
+ 
+-	/* Flags */
+-	unsigned long flags;
+-#define MVNETA_F_TX_DONE_TIMER_BIT  0
+-
+ 	/* Napi weight */
+ 	int weight;
+ 
+@@ -1112,17 +1104,6 @@ static void mvneta_tx_done_pkts_coal_set
+ 	txq->done_pkts_coal = value;
  }
+ 
+-/* Trigger tx done timer in MVNETA_TX_DONE_TIMER_PERIOD msecs */
+-static void mvneta_add_tx_done_timer(struct mvneta_port *pp)
+-{
+-	if (test_and_set_bit(MVNETA_F_TX_DONE_TIMER_BIT, &pp->flags) == 0) {
+-		pp->tx_done_timer.expires = jiffies +
+-			msecs_to_jiffies(MVNETA_TX_DONE_TIMER_PERIOD);
+-		add_timer(&pp->tx_done_timer);
+-	}
+-}
+-
+-
+ /* Handle rx descriptor fill by setting buf_cookie and buf_phys_addr */
+ static void mvneta_rx_desc_fill(struct mvneta_rx_desc *rx_desc,
+ 				u32 phys_addr, u32 cookie)
+@@ -1614,15 +1595,6 @@ out:
+ 		dev_kfree_skb_any(skb);
+ 	}
+ 
+-	if (txq->count >= MVNETA_TXDONE_COAL_PKTS)
+-		mvneta_txq_done(pp, txq);
+-
+-	/* If after calling mvneta_txq_done, count equals
+-	 * frags, we need to set the timer
+-	 */
+-	if (txq->count == frags && frags > 0)
+-		mvneta_add_tx_done_timer(pp);
+-
+ 	return NETDEV_TX_OK;
+ }
+ 
+@@ -1898,14 +1870,22 @@ static int mvneta_poll(struct napi_struc
+ 
+ 	/* Read cause register */
+ 	cause_rx_tx = mvreg_read(pp, MVNETA_INTR_NEW_CAUSE) &
+-		MVNETA_RX_INTR_MASK(rxq_number);
++		(MVNETA_RX_INTR_MASK(rxq_number) | MVNETA_TX_INTR_MASK(txq_number));
++
++	/* Release Tx descriptors */
++	if (cause_rx_tx & MVNETA_TX_INTR_MASK_ALL) {
++		int tx_todo = 0;
++
++		mvneta_tx_done_gbe(pp, (cause_rx_tx & MVNETA_TX_INTR_MASK_ALL), &tx_todo);
++		cause_rx_tx &= ~MVNETA_TX_INTR_MASK_ALL;
++	}
+ 
+ 	/* For the case where the last mvneta_poll did not process all
+ 	 * RX packets
+ 	 */
+ 	cause_rx_tx |= pp->cause_rx_tx;
+ 	if (rxq_number > 1) {
+-		while ((cause_rx_tx != 0) && (budget > 0)) {
++		while ((cause_rx_tx & MVNETA_RX_INTR_MASK_ALL) && (budget > 0)) {
+ 			int count;
+ 			struct mvneta_rx_queue *rxq;
+ 			/* get rx queue number from cause_rx_tx */
+@@ -1937,7 +1917,7 @@ static int mvneta_poll(struct napi_struc
+ 		napi_complete(napi);
+ 		local_irq_save(flags);
+ 		mvreg_write(pp, MVNETA_INTR_NEW_MASK,
+-			    MVNETA_RX_INTR_MASK(rxq_number));
++			    MVNETA_RX_INTR_MASK(rxq_number) | MVNETA_TX_INTR_MASK(txq_number));
+ 		local_irq_restore(flags);
+ 	}
+ 
+@@ -1945,26 +1925,6 @@ static int mvneta_poll(struct napi_struc
+ 	return rx_done;
+ }
+ 
+-/* tx done timer callback */
+-static void mvneta_tx_done_timer_callback(unsigned long data)
+-{
+-	struct net_device *dev = (struct net_device *)data;
+-	struct mvneta_port *pp = netdev_priv(dev);
+-	int tx_done = 0, tx_todo = 0;
+-
+-	if (!netif_running(dev))
+-		return ;
+-
+-	clear_bit(MVNETA_F_TX_DONE_TIMER_BIT, &pp->flags);
+-
+-	tx_done = mvneta_tx_done_gbe(pp,
+-				     (((1 << txq_number) - 1) &
+-				      MVNETA_CAUSE_TXQ_SENT_DESC_ALL_MASK),
+-				     &tx_todo);
+-	if (tx_todo > 0)
+-		mvneta_add_tx_done_timer(pp);
+-}
+-
+ /* Handle rxq fill: allocates rxq skbs; called when initializing a port */
+ static int mvneta_rxq_fill(struct mvneta_port *pp, struct mvneta_rx_queue *rxq,
+ 			   int num)
+@@ -2214,7 +2174,7 @@ static void mvneta_start_dev(struct mvne
+ 
+ 	/* Unmask interrupts */
+ 	mvreg_write(pp, MVNETA_INTR_NEW_MASK,
+-		    MVNETA_RX_INTR_MASK(rxq_number));
++		    MVNETA_RX_INTR_MASK(rxq_number) | MVNETA_TX_INTR_MASK(txq_number));
+ 
+ 	phy_start(pp->phy_dev);
+ 	netif_tx_start_all_queues(pp->dev);
+@@ -2475,8 +2435,6 @@ static int mvneta_stop(struct net_device
+ 	free_irq(dev->irq, pp);
+ 	mvneta_cleanup_rxqs(pp);
+ 	mvneta_cleanup_txqs(pp);
+-	del_timer(&pp->tx_done_timer);
+-	clear_bit(MVNETA_F_TX_DONE_TIMER_BIT, &pp->flags);
+ 
+ 	return 0;
+ }
+@@ -2777,10 +2735,6 @@ static int mvneta_probe(struct platform_
+ 
+ 	pp = netdev_priv(dev);
+ 
+-	pp->tx_done_timer.function = mvneta_tx_done_timer_callback;
+-	init_timer(&pp->tx_done_timer);
+-	clear_bit(MVNETA_F_TX_DONE_TIMER_BIT, &pp->flags);
+-
+ 	pp->weight = MVNETA_RX_POLL_WEIGHT;
+ 	pp->phy_node = phy_node;
+ 	pp->phy_interface = phy_mode;
+@@ -2806,8 +2760,6 @@ static int mvneta_probe(struct platform_
+ 		goto err_clk;
+ 	}
+ 
+-	pp->tx_done_timer.data = (unsigned long)dev;
+-
+ 	pp->tx_ring_size = MVNETA_MAX_TXD;
+ 	pp->rx_ring_size = MVNETA_MAX_RXD;
+ 
 
 
