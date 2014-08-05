@@ -1,99 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745AbaHEDRe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 23:17:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29576 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753654AbaHEDR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 23:17:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,802,1400050800"; 
-   d="scan'208";a="571756394"
-Date: Tue, 5 Aug 2014 03:15:26 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Segall <bsegall@google.com>,
-        Waiman Long <Waiman.Long@hp.com>, Mel Gorman <mgorman@suse.de>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Rik van Riel <riel@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Chegu Vinod <chegu_vinod@hp.com>, Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH] sched: Reduce contention in update_cfs_rq_blocked_load
-Message-ID: <20140804191526.GA2480@intel.com>
-References: <1407184118.11407.11.camel@j-VirtualBox>
+	id S1754489AbaHEDqM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 23:46:12 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:51413 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513AbaHEDqK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 23:46:10 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+References: <1407010227-2269-1-git-send-email-kirill@shutemov.name>
+Date: Mon, 04 Aug 2014 20:42:11 -0700
+In-Reply-To: <1407010227-2269-1-git-send-email-kirill@shutemov.name> (Kirill
+	A. Shutemov's message of "Sat, 2 Aug 2014 23:10:27 +0300")
+Message-ID: <87d2cfzjos.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407184118.11407.11.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18/8kJFM5AUjK5/ENUA/SM3D3UJ2h9XqwA=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4786]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Kirill A. Shutemov" <kirill@shutemov.name>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH, RESEND] procfs: silence lockdep warning about read vs. exec seq_file
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+"Kirill A. Shutemov" <kirill@shutemov.name> writes:
 
-I am not sure whether you noticed my latest work: rewriting per entity load average
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+>
+> Testcase:
+>
+>   cat /proc/self/maps >/dev/null
+>   chmod +x /proc/self/net/packet
+>   exec /proc/self/net/packet
+>
+> It triggers lockdep warning:
 
-http://article.gmane.org/gmane.linux.kernel/1760754
-http://article.gmane.org/gmane.linux.kernel/1760755
-http://article.gmane.org/gmane.linux.kernel/1760757
-http://article.gmane.org/gmane.linux.kernel/1760756
+> I don't know why we allow "chmod +x" on some proc files, notably net-related.
+> Is it a bug?
 
-which simply does not track blocked load average at all. Are you interested in
-testing the patchset with the workload you have? The comparison can also help
-us understand the rewrite. Overall, per our tests, the overhead should be less,
-and perf should be better.
+It looks like we simply did not remove the ability to make those files
+executable when we realized executable proc files could be a problem.
 
-Thanks,
-Yuyang
+I expect that part of proc could use an audit where someone figures out
+what makes sense.  It does appear that chmod XXX /proc/generic_file
+is explicitly supported.  So we would have to be delicate with any
+changes in that area to avoid creating userspace regressions.
 
-On Mon, Aug 04, 2014 at 01:28:38PM -0700, Jason Low wrote:
-> When running workloads on 2+ socket systems, based on perf profiles, the
-> update_cfs_rq_blocked_load function constantly shows up as taking up a
-> noticeable % of run time. This is especially apparent on an 8 socket
-> machine. For example, when running the AIM7 custom workload, we see:
-> 
->    4.18%        reaim  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
-> 
-> Much of the contention is in __update_cfs_rq_tg_load_contrib when we
-> update the tg load contribution stats.  However, it turns out that in many
-> cases, they don't need to be updated and "tg_contrib" is 0.
-> 
-> This patch adds a check in __update_cfs_rq_tg_load_contrib to skip updating
-> tg load contribution stats when nothing needs to be updated. This reduces the
-> cacheline contention that would be unnecessary. In the above case, with the
-> patch, perf reports the total time spent in this function went down by more
-> than a factor of 3x:
-> 
->    1.18%        reaim  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
-> 
-> Signed-off-by: Jason Low <jason.low2@hp.com>
-> ---
->  kernel/sched/fair.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index bfa3c86..8d4cc72 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -2377,6 +2377,9 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
->  	tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
->  	tg_contrib -= cfs_rq->tg_load_contrib;
->  
-> +	if (!tg_contrib)
-> +		return;
-> +
->  	if (force_update || abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
->  		atomic_long_add(tg_contrib, &tg->load_avg);
->  		cfs_rq->tg_load_contrib += tg_contrib;
-> -- 
-> 1.7.1
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Eric
