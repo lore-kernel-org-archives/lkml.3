@@ -1,82 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440AbaHECLr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 22:11:47 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25142 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753337AbaHECLq (ORCPT
+	id S1753537AbaHECNJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 22:13:09 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:26136 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753452AbaHECNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 22:11:46 -0400
-Message-ID: <53E03D0B.3000208@oracle.com>
-Date: Mon, 04 Aug 2014 22:10:19 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 4 Aug 2014 22:13:07 -0400
+Message-ID: <53E03D71.5080800@huawei.com>
+Date: Tue, 5 Aug 2014 10:12:01 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Thomas Graf <tgraf@suug.ch>, davem@davemloft.net, netdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kaber@trash.net, paulmck@linux.vnet.ibm.com,
-        josh@joshtriplett.org, challa@noironetworks.com, walpole@cs.pdx.edu,
-        dev@openvswitch.org, netfilter-devel@vger.kernel.org,
-        nikolay@redhat.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH net-next 2/3] netlink: Convert netlink_lookup() to use
- RCU protected hash table
-References: <cover.1406971567.git.tgraf@suug.ch> <a0370889bd1b1bdf097f74df7017d39ae845c12e.1406971567.git.tgraf@suug.ch>
-In-Reply-To: <a0370889bd1b1bdf097f74df7017d39ae845c12e.1406971567.git.tgraf@suug.ch>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        <Paul.Mundt@huawei.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        <linux-pci@vger.kernel.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        <virtualization@lists.linux-foundation.org>,
+        Xinwei Hu <huxinwei@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Wuyun <wuyun.wu@huawei.com>
+Subject: Re: [RFC PATCH 00/11] Refactor MSI to support Non-PCI device
+References: <1406344128-27055-1-git-send-email-wangyijing@huawei.com> <201408011552.32135.arnd@arndb.de> <53DF2B7B.4000605@huawei.com> <201408041659.31364.arnd@arndb.de>
+In-Reply-To: <201408041659.31364.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2014 05:47 AM, Thomas Graf wrote:
->  static void *netlink_seq_start(struct seq_file *seq, loff_t *pos)
-> -	__acquires(nl_table_lock)
->  {
-> -	read_lock(&nl_table_lock);
-> +	rcu_read_lock();
->  	return *pos ? netlink_seq_socket_idx(seq, *pos - 1) : SEQ_START_TOKEN;
->  }
+>>> The method you describe here makes sense for PCI devices that are required to support
+>>> legacy interrupts and may or may not support MSI on a given system, but not so much
+>>> for platform devices for which we know exactly whether we want to use MSI
+>>> or legacy interrupts.
+>>>
+>>> In particular if you have a device that can only do MSI, the entire pci_enable_msi
+>>> step is pointless: all we need to do is program the correct MSI target address/message
+>>> pair into the device and register the handler.
+>>
+>> Yes, I almost agree if we won't change the existing hundreds of drivers, what
+>> I worried about is some drivers may want to know the IRQ numbers, and use the IRQ
+>> number to process different things, as I mentioned in another reply.
+>> But we can also provide the interface which integrate MSI configuration and request_irq(),
+>> if most drivers don't care the IRQ number.
+> 
+> The driver would still have the option of getting the IRQ number for now: With
+> the interface I imagine, you would get a 'struct msi_desc' pointer, from which
+> you can look up the 'struct irq_desc' pointer (either embedded in msi_desc,
+> or using a pointer from a member of msi_desc), and you can already get the
+> interrupt number from the irq_desc.
+> 
+> My point was that a well-written driver already does not care about the interrupt
+> number: the only information a driver needs in the interrupt handler is a pointer
+> to its own context, which we already derive from the irq_desc.
 
-I'm not sure how you expect this code to work. You're replacing a local lock
-with a RCU critical section. Imagine you're doing spin_lock() and just going
-back to userspace.
+Agree, I will try to introduce this similar interface in next version, thanks!
 
-It's quite easy to trigger this issue:
+> 
+> The main interface that currently requires the irq number is free_irq(), but
+> I would argue that we can just add a wrapper that takes the msi_desc pointer
+> as its first argument so the driver does not have to worry about it.
+> 
+> We can add additional wrappers like that as needed.
 
-[  531.479773] ===============================
-[  531.482951] [ INFO: suspicious RCU usage. ]
-[  531.485512] 3.16.0-next-20140804-sasha-00029-gcb12d07 #995 Not tainted
-[  531.489198] -------------------------------
-[  531.491518] net/netlink/af_netlink.c:2953 suspicious rcu_dereference_protected() usage!
-[  531.495781]
-[  531.495781] other info that might help us debug this:
-[  531.495781]
-[  531.499094]
-[  531.499094] rcu_scheduler_active = 1, debug_locks = 1
-[  531.502685] 3 locks held by trinity-c490/9673:
-[  531.505179] #0: (&f->f_pos_lock){+.+.+.}, at: __fdget_pos (fs/file.c:714)
-[  531.510057] #1: (&p->lock){+.+.+.}, at: seq_lseek (fs/seq_file.c:322)
-[  531.514819] #2: (rcu_read_lock){......}, at: netlink_seq_start (net/netlink/af_netlink.c:2923)
-[  531.517956]
-[  531.517956] stack backtrace:
-[  531.519054] CPU: 7 PID: 9673 Comm: cat Not tainted 3.16.0-next-20140804-sasha-00029-gcb12d07 #995
-[  531.521526]  0000000000000000 00000000917b9e45 ffff881efe493e20 ffffffffa55825a1
-[  531.523616]  ffff881efebeb000 ffff881efe493e50 ffffffffa21d3a75 ffffffffa81ce2c0
-[  531.527426]  0000000000000002 ffff8807cb581d90 ffff880fa3da8000 ffff881efe493ea0
-[  531.532068] Call Trace:
-[  531.533595] dump_stack (lib/dump_stack.c:52)
-[  531.536398] lockdep_rcu_suspicious (kernel/locking/lockdep.c:4259)
-[  531.537934] netlink_seq_next (net/netlink/af_netlink.c:2953 (discriminator 5))
-[  531.539355] traverse (fs/seq_file.c:142)
-[  531.541241] ? mutex_lock_nested (./arch/x86/include/asm/preempt.h:98 kernel/locking/mutex.c:567 kernel/locking/mutex.c:584)
-[  531.544797] seq_lseek (fs/seq_file.c:331 (discriminator 1))
-[  531.547485] proc_reg_llseek (fs/proc/inode.c:197)
-[  531.549904] SyS_lseek (fs/read_write.c:264 fs/read_write.c:289 fs/read_write.c:280)
-[  531.552190] tracesys (arch/x86/kernel/entry_64.S:541)
+OK
 
-I'd suggest testing any RCU related patches with CONFIG_PROVE_RCU in the future.
+>>>> This is a huge change for device drivers, and some device drivers don't know which msi_chip
+>>>> their MSI irq deliver to. I'm reworking the msi_chip, and try to use msi_chip to eliminate
+>>>> all arch_msi_xxx() under every arch in kernel. And the important point is how to create the
+>>>> binding for the MSI device to the target msi_chip.
+>>>
+>>> Which drivers are you thinking of? Again, I wouldn't expect to change any PCI drivers,
+>>> but only platform drivers that do native MSI, so we only have to change drivers that
+>>> do not support any MSI at all yet and that need to be changed anyway in order to add
+>>> support.
+>>
+>> I mean platform device drivers, because we can find the target msi_chip by some platform
+>> interfaces(like the existing of_pci_find_msi_chip_by_node()). So we no need to explicitly
+>> provide the msi_chip as the function argument.
+> 
+> Right, that works too. I was thinking we might need an interface that allows us to
+> pick a particular msi_chip if there are several alternatives (e.g. one in the GIC
+> and one in the PCI host), but you are right: we should normally be able to hardwire
+> that information in DT or elsewhere, and just need the 'struct device pointer' which
+> should probably be the first argument here.
+> 
+> As you pointed out, it's common to have multiple MSIs for a single device, so we
+> also need a context to pass around, so my suggestion would become something like:
+> 
+> struct msi_desc *msi_request(struct device *dev, irq_handler_t handler,
+>  			unsigned long flags, const char *name, void *data);
+> 
+> It's possible that we have to add one or two more arguments here.
+
+Good suggestion, thanks!
+
+> 
+>>> A degenerate case of this would be a system where a PCI device sends its MSI into
+>>> the host controller, that generates a legacy interrupt and that in turn gets 
+>>> sent to an irqchip which turns it back into an MSI for the GICv3. This would of
+>>> course be very inefficient, but I think we should be able to express this with
+>>> both the binding and the in-kernel framework just to be on the safe side.
+>>
+>> Yes, the best way to tell the kernel which msi_chip should deliver to is describe
+>> the binding in DTS file. If a real degenerate case found, we can update the platform
+>> interface which is responsible for getting the match msi_chip in future.
+> 
+> Ok.
+> 
+> 	Arnd
+> 
+> .
+> 
 
 
-Thanks,
-Sasha
+-- 
+Thanks!
+Yijing
+
