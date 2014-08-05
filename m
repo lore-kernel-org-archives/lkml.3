@@ -1,99 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669AbaHEIr0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 04:47:26 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:57452 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932441AbaHEIrX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 04:47:23 -0400
-Date: Tue, 5 Aug 2014 10:47:17 +0200
-From: Robert Richter <rric@kernel.org>
-To: Mark Rutland <mark.rutland@arm.com>, Rob Herring <robherring2@gmail.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        Robert Richter <rrichter@cavium.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/5] arm64, thunder: Add initial dts for Cavium Thunder
- SoC
-Message-ID: <20140805084717.GH4703@rric.localhost>
+	id S932687AbaHEIr6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 04:47:58 -0400
+Received: from mta-out1.inet.fi ([62.71.2.201]:46545 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932441AbaHEIrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 04:47:55 -0400
+Date: Tue, 5 Aug 2014 11:46:14 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH, RESEND] procfs: silence lockdep warning about read vs.
+ exec seq_file
+Message-ID: <20140805084614.GA22025@node.dhcp.inet.fi>
+References: <1407010227-2269-1-git-send-email-kirill@shutemov.name>
+ <87d2cfzjos.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAL_JsqKgfjV4sEZOWuH4YcMjeOA_yNDvZLv_jTi_Sb=27cOD3g@mail.gmail.com>
- <20140730174803.GF20162@leverpostej>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <87d2cfzjos.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.07.14 18:48:03, Mark Rutland wrote:
-> > >> +             uaa0: serial@87e024000000 {
-> > >> +                     compatible = "arm,pl011", "arm,primecell";
-> > >> +                     reg = <0x87e0 0x24000000 0x0 0x1000>;
-> > >> +                     interrupts = <1 21 4>;
-> > >> +                     clocks = <&refclk50mhz>;
-> > >> +                     clock-names = "apb_pclk";
-> > >
-> > > Is this actually the apb_pclk, or is the the uartclk? I assume it's the
-> > > latter.
-> > 
-> > Shouldn't new bindings have both clocks here? A single clock was a
-> > mistake I think (mine in fact).
+On Mon, Aug 04, 2014 at 08:42:11PM -0700, Eric W. Biederman wrote:
+> "Kirill A. Shutemov" <kirill@shutemov.name> writes:
 > 
-> I don't think we fixed it up in the end. It made drivers look a bit messy and
-> it dropped off my priority queue.
-
-On 31.07.14 10:22:19, Rob Herring wrote:
-> On Thu, Jul 31, 2014 at 7:34 AM, Robert Richter <rric@kernel.org> wrote:
-> > On 30.07.14 11:37:38, Rob Herring wrote:
-> >> On Wed, Jul 30, 2014 at 10:46 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> >> > On Wed, Jul 30, 2014 at 04:06:31PM +0100, Robert Richter wrote:
-> >> >> From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-> >> >> +             uaa0: serial@87e024000000 {
-> >> >> +                     compatible = "arm,pl011", "arm,primecell";
-> >> >> +                     reg = <0x87e0 0x24000000 0x0 0x1000>;
-> >> >> +                     interrupts = <1 21 4>;
-> >> >> +                     clocks = <&refclk50mhz>;
-> >> >> +                     clock-names = "apb_pclk";
-> >> >
-> >> > Is this actually the apb_pclk, or is the the uartclk? I assume it's the
-> >> > latter.
-> >>
-> >> Shouldn't new bindings have both clocks here? A single clock was a
-> >> mistake I think (mine in fact).
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 > >
-> > Do you mean
-> >                         clock-names = "uartclk", "apb_pclk";
-> > here?
+> > Testcase:
+> >
+> >   cat /proc/self/maps >/dev/null
+> >   chmod +x /proc/self/net/packet
+> >   exec /proc/self/net/packet
+> >
+> > It triggers lockdep warning:
 > 
-> Yes, but Mark said this change never happened so maybe it is fine. In
-> any case, follow the pl011 binding documentation.
+> > I don't know why we allow "chmod +x" on some proc files, notably net-related.
+> > Is it a bug?
+> 
+> It looks like we simply did not remove the ability to make those files
+> executable when we realized executable proc files could be a problem.
+> 
+> I expect that part of proc could use an audit where someone figures out
+> what makes sense.  It does appear that chmod XXX /proc/generic_file
+> is explicitly supported.  So we would have to be delicate with any
+> changes in that area to avoid creating userspace regressions.
 
-Right:
+I can't imagine valid use-case, taking into account that changing access
+rights for one PID changes it for every PID. It's potential security hole
+if user is not aware about this (I wasn't until recently).
 
-Documentation/devicetree/bindings/arm/primecell.txt:
-- clocks : From common clock binding. First clock is phandle to clock for apb
-        pclk. Additional clocks are optional and specific to those peripherals.
-- clock-names : From common clock binding. Shall be "apb_pclk" for first clock.
+List of files under /proc/PID/ which doesn't fail chmod to its current
+access rights -- chmod "$(stat --format="%a" "$file")" "$file":
 
-Documentation/devicetree/bindings/serial/pl011.txt
-- clocks:  When present, must refer to exactly one clock named
-           "apb_pclk"
+net/anycast6
+net/arp
+net/connector
+net/dev
+net/dev_mcast
+net/dev_snmp6/eth0
+net/dev_snmp6/lo
+net/fib_trie
+net/fib_triestat
+net/icmp
+net/icmp6
+net/if_inet6
+net/igmp
+net/igmp6
+net/ip6_flowlabel
+net/ip6_tables_matches
+net/ip6_tables_names
+net/ip6_tables_targets
+net/ip_mr_cache
+net/ip_mr_vif
+net/ip_tables_matches
+net/ip_tables_names
+net/ip_tables_targets
+net/ipv6_route
+net/mcfilter
+net/mcfilter6
+net/netfilter/nf_log
+net/netlink
+net/netstat
+net/nf_conntrack
+net/nf_conntrack_expect
+net/packet
+net/pnp
+net/protocols
+net/psched
+net/ptype
+net/raw
+net/raw6
+net/route
+net/rt6_stats
+net/rt_cache
+net/snmp
+net/snmp6
+net/sockstat
+net/sockstat6
+net/softnet_stat
+net/stat/arp_cache
+net/stat/ndisc_cache
+net/stat/nf_conntrack
+net/stat/rt_cache
+net/tcp
+net/tcp6
+net/udp
+net/udp6
+net/udplite
+net/udplite6
+net/unix
 
-There is no binding documentation at all for "uartclk".
+David, could you comment on this?
 
-It seems we should should leave clock-names = "apb_pclk" as it is.
-
-Mark, Rob, would this be ok?
-
-Thanks,
-
--Robert
+-- 
+ Kirill A. Shutemov
