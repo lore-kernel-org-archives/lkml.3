@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462AbaHESp1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:45:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52240 "EHLO
+	id S1756507AbaHESqJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:46:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52226 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722AbaHESOS (ORCPT
+	with ESMTP id S1754704AbaHESOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:18 -0400
+	Tue, 5 Aug 2014 14:14:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Greg Thelen <gthelen@google.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.15 21/42] dm bufio: fully initialize shrinker
-Date: Tue,  5 Aug 2014 11:13:35 -0700
-Message-Id: <20140805181321.652730867@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        James Chapman <jchapman@katalix.com>,
+        David Miller <davem@davemloft.net>,
+        Phil Turnbull <phil.turnbull@oracle.com>,
+        Vegard Nossum <vegard.nossum@oracle.com>, Willy Tarreau <w@1wt.eu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 40/42] net/l2tp: dont fall back on UDP [get|set]sockopt
+Date: Tue,  5 Aug 2014 11:13:54 -0700
+Message-Id: <20140805181322.208990727@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -30,45 +33,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Thelen <gthelen@google.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit d8c712ea471ce7a4fd1734ad2211adf8469ddddc upstream.
+commit 3cf521f7dc87c031617fd47e4b7aa2593c2f3daf upstream.
 
-1d3d4437eae1 ("vmscan: per-node deferred work") added a flags field to
-struct shrinker assuming that all shrinkers were zero filled.  The dm
-bufio shrinker is not zero filled, which leaves arbitrary kmalloc() data
-in flags.  So far the only defined flags bit is SHRINKER_NUMA_AWARE.
-But there are proposed patches which add other bits to shrinker.flags
-(e.g. memcg awareness).
+The l2tp [get|set]sockopt() code has fallen back to the UDP functions
+for socket option levels != SOL_PPPOL2TP since day one, but that has
+never actually worked, since the l2tp socket isn't an inet socket.
 
-Rather than simply initializing the shrinker, this patch uses kzalloc()
-when allocating the dm_bufio_client to ensure that the embedded shrinker
-and any other similar structures are zeroed.
+As David Miller points out:
 
-This fixes theoretical over aggressive shrinking of dm bufio objects.
-If the uninitialized dm_bufio_client.shrinker.flags contains
-SHRINKER_NUMA_AWARE then shrink_slab() would call the dm shrinker for
-each numa node rather than just once.  This has been broken since 3.12.
+  "If we wanted this to work, it'd have to look up the tunnel and then
+   use tunnel->sk, but I wonder how useful that would be"
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Acked-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Since this can never have worked so nobody could possibly have depended
+on that functionality, just remove the broken code and return -EINVAL.
+
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Acked-by: James Chapman <jchapman@katalix.com>
+Acked-by: David Miller <davem@davemloft.net>
+Cc: Phil Turnbull <phil.turnbull@oracle.com>
+Cc: Vegard Nossum <vegard.nossum@oracle.com>
+Cc: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-bufio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/l2tp/l2tp_ppp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -1541,7 +1541,7 @@ struct dm_bufio_client *dm_bufio_client_
- 	BUG_ON(block_size < 1 << SECTOR_SHIFT ||
- 	       (block_size & (block_size - 1)));
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -1365,7 +1365,7 @@ static int pppol2tp_setsockopt(struct so
+ 	int err;
  
--	c = kmalloc(sizeof(*c), GFP_KERNEL);
-+	c = kzalloc(sizeof(*c), GFP_KERNEL);
- 	if (!c) {
- 		r = -ENOMEM;
- 		goto bad_client;
+ 	if (level != SOL_PPPOL2TP)
+-		return udp_prot.setsockopt(sk, level, optname, optval, optlen);
++		return -EINVAL;
+ 
+ 	if (optlen < sizeof(int))
+ 		return -EINVAL;
+@@ -1491,7 +1491,7 @@ static int pppol2tp_getsockopt(struct so
+ 	struct pppol2tp_session *ps;
+ 
+ 	if (level != SOL_PPPOL2TP)
+-		return udp_prot.getsockopt(sk, level, optname, optval, optlen);
++		return -EINVAL;
+ 
+ 	if (get_user(len, optlen))
+ 		return -EFAULT;
 
 
