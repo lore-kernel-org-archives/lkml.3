@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439AbaHESbw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:31:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52785 "EHLO
+	id S1756461AbaHEScL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:32:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52781 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492AbaHESaD (ORCPT
+	with ESMTP id S1756375AbaHESaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:30:03 -0400
+	Tue, 5 Aug 2014 14:30:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Bohac <jbohac@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Alex Thorlton <athorlton@sgi.com>, Bob Liu <lliubbo@gmail.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Hedi Berriche <hedi@sgi.com>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 05/19] printk: rename printk_sched to printk_deferred
-Date: Tue,  5 Aug 2014 11:29:29 -0700
-Message-Id: <20140805182934.181742562@linuxfoundation.org>
+Subject: [PATCH 3.4 04/19] mm, thp: do not allow thp faults to avoid cpuset restrictions
+Date: Tue,  5 Aug 2014 11:29:28 -0700
+Message-Id: <20140805182934.155383216@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805182934.022406678@linuxfoundation.org>
 References: <20140805182934.022406678@linuxfoundation.org>
@@ -33,89 +37,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: David Rientjes <rientjes@google.com>
 
-commit aac74dc495456412c4130a1167ce4beb6c1f0b38 upstream.
+commit b104a35d32025ca740539db2808aa3385d0f30eb upstream.
 
-After learning we'll need some sort of deferred printk functionality in
-the timekeeping core, Peter suggested we rename the printk_sched function
-so it can be reused by needed subsystems.
+The page allocator relies on __GFP_WAIT to determine if ALLOC_CPUSET
+should be set in allocflags.  ALLOC_CPUSET controls if a page allocation
+should be restricted only to the set of allowed cpuset mems.
 
-This only changes the function name. No logic changes.
+Transparent hugepages clears __GFP_WAIT when defrag is disabled to prevent
+the fault path from using memory compaction or direct reclaim.  Thus, it
+is unfairly able to allocate outside of its cpuset mems restriction as a
+side-effect.
 
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Bohac <jbohac@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
+This patch ensures that ALLOC_CPUSET is only cleared when the gfp mask is
+truly GFP_ATOMIC by verifying it is also not a thp allocation.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Alex Thorlton <athorlton@sgi.com>
+Tested-by: Alex Thorlton <athorlton@sgi.com>
+Cc: Bob Liu <lliubbo@gmail.com>
+Cc: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Hedi Berriche <hedi@sgi.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/printk.h |    6 +++---
- kernel/printk.c        |    2 +-
- kernel/sched/core.c    |    2 +-
- kernel/sched/rt.c      |    2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ mm/page_alloc.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -101,9 +101,9 @@ asmlinkage __printf(1, 2) __cold
- int printk(const char *fmt, ...);
- 
- /*
-- * Special printk facility for scheduler use only, _DO_NOT_USE_ !
-+ * Special printk facility for scheduler/timekeeping use only, _DO_NOT_USE_ !
-  */
--__printf(1, 2) __cold int printk_sched(const char *fmt, ...);
-+__printf(1, 2) __cold int printk_deferred(const char *fmt, ...);
- 
- /*
-  * Please don't use printk_ratelimit(), because it shares ratelimiting state
-@@ -133,7 +133,7 @@ int printk(const char *s, ...)
- 	return 0;
- }
- static inline __printf(1, 2) __cold
--int printk_sched(const char *s, ...)
-+int printk_deferred(const char *s, ...)
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2187,7 +2187,7 @@ static inline int
+ gfp_to_alloc_flags(gfp_t gfp_mask)
  {
- 	return 0;
- }
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1653,7 +1653,7 @@ late_initcall(printk_late_init);
+ 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
+-	const gfp_t wait = gfp_mask & __GFP_WAIT;
++	const bool atomic = !(gfp_mask & (__GFP_WAIT | __GFP_NO_KSWAPD));
  
- #if defined CONFIG_PRINTK
+ 	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
+ 	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
+@@ -2196,20 +2196,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 	 * The caller may dip into page reserves a bit more if the caller
+ 	 * cannot run direct reclaim, or if the caller has realtime scheduling
+ 	 * policy or is asking for __GFP_HIGH memory.  GFP_ATOMIC requests will
+-	 * set both ALLOC_HARDER (!wait) and ALLOC_HIGH (__GFP_HIGH).
++	 * set both ALLOC_HARDER (atomic == true) and ALLOC_HIGH (__GFP_HIGH).
+ 	 */
+ 	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
  
--int printk_sched(const char *fmt, ...)
-+int printk_deferred(const char *fmt, ...)
- {
- 	unsigned long flags;
- 	va_list args;
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1313,7 +1313,7 @@ out:
- 		 * leave kernel.
+-	if (!wait) {
++	if (atomic) {
+ 		/*
+-		 * Not worth trying to allocate harder for
+-		 * __GFP_NOMEMALLOC even if it can't schedule.
++		 * Not worth trying to allocate harder for __GFP_NOMEMALLOC even
++		 * if it can't schedule.
  		 */
- 		if (p->mm && printk_ratelimit()) {
--			printk_sched("process %d (%s) no longer affine to cpu%d\n",
-+			printk_deferred("process %d (%s) no longer affine to cpu%d\n",
- 					task_pid_nr(p), p->comm, cpu);
- 		}
- 	}
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -884,7 +884,7 @@ static int sched_rt_runtime_exceeded(str
- 
- 			if (!once) {
- 				once = true;
--				printk_sched("sched: RT throttling activated\n");
-+				printk_deferred("sched: RT throttling activated\n");
- 			}
- 		} else {
- 			/*
+-		if  (!(gfp_mask & __GFP_NOMEMALLOC))
++		if (!(gfp_mask & __GFP_NOMEMALLOC))
+ 			alloc_flags |= ALLOC_HARDER;
+ 		/*
+-		 * Ignore cpuset if GFP_ATOMIC (!wait) rather than fail alloc.
+-		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
++		 * Ignore cpuset mems for GFP_ATOMIC rather than fail, see the
++		 * comment for __cpuset_node_allowed_softwall().
+ 		 */
+ 		alloc_flags &= ~ALLOC_CPUSET;
+ 	} else if (unlikely(rt_task(current)) && !in_interrupt())
 
 
