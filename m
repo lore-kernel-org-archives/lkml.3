@@ -1,217 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410AbaHEBT4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 21:19:56 -0400
-Received: from mail-oi0-f73.google.com ([209.85.218.73]:44070 "EHLO
-	mail-oi0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157AbaHEBTy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 21:19:54 -0400
-From: Sonny Rao <sonnyrao@chromium.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org, linux-next@vger.kernel.org,
-        grundler@chromium.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-arm-kernel@lists.infradead.org, jh80.chung@samsung.com,
-        cjb@laptop.org, tgih.jun@samsung.com, kgene.kim@samsung.com,
-        joshi@samsung.com, t.figa@samsung.com, dianders@chromium.org,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>
-Subject: [PATCH] mmc: dw_mmc: change to use recommended reset procedure
-Date: Mon,  4 Aug 2014 18:19:50 -0700
-Message-Id: <1407201590-26740-1-git-send-email-sonnyrao@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <CAPDyKFq2isO+DKMuLT9Ud8B9reFZiVYKG6LL8ysF0ZTNGfY8Nw@mail.gmail.com>
-References: <CAPDyKFq2isO+DKMuLT9Ud8B9reFZiVYKG6LL8ysF0ZTNGfY8Nw@mail.gmail.com>
+	id S1753332AbaHEB2z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 21:28:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32211 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752723AbaHEB2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 21:28:53 -0400
+Date: Mon, 4 Aug 2014 21:28:45 -0400
+From: Dave Jones <davej@redhat.com>
+To: Chris Mason <clm@fb.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: btrfs extents related oops.
+Message-ID: <20140805012845.GA7836@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the fifo reset code to follow the reset procedure
-outlined in the documentation of Synopsys Mobile storage host databook.
+Possibly related to some changes I've been making to my fuzz tester today
+to operate on the same file from multiple threads.
+This was on v3.16-829-g98959948a7ba, but probably exists on earlier trees too
+given the lack of btrfs specific commits so far this merge window.
 
-Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
-Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-[sonnyrao: fix compile for !CONFIG_MMC_DW_IDMAC case]
----
- drivers/mmc/host/dw_mmc.c | 87 ++++++++++++++++++++++++++++++++++-------------
- drivers/mmc/host/dw_mmc.h |  5 +++
- 2 files changed, 69 insertions(+), 23 deletions(-)
+BTRFS: __set_extent_bit: ino 138120 isize 12041673 odd range [18446744069414584347,18446744069414588442]
+BTRFS: clear_extent_bit: ino 138120 isize 12041673 odd range [18446744069414584347,18446744069414588442]
+BTRFS: __set_extent_bit: ino 138120 isize 1297036692924383232 odd range [18446744073441116159,18446744073441120254]
+BTRFS: clear_extent_bit: ino 138120 isize 1297036692924383232 odd range [18446744073441116159,18446744073441120254]
+BTRFS: __set_extent_bit: ino 138122 isize 1044 odd range [18446744073575325309,18446744073575329404]
+BTRFS: clear_extent_bit: ino 138122 isize 1044 odd range [18446744073575325309,18446744073575329404]
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 3881 at fs/btrfs/extent_io.c:430 insert_state+0x131/0x150 [btrfs]()
+BTRFS: end < start 4094 18446744073709551615
+Modules linked in: llc2 af_key ipt_ULOG sctp libcrc32c can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc bluetooth 6lowpan_iphc can_raw can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 rfkill coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm btrfs xor crct10dif_pclmul snd_hda_codec_realtek crc32c_intel snd_hda_codec_hdmi snd_hda_codec_generic snd_hda_intel snd_hda_controller ghash_clmulni_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm raid6_pq microcode snd_timer snd serio_raw usb_debug pcspkr soundcore shpchp e1000e ptp pps_core
+CPU: 0 PID: 3881 Comm: trinity-c118 Not tainted 3.16.0+ #32
+ 0000000000000009 0000000011a27d09 ffff8800991c3c90 ffffffffa67e717a
+ ffff8800991c3cd8 ffff8800991c3cc8 ffffffffa6078f4d 0000000000000ffe
+ ffff88006ca6bd88 ffff8802252980c8 ffffffffffffffff ffff8800991c3dd8
+Call Trace:
+ [<ffffffffa67e717a>] dump_stack+0x4e/0x7a
+ [<ffffffffa6078f4d>] warn_slowpath_common+0x7d/0xa0
+ [<ffffffffa6078fcc>] warn_slowpath_fmt+0x5c/0x80
+ [<ffffffffc04c2b64>] ? __set_extent_bit+0xd4/0x670 [btrfs]
+ [<ffffffffc04c28b1>] insert_state+0x131/0x150 [btrfs]
+ [<ffffffffc04c2c22>] __set_extent_bit+0x192/0x670 [btrfs]
+ [<ffffffffa60b8b7b>] ? preempt_count_sub+0xab/0x100
+ [<ffffffffc04c3fc4>] lock_extent_bits+0x94/0x320 [btrfs]
+ [<ffffffffc04b66ee>] ? btrfs_file_llseek+0x4e/0x2b0 [btrfs]
+ [<ffffffffc04b678f>] btrfs_file_llseek+0xef/0x2b0 [btrfs]
+ [<ffffffffa6207b14>] compat_SyS_lseek+0x94/0xc0
+ [<ffffffffa67f5059>] ia32_do_call+0x13/0x13
+---[ end trace f8236b601b8385e5 ]---
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 1ac227c..39cf54f 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -111,8 +111,7 @@ static const u8 tuning_blk_pattern_8bit[] = {
- 	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
- };
- 
--static inline bool dw_mci_fifo_reset(struct dw_mci *host);
--static inline bool dw_mci_ctrl_all_reset(struct dw_mci *host);
-+static bool dw_mci_reset(struct dw_mci *host);
- 
- #if defined(CONFIG_DEBUG_FS)
- static int dw_mci_req_show(struct seq_file *s, void *v)
-@@ -1235,7 +1234,7 @@ static int dw_mci_data_complete(struct dw_mci *host, struct mmc_data *data)
- 		 * After an error, there may be data lingering
- 		 * in the FIFO
- 		 */
--		dw_mci_fifo_reset(host);
-+		dw_mci_reset(host);
- 	} else {
- 		data->bytes_xfered = data->blocks * data->blksz;
- 		data->error = 0;
-@@ -1352,7 +1351,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
- 
- 			/* CMD error in data command */
- 			if (mrq->cmd->error && mrq->data)
--				dw_mci_fifo_reset(host);
-+				dw_mci_reset(host);
- 
- 			host->cmd = NULL;
- 			host->data = NULL;
-@@ -1963,14 +1962,8 @@ static void dw_mci_work_routine_card(struct work_struct *work)
- 			}
- 
- 			/* Power down slot */
--			if (present == 0) {
--				/* Clear down the FIFO */
--				dw_mci_fifo_reset(host);
--#ifdef CONFIG_MMC_DW_IDMAC
--				dw_mci_idmac_reset(host);
--#endif
--
--			}
-+			if (present == 0)
-+				dw_mci_reset(host);
- 
- 			spin_unlock_bh(&host->lock);
- 
-@@ -2208,8 +2201,11 @@ static bool dw_mci_ctrl_reset(struct dw_mci *host, u32 reset)
- 	return false;
- }
- 
--static inline bool dw_mci_fifo_reset(struct dw_mci *host)
-+static bool dw_mci_reset(struct dw_mci *host)
- {
-+	u32 flags = SDMMC_CTRL_RESET | SDMMC_CTRL_FIFO_RESET;
-+	bool ret = false;
-+
- 	/*
- 	 * Reseting generates a block interrupt, hence setting
- 	 * the scatter-gather pointer to NULL.
-@@ -2219,15 +2215,60 @@ static inline bool dw_mci_fifo_reset(struct dw_mci *host)
- 		host->sg = NULL;
- 	}
- 
--	return dw_mci_ctrl_reset(host, SDMMC_CTRL_FIFO_RESET);
--}
-+	if (host->use_dma)
-+		flags |= SDMMC_CTRL_DMA_RESET;
- 
--static inline bool dw_mci_ctrl_all_reset(struct dw_mci *host)
--{
--	return dw_mci_ctrl_reset(host,
--				 SDMMC_CTRL_FIFO_RESET |
--				 SDMMC_CTRL_RESET |
--				 SDMMC_CTRL_DMA_RESET);
-+	if (dw_mci_ctrl_reset(host, flags)) {
-+		/*
-+		 * In all cases we clear the RAWINTS register to clear any
-+		 * interrupts.
-+		 */
-+		mci_writel(host, RINTSTS, 0xFFFFFFFF);
-+
-+		/* if using dma we wait for dma_req to clear */
-+		if (host->use_dma) {
-+			unsigned long timeout = jiffies + msecs_to_jiffies(500);
-+			u32 status;
-+			do {
-+				status = mci_readl(host, STATUS);
-+				if (!(status & SDMMC_STATUS_DMA_REQ))
-+					break;
-+				cpu_relax();
-+			} while (time_before(jiffies, timeout));
-+
-+			if (status & SDMMC_STATUS_DMA_REQ) {
-+				dev_err(host->dev,
-+					"%s: Timeout waiting for dma_req to "
-+					"clear during reset\n", __func__);
-+				goto ciu_out;
-+			}
-+
-+			/* when using DMA next we reset the fifo again */
-+			if (!dw_mci_ctrl_reset(host, SDMMC_CTRL_FIFO_RESET))
-+				goto ciu_out;
-+		}
-+	} else {
-+		/* if the controller reset bit did clear, then set clock regs */
-+		if (!(mci_readl(host, CTRL) & SDMMC_CTRL_RESET)) {
-+			dev_err(host->dev, "%s: fifo/dma reset bits didn't "
-+				"clear but ciu was reset, doing clock update\n",
-+				__func__);
-+			goto ciu_out;
-+		}
-+	}
-+
-+#if IS_ENABLED(CONFIG_MMC_DW_IDMAC)
-+	/* It is also recommended that we reset and reprogram idmac */
-+	dw_mci_idmac_reset(host);
-+#endif
-+
-+	ret = true;
-+
-+ciu_out:
-+	/* After a CTRL reset we need to have CIU set clock registers  */
-+	mci_send_cmd(host->cur_slot, SDMMC_CMD_UPD_CLK, 0);
-+
-+	return ret;
- }
- 
- #ifdef CONFIG_OF
-@@ -2425,7 +2466,7 @@ int dw_mci_probe(struct dw_mci *host)
- 	}
- 
- 	/* Reset all blocks */
--	if (!dw_mci_ctrl_all_reset(host))
-+	if (!dw_mci_ctrl_reset(host, SDMMC_CTRL_ALL_RESET_FLAGS))
- 		return -ENODEV;
- 
- 	host->dma_ops = host->pdata->dma_ops;
-@@ -2612,7 +2653,7 @@ int dw_mci_resume(struct dw_mci *host)
- 		}
- 	}
- 
--	if (!dw_mci_ctrl_all_reset(host)) {
-+	if (!dw_mci_ctrl_reset(host, SDMMC_CTRL_ALL_RESET_FLAGS)) {
- 		ret = -ENODEV;
- 		return ret;
- 	}
-diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
-index 738fa24..08fd956 100644
---- a/drivers/mmc/host/dw_mmc.h
-+++ b/drivers/mmc/host/dw_mmc.h
-@@ -129,6 +129,7 @@
- #define SDMMC_CMD_INDX(n)		((n) & 0x1F)
- /* Status register defines */
- #define SDMMC_GET_FCNT(x)		(((x)>>17) & 0x1FFF)
-+#define SDMMC_STATUS_DMA_REQ		BIT(31)
- /* FIFOTH register defines */
- #define SDMMC_SET_FIFOTH(m, r, t)	(((m) & 0x7) << 28 | \
- 					 ((r) & 0xFFF) << 16 | \
-@@ -150,6 +151,10 @@
- /* Card read threshold */
- #define SDMMC_SET_RD_THLD(v, x)		(((v) & 0x1FFF) << 16 | (x))
- 
-+/* All ctrl reset bits */
-+#define SDMMC_CTRL_ALL_RESET_FLAGS \
-+	(SDMMC_CTRL_RESET | SDMMC_CTRL_FIFO_RESET | SDMMC_CTRL_DMA_RESET)
-+
- /* Register access macros */
- #define mci_readl(dev, reg)			\
- 	__raw_readl((dev)->regs + SDMMC_##reg)
--- 
-1.8.3.2
 
