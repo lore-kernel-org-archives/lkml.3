@@ -1,19 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055AbaHESTr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:19:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52565 "EHLO
+	id S1756071AbaHESUJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:20:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52557 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755381AbaHESO4 (ORCPT
+	with ESMTP id S1755374AbaHESOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:56 -0400
+	Tue, 5 Aug 2014 14:14:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [PATCH 3.10 07/27] staging: vt6655: Fix disassociated messages every 10 seconds
-Date: Tue,  5 Aug 2014 11:13:59 -0700
-Message-Id: <20140805181344.488138818@linuxfoundation.org>
+        David Rientjes <rientjes@google.com>,
+        Alex Thorlton <athorlton@sgi.com>, Bob Liu <lliubbo@gmail.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Hedi Berriche <hedi@sgi.com>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 06/27] mm, thp: do not allow thp faults to avoid cpuset restrictions
+Date: Tue,  5 Aug 2014 11:13:58 -0700
+Message-Id: <20140805181344.459532670@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181344.268039690@linuxfoundation.org>
 References: <20140805181344.268039690@linuxfoundation.org>
@@ -28,36 +37,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: David Rientjes <rientjes@google.com>
 
-commit 4aa0abed3a2a11b7d71ad560c1a3e7631c5a31cd upstream.
+commit b104a35d32025ca740539db2808aa3385d0f30eb upstream.
 
-byReAssocCount is incremented every second resulting in
-disassociated message being send every 10 seconds whether
-connection or not.
+The page allocator relies on __GFP_WAIT to determine if ALLOC_CPUSET
+should be set in allocflags.  ALLOC_CPUSET controls if a page allocation
+should be restricted only to the set of allowed cpuset mems.
 
-byReAssocCount should only advance while eCommandState
-is in WLAN_ASSOCIATE_WAIT
+Transparent hugepages clears __GFP_WAIT when defrag is disabled to prevent
+the fault path from using memory compaction or direct reclaim.  Thus, it
+is unfairly able to allocate outside of its cpuset mems restriction as a
+side-effect.
 
-Change existing scope to if condition.
+This patch ensures that ALLOC_CPUSET is only cleared when the gfp mask is
+truly GFP_ATOMIC by verifying it is also not a thp allocation.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Alex Thorlton <athorlton@sgi.com>
+Tested-by: Alex Thorlton <athorlton@sgi.com>
+Cc: Bob Liu <lliubbo@gmail.com>
+Cc: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Hedi Berriche <hedi@sgi.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6655/bssdb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/page_alloc.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/staging/vt6655/bssdb.c
-+++ b/drivers/staging/vt6655/bssdb.c
-@@ -1026,7 +1026,7 @@ start:
- 		pDevice->byERPFlag &= ~(WLAN_SET_ERP_USE_PROTECTION(1));
- 	}
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2339,7 +2339,7 @@ static inline int
+ gfp_to_alloc_flags(gfp_t gfp_mask)
+ {
+ 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
+-	const gfp_t wait = gfp_mask & __GFP_WAIT;
++	const bool atomic = !(gfp_mask & (__GFP_WAIT | __GFP_NO_KSWAPD));
  
--	{
-+	if (pDevice->eCommandState == WLAN_ASSOCIATE_WAIT) {
- 		pDevice->byReAssocCount++;
- 		if ((pDevice->byReAssocCount > 10) && (pDevice->bLinkPass != true)) {  //10 sec timeout
- 			printk("Re-association timeout!!!\n");
+ 	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
+ 	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
+@@ -2348,20 +2348,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 	 * The caller may dip into page reserves a bit more if the caller
+ 	 * cannot run direct reclaim, or if the caller has realtime scheduling
+ 	 * policy or is asking for __GFP_HIGH memory.  GFP_ATOMIC requests will
+-	 * set both ALLOC_HARDER (!wait) and ALLOC_HIGH (__GFP_HIGH).
++	 * set both ALLOC_HARDER (atomic == true) and ALLOC_HIGH (__GFP_HIGH).
+ 	 */
+ 	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
+ 
+-	if (!wait) {
++	if (atomic) {
+ 		/*
+-		 * Not worth trying to allocate harder for
+-		 * __GFP_NOMEMALLOC even if it can't schedule.
++		 * Not worth trying to allocate harder for __GFP_NOMEMALLOC even
++		 * if it can't schedule.
+ 		 */
+-		if  (!(gfp_mask & __GFP_NOMEMALLOC))
++		if (!(gfp_mask & __GFP_NOMEMALLOC))
+ 			alloc_flags |= ALLOC_HARDER;
+ 		/*
+-		 * Ignore cpuset if GFP_ATOMIC (!wait) rather than fail alloc.
+-		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
++		 * Ignore cpuset mems for GFP_ATOMIC rather than fail, see the
++		 * comment for __cpuset_node_allowed_softwall().
+ 		 */
+ 		alloc_flags &= ~ALLOC_CPUSET;
+ 	} else if (unlikely(rt_task(current)) && !in_interrupt())
 
 
