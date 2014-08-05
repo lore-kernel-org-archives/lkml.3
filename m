@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269AbaHES2l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:28:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52442 "EHLO
+	id S1755180AbaHESOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:14:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52384 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755192AbaHESOl (ORCPT
+	with ESMTP id S1753888AbaHESOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:41 -0400
+	Tue, 5 Aug 2014 14:14:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.14 04/39] ARM: fix alignment of keystone page table fixup
-Date: Tue,  5 Aug 2014 11:13:41 -0700
-Message-Id: <20140805181336.160728396@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.14 25/39] x86, espfix: Move espfix definitions into a separate header file
+Date: Tue,  5 Aug 2014 11:14:02 -0700
+Message-Id: <20140805181336.809703167@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
 References: <20140805181336.030349158@linuxfoundation.org>
@@ -28,42 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 823a19cd3b91b0729d7417f1848413846be61712 upstream.
+commit e1fe9ed8d2a4937510d0d60e20705035c2609aea upstream.
 
-If init_mm.brk is not section aligned, the LPAE fixup code will miss
-updating the final PMD.  Fix this by aligning map_end.
+Sparse warns that the percpu variables aren't declared before they are
+defined.  Rather than hacking around it, move espfix definitions into
+a proper header file.
 
-Fixes: a77e0c7b2774 ("ARM: mm: Recreate kernel mappings in early_paging_init()")
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/mmu.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/espfix.h |   16 ++++++++++++++++
+ arch/x86/include/asm/setup.h  |    5 ++---
+ arch/x86/kernel/espfix_64.c   |    1 +
+ 3 files changed, 19 insertions(+), 3 deletions(-)
 
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -1436,8 +1436,8 @@ void __init early_paging_init(const stru
- 		return;
+--- /dev/null
++++ b/arch/x86/include/asm/espfix.h
+@@ -0,0 +1,16 @@
++#ifdef _ASM_X86_ESPFIX_H
++#define _ASM_X86_ESPFIX_H
++
++#ifdef CONFIG_X86_64
++
++#include <asm/percpu.h>
++
++DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
++DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
++
++extern void init_espfix_bsp(void);
++extern void init_espfix_ap(void);
++
++#endif /* CONFIG_X86_64 */
++
++#endif /* _ASM_X86_ESPFIX_H */
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -63,11 +63,10 @@ extern void x86_ce4100_early_setup(void)
+ static inline void x86_ce4100_early_setup(void) { }
+ #endif
  
- 	/* remap kernel code and data */
--	map_start = init_mm.start_code;
--	map_end   = init_mm.brk;
-+	map_start = init_mm.start_code & PMD_MASK;
-+	map_end   = ALIGN(init_mm.brk, PMD_SIZE);
+-extern void init_espfix_bsp(void);
+-extern void init_espfix_ap(void);
+-
+ #ifndef _SETUP
  
- 	/* get a handle on things... */
- 	pgd0 = pgd_offset_k(0);
-@@ -1472,7 +1472,7 @@ void __init early_paging_init(const stru
- 	}
++#include <asm/espfix.h>
++
+ /*
+  * This is set up by the setup-routine at boot-time
+  */
+--- a/arch/x86/kernel/espfix_64.c
++++ b/arch/x86/kernel/espfix_64.c
+@@ -40,6 +40,7 @@
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+ #include <asm/setup.h>
++#include <asm/espfix.h>
  
- 	/* remap pmds for kernel mapping */
--	phys = __pa(map_start) & PMD_MASK;
-+	phys = __pa(map_start);
- 	do {
- 		*pmdk++ = __pmd(phys | pmdprot);
- 		phys += PMD_SIZE;
+ /*
+  * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
 
 
