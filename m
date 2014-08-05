@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513AbaHEJey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 05:34:54 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:48373 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754689AbaHEJew (ORCPT
+	id S1757545AbaHEJoi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 05:44:38 -0400
+Received: from vserver.eikelenboom.it ([84.200.39.61]:47526 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757496AbaHEJoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 05:34:52 -0400
-Date: Tue, 5 Aug 2014 10:34:09 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>, Michael Welling <mwelling@ieee.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Joe Schultz <jschultz@xes-inc.com>, Ingo Molnar <mingo@elte.hu>,
-        Doug Anderson <dianders@chromium.org>, linux-serial@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2 v2] serial: Add support for Fintek F81216A LPC to 4
- UART
-Message-ID: <20140805103409.33afef2a@alan.etchedpixels.co.uk>
-In-Reply-To: <CAPybu_2U2jjyY_9gji41mUc5F4N+idDVNO=LAr3F5PpJ0JzYSg@mail.gmail.com>
-References: <CAPybu_1Ma+7nGaS0e17HpPcM1vk6ANSFN3C8MNR=JxWrBBmMOA@mail.gmail.com>
-	<1406834546-23033-1-git-send-email-ricardo.ribalda@gmail.com>
-	<20140801132343.45153300@alan.etchedpixels.co.uk>
-	<CAPybu_2U2jjyY_9gji41mUc5F4N+idDVNO=LAr3F5PpJ0JzYSg@mail.gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 5 Aug 2014 05:44:37 -0400
+Date: Tue, 5 Aug 2014 11:44:33 +0200
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1985206568.20140805114433@eikelenboom.it>
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, gregkh@linuxfoundation.org,
+        <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH v5] Fixes to Xen pciback for 3.17.
+In-Reply-To: <53E0A45C.4050400@citrix.com>
+References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com> <53DBB27D.2040203@citrix.com> <20140804184318.GB9009@laptop.dumpdata.com> <75613802.20140805104438@eikelenboom.it> <53E0A45C.4050400@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Aug 2014 14:28:11 +0200
-Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com> wrote:
 
-> Hello
-> 
-> >> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-> >
-> > This half of things looks good to me.
-> 
-> 
-> Thanks!, What about the other half? Would you accept a two step approach?
-> 
-> 1st: add support for 8250_core
-> 2nd: handle rs485 ioctl on serial_core and modify all the other
-> drivers to use that? (to avoid code duplication)
+Tuesday, August 5, 2014, 11:31:08 AM, you wrote:
 
-We really want to handle it at the tty layer I think not at serial_core.
-I have a patch for that and I'm playing with it but it's taking longer
-than I hoped.
+> On 05/08/14 09:44, Sander Eikelenboom wrote:
+>> 
+>> Monday, August 4, 2014, 8:43:18 PM, you wrote:
+>> 
+>>> On Fri, Aug 01, 2014 at 04:30:05PM +0100, David Vrabel wrote:
+>>>> On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
+>>>>> Greg: goto GHK
+>>>>>
+>>>>> This is v5 version of patches to fix some issues in Xen PCIback.
+>>>>
+>>>> Applied to devel/for-linus-3.17.
+>> 
+>>> Thank you.
+>>>>
+>>>> I dropped the stable Cc for #2 pending a final decision on whether it
+>>>> really is a stable candidate.
+>> 
+>>> OK.
+>>>>
+>>>> David
+>> 
+>> Hi Konrad / David,
+>> 
+>> This series still lacks a resolution on the sysfs /do_flr /reset,
+>> as a result the pci devices are not reset after shutdown of a guest.
+>> (no more pciback 0000:xx:xx.x: restoring config space at offset xxx)
+>> 
+>> So this series now introduces a regression to 3.16, which causes devices to malfunction 
+>> after a guest reboot or after assigning the devices to another guest.
 
-In the mean time I think your patch #1 is ok except for the trivial
-item that I'd prefer the struct serial_rs485 was further down the struct
-uart_8250_port. It's packed so that the bits you need most are in the
-first cache line or two.
+> I don't follow what you're saying.  The lack of a device reset for PCI
+> devices with no FLR method isn't a regression as this has never worked.
+>  Can you explain in more detail what the regression is and which patch
+> caused it?
 
-Alan
+I haven't bisected it to a specific patch in this series,
+but this patch series (when pulled on top of 3.16) cause the following:
+
+- Do a system start and HVM guest start
+- HVM guest with pci passthrough, devices work fine
+- shutdown the HVM guest
+- "pciback 0000:xx:xx.x: restoring config space at offset xxx" messages do not
+  appear anymore when shutting down the HVM guest (as they do with vanilla 3.16)
+- Starting the HVM guest again with the same devices passed through.
+- Devices malfunction (for example a USB host controller will fail a simple 
+  "lsusb"
+- And this all works fine on vanilla 3.16.  
+
+>> Apart from that .. i can't resist to remind the other issue with removing pci
+>> devices passed through to HVM guests related to the signaling via xenstore,
+>> described in:
+>> 
+>> http://lists.xen.org/archives/html/xen-devel/2014-07/msg01875.html
+
+> I don't remember seeing you posting a patch...?
+
+> David
+
+
