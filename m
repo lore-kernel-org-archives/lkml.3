@@ -1,81 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539AbaHESqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:46:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52216 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754686AbaHESOQ (ORCPT
+	id S1755864AbaHESrZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:47:25 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50174 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657AbaHESrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:16 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Vitaly Kuznetsov <vkuznets@redhat.com>,
-        Steven Noonan <steven@uplinklabs.net>
-Subject: [PATCH 3.15 38/42] x86/xen: no need to explicitly register an NMI callback
-Date: Tue,  5 Aug 2014 11:13:52 -0700
-Message-Id: <20140805181322.151731665@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
-References: <20140805181321.018370988@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 5 Aug 2014 14:47:21 -0400
+To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, jejb@kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org,
+        Sathya Prakash <Sathya.Prakash@avagotech.com>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RESEND][PATCH 07/10][SCSI]mpt2sas: Added Reply Descriptor Post Queue (RDPQ) Array support
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20140625103445.GA12943@avagotech.com>
+	<yq1zjg2m6lu.fsf@sermon.lab.mkp.net>
+	<CAK=zhgoQt5J=jh4jShAy5rBXNz34sN-tqf=uZDkY4zQJ9XhM5g@mail.gmail.com>
+	<yq18unklvda.fsf@sermon.lab.mkp.net>
+	<CAK=zhgpDWJLBMBB1mV-7u+o_UC86PiOCAp4vi4-UAn_hXHtF2A@mail.gmail.com>
+	<yq1r41bkgdp.fsf@sermon.lab.mkp.net>
+	<CAK=zhgp_v_sdt+VLDs1Mxxi8Cg4nZNnzgQ=d228h+Ht2EpdEqw@mail.gmail.com>
+	<yq138dpgr6z.fsf@sermon.lab.mkp.net>
+	<CAK=zhgoEhW7fT7SV6ZkzgFa_A49W9quzWOgXb=DH3D_CrMAdDw@mail.gmail.com>
+Date: Tue, 05 Aug 2014 14:46:38 -0400
+In-Reply-To: <CAK=zhgoEhW7fT7SV6ZkzgFa_A49W9quzWOgXb=DH3D_CrMAdDw@mail.gmail.com>
+	(Sreekanth Reddy's message of "Wed, 30 Jul 2014 20:25:14 +0530")
+Message-ID: <yq161i6epv5.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+>>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com> writes:
 
-------------------
+Sreekanth,
 
-From: David Vrabel <david.vrabel@citrix.com>
+Patch was mangled and I had to apply every single hunk by hand. Please
+use git send-email.
 
-commit ea9f9274bf4337ba7cbab241c780487651642d63 upstream.
-
-Remove xen_enable_nmi() to fix a 64-bit guest crash when registering
-the NMI callback on Xen 3.1 and earlier.
-
-It's not needed since the NMI callback is set by a set_trap_table
-hypercall (in xen_load_idt() or xen_write_idt_entry()).
-
-It's also broken since it only set the current VCPU's callback.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reported-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-Tested-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: Steven Noonan <steven@uplinklabs.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/xen/setup.c |    9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
-
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -574,13 +574,7 @@ void xen_enable_syscall(void)
- 	}
- #endif /* CONFIG_X86_64 */
- }
--void xen_enable_nmi(void)
--{
--#ifdef CONFIG_X86_64
--	if (register_callback(CALLBACKTYPE_nmi, (char *)nmi))
--		BUG();
--#endif
--}
++static int dma_mask;
 +
- void __init xen_pvmmu_arch_setup(void)
- {
- 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_4gb_segments);
-@@ -595,7 +589,6 @@ void __init xen_pvmmu_arch_setup(void)
- 
- 	xen_enable_sysenter();
- 	xen_enable_syscall();
--	xen_enable_nmi();
- }
- 
- /* This function is not called for HVM domains */
++static int
++_base_wait_for_doorbell_int(struct MPT2SAS_ADAPTER *ioc, int timeout,
++                int sleep_flag);
++static int
++_base_wait_for_doorbell_ack(struct MPT2SAS_ADAPTER *ioc, int timeout,
++                int sleep_flag);
++static int
++_base_wait_for_doorbell_not_used(struct MPT2SAS_ADAPTER *ioc, int timeout,
++                 int sleep_flag);
++static int
++_base_handshake_req_reply_wait(struct MPT2SAS_ADAPTER *ioc, int request_bytes,
++    u32 *request, int reply_bytes, u16 *reply, int timeout, int sleep_flag);
++static int
++_base_get_ioc_facts(struct MPT2SAS_ADAPTER *ioc, int sleep_flag);
 
+Are you sure you need all these? _base_get_ioc_facts was the only one
+that needed to be declared in my original patch.
 
++    if (ioc->rdpq_array_enable)
++        sz = reply_post_free_sz;
++    else {
++        if (_base_is_controller_msix_enabled(ioc))
++            sz = reply_post_free_sz * ioc->reply_queue_count;
++        else
++            sz = reply_post_free_sz;
++    }
+
+sz = reply_post_free_sz;
+if (_base_is_controller_msix_enabled(ioc) && !ioc->rdpq_array_enable)
+   sz *= ioc->reply_queue_count;
+
++    ioc->reply_post = kcalloc((ioc->rdpq_array_enable) ?
++        (ioc->reply_queue_count):1,
++        sizeof(struct reply_post_struct), GFP_KERNEL);
+
+You're special casing the !rdpq code path again. Why don't you just make
+sure reply_queue_count is always correct?
+
++    do {
++        ioc->reply_post[i].reply_post_free =
++            pci_pool_alloc(ioc->reply_post_free_dma_pool,
++            GFP_KERNEL,
++            &ioc->reply_post[i].reply_post_free_dma);
++        if (!ioc->reply_post[i].reply_post_free) {
++            printk(MPT2SAS_ERR_FMT
++            "reply_post_free pool: pci_pool_alloc failed\n",
++            ioc->name);
++            goto out;
++        }
++        memset(ioc->reply_post[i].reply_post_free, 0, sz);
++        dinitprintk(ioc, printk(MPT2SAS_INFO_FMT
++            "reply post free pool (0x%p): depth(%d),"
++            "element_size(%d), pool_size(%d kB)\n", ioc->name,
++            ioc->reply_post[i].reply_post_free,
++            ioc->reply_post_queue_depth, 8, sz/1024));
++        dinitprintk(ioc, printk(MPT2SAS_INFO_FMT
++            "reply_post_free_dma = (0x%llx)\n", ioc->name,
++            (unsigned long long)
++            ioc->reply_post[i].reply_post_free_dma));
++        total_sz += sz;
++    } while (ioc->rdpq_array_enable && (++i < ioc->reply_queue_count));
+
+Same thing. I think:
+
+     for (i = 0; i < ioc->reply_queue_count ; i++) {
+
+was much clearer.
+
+If reply_queue_count is ever inconsistent wrt. ioc->rdpq_array_enable
+and _base_is_controller_msix_enabled(ioc) then that's an orthogonal
+problem that you should address directly instead of working around it
+several places in the code.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
