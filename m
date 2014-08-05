@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994AbaHENKD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 09:10:03 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:44878 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754896AbaHENJ7 (ORCPT
+	id S1754880AbaHENLx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 09:11:53 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:52929 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359AbaHENLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 09:09:59 -0400
-From: Vignesh Raman <Vignesh_Raman@mentor.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <Jiada_Wang@mentor.com>
-Subject: [PATCH v2 2/2] dma: imx-sdma: Adding tasklet_kill() in sdma_remove function.
-Date: Tue, 5 Aug 2014 18:39:42 +0530
-Message-ID: <1407244182-27302-3-git-send-email-Vignesh_Raman@mentor.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1407244182-27302-1-git-send-email-Vignesh_Raman@mentor.com>
-References: <1407244182-27302-1-git-send-email-Vignesh_Raman@mentor.com>
+	Tue, 5 Aug 2014 09:11:51 -0400
+Date: Tue, 5 Aug 2014 10:11:43 -0300
+From: Lucas Tanure <tanure@linux.com>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>
+Cc: Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org
+Subject: [PATCH] drivers: net: ethernet: intel: i40e: Fix missing
+ uapi/linux/dcbnl.h include in i40e_fcoe.c
+Message-ID: <20140805131143.GA29685@ttmp-linux>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginalArrivalTime: 05 Aug 2014 13:09:59.0036 (UTC) FILETIME=[8F33ABC0:01CFB0AE]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several dma drivers calls tasklet_kill() in remove function. This is done
-because all running tasklets should be killed on remove. This is missing
-in imx sdma driver, so adding tasklet_kill() in sdma_remove function.
+Fix missing include in intel i40e driver. Without this include linux next
+tree won't compile.
 
-Signed-off-by: Vignesh Raman <Vignesh_Raman@mentor.com>
+Signed-off-by: Lucas Tanure <tanure@linux.com>
 ---
- drivers/dma/imx-sdma.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/ethernet/intel/i40e/i40e_fcoe.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index 5cefc7d..3961c72 100644
---- a/drivers/dma/imx-sdma.c
-+++ b/drivers/dma/imx-sdma.c
-@@ -1638,12 +1638,19 @@ static int sdma_remove(struct platform_device *pdev)
- 	struct sdma_engine *sdma = platform_get_drvdata(pdev);
- 	struct resource *iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	int irq = platform_get_irq(pdev, 0);
-+	int i;
+diff --git a/drivers/net/ethernet/intel/i40e/i40e_fcoe.c b/drivers/net/ethernet/intel/i40e/i40e_fcoe.c
+index 6938fc1..5d01db1 100644
+--- a/drivers/net/ethernet/intel/i40e/i40e_fcoe.c
++++ b/drivers/net/ethernet/intel/i40e/i40e_fcoe.c
+@@ -33,6 +33,7 @@
+ #include <scsi/fc/fc_fcoe.h>
+ #include <scsi/libfc.h>
+ #include <scsi/libfcoe.h>
++#include <uapi/linux/dcbnl.h>
  
- 	dma_async_device_unregister(&sdma->dma_device);
- 	kfree(sdma->script_addrs);
- 	free_irq(irq, sdma);
- 	iounmap(sdma->regs);
- 	release_mem_region(iores->start, resource_size(iores));
-+	/* Kill the tasklet */
-+	for (i = 0; i < MAX_DMA_CHANNELS; i++) {
-+		struct sdma_channel *sdmac = &sdma->channel[i];
-+
-+		tasklet_kill(&sdmac->tasklet);
-+	}
- 	kfree(sdma);
- 
- 	platform_set_drvdata(pdev, NULL);
+ #include "i40e.h"
+ #include "i40e_fcoe.h"
 -- 
-1.7.9.5
+2.0.0
 
