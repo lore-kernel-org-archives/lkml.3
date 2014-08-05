@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103AbaHESVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:21:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52524 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753760AbaHESOw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755337AbaHESOw (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 5 Aug 2014 14:14:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52476 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755185AbaHESOq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 14:14:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [PATCH 3.10 18/27] staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
-Date: Tue,  5 Aug 2014 11:14:10 -0700
-Message-Id: <20140805181344.800758407@linuxfoundation.org>
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.14 39/39] x86/espfix/xen: Fix allocation of pages for paravirt page tables
+Date: Tue,  5 Aug 2014 11:14:16 -0700
+Message-Id: <20140805181337.218770741@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140805181344.268039690@linuxfoundation.org>
-References: <20140805181344.268039690@linuxfoundation.org>
+In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
+References: <20140805181336.030349158@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,56 +26,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-commit 6cff1f6ad4c615319c1a146b2aa0af1043c5e9f5 upstream.
+commit 8762e5092828c4dc0f49da5a47a644c670df77f3 upstream.
 
-WARNING: CPU: 0 PID: 929 at /home/apw/COD/linux/kernel/irq/handle.c:147 handle_irq_event_percpu+0x1d1/0x1e0()
-irq 17 handler device_intr+0x0/0xa80 [vt6655_stage] enabled interrupts
+init_espfix_ap() is currently off by one level when informing hypervisor
+that allocated pages will be used for ministacks' page tables.
 
-Using spin_lock_irqsave appears to fix this.
+The most immediate effect of this on a PV guest is that if
+'stack_page = __get_free_page()' returns a non-zeroed-out page the hypervisor
+will refuse to use it for a page table (which it shouldn't be anyway). This will
+result in warnings by both Xen and Linux.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+More importantly, a subsequent write to that page (again, by a PV guest) is
+likely to result in fatal page fault.
+
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Link: http://lkml.kernel.org/r/1404926298-5565-1-git-send-email-boris.ostrovsky@oracle.com
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/staging/vt6655/device_main.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/x86/kernel/espfix_64.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/vt6655/device_main.c
-+++ b/drivers/staging/vt6655/device_main.c
-@@ -2434,6 +2434,7 @@ static  irqreturn_t  device_intr(int irq
- 	int             handled = 0;
- 	unsigned char byData = 0;
- 	int             ii = 0;
-+	unsigned long flags;
- //    unsigned char byRSSI;
- 
- 	MACvReadISR(pDevice->PortOffset, &pDevice->dwIsr);
-@@ -2459,7 +2460,8 @@ static  irqreturn_t  device_intr(int irq
- 
- 	handled = 1;
- 	MACvIntDisable(pDevice->PortOffset);
--	spin_lock_irq(&pDevice->lock);
-+
-+	spin_lock_irqsave(&pDevice->lock, flags);
- 
- 	//Make sure current page is 0
- 	VNSvInPortB(pDevice->PortOffset + MAC_REG_PAGE1SEL, &byOrgPageSel);
-@@ -2700,7 +2702,8 @@ static  irqreturn_t  device_intr(int irq
- 		MACvSelectPage1(pDevice->PortOffset);
+--- a/arch/x86/kernel/espfix_64.c
++++ b/arch/x86/kernel/espfix_64.c
+@@ -175,7 +175,7 @@ void init_espfix_ap(void)
+ 	if (!pud_present(pud)) {
+ 		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
+ 		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
+-		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
++		paravirt_alloc_pmd(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
+ 		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
+ 			set_pud(&pud_p[n], pud);
  	}
+@@ -185,7 +185,7 @@ void init_espfix_ap(void)
+ 	if (!pmd_present(pmd)) {
+ 		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
+ 		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
+-		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
++		paravirt_alloc_pte(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
+ 		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
+ 			set_pmd(&pmd_p[n], pmd);
+ 	}
+@@ -193,7 +193,6 @@ void init_espfix_ap(void)
+ 	pte_p = pte_offset_kernel(&pmd, addr);
+ 	stack_page = (void *)__get_free_page(GFP_KERNEL);
+ 	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
+-	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
+ 	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
+ 		set_pte(&pte_p[n*PTE_STRIDE], pte);
  
--	spin_unlock_irq(&pDevice->lock);
-+	spin_unlock_irqrestore(&pDevice->lock, flags);
-+
- 	MACvIntEnable(pDevice->PortOffset, IMR_MASK_VALUE);
- 
- 	return IRQ_RETVAL(handled);
 
 
