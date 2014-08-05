@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370AbaHESOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:14:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52521 "EHLO
+	id S1755774AbaHESUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:20:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52534 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755322AbaHESOv (ORCPT
+	with ESMTP id S1755359AbaHESOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:51 -0400
+	Tue, 5 Aug 2014 14:14:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.10 17/27] x86_64/entry/xen: Do not invoke espfix64 on Xen
-Date: Tue,  5 Aug 2014 11:14:09 -0700
-Message-Id: <20140805181344.772580306@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Eric Dumazet <edumazet@google.com>, Arnaud Ebalard <arno@natisbad.org>,
+        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 20/27] net: mvneta: increase the 64-bit rx/tx stats out of the hot path
+Date: Tue,  5 Aug 2014 11:14:12 -0700
+Message-Id: <20140805181344.858785873@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181344.268039690@linuxfoundation.org>
 References: <20140805181344.268039690@linuxfoundation.org>
@@ -29,130 +31,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: willy tarreau <w@1wt.eu>
 
-commit 7209a75d2009dbf7745e2fd354abf25c3deb3ca3 upstream.
+commit dc4277dd41a80fd5f29a90412ea04bc3ba54fbf1 upstream.
 
-This moves the espfix64 logic into native_iret.  To make this work,
-it gets rid of the native patch for INTERRUPT_RETURN:
-INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
+Better count packets and bytes in the stack and on 32 bit then
+accumulate them at the end for once. This saves two memory writes
+and two memory barriers per packet. The incoming packet rate was
+increased by 4.7% on the Openblocks AX3 thanks to this.
 
-This changes the 16-bit SS behavior on Xen from OOPSing to leaking
-some bits of the Xen hypervisor's RSP (I think).
-
-[ hpa: this is a nonzero cost on native, but probably not enough to
-  measure. Xen needs to fix this in their own code, probably doing
-  something equivalent to espfix64. ]
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/7b8f1d8ef6597cb16ae004a43c56980a7de3cf94.1406129132.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Reviewed-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Arnaud Ebalard <arno@natisbad.org>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/irqflags.h     |    2 +-
- arch/x86/kernel/entry_64.S          |   28 ++++++++++------------------
- arch/x86/kernel/paravirt_patch_64.c |    2 --
- 3 files changed, 11 insertions(+), 21 deletions(-)
+ drivers/net/ethernet/marvell/mvneta.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/arch/x86/include/asm/irqflags.h
-+++ b/arch/x86/include/asm/irqflags.h
-@@ -129,7 +129,7 @@ static inline notrace unsigned long arch
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -1354,6 +1354,8 @@ static int mvneta_rx(struct mvneta_port
+ {
+ 	struct net_device *dev = pp->dev;
+ 	int rx_done, rx_filled;
++	u32 rcvd_pkts = 0;
++	u32 rcvd_bytes = 0;
  
- #define PARAVIRT_ADJUST_EXCEPTION_FRAME	/*  */
+ 	/* Get number of received packets */
+ 	rx_done = mvneta_rxq_busy_desc_num_get(pp, rxq);
+@@ -1391,10 +1393,8 @@ static int mvneta_rx(struct mvneta_port
  
--#define INTERRUPT_RETURN	iretq
-+#define INTERRUPT_RETURN	jmp native_iret
- #define USERGS_SYSRET64				\
- 	swapgs;					\
- 	sysretq;
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1056,27 +1056,24 @@ restore_args:
- 	RESTORE_ARGS 1,8,1
+ 		rx_bytes = rx_desc->data_size -
+ 			(ETH_FCS_LEN + MVNETA_MH_SIZE);
+-		u64_stats_update_begin(&pp->rx_stats.syncp);
+-		pp->rx_stats.packets++;
+-		pp->rx_stats.bytes += rx_bytes;
+-		u64_stats_update_end(&pp->rx_stats.syncp);
++		rcvd_pkts++;
++		rcvd_bytes += rx_bytes;
  
- irq_return:
-+	INTERRUPT_RETURN
+ 		/* Linux processing */
+ 		skb_reserve(skb, MVNETA_MH_SIZE);
+@@ -1415,6 +1415,13 @@ static int mvneta_rx(struct mvneta_port
+ 		}
+ 	}
+ 
++	if (rcvd_pkts) {
++		u64_stats_update_begin(&pp->rx_stats.syncp);
++		pp->rx_stats.packets += rcvd_pkts;
++		pp->rx_stats.bytes   += rcvd_bytes;
++		u64_stats_update_end(&pp->rx_stats.syncp);
++	}
 +
-+ENTRY(native_iret)
- 	/*
- 	 * Are we returning to a stack segment from the LDT?  Note: in
- 	 * 64-bit mode SS:RSP on the exception stack is always valid.
- 	 */
- #ifdef CONFIG_X86_ESPFIX64
- 	testb $4,(SS-RIP)(%rsp)
--	jnz irq_return_ldt
-+	jnz native_irq_return_ldt
- #endif
+ 	/* Update rxq management counters */
+ 	mvneta_rxq_desc_num_update(pp, rxq, rx_done, rx_filled);
  
--irq_return_iret:
--	INTERRUPT_RETURN
--	_ASM_EXTABLE(irq_return_iret, bad_iret)
--
--#ifdef CONFIG_PARAVIRT
--ENTRY(native_iret)
-+native_irq_return_iret:
- 	iretq
--	_ASM_EXTABLE(native_iret, bad_iret)
--#endif
-+	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
- 
- #ifdef CONFIG_X86_ESPFIX64
--irq_return_ldt:
-+native_irq_return_ldt:
- 	pushq_cfi %rax
- 	pushq_cfi %rdi
- 	SWAPGS
-@@ -1098,7 +1095,7 @@ irq_return_ldt:
- 	SWAPGS
- 	movq %rax,%rsp
- 	popq_cfi %rax
--	jmp irq_return_iret
-+	jmp native_irq_return_iret
- #endif
- 
- 	.section .fixup,"ax"
-@@ -1184,13 +1181,8 @@ __do_double_fault:
- 	cmpl $__KERNEL_CS,CS(%rdi)
- 	jne do_double_fault
- 	movq RIP(%rdi),%rax
--	cmpq $irq_return_iret,%rax
--#ifdef CONFIG_PARAVIRT
--	je 1f
--	cmpq $native_iret,%rax
--#endif
-+	cmpq $native_irq_return_iret,%rax
- 	jne do_double_fault		/* This shouldn't happen... */
--1:
- 	movq PER_CPU_VAR(kernel_stack),%rax
- 	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
- 	movq %rax,RSP(%rdi)
-@@ -1658,7 +1650,7 @@ error_sti:
-  */
- error_kernelspace:
- 	incl %ebx
--	leaq irq_return_iret(%rip),%rcx
-+	leaq native_irq_return_iret(%rip),%rcx
- 	cmpq %rcx,RIP+8(%rsp)
- 	je error_swapgs
- 	movl %ecx,%eax	/* zero extend */
---- a/arch/x86/kernel/paravirt_patch_64.c
-+++ b/arch/x86/kernel/paravirt_patch_64.c
-@@ -6,7 +6,6 @@ DEF_NATIVE(pv_irq_ops, irq_disable, "cli
- DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
- DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
- DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
--DEF_NATIVE(pv_cpu_ops, iret, "iretq");
- DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
- DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
- DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
-@@ -50,7 +49,6 @@ unsigned native_patch(u8 type, u16 clobb
- 		PATCH_SITE(pv_irq_ops, save_fl);
- 		PATCH_SITE(pv_irq_ops, irq_enable);
- 		PATCH_SITE(pv_irq_ops, irq_disable);
--		PATCH_SITE(pv_cpu_ops, iret);
- 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret32);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret64);
 
 
