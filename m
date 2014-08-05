@@ -1,118 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbaHEOeD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 10:34:03 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:49494 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258AbaHEOeB (ORCPT
+	id S1754537AbaHEOeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 10:34:44 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:56764 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaHEOem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 10:34:01 -0400
-Date: Tue, 5 Aug 2014 16:33:57 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <7110555170.20140805163357@eikelenboom.it>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>, gregkh@linuxfoundation.org,
-        <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH v5] Fixes to Xen pciback for 3.17.
-In-Reply-To: <20140805134930.GE13057@laptop.dumpdata.com>
-References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com> <53DBB27D.2040203@citrix.com> <20140804184318.GB9009@laptop.dumpdata.com> <75613802.20140805104438@eikelenboom.it> <53E0A45C.4050400@citrix.com> <1985206568.20140805114433@eikelenboom.it> <20140805134930.GE13057@laptop.dumpdata.com>
+	Tue, 5 Aug 2014 10:34:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140714185830.GE6800@sirena.org.uk>
+References: <1405094802-14401-1-git-send-email-geert+renesas@glider.be>
+	<20140714185830.GE6800@sirena.org.uk>
+Date: Tue, 5 Aug 2014 16:34:40 +0200
+X-Google-Sender-Auth: X4g82NTAuTcJFbE7RMgfttux04w
+Message-ID: <CAMuHMdX4bDMogeSwmd3bxm_fKpjouxZJFT_dd5ErxgJkZ2U=cA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] spi: rspi: Fix leaking of unused DMA descriptors
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
+        linux-spi <linux-spi@vger.kernel.org>, dmaengine@vger.kernel.org,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mark,
 
-Tuesday, August 5, 2014, 3:49:30 PM, you wrote:
+On Mon, Jul 14, 2014 at 8:58 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Fri, Jul 11, 2014 at 06:06:41PM +0200, Geert Uytterhoeven wrote:
+>> If dmaengine_prep_slave_sg() or dmaengine_submit() fail, we may leak
+>> unused DMA descriptors.
+>
+> This doesn't apply, I guess it may depend on some of your other DMA
+> related patches but it's not immediately obvious and it's not been sent
+> as part of a series.  Can you please check and/or clarify?
 
-> On Tue, Aug 05, 2014 at 11:44:33AM +0200, Sander Eikelenboom wrote:
->> 
->> Tuesday, August 5, 2014, 11:31:08 AM, you wrote:
->> 
->> > On 05/08/14 09:44, Sander Eikelenboom wrote:
->> >> 
->> >> Monday, August 4, 2014, 8:43:18 PM, you wrote:
->> >> 
->> >>> On Fri, Aug 01, 2014 at 04:30:05PM +0100, David Vrabel wrote:
->> >>>> On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
->> >>>>> Greg: goto GHK
->> >>>>>
->> >>>>> This is v5 version of patches to fix some issues in Xen PCIback.
->> >>>>
->> >>>> Applied to devel/for-linus-3.17.
->> >> 
->> >>> Thank you.
->> >>>>
->> >>>> I dropped the stable Cc for #2 pending a final decision on whether it
->> >>>> really is a stable candidate.
->> >> 
->> >>> OK.
->> >>>>
->> >>>> David
->> >> 
->> >> Hi Konrad / David,
->> >> 
->> >> This series still lacks a resolution on the sysfs /do_flr /reset,
->> >> as a result the pci devices are not reset after shutdown of a guest.
->> >> (no more pciback 0000:xx:xx.x: restoring config space at offset xxx)
->> >> 
->> >> So this series now introduces a regression to 3.16, which causes devices to malfunction 
->> >> after a guest reboot or after assigning the devices to another guest.
->> 
->> > I don't follow what you're saying.  The lack of a device reset for PCI
->> > devices with no FLR method isn't a regression as this has never worked.
->> >  Can you explain in more detail what the regression is and which patch
->> > caused it?
->> 
->> I haven't bisected it to a specific patch in this series,
->> but this patch series (when pulled on top of 3.16) cause the following:
->> 
->> - Do a system start and HVM guest start
->> - HVM guest with pci passthrough, devices work fine
->> - shutdown the HVM guest
->> - "pciback 0000:xx:xx.x: restoring config space at offset xxx" messages do not
->>   appear anymore when shutting down the HVM guest (as they do with vanilla 3.16)
->> - Starting the HVM guest again with the same devices passed through.
->> - Devices malfunction (for example a USB host controller will fail a simple 
->>   "lsusb"
->> - And this all works fine on vanilla 3.16.  
+Indeed, this (and the rspi one) depended on the two "Handle
+dmaengine_prep_slave_single() failures gracefully" patches.
 
-> Hm, the only patch that makes code changes is 63fc5ec97cc54257d1c4ee49ed2131f754a5ff9b
-> "xen/pciback: Don't deadlock when unbinding."
-> but it does not change any of that code path. Only figures out whether
-> to take a lock or not.
+Unless you recover them from e.g. patchwork, I'll resend them with my
+next batch.
 
-> I will try it out on my box and see if I can reproduce it.
+Sorry for the fuzz.
 
-> And just to be 100% sure - you are using vanilla Xen? No changes on top
-> of it?
+Gr{oetje,eeting}s,
 
-BTW could it have anything to do with the do_flr patch that went into Xen:
-(http://xenbits.xen.org/gitweb/?p=xen.git;a=commitdiff;h=ab78724fc5628318b172b4344f7280621a151e1b)
+                        Geert
 
-And isn't into linux yet .. and somehow the old code not having a problem with 
-that but the new (after the patch series with the linux do_flr patch) has ?
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
-> Thanks!
->> 
->> >> Apart from that .. i can't resist to remind the other issue with removing pci
->> >> devices passed through to HVM guests related to the signaling via xenstore,
->> >> described in:
->> >> 
->> >> http://lists.xen.org/archives/html/xen-devel/2014-07/msg01875.html
->> 
->> > I don't remember seeing you posting a patch...?
-
-> I was going to, but I think we need to figure out the 'do_flr' mechanism
-> first.
->> 
->> > David
->> 
->> 
-
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
