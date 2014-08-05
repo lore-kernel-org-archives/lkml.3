@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713AbaHEOfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 10:35:48 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:51914 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078AbaHEOfq (ORCPT
+	id S1754780AbaHEOf5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 10:35:57 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:52421 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078AbaHEOfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 10:35:46 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: linux-pm@vger.kernel.org
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        =?UTF-8?q?Terje=20Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [RFC 0/2] Add PM_QOS_MEMORY_BANDWIDTH class
-Date: Tue,  5 Aug 2014 16:35:22 +0200
-Message-Id: <1407249324-8568-1-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
+	Tue, 5 Aug 2014 10:35:55 -0400
+Message-ID: <53E0EBBD.5080506@linux.vnet.ibm.com>
+Date: Tue, 05 Aug 2014 20:05:41 +0530
+From: Vishal Mansur <vmansur@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: shangw@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        linuxppc-dev@lists.ozlabs.org
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] powerpc: non-GPL export for eeh_dev_check_failure
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080514-5564-0000-0000-0000008258B7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+EEH kernel services are inconsistently exported by the 
+kernel. eeh_check_failure is exported for any use, but 
+eeh_dev_check_failure is exported only for GPL use. 
+While eeh_check_failure is implemented for a specific 
+purpose to be used by services such as readl, it is 
+not suited for a purpose where caller needs eeh status. 
+This functionality is provided by eeh_dev_check_failure.
 
-I need a way for device drivers to register their needs of memory bandwidth so
-the optimal frequency for the memory bus clock can be set.
+This patch relaxes the export for eeh_dev_check_failure
+to make it consistent with eeh_check_failure() and 
+usable by non-GPL modules.
 
-Adding one more pm_qos class and a PM_QOS_SUM class type seems to accomplish
-that neatly, so I'm asking for comments on these very simple patches.
+Signed-off-by: Vishal Mansur <vmansur@linux.vnet.ibm.com>
+---
+ arch/powerpc/kernel/eeh.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-The patch to drm/tegra isn't really functional because the EMC clock
-implementation [0] hasn't been merged yet, and I'm not posting an
-implementation of a notification listener because in my platform that would be
-the EMC driver which is still under discussion as well.
+diff --git a/arch/powerpc/kernel/eeh.c b/arch/powerpc/kernel/eeh.c
+index 86e2570..8689c30 100644
+--- a/arch/powerpc/kernel/eeh.c
++++ b/arch/powerpc/kernel/eeh.c
+@@ -496,8 +496,7 @@ dn_unlock:
+        eeh_serialize_unlock(flags);
+        return rc;
+ }
+-
+-EXPORT_SYMBOL_GPL(eeh_dev_check_failure);
++EXPORT_SYMBOL(eeh_dev_check_failure);
 
-This will be most useful once we have per-user clock constraints [1], so the
-EMC driver can set one more floor frequency that together with the other
-constraints would lead to the effective rate of the memory bus.
+ /**
+  * eeh_check_failure - Check if all 1's data is due to EEH slot freeze
+--
+2.0.1
 
-Thanks,
-
-Tomeu
-
-[0] http://article.gmane.org/gmane.linux.kernel/1744817
-[1] http://article.gmane.org/gmane.linux.kernel/1760039
-
-Tomeu Vizoso (2):
-  PM / QoS: Add PM_QOS_MEMORY_BANDWIDTH class
-  drm/tegra: Request memory bandwidth for the display controller
-
- drivers/gpu/drm/tegra/dc.c  | 11 +++++++++++
- drivers/gpu/drm/tegra/drm.h |  2 ++
- include/linux/pm_qos.h      |  5 ++++-
- kernel/power/qos.c          | 27 ++++++++++++++++++++++++++-
- 4 files changed, 43 insertions(+), 2 deletions(-)
-
--- 
-1.9.3
 
