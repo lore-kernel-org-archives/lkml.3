@@ -1,69 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885AbaHEW06 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 18:26:58 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44543 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866AbaHEW05 (ORCPT
+	id S1753948AbaHEW3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 18:29:40 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:39789 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438AbaHEW3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 18:26:57 -0400
-Message-ID: <53E159F6.7080603@oracle.com>
-Date: Tue, 05 Aug 2014 18:25:58 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 5 Aug 2014 18:29:38 -0400
 MIME-Version: 1.0
-To: Christoph Lameter <cl@gentwo.org>
-CC: akpm@linux-foundation.org, Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org
-Subject: Re: vmstat: On demand vmstat workers V8
-References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <53D31101.8000107@oracle.com> <53DFFD28.2030502@oracle.com> <alpine.DEB.2.11.1408050950390.16902@gentwo.org>
-In-Reply-To: <alpine.DEB.2.11.1408050950390.16902@gentwo.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Date: Tue, 5 Aug 2014 15:29:38 -0700
+Message-ID: <CAK2H+ecXX5h6t8MyeEVdJR6JXMNbKYvgD3oaeVLakYkixs31eA@mail.gmail.com>
+Subject: 3.14.14 - failed command: SET FEATURES
+From: Mark Knecht <markknecht@gmail.com>
+To: Linux Kernel List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2014 10:51 AM, Christoph Lameter wrote:
-> On Mon, 4 Aug 2014, Sasha Levin wrote:
-> 
->> On 07/25/2014 10:22 PM, Sasha Levin wrote:
->>> On 07/10/2014 10:04 AM, Christoph Lameter wrote:
->>>>> This patch creates a vmstat shepherd worker that monitors the
->>>>> per cpu differentials on all processors. If there are differentials
->>>>> on a processor then a vmstat worker local to the processors
->>>>> with the differentials is created. That worker will then start
->>>>> folding the diffs in regular intervals. Should the worker
->>>>> find that there is no work to be done then it will make the shepherd
->>>>> worker monitor the differentials again.
->>> Hi Christoph, all,
->>>
->>> This patch doesn't interact well with my fuzzing setup. I'm seeing
->>> the following:
->>
->> I think we got sidetracked here a bit, I've noticed that this issue
->> is still happening in -next and discussions here died out.
-> 
-> Ok I saw in another thread that this issue has gone away. Is there an
-> easy way to reproduce this on my system?
-> 
+Hi,
+   End user type here. This seems to be a sort of old issue that
+others have seen but it's never shown up here at home as far as I
+know.
 
-I don't see the VM_BUG_ON anymore, but the cpu warnings are still there.
+   I typically run long-term kernels and have recently been running
+the 3.12 series until a few days ago when I got around to building
+3.14.14. The kernel seemed to work fine but I saw the 'failed command'
+messages posted below in dmesg. I've not seen them before.
 
-I can easily trigger it by cranking up the cpu hotplug code. Just try to
-frequently offline and online cpus, it should reproduce quickly.
+   A little searching suggested trying
 
+touch /etc/pm/power.d/harddrive
 
-Thanks,
-Sasha
+which did remove the messages.
+
+   No problem for me at this point but I figured I'd report it in case
+creating the harddrive file wasn't the right way to handle it.
+
+   If anyone wants config files or anything else let me know.
+
+Cheers,
+Mark
+
+[   16.685795] sky2 0000:07:00.0 eth0: enabling interface
+[   18.552776] sky2 0000:07:00.0 eth0: Link is up at 100 Mbps, full
+duplex, flow control both
+[   19.621150] nvidia 0000:02:00.0: irq 72 for MSI/MSI-X
+[   20.082994] nvidia 0000:04:00.0: irq 73 for MSI/MSI-X
+[   39.534163] ata1.00: exception Emask 0x1 SAct 0x0 SErr 0x0 action 0x0
+[   39.534166] ata1.00: irq_stat 0x40000001
+[   39.534168] ata1.00: failed command: SET FEATURES
+[   39.534172] ata1.00: cmd ef/05:fe:00:00:00/00:00:00:00:00/40 tag 17
+         res 51/04:fe:00:00:00/00:00:00:00:00/40 Emask 0x1 (device error)
+[   39.534174] ata1.00: status: { DRDY ERR }
+[   39.534175] ata1.00: error: { ABRT }
+[   39.547169] ata1.00: exception Emask 0x1 SAct 0x0 SErr 0x0 action 0x0
+[   39.547171] ata1.00: irq_stat 0x40000001
+[   39.547173] ata1.00: failed command: SET FEATURES
+[   39.547177] ata1.00: cmd ef/c2:00:00:00:00/00:00:00:00:00/40 tag 18
+         res 51/04:00:00:00:00/00:00:00:00:00/40 Emask 0x1 (device error)
+[   39.547178] ata1.00: status: { DRDY ERR }
+[   39.547180] ata1.00: error: { ABRT }
+[   39.550299] ata1.00: configured for UDMA/133
+[   39.550301] ata1: EH complete
+[   39.564188] ata2.00: exception Emask 0x1 SAct 0x0 SErr 0x0 action 0x0
+[   39.564191] ata2.00: irq_stat 0x40000001
+[   39.564195] ata2.00: failed command: SET FEATURES
+[   39.564202] ata2.00: cmd ef/05:fe:00:00:00/00:00:00:00:00/40 tag 14
+         res 51/04:fe:00:00:00/00:00:00:00:00/40 Emask 0x1 (device error)
+[   39.564205] ata2.00: status: { DRDY ERR }
+[   39.564208] ata2.00: error: { ABRT }
+[   39.577195] ata2.00: exception Emask 0x1 SAct 0x0 SErr 0x0 action 0x0
+[   39.577199] ata2.00: irq_stat 0x40000001
+[   39.577204] ata2.00: failed command: SET FEATURES
+[   39.577211] ata2.00: cmd ef/c2:00:00:00:00/00:00:00:00:00/40 tag 15
+         res 51/04:00:00:00:00/00:00:00:00:00/40 Emask 0x1 (device error)
+[   39.577215] ata2.00: status: { DRDY ERR }
+[   39.577217] ata2.00: error: { ABRT }
+[   39.580390] ata2.00: configured for UDMA/133
+[   39.580396] ata2: EH complete
+[   39.677366] ata11.00: configured for UDMA/100
+[   39.683543] ata11.01: configured for UDMA/133
+[   39.683550] ata11: EH complete
+[   39.931147] ata12.00: configured for UDMA/133
+[   39.937414] ata12.01: configured for UDMA/133
+[   39.937417] ata12: EH complete
+[   40.084802] ata12.00: configured for UDMA/133
+[   40.091658] ata12.01: configured for UDMA/133
+[   40.091664] ata12: EH complete
+[   40.171143] ata13.00: configured for UDMA/133
+[   40.171147] ata13: EH complete
+[   40.244515] ata14.00: configured for UDMA/133
+[   40.244520] ata14: EH complete
+[   41.278147] EXT4-fs (md3): re-mounted. Opts: commit=60,commit=0
