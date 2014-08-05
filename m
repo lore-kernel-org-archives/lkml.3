@@ -1,204 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720AbaHEMnA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 08:43:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:14688 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752536AbaHEMm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 08:42:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="368160968"
-Date: Tue, 5 Aug 2014 20:44:20 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Felipe Reyes <freyes@suse.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] KVM: nVMX: fix acknowledge interrupt on exit when
- APICv is in use
-Message-ID: <20140805124420.GA19457@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1407213744-24794-1-git-send-email-wanpeng.li@linux.intel.com>
- <1407213744-24794-2-git-send-email-wanpeng.li@linux.intel.com>
- <53E0BA31.1000708@redhat.com>
- <53E0D069.3010202@suse.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E0D069.3010202@suse.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754759AbaHEMnh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 08:43:37 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:59088 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753017AbaHEMng (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 08:43:36 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-5d-53e0d16f9ea4
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, arm@kernel.org
+Subject: [PATCH v5][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
+Date: Tue, 05 Aug 2014 14:43:10 +0200
+Message-id: <6342975.PHG2cX2jjn@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t9jQd38iw+CDV6081gc+7KFzeLvpGPs
+	Fr0LrrJZbHp8jdXi8q45bBYzzu9jslh75C67xanrn9ks1s94zeLA6fH71yRGj02rOtk8Ni+p
+	97hyoonVo2/LKkaPz5vkAtiiuGxSUnMyy1KL9O0SuDK+zLzLXtBuX/FqXR9TA+Nyky5GTg4J
+	AROJ002L2SFsMYkL99azgdhCAtMZJU7MLOli5AKyW5gkmqd0gyXYBKwkJravYgSxRQTUJHoW
+	b2UEKWIW6GOSmDalCywhLOAj8XnRe9YuRg4OFgFVidPrpEHCvAKaEguubGcGsUUFPCV2bF/J
+	BhEXlPgx+R4LiM0sIC+xb/9UVghbS2L9zuNMExj5ZiEpm4WkbBaSsgWMzKsYRVMLkguKk9Jz
+	DfWKE3OLS/PS9ZLzczcxggP6mdQOxpUNFocYBTgYlXh4BdTuBwuxJpYVV+YeYpTgYFYS4Z1w
+	/kGwEG9KYmVValF+fFFpTmrxIUZpDhYlcd4DrdaBQgLpiSWp2ampBalFMFkmDk6pBkbldIHc
+	wCNv+h09ZYJfuC70nbEk69CxVNZlW6a9lKlynXd/pUD6ikt1sumNvbNs7boXclR757x0L/d2
+	UV598sbRaUUumvaXle8rljQe4u0QL/QzYA5Ne3cxqKPoRqbc3AkKDFa92qy9RZ81n1cHrJq9
+	xVe9KW2q5NptidUvjuhk6JbeUrrCp8RSnJFoqMVcVJwIAEYUrd9kAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 02:39:05PM +0200, Felipe Reyes wrote:
->Hi,
->
->On 08/05/2014 01:04 PM, Paolo Bonzini wrote:
->>Il 05/08/2014 06:42, Wanpeng Li ha scritto:
->>>After commit 77b0f5d (KVM: nVMX: Ack and write vector info to intr_info
->>>if L1 asks us to), "Acknowledge interrupt on exit" behavior can be
->>>emulated. To do so, KVM will ask the APIC for the interrupt vector if
->>>during a nested vmexit if VM_EXIT_ACK_INTR_ON_EXIT is set.  With APICv,
->>>kvm_get_apic_interrupt would return -1 and give the following WARNING:
->>>
->>>Call Trace:
->>>  [<ffffffff81493563>] dump_stack+0x49/0x5e
->>>  [<ffffffff8103f0eb>] warn_slowpath_common+0x7c/0x96
->>>  [<ffffffffa059709a>] ? nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
->>>  [<ffffffff8103f11a>] warn_slowpath_null+0x15/0x17
->>>  [<ffffffffa059709a>] nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
->>>  [<ffffffffa0594295>] ? nested_vmx_exit_handled+0x6a/0x39e [kvm_intel]
->>>  [<ffffffffa0537931>] ? kvm_apic_has_interrupt+0x80/0xd5 [kvm]
->>>  [<ffffffffa05972ec>] vmx_check_nested_events+0xc3/0xd3 [kvm_intel]
->>>  [<ffffffffa051ebe9>] inject_pending_event+0xd0/0x16e [kvm]
->>>  [<ffffffffa051efa0>] vcpu_enter_guest+0x319/0x704 [kvm]
->>>
->>>If enabling APIC-v, all interrupts to L1 are delivered through APIC-v.
->>>But when L2 is running, external interrupt will casue L1 vmexit with
->>>reason external interrupt. Then L1 will pick up the interrupt through
->>>vmcs12. when L1 ack the interrupt, since the APIC-v is enabled when
->>>L1 is running, so APIC-v hardware still will do vEOI updating. The problem
->>>is that the interrupt is delivered not through APIC-v hardware, this means
->>>SVI/RVI/vPPR are not setting, but hardware required them when doing vEOI
->>>updating. The solution is that, when L1 tried to pick up the interrupt
->>>from vmcs12, then hypervisor will help to update the SVI/RVI/vPPR to make
->>>sure the following vEOI updating and vPPR updating corrently.
->>>
->>>Also, since interrupt is delivered through vmcs12, so APIC-v hardware will
->>>not cleare vIRR and hypervisor need to clear it before L1 running.
->>>
->>>Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
->>>Suggested-by: "Zhang, Yang Z" <yang.z.zhang@intel.com>
->>>Tested-by: Liu, RongrongX <rongrongx.liu@intel.com>
->>>Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->>>---
->>>v1 -> v2:
->>>  * reusing kvm_get_apic_interrupt here (by modifying kvm_cpu_get_interrupt,
->>>    apic_set_isr and apic_clear_irr)
->>>
->>>  arch/x86/kvm/irq.c   |  2 +-
->>>  arch/x86/kvm/lapic.c | 52 +++++++++++++++++++++++++++++++++++++++-------------
->>>  2 files changed, 40 insertions(+), 14 deletions(-)
->>>
->>>diff --git a/arch/x86/kvm/irq.c b/arch/x86/kvm/irq.c
->>>index bd0da43..a1ec6a5 100644
->>>--- a/arch/x86/kvm/irq.c
->>>+++ b/arch/x86/kvm/irq.c
->>>@@ -108,7 +108,7 @@ int kvm_cpu_get_interrupt(struct kvm_vcpu *v)
->>>
->>>  	vector = kvm_cpu_get_extint(v);
->>>
->>>-	if (kvm_apic_vid_enabled(v->kvm) || vector != -1)
->>>+	if (vector != -1)
->>>  		return vector;			/* PIC */
->>>
->>>  	return kvm_get_apic_interrupt(v);	/* APIC */
->>>diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
->>>index 3855103..08e8a89 100644
->>>--- a/arch/x86/kvm/lapic.c
->>>+++ b/arch/x86/kvm/lapic.c
->>>@@ -352,25 +352,46 @@ static inline int apic_find_highest_irr(struct kvm_lapic *apic)
->>>
->>>  static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
->>>  {
->>>-	apic->irr_pending = false;
->>>+	struct kvm_vcpu *vcpu;
->>>+
->>>+	vcpu = apic->vcpu;
->>>+
->>>  	apic_clear_vector(vec, apic->regs + APIC_IRR);
->>>-	if (apic_search_irr(apic) != -1)
->>>-		apic->irr_pending = true;
->>>+	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
->>>+		/* try to update RVI */
->>>+		kvm_make_request(KVM_REQ_EVENT, vcpu);
->>>+	else {
->>>+		vec = apic_search_irr(apic);
->>>+		apic->irr_pending = (vec != -1);
->>>+	}
->>>  }
->>>
->>>  static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
->>>  {
->>>-	/* Note that we never get here with APIC virtualization enabled.  */
->>>+	struct kvm_vcpu *vcpu;
->>>+
->>>+	if (__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
->>>+		return;
->>>+
->>>+	vcpu = apic->vcpu;
->>>
->>>-	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
->>>-		++apic->isr_count;
->>>-	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
->>>  	/*
->>>-	 * ISR (in service register) bit is set when injecting an interrupt.
->>>-	 * The highest vector is injected. Thus the latest bit set matches
->>>-	 * the highest bit in ISR.
->>>+	 * With APIC virtualization enabled, all caching is disabled
->>>+	 * because the processor can modify ISR under the hood.  Instead
->>>+	 * just set SVI.
->>>  	 */
->>>-	apic->highest_isr_cache = vec;
->>>+	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
->>>+		kvm_x86_ops->hwapic_isr_update(vcpu->kvm, vec);
->>>+	else {
->>>+		++apic->isr_count;
->>>+		BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
->>>+		/*
->>>+		 * ISR (in service register) bit is set when injecting an interrupt.
->>>+		 * The highest vector is injected. Thus the latest bit set matches
->>>+		 * the highest bit in ISR.
->>>+		 */
->>>+		apic->highest_isr_cache = vec;
->>>+	}
->>>  }
->>>
->>>  static inline int apic_find_highest_isr(struct kvm_lapic *apic)
->>>@@ -1627,11 +1648,16 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
->>>  	int vector = kvm_apic_has_interrupt(vcpu);
->>>  	struct kvm_lapic *apic = vcpu->arch.apic;
->>>
->>>-	/* Note that we never get here with APIC virtualization enabled.  */
->>>-
->>>  	if (vector == -1)
->>>  		return -1;
->>>
->>>+	/*
->>>+	 * We get here even with APIC virtualization enabled, if doing
->>>+	 * nested virtualization and L1 runs with the "acknowledge interrupt
->>>+	 * on exit" mode.  Then we cannot inject the interrupt via RVI,
->>>+	 * because the process would deliver it through the IDT.
->>>+	 */
->>>+
->>>  	apic_set_isr(vector, apic);
->>>  	apic_update_ppr(apic);
->>>  	apic_clear_irr(vector, apic);
->>>
->>
->>Thanks, this looks good.  Felipe, can you test this patch together with
->>http://article.gmane.org/gmane.linux.kernel/1762356/raw please?
->>
->>Paolo
->>
->
->I checked that the bug was still there using the latest version of
->linus' kernel (8e099d1) and it is, then I applied the patches you
->indicated and the problem went away. So those 2 patches fix the
->problem for me.
->
+From: Tomasz Figa <t.figa@samsung.com>
 
-Thanks for your verify. 
+Due to recent consolidation of Exynos suspend and cpuidle code, some
+parts of suspend and resume sequences are executed two times, once from
+exynos_pm_syscore_ops and then from exynos_cpu_pm_notifier() and thus it
+breaks suspend, at least on Exynos4-based boards. In addition, simple
+core power down from a cpuidle driver could, in case of CPU 0 could
+result in calling functions that are specific to suspend and deeper idle
+states.
 
-Regards,
-Wanpeng Li 
+This patch fixes the issue by moving those operations outside the CPU PM
+notifier into suspend and AFTR code paths. This leads to a bit of code
+duplication, but allows additional code simplification, so in the end
+more code is removed than added.
 
->Best,
->--
->To unsubscribe from this list: send the line "unsubscribe kvm" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Fixes: 85f9f90808b4 ("ARM: EXYNOS: Use the cpu_pm notifier for pm")
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: arm@kernel.org
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+[b.zolnierkie: ported patch over current changes]
+[b.zolnierkie: fixed exynos_aftr_finisher() return value]
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+---
+ arch/arm/mach-exynos/pm.c        |  163 ++++++++++++++++++---------------------
+ drivers/cpuidle/cpuidle-exynos.c |   25 -----
+ 2 files changed, 80 insertions(+), 108 deletions(-)
+
+v5:
+- use read_cpuid_part() instead of the deprecated read_cpuid_part_number()
+
+Index: b/arch/arm/mach-exynos/pm.c
+===================================================================
+--- a/arch/arm/mach-exynos/pm.c	2014-08-05 14:14:29.605182233 +0200
++++ b/arch/arm/mach-exynos/pm.c	2014-08-05 14:30:41.713207901 +0200
+@@ -114,26 +114,6 @@ static int exynos_irq_set_wake(struct ir
+ #define S5P_CHECK_AFTR  0xFCBA0D10
+ #define S5P_CHECK_SLEEP 0x00000BAD
+ 
+-/* Ext-GIC nIRQ/nFIQ is the only wakeup source in AFTR */
+-static void exynos_set_wakeupmask(long mask)
+-{
+-	pmu_raw_writel(mask, S5P_WAKEUP_MASK);
+-}
+-
+-static void exynos_cpu_set_boot_vector(long flags)
+-{
+-	__raw_writel(virt_to_phys(exynos_cpu_resume), EXYNOS_BOOT_VECTOR_ADDR);
+-	__raw_writel(flags, EXYNOS_BOOT_VECTOR_FLAG);
+-}
+-
+-void exynos_enter_aftr(void)
+-{
+-	exynos_set_wakeupmask(0x0000ff3e);
+-	exynos_cpu_set_boot_vector(S5P_CHECK_AFTR);
+-	/* Set value of power down register for aftr mode */
+-	exynos_sys_powerdown_conf(SYS_AFTR);
+-}
+-
+ /* For Cortex-A9 Diagnostic and Power control register */
+ static unsigned int save_arm_register[2];
+ 
+@@ -173,6 +153,82 @@ static void exynos_cpu_restore_register(
+ 		      : "cc");
+ }
+ 
++static void exynos_pm_central_suspend(void)
++{
++	unsigned long tmp;
++
++	/* Setting Central Sequence Register for power down mode */
++	tmp = pmu_raw_readl(S5P_CENTRAL_SEQ_CONFIGURATION);
++	tmp &= ~S5P_CENTRAL_LOWPWR_CFG;
++	pmu_raw_writel(tmp, S5P_CENTRAL_SEQ_CONFIGURATION);
++}
++
++static int exynos_pm_central_resume(void)
++{
++	unsigned long tmp;
++
++	/*
++	 * If PMU failed while entering sleep mode, WFI will be
++	 * ignored by PMU and then exiting cpu_do_idle().
++	 * S5P_CENTRAL_LOWPWR_CFG bit will not be set automatically
++	 * in this situation.
++	 */
++	tmp = pmu_raw_readl(S5P_CENTRAL_SEQ_CONFIGURATION);
++	if (!(tmp & S5P_CENTRAL_LOWPWR_CFG)) {
++		tmp |= S5P_CENTRAL_LOWPWR_CFG;
++		pmu_raw_writel(tmp, S5P_CENTRAL_SEQ_CONFIGURATION);
++		/* clear the wakeup state register */
++		pmu_raw_writel(0x0, S5P_WAKEUP_STAT);
++		/* No need to perform below restore code */
++		return -1;
++	}
++
++	return 0;
++}
++
++/* Ext-GIC nIRQ/nFIQ is the only wakeup source in AFTR */
++static void exynos_set_wakeupmask(long mask)
++{
++	pmu_raw_writel(mask, S5P_WAKEUP_MASK);
++}
++
++static void exynos_cpu_set_boot_vector(long flags)
++{
++	__raw_writel(virt_to_phys(exynos_cpu_resume), EXYNOS_BOOT_VECTOR_ADDR);
++	__raw_writel(flags, EXYNOS_BOOT_VECTOR_FLAG);
++}
++
++static int exynos_aftr_finisher(unsigned long flags)
++{
++	exynos_set_wakeupmask(0x0000ff3e);
++	exynos_cpu_set_boot_vector(S5P_CHECK_AFTR);
++	/* Set value of power down register for aftr mode */
++	exynos_sys_powerdown_conf(SYS_AFTR);
++	cpu_do_idle();
++
++	return 1;
++}
++
++void exynos_enter_aftr(void)
++{
++	cpu_pm_enter();
++
++	exynos_pm_central_suspend();
++	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9)
++		exynos_cpu_save_register();
++
++	cpu_suspend(0, exynos_aftr_finisher);
++
++	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9) {
++		scu_enable(S5P_VA_SCU);
++		exynos_cpu_restore_register();
++	}
++
++	exynos_pm_central_resume();
++
++	cpu_pm_exit();
++}
++
+ static int exynos_cpu_suspend(unsigned long arg)
+ {
+ #ifdef CONFIG_CACHE_L2X0
+@@ -217,16 +273,6 @@ static void exynos_pm_prepare(void)
+ 	pmu_raw_writel(virt_to_phys(exynos_cpu_resume), S5P_INFORM0);
+ }
+ 
+-static void exynos_pm_central_suspend(void)
+-{
+-	unsigned long tmp;
+-
+-	/* Setting Central Sequence Register for power down mode */
+-	tmp = pmu_raw_readl(S5P_CENTRAL_SEQ_CONFIGURATION);
+-	tmp &= ~S5P_CENTRAL_LOWPWR_CFG;
+-	pmu_raw_writel(tmp, S5P_CENTRAL_SEQ_CONFIGURATION);
+-}
+-
+ static int exynos_pm_suspend(void)
+ {
+ 	unsigned long tmp;
+@@ -244,29 +290,6 @@ static int exynos_pm_suspend(void)
+ 	return 0;
+ }
+ 
+-static int exynos_pm_central_resume(void)
+-{
+-	unsigned long tmp;
+-
+-	/*
+-	 * If PMU failed while entering sleep mode, WFI will be
+-	 * ignored by PMU and then exiting cpu_do_idle().
+-	 * S5P_CENTRAL_LOWPWR_CFG bit will not be set automatically
+-	 * in this situation.
+-	 */
+-	tmp = pmu_raw_readl(S5P_CENTRAL_SEQ_CONFIGURATION);
+-	if (!(tmp & S5P_CENTRAL_LOWPWR_CFG)) {
+-		tmp |= S5P_CENTRAL_LOWPWR_CFG;
+-		pmu_raw_writel(tmp, S5P_CENTRAL_SEQ_CONFIGURATION);
+-		/* clear the wakeup state register */
+-		pmu_raw_writel(0x0, S5P_WAKEUP_STAT);
+-		/* No need to perform below restore code */
+-		return -1;
+-	}
+-
+-	return 0;
+-}
+-
+ static void exynos_pm_resume(void)
+ {
+ 	if (exynos_pm_central_resume())
+@@ -369,44 +392,10 @@ static const struct platform_suspend_ops
+ 	.valid		= suspend_valid_only_mem,
+ };
+ 
+-static int exynos_cpu_pm_notifier(struct notifier_block *self,
+-				  unsigned long cmd, void *v)
+-{
+-	int cpu = smp_processor_id();
+-
+-	switch (cmd) {
+-	case CPU_PM_ENTER:
+-		if (cpu == 0) {
+-			exynos_pm_central_suspend();
+-			if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9)
+-				exynos_cpu_save_register();
+-		}
+-		break;
+-
+-	case CPU_PM_EXIT:
+-		if (cpu == 0) {
+-			if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9) {
+-				scu_enable(S5P_VA_SCU);
+-				exynos_cpu_restore_register();
+-			}
+-			exynos_pm_central_resume();
+-		}
+-		break;
+-	}
+-
+-	return NOTIFY_OK;
+-}
+-
+-static struct notifier_block exynos_cpu_pm_notifier_block = {
+-	.notifier_call = exynos_cpu_pm_notifier,
+-};
+-
+ void __init exynos_pm_init(void)
+ {
+ 	u32 tmp;
+ 
+-	cpu_pm_register_notifier(&exynos_cpu_pm_notifier_block);
+-
+ 	/* Platform-specific GIC callback */
+ 	gic_arch_extn.irq_set_wake = exynos_irq_set_wake;
+ 
+Index: b/drivers/cpuidle/cpuidle-exynos.c
+===================================================================
+--- a/drivers/cpuidle/cpuidle-exynos.c	2014-08-05 14:14:29.641182236 +0200
++++ b/drivers/cpuidle/cpuidle-exynos.c	2014-08-05 14:16:54.037186047 +0200
+@@ -20,25 +20,6 @@
+ 
+ static void (*exynos_enter_aftr)(void);
+ 
+-static int idle_finisher(unsigned long flags)
+-{
+-	exynos_enter_aftr();
+-	cpu_do_idle();
+-
+-	return 1;
+-}
+-
+-static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
+-				struct cpuidle_driver *drv,
+-				int index)
+-{
+-	cpu_pm_enter();
+-	cpu_suspend(0, idle_finisher);
+-	cpu_pm_exit();
+-
+-	return index;
+-}
+-
+ static int exynos_enter_lowpower(struct cpuidle_device *dev,
+ 				struct cpuidle_driver *drv,
+ 				int index)
+@@ -51,8 +32,10 @@ static int exynos_enter_lowpower(struct
+ 
+ 	if (new_index == 0)
+ 		return arm_cpuidle_simple_enter(dev, drv, new_index);
+-	else
+-		return exynos_enter_core0_aftr(dev, drv, new_index);
++
++	exynos_enter_aftr();
++
++	return new_index;
+ }
+ 
+ static struct cpuidle_driver exynos_idle_driver = {
+
