@@ -1,49 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755637AbaHEQvR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 12:51:17 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:64889 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752891AbaHEQvQ (ORCPT
+	id S1755804AbaHEQx1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 12:53:27 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:59425 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754829AbaHEQxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 12:51:16 -0400
-From: Miguel Oliveira <cmroliv@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: navin.patidar@gmail.com, Larry.Finger@lwfinger.net, oat.elena@gmail.com,
-        paulmck@linux.vnet.ibm.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Miguel <cmroliv@gmail.com>
-Subject: [PATCH] staging: rtl8188eu: Fix static symbol sparse warning
-Date: Tue,  5 Aug 2014 19:49:54 +0100
-Message-Id: <1407264594-9933-1-git-send-email-cmroliv@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 5 Aug 2014 12:53:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAKbGBLha7c2aLLRxkAmXk6_P+g6Q3OMWVFSCLcyuE1YybCjmdg@mail.gmail.com>
+References: <20140805131758.3afa6b0b@notabene.brown>
+	<CA+55aFxDQ8fE16uKPfjU-nBnvfjWHz3ib5mo1BDn2=JKXVQQmQ@mail.gmail.com>
+	<20140805045417.GA27012@loki.us-west-2.compute.internal>
+	<CAKbGBLha7c2aLLRxkAmXk6_P+g6Q3OMWVFSCLcyuE1YybCjmdg@mail.gmail.com>
+Date: Tue, 5 Aug 2014 09:53:24 -0700
+X-Google-Sender-Auth: xvFSWtKHI9rlvY_Q3VT2AvEj7pg
+Message-ID: <CA+55aFxTg-_hG14pqRCntHBsVvVgcVKiTLnDvOJPF=9J6CtiJw@mail.gmail.com>
+Subject: Re: Is lockref_get_not_zero() really correct in dget_parent()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Noonan <steven@uplinklabs.net>
+Cc: NeilBrown <neilb@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miguel <cmroliv@gmail.com>
+On Mon, Aug 4, 2014 at 9:56 PM, Steven Noonan <steven@uplinklabs.net> wrote:
+>
+> Er, grep failed me. The above delta to gfs2 is obviously bogus.
 
-Fix sparse warning:
-drivers/staging/rtl8188eu/core/rtw_cmd.c:52:5: warning: symbol '_rtw_enqueue_cmd' was not declared. Should it be static?
-by making it static since it's only used once.
+Yeah, and looking at the patch, I think the "make lockref count
+signed" should be a separate patch.
 
-Signed-off-by: Miguel Oliveira <cmroliv@gmail.com>
----
- drivers/staging/rtl8188eu/core/rtw_cmd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-index 08c325e..104b01f 100644
---- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-@@ -49,7 +49,7 @@ ISR/Call-Back functions can't call this sub-function.
- 
- */
- 
--int _rtw_enqueue_cmd(struct __queue *queue, struct cmd_obj *obj)
-+static int _rtw_enqueue_cmd(struct __queue *queue, struct cmd_obj *obj)
- {
- 	unsigned long irqL;
- 
--- 
-1.7.10.4
-
+            Linus
