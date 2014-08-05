@@ -1,133 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168AbaHEXKV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 19:10:21 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52327 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753796AbaHEXKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 19:10:20 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: [Update][PATCH 1/5] PM / sleep: Mechanism for aborting system suspends unconditionally
-Date: Wed, 06 Aug 2014 01:29 +0200
-Message-ID: <1909932.TyJLycJLk5@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <2110414.zVMoE3FRqa@vostro.rjw.lan>
-References: <20140724212620.GO3935@laptop> <3321219.itH23ZEDt4@vostro.rjw.lan> <2110414.zVMoE3FRqa@vostro.rjw.lan>
+	id S1753435AbaHEXLS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 19:11:18 -0400
+Received: from ozlabs.org ([103.22.144.67]:60506 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751053AbaHEXLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 19:11:17 -0400
+Date: Wed, 6 Aug 2014 09:11:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Wim Van Sebroeck <wim.vansebroeck@linux-watchdog.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        George Cherian <george.cherian@ti.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Sangjung Woo <sangjung.woo@samsung.com>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: Re: [GIT PULL REQUEST] watchdog - v3.17-rc1 merge window
+Message-ID: <20140806091107.447325c4@canb.auug.org.au>
+In-Reply-To: <20140805205547.GK11710@spo001.leaseweb.com>
+References: <20140805205547.GK11710@spo001.leaseweb.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/CJF5ebCdSeZjjl6Imell0j_"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: PM / sleep: Mechanism for aborting system suspends unconditionally
+--Sig_/CJF5ebCdSeZjjl6Imell0j_
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-It sometimes may be necessary to abort a system suspend in
-progress or wake up the system from suspend-to-idle even if the
-pm_wakeup_event()/pm_stay_awake() mechanism is not enabled.
+On Tue, 5 Aug 2014 22:55:47 +0200 Wim Van Sebroeck <wim.vansebroeck@linux-w=
+atchdog.org> wrote:
+>
+> Please pull from 'master' branch of
+> 	git://www.linux-watchdog.org/linux-watchdog.git
 
-For this purpose, introduce a new global variable abort_suspend and
-make pm_wakeup_pending() check its value.  Also add routines for
-manipulating that variable.
+This has been rebased onto v3.16, but none of the patches changed.
 
-This is going to be used in subsequent changes.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+--Sig_/CJF5ebCdSeZjjl6Imell0j_
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-The empty stub pm_wakeup_clear() for CONFIG_PM_SLEEP unset was missing.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Rafael
+iQIcBAEBCAAGBQJT4WSSAAoJEMDTa8Ir7ZwVhjwP/jB25S8mYKdGKVzPKaOyGUAv
+M+1cqiUtMogiJhOC2IGZYILrVByNkxsPvFVJdShgdk1HKCYiAcjzrUNv+EswKTZ6
+E2+Zw/aVI7psfxbwqMw/LGEnKGrh80Ald/qbM+iaKeRxeFlwCuV6emJk6HfW0wYE
+8I9LCUymhjwrthrr8/QmSmYoDKUdOplYSD1c3J78O6MTHl2NKpMsGVyPYopPr5WE
+ZJRx6P1o1bds41c9LSZZtG7CmsGRpzC+BUfYkL6jKI4f1M00PAtGgk2vvz809VBo
+EIORQbz5cYGrVQPT5zt7tArdaCcaFiFzgmJRhEZ8oe/qdOZ4uGSrNICjsEPWP0Og
+MoWopTPxbPNnXeF2vYbjMZkqNB2fnN55DWTHc90v/sUHjmJCfbZjPtVmYuh3Mcsa
+WIP2ki72QusFgJXmZZ46fjW+20bRJxlRQuSN4tlDYRAuILQTmDEaTzAsK+nYmKGn
+/LV3hy3TXFMQIHOrlZqOdFFQjboRBwupXv/cuq/N3O21dbk8YKibgmk48O+c6EzO
+IFFJ/NJOl9opDx60X9TPJVybzqlnlHWm8AG5JPElJYeD16Zwwb+iRTov2k+ketO2
+cL2QhCc0oK1UwudQAnq8yu7HNcxYSxWtOgN8pwjdwO4UGVZB07U8oCJcFwO0EFge
+/JeFeYqfq3kR69ZChVPF
+=fKaw
+-----END PGP SIGNATURE-----
 
----
- drivers/base/power/wakeup.c |   20 ++++++++++++++++++++
- include/linux/suspend.h     |    4 ++++
- kernel/power/process.c      |    1 +
- 3 files changed, 25 insertions(+)
-
-Index: linux-pm/include/linux/suspend.h
-===================================================================
---- linux-pm.orig/include/linux/suspend.h
-+++ linux-pm/include/linux/suspend.h
-@@ -371,6 +371,8 @@ extern int unregister_pm_notifier(struct
- extern bool events_check_enabled;
- 
- extern bool pm_wakeup_pending(void);
-+extern void pm_system_wakeup(void);
-+extern void pm_wakeup_clear(void);
- extern bool pm_get_wakeup_count(unsigned int *count, bool block);
- extern bool pm_save_wakeup_count(unsigned int count);
- extern void pm_wakep_autosleep_enabled(bool set);
-@@ -418,6 +420,8 @@ static inline int unregister_pm_notifier
- #define pm_notifier(fn, pri)	do { (void)(fn); } while (0)
- 
- static inline bool pm_wakeup_pending(void) { return false; }
-+static inline void pm_system_wakeup(void) {}
-+static inline void pm_wakeup_clear(void) {}
- 
- static inline void lock_system_sleep(void) {}
- static inline void unlock_system_sleep(void) {}
-Index: linux-pm/drivers/base/power/wakeup.c
-===================================================================
---- linux-pm.orig/drivers/base/power/wakeup.c
-+++ linux-pm/drivers/base/power/wakeup.c
-@@ -691,6 +691,8 @@ void pm_print_active_wakeup_sources(void
- }
- EXPORT_SYMBOL_GPL(pm_print_active_wakeup_sources);
- 
-+static bool abort_suspend;
-+
- /**
-  * pm_wakeup_pending - Check if power transition in progress should be aborted.
-  *
-@@ -712,6 +714,7 @@ bool pm_wakeup_pending(void)
- 		ret = (cnt != saved_count || inpr > 0);
- 		events_check_enabled = !ret;
- 	}
-+	ret = ret || abort_suspend;
- 	spin_unlock_irqrestore(&events_lock, flags);
- 
- 	if (ret) {
-@@ -722,6 +725,23 @@ bool pm_wakeup_pending(void)
- 	return ret;
- }
- 
-+void pm_system_wakeup(void)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&events_lock, flags);
-+	abort_suspend = true;
-+	spin_unlock_irqrestore(&events_lock, flags);
-+	freeze_wake();
-+}
-+
-+void pm_wakeup_clear(void)
-+{
-+	spin_lock_irq(&events_lock);
-+	abort_suspend = false;
-+	spin_unlock_irq(&events_lock);
-+}
-+
- /**
-  * pm_get_wakeup_count - Read the number of registered wakeup events.
-  * @count: Address to store the value at.
-Index: linux-pm/kernel/power/process.c
-===================================================================
---- linux-pm.orig/kernel/power/process.c
-+++ linux-pm/kernel/power/process.c
-@@ -129,6 +129,7 @@ int freeze_processes(void)
- 	if (!pm_freezing)
- 		atomic_inc(&system_freezing_cnt);
- 
-+	pm_wakeup_clear();
- 	printk("Freezing user space processes ... ");
- 	pm_freezing = true;
- 	error = try_to_freeze_tasks(true);
-
+--Sig_/CJF5ebCdSeZjjl6Imell0j_--
