@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413AbaHESO6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:14:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52537 "EHLO
+	id S1755469AbaHESP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:15:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52568 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755322AbaHESOy (ORCPT
+	with ESMTP id S1755397AbaHESO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:54 -0400
+	Tue, 5 Aug 2014 14:14:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eliad Peller <eliadx.peller@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 03/27] cfg80211: fix mic_failure tracing
-Date: Tue,  5 Aug 2014 11:13:55 -0700
-Message-Id: <20140805181344.374763871@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.10 08/27] iio: buffer: Fix demux table creation
+Date: Tue,  5 Aug 2014 11:14:00 -0700
+Message-Id: <20140805181344.516024889@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181344.268039690@linuxfoundation.org>
 References: <20140805181344.268039690@linuxfoundation.org>
@@ -30,33 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eliad Peller <eliad@wizery.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 8c26d458394be44e135d1c6bd4557e1c4e1a0535 upstream.
+commit 61bd55ce1667809f022be88da77db17add90ea4e upstream.
 
-tsc can be NULL (mac80211 currently always passes NULL),
-resulting in NULL-dereference. check before copying it.
+When creating the demux table we need to iterate over the selected scan mask for
+the buffer to get the samples which should be copied to destination buffer.
+Right now the code uses the mask which contains all active channels, which means
+the demux table contains entries which causes it to copy all the samples from
+source to destination buffer one by one without doing any demuxing.
 
-Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/trace.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/iio/industrialio-buffer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/wireless/trace.h
-+++ b/net/wireless/trace.h
-@@ -1972,7 +1972,8 @@ TRACE_EVENT(cfg80211_michael_mic_failure
- 		MAC_ASSIGN(addr, addr);
- 		__entry->key_type = key_type;
- 		__entry->key_id = key_id;
--		memcpy(__entry->tsc, tsc, 6);
-+		if (tsc)
-+			memcpy(__entry->tsc, tsc, 6);
- 	),
- 	TP_printk(NETDEV_PR_FMT ", " MAC_PR_FMT ", key type: %d, key id: %d, tsc: %pm",
- 		  NETDEV_PR_ARG, MAC_PR_ARG(addr), __entry->key_type,
+--- a/drivers/iio/industrialio-buffer.c
++++ b/drivers/iio/industrialio-buffer.c
+@@ -849,7 +849,7 @@ static int iio_buffer_update_demux(struc
+ 
+ 	/* Now we have the two masks, work from least sig and build up sizes */
+ 	for_each_set_bit(out_ind,
+-			 indio_dev->active_scan_mask,
++			 buffer->scan_mask,
+ 			 indio_dev->masklength) {
+ 		in_ind = find_next_bit(indio_dev->active_scan_mask,
+ 				       indio_dev->masklength,
 
 
