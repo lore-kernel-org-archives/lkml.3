@@ -1,206 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065AbaHEW50 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 18:57:26 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:55806 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026AbaHEW5Y (ORCPT
+	id S1754096AbaHEW5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 18:57:32 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:50882 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026AbaHEW53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 18:57:24 -0400
-From: Mark Einon <mark.einon@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Mark Einon <mark.einon@gmail.com>,
-        stable@vger.kernel.org
-Subject: [PATCH] staging: et131x: Fix errors caused by phydev->addr accesses before initialisation
-Date: Tue,  5 Aug 2014 23:57:06 +0100
-Message-Id: <1407279426-8021-1-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 2.0.1
+	Tue, 5 Aug 2014 18:57:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140805213436.GC29591@mail.corp.redhat.com>
+References: <1407252899-10293-1-git-send-email-benjamin.tissoires@redhat.com>
+	<CAF8JNhKQAZz_a-=5qyqS4rgdv-8Lr=i=uKJMwz_iR4c7cq-cvg@mail.gmail.com>
+	<20140805213436.GC29591@mail.corp.redhat.com>
+Date: Tue, 5 Aug 2014 15:57:26 -0700
+Message-ID: <CAF8JNhKR8uDB4AS5B00y-m7MCH6H8CHGegRb+W8ahS+gdtveNg@mail.gmail.com>
+Subject: Re: [PATCH] Input - wacom: update the ABI doc according to latest changes
+From: Ping Cheng <pinglinux@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Jason Gerecke <killertofu@gmail.com>, Przemo Firszt <przemo@firszt.eu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix two reported bugs, caused by et131x_adapter->phydev->addr being accessed
-before it is initialised, by:
+On Tue, Aug 5, 2014 at 2:34 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> Hi Ping,
+>
+> On Aug 05 2014 or thereabouts, Ping Cheng wrote:
+>> Thank you Benjamin for updating the ABI docs. My comments are inline.
+>>
+>> With those lines updated, this patch is:
+>>
+>> Reviewed-by: Ping Cheng <pingc@wacom.com>
+>
+> Thanks!
+>
+>>
+>> Cheers,
+>>
+>> Ping
+>>
+>> On Tue, Aug 5, 2014 at 8:34 AM, Benjamin Tissoires
+>> <benjamin.tissoires@redhat.com> wrote:
+>> > Now the devices show up under hid no matter the connection. So update the
+>> > sysfs path to the shortest and common one.
+>> > The ABI has also been unified regarding the OLEDs, but Bluetooth handle
+>> > only 1-bit images instead of 4.
+>> >
+>> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> > ---
+>> >
+>> > Guys,
+>> >
+>> > by updating this and working on the g-s-d client side for OLEDs, I think now
+>> > that we should also keep the oled*_img for Bluetooth and implement this file
+>> > for USB too. The user space code gets messy quite fast due to the need to
+>> > support old and new kernels, whereas if we handle the scrambling in the kernel,
+>> > it should be quite straightforward.
+>> > Of course, we have to keep the current button<n>_rawimg for backward
+>> > compatibility.
+>> >
+>> > Any thoughts?
+>> >
+>> > Cheers,
+>> > Benjamin
+>> >
+>> >  Documentation/ABI/testing/sysfs-driver-wacom | 56 ++++++++++------------------
+>> >  1 file changed, 20 insertions(+), 36 deletions(-)
+>> >
+>> > diff --git a/Documentation/ABI/testing/sysfs-driver-wacom b/Documentation/ABI/testing/sysfs-driver-wacom
+>> > index 7fc7810..c75ed4c 100644
+>> > --- a/Documentation/ABI/testing/sysfs-driver-wacom
+>> > +++ b/Documentation/ABI/testing/sysfs-driver-wacom
+>> > @@ -1,47 +1,26 @@
+>> > -WWhat:         /sys/class/hidraw/hidraw*/device/oled*_img
+>> > -Date:          June 2012
+>> > -Contact:       linux-bluetooth@vger.kernel.org
+>> > -Description:
+>> > -               The /sys/class/hidraw/hidraw*/device/oled*_img files control
+>> > -               OLED mocro displays on Intuos4 Wireless tablet. Accepted image
+>> > -               has to contain 256 bytes (64x32 px 1 bit colour). The format
+>> > -               is the same as PBM image 62x32px without header (64 bits per
+>> > -               horizontal line, 32 lines). An example of setting OLED No. 0:
+>> > -               dd bs=256 count=1 if=img_file of=[path to oled0_img]/oled0_img
+>> > -               The attribute is read only and no local copy of the image is
+>> > -               stored.
+>> > -
+>> > -What:          /sys/class/hidraw/hidraw*/device/speed
+>> > +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/speed
+>> >  Date:          April 2010
+>>
+>> Should the Date be updated?
+>
+> I don't think that this one should. The ABI is the same since April
+> 2010, and the "new" path works also for older kernels. So basically,
+> here, for Bluetooth, there has been no changes.
 
-- letting et131x_mii_write() take a phydev address, instead of using the one
-  stored in adapter by default. This is so et131x_mdio_write() can use it's own
-  addr value.
-- removing implementation of et131x_mdio_reset(), as it's not needed.
-- moving a call to et131x_disable_phy_coma() in et131x_pci_setup(), which uses
-  phydev->addr, until after the mdiobus has been registered.
+Oh, I see your point. But, don't we consider path part of the interface?
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=80751
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=77121
-Cc: stable@vger.kernel.org
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/staging/et131x/et131x.c | 68 ++++++++++++++++-------------------------
- 1 file changed, 27 insertions(+), 41 deletions(-)
+Cheers,
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 8bf1eb4..831b7c6 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -1421,22 +1421,16 @@ static int et131x_mii_read(struct et131x_adapter *adapter, u8 reg, u16 *value)
-  * @reg: the register to read
-  * @value: 16-bit value to write
-  */
--static int et131x_mii_write(struct et131x_adapter *adapter, u8 reg, u16 value)
-+static int et131x_mii_write(struct et131x_adapter *adapter, u8 addr, u8 reg,
-+			    u16 value)
- {
- 	struct mac_regs __iomem *mac = &adapter->regs->mac;
--	struct phy_device *phydev = adapter->phydev;
- 	int status = 0;
--	u8 addr;
- 	u32 delay = 0;
- 	u32 mii_addr;
- 	u32 mii_cmd;
- 	u32 mii_indicator;
- 
--	if (!phydev)
--		return -EIO;
--
--	addr = phydev->addr;
--
- 	/* Save a local copy of the registers we are dealing with so we can
- 	 * set them back
- 	 */
-@@ -1631,17 +1625,7 @@ static int et131x_mdio_write(struct mii_bus *bus, int phy_addr,
- 	struct net_device *netdev = bus->priv;
- 	struct et131x_adapter *adapter = netdev_priv(netdev);
- 
--	return et131x_mii_write(adapter, reg, value);
--}
--
--static int et131x_mdio_reset(struct mii_bus *bus)
--{
--	struct net_device *netdev = bus->priv;
--	struct et131x_adapter *adapter = netdev_priv(netdev);
--
--	et131x_mii_write(adapter, MII_BMCR, BMCR_RESET);
--
--	return 0;
-+	return et131x_mii_write(adapter, phy_addr, reg, value);
- }
- 
- /*	et1310_phy_power_switch	-	PHY power control
-@@ -1656,18 +1640,20 @@ static int et131x_mdio_reset(struct mii_bus *bus)
- static void et1310_phy_power_switch(struct et131x_adapter *adapter, bool down)
- {
- 	u16 data;
-+	struct  phy_device *phydev = adapter->phydev;
- 
- 	et131x_mii_read(adapter, MII_BMCR, &data);
- 	data &= ~BMCR_PDOWN;
- 	if (down)
- 		data |= BMCR_PDOWN;
--	et131x_mii_write(adapter, MII_BMCR, data);
-+	et131x_mii_write(adapter, phydev->addr, MII_BMCR, data);
- }
- 
- /* et131x_xcvr_init - Init the phy if we are setting it into force mode */
- static void et131x_xcvr_init(struct et131x_adapter *adapter)
- {
- 	u16 lcr2;
-+	struct  phy_device *phydev = adapter->phydev;
- 
- 	/* Set the LED behavior such that LED 1 indicates speed (off =
- 	 * 10Mbits, blink = 100Mbits, on = 1000Mbits) and LED 2 indicates
-@@ -1688,7 +1674,7 @@ static void et131x_xcvr_init(struct et131x_adapter *adapter)
- 		else
- 			lcr2 |= (LED_VAL_LINKON << LED_TXRX_SHIFT);
- 
--		et131x_mii_write(adapter, PHY_LED_2, lcr2);
-+		et131x_mii_write(adapter, phydev->addr, PHY_LED_2, lcr2);
- 	}
- }
- 
-@@ -3643,14 +3629,14 @@ static void et131x_adjust_link(struct net_device *netdev)
- 
- 			et131x_mii_read(adapter, PHY_MPHY_CONTROL_REG,
- 					 &register18);
--			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
--					 register18 | 0x4);
--			et131x_mii_write(adapter, PHY_INDEX_REG,
-+			et131x_mii_write(adapter, phydev->addr,
-+					 PHY_MPHY_CONTROL_REG, register18 | 0x4);
-+			et131x_mii_write(adapter, phydev->addr, PHY_INDEX_REG,
- 					 register18 | 0x8402);
--			et131x_mii_write(adapter, PHY_DATA_REG,
-+			et131x_mii_write(adapter, phydev->addr, PHY_DATA_REG,
- 					 register18 | 511);
--			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
--					 register18);
-+			et131x_mii_write(adapter, phydev->addr,
-+					 PHY_MPHY_CONTROL_REG, register18);
- 		}
- 
- 		et1310_config_flow_control(adapter);
-@@ -3662,7 +3648,8 @@ static void et131x_adjust_link(struct net_device *netdev)
- 			et131x_mii_read(adapter, PHY_CONFIG, &reg);
- 			reg &= ~ET_PHY_CONFIG_TX_FIFO_DEPTH;
- 			reg |= ET_PHY_CONFIG_FIFO_DEPTH_32;
--			et131x_mii_write(adapter, PHY_CONFIG, reg);
-+			et131x_mii_write(adapter, phydev->addr, PHY_CONFIG,
-+					 reg);
- 		}
- 
- 		et131x_set_rx_dma_timer(adapter);
-@@ -3675,14 +3662,14 @@ static void et131x_adjust_link(struct net_device *netdev)
- 
- 			et131x_mii_read(adapter, PHY_MPHY_CONTROL_REG,
- 					 &register18);
--			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
--					 register18 | 0x4);
--			et131x_mii_write(adapter, PHY_INDEX_REG,
--					 register18 | 0x8402);
--			et131x_mii_write(adapter, PHY_DATA_REG,
--					 register18 | 511);
--			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
--					 register18);
-+			et131x_mii_write(adapter, phydev->addr,
-+					PHY_MPHY_CONTROL_REG, register18 | 0x4);
-+			et131x_mii_write(adapter, phydev->addr,
-+					PHY_INDEX_REG, register18 | 0x8402);
-+			et131x_mii_write(adapter, phydev->addr,
-+					PHY_DATA_REG, register18 | 511);
-+			et131x_mii_write(adapter, phydev->addr,
-+					PHY_MPHY_CONTROL_REG, register18);
- 		}
- 
- 		/* Free the packets being actively sent & stopped */
-@@ -4644,10 +4631,6 @@ static int et131x_pci_setup(struct pci_dev *pdev,
- 	/* Copy address into the net_device struct */
- 	memcpy(netdev->dev_addr, adapter->addr, ETH_ALEN);
- 
--	/* Init variable for counting how long we do not have link status */
--	adapter->boot_coma = 0;
--	et1310_disable_phy_coma(adapter);
--
- 	rc = -ENOMEM;
- 
- 	/* Setup the mii_bus struct */
-@@ -4663,7 +4646,6 @@ static int et131x_pci_setup(struct pci_dev *pdev,
- 	adapter->mii_bus->priv = netdev;
- 	adapter->mii_bus->read = et131x_mdio_read;
- 	adapter->mii_bus->write = et131x_mdio_write;
--	adapter->mii_bus->reset = et131x_mdio_reset;
- 	adapter->mii_bus->irq = kmalloc_array(PHY_MAX_ADDR, sizeof(int),
- 					      GFP_KERNEL);
- 	if (!adapter->mii_bus->irq)
-@@ -4687,6 +4669,10 @@ static int et131x_pci_setup(struct pci_dev *pdev,
- 	/* Setup et1310 as per the documentation */
- 	et131x_adapter_setup(adapter);
- 
-+	/* Init variable for counting how long we do not have link status */
-+	adapter->boot_coma = 0;
-+	et1310_disable_phy_coma(adapter);
-+
- 	/* We can enable interrupts now
- 	 *
- 	 *  NOTE - Because registration of interrupt handler is done in the
--- 
-2.0.1
+Ping
 
+>>
+>> >  Kernel Version:        2.6.35
+>>
+>> This patch is planned for 3.16, right?
+>
+> Same comment than before (about not touching it).
+> This will be planned for 3.17, 3.16 has been out last Sunday.
+>
+>>
+>> >  Contact:       linux-bluetooth@vger.kernel.org
+>> >  Description:
+>> > -               The /sys/class/hidraw/hidraw*/device/speed file controls
+>> > -               reporting speed of Wacom bluetooth tablet. Reading from
+>> > -               this file returns 1 if tablet reports in high speed mode
+>> > +               The /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/speed file
+>> > +               controls reporting speed of Wacom bluetooth tablet. Reading
+>> > +               from this file returns 1 if tablet reports in high speed mode
+>> >                 or 0 otherwise. Writing to this file one of these values
+>> >                 switches reporting speed.
+>> >
+>> > -What:          /sys/class/leds/0005\:056A\:00BD.0001\:selector\:*/
+>> > -Date:          May 2012
+>> > -Kernel Version:        3.5
+>> > -Contact:       linux-bluetooth@vger.kernel.org
+>> > -Description:
+>> > -               LED selector for Intuos4 WL. There are 4 leds, but only one LED
+>> > -               can be lit at a time. Max brightness is 127.
+>> > -
+>> > -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/led
+>> > +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/led
+>> >  Date:          August 2011
+>>
+>> Same here and other 6 dates below
+>
+> We can probably update these dates. I let them untouched because the
+> ABI did not changed but only the path did.
+>
+>>
+>> >  Contact:       linux-input@vger.kernel.org
+>> >  Description:
+>> >                 Attribute group for control of the status LEDs and the OLEDs.
+>> >                 This attribute group is only available for Intuos 4 M, L,
+>> > -               and XL (with LEDs and OLEDs), Intuos 5 (LEDs only), and Cintiq
+>> > -               21UX2 and Cintiq 24HD (LEDs only). Therefore its presence
+>> > -               implicitly signifies the presence of said LEDs and OLEDs on the
+>> > -               tablet device.
+>> > +               and XL (with LEDs and OLEDs), Intuos 4 WL, Intuos 5 (LEDs only),
+>> > +               Intuos Pro (LEDs only) and Cintiq 21UX2 and Cintiq 24HD
+>> > +               (LEDs only). Therefore its presence implicitly signifies the
+>> > +               presence of said LEDs and OLEDs on the tablet device.
+>> >
+>> > -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/status0_luminance
+>> > +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/status0_luminance
+>> >  Date:          August 2011
+>> >  Contact:       linux-input@vger.kernel.org
+>> >  Description:
+>> > @@ -50,7 +29,7 @@ Description:
+>> >                 button is pressed on the stylus. This luminance level is
+>> >                 normally lower than the level when a button is pressed.
+>> >
+>> > -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/status1_luminance
+>> > +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/status1_luminance
+>> >  Date:          August 2011
+>> >  Contact:       linux-input@vger.kernel.org
+>> >  Description:
+>> > @@ -58,7 +37,7 @@ Description:
+>> >                 when the stylus touches the tablet surface, or any button is
+>> >                 pressed on the stylus.
+>> >
+>> > -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/status_led0_select
+>> > +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/status_led0_select
+>> >  Date:          August 2011
+>> >  Contact:       linux-input@vger.kernel.org
+>> >  Description:
+>> > @@ -67,7 +46,7 @@ Description:
+>> >                 24HD) status LEDs is active (0..3). The other three LEDs on the
+>> >                 same side are always inactive.
+>> >
+>> > -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/status_led1_select
+>> > +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/status_led1_select
+>> >  Date:          September 2011
+>> >  Contact:       linux-input@vger.kernel.org
+>> >  Description:
+>> > @@ -75,14 +54,14 @@ Description:
+>> >                 and Cintiq 24HD) status LEDs is active (0..3). The other three LEDs on
+>> >                 the left are always inactive.
+>> >
+>> > -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/buttons_luminance
+>> > +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/buttons_luminance
+>> >  Date:          August 2011
+>> >  Contact:       linux-input@vger.kernel.org
+>> >  Description:
+>> >                 Writing to this file sets the overall luminance level (0..15)
+>>
+>> We need to specify that this ABI is only for Intuos 4 (USB and Bluetooth).
+>
+> Yep. We can carry this fix too in this patch.
+>
+> Cheers,
+> Benjamin
+>
+>>
+>> >                 of all eight button OLED displays.)
+>> >
+>> > -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/button<n>_rawimg
+>> > +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/button<n>_rawimg
+>> >  Date:          August 2011
+>> >  Contact:       linux-input@vger.kernel.org
+>> >  Description:
+>> > @@ -93,3 +72,8 @@ Description:
+>> >                 byte chunk encodes the image data for two consecutive lines on
+>> >                 the display. The low nibble of each byte contains the first
+>> >                 line, and the high nibble contains the second line.
+>> > +               When the Wacom Intuos 4 is connected over Bluetooth, the
+>> > +               image has to contain 256 bytes (64x32 px 1 bit colour).
+>> > +               The format is also scrambled, like in the USB mode, and it can
+>> > +               be summarized by converting 76543210 into GECA6420.
+>> > +                                           HGFEDCBA      HFDB7531
+>> > --
+>> > 2.0.4
+>> >
