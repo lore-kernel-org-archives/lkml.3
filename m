@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240AbaHES06 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:26:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52465 "EHLO
+	id S932101AbaHES10 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:27:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52453 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755234AbaHESOo (ORCPT
+	with ESMTP id S1755224AbaHESOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:44 -0400
+	Tue, 5 Aug 2014 14:14:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Bottomley <JBottomley@Parallels.com>,
-        Steven Haber <steven@qumulo.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 09/39] scsi: handle flush errors properly
-Date: Tue,  5 Aug 2014 11:13:46 -0700
-Message-Id: <20140805181336.332399894@linuxfoundation.org>
+        Eliad Peller <eliadx.peller@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.14 07/39] cfg80211: fix mic_failure tracing
+Date: Tue,  5 Aug 2014 11:13:44 -0700
+Message-Id: <20140805181336.247854799@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
 References: <20140805181336.030349158@linuxfoundation.org>
@@ -31,41 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: Eliad Peller <eliad@wizery.com>
 
-commit 89fb4cd1f717a871ef79fa7debbe840e3225cd54 upstream.
+commit 8c26d458394be44e135d1c6bd4557e1c4e1a0535 upstream.
 
-Flush commands don't transfer data and thus need to be special cased
-in the I/O completion handler so that we can propagate errors to
-the block layer and filesystem.
+tsc can be NULL (mac80211 currently always passes NULL),
+resulting in NULL-dereference. check before copying it.
 
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Reported-by: Steven Haber <steven@qumulo.com>
-Tested-by: Steven Haber <steven@qumulo.com>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_lib.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/wireless/trace.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -831,6 +831,14 @@ void scsi_io_completion(struct scsi_cmnd
- 			scsi_next_command(cmd);
- 			return;
- 		}
-+	} else if (blk_rq_bytes(req) == 0 && result && !sense_deferred) {
-+		/*
-+		 * Certain non BLOCK_PC requests are commands that don't
-+		 * actually transfer anything (FLUSH), so cannot use
-+		 * good_bytes != blk_rq_bytes(req) as the signal for an error.
-+		 * This sets the error explicitly for the problem case.
-+		 */
-+		error = __scsi_error_from_host_byte(cmd, result);
- 	}
- 
- 	/* no bidi support for !REQ_TYPE_BLOCK_PC yet */
+--- a/net/wireless/trace.h
++++ b/net/wireless/trace.h
+@@ -2068,7 +2068,8 @@ TRACE_EVENT(cfg80211_michael_mic_failure
+ 		MAC_ASSIGN(addr, addr);
+ 		__entry->key_type = key_type;
+ 		__entry->key_id = key_id;
+-		memcpy(__entry->tsc, tsc, 6);
++		if (tsc)
++			memcpy(__entry->tsc, tsc, 6);
+ 	),
+ 	TP_printk(NETDEV_PR_FMT ", " MAC_PR_FMT ", key type: %d, key id: %d, tsc: %pm",
+ 		  NETDEV_PR_ARG, MAC_PR_ARG(addr), __entry->key_type,
 
 
