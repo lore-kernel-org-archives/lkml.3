@@ -1,23 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932197AbaHESdE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:33:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52757 "EHLO
+	id S1754986AbaHESda (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:33:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52750 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139AbaHESaA (ORCPT
+	with ESMTP id S932124AbaHESaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Aug 2014 14:30:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sabrina Dubroca <sd@queasysnail.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Weilong Chen <chenweilong@huawei.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>,
-        "David S. Miller" <davem@davemloft.net>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.4 19/19] ipv6: reallocate addrconf router for ipv6 address when lo device up
-Date: Tue,  5 Aug 2014 11:29:43 -0700
-Message-Id: <20140805182934.619752104@linuxfoundation.org>
+        Vlastimil Babka <vbabka@suse.cz>, Bob Liu <bob.liu@oracle.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH 3.4 18/19] mm: try_to_unmap_cluster() should lock_page() before mlocking
+Date: Tue,  5 Aug 2014 11:29:42 -0700
+Message-Id: <20140805182934.590760807@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805182934.022406678@linuxfoundation.org>
 References: <20140805182934.022406678@linuxfoundation.org>
@@ -32,66 +39,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+From: Vlastimil Babka <vbabka@suse.cz>
 
-commit 33d99113b1102c2d2f8603b9ba72d89d915c13f5 upstream.
+commit 57e68e9cd65b4b8eb4045a1e0d0746458502554c upstream.
 
-commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f
-"net IPv6 : Fix broken IPv6 routing table after loopback down-up"
-allocates addrconf router for ipv6 address when lo device up.
-but commit a881ae1f625c599b460cc8f8a7fcb1c438f699ad
-"ipv6:don't call addrconf_dst_alloc again when enable lo" breaks
-this behavior.
+A BUG_ON(!PageLocked) was triggered in mlock_vma_page() by Sasha Levin
+fuzzing with trinity.  The call site try_to_unmap_cluster() does not lock
+the pages other than its check_page parameter (which is already locked).
 
-Since the addrconf router is moved to the garbage list when
-lo device down, we should release this router and rellocate
-a new one for ipv6 address when lo device up.
+The BUG_ON in mlock_vma_page() is not documented and its purpose is
+somewhat unclear, but apparently it serializes against page migration,
+which could otherwise fail to transfer the PG_mlocked flag.  This would
+not be fatal, as the page would be eventually encountered again, but
+NR_MLOCK accounting would become distorted nevertheless.  This patch adds
+a comment to the BUG_ON in mlock_vma_page() and munlock_vma_page() to that
+effect.
 
-This patch solves bug 67951 on bugzilla
-https://bugzilla.kernel.org/show_bug.cgi?id=67951
+The call site try_to_unmap_cluster() is fixed so that for page !=
+check_page, trylock_page() is attempted (to avoid possible deadlocks as we
+already have check_page locked) and mlock_vma_page() is performed only
+upon success.  If the page lock cannot be obtained, the page is left
+without PG_mlocked, which is again not a problem in the whole unevictable
+memory design.
 
-change from v1:
-use ip6_rt_put to repleace ip6_del_rt, thanks Hannes!
-change code style, suggested by Sergei.
-
-CC: Sabrina Dubroca <sd@queasysnail.net>
-CC: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Reported-by: Weilong Chen <chenweilong@huawei.com>
-Signed-off-by: Weilong Chen <chenweilong@huawei.com>
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[weilong: s/ip6_rt_put/dst_release]
-Signed-off-by: Chen Weilong <chenweilong@huawei.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Signed-off-by: Bob Liu <bob.liu@oracle.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ipv6/addrconf.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ mm/mlock.c |    2 ++
+ mm/rmap.c  |   14 ++++++++++++--
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -2438,8 +2438,18 @@ static void init_loopback(struct net_dev
- 			if (sp_ifa->flags & (IFA_F_DADFAILED | IFA_F_TENTATIVE))
- 				continue;
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -78,6 +78,7 @@ void __clear_page_mlock(struct page *pag
+  */
+ void mlock_vma_page(struct page *page)
+ {
++	/* Serialize with page migration */
+ 	BUG_ON(!PageLocked(page));
  
--			if (sp_ifa->rt)
--				continue;
-+			if (sp_ifa->rt) {
-+				/* This dst has been added to garbage list when
-+				 * lo device down, release this obsolete dst and
-+				 * reallocate a new router for ifa.
+ 	if (!TestSetPageMlocked(page)) {
+@@ -105,6 +106,7 @@ void mlock_vma_page(struct page *page)
+  */
+ void munlock_vma_page(struct page *page)
+ {
++	/* For try_to_munlock() and to serialize with page migration */
+ 	BUG_ON(!PageLocked(page));
+ 
+ 	if (TestClearPageMlocked(page)) {
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1449,9 +1449,19 @@ static int try_to_unmap_cluster(unsigned
+ 		BUG_ON(!page || PageAnon(page));
+ 
+ 		if (locked_vma) {
+-			mlock_vma_page(page);   /* no-op if already mlocked */
+-			if (page == check_page)
++			if (page == check_page) {
++				/* we know we have check_page locked */
++				mlock_vma_page(page);
+ 				ret = SWAP_MLOCK;
++			} else if (trylock_page(page)) {
++				/*
++				 * If we can lock the page, perform mlock.
++				 * Otherwise leave the page alone, it will be
++				 * eventually encountered again later.
 +				 */
-+				if (sp_ifa->rt->dst.obsolete > 0) {
-+					dst_release(sp_ifa->rt);
-+					sp_ifa->rt = NULL;
-+				} else {
-+					continue;
-+				}
++				mlock_vma_page(page);
++				unlock_page(page);
 +			}
- 
- 			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
+ 			continue;	/* don't unmap */
+ 		}
  
 
 
