@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072AbaHEMHY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 08:07:24 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:64225 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965AbaHEMHW (ORCPT
+	id S1753389AbaHEMJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 08:09:04 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:59400 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693AbaHEMJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 08:07:22 -0400
-Date: Tue, 5 Aug 2014 17:37:18 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] sound/oss/opl3: Remove typedef opl_devinfo
-Message-ID: <20140805120718.GA12767@himangi-Dell>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Aug 2014 08:09:01 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] PCI/AER: Make linux/aer.h standalone includable
+Date: Tue,  5 Aug 2014 14:08:55 +0200
+Message-Id: <1407240535-19564-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This typedef is unnecessary and should just be removed as they are
-never used.
+From: Thierry Reding <treding@nvidia.com>
 
-The following Coccinelle semantic patch detects the case.
+The header file references u16, u32 and struct pci_dev types, but they
+are not defined in the header nor does the header pull in the necessary
+includes for them. This causes build breakage when the file is included
+without any of the dependencies being satisfied from somewhere else.
 
-@tn@
-identifier i;
-type td;
-@@
+Fix this by including linux/types.h (for u16 and u32) and by adding a
+forward-declaration of struct pci_dev.
 
--typedef
- struct i { ... }
--td
- ;
-
-@@
-type tn.td;
-identifier tn.i;
-@@
-
--td
-+ struct i
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- sound/oss/opl3.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/aer.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/sound/oss/opl3.c b/sound/oss/opl3.c
-index 4709e59..607cee4 100644
---- a/sound/oss/opl3.c
-+++ b/sound/oss/opl3.c
-@@ -52,7 +52,7 @@ struct voice_info
- 	int             panning;	/* 0xffff means not set */
- };
+diff --git a/include/linux/aer.h b/include/linux/aer.h
+index 4dbaa7081530..04bcf33a3e3a 100644
+--- a/include/linux/aer.h
++++ b/include/linux/aer.h
+@@ -7,6 +7,10 @@
+ #ifndef _AER_H_
+ #define _AER_H_
  
--typedef struct opl_devinfo
-+struct opl_devinfo
- {
- 	int             base;
- 	int             left_io, right_io;
-@@ -73,7 +73,7 @@ typedef struct opl_devinfo
- 	unsigned char   cmask;
- 
- 	int             is_opl4;
--} opl_devinfo;
-+};
- 
- static struct opl_devinfo *devc = NULL;
- 
++#include <linux/types.h>
++
++struct pci_dev;
++
+ #define AER_NONFATAL			0
+ #define AER_FATAL			1
+ #define AER_CORRECTABLE			2
 -- 
-1.9.1
+2.0.4
 
