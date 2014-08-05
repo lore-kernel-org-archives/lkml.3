@@ -1,98 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874AbaHEGRw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 02:17:52 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:39975 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755848AbaHEGRv (ORCPT
+	id S1754669AbaHEG1V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 02:27:21 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:59822 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753879AbaHEG1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 02:17:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407183283-21921-1-git-send-email-moon.linux@yahoo.com>
-References: <1407183283-21921-1-git-send-email-moon.linux@yahoo.com>
-Date: Tue, 5 Aug 2014 11:47:50 +0530
-Message-ID: <CAKohpo=j59=5fmVAdhGXkdb3YHN6zDQBkibZZTfc73GvSqx=3A@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq_opp.c: Fixed the __might_sleep by changing
- GFP_KERNEL to GFP_ATOMIC.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Anand Moon <moon.linux@yahoo.com>, Stephen Boyd <sboyd@codeaurora.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 5 Aug 2014 02:27:20 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: David Airlie <airlied@linux.ie>,
+        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drm/gma500: mdfld: Reuse video/mipi_display.h
+Date: Tue,  5 Aug 2014 08:27:16 +0200
+Message-Id: <1407220036-4058-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 August 2014 01:44, Anand Moon <moon.linux@yahoo.com> wrote:
-> Note: Generally, you should use GFP_ATOMIC in interrupt context
-> or in process context where it is not allowed to sleep, and GFP_KERNEL elsewhere.
->
-> This changes fixes bellow bug on ARM imx6
->
-> Signed-off-by: Anand Moon <moon.linux@yahoo.com>
+From: Thierry Reding <treding@nvidia.com>
 
-This should have come after the kernel dump.
+The GMA500 driver redefines many constants already found in the generic
+header. Replace uses of the custom defines by the standard ones and get
+rid of the duplicate defininitions.
 
-> [    7.331858]
-> [    7.333369] ===============================
-> [    7.337633] [ INFO: suspicious RCU usage. ]
-> [    7.341834] 3.16.0-armv7-x2 #1 Not tainted
-> [    7.346506] -------------------------------
-> [    7.350709] include/linux/rcupdate.h:513 Illegal context switch in RCU read-side critical section!
-> [    7.359735]
-> [    7.359735] other info that might help us debug this:
-> [    7.359735]
-> [    7.367932]
-> [    7.367932] rcu_scheduler_active = 1, debug_locks = 1
-> [    7.374477] 2 locks held by swapper/0/1:
-> [    7.378491]  #0:  (&dev->mutex){......}, at: [<c06b273c>] device_attach+0x28/0x9c
-> [    7.386212]  #1:  (rcu_read_lock){......}, at: [<c083cfc8>] dev_pm_opp_init_cpufreq_table+0x0/0x23c
-> [    7.396284]
-> [    7.396284] stack backtrace:
-> [    7.400666] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.16.0-armv7-x2 #1
-> [    7.407668] [<c0019234>] (unwind_backtrace) from [<c0014218>] (show_stack+0x20/0x24)
-> [    7.415473] [<c0014218>] (show_stack) from [<c0a5b8a0>] (dump_stack+0x9c/0xbc)
-> [    7.422818] [<c0a5b8a0>] (dump_stack) from [<c00b4474>] (lockdep_rcu_suspicious+0xdc/0x110)
-> [    7.431298] [<c00b4474>] (lockdep_rcu_suspicious) from [<c008d214>] (__might_sleep+0x204/0x240)
-> [    7.440106] [<c008d214>] (__might_sleep) from [<c01c8090>] (__kmalloc+0x2a8/0x328)
-> [    7.447801] [<c01c8090>] (__kmalloc) from [<c083d06c>] (dev_pm_opp_init_cpufreq_table+0xa4/0x23c)
-> [    7.456780] [<c083d06c>] (dev_pm_opp_init_cpufreq_table) from [<c0841bb0>] (imx6q_cpufreq_probe+0x160/0x750)
-> [    7.466734] [<c0841bb0>] (imx6q_cpufreq_probe) from [<c06b4b84>] (platform_drv_probe+0x28/0x5c)
-> [    7.475456] [<c06b4b84>] (platform_drv_probe) from [<c06b2960>] (driver_probe_device+0x14c/0x39c)
-> [    7.484457] [<c06b2960>] (driver_probe_device) from [<c06b2c00>] (__device_attach+0x50/0x54)
-> [    7.492986] [<c06b2c00>] (__device_attach) from [<c06b09e0>] (bus_for_each_drv+0x70/0xa4)
-> [    7.501291] [<c06b09e0>] (bus_for_each_drv) from [<c06b279c>] (device_attach+0x88/0x9c)
-> [    7.509388] [<c06b279c>] (device_attach) from [<c06b1c08>] (bus_probe_device+0x98/0xbc)
-> [    7.517600] [<c06b1c08>] (bus_probe_device) from [<c06afac0>] (device_add+0x4a8/0x5a0)
-> [    7.525679] [<c06afac0>] (device_add) from [<c06b487c>] (platform_device_add+0xd4/0x26c)
-> [    7.533974] [<c06b487c>] (platform_device_add) from [<c06b5144>] (platform_device_register+0x30/0x34)
-> [    7.543404] [<c06b5144>] (platform_device_register) from [<c0f0dcb4>] (imx6q_init_late+0x17c/0x18c)
-> [    7.552609] [<c0f0dcb4>] (imx6q_init_late) from [<c0f00b8c>] (init_machine_late+0x28/0x30)
-> [    7.560991] [<c0f00b8c>] (init_machine_late) from [<c0008bb0>] (do_one_initcall+0xec/0x224)
-> [    7.569538] [<c0008bb0>] (do_one_initcall) from [<c0efef00>] (kernel_init_freeable+0x208/0x2ac)
-> [    7.578448] [<c0efef00>] (kernel_init_freeable) from [<c0a557ac>] (kernel_init+0x1c/0xf8)
-> [    7.586764] [<c0a557ac>] (kernel_init) from [<c000fce8>] (ret_from_fork+0x14/0x20)
-> ---
->  drivers/cpufreq/cpufreq_opp.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/cpufreq_opp.c b/drivers/cpufreq/cpufreq_opp.c
-> index c0c6f4a..d5b5625 100644
-> --- a/drivers/cpufreq/cpufreq_opp.c
-> +++ b/drivers/cpufreq/cpufreq_opp.c
-> @@ -60,7 +60,7 @@ int dev_pm_opp_init_cpufreq_table(struct device *dev,
->                 goto out;
->         }
->
-> -       freq_table = kzalloc(sizeof(*freq_table) * (max_opps + 1), GFP_KERNEL);
-> +       freq_table = kzalloc(sizeof(*freq_table) * (max_opps + 1), GFP_ATOMIC);
->         if (!freq_table) {
->                 ret = -ENOMEM;
->                 goto out;
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/gpu/drm/gma500/mdfld_dsi_pkg_sender.c | 75 +++++++++++----------------
+ drivers/gpu/drm/gma500/mdfld_dsi_pkg_sender.h | 12 -----
+ 2 files changed, 31 insertions(+), 56 deletions(-)
 
-Please see this:
+diff --git a/drivers/gpu/drm/gma500/mdfld_dsi_pkg_sender.c b/drivers/gpu/drm/gma500/mdfld_dsi_pkg_sender.c
+index 87885d8c06e8..6b43ae3ffd73 100644
+--- a/drivers/gpu/drm/gma500/mdfld_dsi_pkg_sender.c
++++ b/drivers/gpu/drm/gma500/mdfld_dsi_pkg_sender.c
+@@ -25,6 +25,7 @@
+  */
+ 
+ #include <linux/freezer.h>
++#include <video/mipi_display.h>
+ 
+ #include "mdfld_dsi_output.h"
+ #include "mdfld_dsi_pkg_sender.h"
+@@ -32,20 +33,6 @@
+ 
+ #define MDFLD_DSI_READ_MAX_COUNT		5000
+ 
+-enum data_type {
+-	DSI_DT_GENERIC_SHORT_WRITE_0	= 0x03,
+-	DSI_DT_GENERIC_SHORT_WRITE_1	= 0x13,
+-	DSI_DT_GENERIC_SHORT_WRITE_2	= 0x23,
+-	DSI_DT_GENERIC_READ_0		= 0x04,
+-	DSI_DT_GENERIC_READ_1		= 0x14,
+-	DSI_DT_GENERIC_READ_2		= 0x24,
+-	DSI_DT_GENERIC_LONG_WRITE	= 0x29,
+-	DSI_DT_DCS_SHORT_WRITE_0	= 0x05,
+-	DSI_DT_DCS_SHORT_WRITE_1	= 0x15,
+-	DSI_DT_DCS_READ			= 0x06,
+-	DSI_DT_DCS_LONG_WRITE		= 0x39,
+-};
+-
+ enum {
+ 	MDFLD_DSI_PANEL_MODE_SLEEP = 0x1,
+ };
+@@ -321,9 +308,9 @@ static int send_pkg_prepare(struct mdfld_dsi_pkg_sender *sender, u8 data_type,
+ 	u8 cmd;
+ 
+ 	switch (data_type) {
+-	case DSI_DT_DCS_SHORT_WRITE_0:
+-	case DSI_DT_DCS_SHORT_WRITE_1:
+-	case DSI_DT_DCS_LONG_WRITE:
++	case MIPI_DSI_DCS_SHORT_WRITE:
++	case MIPI_DSI_DCS_SHORT_WRITE_PARAM:
++	case MIPI_DSI_DCS_LONG_WRITE:
+ 		cmd = *data;
+ 		break;
+ 	default:
+@@ -334,12 +321,12 @@ static int send_pkg_prepare(struct mdfld_dsi_pkg_sender *sender, u8 data_type,
+ 	sender->status = MDFLD_DSI_PKG_SENDER_BUSY;
+ 
+ 	/*wait for 120 milliseconds in case exit_sleep_mode just be sent*/
+-	if (unlikely(cmd == DCS_ENTER_SLEEP_MODE)) {
++	if (unlikely(cmd == MIPI_DCS_ENTER_SLEEP_MODE)) {
+ 		/*TODO: replace it with msleep later*/
+ 		mdelay(120);
+ 	}
+ 
+-	if (unlikely(cmd == DCS_EXIT_SLEEP_MODE)) {
++	if (unlikely(cmd == MIPI_DCS_EXIT_SLEEP_MODE)) {
+ 		/*TODO: replace it with msleep later*/
+ 		mdelay(120);
+ 	}
+@@ -352,9 +339,9 @@ static int send_pkg_done(struct mdfld_dsi_pkg_sender *sender, u8 data_type,
+ 	u8 cmd;
+ 
+ 	switch (data_type) {
+-	case DSI_DT_DCS_SHORT_WRITE_0:
+-	case DSI_DT_DCS_SHORT_WRITE_1:
+-	case DSI_DT_DCS_LONG_WRITE:
++	case MIPI_DSI_DCS_SHORT_WRITE:
++	case MIPI_DSI_DCS_SHORT_WRITE_PARAM:
++	case MIPI_DSI_DCS_LONG_WRITE:
+ 		cmd = *data;
+ 		break;
+ 	default:
+@@ -362,15 +349,15 @@ static int send_pkg_done(struct mdfld_dsi_pkg_sender *sender, u8 data_type,
+ 	}
+ 
+ 	/*update panel status*/
+-	if (unlikely(cmd == DCS_ENTER_SLEEP_MODE)) {
++	if (unlikely(cmd == MIPI_DCS_ENTER_SLEEP_MODE)) {
+ 		sender->panel_mode |= MDFLD_DSI_PANEL_MODE_SLEEP;
+ 		/*TODO: replace it with msleep later*/
+ 		mdelay(120);
+-	} else if (unlikely(cmd == DCS_EXIT_SLEEP_MODE)) {
++	} else if (unlikely(cmd == MIPI_DCS_EXIT_SLEEP_MODE)) {
+ 		sender->panel_mode &= ~MDFLD_DSI_PANEL_MODE_SLEEP;
+ 		/*TODO: replace it with msleep later*/
+ 		mdelay(120);
+-	} else if (unlikely(cmd == DCS_SOFT_RESET)) {
++	} else if (unlikely(cmd == MIPI_DCS_SOFT_RESET)) {
+ 		/*TODO: replace it with msleep later*/
+ 		mdelay(5);
+ 	}
+@@ -405,19 +392,19 @@ static int send_pkg(struct mdfld_dsi_pkg_sender *sender, u8 data_type,
+ 	}
+ 
+ 	switch (data_type) {
+-	case DSI_DT_GENERIC_SHORT_WRITE_0:
+-	case DSI_DT_GENERIC_SHORT_WRITE_1:
+-	case DSI_DT_GENERIC_SHORT_WRITE_2:
+-	case DSI_DT_GENERIC_READ_0:
+-	case DSI_DT_GENERIC_READ_1:
+-	case DSI_DT_GENERIC_READ_2:
+-	case DSI_DT_DCS_SHORT_WRITE_0:
+-	case DSI_DT_DCS_SHORT_WRITE_1:
+-	case DSI_DT_DCS_READ:
++	case MIPI_DSI_GENERIC_SHORT_WRITE_0_PARAM:
++	case MIPI_DSI_GENERIC_SHORT_WRITE_1_PARAM:
++	case MIPI_DSI_GENERIC_SHORT_WRITE_2_PARAM:
++	case MIPI_DSI_GENERIC_READ_REQUEST_0_PARAM:
++	case MIPI_DSI_GENERIC_READ_REQUEST_1_PARAM:
++	case MIPI_DSI_GENERIC_READ_REQUEST_2_PARAM:
++	case MIPI_DSI_DCS_SHORT_WRITE:
++	case MIPI_DSI_DCS_SHORT_WRITE_PARAM:
++	case MIPI_DSI_DCS_READ:
+ 		ret = send_short_pkg(sender, data_type, data[0], data[1], hs);
+ 		break;
+-	case DSI_DT_GENERIC_LONG_WRITE:
+-	case DSI_DT_DCS_LONG_WRITE:
++	case MIPI_DSI_GENERIC_LONG_WRITE:
++	case MIPI_DSI_DCS_LONG_WRITE:
+ 		ret = send_long_pkg(sender, data_type, data, len, hs);
+ 		break;
+ 	}
+@@ -440,7 +427,7 @@ int mdfld_dsi_send_mcs_long(struct mdfld_dsi_pkg_sender *sender, u8 *data,
+ 	}
+ 
+ 	spin_lock_irqsave(&sender->lock, flags);
+-	send_pkg(sender, DSI_DT_DCS_LONG_WRITE, data, len, hs);
++	send_pkg(sender, MIPI_DSI_DCS_LONG_WRITE, data, len, hs);
+ 	spin_unlock_irqrestore(&sender->lock, flags);
+ 
+ 	return 0;
+@@ -461,10 +448,10 @@ int mdfld_dsi_send_mcs_short(struct mdfld_dsi_pkg_sender *sender, u8 cmd,
+ 	data[0] = cmd;
+ 
+ 	if (param_num) {
+-		data_type = DSI_DT_DCS_SHORT_WRITE_1;
++		data_type = MIPI_DSI_DCS_SHORT_WRITE_PARAM;
+ 		data[1] = param;
+ 	} else {
+-		data_type = DSI_DT_DCS_SHORT_WRITE_0;
++		data_type = MIPI_DSI_DCS_SHORT_WRITE;
+ 		data[1] = 0;
+ 	}
+ 
+@@ -489,17 +476,17 @@ int mdfld_dsi_send_gen_short(struct mdfld_dsi_pkg_sender *sender, u8 param0,
+ 
+ 	switch (param_num) {
+ 	case 0:
+-		data_type = DSI_DT_GENERIC_SHORT_WRITE_0;
++		data_type = MIPI_DSI_GENERIC_SHORT_WRITE_0_PARAM;
+ 		data[0] = 0;
+ 		data[1] = 0;
+ 		break;
+ 	case 1:
+-		data_type = DSI_DT_GENERIC_SHORT_WRITE_1;
++		data_type = MIPI_DSI_GENERIC_SHORT_WRITE_1_PARAM;
+ 		data[0] = param0;
+ 		data[1] = 0;
+ 		break;
+ 	case 2:
+-		data_type = DSI_DT_GENERIC_SHORT_WRITE_2;
++		data_type = MIPI_DSI_GENERIC_SHORT_WRITE_2_PARAM;
+ 		data[0] = param0;
+ 		data[1] = param1;
+ 		break;
+@@ -523,7 +510,7 @@ int mdfld_dsi_send_gen_long(struct mdfld_dsi_pkg_sender *sender, u8 *data,
+ 	}
+ 
+ 	spin_lock_irqsave(&sender->lock, flags);
+-	send_pkg(sender, DSI_DT_GENERIC_LONG_WRITE, data, len, hs);
++	send_pkg(sender, MIPI_DSI_GENERIC_LONG_WRITE, data, len, hs);
+ 	spin_unlock_irqrestore(&sender->lock, flags);
+ 
+ 	return 0;
+@@ -594,7 +581,7 @@ int mdfld_dsi_read_mcs(struct mdfld_dsi_pkg_sender *sender, u8 cmd,
+ 		return -EINVAL;
+ 	}
+ 
+-	return __read_panel_data(sender, DSI_DT_DCS_READ, &cmd, 1,
++	return __read_panel_data(sender, MIPI_DSI_DCS_READ, &cmd, 1,
+ 				data, len, hs);
+ }
+ 
+diff --git a/drivers/gpu/drm/gma500/mdfld_dsi_pkg_sender.h b/drivers/gpu/drm/gma500/mdfld_dsi_pkg_sender.h
+index 459cd7ea8b81..0478a21c15d5 100644
+--- a/drivers/gpu/drm/gma500/mdfld_dsi_pkg_sender.h
++++ b/drivers/gpu/drm/gma500/mdfld_dsi_pkg_sender.h
+@@ -62,18 +62,6 @@ struct mdfld_dsi_pkg_sender {
+ 	u32 mipi_cmd_len_reg;
+ };
+ 
+-/* DCS definitions */
+-#define DCS_SOFT_RESET			0x01
+-#define DCS_ENTER_SLEEP_MODE		0x10
+-#define DCS_EXIT_SLEEP_MODE		0x11
+-#define DCS_SET_DISPLAY_OFF		0x28
+-#define DCS_SET_DISPLAY_ON		0x29
+-#define DCS_SET_COLUMN_ADDRESS		0x2a
+-#define DCS_SET_PAGE_ADDRESS		0x2b
+-#define DCS_WRITE_MEM_START		0x2c
+-#define DCS_SET_TEAR_OFF		0x34
+-#define DCS_SET_TEAR_ON			0x35
+-
+ extern int mdfld_dsi_pkg_sender_init(struct mdfld_dsi_connector *dsi_connector,
+ 					int pipe);
+ extern void mdfld_dsi_pkg_sender_destroy(struct mdfld_dsi_pkg_sender *sender);
+-- 
+2.0.4
 
-https://lkml.org/lkml/2014/7/16/815
-
-@Rafael: Have you already applied patch from above link?
