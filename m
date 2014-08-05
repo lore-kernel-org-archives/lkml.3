@@ -1,111 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621AbaHENtm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 09:49:42 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43104 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256AbaHENtl (ORCPT
+	id S1753713AbaHENvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 09:51:05 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:54995 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041AbaHENvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 09:49:41 -0400
-Date: Tue, 5 Aug 2014 09:49:30 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: David Vrabel <david.vrabel@citrix.com>, gregkh@linuxfoundation.org,
-        boris.ostrovsky@oracle.com, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH v5] Fixes to Xen pciback for 3.17.
-Message-ID: <20140805134930.GE13057@laptop.dumpdata.com>
-References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com>
- <53DBB27D.2040203@citrix.com>
- <20140804184318.GB9009@laptop.dumpdata.com>
- <75613802.20140805104438@eikelenboom.it>
- <53E0A45C.4050400@citrix.com>
- <1985206568.20140805114433@eikelenboom.it>
+	Tue, 5 Aug 2014 09:51:02 -0400
+Message-ID: <53E0E13E.3@linaro.org>
+Date: Tue, 05 Aug 2014 15:50:54 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1985206568.20140805114433@eikelenboom.it>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+CC: Tomasz Figa <t.figa@samsung.com>, Sachin Kamat <sachin.kamat@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v5 0/5] ARM: EXYNOS: cpuidle: fix AFTR mode on boards
+ with secure firmware enabled
+References: <1407245666-20016-1-git-send-email-b.zolnierkie@samsung.com>
+In-Reply-To: <1407245666-20016-1-git-send-email-b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 11:44:33AM +0200, Sander Eikelenboom wrote:
-> 
-> Tuesday, August 5, 2014, 11:31:08 AM, you wrote:
-> 
-> > On 05/08/14 09:44, Sander Eikelenboom wrote:
-> >> 
-> >> Monday, August 4, 2014, 8:43:18 PM, you wrote:
-> >> 
-> >>> On Fri, Aug 01, 2014 at 04:30:05PM +0100, David Vrabel wrote:
-> >>>> On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
-> >>>>> Greg: goto GHK
-> >>>>>
-> >>>>> This is v5 version of patches to fix some issues in Xen PCIback.
-> >>>>
-> >>>> Applied to devel/for-linus-3.17.
-> >> 
-> >>> Thank you.
-> >>>>
-> >>>> I dropped the stable Cc for #2 pending a final decision on whether it
-> >>>> really is a stable candidate.
-> >> 
-> >>> OK.
-> >>>>
-> >>>> David
-> >> 
-> >> Hi Konrad / David,
-> >> 
-> >> This series still lacks a resolution on the sysfs /do_flr /reset,
-> >> as a result the pci devices are not reset after shutdown of a guest.
-> >> (no more pciback 0000:xx:xx.x: restoring config space at offset xxx)
-> >> 
-> >> So this series now introduces a regression to 3.16, which causes devices to malfunction 
-> >> after a guest reboot or after assigning the devices to another guest.
-> 
-> > I don't follow what you're saying.  The lack of a device reset for PCI
-> > devices with no FLR method isn't a regression as this has never worked.
-> >  Can you explain in more detail what the regression is and which patch
-> > caused it?
-> 
-> I haven't bisected it to a specific patch in this series,
-> but this patch series (when pulled on top of 3.16) cause the following:
-> 
-> - Do a system start and HVM guest start
-> - HVM guest with pci passthrough, devices work fine
-> - shutdown the HVM guest
-> - "pciback 0000:xx:xx.x: restoring config space at offset xxx" messages do not
->   appear anymore when shutting down the HVM guest (as they do with vanilla 3.16)
-> - Starting the HVM guest again with the same devices passed through.
-> - Devices malfunction (for example a USB host controller will fail a simple 
->   "lsusb"
-> - And this all works fine on vanilla 3.16.  
+On 08/05/2014 03:34 PM, Bartlomiej Zolnierkiewicz wrote:
+> Hi,
+>
+> This patch series adds support for AFTR idle mode on boards with
+> secure firmware enabled and allows EXYNOS cpuidle driver usage on
+> Exynos4x12 SoCs.
+>
+> It has been tested on Trats2 board (using Exynos4412 SoC with secure
+> firmware enabled) on which AFTR mode reduces power consumption by ~12%
+> when EXYNOS cpuidle driver is enabled (in both cases the default
+> exynos_defconfig config is used and CPU1-3 are offlined).
 
-Hm, the only patch that makes code changes is 63fc5ec97cc54257d1c4ee49ed2131f754a5ff9b
-"xen/pciback: Don't deadlock when unbinding."
-but it does not change any of that code path. Only figures out whether
-to take a lock or not.
+Hi Bartlomiej,
 
-I will try it out on my box and see if I can reproduce it.
+I tested your patchset on an odroid-u2. When the cpuidle driver is 
+enabled and the cpu1-3 are offlined, the kernel hangs.
 
-And just to be 100% sure - you are using vanilla Xen? No changes on top
-of it?
+If I disable the AFTR state on cpuidle, and offline the 1-3, it works as 
+expected. So there is something wrong with the AFTR on the odroid board.
 
-Thanks!
-> 
-> >> Apart from that .. i can't resist to remind the other issue with removing pci
-> >> devices passed through to HVM guests related to the signaling via xenstore,
-> >> described in:
-> >> 
-> >> http://lists.xen.org/archives/html/xen-devel/2014-07/msg01875.html
-> 
-> > I don't remember seeing you posting a patch...?
+> Depends on:
+> - next-20140804 branch of linux-next kernel tree
+> - [PATCH v5][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
+>    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35262.html)
+> - [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+>    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34282.html)
+>
+> Changes since v4:
+> - rebased on top of next-20140804 +
+>    [PATCH v5][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
+>    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35262.html)
+>    [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+>    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34282.html)
+> - call exynos_save_cp15() only on A9 type core (this is needed for the future
+>    Exynos3250 SoC support)
+>
+> Changes since v3:
+> - rebased on top of next-20140804 +
+>    [PATCH v4][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
+>    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35192.html)
+>    [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+>    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34282.html)
+> - (re-)added patch fixing S5P_CENTRAL_SEQ_OPTION register setup
+>
+> Changes since v2:
+> - rebased on top of next-20140708 +
+>    [PATCH 5/6] ARM: EXYNOS: Fix suspend/resume sequencies
+>    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32809.html)
+>    [with rejects fixed]
+>    [PATCH 6/6] ARM: EXYNOS: Register cpuidle device only on Exynos4210 and 5250
+>    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32808.html)
+>    [PATCH 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+>    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32991.html)
+>    [with rejects fixed in patch #2]
+> - addressed review comments from Tomasz Figa and Daniel Lezcano
+>
+> Changes since v1:
+> - synced against next-20140602
+> - added missing Acked-by-s
+>
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+>
+>
+> Bartlomiej Zolnierkiewicz (5):
+>    ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_* macros by static inlines
+>    ARM: EXYNOS: add AFTR mode support to firmware do_idle method
+>    ARM: EXYNOS: cpuidle: add secure firmware support to AFTR mode code
+>    ARM: EXYNOS: PM: fix register setup for AFTR mode code
+>    ARM: EXYNOS: cpuidle: allow driver usage on Exynos4x12 SoCs
+>
+>   arch/arm/include/asm/firmware.h |  2 +-
+>   arch/arm/mach-exynos/common.h   |  5 ++++
+>   arch/arm/mach-exynos/exynos.c   |  4 ++-
+>   arch/arm/mach-exynos/firmware.c | 34 ++++++++++++++++-------
+>   arch/arm/mach-exynos/pm.c       | 60 ++++++++++++++++++++++++-----------------
+>   5 files changed, 70 insertions(+), 35 deletions(-)
+>
 
-I was going to, but I think we need to figure out the 'do_flr' mechanism
-first.
-> 
-> > David
-> 
-> 
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
