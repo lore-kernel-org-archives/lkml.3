@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579AbaHESsG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:48:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52167 "EHLO
+	id S1754495AbaHESOM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:14:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52158 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312AbaHESON (ORCPT
+	with ESMTP id S1754289AbaHESOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:13 -0400
+	Tue, 5 Aug 2014 14:14:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Biggers <ebiggers3@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.15 34/42] vfs: fix check for fallocate on active swapfile
-Date: Tue,  5 Aug 2014 11:13:48 -0700
-Message-Id: <20140805181322.031151354@linuxfoundation.org>
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.15 07/42] ARM: 8115/1: LPAE: reduce damage caused by idmap to virtual memory layout
+Date: Tue,  5 Aug 2014 11:13:21 -0700
+Message-Id: <20140805181321.249157336@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -28,37 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Biggers <ebiggers3@gmail.com>
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 
-commit 6d2b6170c8914c6c69256b687651fb16d7ec3e18 upstream.
+commit 811a2407a3cf7bbd027fbe92d73416f17485a3d8 upstream.
 
-Fix the broken check for calling sys_fallocate() on an active swapfile,
-introduced by commit 0790b31b69374ddadefe ("fs: disallow all fallocate
-operation on active swapfile").
+On LPAE, each level 1 (pgd) page table entry maps 1GiB, and the level 2
+(pmd) entries map 2MiB.
 
-Signed-off-by: Eric Biggers <ebiggers3@gmail.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+When the identity mapping is created on LPAE, the pgd pointers are copied
+from the swapper_pg_dir.  If we find that we need to modify the contents
+of a pmd, we allocate a new empty pmd table and insert it into the
+appropriate 1GB slot, before then filling it with the identity mapping.
+
+However, if the 1GB slot covers the kernel lowmem mappings, we obliterate
+those mappings.
+
+When replacing a PMD, first copy the old PMD contents to the new PMD, so
+that we preserve the existing mappings, particularly the mappings of the
+kernel itself.
+
+[rewrote commit message and added code comment -- rmk]
+
+Fixes: ae2de101739c ("ARM: LPAE: Add identity mapping support for the 3-level page table format")
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/open.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/arm/mm/idmap.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -263,11 +263,10 @@ int do_fallocate(struct file *file, int
- 		return -EPERM;
- 
- 	/*
--	 * We can not allow to do any fallocate operation on an active
--	 * swapfile
-+	 * We cannot allow any fallocate operation on an active swapfile
- 	 */
- 	if (IS_SWAPFILE(inode))
--		ret = -ETXTBSY;
-+		return -ETXTBSY;
- 
- 	/*
- 	 * Revalidate the write permissions, in case security policy has
+--- a/arch/arm/mm/idmap.c
++++ b/arch/arm/mm/idmap.c
+@@ -25,6 +25,13 @@ static void idmap_add_pmd(pud_t *pud, un
+ 			pr_warning("Failed to allocate identity pmd.\n");
+ 			return;
+ 		}
++		/*
++		 * Copy the original PMD to ensure that the PMD entries for
++		 * the kernel image are preserved.
++		 */
++		if (!pud_none(*pud))
++			memcpy(pmd, pmd_offset(pud, 0),
++			       PTRS_PER_PMD * sizeof(pmd_t));
+ 		pud_populate(&init_mm, pud, pmd);
+ 		pmd += pmd_index(addr);
+ 	} else
 
 
