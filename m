@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267AbaHEMXe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 08:23:34 -0400
-Received: from relay1.sgi.com ([192.48.180.66]:45981 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752639AbaHEMXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 08:23:33 -0400
-Date: Tue, 5 Aug 2014 07:23:31 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Hans Wennborg <hans@hanshq.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] gru: fix %d confusingly prefixed with 0x in format
- string
-Message-ID: <20140805122331.GA18464@sgi.com>
-References: <20140804133037.GA31042@sgi.com>
- <1407200285-10544-1-git-send-email-hans@hanshq.net>
+	id S1754468AbaHEMYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 08:24:12 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:14538 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331AbaHEMYJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 08:24:09 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 05 Aug 2014 05:11:26 -0700
+Message-ID: <53E0CCE2.4050008@nvidia.com>
+Date: Tue, 5 Aug 2014 15:24:02 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407200285-10544-1-git-send-email-hans@hanshq.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "edubezval@gmail.com" <edubezval@gmail.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 4/4] thermal: Add Tegra SOCTHERM thermal management
+ driver
+References: <1407241137-32232-1-git-send-email-mperttunen@nvidia.com> <1407241137-32232-5-git-send-email-mperttunen@nvidia.com>
+In-Reply-To: <1407241137-32232-5-git-send-email-mperttunen@nvidia.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Dimitri Sivanich <sivanich@sgi.com>
+On 05/08/14 15:18, Mikko Perttunen wrote:
+> This adds support for the Tegra SOCTHERM thermal sensing and management
+> system found in the Tegra124 system-on-chip. This initial driver supports
+> the four thermal zones with hardware-tracked trip points.
 
-On Mon, Aug 04, 2014 at 05:58:05PM -0700, Hans Wennborg wrote:
-> Signed-off-by: Hans Wennborg <hans@hanshq.net>
+.. does NOT support hardware-tracked trip points. I guess you always 
+have to have at least one little mistake there.
+
+Mikko
+
+>
+> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
 > ---
->  drivers/misc/sgi-gru/grumain.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/misc/sgi-gru/grumain.c b/drivers/misc/sgi-gru/grumain.c
-> index ae16c8c..161a940 100644
-> --- a/drivers/misc/sgi-gru/grumain.c
-> +++ b/drivers/misc/sgi-gru/grumain.c
-> @@ -283,7 +283,7 @@ static void gru_unload_mm_tracker(struct gru_state *gru,
->  	spin_lock(&gru->gs_asid_lock);
->  	BUG_ON((asids->mt_ctxbitmap & ctxbitmap) != ctxbitmap);
->  	asids->mt_ctxbitmap ^= ctxbitmap;
-> -	gru_dbg(grudev, "gid %d, gts %p, gms %p, ctxnum 0x%d, asidmap 0x%lx\n",
-> +	gru_dbg(grudev, "gid %d, gts %p, gms %p, ctxnum %d, asidmap 0x%lx\n",
->  		gru->gs_gid, gts, gms, gts->ts_ctxnum, gms->ms_asidmap[0]);
->  	spin_unlock(&gru->gs_asid_lock);
->  	spin_unlock(&gms->ms_asid_lock);
-> -- 
-> 2.0.0.526.g5318336
+> ...
