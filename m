@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469AbaHESP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:15:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52568 "EHLO
+	id S1755748AbaHESQN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:16:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52586 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755397AbaHESO5 (ORCPT
+	with ESMTP id S1755397AbaHESQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:57 -0400
+	Tue, 5 Aug 2014 14:16:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.10 08/27] iio: buffer: Fix demux table creation
-Date: Tue,  5 Aug 2014 11:14:00 -0700
-Message-Id: <20140805181344.516024889@linuxfoundation.org>
+        John Stultz <john.stultz@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Bohac <jbohac@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 09/27] printk: rename printk_sched to printk_deferred
+Date: Tue,  5 Aug 2014 11:14:01 -0700
+Message-Id: <20140805181344.544272908@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181344.268039690@linuxfoundation.org>
 References: <20140805181344.268039690@linuxfoundation.org>
@@ -29,34 +33,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: John Stultz <john.stultz@linaro.org>
 
-commit 61bd55ce1667809f022be88da77db17add90ea4e upstream.
+commit aac74dc495456412c4130a1167ce4beb6c1f0b38 upstream.
 
-When creating the demux table we need to iterate over the selected scan mask for
-the buffer to get the samples which should be copied to destination buffer.
-Right now the code uses the mask which contains all active channels, which means
-the demux table contains entries which causes it to copy all the samples from
-source to destination buffer one by one without doing any demuxing.
+After learning we'll need some sort of deferred printk functionality in
+the timekeeping core, Peter suggested we rename the printk_sched function
+so it can be reused by needed subsystems.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+This only changes the function name. No logic changes.
+
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Bohac <jbohac@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/industrialio-buffer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/printk.h |    6 +++---
+ kernel/printk.c        |    2 +-
+ kernel/sched/core.c    |    2 +-
+ kernel/sched/rt.c      |    2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/iio/industrialio-buffer.c
-+++ b/drivers/iio/industrialio-buffer.c
-@@ -849,7 +849,7 @@ static int iio_buffer_update_demux(struc
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -124,9 +124,9 @@ asmlinkage __printf(1, 2) __cold
+ int printk(const char *fmt, ...);
  
- 	/* Now we have the two masks, work from least sig and build up sizes */
- 	for_each_set_bit(out_ind,
--			 indio_dev->active_scan_mask,
-+			 buffer->scan_mask,
- 			 indio_dev->masklength) {
- 		in_ind = find_next_bit(indio_dev->active_scan_mask,
- 				       indio_dev->masklength,
+ /*
+- * Special printk facility for scheduler use only, _DO_NOT_USE_ !
++ * Special printk facility for scheduler/timekeeping use only, _DO_NOT_USE_ !
+  */
+-__printf(1, 2) __cold int printk_sched(const char *fmt, ...);
++__printf(1, 2) __cold int printk_deferred(const char *fmt, ...);
+ 
+ /*
+  * Please don't use printk_ratelimit(), because it shares ratelimiting state
+@@ -161,7 +161,7 @@ int printk(const char *s, ...)
+ 	return 0;
+ }
+ static inline __printf(1, 2) __cold
+-int printk_sched(const char *s, ...)
++int printk_deferred(const char *s, ...)
+ {
+ 	return 0;
+ }
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -2485,7 +2485,7 @@ void wake_up_klogd(void)
+ 	preempt_enable();
+ }
+ 
+-int printk_sched(const char *fmt, ...)
++int printk_deferred(const char *fmt, ...)
+ {
+ 	unsigned long flags;
+ 	va_list args;
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1235,7 +1235,7 @@ out:
+ 		 * leave kernel.
+ 		 */
+ 		if (p->mm && printk_ratelimit()) {
+-			printk_sched("process %d (%s) no longer affine to cpu%d\n",
++			printk_deferred("process %d (%s) no longer affine to cpu%d\n",
+ 					task_pid_nr(p), p->comm, cpu);
+ 		}
+ 	}
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -892,7 +892,7 @@ static int sched_rt_runtime_exceeded(str
+ 
+ 			if (!once) {
+ 				once = true;
+-				printk_sched("sched: RT throttling activated\n");
++				printk_deferred("sched: RT throttling activated\n");
+ 			}
+ 		} else {
+ 			/*
 
 
