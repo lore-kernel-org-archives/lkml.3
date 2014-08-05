@@ -1,95 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327AbaHEAqf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 20:46:35 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:30598 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752583AbaHEAqe (ORCPT
+	id S1753351AbaHEAsG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 20:48:06 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:63930 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752768AbaHEAsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 20:46:34 -0400
-X-IronPort-AV: E=Sophos;i="5.04,265,1406563200"; 
-   d="scan'208";a="34178920"
-Message-ID: <53E029BB.2010200@cn.fujitsu.com>
-Date: Tue, 5 Aug 2014 08:47:55 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Mon, 4 Aug 2014 20:48:05 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        <linux-kernel@vger.kernel.org>, <mingo@kernel.org>,
-        <dipankar@in.ibm.com>, <akpm@linux-foundation.org>,
-        <mathieu.desnoyers@efficios.com>, <josh@joshtriplett.org>,
-        <tglx@linutronix.de>, <rostedt@goodmis.org>, <dhowells@redhat.com>,
-        <edumazet@google.com>, <dvhart@linux.intel.com>, <fweisbec@gmail.com>,
-        <oleg@redhat.com>, <bobby.prani@gmail.com>
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-References: <20140731215445.GA21933@linux.vnet.ibm.com> <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com> <53DEE1CD.4000705@cn.fujitsu.com> <20140804074620.GH9918@twins.programming.kicks-ass.net> <53DF41ED.2020508@cn.fujitsu.com> <20140804115043.GA31903@linux.vnet.ibm.com> <20140804122515.GR19379@twins.programming.kicks-ass.net> <20140804145648.GE3588@twins.programming.kicks-ass.net>
-In-Reply-To: <20140804145648.GE3588@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+In-Reply-To: <20140804233826.GA20456@kroah.com>
+References: <166070137.57941.1406779444750.JavaMail.root@mx2.compro.net>
+	<53DA3A2D.90403@compro.net>
+	<1598413764.80217.1406848485858.JavaMail.root@mx2.compro.net>
+	<53DF7F34.5030201@compro.net>
+	<CAHb8M2DkfnkrsjLciSvS=_0GM4wn1dC33ExUWS7nYG=mnNH+Xg@mail.gmail.com>
+	<20140804233826.GA20456@kroah.com>
+Date: Tue, 5 Aug 2014 09:48:03 +0900
+Message-ID: <CAHb8M2CyhjYK2vnQ3Za56UQriBzmYOfVQspfoV2_r9n6q7spjA@mail.gmail.com>
+Subject: Re: [PATCH V2] staging: dgap: introduce dgap_cleanup_nodes()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Mark Hounschell <markh@compro.net>, devel <devel@driverdev.osuosl.org>,
+        Lidza Louina <lidza.louina@gmail.com>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2014 10:56 PM, Peter Zijlstra wrote:
-> On Mon, Aug 04, 2014 at 02:25:15PM +0200, Peter Zijlstra wrote:
->> On Mon, Aug 04, 2014 at 04:50:44AM -0700, Paul E. McKenney wrote:
->>> OK, I will bite...
->>>
->>> What kinds of tasks are on a runqueue, but neither ->on_cpu nor
->>> PREEMPT_ACTIVE?
+2014-08-05 8:38 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
+> On Tue, Aug 05, 2014 at 08:33:16AM +0900, DaeSeok Youn wrote:
+>> Hi, Mark and Greg.
 >>
->> Userspace tasks, they don't necessarily get PREEMPT_ACTIVE when
->> preempted. Now obviously you're not _that_ interested in userspace tasks
->> for this, so that might be ok.
+>> Thanks for testing. :-)
 >>
->> But the main point was, you cannot use ->on_cpu or PREEMPT_ACTIVE
->> without holding rq->lock.
-> 
-> Hmm, maybe you can, we have the context switch in between setting
-> ->on_cpu and clearing PREEMPT_ACTIVE and vice-versa.
-> 
-> The context switch (obviously) provides a full barrier, so we might be
-> able to -- with careful consideration -- read these two separate values
-> and construct something usable from them.
-> 
-> Something like:
-> 
-> 	task_preempt_count(tsk) & PREEMPT_ACTIVE
-	the @tsk is running on_cpu, the above result is false.
-> 	smp_rmb();
-> 	tsk->on_cpu
-	now the @tsk is preempted, the above result also is false.
+>> Greg, is this patch possible to merge to your staging tree?
+>> Please check for me.
+>> patch : https://lkml.org/lkml/2014/7/31/2
+>
+> It's the middle of the merge window, I can't do anything until after
+> 3.17-rc1 is out.  So wait until then, I'll pick up the patch at that
+> point in time, it's still in my "to-apply" queue.
 
-	so it is useless if we fetch the preempt_count and on_cpu in two separated
-instructions.  Maybe it would work if we also take tsk->nivcsw in consideration.
-(I just noticed that tsk->n[i]vcsw are the version numbers for the tsk->on_cpu)
+OK. I will wait until then.
+Thanks.
 
-bool task_on_cpu_or_preempted(tsk)
-{
-	unsigned long saved_nivcsw;
-
-	saved_nivcsw = task->nivcsw;
-	if (tsk->on_cpu)
-		return true;
-
-	smp_rmb();
-
-	if (task_preempt_count(tsk) & PREEMPT_ACTIVE)
-		return true;
-
-	smp_rmb();
-
-	if (tsk->on_cpu || task->nivcsw != saved_nivcsw)
-		return true;
-
-	return false;
-}
-
-> 
-> And because we set PREEMPT_ACTIVE before clearing on_cpu, this should
-> race the right way (err towards the inclusive side).
-> 
-> Obviously that wants a big fat comment...
-
+regards,
+Daeseok Youn
+>
+> thanks,
+>
+> greg k-h
