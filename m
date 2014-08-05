@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538AbaHESjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:39:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52354 "EHLO
+	id S1755478AbaHESjO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:39:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52361 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919AbaHESOa (ORCPT
+	with ESMTP id S1753623AbaHESOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:30 -0400
+	Tue, 5 Aug 2014 14:14:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Bohac <jbohac@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 20/39] printk: rename printk_sched to printk_deferred
-Date: Tue,  5 Aug 2014 11:13:57 -0700
-Message-Id: <20140805181336.650067991@linuxfoundation.org>
+        Stephen Boyd <sboyd@codeaurora.org>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.14 21/39] sched_clock: Avoid corrupting hrtimer tree during suspend
+Date: Tue,  5 Aug 2014 11:13:58 -0700
+Message-Id: <20140805181336.685933287@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
 References: <20140805181336.030349158@linuxfoundation.org>
@@ -33,101 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit aac74dc495456412c4130a1167ce4beb6c1f0b38 upstream.
+commit f723aa1817dd8f4fe005aab52ba70c8ab0ef9457 upstream.
 
-After learning we'll need some sort of deferred printk functionality in
-the timekeeping core, Peter suggested we rename the printk_sched function
-so it can be reused by needed subsystems.
+During suspend we call sched_clock_poll() to update the epoch and
+accumulated time and reprogram the sched_clock_timer to fire
+before the next wrap-around time. Unfortunately,
+sched_clock_poll() doesn't restart the timer, instead it relies
+on the hrtimer layer to do that and during suspend we aren't
+calling that function from the hrtimer layer. Instead, we're
+reprogramming the expires time while the hrtimer is enqueued,
+which can cause the hrtimer tree to be corrupted. Furthermore, we
+restart the timer during suspend but we update the epoch during
+resume which seems counter-intuitive.
 
-This only changes the function name. No logic changes.
+Let's fix this by saving the accumulated state and canceling the
+timer during suspend. On resume we can update the epoch and
+restart the timer similar to what we would do if we were starting
+the clock for the first time.
 
+Fixes: a08ca5d1089d "sched_clock: Use an hrtimer instead of timer"
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Bohac <jbohac@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1406174630-23458-1-git-send-email-john.stultz@linaro.org
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/printk.h  |    6 +++---
- kernel/printk/printk.c  |    2 +-
- kernel/sched/core.c     |    2 +-
- kernel/sched/deadline.c |    2 +-
- kernel/sched/rt.c       |    2 +-
- 5 files changed, 7 insertions(+), 7 deletions(-)
+ kernel/time/sched_clock.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -132,9 +132,9 @@ asmlinkage __printf(1, 2) __cold
- int printk(const char *fmt, ...);
+--- a/kernel/time/sched_clock.c
++++ b/kernel/time/sched_clock.c
+@@ -204,7 +204,8 @@ void __init sched_clock_postinit(void)
  
- /*
-- * Special printk facility for scheduler use only, _DO_NOT_USE_ !
-+ * Special printk facility for scheduler/timekeeping use only, _DO_NOT_USE_ !
-  */
--__printf(1, 2) __cold int printk_sched(const char *fmt, ...);
-+__printf(1, 2) __cold int printk_deferred(const char *fmt, ...);
- 
- /*
-  * Please don't use printk_ratelimit(), because it shares ratelimiting state
-@@ -169,7 +169,7 @@ int printk(const char *s, ...)
+ static int sched_clock_suspend(void)
+ {
+-	sched_clock_poll(&sched_clock_timer);
++	update_sched_clock();
++	hrtimer_cancel(&sched_clock_timer);
+ 	cd.suspended = true;
  	return 0;
  }
- static inline __printf(1, 2) __cold
--int printk_sched(const char *s, ...)
-+int printk_deferred(const char *s, ...)
+@@ -212,6 +213,7 @@ static int sched_clock_suspend(void)
+ static void sched_clock_resume(void)
  {
- 	return 0;
- }
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -2468,7 +2468,7 @@ void wake_up_klogd(void)
- 	preempt_enable();
+ 	cd.epoch_cyc = read_sched_clock();
++	hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL);
+ 	cd.suspended = false;
  }
  
--int printk_sched(const char *fmt, ...)
-+int printk_deferred(const char *fmt, ...)
- {
- 	unsigned long flags;
- 	va_list args;
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1322,7 +1322,7 @@ out:
- 		 * leave kernel.
- 		 */
- 		if (p->mm && printk_ratelimit()) {
--			printk_sched("process %d (%s) no longer affine to cpu%d\n",
-+			printk_deferred("process %d (%s) no longer affine to cpu%d\n",
- 					task_pid_nr(p), p->comm, cpu);
- 		}
- 	}
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -329,7 +329,7 @@ static void replenish_dl_entity(struct s
- 
- 		if (!lag_once) {
- 			lag_once = true;
--			printk_sched("sched: DL replenish lagged to much\n");
-+			printk_deferred("sched: DL replenish lagged to much\n");
- 		}
- 		dl_se->deadline = rq_clock(rq) + pi_se->dl_deadline;
- 		dl_se->runtime = pi_se->dl_runtime;
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -837,7 +837,7 @@ static int sched_rt_runtime_exceeded(str
- 
- 			if (!once) {
- 				once = true;
--				printk_sched("sched: RT throttling activated\n");
-+				printk_deferred("sched: RT throttling activated\n");
- 			}
- 		} else {
- 			/*
 
 
