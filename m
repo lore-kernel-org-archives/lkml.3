@@ -1,119 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399AbaHEOEx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 10:04:53 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:49299 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122AbaHEOEw (ORCPT
+	id S1753608AbaHEOHa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 10:07:30 -0400
+Received: from mail-yk0-f178.google.com ([209.85.160.178]:34759 "EHLO
+	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaHEOH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 10:04:52 -0400
-Date: Tue, 5 Aug 2014 16:04:43 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1724263917.20140805160443@eikelenboom.it>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>, gregkh@linuxfoundation.org,
-        <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH v5] Fixes to Xen pciback for 3.17.
-In-Reply-To: <20140805134930.GE13057@laptop.dumpdata.com>
-References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com> <53DBB27D.2040203@citrix.com> <20140804184318.GB9009@laptop.dumpdata.com> <75613802.20140805104438@eikelenboom.it> <53E0A45C.4050400@citrix.com> <1985206568.20140805114433@eikelenboom.it> <20140805134930.GE13057@laptop.dumpdata.com>
+	Tue, 5 Aug 2014 10:07:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140805132837.GA19379@twins.programming.kicks-ass.net>
+References: <1406659999-13974-1-git-send-email-Waiman.Long@hp.com>
+	<1406659999-13974-3-git-send-email-Waiman.Long@hp.com>
+	<20140805132837.GA19379@twins.programming.kicks-ass.net>
+Date: Tue, 5 Aug 2014 08:07:28 -0600
+Message-ID: <CAKocOOMa89+Ej0rk-LyQLBcwDvLtsXq7x+oPwBMS1N61kKUwQg@mail.gmail.com>
+Subject: Re: [PATCH 2/2 v6] locking/selftest: Support queued rwlock
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Cc: Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Scott J Norton <scott.norton@hp.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 5, 2014 at 7:28 AM, Peter Zijlstra <peterz@infradead.org> wrote:
 
-Tuesday, August 5, 2014, 3:49:30 PM, you wrote:
+> Maybe I wasn't clear; but I meant you should extend the lock tests to
+> cover the full qrwlock semantics.
+>
+> That means we also need tests like:
+>
+>         RL(X1);
+>         IRQ_ENTER();
+>         RL(X2);
+>         IRQ_EXIT();
+>
+> To fully validate that in_interrupt exception to fairness etc..
 
-> On Tue, Aug 05, 2014 at 11:44:33AM +0200, Sander Eikelenboom wrote:
->> 
->> Tuesday, August 5, 2014, 11:31:08 AM, you wrote:
->> 
->> > On 05/08/14 09:44, Sander Eikelenboom wrote:
->> >> 
->> >> Monday, August 4, 2014, 8:43:18 PM, you wrote:
->> >> 
->> >>> On Fri, Aug 01, 2014 at 04:30:05PM +0100, David Vrabel wrote:
->> >>>> On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
->> >>>>> Greg: goto GHK
->> >>>>>
->> >>>>> This is v5 version of patches to fix some issues in Xen PCIback.
->> >>>>
->> >>>> Applied to devel/for-linus-3.17.
->> >> 
->> >>> Thank you.
->> >>>>
->> >>>> I dropped the stable Cc for #2 pending a final decision on whether it
->> >>>> really is a stable candidate.
->> >> 
->> >>> OK.
->> >>>>
->> >>>> David
->> >> 
->> >> Hi Konrad / David,
->> >> 
->> >> This series still lacks a resolution on the sysfs /do_flr /reset,
->> >> as a result the pci devices are not reset after shutdown of a guest.
->> >> (no more pciback 0000:xx:xx.x: restoring config space at offset xxx)
->> >> 
->> >> So this series now introduces a regression to 3.16, which causes devices to malfunction 
->> >> after a guest reboot or after assigning the devices to another guest.
->> 
->> > I don't follow what you're saying.  The lack of a device reset for PCI
->> > devices with no FLR method isn't a regression as this has never worked.
->> >  Can you explain in more detail what the regression is and which patch
->> > caused it?
->> 
->> I haven't bisected it to a specific patch in this series,
->> but this patch series (when pulled on top of 3.16) cause the following:
->> 
->> - Do a system start and HVM guest start
->> - HVM guest with pci passthrough, devices work fine
->> - shutdown the HVM guest
->> - "pciback 0000:xx:xx.x: restoring config space at offset xxx" messages do not
->>   appear anymore when shutting down the HVM guest (as they do with vanilla 3.16)
->> - Starting the HVM guest again with the same devices passed through.
->> - Devices malfunction (for example a USB host controller will fail a simple 
->>   "lsusb"
->> - And this all works fine on vanilla 3.16.  
+A bit off topic for this patch, however relevant for tests in general.
+Is there a reason why these locking selftests need to be under lib?
+Can they be consolidated under tools/testing/selftests?
 
-> Hm, the only patch that makes code changes is 63fc5ec97cc54257d1c4ee49ed2131f754a5ff9b
-> "xen/pciback: Don't deadlock when unbinding."
-> but it does not change any of that code path. Only figures out whether
-> to take a lock or not.
-
-Ok and the do_flr nack by david is unrelated to this part (i didn't check just 
-assumed there could be a connection)
-
-> I will try it out on my box and see if I can reproduce it.
-
-> And just to be 100% sure - you are using vanilla Xen? No changes on top
-> of it?
-
-Except the fix from jan for the pirq/msi stuff (and an unrelated hpet one), other than that no.
-If you can't reproduce i will see if i can dive deeper into it tonight !
-
-> Thanks!
-
->> 
->> >> Apart from that .. i can't resist to remind the other issue with removing pci
->> >> devices passed through to HVM guests related to the signaling via xenstore,
->> >> described in:
->> >> 
->> >> http://lists.xen.org/archives/html/xen-devel/2014-07/msg01875.html
->> 
->> > I don't remember seeing you posting a patch...?
-
-> I was going to, but I think we need to figure out the 'do_flr' mechanism
-> first.
-
->> 
->> > David
->> 
->> 
-
-
+-- Shuah
