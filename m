@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117AbaHEUJF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 16:09:05 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57979 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753922AbaHEUJC (ORCPT
+	id S1753865AbaHEUM6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 16:12:58 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:10879 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753482AbaHEUM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 16:09:02 -0400
-Date: Tue, 05 Aug 2014 13:09:01 -0700 (PDT)
-Message-Id: <20140805.130901.2116578415179622318.davem@davemloft.net>
-To: zoltan.kiss@citrix.com
-Cc: steffen.klassert@secunet.com, minipli@googlemail.com, dborkman@redhat.com,
-        tgraf@suug.ch, joe@perches.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: [PATCH net-next v4 4/4 RFC] pktgen: Allow sending IPv4 TCP
- packets
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1407159435-7951-5-git-send-email-zoltan.kiss@citrix.com>
-References: <1407159435-7951-1-git-send-email-zoltan.kiss@citrix.com>
-	<1407159435-7951-5-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 5 Aug 2014 16:12:56 -0400
+X-CheckPoint: {53E13AC8-0-2100090A-C0000000}
+Message-ID: <53E13AC7.1030406@tilera.com>
+Date: Tue, 5 Aug 2014 16:12:55 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Wang Sheng-Hui <shhuiw@gmail.com>
+CC: Daniel Walter <dwalter@google.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch: tile: kernel: setup.c:  Cleaning up missing null-terminate
+ in conjunction with strncpy
+References: <1406383480-1485-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1406383480-1485-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 05 Aug 2014 13:09:02 -0700 (PDT)
+X-Originating-IP: [10.9.0.23]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-Date: Mon, 4 Aug 2014 14:37:14 +0100
+On 7/26/2014 10:04 AM, Rickard Strandqvist wrote:
+> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>   arch/tile/kernel/setup.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
+> index 112abab..1af7d19 100644
+> --- a/arch/tile/kernel/setup.c
+> +++ b/arch/tile/kernel/setup.c
+> @@ -1087,7 +1087,7 @@ static int __init setup_initramfs_file(char *str)
+>   {
+>   	if (str == NULL)
+>   		return -EINVAL;
+> -	strncpy(initramfs_file, str, sizeof(initramfs_file) - 1);
+> +	strlcpy(initramfs_file, str, sizeof(initramfs_file));
+>   	set_initramfs_file = 1;
+>   
+>   	return 0;
 
-> @@ -3559,6 +3616,14 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
->  		pkt_dev->last_pkt_size = pkt_dev->skb->len;
->  		pkt_dev->allocated_skbs++;
->  		pkt_dev->clone_count = 0;	/* reset counter */
-> +
-> +		if (netif_needs_gso(pkt_dev->skb, netif_skb_features(pkt_dev->skb))) {
-> +			pr_err("Device don't have necessary GSO features! netif_skb_features: %llX summed %u\n",
-> +			       netif_skb_features(pkt_dev->skb),
-> +			       pkt_dev->skb->ip_summed);
-> +			pkt_dev->sofar++;
-> +			goto out;
-> +		}
->  	}
->  
->  	if (pkt_dev->delay && pkt_dev->last_ok)
+I'm inclined not to take this change, because it's not necessary.
+The initramfs_file[] is already zero-filled by being in the BSS, and
+this is a pretty obscure boot option, so it seems a bit more
+maintainable to use a somewhat more standard string API call.
 
-Woe be to the person who actually triggers this condition.  This function
-happens potentially millions of times per second, there is no value in
-emitting a log message every time.
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
