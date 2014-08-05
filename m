@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345AbaHES3z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:29:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52694 "EHLO
+	id S1756388AbaHESaE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:30:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52734 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117AbaHES3x (ORCPT
+	with ESMTP id S1756138AbaHES37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:29:53 -0400
+	Tue, 5 Aug 2014 14:29:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Milan Broz <gmazyland@gmail.com>, Paul Moore <paul@paul-moore.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.4 01/19] crypto: af_alg - properly label AF_ALG socket
-Date: Tue,  5 Aug 2014 11:29:25 -0700
-Message-Id: <20140805182934.067023133@linuxfoundation.org>
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.4 17/19] x86/espfix/xen: Fix allocation of pages for paravirt page tables
+Date: Tue,  5 Aug 2014 11:29:41 -0700
+Message-Id: <20140805182934.561988855@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805182934.022406678@linuxfoundation.org>
 References: <20140805182934.022406678@linuxfoundation.org>
@@ -29,46 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Milan Broz <gmazyland@gmail.com>
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-commit 4c63f83c2c2e16a13ce274ee678e28246bd33645 upstream.
+commit 8762e5092828c4dc0f49da5a47a644c670df77f3 upstream.
 
-Th AF_ALG socket was missing a security label (e.g. SELinux)
-which means that socket was in "unlabeled" state.
+init_espfix_ap() is currently off by one level when informing hypervisor
+that allocated pages will be used for ministacks' page tables.
 
-This was recently demonstrated in the cryptsetup package
-(cryptsetup v1.6.5 and later.)
-See https://bugzilla.redhat.com/show_bug.cgi?id=1115120
+The most immediate effect of this on a PV guest is that if
+'stack_page = __get_free_page()' returns a non-zeroed-out page the hypervisor
+will refuse to use it for a page table (which it shouldn't be anyway). This will
+result in warnings by both Xen and Linux.
 
-This patch clones the sock's label from the parent sock
-and resolves the issue (similar to AF_BLUETOOTH protocol family).
+More importantly, a subsequent write to that page (again, by a PV guest) is
+likely to result in fatal page fault.
 
-Signed-off-by: Milan Broz <gmazyland@gmail.com>
-Acked-by: Paul Moore <paul@paul-moore.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Link: http://lkml.kernel.org/r/1404926298-5565-1-git-send-email-boris.ostrovsky@oracle.com
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/af_alg.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kernel/espfix_64.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/crypto/af_alg.c
-+++ b/crypto/af_alg.c
-@@ -21,6 +21,7 @@
- #include <linux/module.h>
- #include <linux/net.h>
- #include <linux/rwsem.h>
-+#include <linux/security.h>
+--- a/arch/x86/kernel/espfix_64.c
++++ b/arch/x86/kernel/espfix_64.c
+@@ -175,7 +175,7 @@ void init_espfix_ap(void)
+ 	if (!pud_present(pud)) {
+ 		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
+ 		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
+-		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
++		paravirt_alloc_pmd(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
+ 		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
+ 			set_pud(&pud_p[n], pud);
+ 	}
+@@ -185,7 +185,7 @@ void init_espfix_ap(void)
+ 	if (!pmd_present(pmd)) {
+ 		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
+ 		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
+-		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
++		paravirt_alloc_pte(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
+ 		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
+ 			set_pmd(&pmd_p[n], pmd);
+ 	}
+@@ -193,7 +193,6 @@ void init_espfix_ap(void)
+ 	pte_p = pte_offset_kernel(&pmd, addr);
+ 	stack_page = (void *)__get_free_page(GFP_KERNEL);
+ 	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
+-	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
+ 	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
+ 		set_pte(&pte_p[n*PTE_STRIDE], pte);
  
- struct alg_type_list {
- 	const struct af_alg_type *type;
-@@ -243,6 +244,7 @@ int af_alg_accept(struct sock *sk, struc
- 
- 	sock_init_data(newsock, sk2);
- 	sock_graft(sk2, newsock);
-+	security_sk_clone(sk, sk2);
- 
- 	err = type->accept(ask->private, sk2);
- 	if (err) {
 
 
