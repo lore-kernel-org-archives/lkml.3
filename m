@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162AbaHEOx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 10:53:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29371 "EHLO mx1.redhat.com"
+	id S1755191AbaHEOxg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 10:53:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59693 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755130AbaHEOx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 10:53:26 -0400
+	id S1755136AbaHEOxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 10:53:32 -0400
 From: Denys Vlasenko <dvlasenk@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Denys Vlasenko <dvlasenk@redhat.com>,
@@ -15,17 +15,57 @@ Cc: Denys Vlasenko <dvlasenk@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
         Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
         Kees Cook <keescook@chromium.org>
-Subject: [PATCH 6/8] x86: mass removal of ARGOFFSET
-Date: Tue,  5 Aug 2014 16:52:32 +0200
-Message-Id: <1407250354-29525-7-git-send-email-dvlasenk@redhat.com>
+Subject: [PATCH 5/8] x86: entry_64.S: always allocate complete "struct pt_regs"
+Date: Tue,  5 Aug 2014 16:52:31 +0200
+Message-Id: <1407250354-29525-6-git-send-email-dvlasenk@redhat.com>
 In-Reply-To: <1407250354-29525-1-git-send-email-dvlasenk@redhat.com>
 References: <1407250354-29525-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARGOFFSET is zero now, removing it changes no code.
-A few macros lost "offset" parameter, since it is always zero now too.
+64-bit code was using six stack slots fewer by not saving/restoring
+registers which a callee-preserved according to C ABI,
+and not allocating space for them.
+Only when syscall needed a complete "struct pt_regs",
+the complete area was allocated and filled in.
+As an additional twist, on interrupt entry a "slightly less truncated pt_regs"
+trick is used, to make nested interrupt stacks easier to unwind.
+
+This proved to be a source of significant obfuscation and subtle bugs.
+For example, stub_fork had to pop the return address,
+extend the struct, save registers, and push return address back. Ugly.
+ia32_ptregs_common pops return address and "returns" via jmp insn,
+throwing a wrench into CPU return stack cache.
+
+This patch changes code to always allocate a complete "struct pt_regs".
+The saving of registers is still done lazily.
+
+"Partial pt_regs" trick on interrupt stack is retained, but with added comments
+which explain what we are doing, and why. Existing comments are improved.
+
+Macros which manipulate "struct pt_regs" on stack are reworked:
+ALLOC_PTREGS_ON_STACK allocates the structure.
+SAVE_C_REGS saves to it those registers which are clobbered by C code.
+SAVE_EXTRA_REGS saves to it all other registers.
+Corresponding RESTORE_* and REMOVE_PTREGS_FROM_STACK macros reverse it.
+
+ia32_ptregs_common, stub_fork and friends lost their ugly dance with
+return pointer.
+
+LOAD_ARGS32 in ia32entry.S now uses symbolic stack offsets
+instead of magic numbers.
+
+error_entry and save_paranoid now use SAVE_C_REGS + SAVE_EXTRA_REGS
+instead of having it open-coded yet again.
+
+Misleading and slightly wrong comments in "struct pt_regs" are fixed
+(four instances).
+
+Patch was run-tested: 64-bit executables, 32-bit executables,
+strace works.
+Timing tests did not show measurable difference in 32-bit
+and 64-bit syscalls.
 
 Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
 CC: Linus Torvalds <torvalds@linux-foundation.org>
@@ -39,527 +79,1054 @@ CC: Will Drewry <wad@chromium.org>
 CC: Kees Cook <keescook@chromium.org>
 CC: linux-kernel@vger.kernel.org
 ---
- arch/x86/ia32/ia32entry.S      | 140 ++++++++++++++++++++---------------------
- arch/x86/include/asm/calling.h |   2 -
- arch/x86/kernel/entry_64.S     |  66 +++++++++----------
- 3 files changed, 103 insertions(+), 105 deletions(-)
+ arch/x86/ia32/ia32entry.S              |  47 +++----
+ arch/x86/include/asm/calling.h         | 217 ++++++++++++++++-----------------
+ arch/x86/include/asm/irqflags.h        |   4 +-
+ arch/x86/include/asm/ptrace.h          |  13 +-
+ arch/x86/include/uapi/asm/ptrace-abi.h |  16 ++-
+ arch/x86/include/uapi/asm/ptrace.h     |  13 +-
+ arch/x86/kernel/entry_64.S             | 191 +++++++++++------------------
+ arch/x86/kernel/preempt.S              |  16 ++-
+ 8 files changed, 249 insertions(+), 268 deletions(-)
 
 diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index d0ca63b..20eba33 100644
+index 59c8d3a..d0ca63b 100644
 --- a/arch/x86/ia32/ia32entry.S
 +++ b/arch/x86/ia32/ia32entry.S
-@@ -41,13 +41,13 @@
- 	movl	%edx,%edx	/* zero extension */
- 	.endm 
- 
--	/* clobbers %eax */	
--	.macro  CLEAR_RREGS offset=0, _r9=rax
-+	/* clobbers %rax */
-+	.macro  CLEAR_RREGS _r9=rax
- 	xorl 	%eax,%eax
--	movq	%rax,\offset+R11(%rsp)
--	movq	%rax,\offset+R10(%rsp)
--	movq	%\_r9,\offset+R9(%rsp)
--	movq	%rax,\offset+R8(%rsp)
-+	movq	%rax,R11(%rsp)
-+	movq	%rax,R10(%rsp)
-+	movq	%\_r9,R9(%rsp)
-+	movq	%rax,R8(%rsp)
- 	.endm
- 
- 	/*
-@@ -60,14 +60,14 @@
- 	 * If it's -1 to make us punt the syscall, then (u32)-1 is still
- 	 * an appropriately invalid value.
+@@ -62,12 +62,12 @@
  	 */
--	.macro LOAD_ARGS32 offset, _r9=0
-+	.macro LOAD_ARGS32 _r9=0
+ 	.macro LOAD_ARGS32 offset, _r9=0
  	.if \_r9
--	movl \offset+R9(%rsp),%r9d
-+	movl R9(%rsp),%r9d
+-	movl \offset+16(%rsp),%r9d
++	movl \offset+R9(%rsp),%r9d
  	.endif
--	movl \offset+RCX(%rsp),%ecx
--	movl \offset+RDX(%rsp),%edx
--	movl \offset+RSI(%rsp),%esi
--	movl \offset+RDI(%rsp),%edi
-+	movl RCX(%rsp),%ecx
-+	movl RDX(%rsp),%edx
-+	movl RSI(%rsp),%esi
-+	movl RDI(%rsp),%edi
+-	movl \offset+40(%rsp),%ecx
+-	movl \offset+48(%rsp),%edx
+-	movl \offset+56(%rsp),%esi
+-	movl \offset+64(%rsp),%edi
++	movl \offset+RCX(%rsp),%ecx
++	movl \offset+RDX(%rsp),%edx
++	movl \offset+RSI(%rsp),%esi
++	movl \offset+RDI(%rsp),%edi
  	movl %eax,%eax			/* zero extension */
  	.endm
  	
-@@ -152,8 +152,8 @@ ENTRY(ia32_sysenter_target)
- 1:	movl	(%rbp),%ebp
- 	_ASM_EXTABLE(1b,ia32_badarg)
- 	ASM_CLAC
--	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
--	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP)
-+	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP)
- 	CFI_REMEMBER_STATE
- 	jnz  sysenter_tracesys
- 	cmpq	$(IA32_NR_syscalls-1),%rax
-@@ -162,16 +162,16 @@ sysenter_do_call:
- 	IA32_ARG_FIXUP
- sysenter_dispatch:
- 	call	*ia32_sys_call_table(,%rax,8)
--	movq	%rax,RAX-ARGOFFSET(%rsp)
-+	movq	%rax,RAX(%rsp)
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
--	testl	$_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl	$_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,RIP)
- 	jnz	sysexit_audit
- sysexit_from_sys_call:
--	andl    $~TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	andl    $~TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP)
- 	/* clear IF, that popfq doesn't enable interrupts early */
--	andl	$~0x200,EFLAGS-ARGOFFSET(%rsp)
--	movl	RIP-ARGOFFSET(%rsp),%edx		/* User %eip */
-+	andl	$~0x200,EFLAGS(%rsp)
-+	movl	RIP(%rsp),%edx		/* User %eip */
+@@ -144,7 +144,8 @@ ENTRY(ia32_sysenter_target)
+ 	CFI_REL_OFFSET rip,0
+ 	pushq_cfi %rax
+ 	cld
+-	SAVE_ARGS 0,1,0
++	ALLOC_PTREGS_ON_STACK
++	SAVE_C_REGS_EXCEPT_R891011
+  	/* no need to do an access_ok check here because rbp has been
+  	   32bit zero extended */ 
+ 	ASM_STAC
+@@ -172,7 +173,8 @@ sysexit_from_sys_call:
+ 	andl	$~0x200,EFLAGS-ARGOFFSET(%rsp)
+ 	movl	RIP-ARGOFFSET(%rsp),%edx		/* User %eip */
  	CFI_REGISTER rip,rdx
- 	RESTORE_RSI_RDI
- 	REMOVE_PTREGS_FROM_STACK 8*3
-@@ -195,18 +195,18 @@ sysexit_from_sys_call:
- 	movl %eax,%esi			/* 2nd arg: syscall number */
- 	movl $AUDIT_ARCH_I386,%edi	/* 1st arg: audit arch */
- 	call __audit_syscall_entry
--	movl RAX-ARGOFFSET(%rsp),%eax	/* reload syscall number */
-+	movl RAX(%rsp),%eax		/* reload syscall number */
- 	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja ia32_badsys
- 	movl %ebx,%edi			/* reload 1st syscall arg */
--	movl RCX-ARGOFFSET(%rsp),%esi	/* reload 2nd syscall arg */
--	movl RDX-ARGOFFSET(%rsp),%edx	/* reload 3rd syscall arg */
--	movl RSI-ARGOFFSET(%rsp),%ecx	/* reload 4th syscall arg */
--	movl RDI-ARGOFFSET(%rsp),%r8d	/* reload 5th syscall arg */
-+	movl RCX(%rsp),%esi		/* reload 2nd syscall arg */
-+	movl RDX(%rsp),%edx		/* reload 3rd syscall arg */
-+	movl RSI(%rsp),%ecx		/* reload 4th syscall arg */
-+	movl RDI(%rsp),%r8d		/* reload 5th syscall arg */
- 	.endm
- 
- 	.macro auditsys_exit exit
--	testl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP)
- 	jnz ia32_ret_from_sys_call
- 	TRACE_IRQS_ON
- 	ENABLE_INTERRUPTS(CLBR_NONE)
-@@ -217,13 +217,13 @@ sysexit_from_sys_call:
- 1:	setbe %al		/* 1 if error, 0 if not */
- 	movzbl %al,%edi		/* zero-extend that into %edi */
- 	call __audit_syscall_exit
--	movq RAX-ARGOFFSET(%rsp),%rax	/* reload syscall return value */
-+	movq RAX(%rsp),%rax	/* reload syscall return value */
- 	movl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),%edi
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
--	testl %edi,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl %edi,TI_flags+THREAD_INFO(%rsp,RIP)
- 	jz \exit
--	CLEAR_RREGS -ARGOFFSET
-+	CLEAR_RREGS
- 	jmp int_with_check
- 	.endm
- 
-@@ -239,7 +239,7 @@ sysexit_audit:
- 
- sysenter_tracesys:
- #ifdef CONFIG_AUDITSYSCALL
--	testl	$(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl	$(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP)
+-	RESTORE_ARGS 0,24,0,0,0,0
++	RESTORE_RSI_RDI
++	REMOVE_PTREGS_FROM_STACK 8*3
+ 	xorq	%r8,%r8
+ 	xorq	%r9,%r9
+ 	xorq	%r10,%r10
+@@ -240,13 +242,13 @@ sysenter_tracesys:
+ 	testl	$(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
  	jz	sysenter_auditsys
  #endif
- 	SAVE_EXTRA_REGS
-@@ -247,7 +247,7 @@ sysenter_tracesys:
+-	SAVE_REST
++	SAVE_EXTRA_REGS
+ 	CLEAR_RREGS
  	movq	$-ENOSYS,RAX(%rsp)/* ptrace can change this for a bad syscall */
  	movq	%rsp,%rdi        /* &pt_regs -> arg1 */
  	call	syscall_trace_enter
--	LOAD_ARGS32 ARGOFFSET  /* reload args from stack in case ptrace changed it */
-+	LOAD_ARGS32	/* reload args from stack in case ptrace changed it */
- 	RESTORE_EXTRA_REGS
+ 	LOAD_ARGS32 ARGOFFSET  /* reload args from stack in case ptrace changed it */
+-	RESTORE_REST
++	RESTORE_EXTRA_REGS
  	cmpq	$(IA32_NR_syscalls-1),%rax
  	ja	int_ret_from_sys_call /* sysenter_tracesys has set RAX(%rsp) */
-@@ -293,17 +293,17 @@ ENTRY(ia32_cstar_target)
- 	ALLOC_PTREGS_ON_STACK 8
- 	SAVE_C_REGS_EXCEPT_RCX_R891011
+ 	jmp	sysenter_do_call
+@@ -288,7 +290,8 @@ ENTRY(ia32_cstar_target)
+ 	 * disabled irqs and here we enable it straight after entry:
+ 	 */
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
+-	SAVE_ARGS 8,0,0
++	ALLOC_PTREGS_ON_STACK 8
++	SAVE_C_REGS_EXCEPT_RCX_R891011
  	movl 	%eax,%eax	/* zero extension */
--	movq	%rax,ORIG_RAX-ARGOFFSET(%rsp)
--	movq	%rcx,RIP-ARGOFFSET(%rsp)
--	CFI_REL_OFFSET rip,RIP-ARGOFFSET
--	movq	%rbp,RCX-ARGOFFSET(%rsp) /* this lies slightly to ptrace */
-+	movq	%rax,ORIG_RAX(%rsp)
-+	movq	%rcx,RIP(%rsp)
-+	CFI_REL_OFFSET rip,RIP
-+	movq	%rbp,RCX(%rsp) /* this lies slightly to ptrace */
- 	movl	%ebp,%ecx
--	movq	$__USER32_CS,CS-ARGOFFSET(%rsp)
--	movq	$__USER32_DS,SS-ARGOFFSET(%rsp)
--	movq	%r11,EFLAGS-ARGOFFSET(%rsp)
--	/*CFI_REL_OFFSET rflags,EFLAGS-ARGOFFSET*/
--	movq	%r8,RSP-ARGOFFSET(%rsp)	
--	CFI_REL_OFFSET rsp,RSP-ARGOFFSET
-+	movq	$__USER32_CS,CS(%rsp)
-+	movq	$__USER32_DS,SS(%rsp)
-+	movq	%r11,EFLAGS(%rsp)
-+	/*CFI_REL_OFFSET rflags,EFLAGS*/
-+	movq	%r8,RSP(%rsp)
-+	CFI_REL_OFFSET rsp,RSP
- 	/* no need to do an access_ok check here because r8 has been
- 	   32bit zero extended */ 
- 	/* hardware stack frame is complete now */	
-@@ -311,8 +311,8 @@ ENTRY(ia32_cstar_target)
- 1:	movl	(%r8),%r9d
- 	_ASM_EXTABLE(1b,ia32_badarg)
- 	ASM_CLAC
--	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
--	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP)
-+	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP)
- 	CFI_REMEMBER_STATE
- 	jnz   cstar_tracesys
- 	cmpq $IA32_NR_syscalls-1,%rax
-@@ -321,32 +321,32 @@ cstar_do_call:
- 	IA32_ARG_FIXUP 1
- cstar_dispatch:
- 	call *ia32_sys_call_table(,%rax,8)
--	movq %rax,RAX-ARGOFFSET(%rsp)
-+	movq %rax,RAX(%rsp)
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
--	testl $_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl $_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,RIP)
+ 	movq	%rax,ORIG_RAX-ARGOFFSET(%rsp)
+ 	movq	%rcx,RIP-ARGOFFSET(%rsp)
+@@ -325,7 +328,7 @@ cstar_dispatch:
  	jnz sysretl_audit
  sysretl_from_sys_call:
--	andl $~TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	andl $~TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP)
- 	RESTORE_RSI_RDI_RDX
--	movl RIP-ARGOFFSET(%rsp),%ecx
-+	movl RIP(%rsp),%ecx
+ 	andl $~TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+-	RESTORE_ARGS 0,-ARG_SKIP,0,0,0
++	RESTORE_RSI_RDI_RDX
+ 	movl RIP-ARGOFFSET(%rsp),%ecx
  	CFI_REGISTER rip,rcx
--	movl EFLAGS-ARGOFFSET(%rsp),%r11d	
-+	movl EFLAGS(%rsp),%r11d
- 	/*CFI_REGISTER rflags,r11*/
- 	xorq	%r10,%r10
- 	xorq	%r9,%r9
- 	xorq	%r8,%r8
- 	TRACE_IRQS_ON
--	movl RSP-ARGOFFSET(%rsp),%esp
-+	movl RSP(%rsp),%esp
- 	CFI_RESTORE rsp
- 	USERGS_SYSRET32
- 	
- #ifdef CONFIG_AUDITSYSCALL
- cstar_auditsys:
- 	CFI_RESTORE_STATE
--	movl %r9d,R9-ARGOFFSET(%rsp)	/* register to be clobbered by call */
-+	movl %r9d,R9(%rsp)	/* register to be clobbered by call */
- 	auditsys_entry_common
--	movl R9-ARGOFFSET(%rsp),%r9d	/* reload 6th syscall arg */
-+	movl R9(%rsp),%r9d	/* reload 6th syscall arg */
- 	jmp cstar_dispatch
- 
- sysretl_audit:
-@@ -355,16 +355,16 @@ sysretl_audit:
- 
- cstar_tracesys:
- #ifdef CONFIG_AUDITSYSCALL
--	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP)
+ 	movl EFLAGS-ARGOFFSET(%rsp),%r11d	
+@@ -356,13 +359,13 @@ cstar_tracesys:
  	jz cstar_auditsys
  #endif
  	xchgl %r9d,%ebp
- 	SAVE_EXTRA_REGS
--	CLEAR_RREGS 0, r9
-+	CLEAR_RREGS r9
+-	SAVE_REST
++	SAVE_EXTRA_REGS
+ 	CLEAR_RREGS 0, r9
  	movq $-ENOSYS,RAX(%rsp)	/* ptrace can change this for a bad syscall */
  	movq %rsp,%rdi        /* &pt_regs -> arg1 */
  	call syscall_trace_enter
--	LOAD_ARGS32 ARGOFFSET, 1  /* reload args from stack in case ptrace changed it */
-+	LOAD_ARGS32 1	/* reload args from stack in case ptrace changed it */
- 	RESTORE_EXTRA_REGS
+ 	LOAD_ARGS32 ARGOFFSET, 1  /* reload args from stack in case ptrace changed it */
+-	RESTORE_REST
++	RESTORE_EXTRA_REGS
  	xchgl %ebp,%r9d
  	cmpq $(IA32_NR_syscalls-1),%rax
-@@ -422,8 +422,8 @@ ENTRY(ia32_syscall)
+ 	ja int_ret_from_sys_call /* cstar_tracesys has set RAX(%rsp) */
+@@ -417,7 +420,8 @@ ENTRY(ia32_syscall)
+ 	cld
+ 	/* note the registers are not zero extended to the sf.
  	   this could be a problem. */
- 	ALLOC_PTREGS_ON_STACK
- 	SAVE_C_REGS_EXCEPT_R891011
--	orl $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
--	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	orl $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP)
-+	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP)
+-	SAVE_ARGS 0,1,0
++	ALLOC_PTREGS_ON_STACK
++	SAVE_C_REGS_EXCEPT_R891011
+ 	orl $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
  	jnz ia32_tracesys
- 	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja ia32_badsys
-@@ -431,9 +431,9 @@ ia32_do_call:
- 	IA32_ARG_FIXUP
- 	call *ia32_sys_call_table(,%rax,8) # xxx: rip relative
- ia32_sysret:
--	movq %rax,RAX-ARGOFFSET(%rsp)
-+	movq %rax,RAX(%rsp)
+@@ -430,16 +434,16 @@ ia32_sysret:
+ 	movq %rax,RAX-ARGOFFSET(%rsp)
  ia32_ret_from_sys_call:
--	CLEAR_RREGS -ARGOFFSET
-+	CLEAR_RREGS
- 	jmp int_ret_from_sys_call
+ 	CLEAR_RREGS -ARGOFFSET
+-	jmp int_ret_from_sys_call 
++	jmp int_ret_from_sys_call
  
- ia32_tracesys:
-@@ -442,7 +442,7 @@ ia32_tracesys:
+-ia32_tracesys:			 
+-	SAVE_REST
++ia32_tracesys:
++	SAVE_EXTRA_REGS
+ 	CLEAR_RREGS
  	movq $-ENOSYS,RAX(%rsp)	/* ptrace can change this for a bad syscall */
  	movq %rsp,%rdi        /* &pt_regs -> arg1 */
  	call syscall_trace_enter
--	LOAD_ARGS32 ARGOFFSET  /* reload args from stack in case ptrace changed it */
-+	LOAD_ARGS32	/* reload args from stack in case ptrace changed it */
- 	RESTORE_EXTRA_REGS
+ 	LOAD_ARGS32 ARGOFFSET  /* reload args from stack in case ptrace changed it */
+-	RESTORE_REST
++	RESTORE_EXTRA_REGS
  	cmpq $(IA32_NR_syscalls-1),%rax
  	ja  int_ret_from_sys_call	/* ia32_tracesys has set RAX(%rsp) */
-@@ -450,7 +450,7 @@ ia32_tracesys:
- END(ia32_syscall)
+ 	jmp ia32_do_call
+@@ -475,7 +479,6 @@ GLOBAL(stub32_clone)
  
- ia32_badsys:
--	movq $0,ORIG_RAX-ARGOFFSET(%rsp)
-+	movq $0,ORIG_RAX(%rsp)
- 	movq $-ENOSYS,%rax
- 	jmp ia32_sysret
- 
-@@ -482,17 +482,17 @@ ia32_ptregs_common:
+ 	ALIGN
+ ia32_ptregs_common:
+-	popq %r11
  	CFI_ENDPROC
  	CFI_STARTPROC32	simple
  	CFI_SIGNAL_FRAME
--	CFI_DEF_CFA	rsp,SS+8-ARGOFFSET
--	CFI_REL_OFFSET	rax,RAX-ARGOFFSET
--	CFI_REL_OFFSET	rcx,RCX-ARGOFFSET
--	CFI_REL_OFFSET	rdx,RDX-ARGOFFSET
--	CFI_REL_OFFSET	rsi,RSI-ARGOFFSET
--	CFI_REL_OFFSET	rdi,RDI-ARGOFFSET
--	CFI_REL_OFFSET	rip,RIP-ARGOFFSET
--/*	CFI_REL_OFFSET	cs,CS-ARGOFFSET*/
--/*	CFI_REL_OFFSET	rflags,EFLAGS-ARGOFFSET*/
--	CFI_REL_OFFSET	rsp,RSP-ARGOFFSET
--/*	CFI_REL_OFFSET	ss,SS-ARGOFFSET*/
-+	CFI_DEF_CFA	rsp,SS+8
-+	CFI_REL_OFFSET	rax,RAX
-+	CFI_REL_OFFSET	rcx,RCX
-+	CFI_REL_OFFSET	rdx,RDX
-+	CFI_REL_OFFSET	rsi,RSI
-+	CFI_REL_OFFSET	rdi,RDI
-+	CFI_REL_OFFSET	rip,RIP
-+/*	CFI_REL_OFFSET	cs,CS*/
-+/*	CFI_REL_OFFSET	rflags,EFLAGS*/
-+	CFI_REL_OFFSET	rsp,RSP
-+/*	CFI_REL_OFFSET	ss,SS*/
- 	SAVE_EXTRA_REGS 8
+@@ -490,9 +493,9 @@ ia32_ptregs_common:
+ /*	CFI_REL_OFFSET	rflags,EFLAGS-ARGOFFSET*/
+ 	CFI_REL_OFFSET	rsp,RSP-ARGOFFSET
+ /*	CFI_REL_OFFSET	ss,SS-ARGOFFSET*/
+-	SAVE_REST
++	SAVE_EXTRA_REGS 8
  	call *%rax
- 	RESTORE_EXTRA_REGS 8
+-	RESTORE_REST
+-	jmp  ia32_sysret	/* misbalances the return cache */
++	RESTORE_EXTRA_REGS 8
++	ret
+ 	CFI_ENDPROC
+ END(ia32_ptregs_common)
 diff --git a/arch/x86/include/asm/calling.h b/arch/x86/include/asm/calling.h
-index 7642948..e8e2e41 100644
+index e176cea..7642948 100644
 --- a/arch/x86/include/asm/calling.h
 +++ b/arch/x86/include/asm/calling.h
-@@ -88,8 +88,6 @@ For 32-bit we have the following conventions - kernel is built with
- #define RSP		19*8
- #define SS		20*8
+@@ -52,142 +52,135 @@ For 32-bit we have the following conventions - kernel is built with
  
--#define ARGOFFSET	0
+ /*
+  * 64-bit system call stack frame layout defines and helpers,
+- * for assembly code:
++ * for assembly code.
+  */
+ 
+-#define R15		  0
+-#define R14		  8
+-#define R13		 16
+-#define R12		 24
+-#define RBP		 32
+-#define RBX		 40
 -
- 	.macro ALLOC_PTREGS_ON_STACK addskip=0
- 	subq	$15*8+\addskip, %rsp
- 	CFI_ADJUST_CFA_OFFSET 15*8+\addskip
+-/* arguments: interrupts/non tracing syscalls only save up to here: */
+-#define R11		 48
+-#define R10		 56
+-#define R9		 64
+-#define R8		 72
+-#define RAX		 80
+-#define RCX		 88
+-#define RDX		 96
+-#define RSI		104
+-#define RDI		112
+-#define ORIG_RAX	120       /* + error_code */
+-/* end of arguments */
+-
+-/* cpu exception frame or undefined in case of fast syscall: */
+-#define RIP		128
+-#define CS		136
+-#define EFLAGS		144
+-#define RSP		152
+-#define SS		160
+-
+-#define ARGOFFSET	R11
+-
+-	.macro SAVE_ARGS addskip=0, save_rcx=1, save_r891011=1
+-	subq  $9*8+\addskip, %rsp
+-	CFI_ADJUST_CFA_OFFSET	9*8+\addskip
+-	movq_cfi rdi, 8*8
+-	movq_cfi rsi, 7*8
+-	movq_cfi rdx, 6*8
+-
+-	.if \save_rcx
+-	movq_cfi rcx, 5*8
+-	.endif
+-
+-	movq_cfi rax, 4*8
++/* The layout forms the "struct pt_regs" on the stack: */
++/*
++ * C ABI says these regs are callee-preserved. They aren't saved on kernel entry
++ * unless syscall needs a complete, fully filled "struct pt_regs".
++ */
++#define R15		0*8
++#define R14		1*8
++#define R13		2*8
++#define R12		3*8
++#define RBP		4*8
++#define RBX		5*8
++/* These regs are callee-clobbered. Always saved on kernel entry. */
++#define R11		6*8
++#define R10		7*8
++#define R9		8*8
++#define R8		9*8
++#define RAX		10*8
++#define RCX		11*8
++#define RDX		12*8
++#define RSI		13*8
++#define RDI		14*8
++/*
++ * On syscall entry, this is syscall#. On CPU exception, this is error code.
++ * On hw interrupt, it's IRQ number:
++ */
++#define ORIG_RAX	15*8
++/* Return frame for iretq */
++#define RIP		16*8
++#define CS		17*8
++#define EFLAGS		18*8
++#define RSP		19*8
++#define SS		20*8
++
++#define ARGOFFSET	0
++
++	.macro ALLOC_PTREGS_ON_STACK addskip=0
++	subq	$15*8+\addskip, %rsp
++	CFI_ADJUST_CFA_OFFSET 15*8+\addskip
++	.endm
+ 
+-	.if \save_r891011
+-	movq_cfi r8,  3*8
+-	movq_cfi r9,  2*8
+-	movq_cfi r10, 1*8
+-	movq_cfi r11, 0*8
++	.macro SAVE_C_REGS_HELPER offset=0 rcx=1 r8plus=1
++	movq_cfi rdi, 14*8+\offset
++	movq_cfi rsi, 13*8+\offset
++	movq_cfi rdx, 12*8+\offset
++	.if \rcx
++	movq_cfi rcx, 11*8+\offset
++	.endif
++	movq_cfi rax, 10*8+\offset
++	.if \r8plus
++	movq_cfi r8,  9*8+\offset
++	movq_cfi r9,  8*8+\offset
++	movq_cfi r10, 7*8+\offset
++	movq_cfi r11, 6*8+\offset
+ 	.endif
++	.endm
++	.macro SAVE_C_REGS offset=0
++	SAVE_C_REGS_HELPER \offset, 1, 1
++	.endm
++	.macro SAVE_C_REGS_EXCEPT_R891011
++	SAVE_C_REGS_HELPER 0, 1, 0
++	.endm
++	.macro SAVE_C_REGS_EXCEPT_RCX_R891011
++	SAVE_C_REGS_HELPER 0, 0, 0
++	.endm
+ 
++	.macro SAVE_EXTRA_REGS offset=0
++	movq_cfi rbx, 5*8+\offset
++	movq_cfi rbp, 4*8+\offset
++	movq_cfi r12, 3*8+\offset
++	movq_cfi r13, 2*8+\offset
++	movq_cfi r14, 1*8+\offset
++	movq_cfi r15, 0*8+\offset
++	.endm
++	.macro SAVE_EXTRA_REGS_RBP offset=0
++	movq_cfi rbp, 4*8+\offset
+ 	.endm
+ 
+-#define ARG_SKIP	(9*8)
++	.macro RESTORE_EXTRA_REGS offset=0
++	movq_cfi_restore 0*8+\offset, r15
++	movq_cfi_restore 1*8+\offset, r14
++	movq_cfi_restore 2*8+\offset, r13
++	movq_cfi_restore 3*8+\offset, r12
++	movq_cfi_restore 4*8+\offset, rbp
++	movq_cfi_restore 5*8+\offset, rbx
++	.endm
+ 
+-	.macro RESTORE_ARGS rstor_rax=1, addskip=0, rstor_rcx=1, rstor_r11=1, \
+-			    rstor_r8910=1, rstor_rdx=1
++	.macro RESTORE_C_REGS_HELPER rstor_rax=1, rstor_rcx=1, rstor_r11=1, rstor_r8910=1, rstor_rdx=1
+ 	.if \rstor_r11
+-	movq_cfi_restore 0*8, r11
++	movq_cfi_restore 6*8, r11
+ 	.endif
+-
+ 	.if \rstor_r8910
+-	movq_cfi_restore 1*8, r10
+-	movq_cfi_restore 2*8, r9
+-	movq_cfi_restore 3*8, r8
++	movq_cfi_restore 7*8, r10
++	movq_cfi_restore 8*8, r9
++	movq_cfi_restore 9*8, r8
+ 	.endif
+-
+ 	.if \rstor_rax
+-	movq_cfi_restore 4*8, rax
++	movq_cfi_restore 10*8, rax
+ 	.endif
+-
+ 	.if \rstor_rcx
+-	movq_cfi_restore 5*8, rcx
++	movq_cfi_restore 11*8, rcx
+ 	.endif
+-
+ 	.if \rstor_rdx
+-	movq_cfi_restore 6*8, rdx
+-	.endif
+-
+-	movq_cfi_restore 7*8, rsi
+-	movq_cfi_restore 8*8, rdi
+-
+-	.if ARG_SKIP+\addskip > 0
+-	addq $ARG_SKIP+\addskip, %rsp
+-	CFI_ADJUST_CFA_OFFSET	-(ARG_SKIP+\addskip)
++	movq_cfi_restore 12*8, rdx
+ 	.endif
++	movq_cfi_restore 13*8, rsi
++	movq_cfi_restore 14*8, rdi
+ 	.endm
+-
+-	.macro LOAD_ARGS offset, skiprax=0
+-	movq \offset(%rsp),    %r11
+-	movq \offset+8(%rsp),  %r10
+-	movq \offset+16(%rsp), %r9
+-	movq \offset+24(%rsp), %r8
+-	movq \offset+40(%rsp), %rcx
+-	movq \offset+48(%rsp), %rdx
+-	movq \offset+56(%rsp), %rsi
+-	movq \offset+64(%rsp), %rdi
+-	.if \skiprax
+-	.else
+-	movq \offset+72(%rsp), %rax
+-	.endif
++	.macro RESTORE_C_REGS
++	RESTORE_C_REGS_HELPER 1,1,1,1,1
+ 	.endm
+-
+-#define REST_SKIP	(6*8)
+-
+-	.macro SAVE_REST
+-	subq $REST_SKIP, %rsp
+-	CFI_ADJUST_CFA_OFFSET	REST_SKIP
+-	movq_cfi rbx, 5*8
+-	movq_cfi rbp, 4*8
+-	movq_cfi r12, 3*8
+-	movq_cfi r13, 2*8
+-	movq_cfi r14, 1*8
+-	movq_cfi r15, 0*8
++	.macro RESTORE_C_REGS_EXCEPT_RAX
++	RESTORE_C_REGS_HELPER 0,1,1,1,1
+ 	.endm
+-
+-	.macro RESTORE_REST
+-	movq_cfi_restore 0*8, r15
+-	movq_cfi_restore 1*8, r14
+-	movq_cfi_restore 2*8, r13
+-	movq_cfi_restore 3*8, r12
+-	movq_cfi_restore 4*8, rbp
+-	movq_cfi_restore 5*8, rbx
+-	addq $REST_SKIP, %rsp
+-	CFI_ADJUST_CFA_OFFSET	-(REST_SKIP)
++	.macro RESTORE_C_REGS_EXCEPT_RCX
++	RESTORE_C_REGS_HELPER 1,0,1,1,1
+ 	.endm
+-
+-	.macro SAVE_ALL
+-	SAVE_ARGS
+-	SAVE_REST
++	.macro RESTORE_RSI_RDI
++	RESTORE_C_REGS_HELPER 0,0,0,0,0
++	.endm
++	.macro RESTORE_RSI_RDI_RDX
++	RESTORE_C_REGS_HELPER 0,0,0,0,1
+ 	.endm
+ 
+-	.macro RESTORE_ALL addskip=0
+-	RESTORE_REST
+-	RESTORE_ARGS 1, \addskip
++	.macro REMOVE_PTREGS_FROM_STACK addskip=0
++	addq $15*8+\addskip, %rsp
++	CFI_ADJUST_CFA_OFFSET -(15*8+\addskip)
+ 	.endm
+ 
+ 	.macro icebp
+diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
+index bba3cf8..6f98c16 100644
+--- a/arch/x86/include/asm/irqflags.h
++++ b/arch/x86/include/asm/irqflags.h
+@@ -171,9 +171,9 @@ static inline int arch_irqs_disabled(void)
+ #define ARCH_LOCKDEP_SYS_EXIT_IRQ	\
+ 	TRACE_IRQS_ON; \
+ 	sti; \
+-	SAVE_REST; \
++	SAVE_EXTRA_REGS; \
+ 	LOCKDEP_SYS_EXIT; \
+-	RESTORE_REST; \
++	RESTORE_EXTRA_REGS; \
+ 	cli; \
+ 	TRACE_IRQS_OFF;
+ 
+diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
+index 6205f0c..c822b35 100644
+--- a/arch/x86/include/asm/ptrace.h
++++ b/arch/x86/include/asm/ptrace.h
+@@ -31,13 +31,17 @@ struct pt_regs {
+ #else /* __i386__ */
+ 
+ struct pt_regs {
++/*
++ * C ABI says these regs are callee-preserved. They aren't saved on kernel entry
++ * unless syscall needs a complete, fully filled "struct pt_regs".
++ */
+ 	unsigned long r15;
+ 	unsigned long r14;
+ 	unsigned long r13;
+ 	unsigned long r12;
+ 	unsigned long bp;
+ 	unsigned long bx;
+-/* arguments: non interrupts/non tracing syscalls only save up to here*/
++/* These regs are callee-clobbered. Always saved on kernel entry. */
+ 	unsigned long r11;
+ 	unsigned long r10;
+ 	unsigned long r9;
+@@ -47,9 +51,12 @@ struct pt_regs {
+ 	unsigned long dx;
+ 	unsigned long si;
+ 	unsigned long di;
++/*
++ * On syscall entry, this is syscall#. On CPU exception, this is error code.
++ * On hw interrupt, it's IRQ number:
++ */
+ 	unsigned long orig_ax;
+-/* end of arguments */
+-/* cpu exception frame or undefined */
++/* Return frame for iretq */
+ 	unsigned long ip;
+ 	unsigned long cs;
+ 	unsigned long flags;
+diff --git a/arch/x86/include/uapi/asm/ptrace-abi.h b/arch/x86/include/uapi/asm/ptrace-abi.h
+index 7b0a55a..580aee3 100644
+--- a/arch/x86/include/uapi/asm/ptrace-abi.h
++++ b/arch/x86/include/uapi/asm/ptrace-abi.h
+@@ -25,13 +25,17 @@
+ #else /* __i386__ */
+ 
+ #if defined(__ASSEMBLY__) || defined(__FRAME_OFFSETS)
++/*
++ * C ABI says these regs are callee-preserved. They aren't saved on kernel entry
++ * unless syscall needs a complete, fully filled "struct pt_regs".
++ */
+ #define R15 0
+ #define R14 8
+ #define R13 16
+ #define R12 24
+ #define RBP 32
+ #define RBX 40
+-/* arguments: interrupts/non tracing syscalls only save up to here*/
++/* These regs are callee-clobbered. Always saved on kernel entry. */
+ #define R11 48
+ #define R10 56
+ #define R9 64
+@@ -41,15 +45,17 @@
+ #define RDX 96
+ #define RSI 104
+ #define RDI 112
+-#define ORIG_RAX 120       /* = ERROR */
+-/* end of arguments */
+-/* cpu exception frame or undefined in case of fast syscall. */
++/*
++ * On syscall entry, this is syscall#. On CPU exception, this is error code.
++ * On hw interrupt, it's IRQ number:
++ */
++#define ORIG_RAX 120
++/* Return frame for iretq */
+ #define RIP 128
+ #define CS 136
+ #define EFLAGS 144
+ #define RSP 152
+ #define SS 160
+-#define ARGOFFSET R11
+ #endif /* __ASSEMBLY__ */
+ 
+ /* top of stack page */
+diff --git a/arch/x86/include/uapi/asm/ptrace.h b/arch/x86/include/uapi/asm/ptrace.h
+index ac4b9aa..bc16115 100644
+--- a/arch/x86/include/uapi/asm/ptrace.h
++++ b/arch/x86/include/uapi/asm/ptrace.h
+@@ -41,13 +41,17 @@ struct pt_regs {
+ #ifndef __KERNEL__
+ 
+ struct pt_regs {
++/*
++ * C ABI says these regs are callee-preserved. They aren't saved on kernel entry
++ * unless syscall needs a complete, fully filled "struct pt_regs".
++ */
+ 	unsigned long r15;
+ 	unsigned long r14;
+ 	unsigned long r13;
+ 	unsigned long r12;
+ 	unsigned long rbp;
+ 	unsigned long rbx;
+-/* arguments: non interrupts/non tracing syscalls only save up to here*/
++/* These regs are callee-clobbered. Always saved on kernel entry. */
+ 	unsigned long r11;
+ 	unsigned long r10;
+ 	unsigned long r9;
+@@ -57,9 +61,12 @@ struct pt_regs {
+ 	unsigned long rdx;
+ 	unsigned long rsi;
+ 	unsigned long rdi;
++/*
++ * On syscall entry, this is syscall#. On CPU exception, this is error code.
++ * On hw interrupt, it's IRQ number:
++ */
+ 	unsigned long orig_rax;
+-/* end of arguments */
+-/* cpu exception frame or undefined */
++/* Return frame for iretq */
+ 	unsigned long rip;
+ 	unsigned long cs;
+ 	unsigned long eflags;
 diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index c489a2d..8c6a01d 100644
+index 37f7d95..c489a2d 100644
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -73,7 +73,7 @@ ENDPROC(native_usergs_sysret64)
- #endif /* CONFIG_PARAVIRT */
+@@ -14,9 +14,6 @@
+  * NOTE: This code handles signal-recognition, which happens every time
+  * after an interrupt and after each system call.
+  *
+- * Normal syscalls and interrupts don't save a full stack frame, this is
+- * only done for syscall tracing, signals or fork/exec et.al.
+- *
+  * A note on terminology:
+  * - top of stack: Architecture defined interrupt frame from SS to RIP
+  * at the top of the kernel process stack.
+@@ -26,12 +23,6 @@
+  * Some macro usage:
+  * - CFI macros are used to generate dwarf2 unwind information for better
+  * backtraces. They don't change any code.
+- * - SAVE_ALL/RESTORE_ALL - Save/restore all registers
+- * - SAVE_ARGS/RESTORE_ARGS - Save/restore registers that C functions modify.
+- * There are unfortunately lots of special cases where some registers
+- * not touched. The macro is a big mess that should be cleaned up.
+- * - SAVE_REST/RESTORE_REST - Handle the registers not saved by SAVE_ARGS.
+- * Gives a full stack frame.
+  * - ENTRY/END Define functions in the symbol table.
+  * - FIXUP_TOP_OF_STACK/RESTORE_TOP_OF_STACK - Fix up the hardware stack
+  * frame that is otherwise undefined after a SYSCALL
+@@ -156,7 +147,7 @@ ENDPROC(native_usergs_sysret64)
+ 	.endm
  
- 
--.macro TRACE_IRQS_IRETQ offset=ARGOFFSET
-+.macro TRACE_IRQS_IRETQ offset=0
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	bt   $9,EFLAGS-\offset(%rsp)	/* interrupts off? */
- 	jnc  1f
-@@ -107,7 +107,7 @@ ENDPROC(native_usergs_sysret64)
- 	call debug_stack_reset
- .endm
- 
--.macro TRACE_IRQS_IRETQ_DEBUG offset=ARGOFFSET
-+.macro TRACE_IRQS_IRETQ_DEBUG offset=0
- 	bt   $9,EFLAGS-\offset(%rsp)	/* interrupts off? */
- 	jnc  1f
- 	TRACE_IRQS_ON_DEBUG
-@@ -184,16 +184,16 @@ ENDPROC(native_usergs_sysret64)
-  * frame that enables passing a complete pt_regs to a C function.
+ /*
+- * initial frame state for interrupts (and exceptions without error code)
++ * empty frame
   */
- 	.macro DEFAULT_FRAME start=1 offset=0
--	XCPT_FRAME \start, ORIG_RAX+\offset-ARGOFFSET
--	CFI_REL_OFFSET rdi, RDI+\offset-ARGOFFSET
--	CFI_REL_OFFSET rsi, RSI+\offset-ARGOFFSET
--	CFI_REL_OFFSET rdx, RDX+\offset-ARGOFFSET
--	CFI_REL_OFFSET rcx, RCX+\offset-ARGOFFSET
--	CFI_REL_OFFSET rax, RAX+\offset-ARGOFFSET
--	CFI_REL_OFFSET r8, R8+\offset-ARGOFFSET
--	CFI_REL_OFFSET r9, R9+\offset-ARGOFFSET
--	CFI_REL_OFFSET r10, R10+\offset-ARGOFFSET
--	CFI_REL_OFFSET r11, R11+\offset-ARGOFFSET
-+	XCPT_FRAME \start, ORIG_RAX+\offset
-+	CFI_REL_OFFSET rdi, RDI+\offset
-+	CFI_REL_OFFSET rsi, RSI+\offset
-+	CFI_REL_OFFSET rdx, RDX+\offset
-+	CFI_REL_OFFSET rcx, RCX+\offset
-+	CFI_REL_OFFSET rax, RAX+\offset
-+	CFI_REL_OFFSET r8, R8+\offset
-+	CFI_REL_OFFSET r9, R9+\offset
-+	CFI_REL_OFFSET r10, R10+\offset
-+	CFI_REL_OFFSET r11, R11+\offset
+ 	.macro EMPTY_FRAME start=1 offset=0
+ 	.if \start
+@@ -190,9 +181,9 @@ ENDPROC(native_usergs_sysret64)
+ 	.endm
+ 
+ /*
+- * frame that enables calling into C.
++ * frame that enables passing a complete pt_regs to a C function.
+  */
+-	.macro PARTIAL_FRAME start=1 offset=0
++	.macro DEFAULT_FRAME start=1 offset=0
+ 	XCPT_FRAME \start, ORIG_RAX+\offset-ARGOFFSET
+ 	CFI_REL_OFFSET rdi, RDI+\offset-ARGOFFSET
+ 	CFI_REL_OFFSET rsi, RSI+\offset-ARGOFFSET
+@@ -203,13 +194,6 @@ ENDPROC(native_usergs_sysret64)
+ 	CFI_REL_OFFSET r9, R9+\offset-ARGOFFSET
+ 	CFI_REL_OFFSET r10, R10+\offset-ARGOFFSET
+ 	CFI_REL_OFFSET r11, R11+\offset-ARGOFFSET
+-	.endm
+-
+-/*
+- * frame that enables passing a complete pt_regs to a C function.
+- */
+-	.macro DEFAULT_FRAME start=1 offset=0
+-	PARTIAL_FRAME \start, R11+\offset-R15
  	CFI_REL_OFFSET rbx, RBX+\offset
  	CFI_REL_OFFSET rbp, RBP+\offset
  	CFI_REL_OFFSET r12, R12+\offset
-@@ -237,13 +237,13 @@ ENTRY(ret_from_fork)
+@@ -221,21 +205,8 @@ ENDPROC(native_usergs_sysret64)
+ ENTRY(save_paranoid)
+ 	XCPT_FRAME 1 RDI+8
+ 	cld
+-	movq_cfi rdi, RDI+8
+-	movq_cfi rsi, RSI+8
+-	movq_cfi rdx, RDX+8
+-	movq_cfi rcx, RCX+8
+-	movq_cfi rax, RAX+8
+-	movq_cfi r8, R8+8
+-	movq_cfi r9, R9+8
+-	movq_cfi r10, R10+8
+-	movq_cfi r11, R11+8
+-	movq_cfi rbx, RBX+8
+-	movq_cfi rbp, RBP+8
+-	movq_cfi r12, R12+8
+-	movq_cfi r13, R13+8
+-	movq_cfi r14, R14+8
+-	movq_cfi r15, R15+8
++	SAVE_C_REGS 8
++	SAVE_EXTRA_REGS 8
+ 	movl $1,%ebx
+ 	movl $MSR_GS_BASE,%ecx
+ 	rdmsr
+@@ -264,7 +235,7 @@ ENTRY(ret_from_fork)
  
- 	RESTORE_EXTRA_REGS
+ 	GET_THREAD_INFO(%rcx)
  
--	testl $3, CS-ARGOFFSET(%rsp)		# from kernel_thread?
-+	testl $3, CS(%rsp)			# from kernel_thread?
+-	RESTORE_REST
++	RESTORE_EXTRA_REGS
+ 
+ 	testl $3, CS-ARGOFFSET(%rsp)		# from kernel_thread?
  	jz   1f
- 
- 	testl $_TIF_IA32, TI_flags(%rcx)	# 32-bit compat task needs IRET
- 	jnz  int_ret_from_sys_call
- 
--	RESTORE_TOP_OF_STACK %rdi, -ARGOFFSET
-+	RESTORE_TOP_OF_STACK %rdi
+@@ -276,12 +247,10 @@ ENTRY(ret_from_fork)
  	jmp ret_from_sys_call			# go to the SYSRET fastpath
  
  1:
-@@ -310,10 +310,10 @@ GLOBAL(system_call_after_swapgs)
+-	subq $REST_SKIP, %rsp	# leave space for volatiles
+-	CFI_ADJUST_CFA_OFFSET	REST_SKIP
+ 	movq %rbp, %rdi
+ 	call *%rbx
+ 	movl $0, RAX(%rsp)
+-	RESTORE_REST
++	RESTORE_EXTRA_REGS
+ 	jmp int_ret_from_sys_call
+ 	CFI_ENDPROC
+ END(ret_from_fork)
+@@ -339,7 +308,8 @@ GLOBAL(system_call_after_swapgs)
+ 	 * and short:
+ 	 */
  	ENABLE_INTERRUPTS(CLBR_NONE)
- 	ALLOC_PTREGS_ON_STACK 8
- 	SAVE_C_REGS
--	movq  %rax,ORIG_RAX-ARGOFFSET(%rsp)
--	movq  %rcx,RIP-ARGOFFSET(%rsp)
--	CFI_REL_OFFSET rip,RIP-ARGOFFSET
--	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	movq  %rax,ORIG_RAX(%rsp)
-+	movq  %rcx,RIP(%rsp)
-+	CFI_REL_OFFSET rip,RIP
-+	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP)
- 	jnz tracesys
- system_call_fastpath:
- #if __SYSCALL_MASK == ~0
-@@ -325,7 +325,7 @@ system_call_fastpath:
- 	ja badsys
- 	movq %r10,%rcx
- 	call *sys_call_table(,%rax,8)  # XXX:	 rip relative
--	movq %rax,RAX-ARGOFFSET(%rsp)
-+	movq %rax,RAX(%rsp)
- /*
-  * Syscall return path ending with SYSRET (fast path)
-  * Has incomplete stack frame and undefined top of stack.
-@@ -337,7 +337,7 @@ sysret_check:
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
--	movl TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET),%edx
-+	movl TI_flags+THREAD_INFO(%rsp,RIP),%edx
- 	andl %edi,%edx
- 	jnz  sysret_careful
- 	CFI_REMEMBER_STATE
-@@ -346,7 +346,7 @@ sysret_check:
+-	SAVE_ARGS 8,0
++	ALLOC_PTREGS_ON_STACK 8
++	SAVE_C_REGS
+ 	movq  %rax,ORIG_RAX-ARGOFFSET(%rsp)
+ 	movq  %rcx,RIP-ARGOFFSET(%rsp)
+ 	CFI_REL_OFFSET rip,RIP-ARGOFFSET
+@@ -375,9 +345,9 @@ sysret_check:
+ 	 * sysretq will re-enable interrupts:
  	 */
  	TRACE_IRQS_ON
- 	RESTORE_C_REGS_EXCEPT_RCX
--	movq RIP-ARGOFFSET(%rsp),%rcx
-+	movq RIP(%rsp),%rcx
++	RESTORE_C_REGS_EXCEPT_RCX
+ 	movq RIP-ARGOFFSET(%rsp),%rcx
  	CFI_REGISTER	rip,rcx
+-	RESTORE_ARGS 1,-ARG_SKIP,0
  	/*CFI_REGISTER	rflags,r11*/
  	movq	PER_CPU_VAR(old_rsp), %rsp
-@@ -378,11 +378,11 @@ sysret_signal:
- 	 * These all wind up with the iret return path anyway,
- 	 * so just join that path right now.
- 	 */
--	FIXUP_TOP_OF_STACK %r11, -ARGOFFSET
-+	FIXUP_TOP_OF_STACK %r11
- 	jmp int_check_syscall_exit_work
+ 	USERGS_SYSRET64
+@@ -429,7 +399,7 @@ auditsys:
+ 	movq %rax,%rsi			/* 2nd arg: syscall number */
+ 	movl $AUDIT_ARCH_X86_64,%edi	/* 1st arg: audit arch */
+ 	call __audit_syscall_entry
+-	LOAD_ARGS 0		/* reload call-clobbered registers */
++	RESTORE_C_REGS			/* reload call-clobbered registers */
+ 	jmp system_call_fastpath
  
- badsys:
--	movq $-ENOSYS,RAX-ARGOFFSET(%rsp)
-+	movq $-ENOSYS,RAX(%rsp)
- 	jmp ret_from_sys_call
- 
- #ifdef CONFIG_AUDITSYSCALL
-@@ -408,7 +408,7 @@ auditsys:
- 	 * masked off.
- 	 */
- sysret_audit:
--	movq RAX-ARGOFFSET(%rsp),%rsi	/* second arg, syscall return value */
-+	movq RAX(%rsp),%rsi	/* second arg, syscall return value */
- 	cmpq $-MAX_ERRNO,%rsi	/* is it < -MAX_ERRNO? */
- 	setbe %al		/* 1 if so, 0 if not */
- 	movzbl %al,%edi		/* zero-extend that into %edi */
-@@ -420,7 +420,7 @@ sysret_audit:
- 	/* Do syscall tracing */
- tracesys:
- #ifdef CONFIG_AUDITSYSCALL
--	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP)
+ 	/*
+@@ -453,7 +423,7 @@ tracesys:
+ 	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
  	jz auditsys
  #endif
- 	SAVE_EXTRA_REGS
-@@ -444,7 +444,7 @@ tracesys:
- 	ja   int_ret_from_sys_call	/* RAX(%rsp) set to -ENOSYS above */
- 	movq %r10,%rcx	/* fixup for C */
- 	call *sys_call_table(,%rax,8)
--	movq %rax,RAX-ARGOFFSET(%rsp)
-+	movq %rax,RAX(%rsp)
- 	/* Use IRET because user could have changed frame */
- 
- /*
-@@ -528,9 +528,9 @@ END(stub_\func)
- ENTRY(\label)
- 	CFI_STARTPROC
- 	DEFAULT_FRAME 0, 8		/* offset 8: return address */
--	FIXUP_TOP_OF_STACK %r11, 8-ARGOFFSET
-+	FIXUP_TOP_OF_STACK %r11, 8
- 	call \func
--	RESTORE_TOP_OF_STACK %r11, 8-ARGOFFSET
-+	RESTORE_TOP_OF_STACK %r11, 8
- 	ret
- 	CFI_ENDPROC
- END(\label)
-@@ -702,7 +702,7 @@ common_interrupt:
- 	ASM_CLAC
- 	addq $-0x80,(%rsp)		/* Adjust vector to [-256,-1] range */
- 	interrupt do_IRQ
--	/* 0(%rsp): old_rsp-ARGOFFSET */
-+	/* 0(%rsp): old_rsp */
- ret_from_intr:
+-	SAVE_REST
++	SAVE_EXTRA_REGS
+ 	movq $-ENOSYS,RAX(%rsp) /* ptrace can change this for a bad syscall */
+ 	FIXUP_TOP_OF_STACK %rdi
+ 	movq %rsp,%rdi
+@@ -463,8 +433,8 @@ tracesys:
+ 	 * We don't reload %rax because syscall_trace_enter() returned
+ 	 * the value it wants us to use in the table lookup.
+ 	 */
+-	LOAD_ARGS ARGOFFSET, 1
+-	RESTORE_REST
++	RESTORE_C_REGS_EXCEPT_RAX
++	RESTORE_EXTRA_REGS
+ #if __SYSCALL_MASK == ~0
+ 	cmpq $__NR_syscall_max,%rax
+ #else
+@@ -515,7 +485,7 @@ int_very_careful:
+ 	TRACE_IRQS_ON
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
+ int_check_syscall_exit_work:
+-	SAVE_REST
++	SAVE_EXTRA_REGS
+ 	/* Check for syscall exit trace */
+ 	testl $_TIF_WORK_SYSCALL_EXIT,%edx
+ 	jz int_signal
+@@ -534,7 +504,7 @@ int_signal:
+ 	call do_notify_resume
+ 1:	movl $_TIF_WORK_MASK,%edi
+ int_restore_rest:
+-	RESTORE_REST
++	RESTORE_EXTRA_REGS
  	DISABLE_INTERRUPTS(CLBR_NONE)
  	TRACE_IRQS_OFF
-@@ -712,13 +712,13 @@ ret_from_intr:
+ 	jmp int_with_check
+@@ -544,15 +514,12 @@ END(system_call)
+ 	.macro FORK_LIKE func
+ ENTRY(stub_\func)
+ 	CFI_STARTPROC
+-	popq	%r11			/* save return address */
+-	PARTIAL_FRAME 0
+-	SAVE_REST
+-	pushq	%r11			/* put it back on stack */
++	DEFAULT_FRAME 0, 8		/* offset 8: return address */
++	SAVE_EXTRA_REGS 8
+ 	FIXUP_TOP_OF_STACK %r11, 8
+-	DEFAULT_FRAME 0 8		/* offset 8: return address */
+ 	call sys_\func
+ 	RESTORE_TOP_OF_STACK %r11, 8
+-	ret $REST_SKIP		/* pop extended registers */
++	ret
+ 	CFI_ENDPROC
+ END(stub_\func)
+ 	.endm
+@@ -560,7 +527,7 @@ END(stub_\func)
+ 	.macro FIXED_FRAME label,func
+ ENTRY(\label)
+ 	CFI_STARTPROC
+-	PARTIAL_FRAME 0 8		/* offset 8: return address */
++	DEFAULT_FRAME 0, 8		/* offset 8: return address */
+ 	FIXUP_TOP_OF_STACK %r11, 8-ARGOFFSET
+ 	call \func
+ 	RESTORE_TOP_OF_STACK %r11, 8-ARGOFFSET
+@@ -577,12 +544,12 @@ END(\label)
+ ENTRY(stub_execve)
+ 	CFI_STARTPROC
+ 	addq $8, %rsp
+-	PARTIAL_FRAME 0
+-	SAVE_REST
++	DEFAULT_FRAME 0
++	SAVE_EXTRA_REGS
+ 	FIXUP_TOP_OF_STACK %r11
+ 	call sys_execve
+ 	movq %rax,RAX(%rsp)
+-	RESTORE_REST
++	RESTORE_EXTRA_REGS
+ 	jmp int_ret_from_sys_call
+ 	CFI_ENDPROC
+ END(stub_execve)
+@@ -594,12 +561,12 @@ END(stub_execve)
+ ENTRY(stub_rt_sigreturn)
+ 	CFI_STARTPROC
+ 	addq $8, %rsp
+-	PARTIAL_FRAME 0
+-	SAVE_REST
++	DEFAULT_FRAME 0
++	SAVE_EXTRA_REGS
+ 	FIXUP_TOP_OF_STACK %r11
+ 	call sys_rt_sigreturn
+ 	movq %rax,RAX(%rsp) # fixme, this could be done at the higher layer
+-	RESTORE_REST
++	RESTORE_EXTRA_REGS
+ 	jmp int_ret_from_sys_call
+ 	CFI_ENDPROC
+ END(stub_rt_sigreturn)
+@@ -608,12 +575,12 @@ END(stub_rt_sigreturn)
+ ENTRY(stub_x32_rt_sigreturn)
+ 	CFI_STARTPROC
+ 	addq $8, %rsp
+-	PARTIAL_FRAME 0
+-	SAVE_REST
++	DEFAULT_FRAME 0
++	SAVE_EXTRA_REGS
+ 	FIXUP_TOP_OF_STACK %r11
+ 	call sys32_x32_rt_sigreturn
+ 	movq %rax,RAX(%rsp) # fixme, this could be done at the higher layer
+-	RESTORE_REST
++	RESTORE_EXTRA_REGS
+ 	jmp int_ret_from_sys_call
+ 	CFI_ENDPROC
+ END(stub_x32_rt_sigreturn)
+@@ -621,13 +588,13 @@ END(stub_x32_rt_sigreturn)
+ ENTRY(stub_x32_execve)
+ 	CFI_STARTPROC
+ 	addq $8, %rsp
+-	PARTIAL_FRAME 0
+-	SAVE_REST
++	DEFAULT_FRAME 0
++	SAVE_EXTRA_REGS
+ 	FIXUP_TOP_OF_STACK %r11
+ 	call compat_sys_execve
+ 	RESTORE_TOP_OF_STACK %r11
+ 	movq %rax,RAX(%rsp)
+-	RESTORE_REST
++	RESTORE_EXTRA_REGS
+ 	jmp int_ret_from_sys_call
+ 	CFI_ENDPROC
+ END(stub_x32_execve)
+@@ -683,42 +650,36 @@ END(interrupt)
+ 
+ /* 0(%rsp): ~(interrupt number) */
+ 	.macro interrupt func
+-	/* reserve pt_regs for scratch regs and rbp */
+-	subq $ORIG_RAX-RBP, %rsp
+-	CFI_ADJUST_CFA_OFFSET ORIG_RAX-RBP
+ 	cld
+-	/* start from rbp in pt_regs and jump over */
+-	movq_cfi rdi, (RDI-RBP)
+-	movq_cfi rsi, (RSI-RBP)
+-	movq_cfi rdx, (RDX-RBP)
+-	movq_cfi rcx, (RCX-RBP)
+-	movq_cfi rax, (RAX-RBP)
+-	movq_cfi  r8,  (R8-RBP)
+-	movq_cfi  r9,  (R9-RBP)
+-	movq_cfi r10, (R10-RBP)
+-	movq_cfi r11, (R11-RBP)
+-
+-	/* Save rbp so that we can unwind from get_irq_regs() */
+-	movq_cfi rbp, 0
+-
+-	/* Save previous stack value */
+-	movq %rsp, %rsi
++	/*
++	 * Since nothing in interrupt handling code touches r12...r15 members
++	 * of "struct pt_regs", and since interrupts can nest, we can save
++	 * four stack slots and simultaneously provide
++	 * an unwind-friendly stack layout by saving "truncated" pt_regs
++	 * exactly up to rbp slot, without these members.
++	 */
++	ALLOC_PTREGS_ON_STACK -RBP
++	SAVE_C_REGS -RBP
++	/* this goes to 0(%rsp) for unwinder, not for saving the value: */
++	SAVE_EXTRA_REGS_RBP -RBP
+ 
+-	leaq -RBP(%rsp),%rdi	/* arg1 for handler */
+-	testl $3, CS-RBP(%rsi)
++	leaq -RBP(%rsp),%rdi	/* arg1 for \func (pointer to pt_regs) */
++
++	testl $3, CS-RBP(%rsp)
+ 	je 1f
+ 	SWAPGS
++1:
+ 	/*
++	 * Save previous stack pointer, optionally switch to interrupt stack.
+ 	 * irq_count is used to check if a CPU is already on an interrupt stack
+ 	 * or not. While this is essentially redundant with preempt_count it is
+ 	 * a little cheaper to use a separate counter in the PDA (short of
+ 	 * moving irq_enter into assembly, which would be too much work)
+ 	 */
+-1:	incl PER_CPU_VAR(irq_count)
++	movq %rsp, %rsi
++	incl PER_CPU_VAR(irq_count)
+ 	cmovzq PER_CPU_VAR(irq_stack_ptr),%rsp
+ 	CFI_DEF_CFA_REGISTER	rsi
+-
+-	/* Store previous stack value */
+ 	pushq %rsi
+ 	CFI_ESCAPE	0x0f /* DW_CFA_def_cfa_expression */, 6, \
+ 			0x77 /* DW_OP_breg7 */, 0, \
+@@ -750,6 +711,7 @@ ret_from_intr:
+ 	/* Restore saved previous stack */
  	popq %rsi
  	CFI_DEF_CFA rsi,SS+8-RBP	/* reg/off reset after def_cfa_expr */
- 	/* return code expects complete pt_regs - adjust rsp accordingly: */
--	leaq ARGOFFSET-RBP(%rsi), %rsp
-+	leaq -RBP(%rsi), %rsp
++	/* return code expects complete pt_regs - adjust rsp accordingly: */
+ 	leaq ARGOFFSET-RBP(%rsi), %rsp
  	CFI_DEF_CFA_REGISTER	rsp
--	CFI_ADJUST_CFA_OFFSET	RBP-ARGOFFSET
-+	CFI_ADJUST_CFA_OFFSET	RBP
- 
- exit_intr:
- 	GET_THREAD_INFO(%rcx)
--	testl $3,CS-ARGOFFSET(%rsp)
-+	testl $3,CS(%rsp)
- 	je retint_kernel
+ 	CFI_ADJUST_CFA_OFFSET	RBP-ARGOFFSET
+@@ -761,7 +723,7 @@ exit_intr:
  
  	/* Interrupt came from user space */
-@@ -856,7 +856,7 @@ retint_signal:
- ENTRY(retint_kernel)
- 	cmpl $0,PER_CPU_VAR(__preempt_count)
- 	jnz  retint_restore_args
--	bt   $9,EFLAGS-ARGOFFSET(%rsp)	/* interrupts off? */
-+	bt   $9,EFLAGS(%rsp)	/* interrupts off? */
- 	jnc  retint_restore_args
- 	call preempt_schedule_irq
- 	jmp exit_intr
+ 	/*
+-	 * Has a correct top of stack, but a partial stack frame
++	 * Has a correct top of stack.
+ 	 * %rcx: thread info. Interrupts off.
+ 	 */
+ retint_with_reschedule:
+@@ -789,7 +751,8 @@ retint_restore_args:	/* return to kernel space */
+ 	 */
+ 	TRACE_IRQS_IRETQ
+ restore_args:
+-	RESTORE_ARGS 1,8,1
++	RESTORE_C_REGS
++	REMOVE_PTREGS_FROM_STACK 8
+ 
+ irq_return:
+ 	/*
+@@ -876,12 +839,12 @@ retint_signal:
+ 	jz    retint_swapgs
+ 	TRACE_IRQS_ON
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
+-	SAVE_REST
++	SAVE_EXTRA_REGS
+ 	movq $-1,ORIG_RAX(%rsp)
+ 	xorl %esi,%esi		# oldset
+ 	movq %rsp,%rdi		# &pt_regs
+ 	call do_notify_resume
+-	RESTORE_REST
++	RESTORE_EXTRA_REGS
+ 	DISABLE_INTERRUPTS(CLBR_NONE)
+ 	TRACE_IRQS_OFF
+ 	GET_THREAD_INFO(%rcx)
+@@ -1044,8 +1007,7 @@ ENTRY(\sym)
+ 	pushq_cfi $-1			/* ORIG_RAX: no syscall to restart */
+ 	.endif
+ 
+-	subq $ORIG_RAX-R15, %rsp
+-	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
++	ALLOC_PTREGS_ON_STACK
+ 
+ 	.if \paranoid
+ 	call save_paranoid
+@@ -1256,7 +1218,9 @@ ENTRY(xen_failsafe_callback)
+ 	addq $0x30,%rsp
+ 	CFI_ADJUST_CFA_OFFSET -0x30
+ 	pushq_cfi $-1 /* orig_ax = -1 => not a system call */
+-	SAVE_ALL
++	ALLOC_PTREGS_ON_STACK
++	SAVE_C_REGS
++	SAVE_EXTRA_REGS
+ 	jmp error_exit
+ 	CFI_ENDPROC
+ END(xen_failsafe_callback)
+@@ -1313,11 +1277,15 @@ ENTRY(paranoid_exit)
+ paranoid_swapgs:
+ 	TRACE_IRQS_IRETQ 0
+ 	SWAPGS_UNSAFE_STACK
+-	RESTORE_ALL 8
++	RESTORE_EXTRA_REGS
++	RESTORE_C_REGS
++	REMOVE_PTREGS_FROM_STACK 8
+ 	jmp irq_return
+ paranoid_restore:
+ 	TRACE_IRQS_IRETQ_DEBUG 0
+-	RESTORE_ALL 8
++	RESTORE_EXTRA_REGS
++	RESTORE_C_REGS
++	REMOVE_PTREGS_FROM_STACK 8
+ 	jmp irq_return
+ paranoid_userspace:
+ 	GET_THREAD_INFO(%rcx)
+@@ -1357,21 +1325,8 @@ ENTRY(error_entry)
+ 	CFI_ADJUST_CFA_OFFSET 15*8
+ 	/* oldrax contains error code */
+ 	cld
+-	movq_cfi rdi, RDI+8
+-	movq_cfi rsi, RSI+8
+-	movq_cfi rdx, RDX+8
+-	movq_cfi rcx, RCX+8
+-	movq_cfi rax, RAX+8
+-	movq_cfi  r8,  R8+8
+-	movq_cfi  r9,  R9+8
+-	movq_cfi r10, R10+8
+-	movq_cfi r11, R11+8
+-	movq_cfi rbx, RBX+8
+-	movq_cfi rbp, RBP+8
+-	movq_cfi r12, R12+8
+-	movq_cfi r13, R13+8
+-	movq_cfi r14, R14+8
+-	movq_cfi r15, R15+8
++	SAVE_C_REGS 8
++	SAVE_EXTRA_REGS 8
+ 	xorl %ebx,%ebx
+ 	testl $3,CS+8(%rsp)
+ 	je error_kernelspace
+@@ -1412,7 +1367,7 @@ END(error_entry)
+ ENTRY(error_exit)
+ 	DEFAULT_FRAME
+ 	movl %ebx,%eax
+-	RESTORE_REST
++	RESTORE_EXTRA_REGS
+ 	DISABLE_INTERRUPTS(CLBR_NONE)
+ 	TRACE_IRQS_OFF
+ 	GET_THREAD_INFO(%rcx)
+@@ -1631,8 +1586,8 @@ end_repeat_nmi:
+ 	 * so that we repeat another NMI.
+ 	 */
+ 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
+-	subq $ORIG_RAX-R15, %rsp
+-	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
++	ALLOC_PTREGS_ON_STACK
++
+ 	/*
+ 	 * Use save_paranoid to handle SWAPGS, but no need to use paranoid_exit
+ 	 * as we should not be calling schedule in NMI context.
+@@ -1671,8 +1626,10 @@ end_repeat_nmi:
+ nmi_swapgs:
+ 	SWAPGS_UNSAFE_STACK
+ nmi_restore:
++	RESTORE_EXTRA_REGS
++	RESTORE_C_REGS
+ 	/* Pop the extra iret frame at once */
+-	RESTORE_ALL 6*8
++	REMOVE_PTREGS_FROM_STACK 6*8
+ 
+ 	/* Clear the NMI executing stack variable */
+ 	movq $0, 5*8(%rsp)
+diff --git a/arch/x86/kernel/preempt.S b/arch/x86/kernel/preempt.S
+index ca7f0d5..673da2f 100644
+--- a/arch/x86/kernel/preempt.S
++++ b/arch/x86/kernel/preempt.S
+@@ -6,9 +6,13 @@
+ 
+ ENTRY(___preempt_schedule)
+ 	CFI_STARTPROC
+-	SAVE_ALL
++	ALLOC_PTREGS_ON_STACK
++	SAVE_C_REGS
++	SAVE_EXTRA_REGS
+ 	call preempt_schedule
+-	RESTORE_ALL
++	RESTORE_EXTRA_REGS
++	RESTORE_C_REGS
++	REMOVE_PTREGS_FROM_STACK
+ 	ret
+ 	CFI_ENDPROC
+ 
+@@ -16,9 +20,13 @@ ENTRY(___preempt_schedule)
+ 
+ ENTRY(___preempt_schedule_context)
+ 	CFI_STARTPROC
+-	SAVE_ALL
++	ALLOC_PTREGS_ON_STACK
++	SAVE_C_REGS
++	SAVE_EXTRA_REGS
+ 	call preempt_schedule_context
+-	RESTORE_ALL
++	RESTORE_EXTRA_REGS
++	RESTORE_C_REGS
++	REMOVE_PTREGS_FROM_STACK
+ 	ret
+ 	CFI_ENDPROC
+ 
 -- 
 1.8.1.4
 
