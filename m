@@ -1,106 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043AbaHESS5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:18:57 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:36140 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905AbaHESSy convert rfc822-to-8bit (ORCPT
+	id S1755395AbaHESO4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:14:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52542 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372AbaHESOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:18:54 -0400
-Subject: Re: [PATCH 0/3] Yet another stab at a fpga framework
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <1406932118-13885-1-git-send-email-atull@opensource.altera.com>
-Date: Tue, 5 Aug 2014 21:18:46 +0300
-Cc: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
-        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <robh+dt@kernel.org>, <grant.likely@linaro.org>, <pavel@denx.de>,
-        <broonie@kernel.org>, <philip@balister.org>, <rubini@gnudd.com>,
-        <s.trumtrar@pengutronix.de>, <jason@lakedaemon.net>,
-        <kyle.teske@ni.com>, <nico@linaro.org>, <balbi@ti.com>,
-        <m.chehab@samsung.com>, <davidb@codeaurora.org>, <rob@landley.net>,
-        <davem@davemloft.net>, <cesarb@cesarb.net>, <sameo@linux.intel.com>,
-        <akpm@linux-foundation.org>, <linus.walleij@linaro.org>,
-        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
-        <yvanderv@opensource.altera.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1FF23F53-E94E-44F1-A198-BD49ACB2DCA7@konsulko.com>
-References: <1406932118-13885-1-git-send-email-atull@opensource.altera.com>
-To: <atull@opensource.altera.com>
-X-Mailer: Apple Mail (2.1085)
+	Tue, 5 Aug 2014 14:14:54 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Andre van Herk <andre.van.herk@prodrive-technologies.com>,
+        Stef van Os <stef.van.os@prodrive-technologies.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 04/27] rapidio/tsi721_dma: fix failure to obtain transaction descriptor
+Date: Tue,  5 Aug 2014 11:13:56 -0700
+Message-Id: <20140805181344.405720449@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <20140805181344.268039690@linuxfoundation.org>
+References: <20140805181344.268039690@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-On Aug 2, 2014, at 1:28 AM, <atull@opensource.altera.com> wrote:
+------------------
 
-> From: Alan Tull <atull@opensource.altera.com>
-> 
-> [resend with fixed email settings]
-> 
-> The idea of the framework is to provide consistent ways of
-> programming raw images into FPGA's.
-> 
-> Programming from device tree overlays is supported.
-> 
-> The core (fpga-mgr.c) does not include a userspace interface
-> and just exports kernel functions.
-> 
-> This approach separates the core from the interfaces.
-> 
-> Each interface can be enabled or disabled in the defconfig.
-> In some production contexts, interfaces that might be used
-> during development can be disabled.
-> 
-> The core exports kernel functions to:
->  * write the fpga from a buffer or using the firmware layer
->  * get fpga status
->  * find a particular fpga manager from a device tree phandle
->  * register/unregister lower level fpga drivers.
-> 
-> The bus allows us to:
->  * program fpga from a device tree overlay using firmware.
->  * automatically reload firmware and reprogram fpga during resume.
-> 
-> The sysfs interface:
->  * read only, get the name and status of fpga manager.
-> 
-> I have a configfs interface patch which I haven't included,
-> adds configfs as a separate file.
-> 
-> TODO:
->  * Enable bridges after fpga programming, disable during suspend
-> 
-> Alan Tull (3):
->  fpga manager framework core
->  fpga bus driver
->  fpga sysfs interface
-> 
-> drivers/Kconfig          |    2 +
-> drivers/Makefile         |    1 +
-> drivers/fpga/Kconfig     |   27 +++
-> drivers/fpga/Makefile    |   12 ++
-> drivers/fpga/bus.c       |  145 ++++++++++++++++
-> drivers/fpga/fpga-mgr.c  |  431 ++++++++++++++++++++++++++++++++++++++++++++++
-> drivers/fpga/sysfs.c     |   69 ++++++++
-> include/linux/fpga-mgr.h |  137 +++++++++++++++
-> 8 files changed, 824 insertions(+)
-> create mode 100644 drivers/fpga/Kconfig
-> create mode 100644 drivers/fpga/Makefile
-> create mode 100644 drivers/fpga/bus.c
-> create mode 100644 drivers/fpga/fpga-mgr.c
-> create mode 100644 drivers/fpga/sysfs.c
-> create mode 100644 include/linux/fpga-mgr.h
-> 
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-Looks very sane and useful. Please let me know if you come across any problems
-with the overlays code, especially the removal path. 
+commit 0193ed8225e1a79ed64632106ec3cc81798cb13c upstream.
 
-Regards
+This is a bug fix for the situation when function tsi721_desc_get() fails
+to obtain a free transaction descriptor.
 
--- Pantelis
+The bug usually results in a memory access crash dump when data transfer
+scatter-gather list has more entries than size of hardware buffer
+descriptors ring.  This fix ensures that error is properly returned to a
+caller instead of an invalid entry.
+
+This patch is applicable to kernel versions starting from v3.5.
+
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Andre van Herk <andre.van.herk@prodrive-technologies.com>
+Cc: Stef van Os <stef.van.os@prodrive-technologies.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/rapidio/devices/tsi721_dma.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+--- a/drivers/rapidio/devices/tsi721_dma.c
++++ b/drivers/rapidio/devices/tsi721_dma.c
+@@ -287,6 +287,12 @@ struct tsi721_tx_desc *tsi721_desc_get(s
+ 			"desc %p not ACKed\n", tx_desc);
+ 	}
+ 
++	if (ret == NULL) {
++		dev_dbg(bdma_chan->dchan.device->dev,
++			"%s: unable to obtain tx descriptor\n", __func__);
++		goto err_out;
++	}
++
+ 	i = bdma_chan->wr_count_next % bdma_chan->bd_num;
+ 	if (i == bdma_chan->bd_num - 1) {
+ 		i = 0;
+@@ -297,7 +303,7 @@ struct tsi721_tx_desc *tsi721_desc_get(s
+ 	tx_desc->txd.phys = bdma_chan->bd_phys +
+ 				i * sizeof(struct tsi721_dma_desc);
+ 	tx_desc->hw_desc = &((struct tsi721_dma_desc *)bdma_chan->bd_base)[i];
+-
++err_out:
+ 	spin_unlock_bh(&bdma_chan->lock);
+ 
+ 	return ret;
+
 
