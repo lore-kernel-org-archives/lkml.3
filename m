@@ -1,104 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155AbaHEIQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 04:16:43 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:35308 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757089AbaHEIQj (ORCPT
+	id S1757235AbaHEIXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 04:23:11 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:52752 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaHEIXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 04:16:39 -0400
+	Tue, 5 Aug 2014 04:23:08 -0400
+X-Auth-Info: 2ntEDTPu+GozFgV4KTUw2B6B7hpVMZH1SbVLUD3iIhg=
+Message-ID: <53E09467.8070905@denx.de>
+Date: Tue, 05 Aug 2014 10:23:03 +0200
+From: Stefano Babic <sbabic@denx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com>
-Date: Tue, 5 Aug 2014 10:16:37 +0200
-X-Google-Sender-Auth: N0gmqFXBm2TgyfgsMlXjGR2GJNQ
-Message-ID: <CAMuHMdXEH9koVnSS3EWjyUiiSOOOU3EdcT9JHAWNpfmVWQ2opQ@mail.gmail.com>
-Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the dma
- controller API
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        dmaengine@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        =?UTF-8?Q?Antoine_T=C3=A9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Himangi Saraogi <himangi774@gmail.com>
+CC: Alexander Shiyan <shc_work@mail.ru>, julia.lawall@lip6.fr,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Stefano Babic <sbabic@denx.de>, Jingoo Han <jg1.han@samsung.com>,
+        Christian Pellegrin <chripell@fsfe.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] can: mcp251x: Use dmam_alloc_coherent
+References: <20140802135204.GA7635@himangi-Dell> <1406988450.383937334@f99.i.mail.ru>
+In-Reply-To: <1406988450.383937334@f99.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+Hi Himangi,
 
-On Wed, Jul 30, 2014 at 6:03 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> The dmaengine is neither trivial nor properly documented at the moment, which
-> means a lot of trial and error development, which is not that good for such a
-> central piece of the system.
->
-> Attempt at making such a documentation.
+On 02/08/2014 16:07, Alexander Shiyan wrote:
+> Sat, 2 Aug 2014 19:22:04 +0530 от Himangi Saraogi <himangi774@gmail.com>:
+>> This patch moves the data allocated using dma_alloc_coherent to the
+>> corresponding managed interface and does away with the calls to free the
+>> allocated memory in the probe and remove functions.
+> 
+> Just for information: On my opinion, all SPI DMA stuff should be going into SPI layer.
+> It is not a good idea to keep this into this driver.
 
-Great, thanks!
+If I can add my two cents, I agree with Alexander. An underlying SPI
+(master) controller driver can or cannot support DMA transfer, and this
+should be transparent to the CAN layer. The mcp251x driver works with
+both of them, taking advantage when DMA is available.
 
-> +Our dma_device structure has a field called caps_mask that holds the
-> +various type of transaction supported, and you need to modify this
+Best regards,
+Stefano Babic
 
-types of transactions
 
-> +mask using the dma_cap_set function, with various flags depending on
-> +transaction types you support as an argument.
-
-> +  * DMA_SLAVE
-> +    - The device can handle device to memory transfers, including
-> +      scatter-gather transfers.
-> +    - While in the mem2mem case we were having two distinct type to
-
-types
-
-> +      deal with a single chunk to copy or a collection of them, here,
-> +      we just have a single transaction type that is supposed to
-> +      handle both.
-
-> +  * DMA_INTERLEAVE
-> +    - The device support interleaved transfer. Those transfers usually
-
-supports
-
-> +      involve an interleaved set of data, with chunks a few bytes
-> +      wide, where a scatter-gather transfer would be quite
-> +      inefficient.
-
-> +The functions that we have to fill in there, and hence have to
-> +implement, obviously depend on the transaction type you reported as
-
-types
-
-> +supported.
-
-> +   * device_issue_pending
-> +     - Takes the first descriptor in the pending queue, and start the
-
-starts
-
-> +       transfer. Whenever that transfer is done, it should move to the
-> +       next transaction in the list.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+=====================================================================
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: +49-8142-66989-53 Fax: +49-8142-66989-80 Email: sbabic@denx.de
+=====================================================================
