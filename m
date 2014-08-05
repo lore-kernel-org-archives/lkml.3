@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610AbaHEFai (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 01:30:38 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:39458 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775AbaHEFag (ORCPT
+	id S1754691AbaHEFce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 01:32:34 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:51109 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775AbaHEFcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 01:30:36 -0400
-Message-ID: <1407216632.2566.22.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 4/7] locking/rwsem: threshold limited spinning for
- active readers
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Date: Mon, 04 Aug 2014 22:30:32 -0700
-In-Reply-To: <1407214461.2566.14.camel@buesod1.americas.hpqcorp.net>
-References: <1407119782-41119-1-git-send-email-Waiman.Long@hp.com>
-	 <1407119782-41119-5-git-send-email-Waiman.Long@hp.com>
-	 <1407214461.2566.14.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Aug 2014 01:32:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPDOMVj7qO99-oEh7jnGwjW6JXy_WzVBPUfVRUm0ywOVa6C2kg@mail.gmail.com>
+References: <CAPDOMVj5nifG8VQBB_UzNESBc+arxpCQ5sEOAYdb6Rr-KkDSHw@mail.gmail.com>
+	<20140804164633.GA28436@xanatos>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C4028@US01WEMBX2.internal.synopsys.com>
+	<58974.1407180184@turing-police.cc.vt.edu>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C4061@US01WEMBX2.internal.synopsys.com>
+	<62334.1407184063@turing-police.cc.vt.edu>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C411C@US01WEMBX2.internal.synopsys.com>
+	<CAPDOMViK3ZzeDhNMi9oX_s8kZG45BGPwbmZeoT4u-nqg2rgwSg@mail.gmail.com>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C415A@US01WEMBX2.internal.synopsys.com>
+	<CAPDOMVjy9DzNVMg__MP7-0VAXYojDuGr6v+SoNfj3hhBKyHMYA@mail.gmail.com>
+	<20140805001237.GA29701@xanatos>
+	<CAPDOMVgE4P9e0mm6kxhzK01Sway5gx4FW9+GC9QkJ0AjNp2JoQ@mail.gmail.com>
+	<CAPDOMVj7qO99-oEh7jnGwjW6JXy_WzVBPUfVRUm0ywOVa6C2kg@mail.gmail.com>
+Date: Tue, 5 Aug 2014 01:32:31 -0400
+Message-ID: <CAPDOMVhz6+SaxuJw4mkNNe7tsd54rOK6_D=1CWhpjn=1+NFjCg@mail.gmail.com>
+Subject: Re: Kernel Debugging Support
+From: Nick Krause <xerofoify@gmail.com>
+To: "Nyman, Mathias" <mathias.nyman@intel.com>
+Cc: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-04 at 21:54 -0700, Davidlohr Bueso wrote:
-> >  #ifdef CONFIG_RWSEM_SPIN_ON_OWNER
-> > +/*
-> > + * The owner field is set to RWSEM_READ_OWNED if the last owner(s) are
-> > + * readers. It is not reset until a writer takes over and set it to its
-> > + * task structure pointer or NULL when it frees the lock. So a value
-> > + * of RWSEM_READ_OWNED doesn't mean it currently has active readers.
-> > + */
-> > +#define RWSEM_READ_OWNED	((struct task_struct *)-1)
-> 
-> Looks rather weird...
+On Mon, Aug 4, 2014 at 11:18 PM, Nick Krause <xerofoify@gmail.com> wrote:
+> On Mon, Aug 4, 2014 at 9:33 PM, Nick Krause <xerofoify@gmail.com> wrote:
+>> On Mon, Aug 4, 2014 at 8:12 PM, Sarah Sharp
+>> <sarah.a.sharp@linux.intel.com> wrote:
+>>> On Mon, Aug 04, 2014 at 07:11:07PM -0400, Nick Krause wrote:
+>>>> On Mon, Aug 4, 2014 at 7:03 PM, Paul Zimmerman
+>>>> <Paul.Zimmerman@synopsys.com> wrote:
+>>>> >> From: Nick Krause [mailto:xerofoify@gmail.com]
+>>>
+>>> [snip]
+>>>
+>>>> >> Paul ,
+>>>> >> My computer is rather old now as of Sandy Bridge days, so I probably
+>>>> >> can't test the patch
+>>>> >> on my own machine. However I will look at the code and see if I can
+>>>> >> forward port it
+>>>> >> against the usb git tree I have a current version of. In addition I
+>>>> >> would like the new xhci
+>>>> >> maintainers information in  order to send out a patch with the
+>>>> >> Maintainer for xhci updated.
+>>>> >
+>>>> > Sarah already told you who the new maintainer is, and then CCed him
+>>>> > on this thread. Hint: There is a file name 'MAINTAINERS' in the root
+>>>> > of the kernel tree, which tells you who the maintainers are for all of
+>>>> > the subsystems. Please read Documentation/SubmittingPatches, it has a
+>>>> > lot of information like this that you need to know.
+>>>> >
+>>>> > --
+>>>> > Paul
+>>>> >
+>>>> Thanks I will read this file and thanks for the information. I known
+>>>> where the file is I will
+>>>> add the information then.
+>>>
+>>> You may be looking at an older version of MAINTAINERS.  Mathias has only
+>>> been marked as the maintainer since 3.15.  Which kernel version are you
+>>> working on?
+>>>
+>>> Sarah Sharp
+>>
+> I am going to send out my work on the project you sent me I hope it's
+> Ok if not feel free
+> to tell me why. I did this against linus's tree but other then that it
+> should work.
+> Regards Nick
 
-Instead of populating owner when taking the reader lock, why not just
-leave it NULL. Then, we can differentiate between the owner being NULL
-either because it is taken by reader(s) or simply because it is not
-taken. So something like this:
-
-static inline bool rwsem_owner_is_reader(struct rw_semaphore *sem)
-{
-	return !sem->owner && rwsem_is_locked(sem));
-}
-
+In addition,
+I just sent it a few hours ago. Please let me known tomorrow if it's fine.
+I am assuming based off my other work it's not.
+Nick
