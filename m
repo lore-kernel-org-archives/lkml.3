@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650AbaHESuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:50:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52170 "EHLO
+	id S1754322AbaHESOI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:14:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52111 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754336AbaHESOJ (ORCPT
+	with ESMTP id S1754154AbaHESOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:09 -0400
+	Tue, 5 Aug 2014 14:14:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.15 19/42] iio:bma180: Missing check for frequency fractional part
-Date: Tue,  5 Aug 2014 11:13:33 -0700
-Message-Id: <20140805181321.595412275@linuxfoundation.org>
+        Maxim Patlasov <mpatlasov@parallels.com>,
+        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 13/42] mm/page-writeback.c: fix divide by zero in bdi_dirty_limits()
+Date: Tue,  5 Aug 2014 11:13:27 -0700
+Message-Id: <20140805181321.422447558@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -30,35 +34,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Meerwald <pmeerw@pmeerw.net>
+From: Maxim Patlasov <MPatlasov@parallels.com>
 
-commit 9b2a4d35a6ceaf217be61ed8eb3c16986244f640 upstream.
+commit f6789593d5cea42a4ecb1cbeab6a23ade5ebbba7 upstream.
 
-val2 should be zero
+Under memory pressure, it is possible for dirty_thresh, calculated by
+global_dirty_limits() in balance_dirty_pages(), to equal zero.  Then, if
+strictlimit is true, bdi_dirty_limits() tries to resolve the proportion:
 
-This will make no difference for correct inputs but will reject
-incorrect ones with a decimal part in the value written to the sysfs
-interface.
+  bdi_bg_thresh : bdi_thresh = background_thresh : dirty_thresh
 
-Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
-Cc: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+by dividing by zero.
+
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/accel/bma180.c |    2 ++
- 1 file changed, 2 insertions(+)
+ mm/page-writeback.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/iio/accel/bma180.c
-+++ b/drivers/iio/accel/bma180.c
-@@ -376,6 +376,8 @@ static int bma180_write_raw(struct iio_d
- 		mutex_unlock(&data->mutex);
- 		return ret;
- 	case IIO_CHAN_INFO_LOW_PASS_FILTER_3DB_FREQUENCY:
-+		if (val2)
-+			return -EINVAL;
- 		mutex_lock(&data->mutex);
- 		ret = bma180_set_bw(data, val);
- 		mutex_unlock(&data->mutex);
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1324,9 +1324,9 @@ static inline void bdi_dirty_limits(stru
+ 	*bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
+ 
+ 	if (bdi_bg_thresh)
+-		*bdi_bg_thresh = div_u64((u64)*bdi_thresh *
+-					 background_thresh,
+-					 dirty_thresh);
++		*bdi_bg_thresh = dirty_thresh ? div_u64((u64)*bdi_thresh *
++							background_thresh,
++							dirty_thresh) : 0;
+ 
+ 	/*
+ 	 * In order to avoid the stacked BDI deadlock we need
 
 
