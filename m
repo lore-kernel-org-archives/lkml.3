@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205AbaHENip (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 09:38:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14938 "EHLO mga09.intel.com"
+	id S1753235AbaHENms (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 09:42:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49539 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329AbaHENin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 09:38:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,804,1400050800"; 
-   d="scan'208";a="554000400"
-Message-ID: <1407245914.30675.31.camel@acox1-desk.ger.corp.intel.com>
-Subject: Re: [PATCH 2/3] tty: serial: 8250: Add Mediatek UART driver
-From: Alan Cox <alan@linux.intel.com>
-To: Varka Bhadram <varkabhadram@gmail.com>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>, linux-kernel@vger.kernel.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, gregkh@linuxfoundation.org, jslaby@suse.cz,
-        grant.likely@linaro.org, heikki.krogerus@linux.intel.com,
-        paul.gortmaker@windriver.com, asierra@xes-inc.com, mwelling@ieee.org,
-        dianders@chromium.org, m-karicheri2@ti.com, jschultz@xes-inc.com,
-        mingo@elte.hu, balbi@ti.com, heiko@sntech.de,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-api@vger.kernel.org
-Date: Tue, 05 Aug 2014 14:38:34 +0100
-In-Reply-To: <53E0C839.3000808@gmail.com>
-References: <1407236054-30994-1-git-send-email-matthias.bgg@gmail.com>
-		 <1407236054-30994-3-git-send-email-matthias.bgg@gmail.com>
-		 <53E0C633.7060600@gmail.com>
-	 <1407240147.30675.29.camel@acox1-desk.ger.corp.intel.com>
-	 <53E0C839.3000808@gmail.com>
-Organization: Intel Corporation
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751933AbaHENmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 09:42:46 -0400
+Message-ID: <53E0DF51.3010506@suse.cz>
+Date: Tue, 05 Aug 2014 15:42:41 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: behanw@converseincode.com
+CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org,
+        =?UTF-8?B?SmFuLVNpbW9uIE3DtmxsZXI=?= <dl9pf@gmx.de>,
+        Mark Charlebois <charlebm@gmail.com>, bp@alien8.de
+Subject: Re: [PATCH v3] kbuild, LLVMLinux: Supress warnings unless W=1-3
+References: <53DAAB35.8080206@suse.cz> <1406866105-24980-1-git-send-email-behanw@converseincode.com>
+In-Reply-To: <1406866105-24980-1-git-send-email-behanw@converseincode.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-08-05 at 17:34 +0530, Varka Bhadram wrote:
-> On 08/05/2014 05:32 PM, Alan Cox wrote:
-> > On Tue, 2014-08-05 at 17:25 +0530, Varka Bhadram wrote:
-> >> On 08/05/2014 04:24 PM, Matthias Brugger wrote:
-> >>
-> >> (...)
-> >>
-> >>> +#include <linux/io.h>
-> >>> +#include <linux/module.h>
-> >>> +#include <linux/serial_8250.h>
-> >>> +#include <linux/of_irq.h>
-> >>> +#include <linux/of_platform.h>
-> >>> +#include <linux/platform_device.h>
-> >>> +#include <linux/clk.h>
-> >>> +#include <linux/pm_runtime.h>
-> >>> +#include "8250.h"
-> >>> +
-> >> Better if we have includes in alphabetical order..
-> >
-> > So 8250.h would be first and it wouldn't compile ???
-> >
-> > Can we stick to serious critiques ?
+On 2014-08-01 06:08, behanw@converseincode.com wrote:
+> From: Behan Webster <behanw@converseincode.com>
 > 
-> The local headers should be at the end of all includes
+> clang has more warnings enabled by default. Turn them off unless W is set.
+> This patch fixes a logic bug where warnings in clang were disabled when W was set.
+> 
+> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+> Cc: mmarek@suse.cz
+> Cc: bp@alien8.de
+> ---
+>  Makefile                   |  1 +
+>  scripts/Makefile.extrawarn | 22 ++++++++++++----------
+>  2 files changed, 13 insertions(+), 10 deletions(-)
 
-Which is not alaphetical order
+OK, this looks better, I applied the patch to kbuild.git#kbuild.
 
-The include ordering does not matter, please stick to actual things that
-matter.
+
+> +KBUILD_CFLAGS += $(call cc-disable-warning, unknown-warning-option)
+
+Do we have -W... options in the Makefiles that clang does not understand
+and that are added unconditionally?
+
+Thanks,
+Michal
 
