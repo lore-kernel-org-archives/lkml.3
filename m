@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780AbaHESlN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:41:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52333 "EHLO
+	id S1755982AbaHESle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:41:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52328 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754886AbaHESO2 (ORCPT
+	with ESMTP id S1754876AbaHESO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:28 -0400
+	Tue, 5 Aug 2014 14:14:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>,
         Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 17/39] iio: buffer: Fix demux table creation
-Date: Tue,  5 Aug 2014 11:13:54 -0700
-Message-Id: <20140805181336.564297094@linuxfoundation.org>
+Subject: [PATCH 3.14 16/39] iio:bma180: Missing check for frequency fractional part
+Date: Tue,  5 Aug 2014 11:13:53 -0700
+Message-Id: <20140805181336.535213467@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
 References: <20140805181336.030349158@linuxfoundation.org>
@@ -29,34 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Peter Meerwald <pmeerw@pmeerw.net>
 
-commit 61bd55ce1667809f022be88da77db17add90ea4e upstream.
+commit 9b2a4d35a6ceaf217be61ed8eb3c16986244f640 upstream.
 
-When creating the demux table we need to iterate over the selected scan mask for
-the buffer to get the samples which should be copied to destination buffer.
-Right now the code uses the mask which contains all active channels, which means
-the demux table contains entries which causes it to copy all the samples from
-source to destination buffer one by one without doing any demuxing.
+val2 should be zero
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+This will make no difference for correct inputs but will reject
+incorrect ones with a decimal part in the value written to the sysfs
+interface.
+
+Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
+Cc: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
 Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/industrialio-buffer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/iio/accel/bma180.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/iio/industrialio-buffer.c
-+++ b/drivers/iio/industrialio-buffer.c
-@@ -953,7 +953,7 @@ static int iio_buffer_update_demux(struc
- 
- 	/* Now we have the two masks, work from least sig and build up sizes */
- 	for_each_set_bit(out_ind,
--			 indio_dev->active_scan_mask,
-+			 buffer->scan_mask,
- 			 indio_dev->masklength) {
- 		in_ind = find_next_bit(indio_dev->active_scan_mask,
- 				       indio_dev->masklength,
+--- a/drivers/iio/accel/bma180.c
++++ b/drivers/iio/accel/bma180.c
+@@ -376,6 +376,8 @@ static int bma180_write_raw(struct iio_d
+ 		mutex_unlock(&data->mutex);
+ 		return ret;
+ 	case IIO_CHAN_INFO_LOW_PASS_FILTER_3DB_FREQUENCY:
++		if (val2)
++			return -EINVAL;
+ 		mutex_lock(&data->mutex);
+ 		ret = bma180_set_bw(data, val);
+ 		mutex_unlock(&data->mutex);
 
 
