@@ -1,66 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932754AbaHEI7P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 04:59:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44081 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932668AbaHEI7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 04:59:13 -0400
-Subject: Re: [PATCH 3/4] Add the "verbose" module option.
-From: Jean Delvare <jdelvare@suse.de>
-To: kreijack@inwind.it
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, bryan@whatroute.net
-In-Reply-To: <53DFBE8D.5050707@inwind.it>
-References: <1406901650-20841-1-git-send-email-kreijack@inwind.it>
-	 <1406901650-20841-4-git-send-email-kreijack@inwind.it>
-	 <20140803161223.0b26e4bc@endymion.delvare>	<53DE5179.3080402@gmail.com>
-	 <20140803175222.3433b646@endymion.delvare>  <53DE650E.4060909@gmail.com>
-	 <1407141986.4302.10.camel@chaos.site>  <53DFBE8D.5050707@inwind.it>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Tue, 05 Aug 2014 10:59:07 +0200
-Message-ID: <1407229147.4302.19.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S932770AbaHEJBr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 05:01:47 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:60754 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932668AbaHEJBo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 05:01:44 -0400
+Message-ID: <4e2d3edfcb11be9671260c34dd82ae9f.squirrel@www.codeaurora.org>
+In-Reply-To: <53E07484.2040404@ti.com>
+References: <1406810222-19365-1-git-send-email-ygardi@codeaurora.org>
+    <53DF2B0D.7060002@ti.com>
+    <2ecf0e722084297aa67656b5ada33d18.squirrel@www.codeaurora.org>
+    <53E07484.2040404@ti.com>
+Date: Tue, 5 Aug 2014 09:01:43 -0000
+Subject: Re: [PATCH v1] phy: extend APIs of the generic phy framework
+From: ygardi@codeaurora.org
+To: "Kishon Vijay Abraham I" <kishon@ti.com>
+Cc: ygardi@codeaurora.org, linux-arm-msm@vger.kernel,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        noag@codeaurora.org, subhashj@codeaurora.org, gbroner@codeaurora.org
+User-Agent: SquirrelMail/1.4.22-4.el6
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Monday 04 August 2014 à 19:10 +0200, Goffredo Baroncelli a écrit :
-> On 08/04/2014 10:46 AM, Jean Delvare wrote:
-> > Le Sunday 03 August 2014 à 18:36 +0200, Goffredo Baroncelli a écrit :
-> >> The printk without "(tuned %+d)" is never called because 
-> >> LOG_TEMP was #define(d) equal to 0.
-> > 
-> > And this is what your second printk is replacing. So it should not have
-> > the "(tuned *)" either.
-> > 
-> I removed the printk(s) from tune_fan(); the ones leaved replaced 
-> both the ones inside tune_fan() and the ones outside.
+> Hi,
+>
+> On Tuesday 05 August 2014 12:03 AM, ygardi@codeaurora.org wrote:
+>>> Hi,
+>>>
+>>> On Thursday 31 July 2014 06:07 PM, Yaniv Gardi wrote:
+>>>> This change adds a few more APIs to the phy_ops structure:
+>>>> advertise_quirks - API for setting the phy quirks
+>>>
+>>> What are these phy quirks? An explanation on what you are are planning
+>>> to
+>>> do
+>>> with these quirks might help.
+>>
+>> A phy HW might have a specific behavior that should be exposed to the
+>> phy
+>> SW structure by calling this callback. This is the reason behind this
+>> callback. does it make more sense now ?
+>
+> I'm more interested in the _specific_ behaviour you are talking about.
+> Such
+> callbacks can be abused easily.
 
-I understand that. But you still had two final printks, one with "(tuned
-%+d)" when level >= 0, which corresponds to what was printed in tune_fan
-before, and another one when level < 0, which corresponds to what was
-printed in poll_temp before, and that one did not have a "tuned +0" part
-so I simply fail to see why its replacement should have it.
+I'm not sure I understand how this callback can be abused more than any
+other callback. however, specific behaviour of PHY can be, for example,
+different configuration of attributes during power_on power_off when a
+quirk of hibern8_exit is advertised etc.
 
-I admit I'm surprised we're arguing on that as it seems really obvious
-to me, so I can only hope I'm not missing something even more obvious.
+>>
+>>
+>>>> suspend - API for the implementation of phy suspend sequence
+>>>> resume - API for the implementation of phy resume sequence
+>>>
+>>> Why not use the existing pm_runtime's suspend/resume callbacks?
+>>>
+>> Like we observed in our case, often there are need to be extra
+>> operations
+>> in the suspend/resume sequence. those specific operations include
+>> turning
+>> off/on specific clocks, disabling/enabling regulators etc. the specific
+>> implementation must give enough flexibility to add whatever needed to be
+>> done in suspend/resume sequences.
+>
+> All these can be done in suspend and resume callbacks of pm_runtime.
 
-> Anyway, Benjamin which is your opinion ? 
-> For me is equal to remove or to leave "(tune +0)" (when the tuning is equal to 0).
-> Jean think it is better to remove "(tune +0)" (when the tuning is equal to 0).
-> So if you haven't any objection I will remove it.
 
-s/remove/not introduce/ is my actual point.
+>
+> Thanks
+> Kishon
+>>
+>>
+>>
+>>
+>>>>
+>>>> Change-Id: I44dd77f2603d20acb02ccb0cc0d20ade884f97c2
+>>> Remove this..
+>>>
+>>>> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
+>>>> ---
+>>>>  Documentation/phy.txt   |  6 ++---
+>>>>  drivers/phy/phy-core.c  | 58
+>>>> +++++++++++++++++++++++++++++++++++++++++++++++++
+>>>>  include/linux/phy/phy.h | 33 ++++++++++++++++++++++++++++
+>>>>  3 files changed, 94 insertions(+), 3 deletions(-)
+>>>>
+>>>> diff --git a/Documentation/phy.txt b/Documentation/phy.txt
+>>>> index c6594af..f0dc28e 100644
+>>>> --- a/Documentation/phy.txt
+>>>> +++ b/Documentation/phy.txt
+>>>> @@ -63,9 +63,9 @@ struct phy *devm_phy_create(struct device *dev,
+>>>> struct
+>>>> device_node *node,
+>>>>  The PHY drivers can use one of the above 2 APIs to create the PHY by
+>>>> passing
+>>>>  the device pointer, phy ops and init_data.
+>>>>  phy_ops is a set of function pointers for performing PHY operations
+>>>> such as
+>>>> -init, exit, power_on and power_off. *init_data* is mandatory to get a
+>>>> reference
+>>>> -to the PHY in the case of non-dt boot. See section *Board File
+>>>> Initialization*
+>>>> -on how init_data should be used.
+>>>> +init, exit, power_on and power_off, , suspend, resume and
+>>>> advertise_quirks.
+>>>> +*init_data* is mandatory to get a reference to the PHY in the case of
+>>>> non-dt
+>>>> +boot. See section *Board File Initialization* on how init_data should
+>>>> be used.
+>>>>
+>>>>  Inorder to dereference the private data (in phy_ops), the phy
+>>>> provider
+>>>> driver
+>>>>  can use phy_set_drvdata() after creating the PHY and use
+>>>> phy_get_drvdata() in
+>>>> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+>>>> index ff5eec5..77abaab 100644
+>>>> --- a/drivers/phy/phy-core.c
+>>>> +++ b/drivers/phy/phy-core.c
+>>>> @@ -293,6 +293,64 @@ int phy_power_off(struct phy *phy)
+>>>>  }
+>>>>  EXPORT_SYMBOL_GPL(phy_power_off);
+>>>>
+>>>> +int phy_suspend(struct phy *phy)
+>>>> +{
+>>>> +	int ret = 0;
+>>>> +
+>>>> +	if (!phy->ops->suspend)
+>>>> +		return -ENOTSUPP;
+>>>> +
+>>>> +	mutex_lock(&phy->mutex);
+>>>> +
+>>>> +	if (--phy->resume_count == 0) {
+>>>> +		ret =  phy->ops->suspend(phy);
+>>>> +		if (ret) {
+>>>> +			dev_err(&phy->dev, "phy suspend failed --> %d\n", ret);
+>>>> +			/* reverting the resume_count since suspend failed */
+>>>> +			phy->resume_count++;
+>>>> +			goto out;
+>>>> +		}
+>>>> +	}
+>>>> +out:
+>>>> +	mutex_unlock(&phy->mutex);
+>>>> +	return ret;
+>>>> +}
+>>>> +EXPORT_SYMBOL(phy_suspend);
+>>>> +
+>>>> +int phy_resume(struct phy *phy)
+>>>> +{
+>>>> +	int ret = 0;
+>>>> +
+>>>> +	if (!phy->ops->resume)
+>>>> +		return -ENOTSUPP;
+>>>> +
+>>>> +	mutex_lock(&phy->mutex);
+>>>> +
+>>>> +	if (phy->resume_count++ == 0) {
+>>>> +		ret =  phy->ops->resume(phy);
+>>>> +		if (ret) {
+>>>> +			dev_err(&phy->dev, "phy resume failed --> %d\n", ret);
+>>>> +			/* reverting the resume_count since resume failed */
+>>>> +			phy->resume_count--;
+>>>> +			goto out;
+>>>> +		}
+>>>> +	}
+>>>> +out:
+>>>> +	mutex_unlock(&phy->mutex);
+>>>> +	return ret;
+>>>> +}
+>>>> +EXPORT_SYMBOL(phy_resume);
+>>>> +
+>>>> +void phy_advertise_quirks(struct phy *phy)
+>>>> +{
+>>>> +	if (phy->ops->advertise_quirks) {
+>>>> +		mutex_lock(&phy->mutex);
+>>>> +		phy->ops->advertise_quirks(phy);
+>>>> +		mutex_unlock(&phy->mutex);
+>>>> +	}
+>>>> +}
+>>>> +EXPORT_SYMBOL(phy_advertise_quirks);
+>>>> +
+>>>>  /**
+>>>>   * _of_phy_get() - lookup and obtain a reference to a phy by phandle
+>>>>   * @np: device_node for which to get the phy
+>>>> diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+>>>> index 8cb6f81..5b96d65 100644
+>>>> --- a/include/linux/phy/phy.h
+>>>> +++ b/include/linux/phy/phy.h
+>>>> @@ -28,6 +28,14 @@ struct phy;
+>>>>   * @exit: operation to be performed while exiting
+>>>>   * @power_on: powering on the phy
+>>>>   * @power_off: powering off the phy
+>>>> + * @advertise_quirks: setting specific phy quirks. this api is for an
+>>>> +		      internal use of the device driver, and its
+>>>> +		      purpose is to exteriorize the driver's phy quirks
+>>>> +		      according to phy version (or other parameters),
+>>>> +		      so further behaviour of the driver's phy is based
+>>>> +		      on those quirks.
+>>>
+>>> Can you be more specific on what you do with this? This looks more like
+>>> a
+>>> candidate for flags than callback to me?
+>>>
+>>> Thanks
+>>> Kishon
+>>>
+>>
+>>
+>
 
-But I'm not going to argue more, I'm not even using that driver and it's
-a debug message only anyway, so do as you wish.
-
-Thanks,
--- 
-Jean Delvare
-SUSE L3 Support
 
