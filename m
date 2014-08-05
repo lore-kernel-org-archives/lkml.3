@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153AbaHENfA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 09:35:00 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:32014 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725AbaHENe6 (ORCPT
+	id S1754366AbaHENfG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 09:35:06 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:64319 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753725AbaHENfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 09:34:58 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-a4-53e0dd80917b
+	Tue, 5 Aug 2014 09:35:02 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-58-53e0dd84efd4
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Kukjin Kim <kgene.kim@samsung.com>
 Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
@@ -20,75 +20,57 @@ Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         b.zolnierkie@samsung.com
-Subject: [PATCH v5 4/5] ARM: EXYNOS: PM: fix register setup for AFTR mode code
-Date: Tue, 05 Aug 2014 15:34:25 +0200
-Message-id: <1407245666-20016-5-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH v5 5/5] ARM: EXYNOS: cpuidle: allow driver usage on Exynos4x12
+ SoCs
+Date: Tue, 05 Aug 2014 15:34:26 +0200
+Message-id: <1407245666-20016-6-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1407245666-20016-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1407245666-20016-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t9jAd2Guw+CDdZNF7XYOGM9q8W8z7IW
-	vQuuslmcbXrDbvH+0DNmi02Pr7FaXN41h83ic+8RRosZ5/cxWZw5fYnV4uSfXkaL9TNes1hs
-	/OrhwOtx59oeNo/NS+o9bv97zOyx5Wo7i0ffllWMHp83yQWwRXHZpKTmZJalFunbJXBlHD7S
-	xFywibdi1qwG9gbGhdxdjBwcEgImEncWanQxcgKZYhIX7q1n62Lk4hASWMQosablDiuE08Uk
-	cW/aLTaQKjYBK4mJ7asYQWwRATWJnsVbGUGKmAX2Mkss7d7EDpIQFvCT6N63lxFkA4uAqsTy
-	FheQMK+Ah8T1q9+ZILYpSnQ/mwA2k1PAU6Lx2jNmEFsIqGbzld1MExh5FzAyrGIUTS1ILihO
-	Ss811CtOzC0uzUvXS87P3cQIDspnUjsYVzZYHGIU4GBU4uEVULsfLMSaWFZcmXuIUYKDWUmE
-	l/32g2Ah3pTEyqrUovz4otKc1OJDjNIcLErivAdarQOFBNITS1KzU1MLUotgskwcnFINjFby
-	wlIc0UImuiJqD9UOJnaYhQtdv3Rjh6yv3TWVZPF403Tn5E17znx68jngmWnmffkjW8Vakqer
-	zd7cdFr8dOSppknOd9OrtQrfZ2zc1x6/aul0tYbGpz8rji+dnN7OqHQkKED54JY3rvEeRlNX
-	+rGFtm+9OqHl8q+d8+4xcv2p79Le12AnpsRSnJFoqMVcVJwIANj0ilVGAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrELMWRmVeSWpSXmKPExsVy+t9jAd3Wuw+CDdaaWGycsZ7VYt5nWYve
+	BVfZLM42vWG3eH/oGbPFpsfXWC0u75rDZvG59wijxYzz+5gszpy+xGpx8k8vo8X6Ga9ZLDZ+
+	9XDg9bhzbQ+bx+Yl9R63/z1m9thytZ3Fo2/LKkaPz5vkAtiiuGxSUnMyy1KL9O0SuDI2XbnB
+	VPCUs2LXl0dMDYxbOLoYOTgkBEwkFlyM6GLkBDLFJC7cW8/WxcjFISSwiFHi7dNj7BBOF5PE
+	/W1/WUCq2ASsJCa2r2IEsUUE1CR6Fm9lBCliFtjLLLG0exM7SEJYIFSi/fceRpANLAKqEu3L
+	mEHCvAIeEpu+n2eD2KYo0f1sApjNKeAp0XjtGViNEFDN5iu7mSYw8i5gZFjFKJpakFxQnJSe
+	a6RXnJhbXJqXrpecn7uJERySz6R3MK5qsDjEKMDBqMTDK6B2P1iINbGsuDL3EKMEB7OSCC/7
+	7QfBQrwpiZVVqUX58UWlOanFhxilOViUxHkPtloHCgmkJ5akZqemFqQWwWSZODilGhi7Jdqa
+	v/5l/7bB9y2nfr+RRmRgfs6kta+eGd1I+tG/3V/qubWaeoXSvE6p+taVUxtZ5C24OYs8PHvq
+	NBubrZ6tM5VLXurh//hIz5KaJcyJJcel3n/YuqVLgCu+UnvqX6vVlRZyO7++y/DKi1jFn3x0
+	8t5UrhnGK5kPr3FWm56dvMn2yfmnL5RYijMSDbWYi4oTASzIcUZFAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add S5P_CENTRAL_SEQ_OPTION register setup to cpuidle AFTR mode code
-by moving the relevant code from exynos_pm_suspend() (used only by
-suspend) to exynos_pm_central_suspend() (used by both suspend and
-AFTR).  Without this setup AFTR mode doesn't show any benefit over
-WFI one (at least on Exynos4412 SoC).  When this setup is applied
-AFTR mode reduces power consumption by ~12% (as measured on Trats2
-board).
+Register cpuidle platform device on Exynos4x12 SoCs allowing EXYNOS
+cpuidle driver usage on these SoCs.
 
-This change is a preparation for adding secure firmware support to
-EXYNOS cpuidle driver.
+AFTR mode reduces power consumption on Trats2 board (Exynos4412 SoC
+with secure firmware enabled) by ~12% when EXYNOS cpuidle driver is
+enabled (in both cases the default exynos_defconfig config is used
+and CPU1-3 are offlined).
 
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/mach-exynos/pm.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ arch/arm/mach-exynos/exynos.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
-index e0b6885..3cee123 100644
---- a/arch/arm/mach-exynos/pm.c
-+++ b/arch/arm/mach-exynos/pm.c
-@@ -169,6 +169,10 @@ static void exynos_pm_central_suspend(void)
- 	tmp = pmu_raw_readl(S5P_CENTRAL_SEQ_CONFIGURATION);
- 	tmp &= ~S5P_CENTRAL_LOWPWR_CFG;
- 	pmu_raw_writel(tmp, S5P_CENTRAL_SEQ_CONFIGURATION);
-+
-+	/* Setting SEQ_OPTION register */
-+	pmu_raw_writel(S5P_USE_STANDBY_WFI0 | S5P_USE_STANDBY_WFE0,
-+		       S5P_CENTRAL_SEQ_OPTION);
- }
+diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+index 6a24e11..15cf86d 100644
+--- a/arch/arm/mach-exynos/exynos.c
++++ b/arch/arm/mach-exynos/exynos.c
+@@ -317,7 +317,9 @@ static void __init exynos_dt_machine_init(void)
+ 		exynos_sysram_init();
  
- static int exynos_pm_central_resume(void)
-@@ -291,15 +295,8 @@ static void exynos_pm_prepare(void)
+ 	if (of_machine_is_compatible("samsung,exynos4210") ||
+-			of_machine_is_compatible("samsung,exynos5250"))
++	    of_machine_is_compatible("samsung,exynos4212") ||
++	    of_machine_is_compatible("samsung,exynos4412") ||
++	    of_machine_is_compatible("samsung,exynos5250"))
+ 		platform_device_register(&exynos_cpuidle);
  
- static int exynos_pm_suspend(void)
- {
--	unsigned long tmp;
--
- 	exynos_pm_central_suspend();
- 
--	/* Setting SEQ_OPTION register */
--
--	tmp = (S5P_USE_STANDBY_WFI0 | S5P_USE_STANDBY_WFE0);
--	pmu_raw_writel(tmp, S5P_CENTRAL_SEQ_OPTION);
--
- 	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9)
- 		exynos_cpu_save_register();
- 
+ 	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
 -- 
 1.8.2.3
 
