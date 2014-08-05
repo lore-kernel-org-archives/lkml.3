@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaHEEVj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 00:21:39 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:58535 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaHEEVh (ORCPT
+	id S1752261AbaHEEcO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 00:32:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44167 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632AbaHEEcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 00:21:37 -0400
-Message-ID: <53E05BC9.3060500@gmail.com>
-Date: Tue, 05 Aug 2014 12:21:29 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 5 Aug 2014 00:32:13 -0400
+Date: Mon, 4 Aug 2014 21:31:43 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Andreas Mohr <andi@lisas.de>
+Cc: Kristina =?utf-8?Q?Mart=C5=A1enko?= 
+	<kristina.martsenko@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: Re: [GIT PULL] Staging driver patches for 3.17-rc1
+Message-ID: <20140805043143.GA31519@kroah.com>
+References: <20140804190837.GA27292@kroah.com>
+ <20140805041325.GA27507@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>, Jean Delvare <jdelvare@suse.de>
-CC: Karsten Keil <isdn@linux-pingi.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Simek <monstr@monstr.eu>
-Subject: Re: [PATCH] drivers/isdn/hisax/Kconfig: Let HISAX_NETJET skip microblaze
- architecture
-References: <53DFCFC9.6060307@gmail.com>	<20140804212354.74b97cd7@endymion.delvare> <CAMuHMdVGgW11UziFieCgXT7mSNA=_QgOaGAt42kEXqU9CUgqxA@mail.gmail.com>
-In-Reply-To: <CAMuHMdVGgW11UziFieCgXT7mSNA=_QgOaGAt42kEXqU9CUgqxA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140805041325.GA27507@rhlx01.hs-esslingen.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 08/05/2014 03:44 AM, Geert Uytterhoeven wrote:
-> On Mon, Aug 4, 2014 at 9:23 PM, Jean Delvare <jdelvare@suse.de> wrote:
->>> --- a/drivers/isdn/hisax/Kconfig
->>> +++ b/drivers/isdn/hisax/Kconfig
->>> @@ -237,7 +237,7 @@ config HISAX_MIC
->>>
->>>  config HISAX_NETJET
->>>       bool "NETjet card"
->>> -     depends on PCI && (BROKEN || !(PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
->>> +     depends on PCI && (BROKEN || !(PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN) || MICROBLAZE))
->>>       depends on VIRT_TO_BUS
->>>       help
->>>         This enables HiSax support for the NetJet from Traverse
->>> @@ -249,7 +249,7 @@ config HISAX_NETJET
->>>
->>>  config HISAX_NETJET_U
->>>       bool "NETspider U card"
->>> -     depends on PCI && (BROKEN || !(PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
->>> +     depends on PCI && (BROKEN || !(PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN) || MICROBLAZE))
->>>       depends on VIRT_TO_BUS
->>>       help
->>>         This enables HiSax support for the Netspider U interface ISDN card
->>
->> Fine with me, however the list is getting long. It would be better if
->> we could depend on a functional symbol rather than a negated list of
->> architectures. Would it make sense to have CONFIG_CPU_LITTLE_ENDIAN
->> defined on all little-endian architectures, so that driver can depend
->> on that if needed?
+On Tue, Aug 05, 2014 at 06:13:25AM +0200, Andreas Mohr wrote:
+> > Lots of things in here, over 2000 patches, but the best part is this:
+> >  1480 files changed, 39070 insertions(+), 254659 deletions(-)
+> >
+> > Thanks to the great work of Kristina Martšenko, 14 different staging
+> > drivers have been removed from the tree as they were obsolete and no
+> > one
+> > was willing to work on cleaning them up.
 > 
-> Yes, that idea pops up once in a while.
+> -ENOPARSE.
 > 
-> BTW, these days little endian PPC is also supported by Linux...
+> Define "as they were obsolete and no one was willing to work on cleaning
+> them up."?
 > 
->> Alternatively, it might make more sense to list the architectures where
->> these drivers are actually used in practice. I guess that's X86, maybe
->> ARM and IA64, and that's all?
+> *Either* they're obsolete (due to better alternatives available, in the
+> standard case), in which case they indeed can be removed on the spot,
+> *or* they are expected to become full-service drivers and thus need cleanup.
+> Which is it?
+
+No one was willing to do the work to get these drivers out of the
+staging directory.  One had been broken for a number of kernel releases
+with no one even noticing.
+
+> In the case of keucr (a driver where I happen to own hardware,
+> and where AFAIK this driver is required),
+> I really don't see "nobody was willing to work on cleaning them up.",
+> as git log tells.
+
+Don't confuse "coding style cleanups done in a drive-by fashion" with
+"willing to do the real work to get this driver merged out of the
+staging tree."
+
+> Admittedly there probably was no substantial rework,
+> but it did have many janitorial changes, and some changes
+> only 4 months ago even (a time frame which IMHO does not justify
+> removing a driver wholesale, with the effect of certain users to not
+> be able to use them then).
 > 
-> || COMPILE_TEST ....
-> 
+> Oh well, yet another driver where it became more difficult rather than
+> easier to make forward progress.
 
-OK, thanks, what all of you said sounds reasonable to me.
+If you are willing to do the work, I will gladly revert the patch and
+look forward to patches to fix the remaining changes.
 
-Hello Geert:
+thanks,
 
-Could you help send the related patch for it?
-
-
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+greg k-h
