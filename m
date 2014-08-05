@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989AbaHEKgL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 06:36:11 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:39753 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522AbaHEKgJ (ORCPT
+	id S1753172AbaHEKgV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 06:36:21 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:51698 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753010AbaHEKgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 06:36:09 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: agraf@suse.de, kvm@vger.kernel.org, linux-next@vger.kernel.org,
-        kvm-ppc@vger.kernel.org, sfr@canb.auug.org.au
-Subject: [PATCH] KVM: PPC: drop duplicate tracepoint
-Date: Tue,  5 Aug 2014 12:35:56 +0200
-Message-Id: <1407234956-743-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Tue, 5 Aug 2014 06:36:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrV6rap+rZirLsMmdzML9rSKnWEmq-ACNLLGYgKtT-K6uA@mail.gmail.com>
+References: <1406904498-21647-1-git-send-email-dvlasenk@redhat.com>
+ <1406904498-21647-4-git-send-email-dvlasenk@redhat.com> <CALCETrWA6SL52SOM3yifvc0Pjz-HTOvs8G8fXo9TqF5v=0eTzw@mail.gmail.com>
+ <CAK1hOcOwD0cpVWZEV8FP40y9149feUdaxoszQC+wWQfAwU4MNQ@mail.gmail.com> <CALCETrV6rap+rZirLsMmdzML9rSKnWEmq-ACNLLGYgKtT-K6uA@mail.gmail.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Tue, 5 Aug 2014 12:35:55 +0200
+Message-ID: <CAK1hOcM_KLqi9MVa_b-WoimCD084F-t_qE-maEX7ibgtzg8BnQ@mail.gmail.com>
+Subject: Re: [PATCH 4/5] x86: entry_64.S: always allocate complete "struct pt_regs"
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 29577fc00ba4 ("KVM: PPC: HV: Remove generic instruction emulation")
-caused a build failure:
+On Mon, Aug 4, 2014 at 11:03 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> Next up: remove FIXUP/RESTORE_TOP_OF_STACK? :)  Maybe I'll give that a shot.
+>>
+>> I'm yet at the stage "what that stuff does anyway?" and at
+>> "why do we need percpu old_rsp thingy?" in particular.
+>
+> On x86_64, the syscall instruction has no effect on rsp.  That means
+> that the entry point starts out with no stack.  There are no free
+> registers whatsoever at the entry point.
+>
+> That means that the entry code needs to do swapgs, stash rsp somewhere
+> relative to gs, and then load the kernel's rsp.  old_rsp is the spot
+> used for this.
+>
+> Now the kernel does an optimization that is, I think, very much not
+> worth it.  The kernel doesn't bother sticking the old rsp value into
+> pt_regs (saving two instructions on fast path entries) and doesn't
+> initialize the SS, CS, RCX, and EFLAGS fields in pt_regs, saving four
+> more instructions.
+>
+> To make this optimization work, the whole FIXUP/RESTORE_TOP_OF_STACK
+> dance is needed, and there's the usersp crap in the context switch
+> code, and current_user_stack_pointer(), and probably even more crap
+> that I haven't noticed.  And I sure hope that nothing in the *compat*
+> syscall path touches current_user_stack_pointer(), because the compat
+> code doesn't seem to use old_rsp.
+>
+> I think this should all be ripped out.  The only real difficulty will
+> be that the sysret code needs to restore rsp itself, so the sysret
+> path will end up needing two more instructions.  Removing all of the
+> TOP_OF_STACK stuff will add ten instructions to fast path syscalls,
+> and I wouldn't be surprised if this adds considerably fewer than ten
+> cycles on any modern chip.
 
-arch/powerpc/kvm/kvm-pr.o:(__tracepoints+0xa8): multiple definition of `__tracepoint_kvm_ppc_instr'
-arch/powerpc/kvm/kvm.o:(__tracepoints+0x1c0): first defined here
+Something like this on the fast path? -
 
-due to a duplicate definition of the tracepoint in trace.h and
-trace_pr.h.  Because the tracepoint is still used by Book3S HV
-code, and because the PR code does include trace.h, just remove
-the duplicate definition from trace_pr.h, and export it from
-kvm.o.
+        SWAPGS_UNSAFE_STACK
+        movq    %rsp,PER_CPU_VAR(old_rsp)
+        movq    PER_CPU_VAR(kernel_stack),%rsp
+        ENABLE_INTERRUPTS(CLBR_NONE)
+        ALLOC_PTREGS_ON_STACK 8         /* +8: space for orig_ax */
+        SAVE_C_REGS
+        movq  %rax,ORIG_RAX(%rsp)
+        movq  %rcx,RIP(%rsp)
++       movq  %r11,EFLAGS(%rsp)
++       movq PER_CPU_VAR(old_rsp),%rcx
++       movq %rcx,RSP(%rsp)
+        ...
+-       RESTORE_C_REGS_EXCEPT_RCX
++       RESTORE_C_REGS_EXCEPT_RCX_R11
+        movq RIP(%rsp),%rcx
++       movq    EFLAGS(%rsp), %r11
+-       movq    PER_CPU_VAR(old_rsp), %rsp
++       movq    RSP(%rsp), %rsp
+      USERGS_SYSRET64
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/powerpc/kvm/emulate.c  |  2 ++
- arch/powerpc/kvm/trace_pr.h | 20 --------------------
- 2 files changed, 2 insertions(+), 20 deletions(-)
+Looks like only 3 additional insns (unfortunately, one is memory read).
+Do we need to save rsc and r11 in "struct pt_regs" in their
+"standard" slots, though? If we don't, we can drop two insns
+(SAVE_C_REGS -> SAVE_C_REGS_EXCEPT_RCX_R11).
 
-diff --git a/arch/powerpc/kvm/emulate.c b/arch/powerpc/kvm/emulate.c
-index e96b50d0bdab..2325168ad1ff 100644
---- a/arch/powerpc/kvm/emulate.c
-+++ b/arch/powerpc/kvm/emulate.c
-@@ -300,3 +300,5 @@ int kvmppc_emulate_instruction(struct kvm_run *run, struct kvm_vcpu *vcpu)
- 	return emulated;
- }
- EXPORT_SYMBOL_GPL(kvmppc_emulate_instruction);
-+
-+EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_ppc_instr);
-diff --git a/arch/powerpc/kvm/trace_pr.h b/arch/powerpc/kvm/trace_pr.h
-index a674f090dfb8..e1357cd8dc1f 100644
---- a/arch/powerpc/kvm/trace_pr.h
-+++ b/arch/powerpc/kvm/trace_pr.h
-@@ -291,26 +291,6 @@ TRACE_EVENT(kvm_unmap_hva,
- 	TP_printk("unmap hva 0x%lx\n", __entry->hva)
- );
- 
--TRACE_EVENT(kvm_ppc_instr,
--	TP_PROTO(unsigned int inst, unsigned long _pc, unsigned int emulate),
--	TP_ARGS(inst, _pc, emulate),
--
--	TP_STRUCT__entry(
--		__field(	unsigned int,	inst		)
--		__field(	unsigned long,	pc		)
--		__field(	unsigned int,	emulate		)
--	),
--
--	TP_fast_assign(
--		__entry->inst		= inst;
--		__entry->pc		= _pc;
--		__entry->emulate	= emulate;
--	),
--
--	TP_printk("inst %u pc 0x%lx emulate %u\n",
--		  __entry->inst, __entry->pc, __entry->emulate)
--);
--
- #endif /* _TRACE_KVM_H */
- 
- /* This part must be outside protection */
+Then old_rsp can be nuked everywhere else,
+RESTORE_TOP_OF_STACK can be nuked, and
+FIXUP_TOP_OF_STACK can be reduced to merely:
+
+        movq $__USER_DS,SS(%rsp)
+        movq $__USER_CS,CS(%rsp)
+
+(BTW, why currently it does "movq $-1,RCX+\offset(%rsp)?)
+
 -- 
-1.8.3.1
-
+vda
