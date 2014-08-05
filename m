@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932933AbaHEJTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 05:19:35 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:59166 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932792AbaHEJTd (ORCPT
+	id S932950AbaHEJT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 05:19:56 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:63296 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932935AbaHEJTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 05:19:33 -0400
-Message-ID: <53E0A19A.4060504@redhat.com>
-Date: Tue, 05 Aug 2014 11:19:22 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 5 Aug 2014 05:19:54 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>,
+        Michal Simek <monstr@monstr.eu>, Tony Lindgren <tony@atomide.com>,
+        linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH] x86/devicetree: Fix compile warnings on AMD64
+Date: Tue,  5 Aug 2014 11:19:48 +0200
+Message-Id: <1407230388-14211-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 2.0.1
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Alexander Graf <agraf@suse.de>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the kvm-ppc tree
-References: <20140804203618.67a5ba54@canb.auug.org.au>
-In-Reply-To: <20140804203618.67a5ba54@canb.auug.org.au>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/08/2014 12:36, Stephen Rothwell ha scritto:
-> Hi Alexander,
-> 
-> After merging the kvm-ppc tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> arch/powerpc/kvm/kvm-pr.o:(__tracepoints+0xa8): multiple definition of `__tracepoint_kvm_ppc_instr'
-> arch/powerpc/kvm/kvm.o:(__tracepoints+0x1c0): first defined here
-> 
-> Caused by commit 29577fc00ba4 ("KVM: PPC: HV: Remove generic
-> instruction emulation").  I note that this commit has no Reviewed-by,
-> Tested-by or Acked-by tags and only one Signed-off-by tag.
-> 
-> I have reverted that commit for today.
+arch/x86/kernel/devicetree.c: In function ‘ioapic_xlate’:
+arch/x86/kernel/devicetree.c:294:8: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  idx = (__force u32) domain->host_data;
+        ^
+arch/x86/kernel/devicetree.c: In function ‘dt_add_ioapic_domain’:
+arch/x86/kernel/devicetree.c:323:4: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+    (void *)ioapic_num);
 
-Thanks for the heads up.  I will apply this, and wait for tomorrow's
-linux-next build before sending the result to Linus:
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+ arch/x86/kernel/devicetree.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/kvm/trace_pr.h b/arch/powerpc/kvm/trace_pr.h
-index a674f090dfb8..e1357cd8dc1f 100644
---- a/arch/powerpc/kvm/trace_pr.h
-+++ b/arch/powerpc/kvm/trace_pr.h
-@@ -291,26 +291,6 @@ TRACE_EVENT(kvm_unmap_hva,
- 	TP_printk("unmap hva 0x%lx\n", __entry->hva)
- );
+diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+index 7db54b5..a481d1b 100644
+--- a/arch/x86/kernel/devicetree.c
++++ b/arch/x86/kernel/devicetree.c
+@@ -278,7 +278,8 @@ static int ioapic_xlate(struct irq_domain *domain,
+ {
+ 	struct io_apic_irq_attr attr;
+ 	struct of_ioapic_type *it;
+-	u32 line, idx;
++	u32 line;
++	unsigned long idx;
+ 	int rc;
  
--TRACE_EVENT(kvm_ppc_instr,
--	TP_PROTO(unsigned int inst, unsigned long _pc, unsigned int emulate),
--	TP_ARGS(inst, _pc, emulate),
--
--	TP_STRUCT__entry(
--		__field(	unsigned int,	inst		)
--		__field(	unsigned long,	pc		)
--		__field(	unsigned int,	emulate		)
--	),
--
--	TP_fast_assign(
--		__entry->inst		= inst;
--		__entry->pc		= _pc;
--		__entry->emulate	= emulate;
--	),
--
--	TP_printk("inst %u pc 0x%lx emulate %u\n",
--		  __entry->inst, __entry->pc, __entry->emulate)
--);
--
- #endif /* _TRACE_KVM_H */
+ 	if (WARN_ON(intsize < 2))
+@@ -291,7 +292,7 @@ static int ioapic_xlate(struct irq_domain *domain,
  
- /* This part must be outside protection */
+ 	it = &of_ioapic_type[intspec[1]];
+ 
+-	idx = (u32) domain->host_data;
++	idx = (unsigned long) domain->host_data;
+ 	set_io_apic_irq_attr(&attr, idx, line, it->trigger, it->polarity);
+ 
+ 	rc = io_apic_setup_irq_pin_once(irq_find_mapping(domain, line),
+@@ -320,7 +321,7 @@ static void dt_add_ioapic_domain(unsigned int ioapic_num,
+ 	num = gsi_cfg->gsi_end - gsi_cfg->gsi_base + 1;
+ 
+ 	id = irq_domain_add_linear(np, num, &ioapic_irq_domain_ops,
+-			(void *)ioapic_num);
++			(void *)((unsigned long)ioapic_num));
+ 	BUG_ON(!id);
+ 	if (gsi_cfg->gsi_base == 0) {
+ 		/*
+-- 
+2.0.1
 
-
-Paolo
