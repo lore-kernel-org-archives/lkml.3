@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337AbaHESOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:14:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52476 "EHLO
+	id S1756106AbaHESVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:21:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755185AbaHESOq (ORCPT
+	with ESMTP id S1753934AbaHESOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:46 -0400
+	Tue, 5 Aug 2014 14:14:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.14 39/39] x86/espfix/xen: Fix allocation of pages for paravirt page tables
-Date: Tue,  5 Aug 2014 11:14:16 -0700
-Message-Id: <20140805181337.218770741@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 3.10 16/27] x86, espfix: Make it possible to disable 16-bit support
+Date: Tue,  5 Aug 2014 11:14:08 -0700
+Message-Id: <20140805181344.744270996@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
-References: <20140805181336.030349158@linuxfoundation.org>
+In-Reply-To: <20140805181344.268039690@linuxfoundation.org>
+References: <20140805181344.268039690@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,62 +24,216 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit 8762e5092828c4dc0f49da5a47a644c670df77f3 upstream.
+commit 34273f41d57ee8d854dcd2a1d754cbb546cb548f upstream.
 
-init_espfix_ap() is currently off by one level when informing hypervisor
-that allocated pages will be used for ministacks' page tables.
+Embedded systems, which may be very memory-size-sensitive, are
+extremely unlikely to ever encounter any 16-bit software, so make it
+a CONFIG_EXPERT option to turn off support for any 16-bit software
+whatsoever.
 
-The most immediate effect of this on a PV guest is that if
-'stack_page = __get_free_page()' returns a non-zeroed-out page the hypervisor
-will refuse to use it for a page table (which it shouldn't be anyway). This will
-result in warnings by both Xen and Linux.
-
-More importantly, a subsequent write to that page (again, by a PV guest) is
-likely to result in fatal page fault.
-
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Link: http://lkml.kernel.org/r/1404926298-5565-1-git-send-email-boris.ostrovsky@oracle.com
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/espfix_64.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/x86/Kconfig           |   23 ++++++++++++++++++-----
+ arch/x86/kernel/entry_32.S |   12 ++++++++++++
+ arch/x86/kernel/entry_64.S |    8 ++++++++
+ arch/x86/kernel/ldt.c      |    5 +++++
+ 4 files changed, 43 insertions(+), 5 deletions(-)
 
---- a/arch/x86/kernel/espfix_64.c
-+++ b/arch/x86/kernel/espfix_64.c
-@@ -175,7 +175,7 @@ void init_espfix_ap(void)
- 	if (!pud_present(pud)) {
- 		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
- 		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
--		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
-+		paravirt_alloc_pmd(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
- 		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
- 			set_pud(&pud_p[n], pud);
- 	}
-@@ -185,7 +185,7 @@ void init_espfix_ap(void)
- 	if (!pmd_present(pmd)) {
- 		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
- 		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
--		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
-+		paravirt_alloc_pte(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
- 		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
- 			set_pmd(&pmd_p[n], pmd);
- 	}
-@@ -193,7 +193,6 @@ void init_espfix_ap(void)
- 	pte_p = pte_offset_kernel(&pmd, addr);
- 	stack_page = (void *)__get_free_page(GFP_KERNEL);
- 	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
--	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
- 	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
- 		set_pte(&pte_p[n*PTE_STRIDE], pte);
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -952,14 +952,27 @@ config VM86
+ 	default y
+ 	depends on X86_32
+ 	---help---
+-	  This option is required by programs like DOSEMU to run 16-bit legacy
+-	  code on X86 processors. It also may be needed by software like
+-	  XFree86 to initialize some video cards via BIOS. Disabling this
+-	  option saves about 6k.
++	  This option is required by programs like DOSEMU to run
++	  16-bit real mode legacy code on x86 processors. It also may
++	  be needed by software like XFree86 to initialize some video
++	  cards via BIOS. Disabling this option saves about 6K.
++
++config X86_16BIT
++	bool "Enable support for 16-bit segments" if EXPERT
++	default y
++	---help---
++	  This option is required by programs like Wine to run 16-bit
++	  protected mode legacy code on x86 processors.  Disabling
++	  this option saves about 300 bytes on i386, or around 6K text
++	  plus 16K runtime memory on x86-64,
++
++config X86_ESPFIX32
++	def_bool y
++	depends on X86_16BIT && X86_32
  
+ config X86_ESPFIX64
+ 	def_bool y
+-	depends on X86_64
++	depends on X86_16BIT && X86_64
+ 
+ config TOSHIBA
+ 	tristate "Toshiba Laptop support"
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -532,6 +532,7 @@ syscall_exit:
+ restore_all:
+ 	TRACE_IRQS_IRET
+ restore_all_notrace:
++#ifdef CONFIG_X86_ESPFIX32
+ 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS, SS and CS
+ 	# Warning: PT_OLDSS(%esp) contains the wrong/random values if we
+ 	# are returning to the kernel.
+@@ -542,6 +543,7 @@ restore_all_notrace:
+ 	cmpl $((SEGMENT_LDT << 8) | USER_RPL), %eax
+ 	CFI_REMEMBER_STATE
+ 	je ldt_ss			# returning to user-space with LDT SS
++#endif
+ restore_nocheck:
+ 	RESTORE_REGS 4			# skip orig_eax/error_code
+ irq_return:
+@@ -554,6 +556,7 @@ ENTRY(iret_exc)
+ .previous
+ 	_ASM_EXTABLE(irq_return,iret_exc)
+ 
++#ifdef CONFIG_X86_ESPFIX32
+ 	CFI_RESTORE_STATE
+ ldt_ss:
+ #ifdef CONFIG_PARAVIRT
+@@ -597,6 +600,7 @@ ldt_ss:
+ 	lss (%esp), %esp		/* switch to espfix segment */
+ 	CFI_ADJUST_CFA_OFFSET -8
+ 	jmp restore_nocheck
++#endif
+ 	CFI_ENDPROC
+ ENDPROC(system_call)
+ 
+@@ -709,6 +713,7 @@ END(syscall_badsys)
+  * the high word of the segment base from the GDT and swiches to the
+  * normal stack and adjusts ESP with the matching offset.
+  */
++#ifdef CONFIG_X86_ESPFIX32
+ 	/* fixup the stack */
+ 	mov GDT_ESPFIX_SS + 4, %al /* bits 16..23 */
+ 	mov GDT_ESPFIX_SS + 7, %ah /* bits 24..31 */
+@@ -718,8 +723,10 @@ END(syscall_badsys)
+ 	pushl_cfi %eax
+ 	lss (%esp), %esp		/* switch to the normal stack segment */
+ 	CFI_ADJUST_CFA_OFFSET -8
++#endif
+ .endm
+ .macro UNWIND_ESPFIX_STACK
++#ifdef CONFIG_X86_ESPFIX32
+ 	movl %ss, %eax
+ 	/* see if on espfix stack */
+ 	cmpw $__ESPFIX_SS, %ax
+@@ -730,6 +737,7 @@ END(syscall_badsys)
+ 	/* switch to normal stack */
+ 	FIXUP_ESPFIX_STACK
+ 27:
++#endif
+ .endm
+ 
+ /*
+@@ -1337,11 +1345,13 @@ END(debug)
+ ENTRY(nmi)
+ 	RING0_INT_FRAME
+ 	ASM_CLAC
++#ifdef CONFIG_X86_ESPFIX32
+ 	pushl_cfi %eax
+ 	movl %ss, %eax
+ 	cmpw $__ESPFIX_SS, %ax
+ 	popl_cfi %eax
+ 	je nmi_espfix_stack
++#endif
+ 	cmpl $ia32_sysenter_target,(%esp)
+ 	je nmi_stack_fixup
+ 	pushl_cfi %eax
+@@ -1381,6 +1391,7 @@ nmi_debug_stack_check:
+ 	FIX_STACK 24, nmi_stack_correct, 1
+ 	jmp nmi_stack_correct
+ 
++#ifdef CONFIG_X86_ESPFIX32
+ nmi_espfix_stack:
+ 	/* We have a RING0_INT_FRAME here.
+ 	 *
+@@ -1402,6 +1413,7 @@ nmi_espfix_stack:
+ 	lss 12+4(%esp), %esp		# back to espfix stack
+ 	CFI_ADJUST_CFA_OFFSET -24
+ 	jmp irq_return
++#endif
+ 	CFI_ENDPROC
+ END(nmi)
+ 
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1060,8 +1060,10 @@ irq_return:
+ 	 * Are we returning to a stack segment from the LDT?  Note: in
+ 	 * 64-bit mode SS:RSP on the exception stack is always valid.
+ 	 */
++#ifdef CONFIG_X86_ESPFIX64
+ 	testb $4,(SS-RIP)(%rsp)
+ 	jnz irq_return_ldt
++#endif
+ 
+ irq_return_iret:
+ 	INTERRUPT_RETURN
+@@ -1073,6 +1075,7 @@ ENTRY(native_iret)
+ 	_ASM_EXTABLE(native_iret, bad_iret)
+ #endif
+ 
++#ifdef CONFIG_X86_ESPFIX64
+ irq_return_ldt:
+ 	pushq_cfi %rax
+ 	pushq_cfi %rdi
+@@ -1096,6 +1099,7 @@ irq_return_ldt:
+ 	movq %rax,%rsp
+ 	popq_cfi %rax
+ 	jmp irq_return_iret
++#endif
+ 
+ 	.section .fixup,"ax"
+ bad_iret:
+@@ -1169,6 +1173,7 @@ END(common_interrupt)
+ 	 * modify the stack to make it look like we just entered
+ 	 * the #GP handler from user space, similar to bad_iret.
+ 	 */
++#ifdef CONFIG_X86_ESPFIX64
+ 	ALIGN
+ __do_double_fault:
+ 	XCPT_FRAME 1 RDI+8
+@@ -1194,6 +1199,9 @@ __do_double_fault:
+ 	retq
+ 	CFI_ENDPROC
+ END(__do_double_fault)
++#else
++# define __do_double_fault do_double_fault
++#endif
+ 
+ /*
+  * End of kprobes section
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -229,6 +229,11 @@ static int write_ldt(void __user *ptr, u
+ 		}
+ 	}
+ 
++	if (!IS_ENABLED(CONFIG_X86_16BIT) && !ldt_info.seg_32bit) {
++		error = -EINVAL;
++		goto out_unlock;
++	}
++
+ 	fill_ldt(&ldt, &ldt_info);
+ 	if (oldmode)
+ 		ldt.avl = 0;
 
 
