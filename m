@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318AbaHEIkU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 04:40:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14660 "EHLO mga09.intel.com"
+	id S1757342AbaHEIlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 04:41:42 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45716 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757245AbaHEIkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 04:40:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,804,1400050800"; 
-   d="scan'208";a="553877609"
-Date: Tue, 5 Aug 2014 11:40:11 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Alex Elder <elder@linaro.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, david.daney@cavium.com,
-        loic.poulain@intel.com, linux-serial@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Subject: Re: dw8250_set_termios() questions
-Message-ID: <20140805084011.GA14504@xps8300>
-References: <53BFDF22.1020302@linaro.org>
- <53CFB9D3.8030403@linaro.org>
+	id S1757245AbaHEIlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 04:41:40 -0400
+Date: Tue, 5 Aug 2014 10:41:35 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        toshi.kani@hp.com, imammedo@redhat.com, jan.kiszka@siemens.com,
+        mingo@kernel.org, huawei.libin@huawei.com, prarit@redhat.com,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] X86/CPU: Avoid 100ms sleep for cpu offline  during S3
+Message-ID: <20140805084135.GB18234@pd.tnic>
+References: <1407142742-29202-1-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53CFB9D3.8030403@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407142742-29202-1-git-send-email-tianyu.lan@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+On Mon, Aug 04, 2014 at 04:59:02PM +0800, Lan Tianyu wrote:
+> Some test result shows cpu offline consumes more than 100ms during S3.
+> After some researchs, found native_cpu_die() would fall into 100ms
+> sleep if cpu idle loop thread marked cpu state slower. What native_cpu_die()
+> does is that poll cpu state and wait for 100ms if cpu state hasn't been marked
+> to DEAD. The 100ms sleep doesn't make sense. To avoid such long sleep, this
+> patch is to add struct completion to each cpu, wait for the completion
+> in the native_cpu_die() and wakeup the completion when the cpu state is
+> marked to DEAD.
+> 
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> ---
+>  arch/x86/kernel/smpboot.c | 26 ++++++++++++++------------
+>  1 file changed, 14 insertions(+), 12 deletions(-)
 
-On Wed, Jul 23, 2014 at 08:34:11AM -0500, Alex Elder wrote:
-> Heikki, ping.
+...
 
-Sorry for the delay, just came back from vacation.
+> @@ -1339,18 +1342,16 @@ int native_cpu_disable(void)
+>  void native_cpu_die(unsigned int cpu)
+>  {
+>  	/* We don't do anything here: idle task is faking death itself. */
+> -	unsigned int i;
+> +	wait_for_completion_timeout(&per_cpu(die_complete, cpu),
+> +			msecs_to_jiffies(1000));
 
-> On 07/11/2014 07:57 AM, Alex Elder wrote:
-> > Heikki, I have not been a subscriber of the linux-serial
-> > mailing list and didn't see this patch go by:
-> >     serial: 8250_dw: clock rate handling for all ACPI platforms
-> >     http://www.spinics.net/lists/linux-serial/msg12861.html
-> > 
-> > I had been working on doing something very similar for some
-> > Broadcom device tree based devices and it might have been
-> > helpful for me to have seen it.  What I ended up with was
-> > *very* similar to what you did.  Here is the last version
-> > of the patch I posted:
-> >     https://lkml.org/lkml/2014/7/1/323
-> > 
-> > There *are* some differences, and I'd like to inquire about
-> > them before I simply use the code you have for my purpose.
-> > 
-> > These first two relate to whether I can use your
-> > code as-is:
-> > - Why do you skip setting the clock if a null "old"
-> >   pointer is supplied?
+One more thing peterz suggested. Just do:
 
-If there is no "old" the baud rate is not being changed.
+	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
 
-> > - I don't believe it's necessary to surround the clock
-> >   rate change with clk_disable_unprepare() and
-> >   clk_prepare_enable().  Do you believe otherwise?
-
-My clock has CLK_SET_RATE_GATE flag set, so I do need them.
-
-> > This one is addressed to how your code is used now:
-> > - Alan Cox had this question about my patch, and
-> >   it seems to apply to your code as well:
-> >     "This assumes an arbitarily configurable clock,
-> >     which is not I think the usual case."
-> >     https://lkml.org/lkml/2014/6/28/91
-> >   His point is that the clock, if adjustable, may
-> >   not support a rate that produces an acceptable
-> >   signal rate.  Put another way, there may be a
-> >   better frequency than what the clock framework
-> >   selects that (in combination with the UART
-> >   divisor latch registers) produces the best--or
-> >   even a good--signal.  Is there any chance any
-> >   ACPI platforms will suffer this problem?
-
-No there is no such problems on any ACPI platforms. On all platforms
-where the Designware UART is enumerated from ACPI we have adjustable
-fractional divider generating the clock for it.
-
-I understand the problem, but I think for now we can just limit this
-solution to the platforms that we know it works with, like I do by
-only using it with ACPI.
-
-
-Thanks,
+because HZ is the number of jiffies in a second. Which is what you want
+here.
 
 -- 
-heikki
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
