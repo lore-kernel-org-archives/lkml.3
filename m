@@ -1,101 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaHELkA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 07:40:00 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:61546 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752850AbaHELj7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 07:39:59 -0400
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: vinod.koul@intel.com, dan.j.williams@intel.com, michal.simek@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org, levex@linux.com,
-        jassisinghbrar@gmail.com
-Cc: linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        anirudh@xilinx.com, svemula@xilinx.com,
-        Srikanth Thokala <sthokal@xilinx.com>
-Subject: [PATCH v2 1/2] dma: Add Xilinx Central DMA DT Binding Documentation
-Date: Tue,  5 Aug 2014 17:09:50 +0530
-Message-Id: <1407238791-3370-1-git-send-email-sthokal@xilinx.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753568AbaHELkG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 07:40:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48837 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753478AbaHELkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 07:40:02 -0400
+Message-ID: <53E0C27B.1020503@redhat.com>
+Date: Tue, 05 Aug 2014 13:39:39 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        James Hogan <james.hogan@imgtec.com>
+CC: Alexander Graf <agraf@suse.de>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alexey Kardashevskiy <aik@ozlabs.ru>
+Subject: Re: linux-next: manual merge of the kvm-ppc tree with the kvm tree
+References: <20140804180403.3cfdbadf@canb.auug.org.au>	<53E0AB44.90804@imgtec.com> <20140805201342.6b8a8ca4@canb.auug.org.au>
+In-Reply-To: <20140805201342.6b8a8ca4@canb.auug.org.au>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device-tree binding documentation of Xilinx Central DMA Engine
+Il 05/08/2014 12:13, Stephen Rothwell ha scritto:
+>> > And I suppose it'd be nice to replace tabs with spaces for consistency
+>> > (since that's one of the things bf5590f37919 did).
+>> > 
+>> > How about this fixup patch?
+> Thanks for that I have applied it to my merge resolution.
 
-Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
----
-Changes in v2:
-- Change property 'xlnx,data-width' to 'xlnx,datawidth' in the description
-  to match the implementation.
+I've now merged kvm-ppc and kvm-arm into kvm, so everything should be
+fixed tomorrow.  All conficts should be gone, and the build failure on
+PPC too.
 
----
- .../devicetree/bindings/dma/xilinx/xilinx_cdma.txt |   54 ++++++++++++++++++++
- 1 file changed, 54 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/xilinx/xilinx_cdma.txt
+Thanks for your work on linux-next, Stephen.
 
-diff --git a/Documentation/devicetree/bindings/dma/xilinx/xilinx_cdma.txt b/Documentation/devicetree/bindings/dma/xilinx/xilinx_cdma.txt
-new file mode 100644
-index 0000000..b04f76b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_cdma.txt
-@@ -0,0 +1,54 @@
-+Xilinx AXI CDMA engine, it does transfers between memory-mapped source
-+address and a memory-mapped destination address.
-+
-+Required properties:
-+- compatible: Should be "xlnx,axi-cdma-1.00.a"
-+- #dma-cells: Should be <1>, see "dmas" property below
-+- reg: Should contain cdma registers location and length.
-+- dma-channel child node: Should have only one channel
-+
-+Optional properties:
-+- xlnx,include-sg: Tells whether configured for Scatter-mode in
-+	the hardware.
-+
-+Required child node properties:
-+- compatible: It should be "xlnx,axi-cdma-channel".
-+- interrupts: Should contain per channel CDMA interrupts.
-+- xlnx,datawidth: Should contain the stream data width, take values
-+	{32,64...1024}.
-+
-+Option child node properties:
-+- xlnx,include-dre: Tells whether hardware is configured for Data
-+	Realignment Engine.
-+
-+Example:
-+++++++++
-+
-+axi_cdma_0: axicdma@7e200000 {
-+	compatible = "xlnx,axi-cdma-1.00.a";
-+	#dma_cells = <1>;
-+	reg = < 0x7e200000 0x10000 >;
-+	dma-channel@7e200000 {
-+		compatible = "xlnx,axi-cdma-channel";
-+		interrupts = < 0 55 4 >;
-+		xlnx,datawidth = <0x40>;
-+	} ;
-+} ;
-+
-+
-+* DMA client
-+
-+Required properties:
-+- dmas: a list of <[Central DMA device phandle] [Channel ID]> pairs,
-+	where Channel ID is '0' for write/tx and '1' for read/rx
-+	channel.
-+- dma-names: a list of DMA channel names, one per "dmas" entry
-+
-+Example:
-+++++++++
-+
-+cdmatest_0: cdmatest@0 {
-+	compatible ="xlnx,axi-cdma-test-1.00.a";
-+	dmas = <&axi_cdma_0 0>;
-+	dma-names = "cdma0";
-+} ;
--- 
-1.7.9.5
-
+Paolo
