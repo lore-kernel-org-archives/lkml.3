@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865AbaHEUM6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 16:12:58 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:10879 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753482AbaHEUM4 (ORCPT
+	id S1753987AbaHEUNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 16:13:00 -0400
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:40918 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741AbaHEUM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 16:12:56 -0400
-X-CheckPoint: {53E13AC8-0-2100090A-C0000000}
-Message-ID: <53E13AC7.1030406@tilera.com>
-Date: Tue, 5 Aug 2014 16:12:55 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 5 Aug 2014 16:12:58 -0400
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Wang Sheng-Hui <shhuiw@gmail.com>
-CC: Daniel Walter <dwalter@google.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch: tile: kernel: setup.c:  Cleaning up missing null-terminate
- in conjunction with strncpy
-References: <1406383480-1485-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1406383480-1485-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.9.0.23]
+In-Reply-To: <alpine.OSX.2.03.1408042203100.87047@linaro.org>
+References: <1407202310-3359-1-git-send-email-sboyd@codeaurora.org>
+	<1407202310-3359-9-git-send-email-sboyd@codeaurora.org>
+	<alpine.OSX.2.03.1408042203100.87047@linaro.org>
+Date: Tue, 5 Aug 2014 13:12:57 -0700
+Message-ID: <CAJAp7OiXW1A-H4io2kST_Y6LdVP+EYkXoU3GaWTRt_+CyXruQA@mail.gmail.com>
+Subject: Re: [PATCH 8/8] msm: scm: Move the scm driver to drivers/soc/qcom
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Lina Iyer <lina.iyer@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, David Brown <davidb@codeaurora.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/26/2014 10:04 AM, Rickard Strandqvist wrote:
-> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->   arch/tile/kernel/setup.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
-> index 112abab..1af7d19 100644
-> --- a/arch/tile/kernel/setup.c
-> +++ b/arch/tile/kernel/setup.c
-> @@ -1087,7 +1087,7 @@ static int __init setup_initramfs_file(char *str)
->   {
->   	if (str == NULL)
->   		return -EINVAL;
-> -	strncpy(initramfs_file, str, sizeof(initramfs_file) - 1);
-> +	strlcpy(initramfs_file, str, sizeof(initramfs_file));
->   	set_initramfs_file = 1;
->   
->   	return 0;
+On Mon, Aug 4, 2014 at 9:07 PM, Lina Iyer <lina.iyer@linaro.org> wrote:
+> On Mon, 4 Aug 2014, Stephen Boyd wrote:
+[...]
+> Could we move scm-boot.c as well to drivers/soc/qcom and scm-boot.h to include/soc/qcom ?
 
-I'm inclined not to take this change, because it's not necessary.
-The initramfs_file[] is already zero-filled by being in the BSS, and
-this is a pretty obscure boot option, so it seems a bit more
-maintainable to use a somewhat more standard string API call.
+Yes, we can do that.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+But as of now we seem to only have one caller of this wrapper, so
+maybe we could move the functionality into platsmp.c and drop the file
+instead?
 
+I looked at this a while back and was considering suggesting that we
+move the scm access behind firmware_ops, but then we should probably
+also extend the ops struct with all the needed ops related to firmware
+loading and other things; so I'm not sure if it's a beneficial move.
+
+Regards,
+Bjorn
