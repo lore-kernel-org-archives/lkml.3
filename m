@@ -1,102 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172AbaHEKgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 06:36:21 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:51698 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010AbaHEKgQ (ORCPT
+	id S1753317AbaHEKjT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 06:39:19 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:49889 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212AbaHEKjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 06:36:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrV6rap+rZirLsMmdzML9rSKnWEmq-ACNLLGYgKtT-K6uA@mail.gmail.com>
-References: <1406904498-21647-1-git-send-email-dvlasenk@redhat.com>
- <1406904498-21647-4-git-send-email-dvlasenk@redhat.com> <CALCETrWA6SL52SOM3yifvc0Pjz-HTOvs8G8fXo9TqF5v=0eTzw@mail.gmail.com>
- <CAK1hOcOwD0cpVWZEV8FP40y9149feUdaxoszQC+wWQfAwU4MNQ@mail.gmail.com> <CALCETrV6rap+rZirLsMmdzML9rSKnWEmq-ACNLLGYgKtT-K6uA@mail.gmail.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Tue, 5 Aug 2014 12:35:55 +0200
-Message-ID: <CAK1hOcM_KLqi9MVa_b-WoimCD084F-t_qE-maEX7ibgtzg8BnQ@mail.gmail.com>
-Subject: Re: [PATCH 4/5] x86: entry_64.S: always allocate complete "struct pt_regs"
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 5 Aug 2014 06:39:16 -0400
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, sachin.kamat@samsung.com,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH RESEND] usb: ehci/ohci-exynos: Fix PHY getting sequence
+Date: Tue,  5 Aug 2014 16:09:08 +0530
+Message-Id: <1407235148-31790-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 4, 2014 at 11:03 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> Next up: remove FIXUP/RESTORE_TOP_OF_STACK? :)  Maybe I'll give that a shot.
->>
->> I'm yet at the stage "what that stuff does anyway?" and at
->> "why do we need percpu old_rsp thingy?" in particular.
->
-> On x86_64, the syscall instruction has no effect on rsp.  That means
-> that the entry point starts out with no stack.  There are no free
-> registers whatsoever at the entry point.
->
-> That means that the entry code needs to do swapgs, stash rsp somewhere
-> relative to gs, and then load the kernel's rsp.  old_rsp is the spot
-> used for this.
->
-> Now the kernel does an optimization that is, I think, very much not
-> worth it.  The kernel doesn't bother sticking the old rsp value into
-> pt_regs (saving two instructions on fast path entries) and doesn't
-> initialize the SS, CS, RCX, and EFLAGS fields in pt_regs, saving four
-> more instructions.
->
-> To make this optimization work, the whole FIXUP/RESTORE_TOP_OF_STACK
-> dance is needed, and there's the usersp crap in the context switch
-> code, and current_user_stack_pointer(), and probably even more crap
-> that I haven't noticed.  And I sure hope that nothing in the *compat*
-> syscall path touches current_user_stack_pointer(), because the compat
-> code doesn't seem to use old_rsp.
->
-> I think this should all be ripped out.  The only real difficulty will
-> be that the sysret code needs to restore rsp itself, so the sysret
-> path will end up needing two more instructions.  Removing all of the
-> TOP_OF_STACK stuff will add ten instructions to fast path syscalls,
-> and I wouldn't be surprised if this adds considerably fewer than ten
-> cycles on any modern chip.
+Since we want to keep support for both older usb-phys as well as the
+newer generic phys, lets first get the generic PHYs and fallback to
+older USB-PHYs only when we fail to get the former.
+This should fix the issue with ehci-exynos and ohci-exynos, wherein
+in the absence of SAMSUNG_USB2PHY config symbol, we end up getting
+the NOP_USB_XCEIV phy when the same is enabled. And thus the PHYs
+are not configured properly.
 
-Something like this on the fast path? -
+Reported-by: Sachin Kamat <sachin.kamat@samsung.com>
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jingoo Han <jg1.han@samsung.com>
+---
 
-        SWAPGS_UNSAFE_STACK
-        movq    %rsp,PER_CPU_VAR(old_rsp)
-        movq    PER_CPU_VAR(kernel_stack),%rsp
-        ENABLE_INTERRUPTS(CLBR_NONE)
-        ALLOC_PTREGS_ON_STACK 8         /* +8: space for orig_ax */
-        SAVE_C_REGS
-        movq  %rax,ORIG_RAX(%rsp)
-        movq  %rcx,RIP(%rsp)
-+       movq  %r11,EFLAGS(%rsp)
-+       movq PER_CPU_VAR(old_rsp),%rcx
-+       movq %rcx,RSP(%rsp)
-        ...
--       RESTORE_C_REGS_EXCEPT_RCX
-+       RESTORE_C_REGS_EXCEPT_RCX_R11
-        movq RIP(%rsp),%rcx
-+       movq    EFLAGS(%rsp), %r11
--       movq    PER_CPU_VAR(old_rsp), %rsp
-+       movq    RSP(%rsp), %rsp
-      USERGS_SYSRET64
+Based on 'usb-next' branch.
+Resending it after adding 'Reported-by' tag.
 
-Looks like only 3 additional insns (unfortunately, one is memory read).
-Do we need to save rsc and r11 in "struct pt_regs" in their
-"standard" slots, though? If we don't, we can drop two insns
-(SAVE_C_REGS -> SAVE_C_REGS_EXCEPT_RCX_R11).
+ drivers/usb/host/ehci-exynos.c |   40 +++++++++++++++++-----------------
+ drivers/usb/host/ohci-exynos.c |   47 +++++++++++++++++++---------------------
+ 2 files changed, 42 insertions(+), 45 deletions(-)
 
-Then old_rsp can be nuked everywhere else,
-RESTORE_TOP_OF_STACK can be nuked, and
-FIXUP_TOP_OF_STACK can be reduced to merely:
-
-        movq $__USER_DS,SS(%rsp)
-        movq $__USER_CS,CS(%rsp)
-
-(BTW, why currently it does "movq $-1,RCX+\offset(%rsp)?)
-
+diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
+index cda0a2f..2eed9a4 100644
+--- a/drivers/usb/host/ehci-exynos.c
++++ b/drivers/usb/host/ehci-exynos.c
+@@ -62,18 +62,6 @@ static int exynos_ehci_get_phy(struct device *dev,
+ 	int phy_number;
+ 	int ret = 0;
+ 
+-	exynos_ehci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+-	if (IS_ERR(exynos_ehci->phy)) {
+-		ret = PTR_ERR(exynos_ehci->phy);
+-		if (ret != -ENXIO && ret != -ENODEV) {
+-			dev_err(dev, "no usb2 phy configured\n");
+-			return ret;
+-		}
+-		dev_dbg(dev, "Failed to get usb2 phy\n");
+-	} else {
+-		exynos_ehci->otg = exynos_ehci->phy->otg;
+-	}
+-
+ 	for_each_available_child_of_node(dev->of_node, child) {
+ 		ret = of_property_read_u32(child, "reg", &phy_number);
+ 		if (ret) {
+@@ -90,15 +78,27 @@ static int exynos_ehci_get_phy(struct device *dev,
+ 
+ 		phy = devm_of_phy_get(dev, child, NULL);
+ 		of_node_put(child);
+-		if (IS_ERR(phy)) {
+-			ret = PTR_ERR(phy);
+-			if (ret != -ENOSYS && ret != -ENODEV) {
+-				dev_err(dev, "no usb2 phy configured\n");
+-				return ret;
+-			}
+-			dev_dbg(dev, "Failed to get usb2 phy\n");
+-		}
++		if (IS_ERR(phy))
++			/* Lets fallback to older USB-PHYs */
++			goto usb_phy_old;
+ 		exynos_ehci->phy_g[phy_number] = phy;
++		/* Make the older PHYs unavailable */
++		exynos_ehci->phy = ERR_PTR(-ENXIO);
++	}
++
++	return 0;
++
++usb_phy_old:
++	exynos_ehci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
++	if (IS_ERR(exynos_ehci->phy)) {
++		ret = PTR_ERR(exynos_ehci->phy);
++		if (ret != -ENXIO && ret != -ENODEV) {
++			dev_err(dev, "no usb2 phy configured\n");
++			return ret;
++		}
++		dev_dbg(dev, "Failed to get usb2 phy\n");
++	} else {
++		exynos_ehci->otg = exynos_ehci->phy->otg;
+ 	}
+ 
+ 	return ret;
+diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
+index a72ab8f..7c48e3f 100644
+--- a/drivers/usb/host/ohci-exynos.c
++++ b/drivers/usb/host/ohci-exynos.c
+@@ -51,27 +51,12 @@ static int exynos_ohci_get_phy(struct device *dev,
+ 	int phy_number;
+ 	int ret = 0;
+ 
+-	exynos_ohci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+-	if (IS_ERR(exynos_ohci->phy)) {
+-		ret = PTR_ERR(exynos_ohci->phy);
+-		if (ret != -ENXIO && ret != -ENODEV) {
+-			dev_err(dev, "no usb2 phy configured\n");
+-			return ret;
+-		}
+-		dev_dbg(dev, "Failed to get usb2 phy\n");
+-	} else {
+-		exynos_ohci->otg = exynos_ohci->phy->otg;
+-	}
+-
+ 	/*
+ 	 * Getting generic phy:
+ 	 * We are keeping both types of phys as a part of transiting OHCI
+ 	 * to generic phy framework, so as to maintain backward compatibilty
+-	 * with old DTB.
+-	 * If there are existing devices using DTB files built from them,
+-	 * to remove the support for old bindings in this driver,
+-	 * we need to make sure that such devices have their DTBs
+-	 * updated to ones built from new DTS.
++	 * with old DTB too.
++	 * We fallback to older USB-PHYs when we fail to get generic PHYs.
+ 	 */
+ 	for_each_available_child_of_node(dev->of_node, child) {
+ 		ret = of_property_read_u32(child, "reg", &phy_number);
+@@ -89,15 +74,27 @@ static int exynos_ohci_get_phy(struct device *dev,
+ 
+ 		phy = devm_of_phy_get(dev, child, NULL);
+ 		of_node_put(child);
+-		if (IS_ERR(phy)) {
+-			ret = PTR_ERR(phy);
+-			if (ret != -ENOSYS && ret != -ENODEV) {
+-				dev_err(dev, "no usb2 phy configured\n");
+-				return ret;
+-			}
+-			dev_dbg(dev, "Failed to get usb2 phy\n");
+-		}
++		if (IS_ERR(phy))
++			/* Lets fallback to older USB-PHYs */
++			goto usb_phy_old;
+ 		exynos_ohci->phy_g[phy_number] = phy;
++		/* Make the older PHYs unavailable */
++		exynos_ohci->phy = ERR_PTR(-ENXIO);
++	}
++
++	return 0;
++
++usb_phy_old:
++	exynos_ohci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
++	if (IS_ERR(exynos_ohci->phy)) {
++		ret = PTR_ERR(exynos_ohci->phy);
++		if (ret != -ENXIO && ret != -ENODEV) {
++			dev_err(dev, "no usb2 phy configured\n");
++			return ret;
++		}
++		dev_dbg(dev, "Failed to get usb2 phy\n");
++	} else {
++		exynos_ohci->otg = exynos_ohci->phy->otg;
+ 	}
+ 
+ 	return ret;
 -- 
-vda
+1.7.10.4
+
