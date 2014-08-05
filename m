@@ -1,128 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834AbaHEOgP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 10:36:15 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:34550 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773AbaHEOfr (ORCPT
+	id S1753802AbaHEOiz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 10:38:55 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:48712 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121AbaHEOix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 10:35:47 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: linux-pm@vger.kernel.org
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        =?UTF-8?q?Terje=20Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [RFC 1/2] PM / QoS: Add PM_QOS_MEMORY_BANDWIDTH class
-Date: Tue,  5 Aug 2014 16:35:23 +0200
-Message-Id: <1407249324-8568-2-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1407249324-8568-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1407249324-8568-1-git-send-email-tomeu.vizoso@collabora.com>
+	Tue, 5 Aug 2014 10:38:53 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Moyer <jmoyer@redhat.com>, linux-fsdevel@vger.kernel.org
+Subject: [PATCH 0/3] implement readpages() for block device to optimize sequential read
+Date: Tue,  5 Aug 2014 23:38:31 +0900
+Message-Id: <1407249514-20465-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also adds a class type PM_QOS_SUM that aggregates the values by summing them.
+This patchset implements readpages() operation for block device by
+using mpage_readpages() which can create multipage BIOs instead of
+BIOs for each page and reduce system CPU time consumption.
 
-It can be used by memory controllers to calculate the optimum clock frequency
-based on the bandwidth needs of the different memory clients.
+Akinobu Mita (3):
+  vfs: make guard_bh_eod() more generic
+  vfs: guard end of device for mpage interface
+  block_dev: implement readpages() to optimize sequential read
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
----
- include/linux/pm_qos.h |  5 ++++-
- kernel/power/qos.c     | 27 ++++++++++++++++++++++++++-
- 2 files changed, 30 insertions(+), 2 deletions(-)
+ fs/block_dev.c |  7 +++++++
+ fs/buffer.c    | 26 ++++++++++++--------------
+ fs/internal.h  |  5 +++++
+ fs/mpage.c     |  2 ++
+ 4 files changed, 26 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-index 9ab4bf7..636e828 100644
---- a/include/linux/pm_qos.h
-+++ b/include/linux/pm_qos.h
-@@ -15,6 +15,7 @@ enum {
- 	PM_QOS_CPU_DMA_LATENCY,
- 	PM_QOS_NETWORK_LATENCY,
- 	PM_QOS_NETWORK_THROUGHPUT,
-+	PM_QOS_MEMORY_BANDWIDTH,
- 
- 	/* insert new class ID */
- 	PM_QOS_NUM_CLASSES,
-@@ -32,6 +33,7 @@ enum pm_qos_flags_status {
- #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
- #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
- #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
-+#define PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE	0
- #define PM_QOS_RESUME_LATENCY_DEFAULT_VALUE	0
- #define PM_QOS_LATENCY_TOLERANCE_DEFAULT_VALUE	0
- #define PM_QOS_LATENCY_TOLERANCE_NO_CONSTRAINT	(-1)
-@@ -69,7 +71,8 @@ struct dev_pm_qos_request {
- enum pm_qos_type {
- 	PM_QOS_UNITIALIZED,
- 	PM_QOS_MAX,		/* return the largest value */
--	PM_QOS_MIN		/* return the smallest value */
-+	PM_QOS_MIN,		/* return the smallest value */
-+	PM_QOS_SUM		/* return the sum */
- };
- 
- /*
-diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-index 884b770..5f4c006 100644
---- a/kernel/power/qos.c
-+++ b/kernel/power/qos.c
-@@ -105,11 +105,27 @@ static struct pm_qos_object network_throughput_pm_qos = {
- };
- 
- 
-+static BLOCKING_NOTIFIER_HEAD(memory_bandwidth_notifier);
-+static struct pm_qos_constraints memory_bw_constraints = {
-+	.list = PLIST_HEAD_INIT(memory_bw_constraints.list),
-+	.target_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
-+	.default_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
-+	.no_constraint_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
-+	.type = PM_QOS_SUM,
-+	.notifiers = &memory_bandwidth_notifier,
-+};
-+static struct pm_qos_object memory_bandwidth_pm_qos = {
-+	.constraints = &memory_bw_constraints,
-+	.name = "memory_bandwidth",
-+};
-+
-+
- static struct pm_qos_object *pm_qos_array[] = {
- 	&null_pm_qos,
- 	&cpu_dma_pm_qos,
- 	&network_lat_pm_qos,
--	&network_throughput_pm_qos
-+	&network_throughput_pm_qos,
-+	&memory_bandwidth_pm_qos,
- };
- 
- static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-@@ -130,6 +146,9 @@ static const struct file_operations pm_qos_power_fops = {
- /* unlocked internal variant */
- static inline int pm_qos_get_value(struct pm_qos_constraints *c)
- {
-+	struct plist_node *node;
-+	int total_value = 0;
-+
- 	if (plist_head_empty(&c->list))
- 		return c->no_constraint_value;
- 
-@@ -140,6 +159,12 @@ static inline int pm_qos_get_value(struct pm_qos_constraints *c)
- 	case PM_QOS_MAX:
- 		return plist_last(&c->list)->prio;
- 
-+	case PM_QOS_SUM:
-+		plist_for_each(node, &c->list)
-+			total_value += node->prio;
-+
-+		return total_value;
-+
- 	default:
- 		/* runtime check for not using enum */
- 		BUG();
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org
 -- 
-1.9.3
+1.9.1
 
