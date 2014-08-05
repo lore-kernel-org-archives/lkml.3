@@ -1,66 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568AbaHEVM0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 17:12:26 -0400
-Received: from mga11.intel.com ([192.55.52.93]:22378 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753009AbaHEVMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 17:12:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,807,1400050800"; 
-   d="scan'208";a="572182881"
-Date: Wed, 6 Aug 2014 05:12:24 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>, x86@kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: [microcode/load_module] WARNING: CPU: 0 PID: 1444 at
- kernel/sched/core.c:7094 __might_sleep+0x51/0x16f()
-Message-ID: <20140805211224.GA13480@localhost>
+	id S1753683AbaHEVN0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 17:13:26 -0400
+Received: from us2.outbound.mailhostbox.com ([162.210.70.54]:35133 "EHLO
+	us2.outbound.mailhostbox.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753611AbaHEVNY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 17:13:24 -0400
+X-Greylist: delayed 660 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Aug 2014 17:13:24 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Heirloom mailx 12.5 6/20/10
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Wed, 06 Aug 2014 02:32:18 +0530
+From: pekon@pek-sem.com
+To: Lee Jones <lee.jones@linaro.org>
+Cc: <devicetree@vger.kernel.org>, Boris BREZILLON <b.brezillon.dev@gmail.com>,
+        <kernel@stlinux.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] mtd: nand: =?UTF-8?Q?stm=5Fnand=5Fbch=3A=20add=20new?=
+ =?UTF-8?Q?=20driver?=
+In-Reply-To: <20140805142324.GA10136@lee--X1>
+References: <1401268805-26043-1-git-send-email-lee.jones@linaro.org>
+ <20140703002237.GM3599@ld-irv-0074>
+ <20980858CB6D3A4BAE95CA194937D5E73EAFAFF1@DBDE04.ent.ti.com>
+ <20140805142324.GA10136@lee--X1>
+Message-ID: <d4ba973a22bd71eaff94be1f479c5334@pek-sem.com>
+User-Agent: Webmail Services/0.4
+X-CTCH-RefID: wb
+X-CTCH-VOD: Unknown
+X-CTCH-Spam: Unknown
+X-CTCH-Score: 0.000
+X-CTCH-Rules: WHITE_FROM_RCVD
+X-CTCH-Flags: 0
+X-CTCH-ScoreCust: 0.000
+X-CTCH-SenderID: pekon@pek-sem.com
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-BlueWhiteFlag: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+Hello,
 
-Here is a microcode/load_module error triggered by debug check commit
-64c2181bc433b17f04da8fe8592aa83cceac9606 ("sched: Debug nested sleeps"):
+On Tuesday 05 August 2014 07:53 PM, Lee Jones wrote:
+> On Thu, 03 Jul 2014, Gupta, Pekon wrote:
+>>> From: Brian Norris [mailto:computersforpeace@gmail.com]
+>>> On Wed, May 28, 2014 at 10:20:05AM +0100, Lee Jones wrote:
+[...]
+>>>> +static void bch_wait_seq(struct nandi_controller *nandi)
+>>>> +{
+>>>> +	int ret;
+>>>> +
+>>>> +	ret = wait_for_completion_timeout(&nandi->seq_completed, HZ/2);
+>>
+>> Are you sure you want to use same timeout value for all operations
+>> like ERASE, READ, WRITE ? because
+>> (1) There is wide variance between:
+>> - BLOCK_ERASE:  max(tBER) = 10ms) for MT29F4G08 Micron NAND
+>> - PAGE_ERASE: max(tPROG) = 600usec for same Micron part.
+>>
+>> (2) The value of HZ varies across kernel versions and hardware 
+>> platforms.
+>>
+>> I suggest you pass the timeout value in call to bch_wait_seq().
+>> And this timeout value should be like 2x of typical value of which 
+>> you found
+>> during ONFI parsing, or from DT
+>
+> How do you obtain these timings?  I don't see tBER or tPROG being 
+> used
+> anywhere in MTD.
+>
 
-[    6.010476] microcode: CPU0 sig=0x106a3, pf=0x1, revision=0x1
-[    6.011896] microcode: CPU1 sig=0x106a3, pf=0x1, revision=0x1
-[    6.020554] ------------[ cut here ]------------
-[    6.021988] WARNING: CPU: 0 PID: 1444 at kernel/sched/core.c:7094 __might_sleep+0x51/0x16f()
-[    6.024909] do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff81111e4c>] prepare_to_wait_event+0xb2/0xee
-[    6.026998] Modules linked in: microcode(+)
-[    6.027998] CPU: 0 PID: 1444 Comm: modprobe Not tainted 3.16.0-02034-gf5d04af #1
-[    6.029603] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[    6.030674]  0000000000000000 ffff88003da2bd00 ffffffff819c7cb6 ffff88003da2bd48
-[    6.032577]  ffff88003da2bd38 ffffffff810e1dd0 ffffffff810ff665 ffff88003d91b7e0
-[    6.034417]  ffffffff81cd5c89 0000000000000061 0000000000000000 ffff88003da2bd98
-[    6.036236] Call Trace:
-[    6.036908]  [<ffffffff819c7cb6>] dump_stack+0x4d/0x66
-[    6.037894]  [<ffffffff810e1dd0>] warn_slowpath_common+0x7f/0x98
-[    6.038601] microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, Peter Oruba
-[    6.040761]  [<ffffffff810ff665>] ? __might_sleep+0x51/0x16f
-[    6.041861]  [<ffffffff810e1e35>] warn_slowpath_fmt+0x4c/0x4e
-[    6.043034]  [<ffffffff811c06d7>] ? __vmalloc_node_range+0x18d/0x1f1
-[    6.044270]  [<ffffffff81141bf6>] ? module_alloc_update_bounds+0x14/0x5f
-[    6.045458]  [<ffffffff81111e4c>] ? prepare_to_wait_event+0xb2/0xee
-[    6.046592]  [<ffffffff81111e4c>] ? prepare_to_wait_event+0xb2/0xee
-[    6.048258]  [<ffffffff810ff665>] __might_sleep+0x51/0x16f
-[    6.049501]  [<ffffffff819cda15>] mutex_lock+0x20/0x42
-[    6.050601]  [<ffffffff811403c0>] finished_loading+0x19/0x63
-[    6.051823]  [<ffffffff8114217d>] load_module+0x522/0x1f0a
-[    6.053086]  [<ffffffff81492e1b>] ? trace_hardirqs_on_thunk+0x3a/0x3c
-[    6.054498]  [<ffffffff819d0564>] ? retint_restore_args+0x13/0x13
-[    6.055607]  [<ffffffff81111f6c>] ? wait_woken+0x69/0x69
-[    6.056645]  [<ffffffff81143c2f>] SyS_init_module+0xca/0xd9
-[    6.057637]  [<ffffffff819cfa29>] system_call_fastpath+0x16/0x1b
-[    6.058751] ---[ end trace ee9cd23bc6a36c85 ]---
-[    6.098452] ------------[ cut here ]------------
+These are not from NAND framework, these are terms used in data-sheet.
+However, you can read all signal timing from ONFI page while probing.
+But, as Brian suggested that timeout is a erroneous and rare condition
+anyway, so these relaxed timeout values are acceptable. So you may
+ignore my previous comment.
 
-Thanks,
-Fengguang
+
+> [...]
+>
+>>>> +{
+>>>> +	uint8_t *b = data;
+>>>> +	int zeros = 0;
+>>>> +	int i;
+>>>> +
+>>>> +	for (i = 0; i < page_size; i++) {
+>>>> +		zeros += hweight8(~*b++);
+>> Are you sure you want to use hweight8 ?
+>> hweight32 or something should give better performance, plz check.
+>> because this piece of code (check_xx_bitflips) sometimes becomes
+>> bottle neck for READ path.
+>
+> I'm not sure, no.  If I change it, how will I know if it's still 
+> doing
+> the correct thing or otherwise?
+>
+hweight/hweight16/hweight32 are all macros of same family
+just operating on different data-widths, so you may continue
+for now. But once the driver is merged, you might like to
+re-analyze performance gain (especially on MLC NAND) when
+using hweight32() instead of hweight8().
+
+
+> [...]
+>
+>>>> +	/* Load last page of block */
+>>>> +	offs = (loff_t)block << chip->phys_erase_shift;
+>>>> +	offs += mtd->erasesize - mtd->writesize;
+>>>> +	if (bch_read_page(nandi, offs, buf) < 0) {
+>>
+>> *Important*: You shouldn't call internal functions directly here..
+>> Instead use chip->_read() OR mtd-read() that will:
+>> - keep this code independent of ECC modes added in your driver in 
+>> future.
+>> - implicitly handle updating mtd->ecc_stat (like ecc_failed, 
+>> bits_corrected).
+>> - implicitly take care of address alignments checks and offset 
+>> calculations.
+>>
+>> <Same applies to other places where you have directly used 
+>> bch_read_page())
+>
+> Yourself and Brian seem to disagree on this point.  Which is correct?
+>
+>>>> +	/* Is block already considered bad? (will also catch invalid 
+>>>> offsets) */
+>>>> +	ret = mtd_block_isbad(mtd, offs);
+>>>
+>>> You're violating some of the layering here; the low-level driver
+>>> probably shouldn't be calling the high-level mtd_*() APIs. On a 
+>>> similar
+>>> note, I'm not 100% confident that the nand_base/nand_bbt separation 
+>>> is
+>>> written cleanly enough for easy maintenance of your nand_base + ST 
+>>> BBT
+>>> code in parallel. I might need a second look at that, and I think
+>>> modularizing your BBT code to a separate file could help ease this 
+>>> a
+>>> little.
+>
+> ... here is the converse argument.
+>
+I think somewhere in earlier comments, Brian also supported
+to use high-level function like mtd_read(). Also, nand_bbt.c
+itself uses 'mtd_read(), mtd_read_oob() and mtd_write_oob()
+at many places. So I'll let Brain decide here.
+But having low-level function will add redundant code for
+re-checking and aligning the addresses boundaries to block
+and page/sector sizes.
+
+Brian ??
+
+
+with regards, pekon
+
+
+------------------------
+Powered by BigRock.com
+
