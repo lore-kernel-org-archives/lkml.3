@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965AbaHESOd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:14:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52280 "EHLO
+	id S1755432AbaHESO7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:14:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52549 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754788AbaHESOZ (ORCPT
+	with ESMTP id S1753905AbaHESOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:25 -0400
+	Tue, 5 Aug 2014 14:14:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Paul Furtado <paulfurtado91@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 12/39] memcg: oom_notify use-after-free fix
-Date: Tue,  5 Aug 2014 11:13:49 -0700
-Message-Id: <20140805181336.418882443@linuxfoundation.org>
+        James Bottomley <JBottomley@Parallels.com>,
+        Steven Haber <steven@qumulo.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.10 05/27] scsi: handle flush errors properly
+Date: Tue,  5 Aug 2014 11:13:57 -0700
+Message-Id: <20140805181344.431369078@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
-References: <20140805181336.030349158@linuxfoundation.org>
+In-Reply-To: <20140805181344.268039690@linuxfoundation.org>
+References: <20140805181344.268039690@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,79 +27,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: James Bottomley <JBottomley@Parallels.com>
 
-commit 2bcf2e92c3918ce62ab4e934256e47e9a16d19c3 upstream.
+commit 89fb4cd1f717a871ef79fa7debbe840e3225cd54 upstream.
 
-Paul Furtado has reported the following GPF:
+Flush commands don't transfer data and thus need to be special cased
+in the I/O completion handler so that we can propagate errors to
+the block layer and filesystem.
 
-  general protection fault: 0000 [#1] SMP
-  Modules linked in: ipv6 dm_mod xen_netfront coretemp hwmon x86_pkg_temp_thermal crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 microcode pcspkr ext4 jbd2 mbcache raid0 xen_blkfront
-  CPU: 3 PID: 3062 Comm: java Not tainted 3.16.0-rc5 #1
-  task: ffff8801cfe8f170 ti: ffff8801d2ec4000 task.ti: ffff8801d2ec4000
-  RIP: e030:mem_cgroup_oom_synchronize+0x140/0x240
-  RSP: e02b:ffff8801d2ec7d48  EFLAGS: 00010283
-  RAX: 0000000000000001 RBX: ffff88009d633800 RCX: 000000000000000e
-  RDX: fffffffffffffffe RSI: ffff88009d630200 RDI: ffff88009d630200
-  RBP: ffff8801d2ec7da8 R08: 0000000000000012 R09: 00000000fffffffe
-  R10: 0000000000000000 R11: 0000000000000000 R12: ffff88009d633800
-  R13: ffff8801d2ec7d48 R14: dead000000100100 R15: ffff88009d633a30
-  FS:  00007f1748bb4700(0000) GS:ffff8801def80000(0000) knlGS:0000000000000000
-  CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 00007f4110300308 CR3: 00000000c05f7000 CR4: 0000000000002660
-  Call Trace:
-    pagefault_out_of_memory+0x18/0x90
-    mm_fault_error+0xa9/0x1a0
-    __do_page_fault+0x478/0x4c0
-    do_page_fault+0x2c/0x40
-    page_fault+0x28/0x30
-  Code: 44 00 00 48 89 df e8 40 ca ff ff 48 85 c0 49 89 c4 74 35 4c 8b b0 30 02 00 00 4c 8d b8 30 02 00 00 4d 39 fe 74 1b 0f 1f 44 00 00 <49> 8b 7e 10 be 01 00 00 00 e8 42 d2 04 00 4d 8b 36 4d 39 fe 75
-  RIP  mem_cgroup_oom_synchronize+0x140/0x240
-
-Commit fb2a6fc56be6 ("mm: memcg: rework and document OOM waiting and
-wakeup") has moved mem_cgroup_oom_notify outside of memcg_oom_lock
-assuming it is protected by the hierarchical OOM-lock.
-
-Although this is true for the notification part the protection doesn't
-cover unregistration of event which can happen in parallel now so
-mem_cgroup_oom_notify can see already unlinked and/or freed
-mem_cgroup_eventfd_list.
-
-Fix this by using memcg_oom_lock also in mem_cgroup_oom_notify.
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=80881
-
-Fixes: fb2a6fc56be6 (mm: memcg: rework and document OOM waiting and wakeup)
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Reported-by: Paul Furtado <paulfurtado91@gmail.com>
-Tested-by: Paul Furtado <paulfurtado91@gmail.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Steven Haber <steven@qumulo.com>
+Tested-by: Steven Haber <steven@qumulo.com>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memcontrol.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/scsi/scsi_lib.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5670,8 +5670,12 @@ static int mem_cgroup_oom_notify_cb(stru
- {
- 	struct mem_cgroup_eventfd_list *ev;
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -815,6 +815,14 @@ void scsi_io_completion(struct scsi_cmnd
+ 			scsi_next_command(cmd);
+ 			return;
+ 		}
++	} else if (blk_rq_bytes(req) == 0 && result && !sense_deferred) {
++		/*
++		 * Certain non BLOCK_PC requests are commands that don't
++		 * actually transfer anything (FLUSH), so cannot use
++		 * good_bytes != blk_rq_bytes(req) as the signal for an error.
++		 * This sets the error explicitly for the problem case.
++		 */
++		error = __scsi_error_from_host_byte(cmd, result);
+ 	}
  
-+	spin_lock(&memcg_oom_lock);
-+
- 	list_for_each_entry(ev, &memcg->oom_notify, list)
- 		eventfd_signal(ev->eventfd, 1);
-+
-+	spin_unlock(&memcg_oom_lock);
- 	return 0;
- }
- 
+ 	/* no bidi support for !REQ_TYPE_BLOCK_PC yet */
 
 
