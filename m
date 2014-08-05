@@ -1,134 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486AbaHEIBl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 04:01:41 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:33221 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756851AbaHEIBh (ORCPT
+	id S1756961AbaHEIC2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 04:02:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6666 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753389AbaHEICX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 04:01:37 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-From: Minchan Kim <minchan@kernel.org>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>
-Subject: [RFC 1/3] zsmalloc: move pages_allocated to zs_pool
-Date: Tue,  5 Aug 2014 17:02:01 +0900
-Message-Id: <1407225723-23754-2-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1407225723-23754-1-git-send-email-minchan@kernel.org>
-References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
+	Tue, 5 Aug 2014 04:02:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,804,1400050800"; 
+   d="scan'208";a="583538100"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v3] KVM: nVMX: nested TPR shadow/threshold emulation
+Thread-Topic: [PATCH v3] KVM: nVMX: nested TPR shadow/threshold emulation
+Thread-Index: AQHPr9MOWFa0yRHIzU+2SsbexogLsJvBkH2w
+Date: Tue, 5 Aug 2014 07:56:10 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AB505AB@SHSMSX104.ccr.corp.intel.com>
+References: <1407149907-13483-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1407149907-13483-1-git-send-email-wanpeng.li@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pages_allocated has counted in size_class structure and when user
-want to see total_size_bytes, it gathers all of value from each
-size_class to report the sum.
+Wanpeng Li wrote on 2014-08-04:
+> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=61411
+> 
+> TPR shadow/threshold feature is important to speed up the Windows guest.
+> Besides, it is a must feature for certain VMM.
+> 
+> We map virtual APIC page address and TPR threshold from L1 VMCS. If
+> TPR_BELOW_THRESHOLD VM exit is triggered by L2 guest and L1 interested
+> in, we inject it into L1 VMM for handling.
+> 
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+> v2 -> v3:
+>  * nested vm entry failure if both tpr shadow and cr8 exiting bits are not set
+> v1 -> v2:
+>  * don't take L0's "virtualize APIC accesses" setting into account
+>  * virtual_apic_page do exactly the same thing that is done for
+> apic_access_page
+>  * add the tpr threshold field to the read-write fields for shadow VMCS
+> 
+>  arch/x86/kvm/vmx.c | 38 ++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 36 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index c604f3c..7a56e2c 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -379,6 +379,7 @@ struct nested_vmx {
+>  	 * we must keep them pinned while L2 runs.
+>  	 */
+>  	struct page *apic_access_page;
+> +	struct page *virtual_apic_page;
+>  	u64 msr_ia32_feature_control;
+> 
+>  	struct hrtimer preemption_timer;
+> @@ -533,6 +534,7 @@ static int max_shadow_read_only_fields =
+>  	ARRAY_SIZE(shadow_read_only_fields);
+> 
+>  static unsigned long shadow_read_write_fields[] = {
+> +	TPR_THRESHOLD,
+>  	GUEST_RIP,
+>  	GUEST_RSP,
+>  	GUEST_CR0,
+> @@ -2330,7 +2332,7 @@ static __init void
+> nested_vmx_setup_ctls_msrs(void)
+>  		CPU_BASED_MOV_DR_EXITING |
+> CPU_BASED_UNCOND_IO_EXITING |
+>  		CPU_BASED_USE_IO_BITMAPS | CPU_BASED_MONITOR_EXITING |
+>  		CPU_BASED_RDPMC_EXITING | CPU_BASED_RDTSC_EXITING |
+> -		CPU_BASED_PAUSE_EXITING |
+> +		CPU_BASED_PAUSE_EXITING | CPU_BASED_TPR_SHADOW |
+>  		CPU_BASED_ACTIVATE_SECONDARY_CONTROLS;
+>  	/*
+>  	 * We can allow some features even when not supported by the
+> @@ -6148,6 +6150,10 @@ static void free_nested(struct vcpu_vmx *vmx)
+>  		nested_release_page(vmx->nested.apic_access_page);
+>  		vmx->nested.apic_access_page = 0;
+>  	}
+> +	if (vmx->nested.virtual_apic_page) {
+> +		nested_release_page(vmx->nested.virtual_apic_page);
+> +		vmx->nested.virtual_apic_page = 0;
+> +	}
+> 
+>  	nested_free_all_saved_vmcss(vmx);
+>  }
+> @@ -6936,7 +6942,7 @@ static bool nested_vmx_exit_handled(struct
+> kvm_vcpu *vcpu)
+>  	case EXIT_REASON_MCE_DURING_VMENTRY:
+>  		return 0;
+>  	case EXIT_REASON_TPR_BELOW_THRESHOLD:
+> -		return 1;
+> +		return nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW);
+>  	case EXIT_REASON_APIC_ACCESS:
+>  		return nested_cpu_has2(vmcs12,
+>  			SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES);
+> @@ -7057,6 +7063,9 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
+> 
+>  static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
+>  {
+> +	if (is_guest_mode(vcpu))
+> +		return;
+> +
+>  	if (irr == -1 || tpr < irr) {
+>  		vmcs_write32(TPR_THRESHOLD, 0);
+>  		return;
+> @@ -8024,6 +8033,27 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu,
+> struct vmcs12 *vmcs12)
+>  	exec_control &= ~CPU_BASED_VIRTUAL_NMI_PENDING;
+>  	exec_control &= ~CPU_BASED_TPR_SHADOW;
+>  	exec_control |= vmcs12->cpu_based_vm_exec_control;
+> +
+> +	if (exec_control & CPU_BASED_TPR_SHADOW) {
+> +		if (vmx->nested.virtual_apic_page)
+> +			nested_release_page(vmx->nested.virtual_apic_page);
+> +		vmx->nested.virtual_apic_page =
+> +		   nested_get_page(vcpu, vmcs12->virtual_apic_page_addr);
+> +		if (!vmx->nested.virtual_apic_page)
+> +			exec_control &=
+> +				~CPU_BASED_TPR_SHADOW;
+> +		else
+> +			vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
+> +				page_to_phys(vmx->nested.virtual_apic_page));
+> +
+> +		if (!(exec_control & CPU_BASED_TPR_SHADOW) &&
+> +			!((exec_control & CPU_BASED_CR8_LOAD_EXITING) &&
+> +				(exec_control & CPU_BASED_CR8_STORE_EXITING)))
+> +			nested_vmx_failValid(vcpu,
+> VMXERR_ENTRY_INVALID_CONTROL_FIELD);
 
-It's not bad if user don't see the value often but if user start
-to see the value frequently, it would be not a good deal for
-performance POV.
+I think this is not correct. The vmx->nested.virtual_apic_page may not valid due to two reasons:
+1. The virtual_apic_page_addr is not a valid gfn. In this case, the vmx failure must be injected to L1 unconditionally regardless of the setting of CR8 load/store exiting.
+2. The virtual_apic_page is swapped by L0. In this case, we should not inject failure to L1.
 
-This patch moves the variable from size_class to zs_pool so it would
-reduce memory footprint (from [255 * 8byte] to [sizeof(atomic_t)])
-but it adds new locking overhead but it wouldn't be severe because
-it's not a hot path in zs_malloc(ie, it is called only when new
-zspage is created, not a object).
+> +
+> +		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
+> +	}
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- mm/zsmalloc.c | 30 ++++++++++++++++--------------
- 1 file changed, 16 insertions(+), 14 deletions(-)
+Miss else here:
+If L2 owns the APIC and doesn't use TPR_SHADOW, we need to setup the vmcs02 based on vmcs01. For example, if vmcs01 is using TPR_SHADOW, then vmcs02 must set it. Also, we need to use vmcs01's virtual_apic_page and TPR_THRESHOLD for vmcs02.
 
-diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-index fe78189624cf..a6089bd26621 100644
---- a/mm/zsmalloc.c
-+++ b/mm/zsmalloc.c
-@@ -198,9 +198,6 @@ struct size_class {
- 
- 	spinlock_t lock;
- 
--	/* stats */
--	u64 pages_allocated;
--
- 	struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
- };
- 
-@@ -216,9 +213,12 @@ struct link_free {
- };
- 
- struct zs_pool {
-+	spinlock_t stat_lock;
-+
- 	struct size_class size_class[ZS_SIZE_CLASSES];
- 
- 	gfp_t flags;	/* allocation flags used when growing pool */
-+	unsigned long pages_allocated;
- };
- 
- /*
-@@ -882,6 +882,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
- 
- 	}
- 
-+	spin_lock_init(&pool->stat_lock);
- 	pool->flags = flags;
- 
- 	return pool;
-@@ -943,8 +944,10 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
- 			return 0;
- 
- 		set_zspage_mapping(first_page, class->index, ZS_EMPTY);
-+		spin_lock(&pool->stat_lock);
-+		pool->pages_allocated += class->pages_per_zspage;
-+		spin_unlock(&pool->stat_lock);
- 		spin_lock(&class->lock);
--		class->pages_allocated += class->pages_per_zspage;
- 	}
- 
- 	obj = (unsigned long)first_page->freelist;
-@@ -997,14 +1000,14 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
- 
- 	first_page->inuse--;
- 	fullness = fix_fullness_group(pool, first_page);
--
--	if (fullness == ZS_EMPTY)
--		class->pages_allocated -= class->pages_per_zspage;
--
- 	spin_unlock(&class->lock);
- 
--	if (fullness == ZS_EMPTY)
-+	if (fullness == ZS_EMPTY) {
-+		spin_lock(&pool->stat_lock);
-+		pool->pages_allocated -= class->pages_per_zspage;
-+		spin_unlock(&pool->stat_lock);
- 		free_zspage(first_page);
-+	}
- }
- EXPORT_SYMBOL_GPL(zs_free);
- 
-@@ -1100,12 +1103,11 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
- 
- u64 zs_get_total_size_bytes(struct zs_pool *pool)
- {
--	int i;
--	u64 npages = 0;
--
--	for (i = 0; i < ZS_SIZE_CLASSES; i++)
--		npages += pool->size_class[i].pages_allocated;
-+	u64 npages;
- 
-+	spin_lock(&pool->stat_lock);
-+	npages = pool->pages_allocated;
-+	spin_unlock(&pool->stat_lock);
- 	return npages << PAGE_SHIFT;
- }
- EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
--- 
-2.0.0
+> +
+>  	/*
+>  	 * Merging of IO and MSR bitmaps not currently supported.
+>  	 * Rather, exit every time.
+> @@ -8802,6 +8832,10 @@ static void nested_vmx_vmexit(struct kvm_vcpu
+> *vcpu, u32 exit_reason,
+>  		nested_release_page(vmx->nested.apic_access_page);
+>  		vmx->nested.apic_access_page = 0;
+>  	}
+> +	if (vmx->nested.virtual_apic_page) {
+> +		nested_release_page(vmx->nested.virtual_apic_page);
+> +		vmx->nested.virtual_apic_page = 0;
+> +	}
+> 
+>  	/*
+>  	 * Exiting from L2 to L1, we're now back to L1 which thinks it just
+> --
+> 1.9.1
+
+Best regards,
+Yang
+
 
