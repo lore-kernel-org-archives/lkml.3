@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806AbaHEVqm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 17:46:42 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:45853 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866AbaHEVqk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 17:46:40 -0400
+	id S1753904AbaHEVqq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 17:46:46 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41931 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753830AbaHEVqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 17:46:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,807,1400050800"; 
+   d="scan'208";a="572195762"
+Date: Wed, 6 Aug 2014 05:46:24 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>, netdev@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: [setsockopt] WARNING: CPU: 0 PID: 1444 at kernel/sched/core.c:7088
+ __might_sleep+0x51/0x16f()
+Message-ID: <20140805214624.GA9973@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20140725185048.GA27939@www.outflux.net>
-References: <20140725185048.GA27939@www.outflux.net>
-Date: Tue, 5 Aug 2014 14:46:39 -0700
-X-Google-Sender-Auth: ZrGR9_RbTLc4Fo2HfTTVHGLrGL0
-Message-ID: <CAGXu5jK--17NZvJK2BSWiANn4dkgLMUpGpoWrmy+jM=BfKkBxQ@mail.gmail.com>
-Subject: Re: [PULL] fw-restrict update (3.17)
-From: Kees Cook <keescook@chromium.org>
-To: James Morris <jmorris@namei.org>
-Cc: linux-security-module <linux-security-module@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>, Takashi Iwai <tiwai@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 11:50 AM, Kees Cook <keescook@chromium.org> wrote:
-> Hi James,
->
-> Please pull these fw-restrict changes for 3.17. Thanks!
+Greetings,
 
-James, did this ever get pulled? Does it need more review?
+Here is a microcode/load_module error triggered by debug check commit
+64c2181bc433b17f04da8fe8592aa83cceac9606 ("sched: Debug nested sleeps"):
 
-Thanks!
+[main] Setsockopt(1 8 80d1000 4) on fd 21 [1:2:1]
+[main] Setsockopt(1 2f 80d1000 4) on fd 22 [4:2:60]
+[   14.027148] ------------[ cut here ]------------
+[   14.027864] WARNING: CPU: 0 PID: 210 at kernel/sched/core.c:7088 __might_sleep+0x40/0x68()
+[   14.029295] do not call blocking ops when !TASK_RUNNING; state=2 set at [<c144e379>] prepare_to_wait+0x35/0x56
+[   14.030590] Modules linked in:
+[   14.031136] CPU: 0 PID: 210 Comm: trinity-main Not tainted 3.16.0-02167-g254135e #972
+[   14.032263]  00000000 c0f4de4c c0f4de24 c196630c c0f4de3c c142f01a c1447632 c0f1dbb0
+[   14.033480]  00000002 b0066140 c0f4de54 c142f057 00000009 c0f4de4c c1b3bac8 c0f4de68
+[   14.034640]  c0f4de88 c1447632 c1b3bb12 00001bb0 c1b3bac8 00000002 c144e379 c144e379
+[   14.035983] Call Trace:
+[   14.036355]  [<c196630c>] dump_stack+0x16/0x18
+[   14.037005]  [<c142f01a>] warn_slowpath_common+0x55/0x6c
+[   14.037715]  [<c1447632>] ? __might_sleep+0x40/0x68
+[   14.038372]  [<c142f057>] warn_slowpath_fmt+0x26/0x2a
+[   14.039097]  [<c1447632>] __might_sleep+0x40/0x68
+[   14.039787]  [<c144e379>] ? prepare_to_wait+0x35/0x56
+[   14.040595]  [<c144e379>] ? prepare_to_wait+0x35/0x56
+[   14.041272]  [<c14a837e>] kmem_cache_alloc+0x39/0xb0
+[   14.041934]  [<c18fa2de>] ? __alloc_skb+0x3c/0x154
+[   14.042572]  [<c18fa2de>] __alloc_skb+0x3c/0x154
+[   14.043339]  [<c145117a>] ? mark_held_locks+0x44/0x60
+[   14.044141]  [<c1946093>] sigd_enq2+0x2a/0xff
+[   14.044836]  [<c1946188>] sigd_enq+0x20/0x2a
+[   14.045405]  [<c19467fb>] svc_listen+0x8b/0x11f
+[   14.046009]  [<c144e5a6>] ? __wake_up_sync+0xd/0xd
+[   14.046653]  [<c18f4132>] SyS_listen+0x37/0x51
+[   14.047423]  [<c18f4ce5>] SyS_socketcall+0x90/0x1c0
+[   14.048328]  [<c145136e>] ? trace_hardirqs_on+0xb/0xd
+[   14.049061]  [<c19729f6>] ? restore_all+0xf/0xf
+[   14.049665]  [<c19729bd>] syscall_call+0x7/0x7
+[   14.050253]  [<c1970000>] ? __ww_mutex_lock_interruptible+0x165/0x573
+[   14.051147] ---[ end trace 6f1365c63eafedde ]---
+[main] Setsockopt(1 2d 80d1000 f0) on fd 25 [1:1:1]
 
--Kees
-
->
-> -Kees
->
-> The following changes since commit 7d8b6c63751cfbbe5eef81a48c22978b3407a3ad:
->
->   CAPABILITIES: remove undefined caps from all processes (2014-07-24 21:53:47 +1000)
->
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git tags/fw-restrict-3.17
->
-> for you to fetch changes up to 5a9196d715607f76d6b7d96a0970d6065335e62b:
->
->   ima: add support for measuring and appraising firmware (2014-07-25 11:47:46 -0700)
->
-> ----------------------------------------------------------------
-> Firmware validation hooks
->
-> ----------------------------------------------------------------
-> Kees Cook (2):
->       security: introduce kernel_fw_from_file hook
->       firmware_class: perform new LSM checks
->
-> Mimi Zohar (1):
->       ima: add support for measuring and appraising firmware
->
->  Documentation/ABI/testing/ima_policy  |  4 +++-
->  drivers/base/firmware_class.c         | 30 ++++++++++++++++++++++++++----
->  include/linux/ima.h                   |  6 ++++++
->  include/linux/security.h              | 17 +++++++++++++++++
->  security/capability.c                 |  6 ++++++
->  security/integrity/ima/ima.h          |  3 ++-
->  security/integrity/ima/ima_appraise.c |  8 ++++++++
->  security/integrity/ima/ima_main.c     | 11 +++++++++++
->  security/integrity/ima/ima_policy.c   |  7 +++++++
->  security/integrity/integrity.h        |  9 +++++++--
->  security/security.c                   | 11 +++++++++++
->  11 files changed, 104 insertions(+), 8 deletions(-)
->
-> --
-> Kees Cook
-> Chrome OS Security
-
-
-
--- 
-Kees Cook
-Chrome OS Security
+Thanks,
+Fengguang
