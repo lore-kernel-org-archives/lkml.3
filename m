@@ -1,83 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787AbaHEMvT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 08:51:19 -0400
-Received: from imap.thunk.org ([74.207.234.97]:45198 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752561AbaHEMvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 08:51:18 -0400
-Date: Tue, 5 Aug 2014 08:51:14 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Cc: martin f krafft <madduck@madduck.net>
-Subject: Re: EXT4-fs error, kernel BUG
-Message-ID: <20140805125114.GG5263@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	linux kernel mailing list <linux-kernel@vger.kernel.org>,
-	martin f krafft <madduck@madduck.net>
-References: <20140805103436.GA7531@fishbowl.rw.madduck.net>
+	id S1753841AbaHEMz4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 08:55:56 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:35561 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212AbaHEMzy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 08:55:54 -0400
+Date: Tue, 5 Aug 2014 13:55:48 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: P J P <ppandit@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: 3.12 to 3.13 boot regression bisected - still applies to 3.16
+Message-ID: <20140805125548.GP15082@console-pimps.org>
+References: <20140804113435.34ed8c76@pluto>
+ <20140804122728.GH15082@console-pimps.org>
+ <20140804150627.4563b6a7@pluto>
+ <20140804135452.GJ15082@console-pimps.org>
+ <20140805100242.425e1093@pluto>
+ <20140805084542.GM15082@console-pimps.org>
+ <20140805111330.3cf9319f@pluto>
+ <20140805091848.GN15082@console-pimps.org>
+ <20140805135130.2d180b69@pluto>
+ <20140805141142.437ecb17@pluto>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140805103436.GA7531@fishbowl.rw.madduck.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140805141142.437ecb17@pluto>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 12:34:36PM +0200, martin f krafft wrote:
-> Dear kernel people,
+On Tue, 05 Aug, at 02:11:42PM, Bruno Prémont wrote:
 > 
-> Yesterday, I encountered something weird on one of our NAS machines:
+> arch/x86/boot/compressed/head_64.S
+> 341 /*
+> 342  * Copy the compressed kernel to the end of our buffer
+> 343  * where decompression in place becomes safe.
+> 344  */
+> 345         pushq   %rsi
+> 346         leaq    (_bss-8)(%rip), %rsi
+> 347         leaq    (_bss-8)(%rbx), %rdi
+> 348         movq    $_bss /* - $startup_32 */, %rcx
+> 349         shrq    $3, %rcx
+> 350         std
 > 
->   Aug  4 20:09:40 julia kernel: [342873.007709] EXT4-fs error (device dm-6): ext4_ext_check_inode:481: inode #30414321: comm du: pblk 0 bad header/extent: invalid extent entries - magic f30a, entries 1, max 4(4), depth 0(0)
+> code gets up to here
 > 
-> but a fsck -f of the filesystem revealed no problems.
-
-One likely cause of this issue is that the hardware hiccuped on a
-read, and returned garbage, which is what triggered the "EXT4-fs
-error" message (which is really a report of a detect file system
-inconsistency).  A common cause of this is the block address getting
-corrupted, so that the hard drive read the correct data from the wrong
-location.
-
-The other likely cause is that you are using something like RAID1, and
-the one of copies of the disk block really is corrupted, and the
-kernel read the bad version of the block, but fsck managed to read the
-good version of the block.
-
-It's possible that this was caused by a memory corruption, but it
-wouldn't have been high on my suspect list.  Still, if this is a new
-machine, it might not be a bad idea to run memtest86+ for 24-48 hours.
-
-> So I set up another filesystem and tried to copy over the data from
-> /dev/dm-6, using tar.
+> 351         rep     movsq
 > 
-> Shortly afterwards, there a wall message like
+> this location is never reached but instead system reboots
 > 
->   BUG: soft lockup - CPU#0 stuck for 23s! [kswapd0:28]
+> 352         cld
+> 353         popq    %rsi
+> 354 
+> 355 /*      
+> 356  * Jump to the relocated address.
+> 357  */
 
->From the stack traces, it looks like the system was thrashing trying
-to free memory to make forward progess.  (i.e., due to high memory
-pressure).  Exactly why this happened is not something I can determine
-from the strack traces, sorry.  It could be that soft lockup happened,
-you had more processes running, or that some of the processes (samba?
-apache?) were using more memory, and this was a factor.  Why the OOM
-killer didn't kill the processes I can't tell you.
+Excellent. Thanks for doing this, it's all starting to make sense now.
 
-> Is there anything in the following back traces that would help me
-> identify the source of the problem with greater confidence?
+I suspect if you enable CONFIG_RELOCATABLE things will work just fine.
+I've actually got a patch to force that option if CONFIG_EFI_STUB is
+enabled to mitigate this exact problem. Could you try it out (see
+below)?
 
-Sorry, that's about how that can be divined from your kernel stack
-traces.
+Without CONFIG_RELOCATABLE the early boot code will try and decompress
+the kernel image to LOAD_PHYSICAL_ADDR. That may have worked in the days
+of BIOS, when it was reasonable to assume that nothing important would
+be sitting in the 0x10000000 region, but that's just not so for UEFI. 
 
-It might be worth checking the system logs for any suspicious error
-messages beyond just the EXT4-fs error message, but you may have done
-that already.
+For UEFI we need to request memory from the firmware and not stray
+outside the bounds of those allocations. Otherwise there's the potential
+that we'll trash bits of the firmware's code/data.
 
-Good luck,
+---
 
-						- Ted
+>From b9ffb908e18b11be1d89e4c39bee5d4671d3fa6f Mon Sep 17 00:00:00 2001
+From: Matt Fleming <matt.fleming@intel.com>
+Date: Fri, 11 Jul 2014 08:45:25 +0100
+Subject: [PATCH] x86/efi: Enforce CONFIG_RELOCATABLE for EFI boot stub
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Without CONFIG_RELOCATABLE the early boot code will decompress the
+kernel to LOAD_PHYSICAL_ADDR. While this may have been fine in the BIOS
+days, that isn't going to fly with UEFI since parts of the firmware
+code/data may be located at LOAD_PHYSICAL_ADDR.
+
+Straying outside of the bounds of the regions we've explicitly requested
+from the firmware will cause all sorts of trouble. Bruno reports that
+his machine resets while trying to decompress the kernel image.
+
+We already go to great pains to ensure the kernel is loaded into a
+suitably aligned buffer, it's just that the address isn't necessarily
+LOAD_PHYSICAL_ADDR, because we can't guarantee that address isn't in-use
+by the firmware.
+
+Explicitly enforce CONFIG_RELOCATABLE for the EFI boot stub, so that we
+can load the kernel at any address with the correct alignment.
+
+Reported-by: Bruno Prémont <bonbons@linux-vserver.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ arch/x86/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 801ed36c2e49..f31b8ae8c81c 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1537,6 +1537,7 @@ config EFI
+ config EFI_STUB
+        bool "EFI stub support"
+        depends on EFI
++       select RELOCATABLE
+        ---help---
+           This kernel feature allows a bzImage to be loaded directly
+ 	  by EFI firmware without the use of a bootloader.
+-- 
+1.9.0
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
