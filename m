@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233AbaHESug (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:50:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52167 "EHLO
+	id S1754273AbaHESOF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:14:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52088 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329AbaHESOI (ORCPT
+	with ESMTP id S1753766AbaHESN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:08 -0400
+	Tue, 5 Aug 2014 14:13:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eliad Peller <eliadx.peller@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.15 09/42] cfg80211: fix mic_failure tracing
-Date: Tue,  5 Aug 2014 11:13:23 -0700
-Message-Id: <20140805181321.305736050@linuxfoundation.org>
+Subject: [PATCH 3.15 10/42] Revert "mac80211: move "bufferable MMPDU" check to fix AP mode scan"
+Date: Tue,  5 Aug 2014 11:13:24 -0700
+Message-Id: <20140805181321.335713889@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -30,33 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eliad Peller <eliad@wizery.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 8c26d458394be44e135d1c6bd4557e1c4e1a0535 upstream.
+commit 08b9939997df30e42a228e1ecb97f99e9c8ea84e upstream.
 
-tsc can be NULL (mac80211 currently always passes NULL),
-resulting in NULL-dereference. check before copying it.
+This reverts commit 277d916fc2e959c3f106904116bb4f7b1148d47a as it was
+at least breaking iwlwifi by setting the IEEE80211_TX_CTL_NO_PS_BUFFER
+flag in all kinds of interface modes, not only for AP mode where it is
+appropriate.
 
-Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+To avoid reintroducing the original problem, explicitly check for probe
+request frames in the multicast buffering code.
+
+Fixes: 277d916fc2e9 ("mac80211: move "bufferable MMPDU" check to fix AP mode scan")
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/trace.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/mac80211/tx.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
---- a/net/wireless/trace.h
-+++ b/net/wireless/trace.h
-@@ -2072,7 +2072,8 @@ TRACE_EVENT(cfg80211_michael_mic_failure
- 		MAC_ASSIGN(addr, addr);
- 		__entry->key_type = key_type;
- 		__entry->key_id = key_id;
--		memcpy(__entry->tsc, tsc, 6);
-+		if (tsc)
-+			memcpy(__entry->tsc, tsc, 6);
- 	),
- 	TP_printk(NETDEV_PR_FMT ", " MAC_PR_FMT ", key type: %d, key id: %d, tsc: %pm",
- 		  NETDEV_PR_ARG, MAC_PR_ARG(addr), __entry->key_type,
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -414,6 +414,9 @@ ieee80211_tx_h_multicast_ps_buf(struct i
+ 	if (ieee80211_has_order(hdr->frame_control))
+ 		return TX_CONTINUE;
+ 
++	if (ieee80211_is_probe_req(hdr->frame_control))
++		return TX_CONTINUE;
++
+ 	if (tx->local->hw.flags & IEEE80211_HW_QUEUE_CONTROL)
+ 		info->hw_queue = tx->sdata->vif.cab_queue;
+ 
+@@ -463,6 +466,7 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
+ {
+ 	struct sta_info *sta = tx->sta;
+ 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
++	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
+ 	struct ieee80211_local *local = tx->local;
+ 
+ 	if (unlikely(!sta))
+@@ -473,6 +477,12 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
+ 		     !(info->flags & IEEE80211_TX_CTL_NO_PS_BUFFER))) {
+ 		int ac = skb_get_queue_mapping(tx->skb);
+ 
++		if (ieee80211_is_mgmt(hdr->frame_control) &&
++		    !ieee80211_is_bufferable_mmpdu(hdr->frame_control)) {
++			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
++			return TX_CONTINUE;
++		}
++
+ 		ps_dbg(sta->sdata, "STA %pM aid %d: PS buffer for AC %d\n",
+ 		       sta->sta.addr, sta->sta.aid, ac);
+ 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
+@@ -531,19 +541,9 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
+ static ieee80211_tx_result debug_noinline
+ ieee80211_tx_h_ps_buf(struct ieee80211_tx_data *tx)
+ {
+-	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
+-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
+-
+ 	if (unlikely(tx->flags & IEEE80211_TX_PS_BUFFERED))
+ 		return TX_CONTINUE;
+ 
+-	if (ieee80211_is_mgmt(hdr->frame_control) &&
+-	    !ieee80211_is_bufferable_mmpdu(hdr->frame_control)) {
+-		if (tx->flags & IEEE80211_TX_UNICAST)
+-			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
+-		return TX_CONTINUE;
+-	}
+-
+ 	if (tx->flags & IEEE80211_TX_UNICAST)
+ 		return ieee80211_tx_h_unicast_ps_buf(tx);
+ 	else
 
 
