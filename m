@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855AbaHEROU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 13:14:20 -0400
-Received: from mga14.intel.com ([192.55.52.115]:6530 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754784AbaHEROS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 13:14:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="368283378"
-Message-ID: <53E110A9.6020204@intel.com>
-Date: Tue, 05 Aug 2014 20:13:13 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 00/31] perf tools: Yet more preparation for call graph
- from Intel BTS
-References: <1406786474-9306-1-git-send-email-adrian.hunter@intel.com> <20140804215816.GG13375@kernel.org>
-In-Reply-To: <20140804215816.GG13375@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753607AbaHERmY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 13:42:24 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:12366 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039AbaHERmX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 13:42:23 -0400
+Message-ID: <1407260539.6493.3.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2] arch,locking: Ciao arch_mutex_cpu_relax()
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 05 Aug 2014 10:42:19 -0700
+In-Reply-To: <CAMuHMdX2ZCEd=J_Gpf-W+Zyqg27r4C6ULZgO=pg2houR-FXLvg@mail.gmail.com>
+References: <1403288473.10903.2.camel@buesod1.americas.hpqcorp.net>
+	 <20140623065835.GF19860@laptop.programming.kicks-ass.net>
+	 <1403622415.15523.4.camel@buesod1.americas.hpqcorp.net>
+	 <20140625062510.GB4260@osiris>
+	 <CA+55aFx3UQG42cYrUWrTDT9CnpnRwVta6C9N_0FH1wvyDMxPgw@mail.gmail.com>
+	 <1404079773.2619.4.camel@buesod1.americas.hpqcorp.net>
+	 <CAMuHMdX2ZCEd=J_Gpf-W+Zyqg27r4C6ULZgO=pg2houR-FXLvg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/08/2014 12:58 a.m., Arnaldo Carvalho de Melo wrote:
-> Em Thu, Jul 31, 2014 at 09:00:43AM +0300, Adrian Hunter escreveu:
->> Hi
->>
->> Here is the next selection of patches based on tip/perf/core.
->>
->> They can also be found here:
->>
->> 	http://git.infradead.org/users/ahunter/linux-perf.git/shortlog/refs/heads/for-acme
->
-> Just FYI, did some processing today, what I picked I stashed on my
-> tmp.perf/core branch, will continue.
+On Tue, 2014-08-05 at 15:04 +0200, Geert Uytterhoeven wrote:
+> It looks like you forgot to update frv?  It's been failing on -next since a
+> few days:
+> 
+> kernel/locking/mcs_spinlock.h:87:2: error: implicit declaration of
+> function 'cpu_relax_lowlatency'
+> [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
+> kernel/locking/mcs_spinlock.h:87:2: error: implicit declaration of
+> function 'cpu_relax_lowlatency'
+> [-Werror=implicit-function-declaration]
+> make[3]: *** [kernel/locking/mcs_spinlock.o] Error 1
+> cc1: some warnings being treated as errors
+> make[3]: *** [kernel/locking/mutex.o] Error 1
+> 
+> http://kisskb.ellerman.id.au/kisskb/buildresult/11616307/
 
-Thank you!
+Ah, indeed. Thanks for the report, afaict this was the only missing
+arch .
 
->
-> But having something that actually uses all this stuff in 'perf test' is
-> something I'm missing...
->
-> Things like using that set_tracking new API on a evlist with the
-> sched_switch, using it to track, then switching it off after moving the
-> tracking event to another event in the list, etc.
+8<---------------------------------------------------------------
+From: Davidlohr Bueso <davidlohr@hp.com>
+Subject: [PATCH] frv: Define cpu_relax_lowlatency()
 
-I will look at that.
+Fixes errors such as:
+
+kernel/locking/mcs_spinlock.h:87:2: error: implicit declaration of function 'cpu_relax_lowlatency'
+
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ arch/frv/include/asm/processor.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/frv/include/asm/processor.h b/arch/frv/include/asm/processor.h
+index a34f309..6554e78 100644
+--- a/arch/frv/include/asm/processor.h
++++ b/arch/frv/include/asm/processor.h
+@@ -129,7 +129,8 @@ unsigned long get_wchan(struct task_struct *p);
+ #define	KSTK_EIP(tsk)	((tsk)->thread.frame0->pc)
+ #define	KSTK_ESP(tsk)	((tsk)->thread.frame0->sp)
+ 
+-#define cpu_relax()    barrier()
++#define cpu_relax() barrier()
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ /* data cache prefetch */
+ #define ARCH_HAS_PREFETCH
+-- 
+1.8.1.4
+
+
+
