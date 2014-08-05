@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296AbaHESoD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:44:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52269 "EHLO
+	id S1755025AbaHESoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:44:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52244 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786AbaHESOV (ORCPT
+	with ESMTP id S1753877AbaHESOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:21 -0400
+	Tue, 5 Aug 2014 14:14:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.15 26/42] Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
-Date: Tue,  5 Aug 2014 11:13:40 -0700
-Message-Id: <20140805181321.795448722@linuxfoundation.org>
+        roma1390@gmail.com, Anssi Hannula <anssi.hannula@iki.fi>,
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.15 22/42] dm cache: fix race affecting dirty block count
+Date: Tue,  5 Aug 2014 11:13:36 -0700
+Message-Id: <20140805181321.681131953@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -28,64 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-commit 7ed6fb9b5a5510e4ef78ab27419184741169978a upstream.
+commit 44fa816bb778edbab6b6ddaaf24908dd6295937e upstream.
 
-This reverts commit fa81511bb0bbb2b1aace3695ce869da9762624ff in
-preparation of merging in the proper fix (espfix64).
+nr_dirty is updated without locking, causing it to drift so that it is
+non-zero (either a small positive integer, or a very large one when an
+underflow occurs) even when there are no actual dirty blocks.  This was
+due to a race between the workqueue and map function accessing nr_dirty
+in parallel without proper protection.
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+People were seeing under runs due to a race on increment/decrement of
+nr_dirty, see: https://lkml.org/lkml/2014/6/3/648
+
+Fix this by using an atomic_t for nr_dirty.
+
+Reported-by: roma1390@gmail.com
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/ldt.c        |    4 +---
- arch/x86/vdso/vdso32-setup.c |    8 --------
- 2 files changed, 1 insertion(+), 11 deletions(-)
+ drivers/md/dm-cache-target.c |   13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -20,8 +20,6 @@
- #include <asm/mmu_context.h>
- #include <asm/syscalls.h>
- 
--int sysctl_ldt16 = 0;
--
- #ifdef CONFIG_SMP
- static void flush_ldt(void *current_mm)
- {
-@@ -236,7 +234,7 @@ static int write_ldt(void __user *ptr, u
- 	 * IRET leaking the high bits of the kernel stack address.
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -231,7 +231,7 @@ struct cache {
+ 	/*
+ 	 * cache_size entries, dirty if set
  	 */
- #ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
-+	if (!ldt_info.seg_32bit) {
- 		error = -EINVAL;
- 		goto out_unlock;
- 	}
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -39,7 +39,6 @@
- #ifdef CONFIG_X86_64
- #define vdso_enabled			sysctl_vsyscall32
- #define arch_setup_additional_pages	syscall32_setup_pages
--extern int sysctl_ldt16;
- #endif
+-	dm_cblock_t nr_dirty;
++	atomic_t nr_dirty;
+ 	unsigned long *dirty_bitset;
  
- /*
-@@ -250,13 +249,6 @@ static struct ctl_table abi_table2[] = {
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
--	},
--	{
--		.procname	= "ldt16",
--		.data		= &sysctl_ldt16,
--		.maxlen		= sizeof(int),
--		.mode		= 0644,
--		.proc_handler	= proc_dointvec
- 	},
- 	{}
- };
+ 	/*
+@@ -492,7 +492,7 @@ static bool is_dirty(struct cache *cache
+ static void set_dirty(struct cache *cache, dm_oblock_t oblock, dm_cblock_t cblock)
+ {
+ 	if (!test_and_set_bit(from_cblock(cblock), cache->dirty_bitset)) {
+-		cache->nr_dirty = to_cblock(from_cblock(cache->nr_dirty) + 1);
++		atomic_inc(&cache->nr_dirty);
+ 		policy_set_dirty(cache->policy, oblock);
+ 	}
+ }
+@@ -501,8 +501,7 @@ static void clear_dirty(struct cache *ca
+ {
+ 	if (test_and_clear_bit(from_cblock(cblock), cache->dirty_bitset)) {
+ 		policy_clear_dirty(cache->policy, oblock);
+-		cache->nr_dirty = to_cblock(from_cblock(cache->nr_dirty) - 1);
+-		if (!from_cblock(cache->nr_dirty))
++		if (atomic_dec_return(&cache->nr_dirty) == 0)
+ 			dm_table_event(cache->ti->table);
+ 	}
+ }
+@@ -2269,7 +2268,7 @@ static int cache_create(struct cache_arg
+ 	atomic_set(&cache->quiescing_ack, 0);
+ 
+ 	r = -ENOMEM;
+-	cache->nr_dirty = 0;
++	atomic_set(&cache->nr_dirty, 0);
+ 	cache->dirty_bitset = alloc_bitset(from_cblock(cache->cache_size));
+ 	if (!cache->dirty_bitset) {
+ 		*error = "could not allocate dirty bitset";
+@@ -2808,7 +2807,7 @@ static void cache_status(struct dm_targe
+ 
+ 		residency = policy_residency(cache->policy);
+ 
+-		DMEMIT("%u %llu/%llu %u %llu/%llu %u %u %u %u %u %u %llu ",
++		DMEMIT("%u %llu/%llu %u %llu/%llu %u %u %u %u %u %u %lu ",
+ 		       (unsigned)(DM_CACHE_METADATA_BLOCK_SIZE >> SECTOR_SHIFT),
+ 		       (unsigned long long)(nr_blocks_metadata - nr_free_blocks_metadata),
+ 		       (unsigned long long)nr_blocks_metadata,
+@@ -2821,7 +2820,7 @@ static void cache_status(struct dm_targe
+ 		       (unsigned) atomic_read(&cache->stats.write_miss),
+ 		       (unsigned) atomic_read(&cache->stats.demotion),
+ 		       (unsigned) atomic_read(&cache->stats.promotion),
+-		       (unsigned long long) from_cblock(cache->nr_dirty));
++		       (unsigned long) atomic_read(&cache->nr_dirty));
+ 
+ 		if (writethrough_mode(&cache->features))
+ 			DMEMIT("1 writethrough ");
 
 
