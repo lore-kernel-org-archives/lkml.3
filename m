@@ -1,172 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683AbaHEVN0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 17:13:26 -0400
-Received: from us2.outbound.mailhostbox.com ([162.210.70.54]:35133 "EHLO
-	us2.outbound.mailhostbox.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753611AbaHEVNY (ORCPT
+	id S1753338AbaHEVS2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 17:18:28 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:46639 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020AbaHEVS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 17:13:24 -0400
-X-Greylist: delayed 660 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Aug 2014 17:13:24 EDT
+	Tue, 5 Aug 2014 17:18:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Wed, 06 Aug 2014 02:32:18 +0530
-From: pekon@pek-sem.com
-To: Lee Jones <lee.jones@linaro.org>
-Cc: <devicetree@vger.kernel.org>, Boris BREZILLON <b.brezillon.dev@gmail.com>,
-        <kernel@stlinux.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] mtd: nand: =?UTF-8?Q?stm=5Fnand=5Fbch=3A=20add=20new?=
- =?UTF-8?Q?=20driver?=
-In-Reply-To: <20140805142324.GA10136@lee--X1>
-References: <1401268805-26043-1-git-send-email-lee.jones@linaro.org>
- <20140703002237.GM3599@ld-irv-0074>
- <20980858CB6D3A4BAE95CA194937D5E73EAFAFF1@DBDE04.ent.ti.com>
- <20140805142324.GA10136@lee--X1>
-Message-ID: <d4ba973a22bd71eaff94be1f479c5334@pek-sem.com>
-User-Agent: Webmail Services/0.4
-X-CTCH-RefID: wb
-X-CTCH-VOD: Unknown
-X-CTCH-Spam: Unknown
-X-CTCH-Score: 0.000
-X-CTCH-Rules: WHITE_FROM_RCVD
-X-CTCH-Flags: 0
-X-CTCH-ScoreCust: 0.000
-X-CTCH-SenderID: pekon@pek-sem.com
-X-CTCH-SenderID-TotalMessages: 1
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-BlueWhiteFlag: 0
+In-Reply-To: <1407252899-10293-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1407252899-10293-1-git-send-email-benjamin.tissoires@redhat.com>
+Date: Tue, 5 Aug 2014 14:18:24 -0700
+Message-ID: <CAF8JNhKQAZz_a-=5qyqS4rgdv-8Lr=i=uKJMwz_iR4c7cq-cvg@mail.gmail.com>
+Subject: Re: [PATCH] Input - wacom: update the ABI doc according to latest changes
+From: Ping Cheng <pinglinux@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Jason Gerecke <killertofu@gmail.com>, Przemo Firszt <przemo@firszt.eu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Thank you Benjamin for updating the ABI docs. My comments are inline.
 
-On Tuesday 05 August 2014 07:53 PM, Lee Jones wrote:
-> On Thu, 03 Jul 2014, Gupta, Pekon wrote:
->>> From: Brian Norris [mailto:computersforpeace@gmail.com]
->>> On Wed, May 28, 2014 at 10:20:05AM +0100, Lee Jones wrote:
-[...]
->>>> +static void bch_wait_seq(struct nandi_controller *nandi)
->>>> +{
->>>> +	int ret;
->>>> +
->>>> +	ret = wait_for_completion_timeout(&nandi->seq_completed, HZ/2);
->>
->> Are you sure you want to use same timeout value for all operations
->> like ERASE, READ, WRITE ? because
->> (1) There is wide variance between:
->> - BLOCK_ERASE:  max(tBER) = 10ms) for MT29F4G08 Micron NAND
->> - PAGE_ERASE: max(tPROG) = 600usec for same Micron part.
->>
->> (2) The value of HZ varies across kernel versions and hardware 
->> platforms.
->>
->> I suggest you pass the timeout value in call to bch_wait_seq().
->> And this timeout value should be like 2x of typical value of which 
->> you found
->> during ONFI parsing, or from DT
+With those lines updated, this patch is:
+
+Reviewed-by: Ping Cheng <pingc@wacom.com>
+
+Cheers,
+
+Ping
+
+On Tue, Aug 5, 2014 at 8:34 AM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> Now the devices show up under hid no matter the connection. So update the
+> sysfs path to the shortest and common one.
+> The ABI has also been unified regarding the OLEDs, but Bluetooth handle
+> only 1-bit images instead of 4.
 >
-> How do you obtain these timings?  I don't see tBER or tPROG being 
-> used
-> anywhere in MTD.
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
 >
-
-These are not from NAND framework, these are terms used in data-sheet.
-However, you can read all signal timing from ONFI page while probing.
-But, as Brian suggested that timeout is a erroneous and rare condition
-anyway, so these relaxed timeout values are acceptable. So you may
-ignore my previous comment.
-
-
-> [...]
+> Guys,
 >
->>>> +{
->>>> +	uint8_t *b = data;
->>>> +	int zeros = 0;
->>>> +	int i;
->>>> +
->>>> +	for (i = 0; i < page_size; i++) {
->>>> +		zeros += hweight8(~*b++);
->> Are you sure you want to use hweight8 ?
->> hweight32 or something should give better performance, plz check.
->> because this piece of code (check_xx_bitflips) sometimes becomes
->> bottle neck for READ path.
+> by updating this and working on the g-s-d client side for OLEDs, I think now
+> that we should also keep the oled*_img for Bluetooth and implement this file
+> for USB too. The user space code gets messy quite fast due to the need to
+> support old and new kernels, whereas if we handle the scrambling in the kernel,
+> it should be quite straightforward.
+> Of course, we have to keep the current button<n>_rawimg for backward
+> compatibility.
 >
-> I'm not sure, no.  If I change it, how will I know if it's still 
-> doing
-> the correct thing or otherwise?
+> Any thoughts?
 >
-hweight/hweight16/hweight32 are all macros of same family
-just operating on different data-widths, so you may continue
-for now. But once the driver is merged, you might like to
-re-analyze performance gain (especially on MLC NAND) when
-using hweight32() instead of hweight8().
-
-
-> [...]
+> Cheers,
+> Benjamin
 >
->>>> +	/* Load last page of block */
->>>> +	offs = (loff_t)block << chip->phys_erase_shift;
->>>> +	offs += mtd->erasesize - mtd->writesize;
->>>> +	if (bch_read_page(nandi, offs, buf) < 0) {
->>
->> *Important*: You shouldn't call internal functions directly here..
->> Instead use chip->_read() OR mtd-read() that will:
->> - keep this code independent of ECC modes added in your driver in 
->> future.
->> - implicitly handle updating mtd->ecc_stat (like ecc_failed, 
->> bits_corrected).
->> - implicitly take care of address alignments checks and offset 
->> calculations.
->>
->> <Same applies to other places where you have directly used 
->> bch_read_page())
+>  Documentation/ABI/testing/sysfs-driver-wacom | 56 ++++++++++------------------
+>  1 file changed, 20 insertions(+), 36 deletions(-)
 >
-> Yourself and Brian seem to disagree on this point.  Which is correct?
+> diff --git a/Documentation/ABI/testing/sysfs-driver-wacom b/Documentation/ABI/testing/sysfs-driver-wacom
+> index 7fc7810..c75ed4c 100644
+> --- a/Documentation/ABI/testing/sysfs-driver-wacom
+> +++ b/Documentation/ABI/testing/sysfs-driver-wacom
+> @@ -1,47 +1,26 @@
+> -WWhat:         /sys/class/hidraw/hidraw*/device/oled*_img
+> -Date:          June 2012
+> -Contact:       linux-bluetooth@vger.kernel.org
+> -Description:
+> -               The /sys/class/hidraw/hidraw*/device/oled*_img files control
+> -               OLED mocro displays on Intuos4 Wireless tablet. Accepted image
+> -               has to contain 256 bytes (64x32 px 1 bit colour). The format
+> -               is the same as PBM image 62x32px without header (64 bits per
+> -               horizontal line, 32 lines). An example of setting OLED No. 0:
+> -               dd bs=256 count=1 if=img_file of=[path to oled0_img]/oled0_img
+> -               The attribute is read only and no local copy of the image is
+> -               stored.
+> -
+> -What:          /sys/class/hidraw/hidraw*/device/speed
+> +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/speed
+>  Date:          April 2010
+
+Should the Date be updated?
+
+>  Kernel Version:        2.6.35
+
+This patch is planned for 3.16, right?
+
+>  Contact:       linux-bluetooth@vger.kernel.org
+>  Description:
+> -               The /sys/class/hidraw/hidraw*/device/speed file controls
+> -               reporting speed of Wacom bluetooth tablet. Reading from
+> -               this file returns 1 if tablet reports in high speed mode
+> +               The /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/speed file
+> +               controls reporting speed of Wacom bluetooth tablet. Reading
+> +               from this file returns 1 if tablet reports in high speed mode
+>                 or 0 otherwise. Writing to this file one of these values
+>                 switches reporting speed.
 >
->>>> +	/* Is block already considered bad? (will also catch invalid 
->>>> offsets) */
->>>> +	ret = mtd_block_isbad(mtd, offs);
->>>
->>> You're violating some of the layering here; the low-level driver
->>> probably shouldn't be calling the high-level mtd_*() APIs. On a 
->>> similar
->>> note, I'm not 100% confident that the nand_base/nand_bbt separation 
->>> is
->>> written cleanly enough for easy maintenance of your nand_base + ST 
->>> BBT
->>> code in parallel. I might need a second look at that, and I think
->>> modularizing your BBT code to a separate file could help ease this 
->>> a
->>> little.
+> -What:          /sys/class/leds/0005\:056A\:00BD.0001\:selector\:*/
+> -Date:          May 2012
+> -Kernel Version:        3.5
+> -Contact:       linux-bluetooth@vger.kernel.org
+> -Description:
+> -               LED selector for Intuos4 WL. There are 4 leds, but only one LED
+> -               can be lit at a time. Max brightness is 127.
+> -
+> -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/led
+> +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/led
+>  Date:          August 2011
+
+Same here and other 6 dates below
+
+>  Contact:       linux-input@vger.kernel.org
+>  Description:
+>                 Attribute group for control of the status LEDs and the OLEDs.
+>                 This attribute group is only available for Intuos 4 M, L,
+> -               and XL (with LEDs and OLEDs), Intuos 5 (LEDs only), and Cintiq
+> -               21UX2 and Cintiq 24HD (LEDs only). Therefore its presence
+> -               implicitly signifies the presence of said LEDs and OLEDs on the
+> -               tablet device.
+> +               and XL (with LEDs and OLEDs), Intuos 4 WL, Intuos 5 (LEDs only),
+> +               Intuos Pro (LEDs only) and Cintiq 21UX2 and Cintiq 24HD
+> +               (LEDs only). Therefore its presence implicitly signifies the
+> +               presence of said LEDs and OLEDs on the tablet device.
 >
-> ... here is the converse argument.
+> -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/status0_luminance
+> +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/status0_luminance
+>  Date:          August 2011
+>  Contact:       linux-input@vger.kernel.org
+>  Description:
+> @@ -50,7 +29,7 @@ Description:
+>                 button is pressed on the stylus. This luminance level is
+>                 normally lower than the level when a button is pressed.
 >
-I think somewhere in earlier comments, Brian also supported
-to use high-level function like mtd_read(). Also, nand_bbt.c
-itself uses 'mtd_read(), mtd_read_oob() and mtd_write_oob()
-at many places. So I'll let Brain decide here.
-But having low-level function will add redundant code for
-re-checking and aligning the addresses boundaries to block
-and page/sector sizes.
+> -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/status1_luminance
+> +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/status1_luminance
+>  Date:          August 2011
+>  Contact:       linux-input@vger.kernel.org
+>  Description:
+> @@ -58,7 +37,7 @@ Description:
+>                 when the stylus touches the tablet surface, or any button is
+>                 pressed on the stylus.
+>
+> -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/status_led0_select
+> +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/status_led0_select
+>  Date:          August 2011
+>  Contact:       linux-input@vger.kernel.org
+>  Description:
+> @@ -67,7 +46,7 @@ Description:
+>                 24HD) status LEDs is active (0..3). The other three LEDs on the
+>                 same side are always inactive.
+>
+> -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/status_led1_select
+> +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/status_led1_select
+>  Date:          September 2011
+>  Contact:       linux-input@vger.kernel.org
+>  Description:
+> @@ -75,14 +54,14 @@ Description:
+>                 and Cintiq 24HD) status LEDs is active (0..3). The other three LEDs on
+>                 the left are always inactive.
+>
+> -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/buttons_luminance
+> +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/buttons_luminance
+>  Date:          August 2011
+>  Contact:       linux-input@vger.kernel.org
+>  Description:
+>                 Writing to this file sets the overall luminance level (0..15)
 
-Brian ??
+We need to specify that this ABI is only for Intuos 4 (USB and Bluetooth).
 
-
-with regards, pekon
-
-
-------------------------
-Powered by BigRock.com
-
+>                 of all eight button OLED displays.)
+>
+> -What:          /sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/button<n>_rawimg
+> +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/button<n>_rawimg
+>  Date:          August 2011
+>  Contact:       linux-input@vger.kernel.org
+>  Description:
+> @@ -93,3 +72,8 @@ Description:
+>                 byte chunk encodes the image data for two consecutive lines on
+>                 the display. The low nibble of each byte contains the first
+>                 line, and the high nibble contains the second line.
+> +               When the Wacom Intuos 4 is connected over Bluetooth, the
+> +               image has to contain 256 bytes (64x32 px 1 bit colour).
+> +               The format is also scrambled, like in the USB mode, and it can
+> +               be summarized by converting 76543210 into GECA6420.
+> +                                           HGFEDCBA      HFDB7531
+> --
+> 2.0.4
+>
