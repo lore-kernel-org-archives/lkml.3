@@ -1,108 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429AbaHEBGQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 21:06:16 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:13503 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752843AbaHEBGN (ORCPT
+	id S1753460AbaHEBGi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 21:06:38 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:57657 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753307AbaHEBGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 21:06:13 -0400
-X-IronPort-AV: E=Sophos;i="5.04,265,1406563200"; 
-   d="scan'208";a="34179570"
-Message-ID: <53E02E59.2050506@cn.fujitsu.com>
-Date: Tue, 5 Aug 2014 09:07:37 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Mon, 4 Aug 2014 21:06:35 -0400
+Message-ID: <53E02E18.60602@gmail.com>
+Date: Mon, 04 Aug 2014 18:06:32 -0700
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] percpu changes for v3.17-rc1
-References: <20140804140400.GB26230@htj.dyndns.org>
-In-Reply-To: <20140804140400.GB26230@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
+CC: Stephen Boyd <sboyd@codeaurora.org>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        linux-serial@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net
+Subject: [test patch 3/4] use poll_post_exception in msm_serial
+References: <53E02C7C.4090206@gmail.com>
+In-Reply-To: <53E02C7C.4090206@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2014 10:04 PM, Tejun Heo wrote:
-> Hello, Linus.
-> 
-> * Major reorganization of percpu header files which I think makes
->   things a lot more readable and logical than before.
-> 
-> * percpu-refcount is updated so that it requires explicit destruction
->   and can be reinitialized if necessary.  This was pulled into the
->   block tree to replace the custom percpu refcnting implemented in
->   blk-mq.
-> 
-> * In the process, percpu and percpu-refcount got cleaned up a bit.
-> 
-> This pull request contains two stray workqueue commits from Lai.
-> These are my mistakes.  I mistakenly applied the two to this tree and
-> then cherry picked them to the workqueue tree but forgot to roll them
-> back from this one.  I realized this only after percpu-refcount
-> changes were pulled into the block tree so couldn't fix it up
-> afterwards.  Sorry.  They shouldn't cause any problem during merge.
-> 
-> Thanks.
-> 
-> The following changes since commit ebe06187bf2aec10d537ce4595e416035367d703:
-> 
->   epoll: fix use-after-free in eventpoll_release_file (2014-06-16 17:21:59 -1000)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.17
-> 
-> for you to fetch changes up to 2d7227828e1475c7b272e55bd70c4cec8eea219a:
-> 
->   percpu-refcount: implement percpu_ref_reinit() and percpu_ref_is_zero() (2014-06-28 08:10:14 -0400)
-> 
-> ----------------------------------------------------------------
-> Christoph Lameter (1):
->       percpu: Use ALIGN macro instead of hand coding alignment calculation
-> 
-> Lai Jiangshan (2):
->       workqueue: clear POOL_DISASSOCIATED in rebind_workers()
->       workqueue: stronger test in process_one_work()
+From: Frank Rowand <frank.rowand@sonymobile.com>
 
-These two are also requested to be pulled on workqueue tree.
 
-> 
-> Tejun Heo (18):
->       percpu: disallow archs from overriding SHIFT_PERCPU_PTR()
->       percpu: introduce arch_raw_cpu_ptr()
->       percpu: include/asm-generic/percpu.h should contain only arch-overridable parts
->       percpu: move accessors from include/linux/percpu.h to percpu-defs.h
->       percpu: reorganize include/linux/percpu-defs.h
->       percpu: only allow sized arch overrides for {raw|this}_cpu_*() ops
->       percpu: move generic {raw|this}_cpu_*_N() definitions to include/asm-generic/percpu.h
->       percpu: move {raw|this}_cpu_*() definitions to include/linux/percpu-defs.h
->       percpu: reorder macros in percpu header files
->       percpu: use raw_cpu_*() to define __this_cpu_*()
->       percpu: preffity percpu header files
->       percpu: invoke __verify_pcpu_ptr() from the generic part of accessors and operations
->       percpu-refcount, aio: use percpu_ref_cancel_init() in ioctx_alloc()
->       percpu-refcount: one bit is enough for REF_STATUS
->       percpu-refcount: add helpers for ->percpu_count accesses
->       percpu-refcount: use unsigned long for pcpu_count pointer
->       percpu-refcount: require percpu_ref to be exited explicitly
->       percpu-refcount: implement percpu_ref_reinit() and percpu_ref_is_zero()
-> 
->  arch/x86/include/asm/percpu.h    |   3 +-
->  drivers/target/target_core_tpg.c |   4 +-
->  fs/aio.c                         |   6 +-
->  include/asm-generic/percpu.h     | 410 ++++++++++++++++++++----
->  include/linux/percpu-defs.h      | 380 +++++++++++++++++++++-
->  include/linux/percpu-refcount.h  |  64 ++--
->  include/linux/percpu.h           | 673 ---------------------------------------
->  kernel/cgroup.c                  |   8 +-
->  kernel/workqueue.c               |  19 +-
->  lib/percpu-refcount.c            |  86 +++--
->  mm/percpu.c                      |   3 +-
->  11 files changed, 834 insertions(+), 822 deletions(-)
-> 
+**********************************************************
+I need help with this patch - it does not fix the issue.
+**********************************************************
 
+
+Use framework to allow msm_serial driver to fixup state after operating in
+polled mode, before returning to interrupt mode.
+
+I do not have complete documentation on the hardware, so this patch is a
+set of shots in the dark.  Each experiment can be enabled by enabling
+a #define.
+
+The issue I am trying to resolve with this patch is:
+
+   kgdb properly communicates with the dragon board, but
+   following the continue command, the serial driver does not get any stale
+   (UART_IMR_RXSTALE) interrupts until 48 characters have been read, which
+   triggers a high water interrupt.  After the high water interrupt has been
+   processed, the driver resumes properly getting stale interrupts.
+
+msm_poll_post_exception() will be called near the tail end of kgdb_cpu_enter(),
+via the path invoked by:
+
+   /* Call the I/O driver's post_exception routine */
+   if (dbg_io_ops->post_exception)
+      dbg_io_ops->post_exception();
+
+
+
+Not-signed-off-by-yet: Frank Rowand <frank.rowand@sonymobile.com>
+
+---
+ drivers/tty/serial/msm_serial.c |  196 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 196 insertions(+)
+
+Index: b/drivers/tty/serial/msm_serial.c
+===================================================================
+--- a/drivers/tty/serial/msm_serial.c
++++ b/drivers/tty/serial/msm_serial.c
+@@ -881,6 +881,201 @@ static void msm_poll_put_char(struct uar
+ 
+ 	return;
+ }
++
++int zzz_poll_put_char_reset;
++static void msm_poll_post_exception(struct uart_port *port)
++{
++	int misr;
++	struct msm_port *msm_port = UART_TO_MSM(port);
++
++	zzz_poll_put_char_reset++;
++
++	msm_port->old_snap_state = 0;
++
++// #define ZZZ_ALT_1
++#ifdef ZZZ_ALT_1
++	/*
++	 * zzz alternate 1 -- trigger high water after continue <---- bad
++	 *        high water count == 48, set old_snap_state = 48
++	 *        then stale total snap == 49, so count == 1    <---- good
++	 *
++	 *     better than alternate 2
++	 */
++	msm_read(port, UARTDM_RX_TOTAL_SNAP);
++
++#if 0
++	misr = msm_read(port, UART_MISR);
++	if (misr & (UART_IMR_RXSTALE))
++#endif
++		msm_write(port, UART_CR_CMD_RESET_STALE_INT, UART_CR);
++	msm_write(port, 0xFFFFFF, UARTDM_DMRX);
++	msm_write(port, UART_CR_CMD_STALE_EVENT_ENABLE, UART_CR);
++#endif /* ZZZ_ALT_1 */
++
++
++// #define ZZZ_ALT_2
++#ifdef ZZZ_ALT_2
++	/*
++	 * zzz alternate 2 -- trigger high water after continue <---- bad
++	 *        high water count == 48, set old_snap_state = 48
++	 *        next total snap == 310
++	 *        then stale total snap == 310, so count == 262 <---- bad
++	 */
++	msm_read(port, UARTDM_RX_TOTAL_SNAP);
++
++	msm_write(port, UART_CR_CMD_FORCE_STALE, UART_CR);
++#endif
++
++
++// #define ZZZ_ALT_3_4
++#ifdef ZZZ_ALT_3_4
++	/*
++	 * zzz alternate 3 -- never trigger after continue <---- bad
++	 */
++	msm_read(port, UARTDM_RX_TOTAL_SNAP);
++
++	msm_write(port, 0xFFFFFF, UARTDM_DMRX);
++	msm_write(port, UART_CR_CMD_STALE_EVENT_ENABLE, UART_CR);
++
++	msm_write(port, UART_CR_CMD_RESET_STALE_INT, UART_CR);
++	msm_write(port, UART_CR_CMD_FORCE_STALE, UART_CR);
++
++#if 0
++	/*
++	 * zzz alternate 3, #if 1 this block
++	 * zzz alternate 4, #if 0 this block
++	 * zzz alternate 4 -- trigger high water after continue <---- bad
++	 *        high water count == 48, set old_snap_state = 48
++	 *        then stale total snap == 49, so count == 1    <---- good
++	 */
++	misr = msm_read(port, UART_MISR);
++	while (!(misr & (UART_IMR_RXSTALE))) {
++		cpu_relax();
++		misr = msm_read(port, UART_MISR);
++	}
++#endif
++
++#endif /* ZZZ_ALT_3_4 */
++
++
++// #define ZZZ_ALT_5
++#ifdef ZZZ_ALT_5
++	/*
++	 * zzz alternate 5 -- trigger high water after continue <---- bad
++	 *        high water count == 48, set old_snap_state = 48
++	 *        then stale total snap == 49, so count == 1    <---- good
++	 */
++	msm_read(port, UARTDM_RX_TOTAL_SNAP);
++
++#if 0
++	misr = msm_read(port, UART_MISR);
++	if (misr & (UART_IMR_RXSTALE))
++#endif
++		msm_write(port, UART_CR_CMD_RESET_STALE_INT, UART_CR);
++	msm_write(port, 0xFFFFFF, UARTDM_DMRX);
++	msm_write(port, UART_CR_CMD_STALE_EVENT_ENABLE, UART_CR);
++
++	/* zzz should not have to do this, trying anyway */
++	/* restore interrupt */
++	msm_write(port, msm_port->imr, UART_IMR);
++#endif /* ZZZ_ALT_5 */
++
++
++// #define ZZZ_ALT_6
++#ifdef ZZZ_ALT_6
++	/*
++	 * zzz alternate 6 -- trigger high water after continue <---- bad
++	 *        high water count == 48, set old_snap_state = 48
++	 *        then stale total snap == 49, so count == 1    <---- good
++	 */
++	msm_read(port, UARTDM_RX_TOTAL_SNAP);
++
++	msm_write(port, 0, UART_IMR); /* disable interrupt */
++
++	misr = msm_read(port, UART_MISR);
++	if (misr & (UART_IMR_RXSTALE))
++		msm_write(port, UART_CR_CMD_RESET_STALE_INT, UART_CR);
++	msm_write(port, 0xFFFFFF, UARTDM_DMRX);
++	msm_write(port, UART_CR_CMD_STALE_EVENT_ENABLE, UART_CR);
++
++	msm_write(port, UART_CR_CMD_FORCE_STALE, UART_CR);
++
++	/* restore interrupt */
++	msm_write(port, msm_port->imr, UART_IMR);
++
++#endif /* ZZZ_ALT_6 */
++
++
++#define ZZZ_ALT_7
++#ifdef ZZZ_ALT_7
++	/*
++	 * Try to emulate entire interrupt driver read path....
++	 *
++	 * zzzzzz  what is missing that is fixed by the high water irq???
++	 *
++	 * same result for versions A, B, C
++	 * zzz alternate 7 -- trigger high water after continue <---- bad
++	 *        high water count == 48, set old_snap_state = 48
++	 *        then stale total snap == 49, so count == 1    <---- good
++	 */
++
++{
++	int imr_rx_stale;
++	unsigned int sr;
++
++	/*
++	 * zzz Grabbing a lock here will result in a deadlock if a breakpoint
++	 * zzz is hit while the lock is held elsewhere.  It would be best to
++	 * zzz avoid this lock if possible.
++	 *
++	 * zzz It would be better to do a trylock and warn on failure to
++	 * zzz acquire.
++	 */
++	spin_lock(&port->lock);
++
++	misr = msm_read(port, UART_MISR);
++	imr_rx_stale = misr & UART_IMR_RXSTALE;
++
++	msm_write(port, 0, UART_IMR); /* disable interrupt */
++
++	if ((msm_read(port, UART_SR) & UART_SR_OVERRUN))
++		msm_write(port, UART_CR_CMD_RESET_ERR, UART_CR);
++
++
++	/* zzz version A, read _either_ UARTDM_RX_TOTAL_SNAP or UART_RFWR */
++	/* zzz version B, read UARTDM_RX_TOTAL_SNAP and UART_RFWR */
++	/* zzz version C, read UART_RFWR */
++	if (imr_rx_stale)
++		msm_read(port, UARTDM_RX_TOTAL_SNAP);
++	else
++		msm_read(port, UART_RFWR);
++
++	sr = msm_read(port, UART_SR);
++	/* zzz this could be: while (sr & ...) {UARTDM_RF; UART_SR;} */
++	while ((sr & UART_SR_RX_READY) != 0) {
++		msm_read(port, UARTDM_RF);
++		sr = msm_read(port, UART_SR);
++	}
++
++	if (imr_rx_stale)
++		msm_write(port, UART_CR_CMD_RESET_STALE_INT, UART_CR);
++	msm_write(port, 0xFFFFFF, UARTDM_DMRX);
++	msm_write(port, UART_CR_CMD_STALE_EVENT_ENABLE, UART_CR);
++
++	msm_write(port, msm_port->imr, UART_IMR); /* restore interrupt */
++
++	spin_unlock(&port->lock);
++}
++
++#endif /* ZZZ_ALT_7 */
++
++
++
++	return;
++}
++
++
++
+ #endif
+ 
+ static struct uart_ops msm_uart_pops = {
+@@ -905,6 +1100,7 @@ static struct uart_ops msm_uart_pops = {
+ 	.poll_init = msm_poll_init,
+ 	.poll_get_char	= msm_poll_get_char,
+ 	.poll_put_char	= msm_poll_put_char,
++	.poll_post_exception = msm_poll_post_exception,
+ #endif
+ };
+ 
