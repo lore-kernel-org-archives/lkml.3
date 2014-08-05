@@ -1,132 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841AbaHEMz4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 08:55:56 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:35561 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212AbaHEMzy (ORCPT
+	id S1753749AbaHEM6b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 08:58:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37953 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639AbaHEM6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 08:55:54 -0400
-Date: Tue, 5 Aug 2014 13:55:48 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: P J P <ppandit@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: 3.12 to 3.13 boot regression bisected - still applies to 3.16
-Message-ID: <20140805125548.GP15082@console-pimps.org>
-References: <20140804113435.34ed8c76@pluto>
- <20140804122728.GH15082@console-pimps.org>
- <20140804150627.4563b6a7@pluto>
- <20140804135452.GJ15082@console-pimps.org>
- <20140805100242.425e1093@pluto>
- <20140805084542.GM15082@console-pimps.org>
- <20140805111330.3cf9319f@pluto>
- <20140805091848.GN15082@console-pimps.org>
- <20140805135130.2d180b69@pluto>
- <20140805141142.437ecb17@pluto>
+	Tue, 5 Aug 2014 08:58:30 -0400
+Date: Tue, 5 Aug 2014 14:58:19 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Pranith Kumar <pranith@gatech.edu>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Question regarding "Control Dependencies" in memory-barriers.txt
+Message-ID: <20140805125819.GY19379@twins.programming.kicks-ass.net>
+References: <CAJhHMCADiEsUC7GsYF7=qMNEyRJerfhC5zh7WQPgkQ0gJn5=5A@mail.gmail.com>
+ <20140804185226.GQ8101@linux.vnet.ibm.com>
+ <CAJhHMCBEprK9hp786cwguJR=JW7Xxgt4GKX5=E0vikO-D4qmZg@mail.gmail.com>
+ <20140805073237.GX3935@laptop>
+ <CAJhHMCBjub+_Gg_wC2EoR5OgzwT7JTHr-wzoGp_dePUBVwEG8g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Y21+uYhi56M1pLFQ"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140805141142.437ecb17@pluto>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJhHMCBjub+_Gg_wC2EoR5OgzwT7JTHr-wzoGp_dePUBVwEG8g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Aug, at 02:11:42PM, Bruno Prémont wrote:
-> 
-> arch/x86/boot/compressed/head_64.S
-> 341 /*
-> 342  * Copy the compressed kernel to the end of our buffer
-> 343  * where decompression in place becomes safe.
-> 344  */
-> 345         pushq   %rsi
-> 346         leaq    (_bss-8)(%rip), %rsi
-> 347         leaq    (_bss-8)(%rbx), %rdi
-> 348         movq    $_bss /* - $startup_32 */, %rcx
-> 349         shrq    $3, %rcx
-> 350         std
-> 
-> code gets up to here
-> 
-> 351         rep     movsq
-> 
-> this location is never reached but instead system reboots
-> 
-> 352         cld
-> 353         popq    %rsi
-> 354 
-> 355 /*      
-> 356  * Jump to the relocated address.
-> 357  */
 
-Excellent. Thanks for doing this, it's all starting to make sense now.
+--Y21+uYhi56M1pLFQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I suspect if you enable CONFIG_RELOCATABLE things will work just fine.
-I've actually got a patch to force that option if CONFIG_EFI_STUB is
-enabled to mitigate this exact problem. Could you try it out (see
-below)?
+On Tue, Aug 05, 2014 at 08:13:54AM -0400, Pranith Kumar wrote:
+> >> 689         q =3D ACCESS_ONCE(a);
+> >> 690         BUILD_BUG_ON(MAX <=3D 1); /* Order load from a with store =
+to b. */
+> >> 691         if (q % MAX) {
+> >> 692                 ACCESS_ONCE(b) =3D p;
+> >> 693                 do_something();
+> >> 694         } else {
+> >> 695                 ACCESS_ONCE(b) =3D p;
+> >> 696                 do_something_else();
+> >> 697         }
+> >> 698
 
-Without CONFIG_RELOCATABLE the early boot code will try and decompress
-the kernel image to LOAD_PHYSICAL_ADDR. That may have worked in the days
-of BIOS, when it was reasonable to assume that nothing important would
-be sitting in the 0x10000000 region, but that's just not so for UEFI. 
 
-For UEFI we need to request memory from the firmware and not stray
-outside the bounds of those allocations. Otherwise there's the potential
-that we'll trash bits of the firmware's code/data.
+> I don't think the write to 'b' here is speculative since it is
+> happening in both the legs of the if() conditional. The write to b can
+> be pulled out to before the conditional. Without the barrier(), isn't
+> the following a valid transformation of the above?
+>=20
+> BUILD_BUG_ON(MAX <=3D 1); /* this will be compiled out if MAX !=3D 1*/
+> q =3D ACCESS_ONCE(a);
+> ACCESS_ONCE(b) =3D p; / *BUG: No ordering */
+> if (q % MAX) {
+>         do_something();
+> } else {
+>         do_something_else();
+> }
+>=20
+> I don't see how it is preserving the ordering.
 
----
+Ah, that's what you meant. Yes possibly that's true.
 
->From b9ffb908e18b11be1d89e4c39bee5d4671d3fa6f Mon Sep 17 00:00:00 2001
-From: Matt Fleming <matt.fleming@intel.com>
-Date: Fri, 11 Jul 2014 08:45:25 +0100
-Subject: [PATCH] x86/efi: Enforce CONFIG_RELOCATABLE for EFI boot stub
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+--Y21+uYhi56M1pLFQ
+Content-Type: application/pgp-signature
 
-Without CONFIG_RELOCATABLE the early boot code will decompress the
-kernel to LOAD_PHYSICAL_ADDR. While this may have been fine in the BIOS
-days, that isn't going to fly with UEFI since parts of the firmware
-code/data may be located at LOAD_PHYSICAL_ADDR.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Straying outside of the bounds of the regions we've explicitly requested
-from the firmware will cause all sorts of trouble. Bruno reports that
-his machine resets while trying to decompress the kernel image.
+iQIcBAEBAgAGBQJT4NTqAAoJEHZH4aRLwOS6Q58P/3XFlMcarIychMls/NRLr4WD
+hf4gXbxFFbds2+/NcYYsoQFz6to9GuYqkzuH2w9TtB3wa6U/jnS1LcZ+CbH8HYCj
+kGSbrQ5IT0JJa2n6rF+gviGPOlXIu4lxqugqvuZCojwU/YAJzU5SU0G1CPFoSYq0
+pUszMt6yvn0Zon9TdQAR32XO/p4LB5xU04GEoQ9401crEldIlGTJPsuHKDcMWglp
+k6uSrAgZ+NabA67B3tcl4aMZXjSYRsU61y+MOClESQtqVS1U78Yf7/KnJ/9EK2c5
+TRfNvOMEIOzPdkje+MoMfLqK+5DvpnItuaJEa8iG1vvV2YnVW+Uxjw04KlIPUkDj
+VecPkb0BwPEPQXKXhUUySxSa1UTX0AQiM7Jf4MqF4acGtH+E2YTku4/I1xUVWtoW
+mOlVhd7OBQLzqSaaJj1Lbx1e6qJwOP9RjLZKY2tMUcOJt/b0Tm+vzsnQUgfdxiQ7
+IUsP16PYB1sCc5H5fEg7FOJ2ja0MqAHevO5z10lXVLrvHAkJkPm5UIFzXAVAQoy1
+y/DBdrIveZpN17vfn8J4pwbKkiG+vOk2/33/wa7JMSLkh+pk09XZPNuqL0RT7FP/
+mBqV2YTnFo5ce+WFr3icdCCOTyEyGcoyqddwdU2Du/W3bZOh4p4Vyy8j+BX5C+UO
+yCACDM1yT1MHwN/al6G1
+=hWUg
+-----END PGP SIGNATURE-----
 
-We already go to great pains to ensure the kernel is loaded into a
-suitably aligned buffer, it's just that the address isn't necessarily
-LOAD_PHYSICAL_ADDR, because we can't guarantee that address isn't in-use
-by the firmware.
-
-Explicitly enforce CONFIG_RELOCATABLE for the EFI boot stub, so that we
-can load the kernel at any address with the correct alignment.
-
-Reported-by: Bruno Prémont <bonbons@linux-vserver.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/x86/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 801ed36c2e49..f31b8ae8c81c 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1537,6 +1537,7 @@ config EFI
- config EFI_STUB
-        bool "EFI stub support"
-        depends on EFI
-+       select RELOCATABLE
-        ---help---
-           This kernel feature allows a bzImage to be loaded directly
- 	  by EFI firmware without the use of a bootloader.
--- 
-1.9.0
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+--Y21+uYhi56M1pLFQ--
