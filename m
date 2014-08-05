@@ -1,90 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757545AbaHEJoi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 05:44:38 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:47526 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757496AbaHEJoh (ORCPT
+	id S933017AbaHEJqL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 05:46:11 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:49291 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757496AbaHEJqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 05:44:37 -0400
-Date: Tue, 5 Aug 2014 11:44:33 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1985206568.20140805114433@eikelenboom.it>
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, gregkh@linuxfoundation.org,
-        <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH v5] Fixes to Xen pciback for 3.17.
-In-Reply-To: <53E0A45C.4050400@citrix.com>
-References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com> <53DBB27D.2040203@citrix.com> <20140804184318.GB9009@laptop.dumpdata.com> <75613802.20140805104438@eikelenboom.it> <53E0A45C.4050400@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Aug 2014 05:46:08 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Jingoo Han <jg1.han@samsung.com>, Michael Welling <mwelling@ieee.org>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Joe Schultz <jschultz@xes-inc.com>, Ingo Molnar <mingo@elte.hu>,
+        Doug Anderson <dianders@chromium.org>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH 1/2 v2] serial/8250: Add support for RS485 IOCTLs
+Date: Tue,  5 Aug 2014 11:45:59 +0200
+Message-Id: <1407231959-18696-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch allow the users of the 8250 infrastructure to define a
+handler for RS485 configration.
 
-Tuesday, August 5, 2014, 11:31:08 AM, you wrote:
+If no handler is defined the 8250 driver will work as usual.
 
-> On 05/08/14 09:44, Sander Eikelenboom wrote:
->> 
->> Monday, August 4, 2014, 8:43:18 PM, you wrote:
->> 
->>> On Fri, Aug 01, 2014 at 04:30:05PM +0100, David Vrabel wrote:
->>>> On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
->>>>> Greg: goto GHK
->>>>>
->>>>> This is v5 version of patches to fix some issues in Xen PCIback.
->>>>
->>>> Applied to devel/for-linus-3.17.
->> 
->>> Thank you.
->>>>
->>>> I dropped the stable Cc for #2 pending a final decision on whether it
->>>> really is a stable candidate.
->> 
->>> OK.
->>>>
->>>> David
->> 
->> Hi Konrad / David,
->> 
->> This series still lacks a resolution on the sysfs /do_flr /reset,
->> as a result the pci devices are not reset after shutdown of a guest.
->> (no more pciback 0000:xx:xx.x: restoring config space at offset xxx)
->> 
->> So this series now introduces a regression to 3.16, which causes devices to malfunction 
->> after a guest reboot or after assigning the devices to another guest.
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+--
+v2:Change suggested by Alan "One Thousand Gnomes":
+- Move rs485 structure further down on the uart_8250_port structure
 
-> I don't follow what you're saying.  The lack of a device reset for PCI
-> devices with no FLR method isn't a regression as this has never worked.
->  Can you explain in more detail what the regression is and which patch
-> caused it?
+ drivers/tty/serial/8250/8250_core.c | 39 +++++++++++++++++++++++++++++++++++++
+ include/linux/serial_8250.h         |  3 +++
+ 2 files changed, 42 insertions(+)
 
-I haven't bisected it to a specific patch in this series,
-but this patch series (when pulled on top of 3.16) cause the following:
-
-- Do a system start and HVM guest start
-- HVM guest with pci passthrough, devices work fine
-- shutdown the HVM guest
-- "pciback 0000:xx:xx.x: restoring config space at offset xxx" messages do not
-  appear anymore when shutting down the HVM guest (as they do with vanilla 3.16)
-- Starting the HVM guest again with the same devices passed through.
-- Devices malfunction (for example a USB host controller will fail a simple 
-  "lsusb"
-- And this all works fine on vanilla 3.16.  
-
->> Apart from that .. i can't resist to remind the other issue with removing pci
->> devices passed through to HVM guests related to the signaling via xenstore,
->> described in:
->> 
->> http://lists.xen.org/archives/html/xen-devel/2014-07/msg01875.html
-
-> I don't remember seeing you posting a patch...?
-
-> David
-
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 1d42dba..b28ed1b 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -2843,6 +2843,42 @@ serial8250_verify_port(struct uart_port *port, struct serial_struct *ser)
+ 	return 0;
+ }
+ 
++static int serial8250_ioctl(struct uart_port *port, unsigned int cmd,
++			   unsigned long arg)
++{
++	struct uart_8250_port *up =
++		container_of(port, struct uart_8250_port, port);
++	int ret;
++	struct serial_rs485 rs485_config;
++
++	if (!up->rs485_config)
++		return -ENOIOCTLCMD;
++
++	switch (cmd) {
++	case TIOCSRS485:
++		if (copy_from_user(&rs485_config, (void __user *)arg,
++				   sizeof(rs485_config)))
++			return -EFAULT;
++
++		ret = up->rs485_config(up, &rs485_config);
++		if (ret)
++			return ret;
++
++		memcpy(&up->rs485, &rs485_config, sizeof(rs485_config));
++
++		return 0;
++	case TIOCGRS485:
++		if (copy_to_user((void __user *)arg, &up->rs485,
++				 sizeof(up->rs485)))
++			return -EFAULT;
++		return 0;
++	default:
++		break;
++	}
++
++	return -ENOIOCTLCMD;
++}
++
+ static const char *
+ serial8250_type(struct uart_port *port)
+ {
+@@ -2872,6 +2908,7 @@ static struct uart_ops serial8250_pops = {
+ 	.request_port	= serial8250_request_port,
+ 	.config_port	= serial8250_config_port,
+ 	.verify_port	= serial8250_verify_port,
++	.ioctl		= serial8250_ioctl,
+ #ifdef CONFIG_CONSOLE_POLL
+ 	.poll_get_char = serial8250_get_poll_char,
+ 	.poll_put_char = serial8250_put_poll_char,
+@@ -3388,6 +3425,8 @@ int serial8250_register_8250_port(struct uart_8250_port *up)
+ 		uart->port.fifosize	= up->port.fifosize;
+ 		uart->tx_loadsz		= up->tx_loadsz;
+ 		uart->capabilities	= up->capabilities;
++		uart->rs485_config	= up->rs485_config;
++		uart->rs485		= up->rs485;
+ 
+ 		/* Take tx_loadsz from fifosize if it wasn't set separately */
+ 		if (uart->port.fifosize && !uart->tx_loadsz)
+diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
+index f93649e..6dd6717 100644
+--- a/include/linux/serial_8250.h
++++ b/include/linux/serial_8250.h
+@@ -96,10 +96,13 @@ struct uart_8250_port {
+ 	unsigned char		msr_saved_flags;
+ 
+ 	struct uart_8250_dma	*dma;
++	struct serial_rs485     rs485;
+ 
+ 	/* 8250 specific callbacks */
+ 	int			(*dl_read)(struct uart_8250_port *);
+ 	void			(*dl_write)(struct uart_8250_port *, int);
++	int			(*rs485_config)(struct uart_8250_port *,
++						struct serial_rs485 *rs485);
+ };
+ 
+ static inline struct uart_8250_port *up_to_u8250p(struct uart_port *up)
+-- 
+2.0.1
 
