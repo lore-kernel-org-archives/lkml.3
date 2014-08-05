@@ -1,172 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711AbaHEHvV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 03:51:21 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:41759 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999AbaHEHvT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 03:51:19 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, Vivek Gautam <gautam.vivek@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH] usb: ehci/ohci-exynos: Fix PHY getting sequence
-Date: Tue,  5 Aug 2014 13:21:09 +0530
-Message-Id: <1407225069-28443-1-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756795AbaHEHy1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 03:54:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50009 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753745AbaHEHyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 03:54:25 -0400
+Date: Tue, 5 Aug 2014 09:54:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        toshi.kani@hp.com, imammedo@redhat.com, jan.kiszka@siemens.com,
+        mingo@kernel.org, huawei.libin@huawei.com, prarit@redhat.com,
+        linux-kernel@vger.kernel.org,
+        "Brandt, Todd E" <todd.e.brandt@intel.com>
+Subject: Re: [PATCH] X86/CPU: Avoid 100ms sleep for cpu offline  during S3
+Message-ID: <20140805075419.GA18234@pd.tnic>
+References: <1407142742-29202-1-git-send-email-tianyu.lan@intel.com>
+ <20140804102301.GB4808@pd.tnic>
+ <53E04457.2060507@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53E04457.2060507@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we want to keep support for both older usb-phys as well as the
-newer generic phys, lets first get the generic PHYs and fallback to
-older USB-PHYs only when we fail to get the former.
-This should fix the issue with ehci-exynos and ohci-exynos, wherein
-in the absence of SAMSUNG_USB2PHY config symbol, we end up getting
-the NOP_USB_XCEIV phy when the same is enabled. And thus the PHYs
-are not configured properly.
+Hi Tianyu,
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jingoo Han <jg1.han@samsung.com>
----
- drivers/usb/host/ehci-exynos.c |   40 +++++++++++++++++-----------------
- drivers/usb/host/ohci-exynos.c |   47 +++++++++++++++++++---------------------
- 2 files changed, 42 insertions(+), 45 deletions(-)
+On Tue, Aug 05, 2014 at 10:41:27AM +0800, Lan Tianyu wrote:
+> Thanks for your review. We are doing S2RAM optimization.
+> We usually use AnalyzeSuspend tool from Brandt, Todd E to observe
+> the time consume during S2RAM.(https://github.com/01org/suspendresume.git)
+> 
+> I attached the original result from the tool which showed cpu offline consumes
+> more than 100ms. This is due to msleep in the native_cpu_die(). The
+> improvement.html shows the test result with the patch. You can't find cpu
+> offline at first glance and need to click zoom-in button because the consume
+> time of cpu offline is reduced to less than 5ms.
 
-diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
-index cda0a2f..2eed9a4 100644
---- a/drivers/usb/host/ehci-exynos.c
-+++ b/drivers/usb/host/ehci-exynos.c
-@@ -62,18 +62,6 @@ static int exynos_ehci_get_phy(struct device *dev,
- 	int phy_number;
- 	int ret = 0;
- 
--	exynos_ehci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
--	if (IS_ERR(exynos_ehci->phy)) {
--		ret = PTR_ERR(exynos_ehci->phy);
--		if (ret != -ENXIO && ret != -ENODEV) {
--			dev_err(dev, "no usb2 phy configured\n");
--			return ret;
--		}
--		dev_dbg(dev, "Failed to get usb2 phy\n");
--	} else {
--		exynos_ehci->otg = exynos_ehci->phy->otg;
--	}
--
- 	for_each_available_child_of_node(dev->of_node, child) {
- 		ret = of_property_read_u32(child, "reg", &phy_number);
- 		if (ret) {
-@@ -90,15 +78,27 @@ static int exynos_ehci_get_phy(struct device *dev,
- 
- 		phy = devm_of_phy_get(dev, child, NULL);
- 		of_node_put(child);
--		if (IS_ERR(phy)) {
--			ret = PTR_ERR(phy);
--			if (ret != -ENOSYS && ret != -ENODEV) {
--				dev_err(dev, "no usb2 phy configured\n");
--				return ret;
--			}
--			dev_dbg(dev, "Failed to get usb2 phy\n");
--		}
-+		if (IS_ERR(phy))
-+			/* Lets fallback to older USB-PHYs */
-+			goto usb_phy_old;
- 		exynos_ehci->phy_g[phy_number] = phy;
-+		/* Make the older PHYs unavailable */
-+		exynos_ehci->phy = ERR_PTR(-ENXIO);
-+	}
-+
-+	return 0;
-+
-+usb_phy_old:
-+	exynos_ehci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-+	if (IS_ERR(exynos_ehci->phy)) {
-+		ret = PTR_ERR(exynos_ehci->phy);
-+		if (ret != -ENXIO && ret != -ENODEV) {
-+			dev_err(dev, "no usb2 phy configured\n");
-+			return ret;
-+		}
-+		dev_dbg(dev, "Failed to get usb2 phy\n");
-+	} else {
-+		exynos_ehci->otg = exynos_ehci->phy->otg;
- 	}
- 
- 	return ret;
-diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-index a72ab8f..7c48e3f 100644
---- a/drivers/usb/host/ohci-exynos.c
-+++ b/drivers/usb/host/ohci-exynos.c
-@@ -51,27 +51,12 @@ static int exynos_ohci_get_phy(struct device *dev,
- 	int phy_number;
- 	int ret = 0;
- 
--	exynos_ohci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
--	if (IS_ERR(exynos_ohci->phy)) {
--		ret = PTR_ERR(exynos_ohci->phy);
--		if (ret != -ENXIO && ret != -ENODEV) {
--			dev_err(dev, "no usb2 phy configured\n");
--			return ret;
--		}
--		dev_dbg(dev, "Failed to get usb2 phy\n");
--	} else {
--		exynos_ohci->otg = exynos_ohci->phy->otg;
--	}
--
- 	/*
- 	 * Getting generic phy:
- 	 * We are keeping both types of phys as a part of transiting OHCI
- 	 * to generic phy framework, so as to maintain backward compatibilty
--	 * with old DTB.
--	 * If there are existing devices using DTB files built from them,
--	 * to remove the support for old bindings in this driver,
--	 * we need to make sure that such devices have their DTBs
--	 * updated to ones built from new DTS.
-+	 * with old DTB too.
-+	 * We fallback to older USB-PHYs when we fail to get generic PHYs.
- 	 */
- 	for_each_available_child_of_node(dev->of_node, child) {
- 		ret = of_property_read_u32(child, "reg", &phy_number);
-@@ -89,15 +74,27 @@ static int exynos_ohci_get_phy(struct device *dev,
- 
- 		phy = devm_of_phy_get(dev, child, NULL);
- 		of_node_put(child);
--		if (IS_ERR(phy)) {
--			ret = PTR_ERR(phy);
--			if (ret != -ENOSYS && ret != -ENODEV) {
--				dev_err(dev, "no usb2 phy configured\n");
--				return ret;
--			}
--			dev_dbg(dev, "Failed to get usb2 phy\n");
--		}
-+		if (IS_ERR(phy))
-+			/* Lets fallback to older USB-PHYs */
-+			goto usb_phy_old;
- 		exynos_ohci->phy_g[phy_number] = phy;
-+		/* Make the older PHYs unavailable */
-+		exynos_ohci->phy = ERR_PTR(-ENXIO);
-+	}
-+
-+	return 0;
-+
-+usb_phy_old:
-+	exynos_ohci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-+	if (IS_ERR(exynos_ohci->phy)) {
-+		ret = PTR_ERR(exynos_ohci->phy);
-+		if (ret != -ENXIO && ret != -ENODEV) {
-+			dev_err(dev, "no usb2 phy configured\n");
-+			return ret;
-+		}
-+		dev_dbg(dev, "Failed to get usb2 phy\n");
-+	} else {
-+		exynos_ohci->otg = exynos_ohci->phy->otg;
- 	}
- 
- 	return ret;
+The fact that I can't find it is a good thing, right? :-)
+
+Ok, this looks nice, it actually shows an improvement from cpus going
+offline for about 100ish msec and that duration shrinking down to 1.5
+msec on average which is a ~100x improv in my book.
+
+And the total S/R time diff looks really good too.
+
+Can people do those measurements outside of your lab? Because if they
+can, I could do some on my boxes here too :)
+
+Now, what you could do is run this on a couple of systems, if possible,
+write down in the commit message how exactly you did it and add some
+relevant numbers to show the speedup. Because this completion thing is
+definitely worth pursuing further, provided it doesn't break suspend in
+some weird ways.
+
+Btw, the original patches which added the 100ms msleep are:
+
+	ef6e525393db ("[PATCH] x86_64: Use msleep in smpboot.c")
+	aeb8397b6a28 ("[PATCH] i386/smpboot: use msleep() instead of schedule_timeout()")
+
+and its commit message is, of course, :-( not very telling. WTF does
+"task delays as expected" mean? I have to go poke peterz for an idea
+what it might've meant...
+
+So do you see what I mean with writing a good, verbose commit message,
+explaining the situation?
+
+It needs to explain not what we did but why we did it years from now so
+that we know exactly if we have to go touch that code again.
+
+HTH.
+
 -- 
-1.7.10.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
