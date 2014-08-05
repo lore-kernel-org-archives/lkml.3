@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932981AbaHEJY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 05:24:29 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:48347 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756096AbaHEJY2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 05:24:28 -0400
-Date: Tue, 5 Aug 2014 10:23:46 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: David Airlie <airlied@linux.ie>,
-        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/gma500: mdfld: Reuse video/mipi_display.h
-Message-ID: <20140805102346.67867256@alan.etchedpixels.co.uk>
-In-Reply-To: <1407220036-4058-1-git-send-email-thierry.reding@gmail.com>
-References: <1407220036-4058-1-git-send-email-thierry.reding@gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1757451AbaHEJ1u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 05:27:50 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:21692 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753635AbaHEJ1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 05:27:48 -0400
+X-IronPort-AV: E=Sophos;i="5.01,804,1400025600"; 
+   d="scan'208";a="158810297"
+Message-ID: <53E0A391.8090208@citrix.com>
+Date: Tue, 5 Aug 2014 10:27:45 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>
+CC: <gregkh@linuxfoundation.org>, <boris.ostrovsky@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [PATCH v5 2/6] xen/pciback: Don't deadlock when unbinding.
+References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com>	<1405354736-7358-3-git-send-email-konrad.wilk@oracle.com>	<53D64AF3.4080202@citrix.com> <20140804184247.GA9009@laptop.dumpdata.com>
+In-Reply-To: <20140804184247.GA9009@laptop.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  5 Aug 2014 08:27:16 +0200
-Thierry Reding <thierry.reding@gmail.com> wrote:
-
-> From: Thierry Reding <treding@nvidia.com>
+On 04/08/14 19:42, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jul 28, 2014 at 02:06:59PM +0100, David Vrabel wrote:
+>> On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
+>>> As commit 0a9fd0152929db372ff61b0d6c280fdd34ae8bdb
+>>> 'xen/pciback: Document the entry points for 'pcistub_put_pci_dev''
+>>> explained there are four entry points in this function.
+>>> Two of them are when the user fiddles in the SysFS to
+>>> unbind a device which might be in use by a guest or not.
+>>>
+>>> Both 'unbind' states will cause a deadlock as the the PCI lock has
+>>> already been taken, which then pci_device_reset tries to take.
+>>>
+>>> We can simplify this by requiring that all callers of
+>>> pcistub_put_pci_dev MUST hold the device lock. And then
+>>> we can just call the lockless version of pci_device_reset.
+>>>
+>>> To make it even simpler we will modify xen_pcibk_release_pci_dev
+>>> to quality whether it should take a lock or not - as it ends
+>>> up calling xen_pcibk_release_pci_dev and needs to hold the lock.
+>>>
+>>> CC: stable@vger.kernel.org
+>>
+>> This deadlock is for a rather specific and uncommon use case (manually
+>> unbinding a PCI while it is passed-through). Is this critical enough to
+>> warrant a stable backport?
 > 
-> The GMA500 driver redefines many constants already found in the generic
-> header. Replace uses of the custom defines by the standard ones and get
-> rid of the duplicate defininitions.
+> We seem to trip over it frequently when rebooting a server.
 > 
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> That is the VF's end up being unbinded while the guests
+> are being shutdown. And depending on the timing we end up in a deadlock.
 
-The driver pre-dates the standard ones I think. Looks good thanks for
-the cleanup
+Ok.  I'll add the stable tag.
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+David
