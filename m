@@ -1,223 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192AbaHESZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:25:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52471 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755241AbaHESOp (ORCPT
+	id S1756196AbaHESZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:25:56 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48320 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755260AbaHESYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:45 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.14 00/39] 3.14.16-stable review
-Date: Tue,  5 Aug 2014 11:13:37 -0700
-Message-Id: <20140805181336.030349158@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.4
-User-Agent: quilt/0.63-1
+	Tue, 5 Aug 2014 14:24:47 -0400
+Date: Tue, 5 Aug 2014 19:24:36 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140805182436.GF17528@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YAj9hGQEeu6NAWot"
+Content-Disposition: inline
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [GIT PULL] SPI updates for v3.17
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.14.16 release.
-There are 39 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
 
-Responses should be made by Thu Aug  7 18:13:27 UTC 2014.
-Anything received after that time might be too late.
+--YAj9hGQEeu6NAWot
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.16-rc1.gz
-and the diffstat can be found below.
+The following changes since commit 19583ca584d6f574384e17fe7613dfaeadcdc4a6:
 
-thanks,
+  Linux 3.16 (2014-08-03 15:25:02 -0700)
 
-greg k-h
+are available in the git repository at:
 
--------------
-Pseudo-Shortlog of commits:
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git tags/spi-v3=
+=2E17
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.14.16-rc1
+for you to fetch changes up to fab6a0410d20ef09238ef54b8726d170578da752:
 
-Boris Ostrovsky <boris.ostrovsky@oracle.com>
-    x86/espfix/xen: Fix allocation of pages for paravirt page tables
+  Merge remote-tracking branches 'spi/topic/sh', 'spi/topic/sh-msiof' and '=
+spi/topic/topcliff-pch' into spi-next (2014-08-04 17:21:16 +0100)
 
-Minfei Huang <huangminfei@ucloud.cn>
-    lib/btree.c: fix leak of whole btree nodes
+----------------------------------------------------------------
+spi: Updates for v3.17
 
-Sasha Levin <sasha.levin@oracle.com>
-    net/l2tp: don't fall back on UDP [get|set]sockopt
+A quiet release, more bug fixes than anything else.  A few things do
+stand out though:
 
-Max Filippov <jcmvbkbc@gmail.com>
-    xtensa: add fixup for double exception raised in window overflow
+ - Updates to several drivers to move towards the standard GPIO chip
+   select handling in the core.
+ - DMA support for the SH MSIOF driver.
+ - Support for Rockchip SPI controllers (their first mainline
+   submission).
 
-David Vrabel <david.vrabel@citrix.com>
-    x86/xen: no need to explicitly register an NMI callback
+----------------------------------------------------------------
+Addy Ke (4):
+      spi/rockchip: cleanup some coding issues and uncessary output
+      spi/rockchip: call wait_for_idle() for the transfer to complete
+      spi/rockchip: master->mode_bits: remove SPI_CS_HIGH bit
+      spi/rockchip: add compatible strings for RK3188 and RK3288
 
-Viresh Kumar <viresh.kumar@linaro.org>
-    cpufreq: move policy kobj to policy->cpu at resume
+Alexander Shiyan (4):
+      spi: clps711x: Remove unnecessary platform_set_drvdata()
+      spi: falcon: Remove unnecessary platform_set_drvdata()
+      spi: omap-100k: Remove unnecessary platform_set_drvdata()
+      spi: sh-msiof: Remove unnecessary platform_set_drvdata()
 
-Johannes Berg <johannes.berg@intel.com>
-    Revert "mac80211: move "bufferable MMPDU" check to fix AP mode scan"
+Andy Gross (1):
+      spi: qup: Add support for v1.1.1
 
-Malcolm Priestley <tvboxspy@gmail.com>
-    staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
+Andy Shevchenko (1):
+      spi: topcliff-pch: don't hardcode PCI slot to get DMA device
 
-Roger Quadros <rogerq@ti.com>
-    ARM: dts: dra7-evm: Make VDDA_1V8_PHY supply always on
+Geert Uytterhoeven (16):
+      spi: sh-msiof: Add more register documentation
+      spi: sh-msiof: Extract sh_msiof_spi_{start,stop}() helpers
+      spi: sh-msiof: Improve transfer error handling
+      spi: sh-msiof: Refactor sh_msiof_transfer_one()
+      spi: sh-msiof: Add DMA support
+      spi: rspi: Remove unused variable in rspi_rz_transfer_one()
+      spi: rspi: Pass spi_master pointer to rspi_release_dma()
+      spi: sh-msiof: SPI_SH_MSIOF should depend on HAS_DMA
+      spi: rspi: Relax DMA dependency and increase build coverage
+      spi: core: Fix check for dma_map_sg() failures
+      spi: core: Pass correct device to dma_map_sg()
+      spi: rspi: Handle dmaengine_prep_slave_sg() failures gracefully
+      spi: sh-msiof: Handle dmaengine_prep_slave_single() failures graceful=
+ly
+      spi: sh-msiof: Use correct device for DMA mapping with IOMMU
+      spi: topcliff-pch: Update error messages for dmaengine_prep_slave_sg(=
+) API
+      spi: atmel: Use dmaengine_prep_slave_sg() API
 
-Nishanth Menon <nm@ti.com>
-    pinctrl: dra: dt-bindings: Fix pull enable/disable
+Grygorii Strashko (1):
+      spi: davinci: use spi_device.cs_gpio to store gpio cs per spi device
 
-Andy Lutomirski <luto@amacapital.net>
-    x86_64/entry/xen: Do not invoke espfix64 on Xen
+Himangi Saraogi (3):
+      spi: omap-uwire: use devm_ functions
+      spi: au1550: Fix bug in deallocation of memory
+      spi/spi-sh: Use devm_ioremap
 
-H. Peter Anvin <hpa@zytor.com>
-    x86, espfix: Make it possible to disable 16-bit support
+Javier Martinez Canillas (1):
+      spi: s3c64xx: Revert "spi: s3c64xx: Added provision for dedicated cs =
+pin"
 
-H. Peter Anvin <hpa@zytor.com>
-    x86, espfix: Make espfix64 a Kconfig option, fix UML
+Jingoo Han (3):
+      spi: cadence: Make of_device_id array const
+      spi: fsl-spi: Make of_device_id array const
+      spi: sh-hspi: Make of_device_id array const
 
-H. Peter Anvin <hpa@linux.intel.com>
-    x86, espfix: Fix broken header guard
+Lars-Peter Clausen (3):
+      spi: xilinx: Use pdev->id instead of pdev->dev.id for the SPI bus num=
+ber
+      spi: cadence: Make sure that clock polarity changes are applied
+      spi: cadence: Configure SPI clock in the prepare_message() callback
 
-H. Peter Anvin <hpa@linux.intel.com>
-    x86, espfix: Move espfix definitions into a separate header file
+Mark A. Greer (1):
+      spi: omap2-mcspi: Configure hardware when slave driver changes mode
 
-H. Peter Anvin <hpa@linux.intel.com>
-    x86-64, espfix: Don't leak bits 31:16 of %esp returning to 16-bit stack
+Mark Brown (15):
+      spi: Remove unused variable
+      spi: omap-uwire: Ensure devm_ioremap() is prototyped
+      Merge remote-tracking branch 'spi/topic/cleanup' into spi-sh-msiof
+      spi/rockchip: Add dependencies on relaxed I/O accessors
+      Merge tag 'v3.16-rc3' into spi-sh-msiof
+      spi/atmel: Fix pointer to int conversion warnings on 64 bit builds
+      spi/pl022: Explicitly truncate large bitmask
+      Merge remote-tracking branch 'spi/fix/core' into spi-linus
+      Merge remote-tracking branches 'spi/fix/au1550', 'spi/fix/cadence', '=
+spi/fix/omap2-mcspi' and 'spi/fix/orion' into spi-linus
+      Merge remote-tracking branches 'spi/fix/s3c64xx', 'spi/fix/samsung' a=
+nd 'spi/fix/xilinx' into spi-linus
+      Merge remote-tracking branch 'spi/topic/core' into spi-next
+      Merge remote-tracking branches 'spi/topic/adi-v3', 'spi/topic/atmel',=
+ 'spi/topic/cleanup' and 'spi/topic/davinci' into spi-next
+      Merge remote-tracking branches 'spi/topic/dw', 'spi/topic/efm32', 'sp=
+i/topic/fsl' and 'spi/topic/omap-uwire' into spi-next
+      Merge remote-tracking branches 'spi/topic/orion', 'spi/topic/pl022', =
+'spi/topic/qup', 'spi/topic/rockchip' and 'spi/topic/rspi' into spi-next
+      Merge remote-tracking branches 'spi/topic/sh', 'spi/topic/sh-msiof' a=
+nd 'spi/topic/topcliff-pch' into spi-next
 
-H. Peter Anvin <hpa@zytor.com>
-    Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
+Murali Karicheri (2):
+      spi: davinci: fix to support more than 2 chip selects
+      spi: davinci: add support to configure gpio cs through dt
 
-Jan Kara <jack@suse.cz>
-    timer: Fix lock inversion between hrtimer_bases.lock and scheduler locks
+Naveen Krishna Chatradhi (3):
+      spi: s3c64xx: use the generic SPI "cs-gpios" property
+      spi: s3c64xx: Update binding documentation
+      ARM: dts: fix the chip select gpios definition in the SPI nodes
 
-Stephen Boyd <sboyd@codeaurora.org>
-    sched_clock: Avoid corrupting hrtimer tree during suspend
+Russell King (2):
+      spi: spi-orion: check return value from clk_prepare()/clk_enable()
+      spi: spi-orion: add runtime PM support
 
-John Stultz <john.stultz@linaro.org>
-    printk: rename printk_sched to printk_deferred
+Sachin Kamat (4):
+      spi: spi-adi-v3: Remove redundant OOM message
+      spi: Remove redundant OOM message in spi.c
+      spi: omap-uwire: Fix build error
+      spi: samsung: Update binding documentation
 
-Anssi Hannula <anssi.hannula@iki.fi>
-    dm cache: fix race affecting dirty block count
+Steffen Trumtrar (1):
+      spi: dw-mmio: add devicetree support
 
-Greg Thelen <gthelen@google.com>
-    dm bufio: fully initialize shrinker
+Thomas Petazzoni (1):
+      spi: orion: fix incorrect handling of cell-index DT property
 
-Lars-Peter Clausen <lars@metafoo.de>
-    iio: buffer: Fix demux table creation
+Uwe Kleine-K=F6nig (1):
+      spi: efm32: correct namespacing of location property
 
-Peter Meerwald <pmeerw@pmeerw.net>
-    iio:bma180: Missing check for frequency fractional part
+Wei Yongjun (4):
+      spi/rockchip: remove duplicated include from spi-rockchip.c
+      spi/rockchip: remove redundant dev_err call in rockchip_spi_probe()
+      spi/rockchip: fix error return code in rockchip_spi_probe()
+      spi: orion: Fix error return code in orion_spi_probe()
 
-Peter Meerwald <pmeerw@pmeerw.net>
-    iio:bma180: Fix scale factors to report correct acceleration units
+Zhao Qiang (1):
+      spi/fsl: deal with a compile warning
 
-Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-    ACPI / PNP: Fix acpi_pnp_match()
+addy ke (2):
+      spi/rockchip: add rockchip spi DT binding
+      spi/rockchip: add driver for Rockchip RK3xxx SoCs integrated SPI
 
-Malcolm Priestley <tvboxspy@gmail.com>
-    staging: vt6655: Fix disassociated messages every 10 seconds
+ .../devicetree/bindings/spi/efm32-spi.txt          |  13 +-
+ .../devicetree/bindings/spi/qcom,spi-qup.txt       |   6 +-
+ .../devicetree/bindings/spi/snps,dw-apb-ssi.txt    |  28 +
+ .../devicetree/bindings/spi/spi-davinci.txt        |   9 +-
+ .../devicetree/bindings/spi/spi-rockchip.txt       |  37 +
+ .../devicetree/bindings/spi/spi-samsung.txt        |  26 +-
+ arch/arm/boot/dts/exynos4210-smdkv310.dts          |   2 +-
+ arch/arm/boot/dts/exynos4412-trats2.dts            |   2 +-
+ arch/arm/boot/dts/exynos5250-smdk5250.dts          |   2 +-
+ drivers/spi/Kconfig                                |  16 +-
+ drivers/spi/Makefile                               |   1 +
+ drivers/spi/spi-adi-v3.c                           |   5 +-
+ drivers/spi/spi-atmel.c                            |  22 +-
+ drivers/spi/spi-au1550.c                           |   6 +-
+ drivers/spi/spi-cadence.c                          |  37 +-
+ drivers/spi/spi-clps711x.c                         |   2 -
+ drivers/spi/spi-davinci.c                          |  72 +-
+ drivers/spi/spi-dw-mmio.c                          |  19 +-
+ drivers/spi/spi-efm32.c                            |   8 +-
+ drivers/spi/spi-falcon.c                           |   2 -
+ drivers/spi/spi-fsl-lib.c                          |   2 +-
+ drivers/spi/spi-fsl-spi.c                          |   2 +-
+ drivers/spi/spi-omap-100k.c                        |   2 -
+ drivers/spi/spi-omap-uwire.c                       |  11 +-
+ drivers/spi/spi-omap2-mcspi.c                      |  14 +
+ drivers/spi/spi-orion.c                            |  78 +-
+ drivers/spi/spi-pl022.c                            |   2 +-
+ drivers/spi/spi-qup.c                              |  36 +-
+ drivers/spi/spi-rockchip.c                         | 837 +++++++++++++++++=
+++++
+ drivers/spi/spi-rspi.c                             |  45 +-
+ drivers/spi/spi-s3c64xx.c                          |  54 +-
+ drivers/spi/spi-sh-hspi.c                          |   2 +-
+ drivers/spi/spi-sh-msiof.c                         | 527 +++++++++++--
+ drivers/spi/spi-sh.c                               |  15 +-
+ drivers/spi/spi-topcliff-pch.c                     |  12 +-
+ drivers/spi/spi-xilinx.c                           |   2 +-
+ drivers/spi/spi.c                                  |  12 +-
+ include/linux/spi/sh_msiof.h                       |   2 +
+ 38 files changed, 1725 insertions(+), 245 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/spi/snps,dw-apb-ssi.t=
+xt
+ create mode 100644 Documentation/devicetree/bindings/spi/spi-rockchip.txt
+ create mode 100644 drivers/spi/spi-rockchip.c
 
-Michal Hocko <mhocko@suse.cz>
-    memcg: oom_notify use-after-free fix
+--YAj9hGQEeu6NAWot
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-David Rientjes <rientjes@google.com>
-    mm, thp: do not allow thp faults to avoid cpuset restrictions
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Maxim Patlasov <MPatlasov@parallels.com>
-    mm/page-writeback.c: fix divide by zero in bdi_dirty_limits()
+iQIcBAEBAgAGBQJT4SFhAAoJELSic+t+oim99LUP/14FC5cLK5YWus1ttO8D0Hk7
+kOG+W/UG27m5Ic8xZeR04AcuIf1ohxwDfHecCcvCCIAUB0G9Fe48qhrjqmxC+FAo
+/j8gtJMs9v87efHdiwKcP3faBWBfymdAVl+UodRcyt+oKhfuQNmOzTyAebdyjKuF
+UHPlbMhJWzZJiaeyz56xKZTTZUUNhqKfZM4Xa5w5tjcMf8A72FJjlNivAbTAX4AE
+gxm/1M1yATmcYRaAXq/srjXjW9uln+2fLaWxjghve5tXtaFlpX4xQiOLRQF/biKW
+kna4VPKMcfKk7DQemFwjNhcW7tG4h0TB4gCdM3sLofr5WaiNY5AYtUzCMG+xQ2Pp
+q3d48yitPKIClRISeOfxA74JN0h49H6b8hWkdZkSMW8k2FVVBibjUVN4utgKU+8L
+/2ueEJGYQmu5sMrhpV1754n1KOygrkPcVbFpWQ08gPPWx6H5m298L+wo9gvxm8iG
+pTerhTZ5Xs63ZrGzOCdjotv1oGMa+3GTt5zf+iwDr+XDZEVcZnnZ9GQPuH5Fn+Pk
+FB3VAN21C5ZLAxwmT2O6TqErV3mTtfSoLPHzt+HrtDTP70MOzgjORL5jtR+XYY5V
+O6CSazvN2ceZPcUXWhwHWnxIbm0F7pfiQtun4F4LC70p+PRbcasJzOeNMBpSpcmn
+KyLo6w/v4XpAI5YV36yC
+=JmYj
+-----END PGP SIGNATURE-----
 
-James Bottomley <JBottomley@Parallels.com>
-    scsi: handle flush errors properly
-
-Alexandre Bounine <alexandre.bounine@idt.com>
-    rapidio/tsi721_dma: fix failure to obtain transaction descriptor
-
-Eliad Peller <eliad@wizery.com>
-    cfg80211: fix mic_failure tracing
-
-Felix Fietkau <nbd@openwrt.org>
-    ath9k: fix aggregation session lockup
-
-Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-    ARM: 8115/1: LPAE: reduce damage caused by idmap to virtual memory layout
-
-Russell King <rmk+kernel@arm.linux.org.uk>
-    ARM: fix alignment of keystone page table fixup
-
-Haojian Zhuang <haojian.zhuang@linaro.org>
-    ARM: dts: fix L2 address in Hi3620
-
-Milan Broz <gmazyland@gmail.com>
-    crypto: af_alg - properly label AF_ALG socket
-
-Mikulas Patocka <mpatocka@redhat.com>
-    crypto: arm-aes - fix encryption of unaligned data
-
-
--------------
-
-Diffstat:
-
- Documentation/x86/x86_64/mm.txt         |   2 +
- Makefile                                |   4 +-
- arch/arm/boot/dts/dra7-evm.dts          |   1 +
- arch/arm/boot/dts/hi3620.dtsi           |   2 +-
- arch/arm/crypto/aesbs-glue.c            |  10 +-
- arch/arm/mm/idmap.c                     |   7 ++
- arch/arm/mm/mmu.c                       |   6 +-
- arch/x86/Kconfig                        |  25 +++-
- arch/x86/include/asm/espfix.h           |  16 +++
- arch/x86/include/asm/irqflags.h         |   2 +-
- arch/x86/include/asm/pgtable_64_types.h |   2 +
- arch/x86/include/asm/setup.h            |   2 +
- arch/x86/kernel/Makefile                |   1 +
- arch/x86/kernel/entry_32.S              |  12 ++
- arch/x86/kernel/entry_64.S              |  77 +++++++++++-
- arch/x86/kernel/espfix_64.c             | 208 ++++++++++++++++++++++++++++++++
- arch/x86/kernel/ldt.c                   |  10 +-
- arch/x86/kernel/paravirt_patch_64.c     |   2 -
- arch/x86/kernel/smpboot.c               |   7 ++
- arch/x86/mm/dump_pagetables.c           |  31 +++--
- arch/x86/vdso/vdso32-setup.c            |   8 --
- arch/x86/xen/setup.c                    |   9 +-
- arch/xtensa/kernel/vectors.S            | 158 ++++++++++++++++++++----
- arch/xtensa/kernel/vmlinux.lds.S        |   4 +-
- crypto/af_alg.c                         |   2 +
- drivers/cpufreq/cpufreq.c               |   6 +-
- drivers/iio/accel/bma180.c              |   8 +-
- drivers/iio/industrialio-buffer.c       |   2 +-
- drivers/md/dm-bufio.c                   |   2 +-
- drivers/md/dm-cache-target.c            |  13 +-
- drivers/net/wireless/ath/ath9k/xmit.c   |   9 ++
- drivers/pnp/pnpacpi/core.c              |   3 +-
- drivers/rapidio/devices/tsi721_dma.c    |   8 +-
- drivers/scsi/scsi_lib.c                 |   8 ++
- drivers/staging/vt6655/bssdb.c          |   2 +-
- drivers/staging/vt6655/device_main.c    |   7 +-
- include/dt-bindings/pinctrl/dra.h       |   7 +-
- include/linux/printk.h                  |   6 +-
- init/main.c                             |   4 +
- kernel/printk/printk.c                  |   2 +-
- kernel/sched/core.c                     |   2 +-
- kernel/sched/deadline.c                 |   2 +-
- kernel/sched/rt.c                       |   2 +-
- kernel/time/clockevents.c               |  10 +-
- kernel/time/sched_clock.c               |   4 +-
- lib/btree.c                             |   1 +
- mm/memcontrol.c                         |   4 +
- mm/page-writeback.c                     |   6 +-
- mm/page_alloc.c                         |  16 +--
- net/l2tp/l2tp_ppp.c                     |   4 +-
- net/mac80211/tx.c                       |  27 ++---
- net/wireless/trace.h                    |   3 +-
- 52 files changed, 629 insertions(+), 147 deletions(-)
-
-
+--YAj9hGQEeu6NAWot--
