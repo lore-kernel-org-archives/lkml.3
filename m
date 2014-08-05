@@ -1,125 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687AbaHEIr6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 04:47:58 -0400
-Received: from mta-out1.inet.fi ([62.71.2.201]:46545 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932441AbaHEIrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 04:47:55 -0400
-Date: Tue, 5 Aug 2014 11:46:14 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH, RESEND] procfs: silence lockdep warning about read vs.
- exec seq_file
-Message-ID: <20140805084614.GA22025@node.dhcp.inet.fi>
-References: <1407010227-2269-1-git-send-email-kirill@shutemov.name>
- <87d2cfzjos.fsf@x220.int.ebiederm.org>
+	id S932698AbaHEIuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 04:50:05 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:52725 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757256AbaHEIuB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 04:50:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87d2cfzjos.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <5659104.6O7AZx76W6@wuerfel>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	<17186253.ZJUn1qWK0f@wuerfel>
+	<alpine.DEB.2.10.1407181140250.24854@nanos>
+	<5659104.6O7AZx76W6@wuerfel>
+Date: Tue, 5 Aug 2014 10:49:59 +0200
+X-Google-Sender-Auth: _NfjPsWsoiUYTALlmDvmgnVE3hw
+Message-ID: <CAMuHMdVRwTefEsKOMb2gotq5b7JoQ7Z2a8-5dERD7r4MwJdTvg@mail.gmail.com>
+Subject: Re: [PATCH v2 21/29] nios2: Futex operations
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 08:42:11PM -0700, Eric W. Biederman wrote:
-> "Kirill A. Shutemov" <kirill@shutemov.name> writes:
-> 
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> >
-> > Testcase:
-> >
-> >   cat /proc/self/maps >/dev/null
-> >   chmod +x /proc/self/net/packet
-> >   exec /proc/self/net/packet
-> >
-> > It triggers lockdep warning:
-> 
-> > I don't know why we allow "chmod +x" on some proc files, notably net-related.
-> > Is it a bug?
-> 
-> It looks like we simply did not remove the ability to make those files
-> executable when we realized executable proc files could be a problem.
-> 
-> I expect that part of proc could use an audit where someone figures out
-> what makes sense.  It does appear that chmod XXX /proc/generic_file
-> is explicitly supported.  So we would have to be delicate with any
-> changes in that area to avoid creating userspace regressions.
+On Fri, Jul 18, 2014 at 11:55 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 18 July 2014 11:42:34 Thomas Gleixner wrote:
+>> On Fri, 18 Jul 2014, Arnd Bergmann wrote:
+>> > On Friday 18 July 2014 14:07:42 Ley Foon Tan wrote:
+>> > > On Thu, Jul 17, 2014 at 7:07 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > If this understanding is right, we can probably just merge the
+>> > m68k implementation into the asm-generic version, as that does
+>> > exactly that, and just isn't SMP safe. I'm still unsure whether
+>> > I'm missing something here though, as everything else seems to
+>> > do this in assembly, even for non-SMP machines that could use
+>> > the trivial method that m68k has.
+>>
+>> For UP relying of pagefault disable should be good enough indeed. I
+>> guess the asm for the other UP stuff results from looking at
+>> architectures or copying from architectures which did this in ASM
+>
+> Ok, thanks for the confirmation!
+>
+> Ley Foon Tan, I think the best way forward then is for you to
+> take the m68k code and copy (or move) that into asm-generic/futex.h
+> under an #ifndef CONFIG_SMP.
 
-I can't imagine valid use-case, taking into account that changing access
-rights for one PID changes it for every PID. It's potential security hole
-if user is not aware about this (I wasn't until recently).
+Yes, that should work.
 
-List of files under /proc/PID/ which doesn't fail chmod to its current
-access rights -- chmod "$(stat --format="%a" "$file")" "$file":
+I tried that a while ago for OpenRISC, but never cleant it up and sent it out.
 
-net/anycast6
-net/arp
-net/connector
-net/dev
-net/dev_mcast
-net/dev_snmp6/eth0
-net/dev_snmp6/lo
-net/fib_trie
-net/fib_triestat
-net/icmp
-net/icmp6
-net/if_inet6
-net/igmp
-net/igmp6
-net/ip6_flowlabel
-net/ip6_tables_matches
-net/ip6_tables_names
-net/ip6_tables_targets
-net/ip_mr_cache
-net/ip_mr_vif
-net/ip_tables_matches
-net/ip_tables_names
-net/ip_tables_targets
-net/ipv6_route
-net/mcfilter
-net/mcfilter6
-net/netfilter/nf_log
-net/netlink
-net/netstat
-net/nf_conntrack
-net/nf_conntrack_expect
-net/packet
-net/pnp
-net/protocols
-net/psched
-net/ptype
-net/raw
-net/raw6
-net/route
-net/rt6_stats
-net/rt_cache
-net/snmp
-net/snmp6
-net/sockstat
-net/sockstat6
-net/softnet_stat
-net/stat/arp_cache
-net/stat/ndisc_cache
-net/stat/nf_conntrack
-net/stat/rt_cache
-net/tcp
-net/tcp6
-net/udp
-net/udp6
-net/udplite
-net/udplite6
-net/unix
+Gr{oetje,eeting}s,
 
-David, could you comment on this?
+                        Geert
 
--- 
- Kirill A. Shutemov
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
