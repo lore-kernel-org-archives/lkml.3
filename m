@@ -1,106 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344AbaHETwn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 15:52:43 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50031 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980AbaHETwm (ORCPT
+	id S1754404AbaHETww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 15:52:52 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:54801 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754365AbaHETwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 15:52:42 -0400
+	Tue, 5 Aug 2014 15:52:49 -0400
 From: Steven Noonan <steven@uplinklabs.net>
 To: lkml <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
 Cc: Steven Noonan <steven@uplinklabs.net>, NeilBrown <neilb@suse.de>,
         Al Viro <viro@ZenIV.linux.org.uk>
-Subject: [PATCH 1/2] lockref: make lockref count signed
-Date: Tue,  5 Aug 2014 12:52:27 -0700
-Message-Id: <1407268348-25949-1-git-send-email-steven@uplinklabs.net>
+Subject: [PATCH 2/2] lockref: replace lockref_get_not_zero with lockref_get_active
+Date: Tue,  5 Aug 2014 12:52:28 -0700
+Message-Id: <1407268348-25949-2-git-send-email-steven@uplinklabs.net>
 X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1407268348-25949-1-git-send-email-steven@uplinklabs.net>
+References: <1407268348-25949-1-git-send-email-steven@uplinklabs.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are numerous places where this is casted to a signed value anyway, for
-comparisons checking that the value hasn't been set to the 'dead' value of
--128. This change turns the count value into a signed integer, which is how
-it's already being treated anyway. This reduces the chance for developer errors
-when making those comparisons.
+The new lockref_get_active ensures the count is nonzero and that the lockref is
+not dead (i.e, count > 0). Simply comparing to zero was risky for the only
+caller of this function (dget_parent), as it wasn't holding the lockref->lock.
 
 Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: NeilBrown <neilb@suse.de>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>
 Signed-off-by: Steven Noonan <steven@uplinklabs.net>
 ---
- fs/dcache.c             | 6 +++---
- include/linux/lockref.h | 2 +-
- lib/lockref.c           | 4 ++--
- 3 files changed, 6 insertions(+), 6 deletions(-)
+ fs/dcache.c             |  2 +-
+ include/linux/lockref.h |  2 +-
+ lib/lockref.c           | 13 +++++++------
+ 3 files changed, 9 insertions(+), 8 deletions(-)
 
 diff --git a/fs/dcache.c b/fs/dcache.c
-index 06f6585..f7a592e 100644
+index f7a592e..66ee98e 100644
 --- a/fs/dcache.c
 +++ b/fs/dcache.c
-@@ -479,7 +479,7 @@ static void __dentry_kill(struct dentry *dentry)
- 	 * dentry_iput drops the locks, at which point nobody (except
- 	 * transient RCU lookups) can reach this dentry.
+@@ -699,7 +699,7 @@ struct dentry *dget_parent(struct dentry *dentry)
  	 */
--	BUG_ON((int)dentry->d_lockref.count > 0);
-+	BUG_ON(dentry->d_lockref.count > 0);
- 	this_cpu_dec(nr_dentry);
- 	if (dentry->d_op && dentry->d_op->d_release)
- 		dentry->d_op->d_release(dentry);
-@@ -532,7 +532,7 @@ static inline struct dentry *lock_parent(struct dentry *dentry)
- 	struct dentry *parent = dentry->d_parent;
- 	if (IS_ROOT(dentry))
- 		return NULL;
--	if (unlikely((int)dentry->d_lockref.count < 0))
-+	if (unlikely(dentry->d_lockref.count < 0))
- 		return NULL;
- 	if (likely(spin_trylock(&parent->d_lock)))
- 		return parent;
-@@ -848,7 +848,7 @@ static void shrink_dentry_list(struct list_head *list)
- 		 * We found an inuse dentry which was not removed from
- 		 * the LRU because of laziness during lookup. Do not free it.
- 		 */
--		if ((int)dentry->d_lockref.count > 0) {
-+		if (dentry->d_lockref.count > 0) {
- 			spin_unlock(&dentry->d_lock);
- 			if (parent)
- 				spin_unlock(&parent->d_lock);
+ 	rcu_read_lock();
+ 	ret = ACCESS_ONCE(dentry->d_parent);
+-	gotref = lockref_get_not_zero(&ret->d_lockref);
++	gotref = lockref_get_active(&ret->d_lockref);
+ 	rcu_read_unlock();
+ 	if (likely(gotref)) {
+ 		if (likely(ret == ACCESS_ONCE(dentry->d_parent)))
 diff --git a/include/linux/lockref.h b/include/linux/lockref.h
-index 4bfde0e..8558ff1 100644
+index 8558ff1..1a9827e 100644
 --- a/include/linux/lockref.h
 +++ b/include/linux/lockref.h
-@@ -28,7 +28,7 @@ struct lockref {
- #endif
- 		struct {
- 			spinlock_t lock;
--			unsigned int count;
-+			int count;
- 		};
- 	};
+@@ -34,7 +34,7 @@ struct lockref {
  };
+ 
+ extern void lockref_get(struct lockref *);
+-extern int lockref_get_not_zero(struct lockref *);
++extern int lockref_get_active(struct lockref *);
+ extern int lockref_get_or_lock(struct lockref *);
+ extern int lockref_put_or_lock(struct lockref *);
+ 
 diff --git a/lib/lockref.c b/lib/lockref.c
-index d2233de..e4c4255 100644
+index e4c4255..318bef6 100644
 --- a/lib/lockref.c
 +++ b/lib/lockref.c
-@@ -158,7 +158,7 @@ int lockref_get_not_dead(struct lockref *lockref)
+@@ -60,17 +60,18 @@ void lockref_get(struct lockref *lockref)
+ EXPORT_SYMBOL(lockref_get);
+ 
+ /**
+- * lockref_get_not_zero - Increments count unless the count is 0
++ * lockref_get_active - Increments count unless the count is 0 or ref is dead
+  * @lockref: pointer to lockref structure
+- * Return: 1 if count updated successfully or 0 if count was zero
++ * Return: 1 if count updated successfully or 0 if count was zero or lockref
++ * was dead
+  */
+-int lockref_get_not_zero(struct lockref *lockref)
++int lockref_get_active(struct lockref *lockref)
+ {
+ 	int retval;
  
  	CMPXCHG_LOOP(
  		new.count++;
--		if ((int)old.count < 0)
-+		if (old.count < 0)
+-		if (!old.count)
++		if (old.count < 1)
  			return 0;
  	,
  		return 1;
-@@ -166,7 +166,7 @@ int lockref_get_not_dead(struct lockref *lockref)
+@@ -78,14 +79,14 @@ int lockref_get_not_zero(struct lockref *lockref)
  
  	spin_lock(&lockref->lock);
  	retval = 0;
--	if ((int) lockref->count >= 0) {
-+	if (lockref->count >= 0) {
+-	if (lockref->count) {
++	if (lockref->count >= 1) {
  		lockref->count++;
  		retval = 1;
  	}
+ 	spin_unlock(&lockref->lock);
+ 	return retval;
+ }
+-EXPORT_SYMBOL(lockref_get_not_zero);
++EXPORT_SYMBOL(lockref_get_active);
+ 
+ /**
+  * lockref_get_or_lock - Increments count unless the count is 0
 -- 
 2.0.4
 
