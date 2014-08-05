@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054AbaHEQH1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 12:07:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37146 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753894AbaHEQHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 12:07:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="368249395"
-Message-ID: <53E10136.9000505@linux.intel.com>
-Date: Wed, 06 Aug 2014 00:07:18 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755215AbaHEQMt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 12:12:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38761 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753581AbaHEQMs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 12:12:48 -0400
+Date: Tue, 5 Aug 2014 18:12:35 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Dmitry Torokhov <dtor@google.com>
+Subject: Re: [PATCH 0/5] irq / PM: Shared IRQs vs IRQF_NO_SUSPEND and
+ suspend-to-idle wakeup
+Message-ID: <20140805161235.GE19379@twins.programming.kicks-ass.net>
+References: <20140724212620.GO3935@laptop>
+ <alpine.DEB.2.10.1408011533580.4997@nanos>
+ <3855585.ek3PTQLkmN@vostro.rjw.lan>
+ <3321219.itH23ZEDt4@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [Bugfix 0/2] Fix bugs caused by "use irqdomain to dynamically
- allocate IRQ for IOAPIC"
-References: <1407209178-18644-1-git-send-email-jiang.liu@linux.intel.com> <20140805130448.GA13057@laptop.dumpdata.com>
-In-Reply-To: <20140805130448.GA13057@laptop.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SALzGxM+9VBgwVYp"
+Content-Disposition: inline
+In-Reply-To: <3321219.itH23ZEDt4@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--SALzGxM+9VBgwVYp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 2014/8/5 21:04, Konrad Rzeszutek Wilk wrote:
-> On Tue, Aug 05, 2014 at 11:26:16AM +0800, Jiang Liu wrote:
->> Two issues have been reported against patch set "use irqdomain to
->> dynamically allocate IRQ for IOAPIC" at https://lkml.org/lkml/2014/6/9/44.
->>
->> This first one causes failure of suspend/hibernation, please refer to
->> https://lkml.org/lkml/2014/7/28/822 for more information. And we have
->> worked out a patch to fix it (https://lkml.org/lkml/2014/7/30/725) and
->> Borislav has tested it. But with more testing and analysis, I found the
->> provided patch still has some issues:
->> 1) It may cause regression to Xen
-> 
-> Could you elaborate please?
-> 
-> Is there a git tree with all of these patches to test it?
-Hi Konrad,
-	The patch at https://lkml.org/lkml/2014/7/30/725 skips invoking
-xen_pcifront_enable_irq() on resume from suspend or restore from
-hibernation. I'm not sure whether that will affect suspend/hibernation
-with Xen. This patch series won't affect Xen anymore.
-	I have prepared a tree for you at
-https://github.com/jiangliu/linux.git suspend
+On Tue, Aug 05, 2014 at 05:22:57PM +0200, Rafael J. Wysocki wrote:
+> Here's a patch series based on what we talked about.
+>=20
+> [1/5] Mechanism to wake up the system or abort suspend in progress automa=
+tically.
+> [2/5] Fix for shared IRQs vs IRQF_NO_SUSPEND (with wakeup in mind).
+> [3/5] Wakeup interrupts support for suspend-to-idle.
+> [4/5] Set IRQCHIP_SKIP_SET_WAKE for x86 IOAPIC IRQ chips.
+> [5/5] Make PCIe PME wake up from suspend to idle.
+>=20
+> All tested on MSI Wind that has a couple of issues being addressed.
 
-Thanks for help!
-Gerry
+I can confirm it works on my WSM-EP which has that shared interrupt
+stuff.
 
->> 2) Flag dev->dev.power.is_prepared has already been cleared when
->>    pcibios_enable_device() gets called, so it will cause IOAPIC pin
->>    reference count leak.
->>
->> So I reworked the patch to fix above issues. The first patch fixes issue
->> 1 by moving check of dev->dev.power.is_prepared pcibios_enable_irq, so
->> it won't affect Xen. The second patch fixes the IOAPIC pin reference
->> count leakage issue. It also solves the issue we have discussed at
->> http://www.spinics.net/lists/linux-pci/msg32902.html
->>
->> Regards!
->> Gerry
->>
->> Jiang Liu (2):
->>   x86, irq, PCI: Keep IRQ assignment for PCI devices during
->>     suspend/hibernation
->>   x86, irq: Keep balance of IOAPIC pin reference count
->>
->>  arch/x86/pci/intel_mid_pci.c |    9 ++++++++-
->>  arch/x86/pci/irq.c           |    8 +++++++-
->>  drivers/acpi/pci_irq.c       |   15 +++++++++++++--
->>  include/linux/pci.h          |    1 +
->>  4 files changed, 29 insertions(+), 4 deletions(-)
->>
->> -- 
->> 1.7.10.4
->>
+--SALzGxM+9VBgwVYp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT4QJzAAoJEHZH4aRLwOS6msEP+wSxqLsjT6iMMkBfS6Vo0L7q
+ZF9+D1iPaa2goWOctNY6yhP6nFjTq0xrcb5TuGr+tqKkPO9ciEhtm37EihHNDV9x
+Mn70t1aDND9meiimMbmoESq7m5ixsvTcxsU047/fAElszwyylCYjM7lR/Hyac3WR
+m29SfIkksNLsDYZLVhx6SXr18wANAczMWg449ftxBI9l2KUyZ8kM/9KggbolP+6K
+u7JkhSRK7t/lDU8+aiqVmmwAD32viH3lF1Ldb3RTviRf+3otYK98I6Isdq7GqTmi
+IDp/GLhX52yr7i5AjjPcaduNhrMA1eV2pj8Ec5h2ECak3iculmtyJhmkKs5Asj1p
+xBkM33/tgGjcZrMkmQlHkpxPO6sAgL7POeIYtJykO019qgKlu2rx1RPc8c1+6MMO
+vfqZj4CykLOq/A3fxrqhaAdr4278gwRka/6XW5kE3gplIGcAOIVmzaOFX6VB2Zqq
+Onv8xjpY5bPhUcPCn9JyD2PSkzQUUesf3yHagRVjtHEcUxpD6k49NegDN0ceB98U
+lWdk7a8KjYhAo5Jt+WHLa7+Zm0MnL0HVlQcgkkvBTV74K3FzUMb/wSBmo/U0MgcI
+q6KInmazcuTmk+iit/6+IeKObepGTqbO6Iux18n68RDu/BGn+bPCX9ZiHdnoX1YY
+t6Rmhc8O6oUngmLXxwYW
+=q8va
+-----END PGP SIGNATURE-----
+
+--SALzGxM+9VBgwVYp--
