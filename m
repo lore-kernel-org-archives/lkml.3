@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487AbaHESca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:32:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52763 "EHLO
+	id S1756515AbaHEScp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:32:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52761 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756140AbaHESaB (ORCPT
+	with ESMTP id S1755902AbaHESaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Aug 2014 14:30:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Bottomley <JBottomley@Parallels.com>,
-        Steven Haber <steven@qumulo.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.4 03/19] scsi: handle flush errors properly
-Date: Tue,  5 Aug 2014 11:29:27 -0700
-Message-Id: <20140805182934.123796440@linuxfoundation.org>
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.4 02/19] ARM: 8115/1: LPAE: reduce damage caused by idmap to virtual memory layout
+Date: Tue,  5 Aug 2014 11:29:26 -0700
+Message-Id: <20140805182934.095532985@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805182934.022406678@linuxfoundation.org>
 References: <20140805182934.022406678@linuxfoundation.org>
@@ -31,41 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 
-commit 89fb4cd1f717a871ef79fa7debbe840e3225cd54 upstream.
+commit 811a2407a3cf7bbd027fbe92d73416f17485a3d8 upstream.
 
-Flush commands don't transfer data and thus need to be special cased
-in the I/O completion handler so that we can propagate errors to
-the block layer and filesystem.
+On LPAE, each level 1 (pgd) page table entry maps 1GiB, and the level 2
+(pmd) entries map 2MiB.
 
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Reported-by: Steven Haber <steven@qumulo.com>
-Tested-by: Steven Haber <steven@qumulo.com>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+When the identity mapping is created on LPAE, the pgd pointers are copied
+from the swapper_pg_dir.  If we find that we need to modify the contents
+of a pmd, we allocate a new empty pmd table and insert it into the
+appropriate 1GB slot, before then filling it with the identity mapping.
+
+However, if the 1GB slot covers the kernel lowmem mappings, we obliterate
+those mappings.
+
+When replacing a PMD, first copy the old PMD contents to the new PMD, so
+that we preserve the existing mappings, particularly the mappings of the
+kernel itself.
+
+[rewrote commit message and added code comment -- rmk]
+
+Fixes: ae2de101739c ("ARM: LPAE: Add identity mapping support for the 3-level page table format")
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_lib.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/arm/mm/idmap.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -795,6 +795,14 @@ void scsi_io_completion(struct scsi_cmnd
- 			scsi_next_command(cmd);
+--- a/arch/arm/mm/idmap.c
++++ b/arch/arm/mm/idmap.c
+@@ -22,6 +22,13 @@ static void idmap_add_pmd(pud_t *pud, un
+ 			pr_warning("Failed to allocate identity pmd.\n");
  			return;
  		}
-+	} else if (blk_rq_bytes(req) == 0 && result && !sense_deferred) {
 +		/*
-+		 * Certain non BLOCK_PC requests are commands that don't
-+		 * actually transfer anything (FLUSH), so cannot use
-+		 * good_bytes != blk_rq_bytes(req) as the signal for an error.
-+		 * This sets the error explicitly for the problem case.
++		 * Copy the original PMD to ensure that the PMD entries for
++		 * the kernel image are preserved.
 +		 */
-+		error = __scsi_error_from_host_byte(cmd, result);
- 	}
- 
- 	/* no bidi support for !REQ_TYPE_BLOCK_PC yet */
++		if (!pud_none(*pud))
++			memcpy(pmd, pmd_offset(pud, 0),
++			       PTRS_PER_PMD * sizeof(pmd_t));
+ 		pud_populate(&init_mm, pud, pmd);
+ 		pmd += pmd_index(addr);
+ 	} else
 
 
