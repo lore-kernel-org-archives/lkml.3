@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092AbaHES17 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:27:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52451 "EHLO
+	id S1756251AbaHES20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:28:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52446 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755211AbaHESOn (ORCPT
+	with ESMTP id S1755198AbaHESOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:43 -0400
+	Tue, 5 Aug 2014 14:14:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Antonio Quartulli <antonio@open-mesh.com>,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.14 06/39] ath9k: fix aggregation session lockup
-Date: Tue,  5 Aug 2014 11:13:43 -0700
-Message-Id: <20140805181336.218014399@linuxfoundation.org>
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.14 05/39] ARM: 8115/1: LPAE: reduce damage caused by idmap to virtual memory layout
+Date: Tue,  5 Aug 2014 11:13:42 -0700
+Message-Id: <20140805181336.189298830@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
 References: <20140805181336.030349158@linuxfoundation.org>
@@ -30,44 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 
-commit c01fac1c77a00227f706a1654317023e3f4ac7f0 upstream.
+commit 811a2407a3cf7bbd027fbe92d73416f17485a3d8 upstream.
 
-If an aggregation session fails, frames still end up in the driver queue
-with IEEE80211_TX_CTL_AMPDU set.
-This causes tx for the affected station/tid to stall, since
-ath_tx_get_tid_subframe returning packets to send.
+On LPAE, each level 1 (pgd) page table entry maps 1GiB, and the level 2
+(pmd) entries map 2MiB.
 
-Fix this by clearing IEEE80211_TX_CTL_AMPDU as long as no aggregation
-session is running.
+When the identity mapping is created on LPAE, the pgd pointers are copied
+from the swapper_pg_dir.  If we find that we need to modify the contents
+of a pmd, we allocate a new empty pmd table and insert it into the
+appropriate 1GB slot, before then filling it with the identity mapping.
 
-Reported-by: Antonio Quartulli <antonio@open-mesh.com>
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+However, if the 1GB slot covers the kernel lowmem mappings, we obliterate
+those mappings.
+
+When replacing a PMD, first copy the old PMD contents to the new PMD, so
+that we preserve the existing mappings, particularly the mappings of the
+kernel itself.
+
+[rewrote commit message and added code comment -- rmk]
+
+Fixes: ae2de101739c ("ARM: LPAE: Add identity mapping support for the 3-level page table format")
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/xmit.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/arm/mm/idmap.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -890,6 +890,15 @@ ath_tx_get_tid_subframe(struct ath_softc
- 
- 		tx_info = IEEE80211_SKB_CB(skb);
- 		tx_info->flags &= ~IEEE80211_TX_CTL_CLEAR_PS_FILT;
-+
+--- a/arch/arm/mm/idmap.c
++++ b/arch/arm/mm/idmap.c
+@@ -25,6 +25,13 @@ static void idmap_add_pmd(pud_t *pud, un
+ 			pr_warning("Failed to allocate identity pmd.\n");
+ 			return;
+ 		}
 +		/*
-+		 * No aggregation session is running, but there may be frames
-+		 * from a previous session or a failed attempt in the queue.
-+		 * Send them out as normal data frames
++		 * Copy the original PMD to ensure that the PMD entries for
++		 * the kernel image are preserved.
 +		 */
-+		if (!tid->active)
-+			tx_info->flags &= ~IEEE80211_TX_CTL_AMPDU;
-+
- 		if (!(tx_info->flags & IEEE80211_TX_CTL_AMPDU)) {
- 			bf->bf_state.bf_type = 0;
- 			return bf;
++		if (!pud_none(*pud))
++			memcpy(pmd, pmd_offset(pud, 0),
++			       PTRS_PER_PMD * sizeof(pmd_t));
+ 		pud_populate(&init_mm, pud, pmd);
+ 		pmd += pmd_index(addr);
+ 	} else
 
 
