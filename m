@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828AbaHEV3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 17:29:51 -0400
-Received: from mga14.intel.com ([192.55.52.115]:19573 "EHLO mga14.intel.com"
+	id S1753797AbaHEVcQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 17:32:16 -0400
+Received: from tetsuo.zabbo.net ([50.193.208.193]:41112 "EHLO tetsuo.zabbo.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752020AbaHEV3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 17:29:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,807,1400050800"; 
-   d="scan'208";a="572188863"
-Date: Wed, 6 Aug 2014 05:29:48 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org
-Subject: [sched] 36932a9e2b1: +121.2% boot-meminfo.SUnreclaim
-Message-ID: <20140805212948.GE14042@localhost>
+	id S1752866AbaHEVcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 17:32:15 -0400
+Date: Tue, 5 Aug 2014 14:32:14 -0700
+From: Zach Brown <zab@zabbo.net>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 1/1] Btrfs: fix sparse warning
+Message-ID: <20140805213214.GH18659@lenny.home.zabbo.net>
+References: <1405451837-8235-1-git-send-email-fabf@skynet.be>
+ <20140716172021.GA10833@lenny.home.zabbo.net>
+ <1762701571.679094.1405622254558.open-xchange@webmail.nmp.skynet.be>
+ <20140717190152.GB24196@lenny.home.zabbo.net>
+ <20140802142449.15f4cfc2c2821e90e04e175e@skynet.be>
+ <20140804183158.GA18659@lenny.home.zabbo.net>
+ <2069847253.202465.1407230425329.open-xchange@webmail.nmp.skynet.be>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-User-Agent: Heirloom mailx 12.5 6/20/10
+In-Reply-To: <2069847253.202465.1407230425329.open-xchange@webmail.nmp.skynet.be>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+> > > Hello Zach,
+> > >
+> > >� � �Here's an untested patch which
+> >
+> > Try testing it.� It's easy with virtualization and xfstests.
+> >
+> > You'll find that sending to a file fails because each individual file
+> > write call that makes up a send starts at offset 0 -- at the start of
+> > the file.
+> >
+> > Getting this right means getting the semantics around updating the send
+> > descriptors f_pos right.� It requires having a bit of a think about send
+> > semantics and f_pos update locking.
+> 
+> Thanks for those informations Zach,
+> 
+> I've tried btrfs test scripts related to ioctl in xfstests (tests/btrfs/025,
+> 035, 052, 055)
+> but was not able to trigger that problem. Do I have to create another script,
+> use some generic one
+> or maybe use big test/scratch devices ?
 
-FYI, we noticed the below changes on
+No idea, sorry.  Maybe your patch is fine and I'm a dummy.  Maybe you
+didn't test the kernel you thought you were testing.  Maybe the test
+doesn't test what you changed.  You'll have to do some investigating to
+find out.
 
-git://internal_merge_and_test_tree devel-athens-alpha-201408042000
-commit 36932a9e2b1043506d06414fa988cd5b9592841f ("sched: Fix finish_task_switch vs prev_state")
-
-test case: vm-vp-1G/boot/1
-
-11b4855f1d9f1cc  36932a9e2b1043506d06414fa 
----------------  ------------------------- 
-      8524 ± 1%    +121.2%      18858 ± 0%  TOTAL boot-meminfo.SUnreclaim
-      1321 ± 9%   +3196.6%      43568 ± 0%  TOTAL boot-meminfo.KernelStack
-      8756 ± 0%     +29.8%      11363 ± 0%  TOTAL boot-slabinfo.num_pages
-     34982 ± 0%     +29.5%      45311 ± 0%  TOTAL boot-meminfo.Slab
-    535601 ± 0%      -9.9%     482375 ± 0%  TOTAL boot-meminfo.MemFree
-    116621 ± 0%      +9.4%     127548 ± 0%  TOTAL boot-slabinfo.num_objs
-
-Legend:
-	±XX%    - stddev percent
-	[+-]XX% - change percent
-
-Thanks,
-Fengguang
+- z
