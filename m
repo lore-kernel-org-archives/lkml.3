@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478AbaHESjO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:39:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52361 "EHLO
+	id S1755554AbaHESjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:39:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52328 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623AbaHESOb (ORCPT
+	with ESMTP id S1754902AbaHESOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:31 -0400
+	Tue, 5 Aug 2014 14:14:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.14 21/39] sched_clock: Avoid corrupting hrtimer tree during suspend
-Date: Tue,  5 Aug 2014 11:13:58 -0700
-Message-Id: <20140805181336.685933287@linuxfoundation.org>
+        Milan Broz <gmazyland@gmail.com>, Paul Moore <paul@paul-moore.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.14 02/39] crypto: af_alg - properly label AF_ALG socket
+Date: Tue,  5 Aug 2014 11:13:39 -0700
+Message-Id: <20140805181336.102543357@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
 References: <20140805181336.030349158@linuxfoundation.org>
@@ -30,57 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Milan Broz <gmazyland@gmail.com>
 
-commit f723aa1817dd8f4fe005aab52ba70c8ab0ef9457 upstream.
+commit 4c63f83c2c2e16a13ce274ee678e28246bd33645 upstream.
 
-During suspend we call sched_clock_poll() to update the epoch and
-accumulated time and reprogram the sched_clock_timer to fire
-before the next wrap-around time. Unfortunately,
-sched_clock_poll() doesn't restart the timer, instead it relies
-on the hrtimer layer to do that and during suspend we aren't
-calling that function from the hrtimer layer. Instead, we're
-reprogramming the expires time while the hrtimer is enqueued,
-which can cause the hrtimer tree to be corrupted. Furthermore, we
-restart the timer during suspend but we update the epoch during
-resume which seems counter-intuitive.
+Th AF_ALG socket was missing a security label (e.g. SELinux)
+which means that socket was in "unlabeled" state.
 
-Let's fix this by saving the accumulated state and canceling the
-timer during suspend. On resume we can update the epoch and
-restart the timer similar to what we would do if we were starting
-the clock for the first time.
+This was recently demonstrated in the cryptsetup package
+(cryptsetup v1.6.5 and later.)
+See https://bugzilla.redhat.com/show_bug.cgi?id=1115120
 
-Fixes: a08ca5d1089d "sched_clock: Use an hrtimer instead of timer"
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Link: http://lkml.kernel.org/r/1406174630-23458-1-git-send-email-john.stultz@linaro.org
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+This patch clones the sock's label from the parent sock
+and resolves the issue (similar to AF_BLUETOOTH protocol family).
+
+Signed-off-by: Milan Broz <gmazyland@gmail.com>
+Acked-by: Paul Moore <paul@paul-moore.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/sched_clock.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ crypto/af_alg.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/kernel/time/sched_clock.c
-+++ b/kernel/time/sched_clock.c
-@@ -204,7 +204,8 @@ void __init sched_clock_postinit(void)
+--- a/crypto/af_alg.c
++++ b/crypto/af_alg.c
+@@ -21,6 +21,7 @@
+ #include <linux/module.h>
+ #include <linux/net.h>
+ #include <linux/rwsem.h>
++#include <linux/security.h>
  
- static int sched_clock_suspend(void)
- {
--	sched_clock_poll(&sched_clock_timer);
-+	update_sched_clock();
-+	hrtimer_cancel(&sched_clock_timer);
- 	cd.suspended = true;
- 	return 0;
- }
-@@ -212,6 +213,7 @@ static int sched_clock_suspend(void)
- static void sched_clock_resume(void)
- {
- 	cd.epoch_cyc = read_sched_clock();
-+	hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL);
- 	cd.suspended = false;
- }
+ struct alg_type_list {
+ 	const struct af_alg_type *type;
+@@ -243,6 +244,7 @@ int af_alg_accept(struct sock *sk, struc
  
+ 	sock_init_data(newsock, sk2);
+ 	sock_graft(sk2, newsock);
++	security_sk_clone(sk, sk2);
+ 
+ 	err = type->accept(ask->private, sk2);
+ 	if (err) {
 
 
