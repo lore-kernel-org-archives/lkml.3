@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683AbaHEGJD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 02:09:03 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:32836 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753874AbaHEGJC (ORCPT
+	id S1755841AbaHEGOY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 02:14:24 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:44285 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866AbaHEGOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 02:09:02 -0400
-Date: Tue, 5 Aug 2014 08:08:56 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 05/33] perf record: Allow the user to disable time stamps
-Message-ID: <20140805060856.GA9453@gmail.com>
-References: <1407169064-25625-1-git-send-email-acme@kernel.org>
- <1407169064-25625-6-git-send-email-acme@kernel.org>
+	Tue, 5 Aug 2014 02:14:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407169064-25625-6-git-send-email-acme@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53DFEA25.5070206@codeaurora.org>
+References: <1406634362-811-1-git-send-email-prarit@redhat.com>
+	<2066166.pXm4lKLOID@vostro.rjw.lan>
+	<53DA8389.80804@redhat.com>
+	<1917362.abr2Y4p7vh@vostro.rjw.lan>
+	<53DA8A41.2030601@redhat.com>
+	<53DAA60B.6040802@codeaurora.org>
+	<53DAA749.5080506@redhat.com>
+	<53DAA95B.2040505@codeaurora.org>
+	<53DAB038.3050007@redhat.com>
+	<53DABFA6.6090503@codeaurora.org>
+	<53DACA26.1000908@redhat.com>
+	<53DAE592.2030909@codeaurora.org>
+	<53DB6B81.6050400@redhat.com>
+	<53DBCBE8.6010809@codeaurora.org>
+	<CAKohpom0KycrB8qJDM7yEOHOn76J1sEe90CG+JXERJMcxKnOJA@mail.gmail.com>
+	<53DF7BC4.9070500@redhat.com>
+	<CAKohpomEQ__Q4xTaBgHJyE0Meu4au-cXKCAKCqHWTHLRL+R5OA@mail.gmail.com>
+	<53DFEA25.5070206@codeaurora.org>
+Date: Tue, 5 Aug 2014 11:44:21 +0530
+Message-ID: <CAKohpo=VJJFxKo5hNH3GNOZpjeHBc9fWORD9h7SThaFtkM__FA@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem to
+ be held for duration of changing governors [v2]
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Prarit Bhargava <prarit@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        =?UTF-8?Q?Robert_Sch=C3=B6ne?= <robert.schoene@tu-dresden.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 5 August 2014 01:46, Saravana Kannan <skannan@codeaurora.org> wrote:
+> The problem is when between one thread trying to cat a governor's file (say,
+> sampling_rate) vs the governor getting a POLICY_EXIT.
 
-* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+I don't see two threads racing against each other here. Simply changing
+the governor from conservative->ondemand creates this.
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
+Or is it that the kernel is detecting two different orders of taking lock?
 
-This patch looks dangerous and misleading to me.
+But during governor change, isn't the sysfs lock taken first as we are
+storing a value to "scaling_governor"? So, isn't this a sysfs lock first
+in all cases?
 
-> Time stamps are always implicitely enabled for record currently.  The
-> old --time/-T option is a nop.
-> 
-> Allow the user to disable timestamps by using --no-time
-> 
-> This can cause some minor misaccounting (by missing mmaps), but
-> significantly lowers the size of perf.data
+In short, I am still unclear about the *exact* problem here.
 
-I'm not any big change in size:
+> Could you please look at my policy free/remove patches? If you can do that,
+> I can work on a fix for this. It might also be simpler to fix after my patch
+> series (not sure, might be).
 
- -rw------- 1 mingo mingo 384768 Aug  5 08:01 perf.data.timestamps
- -rw------- 1 mingo mingo 336952 Aug  5 08:00 perf.data.notimestamps
+I had an overall look of those on the day you posted them, but haven't
+commented yet as was going away..
 
-That's a ~14% reduction - it's certainly noticeable but not 
-earth-shattering.
+There is no way those can land in 3.17-rc1 atleast and so we still have
+some time to get them pushed..
 
-And what is called 'minor misaccounting' in the description is 
-actually a potentially broken profile that people might rely on.
+Anyway, they are my number two priority and the number one is this bug,
+which we have to fix in stable kernels as well. So, a dependency on your
+series wouldn't work..
 
-So the patch description misleads twice: by exaggerating the 
-advantages and also by downplaying the disadvantages.
-
-So either remove the --time option altogether, or fix its 
-'misaccounting' so that the profile can be relied on.
-
-Thanks,
-
-	Ingo
+Let me see if I can get some solution to this problem first.
