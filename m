@@ -1,52 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322AbaHENec (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 09:34:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49333 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329AbaHENeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 09:34:31 -0400
-Date: Tue, 5 Aug 2014 15:34:28 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: avoid charge statistics churn during
- page migration
-Message-ID: <20140805133428.GH15908@dhcp22.suse.cz>
-References: <1407184469-20741-1-git-send-email-hannes@cmpxchg.org>
- <20140805122434.GD15908@dhcp22.suse.cz>
- <20140805131223.GA14734@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140805131223.GA14734@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753477AbaHENem (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 09:34:42 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:64270 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359AbaHENej (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 09:34:39 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-38-53e0dd6d7c3c
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        b.zolnierkie@samsung.com
+Subject: [PATCH v5 0/5] ARM: EXYNOS: cpuidle: fix AFTR mode on boards with
+ secure firmware enabled
+Date: Tue, 05 Aug 2014 15:34:21 +0200
+Message-id: <1407245666-20016-1-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t9jAd3cuw+CDTqnyVpsnLGe1WLeZ1mL
+	3gVX2SzONr1ht3h/6BmzxabH11gtLu+aw2bxufcIo8WM8/uYLM6cvsRqcfJPL6PF+hmvWSw2
+	fvVw4PW4c20Pm8fmJfUet/89ZvbYcrWdxaNvyypGj8+b5ALYorhsUlJzMstSi/TtErgy9r//
+	zVLwR6Jiy+WTTA2Mk0S7GDk5JARMJGb++swGYYtJXLi3Hsjm4hASWMQocevQUnYIp4tJ4u/S
+	GcwgVWwCVhIT21cxgtgiAmoSPYu3MoIUMQvsZZZY2r2JHSQhLJAiMfHOQRYQm0VAVeLuwwag
+	sRwcvAIeEj+XGUJsU5TofjaBbQIj9wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwWH2
+	THoH46oGi0OMAhyMSjy8Amr3g4VYE8uKK3MPMUpwMCuJ8LLffhAsxJuSWFmVWpQfX1Sak1p8
+	iFGag0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgVFyXvUHzz8cv1P/BUn5yzpd1gpm9zyc
+	vEJVtVw/jOVg3aGY+x7NX9Rz3/yRdD3Utn1JFleFn0JN94PVyiub/hwNfV9lXWP7Nk0tpGpC
+	1rvp90SUZ1/9s/mq3juBmcf23tIvfu5nxRXpqOh3SjNKcYXA4nuqz36u61z56HCJ6LTlmTK5
+	PJUGIUosxRmJhlrMRcWJAGU/F/UvAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 05-08-14 09:12:23, Johannes Weiner wrote:
-> On Tue, Aug 05, 2014 at 02:24:34PM +0200, Michal Hocko wrote:
-> > On Mon 04-08-14 16:34:29, Johannes Weiner wrote:
-> > > Charge migration currently disables IRQs twice to update the charge
-> > > statistics for the old page and then again for the new page.
-> > > 
-> > > But migration is a seemless transition of a charge from one physical
-> > > page to another one of the same size, so this should be a non-event
-> > > from an accounting point of view.  Leave the statistics alone.
-> > 
-> > Moving stats to mem_cgroup_commit_charge sounds logical to me but does
-> > this work properly even for the fuse replace page cache case when old
-> > and new pages can already live in different memcgs?
-> 
-> We don't migrate if the new page is already charged.
+Hi,
 
-Right you are.
+This patch series adds support for AFTR idle mode on boards with
+secure firmware enabled and allows EXYNOS cpuidle driver usage on
+Exynos4x12 SoCs.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+It has been tested on Trats2 board (using Exynos4412 SoC with secure
+firmware enabled) on which AFTR mode reduces power consumption by ~12%
+when EXYNOS cpuidle driver is enabled (in both cases the default
+exynos_defconfig config is used and CPU1-3 are offlined).
+
+Depends on:
+- next-20140804 branch of linux-next kernel tree
+- [PATCH v5][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35262.html)
+- [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34282.html)
+
+Changes since v4:
+- rebased on top of next-20140804 +
+  [PATCH v5][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35262.html)
+  [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34282.html)
+- call exynos_save_cp15() only on A9 type core (this is needed for the future
+  Exynos3250 SoC support)
+
+Changes since v3:
+- rebased on top of next-20140804 +
+  [PATCH v4][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35192.html)
+  [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34282.html)
+- (re-)added patch fixing S5P_CENTRAL_SEQ_OPTION register setup
+
+Changes since v2:
+- rebased on top of next-20140708 +
+  [PATCH 5/6] ARM: EXYNOS: Fix suspend/resume sequencies
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32809.html)
+  [with rejects fixed]
+  [PATCH 6/6] ARM: EXYNOS: Register cpuidle device only on Exynos4210 and 5250
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32808.html)
+  [PATCH 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32991.html)
+  [with rejects fixed in patch #2]
+- addressed review comments from Tomasz Figa and Daniel Lezcano
+
+Changes since v1:
+- synced against next-20140602
+- added missing Acked-by-s
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
+
+Bartlomiej Zolnierkiewicz (5):
+  ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_* macros by static inlines
+  ARM: EXYNOS: add AFTR mode support to firmware do_idle method
+  ARM: EXYNOS: cpuidle: add secure firmware support to AFTR mode code
+  ARM: EXYNOS: PM: fix register setup for AFTR mode code
+  ARM: EXYNOS: cpuidle: allow driver usage on Exynos4x12 SoCs
+
+ arch/arm/include/asm/firmware.h |  2 +-
+ arch/arm/mach-exynos/common.h   |  5 ++++
+ arch/arm/mach-exynos/exynos.c   |  4 ++-
+ arch/arm/mach-exynos/firmware.c | 34 ++++++++++++++++-------
+ arch/arm/mach-exynos/pm.c       | 60 ++++++++++++++++++++++++-----------------
+ 5 files changed, 70 insertions(+), 35 deletions(-)
 
 -- 
-Michal Hocko
-SUSE Labs
+1.8.2.3
+
