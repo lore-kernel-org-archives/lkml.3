@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488AbaHEFuS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 01:50:18 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:55849 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862AbaHEFuQ (ORCPT
+	id S1755564AbaHEFzh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 01:55:37 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:55852 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791AbaHEFzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 01:50:16 -0400
-Message-ID: <1407217807.3178.70.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net-next 2/3] netlink: Convert netlink_lookup() to use
- RCU protected hash table
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>
-Cc: sasha.levin@oracle.com, tgraf@suug.ch, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kaber@trash.net,
-        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
-        challa@noironetworks.com, walpole@cs.pdx.edu, dev@openvswitch.org,
-        netfilter-devel@vger.kernel.org, nikolay@redhat.com
-Date: Tue, 05 Aug 2014 07:50:07 +0200
-In-Reply-To: <20140804.195841.536725238366145203.davem@davemloft.net>
-References: <cover.1406971567.git.tgraf@suug.ch>
-	 <a0370889bd1b1bdf097f74df7017d39ae845c12e.1406971567.git.tgraf@suug.ch>
-	 <53E03D0B.3000208@oracle.com>
-	 <20140804.195841.536725238366145203.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 5 Aug 2014 01:55:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140805054555.GA1920@kroah.com>
+References: <1407214617-27317-1-git-send-email-xerofoify@gmail.com>
+	<20140805054555.GA1920@kroah.com>
+Date: Tue, 5 Aug 2014 01:55:34 -0400
+Message-ID: <CAPDOMVg_Y7VgdM0ovcS=w7juBZ4n3xnV+kzbtzTxNZjEKzC3sA@mail.gmail.com>
+Subject: Re: [PATCH] xhci: Merge and Update debugging for patches from 3.6
+ kernel tree
+From: Nick Krause <xerofoify@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "Nyman, Mathias" <mathias.nyman@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        "manjunath.goudar" <manjunath.goudar@linaro.org>,
+        "jg1.han" <jg1.han@samsung.com>, davidm <davidm@egauge.net>,
+        Ksenia Ragiadakou <burzalodowa@gmail.com>,
+        hartleys <hartleys@visionengravers.com>,
+        "gregory.clement" <gregory.clement@free-electrons.com>,
+        oneukum <oneukum@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-04 at 19:58 -0700, David Miller wrote:
-> From: Sasha Levin <sasha.levin@oracle.com>
-> Date: Mon, 04 Aug 2014 22:10:19 -0400
-> 
-> > On 08/02/2014 05:47 AM, Thomas Graf wrote:
-> >>  static void *netlink_seq_start(struct seq_file *seq, loff_t *pos)
-> >> -	__acquires(nl_table_lock)
-> >>  {
-> >> -	read_lock(&nl_table_lock);
-> >> +	rcu_read_lock();
-> >>  	return *pos ? netlink_seq_socket_idx(seq, *pos - 1) : SEQ_START_TOKEN;
-> >>  }
-> > 
-> > I'm not sure how you expect this code to work. You're replacing a local lock
-> > with a RCU critical section. Imagine you're doing spin_lock() and just going
-> > back to userspace.
-> > 
-> > It's quite easy to trigger this issue:
-> 
-> I think he expected the end of the seq sequence to drop the RCU lock,
-> via netlink_seq_stop().
-> --
+On Tue, Aug 5, 2014 at 1:45 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Tue, Aug 05, 2014 at 12:56:57AM -0400, Nicholas Krause wrote:
+>> I am adding the fixes to the tree send for adding debugging to the kernel
+>> tree from a patch sent in 2013 on the the 3.6 release. The patch adds
+>> debugging over xhci capable debugging usb ports and needed to be updated
+>> into the latest rc tree. The patch was first sent in this thread,
+>> http://marc.info/?l=linux-usb&m=135948845511047.
+>>
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>
+> If you send one more patch, I am going to have to ask vger.kernel.org to
+> ban you from their servers.  You are actively bothering people and
+> causing problems and wasting time.
+>
+> You have been told _numerous_ times to stop, yet you refuse to listen.
+> You hold the record for getting kicked out of the Eudyptula challenge in
+> a matter of hours, something no one else has ever had happen.  You
+> ignore lots of very valid comments and suggestions, for no good reason.
+> You flail about, making mistakes that are now starting to bother users,
+> which is not acceptable at all.
+>
+> I will not respond to any more of your emails, and ask everyone else to
+> now stop as well.
+>
+> good bye.
+>
+> *plonk*
+>
+> greg k-h
 
-Yes, two places use rht_dereference() instead of rht_dereference_rcu()
-
-[PATCH net-next] netlink: fix lockdep splats
-
-With netlink_lookup() conversion to RCU, we need to use appropriate
-rcu dereference in netlink_seq_socket_idx() & netlink_seq_next()
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: 
-Fixes: e341694e3eb57fc ("netlink: Convert netlink_lookup() to use RCU protected hash table")
----
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 0b89ca51a3af..479a344563d8 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -2899,7 +2899,7 @@ static struct sock *netlink_seq_socket_idx(struct seq_file *seq, loff_t pos)
- 
- 	for (i = 0; i < MAX_LINKS; i++) {
- 		struct rhashtable *ht = &nl_table[i].hash;
--		const struct bucket_table *tbl = rht_dereference(ht->tbl, ht);
-+		const struct bucket_table *tbl = rht_dereference_rcu(ht->tbl, ht);
- 
- 		for (j = 0; j < tbl->size; j++) {
- 			rht_for_each_entry_rcu(nlk, tbl->buckets[j], node) {
-@@ -2950,7 +2950,7 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- 
- 	do {
- 		struct rhashtable *ht = &nl_table[i].hash;
--		const struct bucket_table *tbl = rht_dereference(ht->tbl, ht);
-+		const struct bucket_table *tbl = rht_dereference_rcu(ht->tbl, ht);
- 
- 		for (; j < tbl->size; j++) {
- 			rht_for_each_entry_rcu(nlk, tbl->buckets[j], node) {
-
-
+Greg,
+You haven't even checked my patch, our you just going to assume it's wrong?
+Regards Nick
