@@ -1,177 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600AbaHELEb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 07:04:31 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:53041 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054AbaHELE2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 07:04:28 -0400
-Message-ID: <53E0BA31.1000708@redhat.com>
-Date: Tue, 05 Aug 2014 13:04:17 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932343AbaHELFh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 07:05:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46204 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754546AbaHELFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 07:05:36 -0400
+Date: Tue, 5 Aug 2014 13:05:32 +0200
+From: Joerg Roedel <jroedel@suse.de>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Joerg Roedel <joro@8bytes.org>, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH] iommu/vt-d: Defer domain removal if device is assigned to a
+ driver
+Message-ID: <20140805110532.GB14913@suse.de>
+References: <1407151386-16467-1-git-send-email-joro@8bytes.org>
+ <20140804114205.GA5545@pd.tnic>
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Bandan Das <bsd@redhat.com>, Zhang Yang <yang.z.zhang@intel.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freyes@suse.com
-Subject: Re: [PATCH v2 2/2] KVM: nVMX: fix acknowledge interrupt on exit when
- APICv is in use
-References: <1407213744-24794-1-git-send-email-wanpeng.li@linux.intel.com> <1407213744-24794-2-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1407213744-24794-2-git-send-email-wanpeng.li@linux.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140804114205.GA5545@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 05/08/2014 06:42, Wanpeng Li ha scritto:
-> After commit 77b0f5d (KVM: nVMX: Ack and write vector info to intr_info
-> if L1 asks us to), "Acknowledge interrupt on exit" behavior can be
-> emulated. To do so, KVM will ask the APIC for the interrupt vector if
-> during a nested vmexit if VM_EXIT_ACK_INTR_ON_EXIT is set.  With APICv,
-> kvm_get_apic_interrupt would return -1 and give the following WARNING:
-> 
-> Call Trace:
->  [<ffffffff81493563>] dump_stack+0x49/0x5e
->  [<ffffffff8103f0eb>] warn_slowpath_common+0x7c/0x96
->  [<ffffffffa059709a>] ? nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
->  [<ffffffff8103f11a>] warn_slowpath_null+0x15/0x17
->  [<ffffffffa059709a>] nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
->  [<ffffffffa0594295>] ? nested_vmx_exit_handled+0x6a/0x39e [kvm_intel]
->  [<ffffffffa0537931>] ? kvm_apic_has_interrupt+0x80/0xd5 [kvm]
->  [<ffffffffa05972ec>] vmx_check_nested_events+0xc3/0xd3 [kvm_intel]
->  [<ffffffffa051ebe9>] inject_pending_event+0xd0/0x16e [kvm]
->  [<ffffffffa051efa0>] vcpu_enter_guest+0x319/0x704 [kvm]
-> 
-> If enabling APIC-v, all interrupts to L1 are delivered through APIC-v.
-> But when L2 is running, external interrupt will casue L1 vmexit with
-> reason external interrupt. Then L1 will pick up the interrupt through
-> vmcs12. when L1 ack the interrupt, since the APIC-v is enabled when
-> L1 is running, so APIC-v hardware still will do vEOI updating. The problem
-> is that the interrupt is delivered not through APIC-v hardware, this means
-> SVI/RVI/vPPR are not setting, but hardware required them when doing vEOI
-> updating. The solution is that, when L1 tried to pick up the interrupt
-> from vmcs12, then hypervisor will help to update the SVI/RVI/vPPR to make
-> sure the following vEOI updating and vPPR updating corrently.
->     
-> Also, since interrupt is delivered through vmcs12, so APIC-v hardware will
-> not cleare vIRR and hypervisor need to clear it before L1 running.
-> 
-> Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
-> Suggested-by: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-> Tested-by: Liu, RongrongX <rongrongx.liu@intel.com>
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
-> v1 -> v2:
->  * reusing kvm_get_apic_interrupt here (by modifying kvm_cpu_get_interrupt, 
->    apic_set_isr and apic_clear_irr)
-> 
->  arch/x86/kvm/irq.c   |  2 +-
->  arch/x86/kvm/lapic.c | 52 +++++++++++++++++++++++++++++++++++++++-------------
->  2 files changed, 40 insertions(+), 14 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/irq.c b/arch/x86/kvm/irq.c
-> index bd0da43..a1ec6a5 100644
-> --- a/arch/x86/kvm/irq.c
-> +++ b/arch/x86/kvm/irq.c
-> @@ -108,7 +108,7 @@ int kvm_cpu_get_interrupt(struct kvm_vcpu *v)
->  
->  	vector = kvm_cpu_get_extint(v);
->  
-> -	if (kvm_apic_vid_enabled(v->kvm) || vector != -1)
-> +	if (vector != -1)
->  		return vector;			/* PIC */
->  
->  	return kvm_get_apic_interrupt(v);	/* APIC */
-> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-> index 3855103..08e8a89 100644
-> --- a/arch/x86/kvm/lapic.c
-> +++ b/arch/x86/kvm/lapic.c
-> @@ -352,25 +352,46 @@ static inline int apic_find_highest_irr(struct kvm_lapic *apic)
->  
->  static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
->  {
-> -	apic->irr_pending = false;
-> +	struct kvm_vcpu *vcpu;
-> +
-> +	vcpu = apic->vcpu;
-> +
->  	apic_clear_vector(vec, apic->regs + APIC_IRR);
-> -	if (apic_search_irr(apic) != -1)
-> -		apic->irr_pending = true;
-> +	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
-> +		/* try to update RVI */
-> +		kvm_make_request(KVM_REQ_EVENT, vcpu);
-> +	else {
-> +		vec = apic_search_irr(apic);
-> +		apic->irr_pending = (vec != -1);
-> +	}
->  }
->  
->  static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
->  {
-> -	/* Note that we never get here with APIC virtualization enabled.  */
-> +	struct kvm_vcpu *vcpu;
-> +
-> +	if (__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
-> +		return;
-> +
-> +	vcpu = apic->vcpu;
->  
-> -	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
-> -		++apic->isr_count;
-> -	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
->  	/*
-> -	 * ISR (in service register) bit is set when injecting an interrupt.
-> -	 * The highest vector is injected. Thus the latest bit set matches
-> -	 * the highest bit in ISR.
-> +	 * With APIC virtualization enabled, all caching is disabled
-> +	 * because the processor can modify ISR under the hood.  Instead
-> +	 * just set SVI.
->  	 */
-> -	apic->highest_isr_cache = vec;
-> +	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
-> +		kvm_x86_ops->hwapic_isr_update(vcpu->kvm, vec);
-> +	else {
-> +		++apic->isr_count;
-> +		BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
-> +		/*
-> +		 * ISR (in service register) bit is set when injecting an interrupt.
-> +		 * The highest vector is injected. Thus the latest bit set matches
-> +		 * the highest bit in ISR.
-> +		 */
-> +		apic->highest_isr_cache = vec;
-> +	}
->  }
->  
->  static inline int apic_find_highest_isr(struct kvm_lapic *apic)
-> @@ -1627,11 +1648,16 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
->  	int vector = kvm_apic_has_interrupt(vcpu);
->  	struct kvm_lapic *apic = vcpu->arch.apic;
->  
-> -	/* Note that we never get here with APIC virtualization enabled.  */
-> -
->  	if (vector == -1)
->  		return -1;
->  
-> +	/*
-> +	 * We get here even with APIC virtualization enabled, if doing
-> +	 * nested virtualization and L1 runs with the "acknowledge interrupt
-> +	 * on exit" mode.  Then we cannot inject the interrupt via RVI,
-> +	 * because the process would deliver it through the IDT.
-> +	 */
-> +
->  	apic_set_isr(vector, apic);
->  	apic_update_ppr(apic);
->  	apic_clear_irr(vector, apic);
-> 
+Hi,
 
-Thanks, this looks good.  Felipe, can you test this patch together with
-http://article.gmane.org/gmane.linux.kernel/1762356/raw please?
+On Mon, Aug 04, 2014 at 01:42:05PM +0200, Borislav Petkov wrote:
+> It is always questionable when people remove BUG_ONs because relaxing
+> assertions sound like a temporary fix more often than not. Sounds to me
+> that the original commit which deals with BUS_NOTIFY_DEL_DEVICE needs to
+> try again with the fix. :-)
 
-Paolo
+Actually, as I thought about it again, there is a better fix for this
+issue that does not require to remove the BUG_ON :) See attached patch:
+
+>From 57e2519d5b6e4d8ee840a921300d201ff742c826 Mon Sep 17 00:00:00 2001
+From: Joerg Roedel <jroedel@suse.de>
+Date: Tue, 5 Aug 2014 12:55:45 +0200
+Subject: [PATCH] iommu/vt-d: Defer domain removal if device is assigned to a
+ driver
+
+When the BUS_NOTIFY_DEL_DEVICE event is received the device
+might still be attached to a driver. In this case the domain
+can't be released as the mappings might still be in use.
+
+Defer the domain removal in this case until we receivce the
+BUS_NOTIFY_UNBOUND_DRIVER event.
+
+Cc: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: stable@vger.kernel.org   # v3.15, v3.16
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
+---
+ drivers/iommu/intel-iommu.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index d1f5caa..5619f26 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -3869,6 +3869,14 @@ static int device_notifier(struct notifier_block *nb,
+ 	    action != BUS_NOTIFY_DEL_DEVICE)
+ 		return 0;
+ 
++	/*
++	 * If the device is still attached to a device driver we can't
++	 * tear down the domain yet as DMA mappings may still be in use.
++	 * Wait for the BUS_NOTIFY_UNBOUND_DRIVER event to do that.
++	 */
++	if (action == BUS_NOTIFY_DEL_DEVICE && dev->driver != NULL)
++		return 0;
++
+ 	domain = find_domain(dev);
+ 	if (!domain)
+ 		return 0;
+-- 
+1.8.4.5
+
