@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935AbaHEKw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 06:52:28 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:18343 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754994AbaHEKtG (ORCPT
+	id S1756064AbaHEKwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 06:52:47 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:52894 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754970AbaHEKtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 06:49:06 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-a6-53e0b6a08bd6
+	Tue, 5 Aug 2014 06:49:05 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-cf-53e0b69fc7a6
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
@@ -24,85 +24,96 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Tomasz Figa <tomasz.figa@gmail.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 18/29] iommu: exynos: remove unused functions
-Date: Tue, 05 Aug 2014 12:47:46 +0200
-Message-id: <1407235677-26324-19-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH 17/29] iommu: exynos: don't read version register on every tlb
+ operation
+Date: Tue, 05 Aug 2014 12:47:45 +0200
+Message-id: <1407235677-26324-18-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.9.2
 In-reply-to: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
 References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t/xq7oLtj0INjj7S9Pi76Rj7BbNi9ez
-	WUy6P4HFYsF+a4vO2RvYLXoXXGWzONv0ht2ic+ISdosvVx4yWWx6fI3V4vKuOWwWM87vY7JY
-	e+Quu8Wp65/ZLP71HmS0OHP6EqvF/z072C0Ov2lntTjycDe7xapdfxgtbv/mcxD1eHJwHpPH
-	71+TGD12zrrL7jG7Yyarx6ZVnWwe++euYffYvKTe4/a/x8wek28sZ/S4cqKJ1aO3+R2bx5ar
-	7SwefVtWMXp83iQXwBfFZZOSmpNZllqkb5fAlTH54FWmgil8FQ8mOTYw/uHuYuTgkBAwkTjz
-	26mLkRPIFJO4cG89WxcjF4eQwFJGiTs/T7CBJIQE+pgkPr62ALHZBAwlut52gRWJCPQySvQ3
-	/WACcZgF1rFK7O+9zgJSJSxgKzGv6zQTiM0ioCrxtW8WmM0r4Cmx6+kyNoh1chL/X64Ai3MC
-	xQ/fPMAKsc1D4ueGNewTGHkXMDKsYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/dxAiJmq87GJce
-	szrEKMDBqMTDq7D3brAQa2JZcWXuIUYJDmYlEV6JNQ+ChXhTEiurUovy44tKc1KLDzEycXBK
-	NTAWOyWYLHtoGqB6Y/fmC9FX16zfl7QgrMPofVS5eNGsaVnFL90OWyv8nOzB2svYueTBmefX
-	xeVET1d0uDQ26+icOXHgjmzbNGcds6CVs5/fcTCePu2CvbGGLe/OK/+uH47QSt/y8D9fyN/b
-	vm84l6hKxNkvWDbnQ8Pnb8zGMfXBrNdUP6g4cx9VYinOSDTUYi4qTgQA2DnQ63gCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xq7rztz0INljSY2Txd9IxdovmxevZ
+	LCbdn8BisWC/tUXn7A3sFr0LrrJZnG16w27ROXEJu8WXKw+ZLDY9vsZqcXnXHDaLGef3MVms
+	PXKX3eLU9c9sFv96DzJanDl9idXi/54d7BaH37SzWhx5uJvdYtWuP4wWt3/zOYh6PDk4j8nj
+	969JjB47Z91l95jdMZPVY9OqTjaP/XPXsHtsXlLvcfvfY2aPyTeWM3pcOdHE6tHb/I7NY8vV
+	dhaPvi2rGD0+b5IL4IvisklJzcksSy3St0vgyth7ZyJTwVuhip9rvrE2MB7k72Lk5JAQMJFY
+	1LWECcIWk7hwbz1bFyMXh5DAUkaJcw+Ws0A4fUwSn9cdAqtiEzCU6HrbBVYlItDLKNHf9IMJ
+	xGEWWMcqsb/3OgtIlbBAlMTtfw1gHSwCqhIPZ+8Bs3kFPCV+nv7CDLFPTuL/yxVgcU6g+OGb
+	B1hBbCEBD4mfG9awT2DkXcDIsIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJHa+7GBcfMzq
+	EKMAB6MSD6/B6bvBQqyJZcWVuYcYJTiYlUR4JdY8CBbiTUmsrEotyo8vKs1JLT7EyMTBKdXA
+	6LzgrnBT3XMh9YCuuPL+1gvcO9pPWltrm6hk/nm/OrCGcdpr6SXdU37KKykvFlaZ/02Gb4Ll
+	q/2LC5Y8vpkeqHXS5s/xh0o2l2rauSLcn//6sjbQ9Ci3sZ+QjuzC1e9ygpcvEf3d3O9rHlzQ
+	firu3aKs6bVTqmvnB1/Suj611FBqi4OWgiq3EktxRqKhFnNRcSIA+jJAZXsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes two unneeded functions, which are not a part of
-generic IOMMU API and were never used by any other driver.
+This patch removes reading of REG_MMU_VERSION register on every tlb
+operation and caches SYSMMU version in driver's internal data.
 
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c | 31 -------------------------------
- 1 file changed, 31 deletions(-)
+ drivers/iommu/exynos-iommu.c | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 8927923..ec3c882 100644
+index 64b3bc8..8927923 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -491,13 +491,6 @@ static int __exynos_sysmmu_enable(struct device *dev, phys_addr_t pgtable,
- 	return ret;
+@@ -213,6 +213,7 @@ struct sysmmu_drvdata {
+ 	spinlock_t lock;
+ 	struct iommu_domain *domain;
+ 	phys_addr_t pgtable;
++	int version;
+ };
+ 
+ static bool set_sysmmu_active(struct sysmmu_drvdata *data)
+@@ -239,11 +240,6 @@ static void sysmmu_unblock(void __iomem *sfrbase)
+ 	__raw_writel(CTRL_ENABLE, sfrbase + REG_MMU_CTRL);
  }
  
--int exynos_sysmmu_enable(struct device *dev, phys_addr_t pgtable)
+-static unsigned int __raw_sysmmu_version(struct sysmmu_drvdata *data)
 -{
--	BUG_ON(!memblock_is_memory(pgtable));
--
--	return __exynos_sysmmu_enable(dev, pgtable, NULL);
+-	return MMU_RAW_VER(__raw_readl(data->sfrbase + REG_MMU_VERSION));
 -}
 -
- static bool exynos_sysmmu_disable(struct device *dev)
+ static bool sysmmu_block(void __iomem *sfrbase)
  {
- 	unsigned long flags;
-@@ -589,30 +582,6 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, sysmmu_iova_t iova,
- 	spin_unlock_irqrestore(&data->lock, flags);
+ 	int i = 120;
+@@ -403,7 +399,7 @@ static void __sysmmu_init_config(struct sysmmu_drvdata *data)
+ 	unsigned int cfg = CFG_LRU | CFG_QOS(15);
+ 	unsigned int ver;
+ 
+-	ver = __raw_sysmmu_version(data);
++	ver = MMU_RAW_VER(__raw_readl(data->sfrbase + REG_MMU_VERSION));
+ 	if (MMU_MAJ_VER(ver) == 3) {
+ 		if (MMU_MIN_VER(ver) >= 2) {
+ 			cfg |= CFG_FLPDCACHE;
+@@ -417,6 +413,7 @@ static void __sysmmu_init_config(struct sysmmu_drvdata *data)
+ 	}
+ 
+ 	__raw_writel(cfg, data->sfrbase + REG_MMU_CFG);
++	data->version = ver;
  }
  
--void exynos_sysmmu_tlb_invalidate(struct device *dev)
--{
--	struct exynos_iommu_owner *owner = dev->archdata.iommu;
--	unsigned long flags;
--	struct sysmmu_drvdata *data;
--
--	data = dev_get_drvdata(owner->sysmmu);
--
--	spin_lock_irqsave(&data->lock, flags);
--	if (is_sysmmu_active(data)) {
--		if (!IS_ERR(data->clk_master))
--			clk_enable(data->clk_master);
--		if (sysmmu_block(data->sfrbase)) {
--			__sysmmu_tlb_invalidate(data->sfrbase);
--			sysmmu_unblock(data->sfrbase);
--		}
--		if (!IS_ERR(data->clk_master))
--			clk_disable(data->clk_master);
--	} else {
--		dev_dbg(dev, "disabled. Skipping TLB invalidation\n");
--	}
--	spin_unlock_irqrestore(&data->lock, flags);
--}
--
- static int __init exynos_sysmmu_probe(struct platform_device *pdev)
+ static void __sysmmu_enable_nocount(struct sysmmu_drvdata *data)
+@@ -526,7 +523,7 @@ static bool exynos_sysmmu_disable(struct device *dev)
+ static void __sysmmu_tlb_invalidate_flpdcache(struct sysmmu_drvdata *data,
+ 					      sysmmu_iova_t iova)
  {
- 	int irq, ret;
+-	if (__raw_sysmmu_version(data) == MAKE_MMU_VER(3, 3))
++	if (data->version == MAKE_MMU_VER(3, 3))
+ 		__raw_writel(iova | 0x1, data->sfrbase + REG_MMU_FLUSH_ENTRY);
+ }
+ 
+@@ -575,7 +572,7 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, sysmmu_iova_t iova,
+ 		 * 1MB page can be cached in one of all sets.
+ 		 * 64KB page can be one of 16 consecutive sets.
+ 		 */
+-		if (MMU_MAJ_VER(__raw_sysmmu_version(data)) == 2)
++		if (MMU_MAJ_VER(data->version) == 2)
+ 			num_inv = min_t(unsigned int, size / PAGE_SIZE, 64);
+ 
+ 		if (sysmmu_block(data->sfrbase)) {
 -- 
 1.9.2
 
