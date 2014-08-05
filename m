@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495AbaHESOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:14:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52158 "EHLO
+	id S1756608AbaHESs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:48:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52190 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289AbaHESOH (ORCPT
+	with ESMTP id S1754493AbaHESOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:07 -0400
+	Tue, 5 Aug 2014 14:14:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.15 07/42] ARM: 8115/1: LPAE: reduce damage caused by idmap to virtual memory layout
-Date: Tue,  5 Aug 2014 11:13:21 -0700
-Message-Id: <20140805181321.249157336@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.15 32/42] x86_64/entry/xen: Do not invoke espfix64 on Xen
+Date: Tue,  5 Aug 2014 11:13:46 -0700
+Message-Id: <20140805181321.975780382@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -29,51 +29,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 811a2407a3cf7bbd027fbe92d73416f17485a3d8 upstream.
+commit 7209a75d2009dbf7745e2fd354abf25c3deb3ca3 upstream.
 
-On LPAE, each level 1 (pgd) page table entry maps 1GiB, and the level 2
-(pmd) entries map 2MiB.
+This moves the espfix64 logic into native_iret.  To make this work,
+it gets rid of the native patch for INTERRUPT_RETURN:
+INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
 
-When the identity mapping is created on LPAE, the pgd pointers are copied
-from the swapper_pg_dir.  If we find that we need to modify the contents
-of a pmd, we allocate a new empty pmd table and insert it into the
-appropriate 1GB slot, before then filling it with the identity mapping.
+This changes the 16-bit SS behavior on Xen from OOPSing to leaking
+some bits of the Xen hypervisor's RSP (I think).
 
-However, if the 1GB slot covers the kernel lowmem mappings, we obliterate
-those mappings.
+[ hpa: this is a nonzero cost on native, but probably not enough to
+  measure. Xen needs to fix this in their own code, probably doing
+  something equivalent to espfix64. ]
 
-When replacing a PMD, first copy the old PMD contents to the new PMD, so
-that we preserve the existing mappings, particularly the mappings of the
-kernel itself.
-
-[rewrote commit message and added code comment -- rmk]
-
-Fixes: ae2de101739c ("ARM: LPAE: Add identity mapping support for the 3-level page table format")
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/7b8f1d8ef6597cb16ae004a43c56980a7de3cf94.1406129132.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/idmap.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/x86/include/asm/irqflags.h     |    2 +-
+ arch/x86/kernel/entry_64.S          |   28 ++++++++++------------------
+ arch/x86/kernel/paravirt_patch_64.c |    2 --
+ 3 files changed, 11 insertions(+), 21 deletions(-)
 
---- a/arch/arm/mm/idmap.c
-+++ b/arch/arm/mm/idmap.c
-@@ -25,6 +25,13 @@ static void idmap_add_pmd(pud_t *pud, un
- 			pr_warning("Failed to allocate identity pmd.\n");
- 			return;
- 		}
-+		/*
-+		 * Copy the original PMD to ensure that the PMD entries for
-+		 * the kernel image are preserved.
-+		 */
-+		if (!pud_none(*pud))
-+			memcpy(pmd, pmd_offset(pud, 0),
-+			       PTRS_PER_PMD * sizeof(pmd_t));
- 		pud_populate(&init_mm, pud, pmd);
- 		pmd += pmd_index(addr);
- 	} else
+--- a/arch/x86/include/asm/irqflags.h
++++ b/arch/x86/include/asm/irqflags.h
+@@ -129,7 +129,7 @@ static inline notrace unsigned long arch
+ 
+ #define PARAVIRT_ADJUST_EXCEPTION_FRAME	/*  */
+ 
+-#define INTERRUPT_RETURN	iretq
++#define INTERRUPT_RETURN	jmp native_iret
+ #define USERGS_SYSRET64				\
+ 	swapgs;					\
+ 	sysretq;
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1041,27 +1041,24 @@ restore_args:
+ 	RESTORE_ARGS 1,8,1
+ 
+ irq_return:
++	INTERRUPT_RETURN
++
++ENTRY(native_iret)
+ 	/*
+ 	 * Are we returning to a stack segment from the LDT?  Note: in
+ 	 * 64-bit mode SS:RSP on the exception stack is always valid.
+ 	 */
+ #ifdef CONFIG_X86_ESPFIX64
+ 	testb $4,(SS-RIP)(%rsp)
+-	jnz irq_return_ldt
++	jnz native_irq_return_ldt
+ #endif
+ 
+-irq_return_iret:
+-	INTERRUPT_RETURN
+-	_ASM_EXTABLE(irq_return_iret, bad_iret)
+-
+-#ifdef CONFIG_PARAVIRT
+-ENTRY(native_iret)
++native_irq_return_iret:
+ 	iretq
+-	_ASM_EXTABLE(native_iret, bad_iret)
+-#endif
++	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
+ 
+ #ifdef CONFIG_X86_ESPFIX64
+-irq_return_ldt:
++native_irq_return_ldt:
+ 	pushq_cfi %rax
+ 	pushq_cfi %rdi
+ 	SWAPGS
+@@ -1083,7 +1080,7 @@ irq_return_ldt:
+ 	SWAPGS
+ 	movq %rax,%rsp
+ 	popq_cfi %rax
+-	jmp irq_return_iret
++	jmp native_irq_return_iret
+ #endif
+ 
+ 	.section .fixup,"ax"
+@@ -1167,13 +1164,8 @@ __do_double_fault:
+ 	cmpl $__KERNEL_CS,CS(%rdi)
+ 	jne do_double_fault
+ 	movq RIP(%rdi),%rax
+-	cmpq $irq_return_iret,%rax
+-#ifdef CONFIG_PARAVIRT
+-	je 1f
+-	cmpq $native_iret,%rax
+-#endif
++	cmpq $native_irq_return_iret,%rax
+ 	jne do_double_fault		/* This shouldn't happen... */
+-1:
+ 	movq PER_CPU_VAR(kernel_stack),%rax
+ 	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
+ 	movq %rax,RSP(%rdi)
+@@ -1674,7 +1666,7 @@ error_sti:
+  */
+ error_kernelspace:
+ 	incl %ebx
+-	leaq irq_return_iret(%rip),%rcx
++	leaq native_irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+ 	je error_swapgs
+ 	movl %ecx,%eax	/* zero extend */
+--- a/arch/x86/kernel/paravirt_patch_64.c
++++ b/arch/x86/kernel/paravirt_patch_64.c
+@@ -6,7 +6,6 @@ DEF_NATIVE(pv_irq_ops, irq_disable, "cli
+ DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
+ DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
+ DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
+-DEF_NATIVE(pv_cpu_ops, iret, "iretq");
+ DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
+ DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
+ DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
+@@ -50,7 +49,6 @@ unsigned native_patch(u8 type, u16 clobb
+ 		PATCH_SITE(pv_irq_ops, save_fl);
+ 		PATCH_SITE(pv_irq_ops, irq_enable);
+ 		PATCH_SITE(pv_irq_ops, irq_disable);
+-		PATCH_SITE(pv_cpu_ops, iret);
+ 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
+ 		PATCH_SITE(pv_cpu_ops, usergs_sysret32);
+ 		PATCH_SITE(pv_cpu_ops, usergs_sysret64);
 
 
