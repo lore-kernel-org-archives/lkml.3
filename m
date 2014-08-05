@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634AbaHEVhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 17:37:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:52455 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752020AbaHEVhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 17:37:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,807,1400050800"; 
-   d="scan'208";a="465332330"
-Date: Tue, 5 Aug 2014 14:37:34 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu
-Subject: Re: [PATCH] perf/x86: fix load latency/precise store data source
- issues
-Message-ID: <20140805213734.GI5803@tassilo.jf.intel.com>
-References: <20140805041333.GA17598@quad>
+	id S1753877AbaHEViF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 17:38:05 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:25944 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753657AbaHEViD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 17:38:03 -0400
+Date: Tue, 5 Aug 2014 17:37:52 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/3] ftrace: Add a ftrace test collection
+Message-ID: <20140805173752.1de5f1c2@gandalf.local.home>
+In-Reply-To: <20140805024544.23693.66601.stgit@kbuild-fedora.novalocal>
+References: <20140805024544.23693.66601.stgit@kbuild-fedora.novalocal>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140805041333.GA17598@quad>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 06:13:33AM +0200, Stephane Eranian wrote:
+Hi Masami,
+
+This looks great. I'm a bit busy at the moment (just came back from
+vacation, and digging myself out of the hole that left me). But I
+definitely want this in. I have a bunch of tests too, that I can put on
+top of this. My tests are rather hacky, and hard code a lot of stuff in
+them, but they do test a bunch of features of ftrace. It shouldn't be
+too hard to include them here.
+
+
+On Tue, 05 Aug 2014 02:45:44 +0000
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+
+> Hi,
 > 
-> This patch fixes some issues introduced by Andi's 'Revamp
-> PEBS' event selection patch (which is under review right now).
+> I'd like to introduce a collection of testcases for ftrace to
+> avoid regressions.
 > 
-> Most of the issues were related to the encoding of the
-> data source, for PEBS events in general and load/store
-> events on Haswell.
+> For a long time, we've tried to stabilize and extend ftrace
+> tracing infrastructure. This small test framework is a kind of
+> stabilizing work for ftrace. For the first step, this series
+> just introduces a few basic testcases. However, it is easy to
+> add additional tests. I'd like to ask you, ftrace developers,
+> to add tests for your features to ensure it will not be broken
+> by future works.
 > 
-> This patchd does:
->  - the default of 0 in perf_sample_data_init() was wrong. 0 is not
->   a valid value. So defined PERF_MEM_NA (not available)
-
-Looks good.
-
+> ftracetest is a tiny bash script so that anyone can easily
+> understand what it does. I think it is better to share and
+> discuss this tests before growing it.
 > 
->  - On HSW, renamed your precise_store_hsw() to datala_hsw()
->    because you are actually processing both loads and stores, except
->    the load latency event which goes thru normal function
-
-Pleae don't mix cleanups with bug fixes.
-
+>  - Is it enough to support bash script? (of course you can
+>    invoke other commands from the script)
+>  - What's the good naming method of testcases?
+>  - Is any dependency check required?
 > 
->  - precise_store_data_hsw() was returning bogus data source for store
->    events. dse.mem_lvl instead of dse.val
+> BTW, I decided to put this under tools/testing/ftrace instead
+> of tools/testing/selftests/, because all tests requires root
+> privilege. It will be one of discussion points. Anyway,
+> it is easy to integrate this to the selftests.
 
-This was already fixed in the second patch (and it wasn't introduced
-by my patch):
+I agree. I think having its own directory is a good idea. Lets see what
+other people think. When I get time, I'll see if I can start a branch
+that pulls this in and start adding my own tests on top of it.
 
-commit 57f6c0e81f5b82b341c4c4ddd621531788c50433
-Author: Andi Kleen <ak@linux.intel.com>
-Date:   Fri Jul 18 17:41:48 2014 -0700
+Thanks!
 
-    perf, x86: Fix haswell mem hierarchy flags reporting
-    
-    This fixes a bug introduced with
-    
-    commit 722e76e60f2775c21b087ff12c5e678cf0ebcaaf
-    Author: Stephane Eranian <eranian@google.com>
-    Date:   Thu May 15 17:56:44 2014 +0200
-    
-        fix Haswell precise store data source encoding
-    
-    When returning early we need to return the complete value of the
-    memory hierarchy, not just the mem_lvl. Otherwise any load/store/na
-    flags set early get lost.
-    
-    Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
--Andi
-
-
+-- Steve
