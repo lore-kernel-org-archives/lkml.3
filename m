@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083AbaHES1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:27:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52457 "EHLO
+	id S1755226AbaHESOn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:14:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52427 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888AbaHESOo (ORCPT
+	with ESMTP id S1753888AbaHESOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:44 -0400
+	Tue, 5 Aug 2014 14:14:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Andre van Herk <andre.van.herk@prodrive-technologies.com>,
-        Stef van Os <stef.van.os@prodrive-technologies.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 08/39] rapidio/tsi721_dma: fix failure to obtain transaction descriptor
-Date: Tue,  5 Aug 2014 11:13:45 -0700
-Message-Id: <20140805181336.276727525@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Vitaly Kuznetsov <vkuznets@redhat.com>,
+        Steven Noonan <steven@uplinklabs.net>
+Subject: [PATCH 3.14 35/39] x86/xen: no need to explicitly register an NMI callback
+Date: Tue,  5 Aug 2014 11:14:12 -0700
+Message-Id: <20140805181337.097338620@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
 References: <20140805181336.030349158@linuxfoundation.org>
@@ -35,57 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 0193ed8225e1a79ed64632106ec3cc81798cb13c upstream.
+commit ea9f9274bf4337ba7cbab241c780487651642d63 upstream.
 
-This is a bug fix for the situation when function tsi721_desc_get() fails
-to obtain a free transaction descriptor.
+Remove xen_enable_nmi() to fix a 64-bit guest crash when registering
+the NMI callback on Xen 3.1 and earlier.
 
-The bug usually results in a memory access crash dump when data transfer
-scatter-gather list has more entries than size of hardware buffer
-descriptors ring.  This fix ensures that error is properly returned to a
-caller instead of an invalid entry.
+It's not needed since the NMI callback is set by a set_trap_table
+hypercall (in xen_load_idt() or xen_write_idt_entry()).
 
-This patch is applicable to kernel versions starting from v3.5.
+It's also broken since it only set the current VCPU's callback.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Andre van Herk <andre.van.herk@prodrive-technologies.com>
-Cc: Stef van Os <stef.van.os@prodrive-technologies.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reported-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Tested-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Cc: Steven Noonan <steven@uplinklabs.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rapidio/devices/tsi721_dma.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/x86/xen/setup.c |    9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
---- a/drivers/rapidio/devices/tsi721_dma.c
-+++ b/drivers/rapidio/devices/tsi721_dma.c
-@@ -287,6 +287,12 @@ struct tsi721_tx_desc *tsi721_desc_get(s
- 			"desc %p not ACKed\n", tx_desc);
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -574,13 +574,7 @@ void xen_enable_syscall(void)
  	}
- 
-+	if (ret == NULL) {
-+		dev_dbg(bdma_chan->dchan.device->dev,
-+			"%s: unable to obtain tx descriptor\n", __func__);
-+		goto err_out;
-+	}
+ #endif /* CONFIG_X86_64 */
+ }
+-void xen_enable_nmi(void)
+-{
+-#ifdef CONFIG_X86_64
+-	if (register_callback(CALLBACKTYPE_nmi, (char *)nmi))
+-		BUG();
+-#endif
+-}
 +
- 	i = bdma_chan->wr_count_next % bdma_chan->bd_num;
- 	if (i == bdma_chan->bd_num - 1) {
- 		i = 0;
-@@ -297,7 +303,7 @@ struct tsi721_tx_desc *tsi721_desc_get(s
- 	tx_desc->txd.phys = bdma_chan->bd_phys +
- 				i * sizeof(struct tsi721_dma_desc);
- 	tx_desc->hw_desc = &((struct tsi721_dma_desc *)bdma_chan->bd_base)[i];
--
-+err_out:
- 	spin_unlock_bh(&bdma_chan->lock);
+ void __init xen_pvmmu_arch_setup(void)
+ {
+ 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_4gb_segments);
+@@ -595,7 +589,6 @@ void __init xen_pvmmu_arch_setup(void)
  
- 	return ret;
+ 	xen_enable_sysenter();
+ 	xen_enable_syscall();
+-	xen_enable_nmi();
+ }
+ 
+ /* This function is not called for HVM domains */
 
 
