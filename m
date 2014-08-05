@@ -1,152 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802AbaHEVYv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 17:24:51 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:51096 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727AbaHEVYr (ORCPT
+	id S1753928AbaHEVZt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 17:25:49 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:41001 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753891AbaHEVZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 17:24:47 -0400
-From: Fabio Falzoi <fabio.falzoi84@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        micky_ching@realsil.com.cn, wei_wang@realsil.com.cn, joe@perches.org,
-        Fabio Falzoi <fabio.falzoi84@gmail.com>
-Subject: [PATCH v6 1/2] Staging: rts5208: Use dev_dbg and print_hex_dump_bytes to dump memory
-Date: Tue,  5 Aug 2014 23:24:17 +0200
-Message-Id: <1407273858-15267-2-git-send-email-fabio.falzoi84@gmail.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1407273858-15267-1-git-send-email-fabio.falzoi84@gmail.com>
-References: <1407273858-15267-1-git-send-email-fabio.falzoi84@gmail.com>
+	Tue, 5 Aug 2014 17:25:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <53E13D78.6000903@tilera.com>
+References: <1406383386-1400-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <53E13D78.6000903@tilera.com>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Tue, 5 Aug 2014 23:25:27 +0200
+Message-ID: <CAFo99gZ1rOqD-RFN7Shx4mWO4kfVLCXpuxUWqOwK5uY6uwAh3Q@mail.gmail.com>
+Subject: Re: [PATCH] arch: tile: gxio: mpipe.c: Cleaning up missing
+ null-terminate in conjunction with strncpy
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dev_dbg with %*ph format specifier and print_hex_dump_bytes to dump memory
-instead of relying on custom macro.
+2014-08-05 22:24 GMT+02:00 Chris Metcalf <cmetcalf@tilera.com>:
+> On 7/26/2014 10:03 AM, Rickard Strandqvist wrote:
+>>
+>> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+>>
+>> Signed-off-by: Rickard Strandqvist
+>> <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>
+>
+> While using strlcpy() instead of strncpy() and an explicit NUL termination
+> is obviously an improvement, on reflection it doesn't feel like the best
+> solution here - and likely in many similar APIs.  A partial string argument
+> should not be passed on to other components; it's just an error by
+> definition and should be treated that way.  While we could check the
+> strlcpy() return value explicitly against the length, this is somewhat
+> awkward as it requires naming the length twice, and also means we end
+> up doing the copy pointlessly if we're about to return an error anyway.
+>
+> The following change includes Yet Another String Copy function; this may
+> or may not be a fabulous idea, but at least it encapsulates the error
+> checking in a way that seems like it makes the call sites cleaner.
+>
+>
+> From: Chris Metcalf <cmetcalf@tilera.com>
+> Date: Tue, 5 Aug 2014 16:16:13 -0400
+> Subject: [PATCH] tile: avoid errors from truncating long strings in mpipe
+> gxio
+>
+> Using strncpy() will just silently truncate long strings; we should
+> instead return an appropriate error.  Using strlcpy() would suffer from
+> the same problem.  Instead, use strlen()+memcpy(), and add an
+> error-checking step to make sure the lengths are reasonable.
+>
+> I called the convenience wrapper strscpy(), and a case could be made for
+> making it more generic (possibly with a better name), but that seems
+> outside the scope of this initial commit.
+>
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> ---
+>  arch/tile/gxio/mpipe.c | 30 +++++++++++++++++++++++++-----
+>  1 file changed, 25 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/tile/gxio/mpipe.c b/arch/tile/gxio/mpipe.c
+> index 5301a9ffbae1..8b3c201dfdb7 100644
+> --- a/arch/tile/gxio/mpipe.c
+> +++ b/arch/tile/gxio/mpipe.c
+> @@ -29,6 +29,25 @@
+>  /* HACK: Avoid pointless "shadow" warnings. */
+>  #define link link_shadow
+>
+> +/*
+> + * Use this routine to avoid copying too-long strings.  Unlike strncpy
+> + * or strlcpy, we don't enable programmers who don't check return codes;
+> + * partially-copied strings can be problematic.  The routine returns
+> + * the total number of bytes copied (including the trailing NUL) or
+> + * zero if the buffer wasn't big enough.
+> + */
+> +static size_t strscpy(char *dest, const char *src, size_t size)
+> +{
+> +       size_t ret = strlen(src) + 1;
+> +       if (ret > size) {
+> +               if (size)
+> +                       dest[0] = '\0';
+> +               return 0;
+> +       }
+> +       memcpy(dest, src, ret);
+> +       return ret;
+> +}
+> +
+>  int gxio_mpipe_init(gxio_mpipe_context_t *context, unsigned int
+> mpipe_index)
+>  {
+>         char file[32];
+> @@ -511,8 +530,8 @@ int gxio_mpipe_link_instance(const char *link_name)
+>
+>         if (!context)
+>                 return GXIO_ERR_NO_DEVICE;
+>
+> -       strncpy(name.name, link_name, sizeof(name.name));
+> -       name.name[GXIO_MPIPE_LINK_NAME_LEN - 1] = '\0';
+> +       if (strscpy(name.name, link_name, sizeof(name.name)) == 0)
+> +               return GXIO_ERR_NO_DEVICE;
+>
+>         return gxio_mpipe_info_instance_aux(context, name);
+>  }
+> @@ -529,7 +548,8 @@ int gxio_mpipe_link_enumerate_mac(int idx, char
+> *link_name, uint8_t *link_mac)
+>
+>
+>         rv = gxio_mpipe_info_enumerate_aux(context, idx, &name, &mac);
+>         if (rv >= 0) {
+> -               strncpy(link_name, name.name, sizeof(name.name));
+> +               if (strscpy(link_name, name.name, sizeof(name.name)) == 0)
+> +                       return GXIO_ERR_INVAL_MEMORY_SIZE;
+>                 memcpy(link_mac, mac.mac, sizeof(mac.mac));
+>         }
+>
+> @@ -545,8 +565,8 @@ int gxio_mpipe_link_open(gxio_mpipe_link_t *link,
+>
+>         _gxio_mpipe_link_name_t name;
+>         int rv;
+>
+> -       strncpy(name.name, link_name, sizeof(name.name));
+> -       name.name[GXIO_MPIPE_LINK_NAME_LEN - 1] = '\0';
+> +       if (strscpy(name.name, link_name, sizeof(name.name)) == 0)
+> +               return GXIO_ERR_NO_DEVICE;
+>
+>
+>         rv = gxio_mpipe_link_open_aux(context, name, flags);
+>         if (rv < 0)
+> --
+> 1.8.3.1
+>
+> --
+> Chris Metcalf, Tilera Corp.
+> http://www.tilera.com
+>
 
-Signed-off-by: Fabio Falzoi <fabio.falzoi84@gmail.com>
----
- drivers/staging/rts5208/ms.c        | 5 +++--
- drivers/staging/rts5208/rtsx_chip.c | 6 ++++--
- drivers/staging/rts5208/rtsx_scsi.c | 7 +++----
- drivers/staging/rts5208/sd.c        | 6 +++---
- drivers/staging/rts5208/trace.h     | 8 --------
- 5 files changed, 13 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/staging/rts5208/ms.c b/drivers/staging/rts5208/ms.c
-index 390b1f8..db8e221 100644
---- a/drivers/staging/rts5208/ms.c
-+++ b/drivers/staging/rts5208/ms.c
-@@ -305,7 +305,8 @@ static int ms_read_bytes(struct rtsx_chip *chip,
- 
- 	if ((tpc == PRO_READ_SHORT_DATA) && (data_len == 8)) {
- 		dev_dbg(rtsx_dev(chip), "Read format progress:\n");
--		RTSX_DUMP(ptr, cnt);
-+		print_hex_dump_bytes(KBUILD_MODNAME ": ", DUMP_PREFIX_NONE, ptr,
-+				     cnt);
- 	}
- 
- 	return STATUS_SUCCESS;
-@@ -1913,7 +1914,7 @@ RE_SEARCH:
- 	ptr = rtsx_get_cmd_data(chip);
- 
- 	dev_dbg(rtsx_dev(chip), "Boot block data:\n");
--	RTSX_DUMP(ptr, 16);
-+	dev_dbg(rtsx_dev(chip), "%*ph\n", 16, ptr);
- 
- 	/* Block ID error
- 	 * HEADER_ID0, HEADER_ID1
-diff --git a/drivers/staging/rts5208/rtsx_chip.c b/drivers/staging/rts5208/rtsx_chip.c
-index fe98309..1db534a 100644
---- a/drivers/staging/rts5208/rtsx_chip.c
-+++ b/drivers/staging/rts5208/rtsx_chip.c
-@@ -1309,8 +1309,10 @@ int rtsx_write_cfg_seq(struct rtsx_chip *chip, u8 func, u16 addr, u8 *buf,
- 		}
- 	}
- 
--	RTSX_DUMP(mask, dw_len * 4);
--	RTSX_DUMP(data, dw_len * 4);
-+	print_hex_dump_bytes(KBUILD_MODNAME ": ", DUMP_PREFIX_NONE, mask,
-+			     dw_len * 4);
-+	print_hex_dump_bytes(KBUILD_MODNAME ": ", DUMP_PREFIX_NONE, data,
-+			     dw_len * 4);
- 
- 	for (i = 0; i < dw_len; i++) {
- 		retval = rtsx_write_cfg_dw(chip, func, aligned_addr + i * 4,
-diff --git a/drivers/staging/rts5208/rtsx_scsi.c b/drivers/staging/rts5208/rtsx_scsi.c
-index 5f5f512..7e6c7c04 100644
---- a/drivers/staging/rts5208/rtsx_scsi.c
-+++ b/drivers/staging/rts5208/rtsx_scsi.c
-@@ -39,7 +39,7 @@ void scsi_show_command(struct rtsx_chip *chip)
- {
- 	struct scsi_cmnd *srb = chip->srb;
- 	char *what = NULL;
--	int i, unknown_cmd = 0;
-+	int unknown_cmd = 0, len;
- 
- 	switch (srb->cmnd[0]) {
- 	case TEST_UNIT_READY:
-@@ -319,9 +319,8 @@ void scsi_show_command(struct rtsx_chip *chip)
- 			what, srb->cmd_len);
- 
- 	if (unknown_cmd) {
--		for (i = 0; i < srb->cmd_len && i < 16; i++)
--			dev_dbg(rtsx_dev(chip), " %02x", srb->cmnd[i]);
--		dev_dbg(rtsx_dev(chip), "\n");
-+		len = min_t(unsigned short, srb->cmd_len, 16);
-+		dev_dbg(rtsx_dev(chip), "%*ph\n", len, srb->cmnd);
- 	}
- }
- 
-diff --git a/drivers/staging/rts5208/sd.c b/drivers/staging/rts5208/sd.c
-index c79bea8..06c96d5 100644
---- a/drivers/staging/rts5208/sd.c
-+++ b/drivers/staging/rts5208/sd.c
-@@ -427,7 +427,7 @@ static int sd_check_csd(struct rtsx_chip *chip, char check_wp)
- 	memcpy(sd_card->raw_csd, rsp + 1, 15);
- 
- 	dev_dbg(rtsx_dev(chip), "CSD Response:\n");
--	RTSX_DUMP(sd_card->raw_csd, 16);
-+	dev_dbg(rtsx_dev(chip), "%*ph\n", 16, sd_card->raw_csd);
- 
- 	csd_ver = (rsp[1] & 0xc0) >> 6;
- 	dev_dbg(rtsx_dev(chip), "csd_ver = %d\n", csd_ver);
-@@ -1060,7 +1060,7 @@ static int sd_check_switch_mode(struct rtsx_chip *chip, u8 mode,
- 		TRACE_RET(chip, STATUS_FAIL);
- 	}
- 
--	RTSX_DUMP(buf, 64);
-+	dev_dbg(rtsx_dev(chip), "%*ph\n", 64, buf);
- 
- 	if (func_group == NO_ARGUMENT) {
- 		sd_card->func_group1_mask = buf[0x0D];
-@@ -2119,7 +2119,7 @@ static int sd_check_wp_state(struct rtsx_chip *chip)
- 	}
- 
- 	dev_dbg(rtsx_dev(chip), "ACMD13:\n");
--	RTSX_DUMP(buf, 64);
-+	dev_dbg(rtsx_dev(chip), "%*ph\n", 64, buf);
- 
- 	sd_card_type = ((u16)buf[2] << 8) | buf[3];
- 	dev_dbg(rtsx_dev(chip), "sd_card_type = 0x%04x\n", sd_card_type);
-diff --git a/drivers/staging/rts5208/trace.h b/drivers/staging/rts5208/trace.h
-index fbb304a..a9ab407 100644
---- a/drivers/staging/rts5208/trace.h
-+++ b/drivers/staging/rts5208/trace.h
-@@ -84,12 +84,4 @@ static inline char *filename(char *path)
- #define TRACE_GOTO(chip, label)	goto label
- #endif
- 
--#ifdef CONFIG_RTS5208_DEBUG
--#define RTSX_DUMP(buf, buf_len)					\
--	print_hex_dump(KERN_DEBUG, KBUILD_MODNAME ": ",		\
--		       DUMP_PREFIX_NONE, 16, 1, (buf), (buf_len), false)
--#else
--#define RTSX_DUMP(buf, buf_len)
--#endif
--
- #endif  /* __REALTEK_RTSX_TRACE_H */
--- 
-2.0.0
+Hi Chris!
 
+Very good that something takes hold of this problem!
+
+This has recently been discussed, where even Linus did a little post:
+
+https://plus.google.com/111049168280159033135/posts/1amLbuhWbh5
+
+This further clarifies the problem that really all of these functions
+have same kind of problem. What Linus says about strlcpy I had not
+heard before, but it's actually unusually unnecessary and stupid to
+have that "feature".
+Seeing that your strscpy() would have the same problem, change to
+using strnlen() perhaps?
+
+
+You want to have the more of a control, noaction on a error.
+I would otherwise like to have an alternative to strncpy that something like:
+
+char *strnzcpy(char *dest, const char *src, size_t count)
+{
+  if(0 == count)
+    return dest;
+  strncpy(dest, src, --count);
+  dest[count] = '\0';
+  return dest;
+}
+
+... But if we really going to rewrite it we should do it properly so
+you can  get the equivalent to strlen as a return.
+And then return = count than the string was too long. Simply return
+the char *dest is so unnecessary :-)
+
+
+Kind regards
+Rickard Strandqvist
