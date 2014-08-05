@@ -1,182 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961AbaHEIC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 04:02:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6666 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753389AbaHEICX convert rfc822-to-8bit (ORCPT
+	id S932506AbaHEICx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 04:02:53 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:34520 "EHLO
+	smptrelay.restena.lu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757005AbaHEICr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 04:02:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,804,1400050800"; 
-   d="scan'208";a="583538100"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Bandan Das <bsd@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v3] KVM: nVMX: nested TPR shadow/threshold emulation
-Thread-Topic: [PATCH v3] KVM: nVMX: nested TPR shadow/threshold emulation
-Thread-Index: AQHPr9MOWFa0yRHIzU+2SsbexogLsJvBkH2w
-Date: Tue, 5 Aug 2014 07:56:10 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AB505AB@SHSMSX104.ccr.corp.intel.com>
-References: <1407149907-13483-1-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1407149907-13483-1-git-send-email-wanpeng.li@linux.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 5 Aug 2014 04:02:47 -0400
+Date: Tue, 5 Aug 2014 10:02:42 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: P J P <ppandit@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: 3.12 to 3.13 boot regression bisected - still applies to 3.16
+Message-ID: <20140805100242.425e1093@pluto>
+In-Reply-To: <20140804135452.GJ15082@console-pimps.org>
+References: <20140804113435.34ed8c76@pluto>
+	<20140804122728.GH15082@console-pimps.org>
+	<20140804150627.4563b6a7@pluto>
+	<20140804135452.GJ15082@console-pimps.org>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wanpeng Li wrote on 2014-08-04:
-> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=61411
-> 
-> TPR shadow/threshold feature is important to speed up the Windows guest.
-> Besides, it is a must feature for certain VMM.
-> 
-> We map virtual APIC page address and TPR threshold from L1 VMCS. If
-> TPR_BELOW_THRESHOLD VM exit is triggered by L2 guest and L1 interested
-> in, we inject it into L1 VMM for handling.
-> 
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
-> v2 -> v3:
->  * nested vm entry failure if both tpr shadow and cr8 exiting bits are not set
-> v1 -> v2:
->  * don't take L0's "virtualize APIC accesses" setting into account
->  * virtual_apic_page do exactly the same thing that is done for
-> apic_access_page
->  * add the tpr threshold field to the read-write fields for shadow VMCS
-> 
->  arch/x86/kvm/vmx.c | 38 ++++++++++++++++++++++++++++++++++++--
->  1 file changed, 36 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index c604f3c..7a56e2c 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -379,6 +379,7 @@ struct nested_vmx {
->  	 * we must keep them pinned while L2 runs.
->  	 */
->  	struct page *apic_access_page;
-> +	struct page *virtual_apic_page;
->  	u64 msr_ia32_feature_control;
-> 
->  	struct hrtimer preemption_timer;
-> @@ -533,6 +534,7 @@ static int max_shadow_read_only_fields =
->  	ARRAY_SIZE(shadow_read_only_fields);
-> 
->  static unsigned long shadow_read_write_fields[] = {
-> +	TPR_THRESHOLD,
->  	GUEST_RIP,
->  	GUEST_RSP,
->  	GUEST_CR0,
-> @@ -2330,7 +2332,7 @@ static __init void
-> nested_vmx_setup_ctls_msrs(void)
->  		CPU_BASED_MOV_DR_EXITING |
-> CPU_BASED_UNCOND_IO_EXITING |
->  		CPU_BASED_USE_IO_BITMAPS | CPU_BASED_MONITOR_EXITING |
->  		CPU_BASED_RDPMC_EXITING | CPU_BASED_RDTSC_EXITING |
-> -		CPU_BASED_PAUSE_EXITING |
-> +		CPU_BASED_PAUSE_EXITING | CPU_BASED_TPR_SHADOW |
->  		CPU_BASED_ACTIVATE_SECONDARY_CONTROLS;
->  	/*
->  	 * We can allow some features even when not supported by the
-> @@ -6148,6 +6150,10 @@ static void free_nested(struct vcpu_vmx *vmx)
->  		nested_release_page(vmx->nested.apic_access_page);
->  		vmx->nested.apic_access_page = 0;
->  	}
-> +	if (vmx->nested.virtual_apic_page) {
-> +		nested_release_page(vmx->nested.virtual_apic_page);
-> +		vmx->nested.virtual_apic_page = 0;
-> +	}
-> 
->  	nested_free_all_saved_vmcss(vmx);
->  }
-> @@ -6936,7 +6942,7 @@ static bool nested_vmx_exit_handled(struct
-> kvm_vcpu *vcpu)
->  	case EXIT_REASON_MCE_DURING_VMENTRY:
->  		return 0;
->  	case EXIT_REASON_TPR_BELOW_THRESHOLD:
-> -		return 1;
-> +		return nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW);
->  	case EXIT_REASON_APIC_ACCESS:
->  		return nested_cpu_has2(vmcs12,
->  			SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES);
-> @@ -7057,6 +7063,9 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
-> 
->  static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
->  {
-> +	if (is_guest_mode(vcpu))
-> +		return;
-> +
->  	if (irr == -1 || tpr < irr) {
->  		vmcs_write32(TPR_THRESHOLD, 0);
->  		return;
-> @@ -8024,6 +8033,27 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu,
-> struct vmcs12 *vmcs12)
->  	exec_control &= ~CPU_BASED_VIRTUAL_NMI_PENDING;
->  	exec_control &= ~CPU_BASED_TPR_SHADOW;
->  	exec_control |= vmcs12->cpu_based_vm_exec_control;
-> +
-> +	if (exec_control & CPU_BASED_TPR_SHADOW) {
-> +		if (vmx->nested.virtual_apic_page)
-> +			nested_release_page(vmx->nested.virtual_apic_page);
-> +		vmx->nested.virtual_apic_page =
-> +		   nested_get_page(vcpu, vmcs12->virtual_apic_page_addr);
-> +		if (!vmx->nested.virtual_apic_page)
-> +			exec_control &=
-> +				~CPU_BASED_TPR_SHADOW;
-> +		else
-> +			vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
-> +				page_to_phys(vmx->nested.virtual_apic_page));
-> +
-> +		if (!(exec_control & CPU_BASED_TPR_SHADOW) &&
-> +			!((exec_control & CPU_BASED_CR8_LOAD_EXITING) &&
-> +				(exec_control & CPU_BASED_CR8_STORE_EXITING)))
-> +			nested_vmx_failValid(vcpu,
-> VMXERR_ENTRY_INVALID_CONTROL_FIELD);
+On Mon, 4 Aug 2014 14:54:52 +0100 Matt Fleming wrote:
 
-I think this is not correct. The vmx->nested.virtual_apic_page may not valid due to two reasons:
-1. The virtual_apic_page_addr is not a valid gfn. In this case, the vmx failure must be injected to L1 unconditionally regardless of the setting of CR8 load/store exiting.
-2. The virtual_apic_page is swapped by L0. In this case, we should not inject failure to L1.
-
-> +
-> +		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
-> +	}
-
-Miss else here:
-If L2 owns the APIC and doesn't use TPR_SHADOW, we need to setup the vmcs02 based on vmcs01. For example, if vmcs01 is using TPR_SHADOW, then vmcs02 must set it. Also, we need to use vmcs01's virtual_apic_page and TPR_THRESHOLD for vmcs02.
-
-> +
->  	/*
->  	 * Merging of IO and MSR bitmaps not currently supported.
->  	 * Rather, exit every time.
-> @@ -8802,6 +8832,10 @@ static void nested_vmx_vmexit(struct kvm_vcpu
-> *vcpu, u32 exit_reason,
->  		nested_release_page(vmx->nested.apic_access_page);
->  		vmx->nested.apic_access_page = 0;
->  	}
-> +	if (vmx->nested.virtual_apic_page) {
-> +		nested_release_page(vmx->nested.virtual_apic_page);
-> +		vmx->nested.virtual_apic_page = 0;
-> +	}
+> On Mon, 04 Aug, at 03:06:27PM, Bruno Prémont wrote:
+> > 
+> > Yes, I did as I have seen that patch flying by, but it did not help
+> > (I tried at 3.16-rc7).
+>  
+> :-( Thanks for testing.
 > 
->  	/*
->  	 * Exiting from L2 to L1, we're now back to L1 which thinks it just
-> --
-> 1.9.1
+> > On 3.16-rc7 I even tried adding earlyprintk=efi,keep, console=efi,
+> > ignore_loglevel and added some efi_printk() in EFI stub (in the spirit
+> > of https://bugzilla.kernel.org/show_bug.cgi?id=68761)
+> > The last message I get is my efi_printk() right before exiting boot
+> > services. Without my efi_printk() there is no output at all.
+> > 
+> > Then system reboots.
+> 
+> OK, so the fact that the system reboots suggests that the boot
+> stub/kernel caused a fault.
+>  
+> > There is no output on serial console either (via BMC),
+> > (earlycon=uart,io,0x3f8,115200 or earlyprintk=serial,ttyS0,115200)
+> > 
+> > 
+> > I even tried without initrd (setting CONFIG_INITRAMFS_SOURCE="")
+> > and got the same end-result.
+> 
+> Oh that's interesting.
+> 
+> > I could share a slightly modified one, replacing the
+> > contained /etc/passwd. It's about 16MiB in size due to RAID controller
+> > management blobs for recovery. Except for that it just tries to find
+> > ROOT partition, setting up dmcrypt if needed.
+>  
+> This shouldn't be necessary if you can reproduce the issue without an
+> initrd as you stated above.
 
-Best regards,
-Yang
+I just verified CONFIG_INITRAMFS_SOURCE="" on 3.16 and it reboots.
 
+> > Any hint on how to find out what fails would be nice!
+> > initrd issues tend not to be easy to debug (it would help if initrd
+> > issues could be reported at the time kernel tries to start init - e.g.
+> > when console outputs are up and running).
+> 
+> I don't think this is necessarily an initrd issue.
+> 
+> The way that I would debug this is to insert while(1); into strategic
+> places. Yes, it's lame and time consuming, but it's effective.
+> 
+> My first suggestion would be setup_arch(). In particular, because your
+> machine is resetting, I'd guess that the kernel's early trap handlers
+> haven't yet been installed.
+> 
+> So throw a,
+> 
+> 	while (1);
+> 
+> in there and see if you can get your machine to hang instead of reset.
+> If it doesn't hang, the reset occurs earlier in boot - work backwards.
+> If it does hang then you know that execution gets at least that far -
+> work forwards. Like I said, lame but effective.
 
+I tried in setup_arch(), but system still keeps rebooting.
+
+Working backwards I got to x86_64_start_kernel() in
+arch/x86/kernel/head64.c but system is still rebooting.
+
+Not sure what happens before x86_64_start_kernel() is called, it seems
+to be called from ASM code in arch/x86/kernel/head_64.S.
+
+> Meanwhile I'm going to go and stare at the EFI boot stub code and
+> instrument OVMF to check for more memory corruption bugs like the one
+> Michael found in commit c7fb93ec51d4 ("x86/efi: Include a .bss section
+> within the PE/COFF headers").
+
+If there are places between exit_boot() in
+arch/x86/boot/compressed/eboot.c and x86_64_start_kernel() where I
+should include such loops, please tell!
+
+Bruno
