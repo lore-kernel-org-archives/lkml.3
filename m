@@ -1,26 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395AbaHESO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:14:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52542 "EHLO
+	id S1756055AbaHESTr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:19:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372AbaHESOy (ORCPT
+	with ESMTP id S1755381AbaHESO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:54 -0400
+	Tue, 5 Aug 2014 14:14:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Andre van Herk <andre.van.herk@prodrive-technologies.com>,
-        Stef van Os <stef.van.os@prodrive-technologies.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 04/27] rapidio/tsi721_dma: fix failure to obtain transaction descriptor
-Date: Tue,  5 Aug 2014 11:13:56 -0700
-Message-Id: <20140805181344.405720449@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [PATCH 3.10 07/27] staging: vt6655: Fix disassociated messages every 10 seconds
+Date: Tue,  5 Aug 2014 11:13:59 -0700
+Message-Id: <20140805181344.488138818@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181344.268039690@linuxfoundation.org>
 References: <20140805181344.268039690@linuxfoundation.org>
@@ -35,57 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 0193ed8225e1a79ed64632106ec3cc81798cb13c upstream.
+commit 4aa0abed3a2a11b7d71ad560c1a3e7631c5a31cd upstream.
 
-This is a bug fix for the situation when function tsi721_desc_get() fails
-to obtain a free transaction descriptor.
+byReAssocCount is incremented every second resulting in
+disassociated message being send every 10 seconds whether
+connection or not.
 
-The bug usually results in a memory access crash dump when data transfer
-scatter-gather list has more entries than size of hardware buffer
-descriptors ring.  This fix ensures that error is properly returned to a
-caller instead of an invalid entry.
+byReAssocCount should only advance while eCommandState
+is in WLAN_ASSOCIATE_WAIT
 
-This patch is applicable to kernel versions starting from v3.5.
+Change existing scope to if condition.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Andre van Herk <andre.van.herk@prodrive-technologies.com>
-Cc: Stef van Os <stef.van.os@prodrive-technologies.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rapidio/devices/tsi721_dma.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/staging/vt6655/bssdb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/rapidio/devices/tsi721_dma.c
-+++ b/drivers/rapidio/devices/tsi721_dma.c
-@@ -287,6 +287,12 @@ struct tsi721_tx_desc *tsi721_desc_get(s
- 			"desc %p not ACKed\n", tx_desc);
+--- a/drivers/staging/vt6655/bssdb.c
++++ b/drivers/staging/vt6655/bssdb.c
+@@ -1026,7 +1026,7 @@ start:
+ 		pDevice->byERPFlag &= ~(WLAN_SET_ERP_USE_PROTECTION(1));
  	}
  
-+	if (ret == NULL) {
-+		dev_dbg(bdma_chan->dchan.device->dev,
-+			"%s: unable to obtain tx descriptor\n", __func__);
-+		goto err_out;
-+	}
-+
- 	i = bdma_chan->wr_count_next % bdma_chan->bd_num;
- 	if (i == bdma_chan->bd_num - 1) {
- 		i = 0;
-@@ -297,7 +303,7 @@ struct tsi721_tx_desc *tsi721_desc_get(s
- 	tx_desc->txd.phys = bdma_chan->bd_phys +
- 				i * sizeof(struct tsi721_dma_desc);
- 	tx_desc->hw_desc = &((struct tsi721_dma_desc *)bdma_chan->bd_base)[i];
--
-+err_out:
- 	spin_unlock_bh(&bdma_chan->lock);
- 
- 	return ret;
+-	{
++	if (pDevice->eCommandState == WLAN_ASSOCIATE_WAIT) {
+ 		pDevice->byReAssocCount++;
+ 		if ((pDevice->byReAssocCount > 10) && (pDevice->bLinkPass != true)) {  //10 sec timeout
+ 			printk("Re-association timeout!!!\n");
 
 
