@@ -1,89 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaHEBdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 21:33:50 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42877 "EHLO
+	id S1753466AbaHEBdd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 21:33:33 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:42802 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723AbaHEBdr (ORCPT
+	with ESMTP id S1752723AbaHEBdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 21:33:47 -0400
-Message-ID: <53E03475.6070007@codeaurora.org>
-Date: Mon, 04 Aug 2014 18:33:41 -0700
+	Mon, 4 Aug 2014 21:33:25 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: frowand.list@gmail.com
-CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net
-Subject: Re: [request for help] tty: serial: kgdb: fix msm_serial for kgdb
-References: <53E02C7C.4090206@gmail.com>
-In-Reply-To: <53E02C7C.4090206@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: David Brown <davidb@codeaurora.org>, Kumar Gala <galak@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Lina Iyer <lina.iyer@linaro.org>
+Subject: [PATCH 6/8] msm: scm: Add a feat version query API
+Date: Mon,  4 Aug 2014 18:31:48 -0700
+Message-Id: <1407202310-3359-7-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+In-Reply-To: <1407202310-3359-1-git-send-email-sboyd@codeaurora.org>
+References: <1407202310-3359-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/14 17:59, Frank Rowand wrote:
-> Stephen,
->
-> I made some changes to drivers/tty/serial/msm_serial.c to allow kgdb
-> to work with the dragon board (which has a qcom,msm-uartdm-v1.4 serial
-> port).
->
-> I will reply to this email with the patches.
->
-> With these fixes, kgdb properly communicates with the dragon board, but
-> following the continue command, the serial driver does not get any stale
-> (UART_IMR_RXSTALE) interrupts until 48 characters have been read, which
-> triggers a high water interrupt.  After the high water interrupt has been
-> processed, the driver resumes properly getting stale interrupts.
->
-> I am hoping you can help me figure out how to get the stale interrupt to
-> occur for the first character after gdb continues, instead of having to
-> first get a high water interrupt.
->
-> Patch 2 adds a framework to fix up the state of the driver and/or hardware
-> after gdb continues.  Patch 3 is a series of experiments trying to fix
-> things up for msm_serial.  I don't have complete documentation and
-> understanding of the hardware, so some of the experiments might be less
-> than intelligent.
->
-> Can you give me some suggestions of What should I be doing in the fix up
-> function?
+Some users of SCM need to detect features and also detect if
+those features have certain versions available. Add this API.
 
-Hmm... I've never gotten the serial console to come back after
-continuing because I only have one serial port and I use it for the
-console so switching it into kgdb makes me lose the console. How do you
-work around this? Use adb shell?
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mach-qcom/scm.c | 13 +++++++++++++
+ arch/arm/mach-qcom/scm.h |  1 +
+ 2 files changed, 14 insertions(+)
 
-I think the big problem is
-
-    msm_write(port, UARTDM_DMEN_RX_SC_ENABLE, UARTDM_DMEN)
-
-in msm_poll_init() which forces the uart into single character mode.
-That causes all sorts of problems but is required to make the get_char
-stuff work cleanly. I really wanted the msm_poll_get_char_dm_1p3() to
-work for the 1.4 version of the hardware but I guess they made the
-hardware different again for some unknown reason so it doesn't work. I
-never got around to figuring it out or talking to the hardware people.
-It took a while to develop the 1p3 version of the get_char code because
-of the "fifo" centric design.
-
-Do you know if that 1p3 version of the code works for you on 1.3
-hardware? Just curious if that actually has the same bugs or not. I
-probably won't have much time to look at this anytime soon, but I'll try
-and send an email off to the hardware designers to figure out a way to
-avoid switching the mode.
-
+diff --git a/arch/arm/mach-qcom/scm.c b/arch/arm/mach-qcom/scm.c
+index e80571f57ca4..7c62c03324f4 100644
+--- a/arch/arm/mach-qcom/scm.c
++++ b/arch/arm/mach-qcom/scm.c
+@@ -410,3 +410,16 @@ int scm_is_call_available(u32 svc_id, u32 cmd_id)
+ 	return ret_val;
+ }
+ EXPORT_SYMBOL(scm_is_call_available);
++
++#define GET_FEAT_VERSION_CMD	3
++int scm_get_feat_version(u32 feat)
++{
++	if (scm_is_call_available(SCM_SVC_INFO, GET_FEAT_VERSION_CMD)) {
++		u32 version;
++		if (!scm_call(SCM_SVC_INFO, GET_FEAT_VERSION_CMD, &feat,
++				sizeof(feat), &version, sizeof(version)))
++			return version;
++	}
++	return 0;
++}
++EXPORT_SYMBOL(scm_get_feat_version);
+diff --git a/arch/arm/mach-qcom/scm.h b/arch/arm/mach-qcom/scm.h
+index f94c7279616a..6348b08524e7 100644
+--- a/arch/arm/mach-qcom/scm.h
++++ b/arch/arm/mach-qcom/scm.h
+@@ -26,5 +26,6 @@ extern s32 scm_call_atomic2(u32 svc, u32 cmd, u32 arg1, u32 arg2);
+ 
+ extern u32 scm_get_version(void);
+ extern int scm_is_call_available(u32 svc_id, u32 cmd_id);
++extern int scm_get_feat_version(u32 feat);
+ 
+ #endif
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
 
