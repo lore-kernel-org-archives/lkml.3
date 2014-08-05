@@ -1,74 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602AbaHEOy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 10:54:58 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57452 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563AbaHEOy5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 10:54:57 -0400
-Date: Tue, 5 Aug 2014 16:54:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Shuah Khan <shuahkhan@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Scott J Norton <scott.norton@hp.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH 2/2 v6] locking/selftest: Support queued rwlock
-Message-ID: <20140805145437.GL9918@twins.programming.kicks-ass.net>
-References: <1406659999-13974-1-git-send-email-Waiman.Long@hp.com>
- <1406659999-13974-3-git-send-email-Waiman.Long@hp.com>
- <20140805132837.GA19379@twins.programming.kicks-ass.net>
- <CAKocOOMa89+Ej0rk-LyQLBcwDvLtsXq7x+oPwBMS1N61kKUwQg@mail.gmail.com>
- <20140805144108.GK9918@twins.programming.kicks-ass.net>
- <53E0EDD2.50600@canonical.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CUR78EuMd8EhT3+C"
-Content-Disposition: inline
-In-Reply-To: <53E0EDD2.50600@canonical.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1755648AbaHEOzL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 10:55:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34906 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755621AbaHEOzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 10:55:08 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH 7/8] x86: rename some macros and labels, no code changes
+Date: Tue,  5 Aug 2014 16:52:33 +0200
+Message-Id: <1407250354-29525-8-git-send-email-dvlasenk@redhat.com>
+In-Reply-To: <1407250354-29525-1-git-send-email-dvlasenk@redhat.com>
+References: <1407250354-29525-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Rename LOAD_ARGS32 to RESTORE_REGS32 to match other RESTORE_* macros.
+The "ARGS" part was misleading anyway - we are restoring registers,
+not arguments.
 
---CUR78EuMd8EhT3+C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Similarly, rename [retint_]restore_args to [retint_]restore_c_regs:
+at these labels, we restore registers clobbered by C ABI;
+rename int_restore_rest to int_restore_extra_regs.
 
-On Tue, Aug 05, 2014 at 04:44:34PM +0200, Maarten Lankhorst wrote:
-> op 05-08-14 16:41, Peter Zijlstra schreef:
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Oleg Nesterov <oleg@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: Andy Lutomirski <luto@amacapital.net>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: X86 ML <x86@kernel.org>
+CC: Alexei Starovoitov <ast@plumgrid.com>
+CC: Will Drewry <wad@chromium.org>
+CC: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org
+---
+ arch/x86/ia32/ia32entry.S  | 10 +++++-----
+ arch/x86/kernel/entry_64.S | 16 ++++++++--------
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 
-> >> A bit off topic for this patch, however relevant for tests in general.
-> >> Is there a reason why these locking selftests need to be under lib?
-> >> Can they be consolidated under tools/testing/selftests?
-> > tools/ seems wrong as its very much not userspace.
-> Could be moved to kernel/locking though now that all other locking moved there. :-)
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 20eba33..4402bbe 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -51,7 +51,7 @@
+ 	.endm
+ 
+ 	/*
+-	 * Reload arg registers from stack in case ptrace changed them.
++	 * Reload registers from stack in case ptrace changed them.
+ 	 * We don't reload %eax because syscall_trace_enter() returned
+ 	 * the %rax value we should see.  Instead, we just truncate that
+ 	 * value to 32 bits again as we did on entry from user mode.
+@@ -60,7 +60,7 @@
+ 	 * If it's -1 to make us punt the syscall, then (u32)-1 is still
+ 	 * an appropriately invalid value.
+ 	 */
+-	.macro LOAD_ARGS32 _r9=0
++	.macro RESTORE_REGS32 _r9=0
+ 	.if \_r9
+ 	movl R9(%rsp),%r9d
+ 	.endif
+@@ -247,7 +247,7 @@ sysenter_tracesys:
+ 	movq	$-ENOSYS,RAX(%rsp)/* ptrace can change this for a bad syscall */
+ 	movq	%rsp,%rdi        /* &pt_regs -> arg1 */
+ 	call	syscall_trace_enter
+-	LOAD_ARGS32	/* reload args from stack in case ptrace changed it */
++	RESTORE_REGS32	/* reload regs from stack in case ptrace changed it */
+ 	RESTORE_EXTRA_REGS
+ 	cmpq	$(IA32_NR_syscalls-1),%rax
+ 	ja	int_ret_from_sys_call /* sysenter_tracesys has set RAX(%rsp) */
+@@ -364,7 +364,7 @@ cstar_tracesys:
+ 	movq $-ENOSYS,RAX(%rsp)	/* ptrace can change this for a bad syscall */
+ 	movq %rsp,%rdi        /* &pt_regs -> arg1 */
+ 	call syscall_trace_enter
+-	LOAD_ARGS32 1	/* reload args from stack in case ptrace changed it */
++	RESTORE_REGS32 1	/* reload regs from stack in case ptrace changed it */
+ 	RESTORE_EXTRA_REGS
+ 	xchgl %ebp,%r9d
+ 	cmpq $(IA32_NR_syscalls-1),%rax
+@@ -442,7 +442,7 @@ ia32_tracesys:
+ 	movq $-ENOSYS,RAX(%rsp)	/* ptrace can change this for a bad syscall */
+ 	movq %rsp,%rdi        /* &pt_regs -> arg1 */
+ 	call syscall_trace_enter
+-	LOAD_ARGS32	/* reload args from stack in case ptrace changed it */
++	RESTORE_REGS32	/* reload args from stack in case ptrace changed it */
+ 	RESTORE_EXTRA_REGS
+ 	cmpq $(IA32_NR_syscalls-1),%rax
+ 	ja  int_ret_from_sys_call	/* ia32_tracesys has set RAX(%rsp) */
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 8c6a01d..e9bbe02 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -62,7 +62,7 @@
+ 
+ 
+ #ifndef CONFIG_PREEMPT
+-#define retint_kernel retint_restore_args
++#define retint_kernel retint_restore_c_regs
+ #endif
+ 
+ #ifdef CONFIG_PARAVIRT
+@@ -494,7 +494,7 @@ int_check_syscall_exit_work:
+ 	call syscall_trace_leave
+ 	popq_cfi %rdi
+ 	andl $~(_TIF_WORK_SYSCALL_EXIT|_TIF_SYSCALL_EMU),%edi
+-	jmp int_restore_rest
++	jmp int_restore_extra_regs
+ 
+ int_signal:
+ 	testl $_TIF_DO_NOTIFY_MASK,%edx
+@@ -503,7 +503,7 @@ int_signal:
+ 	xorl %esi,%esi		# oldset -> arg2
+ 	call do_notify_resume
+ 1:	movl $_TIF_WORK_MASK,%edi
+-int_restore_rest:
++int_restore_extra_regs:
+ 	RESTORE_EXTRA_REGS
+ 	DISABLE_INTERRUPTS(CLBR_NONE)
+ 	TRACE_IRQS_OFF
+@@ -742,15 +742,15 @@ retint_swapgs:		/* return to user-space */
+ 	DISABLE_INTERRUPTS(CLBR_ANY)
+ 	TRACE_IRQS_IRETQ
+ 	SWAPGS
+-	jmp restore_args
++	jmp restore_c_regs
+ 
+-retint_restore_args:	/* return to kernel space */
++retint_restore_c_regs:	/* return to kernel space */
+ 	DISABLE_INTERRUPTS(CLBR_ANY)
+ 	/*
+ 	 * The iretq could re-enable interrupts:
+ 	 */
+ 	TRACE_IRQS_IRETQ
+-restore_args:
++restore_c_regs:
+ 	RESTORE_C_REGS
+ 	REMOVE_PTREGS_FROM_STACK 8
+ 
+@@ -855,9 +855,9 @@ retint_signal:
+ 	/* rcx:	 threadinfo. interrupts off. */
+ ENTRY(retint_kernel)
+ 	cmpl $0,PER_CPU_VAR(__preempt_count)
+-	jnz  retint_restore_args
++	jnz  retint_restore_c_regs
+ 	bt   $9,EFLAGS(%rsp)	/* interrupts off? */
+-	jnc  retint_restore_args
++	jnc  retint_restore_c_regs
+ 	call preempt_schedule_irq
+ 	jmp exit_intr
+ #endif
+-- 
+1.8.1.4
 
-Yes, I suppose we could do that; IIRC the reason I left it where it is
-is because there are more tests in lib/.
-
---CUR78EuMd8EhT3+C
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT4PAtAAoJEHZH4aRLwOS6KS4P/1SG0l5aJ4ARosgq2BdAG2pA
-UfLlb0M+WmHAge4mOFfbyZunFBqJ/7p2hhATWLwUW+/o7X9V+TI0QoZGkTB5ePv0
-Z/jchoe1XHVnS3aaU45U36+3g/DlzDVxONBtmBoEXve2pmqb9gDhX/iG5vyRzl5P
-oby/qqvCBdiUZDBT/wZt9NlI6f4OO49Ea5KXobFjK6+MS8XDKmZrofVY9DOw5bQi
-kDnUCvAhLRbfLO7jR6o6IJ3IKmRBl4Y/RpeFCJ2XADbFDjzG51z71Hx6vj2Em1+t
-9wKHiLetC6l/xYiZ+5Wo8LvpAetw0a7WSBDLjmptLUatBcn5XdZwQexekGdUsZwn
-O4+lPw5n1jkWkyGtVqCavO1xQCXVDyozx7yD3YM7pAmK5o3MX8r9wOex1OTAKgIs
-nuBwNHQHNTMH8BUZi++pL5hHPXzS3cCcnpOY/2Jy971cCqPh9Vqd380tnG1fCOdb
-xel+oS4hfWnAoZ7TU2lb+V9EfJGWucUqPQ0iJGiyLnCpIT6mS1BzbkBNy8pFFV1V
-MCDnAsYzmRMYpqaUH6sj9dPQaWDFPNu6xloJh1AVuS9OiWZdK0IdTHtsk+n0ScUB
-EGMg6f4t5yGzYacwxqqg6yTJEM0kp+cz2+N4fkEcIKhmSI3vVgdYCT9OfMqJcAJ4
-yqghQJD2w5MGP9Ve9Str
-=Unea
------END PGP SIGNATURE-----
-
---CUR78EuMd8EhT3+C--
