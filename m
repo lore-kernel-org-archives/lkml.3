@@ -1,27 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821AbaHESLK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:11:10 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:49708 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532AbaHESLI (ORCPT
+	id S1754242AbaHESOE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:14:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52083 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688AbaHESN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:11:08 -0400
+	Tue, 5 Aug 2014 14:13:59 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.15 01/42] powerpc/perf: Fix MMCR2 handling for EBB
+Date: Tue,  5 Aug 2014 11:13:15 -0700
+Message-Id: <20140805181321.067283941@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
+References: <20140805181321.018370988@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Date: Tue, 5 Aug 2014 14:11:07 -0400
-Message-ID: <CAPDOMVjiHC-AJJ1njXUuB=1YoZVra4Oky7m3WerKeWfnNwL+Xg@mail.gmail.com>
-Subject: Trolling Issues
-From: Nick Krause <xerofoify@gmail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I want to apologize to all the other maintainers who's time I wasted.
-I am going to check all my work through
-the kernel newbies list before I sent it out in order to stop wasting
-the maintainers time as that way I can
-learn well and not waste people's time who are working hard to may
-linux as good as it can be.
-Cheers Nick
+3.15-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Michael Ellerman <mpe@ellerman.id.au>
+
+commit 8903461c9bc56fcb041fb92d054e2529951770b6 upstream.
+
+In the recent commit b50a6c584bb4 "Clear MMCR2 when enabling PMU", I
+screwed up the handling of MMCR2 for tasks using EBB.
+
+We must make sure we set MMCR2 *before* ebb_switch_in(), otherwise we
+overwrite the value of MMCR2 that userspace may have written. That
+potentially breaks a task that uses EBB and manually uses MMCR2 for
+event freezing.
+
+Fixes: b50a6c584bb4 ("powerpc/perf: Clear MMCR2 when enabling PMU")
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/powerpc/perf/core-book3s.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -1307,6 +1307,9 @@ static void power_pmu_enable(struct pmu
+  out_enable:
+ 	pmao_restore_workaround(ebb);
+ 
++	if (ppmu->flags & PPMU_ARCH_207S)
++		mtspr(SPRN_MMCR2, 0);
++
+ 	mmcr0 = ebb_switch_in(ebb, cpuhw->mmcr[0]);
+ 
+ 	mb();
+@@ -1315,9 +1318,6 @@ static void power_pmu_enable(struct pmu
+ 
+ 	write_mmcr0(cpuhw, mmcr0);
+ 
+-	if (ppmu->flags & PPMU_ARCH_207S)
+-		mtspr(SPRN_MMCR2, 0);
+-
+ 	/*
+ 	 * Enable instruction sampling if necessary
+ 	 */
+
+
