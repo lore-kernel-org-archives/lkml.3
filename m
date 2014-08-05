@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119AbaHESmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:42:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52267 "EHLO
+	id S1756209AbaHESna (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:43:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52266 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754818AbaHESOX (ORCPT
+	with ESMTP id S1753820AbaHESOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:23 -0400
+	Tue, 5 Aug 2014 14:14:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.14 01/39] crypto: arm-aes - fix encryption of unaligned data
-Date: Tue,  5 Aug 2014 11:13:38 -0700
-Message-Id: <20140805181336.073701192@linuxfoundation.org>
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.15 18/42] iio:bma180: Fix scale factors to report correct acceleration units
+Date: Tue,  5 Aug 2014 11:13:32 -0700
+Message-Id: <20140805181321.566894405@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
-References: <20140805181336.030349158@linuxfoundation.org>
+In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
+References: <20140805181321.018370988@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,72 +26,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Peter Meerwald <pmeerw@pmeerw.net>
 
-commit f3c400ef473e00c680ea713a66196b05870b3710 upstream.
+commit 381676d5e86596b11e22a62f196e192df6091373 upstream.
 
-Fix the same alignment bug as in arm64 - we need to pass residue
-unprocessed bytes as the last argument to blkcipher_walk_done.
+The userspace interface for acceleration sensors is documented as using
+m/s^2 units [Documentation/ABI/testing/sysfs-bus-iio]
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+The fullscale raw values for the BMA80 corresponds to -/+ 1, 1.5, 2, etc G
+depending on the selected mode.
+
+The scale table was converting to G rather than m/s^2.
+Change the scaling table to match the documented interface.
+
+See commit 71702e6e, iio: mma8452: Use correct acceleration units,
+for a related fix.
+
+Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
+Cc: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/crypto/aesbs-glue.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/iio/accel/bma180.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/arm/crypto/aesbs-glue.c
-+++ b/arch/arm/crypto/aesbs-glue.c
-@@ -137,7 +137,7 @@ static int aesbs_cbc_encrypt(struct blkc
- 				dst += AES_BLOCK_SIZE;
- 			} while (--blocks);
- 		}
--		err = blkcipher_walk_done(desc, &walk, 0);
-+		err = blkcipher_walk_done(desc, &walk, walk.nbytes % AES_BLOCK_SIZE);
- 	}
- 	return err;
- }
-@@ -158,7 +158,7 @@ static int aesbs_cbc_decrypt(struct blkc
- 		bsaes_cbc_encrypt(walk.src.virt.addr, walk.dst.virt.addr,
- 				  walk.nbytes, &ctx->dec, walk.iv);
- 		kernel_neon_end();
--		err = blkcipher_walk_done(desc, &walk, 0);
-+		err = blkcipher_walk_done(desc, &walk, walk.nbytes % AES_BLOCK_SIZE);
- 	}
- 	while (walk.nbytes) {
- 		u32 blocks = walk.nbytes / AES_BLOCK_SIZE;
-@@ -182,7 +182,7 @@ static int aesbs_cbc_decrypt(struct blkc
- 			dst += AES_BLOCK_SIZE;
- 			src += AES_BLOCK_SIZE;
- 		} while (--blocks);
--		err = blkcipher_walk_done(desc, &walk, 0);
-+		err = blkcipher_walk_done(desc, &walk, walk.nbytes % AES_BLOCK_SIZE);
- 	}
- 	return err;
- }
-@@ -268,7 +268,7 @@ static int aesbs_xts_encrypt(struct blkc
- 		bsaes_xts_encrypt(walk.src.virt.addr, walk.dst.virt.addr,
- 				  walk.nbytes, &ctx->enc, walk.iv);
- 		kernel_neon_end();
--		err = blkcipher_walk_done(desc, &walk, 0);
-+		err = blkcipher_walk_done(desc, &walk, walk.nbytes % AES_BLOCK_SIZE);
- 	}
- 	return err;
- }
-@@ -292,7 +292,7 @@ static int aesbs_xts_decrypt(struct blkc
- 		bsaes_xts_decrypt(walk.src.virt.addr, walk.dst.virt.addr,
- 				  walk.nbytes, &ctx->dec, walk.iv);
- 		kernel_neon_end();
--		err = blkcipher_walk_done(desc, &walk, 0);
-+		err = blkcipher_walk_done(desc, &walk, walk.nbytes % AES_BLOCK_SIZE);
- 	}
- 	return err;
- }
+--- a/drivers/iio/accel/bma180.c
++++ b/drivers/iio/accel/bma180.c
+@@ -68,13 +68,13 @@
+ /* Defaults values */
+ #define BMA180_DEF_PMODE	0
+ #define BMA180_DEF_BW		20
+-#define BMA180_DEF_SCALE	250
++#define BMA180_DEF_SCALE	2452
+ 
+ /* Available values for sysfs */
+ #define BMA180_FLP_FREQ_AVAILABLE \
+ 	"10 20 40 75 150 300"
+ #define BMA180_SCALE_AVAILABLE \
+-	"0.000130 0.000190 0.000250 0.000380 0.000500 0.000990 0.001980"
++	"0.001275 0.001863 0.002452 0.003727 0.004903 0.009709 0.019417"
+ 
+ struct bma180_data {
+ 	struct i2c_client *client;
+@@ -94,7 +94,7 @@ enum bma180_axis {
+ };
+ 
+ static int bw_table[] = { 10, 20, 40, 75, 150, 300 }; /* Hz */
+-static int scale_table[] = { 130, 190, 250, 380, 500, 990, 1980 };
++static int scale_table[] = { 1275, 1863, 2452, 3727, 4903, 9709, 19417 };
+ 
+ static int bma180_get_acc_reg(struct bma180_data *data, enum bma180_axis axis)
+ {
 
 
