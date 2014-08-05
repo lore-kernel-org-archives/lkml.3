@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639AbaHEQ1M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 12:27:12 -0400
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:57708 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363AbaHEQ1K (ORCPT
+	id S1755829AbaHEQaB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 12:30:01 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:40079 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919AbaHEQaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 12:27:10 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peng Tao <bergwolf@gmail.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Joe Perches <joe@perches.com>, Oleg Drokin <green@linuxhacker.ru>,
-        devel@driverdev.osuosl.org (open list:STAGING SUBSYSTEM),
-        linux-kernel@vger.kernel.org (open list)
-Cc: geert@linux-m68k.org, stable@vger.kernel.org
-Subject: [PATCH 1/1] staging: lustre: Remove circular dependency on header
-Date: Tue,  5 Aug 2014 12:27:15 -0400
-Message-Id: <1407256036-18658-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 5 Aug 2014 12:30:00 -0400
+Date: Tue, 5 Aug 2014 12:29:56 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: remove unused/deprecated read_cpuid_part_number()
+In-Reply-To: <2694769.svrdKA2rqt@amdc1032>
+Message-ID: <alpine.LFD.2.11.1408051228480.6061@knanqh.ubzr>
+References: <2694769.svrdKA2rqt@amdc1032>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch fixes a build error on sparc32. I think it should go to
-stable 3.16.
+On Tue, 5 Aug 2014, Bartlomiej Zolnierkiewicz wrote:
 
-Remove a circular dependency on atomic.h header file which leads to compilation
-failure on sparc32 as reported here:
-http://kisskb.ellerman.id.au/kisskb/buildresult/11340509/
+> Commit af040ffc9ba1 ("ARM: make it easier to check the CPU part
+> number correctly") has left (now unused in the upstream tree and
+> marked as deprecated) read_cpuid_part_number() while changing
+> the way it works (using the old function with the definitions will
+> now always evaluate as false).  This causes problems with porting
+> older code to new kernels as the code compiles (with warnings but
+> they are very easy to miss) but it can fail silently or work just
+> fine depending on the used hardware.
+> 
+> Remove unused/deprecated read_cpuid_part_number() so developers
+> have to update their code during build time instead of running into
+> tricky runtime problems later.
+> 
+> Please see the commit af040ffc9ba1 for details on how to convert
+> your old out-of-tree code to use read_cpuid_part() instead of
+> read_cpuid_part_number().
+> 
+> Cc: Nicolas Pitre <nico@linaro.org>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-The specific dependency is as follows:
+If there are no more in-tree users then it should go indeed.
 
-In file included from arch/sparc/include/asm/smp_32.h:24:0,
-                 from arch/sparc/include/asm/smp.h:6,
-                 from arch/sparc/include/asm/switch_to_32.h:4,
-                 from arch/sparc/include/asm/switch_to.h:6,
-                 from arch/sparc/include/asm/ptrace.h:84,
-                 from arch/sparc/include/asm/processor_32.h:16,
-                 from arch/sparc/include/asm/processor.h:6,
-                 from arch/sparc/include/asm/barrier_32.h:4,
-                 from arch/sparc/include/asm/barrier.h:6,
-                 from arch/sparc/include/asm/atomic_32.h:17,
-                 from arch/sparc/include/asm/atomic.h:6,
-                 from drivers/staging/lustre/lustre/obdclass/class_obd.c:38
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-CC: stable@vger.kernel.org
----
- drivers/staging/lustre/lustre/obdclass/class_obd.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/lustre/lustre/obdclass/class_obd.c b/drivers/staging/lustre/lustre/obdclass/class_obd.c
-index 8b19f3c..701c6a7 100644
---- a/drivers/staging/lustre/lustre/obdclass/class_obd.c
-+++ b/drivers/staging/lustre/lustre/obdclass/class_obd.c
-@@ -35,7 +35,7 @@
-  */
- 
- #define DEBUG_SUBSYSTEM S_CLASS
--# include <asm/atomic.h>
-+# include <linux/atomic.h>
- 
- #include "../include/obd_support.h"
- #include "../include/obd_class.h"
--- 
-1.9.1
-
+> ---
+>  arch/arm/include/asm/cputype.h |    5 -----
+>  1 file changed, 5 deletions(-)
+> 
+> Index: b/arch/arm/include/asm/cputype.h
+> ===================================================================
+> --- a/arch/arm/include/asm/cputype.h	2014-08-04 15:09:30.166988335 +0200
+> +++ b/arch/arm/include/asm/cputype.h	2014-08-05 15:40:03.793317783 +0200
+> @@ -182,11 +182,6 @@ static inline unsigned int __attribute_c
+>  	return read_cpuid_id() & 0xff00fff0;
+>  }
+>  
+> -static inline unsigned int __attribute_const__ __deprecated read_cpuid_part_number(void)
+> -{
+> -	return read_cpuid_id() & 0xFFF0;
+> -}
+> -
+>  static inline unsigned int __attribute_const__ xscale_cpu_arch_version(void)
+>  {
+>  	return read_cpuid_id() & ARM_CPU_XSCALE_ARCH_MASK;
+> 
+> 
