@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695AbaHESkh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:40:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52286 "EHLO
+	id S1755663AbaHESkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:40:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52266 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753560AbaHESO3 (ORCPT
+	with ESMTP id S1754403AbaHESO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Aug 2014 14:14:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        roma1390@gmail.com, Anssi Hannula <anssi.hannula@iki.fi>,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.14 19/39] dm cache: fix race affecting dirty block count
-Date: Tue,  5 Aug 2014 11:13:56 -0700
-Message-Id: <20140805181336.621475612@linuxfoundation.org>
+        Greg Thelen <gthelen@google.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.14 18/39] dm bufio: fully initialize shrinker
+Date: Tue,  5 Aug 2014 11:13:55 -0700
+Message-Id: <20140805181336.593223657@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
 References: <20140805181336.030349158@linuxfoundation.org>
@@ -29,87 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: Greg Thelen <gthelen@google.com>
 
-commit 44fa816bb778edbab6b6ddaaf24908dd6295937e upstream.
+commit d8c712ea471ce7a4fd1734ad2211adf8469ddddc upstream.
 
-nr_dirty is updated without locking, causing it to drift so that it is
-non-zero (either a small positive integer, or a very large one when an
-underflow occurs) even when there are no actual dirty blocks.  This was
-due to a race between the workqueue and map function accessing nr_dirty
-in parallel without proper protection.
+1d3d4437eae1 ("vmscan: per-node deferred work") added a flags field to
+struct shrinker assuming that all shrinkers were zero filled.  The dm
+bufio shrinker is not zero filled, which leaves arbitrary kmalloc() data
+in flags.  So far the only defined flags bit is SHRINKER_NUMA_AWARE.
+But there are proposed patches which add other bits to shrinker.flags
+(e.g. memcg awareness).
 
-People were seeing under runs due to a race on increment/decrement of
-nr_dirty, see: https://lkml.org/lkml/2014/6/3/648
+Rather than simply initializing the shrinker, this patch uses kzalloc()
+when allocating the dm_bufio_client to ensure that the embedded shrinker
+and any other similar structures are zeroed.
 
-Fix this by using an atomic_t for nr_dirty.
+This fixes theoretical over aggressive shrinking of dm bufio objects.
+If the uninitialized dm_bufio_client.shrinker.flags contains
+SHRINKER_NUMA_AWARE then shrink_slab() would call the dm shrinker for
+each numa node rather than just once.  This has been broken since 3.12.
 
-Reported-by: roma1390@gmail.com
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: Mikulas Patocka <mpatocka@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-target.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/md/dm-bufio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -231,7 +231,7 @@ struct cache {
- 	/*
- 	 * cache_size entries, dirty if set
- 	 */
--	dm_cblock_t nr_dirty;
-+	atomic_t nr_dirty;
- 	unsigned long *dirty_bitset;
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -1541,7 +1541,7 @@ struct dm_bufio_client *dm_bufio_client_
+ 	BUG_ON(block_size < 1 << SECTOR_SHIFT ||
+ 	       (block_size & (block_size - 1)));
  
- 	/*
-@@ -493,7 +493,7 @@ static bool is_dirty(struct cache *cache
- static void set_dirty(struct cache *cache, dm_oblock_t oblock, dm_cblock_t cblock)
- {
- 	if (!test_and_set_bit(from_cblock(cblock), cache->dirty_bitset)) {
--		cache->nr_dirty = to_cblock(from_cblock(cache->nr_dirty) + 1);
-+		atomic_inc(&cache->nr_dirty);
- 		policy_set_dirty(cache->policy, oblock);
- 	}
- }
-@@ -502,8 +502,7 @@ static void clear_dirty(struct cache *ca
- {
- 	if (test_and_clear_bit(from_cblock(cblock), cache->dirty_bitset)) {
- 		policy_clear_dirty(cache->policy, oblock);
--		cache->nr_dirty = to_cblock(from_cblock(cache->nr_dirty) - 1);
--		if (!from_cblock(cache->nr_dirty))
-+		if (atomic_dec_return(&cache->nr_dirty) == 0)
- 			dm_table_event(cache->ti->table);
- 	}
- }
-@@ -2286,7 +2285,7 @@ static int cache_create(struct cache_arg
- 	atomic_set(&cache->quiescing_ack, 0);
- 
- 	r = -ENOMEM;
--	cache->nr_dirty = 0;
-+	atomic_set(&cache->nr_dirty, 0);
- 	cache->dirty_bitset = alloc_bitset(from_cblock(cache->cache_size));
- 	if (!cache->dirty_bitset) {
- 		*error = "could not allocate dirty bitset";
-@@ -2828,7 +2827,7 @@ static void cache_status(struct dm_targe
- 
- 		residency = policy_residency(cache->policy);
- 
--		DMEMIT("%u %llu/%llu %u %llu/%llu %u %u %u %u %u %u %llu ",
-+		DMEMIT("%u %llu/%llu %u %llu/%llu %u %u %u %u %u %u %lu ",
- 		       (unsigned)(DM_CACHE_METADATA_BLOCK_SIZE >> SECTOR_SHIFT),
- 		       (unsigned long long)(nr_blocks_metadata - nr_free_blocks_metadata),
- 		       (unsigned long long)nr_blocks_metadata,
-@@ -2841,7 +2840,7 @@ static void cache_status(struct dm_targe
- 		       (unsigned) atomic_read(&cache->stats.write_miss),
- 		       (unsigned) atomic_read(&cache->stats.demotion),
- 		       (unsigned) atomic_read(&cache->stats.promotion),
--		       (unsigned long long) from_cblock(cache->nr_dirty));
-+		       (unsigned long) atomic_read(&cache->nr_dirty));
- 
- 		if (writethrough_mode(&cache->features))
- 			DMEMIT("1 writethrough ");
+-	c = kmalloc(sizeof(*c), GFP_KERNEL);
++	c = kzalloc(sizeof(*c), GFP_KERNEL);
+ 	if (!c) {
+ 		r = -ENOMEM;
+ 		goto bad_client;
 
 
