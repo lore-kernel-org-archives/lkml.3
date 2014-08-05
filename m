@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242AbaHESOE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:14:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52083 "EHLO
+	id S1754636AbaHESOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:14:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52179 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753688AbaHESN7 (ORCPT
+	with ESMTP id S1754403AbaHESOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:13:59 -0400
+	Tue, 5 Aug 2014 14:14:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.15 01/42] powerpc/perf: Fix MMCR2 handling for EBB
-Date: Tue,  5 Aug 2014 11:13:15 -0700
-Message-Id: <20140805181321.067283941@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.15 29/42] x86, espfix: Fix broken header guard
+Date: Tue,  5 Aug 2014 11:13:43 -0700
+Message-Id: <20140805181321.881893273@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -29,48 +29,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <mpe@ellerman.id.au>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 8903461c9bc56fcb041fb92d054e2529951770b6 upstream.
+commit 20b68535cd27183ebd3651ff313afb2b97dac941 upstream.
 
-In the recent commit b50a6c584bb4 "Clear MMCR2 when enabling PMU", I
-screwed up the handling of MMCR2 for tasks using EBB.
+Header guard is #ifndef, not #ifdef...
 
-We must make sure we set MMCR2 *before* ebb_switch_in(), otherwise we
-overwrite the value of MMCR2 that userspace may have written. That
-potentially breaks a task that uses EBB and manually uses MMCR2 for
-event freezing.
-
-Fixes: b50a6c584bb4 ("powerpc/perf: Clear MMCR2 when enabling PMU")
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/perf/core-book3s.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/espfix.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -1307,6 +1307,9 @@ static void power_pmu_enable(struct pmu
-  out_enable:
- 	pmao_restore_workaround(ebb);
+--- a/arch/x86/include/asm/espfix.h
++++ b/arch/x86/include/asm/espfix.h
+@@ -1,4 +1,4 @@
+-#ifdef _ASM_X86_ESPFIX_H
++#ifndef _ASM_X86_ESPFIX_H
+ #define _ASM_X86_ESPFIX_H
  
-+	if (ppmu->flags & PPMU_ARCH_207S)
-+		mtspr(SPRN_MMCR2, 0);
-+
- 	mmcr0 = ebb_switch_in(ebb, cpuhw->mmcr[0]);
- 
- 	mb();
-@@ -1315,9 +1318,6 @@ static void power_pmu_enable(struct pmu
- 
- 	write_mmcr0(cpuhw, mmcr0);
- 
--	if (ppmu->flags & PPMU_ARCH_207S)
--		mtspr(SPRN_MMCR2, 0);
--
- 	/*
- 	 * Enable instruction sampling if necessary
- 	 */
+ #ifdef CONFIG_X86_64
 
 
