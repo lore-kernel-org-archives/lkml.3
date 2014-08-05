@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046AbaHEEAK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 00:00:10 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54036 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256AbaHEEAH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 00:00:07 -0400
-Message-ID: <53E056C2.9070101@linux.vnet.ibm.com>
-Date: Tue, 05 Aug 2014 12:00:02 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754229AbaHEEDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 00:03:19 -0400
+Received: from ozlabs.org ([103.22.144.67]:38112 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753492AbaHEEDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 00:03:18 -0400
+Date: Tue, 5 Aug 2014 14:03:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: is the kgdb tree still relevant?
+Message-ID: <20140805140307.3a208980@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, gleb@kernel.org, pbonzini@redhat.com
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: MMU: Use hashtable for MMU page hash
-References: <1407185689-27727-1-git-send-email-sasha.levin@oracle.com>
-In-Reply-To: <1407185689-27727-1-git-send-email-sasha.levin@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080504-4790-0000-0000-00000310C9A6
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/8=D+qaqoPP=qjfzISv2ixip"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2014 04:54 AM, Sasha Levin wrote:
-> Use the kernel hashtable interface instead of the hlist interface.
-> This allows us to eliminate some unneeded code and make the code
-> simpler.
+--Sig_/8=D+qaqoPP=qjfzISv2ixip
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The side effect is that the hash function is changed, the current
-way is:
-	gfn & ((1 << KVM_MMU_HASH_SHIFT) - 1);
+Hi Jason,
 
-Guest memory is always continuous and big region, i guess it's better
-than the one you introduced.
+I have noticed that the kgdb tree contains 10 commits the last of which
+was committed on March 3, 2013.  Should I drop this tree form
+linux-next?
 
-Anyway, benchmark is needed and always welcome. :)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_/8=D+qaqoPP=qjfzISv2ixip
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT4FeAAAoJEMDTa8Ir7ZwVHMMQAJcDzBBjoo7liFM6rWvrMry9
+ciI+mtWnDehlPILXJYEJ5cJkvjk8nHUtkXey3n6r2CAiRtAfGq5MiCVQZc0YWhqy
+Qyfpgj0eEdEBvaEx0ZHCbnXzNWprGLE6MfqUqrlkKjCqmWJadqENf2VNHfGhasnH
+nK7/TD4tyEOBwdc2bt5ZWj8eNn0LU8KsGFkgwWwEW/lCI6NugLAGN8utdm4BPSW7
+LyQC1+XImALnYDRj+5LKo2fquiRA5N+EudRFfzl6LzPW1whVdL+UZEXkOESizI3O
+jZOemYrq57GPePC8erwM17PP2V7pn2Byvqrs6bq+LVmbEZpej5nEDkLuiqS18+E7
+oN5lsKSt4GA3FIXnS6oNBv+tPUkJAG6uMEQ0xBhrzc8/aEvfNINElp8Cp9H/QAac
+KC/+2dhoEEbTPfyG5g8BEnS1N+MZXNUfYJdXCV4dOKInLd091OIFoYFEYPg3FQZt
+24B9kDGcZ/S9sIWA/WZ5YQOlkI171Ah6AtM4vMGS4PQz4pQn0gTQxf/AcHMwcGE7
+AY5Z3Ruhxk9aCu/NTqz1d4gpkFomAOw6I04PTFWhLheRLa2G1vstH4JxeStzTVyW
+OZNhx9FcqAUCbGnh+mvS7HGW2fa9EmcpNLqTJ+9M0Lc98Fm9//gV4bvWI+umYvrT
+cig/GHi1jqocSmiSC+oB
+=vGLd
+-----END PGP SIGNATURE-----
+
+--Sig_/8=D+qaqoPP=qjfzISv2ixip--
