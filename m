@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291AbaHEK4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 06:56:00 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:44595 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754901AbaHEKtB (ORCPT
+	id S1754897AbaHEKtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 06:49:00 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:9316 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583AbaHEKsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 06:49:01 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-94-53e0b69b2d7d
+	Tue, 5 Aug 2014 06:48:53 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-a1-53e0b693f17f
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
@@ -24,90 +24,73 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Tomasz Figa <tomasz.figa@gmail.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 12/29] DRM: Exynos: fix window clear code
-Date: Tue, 05 Aug 2014 12:47:40 +0200
-Message-id: <1407235677-26324-13-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH 03/29] clk: exynos: add missing smmu_g2d clock and update
+ comments
+Date: Tue, 05 Aug 2014 12:47:31 +0200
+Message-id: <1407235677-26324-4-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.9.2
 In-reply-to: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
 References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xq7qztz0INjjXLmnxd9IxdovmxevZ
-	LCbdn8BisWC/tUXn7A3sFr0LrrJZnG16w27ROXEJu8WXKw+ZLDY9vsZqcXnXHDaLGef3MVms
-	PXKX3eLU9c9sFv96DzJanDl9idXi/54d7BaH37SzWhx5uJvdYtWuP4wWt3/zOYh6PDk4j8nj
-	969JjB47Z91l95jdMZPVY9OqTjaP/XPXsHtsXlLvcfvfY2aPyTeWM3pcOdHE6tHb/I7NY8vV
-	dhaPvi2rGD0+b5IL4IvisklJzcksSy3St0vgylg0eQVzwW6BimM7brM1MK7h7WLk5JAQMJG4
-	2fuFHcIWk7hwbz1bFyMXh5DAUkaJ/Ze2MEI4fUwSM6f2MYJUsQkYSnS97QKrEhHoZZTob/rB
-	BOIwC6xjldjfe50FpEpYwFLiZvN0JhCbRUBV4tucfWDdvAKeEt9frGaC2Ccn8f/lCjCbEyh+
-	+OYBVhBbSMBD4ueGNewTGHkXMDKsYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/dxAiJna87GJce
-	szrEKMDBqMTDq7D3brAQa2JZcWXuIUYJDmYlEV6JNQ+ChXhTEiurUovy44tKc1KLDzEycXBK
-	NTDu/HBc9X2A9nfTmwnli26+LXPp1LA88OfZ4o86mafc5uxq3Ma+aNWqQMmcf28FT034fK+Z
-	a++DFb2818za2z6v2yfH9EOD7f7fjL0xU/9q7WTnOvNMwE14XnmCx8b35/Zf+7y0Rnq16vE7
-	Mz7s7Tx1oTbuu2Xahu0qGbF7n3a7/FLjK/t/7+iRZ0osxRmJhlrMRcWJAL2Rb+57AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xq7qTtz0INth8Sd7i76Rj7BbNi9ez
+	WUy6P4HFYsF+a4vO2RvYLXoXXGWzONv0ht2ic+ISdosvVx4yWWx6fI3V4vKuOWwWM87vY7JY
+	e+Quu8Wp65/ZLP71HmS0OHP6EqvF/z072C0Ov2lntTjycDe7xapdfxgtbv/mcxD1eHJwHpPH
+	71+TGD12zrrL7jG7Yyarx6ZVnWwe++euYffYvKTe4/a/x8wek28sZ/S4cqKJ1aO3+R2bx5ar
+	7SwefVtWMXp83iQXwBfFZZOSmpNZllqkb5fAlXHwdztTwUm+imvbYxsYV/J0MXJySAiYSHyf
+	+5AdwhaTuHBvPVsXIxeHkMBSRondzyewQjh9TBJ3Dn5jBKliEzCU6HrbBVYlItDLKNHf9IMJ
+	xGEWWMcqsb/3OgtIlbBAiMS8bQ1gNouAqsTRCVdYQWxeAQ+J7jtvoPbJSfx/uYIJxOYU8JQ4
+	fPMAWI0QUM3PDWvYJzDyLmBkWMUomlqaXFCclJ5rqFecmFtcmpeul5yfu4kREjlfdjAuPmZ1
+	iFGAg1GJh9fg9N1gIdbEsuLK3EOMEhzMSiK8EmseBAvxpiRWVqUW5ccXleakFh9iZOLglGpg
+	nH+m9W75+a28dSsE70R/bRf/nvAqz/JL8d9pL35U8rnNmvN0pdCrlceeWReo5M24oOSucuNZ
+	3LFnrxefL0lJfmfII2f4WCNlscEJxSdlt686ZgpERP+9uPrGfPH8cr4zm/g096v8mMMQ9Mm7
+	lu8zN/eUmFmNd/zDd/GUmM95V7pq3Y/DvH11G5RYijMSDbWYi4oTAcXms1V6AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To correctly disable hardware window during driver init, both enable bits
-(WINCONx_ENWIN in WINCON and SHADOWCON_CHx_ENABLE in SHADOWCON) must be
-cleared, otherwise hardware fails to re-enable such window later.
-
-While touching this function, also temporarily disable ctx->suspended flag
-to let fimd_wait_for_vblank function really to do its job.
+This patch adds missing smmu_g2d clock implementation and updates
+comment about Exynos4 clocks from 278-282 range. Those clocks are
+available on all Exynos4 SoC series, so the misleading comment has been
+removed.
 
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_fimd.c | 25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+ drivers/clk/samsung/clk-exynos4.c   |  1 +
+ include/dt-bindings/clock/exynos4.h | 10 +++++-----
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimd.c b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
-index 41904df..7a363d2 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_fimd.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
-@@ -165,27 +165,38 @@ static void fimd_wait_for_vblank(struct exynos_drm_manager *mgr)
- 		DRM_DEBUG_KMS("vblank wait timed out.\n");
- }
- 
--
- static void fimd_clear_channel(struct exynos_drm_manager *mgr)
- {
- 	struct fimd_context *ctx = mgr->ctx;
--	int win, ch_enabled = 0;
-+	int state, win, ch_enabled = 0;
- 
- 	DRM_DEBUG_KMS("%s\n", __FILE__);
- 
- 	/* Check if any channel is enabled. */
- 	for (win = 0; win < WINDOWS_NR; win++) {
--		u32 val = readl(ctx->regs + SHADOWCON);
--		if (val & SHADOWCON_CHx_ENABLE(win)) {
--			val &= ~SHADOWCON_CHx_ENABLE(win);
--			writel(val, ctx->regs + SHADOWCON);
-+		u32 val = readl(ctx->regs + WINCON(win));
-+		if (val & WINCONx_ENWIN) {
-+			/* wincon */
-+			val &= ~WINCONx_ENWIN;
-+			writel(val, ctx->regs + WINCON(win));
-+
-+			/* unprotect windows */
-+			if (ctx->driver_data->has_shadowcon) {
-+				val = readl(ctx->regs + SHADOWCON);
-+				val &= ~SHADOWCON_CHx_ENABLE(win);
-+				writel(val, ctx->regs + SHADOWCON);
-+			}
- 			ch_enabled = 1;
- 		}
- 	}
- 
- 	/* Wait for vsync, as disable channel takes effect at next vsync */
--	if (ch_enabled)
-+	if (ch_enabled) {
-+		state = ctx->suspended;
-+		ctx->suspended = 0;
- 		fimd_wait_for_vblank(mgr);
-+		ctx->suspended = state;
-+	}
- }
- 
- static int fimd_mgr_initialize(struct exynos_drm_manager *mgr,
+diff --git a/drivers/clk/samsung/clk-exynos4.c b/drivers/clk/samsung/clk-exynos4.c
+index ac163d7..12a7cc3 100644
+--- a/drivers/clk/samsung/clk-exynos4.c
++++ b/drivers/clk/samsung/clk-exynos4.c
+@@ -1183,6 +1183,7 @@ static struct samsung_gate_clock exynos4x12_gate_clks[] __initdata = {
+ 	GATE(CLK_SPI1_ISP, "spi1_isp", "aclk200", E4X12_GATE_ISP1, 13,
+ 			CLK_IGNORE_UNUSED | CLK_GET_RATE_NOCACHE, 0),
+ 	GATE(CLK_G2D, "g2d", "aclk200", GATE_IP_DMC, 23, 0, 0),
++	GATE(CLK_SMMU_G2D, "smmu_g2d", "aclk200", GATE_IP_DMC, 24, 0, 0),
+ 	GATE(CLK_TMU_APBIF, "tmu_apbif", "aclk100", E4X12_GATE_IP_PERIR, 17, 0,
+ 		0),
+ };
+diff --git a/include/dt-bindings/clock/exynos4.h b/include/dt-bindings/clock/exynos4.h
+index 459bd2b..fb981635 100644
+--- a/include/dt-bindings/clock/exynos4.h
++++ b/include/dt-bindings/clock/exynos4.h
+@@ -115,11 +115,11 @@
+ #define CLK_SMMU_MFCR		275
+ #define CLK_G3D			276
+ #define CLK_G2D			277
+-#define CLK_ROTATOR		278 /* Exynos4210 only */
+-#define CLK_MDMA		279 /* Exynos4210 only */
+-#define CLK_SMMU_G2D		280 /* Exynos4210 only */
+-#define CLK_SMMU_ROTATOR	281 /* Exynos4210 only */
+-#define CLK_SMMU_MDMA		282 /* Exynos4210 only */
++#define CLK_ROTATOR		278
++#define CLK_MDMA		279
++#define CLK_SMMU_G2D		280
++#define CLK_SMMU_ROTATOR	281
++#define CLK_SMMU_MDMA		282
+ #define CLK_FIMD0		283
+ #define CLK_MIE0		284
+ #define CLK_MDNIE0		285 /* Exynos4412 only */
 -- 
 1.9.2
 
