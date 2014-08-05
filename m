@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797AbaHEUAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 16:00:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27761 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753438AbaHEUA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 16:00:29 -0400
-Date: Tue, 5 Aug 2014 21:58:21 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH 8/8] x86: add comments about various syscall
-	instructions, no code changes
-Message-ID: <20140805195821.GA30908@redhat.com>
-References: <1407250354-29525-1-git-send-email-dvlasenk@redhat.com> <1407250354-29525-9-git-send-email-dvlasenk@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407250354-29525-9-git-send-email-dvlasenk@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753943AbaHEUDt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 16:03:49 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57927 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764AbaHEUDs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 16:03:48 -0400
+Date: Tue, 05 Aug 2014 13:03:46 -0700 (PDT)
+Message-Id: <20140805.130346.2080401893280146356.davem@davemloft.net>
+To: thomas1206@gmail.com
+Cc: netdev@vger.kernel.org, haiyangz@microsoft.com, kys@microsoft.com,
+        olaf@aepfle.de, jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next] hyperv: Increase the buffer length for
+ netvsc_channel_cb()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1406908530-22667-1-git-send-email-haiyangz@microsoft.com>
+References: <1406908530-22667-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 05 Aug 2014 13:03:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05, Denys Vlasenko wrote:
->
-> This patch adds comments which explain in detail
-> what registers are modified by each of these instructions.
-> The comments are placed immediately before corresponding
-> entry and exit points.
+From: Haiyang Zhang <thomas1206@gmail.com>
+Date: Fri,  1 Aug 2014 15:55:30 +0000
 
-This is great ;) Thanks Denys!
+> When the buffer is too small for a packet from VMBus, a bigger buffer will be
+> allocated in netvsc_channel_cb() and retry reading the packet from VMBus.
+> Increasing this buffer size will reduce the retry overhead.
+> 
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: Dexuan Cui <decui@microsoft.com>
 
-Oleg.
+I'm not applying this, sorry.
 
+I said that because the structure that contains this buffer is now
+larger than a page, you should allocate the CB buffer externally
+via another kmalloc() or via the page allocator.
