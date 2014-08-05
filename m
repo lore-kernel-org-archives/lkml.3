@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877AbaHEViF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 17:38:05 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:25944 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753657AbaHEViD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 17:38:03 -0400
-Date: Tue, 5 Aug 2014 17:37:52 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/3] ftrace: Add a ftrace test collection
-Message-ID: <20140805173752.1de5f1c2@gandalf.local.home>
-In-Reply-To: <20140805024544.23693.66601.stgit@kbuild-fedora.novalocal>
-References: <20140805024544.23693.66601.stgit@kbuild-fedora.novalocal>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1753635AbaHEVno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 17:43:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36390 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752020AbaHEVnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 17:43:43 -0400
+Message-ID: <53E14FF1.50904@redhat.com>
+Date: Tue, 05 Aug 2014 17:43:13 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Aaron Lu <aaron.lu@intel.com>
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org, jhladky@redhat.com
+Subject: Re: [LKP] [sched/numa] a43455a1d57: +94.1% proc-vmstat.numa_hint_faults_local
+References: <53d70ee6.JsUEmW5dWsv8dev+%fengguang.wu@intel.com> <53D72FF5.90908@intel.com> <20140729023940.37b6aebc@annuminas.surriel.com> <20140729081712.GS20603@laptop.programming.kicks-ass.net> <20140729160437.4561742f@annuminas.surriel.com> <20140730021425.GA25023@aaronlu.sh.intel.com> <53D9003F.3050900@redhat.com> <20140731050454.GA9386@aaronlu.sh.intel.com>
+In-Reply-To: <20140731050454.GA9386@aaronlu.sh.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-This looks great. I'm a bit busy at the moment (just came back from
-vacation, and digging myself out of the hole that left me). But I
-definitely want this in. I have a bunch of tests too, that I can put on
-top of this. My tests are rather hacky, and hard code a lot of stuff in
-them, but they do test a bunch of features of ftrace. It shouldn't be
-too hard to include them here.
+On 07/31/2014 01:04 AM, Aaron Lu wrote:
 
-
-On Tue, 05 Aug 2014 02:45:44 +0000
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> Hi,
+>>>> +++ b/kernel/sched/fair.c @@ -924,10 +924,12 @@ static inline
+>>>> unsigned long group_faults_cpu(struct numa_group *group, int
+>>>> nid)
+>>>> 
+>>>> /* * These return the fraction of accesses done by a
+>>>> particular task, or - * task group, on a particular numa
+>>>> node.  The group weight is given a - * larger multiplier, in
+>>>> order to group tasks together that are almost - * evenly
+>>>> spread out between numa nodes. + * task group, on a
+>>>> particular numa node.  The NUMA move threshold + * prevents
+>>>> task moves with marginal improvement, and is set to 5%. */ 
+>>>> +#define NUMA_SCALE 1024 +#define NUMA_MOVE_THRESH (5 *
+>>>> NUMA_SCALE / 100)
+>> 
+>> It would be good to see if changing NUMA_MOVE_THRESH to 
+>> (NUMA_SCALE / 8) does the trick.
 > 
-> I'd like to introduce a collection of testcases for ftrace to
-> avoid regressions.
-> 
-> For a long time, we've tried to stabilize and extend ftrace
-> tracing infrastructure. This small test framework is a kind of
-> stabilizing work for ftrace. For the first step, this series
-> just introduces a few basic testcases. However, it is easy to
-> add additional tests. I'd like to ask you, ftrace developers,
-> to add tests for your features to ensure it will not be broken
-> by future works.
-> 
-> ftracetest is a tiny bash script so that anyone can easily
-> understand what it does. I think it is better to share and
-> discuss this tests before growing it.
-> 
->  - Is it enough to support bash script? (of course you can
->    invoke other commands from the script)
->  - What's the good naming method of testcases?
->  - Is any dependency check required?
-> 
-> BTW, I decided to put this under tools/testing/ftrace instead
-> of tools/testing/selftests/, because all tests requires root
-> privilege. It will be one of discussion points. Anyway,
-> it is easy to integrate this to the selftests.
+> With your 2nd patch and the above change, the result is:
 
-I agree. I think having its own directory is a good idea. Lets see what
-other people think. When I get time, I'll see if I can start a branch
-that pulls this in and start adding my own tests on top of it.
+Peter,
 
-Thanks!
+the threshold does not seem to make a difference for the
+performance tests on my system, I guess you can drop this
+patch :)
 
--- Steve
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJT4U/xAAoJEM553pKExN6DY4oH/ihJDmcCSZ0sKqGbyzJqLrFY
+KWCEXhfiN6hQJBrmeOvrbzlHsMH0LzYfgTVnc1nteAcnUXiBeqkgxwf+S1dmvoFr
+DZSxC+9tQ68ho0YcLd7rpEMfsnwOQAB9BgX8GxxwMb8q5zZ9Bz3r9NKVF0P2D3cj
+eeJ8Z3EGaKOteVhwAPVPeuTf7xwhqoqp4ujLgTL7BcaifqvGhi3+uo9/KcavE15d
+eale3MuhbCIsAQeyB4SwgGwilE/oZTPTos4BNdUrIyxO4nDajbeLb1qsLSHYcirH
+CA7++bTE9V6TvO1tBLVpeYdSAGcDKKUBHM6N+0UDwkR/Tp4oRyQ115Peo2H34ak=
+=kFxZ
+-----END PGP SIGNATURE-----
