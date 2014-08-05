@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188AbaHESZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:25:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52482 "EHLO
+	id S1755249AbaHESOp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:14:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52422 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755253AbaHESOq (ORCPT
+	with ESMTP id S1755185AbaHESOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:46 -0400
+	Tue, 5 Aug 2014 14:14:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Minfei Huang <huangminfei@ucloud.cn>, Joern Engel <joern@logfs.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 38/39] lib/btree.c: fix leak of whole btree nodes
-Date: Tue,  5 Aug 2014 11:14:15 -0700
-Message-Id: <20140805181337.190313782@linuxfoundation.org>
+        Saravana Kannan <skannan@codeaurora.org>,
+        "Srivatsa S. Bhat" <srivatsa@mit.edu>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 34/39] cpufreq: move policy kobj to policy->cpu at resume
+Date: Tue,  5 Aug 2014 11:14:11 -0700
+Message-Id: <20140805181337.068678065@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
 References: <20140805181336.030349158@linuxfoundation.org>
@@ -31,47 +31,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Minfei Huang <huangminfei@ucloud.cn>
+From: Viresh Kumar <viresh.kumar@linaro.org>
 
-commit c75b53af2f0043aff500af0a6f878497bef41bca upstream.
+commit 92c14bd9477a20a83144f08c0ca25b0308bf0730 upstream.
 
-I use btree from 3.14-rc2 in my own module.  When the btree module is
-removed, a warning arises:
+This is only relevant to implementations with multiple clusters, where clusters
+have separate clock lines but all CPUs within a cluster share it.
 
- kmem_cache_destroy btree_node: Slab cache still has objects
- CPU: 13 PID: 9150 Comm: rmmod Tainted: GF          O 3.14.0-rc2 #1
- Hardware name: Inspur NF5270M3/NF5270M3, BIOS CHEETAH_2.1.3 09/10/2013
- Call Trace:
-   dump_stack+0x49/0x5d
-   kmem_cache_destroy+0xcf/0xe0
-   btree_module_exit+0x10/0x12 [btree]
-   SyS_delete_module+0x198/0x1f0
-   system_call_fastpath+0x16/0x1b
+Consider a dual cluster platform with 2 cores per cluster. During suspend we
+start hot unplugging CPUs in order 1 to 3. When CPU2 is removed, policy->kobj
+would be moved to CPU3 and when CPU3 goes down we wouldn't free policy or its
+kobj as we want to retain permissions/values/etc.
 
-The cause is that it doesn't release the last btree node, when height = 1
-and fill = 1.
+Now on resume, we will get CPU2 before CPU3 and will call __cpufreq_add_dev().
+We will recover the old policy and update policy->cpu from 3 to 2 from
+update_policy_cpu().
 
-[akpm@linux-foundation.org: remove unneeded test of NULL]
-Signed-off-by: Minfei Huang <huangminfei@ucloud.cn>
-Cc: Joern Engel <joern@logfs.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+But the kobj is still tied to CPU3 and isn't moved to CPU2. We wouldn't create a
+link for CPU2, but would try that for CPU3 while bringing it online. Which will
+report errors as CPU3 already has kobj assigned to it.
+
+This bug got introduced with commit 42f921a, which overlooked this scenario.
+
+To fix this, lets move kobj to the new policy->cpu while bringing first CPU of a
+cluster back. Also do a WARN_ON() if kobject_move failed, as we would reach here
+only for the first CPU of a non-boot cluster. And we can't recover from this
+situation, if kobject_move() fails.
+
+Fixes: 42f921a6f10c (cpufreq: remove sysfs files for CPUs which failed to come back after resume)
+Cc:  3.13+ <stable@vger.kernel.org> # 3.13+
+Reported-and-tested-by: Bu Yitian <ybu@qti.qualcomm.com>
+Reported-by: Saravana Kannan <skannan@codeaurora.org>
+Reviewed-by: Srivatsa S. Bhat <srivatsa@mit.edu>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- lib/btree.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/lib/btree.c
-+++ b/lib/btree.c
-@@ -198,6 +198,7 @@ EXPORT_SYMBOL_GPL(btree_init);
+---
+ drivers/cpufreq/cpufreq.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1089,10 +1089,12 @@ static int __cpufreq_add_dev(struct devi
+ 	 * the creation of a brand new one. So we need to perform this update
+ 	 * by invoking update_policy_cpu().
+ 	 */
+-	if (frozen && cpu != policy->cpu)
++	if (frozen && cpu != policy->cpu) {
+ 		update_policy_cpu(policy, cpu);
+-	else
++		WARN_ON(kobject_move(&policy->kobj, &dev->kobj));
++	} else {
+ 		policy->cpu = cpu;
++	}
  
- void btree_destroy(struct btree_head *head)
- {
-+	mempool_free(head->node, head->mempool);
- 	mempool_destroy(head->mempool);
- 	head->mempool = NULL;
- }
+ 	policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
+ 	cpumask_copy(policy->cpus, cpumask_of(cpu));
 
 
