@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335AbaHEAMg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 20:12:36 -0400
-Received: from mga02.intel.com ([134.134.136.20]:11831 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752583AbaHEAMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 20:12:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,801,1400050800"; 
-   d="scan'208";a="553706167"
-Date: Mon, 4 Aug 2014 17:12:37 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "Nyman, Mathias" <mathias.nyman@intel.com>
-Subject: Re: Kernel Debugging Support
-Message-ID: <20140805001237.GA29701@xanatos>
-References: <CAPDOMVj5nifG8VQBB_UzNESBc+arxpCQ5sEOAYdb6Rr-KkDSHw@mail.gmail.com>
- <20140804164633.GA28436@xanatos>
- <A2CA0424C0A6F04399FB9E1CD98E0304844C4028@US01WEMBX2.internal.synopsys.com>
- <58974.1407180184@turing-police.cc.vt.edu>
- <A2CA0424C0A6F04399FB9E1CD98E0304844C4061@US01WEMBX2.internal.synopsys.com>
- <62334.1407184063@turing-police.cc.vt.edu>
- <A2CA0424C0A6F04399FB9E1CD98E0304844C411C@US01WEMBX2.internal.synopsys.com>
- <CAPDOMViK3ZzeDhNMi9oX_s8kZG45BGPwbmZeoT4u-nqg2rgwSg@mail.gmail.com>
- <A2CA0424C0A6F04399FB9E1CD98E0304844C415A@US01WEMBX2.internal.synopsys.com>
- <CAPDOMVjy9DzNVMg__MP7-0VAXYojDuGr6v+SoNfj3hhBKyHMYA@mail.gmail.com>
+	id S1753242AbaHEASp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 20:18:45 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:54455 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354AbaHEASo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 20:18:44 -0400
+Date: Mon, 4 Aug 2014 17:18:42 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch 2/3] mm, oom: remove unnecessary check for NULL
+ zonelist
+In-Reply-To: <20140802181327.GL9952@cmpxchg.org>
+Message-ID: <alpine.DEB.2.02.1408041710070.23228@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1407231814110.22326@chino.kir.corp.google.com> <alpine.DEB.2.02.1407231815090.22326@chino.kir.corp.google.com> <20140731152659.GB9952@cmpxchg.org> <alpine.DEB.2.02.1408010159500.4061@chino.kir.corp.google.com>
+ <20140801133444.GH9952@cmpxchg.org> <alpine.DEB.2.02.1408011434330.11532@chino.kir.corp.google.com> <20140802181327.GL9952@cmpxchg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPDOMVjy9DzNVMg__MP7-0VAXYojDuGr6v+SoNfj3hhBKyHMYA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 07:11:07PM -0400, Nick Krause wrote:
-> On Mon, Aug 4, 2014 at 7:03 PM, Paul Zimmerman
-> <Paul.Zimmerman@synopsys.com> wrote:
-> >> From: Nick Krause [mailto:xerofoify@gmail.com]
+On Sat, 2 Aug 2014, Johannes Weiner wrote:
 
-[snip]
+> > I see one concern: that panic_on_oom == 1 will not trigger on pagefault 
+> > when constrained by cpusets.  To address that, I'll state that, since 
+> > cpuset-constrained allocations are the allocation context for pagefaults,
+> > panic_on_oom == 1 should not trigger on pagefault when constrained by 
+> > cpusets.
+> 
+> I expressed my concern pretty clearly above: out_of_memory() wants the
+> zonelist that was used during the failed allocation, you are passing a
+> non-sensical value in there that only happens to have the same type.
+> 
 
-> >> Paul ,
-> >> My computer is rather old now as of Sandy Bridge days, so I probably
-> >> can't test the patch
-> >> on my own machine. However I will look at the code and see if I can
-> >> forward port it
-> >> against the usb git tree I have a current version of. In addition I
-> >> would like the new xhci
-> >> maintainers information in  order to send out a patch with the
-> >> Maintainer for xhci updated.
-> >
-> > Sarah already told you who the new maintainer is, and then CCed him
-> > on this thread. Hint: There is a file name 'MAINTAINERS' in the root
-> > of the kernel tree, which tells you who the maintainers are for all of
-> > the subsystems. Please read Documentation/SubmittingPatches, it has a
-> > lot of information like this that you need to know.
-> >
-> > --
-> > Paul
-> >
-> Thanks I will read this file and thanks for the information. I known
-> where the file is I will
-> add the information then.
+It's certainly meaningful, the particular zonelist chosen isn't important 
+because we don't care about the ordering and pagefaults are not going to 
+be using __GFP_THISNODE.  In this context, we only need to pass a zonelist 
+that includes all zones because constrained_alloc() tests if the 
+allocation is cpuset-constrained based on the gfp flags.  We'll get 
+CONSTRAINT_CPUSET in that case.
 
-You may be looking at an older version of MAINTAINERS.  Mathias has only
-been marked as the maintainer since 3.15.  Which kernel version are you
-working on?
+This is important because the behavior of panic_on_oom differs, as you 
+pointed out, depending on the constraint.  pagefault_out_of_memory(), with 
+my patch, will always get CONSTRAINT_CPUSET when needed and 
+check_panic_on_oom() will behave correctly now for cpusets.
 
-Sarah Sharp
+> We simply don't have the right information at the end of the page
+> fault handler to respect constrained allocations.  Case in point:
+> nodemask is unset from pagefault_out_of_memory(), so we still kill
+> based on mempolicy even though check_panic_on_oom() says it wouldn't.
+> 
+
+That is, in fact, the only last bit of information we need in the 
+pagefault handler to make correct decisions.  It's important, too, since 
+if the vma of the faulting address is constrained by a mempolicy, we want 
+to avoid needless killing a process that has a mempolicy with a disjoint 
+set of nodes.
+
+> The code change is not an adequate solution for the problem we have
+> here and the changelog is an insult to everybody who wants to make
+> sense of this from the git history later on.
+> 
+
+We can also address mempolicies by modifying the page fault handler and 
+passing the vma and faulting address to make the correct panic_on_oom 
+decisions but also filter processes that have mempolicies that consist 
+solely of a disjoint set of nodes.  I'll post that patch series as well.
