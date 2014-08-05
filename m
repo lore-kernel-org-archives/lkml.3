@@ -1,227 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933381AbaHEK6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 06:58:15 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:44938 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932067AbaHEK6K (ORCPT
+	id S933399AbaHEK6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 06:58:18 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:18304 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754783AbaHEKs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 06:58:10 -0400
-X-AuditID: cbfee690-b7f526d000003627-f5-53e0b8bf2c86
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, sachin.kamat@samsung.com,
-        "'Alan Stern'" <stern@rowland.harvard.edu>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1407235148-31790-1-git-send-email-gautam.vivek@samsung.com>
-In-reply-to: <1407235148-31790-1-git-send-email-gautam.vivek@samsung.com>
-Subject: Re: [PATCH RESEND] usb: ehci/ohci-exynos: Fix PHY getting sequence
-Date: Tue, 05 Aug 2014 19:58:07 +0900
-Message-id: <000d01cfb09c$239a8670$6acf9350$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+wmYOEdoQUqI49Rv+ogF3j2sCP1QAAi8uQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsVy+t8zQ939Ox4EG/ydam7RduUgu0Xz4vVs
-	FpcXXmK16F1wlc1i0+NrrBaXd81hs5hxfh+TxaJlrcwWVy6dYrOY8PsCmwOXx/65a9g9Ni+p
-	95h99wejR9+WVYwenzfJBbBGcdmkpOZklqUW6dslcGXsfLWTseCUdsXh6aUNjL1KXYycHBIC
-	JhIzjr5ihLDFJC7cW8/WxcjFISSwjFFi7cNtzDBFNxbOZgexhQSmM0rc+xsCUfSbUeL4+0tg
-	CTYBNYkvXw6D2SICHhJ3jy1nByliFuhikmi+fIIZottD4vS5DWBFnAKeEke69oOtFhbwlmj9
-	eRqshkVAVWL5xvUsXYwcHLwCthL/2sxAwrwCghI/Jt9jAbGZBbQk1u88zgRhy0tsXvOWGaRc
-	QkBd4tFfXYgTjCQaj05jgygRkdj34h0jyDkSAo0cEn9n7GWCWCUg8W3yIRaIXlmJTQeg/pWU
-	OLjiBssERolZSDbPQrJ5FpLNs5CsWMDIsopRNLUguaA4Kb3IRK84Mbe4NC9dLzk/dxMjJK4n
-	7GC8d8D6EGMy0PqJzFKiyfnAtJBXEm9obGZkYWpiamxkbmlGmrCSOK/ao6QgIYH0xJLU7NTU
-	gtSi+KLSnNTiQ4xMHJxSDYyKq15WnOI5+aFRKeTzrO8m4t/0Nn/7tXTBwvf7DiU3ZqrdqLzu
-	b7Qkqn89g4D3cm/Osg7f44VJZs/eccQx9lelTFv9Japp1qEZ3IV9F7hvOmauKjMW1eq9JJPQ
-	GJ6R8uTNSf+9K+e8UTj2Tql248dJU0/GpCT8V2YtzljubDnp546ld5VDjwQqsRRnJBpqMRcV
-	JwIAVw+ucAEDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jQd39Ox4EGxz8ZWjRduUgu0Xz4vVs
-	FpcXXmK16F1wlc1i0+NrrBaXd81hs5hxfh+TxaJlrcwWVy6dYrOY8PsCmwOXx/65a9g9Ni+p
-	95h99wejR9+WVYwenzfJBbBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp
-	5CXmptoqufgE6Lpl5gBdpaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPM
-	2PlqJ2PBKe2Kw9NLGxh7lboYOTkkBEwkbiyczQ5hi0lcuLeeDcQWEpjOKHHvb0gXIxeQ/ZtR
-	4vj7S2BFbAJqEl++HAazRQQ8JO4eW84OUsQs0MUk0Xz5BDNEt4fE6XMbwIo4BTwljnTtZwSx
-	hQW8JVp/ngarYRFQlVi+cT1LFyMHB6+ArcS/NjOQMK+AoMSPyfdYQGxmAS2J9TuPM0HY8hKb
-	17xlBimXEFCXePRXF+IEI4nGo9PYIEpEJPa9eMc4gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYW
-	JBcUJ6XnGuoVJ+YWl+al6yXn525iBCeNZ1I7GFc2WBxiFOBgVOLhFVC7HyzEmlhWXJl7iFGC
-	g1lJhFdizYNgId6UxMqq1KL8+KLSnNTiQ4ymQH9OZJYSTc4HJrS8knhDYxMzI0sjMwsjE3Nz
-	JXHeA63WgUIC6YklqdmpqQWpRTB9TBycUg2MCbvvrla1WW6RpDB5r6pt4Izu06t+T061+F69
-	xnyneoWfuMPRfldlJv+aa/Z+13fPXsvs+/L21+2e1x8mn+jyvBwWUThnvvH921IybQaKH8tU
-	lvgqs+fUr5effNSyaALfxhh/tmDr08/qo2oecYrP3ScbWPTmx+20mVW2le+/ds0MWRyctvmw
-	EktxRqKhFnNRcSIAAnVKVjADAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 5 Aug 2014 06:48:56 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-ad-53e0b6966202
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        Cho KyongHo <pullip.cho@samsung.com>, Joerg Roedel <joro@8bytes.org>,
+        Thierry Reding <treding@nvidia.com>, Olof Johansson <olof@lixom.net>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Rob Herring <robh@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH 06/29] drivers: iommu: add notify about failed bind
+Date: Tue, 05 Aug 2014 12:47:34 +0200
+Message-id: <1407235677-26324-7-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.9.2
+In-reply-to: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
+References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xq7rTtj0INph3mc3i76Rj7BbNi9ez
+	WUy6P4HFYsF+a4vO2RvYLXoXXGWzONv0ht2ic+ISdosvVx4yWWx6fI3V4vKuOWwWM87vY7JY
+	e+Quu8Wp65/ZLP71HmS0OHP6EqvF/z072C0Ov2lntTjycDe7xapdfxgtbv/mcxD1eHJwHpPH
+	71+TGD12zrrL7jG7Yyarx6ZVnWwe++euYffYvKTe4/a/x8wek28sZ/S4cqKJ1aO3+R2bx5ar
+	7SwefVtWMXp83iQXwBfFZZOSmpNZllqkb5fAlbH7u3DBB+6Kg7+vsjQwtnB1MXJySAiYSJy7
+	focNwhaTuHBvPZDNxSEksJRR4uD1JawQTh+TxI+mm8wgVWwChhJdb7vAqkQEehkl+pt+MIE4
+	zALrWCX2915nAakSFnCWOPZ6HthcFgFVib5tu1hBbF4BD4m1LQfYIfbJSfx/uYIJxOYU8JQ4
+	fPMAWI0QUM3PDWvYJzDyLmBkWMUomlqaXFCclJ5rqFecmFtcmpeul5yfu4kREjlfdjAuPmZ1
+	iFGAg1GJh9fg9N1gIdbEsuLK3EOMEhzMSiK8EmseBAvxpiRWVqUW5ccXleakFh9iZOLglGpg
+	LJrGqLPqFO/cv7U17EqTNfunXPnyaNK/110J3b01Edf+rliyq8XNWGjXlj3+F/1Tl0/awRWf
+	85DbvvtxcW3rRx8p48lni+f/XuY8eaqc7vkHybtWO/+P27TC49sepiqDeU2fvzKUrAm+dGyJ
+	dN+VRVkXfZKv9fOefNa1PCl53VL74CWaBmxLE5RYijMSDbWYi4oTATjswiV6AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 05, 2014 7:39 PM, Vivek Gautam wrote:
-> 
-> Since we want to keep support for both older usb-phys as well as the
-> newer generic phys, lets first get the generic PHYs and fallback to
-> older USB-PHYs only when we fail to get the former.
-> This should fix the issue with ehci-exynos and ohci-exynos, wherein
-> in the absence of SAMSUNG_USB2PHY config symbol, we end up getting
-> the NOP_USB_XCEIV phy when the same is enabled. And thus the PHYs
-> are not configured properly.
-> 
-> Reported-by: Sachin Kamat <sachin.kamat@samsung.com>
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Jingoo Han <jg1.han@samsung.com>
+This patch adds support for forwarding recently introduced
+BUS_NOTIFY_DRVBIND_FAILED event to iommu groups. This lets us getting a
+notify for failed device driver bind, so all the items done in
+IOMMU_GROUP_NOTIFY_BIND_DRIVER event can be cleaned if the driver fails
+to bind.
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ drivers/iommu/iommu.c | 3 +++
+ include/linux/iommu.h | 1 +
+ 2 files changed, 4 insertions(+)
 
-Right, we would get the generic PHYs first, then get the older
-usb-phys. Then, the older one will be removed from the kernel.
-Thank you.
-
-Best regards,
-Jingoo Han
-
-> ---
-> 
-> Based on 'usb-next' branch.
-> Resending it after adding 'Reported-by' tag.
-> 
->  drivers/usb/host/ehci-exynos.c |   40 +++++++++++++++++-----------------
->  drivers/usb/host/ohci-exynos.c |   47 +++++++++++++++++++---------------------
->  2 files changed, 42 insertions(+), 45 deletions(-)
-> 
-> diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
-> index cda0a2f..2eed9a4 100644
-> --- a/drivers/usb/host/ehci-exynos.c
-> +++ b/drivers/usb/host/ehci-exynos.c
-> @@ -62,18 +62,6 @@ static int exynos_ehci_get_phy(struct device *dev,
->  	int phy_number;
->  	int ret = 0;
-> 
-> -	exynos_ehci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> -	if (IS_ERR(exynos_ehci->phy)) {
-> -		ret = PTR_ERR(exynos_ehci->phy);
-> -		if (ret != -ENXIO && ret != -ENODEV) {
-> -			dev_err(dev, "no usb2 phy configured\n");
-> -			return ret;
-> -		}
-> -		dev_dbg(dev, "Failed to get usb2 phy\n");
-> -	} else {
-> -		exynos_ehci->otg = exynos_ehci->phy->otg;
-> -	}
-> -
->  	for_each_available_child_of_node(dev->of_node, child) {
->  		ret = of_property_read_u32(child, "reg", &phy_number);
->  		if (ret) {
-> @@ -90,15 +78,27 @@ static int exynos_ehci_get_phy(struct device *dev,
-> 
->  		phy = devm_of_phy_get(dev, child, NULL);
->  		of_node_put(child);
-> -		if (IS_ERR(phy)) {
-> -			ret = PTR_ERR(phy);
-> -			if (ret != -ENOSYS && ret != -ENODEV) {
-> -				dev_err(dev, "no usb2 phy configured\n");
-> -				return ret;
-> -			}
-> -			dev_dbg(dev, "Failed to get usb2 phy\n");
-> -		}
-> +		if (IS_ERR(phy))
-> +			/* Lets fallback to older USB-PHYs */
-> +			goto usb_phy_old;
->  		exynos_ehci->phy_g[phy_number] = phy;
-> +		/* Make the older PHYs unavailable */
-> +		exynos_ehci->phy = ERR_PTR(-ENXIO);
-> +	}
-> +
-> +	return 0;
-> +
-> +usb_phy_old:
-> +	exynos_ehci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> +	if (IS_ERR(exynos_ehci->phy)) {
-> +		ret = PTR_ERR(exynos_ehci->phy);
-> +		if (ret != -ENXIO && ret != -ENODEV) {
-> +			dev_err(dev, "no usb2 phy configured\n");
-> +			return ret;
-> +		}
-> +		dev_dbg(dev, "Failed to get usb2 phy\n");
-> +	} else {
-> +		exynos_ehci->otg = exynos_ehci->phy->otg;
->  	}
-> 
->  	return ret;
-> diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-> index a72ab8f..7c48e3f 100644
-> --- a/drivers/usb/host/ohci-exynos.c
-> +++ b/drivers/usb/host/ohci-exynos.c
-> @@ -51,27 +51,12 @@ static int exynos_ohci_get_phy(struct device *dev,
->  	int phy_number;
->  	int ret = 0;
-> 
-> -	exynos_ohci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> -	if (IS_ERR(exynos_ohci->phy)) {
-> -		ret = PTR_ERR(exynos_ohci->phy);
-> -		if (ret != -ENXIO && ret != -ENODEV) {
-> -			dev_err(dev, "no usb2 phy configured\n");
-> -			return ret;
-> -		}
-> -		dev_dbg(dev, "Failed to get usb2 phy\n");
-> -	} else {
-> -		exynos_ohci->otg = exynos_ohci->phy->otg;
-> -	}
-> -
->  	/*
->  	 * Getting generic phy:
->  	 * We are keeping both types of phys as a part of transiting OHCI
->  	 * to generic phy framework, so as to maintain backward compatibilty
-> -	 * with old DTB.
-> -	 * If there are existing devices using DTB files built from them,
-> -	 * to remove the support for old bindings in this driver,
-> -	 * we need to make sure that such devices have their DTBs
-> -	 * updated to ones built from new DTS.
-> +	 * with old DTB too.
-> +	 * We fallback to older USB-PHYs when we fail to get generic PHYs.
->  	 */
->  	for_each_available_child_of_node(dev->of_node, child) {
->  		ret = of_property_read_u32(child, "reg", &phy_number);
-> @@ -89,15 +74,27 @@ static int exynos_ohci_get_phy(struct device *dev,
-> 
->  		phy = devm_of_phy_get(dev, child, NULL);
->  		of_node_put(child);
-> -		if (IS_ERR(phy)) {
-> -			ret = PTR_ERR(phy);
-> -			if (ret != -ENOSYS && ret != -ENODEV) {
-> -				dev_err(dev, "no usb2 phy configured\n");
-> -				return ret;
-> -			}
-> -			dev_dbg(dev, "Failed to get usb2 phy\n");
-> -		}
-> +		if (IS_ERR(phy))
-> +			/* Lets fallback to older USB-PHYs */
-> +			goto usb_phy_old;
->  		exynos_ohci->phy_g[phy_number] = phy;
-> +		/* Make the older PHYs unavailable */
-> +		exynos_ohci->phy = ERR_PTR(-ENXIO);
-> +	}
-> +
-> +	return 0;
-> +
-> +usb_phy_old:
-> +	exynos_ohci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> +	if (IS_ERR(exynos_ohci->phy)) {
-> +		ret = PTR_ERR(exynos_ohci->phy);
-> +		if (ret != -ENXIO && ret != -ENODEV) {
-> +			dev_err(dev, "no usb2 phy configured\n");
-> +			return ret;
-> +		}
-> +		dev_dbg(dev, "Failed to get usb2 phy\n");
-> +	} else {
-> +		exynos_ohci->otg = exynos_ohci->phy->otg;
->  	}
-> 
->  	return ret;
-> --
-> 1.7.10.4
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index 1698360..516e93a 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -758,6 +758,9 @@ static int iommu_bus_notifier(struct notifier_block *nb,
+ 	case BUS_NOTIFY_UNBOUND_DRIVER:
+ 		group_action = IOMMU_GROUP_NOTIFY_UNBOUND_DRIVER;
+ 		break;
++	case BUS_NOTIFY_DRVBIND_FAILED:
++		group_action = IOMMU_GROUP_NOTIFY_DRVBIND_FAILED;
++		break;
+ 	}
+ 
+ 	if (group_action)
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index 20f9a52..f9fdae5 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -139,6 +139,7 @@ struct iommu_ops {
+ #define IOMMU_GROUP_NOTIFY_BOUND_DRIVER		4 /* Post Driver bind */
+ #define IOMMU_GROUP_NOTIFY_UNBIND_DRIVER	5 /* Pre Driver unbind */
+ #define IOMMU_GROUP_NOTIFY_UNBOUND_DRIVER	6 /* Post Driver unbind */
++#define IOMMU_GROUP_NOTIFY_DRVBIND_FAILED	7 /* Driver failed to bind */
+ 
+ extern int bus_set_iommu(struct bus_type *bus, const struct iommu_ops *ops);
+ extern bool iommu_present(struct bus_type *bus);
+-- 
+1.9.2
 
