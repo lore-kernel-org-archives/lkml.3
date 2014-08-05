@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067AbaHEPHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 11:07:48 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54903 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978AbaHEPHq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 11:07:46 -0400
-Date: Tue, 5 Aug 2014 16:07:37 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: P J P <ppandit@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: 3.12 to 3.13 boot regression bisected - still applies to 3.16
-Message-ID: <20140805150737.GR15082@console-pimps.org>
-References: <20140804150627.4563b6a7@pluto>
- <20140804135452.GJ15082@console-pimps.org>
- <20140805100242.425e1093@pluto>
- <20140805084542.GM15082@console-pimps.org>
- <20140805111330.3cf9319f@pluto>
- <20140805091848.GN15082@console-pimps.org>
- <20140805135130.2d180b69@pluto>
- <20140805141142.437ecb17@pluto>
- <20140805125548.GP15082@console-pimps.org>
- <20140805162107.4698f717@pluto>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140805162107.4698f717@pluto>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755178AbaHEPIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 11:08:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15442 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755077AbaHEPIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 11:08:34 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
+        Przemo Firszt <przemo@firszt.eu>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [PATCH] Input - wacom: only register once the MODULE_* macros
+Date: Tue,  5 Aug 2014 11:08:12 -0400
+Message-Id: <1407251292-10177-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Aug, at 04:21:07PM, Bruno Prémont wrote:
-> 
-> Thanks, enabling CONFIG_RELOCATABLE allows kernel to successfully boot!
-> 
-> So you can add my tested-by to the patch.
+Putting the various MODULE_* makes them appear several times in modinfo
+because wacom.h is used both in wacom_sys.c and wacom_wac.h.
+Having the macros near the module declaration makes them appear only once.
+
+Add also MODULE_VERSION(DRIVER_VERSION) to export the current version
+number.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+
+Dmitry,
+
+I guess this one could sneak on top of your pull request too.
+If not, then I'll push Jiri to take it in one of the future rc :)
+
+Cheers,
+Benjamin
+
+ drivers/hid/wacom.h     | 4 ----
+ drivers/hid/wacom_sys.c | 5 +++++
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/hid/wacom.h b/drivers/hid/wacom.h
+index 8cc4406..64bc1b2 100644
+--- a/drivers/hid/wacom.h
++++ b/drivers/hid/wacom.h
+@@ -101,10 +101,6 @@
+ #define DRIVER_DESC "USB Wacom tablet driver"
+ #define DRIVER_LICENSE "GPL"
  
-Great, thanks for testing! I've tagged the patch for stable and I'll get
-it sent to tip quickly.
-
-> If of interest, memory layout information as reported by 3.16 with
-> CONFIG_RELOCATABLE enabled:
-
-[...]
-
-> [    0.000000] efi: mem06: type=2, attr=0xf, range=[0x0000000001000000-0x0000000001100000) (1MB)
-
-Bingo, this is likely to be the reason for the resets.
-
-Overwriting EFI_LOADER_DATA regions (well, any region other than
-EFI_CONVENTIONAL_MEMORY) is gonna cause some issues.
-
+-MODULE_AUTHOR(DRIVER_AUTHOR);
+-MODULE_DESCRIPTION(DRIVER_DESC);
+-MODULE_LICENSE(DRIVER_LICENSE);
+-
+ #define USB_VENDOR_ID_WACOM	0x056a
+ #define USB_VENDOR_ID_LENOVO	0x17ef
+ 
+diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
+index 6e0c191..ff4ec50 100644
+--- a/drivers/hid/wacom_sys.c
++++ b/drivers/hid/wacom_sys.c
+@@ -1437,6 +1437,11 @@ static int wacom_reset_resume(struct hid_device *hdev)
+ 	return wacom_resume(hdev);
+ }
+ 
++MODULE_VERSION(DRIVER_VERSION);
++MODULE_AUTHOR(DRIVER_AUTHOR);
++MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_LICENSE(DRIVER_LICENSE);
++
+ static struct hid_driver wacom_driver = {
+ 	.name =		"wacom",
+ 	.id_table =	wacom_ids,
 -- 
-Matt Fleming, Intel Open Source Technology Center
+2.0.4
+
