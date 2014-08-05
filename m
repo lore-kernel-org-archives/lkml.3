@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837AbaHESU7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:20:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52527 "EHLO
+	id S1756103AbaHESVU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:21:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52524 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755185AbaHESOw (ORCPT
+	with ESMTP id S1753760AbaHESOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Aug 2014 14:14:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 19/27] Revert "mac80211: move "bufferable MMPDU" check to fix AP mode scan"
-Date: Tue,  5 Aug 2014 11:14:11 -0700
-Message-Id: <20140805181344.830645713@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [PATCH 3.10 18/27] staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
+Date: Tue,  5 Aug 2014 11:14:10 -0700
+Message-Id: <20140805181344.800758407@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181344.268039690@linuxfoundation.org>
 References: <20140805181344.268039690@linuxfoundation.org>
@@ -28,85 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 08b9939997df30e42a228e1ecb97f99e9c8ea84e upstream.
+commit 6cff1f6ad4c615319c1a146b2aa0af1043c5e9f5 upstream.
 
-This reverts commit 277d916fc2e959c3f106904116bb4f7b1148d47a as it was
-at least breaking iwlwifi by setting the IEEE80211_TX_CTL_NO_PS_BUFFER
-flag in all kinds of interface modes, not only for AP mode where it is
-appropriate.
+WARNING: CPU: 0 PID: 929 at /home/apw/COD/linux/kernel/irq/handle.c:147 handle_irq_event_percpu+0x1d1/0x1e0()
+irq 17 handler device_intr+0x0/0xa80 [vt6655_stage] enabled interrupts
 
-To avoid reintroducing the original problem, explicitly check for probe
-request frames in the multicast buffering code.
+Using spin_lock_irqsave appears to fix this.
 
-Fixes: 277d916fc2e9 ("mac80211: move "bufferable MMPDU" check to fix AP mode scan")
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 
 ---
- net/mac80211/tx.c |   27 +++++++++++++--------------
- 1 file changed, 13 insertions(+), 14 deletions(-)
+ drivers/staging/vt6655/device_main.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -398,6 +398,9 @@ ieee80211_tx_h_multicast_ps_buf(struct i
- 	if (ieee80211_has_order(hdr->frame_control))
- 		return TX_CONTINUE;
+--- a/drivers/staging/vt6655/device_main.c
++++ b/drivers/staging/vt6655/device_main.c
+@@ -2434,6 +2434,7 @@ static  irqreturn_t  device_intr(int irq
+ 	int             handled = 0;
+ 	unsigned char byData = 0;
+ 	int             ii = 0;
++	unsigned long flags;
+ //    unsigned char byRSSI;
  
-+	if (ieee80211_is_probe_req(hdr->frame_control))
-+		return TX_CONTINUE;
+ 	MACvReadISR(pDevice->PortOffset, &pDevice->dwIsr);
+@@ -2459,7 +2460,8 @@ static  irqreturn_t  device_intr(int irq
+ 
+ 	handled = 1;
+ 	MACvIntDisable(pDevice->PortOffset);
+-	spin_lock_irq(&pDevice->lock);
 +
- 	/* no stations in PS mode */
- 	if (!atomic_read(&ps->num_sta_ps))
- 		return TX_CONTINUE;
-@@ -447,6 +450,7 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
- {
- 	struct sta_info *sta = tx->sta;
- 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
-+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
- 	struct ieee80211_local *local = tx->local;
++	spin_lock_irqsave(&pDevice->lock, flags);
  
- 	if (unlikely(!sta))
-@@ -457,6 +461,15 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
- 		     !(info->flags & IEEE80211_TX_CTL_NO_PS_BUFFER))) {
- 		int ac = skb_get_queue_mapping(tx->skb);
+ 	//Make sure current page is 0
+ 	VNSvInPortB(pDevice->PortOffset + MAC_REG_PAGE1SEL, &byOrgPageSel);
+@@ -2700,7 +2702,8 @@ static  irqreturn_t  device_intr(int irq
+ 		MACvSelectPage1(pDevice->PortOffset);
+ 	}
  
-+		/* only deauth, disassoc and action are bufferable MMPDUs */
-+		if (ieee80211_is_mgmt(hdr->frame_control) &&
-+		    !ieee80211_is_deauth(hdr->frame_control) &&
-+		    !ieee80211_is_disassoc(hdr->frame_control) &&
-+		    !ieee80211_is_action(hdr->frame_control)) {
-+			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
-+			return TX_CONTINUE;
-+		}
+-	spin_unlock_irq(&pDevice->lock);
++	spin_unlock_irqrestore(&pDevice->lock, flags);
 +
- 		ps_dbg(sta->sdata, "STA %pM aid %d: PS buffer for AC %d\n",
- 		       sta->sta.addr, sta->sta.aid, ac);
- 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
-@@ -514,22 +527,8 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
- static ieee80211_tx_result debug_noinline
- ieee80211_tx_h_ps_buf(struct ieee80211_tx_data *tx)
- {
--	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
--	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
--
- 	if (unlikely(tx->flags & IEEE80211_TX_PS_BUFFERED))
- 		return TX_CONTINUE;
--
--	/* only deauth, disassoc and action are bufferable MMPDUs */
--	if (ieee80211_is_mgmt(hdr->frame_control) &&
--	    !ieee80211_is_deauth(hdr->frame_control) &&
--	    !ieee80211_is_disassoc(hdr->frame_control) &&
--	    !ieee80211_is_action(hdr->frame_control)) {
--		if (tx->flags & IEEE80211_TX_UNICAST)
--			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
--		return TX_CONTINUE;
--	}
--
- 	if (tx->flags & IEEE80211_TX_UNICAST)
- 		return ieee80211_tx_h_unicast_ps_buf(tx);
- 	else
+ 	MACvIntEnable(pDevice->PortOffset, IMR_MASK_VALUE);
+ 
+ 	return IRQ_RETVAL(handled);
 
 
