@@ -1,289 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275AbaHESOr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:14:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52431 "EHLO
+	id S1756182AbaHESYp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:24:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52487 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755190AbaHESOk (ORCPT
+	with ESMTP id S1755260AbaHESOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:40 -0400
+	Tue, 5 Aug 2014 14:14:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.14 36/39] xtensa: add fixup for double exception raised in window overflow
-Date: Tue,  5 Aug 2014 11:14:13 -0700
-Message-Id: <20140805181337.133474452@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.10 00/27] 3.10.52-stable review
+Date: Tue,  5 Aug 2014 11:13:52 -0700
+Message-Id: <20140805181344.268039690@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
-References: <20140805181336.030349158@linuxfoundation.org>
 User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.10.52 release.
+There are 27 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Aug  7 18:13:37 UTC 2014.
+Anything received after that time might be too late.
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.52-rc1.gz
+and the diffstat can be found below.
 
-commit 17290231df16eeee5dfc198dbf5ee4b419996dcd upstream.
+thanks,
 
-There are two FIXMEs in the double exception handler 'for the extremely
-unlikely case'. This case gets hit by gcc during kernel build once in
-a few hours, resulting in an unrecoverable exception condition.
+greg k-h
 
-Provide missing fixup routine to handle this case. Double exception
-literals now need 8 more bytes, add them to the linker script.
+-------------
+Pseudo-Shortlog of commits:
 
-Also replace bbsi instructions with bbsi.l as we're branching depending
-on 8th and 7th LSB-based bits of exception address.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.10.52-rc1
 
-This may be tested by adding the explicit DTLB invalidation to window
-overflow handlers, like the following:
+Boris Ostrovsky <boris.ostrovsky@oracle.com>
+    x86/espfix/xen: Fix allocation of pages for paravirt page tables
 
-#    --- a/arch/xtensa/kernel/vectors.S
-#    +++ b/arch/xtensa/kernel/vectors.S
-#    @@ -592,6 +592,14 @@ ENDPROC(_WindowUnderflow4)
-#     ENTRY_ALIGN64(_WindowOverflow8)
-#
-#    	s32e	a0, a9, -16
-#    +	bbsi.l	a9, 31, 1f
-#    +	rsr	a0, ccount
-#    +	bbsi.l	a0, 4, 1f
-#    +	pdtlb	a0, a9
-#    +	idtlb	a0
-#    +	movi	a0, 9
-#    +	idtlb	a0
-#    +1:
-#    	l32e    a0, a1, -12
-#    	s32e    a2, a9,  -8
-#    	s32e    a1, a9, -12
+Minfei Huang <huangminfei@ucloud.cn>
+    lib/btree.c: fix leak of whole btree nodes
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Sasha Levin <sasha.levin@oracle.com>
+    net/l2tp: don't fall back on UDP [get|set]sockopt
 
----
- arch/xtensa/kernel/vectors.S     |  158 +++++++++++++++++++++++++++++++++------
- arch/xtensa/kernel/vmlinux.lds.S |    4 
- 2 files changed, 138 insertions(+), 24 deletions(-)
+willy tarreau <w@1wt.eu>
+    net: mvneta: replace Tx timer with a real interrupt
 
---- a/arch/xtensa/kernel/vectors.S
-+++ b/arch/xtensa/kernel/vectors.S
-@@ -376,38 +376,42 @@ _DoubleExceptionVector_WindowOverflow:
- 	beqz	a2, 1f		# if at start of vector, don't restore
- 
- 	addi	a0, a0, -128
--	bbsi	a0, 8, 1f	# don't restore except for overflow 8 and 12
--	bbsi	a0, 7, 2f
-+	bbsi.l	a0, 8, 1f	# don't restore except for overflow 8 and 12
-+
-+	/*
-+	 * This fixup handler is for the extremely unlikely case where the
-+	 * overflow handler's reference thru a0 gets a hardware TLB refill
-+	 * that bumps out the (distinct, aliasing) TLB entry that mapped its
-+	 * prior references thru a9/a13, and where our reference now thru
-+	 * a9/a13 gets a 2nd-level miss exception (not hardware TLB refill).
-+	 */
-+	movi	a2, window_overflow_restore_a0_fixup
-+	s32i	a2, a3, EXC_TABLE_FIXUP
-+	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
-+	xsr	a3, excsave1
-+
-+	bbsi.l	a0, 7, 2f
- 
- 	/*
- 	 * Restore a0 as saved by _WindowOverflow8().
--	 *
--	 * FIXME:  we really need a fixup handler for this L32E,
--	 * for the extremely unlikely case where the overflow handler's
--	 * reference thru a0 gets a hardware TLB refill that bumps out
--	 * the (distinct, aliasing) TLB entry that mapped its prior
--	 * references thru a9, and where our reference now thru a9
--	 * gets a 2nd-level miss exception (not hardware TLB refill).
- 	 */
- 
--	l32e	a2, a9, -16
--	wsr	a2, depc	# replace the saved a0
--	j	1f
-+	l32e	a0, a9, -16
-+	wsr	a0, depc	# replace the saved a0
-+	j	3f
- 
- 2:
- 	/*
- 	 * Restore a0 as saved by _WindowOverflow12().
--	 *
--	 * FIXME:  we really need a fixup handler for this L32E,
--	 * for the extremely unlikely case where the overflow handler's
--	 * reference thru a0 gets a hardware TLB refill that bumps out
--	 * the (distinct, aliasing) TLB entry that mapped its prior
--	 * references thru a13, and where our reference now thru a13
--	 * gets a 2nd-level miss exception (not hardware TLB refill).
- 	 */
- 
--	l32e	a2, a13, -16
--	wsr	a2, depc	# replace the saved a0
-+	l32e	a0, a13, -16
-+	wsr	a0, depc	# replace the saved a0
-+3:
-+	xsr	a3, excsave1
-+	movi	a0, 0
-+	s32i	a0, a3, EXC_TABLE_FIXUP
-+	s32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
- 1:
- 	/*
- 	 * Restore WindowBase while leaving all address registers restored.
-@@ -449,6 +453,7 @@ _DoubleExceptionVector_WindowOverflow:
- 
- 	s32i	a0, a2, PT_DEPC
- 
-+_DoubleExceptionVector_handle_exception:
- 	addx4	a0, a0, a3
- 	l32i	a0, a0, EXC_TABLE_FAST_USER
- 	xsr	a3, excsave1
-@@ -464,11 +469,120 @@ _DoubleExceptionVector_WindowOverflow:
- 	rotw	-3
- 	j	1b
- 
--	.end literal_prefix
- 
- ENDPROC(_DoubleExceptionVector)
- 
- /*
-+ * Fixup handler for TLB miss in double exception handler for window owerflow.
-+ * We get here with windowbase set to the window that was being spilled and
-+ * a0 trashed. a0 bit 7 determines if this is a call8 (bit clear) or call12
-+ * (bit set) window.
-+ *
-+ * We do the following here:
-+ * - go to the original window retaining a0 value;
-+ * - set up exception stack to return back to appropriate a0 restore code
-+ *   (we'll need to rotate window back and there's no place to save this
-+ *    information, use different return address for that);
-+ * - handle the exception;
-+ * - go to the window that was being spilled;
-+ * - set up window_overflow_restore_a0_fixup as a fixup routine;
-+ * - reload a0;
-+ * - restore the original window;
-+ * - reset the default fixup routine;
-+ * - return to user. By the time we get to this fixup handler all information
-+ *   about the conditions of the original double exception that happened in
-+ *   the window overflow handler is lost, so we just return to userspace to
-+ *   retry overflow from start.
-+ *
-+ * a0: value of depc, original value in depc
-+ * a2: trashed, original value in EXC_TABLE_DOUBLE_SAVE
-+ * a3: exctable, original value in excsave1
-+ */
-+
-+ENTRY(window_overflow_restore_a0_fixup)
-+
-+	rsr	a0, ps
-+	extui	a0, a0, PS_OWB_SHIFT, PS_OWB_WIDTH
-+	rsr	a2, windowbase
-+	sub	a0, a2, a0
-+	extui	a0, a0, 0, 3
-+	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
-+	xsr	a3, excsave1
-+
-+	_beqi	a0, 1, .Lhandle_1
-+	_beqi	a0, 3, .Lhandle_3
-+
-+	.macro	overflow_fixup_handle_exception_pane n
-+
-+	rsr	a0, depc
-+	rotw	-\n
-+
-+	xsr	a3, excsave1
-+	wsr	a2, depc
-+	l32i	a2, a3, EXC_TABLE_KSTK
-+	s32i	a0, a2, PT_AREG0
-+
-+	movi	a0, .Lrestore_\n
-+	s32i	a0, a2, PT_DEPC
-+	rsr	a0, exccause
-+	j	_DoubleExceptionVector_handle_exception
-+
-+	.endm
-+
-+	overflow_fixup_handle_exception_pane 2
-+.Lhandle_1:
-+	overflow_fixup_handle_exception_pane 1
-+.Lhandle_3:
-+	overflow_fixup_handle_exception_pane 3
-+
-+	.macro	overflow_fixup_restore_a0_pane n
-+
-+	rotw	\n
-+	/* Need to preserve a0 value here to be able to handle exception
-+	 * that may occur on a0 reload from stack. It may occur because
-+	 * TLB miss handler may not be atomic and pointer to page table
-+	 * may be lost before we get here. There are no free registers,
-+	 * so we need to use EXC_TABLE_DOUBLE_SAVE area.
-+	 */
-+	xsr	a3, excsave1
-+	s32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
-+	movi	a2, window_overflow_restore_a0_fixup
-+	s32i	a2, a3, EXC_TABLE_FIXUP
-+	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
-+	xsr	a3, excsave1
-+	bbsi.l	a0, 7, 1f
-+	l32e	a0, a9, -16
-+	j	2f
-+1:
-+	l32e	a0, a13, -16
-+2:
-+	rotw	-\n
-+
-+	.endm
-+
-+.Lrestore_2:
-+	overflow_fixup_restore_a0_pane 2
-+
-+.Lset_default_fixup:
-+	xsr	a3, excsave1
-+	s32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
-+	movi	a2, 0
-+	s32i	a2, a3, EXC_TABLE_FIXUP
-+	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
-+	xsr	a3, excsave1
-+	rfe
-+
-+.Lrestore_1:
-+	overflow_fixup_restore_a0_pane 1
-+	j	.Lset_default_fixup
-+.Lrestore_3:
-+	overflow_fixup_restore_a0_pane 3
-+	j	.Lset_default_fixup
-+
-+ENDPROC(window_overflow_restore_a0_fixup)
-+
-+	.end literal_prefix
-+/*
-  * Debug interrupt vector
-  *
-  * There is not much space here, so simply jump to another handler.
---- a/arch/xtensa/kernel/vmlinux.lds.S
-+++ b/arch/xtensa/kernel/vmlinux.lds.S
-@@ -269,13 +269,13 @@ SECTIONS
- 		  .UserExceptionVector.literal)
-   SECTION_VECTOR (_DoubleExceptionVector_literal,
- 		  .DoubleExceptionVector.literal,
--		  DOUBLEEXC_VECTOR_VADDR - 16,
-+		  DOUBLEEXC_VECTOR_VADDR - 40,
- 		  SIZEOF(.UserExceptionVector.text),
- 		  .UserExceptionVector.text)
-   SECTION_VECTOR (_DoubleExceptionVector_text,
- 		  .DoubleExceptionVector.text,
- 		  DOUBLEEXC_VECTOR_VADDR,
--		  32,
-+		  40,
- 		  .DoubleExceptionVector.literal)
- 
-   . = (LOADADDR( .DoubleExceptionVector.text ) + SIZEOF( .DoubleExceptionVector.text ) + 3) & ~ 3;
+willy tarreau <w@1wt.eu>
+    net: mvneta: add missing bit descriptions for interrupt masks and causes
+
+willy tarreau <w@1wt.eu>
+    net: mvneta: do not schedule in mvneta_tx_timeout
+
+willy tarreau <w@1wt.eu>
+    net: mvneta: use per_cpu stats to fix an SMP lock up
+
+willy tarreau <w@1wt.eu>
+    net: mvneta: increase the 64-bit rx/tx stats out of the hot path
+
+Johannes Berg <johannes.berg@intel.com>
+    Revert "mac80211: move "bufferable MMPDU" check to fix AP mode scan"
+
+Malcolm Priestley <tvboxspy@gmail.com>
+    staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
+
+Andy Lutomirski <luto@amacapital.net>
+    x86_64/entry/xen: Do not invoke espfix64 on Xen
+
+H. Peter Anvin <hpa@zytor.com>
+    x86, espfix: Make it possible to disable 16-bit support
+
+H. Peter Anvin <hpa@zytor.com>
+    x86, espfix: Make espfix64 a Kconfig option, fix UML
+
+H. Peter Anvin <hpa@linux.intel.com>
+    x86, espfix: Fix broken header guard
+
+H. Peter Anvin <hpa@linux.intel.com>
+    x86, espfix: Move espfix definitions into a separate header file
+
+H. Peter Anvin <hpa@linux.intel.com>
+    x86-64, espfix: Don't leak bits 31:16 of %esp returning to 16-bit stack
+
+H. Peter Anvin <hpa@zytor.com>
+    Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
+
+Jan Kara <jack@suse.cz>
+    timer: Fix lock inversion between hrtimer_bases.lock and scheduler locks
+
+John Stultz <john.stultz@linaro.org>
+    printk: rename printk_sched to printk_deferred
+
+Lars-Peter Clausen <lars@metafoo.de>
+    iio: buffer: Fix demux table creation
+
+Malcolm Priestley <tvboxspy@gmail.com>
+    staging: vt6655: Fix disassociated messages every 10 seconds
+
+David Rientjes <rientjes@google.com>
+    mm, thp: do not allow thp faults to avoid cpuset restrictions
+
+James Bottomley <JBottomley@Parallels.com>
+    scsi: handle flush errors properly
+
+Alexandre Bounine <alexandre.bounine@idt.com>
+    rapidio/tsi721_dma: fix failure to obtain transaction descriptor
+
+Eliad Peller <eliad@wizery.com>
+    cfg80211: fix mic_failure tracing
+
+Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+    ARM: 8115/1: LPAE: reduce damage caused by idmap to virtual memory layout
+
+Milan Broz <gmazyland@gmail.com>
+    crypto: af_alg - properly label AF_ALG socket
+
+
+-------------
+
+Diffstat:
+
+ Documentation/x86/x86_64/mm.txt         |   2 +
+ Makefile                                |   4 +-
+ arch/arm/mm/idmap.c                     |   7 ++
+ arch/x86/Kconfig                        |  25 +++-
+ arch/x86/include/asm/espfix.h           |  16 +++
+ arch/x86/include/asm/irqflags.h         |   2 +-
+ arch/x86/include/asm/pgtable_64_types.h |   2 +
+ arch/x86/include/asm/setup.h            |   2 +
+ arch/x86/kernel/Makefile                |   1 +
+ arch/x86/kernel/entry_32.S              |  12 ++
+ arch/x86/kernel/entry_64.S              |  77 +++++++++++-
+ arch/x86/kernel/espfix_64.c             | 208 ++++++++++++++++++++++++++++++++
+ arch/x86/kernel/ldt.c                   |  10 +-
+ arch/x86/kernel/paravirt_patch_64.c     |   2 -
+ arch/x86/kernel/smpboot.c               |   7 ++
+ arch/x86/mm/dump_pagetables.c           |  31 +++--
+ arch/x86/vdso/vdso32-setup.c            |   8 --
+ crypto/af_alg.c                         |   2 +
+ drivers/iio/industrialio-buffer.c       |   2 +-
+ drivers/net/ethernet/marvell/mvneta.c   | 206 ++++++++++++++++---------------
+ drivers/rapidio/devices/tsi721_dma.c    |   8 +-
+ drivers/scsi/scsi_lib.c                 |   8 ++
+ drivers/staging/vt6655/bssdb.c          |   2 +-
+ drivers/staging/vt6655/device_main.c    |   7 +-
+ include/linux/printk.h                  |   6 +-
+ init/main.c                             |   4 +
+ kernel/printk.c                         |   2 +-
+ kernel/sched/core.c                     |   2 +-
+ kernel/sched/rt.c                       |   2 +-
+ kernel/time/clockevents.c               |  10 +-
+ lib/btree.c                             |   1 +
+ mm/page_alloc.c                         |  16 +--
+ net/l2tp/l2tp_ppp.c                     |   4 +-
+ net/mac80211/tx.c                       |  27 ++---
+ net/wireless/trace.h                    |   3 +-
+ 35 files changed, 547 insertions(+), 181 deletions(-)
 
 
