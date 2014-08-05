@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906AbaHEBun (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 21:50:43 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:46286 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152AbaHEBtP (ORCPT
+	id S1753949AbaHEBvJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 21:51:09 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:44327 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759AbaHEBtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 21:49:15 -0400
+	Mon, 4 Aug 2014 21:49:09 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Wim Van Sebroeck <wim@iguana.be>,
@@ -23,9 +23,9 @@ Cc: Wim Van Sebroeck <wim@iguana.be>,
         David Woodhouse <dwmw2@infradead.org>,
         Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v6 3/7] arm: Support restart through restart handler call chain
-Date: Mon,  4 Aug 2014 18:48:54 -0700
-Message-Id: <1407203338-12915-4-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v6 1/7] kernel: Add support for kernel restart handler call chain
+Date: Mon,  4 Aug 2014 18:48:52 -0700
+Message-Id: <1407203338-12915-2-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407203338-12915-1-git-send-email-linux@roeck-us.net>
 References: <1407203338-12915-1-git-send-email-linux@roeck-us.net>
@@ -33,43 +33,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel core now supports a restart handler call chain for system
-restart functions.
+Various drivers implement architecture and/or device specific means
+to restart (reset) the system. Various mechanisms have been implemented
+to support those schemes. The best known mechanism is arm_pm_restart,
+which is a function pointer to be set either from platform specific code
+or from drivers. Another mechanism is to use hardware watchdogs to issue
+a reset; this mechanism is used if there is no other method available
+to reset a board or system. Two examples are alim7101_wdt, which currently
+uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
+the arm_pm_restart function.
 
-With this change, the arm_pm_restart callback is now optional, so check
-if it is set before calling it. Only call the kernel restart handler
-if arm_pm_restart is not set.
+The existing mechanisms have a number of drawbacks. Typically only one scheme
+to restart the system is supported (at least if arm_pm_restart is used).
+At least in theory there can be multiple means to restart the system, some of
+which may be less desirable (for example one mechanism may only reset the CPU,
+while another may reset the entire system). Using arm_pm_restart can also be
+racy if the function pointer is set from a driver, as the driver may be in
+the process of being unloaded when arm_pm_restart is called.
+Using the reboot notifier is always racy, as it is unknown if and when
+other functions using the reboot notifier have completed execution
+by the time the watchdog fires.
+
+Introduce a system restart handler call chain to solve the described problems.
+This call chain is expected to be executed from the architecture specific
+machine_restart() function. Drivers providing system restart functionality
+(such as the watchdog drivers mentioned above) are expected to register
+with this call chain. By using the priority field in the notifier block,
+callers can control restart handler execution sequence and thus ensure that
+the restart handler with the optimal restart capabilities for a given system
+is called first.
 
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 Acked-by: Heiko Stuebner <heiko@sntech.de>
 ---
-v6: No change.
-v5: Renamed restart function to do_kernel_restart
-v4: No change.
-v3: Use wrapper function to execute notifier call chain.
-v2: Only call notifier call chain if arm_pm_restart is not set.
-    Do not include linux/watchdog.h.
+v6: Use atomic notifier call chain
+v5: Function renames:
+    register_restart_notifier -> register_restart_handler
+    unregister_restart_notifier -> unregister_restart_handler
+    kernel_restart_notify -> do_kernel_restart
+v4: Document and suggest values for notifier priorities
+v3: Add kernel_restart_notify wrapper function to execute notifier.
+    Improve documentation.
+    Move restart_notifier_list into kernel/reboot.c and make it static.
+v2: No change.
 
- arch/arm/kernel/process.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ include/linux/reboot.h |  3 ++
+ kernel/reboot.c        | 81 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 84 insertions(+)
 
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index 81ef686..84ca0d5 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -230,7 +230,10 @@ void machine_restart(char *cmd)
- 	local_irq_disable();
- 	smp_send_stop();
+diff --git a/include/linux/reboot.h b/include/linux/reboot.h
+index 48bf152..67fc8fc 100644
+--- a/include/linux/reboot.h
++++ b/include/linux/reboot.h
+@@ -38,6 +38,9 @@ extern int reboot_force;
+ extern int register_reboot_notifier(struct notifier_block *);
+ extern int unregister_reboot_notifier(struct notifier_block *);
  
--	arm_pm_restart(reboot_mode, cmd);
-+	if (arm_pm_restart)
-+		arm_pm_restart(reboot_mode, cmd);
-+	else
-+		do_kernel_restart(cmd);
++extern int register_restart_handler(struct notifier_block *);
++extern int unregister_restart_handler(struct notifier_block *);
++extern void do_kernel_restart(char *cmd);
  
- 	/* Give a grace period for failure to restart of 1s */
- 	mdelay(1000);
+ /*
+  * Architecture-specific implementations of sys_reboot commands.
+diff --git a/kernel/reboot.c b/kernel/reboot.c
+index a3a9e24..5925f5a 100644
+--- a/kernel/reboot.c
++++ b/kernel/reboot.c
+@@ -104,6 +104,87 @@ int unregister_reboot_notifier(struct notifier_block *nb)
+ }
+ EXPORT_SYMBOL(unregister_reboot_notifier);
+ 
++/*
++ *	Notifier list for kernel code which wants to be called
++ *	to restart the system.
++ */
++static ATOMIC_NOTIFIER_HEAD(restart_handler_list);
++
++/**
++ *	register_restart_handler - Register function to be called to reset
++ *				   the system
++ *	@nb: Info about handler function to be called
++ *	@nb->priority:	Handler priority. Handlers should follow the
++ *			following guidelines for setting priorities.
++ *			0:	Restart handler of last resort,
++ *				with limited restart capabilities
++ *			128:	Default restart handler; use if no other
++ *				restart handler is expected to be available,
++ *				and/or if restart functionality is
++ *				sufficient to restart the entire system
++ *			255:	Highest priority restart handler, will
++ *				preempt all other restart handlers
++ *
++ *	Registers a function with code to be called to restart the
++ *	system.
++ *
++ *	Registered functions will be called from machine_restart as last
++ *	step of the restart sequence (if the architecture specific
++ *	machine_restart function calls do_kernel_restart - see below
++ *	for details).
++ *	Registered functions are expected to restart the system immediately.
++ *	If more than one function is registered, the restart handler priority
++ *	selects which function will be called first.
++ *
++ *	Restart handlers are expected to be registered from non-architecture
++ *	code, typically from drivers. A typical use case would be a system
++ *	where restart functionality is provided through a watchdog. Multiple
++ *	restart handlers may exist; for example, one restart handler might
++ *	restart the entire system, while another only restarts the CPU.
++ *	In such cases, the restart handler which only restarts part of the
++ *	hardware is expected to register with low priority to ensure that
++ *	it only runs if no other means to restart the system is available.
++ *
++ *	Currently always returns zero, as atomic_notifier_chain_register()
++ *	always returns zero.
++ */
++int register_restart_handler(struct notifier_block *nb)
++{
++	return atomic_notifier_chain_register(&restart_handler_list, nb);
++}
++EXPORT_SYMBOL(register_restart_handler);
++
++/**
++ *	unregister_restart_handler - Unregister previously registered
++ *				     restart handler
++ *	@nb: Hook to be unregistered
++ *
++ *	Unregisters a previously registered restart handler function.
++ *
++ *	Returns zero on success, or %-ENOENT on failure.
++ */
++int unregister_restart_handler(struct notifier_block *nb)
++{
++	return atomic_notifier_chain_unregister(&restart_handler_list, nb);
++}
++EXPORT_SYMBOL(unregister_restart_handler);
++
++/**
++ *	do_kernel_restart - Execute kernel restart handler call chain
++ *
++ *	Calls functions registered with register_restart_handler.
++ *
++ *	Expected to be called from machine_restart as last step of the restart
++ *	sequence.
++ *
++ *	Restarts the system immediately if a restart handler function has been
++ *	registered. Otherwise does nothing.
++ */
++void do_kernel_restart(char *cmd)
++{
++	atomic_notifier_call_chain(&restart_handler_list, reboot_mode, cmd);
++}
++
+ void migrate_to_reboot_cpu(void)
+ {
+ 	/* The boot cpu is always logical cpu 0 */
 -- 
 1.9.1
 
