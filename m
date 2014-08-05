@@ -1,70 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547AbaHEDOz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 23:14:55 -0400
-Received: from ozlabs.org ([103.22.144.67]:59532 "EHLO ozlabs.org"
+	id S1755579AbaHEDXr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 23:23:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17483 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753169AbaHEDOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 23:14:54 -0400
-Date: Tue, 5 Aug 2014 13:14:47 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [GIT PULL] hwmon updates for 3.17
-Message-ID: <20140805131447.5cec84e5@canb.auug.org.au>
-In-Reply-To: <20140805022209.GA13813@roeck-us.net>
-References: <20140805022209.GA13813@roeck-us.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/cfbcMSHU=GMMa/UvwSxPV9p"; protocol="application/pgp-signature"
+	id S1755556AbaHEDXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Aug 2014 23:23:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,802,1400050800"; 
+   d="scan'208";a="583451104"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [Bugfix 2/2] x86, irq: Keep balance of IOAPIC pin reference count
+Date: Tue,  5 Aug 2014 11:26:18 +0800
+Message-Id: <1407209178-18644-3-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1407209178-18644-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1407209178-18644-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/cfbcMSHU=GMMa/UvwSxPV9p
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+To keep balance of IOAPIC pin reference count, we need to protect
+pirq_enable_irq(), acpi_pci_irq_enable() and intel_mid_pci_irq_enable()
+from reentrance. There are two cases which will cause reentrance.
 
-Hi Guenter,
+The first case is caused by suspend/hibernation. If pcibios_disable_irq
+is called during suspending/hibernating, we don't release the assigned
+IRQ number, otherwise it may break the suspend/hibernation. So late when
+pcibios_enable_irq is called during resume, we shouldn't allocate IRQ
+number again.
 
-On Mon, 4 Aug 2014 19:22:09 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
->
-> Hi Linus,
->=20
-> Please pull hwmon updates for Linux 3.17 from signed tag:
->=20
->     git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.gi=
-t hwmon-for-linus
+The second case is that function acpi_pci_irq_enable() may be called
+twice for PCI devices present at boot time as below:
+1) pci_acpi_init()
+	--> acpi_pci_irq_enable() if pci_routeirq is true
+2) pci_enable_device()
+	--> pcibios_enable_device()
+		--> acpi_pci_irq_enable()
+We can't kill kernel parameter pci_routeirq yet because it's still
+needed for debugging purpose.
 
-This branch was rewritten (but not rebased) to add 5 commits at its
-start and 8 commits at its end since yesterday's linux-next.
+Flag irq_managed is introduced to track whether IRQ number is assigned
+by OS and to protect pirq_enable_irq(), acpi_pci_irq_enable()
+and intel_mid_pci_irq_enable() from reentrance.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/pci/intel_mid_pci.c |    9 ++++++++-
+ arch/x86/pci/irq.c           |    7 ++++++-
+ drivers/acpi/pci_irq.c       |   11 +++++++++--
+ include/linux/pci.h          |    1 +
+ 4 files changed, 24 insertions(+), 4 deletions(-)
 
---Sig_/cfbcMSHU=GMMa/UvwSxPV9p
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
+index 3865116c51fb..661e948aba11 100644
+--- a/arch/x86/pci/intel_mid_pci.c
++++ b/arch/x86/pci/intel_mid_pci.c
+@@ -210,6 +210,9 @@ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
+ {
+ 	int polarity;
+ 
++	if (dev->irq_managed && dev->irq > 0)
++		return 0;
++
+ 	if (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_TANGIER)
+ 		polarity = 0; /* active high */
+ 	else
+@@ -224,13 +227,17 @@ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
+ 	if (mp_map_gsi_to_irq(dev->irq, IOAPIC_MAP_ALLOC) < 0)
+ 		return -EBUSY;
+ 
++	dev->irq_managed = 1;
++
+ 	return 0;
+ }
+ 
+ static void intel_mid_pci_irq_disable(struct pci_dev *dev)
+ {
+-	if (!dev->dev.power.is_prepared && dev->irq > 0)
++	if (!dev->dev.power.is_prepared && dev->irq_managed && dev->irq > 0) {
+ 		mp_unmap_irq(dev->irq);
++		dev->irq_managed = 0;
++	}
+ }
+ 
+ struct pci_ops intel_mid_pci_ops = {
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index bc1a2c341891..dd1369dbcc42 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -1202,6 +1202,9 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ 			int irq;
+ 			struct io_apic_irq_attr irq_attr;
+ 
++			if (dev->irq_managed && dev->irq > 0)
++				return 0;
++
+ 			irq = IO_APIC_get_PCI_irq_vector(dev->bus->number,
+ 						PCI_SLOT(dev->devfn),
+ 						pin - 1, &irq_attr);
+@@ -1228,6 +1231,7 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ 			}
+ 			dev = temp_dev;
+ 			if (irq >= 0) {
++				dev->irq_managed = 1;
+ 				dev->irq = irq;
+ 				dev_info(&dev->dev, "PCI->APIC IRQ transform: "
+ 					 "INT %c -> IRQ %d\n", 'A' + pin - 1, irq);
+@@ -1257,8 +1261,9 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ static void pirq_disable_irq(struct pci_dev *dev)
+ {
+ 	if (io_apic_assign_pci_irqs && !dev->dev.power.is_prepared &&
+-	    dev->irq) {
++	    dev->irq_managed && dev->irq > 0) {
+ 		mp_unmap_irq(dev->irq);
+ 		dev->irq = 0;
++		dev->irq_managed = 0;
+ 	}
+ }
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index c96887d5289e..4a89701dfe36 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -413,6 +413,9 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 		return 0;
+ 	}
+ 
++	if (dev->irq_managed && dev->irq > 0)
++		return 0;
++
+ 	entry = acpi_pci_irq_lookup(dev, pin);
+ 	if (!entry) {
+ 		/*
+@@ -456,6 +459,7 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 		return rc;
+ 	}
+ 	dev->irq = rc;
++	dev->irq_managed = 1;
+ 
+ 	if (link)
+ 		snprintf(link_desc, sizeof(link_desc), " -> Link[%s]", link);
+@@ -478,7 +482,7 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
+ 	u8 pin;
+ 
+ 	pin = dev->pin;
+-	if (!pin)
++	if (!pin || !dev->irq_managed || dev->irq <= 0)
+ 		return;
+ 
+ 	/* Keep IOAPIC pin configuration when suspending */
+@@ -502,6 +506,9 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
+ 	 */
+ 
+ 	dev_dbg(&dev->dev, "PCI INT %c disabled\n", pin_name(pin));
+-	if (gsi >= 0 && dev->irq > 0)
++	if (gsi >= 0) {
+ 		acpi_unregister_gsi(gsi);
++		dev->irq = 0;
++		dev->irq_managed = 0;
++	}
+ }
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 466bcd111d85..5103a5968e67 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -347,6 +347,7 @@ struct pci_dev {
+ 	unsigned int	__aer_firmware_first:1;
+ 	unsigned int	broken_intx_masking:1;
+ 	unsigned int	io_window_1k:1;	/* Intel P2P bridge 1K I/O windows */
++	unsigned int	irq_managed;	/* IRQ number is assigned by OS */
+ 	pci_dev_flags_t dev_flags;
+ 	atomic_t	enable_cnt;	/* pci_enable_device has been called */
+ 
+-- 
+1.7.10.4
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT4EwrAAoJEMDTa8Ir7ZwVEGYP/0chSWzQR3HmuRd7B22nYH4K
-QWqsFFPD6ZmIcK3pF6ylgfCc9f3ivzhwULD70rRygfmF3AZeXetr1lO4cMmn0Aw7
-5ECMM6NaJoMTBeCm7UfN3fAey6Hh8OxWe8h78dQgS3RNvEkb5WuhASBRbYBUZDKs
-4cknq30PBAwEH3/RH5jth+P564SxsZSOJahXpuX6+jTlwL4QNT0JDacj1cyyv3eK
-8Qo9EKCjmJRBg+pDUghmtKlRz+k9HhZZ/cD8xB7bO+vaEK8D4KY/syyAAxjc86cB
-AB+CHtjFkvDZXUP/wyCslZennN56iea/M82VaV3wJDBmHeM4OxSk2VAxRr1LevDC
-7ZscCWQaXTpQMEjpU4drUUqDhexfo109jzV2XiCkxb2T2x9c/SmISWvvIMeN4l/L
-mZ+cB0Fol1INt5/9nzc+t0KNeLsFqy4NFdBocGMCNKKrU9Rw3rMm3jFYu0V+mZ7p
-t+IInrzbXjzj/yrS2FocvoeLnsiUqYYVDt3EUngnCYYHXLBgDfN1a2+k0a2JMfrK
-nNTRVJFzN/A6lSlRRQ8Avz+igycsVkGIkpeUGYSmLEBmQPOUSm4kH/Be6aZDj4iN
-3hZLdPnjzTth/OBiiqK1ugUYz212vjnwkvd61Qc28yRhYq02ScRcYISmDNQsudGJ
-DfTCJwjkVaHVD/O6vrwk
-=qAHe
------END PGP SIGNATURE-----
-
---Sig_/cfbcMSHU=GMMa/UvwSxPV9p--
