@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbaHEEcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 00:32:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44167 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632AbaHEEcN (ORCPT
+	id S1752797AbaHEEdP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 00:33:15 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:40979 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752343AbaHEEdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 00:32:13 -0400
-Date: Mon, 4 Aug 2014 21:31:43 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Kristina =?utf-8?Q?Mart=C5=A1enko?= 
-	<kristina.martsenko@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: Re: [GIT PULL] Staging driver patches for 3.17-rc1
-Message-ID: <20140805043143.GA31519@kroah.com>
-References: <20140804190837.GA27292@kroah.com>
- <20140805041325.GA27507@rhlx01.hs-esslingen.de>
+	Tue, 5 Aug 2014 00:33:13 -0400
+Date: Mon, 4 Aug 2014 21:33:46 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+Subject: [GIT PULL] bcache changes for 3.17
+Message-ID: <20140805043346.GF541@moria.home.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140805041325.GA27507@rhlx01.hs-esslingen.de>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 06:13:25AM +0200, Andreas Mohr wrote:
-> > Lots of things in here, over 2000 patches, but the best part is this:
-> >  1480 files changed, 39070 insertions(+), 254659 deletions(-)
-> >
-> > Thanks to the great work of Kristina Martšenko, 14 different staging
-> > drivers have been removed from the tree as they were obsolete and no
-> > one
-> > was willing to work on cleaning them up.
-> 
-> -ENOPARSE.
-> 
-> Define "as they were obsolete and no one was willing to work on cleaning
-> them up."?
-> 
-> *Either* they're obsolete (due to better alternatives available, in the
-> standard case), in which case they indeed can be removed on the spot,
-> *or* they are expected to become full-service drivers and thus need cleanup.
-> Which is it?
+Hey Jens, here's the pull request for 3.17 - typically late, but lots of tasty
+fixes in this one :)
 
-No one was willing to do the work to get these drivers out of the
-staging directory.  One had been broken for a number of kernel releases
-with no one even noticing.
+The following changes since commit 4c834452aad01531db949414f94f817a86348d59:
 
-> In the case of keucr (a driver where I happen to own hardware,
-> and where AFAIK this driver is required),
-> I really don't see "nobody was willing to work on cleaning them up.",
-> as git log tells.
+  Linux 3.16-rc3 (2014-06-29 14:11:36 -0700)
 
-Don't confuse "coding style cleanups done in a drive-by fashion" with
-"willing to do the real work to get this driver merged out of the
-staging tree."
+are available in the git repository at:
 
-> Admittedly there probably was no substantial rework,
-> but it did have many janitorial changes, and some changes
-> only 4 months ago even (a time frame which IMHO does not justify
-> removing a driver wholesale, with the effect of certain users to not
-> be able to use them then).
-> 
-> Oh well, yet another driver where it became more difficult rather than
-> easier to make forward progress.
+  http://evilpiepirate.org/git/linux-bcache.git for-jens
 
-If you are willing to do the work, I will gladly revert the patch and
-look forward to patches to fix the remaining changes.
+for you to fetch changes up to 0781c8748cf1ea2b0dcd966571103909528c4efa:
 
-thanks,
+  bcache: Drop unneeded blk_sync_queue() calls (2014-08-04 15:23:04 -0700)
 
-greg k-h
+----------------------------------------------------------------
+Jianjian Huo (1):
+      bcache: add mutex lock for bch_is_open
+
+Kent Overstreet (7):
+      bcache: Fix a bug when detaching
+      bcache: Fix a journal replay bug
+      bcache: Make sure to pass GFP_WAIT to mempool_alloc()
+      bcache: Allocate bounce buffers with GFP_NOWAIT
+      bcache: Fix an infinite loop in journal replay
+      bcache: Fix more early shutdown bugs
+      bcache: Drop unneeded blk_sync_queue() calls
+
+Slava Pestov (12):
+      bcache allocator: send discards with correct size
+      bcache: fix lockdep warnings on shutdown
+      bcache: fix crash on shutdown in passthrough mode
+      bcache: wait for buckets when allocating new btree root
+      bcache: fix uninterruptible sleep in writeback thread
+      bcache: fix typo in bch_bkey_equal_header
+      bcache: bcache_write tracepoint was crashing
+      bcache: fix crash in bcache_btree_node_alloc_fail tracepoint
+      bcache: fix use-after-free in btree_gc_coalesce()
+      bcache: fix crash with incomplete cache set
+      bcache: fix memory corruption in init error path
+      bcache: try to set b->parent properly
+
+Surbhi Palande (2):
+      bcache: Fix to remove the rcu_sched stalls.
+      bcache: Correct printing of btree_gc_max_duration_ms
+
+ drivers/md/bcache/alloc.c     |  2 +-
+ drivers/md/bcache/bcache.h    |  4 +++
+ drivers/md/bcache/bset.c      |  2 +-
+ drivers/md/bcache/bset.h      |  2 +-
+ drivers/md/bcache/btree.c     | 50 ++++++++++++++++++++++---------------
+ drivers/md/bcache/btree.h     |  5 ++--
+ drivers/md/bcache/extents.c   | 13 +++++++---
+ drivers/md/bcache/extents.h   |  1 +
+ drivers/md/bcache/journal.c   | 24 +++++++++++-------
+ drivers/md/bcache/request.c   |  3 ++-
+ drivers/md/bcache/super.c     | 57 ++++++++++++++++++++++++++++---------------
+ drivers/md/bcache/util.h      |  4 +--
+ drivers/md/bcache/writeback.c | 14 ++++++++---
+ drivers/md/bcache/writeback.h |  3 ++-
+ include/trace/events/bcache.h | 21 +++++++++-------
+ 15 files changed, 131 insertions(+), 74 deletions(-)
