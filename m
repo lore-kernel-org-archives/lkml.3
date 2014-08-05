@@ -1,86 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756315AbaHES3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:29:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52407 "EHLO
+	id S932111AbaHES3r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:29:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52688 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755147AbaHESOh (ORCPT
+	with ESMTP id S1755635AbaHES3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:37 -0400
+	Tue, 5 Aug 2014 14:29:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nishanth Menon <nm@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.14 30/39] pinctrl: dra: dt-bindings: Fix pull enable/disable
-Date: Tue,  5 Aug 2014 11:14:07 -0700
-Message-Id: <20140805181336.954078546@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.4 00/19] 3.4.102-stable review
+Date: Tue,  5 Aug 2014 11:29:24 -0700
+Message-Id: <20140805182934.022406678@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
-References: <20140805181336.030349158@linuxfoundation.org>
 User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.4.102 release.
+There are 19 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Aug  7 18:29:24 UTC 2014.
+Anything received after that time might be too late.
 
-From: Nishanth Menon <nm@ti.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.102-rc1.gz
+and the diffstat can be found below.
 
-commit 23d9cec07c589276561c13b180577c0b87930140 upstream.
+thanks,
 
-The DRA74/72 control module pins have a weak pull up and pull down.
-This is configured by bit offset 17. if BIT(17) is 1, a pull up is
-selected, else a pull down is selected.
+greg k-h
 
-However, this pull resisstor is applied based on BIT(16) -
-PULLUDENABLE - if BIT(18) is *0*, then pull as defined in BIT(17) is
-applied, else no weak pulls are applied. We defined this in reverse.
+-------------
+Pseudo-Shortlog of commits:
 
-Reference: Table 18-5 (Description of the pad configuration register
-bits) in Technical Reference Manual Revision (DRA74x revision Q:
-SPRUHI2Q Revised June 2014 and DRA72x revision F: SPRUHP2F - Revised
-June 2014)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.102-rc1
 
-Fixes: 6e58b8f1daaf1a ("ARM: dts: DRA7: Add the dts files for dra7 SoC and dra7-evm board")
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Tested-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Gao feng <gaofeng@cn.fujitsu.com>
+    ipv6: reallocate addrconf router for ipv6 address when lo device up
 
----
- include/dt-bindings/pinctrl/dra.h |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+Vlastimil Babka <vbabka@suse.cz>
+    mm: try_to_unmap_cluster() should lock_page() before mlocking
 
---- a/include/dt-bindings/pinctrl/dra.h
-+++ b/include/dt-bindings/pinctrl/dra.h
-@@ -30,7 +30,8 @@
- #define MUX_MODE14	0xe
- #define MUX_MODE15	0xf
- 
--#define PULL_ENA		(1 << 16)
-+#define PULL_ENA		(0 << 16)
-+#define PULL_DIS		(1 << 16)
- #define PULL_UP			(1 << 17)
- #define INPUT_EN		(1 << 18)
- #define SLEWCONTROL		(1 << 19)
-@@ -38,10 +39,10 @@
- #define WAKEUP_EVENT		(1 << 25)
- 
- /* Active pin states */
--#define PIN_OUTPUT		0
-+#define PIN_OUTPUT		(0 | PULL_DIS)
- #define PIN_OUTPUT_PULLUP	(PIN_OUTPUT | PULL_ENA | PULL_UP)
- #define PIN_OUTPUT_PULLDOWN	(PIN_OUTPUT | PULL_ENA)
--#define PIN_INPUT		INPUT_EN
-+#define PIN_INPUT		(INPUT_EN | PULL_DIS)
- #define PIN_INPUT_SLEW		(INPUT_EN | SLEWCONTROL)
- #define PIN_INPUT_PULLUP	(PULL_ENA | INPUT_EN | PULL_UP)
- #define PIN_INPUT_PULLDOWN	(PULL_ENA | INPUT_EN)
+Boris Ostrovsky <boris.ostrovsky@oracle.com>
+    x86/espfix/xen: Fix allocation of pages for paravirt page tables
+
+Minfei Huang <huangminfei@ucloud.cn>
+    lib/btree.c: fix leak of whole btree nodes
+
+Sasha Levin <sasha.levin@oracle.com>
+    net/l2tp: don't fall back on UDP [get|set]sockopt
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Revert: "net: ip, ipv6: handle gso skbs in forwarding path"
+
+Andy Lutomirski <luto@amacapital.net>
+    x86_64/entry/xen: Do not invoke espfix64 on Xen
+
+H. Peter Anvin <hpa@zytor.com>
+    x86, espfix: Make it possible to disable 16-bit support
+
+H. Peter Anvin <hpa@zytor.com>
+    x86, espfix: Make espfix64 a Kconfig option, fix UML
+
+H. Peter Anvin <hpa@linux.intel.com>
+    x86, espfix: Fix broken header guard
+
+H. Peter Anvin <hpa@linux.intel.com>
+    x86, espfix: Move espfix definitions into a separate header file
+
+H. Peter Anvin <hpa@linux.intel.com>
+    x86-64, espfix: Don't leak bits 31:16 of %esp returning to 16-bit stack
+
+H. Peter Anvin <hpa@zytor.com>
+    Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
+
+Jan Kara <jack@suse.cz>
+    timer: Fix lock inversion between hrtimer_bases.lock and scheduler locks
+
+John Stultz <john.stultz@linaro.org>
+    printk: rename printk_sched to printk_deferred
+
+David Rientjes <rientjes@google.com>
+    mm, thp: do not allow thp faults to avoid cpuset restrictions
+
+James Bottomley <JBottomley@Parallels.com>
+    scsi: handle flush errors properly
+
+Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+    ARM: 8115/1: LPAE: reduce damage caused by idmap to virtual memory layout
+
+Milan Broz <gmazyland@gmail.com>
+    crypto: af_alg - properly label AF_ALG socket
+
+
+-------------
+
+Diffstat:
+
+ Documentation/x86/x86_64/mm.txt         |   2 +
+ Makefile                                |   4 +-
+ arch/arm/mm/idmap.c                     |   7 ++
+ arch/x86/Kconfig                        |  25 +++-
+ arch/x86/include/asm/espfix.h           |  16 +++
+ arch/x86/include/asm/irqflags.h         |   2 +-
+ arch/x86/include/asm/pgtable_64_types.h |   2 +
+ arch/x86/include/asm/setup.h            |   2 +
+ arch/x86/kernel/Makefile                |   1 +
+ arch/x86/kernel/entry_32.S              |  12 ++
+ arch/x86/kernel/entry_64.S              |  80 ++++++++++--
+ arch/x86/kernel/espfix_64.c             | 208 ++++++++++++++++++++++++++++++++
+ arch/x86/kernel/ldt.c                   |  10 +-
+ arch/x86/kernel/paravirt_patch_64.c     |   2 -
+ arch/x86/kernel/smpboot.c               |   7 ++
+ arch/x86/mm/dump_pagetables.c           |  31 +++--
+ arch/x86/vdso/vdso32-setup.c            |   8 --
+ crypto/af_alg.c                         |   2 +
+ drivers/scsi/scsi_lib.c                 |   8 ++
+ include/linux/printk.h                  |   6 +-
+ include/linux/skbuff.h                  |  17 ---
+ init/main.c                             |   4 +
+ kernel/printk.c                         |   2 +-
+ kernel/sched/core.c                     |   2 +-
+ kernel/sched/rt.c                       |   2 +-
+ kernel/time/clockevents.c               |  10 +-
+ lib/btree.c                             |   1 +
+ mm/mlock.c                              |   2 +
+ mm/page_alloc.c                         |  16 +--
+ mm/rmap.c                               |  14 ++-
+ net/ipv4/ip_forward.c                   |  68 +----------
+ net/ipv6/addrconf.c                     |  14 ++-
+ net/ipv6/ip6_output.c                   |  13 +-
+ net/l2tp/l2tp_ppp.c                     |   4 +-
+ 34 files changed, 439 insertions(+), 165 deletions(-)
 
 
