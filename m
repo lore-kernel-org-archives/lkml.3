@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727AbaHESxZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:53:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52124 "EHLO
+	id S1755612AbaHESxY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:53:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52131 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634AbaHESOC (ORCPT
+	with ESMTP id S1753838AbaHESOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Aug 2014 14:14:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Alex Thorlton <athorlton@sgi.com>, Bob Liu <lliubbo@gmail.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Hedi Berriche <hedi@sgi.com>, Hugh Dickins <hughd@google.com>,
+        Michal Hocko <mhocko@suse.cz>, Paul Furtado <paulfurtado91@gmail.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 14/42] mm, thp: do not allow thp faults to avoid cpuset restrictions
-Date: Tue,  5 Aug 2014 11:13:28 -0700
-Message-Id: <20140805181321.451781632@linuxfoundation.org>
+Subject: [PATCH 3.15 15/42] memcg: oom_notify use-after-free fix
+Date: Tue,  5 Aug 2014 11:13:29 -0700
+Message-Id: <20140805181321.481551052@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -37,80 +31,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit b104a35d32025ca740539db2808aa3385d0f30eb upstream.
+commit 2bcf2e92c3918ce62ab4e934256e47e9a16d19c3 upstream.
 
-The page allocator relies on __GFP_WAIT to determine if ALLOC_CPUSET
-should be set in allocflags.  ALLOC_CPUSET controls if a page allocation
-should be restricted only to the set of allowed cpuset mems.
+Paul Furtado has reported the following GPF:
 
-Transparent hugepages clears __GFP_WAIT when defrag is disabled to prevent
-the fault path from using memory compaction or direct reclaim.  Thus, it
-is unfairly able to allocate outside of its cpuset mems restriction as a
-side-effect.
+  general protection fault: 0000 [#1] SMP
+  Modules linked in: ipv6 dm_mod xen_netfront coretemp hwmon x86_pkg_temp_thermal crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 microcode pcspkr ext4 jbd2 mbcache raid0 xen_blkfront
+  CPU: 3 PID: 3062 Comm: java Not tainted 3.16.0-rc5 #1
+  task: ffff8801cfe8f170 ti: ffff8801d2ec4000 task.ti: ffff8801d2ec4000
+  RIP: e030:mem_cgroup_oom_synchronize+0x140/0x240
+  RSP: e02b:ffff8801d2ec7d48  EFLAGS: 00010283
+  RAX: 0000000000000001 RBX: ffff88009d633800 RCX: 000000000000000e
+  RDX: fffffffffffffffe RSI: ffff88009d630200 RDI: ffff88009d630200
+  RBP: ffff8801d2ec7da8 R08: 0000000000000012 R09: 00000000fffffffe
+  R10: 0000000000000000 R11: 0000000000000000 R12: ffff88009d633800
+  R13: ffff8801d2ec7d48 R14: dead000000100100 R15: ffff88009d633a30
+  FS:  00007f1748bb4700(0000) GS:ffff8801def80000(0000) knlGS:0000000000000000
+  CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 00007f4110300308 CR3: 00000000c05f7000 CR4: 0000000000002660
+  Call Trace:
+    pagefault_out_of_memory+0x18/0x90
+    mm_fault_error+0xa9/0x1a0
+    __do_page_fault+0x478/0x4c0
+    do_page_fault+0x2c/0x40
+    page_fault+0x28/0x30
+  Code: 44 00 00 48 89 df e8 40 ca ff ff 48 85 c0 49 89 c4 74 35 4c 8b b0 30 02 00 00 4c 8d b8 30 02 00 00 4d 39 fe 74 1b 0f 1f 44 00 00 <49> 8b 7e 10 be 01 00 00 00 e8 42 d2 04 00 4d 8b 36 4d 39 fe 75
+  RIP  mem_cgroup_oom_synchronize+0x140/0x240
 
-This patch ensures that ALLOC_CPUSET is only cleared when the gfp mask is
-truly GFP_ATOMIC by verifying it is also not a thp allocation.
+Commit fb2a6fc56be6 ("mm: memcg: rework and document OOM waiting and
+wakeup") has moved mem_cgroup_oom_notify outside of memcg_oom_lock
+assuming it is protected by the hierarchical OOM-lock.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Alex Thorlton <athorlton@sgi.com>
-Tested-by: Alex Thorlton <athorlton@sgi.com>
-Cc: Bob Liu <lliubbo@gmail.com>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Hedi Berriche <hedi@sgi.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Although this is true for the notification part the protection doesn't
+cover unregistration of event which can happen in parallel now so
+mem_cgroup_oom_notify can see already unlinked and/or freed
+mem_cgroup_eventfd_list.
+
+Fix this by using memcg_oom_lock also in mem_cgroup_oom_notify.
+
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=80881
+
+Fixes: fb2a6fc56be6 (mm: memcg: rework and document OOM waiting and wakeup)
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reported-by: Paul Furtado <paulfurtado91@gmail.com>
+Tested-by: Paul Furtado <paulfurtado91@gmail.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ mm/memcontrol.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2435,7 +2435,7 @@ static inline int
- gfp_to_alloc_flags(gfp_t gfp_mask)
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5544,8 +5544,12 @@ static int mem_cgroup_oom_notify_cb(stru
  {
- 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
--	const gfp_t wait = gfp_mask & __GFP_WAIT;
-+	const bool atomic = !(gfp_mask & (__GFP_WAIT | __GFP_NO_KSWAPD));
+ 	struct mem_cgroup_eventfd_list *ev;
  
- 	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
- 	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
-@@ -2444,20 +2444,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 	 * The caller may dip into page reserves a bit more if the caller
- 	 * cannot run direct reclaim, or if the caller has realtime scheduling
- 	 * policy or is asking for __GFP_HIGH memory.  GFP_ATOMIC requests will
--	 * set both ALLOC_HARDER (!wait) and ALLOC_HIGH (__GFP_HIGH).
-+	 * set both ALLOC_HARDER (atomic == true) and ALLOC_HIGH (__GFP_HIGH).
- 	 */
- 	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
++	spin_lock(&memcg_oom_lock);
++
+ 	list_for_each_entry(ev, &memcg->oom_notify, list)
+ 		eventfd_signal(ev->eventfd, 1);
++
++	spin_unlock(&memcg_oom_lock);
+ 	return 0;
+ }
  
--	if (!wait) {
-+	if (atomic) {
- 		/*
--		 * Not worth trying to allocate harder for
--		 * __GFP_NOMEMALLOC even if it can't schedule.
-+		 * Not worth trying to allocate harder for __GFP_NOMEMALLOC even
-+		 * if it can't schedule.
- 		 */
--		if  (!(gfp_mask & __GFP_NOMEMALLOC))
-+		if (!(gfp_mask & __GFP_NOMEMALLOC))
- 			alloc_flags |= ALLOC_HARDER;
- 		/*
--		 * Ignore cpuset if GFP_ATOMIC (!wait) rather than fail alloc.
--		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
-+		 * Ignore cpuset mems for GFP_ATOMIC rather than fail, see the
-+		 * comment for __cpuset_node_allowed_softwall().
- 		 */
- 		alloc_flags &= ~ALLOC_CPUSET;
- 	} else if (unlikely(rt_task(current)) && !in_interrupt())
 
 
