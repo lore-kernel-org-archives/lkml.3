@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009AbaHEOxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 10:53:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42143 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753768AbaHEOxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 10:53:03 -0400
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH v3 0/8] x86: entry_64.S: always allocate complete "struct pt_regs"
-Date: Tue,  5 Aug 2014 16:52:26 +0200
-Message-Id: <1407250354-29525-1-git-send-email-dvlasenk@redhat.com>
+	id S1755602AbaHEOy6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 10:54:58 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:57452 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563AbaHEOy5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 10:54:57 -0400
+Date: Tue, 5 Aug 2014 16:54:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Shuah Khan <shuahkhan@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Scott J Norton <scott.norton@hp.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH 2/2 v6] locking/selftest: Support queued rwlock
+Message-ID: <20140805145437.GL9918@twins.programming.kicks-ass.net>
+References: <1406659999-13974-1-git-send-email-Waiman.Long@hp.com>
+ <1406659999-13974-3-git-send-email-Waiman.Long@hp.com>
+ <20140805132837.GA19379@twins.programming.kicks-ass.net>
+ <CAKocOOMa89+Ej0rk-LyQLBcwDvLtsXq7x+oPwBMS1N61kKUwQg@mail.gmail.com>
+ <20140805144108.GK9918@twins.programming.kicks-ass.net>
+ <53E0EDD2.50600@canonical.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CUR78EuMd8EhT3+C"
+Content-Disposition: inline
+In-Reply-To: <53E0EDD2.50600@canonical.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Version 3 of the patchset.
 
-Please consider applying at least two first patches, they are definitely safe,
-and the second one fixes a latent bug.
+--CUR78EuMd8EhT3+C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Changes since v2:
-= fixed pre-existing latent bug: wrong symbolic constant usage: R11->ARGOFFSET
-= per Oleg's request, added comments about various syscall instructions
+On Tue, Aug 05, 2014 at 04:44:34PM +0200, Maarten Lankhorst wrote:
+> op 05-08-14 16:41, Peter Zijlstra schreef:
 
-Changes since v1 (mainly in patch 4/6):
-= Reverted changes to "partial pt_regs saving" on interrupt path.
-= Folded PARTIAL_FRAME macro into DEFAULT_FRAME. Patch v1
-  had a bug (incorrect dwarf debug info generation).
-= Corrected more comments.
-= Added use of SAVE_* macros to error_entry and save_paranoid.
-= Added another cleanup rename patch.
+> >> A bit off topic for this patch, however relevant for tests in general.
+> >> Is there a reason why these locking selftests need to be under lib?
+> >> Can they be consolidated under tools/testing/selftests?
+> > tools/ seems wrong as its very much not userspace.
+> Could be moved to kernel/locking though now that all other locking moved there. :-)
 
-TODO:
-= error_entry and save_paranoid have different CFI decorations.
-  At least one of them is likely to be wrong...
-= Move save_paranoid and ret_from_fork closer to their callers.
-= "idtentry" macro uses a subroutine to factor out a largish
-  common code block. "interrupt" macro inlines a similar
-  block every time (~20 instances). Maybe factor it out?
+Yes, I suppose we could do that; IIRC the reason I left it where it is
+is because there are more tests in lib/.
 
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Andy Lutomirski <luto@amacapital.net>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: X86 ML <x86@kernel.org>
-CC: Alexei Starovoitov <ast@plumgrid.com>
-CC: Will Drewry <wad@chromium.org>
-CC: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org
+--CUR78EuMd8EhT3+C
+Content-Type: application/pgp-signature
 
-Denys Vlasenko (8):
-  x86: entry_64.S: delete unused code
-  x86: ia32entry.S: fix wrong symbolic constant usage: R11->ARGOFFSET
-  x86: open-code register save/restore in trace_hardirqs thunks
-  x86: entry_64.S: fold SAVE_ARGS_IRQ macro into its sole user
-  x86: entry_64.S: always allocate complete "struct pt_regs"
-  x86: mass removal of ARGOFFSET
-  x86: rename some macros and labels, no code changes
-  x86: add comments about various syscall instructions, no code changes
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
- arch/x86/ia32/ia32entry.S              | 302 ++++++++++++++------------
- arch/x86/include/asm/calling.h         | 216 +++++++++----------
- arch/x86/include/asm/irqflags.h        |   4 +-
- arch/x86/include/asm/ptrace.h          |  13 +-
- arch/x86/include/uapi/asm/ptrace-abi.h |  16 +-
- arch/x86/include/uapi/asm/ptrace.h     |  13 +-
- arch/x86/kernel/entry_64.S             | 379 +++++++++++++--------------------
- arch/x86/kernel/preempt.S              |  16 +-
- arch/x86/lib/thunk_64.S                |  29 ++-
- 9 files changed, 489 insertions(+), 499 deletions(-)
+iQIcBAEBAgAGBQJT4PAtAAoJEHZH4aRLwOS6KS4P/1SG0l5aJ4ARosgq2BdAG2pA
+UfLlb0M+WmHAge4mOFfbyZunFBqJ/7p2hhATWLwUW+/o7X9V+TI0QoZGkTB5ePv0
+Z/jchoe1XHVnS3aaU45U36+3g/DlzDVxONBtmBoEXve2pmqb9gDhX/iG5vyRzl5P
+oby/qqvCBdiUZDBT/wZt9NlI6f4OO49Ea5KXobFjK6+MS8XDKmZrofVY9DOw5bQi
+kDnUCvAhLRbfLO7jR6o6IJ3IKmRBl4Y/RpeFCJ2XADbFDjzG51z71Hx6vj2Em1+t
+9wKHiLetC6l/xYiZ+5Wo8LvpAetw0a7WSBDLjmptLUatBcn5XdZwQexekGdUsZwn
+O4+lPw5n1jkWkyGtVqCavO1xQCXVDyozx7yD3YM7pAmK5o3MX8r9wOex1OTAKgIs
+nuBwNHQHNTMH8BUZi++pL5hHPXzS3cCcnpOY/2Jy971cCqPh9Vqd380tnG1fCOdb
+xel+oS4hfWnAoZ7TU2lb+V9EfJGWucUqPQ0iJGiyLnCpIT6mS1BzbkBNy8pFFV1V
+MCDnAsYzmRMYpqaUH6sj9dPQaWDFPNu6xloJh1AVuS9OiWZdK0IdTHtsk+n0ScUB
+EGMg6f4t5yGzYacwxqqg6yTJEM0kp+cz2+N4fkEcIKhmSI3vVgdYCT9OfMqJcAJ4
+yqghQJD2w5MGP9Ve9Str
+=Unea
+-----END PGP SIGNATURE-----
 
--- 
-1.8.1.4
-
+--CUR78EuMd8EhT3+C--
