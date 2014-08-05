@@ -1,229 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaHEN0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 09:26:53 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:61077 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaHEN0w (ORCPT
+	id S1752897AbaHEN1N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 09:27:13 -0400
+Received: from mail-yk0-f177.google.com ([209.85.160.177]:59772 "EHLO
+	mail-yk0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216AbaHEN1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 09:26:52 -0400
-Date: Tue, 5 Aug 2014 18:56:47 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] sound/oss/pss: Remove typedefs pss_mixerdata and pss_confdata
-Message-ID: <20140805132647.GA17360@himangi-Dell>
+	Tue, 5 Aug 2014 09:27:10 -0400
+Date: Tue, 5 Aug 2014 09:25:53 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Anson Huang <b20788@freescale.com>
+Cc: rui.zhang@intel.com, shawn.guo@linaro.org, eduardo.valentin@ti.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] Thermal: imx: add i.mx6sx thermal support
+Message-ID: <20140805132553.GA20291@developer>
+References: <1407229963-32662-1-git-send-email-b20788@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407229963-32662-1-git-send-email-b20788@freescale.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Linux kernel coding style guidelines suggest not using typedefs
-for structure types. This patch gets rid of the typedefs for pss_mixerdata
-and pss_confdata.
+Hello Anson,
 
-The following Coccinelle semantic patch is used to make the change.
+On Tue, Aug 05, 2014 at 05:12:43PM +0800, Anson Huang wrote:
+> i.MX6SX has some new features of thermal interrupt function,
+> there are LOW, HIGH and PANIC irq for thermal sensor, so add
+> platform data to separate different thermal version;
+> 
+> The reset value of LOW ALARM is 0 which means the highest
+> temp, so the LOW ALARM will be triggered once irq is enabled,
+> so we need to correct it before enabling thermal irq;
+> 
+> Enable PANIC ALARM as critical trip point, it will trigger
+> system reset via SRC module once PANIC IRQ is triggered, it
+> is pure hardware function, so use it instead of software
+> reset by cooling device.
+> 
+> Signed-off-by: Anson Huang <b20788@freescale.com>
+> ---
+>  .../devicetree/bindings/thermal/imx-thermal.txt    |    2 +-
+>  drivers/thermal/imx_thermal.c                      |   88 +++++++++++++++++---
+>  2 files changed, 76 insertions(+), 14 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/thermal/imx-thermal.txt b/Documentation/devicetree/bindings/thermal/imx-thermal.txt
+> index 1f0f672..95c05b1 100644
+> --- a/Documentation/devicetree/bindings/thermal/imx-thermal.txt
+> +++ b/Documentation/devicetree/bindings/thermal/imx-thermal.txt
+> @@ -1,7 +1,7 @@
+>  * Temperature Monitor (TEMPMON) on Freescale i.MX SoCs
+>  
+>  Required properties:
+> -- compatible : "fsl,imx6q-thermal"
+> +- compatible : "fsl,imx6q-tempmon" for V1, "fsl,imx6sx-tempmon" for V2.
 
-@tn@
-identifier i;
-type td;
-@@
+It would be kind to document the difference between V1 and V2, don't you
+think?
 
--typedef
- struct i { ... }
--td
- ;
+>  - fsl,tempmon : phandle pointer to system controller that contains TEMPMON
+>    control registers, e.g. ANATOP on imx6q.
+>  - fsl,tempmon-data : phandle pointer to fuse controller that contains TEMPMON
+> diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
+> index 2c516f2..2276e74 100644
+> --- a/drivers/thermal/imx_thermal.c
+> +++ b/drivers/thermal/imx_thermal.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/mfd/syscon.h>
+>  #include <linux/module.h>
+>  #include <linux/of.h>
+> +#include <linux/of_device.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/regmap.h>
+>  #include <linux/slab.h>
+> @@ -31,6 +32,10 @@
+>  
+>  #define MISC0				0x0150
+>  #define MISC0_REFTOP_SELBIASOFF		(1 << 3)
+> +#define MISC1				0x0160
+> +#define MISC1_IRQ_TEMPHIGH		(1 << 29)
+> +#define MISC1_IRQ_TEMPLOW		(1 << 28)
+> +#define MISC1_IRQ_TEMPPANIC		(1 << 27)
 
-@@
-type tn.td;
-identifier tn.i;
-@@
+how about using 
++#define MISC1_IRQ_TEMPHIGH		BIT(29)
++#define MISC1_IRQ_TEMPLOW		BIT(28)
++#define MISC1_IRQ_TEMPPANIC		BIT(27)
 
--td
-+ struct i
+>  
+>  #define TEMPSENSE0			0x0180
+>  #define TEMPSENSE0_ALARM_VALUE_SHIFT	20
+> @@ -43,6 +48,11 @@
+>  
+>  #define TEMPSENSE1			0x0190
+>  #define TEMPSENSE1_MEASURE_FREQ		0xffff
+> +#define TEMPSENSE2			0x0290
+> +#define TEMPSENSE2_LOW_VALUE_SHIFT	0
+> +#define TEMPSENSE2_LOW_VALUE_MASK	0xfff
+> +#define TEMPSENSE2_PANIC_VALUE_SHIFT	16
+> +#define TEMPSENSE2_PANIC_VALUE_MASK	0xfff0000
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- sound/oss/pss.c | 46 ++++++++++++++++++++++++----------------------
- 1 file changed, 24 insertions(+), 22 deletions(-)
+Are the above register offsets and (bit) masks applicable to both
+versions? do you mind adding a comment to what is specific to V2?
 
-diff --git a/sound/oss/pss.c b/sound/oss/pss.c
-index 145e36b..ca0d6e9 100644
---- a/sound/oss/pss.c
-+++ b/sound/oss/pss.c
-@@ -123,25 +123,25 @@ static bool pss_mixer;
- #endif
- 
- 
--typedef struct pss_mixerdata {
-+struct pss_mixerdata {
- 	unsigned int volume_l;
- 	unsigned int volume_r;
- 	unsigned int bass;
- 	unsigned int treble;
- 	unsigned int synth;
--} pss_mixerdata;
-+};
- 
--typedef struct pss_confdata {
-+struct pss_confdata {
- 	int             base;
- 	int             irq;
- 	int             dma;
- 	int            *osp;
--	pss_mixerdata   mixer;
-+	struct pss_mixerdata mixer;
- 	int             ad_mixer_dev;
--} pss_confdata;
-+};
-   
--static pss_confdata pss_data;
--static pss_confdata *devc = &pss_data;
-+static struct pss_confdata pss_data;
-+static struct pss_confdata *devc = &pss_data;
- static DEFINE_SPINLOCK(lock);
- 
- static int      pss_initialized;
-@@ -150,7 +150,7 @@ static int	pss_cdrom_port = -1;	/* Parameter for the PSS cdrom port */
- static bool	pss_enable_joystick;    /* Parameter for enabling the joystick */
- static coproc_operations pss_coproc_operations;
- 
--static void pss_write(pss_confdata *devc, int data)
-+static void pss_write(struct pss_confdata *devc, int data)
- {
- 	unsigned long i, limit;
- 
-@@ -206,7 +206,7 @@ static int __init probe_pss(struct address_info *hw_config)
- 	return 1;
- }
- 
--static int set_irq(pss_confdata * devc, int dev, int irq)
-+static int set_irq(struct pss_confdata *devc, int dev, int irq)
- {
- 	static unsigned short irq_bits[16] =
- 	{
-@@ -232,7 +232,7 @@ static int set_irq(pss_confdata * devc, int dev, int irq)
- 	return 1;
- }
- 
--static void set_io_base(pss_confdata * devc, int dev, int base)
-+static void set_io_base(struct pss_confdata *devc, int dev, int base)
- {
- 	unsigned short  tmp = inw(REG(dev)) & 0x003f;
- 	unsigned short  bits = (base & 0x0ffc) << 4;
-@@ -240,7 +240,7 @@ static void set_io_base(pss_confdata * devc, int dev, int base)
- 	outw(bits | tmp, REG(dev));
- }
- 
--static int set_dma(pss_confdata * devc, int dev, int dma)
-+static int set_dma(struct pss_confdata *devc, int dev, int dma)
- {
- 	static unsigned short dma_bits[8] =
- 	{
-@@ -264,7 +264,7 @@ static int set_dma(pss_confdata * devc, int dev, int dma)
- 	return 1;
- }
- 
--static int pss_reset_dsp(pss_confdata * devc)
-+static int pss_reset_dsp(struct pss_confdata *devc)
- {
- 	unsigned long   i, limit = jiffies + HZ/10;
- 
-@@ -275,7 +275,7 @@ static int pss_reset_dsp(pss_confdata * devc)
- 	return 1;
- }
- 
--static int pss_put_dspword(pss_confdata * devc, unsigned short word)
-+static int pss_put_dspword(struct pss_confdata *devc, unsigned short word)
- {
- 	int i, val;
- 
-@@ -291,7 +291,7 @@ static int pss_put_dspword(pss_confdata * devc, unsigned short word)
- 	return 0;
- }
- 
--static int pss_get_dspword(pss_confdata * devc, unsigned short *word)
-+static int pss_get_dspword(struct pss_confdata *devc, unsigned short *word)
- {
- 	int i, val;
- 
-@@ -307,7 +307,8 @@ static int pss_get_dspword(pss_confdata * devc, unsigned short *word)
- 	return 0;
- }
- 
--static int pss_download_boot(pss_confdata * devc, unsigned char *block, int size, int flags)
-+static int pss_download_boot(struct pss_confdata *devc, unsigned char *block,
-+			     int size, int flags)
- {
- 	int i, val, count;
- 	unsigned long limit;
-@@ -397,7 +398,7 @@ static int pss_download_boot(pss_confdata * devc, unsigned char *block, int size
- }
- 
- /* Mixer */
--static void set_master_volume(pss_confdata *devc, int left, int right)
-+static void set_master_volume(struct pss_confdata *devc, int left, int right)
- {
- 	static unsigned char log_scale[101] =  {
- 		0xdb, 0xe0, 0xe3, 0xe5, 0xe7, 0xe9, 0xea, 0xeb, 0xec, 0xed, 0xed, 0xee,
-@@ -416,7 +417,7 @@ static void set_master_volume(pss_confdata *devc, int left, int right)
- 	pss_write(devc, log_scale[right] | 0x0100);
- }
- 
--static void set_synth_volume(pss_confdata *devc, int volume)
-+static void set_synth_volume(struct pss_confdata *devc, int volume)
- {
- 	int vol = ((0x8000*volume)/100L);
- 	pss_write(devc, 0x0080);
-@@ -425,21 +426,21 @@ static void set_synth_volume(pss_confdata *devc, int volume)
- 	pss_write(devc, vol);
- }
- 
--static void set_bass(pss_confdata *devc, int level)
-+static void set_bass(struct pss_confdata *devc, int level)
- {
- 	int vol = (int)(((0xfd - 0xf0) * level)/100L) + 0xf0;
- 	pss_write(devc, 0x0010);
- 	pss_write(devc, vol | 0x0200);
- };
- 
--static void set_treble(pss_confdata *devc, int level)
-+static void set_treble(struct pss_confdata *devc, int level)
- {	
- 	int vol = (((0xfd - 0xf0) * level)/100L) + 0xf0;
- 	pss_write(devc, 0x0010);
- 	pss_write(devc, vol | 0x0300);
- };
- 
--static void pss_mixer_reset(pss_confdata *devc)
-+static void pss_mixer_reset(struct pss_confdata *devc)
- {
- 	set_master_volume(devc, 33, 33);
- 	set_bass(devc, 50);
-@@ -499,7 +500,8 @@ static int ret_vol_stereo(int left, int right)
- 	return ((right << 8) | left);
- }
- 
--static int call_ad_mixer(pss_confdata *devc,unsigned int cmd, void __user *arg)
-+static int call_ad_mixer(struct pss_confdata *devc, unsigned int cmd,
-+			 void __user *arg)
- {
- 	if (devc->ad_mixer_dev != NO_WSS_MIXER) 
- 		return mixer_devs[devc->ad_mixer_dev]->ioctl(devc->ad_mixer_dev, cmd, arg);
-@@ -509,7 +511,7 @@ static int call_ad_mixer(pss_confdata *devc,unsigned int cmd, void __user *arg)
- 
- static int pss_mixer_ioctl (int dev, unsigned int cmd, void __user *arg)
- {
--	pss_confdata *devc = mixer_devs[dev]->devc;
-+	struct pss_confdata *devc = mixer_devs[dev]->devc;
- 	int cmdf = cmd & 0xff;
- 	
- 	if ((cmdf != SOUND_MIXER_VOLUME) && (cmdf != SOUND_MIXER_BASS) &&
--- 
-1.9.1
+>  
+>  #define OCOTP_ANA1			0x04e0
+>  
+> @@ -66,6 +76,21 @@ enum imx_thermal_trip {
+>  #define FACTOR1				15976
+>  #define FACTOR2				4297157
+>  
+> +#define TEMPMON_V1			1
+> +#define TEMPMON_V2			2
+> +
+
+where does the V1/V2 nomenclature come from? how about:
+
++#define TEMPMON_IMX6Q			1
++#define TEMPMON_IMX6SX			2
+
+
+> +struct thermal_soc_data {
+> +	u32 version;
+> +};
+> +
+> +static struct thermal_soc_data thermal_imx6q_data = {
+> +	.version = TEMPMON_V1,
+> +};
+> +
+> +static struct thermal_soc_data thermal_imx6sx_data = {
+> +	.version = TEMPMON_V2,
+> +};
+> +
+>  struct imx_thermal_data {
+>  	struct thermal_zone_device *tz;
+>  	struct thermal_cooling_device *cdev;
+> @@ -79,8 +104,21 @@ struct imx_thermal_data {
+>  	bool irq_enabled;
+>  	int irq;
+>  	struct clk *thermal_clk;
+> +	const struct thermal_soc_data *socdata;
+>  };
+>  
+> +static void imx_set_panic_temp(struct imx_thermal_data *data,
+> +			       signed long panic_temp)
+> +{
+> +	struct regmap *map = data->tempmon;
+> +	int critical_value;
+> +
+> +	critical_value = (data->c2 - panic_temp) / data->c1;
+> +	regmap_write(map, TEMPSENSE2 + REG_CLR, TEMPSENSE2_PANIC_VALUE_MASK);
+> +	regmap_write(map, TEMPSENSE2 + REG_SET, critical_value <<
+> +			TEMPSENSE2_PANIC_VALUE_SHIFT);
+> +}
+> +
+>  static void imx_set_alarm_temp(struct imx_thermal_data *data,
+>  			       signed long alarm_temp)
+>  {
+> @@ -142,13 +180,15 @@ static int imx_get_temp(struct thermal_zone_device *tz, unsigned long *temp)
+>  	/* See imx_get_sensor_data() for formula derivation */
+>  	*temp = data->c2 - n_meas * data->c1;
+>  
+> -	/* Update alarm value to next higher trip point */
+> -	if (data->alarm_temp == data->temp_passive && *temp >= data->temp_passive)
+> -		imx_set_alarm_temp(data, data->temp_critical);
+> -	if (data->alarm_temp == data->temp_critical && *temp < data->temp_passive) {
+> -		imx_set_alarm_temp(data, data->temp_passive);
+> -		dev_dbg(&tz->device, "thermal alarm off: T < %lu\n",
+> -			data->alarm_temp / 1000);
+> +	/* Update alarm value to next higher trip point, only V1 needs it */
+> +	if (data->socdata->version == TEMPMON_V1) {
+> +		if (data->alarm_temp == data->temp_passive && *temp >= data->temp_passive)
+> +			imx_set_alarm_temp(data, data->temp_critical);
+> +		if (data->alarm_temp == data->temp_critical && *temp < data->temp_passive) {
+> +			imx_set_alarm_temp(data, data->temp_passive);
+> +			dev_dbg(&tz->device, "thermal alarm off: T < %lu\n",
+> +				data->alarm_temp / 1000);
+> +		}
+>  	}
+>  
+>  	if (*temp != data->last_temp) {
+> @@ -398,8 +438,17 @@ static irqreturn_t imx_thermal_alarm_irq_thread(int irq, void *dev)
+>  	return IRQ_HANDLED;
+>  }
+>  
+> +static const struct of_device_id of_imx_thermal_match[] = {
+> +	{ .compatible = "fsl,imx6q-tempmon", .data = &thermal_imx6q_data, },
+> +	{ .compatible = "fsl,imx6sx-tempmon", .data = &thermal_imx6sx_data, },
+> +	{ /* end */ }
+> +};
+> +MODULE_DEVICE_TABLE(of, of_imx_thermal_match);
+> +
+>  static int imx_thermal_probe(struct platform_device *pdev)
+>  {
+> +	const struct of_device_id *of_id =
+> +		of_match_device(of_imx_thermal_match, &pdev->dev);
+>  	struct imx_thermal_data *data;
+>  	struct cpumask clip_cpus;
+>  	struct regmap *map;
+> @@ -418,6 +467,21 @@ static int imx_thermal_probe(struct platform_device *pdev)
+>  	}
+>  	data->tempmon = map;
+>  
+> +	data->socdata = of_id->data;
+> +
+> +	/* make sure the IRQ flag is clear before enable irq */
+> +	regmap_write(map, MISC1 + REG_CLR, MISC1_IRQ_TEMPHIGH);
+
+Shouldn't this be also done only for TEMPMON_V2? What is the benefit /
+effect in doing for V1 ?
+
+> +	if (data->socdata->version == TEMPMON_V2) {
+> +		regmap_write(map, MISC1 + REG_CLR, MISC1_IRQ_TEMPLOW |
+> +			MISC1_IRQ_TEMPPANIC);
+> +		/*
+> +		 * reset value of LOW ALARM is incorrect, set it to lowest
+> +		 * value to avoid false trigger of low alarm.
+> +		 */
+> +		regmap_write(map, TEMPSENSE2 + REG_SET,
+> +			TEMPSENSE2_LOW_VALUE_MASK);
+> +	}
+> +
+>  	data->irq = platform_get_irq(pdev, 0);
+>  	if (data->irq < 0)
+>  		return data->irq;
+> @@ -489,6 +553,10 @@ static int imx_thermal_probe(struct platform_device *pdev)
+>  	measure_freq = DIV_ROUND_UP(32768, 10); /* 10 Hz */
+>  	regmap_write(map, TEMPSENSE1 + REG_SET, measure_freq);
+>  	imx_set_alarm_temp(data, data->temp_passive);
+> +
+> +	if (data->socdata->version == TEMPMON_V2)
+> +		imx_set_panic_temp(data, data->temp_critical);
+> +
+>  	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_POWER_DOWN);
+>  	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_MEASURE_TEMP);
+>  
+> @@ -550,12 +618,6 @@ static int imx_thermal_resume(struct device *dev)
+>  static SIMPLE_DEV_PM_OPS(imx_thermal_pm_ops,
+>  			 imx_thermal_suspend, imx_thermal_resume);
+>  
+> -static const struct of_device_id of_imx_thermal_match[] = {
+> -	{ .compatible = "fsl,imx6q-tempmon", },
+> -	{ /* end */ }
+> -};
+> -MODULE_DEVICE_TABLE(of, of_imx_thermal_match);
+> -
+>  static struct platform_driver imx_thermal = {
+>  	.driver = {
+>  		.name	= "imx_thermal",
+> -- 
+> 1.7.9.5
+> 
 
