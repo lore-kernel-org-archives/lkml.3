@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666AbaHEDiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 23:38:04 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:43447 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756314AbaHEDh0 (ORCPT
+	id S1757271AbaHEDgF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 23:36:05 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:64769 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755810AbaHEDfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 23:37:26 -0400
-Message-ID: <53E05125.1030007@linaro.org>
-Date: Tue, 05 Aug 2014 11:36:05 +0800
+	Mon, 4 Aug 2014 23:35:32 -0400
+Message-ID: <53E050B2.2080609@linaro.org>
+Date: Tue, 05 Aug 2014 11:34:10 +0800
 From: Hanjun Guo <hanjun.guo@linaro.org>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+To: Alexander Spyridakis <a.spyridakis@virtualopensystems.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>
-CC: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+        Mark Rutland <mark.rutland@arm.com>, linaro-acpi@lists.linaro.org,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Charles.Garcia-Tobin@arm.com,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH v2 18/18] Documentation: ACPI for ARM64
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-19-git-send-email-hanjun.guo@linaro.org> <53DFF18B.5080509@infradead.org>
-In-Reply-To: <53DFF18B.5080509@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Mark Brown <broonie@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [Linaro-acpi] [PATCH v2 00/18] Introduce ACPI for ARM64 based
+ on ACPI 5.1
+References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <CAJRNFK+UfJhGR65tOecy=X+YdHQHiNPZ4p_p8LUxhRL3GW5gFw@mail.gmail.com>
+In-Reply-To: <CAJRNFK+UfJhGR65tOecy=X+YdHQHiNPZ4p_p8LUxhRL3GW5gFw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-8-5 4:48, Randy Dunlap wrote:
-> On 08/04/14 08:28, Hanjun Guo wrote:
->> From: Graeme Gregory <graeme.gregory@linaro.org>
+On 2014-8-5 1:30, Alexander Spyridakis wrote:
+> On 4 August 2014 17:28, Hanjun Guo <hanjun.guo@linaro.org
+> <mailto:hanjun.guo@linaro.org>> wrote:
 >>
->> Add documentation for the guidelines of how to use ACPI
->> on ARM64.
->>
->> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
->> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->> ---
->>  Documentation/arm64/arm-acpi.txt |  215 ++++++++++++++++++++++++++++++++++++++
->>  1 file changed, 215 insertions(+)
->>  create mode 100644 Documentation/arm64/arm-acpi.txt
->>
->> diff --git a/Documentation/arm64/arm-acpi.txt b/Documentation/arm64/arm-acpi.txt
->> new file mode 100644
->> index 0000000..a6e14a2
->> --- /dev/null
->> +++ b/Documentation/arm64/arm-acpi.txt
->> @@ -0,0 +1,215 @@
->> +ACPI on ARMv8 Servers
->> +---------------------
->> +
+>> ACPI 5.1 has been released and now be freely available for
+>> download [1]. It fixed some major gaps to run ACPI on ARM,
+>> this patch just follow the ACPI 5.1 spec and prepare the
+>> code to run ACPI on ARM64.
 > 
-> ...
-> 
->> +
->> +ACPI Detection
->> +--------------
->> +
->> +Drivers should determine their probe() type by checking for ACPI_HANDLE,
->> +or .of_node, or other information in the device structure. This is
->> +detailed further in the "Driver Recommendations" section.
->> +
->> +In non-driver code If the presence of ACPI needs to be detected at runtime,
->> +then check the value of acpi_disabled. If CONFIG_ACPI not being set,
-> 
->                                           If CONFIG_ACPI is not set,
+> Hello,
 
-Good catch, We will update it.
+Hi,
+
+> 
+> Is this work still reproducible on Foundation and/or ARMv8 FVP models, as
+> described in the following wiki page?
+> https://wiki.linaro.org/LEG/Engineering/Kernel/ACPI
+
+Yes, I think so. If you meet any problem , please let us know, and we will
+update the wiki.
+
+> 
+> Should I assume that UEFI is mandatory (alternative being the aarch64
+> bootwrapper), as described in Documentation/arm64/arm-acpi.txt?
+
+Yes, UEFI is mandatory if you want to use ACPI.
+
+> 
+> Thanks in advance.
+
+You are welcome :)
 
 Thanks
 Hanjun
