@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025AbaHESoo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:44:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52244 "EHLO
+	id S1756407AbaHESom (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:44:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52249 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877AbaHESOT (ORCPT
+	with ESMTP id S1754737AbaHESOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Aug 2014 14:14:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        roma1390@gmail.com, Anssi Hannula <anssi.hannula@iki.fi>,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.15 22/42] dm cache: fix race affecting dirty block count
-Date: Tue,  5 Aug 2014 11:13:36 -0700
-Message-Id: <20140805181321.681131953@linuxfoundation.org>
+        John Stultz <john.stultz@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Bohac <jbohac@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 23/42] printk: rename printk_sched to printk_deferred
+Date: Tue,  5 Aug 2014 11:13:37 -0700
+Message-Id: <20140805181321.709621208@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -29,87 +33,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: John Stultz <john.stultz@linaro.org>
 
-commit 44fa816bb778edbab6b6ddaaf24908dd6295937e upstream.
+commit aac74dc495456412c4130a1167ce4beb6c1f0b38 upstream.
 
-nr_dirty is updated without locking, causing it to drift so that it is
-non-zero (either a small positive integer, or a very large one when an
-underflow occurs) even when there are no actual dirty blocks.  This was
-due to a race between the workqueue and map function accessing nr_dirty
-in parallel without proper protection.
+After learning we'll need some sort of deferred printk functionality in
+the timekeeping core, Peter suggested we rename the printk_sched function
+so it can be reused by needed subsystems.
 
-People were seeing under runs due to a race on increment/decrement of
-nr_dirty, see: https://lkml.org/lkml/2014/6/3/648
+This only changes the function name. No logic changes.
 
-Fix this by using an atomic_t for nr_dirty.
-
-Reported-by: roma1390@gmail.com
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Bohac <jbohac@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-target.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ include/linux/printk.h  |    6 +++---
+ kernel/printk/printk.c  |    2 +-
+ kernel/sched/core.c     |    2 +-
+ kernel/sched/deadline.c |    2 +-
+ kernel/sched/rt.c       |    2 +-
+ 5 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -231,7 +231,7 @@ struct cache {
- 	/*
- 	 * cache_size entries, dirty if set
- 	 */
--	dm_cblock_t nr_dirty;
-+	atomic_t nr_dirty;
- 	unsigned long *dirty_bitset;
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -128,9 +128,9 @@ asmlinkage __printf(1, 2) __cold
+ int printk(const char *fmt, ...);
  
- 	/*
-@@ -492,7 +492,7 @@ static bool is_dirty(struct cache *cache
- static void set_dirty(struct cache *cache, dm_oblock_t oblock, dm_cblock_t cblock)
- {
- 	if (!test_and_set_bit(from_cblock(cblock), cache->dirty_bitset)) {
--		cache->nr_dirty = to_cblock(from_cblock(cache->nr_dirty) + 1);
-+		atomic_inc(&cache->nr_dirty);
- 		policy_set_dirty(cache->policy, oblock);
- 	}
+ /*
+- * Special printk facility for scheduler use only, _DO_NOT_USE_ !
++ * Special printk facility for scheduler/timekeeping use only, _DO_NOT_USE_ !
+  */
+-__printf(1, 2) __cold int printk_sched(const char *fmt, ...);
++__printf(1, 2) __cold int printk_deferred(const char *fmt, ...);
+ 
+ /*
+  * Please don't use printk_ratelimit(), because it shares ratelimiting state
+@@ -165,7 +165,7 @@ int printk(const char *s, ...)
+ 	return 0;
  }
-@@ -501,8 +501,7 @@ static void clear_dirty(struct cache *ca
+ static inline __printf(1, 2) __cold
+-int printk_sched(const char *s, ...)
++int printk_deferred(const char *s, ...)
  {
- 	if (test_and_clear_bit(from_cblock(cblock), cache->dirty_bitset)) {
- 		policy_clear_dirty(cache->policy, oblock);
--		cache->nr_dirty = to_cblock(from_cblock(cache->nr_dirty) - 1);
--		if (!from_cblock(cache->nr_dirty))
-+		if (atomic_dec_return(&cache->nr_dirty) == 0)
- 			dm_table_event(cache->ti->table);
- 	}
+ 	return 0;
  }
-@@ -2269,7 +2268,7 @@ static int cache_create(struct cache_arg
- 	atomic_set(&cache->quiescing_ack, 0);
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -2474,7 +2474,7 @@ void wake_up_klogd(void)
+ 	preempt_enable();
+ }
  
- 	r = -ENOMEM;
--	cache->nr_dirty = 0;
-+	atomic_set(&cache->nr_dirty, 0);
- 	cache->dirty_bitset = alloc_bitset(from_cblock(cache->cache_size));
- 	if (!cache->dirty_bitset) {
- 		*error = "could not allocate dirty bitset";
-@@ -2808,7 +2807,7 @@ static void cache_status(struct dm_targe
+-int printk_sched(const char *fmt, ...)
++int printk_deferred(const char *fmt, ...)
+ {
+ 	unsigned long flags;
+ 	va_list args;
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1320,7 +1320,7 @@ out:
+ 		 * leave kernel.
+ 		 */
+ 		if (p->mm && printk_ratelimit()) {
+-			printk_sched("process %d (%s) no longer affine to cpu%d\n",
++			printk_deferred("process %d (%s) no longer affine to cpu%d\n",
+ 					task_pid_nr(p), p->comm, cpu);
+ 		}
+ 	}
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -352,7 +352,7 @@ static void replenish_dl_entity(struct s
  
- 		residency = policy_residency(cache->policy);
+ 		if (!lag_once) {
+ 			lag_once = true;
+-			printk_sched("sched: DL replenish lagged to much\n");
++			printk_deferred("sched: DL replenish lagged to much\n");
+ 		}
+ 		dl_se->deadline = rq_clock(rq) + pi_se->dl_deadline;
+ 		dl_se->runtime = pi_se->dl_runtime;
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -857,7 +857,7 @@ static int sched_rt_runtime_exceeded(str
  
--		DMEMIT("%u %llu/%llu %u %llu/%llu %u %u %u %u %u %u %llu ",
-+		DMEMIT("%u %llu/%llu %u %llu/%llu %u %u %u %u %u %u %lu ",
- 		       (unsigned)(DM_CACHE_METADATA_BLOCK_SIZE >> SECTOR_SHIFT),
- 		       (unsigned long long)(nr_blocks_metadata - nr_free_blocks_metadata),
- 		       (unsigned long long)nr_blocks_metadata,
-@@ -2821,7 +2820,7 @@ static void cache_status(struct dm_targe
- 		       (unsigned) atomic_read(&cache->stats.write_miss),
- 		       (unsigned) atomic_read(&cache->stats.demotion),
- 		       (unsigned) atomic_read(&cache->stats.promotion),
--		       (unsigned long long) from_cblock(cache->nr_dirty));
-+		       (unsigned long) atomic_read(&cache->nr_dirty));
- 
- 		if (writethrough_mode(&cache->features))
- 			DMEMIT("1 writethrough ");
+ 			if (!once) {
+ 				once = true;
+-				printk_sched("sched: RT throttling activated\n");
++				printk_deferred("sched: RT throttling activated\n");
+ 			}
+ 		} else {
+ 			/*
 
 
