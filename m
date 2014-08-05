@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082AbaHESvW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:51:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52124 "EHLO
+	id S932153AbaHESv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:51:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52141 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766AbaHESOG (ORCPT
+	with ESMTP id S1754254AbaHESOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:06 -0400
+	Tue, 5 Aug 2014 14:14:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Fritz <chf.fritz@googlemail.com>, Pekon Gupta <pekon@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.15 05/42] ARM: OMAP2+: gpmc: fix gpmc_hwecc_bch_capable()
-Date: Tue,  5 Aug 2014 11:13:19 -0700
-Message-Id: <20140805181321.183369124@linuxfoundation.org>
+        Milan Broz <gmazyland@gmail.com>, Paul Moore <paul@paul-moore.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.15 03/42] crypto: af_alg - properly label AF_ALG socket
+Date: Tue,  5 Aug 2014 11:13:17 -0700
+Message-Id: <20140805181321.125337620@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -29,57 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Fritz <chf.fritz@googlemail.com>
+From: Milan Broz <gmazyland@gmail.com>
 
-commit 33753cd2ba41c72a0756edc5dc094d91602deda5 upstream.
+commit 4c63f83c2c2e16a13ce274ee678e28246bd33645 upstream.
 
-This patch adds bch8 ecc software fallback which is mostly used by
-omap3s because they lack hardware elm support.
+Th AF_ALG socket was missing a security label (e.g. SELinux)
+which means that socket was in "unlabeled" state.
 
-Fixes: 0611c41934ab35ce84dea34ab291897ad3cbc7be (ARM: OMAP2+: gpmc:
-update gpmc_hwecc_bch_capable() for new platforms and ECC schemes)
-Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
-Reviewed-by: Pekon Gupta <pekon@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+This was recently demonstrated in the cryptsetup package
+(cryptsetup v1.6.5 and later.)
+See https://bugzilla.redhat.com/show_bug.cgi?id=1115120
+
+This patch clones the sock's label from the parent sock
+and resolves the issue (similar to AF_BLUETOOTH protocol family).
+
+Signed-off-by: Milan Broz <gmazyland@gmail.com>
+Acked-by: Paul Moore <paul@paul-moore.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/gpmc-nand.c |   18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ crypto/af_alg.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/arm/mach-omap2/gpmc-nand.c
-+++ b/arch/arm/mach-omap2/gpmc-nand.c
-@@ -50,6 +50,16 @@ static bool gpmc_hwecc_bch_capable(enum
- 		 soc_is_omap54xx() || soc_is_dra7xx())
- 		return 1;
+--- a/crypto/af_alg.c
++++ b/crypto/af_alg.c
+@@ -21,6 +21,7 @@
+ #include <linux/module.h>
+ #include <linux/net.h>
+ #include <linux/rwsem.h>
++#include <linux/security.h>
  
-+	if (ecc_opt == OMAP_ECC_BCH4_CODE_HW_DETECTION_SW ||
-+		 ecc_opt == OMAP_ECC_BCH8_CODE_HW_DETECTION_SW) {
-+		if (cpu_is_omap24xx())
-+			return 0;
-+		else if (cpu_is_omap3630() && (GET_OMAP_REVISION() == 0))
-+			return 0;
-+		else
-+			return 1;
-+	}
-+
- 	/* OMAP3xxx do not have ELM engine, so cannot support ECC schemes
- 	 * which require H/W based ECC error detection */
- 	if ((cpu_is_omap34xx() || cpu_is_omap3630()) &&
-@@ -57,14 +67,6 @@ static bool gpmc_hwecc_bch_capable(enum
- 		 (ecc_opt == OMAP_ECC_BCH8_CODE_HW)))
- 		return 0;
+ struct alg_type_list {
+ 	const struct af_alg_type *type;
+@@ -243,6 +244,7 @@ int af_alg_accept(struct sock *sk, struc
  
--	/*
--	 * For now, assume 4-bit mode is only supported on OMAP3630 ES1.x, x>=1
--	 * and AM33xx derivates. Other chips may be added if confirmed to work.
--	 */
--	if ((ecc_opt == OMAP_ECC_BCH4_CODE_HW_DETECTION_SW) &&
--	    (!cpu_is_omap3630() || (GET_OMAP_REVISION() == 0)))
--		return 0;
--
- 	/* legacy platforms support only HAM1 (1-bit Hamming) ECC scheme */
- 	if (ecc_opt == OMAP_ECC_HAM1_CODE_HW)
- 		return 1;
+ 	sock_init_data(newsock, sk2);
+ 	sock_graft(sk2, newsock);
++	security_sk_clone(sk, sk2);
+ 
+ 	err = type->accept(ask->private, sk2);
+ 	if (err) {
 
 
