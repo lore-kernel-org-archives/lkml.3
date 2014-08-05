@@ -1,114 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbaHECJy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 22:09:54 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:64958 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723AbaHECJv (ORCPT
+	id S1753440AbaHECLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 22:11:47 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25142 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753337AbaHECLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 22:09:51 -0400
-Message-ID: <53E03CEC.3060108@gmail.com>
-Date: Mon, 04 Aug 2014 19:09:48 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 4 Aug 2014 22:11:46 -0400
+Message-ID: <53E03D0B.3000208@oracle.com>
+Date: Mon, 04 Aug 2014 22:10:19 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net
-Subject: Re: [request for help] tty: serial: kgdb: fix msm_serial for kgdb
-References: <53E02C7C.4090206@gmail.com> <53E03475.6070007@codeaurora.org>
-In-Reply-To: <53E03475.6070007@codeaurora.org>
+To: Thomas Graf <tgraf@suug.ch>, davem@davemloft.net, netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, kaber@trash.net, paulmck@linux.vnet.ibm.com,
+        josh@joshtriplett.org, challa@noironetworks.com, walpole@cs.pdx.edu,
+        dev@openvswitch.org, netfilter-devel@vger.kernel.org,
+        nikolay@redhat.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH net-next 2/3] netlink: Convert netlink_lookup() to use
+ RCU protected hash table
+References: <cover.1406971567.git.tgraf@suug.ch> <a0370889bd1b1bdf097f74df7017d39ae845c12e.1406971567.git.tgraf@suug.ch>
+In-Reply-To: <a0370889bd1b1bdf097f74df7017d39ae845c12e.1406971567.git.tgraf@suug.ch>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/4/2014 6:33 PM, Stephen Boyd wrote:
-> On 08/04/14 17:59, Frank Rowand wrote:
->> Stephen,
->>
->> I made some changes to drivers/tty/serial/msm_serial.c to allow kgdb
->> to work with the dragon board (which has a qcom,msm-uartdm-v1.4 serial
->> port).
->>
->> I will reply to this email with the patches.
->>
->> With these fixes, kgdb properly communicates with the dragon board, but
->> following the continue command, the serial driver does not get any stale
->> (UART_IMR_RXSTALE) interrupts until 48 characters have been read, which
->> triggers a high water interrupt.  After the high water interrupt has been
->> processed, the driver resumes properly getting stale interrupts.
->>
->> I am hoping you can help me figure out how to get the stale interrupt to
->> occur for the first character after gdb continues, instead of having to
->> first get a high water interrupt.
->>
->> Patch 2 adds a framework to fix up the state of the driver and/or hardware
->> after gdb continues.  Patch 3 is a series of experiments trying to fix
->> things up for msm_serial.  I don't have complete documentation and
->> understanding of the hardware, so some of the experiments might be less
->> than intelligent.
->>
->> Can you give me some suggestions of What should I be doing in the fix up
->> function?
-> 
-> Hmm... I've never gotten the serial console to come back after
-> continuing because I only have one serial port and I use it for the
-> console so switching it into kgdb makes me lose the console. How do you
-> work around this? Use adb shell?
+On 08/02/2014 05:47 AM, Thomas Graf wrote:
+>  static void *netlink_seq_start(struct seq_file *seq, loff_t *pos)
+> -	__acquires(nl_table_lock)
+>  {
+> -	read_lock(&nl_table_lock);
+> +	rcu_read_lock();
+>  	return *pos ? netlink_seq_socket_idx(seq, *pos - 1) : SEQ_START_TOKEN;
+>  }
 
-I use kdmx2 to share the host serial port between gdb for kgdb and minicom
-for the console input and output.  I had to update kdmx2 to work in my
-environment.  You can download it from:
+I'm not sure how you expect this code to work. You're replacing a local lock
+with a RCU critical section. Imagine you're doing spin_lock() and just going
+back to userspace.
 
-   http://elinux.org/images/a/a7/Kdmx-2.00_v140730a.tar.gz
+It's quite easy to trigger this issue:
 
-Whenever that link is updated, the new link can be found at:
+[  531.479773] ===============================
+[  531.482951] [ INFO: suspicious RCU usage. ]
+[  531.485512] 3.16.0-next-20140804-sasha-00029-gcb12d07 #995 Not tainted
+[  531.489198] -------------------------------
+[  531.491518] net/netlink/af_netlink.c:2953 suspicious rcu_dereference_protected() usage!
+[  531.495781]
+[  531.495781] other info that might help us debug this:
+[  531.495781]
+[  531.499094]
+[  531.499094] rcu_scheduler_active = 1, debug_locks = 1
+[  531.502685] 3 locks held by trinity-c490/9673:
+[  531.505179] #0: (&f->f_pos_lock){+.+.+.}, at: __fdget_pos (fs/file.c:714)
+[  531.510057] #1: (&p->lock){+.+.+.}, at: seq_lseek (fs/seq_file.c:322)
+[  531.514819] #2: (rcu_read_lock){......}, at: netlink_seq_start (net/netlink/af_netlink.c:2923)
+[  531.517956]
+[  531.517956] stack backtrace:
+[  531.519054] CPU: 7 PID: 9673 Comm: cat Not tainted 3.16.0-next-20140804-sasha-00029-gcb12d07 #995
+[  531.521526]  0000000000000000 00000000917b9e45 ffff881efe493e20 ffffffffa55825a1
+[  531.523616]  ffff881efebeb000 ffff881efe493e50 ffffffffa21d3a75 ffffffffa81ce2c0
+[  531.527426]  0000000000000002 ffff8807cb581d90 ffff880fa3da8000 ffff881efe493ea0
+[  531.532068] Call Trace:
+[  531.533595] dump_stack (lib/dump_stack.c:52)
+[  531.536398] lockdep_rcu_suspicious (kernel/locking/lockdep.c:4259)
+[  531.537934] netlink_seq_next (net/netlink/af_netlink.c:2953 (discriminator 5))
+[  531.539355] traverse (fs/seq_file.c:142)
+[  531.541241] ? mutex_lock_nested (./arch/x86/include/asm/preempt.h:98 kernel/locking/mutex.c:567 kernel/locking/mutex.c:584)
+[  531.544797] seq_lseek (fs/seq_file.c:331 (discriminator 1))
+[  531.547485] proc_reg_llseek (fs/proc/inode.c:197)
+[  531.549904] SyS_lseek (fs/read_write.c:264 fs/read_write.c:289 fs/read_write.c:280)
+[  531.552190] tracesys (arch/x86/kernel/entry_64.S:541)
 
-   http://elinux.org/Kgdb
+I'd suggest testing any RCU related patches with CONFIG_PROVE_RCU in the future.
 
-> 
-> I think the big problem is
-> 
->     msm_write(port, UARTDM_DMEN_RX_SC_ENABLE, UARTDM_DMEN)
-> 
-> in msm_poll_init() which forces the uart into single character mode.
 
-Yep, most of my fixes deal with the fact that in single character mode
-echo fifo word only contains a single character of data.  All of that
-works now.  So my only problem is not getting a stale interrupt until
-after I've gotten a high water interrupt.
-
-> That causes all sorts of problems but is required to make the get_char
-> stuff work cleanly. I really wanted the msm_poll_get_char_dm_1p3() to
-> work for the 1.4 version of the hardware but I guess they made the
-> hardware different again for some unknown reason so it doesn't work. I
-> never got around to figuring it out or talking to the hardware people.
-> It took a while to develop the 1p3 version of the get_char code because
-> of the "fifo" centric design.
-> 
-> Do you know if that 1p3 version of the code works for you on 1.3
-> hardware? Just curious if that actually has the same bugs or not. I
-> probably won't have much time to look at this anytime soon, but I'll try
-> and send an email off to the hardware designers to figure out a way to
-> avoid switching the mode.
-> 
-
-I don't have any 1.3 hardware on my desk.  I'll have to see if I can find
-some when I get a chance.  I did try telling the driver that I was using
-1.3 hardware even though it is 1.4; I had to make some changes to
-msm_poll_get_char_dm_1p3() to make it kind of sort of work, but not well.
-Instead of spending more time on that I just went back to making the single
-character mode work.
-
--Frank
-
+Thanks,
+Sasha
