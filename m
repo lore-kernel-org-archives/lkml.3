@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829AbaHEQaB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 12:30:01 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:40079 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919AbaHEQaA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 12:30:00 -0400
-Date: Tue, 5 Aug 2014 12:29:56 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: remove unused/deprecated read_cpuid_part_number()
-In-Reply-To: <2694769.svrdKA2rqt@amdc1032>
-Message-ID: <alpine.LFD.2.11.1408051228480.6061@knanqh.ubzr>
-References: <2694769.svrdKA2rqt@amdc1032>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1755865AbaHEQah (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 12:30:37 -0400
+Received: from smtp.pobox.com ([208.72.237.35]:55253 "EHLO smtp.pobox.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753276AbaHEQag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 12:30:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=rfkyINnjn/jKUPUkwLQhIixmVJNzPcHk
+	hyIGHqCnHi5G8uA1xIBuc53KqfMiEuLJHJOvUI9NkVjtMhhHE8pDdEngbEnZhTU/
+	dQZdRt6KNds/RS0abA6yDl2a7MpLdmV0gN/AmnkxWflfqa5d2bsaMhkUg75+algy
+	dtBTJKQ/HPA=
+From: Junio C Hamano <gitster@pobox.com>
+To: Ramsay Jones <ramsay@ramsay1.demon.co.uk>
+Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git v2.1.0-rc1
+References: <xmqqy4v3q43r.fsf@gitster.dls.corp.google.com>
+	<53E01A3D.8070504@ramsay1.demon.co.uk>
+Date: Tue, 05 Aug 2014 09:30:24 -0700
+In-Reply-To: <53E01A3D.8070504@ramsay1.demon.co.uk> (Ramsay Jones's message of
+	"Tue, 05 Aug 2014 00:41:49 +0100")
+Message-ID: <xmqqtx5qq4pr.fsf@gitster.dls.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: CECD6D2C-1CBD-11E4-9B1D-9903E9FBB39C-77302942!pb-smtp0.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Aug 2014, Bartlomiej Zolnierkiewicz wrote:
+Ramsay Jones <ramsay@ramsay1.demon.co.uk> writes:
 
-> Commit af040ffc9ba1 ("ARM: make it easier to check the CPU part
-> number correctly") has left (now unused in the upstream tree and
-> marked as deprecated) read_cpuid_part_number() while changing
-> the way it works (using the old function with the definitions will
-> now always evaluate as false).  This causes problems with porting
-> older code to new kernels as the code compiles (with warnings but
-> they are very easy to miss) but it can fail silently or work just
-> fine depending on the used hardware.
-> 
-> Remove unused/deprecated read_cpuid_part_number() so developers
-> have to update their code during build time instead of running into
-> tricky runtime problems later.
-> 
-> Please see the commit af040ffc9ba1 for details on how to convert
-> your old out-of-tree code to use read_cpuid_part() instead of
-> read_cpuid_part_number().
-> 
-> Cc: Nicolas Pitre <nico@linaro.org>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> On 04/08/14 23:31, Junio C Hamano wrote:
+>> 
+>>  * The leaf function to check validity of a refname format has been
+>>    micro-optimized, using SSE2 instructions when available.  A few
+>>    breakages during its development have been caught and fixed already
+>>    but there might remain some more still; please test and report if
+>>    you find any.
+>
+> This has been removed.
 
-If there are no more in-tree users then it should go indeed.
-
-Acked-by: Nicolas Pitre <nico@linaro.org>
-
-> ---
->  arch/arm/include/asm/cputype.h |    5 -----
->  1 file changed, 5 deletions(-)
-> 
-> Index: b/arch/arm/include/asm/cputype.h
-> ===================================================================
-> --- a/arch/arm/include/asm/cputype.h	2014-08-04 15:09:30.166988335 +0200
-> +++ b/arch/arm/include/asm/cputype.h	2014-08-05 15:40:03.793317783 +0200
-> @@ -182,11 +182,6 @@ static inline unsigned int __attribute_c
->  	return read_cpuid_id() & 0xff00fff0;
->  }
->  
-> -static inline unsigned int __attribute_const__ __deprecated read_cpuid_part_number(void)
-> -{
-> -	return read_cpuid_id() & 0xFFF0;
-> -}
-> -
->  static inline unsigned int __attribute_const__ xscale_cpu_arch_version(void)
->  {
->  	return read_cpuid_id() & ARM_CPU_XSCALE_ARCH_MASK;
-> 
-> 
+Thanks for a reminder.  Will drop.
