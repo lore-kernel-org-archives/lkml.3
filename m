@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912AbaHELvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 07:51:35 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:34635 "EHLO
-	smptrelay.restena.lu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753748AbaHELve convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 07:51:34 -0400
-Date: Tue, 5 Aug 2014 13:51:30 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: P J P <ppandit@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: 3.12 to 3.13 boot regression bisected - still applies to 3.16
-Message-ID: <20140805135130.2d180b69@pluto>
-In-Reply-To: <20140805091848.GN15082@console-pimps.org>
-References: <20140804113435.34ed8c76@pluto>
-	<20140804122728.GH15082@console-pimps.org>
-	<20140804150627.4563b6a7@pluto>
-	<20140804135452.GJ15082@console-pimps.org>
-	<20140805100242.425e1093@pluto>
-	<20140805084542.GM15082@console-pimps.org>
-	<20140805111330.3cf9319f@pluto>
-	<20140805091848.GN15082@console-pimps.org>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1754216AbaHELzi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 07:55:38 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:56714 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753218AbaHELzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 07:55:36 -0400
+Message-ID: <1407239718.2475.76.camel@iivanov-dev>
+Subject: Re: [PATCH v2 2/4] pinctrl: qpnp: Qualcomm PMIC pin controller
+ driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: David Collins <collinsd@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Date: Tue, 05 Aug 2014 14:55:18 +0300
+In-Reply-To: <53E0350C.4020003@codeaurora.org>
+References: <1405610748-7583-1-git-send-email-iivanov@mm-sol.com>
+	  <1405610748-7583-3-git-send-email-iivanov@mm-sol.com>
+	  <53D307BB.1020208@codeaurora.org> <1406536774.2475.36.camel@iivanov-dev>
+	 <53E0350C.4020003@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Aug 2014 10:18:48 +0100 Matt Fleming wrote:
-> On Tue, 05 Aug, at 11:13:30AM, Bruno Prémont wrote:
-> > 
-> > I get at least to just before
-> >   status = efi_call_early(exit_boot_services, handle, key);
-> > in eboot.c on line 1310. A efi_printk inserted there is displayed.
+On Mon, 2014-08-04 at 18:36 -0700, Stephen Boyd wrote:
+> On 07/28/14 01:39, Ivan T. Ivanov wrote:
+> > I am working on proposal from Stephen Boyd to encode GPIO/MPP mode and 
+> > source select into combined function. Something like this one:
+> >
+> > #define PM8XXX_DIGITAL_IN		0
+> > #define PM8XXX_DIGITAL_OUT		1
+> > #define PM8XXX_DIGITAL_IN_OUT		2
+> >
+> > ...
+> >
+> > /* mode and source select */
+> > #define PM8XXX_FUNCTION(m,s)		((m) << 16 | (s))
+> >
+> > #define PM8921_GPIO1_14_KYPD_SNS	PM8XXX_FUNCTION(PM8XXX_DIGITAL_IN, 1)
+> > #define PM8921_GPIO9_14_KYPD_DRV	PM8XXX_FUNCTION(PM8XXX_DIGITAL_OUT, 1)
+> > #define PM8921_GPIO33_35_PWM		PM8XXX_FUNCTION(PM8XXX_DIGITAL_OUT, 3)
+> >
+> > ..
+> >
+> >
 > 
-> This is worth pointing out in case you're unaware, but do you know that
-> it's not valid to call efi_printk() after ExitBootServices()? Doing so
-> will almost certainly cause your machine to fault.
+> This isn't what I was suggesting at all. The function should be
+> something like KYPD, PWM and those should just be defined to be 1 or 3.
+> The mode should be some other property like input or output, and the
+> driver should or the two together and put it into the register.
 
-I am aware that efi_printk() uses boot services!
+Well, we can do this. I was just thought that will more convenient if
+function is fully described in to one property.
+
+Regards,
+Ivan
 
 
-Now I tried out loops at many places and have gotten up to line 340 in
-
-  arch/x86/kernel/head_64.S
-
-System reboots within the following assembler instructions (does not
-reach line 359).
-
-So efi_main() returns successfully but the assembler code following it
-gets something wrong.
-
-I'm going to try further to determine which line between 340 and 359 is
-the "bad" one.
-
-Bruno
