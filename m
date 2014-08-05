@@ -1,83 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795AbaHEHy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 03:54:27 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50009 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753745AbaHEHyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 03:54:25 -0400
-Date: Tue, 5 Aug 2014 09:54:19 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        toshi.kani@hp.com, imammedo@redhat.com, jan.kiszka@siemens.com,
-        mingo@kernel.org, huawei.libin@huawei.com, prarit@redhat.com,
-        linux-kernel@vger.kernel.org,
-        "Brandt, Todd E" <todd.e.brandt@intel.com>
-Subject: Re: [PATCH] X86/CPU: Avoid 100ms sleep for cpu offline  during S3
-Message-ID: <20140805075419.GA18234@pd.tnic>
-References: <1407142742-29202-1-git-send-email-tianyu.lan@intel.com>
- <20140804102301.GB4808@pd.tnic>
- <53E04457.2060507@intel.com>
+	id S1756840AbaHEHzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 03:55:05 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:11021 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753583AbaHEHzD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 03:55:03 -0400
+Message-ID: <53E08C8E.30106@huawei.com>
+Date: Tue, 5 Aug 2014 15:49:34 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53E04457.2060507@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "Andi Kleen" <ak@linux.intel.com>, Pei Feiyue <peifeiyue@huawei.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kprobes/x86: opt: free optinsn cache when range check
+ fails
+References: <1406550019-70935-1-git-send-email-wangnan0@huawei.com> <53D6FC38.8070801@hitachi.com> <53D6FEFE.8060307@huawei.com> <53D7872E.8050506@hitachi.com>
+In-Reply-To: <53D7872E.8050506@hitachi.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tianyu,
-
-On Tue, Aug 05, 2014 at 10:41:27AM +0800, Lan Tianyu wrote:
-> Thanks for your review. We are doing S2RAM optimization.
-> We usually use AnalyzeSuspend tool from Brandt, Todd E to observe
-> the time consume during S2RAM.(https://github.com/01org/suspendresume.git)
+On 2014/7/29 19:36, Masami Hiramatsu wrote:
+> Hi Wang,
 > 
-> I attached the original result from the tool which showed cpu offline consumes
-> more than 100ms. This is due to msleep in the native_cpu_die(). The
-> improvement.html shows the test result with the patch. You can't find cpu
-> offline at first glance and need to click zoom-in button because the consume
-> time of cpu offline is reduced to less than 5ms.
+> (2014/07/29 10:55), Wang Nan wrote:
+>> On 2014/7/29 9:43, Masami Hiramatsu wrote:
+>>> (2014/07/28 21:20), Wang Nan wrote:
+>>>> This patch frees optinsn slot when range check error to prevent memory
+>>>> leaks. Before this patch, cache entry in kprobe_insn_cache won't be
+>>>> freed if kprobe optimizing fails due to range check failure.
+>>>>
+>>>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>>>
+>>> Oops, thank you for finding it!
+>>>
+>>> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>>>
+>>> BTW, would you really have hit this error?
+>>> I'd like to know the case if this really happens.
+>>
+>> I'm not really hit it on x86_64. I found this problem when trying to implement kprobe opt on arm.
+> 
+> That's interesting :)
+> 
+>>
+>> On arm, relative jump can only branch on/backward 64MB, which makes it a realistic problem.
+> 
+> Yeah, that is what I expected on RISC processor such as ARM.
+> 
+> Perhaps you'll need to overwrite 2 words, one is for "ldr pc, [pc, #-4]" and one is for
+> the address data. In this case, you have no branch range limitation in 32bit mode. This
+> requires branch destination checking for safety as x86 optprobe does.
+> Plus, you'll have to use same technique of x86 to make a detour code and deferred
+> optimization for overwriting multiple instructions. Put a breakpoint at the probe point,
+> wait for synchronize_sched(), put the 2nd instruction(.data) and overwrite the breakpoint
+> with the "ldr". :)
+> 
+> However, that is only for arm32.
+> For ARM64, I'm not so sure about its ISA. I guess we need a scratchpad area for that..
+> 
+> Anyway, please CC to me when you've done the prototyping and sending RFC. I'll review
+> and test it. :)
+> 
+> Thank you,
+> 
 
-The fact that I can't find it is a good thing, right? :-)
+Hi Masami,
 
-Ok, this looks nice, it actually shows an improvement from cpus going
-offline for about 100ish msec and that duration shrinking down to 1.5
-msec on average which is a ~100x improv in my book.
+I have posted my RFC patch on LKML and ARM mailing list, and also CC you.
+Please see:
 
-And the total S/R time diff looks really good too.
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-August/277809.html
 
-Can people do those measurements outside of your lab? Because if they
-can, I could do some on my boxes here too :)
+Please help me review my patch, Thank you!
 
-Now, what you could do is run this on a couple of systems, if possible,
-write down in the commit message how exactly you did it and add some
-relevant numbers to show the speedup. Because this completion thing is
-definitely worth pursuing further, provided it doesn't break suspend in
-some weird ways.
+>>
+>>>
+>>>> ---
+>>>>  arch/x86/kernel/kprobes/opt.c | 4 +++-
+>>>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
+>>>> index f304773..f1314d0 100644
+>>>> --- a/arch/x86/kernel/kprobes/opt.c
+>>>> +++ b/arch/x86/kernel/kprobes/opt.c
+>>>> @@ -338,8 +338,10 @@ int arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+>>>>  	 * a relative jump.
+>>>>  	 */
+>>>>  	rel = (long)op->optinsn.insn - (long)op->kp.addr + RELATIVEJUMP_SIZE;
+>>>> -	if (abs(rel) > 0x7fffffff)
+>>>> +	if (abs(rel) > 0x7fffffff) {
+>>>> +		__arch_remove_optimized_kprobe(op, 0);
+>>>>  		return -ERANGE;
+>>>> +	}
+>>>>  
+>>>>  	buf = (u8 *)op->optinsn.insn;
+>>>>  
+>>>>
+>>>
+>>>
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+> 
 
-Btw, the original patches which added the 100ms msleep are:
 
-	ef6e525393db ("[PATCH] x86_64: Use msleep in smpboot.c")
-	aeb8397b6a28 ("[PATCH] i386/smpboot: use msleep() instead of schedule_timeout()")
-
-and its commit message is, of course, :-( not very telling. WTF does
-"task delays as expected" mean? I have to go poke peterz for an idea
-what it might've meant...
-
-So do you see what I mean with writing a good, verbose commit message,
-explaining the situation?
-
-It needs to explain not what we did but why we did it years from now so
-that we know exactly if we have to go touch that code again.
-
-HTH.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
