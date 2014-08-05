@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058AbaHEX3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 19:29:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54742 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000AbaHEX3R (ORCPT
+	id S1754094AbaHEXaU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 19:30:20 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:39320 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327AbaHEXaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 19:29:17 -0400
-Date: Tue, 5 Aug 2014 16:29:16 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@kernel.org, oleg@redhat.com, torvalds@linux-foundation.org,
-        tglx@linutronix.de, ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [RFC][PATCH 5/7] tty: Deal with nested sleeps
-Message-ID: <20140805232916.GC26505@kroah.com>
-References: <20140804103025.478913141@infradead.org>
- <20140804103537.628164803@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140804103537.628164803@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 5 Aug 2014 19:30:19 -0400
+From: Dzonatans Melgalvis <dz.melgalvis@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Dzonatans Melgalvis <dz.melgalvis@gmail.com>
+Subject: [PATCH] Staging: comedi: comedidev.h: fix checkpatch code style issue
+Date: Wed,  6 Aug 2014 02:29:45 +0300
+Message-Id: <1407281385-12576-1-git-send-email-dz.melgalvis@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 12:30:30PM +0200, Peter Zijlstra wrote:
-> n_tty_{read,write} are wait loops with sleeps in. Wait loops rely on
-> task_struct::state and sleeps do too, since that's the only means of
-> actually sleeping. Therefore the nested sleeps destroy the wait loop
-> state and the wait loop breaks the sleep functions that assume
-> TASK_RUNNING (mutex_lock).
-> 
-> Fix this by using the new woken_wake_function and wait_woken() stuff,
-> which registers wakeups in wait and thereby allows shrinking the
-> task_state::state changes to the actual sleep part.
-> 
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
->  drivers/tty/n_tty.c |   17 +++++------------
->  1 file changed, 5 insertions(+), 12 deletions(-)
-> 
+Fixing checkpatch warning - blank line missing after declaration.
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Dzonatans Melgalvis <dz.melgalvis@gmail.com>
+---
+ drivers/staging/comedi/comedidev.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+index 58e58a3..c9b7978 100644
+--- a/drivers/staging/comedi/comedidev.h
++++ b/drivers/staging/comedi/comedidev.h
+@@ -57,6 +57,7 @@ struct comedi_subdevice {
+ 	const unsigned int *maxdata_list;	/* list is channel specific */
+ 
+ 	const struct comedi_lrange *range_table;
++
+ 	const struct comedi_lrange *const *range_table_list;
+ 
+ 	unsigned int *chanlist;	/* driver-owned chanlist (not used) */
+@@ -207,8 +208,10 @@ struct comedi_async {
+ 	struct comedi_cmd cmd;
+ 	wait_queue_head_t wait_head;
+ 	unsigned int cb_mask;
++
+ 	int (*inttrig)(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		       unsigned int x);
++
+ };
+ 
+ struct comedi_driver {
+@@ -216,13 +219,16 @@ struct comedi_driver {
+ 
+ 	const char *driver_name;
+ 	struct module *module;
++
+ 	int (*attach)(struct comedi_device *, struct comedi_devconfig *);
+ 	void (*detach)(struct comedi_device *);
+ 	int (*auto_attach)(struct comedi_device *, unsigned long);
+ 
+ 	/* number of elements in board_name and board_id arrays */
+ 	unsigned int num_names;
++
+ 	const char *const *board_name;
++
+ 	/* offset in bytes from one board name pointer to the next */
+ 	int offset;
+ };
+-- 
+1.9.1
+
