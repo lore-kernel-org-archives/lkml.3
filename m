@@ -1,131 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243AbaHEKza (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 06:55:30 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:43857 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125AbaHEKya (ORCPT
+	id S932291AbaHEK4A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 06:56:00 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:44595 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754901AbaHEKtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 06:54:30 -0400
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, gregkh@linuxfoundation.org, jslaby@suse.cz,
-        grant.likely@linaro.org, matthias.bgg@gmail.com,
-        heikki.krogerus@linux.intel.com, alan@linux.intel.com,
-        paul.gortmaker@windriver.com, asierra@xes-inc.com, mwelling@ieee.org,
-        dianders@chromium.org, m-karicheri2@ti.com, jschultz@xes-inc.com,
-        mingo@elte.hu, balbi@ti.com, heiko@sntech.de,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-api@vger.kernel.org
-Subject: [PATCH 1/3] tty: serial: 8250: Add new capability for highspeed register
-Date: Tue,  5 Aug 2014 12:54:11 +0200
-Message-Id: <1407236054-30994-2-git-send-email-matthias.bgg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1407236054-30994-1-git-send-email-matthias.bgg@gmail.com>
-References: <1407236054-30994-1-git-send-email-matthias.bgg@gmail.com>
+	Tue, 5 Aug 2014 06:49:01 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-94-53e0b69b2d7d
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        Cho KyongHo <pullip.cho@samsung.com>, Joerg Roedel <joro@8bytes.org>,
+        Thierry Reding <treding@nvidia.com>, Olof Johansson <olof@lixom.net>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Rob Herring <robh@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH 12/29] DRM: Exynos: fix window clear code
+Date: Tue, 05 Aug 2014 12:47:40 +0200
+Message-id: <1407235677-26324-13-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.9.2
+In-reply-to: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
+References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xq7qztz0INjjXLmnxd9IxdovmxevZ
+	LCbdn8BisWC/tUXn7A3sFr0LrrJZnG16w27ROXEJu8WXKw+ZLDY9vsZqcXnXHDaLGef3MVms
+	PXKX3eLU9c9sFv96DzJanDl9idXi/54d7BaH37SzWhx5uJvdYtWuP4wWt3/zOYh6PDk4j8nj
+	969JjB47Z91l95jdMZPVY9OqTjaP/XPXsHtsXlLvcfvfY2aPyTeWM3pcOdHE6tHb/I7NY8vV
+	dhaPvi2rGD0+b5IL4IvisklJzcksSy3St0vgylg0eQVzwW6BimM7brM1MK7h7WLk5JAQMJG4
+	2fuFHcIWk7hwbz1bFyMXh5DAUkaJ/Ze2MEI4fUwSM6f2MYJUsQkYSnS97QKrEhHoZZTob/rB
+	BOIwC6xjldjfe50FpEpYwFLiZvN0JhCbRUBV4tucfWDdvAKeEt9frGaC2Ccn8f/lCjCbEyh+
+	+OYBVhBbSMBD4ueGNewTGHkXMDKsYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/dxAiJna87GJce
+	szrEKMDBqMTDq7D3brAQa2JZcWXuIUYJDmYlEV6JNQ+ChXhTEiurUovy44tKc1KLDzEycXBK
+	NTDu/HBc9X2A9nfTmwnli26+LXPp1LA88OfZ4o86mafc5uxq3Ma+aNWqQMmcf28FT034fK+Z
+	a++DFb2818za2z6v2yfH9EOD7f7fjL0xU/9q7WTnOvNMwE14XnmCx8b35/Zf+7y0Rnq16vE7
+	Mz7s7Tx1oTbuu2Xahu0qGbF7n3a7/FLjK/t/7+iRZ0osxRmJhlrMRcWJAL2Rb+57AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new capability to the 8250 driver framework. The Mediatek UART
-port has a highspeed register to set the baudrate the port will work with.
-This influences the calculation of the divisor.
+To correctly disable hardware window during driver init, both enable bits
+(WINCONx_ENWIN in WINCON and SHADOWCON_CHx_ENABLE in SHADOWCON) must be
+cleared, otherwise hardware fails to re-enable such window later.
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+While touching this function, also temporarily disable ctx->suspended flag
+to let fimd_wait_for_vblank function really to do its job.
+
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- drivers/tty/serial/8250/8250.h      |    1 +
- drivers/tty/serial/8250/8250_core.c |   47 +++++++++++++++++++++++++++++++++++
- include/uapi/linux/serial_reg.h     |    6 +++++
- 3 files changed, 54 insertions(+)
+ drivers/gpu/drm/exynos/exynos_drm_fimd.c | 25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
-index 1ebf853..2b17655 100644
---- a/drivers/tty/serial/8250/8250.h
-+++ b/drivers/tty/serial/8250/8250.h
-@@ -70,6 +70,7 @@ struct serial8250_config {
- #define UART_CAP_UUE	(1 << 12)	/* UART needs IER bit 6 set (Xscale) */
- #define UART_CAP_RTOIE	(1 << 13)	/* UART needs IER bit 4 set (Xscale, Tegra) */
- #define UART_CAP_HFIFO	(1 << 14)	/* UART has a "hidden" FIFO */
-+#define UART_CAP_HIGHS	(1 << 15)	/* UART has a highspeed register (Mediatek) */
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimd.c b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
+index 41904df..7a363d2 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_fimd.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
+@@ -165,27 +165,38 @@ static void fimd_wait_for_vblank(struct exynos_drm_manager *mgr)
+ 		DRM_DEBUG_KMS("vblank wait timed out.\n");
+ }
  
- #define UART_BUG_QUOT	(1 << 0)	/* UART has buggy quot LSB */
- #define UART_BUG_TXEN	(1 << 1)	/* UART has buggy TX IIR status */
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 27f7ad6..a0c531b 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -2434,6 +2434,53 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
- 	serial_dl_write(up, quot);
+-
+ static void fimd_clear_channel(struct exynos_drm_manager *mgr)
+ {
+ 	struct fimd_context *ctx = mgr->ctx;
+-	int win, ch_enabled = 0;
++	int state, win, ch_enabled = 0;
  
- 	/*
-+	 * Mediatek UARTs use an extra highspeed register (UART_MTK_HIGHS)
-+	 *
-+	 * We need to recalcualte the quot register, as the claculation depends
-+	 * on the vaule in the highspeed register.
-+	 *
-+	 * Some baudrates are not supported by the chip, so we use the next
-+	 * lower rate supported.
-+	 *
-+	 * If highspeed register is set to 3, we need to specify sample count
-+	 * and sample point to increase accuracy. If not, we reset the
-+	 * registers to their default values.
-+	 */
-+	if (up->port.flags & UART_CAP_HIGHS) {
-+		if (baud <= 115200) {
-+			serial_port_out(port, UART_MTK_HIGHS, 0x0);
-+		} else if (baud <= 576000) {
-+			serial_port_out(port, UART_MTK_HIGHS, 0x2);
+ 	DRM_DEBUG_KMS("%s\n", __FILE__);
+ 
+ 	/* Check if any channel is enabled. */
+ 	for (win = 0; win < WINDOWS_NR; win++) {
+-		u32 val = readl(ctx->regs + SHADOWCON);
+-		if (val & SHADOWCON_CHx_ENABLE(win)) {
+-			val &= ~SHADOWCON_CHx_ENABLE(win);
+-			writel(val, ctx->regs + SHADOWCON);
++		u32 val = readl(ctx->regs + WINCON(win));
++		if (val & WINCONx_ENWIN) {
++			/* wincon */
++			val &= ~WINCONx_ENWIN;
++			writel(val, ctx->regs + WINCON(win));
 +
-+			/* Set to next lower baudrate supported */
-+			if ((baud == 500000) || (baud == 576000))
-+				baud = 460800;
-+			quot = DIV_ROUND_CLOSEST(port->uartclk, 4 * baud);
-+		} else {
-+			serial_port_out(port, UART_MTK_HIGHS, 0x3);
-+
-+			/* Set to highest baudrate supported */
-+			if (baud >= 1152000)
-+				baud = 1000000;
-+			quot = DIV_ROUND_CLOSEST(port->uartclk, 256 * baud);
-+		}
-+
-+		serial_dl_write(up, quot);
-+
-+		if (baud > 460800) {
-+			unsigned int tmp;
-+
-+			tmp = DIV_ROUND_CLOSEST(port->uartclk, quot * baud);
-+			serial_port_out(port, UART_MTK_SAMPLE_COUNT, tmp - 1);
-+			serial_port_out(port, UART_MTK_SAMPLE_POINT,
-+						(tmp - 2) >> 1);
-+		} else {
-+			serial_port_out(port, UART_MTK_SAMPLE_COUNT, 0x00);
-+			serial_port_out(port, UART_MTK_SAMPLE_POINT, 0xff);
-+		}
++			/* unprotect windows */
++			if (ctx->driver_data->has_shadowcon) {
++				val = readl(ctx->regs + SHADOWCON);
++				val &= ~SHADOWCON_CHx_ENABLE(win);
++				writel(val, ctx->regs + SHADOWCON);
++			}
+ 			ch_enabled = 1;
+ 		}
+ 	}
+ 
+ 	/* Wait for vsync, as disable channel takes effect at next vsync */
+-	if (ch_enabled)
++	if (ch_enabled) {
++		state = ctx->suspended;
++		ctx->suspended = 0;
+ 		fimd_wait_for_vblank(mgr);
++		ctx->suspended = state;
 +	}
-+
-+	/*
- 	 * XR17V35x UARTs have an extra fractional divisor register (DLD)
- 	 *
- 	 * We need to recalculate all of the registers, because DLM and DLL
-diff --git a/include/uapi/linux/serial_reg.h b/include/uapi/linux/serial_reg.h
-index 99b4705..f6dc97c 100644
---- a/include/uapi/linux/serial_reg.h
-+++ b/include/uapi/linux/serial_reg.h
-@@ -385,5 +385,11 @@
- #define UART_EXAR_TXTRG		0x0a	/* Tx FIFO trigger level write-only */
- #define UART_EXAR_RXTRG		0x0b	/* Rx FIFO trigger level write-only */
+ }
  
-+/*
-+ * These are definitions for the Mediatek UART
-+ */
-+#define UART_MTK_HIGHS		0x09	/* Highspeed register */
-+#define UART_MTK_SAMPLE_COUNT	0x0a	/* Sample count register */
-+#define UART_MTK_SAMPLE_POINT	0x0b	/* Sample point register */
- #endif /* _LINUX_SERIAL_REG_H */
- 
+ static int fimd_mgr_initialize(struct exynos_drm_manager *mgr,
 -- 
-1.7.9.5
+1.9.2
 
