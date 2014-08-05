@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692AbaHEPc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 11:32:26 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:26902
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1755646AbaHEPcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 11:32:24 -0400
+Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:11418
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755618AbaHEPcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 11:32:23 -0400
-X-WSS-ID: 0N9UB5B-08-R0X-02
+	id S1751885AbaHEPcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 11:32:18 -0400
+X-WSS-ID: 0N9UB5O-07-3EX-02
 X-M-MSG: 
 From: Oded Gabbay <oded.gabbay@amd.com>
 To: <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
@@ -18,9 +18,9 @@ CC: Andrew Morton <akpm@linux-foundation.org>, <John.Bridgman@amd.com>,
         "Joerg Roedel" <joro@8bytes.org>, <Andrew.Lewycky@amd.com>,
         <deathsimple@vodafone.de>, <michel.daenzer@amd.com>,
         Oded Gabbay <oded.gabbay@amd.com>
-Subject: [PATCH v3 04/23] drm/radeon: adding synchronization for GRBM GFX
-Date: Tue, 5 Aug 2014 18:30:32 +0300
-Message-ID: <1407252651-3539-5-git-send-email-oded.gabbay@amd.com>
+Subject: [PATCH v3 07/23] amdkfd: Add IOCTL set definitions of amdkfd
+Date: Tue, 5 Aug 2014 18:30:35 +0300
+Message-ID: <1407252651-3539-8-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407252651-3539-1-git-send-email-oded.gabbay@amd.com>
 References: <1407252651-3539-1-git-send-email-oded.gabbay@amd.com>
@@ -28,210 +28,182 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.20.0.84]
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(189002)(199002)(86362001)(104166001)(31966008)(50986999)(81342001)(81542001)(102836001)(85306004)(50226001)(4396001)(62966002)(77982001)(79102001)(83072002)(76482001)(92566001)(88136002)(97736001)(68736004)(92726001)(89996001)(77096002)(85852003)(107046002)(105586002)(229853001)(33646002)(106466001)(19580395003)(21056001)(101416001)(95666004)(44976005)(84676001)(48376002)(87286001)(50466002)(77156001)(36756003)(76176999)(47776003)(64706001)(46102001)(83322001)(99396002)(19580405001)(80022001)(87936001)(74662001)(74502001)(20776003);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR02MB038;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(199002)(189002)(51234002)(64706001)(92726001)(92566001)(85852003)(83072002)(89996001)(88136002)(20776003)(87286001)(47776003)(50226001)(4396001)(19580395003)(19580405001)(83322001)(44976005)(95666004)(105586002)(50986999)(31966008)(99396002)(106466001)(21056001)(107046002)(87936001)(33646002)(74502001)(74662001)(229853001)(76176999)(79102001)(77982001)(62966002)(84676001)(36756003)(77096002)(46102001)(77156001)(81342001)(48376002)(50466002)(97736001)(102836001)(81542001)(85306004)(80022001)(104166001)(68736004)(76482001)(101416001)(86362001)(129583001);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR02MB037;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
 X-Forefront-PRVS: 02945962BD
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
  smtp.mailfrom=Oded.Gabbay@amd.com; 
 X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implementing a lock for selecting and accessing shader engines and arrays.
-This lock will make sure that radeon and amdkfd are not colliding when
-accessing shader engines and arrays with GRBM_GFX_INDEX register.
+- KFD_IOC_GET_VERSION:
+	Retrieves the interface version of amdkfd
+
+- KFD_IOC_CREATE_QUEUE:
+	Creates a usermode queue that runs on a specific GPU device
+
+- KFD_IOC_DESTROY_QUEUE:
+	Destroys an existing usermode queue
+
+- KFD_IOC_SET_MEMORY_POLICY:
+	Sets the memory policy of the default and alternate aperture of the
+        calling process
+
+- KFD_IOC_GET_CLOCK_COUNTERS:
+	Retrieves counters (timestamps) of CPU and GPU
+
+- KFD_IOC_GET_PROCESS_APERTURES:
+	Retrieves information about process apertures that were initialized
+        during the open() call of the amdkfd device
+
+- KFD_IOC_UPDATE_QUEUE:
+	Updates configuration of an existing usermode queue
+
+(v3) remove pragma pack
+
+(v3) remove pmc ioctls
+
+(v3) add parameter for doorbell offset
+
+(v3) add comment on counters
 
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/drm/radeon/cik.c           | 26 ++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/radeon.h        |  2 ++
- drivers/gpu/drm/radeon/radeon_device.c |  1 +
- 3 files changed, 29 insertions(+)
+ include/uapi/linux/kfd_ioctl.h | 123 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 123 insertions(+)
+ create mode 100644 include/uapi/linux/kfd_ioctl.h
 
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index d54d3d7..0096538 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -1563,6 +1563,8 @@ static const u32 godavari_golden_registers[] =
- 
- static void cik_init_golden_registers(struct radeon_device *rdev)
- {
-+	/* Some of the registers might be dependant on GRBM_GFX_INDEX */
-+	mutex_lock(&rdev->grbm_idx_mutex);
- 	switch (rdev->family) {
- 	case CHIP_BONAIRE:
- 		radeon_program_register_sequence(rdev,
-@@ -1637,6 +1639,7 @@ static void cik_init_golden_registers(struct radeon_device *rdev)
- 	default:
- 		break;
- 	}
-+	mutex_unlock(&rdev->grbm_idx_mutex);
- }
- 
- /**
-@@ -3419,6 +3422,7 @@ static void cik_setup_rb(struct radeon_device *rdev,
- 	u32 disabled_rbs = 0;
- 	u32 enabled_rbs = 0;
- 
-+	mutex_lock(&rdev->grbm_idx_mutex);
- 	for (i = 0; i < se_num; i++) {
- 		for (j = 0; j < sh_per_se; j++) {
- 			cik_select_se_sh(rdev, i, j);
-@@ -3430,6 +3434,7 @@ static void cik_setup_rb(struct radeon_device *rdev,
- 		}
- 	}
- 	cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
-+	mutex_unlock(&rdev->grbm_idx_mutex);
- 
- 	mask = 1;
- 	for (i = 0; i < max_rb_num_per_se * se_num; i++) {
-@@ -3440,6 +3445,7 @@ static void cik_setup_rb(struct radeon_device *rdev,
- 
- 	rdev->config.cik.backend_enable_mask = enabled_rbs;
- 
-+	mutex_lock(&rdev->grbm_idx_mutex);
- 	for (i = 0; i < se_num; i++) {
- 		cik_select_se_sh(rdev, i, 0xffffffff);
- 		data = 0;
-@@ -3467,6 +3473,7 @@ static void cik_setup_rb(struct radeon_device *rdev,
- 		WREG32(PA_SC_RASTER_CONFIG, data);
- 	}
- 	cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
-+	mutex_unlock(&rdev->grbm_idx_mutex);
- }
- 
- /**
-@@ -3684,6 +3691,12 @@ static void cik_gpu_init(struct radeon_device *rdev)
- 	/* set HW defaults for 3D engine */
- 	WREG32(CP_MEQ_THRESHOLDS, MEQ1_START(0x30) | MEQ2_START(0x60));
- 
-+	mutex_lock(&rdev->grbm_idx_mutex);
-+	/*
-+	 * making sure that the following register writes will be broadcasted
-+	 * to all the shaders
-+	 */
-+	cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
- 	WREG32(SX_DEBUG_1, 0x20);
- 
- 	WREG32(TA_CNTL_AUX, 0x00010000);
-@@ -3739,6 +3752,7 @@ static void cik_gpu_init(struct radeon_device *rdev)
- 
- 	WREG32(PA_CL_ENHANCE, CLIP_VTX_REORDER_ENA | NUM_CLIP_SEQ(3));
- 	WREG32(PA_SC_ENHANCE, ENABLE_PA_SC_OUT_OF_ORDER);
-+	mutex_unlock(&rdev->grbm_idx_mutex);
- 
- 	udelay(50);
- }
-@@ -6036,6 +6050,7 @@ static void cik_wait_for_rlc_serdes(struct radeon_device *rdev)
- 	u32 i, j, k;
- 	u32 mask;
- 
-+	mutex_lock(&rdev->grbm_idx_mutex);
- 	for (i = 0; i < rdev->config.cik.max_shader_engines; i++) {
- 		for (j = 0; j < rdev->config.cik.max_sh_per_se; j++) {
- 			cik_select_se_sh(rdev, i, j);
-@@ -6047,6 +6062,7 @@ static void cik_wait_for_rlc_serdes(struct radeon_device *rdev)
- 		}
- 	}
- 	cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
-+	mutex_unlock(&rdev->grbm_idx_mutex);
- 
- 	mask = SE_MASTER_BUSY_MASK | GC_MASTER_BUSY | TC0_MASTER_BUSY | TC1_MASTER_BUSY;
- 	for (k = 0; k < rdev->usec_timeout; k++) {
-@@ -6181,10 +6197,12 @@ static int cik_rlc_resume(struct radeon_device *rdev)
- 	WREG32(RLC_LB_CNTR_INIT, 0);
- 	WREG32(RLC_LB_CNTR_MAX, 0x00008000);
- 
-+	mutex_lock(&rdev->grbm_idx_mutex);
- 	cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
- 	WREG32(RLC_LB_INIT_CU_MASK, 0xffffffff);
- 	WREG32(RLC_LB_PARAMS, 0x00600408);
- 	WREG32(RLC_LB_CNTL, 0x80000004);
-+	mutex_unlock(&rdev->grbm_idx_mutex);
- 
- 	WREG32(RLC_MC_CNTL, 0);
- 	WREG32(RLC_UCODE_CNTL, 0);
-@@ -6251,11 +6269,13 @@ static void cik_enable_cgcg(struct radeon_device *rdev, bool enable)
- 
- 		tmp = cik_halt_rlc(rdev);
- 
-+		mutex_lock(&rdev->grbm_idx_mutex);
- 		cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
- 		WREG32(RLC_SERDES_WR_CU_MASTER_MASK, 0xffffffff);
- 		WREG32(RLC_SERDES_WR_NONCU_MASTER_MASK, 0xffffffff);
- 		tmp2 = BPM_ADDR_MASK | CGCG_OVERRIDE_0 | CGLS_ENABLE;
- 		WREG32(RLC_SERDES_WR_CTRL, tmp2);
-+		mutex_unlock(&rdev->grbm_idx_mutex);
- 
- 		cik_update_rlc(rdev, tmp);
- 
-@@ -6297,11 +6317,13 @@ static void cik_enable_mgcg(struct radeon_device *rdev, bool enable)
- 
- 		tmp = cik_halt_rlc(rdev);
- 
-+		mutex_lock(&rdev->grbm_idx_mutex);
- 		cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
- 		WREG32(RLC_SERDES_WR_CU_MASTER_MASK, 0xffffffff);
- 		WREG32(RLC_SERDES_WR_NONCU_MASTER_MASK, 0xffffffff);
- 		data = BPM_ADDR_MASK | MGCG_OVERRIDE_0;
- 		WREG32(RLC_SERDES_WR_CTRL, data);
-+		mutex_unlock(&rdev->grbm_idx_mutex);
- 
- 		cik_update_rlc(rdev, tmp);
- 
-@@ -6345,11 +6367,13 @@ static void cik_enable_mgcg(struct radeon_device *rdev, bool enable)
- 
- 		tmp = cik_halt_rlc(rdev);
- 
-+		mutex_lock(&rdev->grbm_idx_mutex);
- 		cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
- 		WREG32(RLC_SERDES_WR_CU_MASTER_MASK, 0xffffffff);
- 		WREG32(RLC_SERDES_WR_NONCU_MASTER_MASK, 0xffffffff);
- 		data = BPM_ADDR_MASK | MGCG_OVERRIDE_1;
- 		WREG32(RLC_SERDES_WR_CTRL, data);
-+		mutex_unlock(&rdev->grbm_idx_mutex);
- 
- 		cik_update_rlc(rdev, tmp);
- 	}
-@@ -6778,10 +6802,12 @@ static u32 cik_get_cu_active_bitmap(struct radeon_device *rdev, u32 se, u32 sh)
- 	u32 mask = 0, tmp, tmp1;
- 	int i;
- 
-+	mutex_lock(&rdev->grbm_idx_mutex);
- 	cik_select_se_sh(rdev, se, sh);
- 	tmp = RREG32(CC_GC_SHADER_ARRAY_CONFIG);
- 	tmp1 = RREG32(GC_USER_SHADER_ARRAY_CONFIG);
- 	cik_select_se_sh(rdev, 0xffffffff, 0xffffffff);
-+	mutex_unlock(&rdev->grbm_idx_mutex);
- 
- 	tmp &= 0xffff0000;
- 
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index 75bcc04..e420557 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -2374,6 +2374,8 @@ struct radeon_device {
- 	struct radeon_atcs		atcs;
- 	/* srbm instance registers */
- 	struct mutex			srbm_mutex;
-+	/* GRBM index mutex. Protects concurrents access to GRBM index */
-+	struct mutex			grbm_idx_mutex;
- 	/* clock, powergating flags */
- 	u32 cg_flags;
- 	u32 pg_flags;
-diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-index 827bcd1..b80100d 100644
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -1298,6 +1298,7 @@ int radeon_device_init(struct radeon_device *rdev,
- 	mutex_init(&rdev->pm.mutex);
- 	mutex_init(&rdev->gpu_clock_mutex);
- 	mutex_init(&rdev->srbm_mutex);
-+	mutex_init(&rdev->grbm_idx_mutex);
- 	init_rwsem(&rdev->pm.mclk_lock);
- 	init_rwsem(&rdev->exclusive_lock);
- 	init_waitqueue_head(&rdev->irq.vblank_queue);
+diff --git a/include/uapi/linux/kfd_ioctl.h b/include/uapi/linux/kfd_ioctl.h
+new file mode 100644
+index 0000000..a06e021
+--- /dev/null
++++ b/include/uapi/linux/kfd_ioctl.h
+@@ -0,0 +1,123 @@
++/*
++ * Copyright 2014 Advanced Micro Devices, Inc.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
++ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
++ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ * OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++#ifndef KFD_IOCTL_H_INCLUDED
++#define KFD_IOCTL_H_INCLUDED
++
++#include <linux/types.h>
++#include <linux/ioctl.h>
++
++#define KFD_IOCTL_CURRENT_VERSION 1
++
++struct kfd_ioctl_get_version_args {
++	uint32_t min_supported_version;	/* from KFD */
++	uint32_t max_supported_version;	/* from KFD */
++};
++
++/* For kfd_ioctl_create_queue_args.queue_type. */
++#define KFD_IOC_QUEUE_TYPE_COMPUTE   0
++#define KFD_IOC_QUEUE_TYPE_SDMA      1
++
++struct kfd_ioctl_create_queue_args {
++	uint64_t ring_base_address;	/* to KFD */
++	uint64_t write_pointer_address;	/* from KFD */
++	uint64_t read_pointer_address;	/* from KFD */
++	uint64_t doorbell_offset;	/* from KFD */
++
++	uint32_t ring_size;		/* to KFD */
++	uint32_t gpu_id;		/* to KFD */
++	uint32_t queue_type;		/* to KFD */
++	uint32_t queue_percentage;	/* to KFD */
++	uint32_t queue_priority;	/* to KFD */
++	uint32_t queue_id;		/* from KFD */
++};
++
++struct kfd_ioctl_destroy_queue_args {
++	uint32_t queue_id;		/* to KFD */
++};
++
++struct kfd_ioctl_update_queue_args {
++	uint64_t ring_base_address;	/* to KFD */
++
++	uint32_t queue_id;		/* to KFD */
++	uint32_t ring_size;		/* to KFD */
++	uint32_t queue_percentage;	/* to KFD */
++	uint32_t queue_priority;	/* to KFD */
++};
++
++/* For kfd_ioctl_set_memory_policy_args.default_policy and alternate_policy */
++#define KFD_IOC_CACHE_POLICY_COHERENT 0
++#define KFD_IOC_CACHE_POLICY_NONCOHERENT 1
++
++struct kfd_ioctl_set_memory_policy_args {
++	uint64_t alternate_aperture_base;	/* to KFD */
++	uint64_t alternate_aperture_size;	/* to KFD */
++
++	uint32_t gpu_id;			/* to KFD */
++	uint32_t default_policy;		/* to KFD */
++	uint32_t alternate_policy;		/* to KFD */
++};
++
++/*
++ * All counters are monotonic. They are used for profiling of compute jobs.
++ * The profiling is done by userspace.
++ *
++ * In case of GPU reset, the counter should not be affected.
++ */
++
++struct kfd_ioctl_get_clock_counters_args {
++	uint64_t gpu_clock_counter;	/* from KFD */
++	uint64_t cpu_clock_counter;	/* from KFD */
++	uint64_t system_clock_counter;	/* from KFD */
++	uint64_t system_clock_freq;	/* from KFD */
++
++	uint32_t gpu_id;		/* to KFD */
++};
++
++#define NUM_OF_SUPPORTED_GPUS 7
++
++struct kfd_process_device_apertures {
++	uint64_t lds_base;		/* from KFD */
++	uint64_t lds_limit;		/* from KFD */
++	uint64_t scratch_base;		/* from KFD */
++	uint64_t scratch_limit;		/* from KFD */
++	uint64_t gpuvm_base;		/* from KFD */
++	uint64_t gpuvm_limit;		/* from KFD */
++	uint32_t gpu_id;		/* from KFD */
++};
++
++struct kfd_ioctl_get_process_apertures_args {
++	struct kfd_process_device_apertures process_apertures[NUM_OF_SUPPORTED_GPUS];/* from KFD */
++	uint8_t num_of_nodes; /* from KFD, should be in the range [1 - NUM_OF_SUPPORTED_GPUS]*/
++};
++
++#define KFD_IOC_MAGIC 'K'
++
++#define KFD_IOC_GET_VERSION		_IOR(KFD_IOC_MAGIC, 1, struct kfd_ioctl_get_version_args)
++#define KFD_IOC_CREATE_QUEUE		_IOWR(KFD_IOC_MAGIC, 2, struct kfd_ioctl_create_queue_args)
++#define KFD_IOC_DESTROY_QUEUE		_IOWR(KFD_IOC_MAGIC, 3, struct kfd_ioctl_destroy_queue_args)
++#define KFD_IOC_SET_MEMORY_POLICY	_IOW(KFD_IOC_MAGIC, 4, struct kfd_ioctl_set_memory_policy_args)
++#define KFD_IOC_GET_CLOCK_COUNTERS	_IOWR(KFD_IOC_MAGIC, 5, struct kfd_ioctl_get_clock_counters_args)
++#define KFD_IOC_GET_PROCESS_APERTURES	_IOR(KFD_IOC_MAGIC, 6, struct kfd_ioctl_get_process_apertures_args)
++#define KFD_IOC_UPDATE_QUEUE		_IOW(KFD_IOC_MAGIC, 7, struct kfd_ioctl_update_queue_args)
++
++#endif
 -- 
 1.9.1
 
