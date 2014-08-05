@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472AbaHEQ0M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 12:26:12 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:56426 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609AbaHEQ0K (ORCPT
+	id S1755639AbaHEQ1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 12:27:12 -0400
+Received: from mail-yh0-f45.google.com ([209.85.213.45]:57708 "EHLO
+	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755363AbaHEQ1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 12:26:10 -0400
-Message-ID: <53E10590.3070703@gmail.com>
-Date: Wed, 06 Aug 2014 00:25:52 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: monstr@monstr.eu
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arch/microblaze/include/asm/uaccess.h: Use pr_devel() instead
- of pr_debug()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Aug 2014 12:27:10 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Joe Perches <joe@perches.com>, Oleg Drokin <green@linuxhacker.ru>,
+        devel@driverdev.osuosl.org (open list:STAGING SUBSYSTEM),
+        linux-kernel@vger.kernel.org (open list)
+Cc: geert@linux-m68k.org, stable@vger.kernel.org
+Subject: [PATCH 1/1] staging: lustre: Remove circular dependency on header
+Date: Tue,  5 Aug 2014 12:27:15 -0400
+Message-Id: <1407256036-18658-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When DYNAMIC_DEBUG enabled, pr_debug() depends on KBUILD_MODNAME which
-also depends on the modules number in Makefile. The related information
-in "scripts/Makefile.lib" line 94:
+The following patch fixes a build error on sparc32. I think it should go to
+stable 3.16.
 
-  # $(modname_flags) #defines KBUILD_MODNAME as the name of the module it will
-  # end up in (or would, if it gets compiled in)
-  # Note: Files that end up in two or more modules are compiled without the
-  #       KBUILD_MODNAME definition. The reason is that any made-up name would
-  #       differ in different configs.
+Remove a circular dependency on atomic.h header file which leads to compilation
+failure on sparc32 as reported here:
+http://kisskb.ellerman.id.au/kisskb/buildresult/11340509/
 
-For this case, 'radio-si470x-i2c.o' and 'radio-si470x-common.o' are in
-one line, so cause compiling issue. And 'uaccess.h' is a common shared
-header (not specially for drivers), so use pr_devel() instead of is OK.
+The specific dependency is as follows:
 
-The related error with allmodconfig:
+In file included from arch/sparc/include/asm/smp_32.h:24:0,
+                 from arch/sparc/include/asm/smp.h:6,
+                 from arch/sparc/include/asm/switch_to_32.h:4,
+                 from arch/sparc/include/asm/switch_to.h:6,
+                 from arch/sparc/include/asm/ptrace.h:84,
+                 from arch/sparc/include/asm/processor_32.h:16,
+                 from arch/sparc/include/asm/processor.h:6,
+                 from arch/sparc/include/asm/barrier_32.h:4,
+                 from arch/sparc/include/asm/barrier.h:6,
+                 from arch/sparc/include/asm/atomic_32.h:17,
+                 from arch/sparc/include/asm/atomic.h:6,
+                 from drivers/staging/lustre/lustre/obdclass/class_obd.c:38
 
-    CC [M]  drivers/media/radio/si470x/radio-si470x-i2c.o
-    CC [M]  drivers/media/radio/si470x/radio-si470x-common.o
-  In file included from include/linux/printk.h:257:0,
-                   from include/linux/kernel.h:13,
-                   from drivers/media/radio/si470x/radio-si470x.h:29,
-                   from drivers/media/radio/si470x/radio-si470x-common.c:115:
-  ./arch/microblaze/include/asm/uaccess.h: In function 'access_ok':
-  include/linux/dynamic_debug.h:66:14: error: 'KBUILD_MODNAME' undeclared (first use in this function)
-     .modname = KBUILD_MODNAME,   \
-                ^
-  include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYNAMIC_DEBUG_METADATA'
-    DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
-    ^
-  include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
-    dynamic_pr_debug(fmt, ##__VA_ARGS__)
-    ^
-  ./arch/microblaze/include/asm/uaccess.h:101:3: note: in expansion of macro 'pr_debug'
-     pr_debug("ACCESS fail: %s at 0x%08x (size 0x%x), seg 0x%08x\n",
-     ^
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+CC: stable@vger.kernel.org
 ---
- arch/microblaze/include/asm/uaccess.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/lustre/lustre/obdclass/class_obd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/microblaze/include/asm/uaccess.h b/arch/microblaze/include/asm/uaccess.h
-index 0aa0057..59a89a6 100644
---- a/arch/microblaze/include/asm/uaccess.h
-+++ b/arch/microblaze/include/asm/uaccess.h
-@@ -98,13 +98,13 @@ static inline int access_ok(int type, const void __user *addr,	
+diff --git a/drivers/staging/lustre/lustre/obdclass/class_obd.c b/drivers/staging/lustre/lustre/obdclass/class_obd.c
+index 8b19f3c..701c6a7 100644
+--- a/drivers/staging/lustre/lustre/obdclass/class_obd.c
++++ b/drivers/staging/lustre/lustre/obdclass/class_obd.c
+@@ -35,7 +35,7 @@
+  */
  
- 	if ((get_fs().seg < ((unsigned long)addr)) ||
- 			(get_fs().seg < ((unsigned long)addr + size - 1))) {
--		pr_debug("ACCESS fail: %s at 0x%08x (size 0x%x), seg 0x%08x\n",
-+		pr_devel("ACCESS fail: %s at 0x%08x (size 0x%x), seg 0x%08x\n",
- 			type ? "WRITE" : "READ ", (__force u32)addr, (u32)size,
- 			(u32)get_fs().seg);
- 		return 0;
- 	}
- ok:
--	pr_debug("ACCESS OK: %s at 0x%08x (size 0x%x), seg 0x%08x\n",
-+	pr_devel("ACCESS OK: %s at 0x%08x (size 0x%x), seg 0x%08x\n",
- 			type ? "WRITE" : "READ ", (__force u32)addr, (u32)size,
- 			(u32)get_fs().seg);
- 	return 1;
+ #define DEBUG_SUBSYSTEM S_CLASS
+-# include <asm/atomic.h>
++# include <linux/atomic.h>
+ 
+ #include "../include/obd_support.h"
+ #include "../include/obd_class.h"
 -- 
-1.7.11.7
+1.9.1
+
