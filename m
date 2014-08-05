@@ -1,37 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804AbaHEQx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 12:53:27 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:59425 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754829AbaHEQxZ (ORCPT
+	id S1755868AbaHEQyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 12:54:04 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:42516 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755175AbaHEQyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 12:53:25 -0400
+	Tue, 5 Aug 2014 12:54:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKbGBLha7c2aLLRxkAmXk6_P+g6Q3OMWVFSCLcyuE1YybCjmdg@mail.gmail.com>
-References: <20140805131758.3afa6b0b@notabene.brown>
-	<CA+55aFxDQ8fE16uKPfjU-nBnvfjWHz3ib5mo1BDn2=JKXVQQmQ@mail.gmail.com>
-	<20140805045417.GA27012@loki.us-west-2.compute.internal>
-	<CAKbGBLha7c2aLLRxkAmXk6_P+g6Q3OMWVFSCLcyuE1YybCjmdg@mail.gmail.com>
-Date: Tue, 5 Aug 2014 09:53:24 -0700
-X-Google-Sender-Auth: xvFSWtKHI9rlvY_Q3VT2AvEj7pg
-Message-ID: <CA+55aFxTg-_hG14pqRCntHBsVvVgcVKiTLnDvOJPF=9J6CtiJw@mail.gmail.com>
-Subject: Re: Is lockref_get_not_zero() really correct in dget_parent()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Noonan <steven@uplinklabs.net>
-Cc: NeilBrown <neilb@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1407264594-9933-1-git-send-email-cmroliv@gmail.com>
+References: <1407264594-9933-1-git-send-email-cmroliv@gmail.com>
+Date: Tue, 5 Aug 2014 13:54:01 -0300
+Message-ID: <CAOMZO5B9mwbuh1qgs20+vs7S0wR-pyb+NkLa=pUgjqeye8Om-A@mail.gmail.com>
+Subject: Re: [PATCH] staging: rtl8188eu: Fix static symbol sparse warning
+From: Fabio Estevam <festevam@gmail.com>
+To: Miguel Oliveira <cmroliv@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, oat.elena@gmail.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        paulmck@linux.vnet.ibm.com, Larry Finger <Larry.Finger@lwfinger.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 4, 2014 at 9:56 PM, Steven Noonan <steven@uplinklabs.net> wrote:
->
-> Er, grep failed me. The above delta to gfs2 is obviously bogus.
+On Tue, Aug 5, 2014 at 3:49 PM, Miguel Oliveira <cmroliv@gmail.com> wrote:
+> From: Miguel <cmroliv@gmail.com>
 
-Yeah, and looking at the patch, I think the "make lockref count
-signed" should be a separate patch.
-
-            Linus
+Please use your full name in the From field.
