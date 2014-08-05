@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493AbaHESpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:45:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52235 "EHLO
+	id S1755462AbaHESp1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:45:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52240 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754715AbaHESOS (ORCPT
+	with ESMTP id S1754722AbaHESOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Aug 2014 14:14:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Minfei Huang <huangminfei@ucloud.cn>, Joern Engel <joern@logfs.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 41/42] lib/btree.c: fix leak of whole btree nodes
-Date: Tue,  5 Aug 2014 11:13:55 -0700
-Message-Id: <20140805181322.237948997@linuxfoundation.org>
+        Greg Thelen <gthelen@google.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.15 21/42] dm bufio: fully initialize shrinker
+Date: Tue,  5 Aug 2014 11:13:35 -0700
+Message-Id: <20140805181321.652730867@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
 References: <20140805181321.018370988@linuxfoundation.org>
@@ -31,47 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Minfei Huang <huangminfei@ucloud.cn>
+From: Greg Thelen <gthelen@google.com>
 
-commit c75b53af2f0043aff500af0a6f878497bef41bca upstream.
+commit d8c712ea471ce7a4fd1734ad2211adf8469ddddc upstream.
 
-I use btree from 3.14-rc2 in my own module.  When the btree module is
-removed, a warning arises:
+1d3d4437eae1 ("vmscan: per-node deferred work") added a flags field to
+struct shrinker assuming that all shrinkers were zero filled.  The dm
+bufio shrinker is not zero filled, which leaves arbitrary kmalloc() data
+in flags.  So far the only defined flags bit is SHRINKER_NUMA_AWARE.
+But there are proposed patches which add other bits to shrinker.flags
+(e.g. memcg awareness).
 
- kmem_cache_destroy btree_node: Slab cache still has objects
- CPU: 13 PID: 9150 Comm: rmmod Tainted: GF          O 3.14.0-rc2 #1
- Hardware name: Inspur NF5270M3/NF5270M3, BIOS CHEETAH_2.1.3 09/10/2013
- Call Trace:
-   dump_stack+0x49/0x5d
-   kmem_cache_destroy+0xcf/0xe0
-   btree_module_exit+0x10/0x12 [btree]
-   SyS_delete_module+0x198/0x1f0
-   system_call_fastpath+0x16/0x1b
+Rather than simply initializing the shrinker, this patch uses kzalloc()
+when allocating the dm_bufio_client to ensure that the embedded shrinker
+and any other similar structures are zeroed.
 
-The cause is that it doesn't release the last btree node, when height = 1
-and fill = 1.
+This fixes theoretical over aggressive shrinking of dm bufio objects.
+If the uninitialized dm_bufio_client.shrinker.flags contains
+SHRINKER_NUMA_AWARE then shrink_slab() would call the dm shrinker for
+each numa node rather than just once.  This has been broken since 3.12.
 
-[akpm@linux-foundation.org: remove unneeded test of NULL]
-Signed-off-by: Minfei Huang <huangminfei@ucloud.cn>
-Cc: Joern Engel <joern@logfs.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/btree.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/dm-bufio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/lib/btree.c
-+++ b/lib/btree.c
-@@ -198,6 +198,7 @@ EXPORT_SYMBOL_GPL(btree_init);
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -1541,7 +1541,7 @@ struct dm_bufio_client *dm_bufio_client_
+ 	BUG_ON(block_size < 1 << SECTOR_SHIFT ||
+ 	       (block_size & (block_size - 1)));
  
- void btree_destroy(struct btree_head *head)
- {
-+	mempool_free(head->node, head->mempool);
- 	mempool_destroy(head->mempool);
- 	head->mempool = NULL;
- }
+-	c = kmalloc(sizeof(*c), GFP_KERNEL);
++	c = kzalloc(sizeof(*c), GFP_KERNEL);
+ 	if (!c) {
+ 		r = -ENOMEM;
+ 		goto bad_client;
 
 
