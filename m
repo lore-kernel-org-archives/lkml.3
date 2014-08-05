@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101AbaHES10 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:27:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52453 "EHLO
+	id S1756083AbaHES1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:27:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52457 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755224AbaHESOn (ORCPT
+	with ESMTP id S1753888AbaHESOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:43 -0400
+	Tue, 5 Aug 2014 14:14:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eliad Peller <eliadx.peller@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.14 07/39] cfg80211: fix mic_failure tracing
-Date: Tue,  5 Aug 2014 11:13:44 -0700
-Message-Id: <20140805181336.247854799@linuxfoundation.org>
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Andre van Herk <andre.van.herk@prodrive-technologies.com>,
+        Stef van Os <stef.van.os@prodrive-technologies.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 08/39] rapidio/tsi721_dma: fix failure to obtain transaction descriptor
+Date: Tue,  5 Aug 2014 11:13:45 -0700
+Message-Id: <20140805181336.276727525@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
 References: <20140805181336.030349158@linuxfoundation.org>
@@ -30,33 +35,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eliad Peller <eliad@wizery.com>
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-commit 8c26d458394be44e135d1c6bd4557e1c4e1a0535 upstream.
+commit 0193ed8225e1a79ed64632106ec3cc81798cb13c upstream.
 
-tsc can be NULL (mac80211 currently always passes NULL),
-resulting in NULL-dereference. check before copying it.
+This is a bug fix for the situation when function tsi721_desc_get() fails
+to obtain a free transaction descriptor.
 
-Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+The bug usually results in a memory access crash dump when data transfer
+scatter-gather list has more entries than size of hardware buffer
+descriptors ring.  This fix ensures that error is properly returned to a
+caller instead of an invalid entry.
+
+This patch is applicable to kernel versions starting from v3.5.
+
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Andre van Herk <andre.van.herk@prodrive-technologies.com>
+Cc: Stef van Os <stef.van.os@prodrive-technologies.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/trace.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/rapidio/devices/tsi721_dma.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/net/wireless/trace.h
-+++ b/net/wireless/trace.h
-@@ -2068,7 +2068,8 @@ TRACE_EVENT(cfg80211_michael_mic_failure
- 		MAC_ASSIGN(addr, addr);
- 		__entry->key_type = key_type;
- 		__entry->key_id = key_id;
--		memcpy(__entry->tsc, tsc, 6);
-+		if (tsc)
-+			memcpy(__entry->tsc, tsc, 6);
- 	),
- 	TP_printk(NETDEV_PR_FMT ", " MAC_PR_FMT ", key type: %d, key id: %d, tsc: %pm",
- 		  NETDEV_PR_ARG, MAC_PR_ARG(addr), __entry->key_type,
+--- a/drivers/rapidio/devices/tsi721_dma.c
++++ b/drivers/rapidio/devices/tsi721_dma.c
+@@ -287,6 +287,12 @@ struct tsi721_tx_desc *tsi721_desc_get(s
+ 			"desc %p not ACKed\n", tx_desc);
+ 	}
+ 
++	if (ret == NULL) {
++		dev_dbg(bdma_chan->dchan.device->dev,
++			"%s: unable to obtain tx descriptor\n", __func__);
++		goto err_out;
++	}
++
+ 	i = bdma_chan->wr_count_next % bdma_chan->bd_num;
+ 	if (i == bdma_chan->bd_num - 1) {
+ 		i = 0;
+@@ -297,7 +303,7 @@ struct tsi721_tx_desc *tsi721_desc_get(s
+ 	tx_desc->txd.phys = bdma_chan->bd_phys +
+ 				i * sizeof(struct tsi721_dma_desc);
+ 	tx_desc->hw_desc = &((struct tsi721_dma_desc *)bdma_chan->bd_base)[i];
+-
++err_out:
+ 	spin_unlock_bh(&bdma_chan->lock);
+ 
+ 	return ret;
 
 
