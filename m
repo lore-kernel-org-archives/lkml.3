@@ -1,39 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915AbaHEUak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 16:30:40 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:55527 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625AbaHEUai (ORCPT
+	id S1753814AbaHEUka (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 16:40:30 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:37578 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753563AbaHEUk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 16:30:38 -0400
+	Tue, 5 Aug 2014 16:40:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPDOMVjiHC-AJJ1njXUuB=1YoZVra4Oky7m3WerKeWfnNwL+Xg@mail.gmail.com>
-References: <CAPDOMVjiHC-AJJ1njXUuB=1YoZVra4Oky7m3WerKeWfnNwL+Xg@mail.gmail.com>
-Date: Tue, 5 Aug 2014 16:30:37 -0400
-Message-ID: <CAPDOMVikq4nerhNuz4gk26Xi5tPeGg3W892-R5qCGpvYp_f6iw@mail.gmail.com>
-Subject: Re: Trolling Issues
-From: Nick Krause <xerofoify@gmail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <53E13AC7.1030406@tilera.com>
+References: <1406383480-1485-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <53E13AC7.1030406@tilera.com>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Tue, 5 Aug 2014 22:40:06 +0200
+Message-ID: <CAFo99gaZO3wNEFxgOxB9nLPyBwjTSwCeY8Xzu1GrgGu5kv-L6g@mail.gmail.com>
+Subject: Re: [PATCH] arch: tile: kernel: setup.c: Cleaning up missing
+ null-terminate in conjunction with strncpy
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Wang Sheng-Hui <shhuiw@gmail.com>, Daniel Walter <dwalter@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 5, 2014 at 2:11 PM, Nick Krause <xerofoify@gmail.com> wrote:
-> I want to apologize to all the other maintainers who's time I wasted.
-> I am going to check all my work through
-> the kernel newbies list before I sent it out in order to stop wasting
-> the maintainers time as that way I can
-> learn well and not waste people's time who are working hard to may
-> linux as good as it can be.
-> Cheers Nick
-I understand if you don't want to give me a second change , but if you want to
-help me learn, I would love to be cced into anything I can learn from. In
-terms of subsystems support I would like to help out in a few. My list is
-below.
-1. Usb
-2. Networking
-3. Btrfs file system
-4. Scheduler
-5. Drivers for Intel Graphics as they need to be improved a lot
+2014-08-05 22:12 GMT+02:00 Chris Metcalf <cmetcalf@tilera.com>:
+> On 7/26/2014 10:04 AM, Rickard Strandqvist wrote:
+>>
+>> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+>>
+>> Signed-off-by: Rickard Strandqvist
+>> <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>   arch/tile/kernel/setup.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
+>> index 112abab..1af7d19 100644
+>> --- a/arch/tile/kernel/setup.c
+>> +++ b/arch/tile/kernel/setup.c
+>> @@ -1087,7 +1087,7 @@ static int __init setup_initramfs_file(char *str)
+>>   {
+>>         if (str == NULL)
+>>                 return -EINVAL;
+>> -       strncpy(initramfs_file, str, sizeof(initramfs_file) - 1);
+>> +       strlcpy(initramfs_file, str, sizeof(initramfs_file));
+>>         set_initramfs_file = 1;
+>>         return 0;
+>
+>
+> I'm inclined not to take this change, because it's not necessary.
+> The initramfs_file[] is already zero-filled by being in the BSS, and
+> this is a pretty obscure boot option, so it seems a bit more
+> maintainable to use a somewhat more standard string API call.
+>
+
+
+Hi
+
+Of course this is quite alright, the goal is to create code that it
+can not get any bugs.
+With sizeof -1 will get it right, if you can only be sure that the
+zeroes string will be overwritten.
+
+
+Kind regards
+Rickard Strandqvist
