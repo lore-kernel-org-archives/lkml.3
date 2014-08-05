@@ -1,83 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222AbaHEOcI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 10:32:08 -0400
-Received: from mail.kernel.org ([198.145.19.201]:41845 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752133AbaHEOcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 10:32:05 -0400
-Date: Tue, 5 Aug 2014 11:31:59 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 05/33] perf record: Allow the user to disable time stamps
-Message-ID: <20140805143159.GI13375@kernel.org>
-References: <1407169064-25625-1-git-send-email-acme@kernel.org>
- <1407169064-25625-6-git-send-email-acme@kernel.org>
- <20140805060856.GA9453@gmail.com>
- <20140805141733.GH5803@tassilo.jf.intel.com>
+	id S1753873AbaHEOeD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 10:34:03 -0400
+Received: from vserver.eikelenboom.it ([84.200.39.61]:49494 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258AbaHEOeB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 10:34:01 -0400
+Date: Tue, 5 Aug 2014 16:33:57 +0200
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <7110555170.20140805163357@eikelenboom.it>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: David Vrabel <david.vrabel@citrix.com>, gregkh@linuxfoundation.org,
+        <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH v5] Fixes to Xen pciback for 3.17.
+In-Reply-To: <20140805134930.GE13057@laptop.dumpdata.com>
+References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com> <53DBB27D.2040203@citrix.com> <20140804184318.GB9009@laptop.dumpdata.com> <75613802.20140805104438@eikelenboom.it> <53E0A45C.4050400@citrix.com> <1985206568.20140805114433@eikelenboom.it> <20140805134930.GE13057@laptop.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140805141733.GH5803@tassilo.jf.intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Aug 05, 2014 at 07:17:33AM -0700, Andi Kleen escreveu:
-> > > Time stamps are always implicitely enabled for record currently.  The
-> > > old --time/-T option is a nop.
 
-> > > Allow the user to disable timestamps by using --no-time
+Tuesday, August 5, 2014, 3:49:30 PM, you wrote:
 
-> > > This can cause some minor misaccounting (by missing mmaps), but
-> > > significantly lowers the size of perf.data
+> On Tue, Aug 05, 2014 at 11:44:33AM +0200, Sander Eikelenboom wrote:
+>> 
+>> Tuesday, August 5, 2014, 11:31:08 AM, you wrote:
+>> 
+>> > On 05/08/14 09:44, Sander Eikelenboom wrote:
+>> >> 
+>> >> Monday, August 4, 2014, 8:43:18 PM, you wrote:
+>> >> 
+>> >>> On Fri, Aug 01, 2014 at 04:30:05PM +0100, David Vrabel wrote:
+>> >>>> On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
+>> >>>>> Greg: goto GHK
+>> >>>>>
+>> >>>>> This is v5 version of patches to fix some issues in Xen PCIback.
+>> >>>>
+>> >>>> Applied to devel/for-linus-3.17.
+>> >> 
+>> >>> Thank you.
+>> >>>>
+>> >>>> I dropped the stable Cc for #2 pending a final decision on whether it
+>> >>>> really is a stable candidate.
+>> >> 
+>> >>> OK.
+>> >>>>
+>> >>>> David
+>> >> 
+>> >> Hi Konrad / David,
+>> >> 
+>> >> This series still lacks a resolution on the sysfs /do_flr /reset,
+>> >> as a result the pci devices are not reset after shutdown of a guest.
+>> >> (no more pciback 0000:xx:xx.x: restoring config space at offset xxx)
+>> >> 
+>> >> So this series now introduces a regression to 3.16, which causes devices to malfunction 
+>> >> after a guest reboot or after assigning the devices to another guest.
+>> 
+>> > I don't follow what you're saying.  The lack of a device reset for PCI
+>> > devices with no FLR method isn't a regression as this has never worked.
+>> >  Can you explain in more detail what the regression is and which patch
+>> > caused it?
+>> 
+>> I haven't bisected it to a specific patch in this series,
+>> but this patch series (when pulled on top of 3.16) cause the following:
+>> 
+>> - Do a system start and HVM guest start
+>> - HVM guest with pci passthrough, devices work fine
+>> - shutdown the HVM guest
+>> - "pciback 0000:xx:xx.x: restoring config space at offset xxx" messages do not
+>>   appear anymore when shutting down the HVM guest (as they do with vanilla 3.16)
+>> - Starting the HVM guest again with the same devices passed through.
+>> - Devices malfunction (for example a USB host controller will fail a simple 
+>>   "lsusb"
+>> - And this all works fine on vanilla 3.16.  
 
-> > I'm not any big change in size:
+> Hm, the only patch that makes code changes is 63fc5ec97cc54257d1c4ee49ed2131f754a5ff9b
+> "xen/pciback: Don't deadlock when unbinding."
+> but it does not change any of that code path. Only figures out whether
+> to take a lock or not.
 
-> >  -rw------- 1 mingo mingo 384768 Aug  5 08:01 perf.data.timestamps
-> >  -rw------- 1 mingo mingo 336952 Aug  5 08:00 perf.data.notimestamps
+> I will try it out on my box and see if I can reproduce it.
 
-> It will depend on your workload. What period did you use
-> (or did it automatically use) and what kind of 
-> workload was it?
+> And just to be 100% sure - you are using vanilla Xen? No changes on top
+> of it?
 
-> The smaller the period, the higher the benefit.
+BTW could it have anything to do with the do_flr patch that went into Xen:
+(http://xenbits.xen.org/gitweb/?p=xen.git;a=commitdiff;h=ab78724fc5628318b172b4344f7280621a151e1b)
 
-> There are some classes of workloads where using a smaller
-> period is especially beneficial, essentially anything
-> with lots of small events, instead of long loops.
+And isn't into linux yet .. and somehow the old code not having a problem with 
+that but the new (after the patch series with the linux do_flr patch) has ?
 
-> You also get a higher benefit if you use -c or -F, because
-> without that each sample is smaller (no period reported)
 
-> You also get higher benefit for longer traces, and traces
-> that do not start a lot of programs, as those
-> tend to be dominated by MMAP events and other overhead.
+> Thanks!
+>> 
+>> >> Apart from that .. i can't resist to remind the other issue with removing pci
+>> >> devices passed through to HVM guests related to the signaling via xenstore,
+>> >> described in:
+>> >> 
+>> >> http://lists.xen.org/archives/html/xen-devel/2014-07/msg01875.html
+>> 
+>> > I don't remember seeing you posting a patch...?
 
-I guess it would have been great if you had put the above paragraphs in
-the documentation for 'perf record' :-\
+> I was going to, but I think we need to figure out the 'do_flr' mechanism
+> first.
+>> 
+>> > David
+>> 
+>> 
 
-- Arnaldo
- 
-> > So either remove the --time option altogether, or fix its 
-> > 'misaccounting' so that the profile can be relied on.
 
-> I don't know how to fix it. Do you?
-
-> I guess one possible way to mitigate would be to lower the perf
-> buffer sizes, then the worst case out of ordering
-> would be less (I believe any potential problem
-> just comes from out of order events). However that may
-> impact performance.
-
-Mentioning that OOO is the main problem here, i.e. that some samples may
-be misaccounted, should've also been added to the documentation.
-
-- Arnaldo
