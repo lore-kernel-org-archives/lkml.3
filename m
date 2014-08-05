@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910AbaHEFlp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 01:41:45 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:30114 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095AbaHEFln (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 01:41:43 -0400
-Message-ID: <1407217301.2566.28.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 4/7] locking/rwsem: threshold limited spinning for
- active readers
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Date: Mon, 04 Aug 2014 22:41:41 -0700
-In-Reply-To: <1407216632.2566.22.camel@buesod1.americas.hpqcorp.net>
-References: <1407119782-41119-1-git-send-email-Waiman.Long@hp.com>
-	 <1407119782-41119-5-git-send-email-Waiman.Long@hp.com>
-	 <1407214461.2566.14.camel@buesod1.americas.hpqcorp.net>
-	 <1407216632.2566.22.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1754981AbaHEFmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 01:42:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:57166 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754924AbaHEFmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 01:42:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,803,1400050800"; 
+   d="scan'208";a="580095830"
+Message-ID: <53E06EB3.4000507@linux.intel.com>
+Date: Tue, 05 Aug 2014 13:42:11 +0800
+From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Arend van Spriel <arend@broadcom.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: brudley@broadcom.com, Franky Lin <frankyl@broadcom.com>,
+        meuleman@broadcom.com, linville@tuxdriver.com, pieterpg@broadcom.com,
+        dekim@broadcom.com, mcgrof@do-not-panic.com, antonio@open-mesh.com,
+        johannes.berg@intel.com, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] brcmfmac: prevent watchdog from interfering with	scanning
+ and connecting
+References: <539E8559.3010601@linux.intel.com> <539EA79C.7010206@broadcom.com> <53A30F96.3010206@linux.intel.com> <53A311E4.301@broadcom.com> <53CCC44C.2070507@linux.intel.com> <53D124B3.7030807@linux.intel.com> <53DFB6A1.7040900@linux.intel.com> <20140804165202.GG30282@n2100.arm.linux.org.uk> <53DFE933.2080805@broadcom.com>
+In-Reply-To: <53DFE933.2080805@broadcom.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-04 at 22:30 -0700, Davidlohr Bueso wrote:
-> On Mon, 2014-08-04 at 21:54 -0700, Davidlohr Bueso wrote:
-> > >  #ifdef CONFIG_RWSEM_SPIN_ON_OWNER
-> > > +/*
-> > > + * The owner field is set to RWSEM_READ_OWNED if the last owner(s) are
-> > > + * readers. It is not reset until a writer takes over and set it to its
-> > > + * task structure pointer or NULL when it frees the lock. So a value
-> > > + * of RWSEM_READ_OWNED doesn't mean it currently has active readers.
-> > > + */
-> > > +#define RWSEM_READ_OWNED	((struct task_struct *)-1)
-> > 
-> > Looks rather weird...
-> 
-> Instead of populating owner when taking the reader lock, why not just
-> leave it NULL. Then, we can differentiate between the owner being NULL
-> either because it is taken by reader(s) or simply because it is not
-> taken. So something like this:
-> 
-> static inline bool rwsem_owner_is_reader(struct rw_semaphore *sem)
-> {
-> 	return !sem->owner && rwsem_is_locked(sem));
-> }
 
-Although we could race between both checks, specially when going into
-slowpaths, too bad. Probably a read barrier before calling is_locked
-too. Anyway, you see, things start getting funky.
+On 2014/8/5 4:12, Arend van Spriel wrote:
+> On 08/04/14 18:52, Russell King - ARM Linux wrote:
+>> On Tue, Aug 05, 2014 at 12:36:49AM +0800, Fu, Zhonghui wrote:
+>>> Hi, Arend
+>>>
+>>> I investigated this issue, and its root cause is still that sdio
+>>> controller can't receive interrupts from WiFi chip on sdio bus when
+>>> sdio controller is in runtime suspend status. I am running 3.16-rc5
+>>> linux kernel on ASUS T100TA tablet, and using sdhci-acpi driver.
+>>
+>> That's the root cause.  I fixed this with the Freescale i.MX SD driver
+>> which is now able to report pending SDIO interrupts while runtime PM
+>> suspended.
+>>
+>> Other host drivers probably need fixing too, or having runtime PM
+>> disabled on them - if you can't receive SDIO interrupts while runtime
+>> PM suspended, then entering runtime PM while you have a SDIO device
+>> attached is a bug.
+>>
+>> This is something for the MMC people to deal with rather than Arend.
+>
+> Occasionally, the itch is there to fix mmc code, but this looks a bit tricky. The fun starts in sdio.c:mmc_attach_sdio():
+>
+>     /*
+>      * Enable runtime PM only if supported by host+card+board
+>      */
+>     if (host->caps & MMC_CAP_POWER_OFF_CARD) {
+>         /*
+>          * Let runtime PM core know our card is active
+>          */
+>         err = pm_runtime_set_active(&card->dev);
+>         if (err)
+>             goto remove;
+>
+>         /*
+>          * Enable runtime PM for this card
+>          */
+>         pm_runtime_enable(&card->dev);
+>     }
+>
+> The comment above the if statement seems to be stating the right idea, but the code only looks at the host controller capability flags.
+
+Yes, this code section is not implemented as its comments.
+
+Thanks,
+Zhonghui
+
+>
+> Regards,
+> Arend
+>
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
