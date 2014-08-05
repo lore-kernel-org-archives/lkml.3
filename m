@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804AbaHEFjW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 01:39:22 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:44241 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095AbaHEFjV (ORCPT
+	id S1754877AbaHEFjg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 01:39:36 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:53435 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753095AbaHEFje convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 01:39:21 -0400
-From: <Wei.Yang@windriver.com>
-To: <ralf@linux-mips.org>
-CC: <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <mingo@redhat.com>,
-        <acme@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mips@linux-mips.org>, <wei.yang@windriver.com>
-Subject: [PATCH v1] MIPS: perf: Mark pmu interupt IRQF_NO_THREAD
-Date: Tue, 5 Aug 2014 13:37:47 +0800
-Message-ID: <1407217067-1144-1-git-send-email-Wei.Yang@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 5 Aug 2014 01:39:34 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: pull request: wireless-next 2014-08-01
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20140804145342.GB16658@tuxdriver.com>
+Date: Mon, 4 Aug 2014 22:39:47 -0700
+Cc: "linux-wireless@vger.kernel.org Wireless" 
+	<linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <ED6BF15D-CA1F-4E35-8301-E9A9EEDE3AD6@holtmann.org>
+References: <20140801165738.GA26953@tuxdriver.com> <20140802.193939.2179004210212543536.davem@davemloft.net> <C2EB98EF-6873-4F44-B914-A9F89146914A@holtmann.org> <20140804145342.GB16658@tuxdriver.com>
+To: "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yang Wei <Wei.Yang@windriver.com>
+Hi Dave,
 
-In RT kernel, I ran into the following calltrace, so PMU interrupts cannot
-be threaded
+>>>> Please pull this last(?) batch of wireless change intended for the
+>>>> 3.17 stream...
+>>> 
+>>> When I pull this I get tons of conflicts for:
+>>> 
+>>> CONFLICT (content): Merge conflict in net/6lowpan/iphc.c
+>>> 
+>>> I don't feel comfortable fixing these up, where are they coming
+>>> from?
+>> 
+>> I was short on time yesterday, but now I checked up on this in detail. The merge conflicts are actually simple to resolve. You can just rely on John's tree to have the more recent net/6lowpan/ tree. I should have insisted on merging net/6lowpan/ through bluetooth-next and wireless-next way earlier to avoid conflicts.
+>> 
+>> In the future we will avoid this by ensuring that all goes via bluetooth-next first. Sorry for this confusion. John mentioned these merge conflicts in his footnote.
+>> 
+>> John, do you just want to resolve the merge conflicts and send Dave a new pull request?
+> 
+> I'm happy to do that, if Dave wants.  But as you say, once the initial
+> shock of all those conflicts passes the resolution really is fairly
+> simple. :-)
 
-in_atomic(): 1, irqs_disabled(): 1, pid: 0, name: swapper/0
-INFO: lockdep is turned off.
-Call Trace:
-[<ffffffff8088595c>] dump_stack+0x1c/0x50
-[<ffffffff801a958c>] __might_sleep+0x13c/0x148
-[<ffffffff80891c54>] rt_spin_lock+0x3c/0xb0
-[<ffffffff801ad29c>] __wake_up+0x3c/0x80
-[<ffffffff80243ba4>] perf_event_wakeup+0x8c/0xf8
-[<ffffffff80243c50>] perf_pending_event+0x40/0x78
-[<ffffffff8023d88c>] irq_work_run+0x74/0xc0
-[<ffffffff80152640>] mipsxx_pmu_handle_shared_irq+0x110/0x228
-[<ffffffff8015276c>] mipsxx_pmu_handle_irq+0x14/0x30
-[<ffffffff801ffda4>] handle_irq_event_percpu+0xbc/0x470
-[<ffffffff80204478>] handle_percpu_irq+0x98/0xc8
-[<ffffffff801ff284>] generic_handle_irq+0x4c/0x68
-[<ffffffff8089748c>] do_IRQ+0x2c/0x48
-[<ffffffff80105864>] plat_irq_dispatch+0x64/0xd0 
+do you want John to just do the merge conflict resolution? They are all trivial.
 
+Regards
 
-Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
----
- arch/mips/kernel/perf_event_mipsxx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
-index 811084f..fd16763 100644
---- a/arch/mips/kernel/perf_event_mipsxx.c
-+++ b/arch/mips/kernel/perf_event_mipsxx.c
-@@ -550,7 +550,7 @@ static int mipspmu_get_irq(void)
- 	if (mipspmu.irq >= 0) {
- 		/* Request my own irq handler. */
- 		err = request_irq(mipspmu.irq, mipsxx_pmu_handle_irq,
--			IRQF_PERCPU | IRQF_NOBALANCING,
-+			IRQF_PERCPU | IRQF_NOBALANCING | IRQF_NO_THREAD,
- 			"mips_perf_pmu", NULL);
- 		if (err) {
- 			pr_warning("Unable to request IRQ%d for MIPS "
--- 
-1.7.9.5
+Marcel
 
