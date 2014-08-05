@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515AbaHEScp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:32:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52761 "EHLO
+	id S932144AbaHESaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:30:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755902AbaHESaB (ORCPT
+	with ESMTP id S1756348AbaHES3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:30:01 -0400
+	Tue, 5 Aug 2014 14:29:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.4 02/19] ARM: 8115/1: LPAE: reduce damage caused by idmap to virtual memory layout
-Date: Tue,  5 Aug 2014 11:29:26 -0700
-Message-Id: <20140805182934.095532985@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 3.4 12/19] x86, espfix: Make it possible to disable 16-bit support
+Date: Tue,  5 Aug 2014 11:29:36 -0700
+Message-Id: <20140805182934.403928412@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805182934.022406678@linuxfoundation.org>
 References: <20140805182934.022406678@linuxfoundation.org>
@@ -29,51 +28,212 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit 811a2407a3cf7bbd027fbe92d73416f17485a3d8 upstream.
+commit 34273f41d57ee8d854dcd2a1d754cbb546cb548f upstream.
 
-On LPAE, each level 1 (pgd) page table entry maps 1GiB, and the level 2
-(pmd) entries map 2MiB.
+Embedded systems, which may be very memory-size-sensitive, are
+extremely unlikely to ever encounter any 16-bit software, so make it
+a CONFIG_EXPERT option to turn off support for any 16-bit software
+whatsoever.
 
-When the identity mapping is created on LPAE, the pgd pointers are copied
-from the swapper_pg_dir.  If we find that we need to modify the contents
-of a pmd, we allocate a new empty pmd table and insert it into the
-appropriate 1GB slot, before then filling it with the identity mapping.
-
-However, if the 1GB slot covers the kernel lowmem mappings, we obliterate
-those mappings.
-
-When replacing a PMD, first copy the old PMD contents to the new PMD, so
-that we preserve the existing mappings, particularly the mappings of the
-kernel itself.
-
-[rewrote commit message and added code comment -- rmk]
-
-Fixes: ae2de101739c ("ARM: LPAE: Add identity mapping support for the 3-level page table format")
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/idmap.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/x86/Kconfig           |   23 ++++++++++++++++++-----
+ arch/x86/kernel/entry_32.S |   12 ++++++++++++
+ arch/x86/kernel/entry_64.S |    8 ++++++++
+ arch/x86/kernel/ldt.c      |    5 +++++
+ 4 files changed, 43 insertions(+), 5 deletions(-)
 
---- a/arch/arm/mm/idmap.c
-+++ b/arch/arm/mm/idmap.c
-@@ -22,6 +22,13 @@ static void idmap_add_pmd(pud_t *pud, un
- 			pr_warning("Failed to allocate identity pmd.\n");
- 			return;
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -915,14 +915,27 @@ config VM86
+ 	default y
+ 	depends on X86_32
+ 	---help---
+-	  This option is required by programs like DOSEMU to run 16-bit legacy
+-	  code on X86 processors. It also may be needed by software like
+-	  XFree86 to initialize some video cards via BIOS. Disabling this
+-	  option saves about 6k.
++	  This option is required by programs like DOSEMU to run
++	  16-bit real mode legacy code on x86 processors. It also may
++	  be needed by software like XFree86 to initialize some video
++	  cards via BIOS. Disabling this option saves about 6K.
++
++config X86_16BIT
++	bool "Enable support for 16-bit segments" if EXPERT
++	default y
++	---help---
++	  This option is required by programs like Wine to run 16-bit
++	  protected mode legacy code on x86 processors.  Disabling
++	  this option saves about 300 bytes on i386, or around 6K text
++	  plus 16K runtime memory on x86-64,
++
++config X86_ESPFIX32
++	def_bool y
++	depends on X86_16BIT && X86_32
+ 
+ config X86_ESPFIX64
+ 	def_bool y
+-	depends on X86_64
++	depends on X86_16BIT && X86_64
+ 
+ config TOSHIBA
+ 	tristate "Toshiba Laptop support"
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -525,6 +525,7 @@ syscall_exit:
+ restore_all:
+ 	TRACE_IRQS_IRET
+ restore_all_notrace:
++#ifdef CONFIG_X86_ESPFIX32
+ 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS, SS and CS
+ 	# Warning: PT_OLDSS(%esp) contains the wrong/random values if we
+ 	# are returning to the kernel.
+@@ -535,6 +536,7 @@ restore_all_notrace:
+ 	cmpl $((SEGMENT_LDT << 8) | USER_RPL), %eax
+ 	CFI_REMEMBER_STATE
+ 	je ldt_ss			# returning to user-space with LDT SS
++#endif
+ restore_nocheck:
+ 	RESTORE_REGS 4			# skip orig_eax/error_code
+ irq_return:
+@@ -550,6 +552,7 @@ ENTRY(iret_exc)
+ 	.long irq_return,iret_exc
+ .previous
+ 
++#ifdef CONFIG_X86_ESPFIX32
+ 	CFI_RESTORE_STATE
+ ldt_ss:
+ #ifdef CONFIG_PARAVIRT
+@@ -593,6 +596,7 @@ ldt_ss:
+ 	lss (%esp), %esp		/* switch to espfix segment */
+ 	CFI_ADJUST_CFA_OFFSET -8
+ 	jmp restore_nocheck
++#endif
+ 	CFI_ENDPROC
+ ENDPROC(system_call)
+ 
+@@ -766,6 +770,7 @@ ENDPROC(ptregs_clone)
+  * the high word of the segment base from the GDT and swiches to the
+  * normal stack and adjusts ESP with the matching offset.
+  */
++#ifdef CONFIG_X86_ESPFIX32
+ 	/* fixup the stack */
+ 	mov GDT_ESPFIX_SS + 4, %al /* bits 16..23 */
+ 	mov GDT_ESPFIX_SS + 7, %ah /* bits 24..31 */
+@@ -775,8 +780,10 @@ ENDPROC(ptregs_clone)
+ 	pushl_cfi %eax
+ 	lss (%esp), %esp		/* switch to the normal stack segment */
+ 	CFI_ADJUST_CFA_OFFSET -8
++#endif
+ .endm
+ .macro UNWIND_ESPFIX_STACK
++#ifdef CONFIG_X86_ESPFIX32
+ 	movl %ss, %eax
+ 	/* see if on espfix stack */
+ 	cmpw $__ESPFIX_SS, %ax
+@@ -787,6 +794,7 @@ ENDPROC(ptregs_clone)
+ 	/* switch to normal stack */
+ 	FIXUP_ESPFIX_STACK
+ 27:
++#endif
+ .endm
+ 
+ /*
+@@ -1318,11 +1326,13 @@ END(debug)
+  */
+ ENTRY(nmi)
+ 	RING0_INT_FRAME
++#ifdef CONFIG_X86_ESPFIX32
+ 	pushl_cfi %eax
+ 	movl %ss, %eax
+ 	cmpw $__ESPFIX_SS, %ax
+ 	popl_cfi %eax
+ 	je nmi_espfix_stack
++#endif
+ 	cmpl $ia32_sysenter_target,(%esp)
+ 	je nmi_stack_fixup
+ 	pushl_cfi %eax
+@@ -1362,6 +1372,7 @@ nmi_debug_stack_check:
+ 	FIX_STACK 24, nmi_stack_correct, 1
+ 	jmp nmi_stack_correct
+ 
++#ifdef CONFIG_X86_ESPFIX32
+ nmi_espfix_stack:
+ 	/* We have a RING0_INT_FRAME here.
+ 	 *
+@@ -1383,6 +1394,7 @@ nmi_espfix_stack:
+ 	lss 12+4(%esp), %esp		# back to espfix stack
+ 	CFI_ADJUST_CFA_OFFSET -24
+ 	jmp irq_return
++#endif
+ 	CFI_ENDPROC
+ END(nmi)
+ 
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -904,8 +904,10 @@ irq_return:
+ 	 * Are we returning to a stack segment from the LDT?  Note: in
+ 	 * 64-bit mode SS:RSP on the exception stack is always valid.
+ 	 */
++#ifdef CONFIG_X86_ESPFIX64
+ 	testb $4,(SS-RIP)(%rsp)
+ 	jnz irq_return_ldt
++#endif
+ 
+ irq_return_iret:
+ 	INTERRUPT_RETURN
+@@ -923,6 +925,7 @@ ENTRY(native_iret)
+ 	.previous
+ #endif
+ 
++#ifdef CONFIG_X86_ESPFIX64
+ irq_return_ldt:
+ 	pushq_cfi %rax
+ 	pushq_cfi %rdi
+@@ -946,6 +949,7 @@ irq_return_ldt:
+ 	movq %rax,%rsp
+ 	popq_cfi %rax
+ 	jmp irq_return_iret
++#endif
+ 
+ 	.section .fixup,"ax"
+ bad_iret:
+@@ -1019,6 +1023,7 @@ END(common_interrupt)
+ 	 * modify the stack to make it look like we just entered
+ 	 * the #GP handler from user space, similar to bad_iret.
+ 	 */
++#ifdef CONFIG_X86_ESPFIX64
+ 	ALIGN
+ __do_double_fault:
+ 	XCPT_FRAME 1 RDI+8
+@@ -1044,6 +1049,9 @@ __do_double_fault:
+ 	retq
+ 	CFI_ENDPROC
+ END(__do_double_fault)
++#else
++# define __do_double_fault do_double_fault
++#endif
+ 
+ /*
+  * End of kprobes section
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -229,6 +229,11 @@ static int write_ldt(void __user *ptr, u
  		}
-+		/*
-+		 * Copy the original PMD to ensure that the PMD entries for
-+		 * the kernel image are preserved.
-+		 */
-+		if (!pud_none(*pud))
-+			memcpy(pmd, pmd_offset(pud, 0),
-+			       PTRS_PER_PMD * sizeof(pmd_t));
- 		pud_populate(&init_mm, pud, pmd);
- 		pmd += pmd_index(addr);
- 	} else
+ 	}
+ 
++	if (!IS_ENABLED(CONFIG_X86_16BIT) && !ldt_info.seg_32bit) {
++		error = -EINVAL;
++		goto out_unlock;
++	}
++
+ 	fill_ldt(&ldt, &ldt_info);
+ 	if (oldmode)
+ 		ldt.avl = 0;
 
 
