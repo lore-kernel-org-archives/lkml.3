@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaHEXLS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 19:11:18 -0400
-Received: from ozlabs.org ([103.22.144.67]:60506 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053AbaHEXLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 19:11:17 -0400
-Date: Wed, 6 Aug 2014 09:11:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Wim Van Sebroeck <wim.vansebroeck@linux-watchdog.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        George Cherian <george.cherian@ti.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Sangjung Woo <sangjung.woo@samsung.com>,
-        Xiubo Li <Li.Xiubo@freescale.com>
-Subject: Re: [GIT PULL REQUEST] watchdog - v3.17-rc1 merge window
-Message-ID: <20140806091107.447325c4@canb.auug.org.au>
-In-Reply-To: <20140805205547.GK11710@spo001.leaseweb.com>
-References: <20140805205547.GK11710@spo001.leaseweb.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1752261AbaHEXNl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 19:13:41 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:39312 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaHEXNj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 19:13:39 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/CJF5ebCdSeZjjl6Imell0j_"; protocol="application/pgp-signature"
+In-Reply-To: <20140803173031.GQ18735@two.firstfloor.org>
+References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
+	<8738dm9t4z.fsf@tassilo.jf.intel.com>
+	<1406532289.5133.223.camel@marge.simpson.net>
+	<CA+80gGaohO-RaG0_tWZJEFzisrrBpgfiw-mxMrTfSK0N=k7gQA@mail.gmail.com>
+	<20140803173031.GQ18735@two.firstfloor.org>
+Date: Tue, 5 Aug 2014 16:13:38 -0700
+Message-ID: <CA+80gGb5gJax=+1eg=f3pMkxXU0NBWDCkxEtBV7iekgcd1QcTg@mail.gmail.com>
+Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
+From: Sergey Oboguev <oboguev.public@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, linux-kernel@vger.kernel.org,
+        khalid.aziz@oracle.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/CJF5ebCdSeZjjl6Imell0j_
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-On Tue, 5 Aug 2014 22:55:47 +0200 Wim Van Sebroeck <wim.vansebroeck@linux-w=
-atchdog.org> wrote:
+On Sun, Aug 3, 2014 at 10:30 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> (One example might be virtual machine that runs guest operating system that is
+>> not paravirtualized or can be paravirtualized only to a limited extent. The VM
+>> might guess that preemption of VCPU thread that is processing events such as
+>> IPI interrupts, clock interrupts or certain device interrupts is likely to
+>> cause overall performance degradation due to other VCPUs spinning for an IPI
+>> response or spinning waiting for a spinlock, and thought the general kinds of
+>> these dependencies may be foreseen, but actual dependency chains between VCPUs
+>> cannot be established at run time.)
 >
-> Please pull from 'master' branch of
-> 	git://www.linux-watchdog.org/linux-watchdog.git
+> PAUSE loop exiting (PLE) can handle it in limited fashion on VMs
+> even without paravirtualization.
 
-This has been rebased onto v3.16, but none of the patches changed.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The key word is "limited". Sometimes the use of PLE can help to a limited
+indeed (see below) extent, and sometimes it can even be counter-productive,
+which in turn can also be mitigated (http://lwn.net/Articles/424960/) but again
+in a limited fashion.
 
---Sig_/CJF5ebCdSeZjjl6Imell0j_
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+This indeed is similar to the spinlock example discussed in the previous
+message. Similarly to PI/PE, the use of PLE and other spin-loop detection
+techniques is about trying to minimize the cost of after-
+inopportune-preemption actions to whatever (unavoidably limited, that's the key
+thing) extent they can be minimized, whereas priority protection is about the
+avoidance of incurring these costs in the first place.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+And then, x86 VMs is just one use case, whereas there are others with no PLE or
+similar recourses. DPRIO as a matter of fact happened to be conceived within
+the context of the project running legacy non-x86 OS that does not have pause
+in the loops, and the loops are scattered throughout the pre-existing binary
+code in huge numbers and are not pragmatically instrumentable. But this just
+exemplifies a general pattern of having to do with concurrency in a component
+being driven from or driving another component that is for practical purposes
+"set in stone" (3rd party, legacy, out of the scope of the project etc.)
 
-iQIcBAEBCAAGBQJT4WSSAAoJEMDTa8Ir7ZwVhjwP/jB25S8mYKdGKVzPKaOyGUAv
-M+1cqiUtMogiJhOC2IGZYILrVByNkxsPvFVJdShgdk1HKCYiAcjzrUNv+EswKTZ6
-E2+Zw/aVI7psfxbwqMw/LGEnKGrh80Ald/qbM+iaKeRxeFlwCuV6emJk6HfW0wYE
-8I9LCUymhjwrthrr8/QmSmYoDKUdOplYSD1c3J78O6MTHl2NKpMsGVyPYopPr5WE
-ZJRx6P1o1bds41c9LSZZtG7CmsGRpzC+BUfYkL6jKI4f1M00PAtGgk2vvz809VBo
-EIORQbz5cYGrVQPT5zt7tArdaCcaFiFzgmJRhEZ8oe/qdOZ4uGSrNICjsEPWP0Og
-MoWopTPxbPNnXeF2vYbjMZkqNB2fnN55DWTHc90v/sUHjmJCfbZjPtVmYuh3Mcsa
-WIP2ki72QusFgJXmZZ46fjW+20bRJxlRQuSN4tlDYRAuILQTmDEaTzAsK+nYmKGn
-/LV3hy3TXFMQIHOrlZqOdFFQjboRBwupXv/cuq/N3O21dbk8YKibgmk48O+c6EzO
-IFFJ/NJOl9opDx60X9TPJVybzqlnlHWm8AG5JPElJYeD16Zwwb+iRTov2k+ketO2
-cL2QhCc0oK1UwudQAnq8yu7HNcxYSxWtOgN8pwjdwO4UGVZB07U8oCJcFwO0EFge
-/JeFeYqfq3kR69ZChVPF
-=fKaw
------END PGP SIGNATURE-----
-
---Sig_/CJF5ebCdSeZjjl6Imell0j_--
+- Sergey
