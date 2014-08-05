@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303AbaHES3B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:29:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52414 "EHLO
+	id S1756315AbaHES3g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:29:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52407 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755154AbaHESOi (ORCPT
+	with ESMTP id S1755147AbaHESOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:14:38 -0400
+	Tue, 5 Aug 2014 14:14:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [PATCH 3.14 32/39] staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
-Date: Tue,  5 Aug 2014 11:14:09 -0700
-Message-Id: <20140805181337.011324505@linuxfoundation.org>
+        Nishanth Menon <nm@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.14 30/39] pinctrl: dra: dt-bindings: Fix pull enable/disable
+Date: Tue,  5 Aug 2014 11:14:07 -0700
+Message-Id: <20140805181336.954078546@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805181336.030349158@linuxfoundation.org>
 References: <20140805181336.030349158@linuxfoundation.org>
@@ -28,52 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Nishanth Menon <nm@ti.com>
 
-commit 6cff1f6ad4c615319c1a146b2aa0af1043c5e9f5 upstream.
+commit 23d9cec07c589276561c13b180577c0b87930140 upstream.
 
-WARNING: CPU: 0 PID: 929 at /home/apw/COD/linux/kernel/irq/handle.c:147 handle_irq_event_percpu+0x1d1/0x1e0()
-irq 17 handler device_intr+0x0/0xa80 [vt6655_stage] enabled interrupts
+The DRA74/72 control module pins have a weak pull up and pull down.
+This is configured by bit offset 17. if BIT(17) is 1, a pull up is
+selected, else a pull down is selected.
 
-Using spin_lock_irqsave appears to fix this.
+However, this pull resisstor is applied based on BIT(16) -
+PULLUDENABLE - if BIT(18) is *0*, then pull as defined in BIT(17) is
+applied, else no weak pulls are applied. We defined this in reverse.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Reference: Table 18-5 (Description of the pad configuration register
+bits) in Technical Reference Manual Revision (DRA74x revision Q:
+SPRUHI2Q Revised June 2014 and DRA72x revision F: SPRUHP2F - Revised
+June 2014)
+
+Fixes: 6e58b8f1daaf1a ("ARM: dts: DRA7: Add the dts files for dra7 SoC and dra7-evm board")
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Tested-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/staging/vt6655/device_main.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ include/dt-bindings/pinctrl/dra.h |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/vt6655/device_main.c
-+++ b/drivers/staging/vt6655/device_main.c
-@@ -2430,6 +2430,7 @@ static  irqreturn_t  device_intr(int irq
- 	int             handled = 0;
- 	unsigned char byData = 0;
- 	int             ii = 0;
-+	unsigned long flags;
- //    unsigned char byRSSI;
+--- a/include/dt-bindings/pinctrl/dra.h
++++ b/include/dt-bindings/pinctrl/dra.h
+@@ -30,7 +30,8 @@
+ #define MUX_MODE14	0xe
+ #define MUX_MODE15	0xf
  
- 	MACvReadISR(pDevice->PortOffset, &pDevice->dwIsr);
-@@ -2455,7 +2456,8 @@ static  irqreturn_t  device_intr(int irq
+-#define PULL_ENA		(1 << 16)
++#define PULL_ENA		(0 << 16)
++#define PULL_DIS		(1 << 16)
+ #define PULL_UP			(1 << 17)
+ #define INPUT_EN		(1 << 18)
+ #define SLEWCONTROL		(1 << 19)
+@@ -38,10 +39,10 @@
+ #define WAKEUP_EVENT		(1 << 25)
  
- 	handled = 1;
- 	MACvIntDisable(pDevice->PortOffset);
--	spin_lock_irq(&pDevice->lock);
-+
-+	spin_lock_irqsave(&pDevice->lock, flags);
- 
- 	//Make sure current page is 0
- 	VNSvInPortB(pDevice->PortOffset + MAC_REG_PAGE1SEL, &byOrgPageSel);
-@@ -2696,7 +2698,8 @@ static  irqreturn_t  device_intr(int irq
- 		MACvSelectPage1(pDevice->PortOffset);
- 	}
- 
--	spin_unlock_irq(&pDevice->lock);
-+	spin_unlock_irqrestore(&pDevice->lock, flags);
-+
- 	MACvIntEnable(pDevice->PortOffset, IMR_MASK_VALUE);
- 
- 	return IRQ_RETVAL(handled);
+ /* Active pin states */
+-#define PIN_OUTPUT		0
++#define PIN_OUTPUT		(0 | PULL_DIS)
+ #define PIN_OUTPUT_PULLUP	(PIN_OUTPUT | PULL_ENA | PULL_UP)
+ #define PIN_OUTPUT_PULLDOWN	(PIN_OUTPUT | PULL_ENA)
+-#define PIN_INPUT		INPUT_EN
++#define PIN_INPUT		(INPUT_EN | PULL_DIS)
+ #define PIN_INPUT_SLEW		(INPUT_EN | SLEWCONTROL)
+ #define PIN_INPUT_PULLUP	(PULL_ENA | INPUT_EN | PULL_UP)
+ #define PIN_INPUT_PULLDOWN	(PULL_ENA | INPUT_EN)
 
 
