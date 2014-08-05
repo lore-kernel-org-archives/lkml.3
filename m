@@ -1,120 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392AbaHEBEn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Aug 2014 21:04:43 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:59801 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354AbaHEBEl (ORCPT
+	id S1753429AbaHEBGQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Aug 2014 21:06:16 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:13503 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752843AbaHEBGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Aug 2014 21:04:41 -0400
-Message-ID: <53E02DA6.1020609@gmail.com>
-Date: Mon, 04 Aug 2014 18:04:38 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 4 Aug 2014 21:06:13 -0400
+X-IronPort-AV: E=Sophos;i="5.04,265,1406563200"; 
+   d="scan'208";a="34179570"
+Message-ID: <53E02E59.2050506@cn.fujitsu.com>
+Date: Tue, 5 Aug 2014 09:07:37 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: frowand.list@gmail.com
-CC: Stephen Boyd <sboyd@codeaurora.org>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net
-Subject: [test patch 2/4] add poll_post_exception framework
-References: <53E02C7C.4090206@gmail.com>
-In-Reply-To: <53E02C7C.4090206@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] percpu changes for v3.17-rc1
+References: <20140804140400.GB26230@htj.dyndns.org>
+In-Reply-To: <20140804140400.GB26230@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frank Rowand <frank.rowand@sonymobile.com>
+On 08/04/2014 10:04 PM, Tejun Heo wrote:
+> Hello, Linus.
+> 
+> * Major reorganization of percpu header files which I think makes
+>   things a lot more readable and logical than before.
+> 
+> * percpu-refcount is updated so that it requires explicit destruction
+>   and can be reinitialized if necessary.  This was pulled into the
+>   block tree to replace the custom percpu refcnting implemented in
+>   blk-mq.
+> 
+> * In the process, percpu and percpu-refcount got cleaned up a bit.
+> 
+> This pull request contains two stray workqueue commits from Lai.
+> These are my mistakes.  I mistakenly applied the two to this tree and
+> then cherry picked them to the workqueue tree but forgot to roll them
+> back from this one.  I realized this only after percpu-refcount
+> changes were pulled into the block tree so couldn't fix it up
+> afterwards.  Sorry.  They shouldn't cause any problem during merge.
+> 
+> Thanks.
+> 
+> The following changes since commit ebe06187bf2aec10d537ce4595e416035367d703:
+> 
+>   epoll: fix use-after-free in eventpoll_release_file (2014-06-16 17:21:59 -1000)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.17
+> 
+> for you to fetch changes up to 2d7227828e1475c7b272e55bd70c4cec8eea219a:
+> 
+>   percpu-refcount: implement percpu_ref_reinit() and percpu_ref_is_zero() (2014-06-28 08:10:14 -0400)
+> 
+> ----------------------------------------------------------------
+> Christoph Lameter (1):
+>       percpu: Use ALIGN macro instead of hand coding alignment calculation
+> 
+> Lai Jiangshan (2):
+>       workqueue: clear POOL_DISASSOCIATED in rebind_workers()
+>       workqueue: stronger test in process_one_work()
 
-Add framework to allow serial driver to fixup state after operating in
-polled mode, before returning to interrupt mode.
+These two are also requested to be pulled on workqueue tree.
 
-Not-signed-off-by-yet: Frank Rowand <frank.rowand@sonymobile.com>
+> 
+> Tejun Heo (18):
+>       percpu: disallow archs from overriding SHIFT_PERCPU_PTR()
+>       percpu: introduce arch_raw_cpu_ptr()
+>       percpu: include/asm-generic/percpu.h should contain only arch-overridable parts
+>       percpu: move accessors from include/linux/percpu.h to percpu-defs.h
+>       percpu: reorganize include/linux/percpu-defs.h
+>       percpu: only allow sized arch overrides for {raw|this}_cpu_*() ops
+>       percpu: move generic {raw|this}_cpu_*_N() definitions to include/asm-generic/percpu.h
+>       percpu: move {raw|this}_cpu_*() definitions to include/linux/percpu-defs.h
+>       percpu: reorder macros in percpu header files
+>       percpu: use raw_cpu_*() to define __this_cpu_*()
+>       percpu: preffity percpu header files
+>       percpu: invoke __verify_pcpu_ptr() from the generic part of accessors and operations
+>       percpu-refcount, aio: use percpu_ref_cancel_init() in ioctx_alloc()
+>       percpu-refcount: one bit is enough for REF_STATUS
+>       percpu-refcount: add helpers for ->percpu_count accesses
+>       percpu-refcount: use unsigned long for pcpu_count pointer
+>       percpu-refcount: require percpu_ref to be exited explicitly
+>       percpu-refcount: implement percpu_ref_reinit() and percpu_ref_is_zero()
+> 
+>  arch/x86/include/asm/percpu.h    |   3 +-
+>  drivers/target/target_core_tpg.c |   4 +-
+>  fs/aio.c                         |   6 +-
+>  include/asm-generic/percpu.h     | 410 ++++++++++++++++++++----
+>  include/linux/percpu-defs.h      | 380 +++++++++++++++++++++-
+>  include/linux/percpu-refcount.h  |  64 ++--
+>  include/linux/percpu.h           | 673 ---------------------------------------
+>  kernel/cgroup.c                  |   8 +-
+>  kernel/workqueue.c               |  19 +-
+>  lib/percpu-refcount.c            |  86 +++--
+>  mm/percpu.c                      |   3 +-
+>  11 files changed, 834 insertions(+), 822 deletions(-)
+> 
 
----
- drivers/tty/serial/kgdboc.c      |    3 +++
- drivers/tty/serial/serial_core.c |   15 +++++++++++++++
- include/linux/serial_core.h      |    1 +
- include/linux/tty_driver.h       |    1 +
- 4 files changed, 20 insertions(+)
-
-Index: b/drivers/tty/serial/kgdboc.c
-===================================================================
---- a/drivers/tty/serial/kgdboc.c
-+++ b/drivers/tty/serial/kgdboc.c
-@@ -302,6 +302,9 @@ static void kgdboc_post_exp_handler(void
- 		con_debug_leave();
- 	}
- 	kgdboc_restore_input();
-+
-+	if (kgdb_tty_driver->ops->poll_post_exception)
-+		kgdb_tty_driver->ops->poll_post_exception(kgdb_tty_driver, kgdb_tty_line);
- }
- 
- static struct kgdb_io kgdboc_io_ops = {
-Index: b/drivers/tty/serial/serial_core.c
-===================================================================
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2237,6 +2237,20 @@ static void uart_poll_put_char(struct tt
- 	port = state->uart_port;
- 	port->ops->poll_put_char(port, ch);
- }
-+
-+static void uart_poll_post_exception(struct tty_driver *driver, int line)
-+{
-+	struct uart_driver *drv = driver->driver_state;
-+	struct uart_state *state = drv->state + line;
-+	struct uart_port *port;
-+
-+	if (!state || !state->uart_port)
-+		return;
-+
-+	port = state->uart_port;
-+	if (port->ops->poll_post_exception)
-+		port->ops->poll_post_exception(port);
-+}
- #endif
- 
- static const struct tty_operations uart_ops = {
-@@ -2269,6 +2283,7 @@ static const struct tty_operations uart_
- 	.poll_init	= uart_poll_init,
- 	.poll_get_char	= uart_poll_get_char,
- 	.poll_put_char	= uart_poll_put_char,
-+	.poll_post_exception = uart_poll_post_exception,
- #endif
- };
- 
-Index: b/include/linux/tty_driver.h
-===================================================================
---- a/include/linux/tty_driver.h
-+++ b/include/linux/tty_driver.h
-@@ -283,6 +283,7 @@ struct tty_operations {
- 	int (*poll_init)(struct tty_driver *driver, int line, char *options);
- 	int (*poll_get_char)(struct tty_driver *driver, int line);
- 	void (*poll_put_char)(struct tty_driver *driver, int line, char ch);
-+	void (*poll_post_exception)(struct tty_driver *driver, int line);
- #endif
- 	const struct file_operations *proc_fops;
- };
-Index: b/include/linux/serial_core.h
-===================================================================
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -90,6 +90,7 @@ struct uart_ops {
- 	int		(*poll_init)(struct uart_port *);
- 	void		(*poll_put_char)(struct uart_port *, unsigned char);
- 	int		(*poll_get_char)(struct uart_port *);
-+	void		(*poll_post_exception)(struct uart_port *);
- #endif
- };
- 
