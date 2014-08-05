@@ -1,150 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738AbaHEI5c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 04:57:32 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:45452 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932668AbaHEI52 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 04:57:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <87mwcakpzw.wl%kuninori.morimoto.gx@renesas.com>
-References: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
-	<1404908623-909-6-git-send-email-geert+renesas@glider.be>
-	<20140711091358.GK12420@verge.net.au>
-	<1405435735.28592.50.camel@rzhang1-toshiba>
-	<87mwcakpzw.wl%kuninori.morimoto.gx@renesas.com>
-Date: Tue, 5 Aug 2014 10:57:25 +0200
-X-Google-Sender-Auth: QsRCrHtFm4bl5AA2sl78BYXH1GU
-Message-ID: <CAMuHMdVHRcXYgCPtWcMzRvofp7OK3ugLW9ztOHM5ey3_atz6MA@mail.gmail.com>
-Subject: Re: [PATCH 05/13] thermal: rcar: Document SoC-specific bindings
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, Simon Horman <horms@verge.net.au>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S932754AbaHEI7P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 04:59:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44081 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932668AbaHEI7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 04:59:13 -0400
+Subject: Re: [PATCH 3/4] Add the "verbose" module option.
+From: Jean Delvare <jdelvare@suse.de>
+To: kreijack@inwind.it
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, bryan@whatroute.net
+In-Reply-To: <53DFBE8D.5050707@inwind.it>
+References: <1406901650-20841-1-git-send-email-kreijack@inwind.it>
+	 <1406901650-20841-4-git-send-email-kreijack@inwind.it>
+	 <20140803161223.0b26e4bc@endymion.delvare>	<53DE5179.3080402@gmail.com>
+	 <20140803175222.3433b646@endymion.delvare>  <53DE650E.4060909@gmail.com>
+	 <1407141986.4302.10.camel@chaos.site>  <53DFBE8D.5050707@inwind.it>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Tue, 05 Aug 2014 10:59:07 +0200
+Message-ID: <1407229147.4302.19.camel@chaos.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 4:16 AM, Kuninori Morimoto
-<kuninori.morimoto.gx@renesas.com> wrote:
->> > > The documentation only mentioned the generic fallback compatible property.
->> > > Add the missing SoC-specific compatible properties, some of which are
->> > > already in use.
->> > >
->> > > Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
->> > > Cc: Zhang Rui <rui.zhang@intel.com>
->> > > Cc: Eduardo Valentin <eduardo.valentin@ti.com>
->> > > Cc: linux-pm@vger.kernel.org
->> >
->> > Acked-by: Simon Horman <horms+renesas@verge.net.au>
->>
->> Kuninori,
->>
->> what' your opinion of this patch?
->>
->> thanks,
->> rui
->> >
->> > > ---
->> > >  .../devicetree/bindings/thermal/rcar-thermal.txt       | 18 ++++++++++++------
->> > >  1 file changed, 12 insertions(+), 6 deletions(-)
->> > >
->> > > diff --git a/Documentation/devicetree/bindings/thermal/rcar-thermal.txt b/Documentation/devicetree/bindings/thermal/rcar-thermal.txt
->> > > index 28ef498a66e5..0ef00be44b01 100644
->> > > --- a/Documentation/devicetree/bindings/thermal/rcar-thermal.txt
->> > > +++ b/Documentation/devicetree/bindings/thermal/rcar-thermal.txt
->> > > @@ -1,7 +1,13 @@
->> > >  * Renesas R-Car Thermal
->> > >
->> > >  Required properties:
->> > > -- compatible             : "renesas,rcar-thermal"
->> > > +- compatible             : "renesas,thermal-<soctype>", "renesas,rcar-thermal"
->> > > +                   as fallback.
->> > > +                   Examples with soctypes are:
->> > > +                     - "renesas,thermal-r8a73a4" (R-Mobile AP6)
->> > > +                     - "renesas,thermal-r8a7779" (R-Car H1)
->> > > +                     - "renesas,thermal-r8a7790" (R-Car H2)
->> > > +                     - "renesas,thermal-r8a7791" (R-Car M2)
->> > >  - reg                    : Address range of the thermal registers.
->> > >                     The 1st reg will be recognized as common register
->> > >                     if it has "interrupts".
->> > > @@ -12,18 +18,18 @@ Option properties:
->> > >
->> > >  Example (non interrupt support):
->> > >
->> > > -thermal@e61f0100 {
->> > > - compatible = "renesas,rcar-thermal";
->> > > - reg = <0xe61f0100 0x38>;
->> > > +thermal@ffc48000 {
->> > > + compatible = "renesas,thermal-r8a7779", "renesas,rcar-thermal";
->> > > + reg = <0xffc48000 0x38>;
->> > >  };
->> > >
->> > >  Example (interrupt support):
->> > >
->> > >  thermal@e61f0000 {
->> > > - compatible = "renesas,rcar-thermal";
->> > > + compatible = "renesas,thermal-r8a73a4", "renesas,rcar-thermal";
->> > >   reg = <0xe61f0000 0x14
->> > >           0xe61f0100 0x38
->> > >           0xe61f0200 0x38
->> > >           0xe61f0300 0x38>;
->> > > - interrupts = <0 69 4>;
->> > > + interrupts = <0 69 IRQ_TYPE_LEVEL_HIGH>;
->> > >  };
->
-> This patch and [12/13] are adding SoC-specific compatible name.
-> Of course we don't know future request,
-> and, adding SoC-specific compatible name for
-> fallbacking is nice safety for us.
-> So, I don't have strong objection about it.
->
-> But, thermal driver side do nothing for each
-> SoC-specific compatible name at this point.
-> This means
->
->  -> There is no trouble in driver/SoC
->  -> Add new (and not used) compatible name
->  -> Nothing happen in driver/SoC
->
-> My questions are...
->  1) How to verify this patch ?
->  2) Do we need to update example SoC "specific name" list in rcar-thermal.txt.
->     Few example codes are very enough ?
+Le Monday 04 August 2014 à 19:10 +0200, Goffredo Baroncelli a écrit :
+> On 08/04/2014 10:46 AM, Jean Delvare wrote:
+> > Le Sunday 03 August 2014 à 18:36 +0200, Goffredo Baroncelli a écrit :
+> >> The printk without "(tuned %+d)" is never called because 
+> >> LOG_TEMP was #define(d) equal to 0.
+> > 
+> > And this is what your second printk is replacing. So it should not have
+> > the "(tuned *)" either.
+> > 
+> I removed the printk(s) from tune_fan(); the ones leaved replaced 
+> both the ones inside tune_fan() and the ones outside.
 
-One important thing to note in my patch description is "some of which
-are already in use.".
+I understand that. But you still had two final printks, one with "(tuned
+%+d)" when level >= 0, which corresponds to what was printed in tune_fan
+before, and another one when level < 0, which corresponds to what was
+printed in poll_temp before, and that one did not have a "tuned +0" part
+so I simply fail to see why its replacement should have it.
 
-$ git grep renesas,thermal -- arch/arm/boot/ | cat
-arch/arm/boot/dts/r8a7790.dtsi: compatible =
-"renesas,thermal-r8a7790", "renesas,rcar-thermal";
-arch/arm/boot/dts/r8a7791.dtsi: compatible =
-"renesas,thermal-r8a7791", "renesas,rcar-thermal";
-$
+I admit I'm surprised we're arguing on that as it seems really obvious
+to me, so I can only hope I'm not missing something even more obvious.
 
-So these 2 should be added to the documentation for sure.
-Adding the 2 others, and adding them to the respective DTSes (cfr. the
-other patches in the series) doesn't hurt, and will help if an incompatibility
-ever arises.
+> Anyway, Benjamin which is your opinion ? 
+> For me is equal to remove or to leave "(tune +0)" (when the tuning is equal to 0).
+> Jean think it is better to remove "(tune +0)" (when the tuning is equal to 0).
+> So if you haven't any objection I will remove it.
 
-(I assume the driver works with the other DTSes that already claim to have
-a device compatible with "renesas,rcar-thermal").
+s/remove/not introduce/ is my actual point.
 
-Gr{oetje,eeting}s,
+But I'm not going to argue more, I'm not even using that driver and it's
+a debug message only anyway, so do as you wish.
 
-                        Geert
+Thanks,
+-- 
+Jean Delvare
+SUSE L3 Support
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
