@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399AbaHEK6S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 06:58:18 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:18304 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754783AbaHEKs4 (ORCPT
+	id S933402AbaHEK67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 06:58:59 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:44572 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754720AbaHEKsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 06:48:56 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-ad-53e0b6966202
+	Tue, 5 Aug 2014 06:48:54 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-7a-53e0b694a1ab
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
@@ -24,66 +24,98 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Tomasz Figa <tomasz.figa@gmail.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 06/29] drivers: iommu: add notify about failed bind
-Date: Tue, 05 Aug 2014 12:47:34 +0200
-Message-id: <1407235677-26324-7-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH 04/29] drivers: base: add notifier for failed driver bind
+Date: Tue, 05 Aug 2014 12:47:32 +0200
+Message-id: <1407235677-26324-5-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.9.2
 In-reply-to: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
 References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xq7rTtj0INph3mc3i76Rj7BbNi9ez
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsVy+t/xq7pTtj0INvj7WNzi76Rj7BbNi9ez
 	WUy6P4HFYsF+a4vO2RvYLXoXXGWzONv0ht2ic+ISdosvVx4yWWx6fI3V4vKuOWwWM87vY7JY
 	e+Quu8Wp65/ZLP71HmS0OHP6EqvF/z072C0Ov2lntTjycDe7xapdfxgtbv/mcxD1eHJwHpPH
 	71+TGD12zrrL7jG7Yyarx6ZVnWwe++euYffYvKTe4/a/x8wek28sZ/S4cqKJ1aO3+R2bx5ar
-	7SwefVtWMXp83iQXwBfFZZOSmpNZllqkb5fAlbH7u3DBB+6Kg7+vsjQwtnB1MXJySAiYSJy7
-	focNwhaTuHBvPZDNxSEksJRR4uD1JawQTh+TxI+mm8wgVWwChhJdb7vAqkQEehkl+pt+MIE4
-	zALrWCX2915nAakSFnCWOPZ6HthcFgFVib5tu1hBbF4BD4m1LQfYIfbJSfx/uYIJxOYU8JQ4
-	fPMAWI0QUM3PDWvYJzDyLmBkWMUomlqaXFCclJ5rqFecmFtcmpeul5yfu4kREjlfdjAuPmZ1
-	iFGAg1GJh9fg9N1gIdbEsuLK3EOMEhzMSiK8EmseBAvxpiRWVqUW5ccXleakFh9iZOLglGpg
-	LJrGqLPqFO/cv7U17EqTNfunXPnyaNK/110J3b01Edf+rliyq8XNWGjXlj3+F/1Tl0/awRWf
-	85DbvvtxcW3rRx8p48lni+f/XuY8eaqc7vkHybtWO/+P27TC49sepiqDeU2fvzKUrAm+dGyJ
-	dN+VRVkXfZKv9fOefNa1PCl53VL74CWaBmxLE5RYijMSDbWYi4oTATjswiV6AgAA
+	7SwefVtWMXp83iQXwBfFZZOSmpNZllqkb5fAlfFybitbwWaRiov/77E1MJ4X6GLk5JAQMJGY
+	2b2KCcIWk7hwbz1bFyMXh5DAUkaJu9tesEA4fUwSr36uYgWpYhMwlOh62wVWJSLQyyjR3/SD
+	CcRhFljHKrG/9zpQCweHsICnxLrjciAmi4CqxNUv1iC9vAIeEtdnrWGF2CYn8f/lCrDNnEDV
+	h28eAIsLAdX83LCGfQIj7wJGhlWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIXHzdQfj0mNW
+	hxgFOBiVeHgV9t4NFmJNLCuuzD3EKMHBrCTCK7HmQbAQb0piZVVqUX58UWlOavEhRiYOTqkG
+	xuDS8i8+3f6z7++J1el3W8pipDpXNDZ/r5MHO/+bA18+6DvZPTghvryq8++XD46/9sy9dvHv
+	TvN6tW9chun1yxQ1TP6cZxK2y74xd96T4j29rY2bjaRMr6b7f6nofnJmk6CK5kqNQwVPBJxD
+	rpy6pWN1dvccuSsMnI2TZSXVKl+90Tx4KkV5gRJLcUaioRZzUXEiAFwsL7d5AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for forwarding recently introduced
-BUS_NOTIFY_DRVBIND_FAILED event to iommu groups. This lets us getting a
-notify for failed device driver bind, so all the items done in
-IOMMU_GROUP_NOTIFY_BIND_DRIVER event can be cleaned if the driver fails
-to bind.
+This patch adds support for getting a notify for failed device driver
+bind, so all the items done in BUS_NOTIFY_BIND_DRIVER event can be
+cleaned if the driver fails to bind.
 
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- drivers/iommu/iommu.c | 3 +++
- include/linux/iommu.h | 1 +
- 2 files changed, 4 insertions(+)
+ drivers/base/dd.c      | 10 +++++++---
+ include/linux/device.h |  4 +++-
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index 1698360..516e93a 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -758,6 +758,9 @@ static int iommu_bus_notifier(struct notifier_block *nb,
- 	case BUS_NOTIFY_UNBOUND_DRIVER:
- 		group_action = IOMMU_GROUP_NOTIFY_UNBOUND_DRIVER;
- 		break;
-+	case BUS_NOTIFY_DRVBIND_FAILED:
-+		group_action = IOMMU_GROUP_NOTIFY_DRVBIND_FAILED;
-+		break;
- 	}
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index e4ffbcf..541a41f 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -237,10 +237,14 @@ static int driver_sysfs_add(struct device *dev)
+ 	return ret;
+ }
  
- 	if (group_action)
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index 20f9a52..f9fdae5 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -139,6 +139,7 @@ struct iommu_ops {
- #define IOMMU_GROUP_NOTIFY_BOUND_DRIVER		4 /* Post Driver bind */
- #define IOMMU_GROUP_NOTIFY_UNBIND_DRIVER	5 /* Pre Driver unbind */
- #define IOMMU_GROUP_NOTIFY_UNBOUND_DRIVER	6 /* Post Driver unbind */
-+#define IOMMU_GROUP_NOTIFY_DRVBIND_FAILED	7 /* Driver failed to bind */
+-static void driver_sysfs_remove(struct device *dev)
++static void driver_sysfs_remove(struct device *dev, int failed)
+ {
+ 	struct device_driver *drv = dev->driver;
  
- extern int bus_set_iommu(struct bus_type *bus, const struct iommu_ops *ops);
- extern bool iommu_present(struct bus_type *bus);
++	if (failed && dev->bus)
++		blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
++					     BUS_NOTIFY_DRVBIND_FAILED, dev);
++
+ 	if (drv) {
+ 		sysfs_remove_link(&drv->p->kobj, kobject_name(&dev->kobj));
+ 		sysfs_remove_link(&dev->kobj, "driver");
+@@ -316,7 +320,7 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+ 
+ probe_failed:
+ 	devres_release_all(dev);
+-	driver_sysfs_remove(dev);
++	driver_sysfs_remove(dev, true);
+ 	dev->driver = NULL;
+ 	dev_set_drvdata(dev, NULL);
+ 
+@@ -509,7 +513,7 @@ static void __device_release_driver(struct device *dev)
+ 	if (drv) {
+ 		pm_runtime_get_sync(dev);
+ 
+-		driver_sysfs_remove(dev);
++		driver_sysfs_remove(dev, false);
+ 
+ 		if (dev->bus)
+ 			blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
+diff --git a/include/linux/device.h b/include/linux/device.h
+index b387710..92daded 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -176,7 +176,7 @@ extern int bus_register_notifier(struct bus_type *bus,
+ extern int bus_unregister_notifier(struct bus_type *bus,
+ 				   struct notifier_block *nb);
+ 
+-/* All 4 notifers below get called with the target struct device *
++/* All 7 notifers below get called with the target struct device *
+  * as an argument. Note that those functions are likely to be called
+  * with the device lock held in the core, so be careful.
+  */
+@@ -189,6 +189,8 @@ extern int bus_unregister_notifier(struct bus_type *bus,
+ 						      unbound */
+ #define BUS_NOTIFY_UNBOUND_DRIVER	0x00000006 /* driver is unbound
+ 						      from the device */
++#define BUS_NOTIFY_DRVBIND_FAILED	0x00000007 /* driver failed to bind
++						      to device */
+ 
+ extern struct kset *bus_get_kset(struct bus_type *bus);
+ extern struct klist *bus_get_device_klist(struct bus_type *bus);
 -- 
 1.9.2
 
