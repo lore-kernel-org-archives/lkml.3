@@ -1,124 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864AbaHESrZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:47:25 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:50174 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657AbaHESrV (ORCPT
+	id S1756565AbaHESrr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:47:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52190 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754502AbaHESON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:47:21 -0400
-To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, jejb@kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org,
-        Sathya Prakash <Sathya.Prakash@avagotech.com>,
-        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [RESEND][PATCH 07/10][SCSI]mpt2sas: Added Reply Descriptor Post Queue (RDPQ) Array support
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <20140625103445.GA12943@avagotech.com>
-	<yq1zjg2m6lu.fsf@sermon.lab.mkp.net>
-	<CAK=zhgoQt5J=jh4jShAy5rBXNz34sN-tqf=uZDkY4zQJ9XhM5g@mail.gmail.com>
-	<yq18unklvda.fsf@sermon.lab.mkp.net>
-	<CAK=zhgpDWJLBMBB1mV-7u+o_UC86PiOCAp4vi4-UAn_hXHtF2A@mail.gmail.com>
-	<yq1r41bkgdp.fsf@sermon.lab.mkp.net>
-	<CAK=zhgp_v_sdt+VLDs1Mxxi8Cg4nZNnzgQ=d228h+Ht2EpdEqw@mail.gmail.com>
-	<yq138dpgr6z.fsf@sermon.lab.mkp.net>
-	<CAK=zhgoEhW7fT7SV6ZkzgFa_A49W9quzWOgXb=DH3D_CrMAdDw@mail.gmail.com>
-Date: Tue, 05 Aug 2014 14:46:38 -0400
-In-Reply-To: <CAK=zhgoEhW7fT7SV6ZkzgFa_A49W9quzWOgXb=DH3D_CrMAdDw@mail.gmail.com>
-	(Sreekanth Reddy's message of "Wed, 30 Jul 2014 20:25:14 +0530")
-Message-ID: <yq161i6epv5.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 5 Aug 2014 14:14:13 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Rajendra Nayak <rnayak@ti.com>, Tero Kristo <t-kristo@ti.com>,
+        Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.15 35/42] ARM: dts: dra7-evm: Make VDDA_1V8_PHY supply always on
+Date: Tue,  5 Aug 2014 11:13:49 -0700
+Message-Id: <20140805181322.059065301@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
+References: <20140805181321.018370988@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com> writes:
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-Sreekanth,
+------------------
 
-Patch was mangled and I had to apply every single hunk by hand. Please
-use git send-email.
+From: Roger Quadros <rogerq@ti.com>
 
-+static int dma_mask;
-+
-+static int
-+_base_wait_for_doorbell_int(struct MPT2SAS_ADAPTER *ioc, int timeout,
-+                int sleep_flag);
-+static int
-+_base_wait_for_doorbell_ack(struct MPT2SAS_ADAPTER *ioc, int timeout,
-+                int sleep_flag);
-+static int
-+_base_wait_for_doorbell_not_used(struct MPT2SAS_ADAPTER *ioc, int timeout,
-+                 int sleep_flag);
-+static int
-+_base_handshake_req_reply_wait(struct MPT2SAS_ADAPTER *ioc, int request_bytes,
-+    u32 *request, int reply_bytes, u16 *reply, int timeout, int sleep_flag);
-+static int
-+_base_get_ioc_facts(struct MPT2SAS_ADAPTER *ioc, int sleep_flag);
+commit e120fb459693bbc1ac3eabdd65c3659d7cfbfd2a upstream.
 
-Are you sure you need all these? _base_get_ioc_facts was the only one
-that needed to be declared in my original patch.
+After clarification from the hardware team it was found that
+this 1.8V PHY supply can't be switched OFF when SoC is Active.
 
-+    if (ioc->rdpq_array_enable)
-+        sz = reply_post_free_sz;
-+    else {
-+        if (_base_is_controller_msix_enabled(ioc))
-+            sz = reply_post_free_sz * ioc->reply_queue_count;
-+        else
-+            sz = reply_post_free_sz;
-+    }
+Since the PHY IPs don't contain isolation logic built in the design to
+allow the power rail to be switched off, there is a very high risk
+of IP reliability and additional leakage paths which can result in
+additional power consumption.
 
-sz = reply_post_free_sz;
-if (_base_is_controller_msix_enabled(ioc) && !ioc->rdpq_array_enable)
-   sz *= ioc->reply_queue_count;
+The only scenario where this rail can be switched off is part of Power on
+reset sequencing, but it needs to be kept always-on during operation.
 
-+    ioc->reply_post = kcalloc((ioc->rdpq_array_enable) ?
-+        (ioc->reply_queue_count):1,
-+        sizeof(struct reply_post_struct), GFP_KERNEL);
+This patch is required for proper functionality of USB, SATA
+and PCIe on DRA7-evm.
 
-You're special casing the !rdpq code path again. Why don't you just make
-sure reply_queue_count is always correct?
+CC: Rajendra Nayak <rnayak@ti.com>
+CC: Tero Kristo <t-kristo@ti.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-+    do {
-+        ioc->reply_post[i].reply_post_free =
-+            pci_pool_alloc(ioc->reply_post_free_dma_pool,
-+            GFP_KERNEL,
-+            &ioc->reply_post[i].reply_post_free_dma);
-+        if (!ioc->reply_post[i].reply_post_free) {
-+            printk(MPT2SAS_ERR_FMT
-+            "reply_post_free pool: pci_pool_alloc failed\n",
-+            ioc->name);
-+            goto out;
-+        }
-+        memset(ioc->reply_post[i].reply_post_free, 0, sz);
-+        dinitprintk(ioc, printk(MPT2SAS_INFO_FMT
-+            "reply post free pool (0x%p): depth(%d),"
-+            "element_size(%d), pool_size(%d kB)\n", ioc->name,
-+            ioc->reply_post[i].reply_post_free,
-+            ioc->reply_post_queue_depth, 8, sz/1024));
-+        dinitprintk(ioc, printk(MPT2SAS_INFO_FMT
-+            "reply_post_free_dma = (0x%llx)\n", ioc->name,
-+            (unsigned long long)
-+            ioc->reply_post[i].reply_post_free_dma));
-+        total_sz += sz;
-+    } while (ioc->rdpq_array_enable && (++i < ioc->reply_queue_count));
+---
+ arch/arm/boot/dts/dra7-evm.dts |    1 +
+ 1 file changed, 1 insertion(+)
 
-Same thing. I think:
+--- a/arch/arm/boot/dts/dra7-evm.dts
++++ b/arch/arm/boot/dts/dra7-evm.dts
+@@ -182,6 +182,7 @@
+ 					regulator-name = "ldo3";
+ 					regulator-min-microvolt = <1800000>;
+ 					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
+ 					regulator-boot-on;
+ 				};
+ 
 
-     for (i = 0; i < ioc->reply_queue_count ; i++) {
 
-was much clearer.
-
-If reply_queue_count is ever inconsistent wrt. ioc->rdpq_array_enable
-and _base_is_controller_msix_enabled(ioc) then that's an orthogonal
-problem that you should address directly instead of working around it
-several places in the code.
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
