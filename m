@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105AbaHES36 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:29:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52711 "EHLO
+	id S1755534AbaHESeQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:34:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52719 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756351AbaHES34 (ORCPT
+	with ESMTP id S1756353AbaHES35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:29:56 -0400
+	Tue, 5 Aug 2014 14:29:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.4 13/19] x86_64/entry/xen: Do not invoke espfix64 on Xen
-Date: Tue,  5 Aug 2014 11:29:37 -0700
-Message-Id: <20140805182934.434057292@linuxfoundation.org>
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Marcelo Ricardo Leitner <mleitner@redhat.com>,
+        Florian Westphal <fw@strlen.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Jarosch <thomas.jarosch@intra2net.com>
+Subject: [PATCH 3.4 14/19] Revert: "net: ip, ipv6: handle gso skbs in forwarding path"
+Date: Tue,  5 Aug 2014 11:29:38 -0700
+Message-Id: <20140805182934.469311843@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140805182934.022406678@linuxfoundation.org>
 References: <20140805182934.022406678@linuxfoundation.org>
@@ -29,136 +32,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+This reverts commit 29a3cd46644ec8098dbe1c12f89643b5c11831a9 which is
+commit fe6cc55f3a9a053482a76f5a6b2257cee51b4663 upstream.
 
-commit 7209a75d2009dbf7745e2fd354abf25c3deb3ca3 upstream.
-
-This moves the espfix64 logic into native_iret.  To make this work,
-it gets rid of the native patch for INTERRUPT_RETURN:
-INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
-
-This changes the 16-bit SS behavior on Xen from OOPSing to leaking
-some bits of the Xen hypervisor's RSP (I think).
-
-[ hpa: this is a nonzero cost on native, but probably not enough to
-  measure. Xen needs to fix this in their own code, probably doing
-  something equivalent to espfix64. ]
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/7b8f1d8ef6597cb16ae004a43c56980a7de3cf94.1406129132.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Marcelo Ricardo Leitner <mleitner@redhat.com>
+Cc: Florian Westphal <fw@strlen.de>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Thomas Jarosch <thomas.jarosch@intra2net.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/irqflags.h     |    2 +-
- arch/x86/kernel/entry_64.S          |   31 ++++++++++---------------------
- arch/x86/kernel/paravirt_patch_64.c |    2 --
- 3 files changed, 11 insertions(+), 24 deletions(-)
+ include/linux/skbuff.h |   17 ------------
+ net/ipv4/ip_forward.c  |   68 +------------------------------------------------
+ net/ipv6/ip6_output.c  |   13 ---------
+ 3 files changed, 3 insertions(+), 95 deletions(-)
 
---- a/arch/x86/include/asm/irqflags.h
-+++ b/arch/x86/include/asm/irqflags.h
-@@ -129,7 +129,7 @@ static inline notrace unsigned long arch
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -2608,22 +2608,5 @@ static inline bool skb_is_recycleable(co
  
- #define PARAVIRT_ADJUST_EXCEPTION_FRAME	/*  */
- 
--#define INTERRUPT_RETURN	iretq
-+#define INTERRUPT_RETURN	jmp native_iret
- #define USERGS_SYSRET64				\
- 	swapgs;					\
- 	sysretq;
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -900,33 +900,27 @@ restore_args:
- 	RESTORE_ARGS 1,8,1
- 
- irq_return:
-+	INTERRUPT_RETURN
-+
-+ENTRY(native_iret)
- 	/*
- 	 * Are we returning to a stack segment from the LDT?  Note: in
- 	 * 64-bit mode SS:RSP on the exception stack is always valid.
- 	 */
- #ifdef CONFIG_X86_ESPFIX64
- 	testb $4,(SS-RIP)(%rsp)
--	jnz irq_return_ldt
-+	jnz native_irq_return_ldt
- #endif
- 
--irq_return_iret:
--	INTERRUPT_RETURN
+ 	return true;
+ }
 -
--	.section __ex_table, "a"
--	.quad irq_return_iret, bad_iret
--	.previous
+-/**
+- * skb_gso_network_seglen - Return length of individual segments of a gso packet
+- *
+- * @skb: GSO skb
+- *
+- * skb_gso_network_seglen is used to determine the real size of the
+- * individual segments, including Layer3 (IP, IPv6) and L4 headers (TCP/UDP).
+- *
+- * The MAC/L2 header is not accounted for.
+- */
+-static inline unsigned int skb_gso_network_seglen(const struct sk_buff *skb)
+-{
+-	unsigned int hdr_len = skb_transport_header(skb) -
+-			       skb_network_header(skb);
+-	return hdr_len + skb_gso_transport_seglen(skb);
+-}
+ #endif	/* __KERNEL__ */
+ #endif	/* _LINUX_SKBUFF_H */
+--- a/net/ipv4/ip_forward.c
++++ b/net/ipv4/ip_forward.c
+@@ -39,68 +39,6 @@
+ #include <net/route.h>
+ #include <net/xfrm.h>
+ 
+-static bool ip_may_fragment(const struct sk_buff *skb)
+-{
+-	return unlikely((ip_hdr(skb)->frag_off & htons(IP_DF)) == 0) ||
+-		skb->local_df;
+-}
 -
--#ifdef CONFIG_PARAVIRT
--ENTRY(native_iret)
-+native_irq_return_iret:
- 	iretq
+-static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
+-{
+-	if (skb->len <= mtu)
+-		return false;
+-
+-	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
+-		return false;
+-
+-	return true;
+-}
+-
+-static bool ip_gso_exceeds_dst_mtu(const struct sk_buff *skb)
+-{
+-	unsigned int mtu;
+-
+-	if (skb->local_df || !skb_is_gso(skb))
+-		return false;
+-
+-	mtu = dst_mtu(skb_dst(skb));
+-
+-	/* if seglen > mtu, do software segmentation for IP fragmentation on
+-	 * output.  DF bit cannot be set since ip_forward would have sent
+-	 * icmp error.
+-	 */
+-	return skb_gso_network_seglen(skb) > mtu;
+-}
+-
+-/* called if GSO skb needs to be fragmented on forward */
+-static int ip_forward_finish_gso(struct sk_buff *skb)
+-{
+-	struct sk_buff *segs;
+-	int ret = 0;
+-
+-	segs = skb_gso_segment(skb, 0);
+-	if (IS_ERR(segs)) {
+-		kfree_skb(skb);
+-		return -ENOMEM;
+-	}
+-
+-	consume_skb(skb);
+-
+-	do {
+-		struct sk_buff *nskb = segs->next;
+-		int err;
+-
+-		segs->next = NULL;
+-		err = dst_output(segs);
+-
+-		if (err && ret == 0)
+-			ret = err;
+-		segs = nskb;
+-	} while (segs);
+-
+-	return ret;
+-}
+-
+ static int ip_forward_finish(struct sk_buff *skb)
+ {
+ 	struct ip_options * opt	= &(IPCB(skb)->opt);
+@@ -110,9 +48,6 @@ static int ip_forward_finish(struct sk_b
+ 	if (unlikely(opt->optlen))
+ 		ip_forward_options(skb);
  
- 	.section __ex_table,"a"
--	.quad native_iret, bad_iret
-+	.quad native_irq_return_iret, bad_iret
- 	.previous
--#endif
+-	if (ip_gso_exceeds_dst_mtu(skb))
+-		return ip_forward_finish_gso(skb);
+-
+ 	return dst_output(skb);
+ }
  
- #ifdef CONFIG_X86_ESPFIX64
--irq_return_ldt:
-+native_irq_return_ldt:
- 	pushq_cfi %rax
- 	pushq_cfi %rdi
- 	SWAPGS
-@@ -948,7 +942,7 @@ irq_return_ldt:
- 	SWAPGS
- 	movq %rax,%rsp
- 	popq_cfi %rax
--	jmp irq_return_iret
-+	jmp native_irq_return_iret
- #endif
+@@ -152,7 +87,8 @@ int ip_forward(struct sk_buff *skb)
+ 	if (opt->is_strictroute && opt->nexthop != rt->rt_gateway)
+ 		goto sr_failed;
  
- 	.section .fixup,"ax"
-@@ -1034,13 +1028,8 @@ __do_double_fault:
- 	cmpl $__KERNEL_CS,CS(%rdi)
- 	jne do_double_fault
- 	movq RIP(%rdi),%rax
--	cmpq $irq_return_iret,%rax
--#ifdef CONFIG_PARAVIRT
--	je 1f
--	cmpq $native_iret,%rax
--#endif
-+	cmpq $native_irq_return_iret,%rax
- 	jne do_double_fault		/* This shouldn't happen... */
--1:
- 	movq PER_CPU_VAR(kernel_stack),%rax
- 	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
- 	movq %rax,RSP(%rdi)
-@@ -1559,7 +1548,7 @@ error_sti:
-  */
- error_kernelspace:
- 	incl %ebx
--	leaq irq_return_iret(%rip),%rcx
-+	leaq native_irq_return_iret(%rip),%rcx
- 	cmpq %rcx,RIP+8(%rsp)
- 	je error_swapgs
- 	movl %ecx,%eax	/* zero extend */
---- a/arch/x86/kernel/paravirt_patch_64.c
-+++ b/arch/x86/kernel/paravirt_patch_64.c
-@@ -6,7 +6,6 @@ DEF_NATIVE(pv_irq_ops, irq_disable, "cli
- DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
- DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
- DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
--DEF_NATIVE(pv_cpu_ops, iret, "iretq");
- DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
- DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
- DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
-@@ -50,7 +49,6 @@ unsigned native_patch(u8 type, u16 clobb
- 		PATCH_SITE(pv_irq_ops, save_fl);
- 		PATCH_SITE(pv_irq_ops, irq_enable);
- 		PATCH_SITE(pv_irq_ops, irq_disable);
--		PATCH_SITE(pv_cpu_ops, iret);
- 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret32);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret64);
+-	if (!ip_may_fragment(skb) && ip_exceeds_mtu(skb, dst_mtu(&rt->dst))) {
++	if (unlikely(skb->len > dst_mtu(&rt->dst) && !skb_is_gso(skb) &&
++		     (ip_hdr(skb)->frag_off & htons(IP_DF))) && !skb->local_df) {
+ 		IP_INC_STATS(dev_net(rt->dst.dev), IPSTATS_MIB_FRAGFAILS);
+ 		icmp_send(skb, ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED,
+ 			  htonl(dst_mtu(&rt->dst)));
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -382,17 +382,6 @@ static inline int ip6_forward_finish(str
+ 	return dst_output(skb);
+ }
+ 
+-static bool ip6_pkt_too_big(const struct sk_buff *skb, unsigned int mtu)
+-{
+-	if (skb->len <= mtu || skb->local_df)
+-		return false;
+-
+-	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
+-		return false;
+-
+-	return true;
+-}
+-
+ int ip6_forward(struct sk_buff *skb)
+ {
+ 	struct dst_entry *dst = skb_dst(skb);
+@@ -514,7 +503,7 @@ int ip6_forward(struct sk_buff *skb)
+ 	if (mtu < IPV6_MIN_MTU)
+ 		mtu = IPV6_MIN_MTU;
+ 
+-	if (ip6_pkt_too_big(skb, mtu)) {
++	if (skb->len > mtu && !skb_is_gso(skb)) {
+ 		/* Again, force OUTPUT device used as source address */
+ 		skb->dev = dst->dev;
+ 		icmpv6_send(skb, ICMPV6_PKT_TOOBIG, 0, mtu);
 
 
