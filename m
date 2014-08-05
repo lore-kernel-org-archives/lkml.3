@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584AbaHEQn2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 12:43:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:49632 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919AbaHEQn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 12:43:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,805,1400050800"; 
-   d="scan'208";a="580373727"
-Date: Tue, 5 Aug 2014 22:02:30 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: nsekhar@ti.com, joelf@ti.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com
-Subject: Re: [PATCH] ARM: edma: Fix configuration parsing for SoCs with
- multiple eDMA3 CC
-Message-ID: <20140805163229.GZ8181@intel.com>
-References: <1407155216-20267-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1755606AbaHEQtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 12:49:18 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:53740 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753983AbaHEQtQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 12:49:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407155216-20267-1-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+5PVA5FPD8hp_7=M-VNoUG1Mw9R0Xkn2Yo50eo28ojzrcB5Aw@mail.gmail.com>
+References: <20140730014827.565626091@linuxfoundation.org>
+	<20140730014829.344302554@linuxfoundation.org>
+	<20140730065312.GA1652@laptop.redhat.com>
+	<CA+55aFzr_wJzt6RpojXpDo-ashV_N7sP+j7Ba0ND9mSpr7MKRQ@mail.gmail.com>
+	<CA+5PVA5FPD8hp_7=M-VNoUG1Mw9R0Xkn2Yo50eo28ojzrcB5Aw@mail.gmail.com>
+Date: Tue, 5 Aug 2014 09:49:15 -0700
+X-Google-Sender-Auth: RsCsiFkJqEkSl4apnQCAiu2ytZ0
+Message-ID: <CA+55aFwvRcr98M=425eCR8K04X-uAVjH2bs3hudkySVKM4VqVg@mail.gmail.com>
+Subject: Re: [PATCH 3.15 33/37] Fix gcc-4.9.0 miscompilation of load_balance()
+ in scheduler
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Jakub Jelinek <jakub@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>,
+        =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 03:26:56PM +0300, Peter Ujfalusi wrote:
-> The edma_setup_from_hw() should know about the CC number when parsing the
-> CCCFG register - when it reads the register to be precise. The base
-> addresses for CCs stored in an array and we need to provide the correct id
-> to edma_read() in order to read the correct register.
+On Tue, Aug 5, 2014 at 4:31 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+>
+> Sorry to bring this back up after the fact, but it's important for a
+> number of things in various distros
 
-Just an othognal question:
+You said that before, and I ignored you before, because you didn't
+actually give any examples.
 
-I still see lot of code for edma in arm/. What is the plan to re/move that
-to dma/
+>.  I don't disagree it should be
+> disabled by default, but making it unconditional is going to force the
+> distributions that care about perf, systemtap, and debuggers to
+> manually revert this.
 
--- 
-~Vinod
-> 
-> Cc: <stable@vger.kernel.org> # 3.16
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> ---
->  arch/arm/common/edma.c | 9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-> index 88099175fc56..d86771abbf57 100644
-> --- a/arch/arm/common/edma.c
-> +++ b/arch/arm/common/edma.c
-> @@ -1443,14 +1443,14 @@ void edma_assign_channel_eventq(unsigned channel, enum dma_event_q eventq_no)
->  EXPORT_SYMBOL(edma_assign_channel_eventq);
->  
->  static int edma_setup_from_hw(struct device *dev, struct edma_soc_info *pdata,
-> -			      struct edma *edma_cc)
-> +			      struct edma *edma_cc, int cc_id)
->  {
->  	int i;
->  	u32 value, cccfg;
->  	s8 (*queue_priority_map)[2];
->  
->  	/* Decode the eDMA3 configuration from CCCFG register */
-> -	cccfg = edma_read(0, EDMA_CCCFG);
-> +	cccfg = edma_read(cc_id, EDMA_CCCFG);
->  
->  	value = GET_NUM_REGN(cccfg);
->  	edma_cc->num_region = BIT(value);
-> @@ -1464,7 +1464,8 @@ static int edma_setup_from_hw(struct device *dev, struct edma_soc_info *pdata,
->  	value = GET_NUM_EVQUE(cccfg);
->  	edma_cc->num_tc = value + 1;
->  
-> -	dev_dbg(dev, "eDMA3 HW configuration (cccfg: 0x%08x):\n", cccfg);
-> +	dev_dbg(dev, "eDMA3 CC%d HW configuration (cccfg: 0x%08x):\n", cc_id,
-> +		cccfg);
->  	dev_dbg(dev, "num_region: %u\n", edma_cc->num_region);
->  	dev_dbg(dev, "num_channel: %u\n", edma_cc->num_channels);
->  	dev_dbg(dev, "num_slot: %u\n", edma_cc->num_slots);
-> @@ -1684,7 +1685,7 @@ static int edma_probe(struct platform_device *pdev)
->  			return -ENOMEM;
->  
->  		/* Get eDMA3 configuration from IP */
-> -		ret = edma_setup_from_hw(dev, info[j], edma_cc[j]);
-> +		ret = edma_setup_from_hw(dev, info[j], edma_cc[j], j);
->  		if (ret)
->  			return ret;
->  
-> -- 
-> 2.0.2
-> 
+Bah. I bet I use 'perf' more than most, and it doesn't care about
+debug info. Sure, if you want the annotated source code, or put probes
+in place, you want the line number information, but the amount of
+debug information it needs is miniscule, and not impacted bu this at
+all afaik.
 
--- 
+And systemtap people have more problems than this.
+
+Debuggers? Again, people who actually use kgdb have bigger issues than
+some slightly worse local variable tracking.  People care about the
+frame pointer information and type information, but if you use kgdb on
+the kernel you can damn well look at the assembly code and source code
+annotation for local variable information.
+
+So I call bullshit. Give a real example of real-world use, not some
+random handwaving of cases that happen to use debug info but - at
+least for the kernel - don't actually care about the variable
+tracking.
+
+The variable tracking is absolutely the *least* important part of the
+debug info. By a huge margin. To the point of being entirely
+irrelevant for the kernel. You make it sound like you lose all debug
+information, when in reality that's not the case at all.
+
+Trust me, you lose *way* more debug information because the kernel
+uses "-O2" rather than "-O".
+
+               Linus
