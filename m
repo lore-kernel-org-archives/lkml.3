@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877AbaHEFjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 01:39:36 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:53435 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095AbaHEFje convert rfc822-to-8bit (ORCPT
+	id S1754910AbaHEFlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 01:41:45 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:30114 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753095AbaHEFln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 01:39:34 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: pull request: wireless-next 2014-08-01
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <20140804145342.GB16658@tuxdriver.com>
-Date: Mon, 4 Aug 2014 22:39:47 -0700
-Cc: "linux-wireless@vger.kernel.org Wireless" 
-	<linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <ED6BF15D-CA1F-4E35-8301-E9A9EEDE3AD6@holtmann.org>
-References: <20140801165738.GA26953@tuxdriver.com> <20140802.193939.2179004210212543536.davem@davemloft.net> <C2EB98EF-6873-4F44-B914-A9F89146914A@holtmann.org> <20140804145342.GB16658@tuxdriver.com>
-To: "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-X-Mailer: Apple Mail (2.1878.6)
+	Tue, 5 Aug 2014 01:41:43 -0400
+Message-ID: <1407217301.2566.28.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 4/7] locking/rwsem: threshold limited spinning for
+ active readers
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Date: Mon, 04 Aug 2014 22:41:41 -0700
+In-Reply-To: <1407216632.2566.22.camel@buesod1.americas.hpqcorp.net>
+References: <1407119782-41119-1-git-send-email-Waiman.Long@hp.com>
+	 <1407119782-41119-5-git-send-email-Waiman.Long@hp.com>
+	 <1407214461.2566.14.camel@buesod1.americas.hpqcorp.net>
+	 <1407216632.2566.22.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
-
->>>> Please pull this last(?) batch of wireless change intended for the
->>>> 3.17 stream...
->>> 
->>> When I pull this I get tons of conflicts for:
->>> 
->>> CONFLICT (content): Merge conflict in net/6lowpan/iphc.c
->>> 
->>> I don't feel comfortable fixing these up, where are they coming
->>> from?
->> 
->> I was short on time yesterday, but now I checked up on this in detail. The merge conflicts are actually simple to resolve. You can just rely on John's tree to have the more recent net/6lowpan/ tree. I should have insisted on merging net/6lowpan/ through bluetooth-next and wireless-next way earlier to avoid conflicts.
->> 
->> In the future we will avoid this by ensuring that all goes via bluetooth-next first. Sorry for this confusion. John mentioned these merge conflicts in his footnote.
->> 
->> John, do you just want to resolve the merge conflicts and send Dave a new pull request?
+On Mon, 2014-08-04 at 22:30 -0700, Davidlohr Bueso wrote:
+> On Mon, 2014-08-04 at 21:54 -0700, Davidlohr Bueso wrote:
+> > >  #ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+> > > +/*
+> > > + * The owner field is set to RWSEM_READ_OWNED if the last owner(s) are
+> > > + * readers. It is not reset until a writer takes over and set it to its
+> > > + * task structure pointer or NULL when it frees the lock. So a value
+> > > + * of RWSEM_READ_OWNED doesn't mean it currently has active readers.
+> > > + */
+> > > +#define RWSEM_READ_OWNED	((struct task_struct *)-1)
+> > 
+> > Looks rather weird...
 > 
-> I'm happy to do that, if Dave wants.  But as you say, once the initial
-> shock of all those conflicts passes the resolution really is fairly
-> simple. :-)
+> Instead of populating owner when taking the reader lock, why not just
+> leave it NULL. Then, we can differentiate between the owner being NULL
+> either because it is taken by reader(s) or simply because it is not
+> taken. So something like this:
+> 
+> static inline bool rwsem_owner_is_reader(struct rw_semaphore *sem)
+> {
+> 	return !sem->owner && rwsem_is_locked(sem));
+> }
 
-do you want John to just do the merge conflict resolution? They are all trivial.
-
-Regards
-
-Marcel
+Although we could race between both checks, specially when going into
+slowpaths, too bad. Probably a read barrier before calling is_locked
+too. Anyway, you see, things start getting funky.
 
