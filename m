@@ -1,235 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaHESOB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 14:14:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52081 "EHLO
+	id S1756731AbaHESx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 14:53:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52098 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634AbaHESN6 (ORCPT
+	with ESMTP id S1754132AbaHESOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 14:13:58 -0400
+	Tue, 5 Aug 2014 14:14:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.15 00/42] 3.15.9-stable review
-Date: Tue,  5 Aug 2014 11:13:14 -0700
-Message-Id: <20140805181321.018370988@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        James Bottomley <JBottomley@Parallels.com>,
+        Steven Haber <steven@qumulo.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.15 12/42] scsi: handle flush errors properly
+Date: Tue,  5 Aug 2014 11:13:26 -0700
+Message-Id: <20140805181321.393391622@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
+In-Reply-To: <20140805181321.018370988@linuxfoundation.org>
+References: <20140805181321.018370988@linuxfoundation.org>
 User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.15.9 release.
-There are 42 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Thu Aug  7 18:13:05 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.15.9-rc1.gz
-and the diffstat can be found below.
+From: James Bottomley <JBottomley@Parallels.com>
 
-thanks,
+commit 89fb4cd1f717a871ef79fa7debbe840e3225cd54 upstream.
 
-greg k-h
+Flush commands don't transfer data and thus need to be special cased
+in the I/O completion handler so that we can propagate errors to
+the block layer and filesystem.
 
--------------
-Pseudo-Shortlog of commits:
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Steven Haber <steven@qumulo.com>
+Tested-by: Steven Haber <steven@qumulo.com>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.15.9-rc1
+---
+ drivers/scsi/scsi_lib.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Boris Ostrovsky <boris.ostrovsky@oracle.com>
-    x86/espfix/xen: Fix allocation of pages for paravirt page tables
-
-Minfei Huang <huangminfei@ucloud.cn>
-    lib/btree.c: fix leak of whole btree nodes
-
-Sasha Levin <sasha.levin@oracle.com>
-    net/l2tp: don't fall back on UDP [get|set]sockopt
-
-Max Filippov <jcmvbkbc@gmail.com>
-    xtensa: add fixup for double exception raised in window overflow
-
-David Vrabel <david.vrabel@citrix.com>
-    x86/xen: no need to explicitly register an NMI callback
-
-Scot Doyle <lkml14@scotdoyle.com>
-    drm/i915: Ignore VBT backlight presence check on HP Chromebook 14
-
-Malcolm Priestley <tvboxspy@gmail.com>
-    staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
-
-Roger Quadros <rogerq@ti.com>
-    ARM: dts: dra7-evm: Make VDDA_1V8_PHY supply always on
-
-Eric Biggers <ebiggers3@gmail.com>
-    vfs: fix check for fallocate on active swapfile
-
-Nishanth Menon <nm@ti.com>
-    pinctrl: dra: dt-bindings: Fix pull enable/disable
-
-Andy Lutomirski <luto@amacapital.net>
-    x86_64/entry/xen: Do not invoke espfix64 on Xen
-
-H. Peter Anvin <hpa@zytor.com>
-    x86, espfix: Make it possible to disable 16-bit support
-
-H. Peter Anvin <hpa@zytor.com>
-    x86, espfix: Make espfix64 a Kconfig option, fix UML
-
-H. Peter Anvin <hpa@linux.intel.com>
-    x86, espfix: Fix broken header guard
-
-H. Peter Anvin <hpa@linux.intel.com>
-    x86, espfix: Move espfix definitions into a separate header file
-
-H. Peter Anvin <hpa@linux.intel.com>
-    x86-64, espfix: Don't leak bits 31:16 of %esp returning to 16-bit stack
-
-H. Peter Anvin <hpa@zytor.com>
-    Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
-
-Jan Kara <jack@suse.cz>
-    timer: Fix lock inversion between hrtimer_bases.lock and scheduler locks
-
-Stephen Boyd <sboyd@codeaurora.org>
-    sched_clock: Avoid corrupting hrtimer tree during suspend
-
-John Stultz <john.stultz@linaro.org>
-    printk: rename printk_sched to printk_deferred
-
-Anssi Hannula <anssi.hannula@iki.fi>
-    dm cache: fix race affecting dirty block count
-
-Greg Thelen <gthelen@google.com>
-    dm bufio: fully initialize shrinker
-
-Lars-Peter Clausen <lars@metafoo.de>
-    iio: buffer: Fix demux table creation
-
-Peter Meerwald <pmeerw@pmeerw.net>
-    iio:bma180: Missing check for frequency fractional part
-
-Peter Meerwald <pmeerw@pmeerw.net>
-    iio:bma180: Fix scale factors to report correct acceleration units
-
-Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-    ACPI / PNP: Fix acpi_pnp_match()
-
-Malcolm Priestley <tvboxspy@gmail.com>
-    staging: vt6655: Fix disassociated messages every 10 seconds
-
-Michal Hocko <mhocko@suse.cz>
-    memcg: oom_notify use-after-free fix
-
-David Rientjes <rientjes@google.com>
-    mm, thp: do not allow thp faults to avoid cpuset restrictions
-
-Maxim Patlasov <MPatlasov@parallels.com>
-    mm/page-writeback.c: fix divide by zero in bdi_dirty_limits()
-
-James Bottomley <JBottomley@Parallels.com>
-    scsi: handle flush errors properly
-
-Alexandre Bounine <alexandre.bounine@idt.com>
-    rapidio/tsi721_dma: fix failure to obtain transaction descriptor
-
-Johannes Berg <johannes.berg@intel.com>
-    Revert "mac80211: move "bufferable MMPDU" check to fix AP mode scan"
-
-Eliad Peller <eliad@wizery.com>
-    cfg80211: fix mic_failure tracing
-
-Felix Fietkau <nbd@openwrt.org>
-    ath9k: fix aggregation session lockup
-
-Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-    ARM: 8115/1: LPAE: reduce damage caused by idmap to virtual memory layout
-
-Russell King <rmk+kernel@arm.linux.org.uk>
-    ARM: fix alignment of keystone page table fixup
-
-Christoph Fritz <chf.fritz@googlemail.com>
-    ARM: OMAP2+: gpmc: fix gpmc_hwecc_bch_capable()
-
-Haojian Zhuang <haojian.zhuang@linaro.org>
-    ARM: dts: fix L2 address in Hi3620
-
-Milan Broz <gmazyland@gmail.com>
-    crypto: af_alg - properly label AF_ALG socket
-
-Mikulas Patocka <mpatocka@redhat.com>
-    crypto: arm-aes - fix encryption of unaligned data
-
-Michael Ellerman <mpe@ellerman.id.au>
-    powerpc/perf: Fix MMCR2 handling for EBB
-
-
--------------
-
-Diffstat:
-
- Documentation/x86/x86_64/mm.txt         |   2 +
- Makefile                                |   4 +-
- arch/arm/boot/dts/dra7-evm.dts          |   1 +
- arch/arm/boot/dts/hi3620.dtsi           |   2 +-
- arch/arm/crypto/aesbs-glue.c            |  10 +-
- arch/arm/mach-omap2/gpmc-nand.c         |  18 +--
- arch/arm/mm/idmap.c                     |   7 ++
- arch/arm/mm/mmu.c                       |   6 +-
- arch/powerpc/perf/core-book3s.c         |   6 +-
- arch/x86/Kconfig                        |  25 +++-
- arch/x86/include/asm/espfix.h           |  16 +++
- arch/x86/include/asm/irqflags.h         |   2 +-
- arch/x86/include/asm/pgtable_64_types.h |   2 +
- arch/x86/include/asm/setup.h            |   2 +
- arch/x86/kernel/Makefile                |   1 +
- arch/x86/kernel/entry_32.S              |  12 ++
- arch/x86/kernel/entry_64.S              |  77 +++++++++++-
- arch/x86/kernel/espfix_64.c             | 208 ++++++++++++++++++++++++++++++++
- arch/x86/kernel/ldt.c                   |  10 +-
- arch/x86/kernel/paravirt_patch_64.c     |   2 -
- arch/x86/kernel/smpboot.c               |   7 ++
- arch/x86/mm/dump_pagetables.c           |  44 +++++--
- arch/x86/vdso/vdso32-setup.c            |   8 --
- arch/x86/xen/setup.c                    |   9 +-
- arch/xtensa/kernel/vectors.S            | 158 ++++++++++++++++++++----
- arch/xtensa/kernel/vmlinux.lds.S        |   4 +-
- crypto/af_alg.c                         |   2 +
- drivers/gpu/drm/i915/intel_display.c    |   3 +
- drivers/iio/accel/bma180.c              |   8 +-
- drivers/iio/industrialio-buffer.c       |   2 +-
- drivers/md/dm-bufio.c                   |   2 +-
- drivers/md/dm-cache-target.c            |  13 +-
- drivers/net/wireless/ath/ath9k/xmit.c   |   9 ++
- drivers/pnp/pnpacpi/core.c              |   3 +-
- drivers/rapidio/devices/tsi721_dma.c    |   8 +-
- drivers/scsi/scsi_lib.c                 |   8 ++
- drivers/staging/vt6655/bssdb.c          |   2 +-
- drivers/staging/vt6655/device_main.c    |   7 +-
- fs/open.c                               |   5 +-
- include/dt-bindings/pinctrl/dra.h       |   7 +-
- include/linux/printk.h                  |   6 +-
- init/main.c                             |   4 +
- kernel/printk/printk.c                  |   2 +-
- kernel/sched/core.c                     |   2 +-
- kernel/sched/deadline.c                 |   2 +-
- kernel/sched/rt.c                       |   2 +-
- kernel/time/clockevents.c               |  10 +-
- kernel/time/sched_clock.c               |   4 +-
- lib/btree.c                             |   1 +
- mm/memcontrol.c                         |   4 +
- mm/page-writeback.c                     |   6 +-
- mm/page_alloc.c                         |  16 +--
- net/l2tp/l2tp_ppp.c                     |   4 +-
- net/mac80211/tx.c                       |  20 +--
- net/wireless/trace.h                    |   3 +-
- 55 files changed, 653 insertions(+), 155 deletions(-)
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -806,6 +806,14 @@ void scsi_io_completion(struct scsi_cmnd
+ 			scsi_next_command(cmd);
+ 			return;
+ 		}
++	} else if (blk_rq_bytes(req) == 0 && result && !sense_deferred) {
++		/*
++		 * Certain non BLOCK_PC requests are commands that don't
++		 * actually transfer anything (FLUSH), so cannot use
++		 * good_bytes != blk_rq_bytes(req) as the signal for an error.
++		 * This sets the error explicitly for the problem case.
++		 */
++		error = __scsi_error_from_host_byte(cmd, result);
+ 	}
+ 
+ 	/* no bidi support for !REQ_TYPE_BLOCK_PC yet */
 
 
