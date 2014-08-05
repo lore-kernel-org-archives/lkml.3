@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034AbaHEXfJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 19:35:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54759 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaHEXfI (ORCPT
+	id S1754074AbaHEXjU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 19:39:20 -0400
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:61903 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753939AbaHEXjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 19:35:08 -0400
-Date: Tue, 5 Aug 2014 16:35:07 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dzonatans Melgalvis <dz.melgalvis@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: comedi: comedidev.h: fix checkpatch code style
- issue
-Message-ID: <20140805233507.GA27293@kroah.com>
-References: <1407281385-12576-1-git-send-email-dz.melgalvis@gmail.com>
+	Tue, 5 Aug 2014 19:39:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407281385-12576-1-git-send-email-dz.melgalvis@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1407279569.2170.18.camel@dhcp-9-2-203-236.watson.ibm.com>
+References: <20140725185048.GA27939@www.outflux.net>
+	<CAGXu5jK--17NZvJK2BSWiANn4dkgLMUpGpoWrmy+jM=BfKkBxQ@mail.gmail.com>
+	<1407279569.2170.18.camel@dhcp-9-2-203-236.watson.ibm.com>
+Date: Tue, 5 Aug 2014 16:39:17 -0700
+X-Google-Sender-Auth: QW1n3NXZGJM-nrk7va4R_-7jo9Y
+Message-ID: <CAGXu5j+eQkSsqGPXp2uPRUn0Bvz0kdDBH=qnSiMy_cQBThdbyA@mail.gmail.com>
+Subject: Re: [PULL] fw-restrict update (3.17)
+From: Kees Cook <keescook@chromium.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: James Morris <jmorris@namei.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Takashi Iwai <tiwai@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 02:29:45AM +0300, Dzonatans Melgalvis wrote:
-> Fixing checkpatch warning - blank line missing after declaration.
-> 
-> Signed-off-by: Dzonatans Melgalvis <dz.melgalvis@gmail.com>
-> ---
->  drivers/staging/comedi/comedidev.h | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
-> index 58e58a3..c9b7978 100644
-> --- a/drivers/staging/comedi/comedidev.h
-> +++ b/drivers/staging/comedi/comedidev.h
-> @@ -57,6 +57,7 @@ struct comedi_subdevice {
->  	const unsigned int *maxdata_list;	/* list is channel specific */
->  
->  	const struct comedi_lrange *range_table;
-> +
->  	const struct comedi_lrange *const *range_table_list;
+On Tue, Aug 5, 2014 at 3:59 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Tue, 2014-08-05 at 14:46 -0700, Kees Cook wrote:
+>> On Fri, Jul 25, 2014 at 11:50 AM, Kees Cook <keescook@chromium.org> wrote:
+>> > Hi James,
+>> >
+>> > Please pull these fw-restrict changes for 3.17. Thanks!
+>>
+>> James, did this ever get pulled? Does it need more review?
+>>
+>> Thanks!
+>>
+>
+> They made it to the linux-security tree:
+> 6593d92 firmware_class: perform new LSM checks
+>
+> $ git branch -r --contains 6593d92
+>   dhowells-fs/keys-next
+>   kees/for-security-next-fw-restrict
+>   linux-next/akpm
+>   linux-next/akpm-base
+>   linux-next/master
+>   origin/next          <=== linux-security
 
-Really?  Why add that one?  Shouldn't you just remove the previous line?
+Ah! Fantastic. I missed that somehow. :)
 
->  
->  	unsigned int *chanlist;	/* driver-owned chanlist (not used) */
-> @@ -207,8 +208,10 @@ struct comedi_async {
->  	struct comedi_cmd cmd;
->  	wait_queue_head_t wait_head;
->  	unsigned int cb_mask;
-> +
->  	int (*inttrig)(struct comedi_device *dev, struct comedi_subdevice *s,
->  		       unsigned int x);
-> +
->  };
+-Kees
 
-Why is that last line needed?
 
-Please use your judgement with checkpatch fixes, this patch isn't ok
-as-is, sorry.
-
-greg k-h
+-- 
+Kees Cook
+Chrome OS Security
