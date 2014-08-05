@@ -1,109 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506AbaHEICx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 04:02:53 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:34520 "EHLO
-	smptrelay.restena.lu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757005AbaHEICr convert rfc822-to-8bit (ORCPT
+	id S932455AbaHEIBj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 04:01:39 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:33243 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919AbaHEIBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 04:02:47 -0400
-Date: Tue, 5 Aug 2014 10:02:42 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: P J P <ppandit@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: 3.12 to 3.13 boot regression bisected - still applies to 3.16
-Message-ID: <20140805100242.425e1093@pluto>
-In-Reply-To: <20140804135452.GJ15082@console-pimps.org>
-References: <20140804113435.34ed8c76@pluto>
-	<20140804122728.GH15082@console-pimps.org>
-	<20140804150627.4563b6a7@pluto>
-	<20140804135452.GJ15082@console-pimps.org>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 5 Aug 2014 04:01:37 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>
+Subject: [RFC 3/3] zram: limit memory size for zram
+Date: Tue,  5 Aug 2014 17:02:03 +0900
+Message-Id: <1407225723-23754-4-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1407225723-23754-1-git-send-email-minchan@kernel.org>
+References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Aug 2014 14:54:52 +0100 Matt Fleming wrote:
+I have received a request several time from zram users.
+They want to limit memory size for zram because zram can consume
+lot of memory on system without limit so it makes memory management
+control hard.
 
-> On Mon, 04 Aug, at 03:06:27PM, Bruno Prémont wrote:
-> > 
-> > Yes, I did as I have seen that patch flying by, but it did not help
-> > (I tried at 3.16-rc7).
->  
-> :-( Thanks for testing.
-> 
-> > On 3.16-rc7 I even tried adding earlyprintk=efi,keep, console=efi,
-> > ignore_loglevel and added some efi_printk() in EFI stub (in the spirit
-> > of https://bugzilla.kernel.org/show_bug.cgi?id=68761)
-> > The last message I get is my efi_printk() right before exiting boot
-> > services. Without my efi_printk() there is no output at all.
-> > 
-> > Then system reboots.
-> 
-> OK, so the fact that the system reboots suggests that the boot
-> stub/kernel caused a fault.
->  
-> > There is no output on serial console either (via BMC),
-> > (earlycon=uart,io,0x3f8,115200 or earlyprintk=serial,ttyS0,115200)
-> > 
-> > 
-> > I even tried without initrd (setting CONFIG_INITRAMFS_SOURCE="")
-> > and got the same end-result.
-> 
-> Oh that's interesting.
-> 
-> > I could share a slightly modified one, replacing the
-> > contained /etc/passwd. It's about 16MiB in size due to RAID controller
-> > management blobs for recovery. Except for that it just tries to find
-> > ROOT partition, setting up dmcrypt if needed.
->  
-> This shouldn't be necessary if you can reproduce the issue without an
-> initrd as you stated above.
+This patch adds new knob to limit memory of zram.
 
-I just verified CONFIG_INITRAMFS_SOURCE="" on 3.16 and it reboots.
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ Documentation/blockdev/zram.txt |  1 +
+ drivers/block/zram/zram_drv.c   | 41 +++++++++++++++++++++++++++++++++++++++++
+ drivers/block/zram/zram_drv.h   |  1 +
+ 3 files changed, 43 insertions(+)
 
-> > Any hint on how to find out what fails would be nice!
-> > initrd issues tend not to be easy to debug (it would help if initrd
-> > issues could be reported at the time kernel tries to start init - e.g.
-> > when console outputs are up and running).
-> 
-> I don't think this is necessarily an initrd issue.
-> 
-> The way that I would debug this is to insert while(1); into strategic
-> places. Yes, it's lame and time consuming, but it's effective.
-> 
-> My first suggestion would be setup_arch(). In particular, because your
-> machine is resetting, I'd guess that the kernel's early trap handlers
-> haven't yet been installed.
-> 
-> So throw a,
-> 
-> 	while (1);
-> 
-> in there and see if you can get your machine to hang instead of reset.
-> If it doesn't hang, the reset occurs earlier in boot - work backwards.
-> If it does hang then you know that execution gets at least that far -
-> work forwards. Like I said, lame but effective.
+diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+index d24534bee763..fcb0561dfe2e 100644
+--- a/Documentation/blockdev/zram.txt
++++ b/Documentation/blockdev/zram.txt
+@@ -96,6 +96,7 @@ size of the disk when not in use so a huge zram is wasteful.
+ 		compr_data_size
+ 		mem_used_total
+ 		mem_used_max
++		mem_limit
+ 
+ 7) Deactivate:
+ 	swapoff /dev/zram0
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index a4d637b4db7d..47f68bbb2c44 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -137,6 +137,37 @@ static ssize_t max_comp_streams_show(struct device *dev,
+ 	return scnprintf(buf, PAGE_SIZE, "%d\n", val);
+ }
+ 
++static ssize_t mem_limit_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	u64 val;
++	struct zram *zram = dev_to_zram(dev);
++
++	down_read(&zram->init_lock);
++	val = zram->limit_bytes;
++	up_read(&zram->init_lock);
++
++	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
++}
++
++static ssize_t mem_limit_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t len)
++{
++	u64 limit;
++	struct zram *zram = dev_to_zram(dev);
++	int ret;
++
++	ret = kstrtoull(buf, 0, &limit);
++	if (ret < 0)
++		return ret;
++
++	down_write(&zram->init_lock);
++	zram->limit_bytes = limit;
++	ret = len;
++	up_write(&zram->init_lock);
++	return ret;
++}
++
+ static ssize_t max_comp_streams_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t len)
+ {
+@@ -511,6 +542,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		ret = -ENOMEM;
+ 		goto out;
+ 	}
++
++	if (zram->limit_bytes &&
++		zs_get_total_size_bytes(meta->mem_pool) >= zram->limit_bytes) {
++		zs_free(meta->mem_pool, handle);
++		ret = -ENOMEM;
++		goto out;
++	}
++
+ 	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
+ 
+ 	if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
+@@ -854,6 +893,7 @@ static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+ static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+ static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
+ static DEVICE_ATTR(mem_used_max, S_IRUGO, mem_used_max_show, NULL);
++static DEVICE_ATTR(mem_limit, S_IRUGO, mem_limit_show, mem_limit_store);
+ static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
+ 		max_comp_streams_show, max_comp_streams_store);
+ static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
+@@ -883,6 +923,7 @@ static struct attribute *zram_disk_attrs[] = {
+ 	&dev_attr_compr_data_size.attr,
+ 	&dev_attr_mem_used_total.attr,
+ 	&dev_attr_mem_used_max.attr,
++	&dev_attr_mem_limit.attr,
+ 	&dev_attr_max_comp_streams.attr,
+ 	&dev_attr_comp_algorithm.attr,
+ 	NULL,
+diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+index 7f21c145e317..c0d497ff6efc 100644
+--- a/drivers/block/zram/zram_drv.h
++++ b/drivers/block/zram/zram_drv.h
+@@ -99,6 +99,7 @@ struct zram {
+ 	 * we can store in a disk.
+ 	 */
+ 	u64 disksize;	/* bytes */
++	u64 limit_bytes;
+ 	int max_comp_streams;
+ 	struct zram_stats stats;
+ 	char compressor[10];
+-- 
+2.0.0
 
-I tried in setup_arch(), but system still keeps rebooting.
-
-Working backwards I got to x86_64_start_kernel() in
-arch/x86/kernel/head64.c but system is still rebooting.
-
-Not sure what happens before x86_64_start_kernel() is called, it seems
-to be called from ASM code in arch/x86/kernel/head_64.S.
-
-> Meanwhile I'm going to go and stare at the EFI boot stub code and
-> instrument OVMF to check for more memory corruption bugs like the one
-> Michael found in commit c7fb93ec51d4 ("x86/efi: Include a .bss section
-> within the PE/COFF headers").
-
-If there are places between exit_boot() in
-arch/x86/boot/compressed/eboot.c and x86_64_start_kernel() where I
-should include such loops, please tell!
-
-Bruno
