@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088AbaHEOj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 10:39:28 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:46574 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754922AbaHEOjA (ORCPT
+	id S1754629AbaHEOl3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 10:41:29 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47001 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885AbaHEOl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 10:39:00 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Moyer <jmoyer@redhat.com>, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 2/3] vfs: guard end of device for mpage interface
-Date: Tue,  5 Aug 2014 23:38:33 +0900
-Message-Id: <1407249514-20465-3-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407249514-20465-1-git-send-email-akinobu.mita@gmail.com>
-References: <1407249514-20465-1-git-send-email-akinobu.mita@gmail.com>
+	Tue, 5 Aug 2014 10:41:28 -0400
+Date: Tue, 5 Aug 2014 16:41:08 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Waiman Long <Waiman.Long@hp.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Scott J Norton <scott.norton@hp.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH 2/2 v6] locking/selftest: Support queued rwlock
+Message-ID: <20140805144108.GK9918@twins.programming.kicks-ass.net>
+References: <1406659999-13974-1-git-send-email-Waiman.Long@hp.com>
+ <1406659999-13974-3-git-send-email-Waiman.Long@hp.com>
+ <20140805132837.GA19379@twins.programming.kicks-ass.net>
+ <CAKocOOMa89+Ej0rk-LyQLBcwDvLtsXq7x+oPwBMS1N61kKUwQg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vnSC+wKlQbGVr9qh"
+Content-Disposition: inline
+In-Reply-To: <CAKocOOMa89+Ej0rk-LyQLBcwDvLtsXq7x+oPwBMS1N61kKUwQg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add guard_bio_eod() check for mpage code in order to allow us to do IO
-even on the odd last sectors of a device, even if the block size is
-some multiple of the physical sector size.
 
-Using mpage_readpages() for block device requires this guard check.
+--vnSC+wKlQbGVr9qh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org
----
- fs/buffer.c   | 2 +-
- fs/internal.h | 5 +++++
- fs/mpage.c    | 2 ++
- 3 files changed, 8 insertions(+), 1 deletion(-)
+On Tue, Aug 05, 2014 at 08:07:28AM -0600, Shuah Khan wrote:
+> On Tue, Aug 5, 2014 at 7:28 AM, Peter Zijlstra <peterz@infradead.org> wro=
+te:
+>=20
+> > Maybe I wasn't clear; but I meant you should extend the lock tests to
+> > cover the full qrwlock semantics.
+> >
+> > That means we also need tests like:
+> >
+> >         RL(X1);
+> >         IRQ_ENTER();
+> >         RL(X2);
+> >         IRQ_EXIT();
+> >
+> > To fully validate that in_interrupt exception to fairness etc..
+>=20
+> A bit off topic for this patch, however relevant for tests in general.
+> Is there a reason why these locking selftests need to be under lib?
+> Can they be consolidated under tools/testing/selftests?
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index f891c90..0e4b01c 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2964,7 +2964,7 @@ static void end_bio_bh_io_sync(struct bio *bio, int err)
-  * errors, this only handles the "we need to be able to
-  * do IO at the final sector" case.
-  */
--static void guard_bio_eod(int rw, struct bio *bio)
-+void guard_bio_eod(int rw, struct bio *bio)
- {
- 	sector_t maxsector;
- 	struct bio_vec *bvec = &bio->bi_io_vec[bio->bi_vcnt - 1];
-diff --git a/fs/internal.h b/fs/internal.h
-index 4657424..27d4ec5 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -144,3 +144,8 @@ extern long do_splice_direct(struct file *in, loff_t *ppos, struct file *out,
-  * pipe.c
-  */
- extern const struct file_operations pipefifo_fops;
-+
-+/*
-+ * buffer.c
-+ */
-+extern void guard_bio_eod(int rw, struct bio *bio);
-diff --git a/fs/mpage.c b/fs/mpage.c
-index 5f9ed62..3e79220 100644
---- a/fs/mpage.c
-+++ b/fs/mpage.c
-@@ -28,6 +28,7 @@
- #include <linux/backing-dev.h>
- #include <linux/pagevec.h>
- #include <linux/cleancache.h>
-+#include "internal.h"
- 
- /*
-  * I/O completion handler for multipage BIOs.
-@@ -57,6 +58,7 @@ static void mpage_end_io(struct bio *bio, int err)
- static struct bio *mpage_bio_submit(int rw, struct bio *bio)
- {
- 	bio->bi_end_io = mpage_end_io;
-+	guard_bio_eod(rw, bio);
- 	submit_bio(rw, bio);
- 	return NULL;
- }
--- 
-1.9.1
+tools/ seems wrong as its very much not userspace.
 
+--vnSC+wKlQbGVr9qh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT4O0EAAoJEHZH4aRLwOS64nMQAKSO3DTEUEpe1fdcUCaX86vZ
+d34cf+OPL8pVF4hE9nn4p6BWKHYM+4CFtScfsiRGYxbywHT1s0v5bJ+n0Wut1cyP
+h7J8wa0eJXZaNQeg643TiOUDtnasD0K/UQ/A0CM/cPAdbWkKajr6+7U//AMVzjyL
+Qgr6ofLQBlcxpj/LR2PE1J+7GJO024piVmCFCnn/YjNifpKnhyPmcOjgtPfINS5H
+ClVQUE4QbvYbLbUDzOk0zyK0+JS+w9NH7/njUXrK+y/gvinR53d6TcvamnIbyx1Y
+XgTa9MwJ+5Ra1AsNGzJQ3bi00qqAk8rPetO/LrWqKDWO5GDjGH8Fu7Al5P7P+Zbd
+LcQIvkqKGNzfhmh6EI7TSGvrqYSy/Pn2DTM0k08ITca6PaYWaRFI0GhC41PO/jHZ
+6PhYi+XhnnDFSFHC9mpEH+7zOBUYxHiwR4qeweOz0lmpDRCEygOMqpEfRj2SeObB
+07uiFlSeMew7KBH0x/bJxZ921uHSjg9J671Ns/oADvmwknOgH5TzNPs7eVtE7t6r
+7rKDiyLnl+eHXvRVEmbJwZkOhLkhshcXYMniTXFYwN9UJBDNPLJ7jyAEBiDX1Ez9
+TQpa73Zz8KDrNg1rEIXdpfgjUzlFwsLovx0uSl2mw1Bcw7BjUNTytt/AyLhUp44V
+XACl//byikS2HlOF5Z8z
+=LhUk
+-----END PGP SIGNATURE-----
+
+--vnSC+wKlQbGVr9qh--
