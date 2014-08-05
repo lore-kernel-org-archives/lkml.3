@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120AbaHEPpe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 11:45:34 -0400
-Received: from mail-yk0-f175.google.com ([209.85.160.175]:52251 "EHLO
-	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885AbaHEPpc (ORCPT
+	id S1754363AbaHEPxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 11:53:33 -0400
+Received: from si-002-i47.relay.mailchannels.net ([184.154.112.221]:51354 "EHLO
+	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753119AbaHEPxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 11:45:32 -0400
+	Tue, 5 Aug 2014 11:53:31 -0400
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-MC-Relay: Good
+X-MailChannels-SenderId: arvixe|x-authuser|przemo@firszt.eu
+X-MailChannels-Auth-Id: arvixe
+Date: Tue, 05 Aug 2014 15:53:22 +0000
+Message-ID: <20140805155322.Horde.z62yLr1B-ZT7v4rMGcPaVA9@webmail.firszt.eu>
+From: Przemo Firszt <przemo@firszt.eu>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH] Input - wacom: update the ABI doc according to latest
+ changes
+References: <1407252899-10293-1-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1407252899-10293-1-git-send-email-benjamin.tissoires@redhat.com>
+User-Agent: Internet Messaging Program (IMP) H5 (6.1.4)
+Accept-Language: en,pl
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed; DelSp=Yes
 MIME-Version: 1.0
-In-Reply-To: <20140805152540.GC19379@twins.programming.kicks-ass.net>
-References: <1406659999-13974-1-git-send-email-Waiman.Long@hp.com>
-	<1406659999-13974-3-git-send-email-Waiman.Long@hp.com>
-	<20140805132837.GA19379@twins.programming.kicks-ass.net>
-	<CAKocOOMa89+Ej0rk-LyQLBcwDvLtsXq7x+oPwBMS1N61kKUwQg@mail.gmail.com>
-	<20140805144108.GK9918@twins.programming.kicks-ass.net>
-	<53E0EDD2.50600@canonical.com>
-	<20140805145437.GL9918@twins.programming.kicks-ass.net>
-	<CAKocOOM=c2jaW_D27Z_iHoSzknp38j0gh_Exa3iTf5CzFkmPJA@mail.gmail.com>
-	<20140805152540.GC19379@twins.programming.kicks-ass.net>
-Date: Tue, 5 Aug 2014 09:45:32 -0600
-Message-ID: <CAKocOON_RQuKoHTkJKv3iMV5=wszEqGfBGiZ__WW7M902qsf2A@mail.gmail.com>
-Subject: Re: [PATCH 2/2 v6] locking/selftest: Support queued rwlock
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Waiman Long <Waiman.Long@hp.com>,
-        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Scott J Norton <scott.norton@hp.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-AuthUser: przemo@firszt.eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 5, 2014 at 9:25 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Aug 05, 2014 at 09:05:53AM -0600, Shuah Khan wrote:
->> Maybe if tools doesn't sounds right, we could move testing from under tools
->> and have it be testing
->
-> No, tools/testing/ is all userspace stuff afaict.
->
->> We have several selftests spread around in the kernel tree. It makes it easier
->> to pull them under a single make target devtest. I sent in a patch add devtest
->> target that runs tests that are under tools/testing/selftests a couple of
->> weeks ago, hopefully it will be included in 3.17. I am working towards pulling
->> more kernel selftests that exist under this devtest umbrella. That is
->> the motivation
->
-> A link to the patch might've been useful.. but no that's pointless,
-> there is no userspace component to locking-selftest, so your build/run
-> target is bloody pointless.
 
-Makes sense. Thanks,
--- Shuah
+Quoting Benjamin Tissoires <benjamin.tissoires@redhat.com>:
+
+> Now the devices show up under hid no matter the connection. So update the
+> sysfs path to the shortest and common one.
+> The ABI has also been unified regarding the OLEDs, but Bluetooth handle
+> only 1-bit images instead of 4.
+>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+>
+> Guys,
+>
+> by updating this and working on the g-s-d client side for OLEDs, I think now
+> that we should also keep the oled*_img for Bluetooth and implement this file
+> for USB too. The user space code gets messy quite fast due to the need to
+> support old and new kernels, whereas if we handle the scrambling in  
+> the kernel,
+> it should be quite straightforward.
+> Of course, we have to keep the current button<n>_rawimg for backward
+> compatibility.
+[..]
+Hi Benjamin,
+For whatever it's worth, you have my vote for scrambling for usb/bt in  
+the kernel.
+I'm not sure about requirement for backward compatibility (the user space will
+be broken anyway).
+
+I proposed it a while ago [1]
+
+[1] http://www.gossamer-threads.com/lists/linux/kernel/1593583
+
+Regards,
+Przemo Firszt
+
