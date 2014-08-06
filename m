@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579AbaHFS01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 14:26:27 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:48828 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755517AbaHFS0Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 14:26:24 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "Michael Kerrisk \(man-pages\)" <mtk.manpages@gmail.com>,
-        linux-kernel@vger.kernel.org
-References: <87oaw5caq1.fsf@x220.int.ebiederm.org>
-	<87bns5cakh.fsf@x220.int.ebiederm.org>
-	<20140806143500.GA23127@mail.hallyn.com>
-Date: Wed, 06 Aug 2014 11:22:25 -0700
-In-Reply-To: <20140806143500.GA23127@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Wed, 6 Aug 2014 16:35:00 +0200")
-Message-ID: <871tsttr4u.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/0Hr9SWhFNcx0KFuq5L20/QUMbJy8LzU8=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1581]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: [REVIEW][PATCH 2/4] proc: Implement /proc/thread-self to point at the directory of the current thread
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	id S1756745AbaHFS2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 14:28:09 -0400
+Received: from omr1.cc.vt.edu ([198.82.141.52]:38494 "EHLO omr1.cc.vt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756628AbaHFS2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 14:28:07 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Nick Krause <xerofoiffy@gmail.com>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        linux-spi@vger.kernel.org (open list:SPI SUBSYSTEM),
+        linux-kernel@vger.kernel.org (open list)
+Subject: Re: [PATCH 1/1] spi: Remove unused definitions
+In-Reply-To: Your message of "Wed, 06 Aug 2014 13:53:17 -0400."
+             <1407347597-2168-1-git-send-email-xerofoiffy@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1407347597-2168-1-git-send-email-xerofoiffy@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1407349640_2381P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 06 Aug 2014 14:27:20 -0400
+Message-ID: <17153.1407349640@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Eric,
->
-> I've not had a chance to test these, but apart from two trivial
-> comments below these look good to me, and I appreciate the feature.
-> So with the two fixes (if needed),
->
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+--==_Exmh_1407349640_2381P
+Content-Type: text/plain; charset="us-ascii"
+Content-Id: <17141.1407349640.1@turing-police.cc.vt.edu>
+Content-Transfer-Encoding: quoted-printable
 
->> +static int proc_thread_self_readlink(struct dentry *dentry, char __user *buffer,
->> +			      int buflen)
->> +{
->> +	struct pid_namespace *ns = dentry->d_sb->s_fs_info;
->> +	pid_t tgid = task_tgid_nr_ns(current, ns);
->> +	pid_t pid = task_pid_nr_ns(current, ns);
->> +	char tmp[PROC_NUMBUF + 6 + PROC_NUMBUF];
->
-> In the extreme case you're not adding space for a \0 ?  (Unless
-> PROC_NUMBUF includes that)
+On Wed, 06 Aug 2014 13:53:17 -0400, Nick Krause said:
+> Remove unused definition which cause the following warnings
+> =
 
-PROC_NUMBUF has enough space for a sign for the maximum of 10 digits
-for a newline and a terminating \0.  So yes PROC_NUMBUF includes the
-space for a terminating \0.
+> drivers/spi/spi-omap-100k.c:73:0: warning: "WRITE" redefined [enabled by=
+ default]
+> include/linux/fs.h:193:0: note: this is the location of the previous def=
+inition
+> drivers/spi/spi-omap-100k.c:74:0: warning: "READ" redefined [enabled by =
+default]
+> include/linux/fs.h:192:0: note: this is the location of the previous def=
+inition
 
-Eric
+> -#define WRITE 0
+> -#define READ  1
+
+NAK.  Full stop.  These are potentially used in an inner macro someplace, =
+and by
+removing these, the conflicting values from fs.h will be used instead.
+
+#define READ                    0
+#define WRITE                   RW_MASK
+
+So if there *is* a use in an inner macro, you just screwed the pooch
+and introduced a bug in this "clean up" - somebody will be expecting to se=
+e
+a 0 for a READ, and will receive a 1 instead.  This can't end well.
+
+Nick - how *exactly* did you identify that these are in fact not used?
+Given your history of submitting poorly researched patches, you're going t=
+o
+have to justify the "unused" better than the handwaving you've done here.
+
+--==_Exmh_1407349640_2381P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBU+JziAdmEQWDXROgAQIYrRAApfcA5BtiehUUlRTxVshRPQc+CGfZeKo6
+Ua7iA/biWJ+4zmNvJ/wkNF6k6tRSFS55dmj0xKoMjlJjmiziTCSKQbfkIa7YgACO
+P37JbPP78NcxF/uDMs67tI58yEkIKVJ2iHnWW9FJJnRAE+CZcr+Qp0EQ0Z4w6VJz
+LLS8J8Y7Tbf2uAXIJrZf4gxp6c/rz8Mxtw/AR8YA2gszO+nbdeyTICSfZJ1OhZXQ
+y2/RDzRKshbFpVQyo11fUOgER1nEmeZkmRZ1KgnZKZc02gDBpWj+Qj6egWbMRaPj
+jHw9QfiVUriUJG5wnk9mR08tAUwZ3Qa8oAy2eXZvMB8BKWNizGUYazfspECzvwws
+8Wn8AYhtaAWl3sqVZF1MZGCGMqjS6wOaKu4kG2r/wAQA1fIZtCCCgq88ZCdSx6NI
+XOP6WAmHqkxJrR8fYfTnN0ycwmL4X5X9JWmzz9bXuXjCDGWSB8j7KjFU/0bG+J4a
+qNiZXTqcSDrZtc2cqIRUB3YYLJ0l0XvEy2KEGBexyRBEdMrMmkxlXb0rBg4qU4jL
+eGFF7Bq7e5sdlUkWNpBorMm5SC8r2syPpHauliXQBvk+xnxfvQxU5vNn3v/9kSJW
+Z0+l9rRv+pCa7GOOIb92wOWoEG8xtxqznYKfl9zHY9CxF5lYkbd0R4QBpWXY753j
+JBMeCjqOUgQ=
+=FfCs
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1407349640_2381P--
