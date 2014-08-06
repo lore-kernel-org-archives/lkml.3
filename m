@@ -1,183 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180AbaHFTAH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 15:00:07 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:60583 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077AbaHFTAG (ORCPT
+	id S932219AbaHFTAa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 15:00:30 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:42382 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932077AbaHFTAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 15:00:06 -0400
-Date: Wed, 6 Aug 2014 20:59:59 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <182103485.20140806205959@eikelenboom.it>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: gregkh@linuxfoundation.org, boris.ostrovsky@oracle.com,
-        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [PATCH v5] Fixes to Xen pciback for 3.17.
-In-Reply-To: <1724263917.20140805160443@eikelenboom.it>
-References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com> <53DBB27D.2040203@citrix.com> <20140804184318.GB9009@laptop.dumpdata.com> <75613802.20140805104438@eikelenboom.it> <53E0A45C.4050400@citrix.com> <1985206568.20140805114433@eikelenboom.it> <20140805134930.GE13057@laptop.dumpdata.com> <1724263917.20140805160443@eikelenboom.it>
+	Wed, 6 Aug 2014 15:00:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAL8zT=hbwRXRP7yNbrh9BEYzqAyipkTmrFCSqM5Z0U8hr0Yz+g@mail.gmail.com>
+References: <14048583172593@kroah.com>
+	<8B2F6FFD0BD1E448853114367400A37306FD6FBBE9@BLRX7MCDC203.AMER.DELL.COM>
+	<s5h38e9mg5v.wl%tiwai@suse.de>
+	<8B2F6FFD0BD1E448853114367400A37306FD6FBBF8@BLRX7MCDC203.AMER.DELL.COM>
+	<s5hy4w1l0s3.wl%tiwai@suse.de>
+	<8B2F6FFD0BD1E448853114367400A37306FD6FBC06@BLRX7MCDC203.AMER.DELL.COM>
+	<s5hpphdkyi6.wl%tiwai@suse.de>
+	<8B2F6FFD0BD1E448853114367400A37306FD6FBDAB@BLRX7MCDC203.AMER.DELL.COM>
+	<s5hoawvkimg.wl%tiwai@suse.de>
+	<8B2F6FFD0BD1E448853114367400A37306FE07C773@BLRX7MCDC203.AMER.DELL.COM>
+	<s5h7g3frmg7.wl%tiwai@suse.de>
+	<8B2F6FFD0BD1E448853114367400A37306FE07CC64@BLRX7MCDC203.AMER.DELL.COM>
+	<s5hlhrrizbq.wl%tiwai@suse.de>
+	<8B2F6FFD0BD1E448853114367400A37306FE311D74@BLRX7MCDC203.AMER.DELL.COM>
+	<CAL8zT=jDUyxjimFxBFk56q+B9VwZdnijrU9VF7LBm4X4mNKp+g@mail.gmail.com>
+	<s5hvbq753w2.wl%tiwai@suse.de>
+	<CAL8zT=jzFmPZ2jizrPXMGBwNReOnDw7wLHZDashavNBh9vhe2g@mail.gmail.com>
+	<s5htx5r53jl.wl%tiwai@suse.de>
+	<CAKocOOO+vahGqVtM-hE6Vp5P2vX83L+z+OVnP=ZHvE4nc9P-JQ@mail.gmail.com>
+	<CAL8zT=gbqcGPMLKS+bkc3cJPJJGmzuvdr7owy+zF-bCCaEv-Gg@mail.gmail.com>
+	<s5hd2ce55sl.wl%tiwai@suse.de>
+	<CAL8zT=hbwRXRP7yNbrh9BEYzqAyipkTmrFCSqM5Z0U8hr0Yz+g@mail.gmail.com>
+Date: Wed, 6 Aug 2014 13:00:24 -0600
+Message-ID: <CAKocOOOXAPR4-K2pLDABsC=Gpohct+zZ9p+3FNp4_dUfT-2BkQ@mail.gmail.com>
+Subject: Re: patch "firmware loader: allow disabling of udev as firmware
+ loader" added to driver-core tree
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Jean-Michel Hautbois <jhautbois@gmail.com>
+Cc: Takashi Iwai <tiwai@suse.de>, B_B_Singh@dell.com,
+        Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        Kay Sievers <kay@vrfy.org>, Ming Lei <ming.lei@canonical.com>,
+        Stefan Roese <sr@denx.de>, Tom Gundersen <teg@jklm.no>,
+        Stuart_Hayes@dell.com, Srinivas_G_Gowda@dell.com,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 6, 2014 at 3:44 AM, Jean-Michel Hautbois
+<jhautbois@gmail.com> wrote:
+> 2014-08-06 11:24 GMT+02:00 Takashi Iwai <tiwai@suse.de>:
+>> At Wed, 6 Aug 2014 11:10:27 +0200,
+>> Jean-Michel Hautbois wrote:
+>>>
+>>> 2014-08-05 21:22 GMT+02:00 Shuah Khan <shuahkhan@gmail.com>:
+>>> > On Tue, Aug 5, 2014 at 10:01 AM, Takashi Iwai <tiwai@suse.de> wrote:
+>>> >>> Yes, it worked, if the firmware was in the /lib/firmware directory.
+>>> >>
+>>> >
+>>> > ok it works when the firmware is in /lib/firmware. It sounds to me the
+>>> > reason load fails when the firmware is under /sys/class/firmware is
+>>> > fw_load_from_user_helper() returns -ENOENT when
+>>> > CONFIG_FW_LOADER_USER_HELPER is disabled.
+>>> >
+>>> > It would be nice to see the entire dmesg with debug enabled though.
+>>> >
+>>> > -- Shuah
+>>>
+>>> It does not work with the 3.16 kernel even when firmware is in
+>>> /lib/firmware, it worked before this patch is applied.
+>>
+>> Hm?  3.16 doesn't contain my patch yet.  It's merged for 3.17-rc1.
+>
+> Oh, you are right of course, I am on upstream kernel and I have your
+> patch. I don't mean your match is causing the issue though ;-).
+>
 
-Tuesday, August 5, 2014, 4:04:43 PM, you wrote:
+I think this is what is going on and this patch is the cause:
+fw_load_from_user_helper() is a stub that returns -ENOENT with this
+patch. As a result, in _request_firmware() after fw_get_filesystem_firmware()
+fails to find the file, fw_load_from_user_helper() gets called and it
+returns right
+away with -ENOENT.
 
+In some cases if rootfs mount is in progress, fw_load_from_user_helper()
+steps into load the firmware.
 
-> Tuesday, August 5, 2014, 3:49:30 PM, you wrote:
+A quick way to test is by adding a dev_info() in the fw_load_from_user_helper()
+and see if that is path it is taking.
 
->> On Tue, Aug 05, 2014 at 11:44:33AM +0200, Sander Eikelenboom wrote:
->>> 
->>> Tuesday, August 5, 2014, 11:31:08 AM, you wrote:
->>> 
->>> > On 05/08/14 09:44, Sander Eikelenboom wrote:
->>> >> 
->>> >> Monday, August 4, 2014, 8:43:18 PM, you wrote:
->>> >> 
->>> >>> On Fri, Aug 01, 2014 at 04:30:05PM +0100, David Vrabel wrote:
->>> >>>> On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
->>> >>>>> Greg: goto GHK
->>> >>>>>
->>> >>>>> This is v5 version of patches to fix some issues in Xen PCIback.
->>> >>>>
->>> >>>> Applied to devel/for-linus-3.17.
->>> >> 
->>> >>> Thank you.
->>> >>>>
->>> >>>> I dropped the stable Cc for #2 pending a final decision on whether it
->>> >>>> really is a stable candidate.
->>> >> 
->>> >>> OK.
->>> >>>>
->>> >>>> David
->>> >> 
->>> >> Hi Konrad / David,
->>> >> 
->>> >> This series still lacks a resolution on the sysfs /do_flr /reset,
->>> >> as a result the pci devices are not reset after shutdown of a guest.
->>> >> (no more pciback 0000:xx:xx.x: restoring config space at offset xxx)
->>> >> 
->>> >> So this series now introduces a regression to 3.16, which causes devices to malfunction 
->>> >> after a guest reboot or after assigning the devices to another guest.
->>> 
->>> > I don't follow what you're saying.  The lack of a device reset for PCI
->>> > devices with no FLR method isn't a regression as this has never worked.
->>> >  Can you explain in more detail what the regression is and which patch
->>> > caused it?
->>> 
->>> I haven't bisected it to a specific patch in this series,
->>> but this patch series (when pulled on top of 3.16) cause the following:
->>> 
->>> - Do a system start and HVM guest start
->>> - HVM guest with pci passthrough, devices work fine
->>> - shutdown the HVM guest
->>> - "pciback 0000:xx:xx.x: restoring config space at offset xxx" messages do not
->>>   appear anymore when shutting down the HVM guest (as they do with vanilla 3.16)
->>> - Starting the HVM guest again with the same devices passed through.
->>> - Devices malfunction (for example a USB host controller will fail a simple 
->>>   "lsusb"
->>> - And this all works fine on vanilla 3.16.  
-
->> Hm, the only patch that makes code changes is 63fc5ec97cc54257d1c4ee49ed2131f754a5ff9b
->> "xen/pciback: Don't deadlock when unbinding."
->> but it does not change any of that code path. Only figures out whether
->> to take a lock or not.
-
-> Ok and the do_flr nack by david is unrelated to this part (i didn't check just 
-> assumed there could be a connection)
-
->> I will try it out on my box and see if I can reproduce it.
-
->> And just to be 100% sure - you are using vanilla Xen? No changes on top
->> of it?
-
-> Except the fix from jan for the pirq/msi stuff (and an unrelated hpet one), other than that no.
-> If you can't reproduce i will see if i can dive deeper into it tonight !
-
-Hi Konrad,
-
-It looks like the issues is this part of the change:
-
-    --- a/drivers/xen/xen-pciback/pci_stub.c
-    +++ b/drivers/xen/xen-pciback/pci_stub.c
-    @@ -250,6 +250,8 @@ struct pci_dev *pcistub_get_pci_dev(struct xen_pcibk_device *pdev,
-    * - 'echo BDF > unbind' with a guest still using it. See pcistub_remove
-    *
-    * As such we have to be careful.
-    + *
-    + * To make this easier, the caller has to hold the device lock.
-    */
-    void pcistub_put_pci_dev(struct pci_dev *dev)
-    {
-    @@ -276,11 +278,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
-    /* Cleanup our device
-    * (so it's ready for the next domain)
-    */
-    -
-    - /* This is OK - we are running from workqueue context
-    - * and want to inhibit the user from fiddling with 'reset'
-    - */
-    - pci_reset_function(dev);
-    + lockdep_assert_held(&dev->dev.mutex);
-    + __pci_reset_function_locked(dev);
-    pci_restore_state(dev);
-   /* This disables the device. */
-
-More specifically:
-The old "pci_reset_function(dev)" potentially seems to do much more than 
-__pci_reset_function_locked(dev).
-
-
-"__pci_reset_function_locked(dev)" only calls  "__pci_dev_reset"
-while "pci_reset_function" not only calls pci_dev_reset, but on succes
-it also calls: "pci_dev_save_and_disable" which does a save state etc.
-
-
-So i added a little more debug:
-
-device_lock_assert(&dev->dev);
-ret = __pci_reset_function_locked(dev);
-dev_dbg(&dev->dev, "%s __pci_reset_function_locked:%d  dev->state_saved:%d\n", __func__, ret, (!dev->state_saved) ? 0 : 1 );
-pci_restore_state(dev);
-
-And this returns:
-[  494.570579] pciback 0000:04:00.0: pcistub_put_pci_dev __pci_reset_function_locked:0  dev->state_saved:0
-
-So that confirms there is no saved_state to get restored by 
-pci_restore_state(dev) in the next line.
-
-However there seems to be no "locked" variant of the function 
-"pci_reset_function" in pci.c that has all the same logic ...
-
---
-Sander 
-
->> Thanks!
-
->>> 
->>> >> Apart from that .. i can't resist to remind the other issue with removing pci
->>> >> devices passed through to HVM guests related to the signaling via xenstore,
->>> >> described in:
->>> >> 
->>> >> http://lists.xen.org/archives/html/xen-devel/2014-07/msg01875.html
->>> 
->>> > I don't remember seeing you posting a patch...?
-
->> I was going to, but I think we need to figure out the 'do_flr' mechanism
->> first.
-
->>> 
->>> > David
->>> 
->>> 
-
-
-
-
-
+-- Shuah
