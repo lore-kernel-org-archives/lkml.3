@@ -1,96 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244AbaHFUUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 16:20:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33667 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753243AbaHFUUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 16:20:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,813,1400050800"; 
-   d="scan'208";a="572718132"
-Message-ID: <53E28DD9.6060503@intel.com>
-Date: Wed, 06 Aug 2014 13:19:37 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753682AbaHFU21 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 16:28:27 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:49755 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026AbaHFU2Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 16:28:25 -0400
+Date: Wed, 6 Aug 2014 16:28:23 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 4/5] ARM64: add IPI tracepoints
+In-Reply-To: <20140806155237.0a6d7d3c@gandalf.local.home>
+Message-ID: <alpine.LFD.2.11.1408061627280.6061@knanqh.ubzr>
+References: <1406318733-26754-1-git-send-email-nicolas.pitre@linaro.org> <1406318733-26754-5-git-send-email-nicolas.pitre@linaro.org> <20140806155237.0a6d7d3c@gandalf.local.home>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>
-CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Koehrer Mathias <mathias.koehrer@etas.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] Fix e1000e with Intel 82572EI that has no hardware timestamp
- support
-References: <be459158bb5c46fcaf73129858342da4@FE-MBX1012.de.bosch.com>	<53E23BEF.9030701@cogentembedded.com>	<1407337757.772491.149802333.5E523CB0@webmail.messagingengine.com>	<53E24800.4030102@intel.com>	<53E2490E.70608@intel.com> <CAPDOMVgHmQeqOGj1MegRa=gusGXMn5t7cwCNnutpc1_q_fzyYg@mail.gmail.com>
-In-Reply-To: <CAPDOMVgHmQeqOGj1MegRa=gusGXMn5t7cwCNnutpc1_q_fzyYg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2014 12:03 PM, Nick Krause wrote:
-> On Wed, Aug 6, 2014 at 11:26 AM, Alexander Duyck
-> <alexander.h.duyck@intel.com> wrote:
->> On 08/06/2014 08:21 AM, Alexander Duyck wrote:
->>> On 08/06/2014 08:09 AM, Henrique de Moraes Holschuh wrote:
->>>> On Wed, Aug 6, 2014, at 11:30, Sergei Shtylyov wrote:
->>>>> On 8/6/2014 6:27 PM, Koehrer Mathias (ETAS/ESW5) wrote:
->>>>>
->>>>>> With the Intel 82527EI (driver: e1000e) there is an issue when running
->>>>>> the ptpd2 program, that leads to a kernel oops.
->>>>>> The reason is here that in e1000_xmit_frame() a work queue will be
->>>>>> scheduled that has not been initialized in this case.
->>>>>> The work queue "tx_hwstamp_work" will only be initialized if
->>>>>> adapter->flags & FLAG_HAS_HW_TIMESTAMP set.
->>>>>> This check is missing in e1000_xmit_frame().
->>>>>
->>>>>> The following patch adds the missing check.
->>>>>
->>>>>     OK, but this time you forgot your sign-off. :-)
->>>>
->>>> Also, shouldn't the added test be inside the unlikely() ?
->>>>
->>>
->>> That shouldn't be necessary, but it might be better to place the new
->>> check after the unlikely.  So you do the unlikely check first, then the
->>> adapter check to see if we support Tx timestamping.  That way we can
->>> avoid any unnecessary checks in the adapter structure.
->>>
->>> Thanks,
->>>
->>> Alex
->>>
->>
->>
->> Actually you might want to even take it one step further and break out
->> the test as follows (note this is only pseudo-code:
->>   unlikely(skb->tx_flags & HW_TSTAMP) &&
->>   (adapter->flags & HAS_HW_TSTAMP) &&
->>   !adapter->tx_hwtstamp_skb
->>
->> There isn't much point in wrapping the entire statement in unlikely, by
->> wrapping just the first test the rest of the conditional checks can be
->> pushed into the branch which will likely require a jump to some remote
->> block of code and should streamline the hot-path.
->>
->> Thanks,
->>
->> Alex
+On Wed, 6 Aug 2014, Steven Rostedt wrote:
+
+> Will and Russell,
 > 
-> Alex,
-> Has this patch been resent or not. If not I can clean it up and sent
-> as my own patch against linus's tree.
-> Regards NIck
+> Can you give me your Acked-by for this, and I can pull it through my
+> tree?
+
+Catalin (the ARM64 maintainer) already provided his.
+
+
 > 
-
-Nick,
-
-Please give Mathias a chance to complete his own patch.  Also this is
-would be against Dave Miller's net tree, not Linus's tree.
-
-Thanks,
-
-Alex
+> Thanks,
+> 
+> -- Steve
+> 
+> 
+> On Fri, 25 Jul 2014 16:05:32 -0400
+> Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> 
+> > The strings used to list IPIs in /proc/interrupts are reused for tracing
+> > purposes.
+> > 
+> > While at it, the code is slightly cleaned up so the ipi_types array
+> > indices are no longer offset by IPI_RESCHEDULE whose value is 0 anyway.
+> > 
+> > Signed-off-by: Nicolas Pitre <nico@linaro.org>
+> > Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> > ---
+> >  arch/arm64/kernel/smp.c | 65 +++++++++++++++++++++++++++++--------------------
+> >  1 file changed, 39 insertions(+), 26 deletions(-)
+> > 
+> > diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+> > index 40f38f46c8..a89c66f3b4 100644
+> > --- a/arch/arm64/kernel/smp.c
+> > +++ b/arch/arm64/kernel/smp.c
+> > @@ -50,6 +50,9 @@
+> >  #include <asm/tlbflush.h>
+> >  #include <asm/ptrace.h>
+> >  
+> > +#define CREATE_TRACE_POINTS
+> > +#include <trace/events/ipi.h>
+> > +
+> >  /*
+> >   * as from 2.5, kernels no longer have an init_tasks structure
+> >   * so we need some other way of telling a new secondary core
+> > @@ -307,8 +310,6 @@ void __init smp_prepare_boot_cpu(void)
+> >  	set_my_cpu_offset(per_cpu_offset(smp_processor_id()));
+> >  }
+> >  
+> > -static void (*smp_cross_call)(const struct cpumask *, unsigned int);
+> > -
+> >  /*
+> >   * Enumerate the possible CPU set from the device tree and build the
+> >   * cpu logical map array containing MPIDR values related to logical
+> > @@ -463,32 +464,15 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+> >  	}
+> >  }
+> >  
+> > +static void (*__smp_cross_call)(const struct cpumask *, unsigned int);
+> >  
+> >  void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
+> >  {
+> > -	smp_cross_call = fn;
+> > +	__smp_cross_call = fn;
+> >  }
+> >  
+> > -void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+> > -{
+> > -	smp_cross_call(mask, IPI_CALL_FUNC);
+> > -}
+> > -
+> > -void arch_send_call_function_single_ipi(int cpu)
+> > -{
+> > -	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+> > -}
+> > -
+> > -#ifdef CONFIG_IRQ_WORK
+> > -void arch_irq_work_raise(void)
+> > -{
+> > -	if (smp_cross_call)
+> > -		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
+> > -}
+> > -#endif
+> > -
+> > -static const char *ipi_types[NR_IPI] = {
+> > -#define S(x,s)	[x - IPI_RESCHEDULE] = s
+> > +static const char *ipi_types[NR_IPI] __tracepoint_string = {
+> > +#define S(x,s)	[x] = s
+> >  	S(IPI_RESCHEDULE, "Rescheduling interrupts"),
+> >  	S(IPI_CALL_FUNC, "Function call interrupts"),
+> >  	S(IPI_CALL_FUNC_SINGLE, "Single function call interrupts"),
+> > @@ -497,12 +481,18 @@ static const char *ipi_types[NR_IPI] = {
+> >  	S(IPI_IRQ_WORK, "IRQ work interrupts"),
+> >  };
+> >  
+> > +static void smp_cross_call(const struct cpumask *target, unsigned int ipinr)
+> > +{
+> > +	trace_ipi_raise(target, ipi_types[ipinr]);
+> > +	__smp_cross_call(target, ipinr);
+> > +}
+> > +
+> >  void show_ipi_list(struct seq_file *p, int prec)
+> >  {
+> >  	unsigned int cpu, i;
+> >  
+> >  	for (i = 0; i < NR_IPI; i++) {
+> > -		seq_printf(p, "%*s%u:%s", prec - 1, "IPI", i + IPI_RESCHEDULE,
+> > +		seq_printf(p, "%*s%u:%s", prec - 1, "IPI", i,
+> >  			   prec >= 4 ? " " : "");
+> >  		for_each_online_cpu(cpu)
+> >  			seq_printf(p, "%10u ",
+> > @@ -522,6 +512,24 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
+> >  	return sum;
+> >  }
+> >  
+> > +void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+> > +{
+> > +	smp_cross_call(mask, IPI_CALL_FUNC);
+> > +}
+> > +
+> > +void arch_send_call_function_single_ipi(int cpu)
+> > +{
+> > +	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+> > +}
+> > +
+> > +#ifdef CONFIG_IRQ_WORK
+> > +void arch_irq_work_raise(void)
+> > +{
+> > +	if (__smp_cross_call)
+> > +		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
+> > +}
+> > +#endif
+> > +
+> >  static DEFINE_RAW_SPINLOCK(stop_lock);
+> >  
+> >  /*
+> > @@ -553,8 +561,10 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+> >  	unsigned int cpu = smp_processor_id();
+> >  	struct pt_regs *old_regs = set_irq_regs(regs);
+> >  
+> > -	if (ipinr >= IPI_RESCHEDULE && ipinr < IPI_RESCHEDULE + NR_IPI)
+> > -		__inc_irq_stat(cpu, ipi_irqs[ipinr - IPI_RESCHEDULE]);
+> > +	if ((unsigned)ipinr < NR_IPI) {
+> > +		trace_ipi_entry(ipi_types[ipinr]);
+> > +		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
+> > +	}
+> >  
+> >  	switch (ipinr) {
+> >  	case IPI_RESCHEDULE:
+> > @@ -599,6 +609,9 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+> >  		pr_crit("CPU%u: Unknown IPI message 0x%x\n", cpu, ipinr);
+> >  		break;
+> >  	}
+> > +
+> > +	if ((unsigned)ipinr < NR_IPI)
+> > +		trace_ipi_exit(ipi_types[ipinr]);
+> >  	set_irq_regs(old_regs);
+> >  }
+> >  
+> 
+> 
