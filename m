@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461AbaHFWNi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 18:13:38 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:34519 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264AbaHFWNg (ORCPT
+	id S1754384AbaHFWRV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 18:17:21 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39496 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752723AbaHFWRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 18:13:36 -0400
+	Wed, 6 Aug 2014 18:17:19 -0400
+Date: Wed, 6 Aug 2014 23:16:48 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kees Cook <keescook@chromium.org>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Liu hua <sdu.liu@huawei.com>,
+        Rob Herring <robherring2@gmail.com>, wangnan0 <wangnan0@huawei.com>,
+        Laura Abbott <lauraa@codeaurora.org>, peifeiyue <peifeiyue@huawei.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vitaly Andrianov <vitalya@ti.com>, Rabin Vincent <rabin@rab.in>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "liusdu@126.com" <liusdu@126.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH v3 2/2] ARM : change fixmap mapping region to support
+	32 CPUs
+Message-ID: <20140806221648.GT30282@n2100.arm.linux.org.uk>
+References: <1397559967-26050-1-git-send-email-sdu.liu@huawei.com> <1397559967-26050-3-git-send-email-sdu.liu@huawei.com> <CAL_JsqKE-L2PN3mXHNdTPMEyTMR9ZtbgGB=O_V6nOXN0YC0a4A@mail.gmail.com> <alpine.LFD.2.11.1405301441210.17310@knanqh.ubzr> <CAGXu5j+ga5Enrsd8LuYarGh1Ozakmi3MNw+b9fZ7ubGUJFZY=w@mail.gmail.com> <53E1A3A3.8080706@huawei.com> <CAGXu5jKxtm0YAojOLhd_O9AFUAX+xHgEwwB0W_fpN7Xy8wHphQ@mail.gmail.com> <alpine.LFD.2.11.1408061317590.6061@knanqh.ubzr> <CAGXu5jJN9w=Md3aMkYwFcBVanXfSGL1BdZGZ74ic945B_ocuqg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844C44CF@US01WEMBX2.internal.synopsys.com>
-References: <1407159942-7063-1-git-send-email-kever.yang@rock-chips.com>
-	<1407159942-7063-3-git-send-email-kever.yang@rock-chips.com>
-	<CAD=FV=WO5TxzWEv3XwO7T6_F6ynyi0P0yF+Y=LD495dEOyWw_w@mail.gmail.com>
-	<53E0373C.5090309@rock-chips.com>
-	<A2CA0424C0A6F04399FB9E1CD98E0304844C44CF@US01WEMBX2.internal.synopsys.com>
-Date: Wed, 6 Aug 2014 15:13:35 -0700
-X-Google-Sender-Auth: lvP7GCpG10l3dHzZYDYPgG1Cbo4
-Message-ID: <CAD=FV=XBnVy+c-VFSC0MdExqGsDSMO9LXBAFgwPn+toWBcxe5w@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] usb: dwc2: add 'mode' which based on Kconfig
- select or dts setting
-From: Doug Anderson <dianders@chromium.org>
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-Cc: Kever Yang <kever.yang@rock-chips.com>, Heiko Stuebner <heiko@sntech.de>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Olof Johansson <olof@lixom.net>,
-        Sonny Rao <sonnyrao@chromium.org>, wulf <wulf@rock-chips.com>,
-        lyz <lyz@rock-chips.com>, Jingoo Han <jg1.han@samsung.com>,
-        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jJN9w=Md3aMkYwFcBVanXfSGL1BdZGZ74ic945B_ocuqg@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul,
+On Wed, Aug 06, 2014 at 10:28:37AM -0700, Kees Cook wrote:
+> That's what I was thinking. I tried this, and things are still weird,
+> though I think I'm narrowing it down. I made the early_pte_alloc
+> happen, but after boot it doesn't show up in
+> /sys/kernel/debug/kernel_page_tables. When I attempt a fixmap text
+> poke, I get this out of dmesg (lkdtm is reporting the address returned
+> from the patch mapping):
+> 
+> lkdtm: 80421ac0 mapped RW via ffdefac0
+> Unable to handle kernel paging request at virtual address ffdefac0
+> pgd = 9e888000
+> [ffdefac0] *pgd=9fffc811, *pte=00000000, *ppte=00000000
+> Internal error: Oops: 807 [#1] SMP ARM
+> 
+> The target address (0xffdefac0) is correct; it's in the range set aside:
+> 
+> #define FIXADDR_START           0xffc00000UL
+> #define FIXADDR_END             0xffe00000UL
+> #define FIXADDR_TOP             (FIXADDR_END - PAGE_SIZE)
+> 
+> enum fixed_addresses {
+>         /* Support 16 CPUs for kmap as the first region of fixmap entries. */
+>         FIX_KMAP_BEGIN,
+>         FIX_KMAP_END = 15,
+> 
+>         /* Support writing RO kernel text via kprobes, jump labels, etc. */
+>         FIX_TEXT_POKE0,
+>         FIX_TEXT_POKE1,
+> 
+>         __end_of_fixed_addresses
+> };
+> 
+> But the resulting PTE is in totally the wrong location as reported by
+> /sys/kernel/debug/kernel_page_tables:
+> 
+> ---[ Fixmap Area ]---
+> 0xfffef000-0xffff0000           4K     RW NX SHD MEM/CACHED/WBWA
+> 
+> I continue to dig...
 
-On Tue, Aug 5, 2014 at 1:08 PM, Paul Zimmerman
-<Paul.Zimmerman@synopsys.com> wrote:
->> Maybe dwc2 is refer to the Kconfig in dwc3 for there is a choice from
->> one of "Host only mode", "Gadget only mode" and "Dual Role mode",
->> which means the role is decided by the Kconfig.
->>
->> In my opinion, there maybe more than one controller in a Soc, and for
->> different
->> usage, the mode select should not be done in Kconfig, it's better to do that
->> in dts file.
->> I agree with you that the CONFIG_USB_DWC2_HOST should defined for host
->> functionality, not for role definition.
->>
->> Paul: what do you think?
->
-> I'm confused about how your dual-role mode implementation is supposed
-> to work. Right now, the host and peripheral modes are compiled as
-> separate drivers, and there is no dual-role mode in the Kconfig. So I
-> don't see how your code can work. Have you tested it?
+This sounds like you have an erroneous merge conflict resolution.  You
+seem to be poking into TOP_PTE rather than fixmap_page_table.
 
-Ah, interesting.  I just assumed that since you could compile both in
-that dual mode was there, but I clearly was confused.
-
-I don't think Kever had tested dual_role mode.
-
-
-> Dinh Nguyen is working on a patch series to add dual-role support, I
-> think you have seen that, right? That adds the Kconfig options for all
-> three modes. Maybe you should build on top of that?
-
-I hadn't personally seen it, but now I have!  I guess this is the
-newest <https://www.mail-archive.com/linux-usb@vger.kernel.org/msg46103.html>.
-
-I haven't done a thorough review, but I think Kever's patch v4
-<https://patchwork.kernel.org/patch/4682711/> is still relevant since
-I don't see anything parsing the dr_mode in Dinh's patches.
-
--Doug
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
