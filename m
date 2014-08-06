@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756474AbaHFQqk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 12:46:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41390 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756424AbaHFQqg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 12:46:36 -0400
-Date: Wed, 6 Aug 2014 18:46:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: WARN_ON_ONCE(in_nmi()) hit in irq_work_queue_on
-Message-ID: <20140806164633.GY3935@laptop>
-References: <20140806162113.GC14261@redhat.com>
+	id S932703AbaHFQ4V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 12:56:21 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52950 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932695AbaHFQ4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 12:56:18 -0400
+Message-ID: <53E25E24.8070506@ti.com>
+Date: Wed, 6 Aug 2014 12:56:04 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140806162113.GC14261@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <bhelgaas@google.com>
+Subject: Re: [PATCH] PCI: keystone: add a pci quirk to limit mrrs
+References: <1407338300-9146-1-git-send-email-m-karicheri2@ti.com> <20140806163021.GB19914@obsidianresearch.com>
+In-Reply-To: <20140806163021.GB19914@obsidianresearch.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 12:21:13PM -0400, Dave Jones wrote:
-> WARNING: CPU: 3 PID: 18062 at kernel/irq_work.c:72 irq_work_queue_on+0x11e/0x140()
-> CPU: 3 PID: 18062 Comm: trinity-subchil Not tainted 3.16.0+ #34
->  0000000000000009 00000000903774d1 ffff880244e06c00 ffffffff9a7f1e37
->  0000000000000000 ffff880244e06c38 ffffffff9a0791dd ffff880244fce180
->  0000000000000003 ffff880244e06d58 ffff880244e06ef8 0000000000000000
-> Call Trace:
->  <NMI>  [<ffffffff9a7f1e37>] dump_stack+0x4e/0x7a
->  [<ffffffff9a0791dd>] warn_slowpath_common+0x7d/0xa0
->  [<ffffffff9a07930a>] warn_slowpath_null+0x1a/0x20
->  [<ffffffff9a17ca1e>] irq_work_queue_on+0x11e/0x140
->  [<ffffffff9a10a2c7>] tick_nohz_full_kick_cpu+0x57/0x90
->  [<ffffffff9a186cd5>] __perf_event_overflow+0x275/0x350
->  [<ffffffff9a184f80>] ? perf_event_task_disable+0xa0/0xa0
->  [<ffffffff9a01a4cf>] ? x86_perf_event_set_period+0xbf/0x150
->  [<ffffffff9a187934>] perf_event_overflow+0x14/0x20
->  [<ffffffff9a020386>] intel_pmu_handle_irq+0x206/0x410
->  [<ffffffff9a0b54d3>] ? arch_vtime_task_switch+0x63/0x130
->  [<ffffffff9a01937b>] perf_event_nmi_handler+0x2b/0x50
->  [<ffffffff9a007b72>] nmi_handle+0xd2/0x390
->  [<ffffffff9a007aa5>] ? nmi_handle+0x5/0x390
->  [<ffffffff9a0d131b>] ? lock_release+0xab/0x330
->  [<ffffffff9a008062>] default_do_nmi+0x72/0x1c0
->  [<ffffffff9a0c925f>] ? cpuacct_account_field+0xcf/0x200
->  [<ffffffff9a008268>] do_nmi+0xb8/0x100
->  [<ffffffff9a7ff66a>] end_repeat_nmi+0x1e/0x2e
->  [<ffffffff9a0c925f>] ? cpuacct_account_field+0xcf/0x200
->  [<ffffffff9a0d131b>] ? lock_release+0xab/0x330
->  [<ffffffff9a0d131b>] ? lock_release+0xab/0x330
->  [<ffffffff9a0d131b>] ? lock_release+0xab/0x330
->  <<EOE>>  [<ffffffff9a0c9277>] cpuacct_account_field+0xe7/0x200
->  [<ffffffff9a0c9195>] ? cpuacct_account_field+0x5/0x200
->  [<ffffffff9a0b4d18>] account_system_time+0x98/0x1a0
->  [<ffffffff9a0b4e4e>] __vtime_account_system+0x2e/0x40
->  [<ffffffff9a0b5419>] vtime_user_enter+0x59/0x90
->  [<ffffffff9a18e183>] ? context_tracking_user_enter+0xd3/0x1f0
->  [<ffffffff9a18e183>] context_tracking_user_enter+0xd3/0x1f0
->  [<ffffffff9a013815>] syscall_trace_leave+0xa5/0x210
->  [<ffffffff9a7fd8bf>] int_check_syscall_exit_work+0x34/0x3d
-> ---[ end trace 73831bdc3ef3ba75 ]---
+On 08/06/2014 12:30 PM, Jason Gunthorpe wrote:
+> On Wed, Aug 06, 2014 at 11:18:20AM -0400, Murali Karicheri wrote:
+>> Keystone PCI controller has a limitation that memory read request
+>> size must not exceed 256 bytes. This is a hardware limitation and
+>> add a quirk to force this limit on all downstream devices by
+>> updating mrrs.
+>
+> Does this still work if the tuning is enabled, or does the tuning run
+> after this?
 
-Urgh, Frederic, any idea how that happened? 
+Yes it works with tuning enabled. Tuning happens afterwards. The 
+'limiting mrrs to 256' below is from my patch.
+
+
+[    2.267670] limiting mrrs to 256
+[    2.267698] limiting mrrs to 256
+[    2.267808] pcieport 0000:00:00.0: BAR 8: assigned [mem 
+0x50000000-0x500fffff]
+[    2.267818] pcieport 0000:00:00.0: BAR 9: assigned [mem 
+0x50100000-0x501fffff pref]
+[    2.267827] pcieport 0000:00:00.0: BAR 7: assigned [io  0x1000-0x1fff]
+[    2.267840] pci 0000:01:00.0: BAR 0: assigned [mem 0x50000000-0x5001ffff]
+[    2.267855] pci 0000:01:00.0: BAR 1: assigned [mem 0x50020000-0x5003ffff]
+[    2.267869] pci 0000:01:00.0: BAR 6: assigned [mem 
+0x50100000-0x5011ffff pref]
+[    2.267877] pci 0000:01:00.1: BAR 0: assigned [mem 0x50040000-0x5005ffff]
+[    2.267891] pci 0000:01:00.1: BAR 1: assigned [mem 0x50060000-0x5007ffff]
+[    2.267904] pci 0000:01:00.1: BAR 6: assigned [mem 
+0x50120000-0x5013ffff pref]
+[    2.267913] pci 0000:01:00.0: BAR 2: assigned [io  0x1000-0x101f]
+[    2.267926] pci 0000:01:00.1: BAR 2: assigned [io  0x1020-0x103f]
+[    2.267946] pcieport 0000:00:00.0: Max Payload Size set to  256/ 256 
+(was  128), Max Read Rq  256
+[    2.267980] pci 0000:01:00.0: Max Payload Size set to  256/ 256 (was 
+  128), Max Read Rq  256
+[    2.268013] pci 0000:01:00.1: Max Payload Size set to  256/ 256 (was 
+  128), Max Read Rq  256
+
+
+>
+>> +			if (pcie_get_readrq(dev)>  256) {
+>> +				pr_info("limiting mrrs to 256\n");
+>> +				pcie_set_readrq(dev, 256);
+>
+> The pr_info should either go away, or at least print the PCI bdf..
+
+I will change this to a dev_info and print the PCI bdf as part of it.
+
+>
+> Jason
+
