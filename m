@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932957AbaHFRK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 13:10:59 -0400
-Received: from mail-yk0-f201.google.com ([209.85.160.201]:34018 "EHLO
-	mail-yk0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757553AbaHFRJt (ORCPT
+	id S932942AbaHFRK5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 13:10:57 -0400
+Received: from mail-pd0-f201.google.com ([209.85.192.201]:59399 "EHLO
+	mail-pd0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932870AbaHFRJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Aug 2014 13:09:49 -0400
 From: Doug Anderson <dianders@chromium.org>
@@ -19,9 +19,9 @@ Cc: Addy Ke <addy.ke@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
         linux@arm.linux.org.uk, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 3/4] ARM: dts: Take the mmc slot node out of rk3288-evb
-Date: Wed,  6 Aug 2014 10:09:43 -0700
-Message-Id: <1407344984-14176-4-git-send-email-dianders@chromium.org>
+Subject: [PATCH v3 4/4] ARM: dts: mmc slot node gone on rk3288 => no more address / size cells
+Date: Wed,  6 Aug 2014 10:09:44 -0700
+Message-Id: <1407344984-14176-5-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 In-Reply-To: <1407344984-14176-1-git-send-email-dianders@chromium.org>
 References: <1407344984-14176-1-git-send-email-dianders@chromium.org>
@@ -29,12 +29,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In Jaehoon's (mmc: dw_mmc: Slot quirk "disable-wp" is deprecated) the
-slot node is no longer used.  Remove it.
+We've removed the slot node from all rk3288 device trees, so we no
+longer need address-cells or size-cells.
 
-Note that if Jaehoon's patch lands before my (ARM: dts: Enable emmc
-and sdmmc on the rk3288-evb boards) then this could be squashed into
-the later.
+If Jaehoon's (mmc: dw_mmc: Slot quirk "disable-wp" is deprecated)
+patch lands before my (ARM: dts: Add emmc and sdmmc to the rk3288
+device tree) then this could be squashed into the later patch.
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
@@ -43,48 +43,31 @@ Changes in v3: None
 Changes in v2:
 - Refer to the new title of Jaehoon's patch
 
- arch/arm/boot/dts/rk3288-evb.dtsi | 12 ++----------
- 1 file changed, 2 insertions(+), 10 deletions(-)
+ arch/arm/boot/dts/rk3288.dtsi | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
-index c2cf72f..ebce49a 100644
---- a/arch/arm/boot/dts/rk3288-evb.dtsi
-+++ b/arch/arm/boot/dts/rk3288-evb.dtsi
-@@ -53,16 +53,12 @@
- 	broken-cd;
- 	bus-width = <8>;
- 	cap-mmc-highspeed;
-+	disable-wp;
- 	non-removable;
- 	num-slots = <1>;
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&emmc_clk &emmc_cmd &emmc_pwr &emmc_bus8>;
- 	status = "okay";
--
--	slot@0 {
--		reg = <0>;
--		disable-wp;
--	};
- };
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index dc98a5b..8774e83 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -85,8 +85,6 @@
+ 		fifo-depth = <0x100>;
+ 		interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
+ 		reg = <0xff0c0000 0x4000>;
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+ 	};
  
- &sdmmc {
-@@ -70,15 +66,11 @@
- 	cap-mmc-highspeed;
- 	cap-sd-highspeed;
- 	card-detect-delay = <200>;
-+	disable-wp;			/* wp not hooked up */
- 	num-slots = <1>;
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_cd &sdmmc_bus4>;
- 	status = "okay";
--
--	slot@0 {
--		reg = <0>;
--		disable-wp;		/* wp not hooked up */
--	};
- };
+ 	emmc: dwmmc@ff0f0000 {
+@@ -96,8 +94,6 @@
+ 		fifo-depth = <0x100>;
+ 		interrupts = <GIC_SPI 35 IRQ_TYPE_LEVEL_HIGH>;
+ 		reg = <0xff0f0000 0x4000>;
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+ 	};
  
- &i2c0 {
+ 	i2c1: i2c@ff140000 {
 -- 
 2.0.0.526.g5318336
 
