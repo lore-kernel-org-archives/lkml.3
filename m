@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932785AbaHFQ6o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 12:58:44 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:47659 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757305AbaHFQ6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 12:58:42 -0400
-Date: Wed, 6 Aug 2014 10:58:37 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com
-Subject: Re: [PATCH] PCI: keystone: add a pci quirk to limit mrrs
-Message-ID: <20140806165837.GC19914@obsidianresearch.com>
-References: <1407338300-9146-1-git-send-email-m-karicheri2@ti.com>
- <20140806163021.GB19914@obsidianresearch.com>
- <53E25E24.8070506@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E25E24.8070506@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S932803AbaHFQ7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 12:59:11 -0400
+Received: from mail-yk0-f193.google.com ([209.85.160.193]:44552 "EHLO
+	mail-yk0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757152AbaHFQzU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 12:55:20 -0400
+From: Nick Krause <xerofoiffy@gmail.com>
+To: Mark Brown <broonie@kernel.org>,
+        linux-spi@vger.kernel.org (open list:SPI SUBSYSTEM),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] spi: Fix warning about redefinition
+Date: Wed,  6 Aug 2014 12:55:28 -0400
+Message-Id: <1407344128-9754-1-git-send-email-xerofoiffy@gmail.com>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 12:56:04PM -0400, Murali Karicheri wrote:
-> On 08/06/2014 12:30 PM, Jason Gunthorpe wrote:
-> >On Wed, Aug 06, 2014 at 11:18:20AM -0400, Murali Karicheri wrote:
-> >>Keystone PCI controller has a limitation that memory read request
-> >>size must not exceed 256 bytes. This is a hardware limitation and
-> >>add a quirk to force this limit on all downstream devices by
-> >>updating mrrs.
-> >
-> >Does this still work if the tuning is enabled, or does the tuning run
-> >after this?
-> 
-> Yes it works with tuning enabled. Tuning happens afterwards. The
-> 'limiting mrrs to 256' below is from my patch.
+Fix the following warnings about redefining READ and write
 
-That seems backwards to me...
+drivers/spi/spi-omap-100k.c:73:0: warning: "WRITE" redefined [enabled by default]
+include/linux/fs.h:193:0: note: this is the location of the previous definition
+drivers/spi/spi-omap-100k.c:74:0: warning: "READ" redefined [enabled by default]
+include/linux/fs.h:192:0: note: this is the location of the previous definition
 
-Jason
+Signed-off-by: Nick Krause <xerofoiffy@gmail.com>
+---
+ drivers/spi/spi-omap-100k.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/spi/spi-omap-100k.c b/drivers/spi/spi-omap-100k.c
+index 5e91858..eb8ae4e 100644
+--- a/drivers/spi/spi-omap-100k.c
++++ b/drivers/spi/spi-omap-100k.c
+@@ -70,6 +70,12 @@
+ #define SPI_STATUS_WE                   (1UL << 1)
+ #define SPI_STATUS_RD                   (1UL << 0)
+ 
++#ifdef WRITE
++#undef WRITE
++#endif
++#ifdef READ
++#undef READ
++#endif
+ #define WRITE 0
+ #define READ  1
+ 
+-- 
+1.9.1
+
