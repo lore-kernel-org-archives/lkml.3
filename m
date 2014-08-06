@@ -1,88 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687AbaHFVG3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 17:06:29 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:33225 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312AbaHFVFO (ORCPT
+	id S1754410AbaHFVHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 17:07:24 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43757 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866AbaHFVHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 17:05:14 -0400
-From: Goffredo Baroncelli <kreijack@gmail.com>
-X-Google-Original-From: Goffredo Baroncelli <kreijack@inwind.it>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jean Delvare <jdelvare@suse.de>,
-        Goffredo Baroncelli <kreijack@inwind.it>
-Subject: [PATCH 2/5] Remove attach_method because un-used
-Date: Wed,  6 Aug 2014 21:05:00 +0000
-Message-Id: <1407359103-6012-3-git-send-email-kreijack@inwind.it>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1407359103-6012-1-git-send-email-kreijack@inwind.it>
-References: <1407359103-6012-1-git-send-email-kreijack@inwind.it>
+	Wed, 6 Aug 2014 17:07:23 -0400
+Date: Wed, 06 Aug 2014 14:07:22 -0700 (PDT)
+Message-Id: <20140806.140722.489043833669403528.davem@davemloft.net>
+To: zoltan.kiss@citrix.com
+Cc: wei.liu2@citrix.com, Ian.Campbell@citrix.com, david.vrabel@citrix.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xenproject.org
+Subject: Re: [PATCH] xen-netback: Change disable flag from bool to a bit
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1407348973-2433-5-git-send-email-zoltan.kiss@citrix.com>
+References: <1407348973-2433-1-git-send-email-zoltan.kiss@citrix.com>
+	<1407348973-2433-5-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 06 Aug 2014 14:07:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove attach_method because i2c-powermac is
-in charge to instantiate the driver directly.
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+Date: Wed, 6 Aug 2014 19:16:13 +0100
 
-Signed-off-by: Goffredo Baroncelli <kreijack@inwind.it>
----
- drivers/macintosh/therm_windtunnel.c | 35 -----------------------------------
- 1 file changed, 35 deletions(-)
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 
-diff --git a/drivers/macintosh/therm_windtunnel.c b/drivers/macintosh/therm_windtunnel.c
-index a64a06f..1e50455 100644
---- a/drivers/macintosh/therm_windtunnel.c
-+++ b/drivers/macintosh/therm_windtunnel.c
-@@ -300,40 +300,6 @@ static int control_loop(void *dummy)
- /*	i2c probing and setup						*/
- /************************************************************************/
- 
--static int
--do_attach( struct i2c_adapter *adapter )
--{
--	/* scan 0x48-0x4f (DS1775) and 0x2c-2x2f (ADM1030) */
--	static const unsigned short scan_ds1775[] = {
--		0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
--		I2C_CLIENT_END
--	};
--	static const unsigned short scan_adm1030[] = {
--		0x2c, 0x2d, 0x2e, 0x2f,
--		I2C_CLIENT_END
--	};
--
--	if( strncmp(adapter->name, "uni-n", 5) )
--		return 0;
--
--	if( !x.running ) {
--		struct i2c_board_info info;
--
--		memset(&info, 0, sizeof(struct i2c_board_info));
--		strlcpy(info.type, "therm_ds1775", I2C_NAME_SIZE);
--		i2c_new_probed_device(adapter, &info, scan_ds1775, NULL);
--
--		strlcpy(info.type, "therm_adm1030", I2C_NAME_SIZE);
--		i2c_new_probed_device(adapter, &info, scan_adm1030, NULL);
--
--		if( x.thermostat && x.fan ) {
--			x.running = 1;
--			x.poll_task = kthread_run(control_loop, NULL, "g4fand");
--		}
--	}
--	return 0;
--}
--
- static void
- try_start_control_loop(void)
- {
-@@ -450,7 +416,6 @@ static struct i2c_driver g4fan_driver = {
- 	.driver = {
- 		.name	= "therm_windtunnel",
- 	},
--	.attach_adapter = do_attach,
- 	.probe		= do_probe,
- 	.remove		= do_remove,
- 	.id_table	= therm_windtunnel_id,
--- 
-2.0.1
-
+Neither this nor your "Small fixes around internal queue purging"
+patch apply cleanly to my current tree.  I have no idea what tree you
+are sending these patches against.
