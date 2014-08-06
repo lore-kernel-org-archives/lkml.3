@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983AbaHFRO0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 13:14:26 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:60059 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757723AbaHFROX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757726AbaHFROX (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 6 Aug 2014 13:14:23 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:42097 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932599AbaHFROS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 13:14:18 -0400
 From: Srikrishan Malik <srikrishanmalik@gmail.com>
 To: greg@kroah.com, andreas.dilger@intel.com, oleg.drokin@intel.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Srikrishan Malik <srikrishanmalik@gmail.com>
-Subject: [PATCH 08/12] staging: lustre: fix multi line strings
-Date: Wed,  6 Aug 2014 22:42:58 +0530
-Message-Id: <1407345182-709-8-git-send-email-srikrishanmalik@gmail.com>
+Subject: [PATCH 07/12] staging: lustre: add blank lines after declarations
+Date: Wed,  6 Aug 2014 22:42:57 +0530
+Message-Id: <1407345182-709-7-git-send-email-srikrishanmalik@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1407345182-709-1-git-send-email-srikrishanmalik@gmail.com>
 References: <1407345182-709-1-git-send-email-srikrishanmalik@gmail.com>
@@ -23,146 +23,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Fixes the following checkpatch warning:
 
-WARNING: quoted string split across lines
+WARNING: Missing a blank line after declarations
 
 Signed-off-by: Srikrishan Malik <srikrishanmalik@gmail.com>
 ---
- drivers/staging/lustre/lustre/mdc/mdc_locks.c   |  9 +++----
- drivers/staging/lustre/lustre/mdc/mdc_reint.c   |  3 +--
- drivers/staging/lustre/lustre/mdc/mdc_request.c | 36 ++++++++++++-------------
- 3 files changed, 23 insertions(+), 25 deletions(-)
+ drivers/staging/lustre/lustre/mdc/mdc_lib.c     | 1 +
+ drivers/staging/lustre/lustre/mdc/mdc_locks.c   | 3 +++
+ drivers/staging/lustre/lustre/mdc/mdc_request.c | 5 +++++
+ 3 files changed, 9 insertions(+)
 
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_lib.c b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
+index 7f9b6eb51860..95fe62da26e2 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_lib.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
+@@ -490,6 +490,7 @@ void mdc_getattr_pack(struct ptlrpc_request *req, __u64 valid, int flags,
+ 
+ 	if (op_data->op_name) {
+ 		char *tmp = req_capsule_client_get(&req->rq_pill, &RMF_NAME);
++
+ 		LOGL0(op_data->op_name, op_data->op_namelen, tmp);
+ 
+ 	}
 diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-index 4d837d61be65..7f724e3c3f06 100644
+index a5a2597616e9..4d837d61be65 100644
 --- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
 +++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-@@ -136,11 +136,10 @@ int mdc_set_lock_data(struct obd_export *exp, __u64 *lockh, void *data,
+@@ -134,6 +134,7 @@ int mdc_set_lock_data(struct obd_export *exp, __u64 *lockh, void *data,
+ 	if (lock->l_resource->lr_lvb_inode &&
+ 	    lock->l_resource->lr_lvb_inode != data) {
  		struct inode *old_inode = lock->l_resource->lr_lvb_inode;
- 
++
  		LASSERTF(old_inode->i_state & I_FREEING,
--			 "Found existing inode %p/%lu/%u state %lu in lock: "
--			 "setting data to %p/%lu/%u\n", old_inode,
--			 old_inode->i_ino, old_inode->i_generation,
--			 old_inode->i_state,
--			 new_inode, new_inode->i_ino, new_inode->i_generation);
-+			 "Found existing inode %p/%lu/%u state %lu in lock: setting data to %p/%lu/%u\n",
-+			 old_inode, old_inode->i_ino, old_inode->i_generation,
-+			 old_inode->i_state, new_inode, new_inode->i_ino,
-+			 new_inode->i_generation);
- 	}
- 	lock->l_resource->lr_lvb_inode = new_inode;
- 	if (bits)
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_reint.c b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
-index c40304bf0b62..6f78bffa9294 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_reint.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
-@@ -158,8 +158,7 @@ int mdc_setattr(struct obd_export *exp, struct md_op_data *op_data,
+ 			 "Found existing inode %p/%lu/%u state %lu in lock: "
+ 			 "setting data to %p/%lu/%u\n", old_inode,
+@@ -678,6 +679,7 @@ static int mdc_finish_enqueue(struct obd_export *exp,
+ 			 */
+ 			if ((it->it_op & IT_OPEN) && req->rq_replay) {
+ 				void *lmm;
++
+ 				if (req_capsule_get_size(pill, &RMF_EADATA,
+ 							 RCL_CLIENT) <
+ 				    body->eadatasize)
+@@ -1029,6 +1031,7 @@ static int mdc_finish_intent_lock(struct obd_export *exp,
+ 	lock = ldlm_handle2lock(lockh);
+ 	if (lock) {
+ 		ldlm_policy_data_t policy = lock->l_policy_data;
++
+ 		LDLM_DEBUG(lock, "matching against this");
  
- 		*mod = obd_mod_alloc();
- 		if (*mod == NULL) {
--			DEBUG_REQ(D_ERROR, req, "Can't allocate "
--				  "md_open_data");
-+			DEBUG_REQ(D_ERROR, req, "Can't allocate md_open_data");
- 		} else {
- 			req->rq_replay = 1;
- 			req->rq_cb_data = *mod;
+ 		LASSERTF(fid_res_name_eq(&mdt_body->fid1,
 diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-index 57d903156917..6c691a4763b5 100644
+index 6def92133227..57d903156917 100644
 --- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
 +++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-@@ -517,14 +517,14 @@ int mdc_get_lustre_md(struct obd_export *exp, struct ptlrpc_request *req,
- 		struct lov_mds_md *lmm;
+@@ -203,6 +203,7 @@ static int mdc_getattr_common(struct obd_export *exp,
  
- 		if (!S_ISREG(md->body->mode)) {
--			CDEBUG(D_INFO, "OBD_MD_FLEASIZE set, should be a "
--			       "regular file, but is not\n");
-+			CDEBUG(D_INFO,
-+			       "OBD_MD_FLEASIZE set, should be a regular file, but is not\n");
- 			GOTO(out, rc = -EPROTO);
- 		}
- 
- 		if (md->body->eadatasize == 0) {
--			CDEBUG(D_INFO, "OBD_MD_FLEASIZE set, "
--			       "but eadatasize 0\n");
-+			CDEBUG(D_INFO,
-+			       "OBD_MD_FLEASIZE set, but eadatasize 0\n");
- 			GOTO(out, rc = -EPROTO);
- 		}
- 		lmmsize = md->body->eadatasize;
-@@ -537,8 +537,8 @@ int mdc_get_lustre_md(struct obd_export *exp, struct ptlrpc_request *req,
- 			GOTO(out, rc);
- 
- 		if (rc < sizeof(*md->lsm)) {
--			CDEBUG(D_INFO, "lsm size too small: "
--			       "rc < sizeof (*md->lsm) (%d < %d)\n",
-+			CDEBUG(D_INFO,
-+			       "lsm size too small: rc < sizeof (*md->lsm) (%d < %d)\n",
- 			       rc, (int)sizeof(*md->lsm));
- 			GOTO(out, rc = -EPROTO);
- 		}
-@@ -548,14 +548,14 @@ int mdc_get_lustre_md(struct obd_export *exp, struct ptlrpc_request *req,
- 		struct lov_mds_md *lmv;
- 
- 		if (!S_ISDIR(md->body->mode)) {
--			CDEBUG(D_INFO, "OBD_MD_FLDIREA set, should be a "
--			       "directory, but is not\n");
-+			CDEBUG(D_INFO,
-+			       "OBD_MD_FLDIREA set, should be a directory, but is not\n");
- 			GOTO(out, rc = -EPROTO);
- 		}
- 
- 		if (md->body->eadatasize == 0) {
--			CDEBUG(D_INFO, "OBD_MD_FLDIREA is set, "
--			       "but eadatasize 0\n");
-+			CDEBUG(D_INFO,
-+			       "OBD_MD_FLDIREA is set, but eadatasize 0\n");
+ 	if (body->valid & OBD_MD_FLMDSCAPA) {
+ 		struct lustre_capa *capa;
++
+ 		capa = req_capsule_server_get(pill, &RMF_CAPA1);
+ 		if (capa == NULL)
  			return -EPROTO;
- 		}
- 		if (md->body->valid & OBD_MD_MEA) {
-@@ -571,8 +571,8 @@ int mdc_get_lustre_md(struct obd_export *exp, struct ptlrpc_request *req,
- 				GOTO(out, rc);
+@@ -283,6 +284,7 @@ int mdc_getattr_name(struct obd_export *exp, struct md_op_data *op_data,
  
- 			if (rc < sizeof(*md->mea)) {
--				CDEBUG(D_INFO, "size too small:  "
--				       "rc < sizeof(*md->mea) (%d < %d)\n",
-+				CDEBUG(D_INFO,
-+				       "size too small: rc < sizeof(*md->mea) (%d < %d)\n",
- 					rc, (int)sizeof(*md->mea));
- 				GOTO(out, rc = -EPROTO);
- 			}
-@@ -778,8 +778,8 @@ int mdc_set_open_replay_data(struct obd_export *exp,
- 	rec->cr_old_handle.cookie = body->handle.cookie;
- 	open_req->rq_replay_cb = mdc_replay_open;
- 	if (!fid_is_sane(&body->fid1)) {
--		DEBUG_REQ(D_ERROR, open_req, "Saving replay request with "
--			  "insane fid");
-+		DEBUG_REQ(D_ERROR, open_req,
-+			  "Saving replay request with insane fid");
- 		LBUG();
- 	}
+ 	if (op_data->op_name) {
+ 		char *name = req_capsule_client_get(&req->rq_pill, &RMF_NAME);
++
+ 		LASSERT(strnlen(op_data->op_name, op_data->op_namelen) ==
+ 				op_data->op_namelen);
+ 		memcpy(name, op_data->op_name, op_data->op_namelen);
+@@ -696,6 +698,7 @@ void mdc_replay_open(struct ptlrpc_request *req)
+ void mdc_commit_open(struct ptlrpc_request *req)
+ {
+ 	struct md_open_data *mod = req->rq_cb_data;
++
+ 	if (mod == NULL)
+ 		return;
  
-@@ -928,8 +928,8 @@ int mdc_close(struct obd_export *exp, struct md_op_data *op_data,
+@@ -2390,6 +2393,7 @@ int mdc_fid_alloc(struct obd_export *exp, struct lu_fid *fid,
+ struct obd_uuid *mdc_get_uuid(struct obd_export *exp)
+ {
+ 	struct client_obd *cli = &exp->exp_obd->u.cli;
++
+ 	return &cli->cl_target_uuid;
+ }
  
- 		rc = lustre_msg_get_status(req->rq_repmsg);
- 		if (lustre_msg_get_type(req->rq_repmsg) == PTL_RPC_MSG_ERR) {
--			DEBUG_REQ(D_ERROR, req, "type == PTL_RPC_MSG_ERR, err "
--				  "= %d", rc);
-+			DEBUG_REQ(D_ERROR, req,
-+				  "type == PTL_RPC_MSG_ERR, err = %d", rc);
- 			if (rc > 0)
- 				rc = -rc;
- 		}
-@@ -2055,8 +2055,8 @@ static int mdc_hsm_copytool_send(int len, void *val)
- 		return -EPROTO;
- 	}
+@@ -2742,6 +2746,7 @@ int __init mdc_init(void)
+ {
+ 	int rc;
+ 	struct lprocfs_static_vars lvars = { NULL };
++
+ 	lprocfs_mdc_init_vars(&lvars);
  
--	CDEBUG(D_HSM, " Received message mg=%x t=%d m=%d l=%d actions=%d "
--	       "on %s\n",
-+	CDEBUG(D_HSM,
-+	       " Received message mg=%x t=%d m=%d l=%d actions=%d on %s\n",
- 	       lh->kuc_magic, lh->kuc_transport, lh->kuc_msgtype,
- 	       lh->kuc_msglen, hal->hal_count, hal->hal_fsname);
- 
+ 	rc = class_register_type(&mdc_obd_ops, &mdc_md_ops, lvars.module_vars,
 -- 
 1.9.3
 
