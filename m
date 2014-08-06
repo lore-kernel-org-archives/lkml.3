@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740AbaHFStK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 14:49:10 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:43116 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756140AbaHFStH (ORCPT
+	id S1756768AbaHFSuT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 14:50:19 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:53462 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263AbaHFSuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 14:49:07 -0400
-Date: Wed, 6 Aug 2014 22:49:02 +0400
-From: Dmitry Popov <ixaphire@qrator.net>
-To: David Miller <davem@davemloft.net>
-Cc: yoshfuji@linux-ipv6.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH net-next] tcp: md5: check md5 signature without socket
- lock
-Message-Id: <20140806224902.180d8bbee02b9f4ce82cbe5c@qrator.net>
-In-Reply-To: <20140805.162703.362629415553579077.davem@davemloft.net>
-References: <20140805025452.1a5bec4ad0d0c5a30a22a589@qrator.net>
-	<20140805.162703.362629415553579077.davem@davemloft.net>
-X-Mailer: Sylpheed 3.4.2 (GTK+ 2.24.24; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Aug 2014 14:50:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <17153.1407349640@turing-police.cc.vt.edu>
+References: <1407347597-2168-1-git-send-email-xerofoiffy@gmail.com>
+	<17153.1407349640@turing-police.cc.vt.edu>
+Date: Wed, 6 Aug 2014 20:50:15 +0200
+X-Google-Sender-Auth: e6-yShgRuloiAVkkeLpw2LMBGqo
+Message-ID: <CAMuHMdVJQd0Mb8aXbd9iqkabzKdw9WSR791LxqUoVEJ1g1kaHA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] spi: Remove unused definitions
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Cc: Nick Krause <xerofoiffy@gmail.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        "open list:SPI SUBSYSTEM" <linux-spi@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Aug 2014 16:27:03 -0700 (PDT)
-David Miller <davem@davemloft.net> wrote:
+On Wed, Aug 6, 2014 at 8:27 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Wed, 06 Aug 2014 13:53:17 -0400, Nick Krause said:
+>> Remove unused definition which cause the following warnings
+>>
+>> drivers/spi/spi-omap-100k.c:73:0: warning: "WRITE" redefined [enabled by default]
+>> include/linux/fs.h:193:0: note: this is the location of the previous definition
+>> drivers/spi/spi-omap-100k.c:74:0: warning: "READ" redefined [enabled by default]
+>> include/linux/fs.h:192:0: note: this is the location of the previous definition
+>
+>> -#define WRITE 0
+>> -#define READ  1
+>
+> NAK.  Full stop.  These are potentially used in an inner macro someplace, and by
+> removing these, the conflicting values from fs.h will be used instead.
+>
+> #define READ                    0
+> #define WRITE                   RW_MASK
+>
+> So if there *is* a use in an inner macro, you just screwed the pooch
+> and introduced a bug in this "clean up" - somebody will be expecting to see
+> a 0 for a READ, and will receive a 1 instead.  This can't end well.
+>
+> Nick - how *exactly* did you identify that these are in fact not used?
+> Given your history of submitting poorly researched patches, you're going to
+> have to justify the "unused" better than the handwaving you've done here.
 
-> > +#ifdef CONFIG_TCP_MD5SIG
-> > +	/*
-> > +	 * We really want to reject the packet as early as possible
-> > +	 * if:
-> > +	 *  o We're expecting an MD5'd packet and this is no MD5 tcp option
-> > +	 *  o There is an MD5 option and we're not expecting one
-> > +	 */
-> > +	if (tcp_v4_inbound_md5_hash(sk, skb))
-> > +		goto discard_and_relse;
-> > +#endif
+Just looking into this...
 
-> 
-> The original ordering seemed very much intentional, as per the comment.
-> 
-> You need to either make your locking change without disturbing this
-> ordering, or proprosed first and separately that the early check
-> should be changed.
-> 
-> Also, you really shouldn't just move the early md5 check _after_ the
-> TCP_ESTABLISHED fast path, and keep the comment there as well.  The
-> comment makes no sense any longer if the MD5 check happens after the
-> TCP_ESTABLISHED fast path, right?
-> 
-> I'm not applying this, sorry.
-> 
+It seems READ and WRITE are not used at all in this file.
 
-It seems your arguments are based on the assumption that I moved md5 signature
-check down the tcp processing chain. But I did exactly the opposite, md5 is
-checked earlier in this patch.
+To be 100% sure, I tried to find with which kernel config this warning shows up.
+It doesn't happen for omap1_defconfig with CONFIG_SPI_OMAP_100K,
+which was the most likely culprit.
 
-I moved tcp_v{4,6}_inbound_md5_hash from tcp_v{4,6}_do_rcv to tcp_v{4,6}_rcv,
-and tcp_v{4,6}_do_rcv is always called from tcp_v{4,6}_rcv (either directly or
-via sk_backlog). 
+It does happen with sparc/sparc64 allmodconfig. However, changing or
+removing the READ and WRITE definitions in drivers/spi/spi-omap-100k.c
+doesn't have any influence on the preprocessed source files
+("make drivers/spi/spi-omap-100k.i", modulo line number changes),
+for both omap1 and sparc builds.
 
-For ipv4 it looks something like this (and ipv6 is almost the same):
+(Nick: I believe the above is what people really want to see)
 
-tcp_v4_rcv(skb):
-... /* various checks like pkt size, checksum and so on */
-	sk = __inet_lookup_skb(&tcp_hashinfo, skb, th->source, th->dest);
-... /* some more checks */
-	if (!xfrm4_policy_check(sk, XFRM_POLICY_IN, skb))
-...
-+	if (tcp_v4_inbound_md5_hash(sk, skb))
-+		goto discard_and_relse;
-	nf_reset(skb);
+So I conclude they are really not used, and they can be safely removed.
 
-	if (sk_filter(sk, skb))
-		goto discard_and_relse;
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-	sk_mark_napi_id(sk, skb);
-	skb->dev = NULL;
+Gr{oetje,eeting}s,
 
-	bh_lock_sock_nested(sk);
-	if ( /* NET_DMA, sk_backlog and tcp_prequeue checks */ )
-        	ret = tcp_v4_do_rcv(sk, skb);
-...
-        bh_unlock_sock(sk);
-	sock_put(sk);
-        return ret;
+                        Geert
 
-tcp_v4_do_rcv(sk, skb):
--	if (tcp_v4_inbound_md5_hash(sk, skb))
--		goto discard_and_relse;
-... /* do further processing */
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-So, speaking of ordering, only nf_reset, sk_filter, sk_mark_napi_id,
-skb->dev=NULL, sk_backlogging, tcp_prequeue and NET_DMA things would be done
-after tcp_v4_inbound_md5_hash (instead of before) if this patch is applied. 
-I don't see anything bad about that, correct me if I'm wrong.
-
-I could also move tcp_v4_inbound_md5_hash before xfrm4_policy_check or after
-sk_filter: I don't have any strong arguments here, so I am ok to resubmit
-with other ordering of these calls.
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
