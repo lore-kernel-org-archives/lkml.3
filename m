@@ -1,34 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbaHFUys (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 16:54:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54425 "EHLO
+	id S1754340AbaHFUzD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 16:55:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54531 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908AbaHFUyp (ORCPT
+	with ESMTP id S1754298AbaHFUzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 16:54:45 -0400
+	Wed, 6 Aug 2014 16:55:00 -0400
 From: Kamal Mostafa <kamal@canonical.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mauro <registosites@hotmail.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>, Bin Gao <bin.gao@intel.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>, kernel-team@lists.ubuntu.com
-Subject: [3.13.y.z extended stable] Patch "perf/x86/intel: ignore CondChgd bit to avoid false NMI handling" has been added to staging queue
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>,
+        kernel-team@lists.ubuntu.com
+Subject: [3.13.y.z extended stable] Patch "x86, tsc: Fix cpufreq lockup" has been added to staging queue
 Date: Wed,  6 Aug 2014 13:54:35 -0700
-Message-Id: <1407358475-21676-1-git-send-email-kamal@canonical.com>
+Message-Id: <1407358475-21635-1-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 X-Extended-Stable: 3.13
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I have just added a patch titled
 
-    perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
+    x86, tsc: Fix cpufreq lockup
 
 to the linux-3.13.y-queue branch of the 3.13.y.z extended stable tree 
 which can be found at:
@@ -48,109 +48,61 @@ Thanks.
 
 ------
 
->From 02ed4cc520c34a3f674930833dc1113066dc3ff0 Mon Sep 17 00:00:00 2001
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Date: Wed, 25 Jun 2014 10:09:07 +0900
-Subject: perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+>From 0c163f7d8b127903f45ebc8d47557b9bcfab8274 Mon Sep 17 00:00:00 2001
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 24 Jun 2014 14:48:19 +0200
+Subject: x86, tsc: Fix cpufreq lockup
 
-commit b292d7a10487aee6e74b1c18b8d95b92f40d4a4f upstream.
+commit 3896c329df8092661dac80f55a8c3f60136fd61a upstream.
 
-Currently, any NMI is falsely handled by a NMI handler of NMI watchdog
-if CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR is set.
+Mauro reported that his AMD X2 using the powernow-k8 cpufreq driver
+locked up when doing cpu hotplug.
 
-For example, we use external NMI to make system panic to get crash
-dump, but in this case, the external NMI is falsely handled do to the
-issue.
+Because we called set_cyc2ns_scale() from the time_cpufreq_notifier()
+unconditionally, it gets called multiple times for each freq change,
+instead of only the once, when the tsc_khz value actually changes.
 
-This commit deals with the issue simply by ignoring CondChgd bit.
+Because it gets called more than once, we run out of cyc2ns data slots
+and stall, waiting for a free one, but because we're half way offline,
+there's no consumers to free slots.
 
-Here is explanation in detail.
+By placing the call inside the condition that actually changes tsc_khz
+we avoid superfluous calls and avoid the problem.
 
-On x86 NMI watchdog uses performance monitoring feature to
-periodically signal NMI each time performance counter gets overflowed.
-
-intel_pmu_handle_irq() is called as a NMI_LOCAL handler from a NMI
-handler of NMI watchdog, perf_event_nmi_handler(). It identifies an
-owner of a given NMI by looking at overflow status bits in
-MSR_CORE_PERF_GLOBAL_STATUS MSR. If some of the bits are set, then it
-handles the given NMI as its own NMI.
-
-The problem is that the intel_pmu_handle_irq() doesn't distinguish
-CondChgd bit from other bits. Unlike the other status bits, CondChgd
-bit doesn't represent overflow status for performance counters. Thus,
-CondChgd bit cannot be thought of as a mark indicating a given NMI is
-NMI watchdog's.
-
-As a result, if CondChgd bit is set, any NMI is falsely handled by the
-NMI handler of NMI watchdog. Also, if type of the falsely handled NMI
-is either NMI_UNKNOWN, NMI_SERR or NMI_IO_CHECK, the corresponding
-action is never performed until CondChgd bit is cleared.
-
-I noticed this behavior on systems with Ivy Bridge processors: Intel
-Xeon CPU E5-2630 v2 and Intel Xeon CPU E7-8890 v2. On both systems,
-CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR has already been set
-in the beginning at boot. Then the CondChgd bit is immediately cleared
-by next wrmsr to MSR_CORE_PERF_GLOBAL_CTRL MSR and appears to remain
-0.
-
-On the other hand, on older processors such as Nehalem, Xeon E7540,
-CondChgd bit is not set in the beginning at boot.
-
-I'm not sure about exact behavior of CondChgd bit, in particular when
-this bit is set. Although I read Intel System Programmer's Manual to
-figure out that, the descriptions I found are:
-
-  In 18.9.1:
-
-  "The MSR_PERF_GLOBAL_STATUS MSR also provides a ¡sticky bit¢ to
-   indicate changes to the state of performancmonitoring hardware"
-
-  In Table 35-2 IA-32 Architectural MSRs
-
-  63 CondChg: status bits of this register has changed.
-
-These are different from the bahviour I see on the actual system as I
-explained above.
-
-At least, I think ignoring CondChgd bit should be enough for NMI
-watchdog perspective.
-
-Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Reported-by: Mauro <registosites@hotmail.com>
+Tested-by: Mauro <registosites@hotmail.com>
+Fixes: 20d1c86a5776 ("sched/clock, x86: Rewrite cyc2ns() to avoid the need to disable IRQs")
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Bin Gao <bin.gao@intel.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Stefani Seibold <stefani@seibold.net>
 Cc: linux-kernel@vger.kernel.org
-Link: http://lkml.kernel.org/r/20140625.103503.409316067.d.hatayama@jp.fujitsu.com
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/x86/kernel/tsc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 0fa4f24..0b1825a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1385,6 +1385,15 @@ again:
- 	intel_pmu_lbr_read();
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 930e5d4..66af9af 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -722,9 +722,9 @@ static int time_cpufreq_notifier(struct notifier_block *nb, unsigned long val,
+ 		tsc_khz = cpufreq_scale(tsc_khz_ref, ref_freq, freq->new);
+ 		if (!(freq->flags & CPUFREQ_CONST_LOOPS))
+ 			mark_tsc_unstable("cpufreq changes");
+-	}
 
- 	/*
-+	 * CondChgd bit 63 doesn't mean any overflow status. Ignore
-+	 * and clear the bit.
-+	 */
-+	if (__test_and_clear_bit(63, (unsigned long *)&status)) {
-+		if (!status)
-+			goto done;
+-	set_cyc2ns_scale(tsc_khz, freq->cpu);
++		set_cyc2ns_scale(tsc_khz, freq->cpu);
 +	}
-+
-+	/*
- 	 * PEBS overflow sets bit 62 in the global status register
- 	 */
- 	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
+
+ 	return 0;
+ }
 --
 1.9.1
 
