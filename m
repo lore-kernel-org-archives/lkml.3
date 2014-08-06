@@ -1,77 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756AbaHFO2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 10:28:12 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:51133 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838AbaHFO2I (ORCPT
+	id S1754855AbaHFO2v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 10:28:51 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33364 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826AbaHFO2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 10:28:08 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: [PATCH gdb/scripts] scripts/gdb: Ignore byte-compiled python files
-Date: Wed,  6 Aug 2014 15:27:49 +0100
-Message-Id: <1407335269-9533-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Wed, 6 Aug 2014 10:28:50 -0400
+Date: Wed, 6 Aug 2014 07:28:47 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] xfs: Remove typedef xfs_uu_t
+Message-ID: <20140806142847.GA9757@infradead.org>
+References: <20140806141343.GA15659@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140806141343.GA15659@himangi-Dell>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the gdb scripts leaves byte-compiled python files in the scripts/
-directory. These should be ignored by git and cleaned up by mrproper.
+On Wed, Aug 06, 2014 at 07:43:43PM +0530, Himangi Saraogi wrote:
+> The Linux kernel coding style guidelines suggest not using typedefs
+> for structure types. This patch gets rid of the typedef for xfs_uu_t.
+> Also the names of the struct is changed to drop the _t, to make the
+> name look less typedef-like.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org
----
-
-Notes:
-    Relies upon (and intended for incorporation into) Jan Kiszka's gdb/scripts
-    patch series.
-
- .gitignore                   | 1 +
- Makefile                     | 2 +-
- scripts/gdb/linux/.gitignore | 2 ++
- 3 files changed, 4 insertions(+), 1 deletion(-)
- create mode 100644 scripts/gdb/linux/.gitignore
-
-diff --git a/.gitignore b/.gitignore
-index f4c0b09..a04486e 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -42,6 +42,7 @@ Module.symvers
- /TAGS
- /linux
- /vmlinux
-+/vmlinux-gdb.py
- /vmlinuz
- /System.map
- /Module.markers
-diff --git a/Makefile b/Makefile
-index 7105eb2a..a3ca8ba 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1136,7 +1136,7 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
- 		  signing_key.priv signing_key.x509 x509.genkey		\
- 		  extra_certificates signing_key.x509.keyid		\
- 		  signing_key.x509.signer include/linux/version.h	\
--		  vmlinux-gdb.py
-+		  vmlinux-gdb.py scripts/gdb/linux/*.py[co]
- 
- # clean - Delete most, but leave enough to build external modules
- #
-diff --git a/scripts/gdb/linux/.gitignore b/scripts/gdb/linux/.gitignore
-new file mode 100644
-index 0000000..52e4e61
---- /dev/null
-+++ b/scripts/gdb/linux/.gitignore
-@@ -0,0 +1,2 @@
-+*.pyc
-+*.pyo
--- 
-1.9.3
+The right fix is to just kill the type, and read the values directly
+from the uuid_t type using get_unaligned_be16.
 
