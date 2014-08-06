@@ -1,56 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857AbaHFTOg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 15:14:36 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:55399 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042AbaHFTOe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 15:14:34 -0400
-Date: Wed, 6 Aug 2014 12:14:30 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg KH <greg@kroah.com>
-Cc: Nick Krause <xerofoiffy@gmail.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        "open list:SPI SUBSYSTEM" <linux-spi@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] spi: Remove unused definitions
-Message-ID: <20140806191430.GA5711@roeck-us.net>
-References: <1407347597-2168-1-git-send-email-xerofoiffy@gmail.com>
- <20140806183319.GA15654@kroah.com>
+	id S1756876AbaHFTOu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 15:14:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15646 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756860AbaHFTOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 15:14:48 -0400
+Date: Wed, 6 Aug 2014 15:14:30 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Peter Feiner <pfeiner@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Jerome Marchand <jmarchan@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH -mm v6 06/13] pagemap: use walk->vma instead of calling
+ find_vma()
+Message-ID: <20140806191430.GA19526@nhori.bos.redhat.com>
+References: <1406920849-25908-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1406920849-25908-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20140806173040.GA28526@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140806183319.GA15654@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140806173040.GA28526@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 11:33:19AM -0700, Greg KH wrote:
-> On Wed, Aug 06, 2014 at 01:53:17PM -0400, Nick Krause wrote:
-> > Remove unused definition which cause the following warnings
-> > 
-> > drivers/spi/spi-omap-100k.c:73:0: warning: "WRITE" redefined [enabled by default]
-> > include/linux/fs.h:193:0: note: this is the location of the previous definition
-> > drivers/spi/spi-omap-100k.c:74:0: warning: "READ" redefined [enabled by default]
-> > include/linux/fs.h:192:0: note: this is the location of the previous definition
-> > 
-> > Signed-off-by: Nick Krause <xerofoiffy@gmail.com>
-> > ---
-> >  drivers/spi/spi-omap-100k.c | 4 ----
-> >  1 file changed, 4 deletions(-)
-> 
-> Nick, you were warned about this numerous times in the past.
-> 
-> By changing email addresses you have now ensured that we will never
-> listen to you, as you obviously are not listening to us.
-> 
-He does manage to get our attention, though. Also, it is not that simple -
-for my part I keep looking out for the patches just to make sure that
-we don't get any more less than well researched "fixes" into the kernel.
-I figure it pays to spend some time now instead of having to clean up
-the resulting mess if something slips by.
+Hi Peter,
 
-Guenter
+On Wed, Aug 06, 2014 at 01:30:40PM -0400, Peter Feiner wrote:
+> On Fri, Aug 01, 2014 at 03:20:42PM -0400, Naoya Horiguchi wrote:
+> > Page table walker has the information of the current vma in mm_walk, so
+> > we don't have to call find_vma() in each pagemap_hugetlb_range() call.
+> 
+> You could also get rid of a bunch of code in pagemap_pte_range:
+
+Thanks for the comment.
+
+> ---
+>  fs/proc/task_mmu.c | 33 ++++++---------------------------
+>  1 file changed, 6 insertions(+), 27 deletions(-)
+> 
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index 9b30bdd..e9af130 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -1035,16 +1035,14 @@ static inline void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme, struct pagemap
+>  static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>  			     struct mm_walk *walk)
+>  {
+> -	struct vm_area_struct *vma;
+> +	struct vm_area_struct *vma = walk->vma
+>  	struct pagemapread *pm = walk->private;
+>  	spinlock_t *ptl;
+>  	pte_t *pte;
+>  	int err = 0;
+> -	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
+> +	pagemap_entry_t pme;
+>  
+> -	/* find the first VMA at or above 'addr' */
+> -	vma = find_vma(walk->mm, addr);
+> -	if (vma && pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+> +	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+>  		int pmd_flags2;
+>  
+>  		if ((vma->vm_flags & VM_SOFTDIRTY) || pmd_soft_dirty(*pmd))
+> @@ -1069,28 +1067,9 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>  	if (pmd_trans_unstable(pmd))
+>  		return 0;
+>  	for (; addr != end; addr += PAGE_SIZE) {
+> -		int flags2;
+> -
+> -		/* check to see if we've left 'vma' behind
+> -		 * and need a new, higher one */
+> -		if (vma && (addr >= vma->vm_end)) {
+> -			vma = find_vma(walk->mm, addr);
+> -			if (vma && (vma->vm_flags & VM_SOFTDIRTY))
+> -				flags2 = __PM_SOFT_DIRTY;
+> -			else
+> -				flags2 = 0;
+> -			pme = make_pme(PM_NOT_PRESENT(pm->v2) | PM_STATUS2(pm->v2, flags2));
+> -		}
+
+Right. Soft dirty check is done in pte_to_pagemap_entry(), and vma
+boundary check is done in mm/pagewalk.c, so we don't need this block
+any more.
+
+Thanks,
+Naoya Horiguchi
+
+> -
+> -		/* check that 'vma' actually covers this address,
+> -		 * and that it isn't a huge page vma */
+> -		if (vma && (vma->vm_start <= addr) &&
+> -		    !is_vm_hugetlb_page(vma)) {
+> -			pte = pte_offset_map(pmd, addr);
+> -			pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
+> -			/* unmap before userspace copy */
+> -			pte_unmap(pte);
+> -		}
+> +		pte = pte_offset_map(pmd, addr);
+> +		pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
+> +		pte_unmap(pte);
+>  		err = add_to_pagemap(addr, &pme, pm);
+>  		if (err)
+>  			return err;
+> -- 
+> 2.0.0.526.g5318336
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
