@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799AbaHFN4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 09:56:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41975 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753438AbaHFN4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 09:56:15 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Minchan Kim <minchan@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>
-Subject: [PATCH 1/4] mm: page_alloc: determine migratetype only once
-Date: Wed,  6 Aug 2014 15:55:53 +0200
-Message-Id: <1407333356-30928-2-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1407333356-30928-1-git-send-email-vbabka@suse.cz>
-References: <1407333356-30928-1-git-send-email-vbabka@suse.cz>
+	id S1754037AbaHFN42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 09:56:28 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:49389 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438AbaHFN40 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 09:56:26 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Subject: [PATCH v5 0/6] Per-user clock constraints
+Date: Wed,  6 Aug 2014 15:56:03 +0200
+Message-Id: <1407333368-31979-1-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The check for ALLOC_CMA in __alloc_pages_nodemask() derives migratetype
-from gfp_mask in each retry pass, although the migratetype variable already
-has the value determined and it does not change. Use the variable and perform
-the check only once. Also convert #ifdef CONFIC_CMA to IS_ENABLED.
+Hi,
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
----
- mm/page_alloc.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+in this v5 of the patchset I have just moved the storage of the clock constraints to the struct clk, as suggested by Stephen. Follows the original cover letter blurb:
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d0e3d2f..b2cd463 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2775,6 +2775,9 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
- 	if (unlikely(!zonelist->_zonerefs->zone))
- 		return NULL;
- 
-+	if (IS_ENABLED(CONFIG_CMA) && migratetype == MIGRATE_MOVABLE)
-+		alloc_flags |= ALLOC_CMA;
-+
- retry_cpuset:
- 	cpuset_mems_cookie = read_mems_allowed_begin();
- 
-@@ -2786,10 +2789,6 @@ retry_cpuset:
- 		goto out;
- 	classzone_idx = zonelist_zone_idx(preferred_zoneref);
- 
--#ifdef CONFIG_CMA
--	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
--		alloc_flags |= ALLOC_CMA;
--#endif
- 	/* First allocation attempt */
- 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
- 			zonelist, high_zoneidx, alloc_flags,
+I'm retaking Rabin's patches [0] for splitting the clk API in two: one API for
+clk consumers and another for providers. The consumer API uses a clk structure
+that just keeps track of the consumer and has a reference to the actual
+clk_core struct, which is used internally.
+
+I have kept a patch from Rabin that aims to aid in debugging nested
+enable/disable calls, though my personal aim is to allow more than one consumer
+to influence the final, effective frequency rate. For now this is limited to
+setting floor and ceiling constraints, with the short-term aim of allowing
+devfreq and thermal drivers to set floor and ceiling frequencies on the memory
+clock, respectively.
+
+For those functions in the consumer clk API that were called from providers, I
+have added variants to clk-provider.h that are the same only that accept a
+clk_core instead. These functions are prefixed with clk_provider_.
+
+Patch 1/6 just adds a bunch of defines with the goal of having all the renames
+in their own commit while preserving git-bisectability, with patch 3/6
+containing the rename itself as generated by the Coccinelle script in [1].
+Patch 2/6 is needed because sound/soc/mxs/mxs-saif.c calls both the consumer
+and the provider API. The actual implementation of the API split comes in patch
+4/6. I will be happy to organize the refactoring differently if anybody has a
+better idea.
+
+Patch 5/6 warns when there's an unbalanced usage of the enable and disable
+APIs, and patch 6/6 adds the API for setting floor and ceiling frequencies, per
+consumer.
+
+[0] http://thread.gmane.org/gmane.linux.kernel/1402006
+[1] http://cgit.collabora.com/git/user/tomeu/linux.git/commit/?id=da9c7e34d9
+
+Thanks,
+
+Tomeu
+
+Tomeu Vizoso (6):
+  clk: Add temporary mapping to the existing API
+  ASoC: mxs-saif: fix mixed use of public and provider clk API
+  clk: Move all drivers to use internal API
+  clk: use struct clk only for external API
+  clk: per-user clock accounting for debug
+  clk: Add floor and ceiling constraints to clock rates
+
+[detailed diffstat omitted for brevity sake]
+
+   244 files changed, 2281 insertions(+), 1812 deletions(-)
+
 -- 
-1.8.4.5
+1.9.3
 
