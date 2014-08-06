@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728AbaHFHmn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 03:42:43 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:37336 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323AbaHFHmm (ORCPT
+	id S1754832AbaHFHpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 03:45:15 -0400
+Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:53859 "EHLO
+	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753262AbaHFHpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 03:42:42 -0400
-Message-ID: <1407310958.5090.218.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Sergey Oboguev <oboguev.public@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        khalid.aziz@oracle.com
-Date: Wed, 06 Aug 2014 09:42:38 +0200
-In-Reply-To: <1407303693.5090.171.camel@marge.simpson.net>
-References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
-	 <8738dm9t4z.fsf@tassilo.jf.intel.com>
-	 <1406532289.5133.223.camel@marge.simpson.net>
-	 <CA+80gGaohO-RaG0_tWZJEFzisrrBpgfiw-mxMrTfSK0N=k7gQA@mail.gmail.com>
-	 <1407059776.5156.108.camel@marge.simpson.net>
-	 <CA+80gGZJGX6PjzwptNJ5gU3SvCxaYT8v4id+4NqMAPwgAAS26Q@mail.gmail.com>
-	 <1407303693.5090.171.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 6 Aug 2014 03:45:12 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>
+Subject: [PATCH] i2c: qup: disable clks and return instead of just returning error
+Date: Wed,  6 Aug 2014 13:18:51 +0530
+Message-Id: <1407311331-15700-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-06 at 07:41 +0200, Mike Galbraith wrote:
+This fixes a error handling scenario where clocks were not being disabled
+when QUP_OUTPUT_BLOCK_SIZE returns a size greater thanat size of blk_sizes
+array. So this patch adds a statement to jump to err lable to release the
+clocks.
 
-> You're reading me entirely wrong, I'm not trying to discourage you from
-> inventing a better bullet, I just think this particular bullet is a dud.
+Wolfram Sang <wsa@the-dreams.de>
+Grant Likely <grant.likely@linaro.org>
+Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Andy Gross <agross@codeaurora.org>
+"Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Anyway, I'll try to assume you're talking to the _reasonable_ people on
-this list in any reply.  The chance of penetrating my thick skull once
-I've made up my mind approaches zero ;-)
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+---
+ drivers/i2c/busses/i2c-qup.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
--Mike
+diff --git a/drivers/i2c/busses/i2c-qup.c b/drivers/i2c/busses/i2c-qup.c
+index 2a5efb5..3a4d64e 100644
+--- a/drivers/i2c/busses/i2c-qup.c
++++ b/drivers/i2c/busses/i2c-qup.c
+@@ -633,13 +633,17 @@ static int qup_i2c_probe(struct platform_device *pdev)
+ 	 * associated with each byte written/received
+ 	 */
+ 	size = QUP_OUTPUT_BLOCK_SIZE(io_mode);
+-	if (size >= ARRAY_SIZE(blk_sizes))
+-		return -EIO;
++	if (size >= ARRAY_SIZE(blk_sizes)) {
++		ret = -EIO;
++		goto fail;
++	}
+ 	qup->out_blk_sz = blk_sizes[size] / 2;
+ 
+ 	size = QUP_INPUT_BLOCK_SIZE(io_mode);
+-	if (size >= ARRAY_SIZE(blk_sizes))
+-		return -EIO;
++	if (size >= ARRAY_SIZE(blk_sizes)) {
++		ret = -EIO;
++		goto fail;
++	}
+ 	qup->in_blk_sz = blk_sizes[size] / 2;
+ 
+ 	size = QUP_OUTPUT_FIFO_SIZE(io_mode);
+-- 
+1.7.9.5
 
