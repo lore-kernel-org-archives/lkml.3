@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745AbaHFPIe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 11:08:34 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57740 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755520AbaHFPId (ORCPT
+	id S1755898AbaHFPJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 11:09:27 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:49754 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751557AbaHFPJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 11:08:33 -0400
-Date: Wed, 6 Aug 2014 08:08:31 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
- to be held for duration of changing governors [v2]
-Message-ID: <20140806150831.GB32301@codeaurora.org>
-References: <53DB6B81.6050400@redhat.com>
- <53DBCBE8.6010809@codeaurora.org>
- <53DBE764.8050109@redhat.com>
- <53DBEC27.7050803@codeaurora.org>
- <CAKohpombG3Gj4mbm02vPNnAxzaRvQP7rb=iQ14dCFH4_+71H3w@mail.gmail.com>
- <53E0B657.4070007@redhat.com>
- <CAKohponxBdYEgY2oYuzmdaqfSRS8Uq8bZOzcb1QDmKO-z5ZBFQ@mail.gmail.com>
- <53E1556B.5070304@codeaurora.org>
- <CAKohpoky1-hj7cwnKc58svh8Z1Yas1=q4uJEK8mWcb56uqAcng@mail.gmail.com>
- <53E1FEE5.80305@redhat.com>
+	Wed, 6 Aug 2014 11:09:25 -0400
+Message-Id: <1407337757.772491.149802333.5E523CB0@webmail.messagingengine.com>
+X-Sasl-Enc: DbOB6Z813vjZTyIfya97cWaRchsCl+MG5RRpJDv8hlsJ 1407337757
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Koehrer Mathias <mathias.koehrer@etas.com> (ETAS/ESW5),
+        Nick Krause <xerofoify@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E1FEE5.80305@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-36a9b403
+In-Reply-To: <53E23BEF.9030701@cogentembedded.com>
+References: <be459158bb5c46fcaf73129858342da4@FE-MBX1012.de.bosch.com>
+ <53E23BEF.9030701@cogentembedded.com>
+Subject: Re: [PATCH] Fix e1000e with Intel 82572EI that has no hardware timestamp
+ support
+Date: Wed, 06 Aug 2014 12:09:17 -0300
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06, Prarit Bhargava wrote:
+On Wed, Aug 6, 2014, at 11:30, Sergei Shtylyov wrote:
+> On 8/6/2014 6:27 PM, Koehrer Mathias (ETAS/ESW5) wrote:
 > 
+> > With the Intel 82527EI (driver: e1000e) there is an issue when running
+> > the ptpd2 program, that leads to a kernel oops.
+> > The reason is here that in e1000_xmit_frame() a work queue will be
+> > scheduled that has not been initialized in this case.
+> > The work queue "tx_hwstamp_work" will only be initialized if
+> > adapter->flags & FLAG_HAS_HW_TIMESTAMP set.
+> > This check is missing in e1000_xmit_frame().
 > 
-> On 08/06/2014 04:10 AM, Viresh Kumar wrote:
-> > On 6 August 2014 03:36, Saravana Kannan <skannan@codeaurora.org> wrote:
-> >> Stephen and I looked into this. This is not a sysfs framework difference.
-> >> The reason we don't have this issue when we use global tunables is because
-> >> we add the attribute group to the cpufreq_global_kobject and that kobject
-> >> doesn't have a kobj_type ops similar to the per policy kobject. So,
-> >> read/write to those attributes do NOT go through the generic show/store ops
-> >> that wrap every other cpufreq framework attribute read/writes.
-> >>
-> >> So, none of those read/write do any kind of locking. They don't race with
-> >> POLICY_EXIT (because we remove the sysfs group first thing in POLICY_EXIT)
-> >> but might still race with START/STOPs (not sure, haven't looked closely
-> >> yet).
-> >>
-> >> For example, writing to sampling_rate of ondemand governor might cause a
-> >> race in update_sampling_rate(). It could race and happen between a STOP and
-> >> POLICY_EXIT (triggered by hotplug, gov change, etc).
-> > 
-> > This sounds good but I couldn't prove it. Doing this on my dual core exynos
-> > doesn't give me that crash report and it should?
+> > The following patch adds the missing check.
 > 
-> Are you sure you're not seeing another lockdep warning?  That was my problem --
-> there was an xfs related lockdep warning which then resulted in lockdep being
-> disabled from that point on.
-> 
+>     OK, but this time you forgot your sign-off. :-)
 
-Are we talking about the lockdep splat or the crash that started
-this thread or something else? For the lockdep splat you need the
-corrected patch in this thread and the per policy governor flag.
-I'm not sure how to recreate the crash that started this thread.
+Also, shouldn't the added test be inside the unlikely() ?
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
