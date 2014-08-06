@@ -1,115 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbaHFHI5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 03:08:57 -0400
-Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:37427 "EHLO
-	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753446AbaHFHI4 (ORCPT
+	id S1754780AbaHFHJK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 03:09:10 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:49161 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446AbaHFHJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 03:08:56 -0400
-X-Sender-Id: kiran.padwal@smartplayin.com
-From: Kiran Padwal <kiran.padwal@smartplayin.com>
-To: wsa@the-dreams.de
-Cc: kiran.padwal@smartplayin.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] i2c: remove unnecessary 'else' after 'return' statement
-Date: Wed,  6 Aug 2014 12:36:05 +0530
-Message-Id: <1407308765-13869-1-git-send-email-kiran.padwal@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 6 Aug 2014 03:09:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <878un2lat1.wl%kuninori.morimoto.gx@gmail.com>
+References: <1404908623-909-1-git-send-email-geert+renesas@glider.be>
+	<1404908623-909-6-git-send-email-geert+renesas@glider.be>
+	<20140711091358.GK12420@verge.net.au>
+	<1405435735.28592.50.camel@rzhang1-toshiba>
+	<87mwcakpzw.wl%kuninori.morimoto.gx@renesas.com>
+	<CAMuHMdVHRcXYgCPtWcMzRvofp7OK3ugLW9ztOHM5ey3_atz6MA@mail.gmail.com>
+	<878un2lat1.wl%kuninori.morimoto.gx@gmail.com>
+Date: Wed, 6 Aug 2014 09:09:04 +0200
+X-Google-Sender-Auth: s_JmFqMpQ6QKON8sKdOmOzF3fBA
+Message-ID: <CAMuHMdV1PcH-Xcn9Qkc0GoLv7vg7roXfXh1f++Sn3bycAcsKww@mail.gmail.com>
+Subject: Re: [PATCH 05/13] thermal: rcar: Document SoC-specific bindings
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Simon Horman <horms@verge.net.au>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following warning reported by checkpatch.pl:
+Hi Morimoto-san,
 
-WARNING: else is not generally useful after a break or return
+On Wed, Aug 6, 2014 at 2:30 AM, Kuninori Morimoto
+<kuninori.morimoto.gx@gmail.com> wrote:
+>> >> > >  Required properties:
+>> >> > > -- compatible             : "renesas,rcar-thermal"
+>> >> > > +- compatible             : "renesas,thermal-<soctype>", "renesas,rcar-thermal"
+>> >> > > +                   as fallback.
+>> >> > > +                   Examples with soctypes are:
+>> >> > > +                     - "renesas,thermal-r8a73a4" (R-Mobile AP6)
+>> >> > > +                     - "renesas,thermal-r8a7779" (R-Car H1)
+>> >> > > +                     - "renesas,thermal-r8a7790" (R-Car H2)
+>> >> > > +                     - "renesas,thermal-r8a7791" (R-Car M2)
+>> >> > >  - reg                    : Address range of the thermal registers.
+>> >> > >                     The 1st reg will be recognized as common register
+>> >> > >                     if it has "interrupts".
+> (snip)
+>> One important thing to note in my patch description is "some of which
+>> are already in use.".
+>>
+>> $ git grep renesas,thermal -- arch/arm/boot/ | cat
+>> arch/arm/boot/dts/r8a7790.dtsi: compatible =
+>> "renesas,thermal-r8a7790", "renesas,rcar-thermal";
+>> arch/arm/boot/dts/r8a7791.dtsi: compatible =
+>> "renesas,thermal-r8a7791", "renesas,rcar-thermal";
+>> $
+>>
+>> So these 2 should be added to the documentation for sure.
+>> Adding the 2 others, and adding them to the respective DTSes (cfr. the
+>> other patches in the series) doesn't hurt, and will help if an incompatibility
+>> ever arises.
+>>
+>> (I assume the driver works with the other DTSes that already claim to have
+>> a device compatible with "renesas,rcar-thermal").
+>
+> I reconsidered about this.
+> Actually, I'm still wondering about this approach
+> because driver side doesn't have SoC specific matching table.
+> Of course SoC-specific name in .compatible can be backup plan for us,
+> but, we don't know it is 100% true.
+> (we might have new driver for some specific SoC, like R-Car DMA driver ?)
+>
+> Adding to SoC specific compatible name in SoC side DTSes are no problem,
+> it can be backup plan.
+> but, we can't say 100% true that <driver>.txt has SoC specific name list.
+> because, driver doesn't care about it today, and we don't know the future
 
-Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
----
- drivers/i2c/i2c-core.c |   28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+If the SoC-specific name is used in a DTS, it must[*] be documented in the
+bindings. Checkpatch.pl checks for that.
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 632057a..228bd04 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -351,8 +351,8 @@ static int i2c_device_pm_suspend(struct device *dev)
- 
- 	if (pm)
- 		return pm_generic_suspend(dev);
--	else
--		return i2c_legacy_suspend(dev, PMSG_SUSPEND);
-+
-+	return i2c_legacy_suspend(dev, PMSG_SUSPEND);
- }
- 
- static int i2c_device_pm_resume(struct device *dev)
-@@ -361,8 +361,8 @@ static int i2c_device_pm_resume(struct device *dev)
- 
- 	if (pm)
- 		return pm_generic_resume(dev);
--	else
--		return i2c_legacy_resume(dev);
-+
-+	return i2c_legacy_resume(dev);
- }
- 
- static int i2c_device_pm_freeze(struct device *dev)
-@@ -371,8 +371,8 @@ static int i2c_device_pm_freeze(struct device *dev)
- 
- 	if (pm)
- 		return pm_generic_freeze(dev);
--	else
--		return i2c_legacy_suspend(dev, PMSG_FREEZE);
-+
-+	return i2c_legacy_suspend(dev, PMSG_FREEZE);
- }
- 
- static int i2c_device_pm_thaw(struct device *dev)
-@@ -381,8 +381,8 @@ static int i2c_device_pm_thaw(struct device *dev)
- 
- 	if (pm)
- 		return pm_generic_thaw(dev);
--	else
--		return i2c_legacy_resume(dev);
-+
-+	return i2c_legacy_resume(dev);
- }
- 
- static int i2c_device_pm_poweroff(struct device *dev)
-@@ -391,8 +391,8 @@ static int i2c_device_pm_poweroff(struct device *dev)
- 
- 	if (pm)
- 		return pm_generic_poweroff(dev);
--	else
--		return i2c_legacy_suspend(dev, PMSG_HIBERNATE);
-+
-+	return i2c_legacy_suspend(dev, PMSG_HIBERNATE);
- }
- 
- static int i2c_device_pm_restore(struct device *dev)
-@@ -401,8 +401,8 @@ static int i2c_device_pm_restore(struct device *dev)
- 
- 	if (pm)
- 		return pm_generic_restore(dev);
--	else
--		return i2c_legacy_resume(dev);
-+
-+	return i2c_legacy_resume(dev);
- }
- #else /* !CONFIG_PM_SLEEP */
- #define i2c_device_pm_suspend	NULL
-@@ -622,8 +622,8 @@ static int i2c_trylock_adapter(struct i2c_adapter *adapter)
- 
- 	if (parent)
- 		return i2c_trylock_adapter(parent);
--	else
--		return rt_mutex_trylock(&adapter->bus_lock);
-+
-+	return rt_mutex_trylock(&adapter->bus_lock);
- }
- 
- /**
--- 
-1.7.9.5
+[*] The only exception is devices for which no driver exists yet. But then the
+    bindings are preliminary and in limbo.
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
