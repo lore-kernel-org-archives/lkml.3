@@ -1,68 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570AbaHFVaY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 17:30:24 -0400
-Received: from g2t2352.austin.hp.com ([15.217.128.51]:57496 "EHLO
-	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383AbaHFVaX (ORCPT
+	id S1754629AbaHFVa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 17:30:59 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58307 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754590AbaHFVa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 17:30:23 -0400
-Message-ID: <1407360614.3395.2.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [3.13.y.z extended stable] Patch "locking/mutex: Disable
- optimistic spinning on some architectures" has been added to staging queue
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andev <debiandev@gmail.com>
-Cc: Kamal Mostafa <kamal@canonical.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Vineet Gupta <vgupta@synopsys.com>, Jason Low <jason.low2@hp.com>,
-        Waiman Long <waiman.long@hp.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        John David Anglin <dave.anglin@bell.net>,
-        James Hogan <james.hogan@imgtec.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
-        sparclinux@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        kernel-team@lists.ubuntu.com
-Date: Wed, 06 Aug 2014 14:30:14 -0700
-In-Reply-To: <CAJUuVQ5OpNye8HAEw6x=owBB32pq-aLF7_Gqo493jDDHDahhRA@mail.gmail.com>
-References: <1407358496-23094-1-git-send-email-kamal@canonical.com>
-	 <CAJUuVQ5OpNye8HAEw6x=owBB32pq-aLF7_Gqo493jDDHDahhRA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Aug 2014 17:30:58 -0400
+Date: Wed, 6 Aug 2014 23:30:55 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Miguel Oliveira <cmroliv@gmail.com>, gulsah.1004@gmail.com,
+        peter.p.waskiewicz.jr@intel.com, kristina.martsenko@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: nokia_h4: nokia_core.c: use usleep_range()
+ instead of msleep()
+Message-ID: <20140806213055.GA26046@amd.pavel.ucw.cz>
+References: <1401445633-5290-1-git-send-email-cmroliv@gmail.com>
+ <20140530123023.GA10549@amd.pavel.ucw.cz>
+ <20140530155959.GA10682@kroah.com>
+ <201405301815.10811@pali>
+ <20140530163604.GA11943@kroah.com>
+ <DB71A450-EF1D-479F-9111-A36FF8EA89B2@holtmann.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DB71A450-EF1D-479F-9111-A36FF8EA89B2@holtmann.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-06 at 17:25 -0400, Andev wrote:
-> On Wed, Aug 6, 2014 at 4:54 PM, Kamal Mostafa <kamal@canonical.com> wrote:
-> > This is a note to let you know that I have just added a patch titled
-> >
-> >     locking/mutex: Disable optimistic spinning on some architectures
-> >
-> > to the linux-3.13.y-queue branch of the 3.13.y.z extended stable tree
-> > which can be found at:
-> >
-> >  http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.13.y-queue
-> >
-> > This patch is scheduled to be released in version 3.13.11.6.
-> >
+On Wed 2014-08-06 13:56:33, Marcel Holtmann wrote:
+> Hi Greg,
 > 
-> This patch is specifically for parisc, sparc32, tile32, metag-lock1,
-> arc-!llsc and hexagon none of which Ubuntu supports.
+> >>>>>>> Creating this patch for the Eudyptula Challenge.
+> >>>>>>> Replaced msleep() for a delay < 20ms with a
+> >>>>>>> usleep_range() between 10000us and 15000us. Also
+> >>>>>>> inserted a blank line after adeclaration.
+> >>>>>> 
+> >>>>>> So you are changing timings without testing. Plus,
+> >>>>>> burning CPU power instead of sleeping.
+> >>>>>> 
+> >>>>>> Seems you'll need another patch for the challenge :-).
+> >>>>> 
+> >>>>> I actually wonder if anybody is seriously working on this
+> >>>>> driver. My concern with the staging drivers has always
+> >>>>> been that we are quick with merging them when the work on
+> >>>>> getting them into upstream shape is actually hard.
+> >>>>> However reality is once they are in staging nobody is
+> >>>>> doing the work to clean them up and fix the issues.
+> >>>> 
+> >>>> There is active work on merging n900 changes.
+> >>> 
+> >>> Really?  Where?
+> >>> 
+> >> 
+> >> You can look at elinux wiki where is table how process is going:
+> >> http://elinux.org/N900
+> >> 
+> >> Also look at planed future list and its progress:
+> >> http://elinux.org/N900/Changelog
+> >> 
+> >> You can see that drivers are including step by step.
+> > 
+> > I'm not going to dig through random web pages, sorry.  If patches aren't
+> > sent to me for a driver, I consider it dead, that's only fair for me
+> > given my workload, don't you think?
+> > 
+> >>>> And no, it does not progress as quickly as I'd like, but
+> >>>> we'll get there. It is also requirement for n900 FM radio
+> >>>> receiving...
+> >>>> 
+> >>>>> Greg, instead of wasting our time with this, can we just
+> >>>>> remove this driver from staging.
+> >>>> 
+> >>>> Please don't.
+> >>> 
+> >>> As there has not been any real work on it since it has been
+> >>> merged, I don't see why I shouldn't remove it.  If you do get
+> >>> some work done on it, you can always revert the removal and
+> >>> continue on.  But the existance of code in staging that is
+> >>> not progressing forward at all is something that I don't like
+> >>> at all, and will be doing a large sweep of soon to remove.
+> >>> 
+> >>> thanks,
+> >>> 
+> >>> greg k-h
+> >> 
+> >> Just look how much time took to include my patch for radio-
+> >> bcm2048 (fm radio part of this chip) which fixing wrong overflow 
+> >> check. I sent it at the end of December and... yes it is still 
+> >> not included in linus tree. Now it is somethere in media tree and 
+> >> probably will be pulled in next merge window.
+> >> 
+> >> This means that it takes about half of year to include patches 
+> >> for these drivers.
+> > 
+> > Just because the media drivers take a long time to get fixes merged,
+> > don't use that as an excuse to not fix up the staging drivers.
+> > 
+> > In fact, it sounds like you have lots of time while that patch is
+> > getting merged, why not work on fixing up the staging driver?  :)
 > 
-> Why are you backporting this patch?
+> and 2 month later, we still have nothing accomplished with this driver.
+> 
+> So this driver is 6 month in staging and not a single commit to address anything in the TODO file. I only see pointless coding style change.
+> 
+> There is a reason why I dislike staging drivers. And this is exactly it. It gets treated as dumping ground. So can we please remove this driver now. Maybe someone finally wakes up and does their promised job.
+>
 
-Well 3.13.y.z isn't an Ubuntu kernel, its upstream, and those archs
-*are* supported.
+Yeah, so I clearly make a mistake of cleaning the driver up _before_
+merging it into staging.
 
+And yes, I'm currently trying to get 3.16 working in the qemu, which
+is prerequisite for any useful n900 work.
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
