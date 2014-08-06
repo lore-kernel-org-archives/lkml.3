@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113AbaHFORk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 10:17:40 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:33736 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148AbaHFORj (ORCPT
+	id S1753706AbaHFOST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 10:18:19 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:59951 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963AbaHFOSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 10:17:39 -0400
-Message-ID: <53E23900.3040007@linaro.org>
-Date: Wed, 06 Aug 2014 16:17:36 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 6 Aug 2014 10:18:17 -0400
+Date: Wed, 6 Aug 2014 15:18:14 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>, Dave Young <dyoung@redhat.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Mark Salter <msalter@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
+Subject: Re: [PATCH 1/2] UEFI arm64: add noefi boot param
+Message-ID: <20140806141814.GD15082@console-pimps.org>
+References: <20140806083825.GA31711@dhcp-16-198.nay.redhat.com>
+ <20140806130623.GI4179@bivouac.eciton.net>
+ <20140806132021.GB15082@console-pimps.org>
+ <20140806132941.GJ4179@bivouac.eciton.net>
+ <20140806140155.GC15082@console-pimps.org>
+ <CAKv+Gu8ey1iKu-_wS6yYaEXQaQMDXa+PF5Kiw+edA9a_OE1EAw@mail.gmail.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>,
-        Rafael J Wysocki <rafael.j.wysocki@intel.com>,
-        Nicolas Pitre <nico@linaro.org>
-CC: Mike Galbraith <mgalbraith@suse.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4] cpuidle: menu: Use ktime_to_us instead of reinventing
- the wheel
-References: <1407331161-4642-1-git-send-email-mgorman@suse.de> <1407331161-4642-3-git-send-email-mgorman@suse.de>
-In-Reply-To: <1407331161-4642-3-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKv+Gu8ey1iKu-_wS6yYaEXQaQMDXa+PF5Kiw+edA9a_OE1EAw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2014 03:19 PM, Mel Gorman wrote:
-> The ktime_to_us implementation is slightly better than the one implemented
-> in menu.c. Use it
->
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+On Wed, 06 Aug, at 04:10:45PM, Ard Biesheuvel wrote:
+> 
+> Shouldn't we clear the bit here if we failed to enable runtime
+> services for some reason? Other code may test the bit assuming that it
+> signifies that runtime services have been enabled successfully, while
+> this patch changes it to mean that we /intended/ to enable them, which
+> is not quite the same thing.
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-
-> ---
->   drivers/cpuidle/governors/menu.c | 5 +----
->   1 file changed, 1 insertion(+), 4 deletions(-)
->
-> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-> index 801b2ee..373278a 100644
-> --- a/drivers/cpuidle/governors/menu.c
-> +++ b/drivers/cpuidle/governors/menu.c
-> @@ -297,7 +297,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->   	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
->   	int i;
->   	unsigned int interactivity_req;
-> -	struct timespec t;
->
->   	if (data->needs_update) {
->   		menu_update(drv, dev);
-> @@ -311,9 +310,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->   		return 0;
->
->   	/* determine the expected residency time, round up */
-> -	t = ktime_to_timespec(tick_nohz_get_sleep_length());
-> -	data->next_timer_us =
-> -		t.tv_sec * USEC_PER_SEC + t.tv_nsec / NSEC_PER_USEC;
-> +	data->next_timer_us = ktime_to_us(tick_nohz_get_sleep_length());
->
->
->   	data->bucket = which_bucket(data->next_timer_us);
->
-
+Yep, good catch. We need to do something similar for efi_runtime_init()
+on x86 too.
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Matt Fleming, Intel Open Source Technology Center
