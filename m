@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233AbaHFAz6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 20:55:58 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:40274 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaHFAz4 (ORCPT
+	id S1755195AbaHFA5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 20:57:23 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:13297 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751081AbaHFA5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 20:55:56 -0400
-Message-ID: <53E17D15.3090900@gmail.com>
-Date: Tue, 05 Aug 2014 17:55:49 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 5 Aug 2014 20:57:22 -0400
+Date: Tue, 5 Aug 2014 20:57:11 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
+ waiting for RCU-tasks
+Message-ID: <20140805205711.7a52076c@gandalf.local.home>
+In-Reply-To: <20140802225857.GC8101@linux.vnet.ibm.com>
+References: <20140731215445.GA21933@linux.vnet.ibm.com>
+	<1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	<1406843709-23396-3-git-send-email-paulmck@linux.vnet.ibm.com>
+	<20140801150926.GA845@redhat.com>
+	<20140801183251.GJ4784@linux.vnet.ibm.com>
+	<20140801194417.GA27141@linux.vnet.ibm.com>
+	<20140802144719.GA18018@redhat.com>
+	<20140802225857.GC8101@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net
-Subject: Re: [request for help] tty: serial: kgdb: fix msm_serial for kgdb
-References: <53E02C7C.4090206@gmail.com> <53E03475.6070007@codeaurora.org> <53E03CEC.3060108@gmail.com> <53E12F04.3000509@codeaurora.org> <53E16E7C.8050302@codeaurora.org>
-In-Reply-To: <53E16E7C.8050302@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/5/2014 4:53 PM, Stephen Boyd wrote:
-> On 08/05/14 12:22, Stephen Boyd wrote:
->>
->> I tried it and it doesn't work either. Typing lots of characters finally
->> unjams it like you see on 1.4 hardware.
->>
+On Sat, 2 Aug 2014 15:58:57 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+
+> On Sat, Aug 02, 2014 at 04:47:19PM +0200, Oleg Nesterov wrote:
+> > On 08/01, Paul E. McKenney wrote:
+> > >
+> > > On Fri, Aug 01, 2014 at 11:32:51AM -0700, Paul E. McKenney wrote:
+> > > > On Fri, Aug 01, 2014 at 05:09:26PM +0200, Oleg Nesterov wrote:
+> > > > > On 07/31, Paul E. McKenney wrote:
+> > > > > >
+> > > > > > +void synchronize_rcu_tasks(void)
+> > > > > > +{
+> > > > > > +	/* Complain if the scheduler has not started.  */
+> > > > > > +	rcu_lockdep_assert(!rcu_scheduler_active,
+> > > > > > +			   "synchronize_rcu_tasks called too soon");
+> > > > > > +
+> > > > > > +	/* Wait for the grace period. */
+> > > > > > +	wait_rcu_gp(call_rcu_tasks);
+> > > > > > +}
+> > > > >
+> > > > > Btw, what about CONFIG_PREEMPT=n ?
+> > > > >
+> > > > > I mean, can't synchronize_rcu_tasks() be synchronize_sched() in this
+> > > > > case?
+> > > >
+> > > > Excellent point, indeed it can!
+> > > >
+> > > > And if I do it right, it will make CONFIG_TASKS_RCU=y safe for kernel
+> > > > tinification.  ;-)
+> > >
+> > > Unless, that is, we need to wait for trampolines in the idle loop...
+> > >
+> > > Sounds like a question for Steven.  ;-)
+> > 
+> > Sure, but the full blown synchronize_rcu_tasks() can't handle the idle threads
+> > anyway. An idle thread can not be deactivated and for_each_process() can't see
+> > it anyway.
 > 
-> Can you try this? It seems to work for me on both 1.3 and 1.4 hardware
+> Indeed, if idle threads need to be tracked, their tracking will need to
+> be at least partially special-cased.
+> 
 
-Yes, much better getting rid of the single character mode!  Works for me
-on the dragonboard (1.4 hardware).
+Yeah, idle threads can be affected by the trampolines. That is, we can
+still hook a trampoline to some function in the idle loop.
 
-Reviewed-by: Frank Rowand <frank.rowand@sonymobile.com>
-Tested-by: Frank Rowand <frank.rowand@sonymobile.com>
+But we should be able to make the hardware call that puts the CPU to
+sleep a quiescent state too. May need to be arch dependent. :-/
 
-Thanks for figuring this out.
-
-I'll send a patch to handle sysrq after I see this patch upstream.
-
--Frank
+-- Steve
