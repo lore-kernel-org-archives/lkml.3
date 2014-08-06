@@ -1,89 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597AbaHFWqY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 18:46:24 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:59229 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754063AbaHFWqW (ORCPT
+	id S1754326AbaHFWsM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 18:48:12 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:47796 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472AbaHFWsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 18:46:22 -0400
+	Wed, 6 Aug 2014 18:48:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <1406197295-10604-3-git-send-email-caesar.wang@rock-chips.com>
-References: <1406197295-10604-1-git-send-email-caesar.wang@rock-chips.com>
-	<1406197295-10604-3-git-send-email-caesar.wang@rock-chips.com>
-Date: Wed, 6 Aug 2014 15:46:21 -0700
-X-Google-Sender-Auth: Rcmb7P-5ScWd8iRrdIr4QL9jyn8
-Message-ID: <CAD=FV=V4Kp-H3CcAKZPV1jBnYX+Ntwvxx6RB13TLxS5RRPHTWA@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] pwm: rockchip: Added to support for RK3288 SoC
-From: Doug Anderson <dianders@chromium.org>
-To: Caesar Wang <caesar.wang@rock-chips.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>, b.galvani@gmail.com,
-        Rob Herring <robh+dt@kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Kumar Gala <galak@codeaurora.org>, Eddie Cai <cf@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        Addy Ke <addy.ke@rock-chips.com>,
-        =?UTF-8?B?6ZmI5riQ6aOe?= <cjf@rock-chips.com>,
-        han jiang <hj@rock-chips.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-pwm <linux-pwm@vger.kernel.org>,
+In-Reply-To: <CAD=FV=V7TuqcVouC3KfPyebLqbVOJNhu-4HAVx0=+9_ny1RrOA@mail.gmail.com>
+References: <1407286910-30906-1-git-send-email-kever.yang@rock-chips.com>
+	<1407286910-30906-3-git-send-email-kever.yang@rock-chips.com>
+	<CAD=FV=V7TuqcVouC3KfPyebLqbVOJNhu-4HAVx0=+9_ny1RrOA@mail.gmail.com>
+Date: Wed, 6 Aug 2014 17:48:08 -0500
+Message-ID: <CADhT+weuBWygDShZ5wgyozZ9zrm+EB+rhOZegXHjRLKLja2GXw@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] usb: dwc2: add 'mode' which based on Kconfig
+ select or dts setting
+From: Dinh Nguyen <dinh.linux@gmail.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Kever Yang <kever.yang@rock-chips.com>,
+        Paul Zimmerman <paulz@synopsys.com>, Heiko Stuebner <heiko@sntech.de>,
+        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Olof Johansson <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>, wulf <wulf@rock-chips.com>,
+        lyz <lyz@rock-chips.com>, Jingoo Han <jg1.han@samsung.com>,
+        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+        Dinh Nguyen <dinguyen@altera.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Caesar,
+On Wed, Aug 6, 2014 at 5:24 PM, Doug Anderson <dianders@chromium.org> wrote:
+> Kever,
+>
+> On Tue, Aug 5, 2014 at 6:01 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
+>> According to the "dr_mode", the otg controller can work as
+>> device role and host role. Some boards always want to use host mode
+>> and some other boards want to use gadget mode. We use the dts setting
+>> to set dwc2's mode, rather than fixing it to whatever hardware says.
+>>
+>> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+>> Acked-by: Paul Zimmerman <paulz@synopsys.com>
+>> ---
+>>
+>> Changes in v4:
+>> - From Doug's suggestion:
+>>  -- remove dr_mode init from Kconfig code
+>>  -- change the commit meesage
+>>
+>> Changes in v3:
+>> - fix the odd spacing in dwc2_hsotg struct
+>> - From Jingoo's suggestion:
+>>     change the commit message
+>> - add dr_mode init from Kconfig
+>>
+>> Changes in v2:
+>> - put spaces around '+' operator
+>> - expand the comment for dr_mode
+>> - handle dr_mode is USB_DR_MODE_OTG
+>>
+>>  drivers/usb/dwc2/core.c     | 18 ++++++++++++++++++
+>>  drivers/usb/dwc2/core.h     |  5 +++++
+>>  drivers/usb/dwc2/platform.c |  4 ++++
+>>  3 files changed, 27 insertions(+)
+>
+> I think this patch still makes sense even though we don't have a
+> combined driver yet.  Perhaps Paul or Dihn can confirm.
+>
 
-On Thu, Jul 24, 2014 at 3:21 AM, Caesar Wang <caesar.wang@rock-chips.com> wrote:
-> +static const struct rockchip_pwm_data pwm_data_v1 = {
-> +       .regs.duty = PWM_HRC,
-> +       .regs.period = PWM_LRC,
-> +       .regs.cntr = PWM_CNTR,
-> +       .regs.ctrl = PWM_CTRL,
-> +       .prescaler = PRESCALER,
-> +       .set_enable = rockchip_pwm_set_enable_v1,
-> +};
-> +
-> +static const struct rockchip_pwm_data pwm_data_v2 = {
-> +       .regs.duty = PWM_LRC,
-> +       .regs.period = PWM_HRC,
-> +       .regs.cntr = PWM_CNTR,
-> +       .regs.ctrl = PWM_CTRL,
-> +       .prescaler = PRESCALER-1,
-> +       .set_enable = rockchip_pwm_set_enable_v2,
-> +};
-> +
-> +static const struct rockchip_pwm_data pwm_data_vop = {
-> +       .regs.duty = PWM_LRC,
-> +       .regs.period = PWM_HRC,
-> +       .regs.cntr = PWM_CTRL,
-> +       .regs.ctrl = PWM_CNTR,
+I think this looks fine to me. I will rebase my v3 on top of this patch.
 
-Did you really mean to flip CTRL and CNTR here?  If so, that's super
-confusing and deserves a comment.  AKA, I think the above should not
-be:
+Dinh
 
- +       .regs.cntr = PWM_CTRL,
- +       .regs.ctrl = PWM_CNTR,
-
-...but should be
-
- +       .regs.cntr = PWM_CNTR,
- +       .regs.ctrl = PWM_CTRL,
-
-If you didn't mean to flip CTRL and CNTR here, then just get rid of
-pwm_data_vop and refer to pwm_data_v2.  In fact, I'd suggest that you
-totally remove the "rockchip,vop-pwm" since there's nothing different
-between "rockchip,rk3288-pwm" and "rockchip,vop-pwm".
-
-
-Have you validated Thierry's suggestion to allow you to access your
-memory range?
-
--Doug
+> We could potentially do something based on KConfig (like you did in
+> patch set #3), but it wouldn't really make sense to do that until
+> after Dihn's work lands.
+>
+>
+>> diff --git a/drivers/usb/dwc2/core.c b/drivers/usb/dwc2/core.c
+>> index 27d2c9b..738bec2 100644
+>> --- a/drivers/usb/dwc2/core.c
+>> +++ b/drivers/usb/dwc2/core.c
+>> @@ -118,6 +118,7 @@ static int dwc2_core_reset(struct dwc2_hsotg *hsotg)
+>>  {
+>>         u32 greset;
+>>         int count = 0;
+>> +       u32 gusbcfg;
+>>
+>>         dev_vdbg(hsotg->dev, "%s()\n", __func__);
+>>
+>> @@ -148,6 +149,23 @@ static int dwc2_core_reset(struct dwc2_hsotg *hsotg)
+>>                 }
+>>         } while (greset & GRSTCTL_CSFTRST);
+>>
+>> +       if (hsotg->dr_mode == USB_DR_MODE_HOST) {
+>> +               gusbcfg = readl(hsotg->regs + GUSBCFG);
+>> +               gusbcfg &= ~GUSBCFG_FORCEDEVMODE;
+>> +               gusbcfg |= GUSBCFG_FORCEHOSTMODE;
+>> +               writel(gusbcfg, hsotg->regs + GUSBCFG);
+>> +       } else if (hsotg->dr_mode == USB_DR_MODE_PERIPHERAL) {
+>> +               gusbcfg = readl(hsotg->regs + GUSBCFG);
+>> +               gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
+>> +               gusbcfg |= GUSBCFG_FORCEDEVMODE;
+>> +               writel(gusbcfg, hsotg->regs + GUSBCFG);
+>> +       } else if (hsotg->dr_mode == USB_DR_MODE_OTG) {
+>> +               gusbcfg = readl(hsotg->regs + GUSBCFG);
+>> +               gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
+>> +               gusbcfg &= ~GUSBCFG_FORCEDEVMODE;
+>> +               writel(gusbcfg, hsotg->regs + GUSBCFG);
+>
+> I think the third case here won't be too useful until the combined
+> driver, but it shouldn't hurt, right?
+>
+>
+> -Doug
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
