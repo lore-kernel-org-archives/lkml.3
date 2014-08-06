@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113AbaHFOgg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 10:36:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34980 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552AbaHFOgf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755451AbaHFOgs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 10:36:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24079 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754225AbaHFOgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Aug 2014 10:36:35 -0400
-Date: Wed, 6 Aug 2014 07:36:01 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "oort10@gmail.com" <oort10@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] staging:r8190: coding style: Fixed checkpatch
- reported Error
-Message-ID: <20140806143601.GB13552@kroah.com>
-References: <1406785411-12538-1-git-send-email-sanjeev_sharma@mentor.com>
- <1406785411-12538-4-git-send-email-sanjeev_sharma@mentor.com>
- <FDC088D3B5555644AE135ED28A7ABDE94DF1BA98@EU-MBX-02.mgc.mentorg.com>
+Date: Wed, 6 Aug 2014 10:36:21 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: a.p.zijlstra@chello.nl
+Subject: perf related boot hang.
+Message-ID: <20140806143621.GA13832@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, a.p.zijlstra@chello.nl
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <FDC088D3B5555644AE135ED28A7ABDE94DF1BA98@EU-MBX-02.mgc.mentorg.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 09:33:56AM +0000, Sharma, Sanjeev wrote:
-> Hello All,
-> 
-> I have submitted few patches last week and also get reply from Greg that patches will show up in linux-next tree and in parallel I need to submit new patches  and now Looks like I need to
-> Sync my tree with linux-next tree before start working on New set of change and as soon as I am pulling change I always get conflicts.
-> 
-> Anyone has idea who to overcome this problem ?
+On Linus current tree, when I cold-boot one of my boxes, it locks up
+during boot up with this trace..
 
-Use a separate branch for your work, and also never use 'git pull' with
-linux-next, that just will not work at all.
+Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 2
+CPU: 2 PID: 577 Comm: in:imjournal Not tainted 3.16.0+ #33
+ ffff880244c06c88 000000008b73013e ffff880244c06bf0 ffffffffb47ee207
+ ffffffffb4c51118 ffff880244c06c78 ffffffffb47ebcf8 0000000000000010
+ ffff880244c06c88 ffff880244c06c20 000000008b73013e 0000000000000000
+Call Trace:
+ <NMI>  [<ffffffffb47ee207>] dump_stack+0x4e/0x7a
+ [<ffffffffb47ebcf8>] panic+0xd4/0x207
+ [<ffffffffb4145448>] watchdog_overflow_callback+0x118/0x120
+ [<ffffffffb4186f0e>] __perf_event_overflow+0xae/0x350
+ [<ffffffffb4185380>] ? perf_event_task_disable+0xa0/0xa0
+ [<ffffffffb401a4ef>] ? x86_perf_event_set_period+0xbf/0x150
+ [<ffffffffb4187d34>] perf_event_overflow+0x14/0x20
+ [<ffffffffb40203a6>] intel_pmu_handle_irq+0x206/0x410
+ [<ffffffffb401939b>] perf_event_nmi_handler+0x2b/0x50
+ [<ffffffffb4007b72>] nmi_handle+0xd2/0x390
+ [<ffffffffb4007aa5>] ? nmi_handle+0x5/0x390
+ [<ffffffffb40d8301>] ? lock_acquired+0x131/0x450
+ [<ffffffffb4008062>] default_do_nmi+0x72/0x1c0
 
-greg k-h
+
+If I reset it, it then seems to always boot up fine.
+
+	Dave
