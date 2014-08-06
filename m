@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392AbaHFNmC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 09:42:02 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51596 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752897AbaHFNl7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 09:41:59 -0400
-From: Punit Agrawal <punit.agrawal@arm.com>
-To: linux-pm@vger.kernel.org
-Cc: linux-samsung-soc@vger.kernel.org, orjan.eide@arm.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/2] Convert exynos PPMU driver to be built as module
-References: <1405692594-19352-1-git-send-email-punit.agrawal@arm.com>
-Date: Wed, 06 Aug 2014 14:41:26 +0100
-In-Reply-To: <1405692594-19352-1-git-send-email-punit.agrawal@arm.com> (Punit
-	Agrawal's message of "Fri, 18 Jul 2014 15:09:52 +0100")
-Message-ID: <9hhvbq54tx5.fsf@arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753534AbaHFNmG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 09:42:06 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:18960 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612AbaHFNmB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 09:42:01 -0400
+Message-ID: <53E23058.3030206@huawei.com>
+Date: Wed, 6 Aug 2014 21:40:40 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Will Deacon <will.deacon@arm.com>, <linux-kernel@vger.kernel.org>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        Li Zefan <lizefan@huawei.com>, <davem@davemloft.net>,
+        <linux-arm-kernel@lists.infradead.org>, <peifeiyue@huawei.com>
+Subject: Re: [RFC PATCH] kprobes: arm: enable OPTPROBES for arm 32
+References: <1407223697-74911-1-git-send-email-wangnan0@huawei.com>	 <53E1B2A0.1040807@hitachi.com> <1407332208.3006.13.camel@linaro1.home>
+In-Reply-To: <1407332208.3006.13.camel@linaro1.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Punit Agrawal <punit.agrawal@arm.com> writes:
+On 2014/8/6 21:36, Jon Medhurst (Tixy) wrote:
+> On Wed, 2014-08-06 at 13:44 +0900, Masami Hiramatsu wrote:
+>> (2014/08/05 16:28), Wang Nan wrote
+> [...]
+>>> +asm (
+>>> +			".global optprobe_template_entry\n"
+>>> +			"optprobe_template_entry:\n"
+>>> +#ifndef CONFIG_THUMB
+>>> +			"	sub	sp, sp, #80\n"
+>>> +			"	stmia	sp, {r0 - r14} \n"
+>>> +			"	add	r3, sp, #80\n"
+>>> +			"	str	r3, [sp, #52]\n"
+>>> +			"	mrs	r4, cpsr\n"
+>>> +			"	str	r4, [sp, #64]\n"
+>>> +			"	mov	r1, sp\n"
+>>> +			"	ldr	r0, 1f\n"
+>>> +			"	ldr	r2, 2f\n"
+>>> +			"	blx	r2\n"
+>>> +			"	ldr	r1, [sp, #64]\n"
+>>> +			"	msr	cpsr_fs, r1\n"
+>>> +			"	ldmia	sp, {r0 - r15}\n"
+>>> +			".global optprobe_template_val\n"
+>>> +			"optprobe_template_val:\n"
+>>> +			"1:	nop\n"
+>>> +			".global optprobe_template_call\n"
+>>> +			"optprobe_template_call:\n"
+>>> +			"2:	nop\n"
+>>> +#else /* CONFIG_THUMB */
+>>> +# error optprobe for thumb is not supported.
+>>
+>> Can we set CONFIG_THUMB=y without CONFIG_THUMB2_KERNEL ?
+> 
+> Yes, CONFIG_THUMB is for supporting userside Thumb code,
+> CONFIG_THUMB2_KERNEL is for building the kernel for Thumb and the
+> options are orthogonal. So I don't think kprobes code should be testing
+> CONFIG_THUMB as it doesn't deal with userside.
+> 
 
-> Hi,
->
-> There's no reason why the exynos PPMU can't be built as a module
-> except you need -
->
-> - The first patch exports the functions that are needed to build
-> devfreq drivers as modules.
->
-> - The second patch then converts the exynos PPMU devfreq driver to be
->   built as a module.
->
+You are correct. This is my mistake.
 
-Ping!
 
-> Compile tested only.
->
-> Thanks
->
-> Punit Agrawal (1):
->   PM / devfreq: exynos: Enable building exynos PPMU as module
->
-> Ørjan Eide (1):
->   PM / devfreq: Export helper functions for drivers
->
->  drivers/devfreq/Kconfig              |    2 +-
->  drivers/devfreq/devfreq.c            |    3 +++
->  drivers/devfreq/exynos/exynos_ppmu.c |    3 +++
->  3 files changed, 7 insertions(+), 1 deletion(-)
