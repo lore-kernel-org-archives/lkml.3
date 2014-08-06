@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283AbaHFHLX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 03:11:23 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36077 "EHLO
+	id S1755245AbaHFHLW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 03:11:22 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36082 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446AbaHFHLS (ORCPT
+	with ESMTP id S1753799AbaHFHLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Aug 2014 03:11:18 -0400
 X-Original-SENDERIP: 10.177.220.145
@@ -29,9 +29,9 @@ Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
         Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 2/8] mm/page_alloc: correct to clear guard attribute in DEBUG_PAGEALLOC
-Date: Wed,  6 Aug 2014 16:18:30 +0900
-Message-Id: <1407309517-3270-5-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 1/8] mm/page_alloc: correct to clear guard attribute in DEBUG_PAGEALLOC
+Date: Wed,  6 Aug 2014 16:18:27 +0900
+Message-Id: <1407309517-3270-2-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -61,7 +61,7 @@ Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
  1 file changed, 16 insertions(+), 13 deletions(-)
 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 44672dc..3e1e344 100644
+index b99643d4..e6fee4b 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
 @@ -441,18 +441,28 @@ static int __init debug_guardpage_minorder_setup(char *buf)
