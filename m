@@ -1,247 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259AbaHFMgj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 08:36:39 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:52959 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363AbaHFMgh (ORCPT
+	id S1755124AbaHFMk2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 08:40:28 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:37806 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064AbaHFMk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 08:36:37 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, agraf@suse.de, paulus@samba.org,
-        kvm-ppc@vger.kernel.org
-Subject: [PATCH] KVM: Move more code under CONFIG_HAVE_KVM_IRQFD
-Date: Wed,  6 Aug 2014 14:36:28 +0200
-Message-Id: <1407328588-14701-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Wed, 6 Aug 2014 08:40:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140806083825.GA31711@dhcp-16-198.nay.redhat.com>
+References: <20140806083825.GA31711@dhcp-16-198.nay.redhat.com>
+Date: Wed, 6 Aug 2014 14:40:25 +0200
+Message-ID: <CAKv+Gu83+OtTkM+tEkB4AKpqHg2qGXtfAxC-pQq0u9ez+VjwaA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] UEFI arm64: add noefi boot param
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Mark Salter <msalter@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commits e4d57e1ee1ab (KVM: Move irq notifier implementation into
-eventfd.c, 2014-06-30) included the irq notifier code unconditionally
-in eventfd.c, while it was under CONFIG_HAVE_KVM_IRQCHIP before.
+On 6 August 2014 10:38, Dave Young <dyoung@redhat.com> wrote:
+>
+> Adding a noefi boot param like in X86 to disable efi runtime services support.
+>
+> This will be useful for debugging uefi problems. Also it will be useful
+> for later kexec/kdump work. Kexec on uefi support in X86 depends on a fixed vm
+> area specific for uefi runtime 1:1 mapping, kernel will switch to a different
+> page table for any uefi runtime callback in virtual mode. In arm64 similar
+> work probably is necessary. But kexec boot will just works with 'noefi' with
+> the limitaion of lacking runtime services. The runtime services is not critical
+> for kdump kernel for now. So as for kexec/kdump just leave the 1:1 mapping a
+> future work.
+>
 
-Similarly, commit 297e21053a52 (KVM: Give IRQFD its own separate enabling
-Kconfig option, 2014-06-30) moved code from CONFIG_HAVE_IRQ_ROUTING
-to CONFIG_HAVE_KVM_IRQFD but forgot to move the pieces that used to be
-under CONFIG_HAVE_KVM_IRQCHIP.
+Can we find a better name? You will still be using the UEFI memory map
+rather than the DT memory nodes (which will have been deleted by the
+stub), and things like SMBIOS and ACPI that hinge off UEFI remain
+enabled as well.
 
-Together, this broke compilation without CONFIG_KVM_XICS.  Fix by adding
-or changing the #ifdefs so that they point at CONFIG_HAVE_KVM_IRQFD.
+Other than that, the patch looks fine to me
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- include/linux/kvm_host.h   |   2 +
- include/trace/events/kvm.h |   8 +--
- virt/kvm/eventfd.c         | 122 ++++++++++++++++++++++-----------------------
- virt/kvm/kvm_main.c        |   2 +
- 4 files changed, 69 insertions(+), 65 deletions(-)
+Regards,
+Ard.
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 8593d2e61cbf..a4c33b34fe3f 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -388,6 +388,8 @@ struct kvm {
- 	 */
- 	struct kvm_irq_routing_table __rcu *irq_routing;
- 	struct hlist_head mask_notifier_list;
-+#endif
-+#ifdef CONFIG_HAVE_KVM_IRQFD
- 	struct hlist_head irq_ack_notifier_list;
- #endif
- 
-diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
-index 131a0bda7aec..908925ace776 100644
---- a/include/trace/events/kvm.h
-+++ b/include/trace/events/kvm.h
-@@ -37,7 +37,7 @@ TRACE_EVENT(kvm_userspace_exit,
- 		  __entry->errno < 0 ? -__entry->errno : __entry->reason)
- );
- 
--#if defined(CONFIG_HAVE_KVM_IRQCHIP)
-+#if defined(CONFIG_HAVE_KVM_IRQFD)
- TRACE_EVENT(kvm_set_irq,
- 	TP_PROTO(unsigned int gsi, int level, int irq_source_id),
- 	TP_ARGS(gsi, level, irq_source_id),
-@@ -57,7 +57,7 @@ TRACE_EVENT(kvm_set_irq,
- 	TP_printk("gsi %u level %d source %d",
- 		  __entry->gsi, __entry->level, __entry->irq_source_id)
- );
--#endif
-+#endif /* defined(CONFIG_HAVE_KVM_IRQFD) */
- 
- #if defined(__KVM_HAVE_IOAPIC)
- #define kvm_deliver_mode		\
-@@ -124,7 +124,7 @@ TRACE_EVENT(kvm_msi_set_irq,
- 
- #endif /* defined(__KVM_HAVE_IOAPIC) */
- 
--#if defined(CONFIG_HAVE_KVM_IRQCHIP)
-+#if defined(CONFIG_HAVE_KVM_IRQFD)
- 
- TRACE_EVENT(kvm_ack_irq,
- 	TP_PROTO(unsigned int irqchip, unsigned int pin),
-@@ -149,7 +149,7 @@ TRACE_EVENT(kvm_ack_irq,
- #endif
- );
- 
--#endif /* defined(CONFIG_HAVE_KVM_IRQCHIP) */
-+#endif /* defined(CONFIG_HAVE_KVM_IRQFD) */
- 
- 
- 
-diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-index f5f61548f60d..3c5981c87c3f 100644
---- a/virt/kvm/eventfd.c
-+++ b/virt/kvm/eventfd.c
-@@ -445,6 +445,67 @@ out:
- 	kfree(irqfd);
- 	return ret;
- }
-+
-+bool kvm_irq_has_notifier(struct kvm *kvm, unsigned irqchip, unsigned pin)
-+{
-+	struct kvm_irq_ack_notifier *kian;
-+	int gsi, idx;
-+
-+	idx = srcu_read_lock(&kvm->irq_srcu);
-+	gsi = kvm_irq_map_chip_pin(kvm, irqchip, pin);
-+	if (gsi != -1)
-+		hlist_for_each_entry_rcu(kian, &kvm->irq_ack_notifier_list,
-+					 link)
-+			if (kian->gsi == gsi) {
-+				srcu_read_unlock(&kvm->irq_srcu, idx);
-+				return true;
-+			}
-+
-+	srcu_read_unlock(&kvm->irq_srcu, idx);
-+
-+	return false;
-+}
-+EXPORT_SYMBOL_GPL(kvm_irq_has_notifier);
-+
-+void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin)
-+{
-+	struct kvm_irq_ack_notifier *kian;
-+	int gsi, idx;
-+
-+	trace_kvm_ack_irq(irqchip, pin);
-+
-+	idx = srcu_read_lock(&kvm->irq_srcu);
-+	gsi = kvm_irq_map_chip_pin(kvm, irqchip, pin);
-+	if (gsi != -1)
-+		hlist_for_each_entry_rcu(kian, &kvm->irq_ack_notifier_list,
-+					 link)
-+			if (kian->gsi == gsi)
-+				kian->irq_acked(kian);
-+	srcu_read_unlock(&kvm->irq_srcu, idx);
-+}
-+
-+void kvm_register_irq_ack_notifier(struct kvm *kvm,
-+				   struct kvm_irq_ack_notifier *kian)
-+{
-+	mutex_lock(&kvm->irq_lock);
-+	hlist_add_head_rcu(&kian->link, &kvm->irq_ack_notifier_list);
-+	mutex_unlock(&kvm->irq_lock);
-+#ifdef __KVM_HAVE_IOAPIC
-+	kvm_vcpu_request_scan_ioapic(kvm);
-+#endif
-+}
-+
-+void kvm_unregister_irq_ack_notifier(struct kvm *kvm,
-+				    struct kvm_irq_ack_notifier *kian)
-+{
-+	mutex_lock(&kvm->irq_lock);
-+	hlist_del_init_rcu(&kian->link);
-+	mutex_unlock(&kvm->irq_lock);
-+	synchronize_srcu(&kvm->irq_srcu);
-+#ifdef __KVM_HAVE_IOAPIC
-+	kvm_vcpu_request_scan_ioapic(kvm);
-+#endif
-+}
- #endif
- 
- void
-@@ -867,64 +928,3 @@ kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
- 
- 	return kvm_assign_ioeventfd(kvm, args);
- }
--
--bool kvm_irq_has_notifier(struct kvm *kvm, unsigned irqchip, unsigned pin)
--{
--	struct kvm_irq_ack_notifier *kian;
--	int gsi, idx;
--
--	idx = srcu_read_lock(&kvm->irq_srcu);
--	gsi = kvm_irq_map_chip_pin(kvm, irqchip, pin);
--	if (gsi != -1)
--		hlist_for_each_entry_rcu(kian, &kvm->irq_ack_notifier_list,
--					 link)
--			if (kian->gsi == gsi) {
--				srcu_read_unlock(&kvm->irq_srcu, idx);
--				return true;
--			}
--
--	srcu_read_unlock(&kvm->irq_srcu, idx);
--
--	return false;
--}
--EXPORT_SYMBOL_GPL(kvm_irq_has_notifier);
--
--void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin)
--{
--	struct kvm_irq_ack_notifier *kian;
--	int gsi, idx;
--
--	trace_kvm_ack_irq(irqchip, pin);
--
--	idx = srcu_read_lock(&kvm->irq_srcu);
--	gsi = kvm_irq_map_chip_pin(kvm, irqchip, pin);
--	if (gsi != -1)
--		hlist_for_each_entry_rcu(kian, &kvm->irq_ack_notifier_list,
--					 link)
--			if (kian->gsi == gsi)
--				kian->irq_acked(kian);
--	srcu_read_unlock(&kvm->irq_srcu, idx);
--}
--
--void kvm_register_irq_ack_notifier(struct kvm *kvm,
--				   struct kvm_irq_ack_notifier *kian)
--{
--	mutex_lock(&kvm->irq_lock);
--	hlist_add_head_rcu(&kian->link, &kvm->irq_ack_notifier_list);
--	mutex_unlock(&kvm->irq_lock);
--#ifdef __KVM_HAVE_IOAPIC
--	kvm_vcpu_request_scan_ioapic(kvm);
--#endif
--}
--
--void kvm_unregister_irq_ack_notifier(struct kvm *kvm,
--				    struct kvm_irq_ack_notifier *kian)
--{
--	mutex_lock(&kvm->irq_lock);
--	hlist_del_init_rcu(&kian->link);
--	mutex_unlock(&kvm->irq_lock);
--	synchronize_srcu(&kvm->irq_srcu);
--#ifdef __KVM_HAVE_IOAPIC
--	kvm_vcpu_request_scan_ioapic(kvm);
--#endif
--}
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index a69a623938b8..33712fb26eb1 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -465,6 +465,8 @@ static struct kvm *kvm_create_vm(unsigned long type)
- 
- #ifdef CONFIG_HAVE_KVM_IRQCHIP
- 	INIT_HLIST_HEAD(&kvm->mask_notifier_list);
-+#endif
-+#ifdef CONFIG_HAVE_KVM_IRQFD
- 	INIT_HLIST_HEAD(&kvm->irq_ack_notifier_list);
- #endif
- 
--- 
-1.8.3.1
 
+> Signed-off-by: Dave Young <dyoung@redhat.com>
+> ---
+>  arch/arm64/kernel/efi.c |   17 ++++++++++++++---
+>  1 file changed, 14 insertions(+), 3 deletions(-)
+>
+> Index: linux-2.6/arch/arm64/kernel/efi.c
+> ===================================================================
+> --- linux-2.6.orig/arch/arm64/kernel/efi.c
+> +++ linux-2.6/arch/arm64/kernel/efi.c
+> @@ -31,6 +31,14 @@ static efi_runtime_services_t *runtime;
+>
+>  static u64 efi_system_table;
+>
+> +static bool disable_runtime __initdata = false;
+> +static int __init setup_noefi(char *arg)
+> +{
+> +       disable_runtime = true;
+> +       return 0;
+> +}
+> +early_param("noefi", setup_noefi);
+> +
+>  static int uefi_debug __initdata;
+>  static int __init uefi_debug_setup(char *str)
+>  {
+> @@ -391,11 +399,14 @@ static int __init arm64_enter_virtual_mo
+>                 return -1;
+>         }
+>
+> -       pr_info("Remapping and enabling EFI services.\n");
+> -
+> -       /* replace early memmap mapping with permanent mapping */
+>         mapsize = memmap.map_end - memmap.map;
+>         early_memunmap(memmap.map, mapsize);
+> +
+> +       if (disable_runtime)
+> +               return -ENODEV;
+> +
+> +       pr_info("Remapping and enabling EFI services.\n");
+> +       /* replace early memmap mapping with permanent mapping */
+>         memmap.map = (__force void *)ioremap_cache((phys_addr_t)memmap.phys_map,
+>                                                    mapsize);
+>         memmap.map_end = memmap.map + mapsize;
