@@ -1,90 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128AbaHFOFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 10:05:25 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:41134 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751813AbaHFOFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 10:05:24 -0400
-X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Aug 2014 10:05:24 EDT
-From: Gene Heskett <gheskett@wdtv.com>
-To: "Lan, Tianyu" <tianyu.lan@intel.com>
-Subject: Re: [PATCH] X86/CPU: Avoid 100ms sleep for cpu offline  during S3
-Date: Wed, 6 Aug 2014 09:57:58 -0400
-Cc: Borislav Petkov <bp@alien8.de>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "toshi.kani@hp.com" <toshi.kani@hp.com>,
-        "imammedo@redhat.com" <imammedo@redhat.com>,
-        "jan.kiszka@siemens.com" <jan.kiszka@siemens.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "huawei.libin@huawei.com" <huawei.libin@huawei.com>,
-        "prarit@redhat.com" <prarit@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brandt, Todd E" <todd.e.brandt@intel.com>
-References: <1407142742-29202-1-git-send-email-tianyu.lan@intel.com> <20140806110748.GC27033@pd.tnic> <4CFBC02C07DA244CA19D6815A05BE6EE0119E1CF@SHSMSX103.ccr.corp.intel.com>
-In-Reply-To: <4CFBC02C07DA244CA19D6815A05BE6EE0119E1CF@SHSMSX103.ccr.corp.intel.com>
+	id S1754771AbaHFOFy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 10:05:54 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:49625 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612AbaHFOFw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 10:05:52 -0400
+Date: Wed, 6 Aug 2014 19:35:47 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] pcmcia: Remove typedef in structs and emum
+Message-ID: <20140806140547.GA15508@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201408060957.59268.gheskett@wdtv.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 August 2014, Lan, Tianyu wrote:
->Have you tried my attached kernel config file? When someone reported
->the issue to me, I also was very hard to reproduce the issue by my own
->config file. Maybe once 100 tries. But I can reproduced the issue every
->time with the attached configure file on several my machines and even
->on server.
+The Linux kernel coding style guidelines suggest not using typedefs
+for structure and enum types. This patch gets rid of the typedefs for
+cirrus_state_t, vg46x_state_t and pcic_id. Also, the names of the structs
+are changed to drop the _t, to make the name look less typedef-like.
 
-There was no attachment.
->
->-----Original Message-----
->From: Borislav Petkov [mailto:bp@alien8.de]
->Sent: Wednesday, August 06, 2014 7:08 PM
->To: Lan, Tianyu
->Cc: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org;
->toshi.kani@hp.com; imammedo@redhat.com; jan.kiszka@siemens.com;
->mingo@kernel.org; huawei.libin@huawei.com; prarit@redhat.com;
->linux-kernel@vger.kernel.org; Brandt, Todd E Subject: Re: [PATCH]
->X86/CPU: Avoid 100ms sleep for cpu offline during S3
->
->On Tue, Aug 05, 2014 at 05:29:18PM +0800, Lan Tianyu wrote:
->> I think you can pull Tod's tool from git hub and do test from your
->> laptop. I attached a configure file come from ubuntu which is easier
->> to produce the issue. You can use it to reproduce the issue.
->
->Right, so I ran it on an old dualcore AMD laptop I have lying around
->here and it didn't show any difference with or without your patch.
->
->For all 4 runs I did with the tool running it without any arguments (so
->it did the default thing), I got suspend time for CPU1 of 4-6 msec and
->resume of ~20msec.
->
->I don't know whether it is the dual core or AMD but your patch doesn't
->change anything on that laptop which is ok, I'd guess.
->
->> Ok. BTW, I have tested it on the Ivbridge and Haswell machines.
->
->Yeah, add those numbers to the commit message too.
->
->Thanks.
->
->--
->Regards/Gruss,
->    Boris.
->
->Sent from a fat crate under my desk. Formatting is fine.
->--
+The following Coccinelle semantic patch detects the cases for struct type:
 
+@tn@
+identifier i;
+type td;
+@@
 
-Cheers, Gene Heskett
+-typedef
+ struct i { ... }
+-td
+ ;
+
+@@
+type tn.td;
+identifier tn.i;
+@@
+
+-td
++ struct i
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ drivers/pcmcia/i82365.c | 36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/pcmcia/i82365.c b/drivers/pcmcia/i82365.c
+index e6f3d17d..c2ea2ec 100644
+--- a/drivers/pcmcia/i82365.c
++++ b/drivers/pcmcia/i82365.c
+@@ -132,14 +132,14 @@ module_param(recov_time, int, 0444);
+ 
+ /*====================================================================*/
+ 
+-typedef struct cirrus_state_t {
++struct cirrus_state {
+     u_char		misc1, misc2;
+     u_char		timer[6];
+-} cirrus_state_t;
++};
+ 
+-typedef struct vg46x_state_t {
++struct vg46x_state {
+     u_char		ctl, ema;
+-} vg46x_state_t;
++};
+ 
+ struct i82365_socket {
+     u_short		type, flags;
+@@ -149,8 +149,8 @@ struct i82365_socket {
+     u_short		psock;
+     u_char		cs_irq, intr;
+     union {
+-	cirrus_state_t		cirrus;
+-	vg46x_state_t		vg46x;
++	struct cirrus_state		cirrus;
++	struct vg46x_state		vg46x;
+     } state;
+ };
+ 
+@@ -173,11 +173,11 @@ static struct timer_list poll_timer;
+ /*====================================================================*/
+ 
+ /* These definitions must match the pcic table! */
+-typedef enum pcic_id {
++enum pcic_id {
+     IS_I82365A, IS_I82365B, IS_I82365DF,
+     IS_IBM, IS_RF5Cx96, IS_VLSI, IS_VG468, IS_VG469,
+     IS_PD6710, IS_PD672X, IS_VT83C469,
+-} pcic_id;
++};
+ 
+ /* Flags for classifying groups of controllers */
+ #define IS_VADEM	0x0001
+@@ -189,12 +189,12 @@ typedef enum pcic_id {
+ #define IS_REGISTERED	0x2000
+ #define IS_ALIVE	0x8000
+ 
+-typedef struct pcic_t {
++struct pcic {
+     char		*name;
+     u_short		flags;
+-} pcic_t;
++};
+ 
+-static pcic_t pcic[] = {
++static struct pcic pcic[] = {
+     { "Intel i82365sl A step", 0 },
+     { "Intel i82365sl B step", 0 },
+     { "Intel i82365sl DF", IS_DF_PWR },
+@@ -208,7 +208,7 @@ static pcic_t pcic[] = {
+     { "VIA VT83C469", IS_CIRRUS|IS_VIA },
+ };
+ 
+-#define PCIC_COUNT	(sizeof(pcic)/sizeof(pcic_t))
++#define PCIC_COUNT	(sizeof(pcic)/sizeof(struct pcic))
+ 
+ /*====================================================================*/
+ 
+@@ -294,7 +294,7 @@ static void i365_set_pair(u_short sock, u_short reg, u_short data)
+ static void cirrus_get_state(u_short s)
+ {
+     int i;
+-    cirrus_state_t *p = &socket[s].state.cirrus;
++    struct cirrus_state *p = &socket[s].state.cirrus;
+     p->misc1 = i365_get(s, PD67_MISC_CTL_1);
+     p->misc1 &= (PD67_MC1_MEDIA_ENA | PD67_MC1_INPACK_ENA);
+     p->misc2 = i365_get(s, PD67_MISC_CTL_2);
+@@ -306,7 +306,7 @@ static void cirrus_set_state(u_short s)
+ {
+     int i;
+     u_char misc;
+-    cirrus_state_t *p = &socket[s].state.cirrus;
++    struct cirrus_state *p = &socket[s].state.cirrus;
+ 
+     misc = i365_get(s, PD67_MISC_CTL_2);
+     i365_set(s, PD67_MISC_CTL_2, p->misc2);
+@@ -321,7 +321,7 @@ static void cirrus_set_state(u_short s)
+ static u_int __init cirrus_set_opts(u_short s, char *buf)
+ {
+     struct i82365_socket *t = &socket[s];
+-    cirrus_state_t *p = &socket[s].state.cirrus;
++    struct cirrus_state *p = &socket[s].state.cirrus;
+     u_int mask = 0xffff;
+ 
+     if (has_ring == -1) has_ring = 1;
+@@ -377,7 +377,7 @@ static u_int __init cirrus_set_opts(u_short s, char *buf)
+ 
+ static void vg46x_get_state(u_short s)
+ {
+-    vg46x_state_t *p = &socket[s].state.vg46x;
++    struct vg46x_state *p = &socket[s].state.vg46x;
+     p->ctl = i365_get(s, VG468_CTL);
+     if (socket[s].type == IS_VG469)
+ 	p->ema = i365_get(s, VG469_EXT_MODE);
+@@ -385,7 +385,7 @@ static void vg46x_get_state(u_short s)
+ 
+ static void vg46x_set_state(u_short s)
+ {
+-    vg46x_state_t *p = &socket[s].state.vg46x;
++    struct vg46x_state *p = &socket[s].state.vg46x;
+     i365_set(s, VG468_CTL, p->ctl);
+     if (socket[s].type == IS_VG469)
+ 	i365_set(s, VG469_EXT_MODE, p->ema);
+@@ -393,7 +393,7 @@ static void vg46x_set_state(u_short s)
+ 
+ static u_int __init vg46x_set_opts(u_short s, char *buf)
+ {
+-    vg46x_state_t *p = &socket[s].state.vg46x;
++    struct vg46x_state *p = &socket[s].state.vg46x;
+     
+     flip(p->ctl, VG468_CTL_ASYNC, async_clock);
+     flip(p->ema, VG469_MODE_CABLE, cable_mode);
 -- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
-US V Castleman, SCOTUS, Mar 2014 is grounds for Impeaching SCOTUS
+1.9.1
+
