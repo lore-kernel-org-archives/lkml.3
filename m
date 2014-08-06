@@ -1,50 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932925AbaHFRK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 13:10:29 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50468 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932878AbaHFRJw (ORCPT
+	id S932957AbaHFRK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 13:10:59 -0400
+Received: from mail-yk0-f201.google.com ([209.85.160.201]:34018 "EHLO
+	mail-yk0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757553AbaHFRJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 13:09:52 -0400
-Message-ID: <53E26155.1020107@ti.com>
-Date: Wed, 6 Aug 2014 13:09:41 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <bhelgaas@google.com>
-Subject: Re: [PATCH] PCI: keystone: add a pci quirk to limit mrrs
-References: <1407338300-9146-1-git-send-email-m-karicheri2@ti.com> <20140806163021.GB19914@obsidianresearch.com> <53E25E24.8070506@ti.com> <20140806165837.GC19914@obsidianresearch.com>
-In-Reply-To: <20140806165837.GC19914@obsidianresearch.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Aug 2014 13:09:49 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Doug Anderson <dianders@chromium.org>,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 3/4] ARM: dts: Take the mmc slot node out of rk3288-evb
+Date: Wed,  6 Aug 2014 10:09:43 -0700
+Message-Id: <1407344984-14176-4-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1407344984-14176-1-git-send-email-dianders@chromium.org>
+References: <1407344984-14176-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2014 12:58 PM, Jason Gunthorpe wrote:
-> On Wed, Aug 06, 2014 at 12:56:04PM -0400, Murali Karicheri wrote:
->> On 08/06/2014 12:30 PM, Jason Gunthorpe wrote:
->>> On Wed, Aug 06, 2014 at 11:18:20AM -0400, Murali Karicheri wrote:
->>>> Keystone PCI controller has a limitation that memory read request
->>>> size must not exceed 256 bytes. This is a hardware limitation and
->>>> add a quirk to force this limit on all downstream devices by
->>>> updating mrrs.
->>>
->>> Does this still work if the tuning is enabled, or does the tuning run
->>> after this?
->>
->> Yes it works with tuning enabled. Tuning happens afterwards. The
->> 'limiting mrrs to 256' below is from my patch.
->
-> That seems backwards to me...
-Rational? The tuning is reading mrrs and set mps to less than or equal 
-to mrss. So adding this before make sure mrrs used is below keystones's 
-limit.
+In Jaehoon's (mmc: dw_mmc: Slot quirk "disable-wp" is deprecated) the
+slot node is no longer used.  Remove it.
 
-Murali
->
-> Jason
+Note that if Jaehoon's patch lands before my (ARM: dts: Enable emmc
+and sdmmc on the rk3288-evb boards) then this could be squashed into
+the later.
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+Changes in v3: None
+Changes in v2:
+- Refer to the new title of Jaehoon's patch
+
+ arch/arm/boot/dts/rk3288-evb.dtsi | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
+index c2cf72f..ebce49a 100644
+--- a/arch/arm/boot/dts/rk3288-evb.dtsi
++++ b/arch/arm/boot/dts/rk3288-evb.dtsi
+@@ -53,16 +53,12 @@
+ 	broken-cd;
+ 	bus-width = <8>;
+ 	cap-mmc-highspeed;
++	disable-wp;
+ 	non-removable;
+ 	num-slots = <1>;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&emmc_clk &emmc_cmd &emmc_pwr &emmc_bus8>;
+ 	status = "okay";
+-
+-	slot@0 {
+-		reg = <0>;
+-		disable-wp;
+-	};
+ };
+ 
+ &sdmmc {
+@@ -70,15 +66,11 @@
+ 	cap-mmc-highspeed;
+ 	cap-sd-highspeed;
+ 	card-detect-delay = <200>;
++	disable-wp;			/* wp not hooked up */
+ 	num-slots = <1>;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_cd &sdmmc_bus4>;
+ 	status = "okay";
+-
+-	slot@0 {
+-		reg = <0>;
+-		disable-wp;		/* wp not hooked up */
+-	};
+ };
+ 
+ &i2c0 {
+-- 
+2.0.0.526.g5318336
 
