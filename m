@@ -1,113 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458AbaHFWZA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 18:25:00 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:33966 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754388AbaHFWY4 (ORCPT
+	id S1754572AbaHFW0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 18:26:38 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:51588 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417AbaHFW0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 18:24:56 -0400
+	Wed, 6 Aug 2014 18:26:36 -0400
+Date: Wed, 6 Aug 2014 15:26:34 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Minchan Kim <minchan@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH 1/4] mm: page_alloc: determine migratetype only once
+In-Reply-To: <1407333356-30928-2-git-send-email-vbabka@suse.cz>
+Message-ID: <alpine.DEB.2.02.1408061526250.13545@chino.kir.corp.google.com>
+References: <1407333356-30928-1-git-send-email-vbabka@suse.cz> <1407333356-30928-2-git-send-email-vbabka@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1407286910-30906-3-git-send-email-kever.yang@rock-chips.com>
-References: <1407286910-30906-1-git-send-email-kever.yang@rock-chips.com>
-	<1407286910-30906-3-git-send-email-kever.yang@rock-chips.com>
-Date: Wed, 6 Aug 2014 15:24:55 -0700
-X-Google-Sender-Auth: nA-Oig8nZtxrBkCtdjHr0vXBlPM
-Message-ID: <CAD=FV=V7TuqcVouC3KfPyebLqbVOJNhu-4HAVx0=+9_ny1RrOA@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] usb: dwc2: add 'mode' which based on Kconfig
- select or dts setting
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Paul Zimmerman <paulz@synopsys.com>, Heiko Stuebner <heiko@sntech.de>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Olof Johansson <olof@lixom.net>,
-        Sonny Rao <sonnyrao@chromium.org>, wulf <wulf@rock-chips.com>,
-        lyz <lyz@rock-chips.com>, Jingoo Han <jg1.han@samsung.com>,
-        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@altera.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
+On Wed, 6 Aug 2014, Vlastimil Babka wrote:
 
-On Tue, Aug 5, 2014 at 6:01 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> According to the "dr_mode", the otg controller can work as
-> device role and host role. Some boards always want to use host mode
-> and some other boards want to use gadget mode. We use the dts setting
-> to set dwc2's mode, rather than fixing it to whatever hardware says.
->
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> Acked-by: Paul Zimmerman <paulz@synopsys.com>
-> ---
->
-> Changes in v4:
-> - From Doug's suggestion:
->  -- remove dr_mode init from Kconfig code
->  -- change the commit meesage
->
-> Changes in v3:
-> - fix the odd spacing in dwc2_hsotg struct
-> - From Jingoo's suggestion:
->     change the commit message
-> - add dr_mode init from Kconfig
->
-> Changes in v2:
-> - put spaces around '+' operator
-> - expand the comment for dr_mode
-> - handle dr_mode is USB_DR_MODE_OTG
->
->  drivers/usb/dwc2/core.c     | 18 ++++++++++++++++++
->  drivers/usb/dwc2/core.h     |  5 +++++
->  drivers/usb/dwc2/platform.c |  4 ++++
->  3 files changed, 27 insertions(+)
+> The check for ALLOC_CMA in __alloc_pages_nodemask() derives migratetype
+> from gfp_mask in each retry pass, although the migratetype variable already
+> has the value determined and it does not change. Use the variable and perform
+> the check only once. Also convert #ifdef CONFIC_CMA to IS_ENABLED.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 
-I think this patch still makes sense even though we don't have a
-combined driver yet.  Perhaps Paul or Dihn can confirm.
-
-We could potentially do something based on KConfig (like you did in
-patch set #3), but it wouldn't really make sense to do that until
-after Dihn's work lands.
-
-
-> diff --git a/drivers/usb/dwc2/core.c b/drivers/usb/dwc2/core.c
-> index 27d2c9b..738bec2 100644
-> --- a/drivers/usb/dwc2/core.c
-> +++ b/drivers/usb/dwc2/core.c
-> @@ -118,6 +118,7 @@ static int dwc2_core_reset(struct dwc2_hsotg *hsotg)
->  {
->         u32 greset;
->         int count = 0;
-> +       u32 gusbcfg;
->
->         dev_vdbg(hsotg->dev, "%s()\n", __func__);
->
-> @@ -148,6 +149,23 @@ static int dwc2_core_reset(struct dwc2_hsotg *hsotg)
->                 }
->         } while (greset & GRSTCTL_CSFTRST);
->
-> +       if (hsotg->dr_mode == USB_DR_MODE_HOST) {
-> +               gusbcfg = readl(hsotg->regs + GUSBCFG);
-> +               gusbcfg &= ~GUSBCFG_FORCEDEVMODE;
-> +               gusbcfg |= GUSBCFG_FORCEHOSTMODE;
-> +               writel(gusbcfg, hsotg->regs + GUSBCFG);
-> +       } else if (hsotg->dr_mode == USB_DR_MODE_PERIPHERAL) {
-> +               gusbcfg = readl(hsotg->regs + GUSBCFG);
-> +               gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
-> +               gusbcfg |= GUSBCFG_FORCEDEVMODE;
-> +               writel(gusbcfg, hsotg->regs + GUSBCFG);
-> +       } else if (hsotg->dr_mode == USB_DR_MODE_OTG) {
-> +               gusbcfg = readl(hsotg->regs + GUSBCFG);
-> +               gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
-> +               gusbcfg &= ~GUSBCFG_FORCEDEVMODE;
-> +               writel(gusbcfg, hsotg->regs + GUSBCFG);
-
-I think the third case here won't be too useful until the combined
-driver, but it shouldn't hurt, right?
-
-
--Doug
+Acked-by: David Rientjes <rientjes@google.com>
