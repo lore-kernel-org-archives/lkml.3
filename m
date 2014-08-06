@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185AbaHFWD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 18:03:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29568 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908AbaHFWDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 18:03:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,814,1400050800"; 
-   d="scan'208";a="572761569"
-Message-ID: <1407362634.2869.2.camel@rzwisler-mobl1.amr.corp.intel.com>
-Subject: Re: [PATCH 4/4] brd: Request from fdisk 4k alignment
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-To: Boaz Harrosh <boaz@plexistor.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <willy@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Date: Wed, 06 Aug 2014 16:03:54 -0600
-In-Reply-To: <53E21317.7080403@plexistor.com>
-References: <53E21125.9080308@plexistor.com>
-	 <53E21317.7080403@plexistor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754300AbaHFWGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 18:06:17 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:63488 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753986AbaHFWGO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 18:06:14 -0400
+Date: Wed, 6 Aug 2014 15:06:11 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Josh Triplett <josh@joshtriplett.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, torvalds@linux-foundation.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Add "make tinyconfig" to configure the tiniest
+ possible kernel
+In-Reply-To: <20140806171344.GA15764@jtriplet-mobl1>
+Message-ID: <alpine.DEB.2.02.1408061504000.13545@chino.kir.corp.google.com>
+References: <20140806171344.GA15764@jtriplet-mobl1>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-06 at 14:35 +0300, Boaz Harrosh wrote:
-> Because of the direct_access() API which returns a PFN. partitions
-> better start on 4K boundary, else offset ZERO of a partition will
-> not be aligned and blk_direct_access() will fail the call.
+On Wed, 6 Aug 2014, Josh Triplett wrote:
+
+> Since commit 5d2acfc7b974bbd3858b4dd3f2cdc6362dd8843a ("kconfig: make
+> allnoconfig disable options behind EMBEDDED and EXPERT") in 3.15-rc1,
+> "make allnoconfig" disables every possible config option.
 > 
-> By setting blk_queue_physical_block_size(PAGE_SIZE) we can communicate
-> this to fdisk and friends.
-> Note that blk_queue_physical_block_size() also trashes io_min, but
-> we can leave this one to be 512.
+> However, a few configuration options (CC_OPTIMIZE_FOR_SIZE,
+> OPTIMIZE_INLINING) produce a smaller kernel when turned on, and a few
+> choices exist (compression, highmem, allocator) for which a non-default
+> option produces a smaller kernel.
 > 
-> Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
-> ---
->  drivers/block/brd.c | 7 +++++++
->  1 file changed, 7 insertions(+)
+> Add a "tinyconfig" target, which starts from allnoconfig and then sets
+> these options to configure the tiniest possible kernel.  This provides a
+> better baseline for embedded systems or efforts to reduce kernel size.
 > 
-> diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-> index 9673704..514cfe1 100644
-> --- a/drivers/block/brd.c
-> +++ b/drivers/block/brd.c
-> @@ -495,10 +495,17 @@ static struct brd_device *brd_alloc(int i)
->  	brd->brd_queue = blk_alloc_queue(GFP_KERNEL);
->  	if (!brd->brd_queue)
->  		goto out_free_dev;
-> +
->  	blk_queue_make_request(brd->brd_queue, brd_make_request);
->  	blk_queue_max_hw_sectors(brd->brd_queue, 1024);
->  	blk_queue_bounce_limit(brd->brd_queue, BLK_BOUNCE_ANY);
->  
-> +	/* This is so fdisk will align partitions on 4k, because of
-> +	 * direct_access API needing 4k alignment, returning a PFN
-> +	 */
-> +	blk_queue_physical_block_size(brd->brd_queue, PAGE_SIZE);
-> +	brd->brd_queue->limits.io_min = 512; /* Don't use the accessor */
-> +
->  	brd->brd_queue->limits.discard_granularity = PAGE_SIZE;
->  	brd->brd_queue->limits.max_discard_sectors = UINT_MAX;
->  	brd->brd_queue->limits.discard_zeroes_data = 1;
 
-Is there an error case that this patch fixes?  I've had page alignment checks
-in my PRD direct_access code forever, and I don't know if they've ever
-tripped.  
+I like it, the only comment that I have is that we already have a 
+xenconfig patchset sitting around that adds a helper function for this 
+functionality in the x86 Makefile that hasn't been merged yet.
 
-Also, blk_queue_physical_block_size() seems wrong - here's the comment for
-that function:
+The *config functionality is added in
+http://marc.info/?l=linux-kernel&m=140233900403377
 
-	/**
-	 * blk_queue_physical_block_size - set physical block size for the queue
-	 * @q:  the request queue for the device
-	 * @size:  the physical block size, in bytes
-	 *
-	 * Description:
-	 *   This should be set to the lowest possible sector size that the
-	 *   hardware can operate on without reverting to read-modify-write
-	 *   operations.
-	 */
+and then used in
+http://marc.info/?l=linux-kernel&m=140233901403381
+http://marc.info/?l=linux-kernel&m=140233904503428
 
-It doesn't sound like this is what you're after?  It sounds like instead you
-want to control the alignment, not minimum natural I/O size?  It seems like if
-you did want to do this, blk_queue_alignment_offset() would be more what you
-were after?
-
-- Ross
-
-
+and have been pending since June.  I was going to ask Luis to rebase and 
+resend, but perhaps you can send the first patch along as a predecessor to 
+your patch and then let tinyconfig use build-virtconfig?
