@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132AbaHEX7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 19:59:31 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:56167 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885AbaHEX73 (ORCPT
+	id S1754130AbaHFABB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 20:01:01 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:65527 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945AbaHFABA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 19:59:29 -0400
+	Tue, 5 Aug 2014 20:01:00 -0400
+X-IronPort-AV: E=Sophos;i="5.01,808,1400025600"; 
+   d="scan'208";a="159748014"
+Date: Wed, 6 Aug 2014 01:00:59 +0100
+From: Wei Liu <wei.liu2@citrix.com>
+To: David Miller <davem@davemloft.net>
+CC: <zoltan.kiss@citrix.com>, <wei.liu2@citrix.com>, <Ian.Campbell@citrix.com>,
+        <david.vrabel@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: Re: [PATCH net-next 0/2] xen-netback: Changes around carrier handling
+Message-ID: <20140806000059.GA7315@zion.uk.xensource.com>
+References: <1407165658-20146-1-git-send-email-zoltan.kiss@citrix.com>
+ <20140805.160748.1185917042908283028.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <20140805233058.GI13858@redhat.com>
-References: <20140730014827.565626091@linuxfoundation.org>
-	<20140730014829.344302554@linuxfoundation.org>
-	<20140730065312.GA1652@laptop.redhat.com>
-	<CA+55aFzr_wJzt6RpojXpDo-ashV_N7sP+j7Ba0ND9mSpr7MKRQ@mail.gmail.com>
-	<CA+5PVA5FPD8hp_7=M-VNoUG1Mw9R0Xkn2Yo50eo28ojzrcB5Aw@mail.gmail.com>
-	<CA+55aFwvRcr98M=425eCR8K04X-uAVjH2bs3hudkySVKM4VqVg@mail.gmail.com>
-	<CA+5PVA79a-BoMMAzryH0O3NFz6KY1f9REAmE=T00ErfcUfCGEg@mail.gmail.com>
-	<20140805210728.GH13858@redhat.com>
-	<CA+55aFwq72kDdRSWXKhyO1j=_PAKB960+RNOD6Cou0wZTa+5Hw@mail.gmail.com>
-	<20140805233058.GI13858@redhat.com>
-Date: Tue, 5 Aug 2014 16:59:28 -0700
-X-Google-Sender-Auth: iOfvH-hhTh4dUvH0x96TUI7SBe4
-Message-ID: <CA+55aFz_wx5BVir=WviqwE_ysKMXb1Ka8T7L+Gq2NT9S=yo2_w@mail.gmail.com>
-Subject: Re: [PATCH 3.15 33/37] Fix gcc-4.9.0 miscompilation of load_balance()
- in scheduler
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>, Jakub Jelinek <jakub@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>,
-        =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Josh Stone <jistone@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140805.160748.1185917042908283028.davem@davemloft.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 5, 2014 at 4:30 PM, Frank Ch. Eigler <fche@redhat.com> wrote:
->
-> Would you consider a patch that does a gcc COMPARE_DEBUG-based test?
+On Tue, Aug 05, 2014 at 04:07:48PM -0700, David Miller wrote:
+> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Date: Mon, 4 Aug 2014 16:20:56 +0100
+> 
+> > This series starts using carrier off as a way to purge packets when the guest is
+> > not able (or willing) to receive them. It is a much faster way to get rid of
+> > packets waiting for an overwhelmed guest.
+> > The first patch changes current netback code where it relies currently on
+> > netif_carrier_ok.
+> > The second turns off the carrier if the guest times out on a queue, and only
+> > turn it on again if that queue (or queues) resurrects.
+> > 
+> > Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> > Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> 
+> Applied, but I have some reservations:
+> 
 
-Yes. But as mentioned, we don't have a really good way to do that. I
-guess we can do something similar to what "cc-option" does, but that
-will end up doing it for every single kernel build. I'd love to have
-something like this be done at kconfig time (along with all the
-*other* crazy conditional compiler options we do), but I guess that's
-a largely independent issue.
+Wow, this is fast. I appreciate your speed, but there's still
+outstanding issues in the series.
 
-And afaik, it will basically disallow every gcc version since 4.5 up
-until 4.9.2 gets released. And afaik, even current gcc actually fails
-the compare-debug test for at least some inputs, so ...
+Apart from some comments on maintainability, the biggest problem is that
+there's a bug in second patch that needs to be fixed; or I need to be
+proved wrong.  We need to set aside some more time to get those
+questions answered. I don't think this series is suitable to go in as
+is.
 
-                 Linus
+DaveM, could you please advise how to deal with this situation?
+
+Wei.
