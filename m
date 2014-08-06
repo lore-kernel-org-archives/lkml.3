@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932856AbaHFRT4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 13:19:56 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:39302 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756157AbaHFRTz (ORCPT
+	id S932888AbaHFRVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 13:21:23 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:60184 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756428AbaHFRVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 13:19:55 -0400
+	Wed, 6 Aug 2014 13:21:21 -0400
+Date: Wed, 6 Aug 2014 13:21:18 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Kees Cook <keescook@chromium.org>
+cc: Liu hua <sdu.liu@huawei.com>, Rob Herring <robherring2@gmail.com>,
+        wangnan0 <wangnan0@huawei.com>, Laura Abbott <lauraa@codeaurora.org>,
+        peifeiyue <peifeiyue@huawei.com>, Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vitaly Andrianov <vitalya@ti.com>, Rabin Vincent <rabin@rab.in>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "liusdu@126.com" <liusdu@126.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH v3 2/2] ARM : change fixmap mapping region to support 32
+ CPUs
+In-Reply-To: <CAGXu5jKxtm0YAojOLhd_O9AFUAX+xHgEwwB0W_fpN7Xy8wHphQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1408061317590.6061@knanqh.ubzr>
+References: <1397559967-26050-1-git-send-email-sdu.liu@huawei.com> <1397559967-26050-3-git-send-email-sdu.liu@huawei.com> <CAL_JsqKE-L2PN3mXHNdTPMEyTMR9ZtbgGB=O_V6nOXN0YC0a4A@mail.gmail.com> <alpine.LFD.2.11.1405301441210.17310@knanqh.ubzr>
+ <CAGXu5j+ga5Enrsd8LuYarGh1Ozakmi3MNw+b9fZ7ubGUJFZY=w@mail.gmail.com> <53E1A3A3.8080706@huawei.com> <CAGXu5jKxtm0YAojOLhd_O9AFUAX+xHgEwwB0W_fpN7Xy8wHphQ@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1407344128-9754-1-git-send-email-xerofoiffy@gmail.com>
-References: <1407344128-9754-1-git-send-email-xerofoiffy@gmail.com>
-Date: Wed, 6 Aug 2014 19:19:54 +0200
-Message-ID: <CAFLxGvxfSD+dW1oUyKAqq8tUMHYS7fuJdsdRKOR94O+nD8RoMg@mail.gmail.com>
-Subject: Re: [PATCH] spi: Fix warning about redefinition
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Nick Krause <xerofoiffy@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>,
-        "open list:SPI SUBSYSTEM" <linux-spi@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 6, 2014 at 6:55 PM, Nick Krause <xerofoiffy@gmail.com> wrote:
-> Fix the following warnings about redefining READ and write
->
-> drivers/spi/spi-omap-100k.c:73:0: warning: "WRITE" redefined [enabled by default]
-> include/linux/fs.h:193:0: note: this is the location of the previous definition
-> drivers/spi/spi-omap-100k.c:74:0: warning: "READ" redefined [enabled by default]
-> include/linux/fs.h:192:0: note: this is the location of the previous definition
->
-> Signed-off-by: Nick Krause <xerofoiffy@gmail.com>
-> ---
->  drivers/spi/spi-omap-100k.c | 6 ++++++
->  1 file changed, 6 insertions(+)
->
-> diff --git a/drivers/spi/spi-omap-100k.c b/drivers/spi/spi-omap-100k.c
-> index 5e91858..eb8ae4e 100644
-> --- a/drivers/spi/spi-omap-100k.c
-> +++ b/drivers/spi/spi-omap-100k.c
-> @@ -70,6 +70,12 @@
->  #define SPI_STATUS_WE                   (1UL << 1)
->  #define SPI_STATUS_RD                   (1UL << 0)
->
-> +#ifdef WRITE
-> +#undef WRITE
-> +#endif
-> +#ifdef READ
-> +#undef READ
-> +#endif
->  #define WRITE 0
->  #define READ  1
+On Wed, 6 Aug 2014, Kees Cook wrote:
 
-Are these symbols even in use?
+> With the original code, there is (I think) a page table entry for the
+> fixmap range. For the latter, there isn't. I see a NULL pgd entry
+> fault when trying to use it, and noticed that this only exists under
+> highmem:
+> 
+> static void __init kmap_init(void)
+> {
+> #ifdef CONFIG_HIGHMEM
+>         pkmap_page_table = early_pte_alloc(pmd_off_k(PKMAP_BASE),
+>                 PKMAP_BASE, _PAGE_KERNEL_TABLE);
+> 
+>         fixmap_page_table = early_pte_alloc(pmd_off_k(FIXADDR_START),
+>                 FIXADDR_START, _PAGE_KERNEL_TABLE);
+> #endif
+> }
 
-> --
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The above is wrong.  The fixmap PTEs must be allocated unconditionally 
+irrespective of highmem.  So the #endif should be moved up by 3 lines.
 
 
-
--- 
-Thanks,
-//richard
+Nicolas
