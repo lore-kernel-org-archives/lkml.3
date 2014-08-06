@@ -1,70 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488AbaHFTuf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 15:50:35 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:43988 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443AbaHFTud (ORCPT
+	id S1754534AbaHFTvN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 15:51:13 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:17729 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754494AbaHFTvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 15:50:33 -0400
+	Wed, 6 Aug 2014 15:51:11 -0400
+Date: Wed, 6 Aug 2014 15:51:06 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 3/5] ARM: add IPI tracepoints
+Message-ID: <20140806155106.138201e7@gandalf.local.home>
+In-Reply-To: <1406318733-26754-4-git-send-email-nicolas.pitre@linaro.org>
+References: <1406318733-26754-1-git-send-email-nicolas.pitre@linaro.org>
+	<1406318733-26754-4-git-send-email-nicolas.pitre@linaro.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <2f6ac51155f9d34791b274b5102d15a997ff8b99.1396384101.git.stefan@agner.ch>
-References: <cover.1396384101.git.stefan@agner.ch>
-	<2f6ac51155f9d34791b274b5102d15a997ff8b99.1396384101.git.stefan@agner.ch>
-Date: Wed, 6 Aug 2014 12:50:31 -0700
-X-Google-Sender-Auth: hmNGN6NQAnPoZg8OcyzYu2VFcX8
-Message-ID: <CAD=FV=Va=V4xGqQM9kMFFdQDyYNWDEh_cXJW=b3iYGRrJiH9DQ@mail.gmail.com>
-Subject: Re: [RFC 2/2] mmc: use SD/MMC host ID for block device name ID
-From: Doug Anderson <dianders@chromium.org>
-To: stefan@agner.ch, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Addy Ke <addy.ke@rock-chips.com>, Olof Johansson <olof@lixom.net>,
-        Andrew Bresticker <abrestic@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefan,
+Russell,
 
-On Tue, Apr 1, 2014 at 1:35 PM,  <stefan@agner.ch> wrote:
-> From: Stefan Agner <stefan@agner.ch>
->
-> By using the SD/MMC host device ID as a starting point for block
-> device numbering, one can reliably predict the first block device
-> name (at least for the first controller). This is especially useful
-> for SoCs with multiple SD/MMC host controller, where the controller
-> with index 0 is connected to a eMMC device.
->
-> Usually the first controller gets the first block device name ID,
-> however this is not guaranteed. Also if the first controller is
-> aliased as second controller and visa-versa (using device tree
-> aliases), the block device name ID assignation is not ordered by
-> the SD/MMC host device ID (since mmc_rescan is called in order of
-> the memory mapped pheripherial addresses).
->
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
+Can you give me your Acked-by for this, and I can pull it through my
+tree?
+
+Thanks,
+
+-- Steve
+
+
+On Fri, 25 Jul 2014 16:05:31 -0400
+Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+
+> The strings used to list IPIs in /proc/interrupts are reused for tracing
+> purposes.
+> 
+> While at it, prevent a negative ipinr from escaping the range check
+> in handle_IPI().
+> 
+> Signed-off-by: Nicolas Pitre <nico@linaro.org>
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
 > ---
->  drivers/mmc/card/block.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+>  arch/arm/kernel/smp.c | 70 ++++++++++++++++++++++++++++++---------------------
+>  1 file changed, 42 insertions(+), 28 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> index 7c4fada440..9388a3d479 100644
+> --- a/arch/arm/kernel/smp.c
+> +++ b/arch/arm/kernel/smp.c
+> @@ -47,6 +47,9 @@
+>  #include <asm/mach/arch.h>
+>  #include <asm/mpu.h>
+>  
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/ipi.h>
+> +
+>  /*
+>   * as from 2.5, kernels no longer have an init_tasks structure
+>   * so we need some other way of telling a new secondary core
+> @@ -430,38 +433,15 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+>  	}
+>  }
+>  
+> -static void (*smp_cross_call)(const struct cpumask *, unsigned int);
+> +static void (*__smp_cross_call)(const struct cpumask *, unsigned int);
+>  
+>  void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
+>  {
+> -	if (!smp_cross_call)
+> -		smp_cross_call = fn;
+> -}
+> -
+> -void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+> -{
+> -	smp_cross_call(mask, IPI_CALL_FUNC);
+> -}
+> -
+> -void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
+> -{
+> -	smp_cross_call(mask, IPI_WAKEUP);
+> -}
+> -
+> -void arch_send_call_function_single_ipi(int cpu)
+> -{
+> -	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+> +	if (!__smp_cross_call)
+> +		__smp_cross_call = fn;
+>  }
+>  
+> -#ifdef CONFIG_IRQ_WORK
+> -void arch_irq_work_raise(void)
+> -{
+> -	if (is_smp())
+> -		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
+> -}
+> -#endif
+> -
+> -static const char *ipi_types[NR_IPI] = {
+> +static const char *ipi_types[NR_IPI] __tracepoint_string = {
+>  #define S(x,s)	[x] = s
+>  	S(IPI_WAKEUP, "CPU wakeup interrupts"),
+>  	S(IPI_TIMER, "Timer broadcast interrupts"),
+> @@ -473,6 +453,12 @@ static const char *ipi_types[NR_IPI] = {
+>  	S(IPI_COMPLETION, "completion interrupts"),
+>  };
+>  
+> +static void smp_cross_call(const struct cpumask *target, unsigned int ipinr)
+> +{
+> +	trace_ipi_raise(target, ipi_types[ipinr]);
+> +	__smp_cross_call(target, ipinr);
+> +}
+> +
+>  void show_ipi_list(struct seq_file *p, int prec)
+>  {
+>  	unsigned int cpu, i;
+> @@ -499,6 +485,29 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
+>  	return sum;
+>  }
+>  
+> +void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+> +{
+> +	smp_cross_call(mask, IPI_CALL_FUNC);
+> +}
+> +
+> +void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
+> +{
+> +	smp_cross_call(mask, IPI_WAKEUP);
+> +}
+> +
+> +void arch_send_call_function_single_ipi(int cpu)
+> +{
+> +	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+> +}
+> +
+> +#ifdef CONFIG_IRQ_WORK
+> +void arch_irq_work_raise(void)
+> +{
+> +	if (is_smp())
+> +		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
+> +}
+> +#endif
+> +
+>  #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
+>  void tick_broadcast(const struct cpumask *mask)
+>  {
+> @@ -556,8 +565,10 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+>  	unsigned int cpu = smp_processor_id();
+>  	struct pt_regs *old_regs = set_irq_regs(regs);
+>  
+> -	if (ipinr < NR_IPI)
+> +	if ((unsigned)ipinr < NR_IPI) {
+> +		trace_ipi_entry(ipi_types[ipinr]);
+>  		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
+> +	}
+>  
+>  	switch (ipinr) {
+>  	case IPI_WAKEUP:
+> @@ -612,6 +623,9 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+>  		       cpu, ipinr);
+>  		break;
+>  	}
+> +
+> +	if ((unsigned)ipinr < NR_IPI)
+> +		trace_ipi_exit(ipi_types[ipinr]);
+>  	set_irq_regs(old_regs);
+>  }
+>  
 
-As Stephen points out, "mmcblk" IDs for SD cards are not actually
-guaranteed.  Also UUID is a better API for things to use.
-
-That being said, your patch helps me a lot when doing development.  As
-you said, I'm guaranteed that if eMMC is no-removable and enumerated
-at boot that it will be a predictable ID and I can use it in my
-scripts.  Also this helps keep me from having to do lots of extra
-thinking to figure out whether I happened to have an SD card plugged
-in at boot or I didn't.
-
-I'd love to see this land.
-
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Doug Anderson <dianders@chromium.org>
