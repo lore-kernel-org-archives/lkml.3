@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353AbaHFUPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 16:15:37 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:40882 "EHLO
+	id S1754418AbaHFUP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 16:15:58 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:32502 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754266AbaHFUPa (ORCPT
+	by vger.kernel.org with ESMTP id S1754260AbaHFUP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 16:15:30 -0400
+	Wed, 6 Aug 2014 16:15:29 -0400
 X-IronPort-AV: E=Sophos;i="5.01,813,1400018400"; 
-   d="scan'208";a="88519531"
+   d="scan'208";a="88519530"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: kernel-janitors@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>,
+        linux-iio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] drivers: video: fbdev: atmel_lcdfb.c: fix error return code
-Date: Wed,  6 Aug 2014 22:12:18 +0200
-Message-Id: <1407355938-10932-4-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 3/4] iio: fix error return code
+Date: Wed,  6 Aug 2014 22:12:17 +0200
+Message-Id: <1407355938-10932-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -52,29 +51,30 @@ ret@p1 = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
-The error codes chosen are the ones that are commonly used elsewhere or
-these functions.  Perhaps something else is wanted.
+ drivers/iio/adc/xilinx-xadc-core.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
- drivers/video/fbdev/atmel_lcdfb.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/video/fbdev/atmel_lcdfb.c b/drivers/video/fbdev/atmel_lcdfb.c
-index 92640d4..1d8bdb9 100644
---- a/drivers/video/fbdev/atmel_lcdfb.c
-+++ b/drivers/video/fbdev/atmel_lcdfb.c
-@@ -1102,12 +1102,14 @@ static int atmel_lcdfb_of_init(struct atmel_lcdfb_info *sinfo)
- 	timings = of_get_display_timings(display_np);
- 	if (!timings) {
- 		dev_err(dev, "failed to get display timings\n");
-+		ret = -EINVAL;
- 		goto put_display_node;
+diff --git a/drivers/iio/adc/xilinx-xadc-core.c b/drivers/iio/adc/xilinx-xadc-core.c
+index fd2745c..196e269 100644
+--- a/drivers/iio/adc/xilinx-xadc-core.c
++++ b/drivers/iio/adc/xilinx-xadc-core.c
+@@ -1201,12 +1201,16 @@ static int xadc_probe(struct platform_device *pdev)
+ 			goto err_device_free;
+ 
+ 		xadc->convst_trigger = xadc_alloc_trigger(indio_dev, "convst");
+-		if (IS_ERR(xadc->convst_trigger))
++		if (IS_ERR(xadc->convst_trigger)) {
++			ret = PTR_ERR(xadc->convst_trigger);
+ 			goto err_triggered_buffer_cleanup;
++		}
+ 		xadc->samplerate_trigger = xadc_alloc_trigger(indio_dev,
+ 			"samplerate");
+-		if (IS_ERR(xadc->samplerate_trigger))
++		if (IS_ERR(xadc->samplerate_trigger)) {
++			ret = PTR_ERR(xadc->samplerate_trigger);
+ 			goto err_free_convst_trigger;
++		}
  	}
  
- 	timings_np = of_find_node_by_name(display_np, "display-timings");
- 	if (!timings_np) {
- 		dev_err(dev, "failed to find display-timings node\n");
-+		ret = -ENODEV;
- 		goto put_display_node;
- 	}
- 
+ 	xadc->clk = devm_clk_get(&pdev->dev, NULL);
 
