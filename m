@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075AbaHFS7H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 14:59:07 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56265 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756284AbaHFS7E (ORCPT
+	id S932137AbaHFS7y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 14:59:54 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:54046 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932077AbaHFS7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 14:59:04 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Rafael J Wysocki <rafael.j.wysocki@intel.com>,
-        Nicolas Pitre <nico@linaro.org>, Mike Galbraith <mgalbraith@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Reduce overhead of menu governor
-Date: Wed, 06 Aug 2014 21:17:45 +0200
-Message-ID: <3495244.HqlX2f8Ijd@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1407331161-4642-1-git-send-email-mgorman@suse.de>
-References: <1407331161-4642-1-git-send-email-mgorman@suse.de>
+	Wed, 6 Aug 2014 14:59:53 -0400
+Date: Wed, 6 Aug 2014 19:59:42 +0100
+From: "Tobenna P. Igwe" <ptigwe@gmail.com>
+To: Ken Cox <jkc@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, sparmaintainer@unisys.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Benjamin Romer <benjamin.romer@unisys.com>,
+        David Kershner <david.kershner@unisys.com>, ptigwe@gmail.com
+Subject: [PATCH] staging: unisys: uislib: Fixed missing blank line coding
+ style issue
+Message-ID: <20140806185934.GA7446@Tobenna-Peter-Igwes-MacBook-Pro.local>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 06, 2014 02:19:17 PM Mel Gorman wrote:
-> The menu_select function is heavy and is very noticable in profiles for
-> workloads that enter/leave idle state a lot. This primarily happens
-> for scheduler microbenchmarks. The biggest contibution is the standard
-> deviation calculations and comparisons but the excessive calls into
-> the scheduler core do not help.
-> 
-> It would be nice to reduce the number of times nr_iowait is checked to
-> once per 8 intervals but I was not sure how to measure what the general
-> impact of such a change could be.
-> 
-> Similiarly I looked at different ways the standard deviation could be
-> calculated but the standard equivalent calculations potentially overflow.
-> It could be done as rolling average and rolling deviation but again
-> it was unclear how that could be evaluated. Tips on how the goodness/badness
-> of governor changes are evalated would be nice.
-> 
-> In the meantime, here are patches against some  of the obvious stuff.
+Fixed coding style issue "Missing a blank line after declarations"
+detected by the 'checkpatch.pl' script.
 
-They look good, I'm going to apply them.
+Signed-off-by: Tobenna P. Igwe <ptigwe@gmail.com>
+---
+ drivers/staging/unisys/uislib/uisutils.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-Rafael
+diff --git a/drivers/staging/unisys/uislib/uisutils.c b/drivers/staging/unisys/uislib/uisutils.c
+index ee26e00..ab593e4 100644
+--- a/drivers/staging/unisys/uislib/uisutils.c
++++ b/drivers/staging/unisys/uislib/uisutils.c
+@@ -117,6 +117,7 @@ uisctrl_register_req_handler_ex(uuid_le switchTypeGuid,
+ {
+ 	ReqHandlerInfo_t *pReqHandlerInfo;
+ 	int rc = 0;		/* assume failure */
++
+ 	LOGINF("type=%pUL, controlfunc=0x%p.\n",
+ 	       &switchTypeGuid, controlfunc);
+ 	if (!controlfunc) {
+@@ -161,6 +162,7 @@ int
+ uisctrl_unregister_req_handler_ex(uuid_le switchTypeGuid)
+ {
+ 	int rc = 0;		/* assume failure */
++
+ 	LOGINF("type=%pUL.\n", &switchTypeGuid);
+ 	if (ReqHandlerDel(switchTypeGuid) < 0) {
+ 		LOGERR("failed to remove %pUL from server list\n",
+@@ -249,6 +251,7 @@ uisutil_copy_fragsinfo_from_skb(unsigned char *calling_ctx, void *skb_in,
+ 	if (skb_shinfo(skb)->frag_list) {
+ 		struct sk_buff *skbinlist;
+ 		int c;
++
+ 		for (skbinlist = skb_shinfo(skb)->frag_list; skbinlist;
+ 		     skbinlist = skbinlist->next) {
+ 
+@@ -306,6 +309,7 @@ ReqHandlerFind(uuid_le switchTypeGuid)
+ {
+ 	struct list_head *lelt, *tmp;
+ 	ReqHandlerInfo_t *entry = NULL;
++
+ 	spin_lock(&ReqHandlerInfo_list_lock);
+ 	list_for_each_safe(lelt, tmp, &ReqHandlerInfo_list) {
+ 		entry = list_entry(lelt, ReqHandlerInfo_t, list_link);
+@@ -324,6 +328,7 @@ ReqHandlerDel(uuid_le switchTypeGuid)
+ 	struct list_head *lelt, *tmp;
+ 	ReqHandlerInfo_t *entry = NULL;
+ 	int rc = -1;
++
+ 	spin_lock(&ReqHandlerInfo_list_lock);
+ 	list_for_each_safe(lelt, tmp, &ReqHandlerInfo_list) {
+ 		entry = list_entry(lelt, ReqHandlerInfo_t, list_link);
+-- 
+1.7.10.4
 
