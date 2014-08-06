@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759AbaHFKZj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 06:25:39 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:2248 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755989AbaHFKZg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755757AbaHFKZg (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 6 Aug 2014 06:25:36 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:7219 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755976AbaHFKZe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 06:25:34 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 06 Aug 2014 03:16:50 -0700
+	by hqnvupgp07.nvidia.com on Wed, 06 Aug 2014 03:12:46 -0700
 From: Mikko Perttunen <mperttunen@nvidia.com>
 To: <rui.zhang@intel.com>, <edubezval@gmail.com>, <swarren@wwwdotorg.org>,
         <thierry.reding@gmail.com>
 CC: <linux-pm@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH v3 3/4] ARM: tegra: Add thermal trip points for Jetson TK1
-Date: Wed, 6 Aug 2014 13:25:05 +0300
-Message-ID: <1407320706-17440-4-git-send-email-mperttunen@nvidia.com>
+Subject: [PATCH v3 2/4] ARM: tegra: Add soctherm and thermal zones to Tegra124 device tree
+Date: Wed, 6 Aug 2014 13:25:04 +0300
+Message-ID: <1407320706-17440-3-git-send-email-mperttunen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1407320706-17440-1-git-send-email-mperttunen@nvidia.com>
 References: <1407320706-17440-1-git-send-email-mperttunen@nvidia.com>
@@ -28,56 +28,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds critical trip points to the Jetson TK1 device tree.
-The device will do a controlled shutdown when either the CPU, GPU
-or MEM thermal zone reaches 101 degrees Celsius.
+This adds the soctherm thermal sensing and management unit to the
+Tegra124 device tree along with the four thermal zones corresponding
+to the four thermal sensors provided by soctherm.
 
 Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
 ---
- arch/arm/boot/dts/tegra124-jetson-tk1.dts | 32 +++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
+ arch/arm/boot/dts/tegra124.dtsi | 47 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
 
-diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-index ee178c4..c6b47b9 100644
---- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-+++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-@@ -1856,4 +1856,36 @@
- 			 <&tegra_car TEGRA124_CLK_EXTERN1>;
- 		clock-names = "pll_a", "pll_a_out0", "mclk";
+diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
+index 03916ef..a579fab 100644
+--- a/arch/arm/boot/dts/tegra124.dtsi
++++ b/arch/arm/boot/dts/tegra124.dtsi
+@@ -3,6 +3,7 @@
+ #include <dt-bindings/pinctrl/pinctrl-tegra.h>
+ #include <dt-bindings/pinctrl/pinctrl-tegra-xusb.h>
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
++#include <dt-bindings/thermal/tegra124-soctherm.h>
+ 
+ #include "skeleton.dtsi"
+ 
+@@ -756,6 +757,52 @@
+ 		status = "disabled";
  	};
-+
+ 
 +	thermal-zones {
 +		cpu {
-+			trips {
-+				trip@0 {
-+					temperature = <101000>;
-+					hysteresis = <0>;
-+					type = "critical";
-+				};
-+			};
++			polling-delay-passive = <1000>;
++			polling-delay = <1000>;
++
++			thermal-sensors =
++				<&soctherm TEGRA124_SOCTHERM_SENSOR_CPU>;
 +		};
 +
 +		mem {
-+			trips {
-+				trip@0 {
-+					temperature = <101000>;
-+					hysteresis = <0>;
-+					type = "critical";
-+				};
-+			};
++			polling-delay-passive = <1000>;
++			polling-delay = <1000>;
++
++			thermal-sensors =
++				<&soctherm TEGRA124_SOCTHERM_SENSOR_MEM>;
 +		};
 +
 +		gpu {
-+			trips {
-+				trip@0 {
-+					temperature = <101000>;
-+					hysteresis = <0>;
-+					type = "critical";
-+				};
-+			};
++			polling-delay-passive = <1000>;
++			polling-delay = <1000>;
++
++			thermal-sensors =
++				<&soctherm TEGRA124_SOCTHERM_SENSOR_GPU>;
++		};
++
++		pllx {
++			polling-delay-passive = <1000>;
++			polling-delay = <1000>;
++
++			thermal-sensors =
++				<&soctherm TEGRA124_SOCTHERM_SENSOR_PLLX>;
 +		};
 +	};
- };
++
++	soctherm: soctherm@0,700e2000 {
++		compatible = "nvidia,tegra124-soctherm";
++		reg = <0x0 0x700e2000 0x0 0x1000>;
++		interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&tegra_car TEGRA124_CLK_TSENSOR>,
++			<&tegra_car TEGRA124_CLK_SOC_THERM>;
++		clock-names = "tsensor", "soctherm";
++		resets = <&tegra_car 78>;
++		reset-names = "soctherm";
++		#thermal-sensor-cells = <1>;
++	};
++
+ 	cpus {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
 -- 
 1.8.1.5
 
