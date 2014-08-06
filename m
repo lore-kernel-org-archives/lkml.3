@@ -1,29 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685AbaHFGqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 02:46:31 -0400
-Received: from [27.124.90.4] ([27.124.90.4]:38528 "EHLO mail.kuburayakab.go.id"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750883AbaHFGqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 02:46:30 -0400
-X-Greylist: delayed 523 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Aug 2014 02:46:29 EDT
-Date: Wed, 6 Aug 2014 00:26:21 +0700 (WIT)
-From: Ong Eng <diskominfo@kuburayakab.go.id>
-Reply-To: Ong Eng <ongeng_huat1@outlook.com>
-Message-ID: <27139412.14319.1407259581735.JavaMail.root@kuburayakab.go.id>
-Subject: Your Co-Partnership.
+	id S1754751AbaHFGr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 02:47:58 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:57396 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319AbaHFGr5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 02:47:57 -0400
+Message-ID: <53E1CF98.6010308@gmail.com>
+Date: Wed, 06 Aug 2014 09:47:52 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Hans Wennborg <hans@hanshq.net>, bharrosh@panasas.com,
+        osd-dev@open-osd.org, linux-kernel@vger.kernel.org
+Subject: Re: [osd-dev] [PATCH 13/15] exofs: fix decimal printf format specifiers
+ prefixed with 0x
+References: <1407300246-454-1-git-send-email-hans@hanshq.net>
+In-Reply-To: <1407300246-454-1-git-send-email-hans@hanshq.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.138.171.212]
-X-Mailer: Zimbra 7.2.5_GA_2906 (zclient/7.2.5_GA_2906)
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/06/2014 07:44 AM, Hans Wennborg wrote:
+> The prefix suggests the number should be printed in hex, so use
+> the %x specifier to do that.
+> 
+> Found by using regex suggested by Joe Perches.
+> 
+> Signed-off-by: Hans Wennborg <hans@hanshq.net>
 
+Thanks will push
+Boaz
 
-I am Mr. Ong Eng Huat fund manager to Mr. Muhammad Hussein, I am contacting you over a business proposal partnership of $24,500,000.00 strictly for the purchase of choice properties in your country, if interested, get back to me.
-Mr. Ong Eng Huat.
-Email:ongeng_huat1@outlook.com
+> ---
+>  fs/exofs/dir.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/exofs/dir.c b/fs/exofs/dir.c
+> index 49f51ab..54ab575 100644
+> --- a/fs/exofs/dir.c
+> +++ b/fs/exofs/dir.c
+> @@ -143,7 +143,7 @@ Espan:
+>  bad_entry:
+>  	EXOFS_ERR(
+>  		"ERROR [exofs_check_page]: bad entry in directory(0x%lx): %s - "
+> -		"offset=%lu, inode=0x%llu, rec_len=%d, name_len=%d\n",
+> +		"offset=%lu, inode=0x%llx, rec_len=%d, name_len=%d\n",
+>  		dir->i_ino, error, (page->index<<PAGE_CACHE_SHIFT)+offs,
+>  		_LLU(le64_to_cpu(p->inode_no)),
+>  		rec_len, p->name_len);
+> 
+
