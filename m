@@ -1,74 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534AbaHFNmG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 09:42:06 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:18960 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612AbaHFNmB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 09:42:01 -0400
-Message-ID: <53E23058.3030206@huawei.com>
-Date: Wed, 6 Aug 2014 21:40:40 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1752743AbaHFNqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 09:46:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48167 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784AbaHFNqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 09:46:17 -0400
+Date: Wed, 6 Aug 2014 09:46:13 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Chai Wen <chaiw.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com
+Subject: Re: [PATCH 2/2] softlockup: make detector be aware of task switch of
+ processes hogging cpu
+Message-ID: <20140806134612.GV87407@redhat.com>
+References: <1407137779-19129-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
+ <1407137779-19129-2-git-send-email-chaiw.fnst@cn.fujitsu.com>
+ <20140804143122.GF87407@redhat.com>
+ <53E045DD.4010505@cn.fujitsu.com>
+ <20140805152013.GK87407@redhat.com>
+ <53E191AC.2000700@cn.fujitsu.com>
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Will Deacon <will.deacon@arm.com>, <linux-kernel@vger.kernel.org>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Li Zefan <lizefan@huawei.com>, <davem@davemloft.net>,
-        <linux-arm-kernel@lists.infradead.org>, <peifeiyue@huawei.com>
-Subject: Re: [RFC PATCH] kprobes: arm: enable OPTPROBES for arm 32
-References: <1407223697-74911-1-git-send-email-wangnan0@huawei.com>	 <53E1B2A0.1040807@hitachi.com> <1407332208.3006.13.camel@linaro1.home>
-In-Reply-To: <1407332208.3006.13.camel@linaro1.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E191AC.2000700@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/8/6 21:36, Jon Medhurst (Tixy) wrote:
-> On Wed, 2014-08-06 at 13:44 +0900, Masami Hiramatsu wrote:
->> (2014/08/05 16:28), Wang Nan wrote
-> [...]
->>> +asm (
->>> +			".global optprobe_template_entry\n"
->>> +			"optprobe_template_entry:\n"
->>> +#ifndef CONFIG_THUMB
->>> +			"	sub	sp, sp, #80\n"
->>> +			"	stmia	sp, {r0 - r14} \n"
->>> +			"	add	r3, sp, #80\n"
->>> +			"	str	r3, [sp, #52]\n"
->>> +			"	mrs	r4, cpsr\n"
->>> +			"	str	r4, [sp, #64]\n"
->>> +			"	mov	r1, sp\n"
->>> +			"	ldr	r0, 1f\n"
->>> +			"	ldr	r2, 2f\n"
->>> +			"	blx	r2\n"
->>> +			"	ldr	r1, [sp, #64]\n"
->>> +			"	msr	cpsr_fs, r1\n"
->>> +			"	ldmia	sp, {r0 - r15}\n"
->>> +			".global optprobe_template_val\n"
->>> +			"optprobe_template_val:\n"
->>> +			"1:	nop\n"
->>> +			".global optprobe_template_call\n"
->>> +			"optprobe_template_call:\n"
->>> +			"2:	nop\n"
->>> +#else /* CONFIG_THUMB */
->>> +# error optprobe for thumb is not supported.
->>
->> Can we set CONFIG_THUMB=y without CONFIG_THUMB2_KERNEL ?
+On Wed, Aug 06, 2014 at 10:23:40AM +0800, Chai Wen wrote:
+> On 08/05/2014 11:20 PM, Don Zickus wrote:
 > 
-> Yes, CONFIG_THUMB is for supporting userside Thumb code,
-> CONFIG_THUMB2_KERNEL is for building the kernel for Thumb and the
-> options are orthogonal. So I don't think kprobes code should be testing
-> CONFIG_THUMB as it doesn't deal with userside.
+> > On Tue, Aug 05, 2014 at 10:47:57AM +0800, Chai Wen wrote:
+> >> On 08/04/2014 10:31 PM, Don Zickus wrote:
+> >>
+> >>> On Mon, Aug 04, 2014 at 03:36:19PM +0800, chai wen wrote:
+> >>>>
+> >>>> For now, soft lockup detector warns once for each case of process softlockup.
+> >>>> But the thread 'watchdog/n' may can not always get cpu at the time slot between
+> >>>> the task switch of two processes hogging that cpu.
+> >>>> This case is a false negative of "warn only once for a process", as there may be
+> >>>> a different process that is going to hog the cpu. Is is better for detector to
+> >>>> be aware of it. 
+> >>>
+> >>> I am not sure I fully understand the problem resolved.
+> >>>
+> >>> >From the changelog I understood that two processes bouncing back and forth
+> >>> could hog the cpu and could create a 'false negative' (a situation not
+> >>> reported but should).
+> >>
+> >>
+> >> Hi Don
+> >>
+> >> Thanks for your comment.
+> >> Perhaps 'task-switch' is wrong and is some misleading here, sorry for that.
+> >>
+> >> Here I mean the very case that between a termination of an old cpu hogging
+> >> process and a starting getting cpu of a new process hogging cpu.
+> >> The case that two or more processes bouncing back and forth and the thread 'watchdog/n'
+> >> getting no chance to run is rather difficult to be supposed. And I think this situation
+> >> does not exist.
+> >>
+> >> When I am reading the code of warning once about a case, I think maybe it is
+> >> not so reliable by judging a "soft_watchdog_warn". And I tried a simple test to see
+> >> if it could handle the cased I mentioned above. Please see the comment and detail of
+> >> the test below.
+> > 
+> > Thank you for your test case.  I understand the problem now.  If you have
+> > multiple processes hogging the cpu and you kill the one reported by
+> > the softlockup warning, you will never know about the other processes
+> > because the soft_watchdog_warn variable never gets a chance to reset.
+> > 
+> > I am ok with your patch then.
+> > 
+> > Do you mind if I modify the changelog a little bit to maybe help explain
+> > the problem better?  I am thinking of something like below:
+> > 
+> > "
+> > For now, soft lockup detector warns once for each case of process softlockup.
+> > But the thread 'watchdog/n' may not always get the cpu at the time slot between
+> > the task switch of two processes hogging that cpu to reset
+> > soft_watchdog_warn.
+> > 
+> > An example would be two processes hogging the cpu.  Process A causes the
+> > softlockup warning and is killed manually by a user.  Process B
+> > immediately becomes the new process hogging the cpu preventing the
+> > softlockup code from resetting the soft_watchdog_warn variable.
+> > 
+> > This case is a false negative of "warn only once for a process", as there may be
+> > a different process that is going to hog the cpu.  Resolve this by
+> > saving/checking the pid of the hogging process and use that to reset
+> > soft_watchdog_warn too.
+> > "
 > 
+> 
+> Your changelog and comment below is more specific for this case.
+> Thanks for your work on this patch.
+> Please feel free to do it like this.
 
-You are correct. This is my mistake.
+Ok.  Great.  I'll repost with my signoff and updated changelog.
 
+Cheers,
+Don
 
+> 
+> 
+> thanks
+> chai wen
+> 
+> 
+> > 
+> >>
+> >>>
+> >>> But looking at the patch below I was a little confused on the
+> >>> __touch_watchdog addition.  See below:
+> >>>
+> >>>>
+> >>>> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
+> >>>> ---
+> >>>>  kernel/watchdog.c |   18 ++++++++++++++++--
+> >>>>  1 files changed, 16 insertions(+), 2 deletions(-)
+> >>>>
+> >>>> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> >>>> index 4c2e11c..908050c 100644
+> >>>> --- a/kernel/watchdog.c
+> >>>> +++ b/kernel/watchdog.c
+> >>>> @@ -42,6 +42,7 @@ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
+> >>>>  static DEFINE_PER_CPU(bool, soft_watchdog_warn);
+> >>>>  static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
+> >>>>  static DEFINE_PER_CPU(unsigned long, soft_lockup_hrtimer_cnt);
+> >>>> +static DEFINE_PER_CPU(pid_t, softlockup_warn_pid_saved);
+> >>>>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+> >>>>  static DEFINE_PER_CPU(bool, hard_watchdog_warn);
+> >>>>  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
+> >>>> @@ -317,6 +318,8 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+> >>>>  	 */
+> >>>>  	duration = is_softlockup(touch_ts);
+> >>>>  	if (unlikely(duration)) {
+> >>>> +		pid_t pid = task_pid_nr(current);
+> >>>> +
+> >>>>  		/*
+> >>>>  		 * If a virtual machine is stopped by the host it can look to
+> >>>>  		 * the watchdog like a soft lockup, check to see if the host
+> >>>> @@ -326,8 +329,18 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+> >>>>  			return HRTIMER_RESTART;
+> >>>>  
+> >>>>  		/* only warn once */
+> >>>> -		if (__this_cpu_read(soft_watchdog_warn) == true)
+> >>>> +		if (__this_cpu_read(soft_watchdog_warn) == true) {
+> >>>> +			/*
+> >>>> +			 * soft lockup detector should be aware of that there
+> >>>> +			 * may be a task-swicth of two different processes
+> >>>> +			 * hogging the cpu continously
+> >>>> +			 */
+> > 
+> > Can I modify the comment above to something like:
+> > 
+> > 
+> > +			/*
+> > +			 * Handle the case where multiple processes are
+> > +			 * causing softlockups but the duration is small
+> > +			 * enough, the softlockup detector can not reset
+> > +			 * itself in time.  Use pids to detect this.
+> > +			 */
+> > 
+> > 
+> > Cheers,
+> > Don
+> > 
+> >>>
+> >>> The above piece is what I am trying to understand.  Are you saying that
+> >>> when two different processes are hogging the cpu, undo the
+> >>> soft_watchdog_warn and allow the second pid to be reported?
+> >>>
+> >>
+> >>
+> >> Yes, Indeed.
+> >>
+> >>> Just trying to understand the problem and see if this is the right
+> >>> approach (because 3 or more processes could cause the same problem???).
+> >>>
+> >>
+> >>
+> >> Only 2 processes is involved in this case as mentioned above, and it is a case about
+> >> a termination of an old process and a starting of a new process.
+> >>
+> >> Here is my test about the case:
+> >>
+> >> 	stuck.c:
+> >> 	#include <stdlib.h>
+> >> 	#include <stdio.h>
+> >>
+> >> 	int main(int argc, char **argv)
+> >> 	{
+> >>     		while(1);
+> >>     		exit(0);
+> >> 	}
+> >>
+> >> 	# gcc -o stuck stuck.c
+> >> 	# ./stuck &
+> >> 	[1] 30309
+> >> 	# ./stuck &
+> >> 	[2] 30310
+> >> 	# taskset -pc 3 30309
+> >> 	pid 30309's current affinity list: 0-3
+> >> 	pid 30309's new affinity list: 3
+> >> 	# taskset -pc 3 30310
+> >> 	pid 30310's current affinity list: 0-3
+> >> 	pid 30310's new affinity list: 3
+> >>
+> >> 	Then change the schedule policy of 30309 and 30310 to be SCHED_FIFO with the MAX_RT_PRIO-1 priority.
+> >> 	As the firstly changed to SCHED_FIFO process hogging cpu#3, and is reported after about ~20s.
+> >> 	After it is killed or terminated, the process 30310 is going out and keeping hogging the cpu continuously
+> >> 	But this process can not be always reported by the detector in this test.
+> >> 	If removing the 'warn once' checking, pid change and rather big lockup duration could be found.
+> >>
+> >> thanks
+> >> chai wen
+> >>
+> >>> Cheers,
+> >>> Don
+> >>>
+> >>>>  			return HRTIMER_RESTART;
+> >>>> +		}
+> >>>>  
+> >>>>  		if (softlockup_all_cpu_backtrace) {
+> >>>>  			/* Prevent multiple soft-lockup reports if one cpu is already
+> >>>> @@ -342,7 +355,8 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+> >>>>  
+> >>>>  		printk(KERN_EMERG "BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
+> >>>>  			smp_processor_id(), duration,
+> >>>> -			current->comm, task_pid_nr(current));
+> >>>> +			current->comm, pid);
+> >>>> +		__this_cpu_write(softlockup_warn_pid_saved, pid);
+> >>>>  		print_modules();
+> >>>>  		print_irqtrace_events(current);
+> >>>>  		if (regs)
+> >>>> -- 
+> >>>> 1.7.1
+> >>>>
+> >>> .
+> >>>
+> >>
+> >>
+> >>
+> >> -- 
+> >> Regards
+> >>
+> >> Chai Wen
+> > .
+> > 
+> 
+> 
+> 
+> -- 
+> Regards
+> 
+> Chai Wen
