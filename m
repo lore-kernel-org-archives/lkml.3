@@ -1,291 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356AbaHFXHH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 19:07:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5477 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752417AbaHFXHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 19:07:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,814,1400050800"; 
-   d="scan'208";a="554827838"
-Message-ID: <1407366387.2869.3.camel@rzwisler-mobl1.amr.corp.intel.com>
-Subject: Re: [PATCH 3/4] brd: Fix all partitions BUGs
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-To: Boaz Harrosh <boaz@plexistor.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <willy@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Date: Wed, 06 Aug 2014 17:06:27 -0600
-In-Reply-To: <53E2127B.1020805@plexistor.com>
-References: <53E21125.9080308@plexistor.com>
-	 <53E2127B.1020805@plexistor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754411AbaHFXSK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 19:18:10 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:56829 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472AbaHFXSI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 19:18:08 -0400
+Date: Wed, 6 Aug 2014 16:18:03 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Goffredo Baroncelli <kreijack@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jean Delvare <jdelvare@suse.de>,
+        Goffredo Baroncelli <kreijack@iniwnd.it>,
+        Goffredo Baroncelli <kreijack@inwind.it>
+Subject: Re: [PATCH 5/5] Export the temperatures via hwmon
+Message-ID: <20140806231803.GA5643@roeck-us.net>
+References: <1407359103-6012-1-git-send-email-kreijack@inwind.it>
+ <1407359103-6012-6-git-send-email-kreijack@inwind.it>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407359103-6012-6-git-send-email-kreijack@inwind.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-06 at 14:33 +0300, Boaz Harrosh wrote:
-> This patch fixes up brd's partitions scheme, now enjoying all worlds.
+On Wed, Aug 06, 2014 at 09:05:03PM +0000, Goffredo Baroncelli wrote:
+> From: Goffredo Baroncelli <kreijack@iniwnd.it>
 > 
-> The MAIN fix here is that currently if one fdisks some partitions,
-> a BAD bug will make all partitions point to the same start-end sector
-> ie: 0 - brd_size And an mkfs of any partition would trash the partition
-> table and the other partition.
+> Export the temperature via the hwmon subsystem.
+> See the list below for the sensors exported:
 > 
-> Another fix is that "mount -U uuid" did not work, because of the
-> GENHD_FL_SUPPRESS_PARTITION_INFO flag.
+> $ cd /sys/devices/temperature/hwmon/hwmon0
+> $ echo "name: $(cat name)"; for i in temp*; do echo "$i: $(cat $i)"; done
+> name: therm_windtunnel
+> temp1_input: 59312
+> temp1_label: CPU
+> temp2_input: 36750
+> temp2_label: Case
+> temp3_input: 37750
+> temp3_label: Case2
 > 
-> So NOW the logic goes like this:
-> * max_part - Just says how many minors to reserve between devices
->   But in any way, there can be as many partition as requested.
->   If minors between devices ends, then dynamic 259-major ids will
->   be allocated on the fly.
->   The default is now max_part=1, which means all partitions devt
->   will be from the dynamic major-range.
->   (If persistent partition minors is needed use max_part=)
+Makes me wonder why you don't report the fan speed through hwmon.
+
+> The Case2 temperature is the sensor temperature inside the adm1030.
 > 
-> * Creation of new devices on the fly still/always work:
->   mknod /path/devnod b 1 X
->   fdisk -l /path/devnod
->   Will create a new device if (X / max_part) was not already
->   created before. (Just as before)
-> 
->   partitions on the dynamically created device will work as well
->   Same logic applies with minors as with the pre-created ones.
-> 
-> TODO: dynamic grow of device size, maybe through sysfs. So each
->       device can have it's own size.
+There are standard hwmon drivers for lm75, ds1775, and adm1030.
+Personally I think it would make more sense to use those directly.
+But I guess that would be for another day.
 
-With this patch we end up in what feels like a weird place where we're half
-using the old scheme of major/minor allocation, and half in the world of
-dynamic major/minors.  Devices have a major of 1 and minors that increment by
-1, but partitions have a major of 259 (BLOCK_EXT_MAJOR):
-
-	brw-rw---- 1 root disk   1, 0 Aug  6 14:10 /dev/ram0
-	brw-rw---- 1 root disk   1, 1 Aug  6 14:13 /dev/ram1
-	brw-rw---- 1 root disk 259, 0 Aug  6 14:14 /dev/ram1p1
-	brw-rw---- 1 root disk 259, 1 Aug  6 14:13 /dev/ram1p2
-	brw-rw---- 1 root disk 259, 2 Aug  6 14:14 /dev/ram1p51
-
-For NVMe and PRD you get a major of 259 all around:
-
-	brw-rw---- 1 root disk 259, 0 Aug  6 16:55 /dev/pmem0
-	brw-rw---- 1 root disk 259, 2 Aug  6 16:55 /dev/pmem0p1
-	brw-rw---- 1 root disk 259, 3 Aug  6 16:55 /dev/pmem0p2
-	brw-rw---- 1 root disk 259, 1 Aug  6 16:54 /dev/pmem1
-
-It could be that this is fine, but it just smells fishy to me I guess.
-
-Also, it looks like you can still create a new device with this patch, but you
-can't create partitions on that device.  Not sure if this is just what you get
-when you dynamically create a device on the fly, or if it's a symptom of
-something larger.
-
-- Ross
-
-> 
-> Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
+> Signed-off-by: Goffredo Baroncelli <kreijack@inwind.it>
 > ---
->  drivers/block/brd.c | 93 +++++++++++++++++++++--------------------------------
->  1 file changed, 36 insertions(+), 57 deletions(-)
+>  drivers/macintosh/therm_windtunnel.c | 103 +++++++++++++++++++++++++++++++++--
+>  1 file changed, 99 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-> index 3f07cb4..9673704 100644
-> --- a/drivers/block/brd.c
-> +++ b/drivers/block/brd.c
-> @@ -447,16 +447,18 @@ static const struct block_device_operations brd_fops = {
->  /*
->   * And now the modules code and kernel interface.
->   */
-> -static int rd_nr;
-> -int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
-> -static int max_part;
-> -static int part_shift;
-> +static int rd_nr = CONFIG_BLK_DEV_RAM_COUNT;
->  module_param(rd_nr, int, S_IRUGO);
->  MODULE_PARM_DESC(rd_nr, "Maximum number of brd devices");
-> +
-> +int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
->  module_param(rd_size, int, S_IRUGO);
->  MODULE_PARM_DESC(rd_size, "Size of each RAM disk in kbytes.");
-> +
-> +static int max_part = 1;
->  module_param(max_part, int, S_IRUGO);
-> -MODULE_PARM_DESC(max_part, "Maximum number of partitions per RAM disk");
-> +MODULE_PARM_DESC(max_part, "Num Minors to reserve between devices");
-> +
->  MODULE_LICENSE("GPL");
->  MODULE_ALIAS_BLOCKDEV_MAJOR(RAMDISK_MAJOR);
->  MODULE_ALIAS("rd");
-> @@ -502,15 +504,15 @@ static struct brd_device *brd_alloc(int i)
->  	brd->brd_queue->limits.discard_zeroes_data = 1;
->  	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, brd->brd_queue);
+> diff --git a/drivers/macintosh/therm_windtunnel.c b/drivers/macintosh/therm_windtunnel.c
+> index b6cba98..a6757d7 100644
+> --- a/drivers/macintosh/therm_windtunnel.c
+> +++ b/drivers/macintosh/therm_windtunnel.c
+> @@ -37,6 +37,8 @@
+>  #include <linux/init.h>
+>  #include <linux/kthread.h>
+>  #include <linux/of_platform.h>
+> +#include <linux/hwmon.h>
+> +#include <linux/hwmon-sysfs.h>
 >  
-> -	disk = brd->brd_disk = alloc_disk(1 << part_shift);
-> +	disk = brd->brd_disk = alloc_disk(max_part);
->  	if (!disk)
->  		goto out_free_queue;
->  	disk->major		= RAMDISK_MAJOR;
-> -	disk->first_minor	= i << part_shift;
-> +	disk->first_minor	= i * max_part;
->  	disk->fops		= &brd_fops;
->  	disk->private_data	= brd;
->  	disk->queue		= brd->brd_queue;
-> -	disk->flags |= GENHD_FL_SUPPRESS_PARTITION_INFO;
-> +	disk->flags		= GENHD_FL_EXT_DEVT;
->  	sprintf(disk->disk_name, "ram%d", i);
->  	set_capacity(disk, rd_size * 2);
+>  #include <asm/prom.h>
+>  #include <asm/machdep.h>
+> @@ -58,9 +60,12 @@ static struct {
+>  	struct i2c_client	*thermostat;
+>  	struct i2c_client	*fan;
 >  
-> @@ -532,10 +534,11 @@ static void brd_free(struct brd_device *brd)
->  	kfree(brd);
->  }
+> +	struct device		*hwmon;
+> +
+>  	int			overheat_temp;		/* 100% fan at this temp */
+>  	int			overheat_hyst;
+>  	int			temp;
+> +	int			casetemp2;
+>  	int			casetemp;
+>  	int			fan_level;		/* active fan_table setting */
 >  
-> -static struct brd_device *brd_init_one(int i)
-> +static struct brd_device *brd_init_one(int i, bool *new)
+> @@ -120,6 +125,75 @@ static DEVICE_ATTR(case_temperature, S_IRUGO, show_case_temperature, NULL );
+>  static DEVICE_ATTR(fan_level, S_IRUGO, show_fan_level, NULL);
+>  
+>  
+> +static ssize_t
+> +show_temp1(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	return sprintf(buf, "%d%03d\n", x.temp>>8, (x.temp & 0xff)*1000>>8);
+
+I personally prefer if code follows coding style, with spaces around operands,
+and if calculations are less cryptic.
+
+> +}
+> +
+> +static ssize_t
+> +show_temp1_label(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	return sprintf(buf, "CPU\n");
+> +}
+> +
+> +static ssize_t
+> +show_temp2(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	return sprintf(buf, "%d%03d\n", x.casetemp>>8,
+> +				(x.casetemp & 0xff)*1000>>8);
+> +}
+> +
+> +static ssize_t
+> +show_temp2_label(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	return sprintf(buf, "Case\n");
+> +}
+> +
+> +
+> +static ssize_t
+> +show_temp3(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	return sprintf(buf, "%d%03d\n", x.casetemp2>>8,
+> +				(x.casetemp2 & 0xff)*1000>>8);
+
+... and aligned second lines.
+
+> +}
+> +
+> +static ssize_t
+> +show_temp3_label(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	return sprintf(buf, "Case2\n");
+> +}
+> +
+> +#define TWT_ATTRIB(name, func) \
+> +	static SENSOR_DEVICE_ATTR(name##_input, S_IRUGO, func, NULL, 0); \
+> +	static SENSOR_DEVICE_ATTR(name##_label, S_IRUGO, func##_label, \
+> +					NULL, 0)
+> +
+> +TWT_ATTRIB(temp1, show_temp1);
+> +TWT_ATTRIB(temp2, show_temp2);
+> +TWT_ATTRIB(temp3, show_temp3);
+> +
+> +
+A single empty line should be sufficient. Personally I am also not
+a fan of such macros (and neither is checkpatch), and prefer the use
+of direct macros as less confusing.
+
+Also, using three different functions for three different attributes
+where the only difference is the variable name defeats the purpose
+of using SENSOR_DEVICE_ATTR, which has an index variable for exactly 
+that reason. I would suggest to either use an indexed array to access
+the temperatures, or use DEVICE_ATTR.
+
+> +static struct attribute  *therm_windtunnel_attributes[] = {
+> +	&sensor_dev_attr_temp1_input.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_label.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_input.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_label.dev_attr.attr,
+> +	&sensor_dev_attr_temp3_input.dev_attr.attr,
+> +	&sensor_dev_attr_temp3_label.dev_attr.attr,
+> +
+> +	NULL,
+> +};
+> +
+> +static const struct attribute_group therm_windtunnel_attr_group = {
+> +	.attrs  = therm_windtunnel_attributes,
+> +};
+> +
+> +static const struct attribute_group *therm_windtunnel_attr_groups[] = {
+> +	&therm_windtunnel_attr_group,
+> +	NULL,
+> +};
+
+ATTRIBUTE_GROUPS() is a nice and useful macro.
+
+> +
+>  /************************************************************************/
+>  /*	controller thread						*/
+>  /************************************************************************/
+> @@ -172,16 +246,23 @@ tune_fan( int fan_setting )
+>  static void
+>  poll_temp( void )
 >  {
->  	struct brd_device *brd;
+> -	int temp, i, level, casetemp, tempchanged;
+> +	int temp, i, level, casetemp, tempchanged, casetemp2, reg06;
 >  
-> +	*new = false;
->  	list_for_each_entry(brd, &brd_devices, brd_list) {
->  		if (brd->brd_number == i)
->  			goto out;
-> @@ -546,6 +549,7 @@ static struct brd_device *brd_init_one(int i)
->  		add_disk(brd->brd_disk);
->  		list_add_tail(&brd->brd_list, &brd_devices);
->  	}
-> +	*new = true;
->  out:
->  	return brd;
->  }
-> @@ -561,70 +565,46 @@ static struct kobject *brd_probe(dev_t dev, int *part, void *data)
->  {
->  	struct brd_device *brd;
->  	struct kobject *kobj;
-> +	bool new;
+> +	/* temperature read from ds1775 */
+>  	temp = read_reg( x.thermostat, 0, 2 );
 >  
->  	mutex_lock(&brd_devices_mutex);
-> -	brd = brd_init_one(MINOR(dev) >> part_shift);
-> +	brd = brd_init_one(MINOR(dev) / max_part, &new);
->  	kobj = brd ? get_disk(brd->brd_disk) : NULL;
->  	mutex_unlock(&brd_devices_mutex);
+>  	/* this actually occurs when the computer is loaded */
+>  	if( temp < 0 )
+>  		return;
 >  
-> -	*part = 0;
-> +	if (new)
-> +		*part = 0;
-> +
->  	return kobj;
->  }
+> -	casetemp = read_reg(x.fan, 0x0b, 1) << 8;
+> -	casetemp |= (read_reg(x.fan, 0x06, 1) & 0x7) << 5;
+> +	/*
+> +	 * temperatures read from the adm1030
+> +	 * casetemp is the external temperature sensor
+> +	 * casetemp2 is the internal temperature sensor
+> +	 */
+
+What if there is no adm1030 ? Or is that always there ?
+Just wondering.
+
+> +	reg06 = read_reg(x.fan, 0x06, 1);
+> +	casetemp = (read_reg(x.fan, 0x0b, 1) << 8) | (reg06 & 0x07 << 5);
+> +	casetemp2 = (read_reg(x.fan, 0x0a, 1) << 8) | (reg06 & 0xc0);
 >  
->  static int __init brd_init(void)
->  {
-> -	int i, nr;
-> -	unsigned long range;
->  	struct brd_device *brd, *next;
-> +	int i;
->  
->  	/*
->  	 * brd module now has a feature to instantiate underlying device
->  	 * structure on-demand, provided that there is an access dev node.
-> -	 * However, this will not work well with user space tool that doesn't
-> -	 * know about such "feature".  In order to not break any existing
-> -	 * tool, we do the following:
->  	 *
-> -	 * (1) if rd_nr is specified, create that many upfront, and this
-> -	 *     also becomes a hard limit.
-> -	 * (2) if rd_nr is not specified, create CONFIG_BLK_DEV_RAM_COUNT
-> -	 *     (default 16) rd device on module load, user can further
-> -	 *     extend brd device by create dev node themselves and have
-> -	 *     kernel automatically instantiate actual device on-demand.
-> +	 * (1) if rd_nr is specified, create that many upfront. else
-> +	 *     it defaults to CONFIG_BLK_DEV_RAM_COUNT
-> +	 * (2) User can further extend brd devices by create dev node themselves
-> +	 *     and have kernel automatically instantiate actual device
-> +	 *     on-demand. Example:
-> +	 *		mknod /path/devnod_name b 1 X	# 1 is the rd major
-> +	 *		fdisk -l /path/devnod_name
-> +	 *	If (X / max_part) was not already created it will be created
-> +	 *	dynamically.
+>  	level = -1;
+>  	for( i=0; (temp & 0xffff) > fan_table[i].temp ; i++ )
+> @@ -200,13 +281,16 @@ poll_temp( void )
+>  	 * if verbose >0 log each fan tuning
+>  	 * if verbose >1 log each cpu temperature change
 >  	 */
+> -	tempchanged = x.temp != temp || x.casetemp != casetemp;
+> +	tempchanged = x.temp != temp || x.casetemp != casetemp ||
+> +		x.casetemp2 != casetemp2;
+>  	if ((verbose > 1 && tempchanged) ||
+>  	    (verbose > 0 && level >= 0)) {
+>  		printk(KERN_INFO);
+>  		print_temp("CPU-temp: ", temp);
+>  		if (casetemp)
+>  			print_temp(", Case: ", casetemp);
+> +		if (casetemp2)
+> +			print_temp(", Case2: ", casetemp2);
+>  		if (level >= 0)
+>  			printk(", Fan: %d (tuned %+d)\n", 11-level,
+>  				x.fan_level-level);
+
+Wow, this logging must clutter the kernel log quite substantially
+if enabled.
+
+> @@ -216,6 +300,7 @@ poll_temp( void )
 >  
-> -	part_shift = 0;
-> -	if (max_part > 0) {
-> -		part_shift = fls(max_part);
-> -
-> -		/*
-> -		 * Adjust max_part according to part_shift as it is exported
-> -		 * to user space so that user can decide correct minor number
-> -		 * if [s]he want to create more devices.
-> -		 *
-> -		 * Note that -1 is required because partition 0 is reserved
-> -		 * for the whole disk.
-> -		 */
-> -		max_part = (1UL << part_shift) - 1;
-> -	}
-> -
-> -	if ((1UL << part_shift) > DISK_MAX_PARTS)
-> -		return -EINVAL;
-> -
-> -	if (rd_nr > 1UL << (MINORBITS - part_shift))
-> -		return -EINVAL;
-> -
-> -	if (rd_nr) {
-> -		nr = rd_nr;
-> -		range = rd_nr << part_shift;
-> -	} else {
-> -		nr = CONFIG_BLK_DEV_RAM_COUNT;
-> -		range = 1UL << MINORBITS;
-> -	}
-> -
->  	if (register_blkdev(RAMDISK_MAJOR, "ramdisk"))
->  		return -EIO;
+>  	x.temp = temp;
+>  	x.casetemp = casetemp;
+> +	x.casetemp2 = casetemp2;
 >  
-> -	for (i = 0; i < nr; i++) {
-> +	if (unlikely(!max_part))
-> +		max_part = 1;
+>  	if( level >= 0 )
+>  		tune_fan( level );
+> @@ -275,11 +360,21 @@ setup_hardware( void )
+>  	if (err)
+>  		printk(KERN_WARNING
+>  			"Failed to create temperature attribute file(s).\n");
 > +
-> +	for (i = 0; i < rd_nr; i++) {
->  		brd = brd_alloc(i);
->  		if (!brd)
->  			goto out_free;
-> @@ -636,7 +616,7 @@ static int __init brd_init(void)
->  	list_for_each_entry(brd, &brd_devices, brd_list)
->  		add_disk(brd->brd_disk);
->  
-> -	blk_register_region(MKDEV(RAMDISK_MAJOR, 0), range,
-> +	blk_register_region(MKDEV(RAMDISK_MAJOR, 0), 1UL << MINORBITS,
->  				  THIS_MODULE, brd_probe, NULL, NULL);
->  
->  	printk(KERN_INFO "brd: module loaded\n");
-> @@ -649,21 +629,20 @@ out_free:
->  	}
->  	unregister_blkdev(RAMDISK_MAJOR, "ramdisk");
->  
-> +	printk(KERN_INFO "brd: module NOT loaded !!!\n");
->  	return -ENOMEM;
+> +	x.hwmon = hwmon_device_register_with_groups(&x.of_dev->dev,
+> +			"therm_windtunnel", NULL,
+> +			therm_windtunnel_attr_groups);
+> +	if (!x.hwmon)
+> +		dev_warn(&x.of_dev->dev, "Failed to create the hwmon device\n");
 >  }
 >  
->  static void __exit brd_exit(void)
+>  static void
+>  restore_regs( void )
 >  {
-> -	unsigned long range;
->  	struct brd_device *brd, *next;
->  
-> -	range = rd_nr ? rd_nr << part_shift : 1UL << MINORBITS;
-> -
->  	list_for_each_entry_safe(brd, next, &brd_devices, brd_list)
->  		brd_del_one(brd);
->  
-> -	blk_unregister_region(MKDEV(RAMDISK_MAJOR, 0), range);
-> +	blk_unregister_region(MKDEV(RAMDISK_MAJOR, 0), 1UL << MINORBITS);
->  	unregister_blkdev(RAMDISK_MAJOR, "ramdisk");
-> +	printk(KERN_INFO "brd: module unloaded\n");
->  }
->  
->  module_init(brd_init);
-
-
-
-
+> +	if (x.hwmon)
+> +		hwmon_device_unregister(x.hwmon);
+> +	x.hwmon = NULL;
+> +
+>  	device_remove_file( &x.of_dev->dev, &dev_attr_cpu_temperature );
+>  	device_remove_file( &x.of_dev->dev, &dev_attr_case_temperature );
+>  	device_remove_file(&x.of_dev->dev, &dev_attr_fan_level);
+> -- 
+> 2.0.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> 
