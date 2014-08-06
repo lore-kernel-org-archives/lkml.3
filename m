@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950AbaHFKXy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 06:23:54 -0400
-Received: from unicorn.mansr.com ([81.2.72.234]:36689 "EHLO unicorn.mansr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755912AbaHFKXw convert rfc822-to-8bit (ORCPT
+	id S1755745AbaHFKZb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 06:25:31 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:7211 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065AbaHFKZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 06:23:52 -0400
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Jakub Jelinek <jakub@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Josh Stone <jistone@redhat.com>
-Subject: Re: [PATCH 3.15 33/37] Fix gcc-4.9.0 miscompilation of load_balance() in scheduler
-References: <20140730014827.565626091@linuxfoundation.org>
-	<20140730014829.344302554@linuxfoundation.org>
-	<20140730065312.GA1652@laptop.redhat.com>
-	<CA+55aFzr_wJzt6RpojXpDo-ashV_N7sP+j7Ba0ND9mSpr7MKRQ@mail.gmail.com>
-	<CA+5PVA5FPD8hp_7=M-VNoUG1Mw9R0Xkn2Yo50eo28ojzrcB5Aw@mail.gmail.com>
-	<CA+55aFwvRcr98M=425eCR8K04X-uAVjH2bs3hudkySVKM4VqVg@mail.gmail.com>
-	<CA+5PVA79a-BoMMAzryH0O3NFz6KY1f9REAmE=T00ErfcUfCGEg@mail.gmail.com>
-	<20140805210728.GH13858@redhat.com>
-	<CA+55aFwq72kDdRSWXKhyO1j=_PAKB960+RNOD6Cou0wZTa+5Hw@mail.gmail.com>
-	<20140806081441.GZ7393@tucnak.redhat.com>
-Date: Wed, 06 Aug 2014 11:23:47 +0100
-In-Reply-To: <20140806081441.GZ7393@tucnak.redhat.com> (Jakub Jelinek's
-	message of "Wed, 6 Aug 2014 10:14:41 +0200")
-Message-ID: <yw1xfvh9532k.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 6 Aug 2014 06:25:29 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 06 Aug 2014 03:16:42 -0700
+From: Mikko Perttunen <mperttunen@nvidia.com>
+To: <rui.zhang@intel.com>, <edubezval@gmail.com>, <swarren@wwwdotorg.org>,
+        <thierry.reding@gmail.com>
+CC: <linux-pm@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>
+Subject: [PATCH v3 0/4] Tegra124 soctherm driver
+Date: Wed, 6 Aug 2014 13:25:02 +0300
+Message-ID: <1407320706-17440-1-git-send-email-mperttunen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jakub Jelinek <jakub@redhat.com> writes:
+Hi,
 
-> There have been several man-years of work to get from the 25% var coverage
-> to 67%, several DWARF extensions (most of them to be available in DWARF5 or
-> work in progress on that) and with -fno-var-tracking-assignments that is
-> just returned to the old state.
+this series adds support for the thermal monitoring features of the
+soctherm unit on the Tegra124 SoC. v2 drops support for interrupt-
+based trip points. Thermtrip (emergency thermal shutdown) still
+works when this driver is loaded and the PMC thermal reset patch
+series is applied.
 
-This is a typical "but look at all the work we've put in, it *has* to
-work" argument.  As always, it is completely without merit.
+The branch is also available in my github repo,
+  git://github.com/cyndis/linux.git soctherm-v3
 
->> In other words, anybody who relies on it has already learnt to work
->> around it. Or, more likely, there just isn't anybody who relies on it.
->> 
->> I don't understand how you guys can be so cavalier about a compiler
->> bug that has already resulted in actual real problems. You bring up
->
-> I have no problem with a -fno-var-tracking-assignments workaround for
-> compilers that have the PR61801 wrong-code bug.
+Thanks,
+Mikko
 
-Are there any that with reasonable confidence do not?
+Mikko Perttunen (4):
+  of: Add bindings for nvidia,tegra124-soctherm
+  ARM: tegra: Add soctherm and thermal zones to Tegra124 device tree
+  ARM: tegra: Add thermal trip points for Jetson TK1
+  thermal: Add Tegra SOCTHERM thermal management driver
+
+ .../devicetree/bindings/thermal/tegra-soctherm.txt |  53 +++
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts          |  32 ++
+ arch/arm/boot/dts/tegra124.dtsi                    |  47 +++
+ drivers/thermal/Kconfig                            |  10 +
+ drivers/thermal/Makefile                           |   1 +
+ drivers/thermal/tegra_soctherm.c                   | 430 +++++++++++++++++++++
+ include/dt-bindings/thermal/tegra124-soctherm.h    |  13 +
+ 7 files changed, 586 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/thermal/tegra-soctherm.txt
+ create mode 100644 drivers/thermal/tegra_soctherm.c
+ create mode 100644 include/dt-bindings/thermal/tegra124-soctherm.h
 
 -- 
-Måns Rullgård
-mans@mansr.com
+1.8.1.5
+
