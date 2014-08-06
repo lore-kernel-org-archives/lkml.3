@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547AbaHFShQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 14:37:16 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42061 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518AbaHFShO (ORCPT
+	id S1756585AbaHFSho (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 14:37:44 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54300 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756294AbaHFShn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 14:37:14 -0400
-From: Kumar Gala <galak@codeaurora.org>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH] ARM: qcom: Update defconfig
-Date: Wed,  6 Aug 2014 13:37:11 -0500
-Message-Id: <1407350231-16902-1-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Wed, 6 Aug 2014 14:37:43 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: markus@gutschke.com
+Cc: Zhang Rui <rui.zhang@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: 3.16-rcX crashes on resume from Suspend-To-RAM
+Date: Wed, 06 Aug 2014 20:56:21 +0200
+Message-ID: <3611647.fAl6g4h0i8@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CALGCz1pSpzDVb8sQx=QFKjdR4fi566h42p2nRkFx+RXairbgFQ@mail.gmail.com>
+References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com> <1407206650.10148.28.camel@rzhang1-toshiba> <CALGCz1pSpzDVb8sQx=QFKjdR4fi566h42p2nRkFx+RXairbgFQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Enable IPQ806x & APQ8084 clk support
-* Enable CPU_IDLE to get basic wfi support
-* Enable SPI NOR and MTD M25P80 support (used on AP148 board)
+On Wednesday, August 06, 2014 11:31:07 AM Markus Gutschke wrote:
+> I tried removing snd_hda_intel, but it didn't make any difference.
+> 
+> I then followed your instructions to turn on tracing, but I am more
+> puzzled than I was before. The crash reliably happens, every time I
+> suspend/resume without first having tracing turned on. But as soon as
+> I enter "echo devices >/sys/power/pm_test" to enable tracing things
+> change. Upon suspending, the machine now happily resumes itself again
+> a few seconds later. No crash whatsoever.
+> 
+> Is this the expected behavior? Anything else you want me to do?
 
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
----
- arch/arm/configs/qcom_defconfig | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Yes, it is.  This means that suspending/resuming devices works correctly.
 
-diff --git a/arch/arm/configs/qcom_defconfig b/arch/arm/configs/qcom_defconfig
-index 42ebd72..457f7f0 100644
---- a/arch/arm/configs/qcom_defconfig
-+++ b/arch/arm/configs/qcom_defconfig
-@@ -29,6 +29,7 @@ CONFIG_HIGHPTE=y
- CONFIG_CLEANCACHE=y
- CONFIG_ARM_APPENDED_DTB=y
- CONFIG_ARM_ATAG_DTB_COMPAT=y
-+CONFIG_CPU_IDLE=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-@@ -53,6 +54,7 @@ CONFIG_DEVTMPFS_MOUNT=y
- CONFIG_MTD=y
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_M25P80=y
-+CONFIG_MTD_SPI_NOR=y
- CONFIG_BLK_DEV_LOOP=y
- CONFIG_BLK_DEV_RAM=y
- CONFIG_SCSI=y
-@@ -86,7 +88,6 @@ CONFIG_SERIO_LIBPS2=y
- CONFIG_SERIAL_MSM=y
- CONFIG_SERIAL_MSM_CONSOLE=y
- CONFIG_HW_RANDOM=y
--CONFIG_HW_RANDOM_MSM=y
- CONFIG_I2C=y
- CONFIG_I2C_CHARDEV=y
- CONFIG_I2C_QUP=y
-@@ -133,6 +134,8 @@ CONFIG_QCOM_BAM_DMA=y
- CONFIG_STAGING=y
- CONFIG_QCOM_GSBI=y
- CONFIG_COMMON_CLK_QCOM=y
-+CONFIG_APQ_MMCC_8084=y
-+CONFIG_IPQ_GCC_806X=y
- CONFIG_MSM_GCC_8660=y
- CONFIG_MSM_MMCC_8960=y
- CONFIG_MSM_MMCC_8974=y
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Please try
+
+# echo platform > /sys/power/pm_test
+
+and see if that triggers the crash.
+
+If it doesn't, please try
+
+# echo processors > /sys/power/pm_test
+
+and if that doesn't trigger the crash,
+
+# echo core > /sys/power/pm_test
+
+(this is described in Documentation/power/basic-pm-debugging.txt in the kernel
+source tree, BTW).
+
+Rafael
 
