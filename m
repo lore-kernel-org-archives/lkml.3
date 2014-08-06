@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626AbaHFHMh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 03:12:37 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36193 "EHLO
+	id S1755654AbaHFHMj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 03:12:39 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36152 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755072AbaHFHLT (ORCPT
+	with ESMTP id S1754553AbaHFHLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Aug 2014 03:11:19 -0400
 X-Original-SENDERIP: 10.177.220.145
@@ -29,9 +29,9 @@ Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
         Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 4/8] mm/isolation: close the two race problems related to pageblock isolation
-Date: Wed,  6 Aug 2014 16:18:33 +0900
-Message-Id: <1407309517-3270-8-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 3/8] mm/page_alloc: fix pcp high, batch management
+Date: Wed,  6 Aug 2014 16:18:32 +0900
+Message-Id: <1407309517-3270-7-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -39,207 +39,232 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We got migratetype of the freeing page without holding the zone lock so
-it could be racy. There are two cases of this race.
+per cpu pages structure, aka pcp, has high and batch values to control
+how many pages we perform caching. This values could be updated
+asynchronously and updater should ensure that this doesn't make any
+problem. For this purpose, pageset_update() is implemented and do some
+memory synchronization. But, it turns out to be wrong when I implemented
+new feature using this. There is no corresponding smp_rmb() in read-side
+so that it can't guarantee anything. Without correct updating, system
+could hang in free_pcppages_bulk() due to larger batch value than high.
+To properly update this values, we need to synchronization primitives on
+read-side, but, it hurts allocator's fastpath.
 
-1. pages are added to isolate buddy list after restoring original
-migratetype.
-2. pages are added to normal buddy list while pageblock is isolated.
-
-If case 1 happens, we can't allocate freepages on isolate buddy list
-until next pageblock isolation occurs.
-In case of 2, pages could be merged with pages on isolate buddy list and
-located on normal buddy list. This makes freepage counting incorrect
-and break the property of pageblock isolation.
-
-One solution to this problem is checking pageblock migratetype with
-holding zone lock in __free_one_page() and I posted it before, but,
-it didn't get welcome since it needs the hook in zone lock critical
-section on freepath.
-
-This is another solution to this problem and impose most overhead on
-pageblock isolation logic. Following is how this solution works.
-
-1. Extends irq disabled period on freepath to call
-get_pfnblock_migratetype() with irq disabled. With this, we can be
-sure that future freed pages will see modified pageblock migratetype
-after certain synchronization point so we don't need to hold the zone
-lock to get correct pageblock migratetype. Although it extends irq
-disabled period on freepath, I guess it is marginal and better than
-adding the hook in zone lock critical section.
-
-2. #1 requires IPI for synchronization and we can't hold the zone lock
-during processing IPI. In this time, some pages could be moved from buddy
-list to pcp list on page allocation path and later it could be moved again
-from pcp list to buddy list. In this time, this page would be on isolate
-pageblock, so, the hook is required on free_pcppages_bulk() to prevent
-misplacement. To remove this possibility, disabling and draining pcp
-list is needed during isolation. It guaratees that there is no page on pcp
-list on all cpus while isolation, so misplacement problem can't happen.
-
-Note that this doesn't fix freepage counting problem. To fix it,
-we need more logic. Following patches will do it.
+There is another choice for synchronization, that is, sending IPI. This
+is somewhat expensive, but, this is really rare case so I guess it has
+no problem here. However, reducing IPI is very helpful here. Current
+logic handles each CPU's pcp update one by one. To reduce sending IPI,
+we need to re-ogranize the code to handle all CPU's pcp update at one go.
+This patch implement these requirements.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 ---
- mm/internal.h       |    2 ++
- mm/page_alloc.c     |   27 ++++++++++++++++++++-------
- mm/page_isolation.c |   45 +++++++++++++++++++++++++++++++++------------
- 3 files changed, 55 insertions(+), 19 deletions(-)
+ mm/page_alloc.c |  139 ++++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 80 insertions(+), 59 deletions(-)
 
-diff --git a/mm/internal.h b/mm/internal.h
-index a1b651b..81b8884 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -108,6 +108,8 @@ extern pmd_t *mm_find_pmd(struct mm_struct *mm, unsigned long address);
- /*
-  * in mm/page_alloc.c
-  */
-+extern void zone_pcp_disable(struct zone *zone);
-+extern void zone_pcp_enable(struct zone *zone);
- extern void __free_pages_bootmem(struct page *page, unsigned int order);
- extern void prep_compound_page(struct page *page, unsigned long order);
- #ifdef CONFIG_MEMORY_FAILURE
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 3e1e344..4517b1d 100644
+index e6fee4b..3e1e344 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -726,11 +726,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
- 			__free_one_page(page, page_to_pfn(page), zone, 0, mt);
- 			trace_mm_page_pcpu_drain(page, 0, mt);
--			if (likely(!is_migrate_isolate_page(page))) {
--				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
--				if (is_migrate_cma(mt))
--					__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
--			}
-+			__mod_zone_freepage_state(zone, 1, mt);
- 		} while (--to_free && --batch_free && !list_empty(list));
- 	}
- 	spin_unlock(&zone->lock);
-@@ -789,8 +785,8 @@ static void __free_pages_ok(struct page *page, unsigned int order)
- 	if (!free_pages_prepare(page, order))
- 		return;
+@@ -3800,7 +3800,7 @@ static void build_zonelist_cache(pg_data_t *pgdat)
+  * not check if the processor is online before following the pageset pointer.
+  * Other parts of the kernel may not check if the zone is available.
+  */
+-static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch);
++static void setup_pageset(struct per_cpu_pageset __percpu *pcp);
+ static DEFINE_PER_CPU(struct per_cpu_pageset, boot_pageset);
+ static void setup_zone_pageset(struct zone *zone);
  
--	migratetype = get_pfnblock_migratetype(page, pfn);
- 	local_irq_save(flags);
-+	migratetype = get_pfnblock_migratetype(page, pfn);
- 	__count_vm_events(PGFREE, 1 << order);
- 	set_freepage_migratetype(page, migratetype);
- 	free_one_page(page_zone(page), page, pfn, order, migratetype);
-@@ -1410,9 +1406,9 @@ void free_hot_cold_page(struct page *page, bool cold)
- 	if (!free_pages_prepare(page, 0))
- 		return;
- 
-+	local_irq_save(flags);
- 	migratetype = get_pfnblock_migratetype(page, pfn);
- 	set_freepage_migratetype(page, migratetype);
--	local_irq_save(flags);
- 	__count_vm_event(PGFREE);
- 
- 	/*
-@@ -6469,6 +6465,23 @@ void free_contig_range(unsigned long pfn, unsigned nr_pages)
- }
- #endif
- 
-+#ifdef CONFIG_MEMORY_ISOLATION
-+void zone_pcp_disable(struct zone *zone)
-+{
-+	mutex_lock(&pcp_batch_high_lock);
-+	pageset_update(zone, 1, 1);
-+}
-+
-+void zone_pcp_enable(struct zone *zone)
-+{
-+	int high, batch;
-+
-+	pageset_get_values(zone, &high, &batch);
-+	pageset_update(zone, high, batch);
-+	mutex_unlock(&pcp_batch_high_lock);
-+}
-+#endif
-+
- #ifdef CONFIG_MEMORY_HOTPLUG
- /*
-  * The zone indicated has a new number of managed_pages; batch sizes and percpu
-diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index 3100f98..439158d 100644
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -16,9 +16,10 @@ int set_migratetype_isolate(struct page *page, bool skip_hwpoisoned_pages)
- 	struct memory_isolate_notify arg;
- 	int notifier_ret;
- 	int ret = -EBUSY;
-+	unsigned long nr_pages;
-+	int migratetype;
- 
- 	zone = page_zone(page);
--
- 	spin_lock_irqsave(&zone->lock, flags);
- 
- 	pfn = page_to_pfn(page);
-@@ -55,20 +56,32 @@ int set_migratetype_isolate(struct page *page, bool skip_hwpoisoned_pages)
+@@ -3846,9 +3846,9 @@ static int __build_all_zonelists(void *data)
+ 	 * needs the percpu allocator in order to allocate its pagesets
+ 	 * (a chicken-egg dilemma).
  	 */
+-	for_each_possible_cpu(cpu) {
+-		setup_pageset(&per_cpu(boot_pageset, cpu), 0);
++	setup_pageset(&boot_pageset);
  
- out:
--	if (!ret) {
--		unsigned long nr_pages;
--		int migratetype = get_pageblock_migratetype(page);
-+	if (ret) {
-+		spin_unlock_irqrestore(&zone->lock, flags);
-+		return ret;
++	for_each_possible_cpu(cpu) {
+ #ifdef CONFIG_HAVE_MEMORYLESS_NODES
+ 		/*
+ 		 * We now know the "local memory node" for each node--
+@@ -4230,24 +4230,59 @@ static int zone_batchsize(struct zone *zone)
+  * outside of boot time (or some other assurance that no concurrent updaters
+  * exist).
+  */
+-static void pageset_update(struct per_cpu_pages *pcp, unsigned long high,
+-		unsigned long batch)
++static void pageset_update(struct zone *zone, int high, int batch)
+ {
+-       /* start with a fail safe value for batch */
+-	pcp->batch = 1;
+-	smp_wmb();
++	int cpu;
++	struct per_cpu_pages *pcp;
++
++	/* start with a fail safe value for batch */
++	for_each_possible_cpu(cpu) {
++		pcp = &per_cpu_ptr(zone->pageset, cpu)->pcp;
++		pcp->batch = 1;
 +	}
- 
--		set_pageblock_migratetype(page, MIGRATE_ISOLATE);
--		nr_pages = move_freepages_block(zone, page, MIGRATE_ISOLATE);
-+	migratetype = get_pageblock_migratetype(page);
-+	set_pageblock_migratetype(page, MIGRATE_ISOLATE);
-+	spin_unlock_irqrestore(&zone->lock, flags);
- 
--		__mod_zone_freepage_state(zone, -nr_pages, migratetype);
--	}
-+	zone_pcp_disable(zone);
-+
-+	/*
-+	 * After this point, freed pages will see MIGRATE_ISOLATE as
-+	 * their pageblock migratetype on all cpus. And pcp list has
-+	 * no free page.
-+	 */
-+	on_each_cpu(drain_local_pages, NULL, 1);
- 
-+	spin_lock_irqsave(&zone->lock, flags);
-+	nr_pages = move_freepages_block(zone, page, MIGRATE_ISOLATE);
-+	__mod_zone_freepage_state(zone, -nr_pages, migratetype);
- 	spin_unlock_irqrestore(&zone->lock, flags);
--	if (!ret)
--		drain_all_pages();
--	return ret;
-+
-+	zone_pcp_enable(zone);
-+
-+	return 0;
- }
- 
- void unset_migratetype_isolate(struct page *page, unsigned migratetype)
-@@ -80,9 +93,17 @@ void unset_migratetype_isolate(struct page *page, unsigned migratetype)
- 	spin_lock_irqsave(&zone->lock, flags);
- 	if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
- 		goto out;
-+
-+	set_pageblock_migratetype(page, migratetype);
-+	spin_unlock_irqrestore(&zone->lock, flags);
-+
-+	/* Freed pages will see original migratetype after this point */
 +	kick_all_cpus_sync();
 +
-+	spin_lock_irqsave(&zone->lock, flags);
- 	nr_pages = move_freepages_block(zone, page, migratetype);
- 	__mod_zone_freepage_state(zone, nr_pages, migratetype);
--	set_pageblock_migratetype(page, migratetype);
++	/* Update high, then batch, in order */
++	for_each_possible_cpu(cpu) {
++		pcp = &per_cpu_ptr(zone->pageset, cpu)->pcp;
++		pcp->high = high;
++	}
++	kick_all_cpus_sync();
+ 
+-       /* Update high, then batch, in order */
+-	pcp->high = high;
+-	smp_wmb();
++	for_each_possible_cpu(cpu) {
++		pcp = &per_cpu_ptr(zone->pageset, cpu)->pcp;
++		pcp->batch = batch;
++	}
++}
 +
- out:
- 	spin_unlock_irqrestore(&zone->lock, flags);
++/*
++ * pageset_get_values_by_high() gets the high water mark for
++ * hot per_cpu_pagelist to the value high for the pageset p.
++ */
++static void pageset_get_values_by_high(int input_high,
++				int *output_high, int *output_batch)
++{
++	*output_batch = max(1, input_high / 4);
++	if ((input_high / 4) > (PAGE_SHIFT * 8))
++		*output_batch = PAGE_SHIFT * 8;
++}
+ 
+-	pcp->batch = batch;
++/* a companion to pageset_get_values_by_high() */
++static void pageset_get_values_by_batch(int input_batch,
++				int *output_high, int *output_batch)
++{
++	*output_high = 6 * input_batch;
++	*output_batch = max(1, 1 * input_batch);
  }
+ 
+-/* a companion to pageset_set_high() */
+-static void pageset_set_batch(struct per_cpu_pageset *p, unsigned long batch)
++static void pageset_get_values(struct zone *zone, int *high, int *batch)
+ {
+-	pageset_update(&p->pcp, 6 * batch, max(1UL, 1 * batch));
++	if (percpu_pagelist_fraction) {
++		pageset_get_values_by_high(
++			(zone->managed_pages / percpu_pagelist_fraction),
++			high, batch);
++	} else
++		pageset_get_values_by_batch(zone_batchsize(zone), high, batch);
+ }
+ 
+ static void pageset_init(struct per_cpu_pageset *p)
+@@ -4263,51 +4298,38 @@ static void pageset_init(struct per_cpu_pageset *p)
+ 		INIT_LIST_HEAD(&pcp->lists[migratetype]);
+ }
+ 
+-static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
++/* Use this only in boot time, because it doesn't do any synchronization */
++static void setup_pageset(struct per_cpu_pageset __percpu *pcp)
+ {
+-	pageset_init(p);
+-	pageset_set_batch(p, batch);
+-}
+-
+-/*
+- * pageset_set_high() sets the high water mark for hot per_cpu_pagelist
+- * to the value high for the pageset p.
+- */
+-static void pageset_set_high(struct per_cpu_pageset *p,
+-				unsigned long high)
+-{
+-	unsigned long batch = max(1UL, high / 4);
+-	if ((high / 4) > (PAGE_SHIFT * 8))
+-		batch = PAGE_SHIFT * 8;
+-
+-	pageset_update(&p->pcp, high, batch);
+-}
+-
+-static void pageset_set_high_and_batch(struct zone *zone,
+-				       struct per_cpu_pageset *pcp)
+-{
+-	if (percpu_pagelist_fraction)
+-		pageset_set_high(pcp,
+-			(zone->managed_pages /
+-				percpu_pagelist_fraction));
+-	else
+-		pageset_set_batch(pcp, zone_batchsize(zone));
+-}
++	int cpu;
++	int high, batch;
++	struct per_cpu_pageset *p;
+ 
+-static void __meminit zone_pageset_init(struct zone *zone, int cpu)
+-{
+-	struct per_cpu_pageset *pcp = per_cpu_ptr(zone->pageset, cpu);
++	pageset_get_values_by_batch(0, &high, &batch);
+ 
+-	pageset_init(pcp);
+-	pageset_set_high_and_batch(zone, pcp);
++	for_each_possible_cpu(cpu) {
++		p = per_cpu_ptr(pcp, cpu);
++		pageset_init(p);
++		p->pcp.high = high;
++		p->pcp.batch = batch;
++	}
+ }
+ 
+ static void __meminit setup_zone_pageset(struct zone *zone)
+ {
+ 	int cpu;
++	int high, batch;
++	struct per_cpu_pageset *p;
++
++	pageset_get_values(zone, &high, &batch);
++
+ 	zone->pageset = alloc_percpu(struct per_cpu_pageset);
+-	for_each_possible_cpu(cpu)
+-		zone_pageset_init(zone, cpu);
++	for_each_possible_cpu(cpu) {
++		p = per_cpu_ptr(zone->pageset, cpu);
++		pageset_init(p);
++		p->pcp.high = high;
++		p->pcp.batch = batch;
++	}
+ }
+ 
+ /*
+@@ -5928,11 +5950,10 @@ int percpu_pagelist_fraction_sysctl_handler(struct ctl_table *table, int write,
+ 		goto out;
+ 
+ 	for_each_populated_zone(zone) {
+-		unsigned int cpu;
++		int high, batch;
+ 
+-		for_each_possible_cpu(cpu)
+-			pageset_set_high_and_batch(zone,
+-					per_cpu_ptr(zone->pageset, cpu));
++		pageset_get_values(zone, &high, &batch);
++		pageset_update(zone, high, batch);
+ 	}
+ out:
+ 	mutex_unlock(&pcp_batch_high_lock);
+@@ -6455,11 +6476,11 @@ void free_contig_range(unsigned long pfn, unsigned nr_pages)
+  */
+ void __meminit zone_pcp_update(struct zone *zone)
+ {
+-	unsigned cpu;
++	int high, batch;
++
+ 	mutex_lock(&pcp_batch_high_lock);
+-	for_each_possible_cpu(cpu)
+-		pageset_set_high_and_batch(zone,
+-				per_cpu_ptr(zone->pageset, cpu));
++	pageset_get_values(zone, &high, &batch);
++	pageset_update(zone, high, batch);
+ 	mutex_unlock(&pcp_batch_high_lock);
+ }
+ #endif
 -- 
 1.7.9.5
 
