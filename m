@@ -1,133 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795AbaHFJ0T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 05:26:19 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:53614 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074AbaHFJ0R (ORCPT
+	id S1755093AbaHFJ3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 05:29:32 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33302 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754000AbaHFJ32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 05:26:17 -0400
-From: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-To: <mingo@redhat.com>, <peterz@infradead.org>, <juri.lelli@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <xiaofeng.yan2012@gmail.com>, "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-Subject: [PATCH v3] sched/deadline: overrun could happen in start_hrtick_dl
-Date: Wed, 6 Aug 2014 09:08:14 +0000
-Message-ID: <1407316094-18207-1-git-send-email-xiaofeng.yan@huawei.com>
-X-Mailer: git-send-email 1.8.3.4
+	Wed, 6 Aug 2014 05:29:28 -0400
+Message-Id: <1407317367.1360819.149688237.188FBBFC@webmail.messagingengine.com>
+X-Sasl-Enc: mongF9BFrz5aOk0s2s+BJEJ4YViQo7iQ1XDHBRI5BtsW 1407317367
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Koehrer Mathias <mathias.koehrer@etas.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Cc: e1000-devel@lists.sourceforge.net
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain
-X-Originating-IP: [10.107.197.241]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020209.53E1F4B7.012B,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 497b5d197367f6e5853f3491e18835bc
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-36a9b403
+Subject: Re: PROBLEM: [x86] Running ptpd2 using an Intel 82572EI (e1000e) leads
+ to a kernel oops (3.12.26)
+Date: Wed, 06 Aug 2014 11:29:27 +0200
+In-Reply-To: <50f83e65cecd4882b22887858bfdf484@FE-MBX1012.de.bosch.com>
+References: <50f83e65cecd4882b22887858bfdf484@FE-MBX1012.de.bosch.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It could be wrong for the precision of runtime and deadline
-when the precision is within microsecond level. For example:
-Task runtime deadline period
- P1   200us   500us   500us
+[added e1000-devel]
 
-This case need enbale HRTICK feature by the next command
-PC#echo "HRTICK" > /sys/kernel/debug/sched_features
-PC#trace-cmd record -e sched_switch &
-PC#./schedtool -E -t 200000:500000 -e ./test
+Hi,
 
-Some of runtime and deadline run with millisecond level by
-reading kernershark. Some pieces of trace.dat are as follows:
-(remove some irrelevant information)
-<idle>-0   157.603157: sched_switch: :R ==> 2481:4294967295: test
-test-2481  157.603203: sched_switch:  2481:R ==> 0:120: swapper/2
-<idle>-0   157.605657: sched_switch:  :R ==> 2481:4294967295: test
-test-2481  157.608183: sched_switch:  2481:R ==> 2483:120: trace-cmd
-trace-cmd-2483 157.609656: sched_switch:2483:R==>2481:4294967295: test
+On Mon, Aug 4, 2014, at 14:26, Koehrer Mathias (ETAS/ESW5) wrote:
+> [1.] One line summary of the problem: 
+> Running ptpd2 using an Intel 82572EI (e1000e) leads to a kernel oops
+> (3.12.26)
+> 
+> [2.] Full description of the problem/report:
+> I run the PTP daemon ptpd2 (http://ptpd.sourceforge.net/), version 2.3.1
+> on a x86 PC using an Intel 82572EI NIC (driver e1000e).
+> The ptpd2 is started as
+> ptpd2 -i eth0 --masteronly --foreground --verbose
+> I have another PC in the same network that is running the PTP slave.
+> After a couple of seconds the kernel generates an Oops.
+> 
+> Using a different network adapter works fine.
+> 
+> Thanks for any support on this!
+> 
+> [3.] Keywords (i.e., modules, networking, kernel):
+> PTP, networking, e1000e
+> 
+> [4.] Kernel information
+> 
+> [4.1.] Kernel version (from /proc/version):
+> Linux version 3.12.26-4 (user@rtpc) (gcc version 4.7.2 (Debian 4.7.2-5) )
+> #1 SMP PREEMPT Mon Aug 4 11:04:11 CEST 2014
+> 
+> [4.2.] Kernel .config file:
+> [...]
 
-We can get the runtime from the information at some point.
-runtime = 157.605657 - 157.608183
-runtime = 0.002526(2.526ms)
-The correct runtime should be less than or equal to 200us at some point.
+> ------------[ cut here ]------------
+> WARNING: CPU: 0 PID: 5358 at kernel/workqueue.c:1386
+> __queue_work+0x18f/0x300()
+> Modules linked in: e100 mii e1000 nfsd exportfs nfs lockd sunrpc igb
+> i2c_algo_bit i2c_core dca bridge stp llc e1000e smsc47b397 coretemp
+> kvm_intel kvm usb_storage tg3 psmouse ptp pps_core libphy ehci_pci pcspkr
+> processor parport_pc parport thermal_sys hwmon reiserfs sg sr_mod sd_mod
+> cdrom ahci libahci microcode uhci_hcd ehci_hcd
+> CPU: 0 PID: 5358 Comm: ptpd2 Not tainted 3.12.26-4 #1
+> Hardware name: Hewlett-Packard HP xw4600 Workstation/0AA0h, BIOS 786F3
+> v01.13 06/25/2008
+>  00000000 00000000 f48dfad4 c07b2d07 00000000 f48dfb04 c0440e64 c08ee514
+>  00000000 000014ee c08f4e3c 0000056a c045775f c045775f f5877100 f501f900
+>  f5875e80 f48dfb14 c0440ea2 00000009 00000000 f48dfb48 c045775f f48dfb34
+> Call Trace:
+>  [<c07b2d07>] dump_stack+0x4b/0x79
+>  [<c0440e64>] warn_slowpath_common+0x84/0xa0
+>  [<c045775f>] ? __queue_work+0x18f/0x300
+>  [<c045775f>] ? __queue_work+0x18f/0x300
+>  [<c0440ea2>] warn_slowpath_null+0x22/0x30
+>  [<c045775f>] __queue_work+0x18f/0x300
+>  [<c045795d>] queue_work_on+0x3d/0x50
+>  [<f9f806e5>] schedule_work+0x15/0x20 [e1000e]
+>  [<f9f845ba>] e1000_xmit_frame+0xc4a/0xcb0 [e1000e]
 
-The problem is caused by a conditional judgment "delta > 10000".
-Because no hrtimer start up to control the runtime when runtime is less than 10us.
-So the process will continue to run until tick-period coming.
+Quick analysis so far:
+Looks like the socket enabled hw timestamping but the network card (from
+the lspci output below) is not capable of hw timestamping. queue_work
+thus gets fed an uninitialized work struct and bails out here.
 
-Move the code with the limit of the least time slice
-from hrtick_start_fair() to hrtick_start() because
-EDF schedule class also need this function in start_hrtick_dl().
+>  [<c07368bb>] ? harmonize_features+0x2b/0x1d0
+>  [<c0737033>] dev_hard_start_xmit+0x2c3/0x560
+>  [<c0724e61>] ? sock_alloc_send_pskb+0x161/0x380
+>  [<c074d602>] sch_direct_xmit+0xa2/0x190
+>  [<c0737454>] dev_queue_xmit+0x184/0x410
+>  [<c075f7c1>] ip_finish_output+0x1f1/0x3c0
+>  [<c076036f>] ip_mc_output+0x8f/0x140
+>  [<c075fd60>] ip_local_out+0x20/0x30
+>  [<c0760e4a>] ip_send_skb+0x1a/0x80
+>  [<c078395a>] udp_send_skb+0x1fa/0x280
+>  [<c0783ce3>] udp_sendmsg+0x2a3/0x8b0
+>  [<c075e350>] ? ip_setup_cork+0xf0/0xf0
+>  [<c0472cf1>] ? dequeue_task_fair+0x211/0x660
+>  [<c046fa68>] ? __enqueue_entity+0x78/0x80
+>  [<c078d3d0>] inet_sendmsg+0x70/0xa0
+>  [<c07213e2>] sock_sendmsg+0x62/0xa0
+>  [<c05c67b5>] ? _copy_from_user+0x35/0x50
+>  [<c0721991>] SYSC_sendto+0xf1/0x130
+>  [<c044ed4a>] ? ptrace_do_notify+0x8a/0xa0
+>  [<c0721f5d>] SyS_sendto+0x2d/0x30
+>  [<c0722908>] SyS_socketcall+0x1c8/0x300
+>  [<c07b848f>] syscall_call+0x7/0x7
+> ---[ end trace d87b1e283af6ddc9 ]---
+> [7.] A small shell script or example program which triggers the
+>      problem (if possible)
+> ptpd2 -i eth0 --masteronly --foreground --verbose
+> 
 
-To fix this problem, we call hrtimer_start() unconditionally in start_hrtick_dl(),
-and make sure schedule slice won't be smaller than 10us in hrtimer_start().
+> 34:00.0 Ethernet controller: Intel Corporation 82572EI Gigabit Ethernet
+> Controller (Copper) (rev 06)
 
-Signed-off-by: Xiaofeng Yan <xiaofeng.yan@huawei.com>
-Reviewed-by:   Peter Zijlstra <peterz@infradead.org>
-Reviewed-by:   Li Zefan <lizefan@huawei.com>
----
- kernel/sched/core.c     |    8 +++++++-
- kernel/sched/deadline.c |    5 +----
- kernel/sched/fair.c     |    8 --------
- 3 files changed, 8 insertions(+), 13 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 1211575..53514ba 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -449,8 +449,14 @@ static void __hrtick_start(void *arg)
- void hrtick_start(struct rq *rq, u64 delay)
- {
- 	struct hrtimer *timer = &rq->hrtick_timer;
--	ktime_t time = ktime_add_ns(timer->base->get_time(), delay);
-+	ktime_t time;
- 
-+	/*
-+	 * Don't schedule slices shorter than 10000ns, that just
-+	 * doesn't make sense and can cause timer DoS.
-+	 */
-+	s64 delta = max_t(s64, delay, 10000LL);
-+	time = ktime_add_ns(timer->base->get_time(), delta);
- 	hrtimer_set_expires(timer, time);
- 
- 	if (rq == this_rq()) {
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 255ce13..ce52d07 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -997,10 +997,7 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
- #ifdef CONFIG_SCHED_HRTICK
- static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
- {
--	s64 delta = p->dl.dl_runtime - p->dl.runtime;
--
--	if (delta > 10000)
--		hrtick_start(rq, p->dl.runtime);
-+	hrtick_start(rq, p->dl.runtime);
- }
- #endif
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bfa3c86..0d6b3e6 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3892,14 +3892,6 @@ static void hrtick_start_fair(struct rq *rq, struct task_struct *p)
- 				resched_curr(rq);
- 			return;
- 		}
--
--		/*
--		 * Don't schedule slices shorter than 10000ns, that just
--		 * doesn't make sense. Rely on vruntime for fairness.
--		 */
--		if (rq->curr != p)
--			delta = max_t(s64, 10000LL, delta);
--
- 		hrtick_start(rq, delta);
- 	}
- }
--- 
-1.7.9.5
-
+Bye,
+Hannes
