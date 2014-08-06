@@ -1,191 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682AbaHFU21 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 16:28:27 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:49755 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026AbaHFU2Z (ORCPT
+	id S1753927AbaHFUbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 16:31:37 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:65406 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426AbaHFUbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 16:28:25 -0400
-Date: Wed, 6 Aug 2014 16:28:23 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@redhat.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v2 4/5] ARM64: add IPI tracepoints
-In-Reply-To: <20140806155237.0a6d7d3c@gandalf.local.home>
-Message-ID: <alpine.LFD.2.11.1408061627280.6061@knanqh.ubzr>
-References: <1406318733-26754-1-git-send-email-nicolas.pitre@linaro.org> <1406318733-26754-5-git-send-email-nicolas.pitre@linaro.org> <20140806155237.0a6d7d3c@gandalf.local.home>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Wed, 6 Aug 2014 16:31:36 -0400
+Message-ID: <53E290A4.1020900@cogentembedded.com>
+Date: Thu, 07 Aug 2014 00:31:32 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Zoltan Kiss <zoltan.kiss@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+CC: David Vrabel <david.vrabel@citrix.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Subject: Re: [PATCH net-next] xen-netback: Fix vif->disable handling
+References: <1407353598-14185-1-git-send-email-zoltan.kiss@citrix.com>
+In-Reply-To: <1407353598-14185-1-git-send-email-zoltan.kiss@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Aug 2014, Steven Rostedt wrote:
+Hello.
 
-> Will and Russell,
-> 
-> Can you give me your Acked-by for this, and I can pull it through my
-> tree?
+On 08/06/2014 11:33 PM, Zoltan Kiss wrote:
 
-Catalin (the ARM64 maintainer) already provided his.
+> In the patch called "xen-netback: Turn off the carrier if the guest is not able
+> to receive" new branches were introduced to this if statement, risking that a
+> queue with non-zero id can reenable the disabled interface.
 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: xen-devel@lists.xenproject.org
 
-> 
-> Thanks,
-> 
-> -- Steve
-> 
-> 
-> On Fri, 25 Jul 2014 16:05:32 -0400
-> Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> 
-> > The strings used to list IPIs in /proc/interrupts are reused for tracing
-> > purposes.
-> > 
-> > While at it, the code is slightly cleaned up so the ipi_types array
-> > indices are no longer offset by IPI_RESCHEDULE whose value is 0 anyway.
-> > 
-> > Signed-off-by: Nicolas Pitre <nico@linaro.org>
-> > Acked-by: Steven Rostedt <rostedt@goodmis.org>
-> > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> > ---
-> >  arch/arm64/kernel/smp.c | 65 +++++++++++++++++++++++++++++--------------------
-> >  1 file changed, 39 insertions(+), 26 deletions(-)
-> > 
-> > diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-> > index 40f38f46c8..a89c66f3b4 100644
-> > --- a/arch/arm64/kernel/smp.c
-> > +++ b/arch/arm64/kernel/smp.c
-> > @@ -50,6 +50,9 @@
-> >  #include <asm/tlbflush.h>
-> >  #include <asm/ptrace.h>
-> >  
-> > +#define CREATE_TRACE_POINTS
-> > +#include <trace/events/ipi.h>
-> > +
-> >  /*
-> >   * as from 2.5, kernels no longer have an init_tasks structure
-> >   * so we need some other way of telling a new secondary core
-> > @@ -307,8 +310,6 @@ void __init smp_prepare_boot_cpu(void)
-> >  	set_my_cpu_offset(per_cpu_offset(smp_processor_id()));
-> >  }
-> >  
-> > -static void (*smp_cross_call)(const struct cpumask *, unsigned int);
-> > -
-> >  /*
-> >   * Enumerate the possible CPU set from the device tree and build the
-> >   * cpu logical map array containing MPIDR values related to logical
-> > @@ -463,32 +464,15 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
-> >  	}
-> >  }
-> >  
-> > +static void (*__smp_cross_call)(const struct cpumask *, unsigned int);
-> >  
-> >  void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
-> >  {
-> > -	smp_cross_call = fn;
-> > +	__smp_cross_call = fn;
-> >  }
-> >  
-> > -void arch_send_call_function_ipi_mask(const struct cpumask *mask)
-> > -{
-> > -	smp_cross_call(mask, IPI_CALL_FUNC);
-> > -}
-> > -
-> > -void arch_send_call_function_single_ipi(int cpu)
-> > -{
-> > -	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-> > -}
-> > -
-> > -#ifdef CONFIG_IRQ_WORK
-> > -void arch_irq_work_raise(void)
-> > -{
-> > -	if (smp_cross_call)
-> > -		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
-> > -}
-> > -#endif
-> > -
-> > -static const char *ipi_types[NR_IPI] = {
-> > -#define S(x,s)	[x - IPI_RESCHEDULE] = s
-> > +static const char *ipi_types[NR_IPI] __tracepoint_string = {
-> > +#define S(x,s)	[x] = s
-> >  	S(IPI_RESCHEDULE, "Rescheduling interrupts"),
-> >  	S(IPI_CALL_FUNC, "Function call interrupts"),
-> >  	S(IPI_CALL_FUNC_SINGLE, "Single function call interrupts"),
-> > @@ -497,12 +481,18 @@ static const char *ipi_types[NR_IPI] = {
-> >  	S(IPI_IRQ_WORK, "IRQ work interrupts"),
-> >  };
-> >  
-> > +static void smp_cross_call(const struct cpumask *target, unsigned int ipinr)
-> > +{
-> > +	trace_ipi_raise(target, ipi_types[ipinr]);
-> > +	__smp_cross_call(target, ipinr);
-> > +}
-> > +
-> >  void show_ipi_list(struct seq_file *p, int prec)
-> >  {
-> >  	unsigned int cpu, i;
-> >  
-> >  	for (i = 0; i < NR_IPI; i++) {
-> > -		seq_printf(p, "%*s%u:%s", prec - 1, "IPI", i + IPI_RESCHEDULE,
-> > +		seq_printf(p, "%*s%u:%s", prec - 1, "IPI", i,
-> >  			   prec >= 4 ? " " : "");
-> >  		for_each_online_cpu(cpu)
-> >  			seq_printf(p, "%10u ",
-> > @@ -522,6 +512,24 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
-> >  	return sum;
-> >  }
-> >  
-> > +void arch_send_call_function_ipi_mask(const struct cpumask *mask)
-> > +{
-> > +	smp_cross_call(mask, IPI_CALL_FUNC);
-> > +}
-> > +
-> > +void arch_send_call_function_single_ipi(int cpu)
-> > +{
-> > +	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-> > +}
-> > +
-> > +#ifdef CONFIG_IRQ_WORK
-> > +void arch_irq_work_raise(void)
-> > +{
-> > +	if (__smp_cross_call)
-> > +		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
-> > +}
-> > +#endif
-> > +
-> >  static DEFINE_RAW_SPINLOCK(stop_lock);
-> >  
-> >  /*
-> > @@ -553,8 +561,10 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
-> >  	unsigned int cpu = smp_processor_id();
-> >  	struct pt_regs *old_regs = set_irq_regs(regs);
-> >  
-> > -	if (ipinr >= IPI_RESCHEDULE && ipinr < IPI_RESCHEDULE + NR_IPI)
-> > -		__inc_irq_stat(cpu, ipi_irqs[ipinr - IPI_RESCHEDULE]);
-> > +	if ((unsigned)ipinr < NR_IPI) {
-> > +		trace_ipi_entry(ipi_types[ipinr]);
-> > +		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
-> > +	}
-> >  
-> >  	switch (ipinr) {
-> >  	case IPI_RESCHEDULE:
-> > @@ -599,6 +609,9 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
-> >  		pr_crit("CPU%u: Unknown IPI message 0x%x\n", cpu, ipinr);
-> >  		break;
-> >  	}
-> > +
-> > +	if ((unsigned)ipinr < NR_IPI)
-> > +		trace_ipi_exit(ipi_types[ipinr]);
-> >  	set_irq_regs(old_regs);
-> >  }
-> >  
-> 
-> 
+> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> index aa20933..f84516f 100644
+> --- a/drivers/net/xen-netback/netback.c
+> +++ b/drivers/net/xen-netback/netback.c
+> @@ -2027,7 +2027,13 @@ int xenvif_kthread_guest_rx(void *data)
+>   		 */
+>   		if (unlikely(queue->vif->disabled && queue->id == 0))
+>   			xenvif_carrier_off(queue->vif);
+> -		else if (unlikely(test_and_clear_bit(QUEUE_STATUS_RX_PURGE_EVENT,
+> +		else if (unlikely(queue->vif->disabled)) {
+
+    Perhaps it's time to fix the coding style and add {} around the first arm 
+of the *if* statement?
+
+> +			/* kthread_stop() would be called upon this thread soon,
+> +			 * be a bit proactive
+> +			 */
+> +			skb_queue_purge(&queue->rx_queue);
+> +			queue->rx_last_skb_slots = 0;
+> +		} else if (unlikely(test_and_clear_bit(QUEUE_STATUS_RX_PURGE_EVENT,
+>   						     &queue->status))) {
+>   			xenvif_rx_purge_event(queue);
+>   		} else if (!netif_carrier_ok(queue->vif->dev)) {
+
+WBR, Sergei
+
