@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916AbaHFNZj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 09:25:39 -0400
-Received: from smtp6-v.fe.bosch.de ([139.15.237.11]:47610 "EHLO
-	smtp6-v.fe.bosch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658AbaHFNZh convert rfc822-to-8bit (ORCPT
+	id S1752773AbaHFN3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 09:29:53 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:47130 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730AbaHFN3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 09:25:37 -0400
-From: "Koehrer Mathias (ETAS/ESW5)" <mathias.koehrer@etas.com>
-To: Nick Krause <xerofoify@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: PROBLEM: [x86] Running ptpd2 using an Intel 82572EI (e1000e)
- leads to a kernel oops (3.12.26)
-Thread-Topic: PROBLEM: [x86] Running ptpd2 using an Intel 82572EI (e1000e)
- leads to a kernel oops (3.12.26)
-Thread-Index: Ac+v3yzc3cSLCNWNSz2wcfBA1YE8+gBHlF+AABhU8HD///8TAP//3aGQgAAqSQD//9V6IA==
-Date: Wed, 6 Aug 2014 13:25:11 +0000
-Message-ID: <4ad0764f38504a98a272dab1f0ac704f@FE-MBX1012.de.bosch.com>
-References: <50f83e65cecd4882b22887858bfdf484@FE-MBX1012.de.bosch.com>
-	<CAPDOMVieG6RoOyQM1JG5vCQ1qSgqz-cy37X9GPnkzPUTyRBFBA@mail.gmail.com>
-	<ff2e6995521f40268c42d09e92cfe627@FE-MBX1012.de.bosch.com>
-	<CAPDOMVgFA-jTL=iDD2vLzPHrsO_=qsupAebTSUm0k0VmmHvX6A@mail.gmail.com>
-	<d7c17267f87c4e64a1559fa706cf1ead@FE-MBX1012.de.bosch.com>
- <CAPDOMVjWO9rfZjnHOgK+yB-3MVkmVz_00piBgnDFdf6j=56+GA@mail.gmail.com>
-In-Reply-To: <CAPDOMVjWO9rfZjnHOgK+yB-3MVkmVz_00piBgnDFdf6j=56+GA@mail.gmail.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.5.148.126]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 6 Aug 2014 09:29:50 -0400
+Date: Wed, 6 Aug 2014 14:29:41 +0100
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Dave Young <dyoung@redhat.com>, catalin.marinas@arm.com,
+        will.deacon@arm.com, matt.fleming@intel.com, ard.biesheuvel@linaro.org,
+        msalter@redhat.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [PATCH 1/2] UEFI arm64: add noefi boot param
+Message-ID: <20140806132941.GJ4179@bivouac.eciton.net>
+References: <20140806083825.GA31711@dhcp-16-198.nay.redhat.com>
+ <20140806130623.GI4179@bivouac.eciton.net>
+ <20140806132021.GB15082@console-pimps.org>
 MIME-Version: 1.0
-X-TM-AS-MML: disable
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140806132021.GB15082@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Nick Krause [mailto:xerofoify@gmail.com]
-> Sent: Wednesday, August 06, 2014 2:37 PM
-> To: Koehrer Mathias (ETAS/ESW5)
-> Cc: linux-kernel@vger.kernel.org; netdev@vger.kernel.org
-> Subject: Re: PROBLEM: [x86] Running ptpd2 using an Intel 82572EI (e1000e) leads
-> to a kernel oops (3.12.26)
-> 
-> On Wed, Aug 6, 2014 at 8:17 AM, Koehrer Mathias (ETAS/ESW5)
-> <mathias.koehrer@etas.com> wrote:
-> >> Mathias ,
-> >> After tracing this it seems to be either one of two things based on
-> >> the warn on messages in
-> >> __queue_work. Normally it would be because of this line.
-> >> WARN_ON_ONCE(!irqs_disabled());.
-> >> However it would also be the second warn on, If you want I can send a
-> >> simple patch with
-> >> a printk statement to see which one it is.
-> >> Regards Nick
-> > That would be helpful. I can try to see what's happening.
-> >
-> > Regards
-> >
-> > Mathias
-> Sorry for the late reply but couldn't figure out how to print the flags.
-> Cheers Nick
-Hi Nick,
-thanks for the patch.
-I applied it, however there was no change at all in the output.
+On Wed, Aug 06, 2014 at 02:20:21PM +0100, Matt Fleming wrote:
+> > Since this is really turning an x86-specific feature into a generic
+> > one, could it be moved to core code?
+> > Maybe an efi.mask, reusing the efi_enabled defines, with an
+> > efi_disabled macro?
+>  
+> Why the new efi_disabled() and efi.mask? This is all achievable with
+> efi_enabled() and efi.flags, in fact, this kind of thing is exactly why
+> they were invented.
 
-My impression is, that it has to do with the network driver as everything works fine if I am using a different NIC.
+Because this flag is indicating which facilities we should not try to
+enable, rather than which facilities we have enabled.
 
-When I apply the patch
+The EFI_RUNTIME_SERVICES flag is set after successful call to
+set_virtual_address_map. The apparent intent of "noefi" is to prevent
+that call from being made in the first place.
 
-Index: linux-3.12.26/drivers/net/ethernet/intel/e1000e/netdev.c
-===================================================================
---- linux-3.12.26.orig/drivers/net/ethernet/intel/e1000e/netdev.c       2014-08-04 10:56:56.000000000 +0200
-+++ linux-3.12.26/drivers/net/ethernet/intel/e1000e/netdev.c    2014-08-06 15:15:42.000000000 +0200
-@@ -5549,7 +5549,8 @@
-        count = e1000_tx_map(tx_ring, skb, first, adapter->tx_fifo_limit,
-                             nr_frags);
-        if (count) {
--               if (unlikely((skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP) &&
-+               if ((adapter->flags & FLAG_HAS_HW_TIMESTAMP) &&
-+                        unlikely((skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP) &&
-                             !adapter->tx_hwtstamp_skb)) {
-                        skb_shinfo(skb)->tx_flags |= SKBTX_IN_PROGRESS;
-                        tx_flags |= E1000_TX_FLAGS_HWTSTAMP;
+Anyway, it was just a suggestion - main point was it would make sense
+to share the code.
+ 
+> > Also, since this patch (and its x86 predecessor) is not really
+> > "noefi", could this be integrated with the "efi=" patch
+> > (http://permalink.gmane.org/gmane.linux.kernel.efi/4405),
+> > as an efi=noruntime option?
+> > 
+> > On x86, due to CSM, "noefi" was a useful fallback for completely
+> > broken (U)EFI implementations - but on an arm* UEFI system, there will
+> > be no fallback. Could it be wrapped in a kernel hacking config option?
+>  
+> I don't mind making "noefi" a synonym for "efi=noruntime" on x86, as
+> long as we keep "noefi" around with the same semantics it's always had.
 
-to the e1000e driver it seems to work...
-This makes sense as the work queue is only created if  "adapter->flags & FLAG_HAS_HW_TIMESTAMP"  is set.
-With this NIC this is *not* the case.
+Yeah, that would be nice.
 
-
-Regards
-
-Mathias
-
--- 
+/
+    Leif
