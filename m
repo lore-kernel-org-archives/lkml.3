@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093AbaHFHfe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 03:35:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38339 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753704AbaHFHfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 03:35:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,810,1400050800"; 
-   d="scan'208";a="584083070"
-From: "Ong, Boon Leong" <boon.leong.ong@intel.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen, Alvin" <alvin.chen@intel.com>
-Subject: RE: [PATCH v2] mmc: sdhci-pci: SDIO host controller support for
- Intel Quark X1000
-Thread-Topic: [PATCH v2] mmc: sdhci-pci: SDIO host controller support for
- Intel Quark X1000
-Thread-Index: AQHPj3HBwf6FoQ4dVUCzkJiqJqAAgJuMA0GAgDducfA=
-Date: Wed, 6 Aug 2014 07:31:38 +0000
-Message-ID: <AF233D1473C1364ABD51D28909A1B1B72F81CCA4@pgsmsx105.gar.corp.intel.com>
-References: <1403618196-7366-1-git-send-email-alvin.chen@intel.com>
-	<1403618196-7366-2-git-send-email-alvin.chen@intel.com>
- <CAPDyKFq8cQHhadSAcaMG6XTKKaZ3XjX5PQyxsRteqhbcMaYZ0A@mail.gmail.com>
-In-Reply-To: <CAPDyKFq8cQHhadSAcaMG6XTKKaZ3XjX5PQyxsRteqhbcMaYZ0A@mail.gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.205]
-Content-Type: text/plain; charset="utf-8"
+	id S1755273AbaHFHfp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 03:35:45 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:13791 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754553AbaHFHfn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 03:35:43 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 06 Aug 2014 00:26:57 -0700
+Message-ID: <53E1DA60.9010401@nvidia.com>
+Date: Wed, 6 Aug 2014 13:03:52 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] regulator: userspace-consumer: add DT binding details
+References: <1406728440-17837-1-git-send-email-ldewangan@nvidia.com> <1406728440-17837-2-git-send-email-ldewangan@nvidia.com> <20140730155302.GE20162@leverpostej> <20140730164014.GY17528@sirena.org.uk>
+In-Reply-To: <20140730164014.GY17528@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s767ZfPV009847
 
-> -----Original Message-----
-> From: Ulf Hansson [mailto:ulf.hansson@linaro.org]
-> Sent: Wednesday, July 02, 2014 5:01 PM
-> To: Chen, Alvin
-> Cc: Chris Ball; linux-mmc; linux-kernel@vger.kernel.org; Ong, Boon Leong
-> Subject: Re: [PATCH v2] mmc: sdhci-pci: SDIO host controller support for Intel
-> Quark X1000
-> 
-> On 24 June 2014 15:56, Chen, Alvin <alvin.chen@intel.com> wrote:
-> > From: Derek Browne <Derek.Browne@intel.com>
-> >
-> > This patch is to enable SDIO host controller for Intel Quark X1000.
-> >
-> > Signed-off-by: Derek Browne <Derek.Browne@intel.com>
-> > Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
-> 
-> Thanks! Applied for next.
-> 
+On Wednesday 30 July 2014 10:10 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Wed, Jul 30, 2014 at 04:53:03PM +0100, Mark Rutland wrote:
+>> On Wed, Jul 30, 2014 at 02:54:00PM +0100, Laxman Dewangan wrote:
+>>> +Required properties:
+>>> +- compatible		: Must be "reg-userspace-consumer".
+>> I would never expect to see "userspace" in a DT beinding string; this is
+>> entirely a software abstraction description and has nothing to do with
+>> the interaction of HW components.
+>> Why do you think we need this in the DT?
+> Yes, this is test code - it is not intended to be used in production.
+> Any binding should be for the consumer using this, not for this
+> implementation detail.
+>
 
-Hi Ulf, 
-	For this patch, are you in progress of getting it into v3.17  merge window?
-	Just want to follow-up.
+We have the GPS module and its driver in the user space. There is no 
+code for GPS on kernel. Just power on and open port from user space, get 
+the information.
 
-Many thanks
-Boon Leong
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On this case, how do we power on GPS module if we don't expose it? It 
+need two power source for digital section and analog section.
