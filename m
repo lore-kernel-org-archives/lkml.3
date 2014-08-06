@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927AbaHFUbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 16:31:37 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:65406 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426AbaHFUbg (ORCPT
+	id S1754033AbaHFUby (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 16:31:54 -0400
+Received: from smtprelay0203.hostedemail.com ([216.40.44.203]:42976 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753532AbaHFUbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 16:31:36 -0400
-Message-ID: <53E290A4.1020900@cogentembedded.com>
-Date: Thu, 07 Aug 2014 00:31:32 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Zoltan Kiss <zoltan.kiss@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-CC: David Vrabel <david.vrabel@citrix.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: [PATCH net-next] xen-netback: Fix vif->disable handling
-References: <1407353598-14185-1-git-send-email-zoltan.kiss@citrix.com>
-In-Reply-To: <1407353598-14185-1-git-send-email-zoltan.kiss@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 6 Aug 2014 16:31:53 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2910:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3871:3872:3873:3874:4321:4605:5007:7652:10004:10400:10848:10967:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12740:13069:13141:13230:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: shoe29_ffeecb93d936
+X-Filterd-Recvd-Size: 2227
+Message-ID: <1407357106.2736.7.camel@joe-AO725>
+Subject: Re: [PATCH 05/12] staging: lustre: Add missing spaces around
+ operators and braces.
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Andy Whitcroft <apw@canonical.com>
+Cc: Srikrishan Malik <srikrishanmalik@gmail.com>, greg@kroah.com,
+        andreas.dilger@intel.com, oleg.drokin@intel.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Wed, 06 Aug 2014 13:31:46 -0700
+In-Reply-To: <20140806201333.GC4856@mwanda>
+References: <1407345182-709-1-git-send-email-srikrishanmalik@gmail.com>
+	 <1407345182-709-5-git-send-email-srikrishanmalik@gmail.com>
+	 <20140806201333.GC4856@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, 2014-08-06 at 23:13 +0300, Dan Carpenter wrote:
+> On Wed, Aug 06, 2014 at 10:42:55PM +0530, Srikrishan Malik wrote:
+> > diff --git a/drivers/staging/lustre/lustre/mdc/mdc_reint.c b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
+[]
+> > @@ -71,7 +71,7 @@ int mdc_resource_get_unused(struct obd_export *exp, const struct lu_fid *fid,
+> >  			    __u64 bits)
+> >  {
+> >  	struct ldlm_namespace *ns = exp->exp_obd->obd_namespace;
+> > -	ldlm_policy_data_t policy = {{0}};
+> > +	ldlm_policy_data_t policy = {{0} };
+> 
+> That's odd.  Since when is a space required here?  Anyway, put one at
+> the start too if you're goind to do that.  Or you could do it like:
+> 
+> 	ldlm_policy_data_t policy = {};
+> 
+> ?
 
-On 08/06/2014 11:33 PM, Zoltan Kiss wrote:
+It comes from a pretty old bit of checkpatch:
 
-> In the patch called "xen-netback: Turn off the carrier if the guest is not able
-> to receive" new branches were introduced to this if statement, risking that a
-> queue with non-zero id can reenable the disabled interface.
+de7d4f0e (Andy Whitcroft 2007-07-15 23:37:22 -0700 3706) # closing brace should have a space following it when it has anything
+de7d4f0e (Andy Whitcroft 2007-07-15 23:37:22 -0700 3707) # on the line
+de7d4f0e (Andy Whitcroft 2007-07-15 23:37:22 -0700 3708)                if ($line =~ /}(?!(?:,|;|\)))\S/) {
 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: xen-devel@lists.xenproject.org
+Maybe it should have an } added to the test like:
 
-> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-> index aa20933..f84516f 100644
-> --- a/drivers/net/xen-netback/netback.c
-> +++ b/drivers/net/xen-netback/netback.c
-> @@ -2027,7 +2027,13 @@ int xenvif_kthread_guest_rx(void *data)
->   		 */
->   		if (unlikely(queue->vif->disabled && queue->id == 0))
->   			xenvif_carrier_off(queue->vif);
-> -		else if (unlikely(test_and_clear_bit(QUEUE_STATUS_RX_PURGE_EVENT,
-> +		else if (unlikely(queue->vif->disabled)) {
+if ($line =~ /}(?!(?:,|;|\)|}))\S/) {
 
-    Perhaps it's time to fix the coding style and add {} around the first arm 
-of the *if* statement?
-
-> +			/* kthread_stop() would be called upon this thread soon,
-> +			 * be a bit proactive
-> +			 */
-> +			skb_queue_purge(&queue->rx_queue);
-> +			queue->rx_last_skb_slots = 0;
-> +		} else if (unlikely(test_and_clear_bit(QUEUE_STATUS_RX_PURGE_EVENT,
->   						     &queue->status))) {
->   			xenvif_rx_purge_event(queue);
->   		} else if (!netif_carrier_ok(queue->vif->dev)) {
-
-WBR, Sergei
 
