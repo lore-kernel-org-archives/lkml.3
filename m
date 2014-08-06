@@ -1,77 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963AbaHFP0K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 11:26:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37339 "EHLO mga01.intel.com"
+	id S1753534AbaHFPho (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 11:37:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44155 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751557AbaHFP0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 11:26:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,812,1400050800"; 
-   d="scan'208";a="572583667"
-Message-ID: <53E2490E.70608@intel.com>
-Date: Wed, 06 Aug 2014 08:26:06 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Koehrer Mathias <mathias.koehrer@etas.com>,
-        Nick Krause <xerofoify@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] Fix e1000e with Intel 82572EI that has no hardware timestamp
- support
-References: <be459158bb5c46fcaf73129858342da4@FE-MBX1012.de.bosch.com> <53E23BEF.9030701@cogentembedded.com> <1407337757.772491.149802333.5E523CB0@webmail.messagingengine.com> <53E24800.4030102@intel.com>
-In-Reply-To: <53E24800.4030102@intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1750945AbaHFPhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 11:37:43 -0400
+From: Takashi Iwai <tiwai@suse.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jean-Michel Hautbois <jhautbois@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] misc: lattice-ecp3-config: Add missing MODULE_FIRMWARE()
+Date: Wed,  6 Aug 2014 17:37:41 +0200
+Message-Id: <1407339461-24483-1-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 2.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2014 08:21 AM, Alexander Duyck wrote:
-> On 08/06/2014 08:09 AM, Henrique de Moraes Holschuh wrote:
->> On Wed, Aug 6, 2014, at 11:30, Sergei Shtylyov wrote:
->>> On 8/6/2014 6:27 PM, Koehrer Mathias (ETAS/ESW5) wrote:
->>>
->>>> With the Intel 82527EI (driver: e1000e) there is an issue when running
->>>> the ptpd2 program, that leads to a kernel oops.
->>>> The reason is here that in e1000_xmit_frame() a work queue will be
->>>> scheduled that has not been initialized in this case.
->>>> The work queue "tx_hwstamp_work" will only be initialized if
->>>> adapter->flags & FLAG_HAS_HW_TIMESTAMP set.
->>>> This check is missing in e1000_xmit_frame().
->>>
->>>> The following patch adds the missing check.
->>>
->>>     OK, but this time you forgot your sign-off. :-)
->>
->> Also, shouldn't the added test be inside the unlikely() ?
->>
-> 
-> That shouldn't be necessary, but it might be better to place the new
-> check after the unlikely.  So you do the unlikely check first, then the
-> adapter check to see if we support Tx timestamping.  That way we can
-> avoid any unnecessary checks in the adapter structure.
-> 
-> Thanks,
-> 
-> Alex
-> 
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+ drivers/misc/lattice-ecp3-config.c | 1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/drivers/misc/lattice-ecp3-config.c b/drivers/misc/lattice-ecp3-config.c
+index 7ffdb589841e..643c9eda69dd 100644
+--- a/drivers/misc/lattice-ecp3-config.c
++++ b/drivers/misc/lattice-ecp3-config.c
+@@ -242,3 +242,4 @@ module_spi_driver(lattice_ecp3_driver);
+ MODULE_AUTHOR("Stefan Roese <sr@denx.de>");
+ MODULE_DESCRIPTION("Lattice ECP3 FPGA configuration via SPI");
+ MODULE_LICENSE("GPL");
++MODULE_FIRMWARE(FIRMWARE_NAME);
+-- 
+2.0.3
 
-Actually you might want to even take it one step further and break out
-the test as follows (note this is only pseudo-code:
-  unlikely(skb->tx_flags & HW_TSTAMP) &&
-  (adapter->flags & HAS_HW_TSTAMP) &&
-  !adapter->tx_hwtstamp_skb
-
-There isn't much point in wrapping the entire statement in unlikely, by
-wrapping just the first test the rest of the conditional checks can be
-pushed into the branch which will likely require a jump to some remote
-block of code and should streamline the hot-path.
-
-Thanks,
-
-Alex
