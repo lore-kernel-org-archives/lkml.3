@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431AbaHFWcG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 18:32:06 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:45452 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754291AbaHFWcF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 18:32:05 -0400
-X-Originating-IP: 173.246.103.110
-Date: Wed, 6 Aug 2014 15:31:54 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        David Rientjes <rientjes@google.com>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] x86: Add "make tinyconfig" to configure the tiniest
- possible kernel
-Message-ID: <20140806223152.GA14348@jtriplet-mobl1>
-References: <20140806222419.GA2566@jtriplet-mobl1>
+	id S1754569AbaHFWdA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 18:33:00 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54601 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754437AbaHFWc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 18:32:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,814,1400050800"; 
+   d="scan'208";a="572771020"
+From: "Keller, Jacob E" <jacob.e.keller@intel.com>
+To: "Fujinaka, Todd" <todd.fujinaka@intel.com>
+CC: "hannes@stressinduktion.org" <hannes@stressinduktion.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "mathias.koehrer@etas.com" <mathias.koehrer@etas.com>
+Subject: Re: [E1000-devel] PROBLEM: [x86] Running ptpd2 using an Intel
+ 82572EI (e1000e) leads to a kernel oops (3.12.26)
+Thread-Topic: [E1000-devel] PROBLEM: [x86] Running ptpd2 using an Intel
+ 82572EI (e1000e) leads to a kernel oops (3.12.26)
+Thread-Index: Ac+v3yzc3cSLCNWNSz2wcfBA1YE8+gBtGo2AAAzknIAADnhHAA==
+Date: Wed, 6 Aug 2014 22:32:56 +0000
+Message-ID: <1407364376.29652.3.camel@jekeller-desk1.amr.corp.intel.com>
+References: <50f83e65cecd4882b22887858bfdf484@FE-MBX1012.de.bosch.com>
+	 <1407317367.1360819.149688237.188FBBFC@webmail.messagingengine.com>
+	 <9B4A1B1917080E46B64F07F2989DADD6533AC68E@ORSMSX114.amr.corp.intel.com>
+In-Reply-To: <9B4A1B1917080E46B64F07F2989DADD6533AC68E@ORSMSX114.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [134.134.173.156]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <228CE2C8ED20CF40977538E9073499D2@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140806222419.GA2566@jtriplet-mobl1>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s76MX5El014282
 
-Since commit 5d2acfc7b974bbd3858b4dd3f2cdc6362dd8843a ("kconfig: make
-allnoconfig disable options behind EMBEDDED and EXPERT") in 3.15-rc1,
-"make allnoconfig" disables every possible config option.
+On Wed, 2014-08-06 at 15:38 +0000, Fujinaka, Todd wrote:
+> Looking at your patches on netdev, it appears that there are flags set in the skb that should never be set for the 82572EI as that part doesn't have hardware timestamping. This points to a bug in the ptpd code.
+> 
+> Todd Fujinaka
+> Software Application Engineer
+> Networking Division (ND)
+> Intel Corporation
+> todd.fujinaka@intel.com
+> (503) 712-4565
 
-However, a few configuration options (CC_OPTIMIZE_FOR_SIZE,
-OPTIMIZE_INLINING) produce a smaller kernel when turned on, and a few
-choices exist (compression, highmem, allocator) for which a non-default
-option produces a smaller kernel.
 
-Add a "tinyconfig" option, which starts from allnoconfig and then sets
-these options to configure the tiniest possible kernel.  This provides a
-better baseline for embedded systems or efforts to reduce kernel size.
+Surely we can bail here instead of generating a kernel oops? Even though
+ptpd may be incorrect here, we still shouldn't do this. I think this may
+be a bug in the set_ts_config possibly as well (since it shouldn't be
+able to set the hardware timestamp flags for the 82572EI
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
-
-v2: Based this on Luis's helper, added in patch 1/2, which eliminates
-the previously duplicated implementation from kvmconfig.
-
- arch/x86/Makefile            | 5 +++++
- arch/x86/configs/tiny.config | 5 +++++
- 2 files changed, 10 insertions(+)
- create mode 100644 arch/x86/configs/tiny.config
-
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 1568678..2b5ca16 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -257,6 +257,10 @@ PHONY += kvmconfig
- kvmconfig:
- 	$(call mergeconfig,kvm_guest)
- 
-+PHONY += tinyconfig
-+tinyconfig: allnoconfig
-+	$(call mergeconfig,tiny)
-+
- define archhelp
-   echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
-   echo  '  install      - Install kernel using'
-@@ -271,4 +275,5 @@ define archhelp
-   echo  '                  FDARGS="..."  arguments for the booted kernel'
-   echo  '                  FDINITRD=file initrd for the booted kernel'
-   echo  '  kvmconfig	- Enable additional options for guest kernel support'
-+  echo  '  tinyconfig   - Configure the tiniest possible kernel'
- endef
-diff --git a/arch/x86/configs/tiny.config b/arch/x86/configs/tiny.config
-new file mode 100644
-index 0000000..8f0e54c
---- /dev/null
-+++ b/arch/x86/configs/tiny.config
-@@ -0,0 +1,5 @@
-+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-+CONFIG_KERNEL_XZ=y
-+CONFIG_NOHIGHMEM=y
-+CONFIG_OPTIMIZE_INLINING=y
-+CONFIG_SLOB=y
--- 
-2.1.0.rc1
-
+Thanks,
+Jake
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
