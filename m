@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675AbaHFPVE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 11:21:04 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:53197 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438AbaHFPVC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 11:21:02 -0400
+	id S1755887AbaHFPWC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 11:22:02 -0400
+Received: from mga14.intel.com ([192.55.52.115]:32272 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755143AbaHFPWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 11:22:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,812,1400050800"; 
+   d="scan'208";a="572581723"
+Message-ID: <53E24800.4030102@intel.com>
+Date: Wed, 06 Aug 2014 08:21:36 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <28626.1406648278@warthog.procyon.org.uk>
-References: <cover.1406043029.git.milosz@adfin.com>
-	<53CE8862.7020201@adfin.com>
-	<28626.1406648278@warthog.procyon.org.uk>
-Date: Wed, 6 Aug 2014 11:21:01 -0400
-Message-ID: <CANP1eJG572cAR1t+pzCExk7EQWb=aDz77-PuP50GAP2j2mETiw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] FS-Cache: Reduce cookie ref count if submit fails.
-From: Milosz Tanski <milosz@adfin.com>
-To: David Howells <dhowells@redhat.com>
-Cc: "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
-        Shantanu Goel <sgoel01@yahoo.com>
-Content-Type: text/plain; charset=UTF-8
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Koehrer Mathias <mathias.koehrer@etas.com>,
+        Nick Krause <xerofoify@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] Fix e1000e with Intel 82572EI that has no hardware timestamp
+ support
+References: <be459158bb5c46fcaf73129858342da4@FE-MBX1012.de.bosch.com> <53E23BEF.9030701@cogentembedded.com> <1407337757.772491.149802333.5E523CB0@webmail.messagingengine.com>
+In-Reply-To: <1407337757.772491.149802333.5E523CB0@webmail.messagingengine.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The honest answer is I don't know if it know if needs to be unlocked
-before or after. I saw a same pattern with unlocking order inside of
-__fscache_attr_changed in the failure case.
+On 08/06/2014 08:09 AM, Henrique de Moraes Holschuh wrote:
+> On Wed, Aug 6, 2014, at 11:30, Sergei Shtylyov wrote:
+>> On 8/6/2014 6:27 PM, Koehrer Mathias (ETAS/ESW5) wrote:
+>>
+>>> With the Intel 82527EI (driver: e1000e) there is an issue when running
+>>> the ptpd2 program, that leads to a kernel oops.
+>>> The reason is here that in e1000_xmit_frame() a work queue will be
+>>> scheduled that has not been initialized in this case.
+>>> The work queue "tx_hwstamp_work" will only be initialized if
+>>> adapter->flags & FLAG_HAS_HW_TIMESTAMP set.
+>>> This check is missing in e1000_xmit_frame().
+>>
+>>> The following patch adds the missing check.
+>>
+>>     OK, but this time you forgot your sign-off. :-)
+> 
+> Also, shouldn't the added test be inside the unlikely() ?
+> 
 
-If this can be re-ordered I can take care of that in my next version I
-submit to you.
+That shouldn't be necessary, but it might be better to place the new
+check after the unlikely.  So you do the unlikely check first, then the
+adapter check to see if we support Tx timestamping.  That way we can
+avoid any unnecessary checks in the adapter structure.
 
-- Milosz
+Thanks,
 
-On Tue, Jul 29, 2014 at 11:37 AM, David Howells <dhowells@redhat.com> wrote:
-> Milosz Tanski <milosz@adfin.com> wrote:
->
->> +     wake_cookie = __fscache_unuse_cookie(cookie);
->>       spin_unlock(&cookie->lock);
->> +     if (wake_cookie)
->> +             __fscache_wake_unused_cookie(cookie);
->
-> Why do __fscache_unuse_cookie() with cookie->lock held?
->
-> David
-
-
-
--- 
-Milosz Tanski
-CTO
-16 East 34th Street, 15th floor
-New York, NY 10016
-
-p: 646-253-9055
-e: milosz@adfin.com
+Alex
