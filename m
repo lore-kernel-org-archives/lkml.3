@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518AbaHFHt6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 03:49:58 -0400
-Received: from smtp121.ord1c.emailsrvr.com ([108.166.43.121]:40120 "EHLO
-	smtp121.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751323AbaHFHt5 (ORCPT
+	id S1755158AbaHFHvc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 03:51:32 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:41293 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799AbaHFHva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 03:49:57 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Andy Gross <agross@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: [PATCH] i2c: qup: disable clks and return instead of just returning error
-Date: Wed,  6 Aug 2014 13:23:22 +0530
-Message-Id: <1407311602-15751-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 6 Aug 2014 03:51:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140805130646.GZ19379@twins.programming.kicks-ass.net>
+References: <20140804103025.478913141@infradead.org>
+	<CALFYKtBo2p5uNtkJZOy_rN7JbdFs1RbB1OfcF7TR+qDaMU0Kvg@mail.gmail.com>
+	<20140805130646.GZ19379@twins.programming.kicks-ass.net>
+Date: Wed, 6 Aug 2014 11:51:29 +0400
+Message-ID: <CALFYKtAVQ9Rgu_QWCqUkNHk4-wbiVK0FeiwLDttaxZC5bnnG5w@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/7] nested sleeps, fixes and debug infra
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, oleg@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>, tglx@linutronix.de,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a error handling scenario where clocks were not being disabled
-when QUP_OUTPUT_BLOCK_SIZE returns a size greater thanat size of blk_sizes
-array. So this patch adds a statement to jump to err lable to release the
-clocks.
+On Tue, Aug 5, 2014 at 5:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Aug 05, 2014 at 12:33:16PM +0400, Ilya Dryomov wrote:
+>> On Mon, Aug 4, 2014 at 2:30 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > Hi,
+>> >
+>> > Ilya recently tripped over a nested sleep which made Ingo suggest we should
+>> > have debug checks for that. So I did some, see patch 7. Of course that
+>> > triggered a whole bunch of fail the instant I tried to boot my machine.
+>> >
+>> > With this series I can boot my test box and build a kernel on it, I'm fairly
+>> > sure that's far too limited a test to have found all, but its a start.
+>>
+>> FWIW, I'm getting a lot of these during light rbd testing.  CC'ed
+>> netdev and linux-mm.
+>
+> Both are cond_resched() calls, and that's not blocking as such, just a
+> preemption point, so lets exclude those.
 
-CC: Wolfram Sang <wsa@the-dreams.de>
-CC: Grant Likely <grant.likely@linaro.org>
-CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-CC: Andy Gross <agross@codeaurora.org>
-CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+OK, this one is a bit different.
 
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
+WARNING: CPU: 1 PID: 1744 at kernel/sched/core.c:7104 __might_sleep+0x58/0x90()
+do not call blocking ops when !TASK_RUNNING; state=1 set at
+[<ffffffff81070e10>] prepare_to_wait+0x50 /0xa0
+Modules linked in:
+CPU: 1 PID: 1744 Comm: lt-ceph_test_li Not tainted 3.16.0-vm+ #113
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+ 0000000000001bc0 ffff88006c4479d8 ffffffff8156f455 0000000000000000
+ ffff88006c447a28 ffff88006c447a18 ffffffff81033357 0000000000000001
+ 0000000000000000 0000000000000950 ffffffff817ee48a ffff88006dba6120
+Call Trace:
+ [<ffffffff8156f455>] dump_stack+0x4f/0x7c
+ [<ffffffff81033357>] warn_slowpath_common+0x87/0xb0
+ [<ffffffff81033421>] warn_slowpath_fmt+0x41/0x50
+ [<ffffffff81078bb2>] ? trace_hardirqs_on_caller+0x182/0x1f0
+ [<ffffffff81070e10>] ? prepare_to_wait+0x50/0xa0
+ [<ffffffff81070e10>] ? prepare_to_wait+0x50/0xa0
+ [<ffffffff8105bc38>] __might_sleep+0x58/0x90
+ [<ffffffff8148c671>] lock_sock_nested+0x31/0xb0
+ [<ffffffff8148dfeb>] ? release_sock+0x1bb/0x200
+ [<ffffffff81498aaa>] sk_stream_wait_memory+0x18a/0x2d0
+ [<ffffffff810709a0>] ? woken_wake_function+0x10/0x10
+ [<ffffffff814e058f>] tcp_sendmsg+0xb6f/0xd70
+ [<ffffffff81509e9f>] inet_sendmsg+0xdf/0x100
+ [<ffffffff81509dc0>] ? inet_recvmsg+0x100/0x100
+ [<ffffffff81489f07>] sock_sendmsg+0x67/0x90
+ [<ffffffff810fe391>] ? might_fault+0x51/0xb0
+ [<ffffffff8148a252>] ___sys_sendmsg+0x2d2/0x2e0
+ [<ffffffff811428a0>] ? do_dup2+0xd0/0xd0
+ [<ffffffff811428a0>] ? do_dup2+0xd0/0xd0
+ [<ffffffff8105bfe0>] ? finish_task_switch+0x50/0x100
+ [<ffffffff811429d5>] ? __fget_light+0x45/0x60
+ [<ffffffff811429fe>] ? __fdget+0xe/0x10
+ [<ffffffff8148ad14>] __sys_sendmsg+0x44/0x70
+ [<ffffffff8148ad49>] SyS_sendmsg+0x9/0x10
+ [<ffffffff815764d2>] system_call_fastpath+0x16/0x1b
 
-Resending the patch by updating CCs list.
- drivers/i2c/busses/i2c-qup.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+Thanks,
 
-diff --git a/drivers/i2c/busses/i2c-qup.c b/drivers/i2c/busses/i2c-qup.c
-index 2a5efb5..3a4d64e 100644
---- a/drivers/i2c/busses/i2c-qup.c
-+++ b/drivers/i2c/busses/i2c-qup.c
-@@ -633,13 +633,17 @@ static int qup_i2c_probe(struct platform_device *pdev)
- 	 * associated with each byte written/received
- 	 */
- 	size = QUP_OUTPUT_BLOCK_SIZE(io_mode);
--	if (size >= ARRAY_SIZE(blk_sizes))
--		return -EIO;
-+	if (size >= ARRAY_SIZE(blk_sizes)) {
-+		ret = -EIO;
-+		goto fail;
-+	}
- 	qup->out_blk_sz = blk_sizes[size] / 2;
- 
- 	size = QUP_INPUT_BLOCK_SIZE(io_mode);
--	if (size >= ARRAY_SIZE(blk_sizes))
--		return -EIO;
-+	if (size >= ARRAY_SIZE(blk_sizes)) {
-+		ret = -EIO;
-+		goto fail;
-+	}
- 	qup->in_blk_sz = blk_sizes[size] / 2;
- 
- 	size = QUP_OUTPUT_FIFO_SIZE(io_mode);
--- 
-1.7.9.5
-
+                Ilya
