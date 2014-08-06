@@ -1,952 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344AbaHFTrr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 15:47:47 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57608 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754305AbaHFTro convert rfc822-to-8bit (ORCPT
+	id S1754396AbaHFTrz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 15:47:55 -0400
+Received: from vserver.eikelenboom.it ([84.200.39.61]:33162 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754355AbaHFTrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 15:47:44 -0400
-From: "Murphy, Dan" <dmurphy@ti.com>
-To: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "madcatxster@devoid-pointer.net" <madcatxster@devoid-pointer.net>,
-        "simon@mungewell.org" <simon@mungewell.org>,
-        "elias.vds@gmail.com" <elias.vds@gmail.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v5] input: drv260x: Add TI drv260x haptics driver
-Thread-Topic: [PATCH v5] input: drv260x: Add TI drv260x haptics driver
-Thread-Index: AQHPrPO0tYMQlTI4yUqEx0SWRNhMRw==
-Date: Wed, 6 Aug 2014 19:47:25 +0000
-Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49DCAF45@DFLE09.ent.ti.com>
-References: <1406834089-15095-1-git-send-email-dmurphy@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 6 Aug 2014 15:47:52 -0400
+Date: Wed, 6 Aug 2014 21:47:43 +0200
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <276705485.20140806214743@eikelenboom.it>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: gregkh@linuxfoundation.org, boris.ostrovsky@oracle.com,
+        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [PATCH v5] Fixes to Xen pciback for 3.17.
+In-Reply-To: <20140806193916.GA31040@laptop.dumpdata.com>
+References: <53DBB27D.2040203@citrix.com> <20140804184318.GB9009@laptop.dumpdata.com> <75613802.20140805104438@eikelenboom.it> <53E0A45C.4050400@citrix.com> <1985206568.20140805114433@eikelenboom.it> <20140805134930.GE13057@laptop.dumpdata.com> <1724263917.20140805160443@eikelenboom.it> <182103485.20140806205959@eikelenboom.it> <20140806191831.GB30062@laptop.dumpdata.com> <1081188855.20140806212559@eikelenboom.it> <20140806193916.GA31040@laptop.dumpdata.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bump
 
-On 07/31/2014 02:14 PM, Murphy, Dan wrote:
-> Add the TI drv260x haptics/vibrator driver.
-> This device uses the input force feedback
-> to produce a wave form to driver an
-> ERM or LRA actuator device.
-> 
-> The initial driver supports the devices
-> real time playback mode.  But the device
-> has additional wave patterns in ROM.
-> 
-> This functionality will be added in
-> future patchsets.
-> 
-> Product data sheet is located here:
-> http://www.ti.com/product/drv2605
-> 
-> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+Wednesday, August 6, 2014, 9:39:16 PM, you wrote:
+
+> On Wed, Aug 06, 2014 at 09:25:59PM +0200, Sander Eikelenboom wrote:
+>> 
+>> Wednesday, August 6, 2014, 9:18:31 PM, you wrote:
+>> 
+>> > On Wed, Aug 06, 2014 at 08:59:59PM +0200, Sander Eikelenboom wrote:
+>> >> 
+>> >> Tuesday, August 5, 2014, 4:04:43 PM, you wrote:
+>> >> 
+>> >> 
+>> >> > Tuesday, August 5, 2014, 3:49:30 PM, you wrote:
+>> >> 
+>> >> >> On Tue, Aug 05, 2014 at 11:44:33AM +0200, Sander Eikelenboom wrote:
+>> >> >>> 
+>> >> >>> Tuesday, August 5, 2014, 11:31:08 AM, you wrote:
+>> >> >>> 
+>> >> >>> > On 05/08/14 09:44, Sander Eikelenboom wrote:
+>> >> >>> >> 
+>> >> >>> >> Monday, August 4, 2014, 8:43:18 PM, you wrote:
+>> >> >>> >> 
+>> >> >>> >>> On Fri, Aug 01, 2014 at 04:30:05PM +0100, David Vrabel wrote:
+>> >> >>> >>>> On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
+>> >> >>> >>>>> Greg: goto GHK
+>> >> >>> >>>>>
+>> >> >>> >>>>> This is v5 version of patches to fix some issues in Xen PCIback.
+>> >> >>> >>>>
+>> >> >>> >>>> Applied to devel/for-linus-3.17.
+>> >> >>> >> 
+>> >> >>> >>> Thank you.
+>> >> >>> >>>>
+>> >> >>> >>>> I dropped the stable Cc for #2 pending a final decision on whether it
+>> >> >>> >>>> really is a stable candidate.
+>> >> >>> >> 
+>> >> >>> >>> OK.
+>> >> >>> >>>>
+>> >> >>> >>>> David
+>> >> >>> >> 
+>> >> >>> >> Hi Konrad / David,
+>> >> >>> >> 
+>> >> >>> >> This series still lacks a resolution on the sysfs /do_flr /reset,
+>> >> >>> >> as a result the pci devices are not reset after shutdown of a guest.
+>> >> >>> >> (no more pciback 0000:xx:xx.x: restoring config space at offset xxx)
+>> >> >>> >> 
+>> >> >>> >> So this series now introduces a regression to 3.16, which causes devices to malfunction 
+>> >> >>> >> after a guest reboot or after assigning the devices to another guest.
+>> >> >>> 
+>> >> >>> > I don't follow what you're saying.  The lack of a device reset for PCI
+>> >> >>> > devices with no FLR method isn't a regression as this has never worked.
+>> >> >>> >  Can you explain in more detail what the regression is and which patch
+>> >> >>> > caused it?
+>> >> >>> 
+>> >> >>> I haven't bisected it to a specific patch in this series,
+>> >> >>> but this patch series (when pulled on top of 3.16) cause the following:
+>> >> >>> 
+>> >> >>> - Do a system start and HVM guest start
+>> >> >>> - HVM guest with pci passthrough, devices work fine
+>> >> >>> - shutdown the HVM guest
+>> >> >>> - "pciback 0000:xx:xx.x: restoring config space at offset xxx" messages do not
+>> >> >>>   appear anymore when shutting down the HVM guest (as they do with vanilla 3.16)
+>> >> >>> - Starting the HVM guest again with the same devices passed through.
+>> >> >>> - Devices malfunction (for example a USB host controller will fail a simple 
+>> >> >>>   "lsusb"
+>> >> >>> - And this all works fine on vanilla 3.16.  
+>> >> 
+>> >> >> Hm, the only patch that makes code changes is 63fc5ec97cc54257d1c4ee49ed2131f754a5ff9b
+>> >> >> "xen/pciback: Don't deadlock when unbinding."
+>> >> >> but it does not change any of that code path. Only figures out whether
+>> >> >> to take a lock or not.
+>> >> 
+>> >> > Ok and the do_flr nack by david is unrelated to this part (i didn't check just 
+>> >> > assumed there could be a connection)
+>> >> 
+>> >> >> I will try it out on my box and see if I can reproduce it.
+>> >> 
+>> >> >> And just to be 100% sure - you are using vanilla Xen? No changes on top
+>> >> >> of it?
+>> >> 
+>> >> > Except the fix from jan for the pirq/msi stuff (and an unrelated hpet one), other than that no.
+>> >> > If you can't reproduce i will see if i can dive deeper into it tonight !
+>> >> 
+>> >> Hi Konrad,
+>> >> 
+>> >> It looks like the issues is this part of the change:
+>> >> 
+>> >>     --- a/drivers/xen/xen-pciback/pci_stub.c
+>> >>     +++ b/drivers/xen/xen-pciback/pci_stub.c
+>> >>     @@ -250,6 +250,8 @@ struct pci_dev *pcistub_get_pci_dev(struct xen_pcibk_device *pdev,
+>> >>     * - 'echo BDF > unbind' with a guest still using it. See pcistub_remove
+>> >>     *
+>> >>     * As such we have to be careful.
+>> >>     + *
+>> >>     + * To make this easier, the caller has to hold the device lock.
+>> >>     */
+>> >>     void pcistub_put_pci_dev(struct pci_dev *dev)
+>> >>     {
+>> >>     @@ -276,11 +278,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>> >>     /* Cleanup our device
+>> >>     * (so it's ready for the next domain)
+>> >>     */
+>> >>     -
+>> >>     - /* This is OK - we are running from workqueue context
+>> >>     - * and want to inhibit the user from fiddling with 'reset'
+>> >>     - */
+>> >>     - pci_reset_function(dev);
+>> >>     + lockdep_assert_held(&dev->dev.mutex);
+>> >>     + __pci_reset_function_locked(dev);
+>> >>     pci_restore_state(dev);
+>> >>    /* This disables the device. */
+>> >> 
+>> >> More specifically:
+>> >> The old "pci_reset_function(dev)" potentially seems to do much more than 
+>> >> __pci_reset_function_locked(dev).
+>> >> 
+>> >> 
+>> >> "__pci_reset_function_locked(dev)" only calls  "__pci_dev_reset"
+>> >> while "pci_reset_function" not only calls pci_dev_reset, but on succes
+>> >> it also calls: "pci_dev_save_and_disable" which does a save state etc.
+>> >> 
+>> >> 
+>> >> So i added a little more debug:
+>> >> 
+>> >> device_lock_assert(&dev->dev);
+>> >> ret = __pci_reset_function_locked(dev);
+>> >> dev_dbg(&dev->dev, "%s __pci_reset_function_locked:%d  dev->state_saved:%d\n", __func__, ret, (!dev->state_saved) ? 0 : 1 );
+>> >> pci_restore_state(dev);
+>> >> 
+>> >> And this returns:
+>> >> [  494.570579] pciback 0000:04:00.0: pcistub_put_pci_dev __pci_reset_function_locked:0  dev->state_saved:0
+>> >> 
+>> >> So that confirms there is no saved_state to get restored by 
+>> >> pci_restore_state(dev) in the next line.
+>> >> 
+>> >> However there seems to be no "locked" variant of the function 
+>> >> "pci_reset_function" in pci.c that has all the same logic ...
+>> 
+>> > Yup. I've a preliminary patch:
+>> 
+>> Preliminary in the sense: "this should fix it .. needs more testing" ?
+
+> This should fix it, albeit the fix has a disastrous flaw. Here is the proper version:
+
+
+> From 00a5b6e3c9ee2c2d605879bdaebc627fa640b024 Mon Sep 17 00:00:00 2001
+> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Date: Wed, 6 Aug 2014 16:21:32 -0400
+> Subject: [PATCH] xen/pciback: Restore configuration space when detaching from
+>  a guest.
+
+> The commit 9eea3f7695226f9af9992cebf8e98ac0ad78b277
+> "xen/pciback: Don't deadlock when unbinding." was using
+> the version of pci_reset_function which would lock the device lock.
+> That is no good as we can dead-lock. As such we swapped to using
+> the lock-less version and requiring that the callers
+> of 'pcistub_put_pci_dev' take the device lock. And as such
+> this bug got exposed.
+
+> Using the lock-less version is  OK, except that we tried to
+> use 'pci_restore_state' after the lock-less version of
+> __pci_reset_function_locked - which won't work as 'state_saved'
+> is set to false. Said 'state_saved' is a toggle boolean that
+> is to be used by the sequence of a) pci_save_state/pci_restore_state
+> or b) pci_load_and_free_saved_state/pci_restore_state. We don't
+> want to use a) as the guest might have messed up the PCI
+> configuration space and we want it to revert to the state
+> when the PCI device was binded to us. Therefore we pick
+> b) to restore the configuration space.
+
+> To still retain the PCI configuration space, we save it once
+> more and store it on our private copy to be restored when:
+>  - Device is unbinded from pciback
+>  - Device is detached from a guest.
+
+> Reported-by:  Sander Eikelenboom <linux@eikelenboom.it>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > ---
-> 
-> v5 - Move register defines to c file and rm header file, error check
-> init in probe, fixed identation, remove empty labels in probe
-> and just return on fail and removed the remove callback and function.
-> Did not factor out the suspend into a stop function. - https://patchwork.kernel.org/patch/4649631/
-> v4 - Convert regulator to devm, added error checking where required,
-> updated bindings doc, moved dt parsing to separate call and made platform
-> data the first data point, moved vibrator enable and mode programming from
-> play entry to worker thread, added user check and input mutex in suspend/resume
-> calls, moved platform data to individual file and into include platform-data directory,
-> removed file names from file headers - https://patchwork.kernel.org/patch/4642221/
-> v3 - Updated binding doc, changed to memless device, updated input alloc to
-> devm, removed mutex locking, add sanity checks for mode and library - https://patchwork.kernel.org/patch/4635421/
-> v2 - Fixed binding doc and patch headline - https://patchwork.kernel.org/patch/4619641/
-> 
-> 
->  .../devicetree/bindings/input/ti,drv260x.txt       |   50 ++
->  drivers/input/misc/Kconfig                         |    9 +
->  drivers/input/misc/Makefile                        |    1 +
->  drivers/input/misc/drv260x.c                       |  697 ++++++++++++++++++++
->  include/dt-bindings/input/ti-drv260x.h             |   35 +
->  include/linux/platform_data/drv260x-pdata.h        |   29 +
->  6 files changed, 821 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/input/ti,drv260x.txt
->  create mode 100644 drivers/input/misc/drv260x.c
->  create mode 100644 include/dt-bindings/input/ti-drv260x.h
->  create mode 100644 include/linux/platform_data/drv260x-pdata.h
-> 
-> diff --git a/Documentation/devicetree/bindings/input/ti,drv260x.txt b/Documentation/devicetree/bindings/input/ti,drv260x.txt
-> new file mode 100644
-> index 0000000..8e6970d
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/input/ti,drv260x.txt
-> @@ -0,0 +1,50 @@
-> +Texas Instruments - drv260x Haptics driver family
-> +
-> +The drv260x family serial control bus communicates through I2C protocols
-> +
-> +Required properties:
-> +	- compatible - One of:
-> +		"ti,drv2604" - DRV2604
-> +		"ti,drv2605" - DRV2605
-> +		"ti,drv2605l" - DRV2605L
-> +	- reg -  I2C slave address
-> +	- supply- Required supply regulators are:
-> +		"vbat" - battery voltage
-> +	- mode - Power up mode of the chip (defined in include/dt-bindings/input/ti-drv260x.h)
-> +		DRV260X_LRA_MODE - Linear Resonance Actuator mode (Piezoelectric)
-> +		DRV260X_LRA_NO_CAL_MODE - This is a LRA Mode but there is no calibration
-> +				sequence during init.  And the device is configured for real
-> +				time playback mode (RTP mode).
-> +		DRV260X_ERM_MODE - Eccentric Rotating Mass mode (Rotary vibrator)
-> +	- library-sel - These are ROM based waveforms pre-programmed into the IC.
-> +				This should be set to set the library to use at power up.
-> +				(defined in include/dt-bindings/input/ti-drv260x.h)
-> +		DRV260X_LIB_A - Pre-programmed Library
-> +		DRV260X_LIB_B - Pre-programmed Library
-> +		DRV260X_LIB_C - Pre-programmed Library
-> +		DRV260X_LIB_D - Pre-programmed Library
-> +		DRV260X_LIB_E - Pre-programmed Library
-> +		DRV260X_LIB_F - Pre-programmed Library
-> +
-> +Optional properties:
-> +	- enable-gpio - gpio pin to enable/disable the device.
-> +	- vib_rated_voltage - The rated voltage of the actuator in millivolts.
-> +			  If this is not set then the value will be defaulted to
-> +			  3.2 v.
-> +	- vib_overdrive_voltage - The overdrive voltage of the actuator in millivolts.
-> +			  If this is not set then the value will be defaulted to
-> +			  3.2 v.
-> +Example:
-> +
-> +drv2605l: drv2605l@5a {
-> +		compatible = "ti,drv2605l";
-> +		reg = <0x5a>;
-> +		enable-gpio = <&gpio1 28 GPIO_ACTIVE_HIGH>;
-> +		mode = <DRV260X_LRA_MODE>;
-> +		library-sel = <DRV260X_LIB_SEL_DEFAULT>;
-> +		vib-rated-voltage = <3200>;
-> +		vib-overdriver-voltage = <3200>;
-> +};
-> +
-> +For more product information please see the link below:
-> +http://www.ti.com/product/drv2605
-> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-> index 2ff4425..99f6762 100644
-> --- a/drivers/input/misc/Kconfig
-> +++ b/drivers/input/misc/Kconfig
-> @@ -676,4 +676,13 @@ config INPUT_SOC_BUTTON_ARRAY
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called soc_button_array.
+>  drivers/xen/xen-pciback/pci_stub.c |   25 +++++++++++++++++++++----
+>  1 files changed, 21 insertions(+), 4 deletions(-)
+
+> diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+> index 1ddd22f..8cf7f2b 100644
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -105,7 +105,7 @@ static void pcistub_device_release(struct kref *kref)
+>          */
+>         __pci_reset_function_locked(dev);
+>         if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
+> -               dev_dbg(&dev->dev, "Could not reload PCI state\n");
+> +               dev_info(&dev->dev, "Could not reload PCI state\n");
+>         else
+>                 pci_restore_state(dev);
 >  
-> +config INPUT_DRV260X_HAPTICS
-> +	tristate "TI DRV260X haptics support"
-> +	depends on INPUT && I2C
-> +	help
-> +	  Say Y to enable support for the TI DRV260X haptics driver.
-> +
-> +	  To compile this driver as a module, choose M here: the
-> +	  module will be called drv260x-haptics.
-> +
->  endif
-> diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-> index 4955ad3..d8ef3c7 100644
-> --- a/drivers/input/misc/Makefile
-> +++ b/drivers/input/misc/Makefile
-> @@ -64,3 +64,4 @@ obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
->  obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
->  obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
->  obj-$(CONFIG_INPUT_IDEAPAD_SLIDEBAR)	+= ideapad_slidebar.o
-> +obj-$(CONFIG_INPUT_DRV260X_HAPTICS)	+= drv260x.o
-> diff --git a/drivers/input/misc/drv260x.c b/drivers/input/misc/drv260x.c
-> new file mode 100644
-> index 0000000..6ccdeff
-> --- /dev/null
-> +++ b/drivers/input/misc/drv260x.c
-> @@ -0,0 +1,697 @@
-> +/*
-> + * DRV260X haptics driver family
-> + *
-> + * Author: Dan Murphy <dmurphy@ti.com>
-> + *
-> + * Copyright:   (C) 2014 Texas Instruments, Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + */
-> +
-> +#include <linux/i2c.h>
-> +#include <linux/input.h>
-> +#include <linux/module.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regmap.h>
-> +#include <linux/slab.h>
-> +#include <linux/delay.h>
-> +#include <linux/regulator/consumer.h>
-> +
-> +#include <dt-bindings/input/ti-drv260x.h>
-> +#include <linux/platform_data/drv260x-pdata.h>
-> +
-> +#define DRV260X_STATUS		0x0
-> +#define DRV260X_MODE		0x1
-> +#define DRV260X_RT_PB_IN	0x2
-> +#define DRV260X_LIB_SEL		0x3
-> +#define DRV260X_WV_SEQ_1	0x4
-> +#define DRV260X_WV_SEQ_2	0x5
-> +#define DRV260X_WV_SEQ_3	0x6
-> +#define DRV260X_WV_SEQ_4	0x7
-> +#define DRV260X_WV_SEQ_5	0x8
-> +#define DRV260X_WV_SEQ_6	0x9
-> +#define DRV260X_WV_SEQ_7	0xa
-> +#define DRV260X_WV_SEQ_8	0xb
-> +#define DRV260X_GO				0xc
-> +#define DRV260X_OVERDRIVE_OFF	0xd
-> +#define DRV260X_SUSTAIN_P_OFF	0xe
-> +#define DRV260X_SUSTAIN_N_OFF	0xf
-> +#define DRV260X_BRAKE_OFF		0x10
-> +#define DRV260X_A_TO_V_CTRL		0x11
-> +#define DRV260X_A_TO_V_MIN_INPUT	0x12
-> +#define DRV260X_A_TO_V_MAX_INPUT	0x13
-> +#define DRV260X_A_TO_V_MIN_OUT	0x14
-> +#define DRV260X_A_TO_V_MAX_OUT	0x15
-> +#define DRV260X_RATED_VOLT		0x16
-> +#define DRV260X_OD_CLAMP_VOLT	0x17
-> +#define DRV260X_CAL_COMP		0x18
-> +#define DRV260X_CAL_BACK_EMF	0x19
-> +#define DRV260X_FEEDBACK_CTRL	0x1a
-> +#define DRV260X_CTRL1			0x1b
-> +#define DRV260X_CTRL2			0x1c
-> +#define DRV260X_CTRL3			0x1d
-> +#define DRV260X_CTRL4			0x1e
-> +#define DRV260X_CTRL5			0x1f
-> +#define DRV260X_LRA_LOOP_PERIOD	0x20
-> +#define DRV260X_VBAT_MON		0x21
-> +#define DRV260X_LRA_RES_PERIOD	0x22
-> +#define DRV260X_MAX_REG			0x23
-> +
-> +#define DRV260X_ALLOWED_R_BYTES	25
-> +#define DRV260X_ALLOWED_W_BYTES	2
-> +#define DRV260X_MAX_RW_RETRIES	5
-> +#define DRV260X_I2C_RETRY_DELAY 10
-> +
-> +#define DRV260X_GO_BIT				0x01
-> +
-> +/* Library Selection */
-> +#define DRV260X_LIB_SEL_MASK		0x07
-> +#define DRV260X_LIB_SEL_RAM			0x0
-> +#define DRV260X_LIB_SEL_OD			0x1
-> +#define DRV260X_LIB_SEL_40_60		0x2
-> +#define DRV260X_LIB_SEL_60_80		0x3
-> +#define DRV260X_LIB_SEL_100_140		0x4
-> +#define DRV260X_LIB_SEL_140_PLUS	0x5
-> +
-> +#define DRV260X_LIB_SEL_HIZ_MASK	0x10
-> +#define DRV260X_LIB_SEL_HIZ_EN		0x01
-> +#define DRV260X_LIB_SEL_HIZ_DIS		0
-> +
-> +/* Mode register */
-> +#define DRV260X_STANDBY				(1 << 6)
-> +#define DRV260X_STANDBY_MASK		0x40
-> +#define DRV260X_INTERNAL_TRIGGER	0x00
-> +#define DRV260X_EXT_TRIGGER_EDGE	0x01
-> +#define DRV260X_EXT_TRIGGER_LEVEL	0x02
-> +#define DRV260X_PWM_ANALOG_IN		0x03
-> +#define DRV260X_AUDIOHAPTIC			0x04
-> +#define DRV260X_RT_PLAYBACK			0x05
-> +#define DRV260X_DIAGNOSTICS			0x06
-> +#define DRV260X_AUTO_CAL			0x07
-> +
-> +/* Audio to Haptics Control */
-> +#define DRV260X_AUDIO_HAPTICS_PEAK_10MS		(0 << 2)
-> +#define DRV260X_AUDIO_HAPTICS_PEAK_20MS		(1 << 2)
-> +#define DRV260X_AUDIO_HAPTICS_PEAK_30MS		(2 << 2)
-> +#define DRV260X_AUDIO_HAPTICS_PEAK_40MS		(3 << 2)
-> +
-> +#define DRV260X_AUDIO_HAPTICS_FILTER_100HZ	0x00
-> +#define DRV260X_AUDIO_HAPTICS_FILTER_125HZ	0x01
-> +#define DRV260X_AUDIO_HAPTICS_FILTER_150HZ	0x02
-> +#define DRV260X_AUDIO_HAPTICS_FILTER_200HZ	0x03
-> +
-> +/* Min/Max Input/Output Voltages */
-> +#define DRV260X_AUDIO_HAPTICS_MIN_IN_VOLT	0x19
-> +#define DRV260X_AUDIO_HAPTICS_MAX_IN_VOLT	0x64
-> +#define DRV260X_AUDIO_HAPTICS_MIN_OUT_VOLT	0x19
-> +#define DRV260X_AUDIO_HAPTICS_MAX_OUT_VOLT	0xFF
-> +
-> +/* Feedback register */
-> +#define DRV260X_FB_REG_ERM_MODE			0x7f
-> +#define DRV260X_FB_REG_LRA_MODE			(1 << 7)
-> +
-> +#define DRV260X_BRAKE_FACTOR_MASK	0x1f
-> +#define DRV260X_BRAKE_FACTOR_2X		(1 << 0)
-> +#define DRV260X_BRAKE_FACTOR_3X		(2 << 4)
-> +#define DRV260X_BRAKE_FACTOR_4X		(3 << 4)
-> +#define DRV260X_BRAKE_FACTOR_6X		(4 << 4)
-> +#define DRV260X_BRAKE_FACTOR_8X		(5 << 4)
-> +#define DRV260X_BRAKE_FACTOR_16		(6 << 4)
-> +#define DRV260X_BRAKE_FACTOR_DIS	(7 << 4)
-> +
-> +#define DRV260X_LOOP_GAIN_LOW		0xf3
-> +#define DRV260X_LOOP_GAIN_MED		(1 << 2)
-> +#define DRV260X_LOOP_GAIN_HIGH		(2 << 2)
-> +#define DRV260X_LOOP_GAIN_VERY_HIGH	(3 << 2)
-> +
-> +#define DRV260X_BEMF_GAIN_0			0xfc
-> +#define DRV260X_BEMF_GAIN_1		(1 << 0)
-> +#define DRV260X_BEMF_GAIN_2		(2 << 0)
-> +#define DRV260X_BEMF_GAIN_3		(3 << 0)
-> +
-> +/* Control 1 register */
-> +#define DRV260X_AC_CPLE_EN			(1 << 5)
-> +#define DRV260X_STARTUP_BOOST		(1 << 7)
-> +
-> +/* Control 2 register */
-> +
-> +#define DRV260X_IDISS_TIME_45		0
-> +#define DRV260X_IDISS_TIME_75		(1 << 0)
-> +#define DRV260X_IDISS_TIME_150		(1 << 1)
-> +#define DRV260X_IDISS_TIME_225		0x03
-> +
-> +#define DRV260X_BLANK_TIME_45	(0 << 2)
-> +#define DRV260X_BLANK_TIME_75	(1 << 2)
-> +#define DRV260X_BLANK_TIME_150	(2 << 2)
-> +#define DRV260X_BLANK_TIME_225	(3 << 2)
-> +
-> +#define DRV260X_SAMP_TIME_150	(0 << 4)
-> +#define DRV260X_SAMP_TIME_200	(1 << 4)
-> +#define DRV260X_SAMP_TIME_250	(2 << 4)
-> +#define DRV260X_SAMP_TIME_300	(3 << 4)
-> +
-> +#define DRV260X_BRAKE_STABILIZER	(1 << 6)
-> +#define DRV260X_UNIDIR_IN			(0 << 7)
-> +#define DRV260X_BIDIR_IN			(1 << 7)
-> +
-> +/* Control 3 Register */
-> +#define DRV260X_LRA_OPEN_LOOP		(1 << 0)
-> +#define DRV260X_ANANLOG_IN			(1 << 1)
-> +#define DRV260X_LRA_DRV_MODE		(1 << 2)
-> +#define DRV260X_RTP_UNSIGNED_DATA	(1 << 3)
-> +#define DRV260X_SUPPLY_COMP_DIS		(1 << 4)
-> +#define DRV260X_ERM_OPEN_LOOP		(1 << 5)
-> +#define DRV260X_NG_THRESH_0			(0 << 6)
-> +#define DRV260X_NG_THRESH_2			(1 << 6)
-> +#define DRV260X_NG_THRESH_4			(2 << 6)
-> +#define DRV260X_NG_THRESH_8			(3 << 6)
-> +
-> +/* Control 4 Register */
-> +#define DRV260X_AUTOCAL_TIME_150MS		(0 << 4)
-> +#define DRV260X_AUTOCAL_TIME_250MS		(1 << 4)
-> +#define DRV260X_AUTOCAL_TIME_500MS		(2 << 4)
-> +#define DRV260X_AUTOCAL_TIME_1000MS		(3 << 4)
-> +
-> +/**
-> + * struct drv260x_data -
-> + * @input_dev - Pointer to the input device
-> + * @client - Pointer to the I2C client
-> + * @regmap - Register map of the device
-> + * @work - Work item used to off load the enable/disable of the vibration
-> + * @enable_gpio - Pointer to the gpio used for enable/disabling
-> + * @regulator - Pointer to the regulator for the IC
-> + * @magnitude - Magnitude of the vibration event
-> + * @mode - The operating mode of the IC (LRA_NO_CAL, ERM or LRA)
-> + * @library - The vibration library to be used
-> + * @rated_voltage - The rated_voltage of the actuator
-> + * @overdriver_voltage - The over drive voltage of the actuator
-> +**/
-> +struct drv260x_data {
-> +	struct input_dev *input_dev;
-> +	struct i2c_client *client;
-> +	struct regmap *regmap;
-> +	struct work_struct work;
-> +	struct gpio_desc *enable_gpio;
-> +	struct regulator *regulator;
-> +	u32 magnitude;
-> +	u32 mode;
-> +	u32 library;
-> +	int rated_voltage;
-> +	int overdrive_voltage;
-> +};
-> +
-> +static struct reg_default drv260x_reg_defs[] = {
-> +	{ DRV260X_STATUS, 0xe0 },
-> +	{ DRV260X_MODE, 0x40 },
-> +	{ DRV260X_RT_PB_IN, 0x00},
-> +	{ DRV260X_LIB_SEL, 0x00},
-> +	{ DRV260X_WV_SEQ_1, 0x01},
-> +	{ DRV260X_WV_SEQ_2, 0x00},
-> +	{ DRV260X_WV_SEQ_3, 0x00},
-> +	{ DRV260X_WV_SEQ_4, 0x00},
-> +	{ DRV260X_WV_SEQ_5, 0x00},
-> +	{ DRV260X_WV_SEQ_6, 0x00},
-> +	{ DRV260X_WV_SEQ_7, 0x00},
-> +	{ DRV260X_WV_SEQ_8, 0x00},
-> +	{ DRV260X_GO, 0x00},
-> +	{ DRV260X_OVERDRIVE_OFF, 0x00},
-> +	{ DRV260X_SUSTAIN_P_OFF, 0x00},
-> +	{ DRV260X_SUSTAIN_N_OFF, 0x00},
-> +	{ DRV260X_BRAKE_OFF	, 0x00},
-> +	{ DRV260X_A_TO_V_CTRL	, 0x05},
-> +	{ DRV260X_A_TO_V_MIN_INPUT, 0x19},
-> +	{ DRV260X_A_TO_V_MAX_INPUT, 0xff},
-> +	{ DRV260X_A_TO_V_MIN_OUT, 0x19},
-> +	{ DRV260X_A_TO_V_MAX_OUT, 0xff},
-> +	{ DRV260X_RATED_VOLT, 0x3e},
-> +	{ DRV260X_OD_CLAMP_VOLT, 0x8c},
-> +	{ DRV260X_CAL_COMP, 0x0c},
-> +	{ DRV260X_CAL_BACK_EMF, 0x6c},
-> +	{ DRV260X_FEEDBACK_CTRL, 0x36},
-> +	{ DRV260X_CTRL1, 0x93},
-> +	{ DRV260X_CTRL2, 0xfa},
-> +	{ DRV260X_CTRL3, 0xa0},
-> +	{ DRV260X_CTRL4, 0x20},
-> +	{ DRV260X_CTRL5, 0x80},
-> +	{ DRV260X_LRA_LOOP_PERIOD, 0x33},
-> +	{ DRV260X_VBAT_MON, 0x00},
-> +	{ DRV260X_LRA_RES_PERIOD, 0x00},
-> +};
-> +
-> +/**
-> + * Rated and Overdriver Voltages:
-> + * Calculated using the formula r = v * 255 / 5.6
-> + * where r is what will be written to the register
-> + * and v is the rated or overdriver voltage of the actuator
-> + **/
-> +#define DRV260X_DEF_RATED_VOLT		0x90
-> +#define DRV260X_DEF_OD_CLAMP_VOLT	0x90
-> +
-> +static int drv260x_calculate_voltage(int voltage)
-> +{
-> +	return (voltage * 255 / 5600);
-> +}
-> +
-> +static void drv260x_worker(struct work_struct *work)
-> +{
-> +	struct drv260x_data *haptics = container_of(work, struct drv260x_data, work);
-> +	int ret;
-> +
-> +	gpiod_set_value(haptics->enable_gpio, 1);
-> +	/* Data sheet says to wait 250us before trying to communicate */
-> +	udelay(250);
-> +
-> +	ret = regmap_write(haptics->regmap, DRV260X_MODE, DRV260X_RT_PLAYBACK);
-> +	if (ret != 0) {
-> +		dev_err(&haptics->client->dev,
-> +			"Failed to write set mode: %d\n", ret);
-> +		return;
-> +	}
-> +
-> +	ret = regmap_write(haptics->regmap, DRV260X_RT_PB_IN, haptics->magnitude);
-> +	if (ret != 0) {
-> +		dev_err(&haptics->client->dev,
-> +			"Failed to set magnitude: %d\n", ret);
-> +	}
-> +}
-> +
-> +static int drv260x_haptics_play(struct input_dev *input, void *data,
-> +				struct ff_effect *effect)
-> +{
-> +	struct drv260x_data *haptics = input_get_drvdata(input);
-> +
-> +	haptics->mode = DRV260X_LRA_NO_CAL_MODE;
-> +	haptics->magnitude = 0;
-> +
-> +	if (effect->u.rumble.strong_magnitude ||
-> +		effect->u.rumble.weak_magnitude) {
-> +		if (effect->u.rumble.strong_magnitude > 0)
-> +			haptics->magnitude = effect->u.rumble.strong_magnitude;
-> +		else if	(effect->u.rumble.weak_magnitude > 0)
-> +			haptics->magnitude = effect->u.rumble.weak_magnitude;
-> +	}
-> +
-> +	schedule_work(&haptics->work);
-> +
-> +	return 0;
-> +}
-> +
-> +static void drv260x_close(struct input_dev *input)
-> +{
-> +	struct drv260x_data *haptics = input_get_drvdata(input);
-> +	int ret;
-> +
-> +	cancel_work_sync(&haptics->work);
-> +
-> +	ret = regmap_write(haptics->regmap, DRV260X_MODE, DRV260X_STANDBY);
-> +	if (ret != 0) {
-> +		dev_err(&haptics->client->dev,
-> +			"Failed to write standby mode: %d\n", ret);
-> +	}
-> +
-> +	gpiod_set_value(haptics->enable_gpio, 0);
-> +}
-> +
-> +static const struct reg_default drv260x_lra_cal_regs[] = {
-> +	{ DRV260X_MODE, DRV260X_AUTO_CAL },
-> +	{ DRV260X_CTRL3, DRV260X_NG_THRESH_2},
-> +	{ DRV260X_FEEDBACK_CTRL, DRV260X_FB_REG_LRA_MODE | DRV260X_BRAKE_FACTOR_4X | DRV260X_LOOP_GAIN_HIGH },
-> +};
-> +
-> +static const struct reg_default drv260x_lra_init_regs[] = {
-> +	{ DRV260X_MODE, DRV260X_RT_PLAYBACK},
-> +	{ DRV260X_A_TO_V_CTRL, DRV260X_AUDIO_HAPTICS_PEAK_20MS | DRV260X_AUDIO_HAPTICS_FILTER_125HZ},
-> +	{ DRV260X_A_TO_V_MIN_INPUT, DRV260X_AUDIO_HAPTICS_MIN_IN_VOLT },
-> +	{ DRV260X_A_TO_V_MAX_INPUT, DRV260X_AUDIO_HAPTICS_MAX_IN_VOLT },
-> +	{ DRV260X_A_TO_V_MIN_OUT, DRV260X_AUDIO_HAPTICS_MIN_OUT_VOLT },
-> +	{ DRV260X_A_TO_V_MAX_OUT, DRV260X_AUDIO_HAPTICS_MAX_OUT_VOLT },
-> +	{ DRV260X_FEEDBACK_CTRL, DRV260X_FB_REG_LRA_MODE | DRV260X_BRAKE_FACTOR_2X | DRV260X_LOOP_GAIN_MED | DRV260X_BEMF_GAIN_3 },
-> +	{ DRV260X_CTRL1, DRV260X_STARTUP_BOOST },
-> +	{ DRV260X_CTRL2, DRV260X_SAMP_TIME_250 },
-> +	{ DRV260X_CTRL3, DRV260X_NG_THRESH_2 | DRV260X_ANANLOG_IN },
-> +	{ DRV260X_CTRL4, DRV260X_AUTOCAL_TIME_500MS },
-> +};
-> +
-> +static const struct reg_default drv260x_erm_cal_regs[] = {
-> +	{ DRV260X_MODE, DRV260X_AUTO_CAL },
-> +	{ DRV260X_A_TO_V_MIN_INPUT, DRV260X_AUDIO_HAPTICS_MIN_IN_VOLT },
-> +	{ DRV260X_A_TO_V_MAX_INPUT, DRV260X_AUDIO_HAPTICS_MAX_IN_VOLT },
-> +	{ DRV260X_A_TO_V_MIN_OUT, DRV260X_AUDIO_HAPTICS_MIN_OUT_VOLT },
-> +	{ DRV260X_A_TO_V_MAX_OUT, DRV260X_AUDIO_HAPTICS_MAX_OUT_VOLT },
-> +	{ DRV260X_FEEDBACK_CTRL, DRV260X_BRAKE_FACTOR_3X | DRV260X_LOOP_GAIN_MED | DRV260X_BEMF_GAIN_2 },
-> +	{ DRV260X_CTRL1, DRV260X_STARTUP_BOOST },
-> +	{ DRV260X_CTRL2, DRV260X_SAMP_TIME_250 | DRV260X_BLANK_TIME_75 | DRV260X_SAMP_TIME_250 | DRV260X_IDISS_TIME_75 },
-> +	{ DRV260X_CTRL3, DRV260X_NG_THRESH_2 | DRV260X_ERM_OPEN_LOOP },
-> +	{ DRV260X_CTRL4, DRV260X_AUTOCAL_TIME_500MS },
-> +};
-> +
-> +static int drv260x_init(struct drv260x_data *haptics)
-> +{
-> +	int ret;
-> +	unsigned int cal_buf;
-> +
-> +	ret = regmap_write(haptics->regmap,
-> +			   DRV260X_RATED_VOLT, haptics->rated_voltage);
-> +	if (ret != 0)
-> +		goto write_failure;
-> +
-> +	ret = regmap_write(haptics->regmap,
-> +			   DRV260X_OD_CLAMP_VOLT, haptics->overdrive_voltage);
-> +	if (ret != 0)
-> +		goto write_failure;
-> +
-> +	switch(haptics->mode) {
-> +	case DRV260X_LRA_MODE:
-> +		ret = regmap_register_patch(haptics->regmap,
-> +					drv260x_lra_cal_regs,
-> +					ARRAY_SIZE(drv260x_lra_cal_regs));
-> +		if (ret != 0)
-> +			goto write_failure;
-> +		break;
-> +	case DRV260X_ERM_MODE:
-> +		ret = regmap_register_patch(haptics->regmap,
-> +					drv260x_erm_cal_regs,
-> +					ARRAY_SIZE(drv260x_erm_cal_regs));
-> +		if (ret != 0)
-> +			goto write_failure;
-> +
-> +		ret = regmap_update_bits(haptics->regmap, DRV260X_LIB_SEL,
-> +					DRV260X_LIB_SEL_MASK,
-> +					haptics->library);
-> +		if (ret != 0)
-> +			goto write_failure;
-> +		break;
-> +	default:
-> +		ret = regmap_register_patch(haptics->regmap,
-> +					drv260x_lra_init_regs,
-> +					ARRAY_SIZE(drv260x_lra_init_regs));
-> +		if (ret != 0)
-> +			goto write_failure;
-> +
-> +		ret = regmap_update_bits(haptics->regmap, DRV260X_LIB_SEL,
-> +					DRV260X_LIB_SEL_MASK,
-> +					haptics->library);
-> +		if (ret != 0)
-> +			goto write_failure;
-> +
-> +		goto skip_go_bit;
-> +		break;
-> +	}
-> +
-> +	if (ret != 0) {
-> +		dev_err(&haptics->client->dev,
-> +			"Failed to write init registers: %d\n",
-> +			ret);
-> +		goto write_failure;
-> +	}
-> +
-> +	ret = regmap_write(haptics->regmap, DRV260X_GO, DRV260X_GO_BIT);
-> +	if (ret != 0)
-> +		goto write_failure;
-> +
-> +	do {
-> +		ret = regmap_read(haptics->regmap, DRV260X_GO, &cal_buf);
-> +		if (ret != 0)
-> +			goto write_failure;
-> +	} while (cal_buf == DRV260X_GO_BIT || ret != 0);
-> +
-> +	return ret;
-> +
-> +write_failure:
-> +	dev_err(&haptics->client->dev,
-> +		"Failed to write init registers: %d\n",
-> +		ret);
-> +skip_go_bit:
-> +	return ret;
-> +}
-> +
-> +static const struct regmap_config drv260x_regmap_config = {
-> +	.reg_bits = 8,
-> +	.val_bits = 8,
-> +
-> +	.max_register = DRV260X_MAX_REG,
-> +	.reg_defaults = drv260x_reg_defs,
-> +	.num_reg_defaults = ARRAY_SIZE(drv260x_reg_defs),
-> +	.cache_type = REGCACHE_NONE,
-> +};
-> +
-> +#ifdef CONFIG_OF
-> +static int drv260x_parse_dt(struct device_node *dev_node,
-> +				struct drv260x_data *haptics,
-> +				struct device *dev)
-> +{
-> +	int ret;
-> +	int voltage;
-> +
-> +	ret = of_property_read_u32(dev_node, "mode", &haptics->mode);
-> +	if (ret < 0) {
-> +		dev_err(dev, "%s: No entry for mode\n", __func__);
-> +
-> +		return ret;
-> +	}
-> +	ret = of_property_read_u32(dev_node, "library-sel",
-> +				&haptics->library);
-> +	if (ret < 0) {
-> +		dev_err(dev, "%s: No entry for library selection\n",
-> +			__func__);
-> +
-> +		return ret;
-> +	}
-> +	ret = of_property_read_u32(dev_node, "vib-rated-voltage",
-> +				&voltage);
-> +	if (!ret)
-> +		haptics->rated_voltage = drv260x_calculate_voltage(voltage);
-> +
-> +
-> +	ret = of_property_read_u32(dev_node, "vib-overdrive-voltage",
-> +				&voltage);
-> +	if (!ret)
-> +		haptics->overdrive_voltage = drv260x_calculate_voltage(voltage);
-> +
-> +	return ret;
-> +
-> +}
-> +#else
-> +static inline int drv260x_parse_dt(struct device *dev)
-> +{
-> +	dev_err(dev, "no platform data defined\n");
-> +
-> +	return -EINVAL;
-> +}
-> +#endif
-> +static int drv260x_probe(struct i2c_client *client,
-> +			   const struct i2c_device_id *id)
-> +{
-> +	struct drv260x_data *haptics;
-> +	struct device_node *np = client->dev.of_node;
-> +	struct drv260x_platform_data *pdata = dev_get_platdata(&client->dev);
-> +	int ret;
-> +
-> +	haptics = devm_kzalloc(&client->dev, sizeof(*haptics), GFP_KERNEL);
-> +	if (!haptics)
-> +		return -ENOMEM;
-> +
-> +	haptics->rated_voltage = DRV260X_DEF_OD_CLAMP_VOLT;
-> +	haptics->rated_voltage = DRV260X_DEF_RATED_VOLT;
-> +
-> +	 if (pdata) {
-> +		haptics->mode = pdata->mode;
-> +		haptics->library = pdata->library_selection;
-> +		if (pdata->vib_overdrive_voltage)
-> +			haptics->overdrive_voltage = drv260x_calculate_voltage(pdata->vib_overdrive_voltage);
-> +		if (pdata->vib_rated_voltage)
-> +			haptics->rated_voltage = drv260x_calculate_voltage(pdata->vib_rated_voltage);
-> +	} else if (np) {
-> +		ret = drv260x_parse_dt(np, haptics, &client->dev);
-> +		if (ret)
-> +			return ret;
-> +	} else {
-> +		dev_err(&client->dev, "Platform data not set\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +
-> +	if (haptics->mode < DRV260X_LRA_MODE ||
-> +	    haptics->mode > DRV260X_ERM_MODE) {
-> +		dev_err(&client->dev,
-> +			"Vibrator mode is invalid: %i\n",
-> +			haptics->mode);
-> +		return -EINVAL;
-> +	}
-> +	
-> +	if (haptics->library < DRV260X_LIB_SEL_DEFAULT ||
-> +	    haptics->library > DRV260X_LIB_F) {
-> +		dev_err(&client->dev,
-> +			"Library value is invalid: %i\n", haptics->library);
-> +		return -EINVAL;
-> +	}	
-> +
-> +	haptics->regulator = devm_regulator_get(&client->dev, "vbat");
-> +	if (IS_ERR(haptics->regulator)) {
-> +		ret = PTR_ERR(haptics->regulator);
-> +		dev_err(&client->dev,
-> +			"unable to get regulator, error: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	haptics->enable_gpio = devm_gpiod_get(&client->dev, "enable");
-> +	if (IS_ERR(haptics->enable_gpio)) {
-> +		ret = PTR_ERR(haptics->enable_gpio);
-> +		if (ret != -ENOENT && ret != -ENOSYS)
-> +			return ret;
-> +		haptics->enable_gpio = NULL;
-> +	} else {
-> +		gpiod_direction_output(haptics->enable_gpio, 1);
-> +	}
-> +
-> +	haptics->input_dev = devm_input_allocate_device(&client->dev);
-> +	if (haptics->input_dev == NULL) {
-> +		dev_err(&client->dev, "Failed to allocate input device\n");
-> +		ret = -ENOMEM;
-> +		return ret;
-> +	}
-> +
-> +	haptics->input_dev->name = "drv260x:haptics";
-> +	haptics->input_dev->dev.parent = client->dev.parent;
-> +	haptics->input_dev->close = drv260x_close;
-> +	input_set_drvdata(haptics->input_dev, haptics);
-> +	input_set_capability(haptics->input_dev, EV_FF, FF_RUMBLE);
-> +
-> +	ret = input_ff_create_memless(haptics->input_dev, NULL,
-> +				      drv260x_haptics_play);
-> +	if (ret < 0) {
-> +		dev_err(&client->dev, "input_ff_create() failed: %d\n",
-> +			ret);
-> +		return ret;
-> +	}
-> +
-> +	INIT_WORK(&haptics->work, drv260x_worker);
-> +
-> +	haptics->client = client;
-> +	i2c_set_clientdata(client, haptics);
-> +
-> +	haptics->regmap = devm_regmap_init_i2c(client, &drv260x_regmap_config);
-> +	if (IS_ERR(haptics->regmap)) {
-> +		ret = PTR_ERR(haptics->regmap);
-> +		dev_err(&client->dev, "Failed to allocate register map: %d\n",
-> +			ret);
-> +		return ret;
-> +	}
-> +
-> +	ret = drv260x_init(haptics);
-> +	if (ret < 0) {
-> +		dev_err(&client->dev, "Device init failed: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	ret = input_register_device(haptics->input_dev);
-> +	if (ret < 0) {
-> +		dev_err(&client->dev, "couldn't register input device: %d\n",
-> +			ret);
-> +		return ret;
-> +	}
-> +	return 0;
-> +}
-> +
-> +#ifdef CONFIG_PM_SLEEP
-> +static int drv260x_suspend(struct device *dev)
-> +{
-> +	struct drv260x_data *haptics = dev_get_drvdata(dev);
-> +	int ret = 0;
-> +
-> +	mutex_lock(&haptics->input_dev->mutex);
-> +
-> +	if (haptics->input_dev->users) {
-> +		ret = regmap_update_bits(haptics->regmap,
-> +				   DRV260X_MODE,
-> +				   DRV260X_STANDBY_MASK,
-> +				   DRV260X_STANDBY);
-> +		if (ret) {
-> +			dev_err(dev, "Failed to set standby mode\n");
-> +			goto out;
-> +		}
-> +
-> +		gpiod_set_value(haptics->enable_gpio, 0);
-> +
-> +		ret = regulator_disable(haptics->regulator);
-> +		if (ret)
-> +			dev_err(dev, "Failed to disable regulator\n");
-> +	}
-> +out:
-> +	mutex_unlock(&haptics->input_dev->mutex);
-> +	return ret;
-> +}
-> +
-> +static int drv260x_resume(struct device *dev)
-> +{
-> +	struct drv260x_data *haptics = dev_get_drvdata(dev);
-> +	int ret = 0;
-> +
-> +	mutex_lock(&haptics->input_dev->mutex);
-> +
-> +	if (haptics->input_dev->users) {
-> +		ret = regulator_enable(haptics->regulator);
-> +		if (ret) {
-> +			dev_err(dev, "Failed to enable regulator\n");
-> +			goto out;
-> +		}
-> +		ret = regmap_update_bits(haptics->regmap,
-> +				   DRV260X_MODE,
-> +				   DRV260X_STANDBY_MASK, 0);
-> +		if (ret) {
-> +			dev_err(dev, "Failed to unset standby mode\n");
-> +			goto out;
-> +		}
-> +
-> +		gpiod_set_value(haptics->enable_gpio, 1);
-> +	}
-> +
-> +out:
-> +	mutex_unlock(&haptics->input_dev->mutex);
-> +	return ret;
-> +}
-> +#endif
-> +
-> +static SIMPLE_DEV_PM_OPS(drv260x_pm_ops, drv260x_suspend, drv260x_resume);
-> +
-> +static const struct i2c_device_id drv260x_id[] = {
-> +	{ "drv2605l", 0 },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(i2c, drv260x_id);
-> +
-> +#if IS_ENABLED(CONFIG_OF)
-> +static const struct of_device_id drv260x_of_match[] = {
-> +	{ .compatible = "ti,drv2604", },
-> +	{ .compatible = "ti,drv2604l", },
-> +	{ .compatible = "ti,drv2605", },
-> +	{ .compatible = "ti,drv2605l", },
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(of, drv260x_of_match);
-> +#endif
-> +
-> +static struct i2c_driver drv260x_driver = {
-> +	.probe		= drv260x_probe,
-> +	.driver		= {
-> +		.name	= "drv260x-haptics",
-> +		.owner	= THIS_MODULE,
-> +		.of_match_table = of_match_ptr(drv260x_of_match),
-> +		.pm	= &drv260x_pm_ops,
-> +	},
-> +	.id_table = drv260x_id,
-> +};
-> +module_i2c_driver(drv260x_driver);
-> +
-> +MODULE_ALIAS("platform:drv260x-haptics");
-> +MODULE_DESCRIPTION("TI DRV260x haptics driver");
-> +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("Dan Murphy <dmurphy@ti.com>");
-> diff --git a/include/dt-bindings/input/ti-drv260x.h b/include/dt-bindings/input/ti-drv260x.h
-> new file mode 100644
-> index 0000000..be7f245
-> --- /dev/null
-> +++ b/include/dt-bindings/input/ti-drv260x.h
-> @@ -0,0 +1,35 @@
-> +/*
-> + * DRV260X haptics driver family
-> + *
-> + * Author: Dan Murphy <dmurphy@ti.com>
-> + *
-> + * Copyright:   (C) 2014 Texas Instruments, Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + */
-> +
-> +#ifndef _DT_BINDINGS_TI_DRV260X_H
-> +#define _DT_BINDINGS_TI_DRV260X_H
-> +
-> +/* Calibration Types */
-> +#define DRV260X_LRA_MODE		0x00
-> +#define DRV260X_LRA_NO_CAL_MODE	0x01
-> +#define DRV260X_ERM_MODE		0x02
-> +
-> +/* Library Selection */
-> +#define DRV260X_LIB_SEL_DEFAULT		0x00
-> +#define DRV260X_LIB_A				0x01
-> +#define DRV260X_LIB_B				0x02
-> +#define DRV260X_LIB_C				0x03
-> +#define DRV260X_LIB_D				0x04
-> +#define DRV260X_LIB_E				0x05
-> +#define DRV260X_LIB_F				0x06
-> +
-> +#endif
-> diff --git a/include/linux/platform_data/drv260x-pdata.h b/include/linux/platform_data/drv260x-pdata.h
-> new file mode 100644
-> index 0000000..4091a9b
-> --- /dev/null
-> +++ b/include/linux/platform_data/drv260x-pdata.h
-> @@ -0,0 +1,29 @@
-> +/*
-> + * Platform data for DRV260X haptics driver family
-> + *
-> + * Author: Dan Murphy <dmurphy@ti.com>
-> + *
-> + * Copyright:   (C) 2014 Texas Instruments, Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + */
-> +
-> +#ifndef _LINUX_DRV260X_PDATA_H
-> +#define _LINUX_DRV260X_PDATA_H
-> +
-> +struct drv260x_platform_data {
-> +	int enable_gpio;
-> +	u32 library_selection;
-> +	u32 mode;
-> +	u32 vib_rated_voltage;
-> +	u32 vib_overdrive_voltage;
-> +};
-> +
-> +#endif
-> 
+> @@ -257,6 +257,7 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>  {
+>         struct pcistub_device *psdev, *found_psdev = NULL;
+>         unsigned long flags;
+> +       struct xen_pcibk_dev_data *dev_data;
+>  
+>         spin_lock_irqsave(&pcistub_devices_lock, flags);
+>  
+> @@ -279,9 +280,25 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>          * (so it's ready for the next domain)
+>          */
+>         device_lock_assert(&dev->dev);
+> -       __pci_reset_function_locked(dev);
+> -       pci_restore_state(dev);
+> -
+> +       dev_data = pci_get_drvdata(dev);
+> +       if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
+> +               dev_info(&dev->dev, "Could not reload PCI state\n");
+> +       else {
+> +               __pci_reset_function_locked(dev);
+> +               /*
+> +                * The usual sequence is pci_save_state & pci_restore_state
+> +                * but the guest might have messed the configuration space up.
+> +                * Use the initial version (when device was binded to us).
+> +                */
+> +               pci_restore_state(dev);
+> +               /*
+> +                * The next steps are to reload the configuration for the
+> +                * next time we bind & unbind to a guest - or unload from
+> +                * pciback.
+> +                */
+> +               pci_save_state(dev);
+> +               dev_data->pci_saved_state = pci_store_saved_state(dev);
+> +       }
+>         /* This disables the device. */
+>         xen_pcibk_reset_device(dev);
+>  
 
 
--- 
-------------------
-Dan Murphy
+Is it save to have "__pci_reset_function_locked(dev)" to be conditional on succes of 
+"pci_load_and_free_saved_state" ?
+
+Or is it safer because you don't reset the device although it's in an unknown 
+state (and resetting it while it's back to dom0 could lead to more problems  ?)
+
