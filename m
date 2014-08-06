@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932852AbaHFRIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 13:08:52 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:59034
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	id S932866AbaHFRJo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 13:09:44 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48902 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932827AbaHFRIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 13:08:51 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/1] Drivers: net-next: hyperv: Adjust the size of sendbuf region to support ws2008r2
-Date: Wed,  6 Aug 2014 11:11:00 -0700
-Message-Id: <1407348660-6844-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753240AbaHFRJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 13:09:41 -0400
+Date: Wed, 6 Aug 2014 19:09:37 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Bugfix 1/2] x86, irq, PCI: Keep IRQ assignment for PCI devices
+ during suspend/hibernation
+Message-ID: <20140806170937.GA4895@pd.tnic>
+References: <1407209178-18644-1-git-send-email-jiang.liu@linux.intel.com>
+ <1407209178-18644-2-git-send-email-jiang.liu@linux.intel.com>
+ <20140805183729.GA23068@pd.tnic>
+ <53E201FC.6010102@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53E201FC.6010102@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WS2008R2 is a supported platform and it turns out that the maximum sendbuf
-size that ws2008R2 can support is only 15MB. Make the necessary
-adjustment.
+On Wed, Aug 06, 2014 at 06:22:52PM +0800, Jiang Liu wrote:
+> 	I have prepared a tree for you at
+> https://github.com/jiangliu/linux.git suspend2
+> 
+> It's based on tip/master and includes:
+> 1) the patch to fix warning caused  by USB controller
+> 2) these two patches to fix failure of suspend/hibernation
+> 
+> Could you please help to check whether suspend/hibernation works as
+> expect on your platforms?
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/net/hyperv/hyperv_net.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Seems to work - just did 10-ish successful s/r cycles. The IO page
+faults are still there though.
 
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index 40ba1ef..459b823 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -584,7 +584,7 @@ struct nvsp_message {
- 
- #define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024*16)	/* 16MB */
- #define NETVSC_RECEIVE_BUFFER_SIZE_LEGACY	(1024*1024*15)  /* 15MB */
--#define NETVSC_SEND_BUFFER_SIZE			(1024 * 1024 * 16)   /* 16MB */
-+#define NETVSC_SEND_BUFFER_SIZE			(1024 * 1024 * 15)   /* 15MB */
- #define NETVSC_INVALID_INDEX			-1
- 
- 
 -- 
-1.7.4.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
