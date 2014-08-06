@@ -1,91 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455AbaHFV0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 17:26:09 -0400
-Received: from smtprelay0063.hostedemail.com ([216.40.44.63]:37948 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753508AbaHFV0H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 17:26:07 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2910:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3871:3872:3873:3874:4321:4605:5007:7652:10004:10400:10848:10967:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12740:13141:13230:13255:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ants75_34fe56df9ee5d
-X-Filterd-Recvd-Size: 3190
-Message-ID: <1407360362.2736.13.camel@joe-AO725>
-Subject: Re: [PATCH 05/12] staging: lustre: Add missing spaces around
- operators and braces.
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Srikrishan Malik <srikrishanmalik@gmail.com>, greg@kroah.com,
-        andreas.dilger@intel.com, oleg.drokin@intel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Wed, 06 Aug 2014 14:26:02 -0700
-In-Reply-To: <20140806204528.GB11899@mwanda>
-References: <1407345182-709-1-git-send-email-srikrishanmalik@gmail.com>
-	 <1407345182-709-5-git-send-email-srikrishanmalik@gmail.com>
-	 <20140806201333.GC4856@mwanda> <1407357106.2736.7.camel@joe-AO725>
-	 <20140806204528.GB11899@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754515AbaHFV30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 17:29:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31925 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751549AbaHFV3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 17:29:24 -0400
+Date: Wed, 6 Aug 2014 17:29:02 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Ping Cheng <pinglinux@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Jason Gerecke <killertofu@gmail.com>, Przemo Firszt <przemo@firszt.eu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>
+Subject: Re: [PATCH] Input - wacom: update the ABI doc according to latest
+ changes
+Message-ID: <20140806212902.GD15018@mail.corp.redhat.com>
+References: <1407252899-10293-1-git-send-email-benjamin.tissoires@redhat.com>
+ <CAF8JNhKQAZz_a-=5qyqS4rgdv-8Lr=i=uKJMwz_iR4c7cq-cvg@mail.gmail.com>
+ <20140805213436.GC29591@mail.corp.redhat.com>
+ <CAF8JNhKR8uDB4AS5B00y-m7MCH6H8CHGegRb+W8ahS+gdtveNg@mail.gmail.com>
+ <20140806204408.GC15018@mail.corp.redhat.com>
+ <20140806210401.GB22889@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140806210401.GB22889@core.coreip.homeip.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-06 at 23:45 +0300, Dan Carpenter wrote:
-> On Wed, Aug 06, 2014 at 01:31:46PM -0700, Joe Perches wrote:
-> > On Wed, 2014-08-06 at 23:13 +0300, Dan Carpenter wrote:
-> > > On Wed, Aug 06, 2014 at 10:42:55PM +0530, Srikrishan Malik wrote:
-> > > > diff --git a/drivers/staging/lustre/lustre/mdc/mdc_reint.c b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
-> > []
-> > > > @@ -71,7 +71,7 @@ int mdc_resource_get_unused(struct obd_export *exp, const struct lu_fid *fid,
-> > > >  			    __u64 bits)
-> > > >  {
-> > > >  	struct ldlm_namespace *ns = exp->exp_obd->obd_namespace;
-> > > > -	ldlm_policy_data_t policy = {{0}};
-> > > > +	ldlm_policy_data_t policy = {{0} };
+On Aug 06 2014 or thereabouts, Dmitry Torokhov wrote:
+> On Wed, Aug 06, 2014 at 04:44:08PM -0400, Benjamin Tissoires wrote:
+> > On Aug 05 2014 or thereabouts, Ping Cheng wrote:
+> > > On Tue, Aug 5, 2014 at 2:34 PM, Benjamin Tissoires
+> > > <benjamin.tissoires@redhat.com> wrote:
+> > > > Hi Ping,
+> > > >
+> > > > On Aug 05 2014 or thereabouts, Ping Cheng wrote:
+> > > >> Thank you Benjamin for updating the ABI docs. My comments are inline.
+> > > >>
+> > > >> With those lines updated, this patch is:
+> > > >>
+> > > >> Reviewed-by: Ping Cheng <pingc@wacom.com>
+> > > >
+> > > > Thanks!
+> > > >
+> > > >>
+> > > >> Cheers,
+> > > >>
+> > > >> Ping
+> > > >>
+> > > >> On Tue, Aug 5, 2014 at 8:34 AM, Benjamin Tissoires
+> > > >> <benjamin.tissoires@redhat.com> wrote:
+> > > >> > Now the devices show up under hid no matter the connection. So update the
+> > > >> > sysfs path to the shortest and common one.
+> > > >> > The ABI has also been unified regarding the OLEDs, but Bluetooth handle
+> > > >> > only 1-bit images instead of 4.
+> > > >> >
+> > > >> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> > > >> > ---
+> > > >> >
+> > > >> > Guys,
+> > > >> >
+> > > >> > by updating this and working on the g-s-d client side for OLEDs, I think now
+> > > >> > that we should also keep the oled*_img for Bluetooth and implement this file
+> > > >> > for USB too. The user space code gets messy quite fast due to the need to
+> > > >> > support old and new kernels, whereas if we handle the scrambling in the kernel,
+> > > >> > it should be quite straightforward.
+> > > >> > Of course, we have to keep the current button<n>_rawimg for backward
+> > > >> > compatibility.
+> > > >> >
+> > > >> > Any thoughts?
+> > > >> >
+> > > >> > Cheers,
+> > > >> > Benjamin
+> > > >> >
+> > > >> >  Documentation/ABI/testing/sysfs-driver-wacom | 56 ++++++++++------------------
+> > > >> >  1 file changed, 20 insertions(+), 36 deletions(-)
+> > > >> >
+> > > >> > diff --git a/Documentation/ABI/testing/sysfs-driver-wacom b/Documentation/ABI/testing/sysfs-driver-wacom
+> > > >> > index 7fc7810..c75ed4c 100644
+> > > >> > --- a/Documentation/ABI/testing/sysfs-driver-wacom
+> > > >> > +++ b/Documentation/ABI/testing/sysfs-driver-wacom
+> > > >> > @@ -1,47 +1,26 @@
+> > > >> > -WWhat:         /sys/class/hidraw/hidraw*/device/oled*_img
+> > > >> > -Date:          June 2012
+> > > >> > -Contact:       linux-bluetooth@vger.kernel.org
+> > > >> > -Description:
+> > > >> > -               The /sys/class/hidraw/hidraw*/device/oled*_img files control
+> > > >> > -               OLED mocro displays on Intuos4 Wireless tablet. Accepted image
+> > > >> > -               has to contain 256 bytes (64x32 px 1 bit colour). The format
+> > > >> > -               is the same as PBM image 62x32px without header (64 bits per
+> > > >> > -               horizontal line, 32 lines). An example of setting OLED No. 0:
+> > > >> > -               dd bs=256 count=1 if=img_file of=[path to oled0_img]/oled0_img
+> > > >> > -               The attribute is read only and no local copy of the image is
+> > > >> > -               stored.
+> > > >> > -
+> > > >> > -What:          /sys/class/hidraw/hidraw*/device/speed
+> > > >> > +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/speed
+> > > >> >  Date:          April 2010
+> > > >>
+> > > >> Should the Date be updated?
+> > > >
+> > > > I don't think that this one should. The ABI is the same since April
+> > > > 2010, and the "new" path works also for older kernels. So basically,
+> > > > here, for Bluetooth, there has been no changes.
 > > > 
-> > > That's odd.  Since when is a space required here?  Anyway, put one at
-> > > the start too if you're goind to do that.  Or you could do it like:
+> > > Oh, I see your point. But, don't we consider path part of the interface?
 > > > 
-> > > 	ldlm_policy_data_t policy = {};
-> > > 
-> > > ?
 > > 
-> > It comes from a pretty old bit of checkpatch:
+> > Well, in this case, both the path /sys/class/hidraw/hidraw*/device/speed
+> > and /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/speed refers to the same
+> > device, even in April 2010.
 > > 
-> > de7d4f0e (Andy Whitcroft 2007-07-15 23:37:22 -0700 3706) # closing brace should have a space following it when it has anything
-> > de7d4f0e (Andy Whitcroft 2007-07-15 23:37:22 -0700 3707) # on the line
-> > de7d4f0e (Andy Whitcroft 2007-07-15 23:37:22 -0700 3708)                if ($line =~ /}(?!(?:,|;|\)))\S/) {
-> > 
-> > Maybe it should have an } added to the test like:
-> > 
-> > if ($line =~ /}(?!(?:,|;|\)|}))\S/) {
-> >
+> > /sys/class/hidraw/hidraw*/device is IMO not accurate because you have to
+> > check all the hidraw devices to find the right one.
+> > /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/speed gives you the correct
+> > at first sight. This is just a fix to have a more reliable path in the
+> > documentation, not a change.
 > 
-> Yes.  It feels like '}}' is common.
-
-I think so too.  Also, there isn't an equivalent
-test for '{{' so warning on '}}' seems silly.
-
-> Also it should ignore \. because this used for:
+> Can we document this in changelog?
 > 
-> ERROR: space required after that close brace '}'
-> #118: FILE: ./drivers/gpu/drm/nouveau/core/engine/disp/nva3.c:118:
-> +}.base.base;
-> 
-> Otherwise this test is legit and complains about bad typedefs and
-> '}else{' statements.
 
-I don't think \. should be added myself.
+Hmm, yes. I guess I'll have to send a new version with this
+documentation in the commit message and the update of the other dates.
 
-Only nouveau uses that style.
+I should be offline for the next 3 to 4 hours, so it will have to wait
+tonight or tomorrow morning.
 
-I think all of those nouveau uses are not
-very nice and they should be changed instead
-or the warnings should just be ignored there.
+BTW, thanks for merging the rest of the series (and the various
+patches). Greatly appreciated.
 
-Andy?
+Cheers,
+Benjamin
 
