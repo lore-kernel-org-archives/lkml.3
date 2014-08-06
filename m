@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447AbaHFSfV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 14:35:21 -0400
-Received: from mail-oi0-f49.google.com ([209.85.218.49]:44042 "EHLO
-	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756180AbaHFSfU (ORCPT
+	id S1756547AbaHFShQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 14:37:16 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:42061 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756518AbaHFShO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 14:35:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <17153.1407349640@turing-police.cc.vt.edu>
-References: <1407347597-2168-1-git-send-email-xerofoiffy@gmail.com>
-	<17153.1407349640@turing-police.cc.vt.edu>
-Date: Wed, 6 Aug 2014 14:35:19 -0400
-X-Google-Sender-Auth: WnJj4f7QB31fjjQbKHmVxU0odcU
-Message-ID: <CAKb7Uvj7CRE3O8N8+_1pk_aHVWWWBWUit2N+2=yy5NTG0Gaidw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] spi: Remove unused definitions
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Valdis.Kletnieks@vt.edu
-Cc: Nick Krause <xerofoiffy@gmail.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        "open list:SPI SUBSYSTEM" <linux-spi@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 6 Aug 2014 14:37:14 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH] ARM: qcom: Update defconfig
+Date: Wed,  6 Aug 2014 13:37:11 -0500
+Message-Id: <1407350231-16902-1-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 6, 2014 at 2:27 PM,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Wed, 06 Aug 2014 13:53:17 -0400, Nick Krause said:
->> Remove unused definition which cause the following warnings
->>
->> drivers/spi/spi-omap-100k.c:73:0: warning: "WRITE" redefined [enabled by default]
->> include/linux/fs.h:193:0: note: this is the location of the previous definition
->> drivers/spi/spi-omap-100k.c:74:0: warning: "READ" redefined [enabled by default]
->> include/linux/fs.h:192:0: note: this is the location of the previous definition
->
->> -#define WRITE 0
->> -#define READ  1
->
-> NAK.  Full stop.  These are potentially used in an inner macro someplace, and by
-> removing these, the conflicting values from fs.h will be used instead.
->
-> #define READ                    0
-> #define WRITE                   RW_MASK
->
-> So if there *is* a use in an inner macro, you just screwed the pooch
-> and introduced a bug in this "clean up" - somebody will be expecting to see
-> a 0 for a READ, and will receive a 1 instead.  This can't end well.
+* Enable IPQ806x & APQ8084 clk support
+* Enable CPU_IDLE to get basic wfi support
+* Enable SPI NOR and MTD M25P80 support (used on AP148 board)
 
-I was actually about to send a similar response, but then I noticed I
-couldn't actually find any uses of READ/WRITE in the file... But I
-could easily have missed them.
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+ arch/arm/configs/qcom_defconfig | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
->
-> Nick - how *exactly* did you identify that these are in fact not used?
-> Given your history of submitting poorly researched patches, you're going to
-> have to justify the "unused" better than the handwaving you've done here.
+diff --git a/arch/arm/configs/qcom_defconfig b/arch/arm/configs/qcom_defconfig
+index 42ebd72..457f7f0 100644
+--- a/arch/arm/configs/qcom_defconfig
++++ b/arch/arm/configs/qcom_defconfig
+@@ -29,6 +29,7 @@ CONFIG_HIGHPTE=y
+ CONFIG_CLEANCACHE=y
+ CONFIG_ARM_APPENDED_DTB=y
+ CONFIG_ARM_ATAG_DTB_COMPAT=y
++CONFIG_CPU_IDLE=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+@@ -53,6 +54,7 @@ CONFIG_DEVTMPFS_MOUNT=y
+ CONFIG_MTD=y
+ CONFIG_MTD_BLOCK=y
+ CONFIG_MTD_M25P80=y
++CONFIG_MTD_SPI_NOR=y
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+ CONFIG_SCSI=y
+@@ -86,7 +88,6 @@ CONFIG_SERIO_LIBPS2=y
+ CONFIG_SERIAL_MSM=y
+ CONFIG_SERIAL_MSM_CONSOLE=y
+ CONFIG_HW_RANDOM=y
+-CONFIG_HW_RANDOM_MSM=y
+ CONFIG_I2C=y
+ CONFIG_I2C_CHARDEV=y
+ CONFIG_I2C_QUP=y
+@@ -133,6 +134,8 @@ CONFIG_QCOM_BAM_DMA=y
+ CONFIG_STAGING=y
+ CONFIG_QCOM_GSBI=y
+ CONFIG_COMMON_CLK_QCOM=y
++CONFIG_APQ_MMCC_8084=y
++CONFIG_IPQ_GCC_806X=y
+ CONFIG_MSM_GCC_8660=y
+ CONFIG_MSM_MMCC_8960=y
+ CONFIG_MSM_MMCC_8974=y
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
