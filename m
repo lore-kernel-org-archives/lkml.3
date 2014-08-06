@@ -1,32 +1,30 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896AbaHBN1H (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sat, 2 Aug 2014 09:27:07 -0400
-Received: from outrelay09.libero.it ([212.52.84.104]:57091 "EHLO
-	outrelay09.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676AbaHBN1F convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Aug 2014 09:27:05 -0400
-X-libjamoibt: 1587
-Message-ID: <30724279.3849131406985990476.JavaMail.defaultUser@defaultHost>
-Date: Sat, 2 Aug 2014 15:26:30 +0200 (CEST)
-From: General Cliff Sam <generalcliff@outlook.com>
-Reply-To: General Cliff Sam <generalcliff@outlook.com>
-Subject: HELLO
+	id S1754224AbaHFDCf (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 5 Aug 2014 23:02:35 -0400
+Received: from steveas.by ([31.130.202.82]:35968 "EHLO steveas.by"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753921AbaHFDCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 23:02:33 -0400
+X-Greylist: delayed 916 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Aug 2014 23:02:33 EDT
+To: linux-kernel@vger.kernel.org
+Subject: Hi
+X-PHP-Originating-Script: 1010:error(1).php
+From: KM <kmh09791@gmail.com>
+Reply-To: groll_3@rediffmail.com
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-SenderIP: 146.185.28.58
-X-libjamv: MRdO2BQDwlY=
-X-libjamsun: COzhEtIrrl2cRWSstKuhZuRUy7KwQzdH
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <20140806024128.C0A6F497343@steveas.by>
+Date: Wed,  6 Aug 2014 05:41:28 +0300 (FET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dzień dobry
-proszę nie otrzymasz list wysłałem do was ostatnio?
+Can I talk to you, I will be very glad if you permit me to talk to you for an important deal.
 
-Good day
-please did you receive what i sent to you recently?
+
+Regards
+
+KM
 
 
