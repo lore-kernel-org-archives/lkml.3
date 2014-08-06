@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaHFUby (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 16:31:54 -0400
-Received: from smtprelay0203.hostedemail.com ([216.40.44.203]:42976 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753532AbaHFUbx (ORCPT
+	id S1754134AbaHFUdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 16:33:45 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:59512 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151AbaHFUdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 16:31:53 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2910:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3871:3872:3873:3874:4321:4605:5007:7652:10004:10400:10848:10967:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12740:13069:13141:13230:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: shoe29_ffeecb93d936
-X-Filterd-Recvd-Size: 2227
-Message-ID: <1407357106.2736.7.camel@joe-AO725>
-Subject: Re: [PATCH 05/12] staging: lustre: Add missing spaces around
- operators and braces.
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Andy Whitcroft <apw@canonical.com>
-Cc: Srikrishan Malik <srikrishanmalik@gmail.com>, greg@kroah.com,
-        andreas.dilger@intel.com, oleg.drokin@intel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Wed, 06 Aug 2014 13:31:46 -0700
-In-Reply-To: <20140806201333.GC4856@mwanda>
-References: <1407345182-709-1-git-send-email-srikrishanmalik@gmail.com>
-	 <1407345182-709-5-git-send-email-srikrishanmalik@gmail.com>
-	 <20140806201333.GC4856@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Aug 2014 16:33:43 -0400
+Date: Wed, 6 Aug 2014 13:33:39 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Dexuan Cui <decui@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+        kys@microsoft.com, haiyangz@microsoft.com
+Subject: Re: [PATCH] Input: hyperv-keyboard: register as a wakeup source
+Message-ID: <20140806203339.GA22889@core.coreip.homeip.net>
+References: <1406903304-7256-1-git-send-email-decui@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406903304-7256-1-git-send-email-decui@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-06 at 23:13 +0300, Dan Carpenter wrote:
-> On Wed, Aug 06, 2014 at 10:42:55PM +0530, Srikrishan Malik wrote:
-> > diff --git a/drivers/staging/lustre/lustre/mdc/mdc_reint.c b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
-[]
-> > @@ -71,7 +71,7 @@ int mdc_resource_get_unused(struct obd_export *exp, const struct lu_fid *fid,
-> >  			    __u64 bits)
-> >  {
-> >  	struct ldlm_namespace *ns = exp->exp_obd->obd_namespace;
-> > -	ldlm_policy_data_t policy = {{0}};
-> > +	ldlm_policy_data_t policy = {{0} };
+On Fri, Aug 01, 2014 at 07:28:24AM -0700, Dexuan Cui wrote:
+> With this patch, we can press a key to wake up the VM after the VM executes
+> "echo freeze > /sys/power/state".
 > 
-> That's odd.  Since when is a space required here?  Anyway, put one at
-> the start too if you're goind to do that.  Or you could do it like:
+> This addresses part of https://bugzilla.redhat.com/show_bug.cgi?id=1086100
+
+I am sorry but this bug is not open to the public. Please avoid
+mentioning such bugs in changelogs. Otherwise I'll apply it.
+
 > 
-> 	ldlm_policy_data_t policy = {};
+> Cc: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Dexuan Cui <decui@microsoft.com>
+> ---
+>  drivers/input/serio/hyperv-keyboard.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
 > 
-> ?
+> diff --git a/drivers/input/serio/hyperv-keyboard.c b/drivers/input/serio/hyperv-keyboard.c
+> index 6132619..e74e5d6 100644
+> --- a/drivers/input/serio/hyperv-keyboard.c
+> +++ b/drivers/input/serio/hyperv-keyboard.c
+> @@ -170,6 +170,15 @@ static void hv_kbd_on_receive(struct hv_device *hv_dev,
+>  			serio_interrupt(kbd_dev->hv_serio, scan_code, 0);
+>  		}
+>  		spin_unlock_irqrestore(&kbd_dev->lock, flags);
+> +
+> +		/*
+> +		 * Only trigger a wakeup on key down, otherwise
+> +		 * "echo freeze > /sys/power/state" can't really enter the
+> +		 * state because the Enter-UP can trigger a wakeup at once.
+> +		 */
+> +		if (!(info & IS_BREAK))
+> +			pm_wakeup_event(&hv_dev->device, 0);
+> +
+>  		break;
+>  
+>  	default:
+> @@ -376,6 +385,9 @@ static int hv_kbd_probe(struct hv_device *hv_dev,
+>  		goto err_close_vmbus;
+>  
+>  	serio_register_port(kbd_dev->hv_serio);
+> +
+> +	device_init_wakeup(&hv_dev->device, true);
+> +
+>  	return 0;
+>  
+>  err_close_vmbus:
+> @@ -390,6 +402,7 @@ static int hv_kbd_remove(struct hv_device *hv_dev)
+>  {
+>  	struct hv_kbd_dev *kbd_dev = hv_get_drvdata(hv_dev);
+>  
+> +	device_init_wakeup(&hv_dev->device, false);
+>  	serio_unregister_port(kbd_dev->hv_serio);
+>  	vmbus_close(hv_dev->channel);
+>  	kfree(kbd_dev);
+> -- 
+> 1.9.1
+> 
 
-It comes from a pretty old bit of checkpatch:
-
-de7d4f0e (Andy Whitcroft 2007-07-15 23:37:22 -0700 3706) # closing brace should have a space following it when it has anything
-de7d4f0e (Andy Whitcroft 2007-07-15 23:37:22 -0700 3707) # on the line
-de7d4f0e (Andy Whitcroft 2007-07-15 23:37:22 -0700 3708)                if ($line =~ /}(?!(?:,|;|\)))\S/) {
-
-Maybe it should have an } added to the test like:
-
-if ($line =~ /}(?!(?:,|;|\)|}))\S/) {
-
-
+-- 
+Dmitry
