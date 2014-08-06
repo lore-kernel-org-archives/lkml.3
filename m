@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264AbaHFIGJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 04:06:09 -0400
-Received: from relay.parallels.com ([195.214.232.42]:51356 "EHLO
+	id S1755303AbaHFIGO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 04:06:14 -0400
+Received: from relay.parallels.com ([195.214.232.42]:51462 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755200AbaHFIGE (ORCPT
+	with ESMTP id S1755245AbaHFIGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 04:06:04 -0400
-Message-ID: <1407312354.8424.34.camel@tkhai>
-Subject: [PATCH v4 0/6] sched: Add on_rq states and remove several double rq
- locks
+	Wed, 6 Aug 2014 04:06:10 -0400
+Message-ID: <1407312361.8424.35.camel@tkhai>
+Subject: [PATCH v4 1/6] sched/fair: Fix reschedule which is generated on
+ throttled cfs_rq
 From: Kirill Tkhai <ktkhai@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <peterz@infradead.org>, <pjt@google.com>, <oleg@redhat.com>,
         <rostedt@goodmis.org>, <umgwanakikbuti@gmail.com>, <tkhai@yandex.ru>,
         <tim.c.chen@linux.intel.com>, <mingo@kernel.org>,
         <nicolas.pitre@linaro.org>
-Date: Wed, 6 Aug 2014 12:05:54 +0400
+Date: Wed, 6 Aug 2014 12:06:01 +0400
+In-Reply-To: <20140806075138.24858.23816.stgit@tkhai>
+References: <20140806075138.24858.23816.stgit@tkhai>
 Organization: Parallels
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.8.5-2+b3 
@@ -28,74 +30,47 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This series aims to get rid of some places where locks of two RQs are held
-at the same time.
+(sched_entity::on_rq == 1) does not guarantee the task is pickable;
+changes on throttled cfs_rq must not lead to reschedule.
 
-Patch [1/6] is a fix/preparation. It's new in v4 version of series.
+Check for task_struct::on_rq instead.
 
-Patch [2/6] is a preparation/cleanup. It replaces old (task_struct::on_rq == 1)
-with new (task_struct::on_rq == ONRQ_QUEUED) everywhere. No functional changes.
-
-Patch [3/6] is main in the series. It introduces new ONRQ_MIGRATING state and
-teaches scheduler to understand it (we need little changes in try_to_wake_up()
-and task_rq_lock() family). This will be used in the following way:
-
-        (we are changing task's rq)
-
-        raw_spin_lock(&src_rq->lock);
-
-        p = ...; /* Some src_rq task */
-
-        dequeue_task(src_rq, p, 0);
-        p->on_rq = ONRQ_MIGRATING;
-        set_task_cpu(p, dst_cpu);
-        raw_spin_unlock(&src_rq->lock);
-
-        /*
-         * Now p is dequeued, and both
-         * RQ locks are unlocked, but
-         * its on_rq is not zero.
-         * Nobody can manipulate p
-         * while it's migrating,
-         * even when spinlocks are
-         * unlocked.
-         */
-
-        raw_spin_lock(&dst_rq->lock);
-        p->on_rq = ONRQ_QUEUED;
-        enqueue_task(dst_rq, p, 0);
-        raw_spin_unlock(&dst_rq->lock);
-
-Patches [4,5,6/6] remove double locks and use new ONRQ_MIGRATING state.
-They allow unlocked using of 3-4 function, which looks safe for me.
-
-The profit is double_rq_lock() is not need now, so we reduce the
-total time when RQs are locked.
-
-
-
----
-
-v4: New patch [1/6]
-
-Kirill Tkhai (6):
-      sched/fair: Fix reschedule which is generated on throttled cfs_rq
-      sched: Wrapper for checking task_struct::on_rq
-      sched: Teach scheduler to understand ONRQ_MIGRATING state
-      sched: Remove double_rq_lock() from __migrate_task()
-      sched/fair: Remove double_lock_balance() from active_load_balance_cpu_stop()
-      sched/fair: Remove double_lock_balance() from load_balance()
-
-
- kernel/sched/core.c      |  115 +++++++++++++++++-------------
- kernel/sched/deadline.c  |   14 ++--
- kernel/sched/fair.c      |  174 +++++++++++++++++++++++++++++++---------------
- kernel/sched/rt.c        |   16 ++--
- kernel/sched/sched.h     |   13 +++
- kernel/sched/stop_task.c |    2 -
- 6 files changed, 212 insertions(+), 122 deletions(-)
-
---
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+---
+ kernel/sched/fair.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index bfa3c86..6f0ce2b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -7465,7 +7465,7 @@ static void task_fork_fair(struct task_struct *p)
+ static void
+ prio_changed_fair(struct rq *rq, struct task_struct *p, int oldprio)
+ {
+-	if (!p->se.on_rq)
++	if (!p->on_rq)
+ 		return;
+ 
+ 	/*
+@@ -7521,15 +7521,15 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
+  */
+ static void switched_to_fair(struct rq *rq, struct task_struct *p)
+ {
+-	struct sched_entity *se = &p->se;
+ #ifdef CONFIG_FAIR_GROUP_SCHED
++	struct sched_entity *se = &p->se;
+ 	/*
+ 	 * Since the real-depth could have been changed (only FAIR
+ 	 * class maintain depth value), reset depth properly.
+ 	 */
+ 	se->depth = se->parent ? se->parent->depth + 1 : 0;
+ #endif
+-	if (!se->on_rq)
++	if (!p->on_rq)
+ 		return;
+ 
+ 	/*
+
 
 
