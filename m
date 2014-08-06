@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116AbaHFQV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 12:21:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55210 "EHLO mx1.redhat.com"
+	id S1755594AbaHFQXi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 12:23:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1551 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753799AbaHFQVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 12:21:25 -0400
-Date: Wed, 6 Aug 2014 12:21:13 -0400
+	id S1751857AbaHFQXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 12:23:37 -0400
+Date: Wed, 6 Aug 2014 12:23:08 -0400
 From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: WARN_ON_ONCE(in_nmi()) hit in irq_work_queue_on
-Message-ID: <20140806162113.GC14261@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: perf related boot hang.
+Message-ID: <20140806162308.GD14261@redhat.com>
 Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>
+	Peter Zijlstra <peterz@infradead.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20140806143621.GA13832@redhat.com>
+ <20140806161934.GF19379@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140806161934.GF19379@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: CPU: 3 PID: 18062 at kernel/irq_work.c:72 irq_work_queue_on+0x11e/0x140()
-CPU: 3 PID: 18062 Comm: trinity-subchil Not tainted 3.16.0+ #34
- 0000000000000009 00000000903774d1 ffff880244e06c00 ffffffff9a7f1e37
- 0000000000000000 ffff880244e06c38 ffffffff9a0791dd ffff880244fce180
- 0000000000000003 ffff880244e06d58 ffff880244e06ef8 0000000000000000
-Call Trace:
- <NMI>  [<ffffffff9a7f1e37>] dump_stack+0x4e/0x7a
- [<ffffffff9a0791dd>] warn_slowpath_common+0x7d/0xa0
- [<ffffffff9a07930a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff9a17ca1e>] irq_work_queue_on+0x11e/0x140
- [<ffffffff9a10a2c7>] tick_nohz_full_kick_cpu+0x57/0x90
- [<ffffffff9a186cd5>] __perf_event_overflow+0x275/0x350
- [<ffffffff9a184f80>] ? perf_event_task_disable+0xa0/0xa0
- [<ffffffff9a01a4cf>] ? x86_perf_event_set_period+0xbf/0x150
- [<ffffffff9a187934>] perf_event_overflow+0x14/0x20
- [<ffffffff9a020386>] intel_pmu_handle_irq+0x206/0x410
- [<ffffffff9a0b54d3>] ? arch_vtime_task_switch+0x63/0x130
- [<ffffffff9a01937b>] perf_event_nmi_handler+0x2b/0x50
- [<ffffffff9a007b72>] nmi_handle+0xd2/0x390
- [<ffffffff9a007aa5>] ? nmi_handle+0x5/0x390
- [<ffffffff9a0d131b>] ? lock_release+0xab/0x330
- [<ffffffff9a008062>] default_do_nmi+0x72/0x1c0
- [<ffffffff9a0c925f>] ? cpuacct_account_field+0xcf/0x200
- [<ffffffff9a008268>] do_nmi+0xb8/0x100
- [<ffffffff9a7ff66a>] end_repeat_nmi+0x1e/0x2e
- [<ffffffff9a0c925f>] ? cpuacct_account_field+0xcf/0x200
- [<ffffffff9a0d131b>] ? lock_release+0xab/0x330
- [<ffffffff9a0d131b>] ? lock_release+0xab/0x330
- [<ffffffff9a0d131b>] ? lock_release+0xab/0x330
- <<EOE>>  [<ffffffff9a0c9277>] cpuacct_account_field+0xe7/0x200
- [<ffffffff9a0c9195>] ? cpuacct_account_field+0x5/0x200
- [<ffffffff9a0b4d18>] account_system_time+0x98/0x1a0
- [<ffffffff9a0b4e4e>] __vtime_account_system+0x2e/0x40
- [<ffffffff9a0b5419>] vtime_user_enter+0x59/0x90
- [<ffffffff9a18e183>] ? context_tracking_user_enter+0xd3/0x1f0
- [<ffffffff9a18e183>] context_tracking_user_enter+0xd3/0x1f0
- [<ffffffff9a013815>] syscall_trace_leave+0xa5/0x210
- [<ffffffff9a7fd8bf>] int_check_syscall_exit_work+0x34/0x3d
----[ end trace 73831bdc3ef3ba75 ]---
+On Wed, Aug 06, 2014 at 06:19:34PM +0200, Peter Zijlstra wrote:
+ > On Wed, Aug 06, 2014 at 10:36:21AM -0400, Dave Jones wrote:
+ > > On Linus current tree, when I cold-boot one of my boxes, it locks up
+ > > during boot up with this trace..
+ > > 
+ > > Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 2
+ > > CPU: 2 PID: 577 Comm: in:imjournal Not tainted 3.16.0+ #33
+ > >  ffff880244c06c88 000000008b73013e ffff880244c06bf0 ffffffffb47ee207
+ > >  ffffffffb4c51118 ffff880244c06c78 ffffffffb47ebcf8 0000000000000010
+ > >  ffff880244c06c88 ffff880244c06c20 000000008b73013e 0000000000000000
+ > > Call Trace:
+ > >  <NMI>  [<ffffffffb47ee207>] dump_stack+0x4e/0x7a
+ > >  [<ffffffffb47ebcf8>] panic+0xd4/0x207
+ > >  [<ffffffffb4145448>] watchdog_overflow_callback+0x118/0x120
+ > >  [<ffffffffb4186f0e>] __perf_event_overflow+0xae/0x350
+ > >  [<ffffffffb4185380>] ? perf_event_task_disable+0xa0/0xa0
+ > >  [<ffffffffb401a4ef>] ? x86_perf_event_set_period+0xbf/0x150
+ > >  [<ffffffffb4187d34>] perf_event_overflow+0x14/0x20
+ > >  [<ffffffffb40203a6>] intel_pmu_handle_irq+0x206/0x410
+ > >  [<ffffffffb401939b>] perf_event_nmi_handler+0x2b/0x50
+ > >  [<ffffffffb4007b72>] nmi_handle+0xd2/0x390
+ > >  [<ffffffffb4007aa5>] ? nmi_handle+0x5/0x390
+ > >  [<ffffffffb40d8301>] ? lock_acquired+0x131/0x450
+ > >  [<ffffffffb4008062>] default_do_nmi+0x72/0x1c0
+ > > 
+ > > 
+ > > If I reset it, it then seems to always boot up fine.
+ > 
+ > Uhm,. cute! And that's the entire stacktrace? It would seem to me there
+ > would be at least a 'task' context below that. CPUs simply do not _only_
+ > run NMI code, and that trace starts at default_do_nmi().
+ 
+There may have been more to follow, but the machine had locked up solid,
+so I couldn't get any more output.  Next time I see it, I'll go check
+the console to see if there's anything extra.
+
+Curiously, I just hit another NMI related bug (see other mail) while fuzzing.
+
+	Dave
 
