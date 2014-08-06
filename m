@@ -1,87 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400AbaHFTVV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 15:21:21 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:55615 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932246AbaHFTVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 15:21:20 -0400
-X-IronPort-AV: E=Sophos;i="5.01,813,1400025600"; 
-   d="scan'208";a="159426503"
-Message-ID: <53E28017.9040908@citrix.com>
-Date: Wed, 6 Aug 2014 20:20:55 +0100
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1757000AbaHFT0G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 15:26:06 -0400
+Received: from vserver.eikelenboom.it ([84.200.39.61]:60804 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756037AbaHFT0E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 15:26:04 -0400
+Date: Wed, 6 Aug 2014 21:25:59 +0200
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1081188855.20140806212559@eikelenboom.it>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: gregkh@linuxfoundation.org, boris.ostrovsky@oracle.com,
+        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [PATCH v5] Fixes to Xen pciback for 3.17.
+In-Reply-To: <20140806191831.GB30062@laptop.dumpdata.com>
+References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com> <53DBB27D.2040203@citrix.com> <20140804184318.GB9009@laptop.dumpdata.com> <75613802.20140805104438@eikelenboom.it> <53E0A45C.4050400@citrix.com> <1985206568.20140805114433@eikelenboom.it> <20140805134930.GE13057@laptop.dumpdata.com> <1724263917.20140805160443@eikelenboom.it> <182103485.20140806205959@eikelenboom.it> <20140806191831.GB30062@laptop.dumpdata.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <wei.liu2@citrix.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: Re: [PATCH net-next 0/2] xen-netback: Changes around carrier handling
-References: <1407165658-20146-1-git-send-email-zoltan.kiss@citrix.com> <20140805.160748.1185917042908283028.davem@davemloft.net>
-In-Reply-To: <20140805.160748.1185917042908283028.davem@davemloft.net>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/14 00:07, David Miller wrote:
-> From: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Date: Mon, 4 Aug 2014 16:20:56 +0100
->
->> This series starts using carrier off as a way to purge packets when the guest is
->> not able (or willing) to receive them. It is a much faster way to get rid of
->> packets waiting for an overwhelmed guest.
->> The first patch changes current netback code where it relies currently on
->> netif_carrier_ok.
->> The second turns off the carrier if the guest times out on a queue, and only
->> turn it on again if that queue (or queues) resurrects.
->>
->> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
->
-> Applied, but I have some reservations:
->
-> 1) This is starting to bleed what is normally qdisc type policy into the
->     driver.
-Yeah. The fundamental problem with netback that start_xmit place the 
-packet into an internal queue, and then the thread does the actual 
-transmission from that queue, but it doesn't know whether it will 
-succeed in a finite time period.
-There is slot estimation in start_xmit to prevent QDisc pouring more 
-packets into the internal queue when it seems it won't fit. When that 
-happens, we stop QDisc and start a timer, and when the timer fires, 
-before this patch we just ditched the internal queue and started QDisc 
-again. If the frontend were dead, it lead to a quite long delay until 
-packets destined to it were freed.
-I just noticed a possible problem with start_xmit: if this slot 
-estimation fails, and the packet is likely to be stalled at least for a 
-while, it still place the skb into the internal queue and return 
-NETDEV_TX_OK. Shouldn't we return NETDEV_TX_BUSY and not placing the 
-packet into the internal queue? It will be requeued later, or dropped by 
-QDisc. I think it will be more natural. But it can decrease performance 
-if these "not enough slot" situations are very frequent and short 
-living, and by the time the RX thread wakes up
-My long term idea is to move part of the thread's work into start_xmit, 
-so it can set up the grant operations and if there isn't enough slot it 
-can return the skb to QDisc with NETDEV_TX_BUSY for requeueing. Then the 
-thread can only do the batching of the grant copy operations and 
-releasing the skbs. And we can ditch a good part of the code ...
 
->
-> 2) There are other drivers that could run into this kind of situation and
->     have similar concerns, therefore we should make sure we have a consistent
->     approach that such entities use to handle this problem.
->
-> Part of the problem is that netif_carrier_off() only partially mimicks
-> the situation.  It expresses the "transmitter is down so packets
-> aren't going onto the wire" part, which keeps the watchdog from
-> spitting out log messages ever time it fires.  But it doesn't deal
-> with packet freeing policy meanwhile, which I guess is the part that
-> this patch series is largely trying to address.
->
-> Thanks.
->
+Wednesday, August 6, 2014, 9:18:31 PM, you wrote:
+
+> On Wed, Aug 06, 2014 at 08:59:59PM +0200, Sander Eikelenboom wrote:
+>> 
+>> Tuesday, August 5, 2014, 4:04:43 PM, you wrote:
+>> 
+>> 
+>> > Tuesday, August 5, 2014, 3:49:30 PM, you wrote:
+>> 
+>> >> On Tue, Aug 05, 2014 at 11:44:33AM +0200, Sander Eikelenboom wrote:
+>> >>> 
+>> >>> Tuesday, August 5, 2014, 11:31:08 AM, you wrote:
+>> >>> 
+>> >>> > On 05/08/14 09:44, Sander Eikelenboom wrote:
+>> >>> >> 
+>> >>> >> Monday, August 4, 2014, 8:43:18 PM, you wrote:
+>> >>> >> 
+>> >>> >>> On Fri, Aug 01, 2014 at 04:30:05PM +0100, David Vrabel wrote:
+>> >>> >>>> On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
+>> >>> >>>>> Greg: goto GHK
+>> >>> >>>>>
+>> >>> >>>>> This is v5 version of patches to fix some issues in Xen PCIback.
+>> >>> >>>>
+>> >>> >>>> Applied to devel/for-linus-3.17.
+>> >>> >> 
+>> >>> >>> Thank you.
+>> >>> >>>>
+>> >>> >>>> I dropped the stable Cc for #2 pending a final decision on whether it
+>> >>> >>>> really is a stable candidate.
+>> >>> >> 
+>> >>> >>> OK.
+>> >>> >>>>
+>> >>> >>>> David
+>> >>> >> 
+>> >>> >> Hi Konrad / David,
+>> >>> >> 
+>> >>> >> This series still lacks a resolution on the sysfs /do_flr /reset,
+>> >>> >> as a result the pci devices are not reset after shutdown of a guest.
+>> >>> >> (no more pciback 0000:xx:xx.x: restoring config space at offset xxx)
+>> >>> >> 
+>> >>> >> So this series now introduces a regression to 3.16, which causes devices to malfunction 
+>> >>> >> after a guest reboot or after assigning the devices to another guest.
+>> >>> 
+>> >>> > I don't follow what you're saying.  The lack of a device reset for PCI
+>> >>> > devices with no FLR method isn't a regression as this has never worked.
+>> >>> >  Can you explain in more detail what the regression is and which patch
+>> >>> > caused it?
+>> >>> 
+>> >>> I haven't bisected it to a specific patch in this series,
+>> >>> but this patch series (when pulled on top of 3.16) cause the following:
+>> >>> 
+>> >>> - Do a system start and HVM guest start
+>> >>> - HVM guest with pci passthrough, devices work fine
+>> >>> - shutdown the HVM guest
+>> >>> - "pciback 0000:xx:xx.x: restoring config space at offset xxx" messages do not
+>> >>>   appear anymore when shutting down the HVM guest (as they do with vanilla 3.16)
+>> >>> - Starting the HVM guest again with the same devices passed through.
+>> >>> - Devices malfunction (for example a USB host controller will fail a simple 
+>> >>>   "lsusb"
+>> >>> - And this all works fine on vanilla 3.16.  
+>> 
+>> >> Hm, the only patch that makes code changes is 63fc5ec97cc54257d1c4ee49ed2131f754a5ff9b
+>> >> "xen/pciback: Don't deadlock when unbinding."
+>> >> but it does not change any of that code path. Only figures out whether
+>> >> to take a lock or not.
+>> 
+>> > Ok and the do_flr nack by david is unrelated to this part (i didn't check just 
+>> > assumed there could be a connection)
+>> 
+>> >> I will try it out on my box and see if I can reproduce it.
+>> 
+>> >> And just to be 100% sure - you are using vanilla Xen? No changes on top
+>> >> of it?
+>> 
+>> > Except the fix from jan for the pirq/msi stuff (and an unrelated hpet one), other than that no.
+>> > If you can't reproduce i will see if i can dive deeper into it tonight !
+>> 
+>> Hi Konrad,
+>> 
+>> It looks like the issues is this part of the change:
+>> 
+>>     --- a/drivers/xen/xen-pciback/pci_stub.c
+>>     +++ b/drivers/xen/xen-pciback/pci_stub.c
+>>     @@ -250,6 +250,8 @@ struct pci_dev *pcistub_get_pci_dev(struct xen_pcibk_device *pdev,
+>>     * - 'echo BDF > unbind' with a guest still using it. See pcistub_remove
+>>     *
+>>     * As such we have to be careful.
+>>     + *
+>>     + * To make this easier, the caller has to hold the device lock.
+>>     */
+>>     void pcistub_put_pci_dev(struct pci_dev *dev)
+>>     {
+>>     @@ -276,11 +278,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>>     /* Cleanup our device
+>>     * (so it's ready for the next domain)
+>>     */
+>>     -
+>>     - /* This is OK - we are running from workqueue context
+>>     - * and want to inhibit the user from fiddling with 'reset'
+>>     - */
+>>     - pci_reset_function(dev);
+>>     + lockdep_assert_held(&dev->dev.mutex);
+>>     + __pci_reset_function_locked(dev);
+>>     pci_restore_state(dev);
+>>    /* This disables the device. */
+>> 
+>> More specifically:
+>> The old "pci_reset_function(dev)" potentially seems to do much more than 
+>> __pci_reset_function_locked(dev).
+>> 
+>> 
+>> "__pci_reset_function_locked(dev)" only calls  "__pci_dev_reset"
+>> while "pci_reset_function" not only calls pci_dev_reset, but on succes
+>> it also calls: "pci_dev_save_and_disable" which does a save state etc.
+>> 
+>> 
+>> So i added a little more debug:
+>> 
+>> device_lock_assert(&dev->dev);
+>> ret = __pci_reset_function_locked(dev);
+>> dev_dbg(&dev->dev, "%s __pci_reset_function_locked:%d  dev->state_saved:%d\n", __func__, ret, (!dev->state_saved) ? 0 : 1 );
+>> pci_restore_state(dev);
+>> 
+>> And this returns:
+>> [  494.570579] pciback 0000:04:00.0: pcistub_put_pci_dev __pci_reset_function_locked:0  dev->state_saved:0
+>> 
+>> So that confirms there is no saved_state to get restored by 
+>> pci_restore_state(dev) in the next line.
+>> 
+>> However there seems to be no "locked" variant of the function 
+>> "pci_reset_function" in pci.c that has all the same logic ...
+
+> Yup. I've a preliminary patch:
+
+Preliminary in the sense: "this should fix it .. needs more testing" ?
+
+> diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+> index 1ddd22f..4cb7901 100644
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -105,7 +105,7 @@ static void pcistub_device_release(struct kref *kref)
+>          */
+>         __pci_reset_function_locked(dev);
+>         if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
+> -               dev_dbg(&dev->dev, "Could not reload PCI state\n");
+> +               dev_info(&dev->dev, "Could not reload PCI state\n");
+>         else
+>                 pci_restore_state(dev);
+>  
+> @@ -257,6 +257,7 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>  {
+>         struct pcistub_device *psdev, *found_psdev = NULL;
+>         unsigned long flags;
+> +       struct xen_pcibk_dev_data *dev_data;
+>  
+>         spin_lock_irqsave(&pcistub_devices_lock, flags);
+>  
+> @@ -278,10 +279,25 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>         /* Cleanup our device
+>          * (so it's ready for the next domain)
+>          */
+> -       device_lock_assert(&dev->dev);
+> -       __pci_reset_function_locked(dev);
+> -       pci_restore_state(dev);
+> -
+> +       if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
+> +               dev_info(&dev->dev, "Could not reload PCI state\n");
+> +       else {
+> +               device_lock_assert(&dev->dev);
+> +               __pci_reset_function_locked(dev);
+> +               /*
+> +                * The usual sequence is pci_save_state & pci_restore_state
+> +                * but the guest might have messed the config space up. Use
+> +                * the initial configuration (when device was binded to us).
+> +                */
+> +               pci_restore_state(dev);
+> +               /*
+> +                * The next steps are to reload the configuration for the
+> +                * next time we need to unbind/bind to a guest..
+> +                */
+> +               dev_data = pci_get_drvdata(dev);
+> +               pci_save_state(dev);
+> +               dev_data->pci_saved_state = pci_store_saved_state(dev);
+> +       }
+>         /* This disables the device. */
+>         xen_pcibk_reset_device(dev);
+>  
+>> 
+>> --
+>> Sander 
+>> 
+>> >> Thanks!
+>> 
+>> >>> 
+>> >>> >> Apart from that .. i can't resist to remind the other issue with removing pci
+>> >>> >> devices passed through to HVM guests related to the signaling via xenstore,
+>> >>> >> described in:
+>> >>> >> 
+>> >>> >> http://lists.xen.org/archives/html/xen-devel/2014-07/msg01875.html
+>> >>> 
+>> >>> > I don't remember seeing you posting a patch...?
+>> 
+>> >> I was going to, but I think we need to figure out the 'do_flr' mechanism
+>> >> first.
+>> 
+>> >>> 
+>> >>> > David
+>> >>> 
+>> >>> 
+>> 
+>> 
+>> 
+>> 
+>> 
+
 
