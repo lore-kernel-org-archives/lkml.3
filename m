@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729AbaHFNrk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 09:47:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57011 "EHLO arroyo.ext.ti.com"
+	id S1755049AbaHFNtk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 09:49:40 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39921 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753451AbaHFNrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 09:47:37 -0400
+	id S1753540AbaHFNrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 09:47:39 -0400
 From: Jyri Sarha <jsarha@ti.com>
 To: <linux-kernel@vger.kernel.org>, <mturquette@linaro.org>,
         <dri-devel@lists.freedesktop.org>, <airlied@linux.ie>,
@@ -15,9 +15,9 @@ CC: <tony@atomide.com>, <broonie@kernel.org>,
         <liam.r.girdwood@linux.intel.com>, <peter.ujfalusi@ti.com>,
         <detheridge@ti.com>, <zonque@gmail.com>, <t-kristo@ti.com>,
         Jyri Sarha <jsarha@ti.com>
-Subject: [PATCH 3/9] drm/tilcdc: Add I2S HDMI audio config for tda998x
-Date: Wed, 6 Aug 2014 16:47:18 +0300
-Message-ID: <6809e37af0cd57f89e5f9103ae616d51f3b06e12.1407332062.git.jsarha@ti.com>
+Subject: [PATCH 4/9] ASoC: davinci-evm: HDMI audio support for TDA998x trough McASP I2S bus
+Date: Wed, 6 Aug 2014 16:47:19 +0300
+Message-ID: <8d6a8f6698f4abd5846567533a1a0ed2c7e5c41a.1407332062.git.jsarha@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1407332062.git.jsarha@ti.com>
 References: <cover.1407332062.git.jsarha@ti.com>
@@ -27,58 +27,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The configuration is needed for HDMI audio. The "swap" and "mirr"
-parameters have to be correctly set in the configuration in order to
-have proper colors in the HDMI picture.
+Add machine driver support for BeagleBone-Black HDMI audio. BBB has
+NXP TDA998X HDMI transmitter connected to McASP port in I2S mode. The
+44100 Hz sample-rate and it's multiples can not be accurately produced
+on BBB. The only supported sample format is SNDRV_PCM_FORMAT_S32_LE.
+The 8 least significant bits are ignored.
 
 Signed-off-by: Jyri Sarha <jsarha@ti.com>
 ---
- drivers/gpu/drm/tilcdc/tilcdc_slave.c |   24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+ .../bindings/sound/davinci-evm-audio.txt           |    4 +-
+ sound/soc/davinci/davinci-evm.c                    |   82 +++++++++++++++++++-
+ 2 files changed, 83 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/tilcdc/tilcdc_slave.c b/drivers/gpu/drm/tilcdc/tilcdc_slave.c
-index 595068b..e43240a 100644
---- a/drivers/gpu/drm/tilcdc/tilcdc_slave.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_slave.c
-@@ -19,6 +19,7 @@
- #include <linux/pinctrl/pinmux.h>
- #include <linux/pinctrl/consumer.h>
- #include <drm/drm_encoder_slave.h>
-+#include <drm/i2c/tda998x.h>
+diff --git a/Documentation/devicetree/bindings/sound/davinci-evm-audio.txt b/Documentation/devicetree/bindings/sound/davinci-evm-audio.txt
+index 963e100..c137436 100644
+--- a/Documentation/devicetree/bindings/sound/davinci-evm-audio.txt
++++ b/Documentation/devicetree/bindings/sound/davinci-evm-audio.txt
+@@ -1,7 +1,9 @@
+ * Texas Instruments SoC audio setups with TLV320AIC3X Codec
  
- #include "tilcdc_drv.h"
+ Required properties:
+-- compatible : "ti,da830-evm-audio" : forDM365/DA8xx/OMAPL1x/AM33xx
++- compatible : "ti,da830-evm-audio" : for DM365/DA8xx/OMAPL1x/AM33xx
++               "ti,am335x-beaglebone-black-audio" : for Beaglebone-black HDMI
++                                                    audio
+ - ti,model : The user-visible name of this sound complex.
+ - ti,audio-codec : The phandle of the TLV320AIC3x audio codec
+ - ti,mcasp-controller : The phandle of the McASP controller
+diff --git a/sound/soc/davinci/davinci-evm.c b/sound/soc/davinci/davinci-evm.c
+index a50010e..9b98667 100644
+--- a/sound/soc/davinci/davinci-evm.c
++++ b/sound/soc/davinci/davinci-evm.c
+@@ -21,6 +21,7 @@
+ #include <sound/core.h>
+ #include <sound/pcm.h>
+ #include <sound/soc.h>
++#include <sound/pcm_params.h>
  
-@@ -111,8 +112,29 @@ static const struct drm_encoder_helper_funcs slave_encoder_helper_funcs = {
- 		.restore        = drm_i2c_encoder_restore,
+ #include <asm/dma.h>
+ #include <asm/mach-types.h>
+@@ -83,12 +84,46 @@ static int evm_hw_params(struct snd_pcm_substream *substream,
+ 	return 0;
+ }
+ 
++/* If changing sample format the tda998x configuration (REG_CTS_N) needs
++   to be changed. */
++#define TDA998X_SAMPLE_FORMAT SNDRV_PCM_FORMAT_S32_LE
++static int evm_tda998x_startup(struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct snd_mask *fmt = constrs_mask(&runtime->hw_constraints,
++					    SNDRV_PCM_HW_PARAM_FORMAT);
++	snd_mask_none(fmt);
++	snd_mask_set(fmt, TDA998X_SAMPLE_FORMAT);
++
++	return evm_startup(substream);
++}
++
++static int evm_tda998x_hw_params(struct snd_pcm_substream *substream,
++				 struct snd_pcm_hw_params *params)
++{
++	struct snd_soc_pcm_runtime *rtd = substream->private_data;
++	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
++	struct snd_soc_card *soc_card = rtd->card;
++	struct snd_soc_card_drvdata_davinci *drvdata =
++		snd_soc_card_get_drvdata(soc_card);
++
++	return snd_soc_dai_set_sysclk(cpu_dai, 0, drvdata->sysclk,
++				      SND_SOC_CLOCK_IN);
++}
++
+ static struct snd_soc_ops evm_ops = {
+ 	.startup = evm_startup,
+ 	.shutdown = evm_shutdown,
+ 	.hw_params = evm_hw_params,
  };
  
-+static struct tda998x_encoder_params tda998x_pdata = {
-+	.swap_b = 0x3,
-+	.mirr_b = 0x0,
-+	.swap_a = 0x2,
-+	.mirr_a = 0x0,
-+	.swap_d = 0x1,
-+	.mirr_d = 0x0,
-+	.swap_c = 0x0,
-+	.mirr_c = 0x0,
-+	.swap_f = 0x5,
-+	.mirr_f = 0x0,
-+	.swap_e = 0x4,
-+	.mirr_e = 0x0,
-+	.audio_cfg = 0x3,	/* I2S mode */
-+	.audio_clk_cfg = 1,	/* select clock pin */
-+	.audio_frame[1] = 1,	/* channels - 1 */
-+	.audio_format = AFMT_I2S,
-+	.audio_sample_rate = 48000,
++
++static struct snd_soc_ops evm_tda998x_ops = {
++	.startup = evm_tda998x_startup,
++	.shutdown = evm_shutdown,
++	.hw_params = evm_tda998x_hw_params,
 +};
 +
- static const struct i2c_board_info info = {
--		I2C_BOARD_INFO("tda998x", 0x70)
-+		I2C_BOARD_INFO("tda998x", 0x70),
-+		.platform_data = &tda998x_pdata,
+ /* davinci-evm machine dapm widgets */
+ static const struct snd_soc_dapm_widget aic3x_dapm_widgets[] = {
+ 	SND_SOC_DAPM_HP("Headphone Jack", NULL),
+@@ -149,6 +184,35 @@ static int evm_aic3x_init(struct snd_soc_pcm_runtime *rtd)
+ 	return 0;
+ }
+ 
++static const struct snd_soc_dapm_widget tda998x_dapm_widgets[] = {
++	SND_SOC_DAPM_OUTPUT("HDMI Out"),
++};
++
++static int evm_tda998x_init(struct snd_soc_pcm_runtime *rtd)
++{
++	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
++	struct snd_soc_dapm_context *dapm = &rtd->codec->dapm;
++	struct snd_soc_card *soc_card = rtd->card;
++	int ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, 0, 1);
++	if (ret < 0)
++		return ret;
++
++	snd_soc_dapm_new_controls(dapm, tda998x_dapm_widgets,
++				  ARRAY_SIZE(tda998x_dapm_widgets));
++
++	ret = snd_soc_of_parse_audio_routing(soc_card, "ti,audio-routing");
++
++	/* not connected */
++	snd_soc_dapm_disable_pin(dapm, "RX");
++
++	/* always connected */
++	snd_soc_dapm_enable_pin(dapm, "HDMI Out");
++
++	return 0;
++}
++
+ /* davinci-evm digital audio interface glue - connects codec <--> CPU */
+ static struct snd_soc_dai_link dm6446_evm_dai = {
+ 	.name = "TLV320AIC3X",
+@@ -334,7 +398,7 @@ static struct snd_soc_card da850_snd_soc_card = {
+ #if defined(CONFIG_OF)
+ 
+ /*
+- * The struct is used as place holder. It will be completely
++ * The structs are used as place holders. They will be completely
+  * filled with data from dt node.
+  */
+ static struct snd_soc_dai_link evm_dai_tlv320aic3x = {
+@@ -347,10 +411,24 @@ static struct snd_soc_dai_link evm_dai_tlv320aic3x = {
+ 		   SND_SOC_DAIFMT_IB_NF,
  };
  
- static struct drm_encoder *slave_encoder_create(struct drm_device *dev,
++static struct snd_soc_dai_link evm_dai_tda998x_hdmi = {
++	.name		= "NXP TDA998x HDMI Chip",
++	.stream_name	= "HDMI",
++	.codec_dai_name	= "hdmi-hifi",
++	.ops		= &evm_tda998x_ops,
++	.init           = evm_tda998x_init,
++	.dai_fmt	= (SND_SOC_DAIFMT_CBS_CFS | SND_SOC_DAIFMT_I2S |
++			   SND_SOC_DAIFMT_IB_NF),
++};
++
+ static const struct of_device_id davinci_evm_dt_ids[] = {
+ 	{
+ 		.compatible = "ti,da830-evm-audio",
+-		.data = (void *) &evm_dai_tlv320aic3x,
++		.data = &evm_dai_tlv320aic3x,
++	},
++	{
++		.compatible = "ti,am335x-beaglebone-black-audio",
++		.data = &evm_dai_tda998x_hdmi,
+ 	},
+ 	{ /* sentinel */ }
+ };
 -- 
 1.7.9.5
 
