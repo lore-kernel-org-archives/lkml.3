@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554AbaHFHMd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 03:12:33 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36283 "EHLO
+	id S1755780AbaHFHNu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 03:13:50 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36090 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093AbaHFHLT (ORCPT
+	with ESMTP id S1753843AbaHFHLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 03:11:19 -0400
+	Wed, 6 Aug 2014 03:11:18 -0400
 X-Original-SENDERIP: 10.177.220.145
 X-Original-MAILFROM: iamjoonsoo.kim@lge.com
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
@@ -29,9 +29,9 @@ Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
         Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 7/8] mm/isolation: fix freepage counting bug on start/undo_isolat_page_range()
-Date: Wed,  6 Aug 2014 16:18:36 +0900
-Message-Id: <1407309517-3270-11-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 2/8] mm/isolation: remove unstable check for isolated page
+Date: Wed,  6 Aug 2014 16:18:29 +0900
+Message-Id: <1407309517-3270-4-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -39,173 +39,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current isolation logic isolates each pageblock individually.
-This causes freepage counting problem when page with pageblock order is
-merged with other page on different buddy list. We can prevent it by
-following solutions.
+The check '!PageBuddy(page) && page_count(page) == 0 &&
+migratetype == MIGRATE_ISOLATE' would mean the page on free processing.
+Although it could go into buddy allocator within a short time,
+futher operation such as isolate_freepages_range() in CMA, called after
+test_page_isolated_in_pageblock(), could be failed due to this unstability
+since it requires that the page is on buddy. I think that removing
+this unstability is good thing.
 
-1. decrease MAX_ORDER to pageblock order
-2. prevent merging buddy pages if they are on different buddy list
-
-Solution 1. looks really easy, but, I'm not sure if there is a user
-to allocate more than pageblock order.
-
-Solution 2. seems not to get greeted, because it needs to inserts
-hooks to the core part of allocator.
-
-So, this is solution 3, that is, making start/undo_isolat_page_range()
-bug free through handling whole range at one go. If given range is
-aligned with MAX_ORDER properly, page isn't merged with other page on
-different buddy list. So we can calm down freepage counting bug.
-Unfortunately, this solution only works for MAX_ORDER aligned range
-like as CMA and aligning range is caller's duty.
-
-Although we can go with solution 1., this patch is still useful since
-some synchronization call is reduced since we call them in batch.
+And, following patch makes isolated freepage has new status matched with
+this condition and this check is the obstacle to that change. So remove
+it.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 ---
- mm/page_isolation.c |  105 ++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 84 insertions(+), 21 deletions(-)
+ mm/page_isolation.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
 diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index b91f9ec..063f1f9 100644
+index d1473b2..3100f98 100644
 --- a/mm/page_isolation.c
 +++ b/mm/page_isolation.c
-@@ -222,30 +222,63 @@ int start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
- 			     unsigned migratetype, bool skip_hwpoisoned_pages)
- {
- 	unsigned long pfn;
--	unsigned long undo_pfn;
--	struct page *page;
-+	unsigned long flags = 0, nr_pages;
-+	struct page *page = NULL;
-+	struct zone *zone = NULL;
- 
- 	BUG_ON((start_pfn) & (pageblock_nr_pages - 1));
- 	BUG_ON((end_pfn) & (pageblock_nr_pages - 1));
- 
--	for (pfn = start_pfn;
--	     pfn < end_pfn;
--	     pfn += pageblock_nr_pages) {
-+	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
- 		page = __first_valid_page(pfn, pageblock_nr_pages);
--		if (page &&
--		    set_migratetype_isolate(page, skip_hwpoisoned_pages)) {
--			undo_pfn = pfn;
--			goto undo;
-+		if (!page)
-+			continue;
-+
-+		if (!zone) {
-+			zone = page_zone(page);
-+			spin_lock_irqsave(&zone->lock, flags);
-+		}
-+
-+		if (set_migratetype_isolate_pre(page, skip_hwpoisoned_pages)) {
-+			spin_unlock_irqrestore(&zone->lock, flags);
-+			return -EBUSY;
- 		}
- 	}
--	return 0;
--undo:
--	for (pfn = start_pfn;
--	     pfn < undo_pfn;
--	     pfn += pageblock_nr_pages)
--		unset_migratetype_isolate(pfn_to_page(pfn), migratetype);
- 
--	return -EBUSY;
-+	if (!zone)
-+		return 0;
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
-+		page = __first_valid_page(pfn, pageblock_nr_pages);
-+		if (!page)
-+			continue;
-+
-+		set_pageblock_migratetype(page, MIGRATE_ISOLATE);
-+	}
-+	spin_unlock_irqrestore(&zone->lock, flags);
-+
-+	zone_pcp_disable(zone);
-+	/*
-+	 * After this point, freed page will see MIGRATE_ISOLATE as
-+	 * their pageblock migratetype on all cpus. And pcp list has
-+	 * no free page.
-+	 */
-+	on_each_cpu(drain_local_pages, NULL, 1);
-+
-+	spin_lock_irqsave(&zone->lock, flags);
-+	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
-+		page = __first_valid_page(pfn, pageblock_nr_pages);
-+		if (!page)
-+			continue;
-+
-+		nr_pages = move_freepages_block(zone, page, MIGRATE_ISOLATE);
-+		__mod_zone_freepage_state(zone, -nr_pages, migratetype);
-+	}
-+	spin_unlock_irqrestore(&zone->lock, flags);
-+
-+	zone_pcp_enable(zone);
-+
-+	return 0;
- }
- 
- /*
-@@ -256,18 +289,48 @@ int undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
- {
- 	unsigned long pfn;
- 	struct page *page;
-+	struct zone *zone = NULL;
-+	unsigned long flags, nr_pages;
-+
- 	BUG_ON((start_pfn) & (pageblock_nr_pages - 1));
- 	BUG_ON((end_pfn) & (pageblock_nr_pages - 1));
--	for (pfn = start_pfn;
--	     pfn < end_pfn;
--	     pfn += pageblock_nr_pages) {
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
-+		page = __first_valid_page(pfn, pageblock_nr_pages);
-+		if (!page)
-+			continue;
-+
-+		if (!zone) {
-+			zone = page_zone(page);
-+			spin_lock_irqsave(&zone->lock, flags);
-+		}
-+
-+		if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
-+			continue;
-+
-+		nr_pages = move_freepages_block(zone, page, migratetype);
-+		__mod_zone_freepage_state(zone, nr_pages, migratetype);
-+		set_pageblock_migratetype(page, migratetype);
-+	}
-+
-+	if (!zone)
-+		return 0;
-+
-+	spin_unlock_irqrestore(&zone->lock, flags);
-+
-+	/* Freed pages will see original migratetype after this point */
-+	kick_all_cpus_sync();
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
- 		page = __first_valid_page(pfn, pageblock_nr_pages);
--		if (!page || get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
-+		if (!page)
- 			continue;
--		unset_migratetype_isolate(page, migratetype);
-+
-+		unset_migratetype_isolate_post(page, migratetype);
- 	}
- 	return 0;
- }
-+
- /*
-  * Test all pages in the range is free(means isolated) or not.
-  * all pages in [start_pfn...end_pfn) must be in the same zone.
+@@ -198,11 +198,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
+ 						MIGRATE_ISOLATE);
+ 			}
+ 			pfn += 1 << page_order(page);
+-		}
+-		else if (page_count(page) == 0 &&
+-			get_freepage_migratetype(page) == MIGRATE_ISOLATE)
+-			pfn += 1;
+-		else if (skip_hwpoisoned_pages && PageHWPoison(page)) {
++		} else if (skip_hwpoisoned_pages && PageHWPoison(page)) {
+ 			/*
+ 			 * The HWPoisoned page may be not in buddy
+ 			 * system, and page_count() is not 0.
 -- 
 1.7.9.5
 
