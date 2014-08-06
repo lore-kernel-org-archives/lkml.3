@@ -1,70 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622AbaHFHkd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 03:40:33 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37164 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752963AbaHFHkc (ORCPT
+	id S1754728AbaHFHmn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 03:42:43 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:37336 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323AbaHFHmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 03:40:32 -0400
-Date: Wed, 6 Aug 2014 09:40:29 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Hans Wennborg <hans@hanshq.net>
-Cc: linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/15] pinctrl: pinctrl-at91.c: fix decimal printf format
- specifiers prefixed with 0x
-Message-ID: <20140806074028.GZ3214@piout.net>
-References: <1407300196-32708-1-git-send-email-hans@hanshq.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407300196-32708-1-git-send-email-hans@hanshq.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Aug 2014 03:42:42 -0400
+Message-ID: <1407310958.5090.218.camel@marge.simpson.net>
+Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Sergey Oboguev <oboguev.public@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        khalid.aziz@oracle.com
+Date: Wed, 06 Aug 2014 09:42:38 +0200
+In-Reply-To: <1407303693.5090.171.camel@marge.simpson.net>
+References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
+	 <8738dm9t4z.fsf@tassilo.jf.intel.com>
+	 <1406532289.5133.223.camel@marge.simpson.net>
+	 <CA+80gGaohO-RaG0_tWZJEFzisrrBpgfiw-mxMrTfSK0N=k7gQA@mail.gmail.com>
+	 <1407059776.5156.108.camel@marge.simpson.net>
+	 <CA+80gGZJGX6PjzwptNJ5gU3SvCxaYT8v4id+4NqMAPwgAAS26Q@mail.gmail.com>
+	 <1407303693.5090.171.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2014 at 21:43:16 -0700, Hans Wennborg wrote :
-> The prefix suggests the number should be printed in hex, so use
-> the %x specifier to do that.
-> 
-> Found by using regex suggested by Joe Perches.
-> 
-> Signed-off-by: Hans Wennborg <hans@hanshq.net>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+On Wed, 2014-08-06 at 07:41 +0200, Mike Galbraith wrote:
 
-> ---
->  drivers/pinctrl/pinctrl-at91.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-> index af1ba4f..60464a2 100644
-> --- a/drivers/pinctrl/pinctrl-at91.c
-> +++ b/drivers/pinctrl/pinctrl-at91.c
-> @@ -497,10 +497,10 @@ static struct at91_pinctrl_mux_ops at91sam9x5_ops = {
->  static void at91_pin_dbg(const struct device *dev, const struct at91_pmx_pin *pin)
->  {
->  	if (pin->mux) {
-> -		dev_dbg(dev, "pio%c%d configured as periph%c with conf = 0x%lu\n",
-> +		dev_dbg(dev, "pio%c%d configured as periph%c with conf = 0x%lx\n",
->  			pin->bank + 'A', pin->pin, pin->mux - 1 + 'A', pin->conf);
->  	} else {
-> -		dev_dbg(dev, "pio%c%d configured as gpio with conf = 0x%lu\n",
-> +		dev_dbg(dev, "pio%c%d configured as gpio with conf = 0x%lx\n",
->  			pin->bank + 'A', pin->pin, pin->conf);
->  	}
->  }
-> -- 
-> 2.0.0.526.g5318336
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> You're reading me entirely wrong, I'm not trying to discourage you from
+> inventing a better bullet, I just think this particular bullet is a dud.
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Anyway, I'll try to assume you're talking to the _reasonable_ people on
+this list in any reply.  The chance of penetrating my thick skull once
+I've made up my mind approaches zero ;-)
+
+-Mike
+
