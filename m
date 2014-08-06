@@ -1,161 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350AbaHFVt6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 17:49:58 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:40899 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753927AbaHFVt4 (ORCPT
+	id S1754420AbaHFVuu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 17:50:50 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:46415 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753532AbaHFVut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 17:49:56 -0400
-Date: Thu, 7 Aug 2014 01:49:53 +0400
-From: Dmitry Popov <ixaphire@qrator.net>
-To: "David S. Miller" <davem@davemloft.net>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH net-next v2] tcp: md5: check md5 signature without socket
- lock
-Message-Id: <20140807014953.d8c4cde302bb9b30f8efe0e1@qrator.net>
-X-Mailer: Sylpheed 3.4.2 (GTK+ 2.24.24; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Aug 2014 17:50:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140806201256.GO3711@ld-irv-0074>
+References: <1403220823-19444-1-git-send-email-f.fainelli@gmail.com>
+	<CAGVrzcYfA8rCXGRW7g0JhT4GQKT8SQj+pMvCh25yoXLFGNM_Pw@mail.gmail.com>
+	<20140806165452.GN3711@ld-irv-0074>
+	<CAL_JsqK8BiffXgpQSig5EbV3FUW7EBOn9YjZGqOcUcEJiCJ0WA@mail.gmail.com>
+	<20140806201256.GO3711@ld-irv-0074>
+Date: Wed, 6 Aug 2014 14:50:47 -0700
+Message-ID: <CA+bK7J7LQq4S70ScSynbLTjNMmP=9n3KD2suYRg9JN+pEv-Y7g@mail.gmail.com>
+Subject: Re: [PATCH] of/irq: lookup 'interrupts-extended' property first
+From: Tim Bird <tbird20d@gmail.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since a8afca032 (tcp: md5: protects md5sig_info with RCU) tcp_md5_do_lookup
-doesn't require socket lock, rcu_read_lock is enough. Therefore socket lock is
-no longer required for tcp_v{4,6}_inbound_md5_hash too, so we can move these
-calls (wrapped with rcu_read_{,un}lock) before bh_lock_sock:
-from tcp_v{4,6}_do_rcv to tcp_v{4,6}_rcv.
+On Wed, Aug 6, 2014 at 1:12 PM, Brian Norris
+<computersforpeace@gmail.com> wrote:
+> On Wed, Aug 06, 2014 at 01:42:08PM -0500, Rob Herring wrote:
+>> On Wed, Aug 6, 2014 at 11:54 AM, Brian Norris <computersforpeace@gmail.com> wrote:
+>> > On Thu, Jul 31, 2014 at 11:00:01AM -0700, Florian Fainelli wrote:
+>> > I think it is important that a device tree provide some flexibility on
+>> > kernel versions. We only invented 'interrupts-extended' in Linux 3.13,
+>> > so it's easy to have device trees that could work only on 3.13+.
+>> >
+>> > Typically, we might say that new features require new kernels, but this
+>> > is a very basic piece of the DT infrastructure. In our case, we have
+>> > hardware whose basic features can be supported by a single interrupt
+>> > parent, and so we used the 'interrupts' property pre-3.13. But when we
+>> > want to add some power management features, there's an additional
+>> > interrupt parent. Under the current DT binding, we have to switch over
+>> > to using 'interrupts-extended' exclusively, and thus we must have a
+>> > completely new DTB for >=3.13, and this DTB no longer works with the old
+>> > kernels.
+>>
+>> "Must have" to enable the new features?
+>
+> Yes. The new feature requires an additional interrupt parent, and so it
+> requires interrupts-extended.
 
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
----
- net/ipv4/tcp_ipv4.c | 36 +++++++++++++++++++++++++-----------
- net/ipv6/tcp_ipv6.c | 25 +++++++++++++++++++------
- 2 files changed, 44 insertions(+), 17 deletions(-)
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 77cccda..f2779b1 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1182,7 +1182,8 @@ clear_hash_noput:
- }
- EXPORT_SYMBOL(tcp_v4_md5_hash_skb);
- 
--static bool tcp_v4_inbound_md5_hash(struct sock *sk, const struct sk_buff *skb)
-+static bool __tcp_v4_inbound_md5_hash(struct sock *sk,
-+				      const struct sk_buff *skb)
- {
- 	/*
- 	 * This gets called for each TCP segment that arrives
-@@ -1235,6 +1236,17 @@ static bool tcp_v4_inbound_md5_hash(struct sock *sk, const struct sk_buff *skb)
- 	return false;
- }
- 
-+static bool tcp_v4_inbound_md5_hash(struct sock *sk, const struct sk_buff *skb)
-+{
-+	bool ret;
-+
-+	rcu_read_lock();
-+	ret = __tcp_v4_inbound_md5_hash(sk, skb);
-+	rcu_read_unlock();
-+
-+	return ret;
-+}
-+
- #endif
- 
- struct request_sock_ops tcp_request_sock_ops __read_mostly = {
-@@ -1539,16 +1551,6 @@ static struct sock *tcp_v4_hnd_req(struct sock *sk, struct sk_buff *skb)
- int tcp_v4_do_rcv(struct sock *sk, struct sk_buff *skb)
- {
- 	struct sock *rsk;
--#ifdef CONFIG_TCP_MD5SIG
--	/*
--	 * We really want to reject the packet as early as possible
--	 * if:
--	 *  o We're expecting an MD5'd packet and this is no MD5 tcp option
--	 *  o There is an MD5 option and we're not expecting one
--	 */
--	if (tcp_v4_inbound_md5_hash(sk, skb))
--		goto discard;
--#endif
- 
- 	if (sk->sk_state == TCP_ESTABLISHED) { /* Fast path */
- 		struct dst_entry *dst = sk->sk_rx_dst;
-@@ -1751,6 +1753,18 @@ process:
- 
- 	if (!xfrm4_policy_check(sk, XFRM_POLICY_IN, skb))
- 		goto discard_and_relse;
-+
-+#ifdef CONFIG_TCP_MD5SIG
-+	/*
-+	 * We really want to reject the packet as early as possible
-+	 * if:
-+	 *  o We're expecting an MD5'd packet and this is no MD5 tcp option
-+	 *  o There is an MD5 option and we're not expecting one
-+	 */
-+	if (tcp_v4_inbound_md5_hash(sk, skb))
-+		goto discard_and_relse;
-+#endif
-+
- 	nf_reset(skb);
- 
- 	if (sk_filter(sk, skb))
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 229239a..226a237 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -676,7 +676,8 @@ clear_hash_noput:
- 	return 1;
- }
- 
--static int tcp_v6_inbound_md5_hash(struct sock *sk, const struct sk_buff *skb)
-+static int __tcp_v6_inbound_md5_hash(struct sock *sk,
-+				     const struct sk_buff *skb)
- {
- 	const __u8 *hash_location = NULL;
- 	struct tcp_md5sig_key *hash_expected;
-@@ -716,6 +717,18 @@ static int tcp_v6_inbound_md5_hash(struct sock *sk, const struct sk_buff *skb)
- 	}
- 	return 0;
- }
-+
-+static int tcp_v6_inbound_md5_hash(struct sock *sk, const struct sk_buff *skb)
-+{
-+	int ret;
-+
-+	rcu_read_lock();
-+	ret = __tcp_v6_inbound_md5_hash(sk, skb);
-+	rcu_read_unlock();
-+
-+	return ret;
-+}
-+
- #endif
- 
- struct request_sock_ops tcp6_request_sock_ops __read_mostly = {
-@@ -1346,11 +1359,6 @@ static int tcp_v6_do_rcv(struct sock *sk, struct sk_buff *skb)
- 	if (skb->protocol == htons(ETH_P_IP))
- 		return tcp_v4_do_rcv(sk, skb);
- 
--#ifdef CONFIG_TCP_MD5SIG
--	if (tcp_v6_inbound_md5_hash(sk, skb))
--		goto discard;
--#endif
--
- 	if (sk_filter(sk, skb))
- 		goto discard;
- 
-@@ -1523,6 +1531,11 @@ process:
- 	if (!xfrm6_policy_check(sk, XFRM_POLICY_IN, skb))
- 		goto discard_and_relse;
- 
-+#ifdef CONFIG_TCP_MD5SIG
-+	if (tcp_v6_inbound_md5_hash(sk, skb))
-+		goto discard_and_relse;
-+#endif
-+
- 	if (sk_filter(sk, skb))
- 		goto discard_and_relse;
- 
+Hold on there.  What about interrupt-map?  That was the traditional DT
+feature for
+supporting multi-parented interrupts.  Why couldn't the feature have been added
+using that instead of interrupts-extended?
+
+I know interrupts-extended is preferred, but has interrupt-map support been
+removed from recent kernels?  I'm a bit confused.
+
+ -- Tim Bird
+Senior Software Engineer, Sony Mobile
+Architecture Group Chair, CE Workgroup, Linux Foundation
