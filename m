@@ -1,25 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340AbaHFUzD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 16:55:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54531 "EHLO
+	id S1754411AbaHFUzr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 16:55:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54594 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754298AbaHFUzA (ORCPT
+	with ESMTP id S1751549AbaHFUzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 16:55:00 -0400
+	Wed, 6 Aug 2014 16:55:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mauro <registosites@hotmail.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Bin Gao <bin.gao@intel.com>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Vineet Gupta <vgupta@synopsys.com>, Jason Low <jason.low2@hp.com>,
+        Waiman Long <waiman.long@hp.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        John David Anglin <dave.anglin@bell.net>,
+        James Hogan <james.hogan@imgtec.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, sparclinux@vger.kernel.org,
         Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>,
         kernel-team@lists.ubuntu.com
-Subject: [3.13.y.z extended stable] Patch "x86, tsc: Fix cpufreq lockup" has been added to staging queue
-Date: Wed,  6 Aug 2014 13:54:35 -0700
-Message-Id: <1407358475-21635-1-git-send-email-kamal@canonical.com>
+Subject: [3.13.y.z extended stable] Patch "locking/mutex: Disable optimistic spinning on some architectures" has been added to staging queue
+Date: Wed,  6 Aug 2014 13:54:56 -0700
+Message-Id: <1407358496-23094-1-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,7 +39,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I have just added a patch titled
 
-    x86, tsc: Fix cpufreq lockup
+    locking/mutex: Disable optimistic spinning on some architectures
 
 to the linux-3.13.y-queue branch of the 3.13.y.z extended stable tree 
 which can be found at:
@@ -48,61 +59,131 @@ Thanks.
 
 ------
 
->From 0c163f7d8b127903f45ebc8d47557b9bcfab8274 Mon Sep 17 00:00:00 2001
+>From 01698736c59ec0ef7db9aa25785868ebd5637e12 Mon Sep 17 00:00:00 2001
 From: Peter Zijlstra <peterz@infradead.org>
-Date: Tue, 24 Jun 2014 14:48:19 +0200
-Subject: x86, tsc: Fix cpufreq lockup
+Date: Fri, 6 Jun 2014 19:53:16 +0200
+Subject: locking/mutex: Disable optimistic spinning on some architectures
 
-commit 3896c329df8092661dac80f55a8c3f60136fd61a upstream.
+commit 4badad352a6bb202ec68afa7a574c0bb961e5ebc upstream.
 
-Mauro reported that his AMD X2 using the powernow-k8 cpufreq driver
-locked up when doing cpu hotplug.
+The optimistic spin code assumes regular stores and cmpxchg() play nice;
+this is found to not be true for at least: parisc, sparc32, tile32,
+metag-lock1, arc-!llsc and hexagon.
 
-Because we called set_cyc2ns_scale() from the time_cpufreq_notifier()
-unconditionally, it gets called multiple times for each freq change,
-instead of only the once, when the tsc_khz value actually changes.
+There is further wreckage, but this in particular seemed easy to
+trigger, so blacklist this.
 
-Because it gets called more than once, we run out of cyc2ns data slots
-and stall, waiting for a free one, but because we're half way offline,
-there's no consumers to free slots.
+Opt in for known good archs.
 
-By placing the call inside the condition that actually changes tsc_khz
-we avoid superfluous calls and avoid the problem.
-
-Reported-by: Mauro <registosites@hotmail.com>
-Tested-by: Mauro <registosites@hotmail.com>
-Fixes: 20d1c86a5776 ("sched/clock, x86: Rewrite cyc2ns() to avoid the need to disable IRQs")
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Bin Gao <bin.gao@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: David Miller <davem@davemloft.net>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Vineet Gupta <vgupta@synopsys.com>
+Cc: Jason Low <jason.low2@hp.com>
+Cc: Waiman Long <waiman.long@hp.com>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: John David Anglin <dave.anglin@bell.net>
+Cc: James Hogan <james.hogan@imgtec.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: sparclinux@vger.kernel.org
+Link: http://lkml.kernel.org/r/20140606175316.GV13930@laptop.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/tsc.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/Kconfig     | 1 +
+ arch/arm64/Kconfig   | 1 +
+ arch/powerpc/Kconfig | 1 +
+ arch/sparc/Kconfig   | 1 +
+ arch/x86/Kconfig     | 1 +
+ kernel/Kconfig.locks | 5 ++++-
+ 6 files changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 930e5d4..66af9af 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -722,9 +722,9 @@ static int time_cpufreq_notifier(struct notifier_block *nb, unsigned long val,
- 		tsc_khz = cpufreq_scale(tsc_khz_ref, ref_freq, freq->new);
- 		if (!(freq->flags & CPUFREQ_CONST_LOOPS))
- 			mark_tsc_unstable("cpufreq changes");
--	}
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 31e1f44..b3d400d 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -6,6 +6,7 @@ config ARM
+ 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
+ 	select ARCH_HAVE_CUSTOM_GPIO_H
+ 	select ARCH_MIGHT_HAVE_PC_PARPORT
++	select ARCH_SUPPORTS_ATOMIC_RMW
+ 	select ARCH_USE_CMPXCHG_LOCKREF
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select BUILDTIME_EXTABLE_SORT if MMU
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 6d4dd22..bf0ed5d 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -2,6 +2,7 @@ config ARM64
+ 	def_bool y
+ 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+ 	select ARCH_USE_CMPXCHG_LOCKREF
++	select ARCH_SUPPORTS_ATOMIC_RMW
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARCH_WANT_COMPAT_IPC_PARSE_VERSION
+ 	select ARCH_WANT_FRAME_POINTERS
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index b44b52c..ab43fa3 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -139,6 +139,7 @@ config PPC
+ 	select OLD_SIGACTION if PPC32
+ 	select HAVE_DEBUG_STACKOVERFLOW
+ 	select HAVE_IRQ_EXIT_ON_IRQ_STACK
++	select ARCH_SUPPORTS_ATOMIC_RMW
 
--	set_cyc2ns_scale(tsc_khz, freq->cpu);
-+		set_cyc2ns_scale(tsc_khz, freq->cpu);
-+	}
+ config GENERIC_CSUM
+ 	def_bool CPU_LITTLE_ENDIAN
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 6c95f4d..94cd9c1 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -76,6 +76,7 @@ config SPARC64
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select HAVE_C_RECORDMCOUNT
+ 	select NO_BOOTMEM
++	select ARCH_SUPPORTS_ATOMIC_RMW
 
- 	return 0;
- }
+ config ARCH_DEFCONFIG
+ 	string
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 9e31880..9562fc3 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -125,6 +125,7 @@ config X86
+ 	select RTC_LIB
+ 	select HAVE_DEBUG_STACKOVERFLOW
+ 	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
++	select ARCH_SUPPORTS_ATOMIC_RMW
+
+ config INSTRUCTION_DECODER
+ 	def_bool y
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index d2b32ac..ecee67a 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -220,6 +220,9 @@ config INLINE_WRITE_UNLOCK_IRQRESTORE
+
+ endif
+
++config ARCH_SUPPORTS_ATOMIC_RMW
++	bool
++
+ config MUTEX_SPIN_ON_OWNER
+ 	def_bool y
+-	depends on SMP && !DEBUG_MUTEXES
++	depends on SMP && !DEBUG_MUTEXES && ARCH_SUPPORTS_ATOMIC_RMW
 --
 1.9.1
 
