@@ -1,145 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684AbaHFSRF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 14:17:05 -0400
+	id S1755446AbaHFST5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 14:19:57 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:37492 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565AbaHFSRB (ORCPT
+	with ESMTP id S1754647AbaHFSRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 14:17:01 -0400
+	Wed, 6 Aug 2014 14:17:04 -0400
 X-IronPort-AV: E=Sophos;i="5.01,813,1400025600"; 
-   d="scan'208";a="160023712"
+   d="scan'208";a="160023728"
 From: Zoltan Kiss <zoltan.kiss@citrix.com>
 To: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>
 CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
         David Vrabel <david.vrabel@citrix.com>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: [PATCH net-next 1/2 v2] xen-netback: Using a new state bit instead of carrier
-Date: Wed, 6 Aug 2014 19:16:10 +0100
-Message-ID: <1407348973-2433-2-git-send-email-zoltan.kiss@citrix.com>
+Subject: [PATCH] xen-netback: Change disable flag from bool to a bit
+Date: Wed, 6 Aug 2014 19:16:13 +0100
+Message-ID: <1407348973-2433-5-git-send-email-zoltan.kiss@citrix.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407348973-2433-1-git-send-email-zoltan.kiss@citrix.com>
 References: <1407348973-2433-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-DLP: MIA2
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-This patch introduces a new state bit VIF_STATUS_CONNECTED to track whether the
-vif is in a connected state. Using carrier will not work with the next patch
-in this series, which aims to turn the carrier temporarily off if the guest
-doesn't seem to be able to receive packets.
 
 Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xenproject.org 
----
-v2:
-- rename the bitshift type to "enum state_bit_shift" here, not in the next patch
 
 diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index 28c9822..4a92fc1 100644
+index 5cb139a..f126920 100644
 --- a/drivers/net/xen-netback/common.h
 +++ b/drivers/net/xen-netback/common.h
-@@ -198,6 +198,11 @@ struct xenvif_queue { /* Per-queue data for xenvif */
- 	struct xenvif_stats stats;
+@@ -106,7 +106,11 @@ enum vif_state_bit_shift {
+ 	/* This bit signals to the RX thread that queuing was stopped
+ 	 * (in start_xmit), and either the timer fired or an RX interrupt came
+ 	 */
+-	VIF_STATUS_RX_PURGE_EVENT
++	VIF_STATUS_RX_PURGE_EVENT,
++	/* Is this interface disabled? True when backend discovers
++	 * frontend is rogue.
++	 */
++	VIF_STATUS_DISABLED
  };
  
-+enum state_bit_shift {
-+	/* This bit marks that the vif is connected */
-+	VIF_STATUS_CONNECTED
-+};
-+
  struct xenvif {
- 	/* Unique identifier for this interface. */
+@@ -114,10 +118,6 @@ struct xenvif {
  	domid_t          domid;
-@@ -220,6 +225,7 @@ struct xenvif {
- 	 * frontend is rogue.
- 	 */
- 	bool disabled;
-+	unsigned long status;
+ 	unsigned int     handle;
  
- 	/* Queues */
- 	struct xenvif_queue *queues;
+-	/* Is this interface disabled? True when backend discovers
+-	 * frontend is rogue.
+-	 */
+-	bool disabled;
+ 	unsigned long status;
+ 
+ 	/* Use NAPI for guest TX */
 diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index bd59d9d..fbdadb3 100644
+index e396d86..92e397c 100644
 --- a/drivers/net/xen-netback/interface.c
 +++ b/drivers/net/xen-netback/interface.c
-@@ -55,7 +55,8 @@ static inline void xenvif_stop_queue(struct xenvif_queue *queue)
+@@ -70,7 +70,7 @@ static int xenvif_poll(struct napi_struct *napi, int budget)
+ 	 * We also turn off NAPI if the receive queue is stalled and the carrier
+ 	 * is turned off.
+ 	 */
+-	if (unlikely(vif->disabled ||
++	if (unlikely(test_bit(VIF_STATUS_DISABLED, &vif->status) ||
+ 		     !netif_carrier_ok(vif->dev))) {
+ 		napi_complete(napi);
+ 		return 0;
+@@ -352,8 +352,6 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
+ 	vif->ip_csum = 1;
+ 	vif->dev = dev;
  
- int xenvif_schedulable(struct xenvif *vif)
- {
--	return netif_running(vif->dev) && netif_carrier_ok(vif->dev);
-+	return netif_running(vif->dev) &&
-+		test_bit(VIF_STATUS_CONNECTED, &vif->status);
- }
- 
- static irqreturn_t xenvif_tx_interrupt(int irq, void *dev_id)
-@@ -267,7 +268,7 @@ static void xenvif_down(struct xenvif *vif)
- static int xenvif_open(struct net_device *dev)
- {
- 	struct xenvif *vif = netdev_priv(dev);
--	if (netif_carrier_ok(dev))
-+	if (test_bit(VIF_STATUS_CONNECTED, &vif->status))
- 		xenvif_up(vif);
- 	netif_tx_start_all_queues(dev);
- 	return 0;
-@@ -276,7 +277,7 @@ static int xenvif_open(struct net_device *dev)
- static int xenvif_close(struct net_device *dev)
- {
- 	struct xenvif *vif = netdev_priv(dev);
--	if (netif_carrier_ok(dev))
-+	if (test_bit(VIF_STATUS_CONNECTED, &vif->status))
- 		xenvif_down(vif);
- 	netif_tx_stop_all_queues(dev);
- 	return 0;
-@@ -528,6 +529,7 @@ void xenvif_carrier_on(struct xenvif *vif)
- 	if (!vif->can_sg && vif->dev->mtu > ETH_DATA_LEN)
- 		dev_set_mtu(vif->dev, ETH_DATA_LEN);
- 	netdev_update_features(vif->dev);
-+	set_bit(VIF_STATUS_CONNECTED, &vif->status);
- 	netif_carrier_on(vif->dev);
- 	if (netif_running(vif->dev))
- 		xenvif_up(vif);
-@@ -625,9 +627,11 @@ void xenvif_carrier_off(struct xenvif *vif)
- 	struct net_device *dev = vif->dev;
- 
- 	rtnl_lock();
--	netif_carrier_off(dev); /* discard queued packets */
--	if (netif_running(dev))
--		xenvif_down(vif);
-+	if (test_and_clear_bit(VIF_STATUS_CONNECTED, &vif->status)) {
-+		netif_carrier_off(dev); /* discard queued packets */
-+		if (netif_running(dev))
-+			xenvif_down(vif);
-+	}
- 	rtnl_unlock();
- }
- 
-@@ -656,8 +660,7 @@ void xenvif_disconnect(struct xenvif *vif)
- 	unsigned int num_queues = vif->num_queues;
- 	unsigned int queue_index;
- 
--	if (netif_carrier_ok(vif->dev))
--		xenvif_carrier_off(vif);
-+	xenvif_carrier_off(vif);
- 
- 	for (queue_index = 0; queue_index < num_queues; ++queue_index) {
- 		queue = &vif->queues[queue_index];
+-	vif->disabled = false;
+-
+ 	vif->credit_bytes = vif->remaining_credit = ~0UL;
+ 	vif->credit_usec  = 0UL;
+ 	init_timer(&vif->credit_timeout);
 diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 769e553..6c4cc0f 100644
+index 0737597..8b75b41 100644
 --- a/drivers/net/xen-netback/netback.c
 +++ b/drivers/net/xen-netback/netback.c
-@@ -1953,7 +1953,7 @@ int xenvif_kthread_guest_rx(void *data)
- 		 * context so we defer it here, if this thread is
- 		 * associated with queue 0.
- 		 */
--		if (unlikely(queue->vif->disabled && netif_carrier_ok(queue->vif->dev) && queue->id == 0))
-+		if (unlikely(queue->vif->disabled && queue->id == 0))
- 			xenvif_carrier_off(queue->vif);
+@@ -787,7 +787,7 @@ static void xenvif_tx_err(struct xenvif *vif,
+ static void xenvif_fatal_tx_err(struct xenvif *vif)
+ {
+ 	netdev_err(vif->dev, "fatal error; disabling device\n");
+-	vif->disabled = true;
++	set_bit(VIF_STATUS_DISABLED, &vif->status);
+ 	xenvif_kick_thread(vif);
+ }
  
- 		if (kthread_should_stop())
+@@ -1936,7 +1936,7 @@ int xenvif_kthread_guest_rx(void *data)
+ 	while (!kthread_should_stop()) {
+ 		wait_event_interruptible(vif->wq,
+ 					 rx_work_todo(vif) ||
+-					 vif->disabled ||
++					 test_bit(VIF_STATUS_DISABLED, &vif->status) ||
+ 					 test_bit(VIF_STATUS_RX_PURGE_EVENT, &vif->status) ||
+ 					 kthread_should_stop());
+ 
+@@ -1946,7 +1946,7 @@ int xenvif_kthread_guest_rx(void *data)
+ 		 * but we cannot disable the interface in softirq
+ 		 * context so we defer it here.
+ 		 */
+-		if (unlikely(vif->disabled))
++		if (unlikely(test_and_clear_bit(VIF_STATUS_DISABLED, &vif->status)))
+ 			xenvif_carrier_off(vif);
+ 		else if (unlikely(test_and_clear_bit(VIF_STATUS_RX_PURGE_EVENT,
+ 						     &vif->status))) {
