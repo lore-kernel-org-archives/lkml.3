@@ -1,121 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820AbaHFK15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 06:27:57 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4352 "EHLO mga01.intel.com"
+	id S1755200AbaHFKfe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 06:35:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38136 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754329AbaHFK1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 06:27:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,811,1400050800"; 
-   d="scan'208";a="580775420"
-Message-ID: <53E20325.9020303@linux.intel.com>
-Date: Wed, 06 Aug 2014 18:27:49 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: xen-devel@lists.xenproject.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+	id S1751682AbaHFKfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 06:35:32 -0400
+Date: Wed, 6 Aug 2014 11:35:27 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [Bugfix 0/2] Fix bugs caused by "use irqdomain to dynamically
- allocate IRQ for IOAPIC"
-References: <1407209178-18644-1-git-send-email-jiang.liu@linux.intel.com> <20140805130448.GA13057@laptop.dumpdata.com> <53E10136.9000505@linux.intel.com> <20140805175802.GE27240@laptop.dumpdata.com>
-In-Reply-To: <20140805175802.GE27240@laptop.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: mm: BUG in unmap_page_range
+Message-ID: <20140806103527.GY10819@suse.de>
+References: <53DD5F20.8010507@oracle.com>
+ <alpine.LSU.2.11.1408040418500.3406@eggly.anvils>
+ <20140805144439.GW10819@suse.de>
+ <alpine.LSU.2.11.1408051649330.6591@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1408051649330.6591@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 05, 2014 at 05:42:03PM -0700, Hugh Dickins wrote:
+> > <SNIP>
+> > 
+> > I'm attaching a preliminary pair of patches. The first which deals with
+> > ARCH_USES_NUMA_PROT_NONE and the second which is yours with a revised
+> > changelog. I'm adding Aneesh to the cc to look at the powerpc portion of
+> > the first patch.
+> 
+> Thanks a lot, Mel.
+> 
+> I am surprised by the ordering, but perhaps you meant nothing by it.
 
+I didn't mean anything by it. It was based on the order I looked at the
+patches in. Revisited c46a7c817, looked at ARCH_USES_NUMA_PROT_NONE issue
+to see if it had any potential impact to your patch and then moved on to
+your patch.
 
-On 2014/8/6 1:58, Konrad Rzeszutek Wilk wrote:
-> On Wed, Aug 06, 2014 at 12:07:18AM +0800, Jiang Liu wrote:
->>
->>
->> On 2014/8/5 21:04, Konrad Rzeszutek Wilk wrote:
->>> On Tue, Aug 05, 2014 at 11:26:16AM +0800, Jiang Liu wrote:
->>>> Two issues have been reported against patch set "use irqdomain to
->>>> dynamically allocate IRQ for IOAPIC" at https://lkml.org/lkml/2014/6/9/44.
->>>>
->>>> This first one causes failure of suspend/hibernation, please refer to
->>>> https://lkml.org/lkml/2014/7/28/822 for more information. And we have
->>>> worked out a patch to fix it (https://lkml.org/lkml/2014/7/30/725) and
->>>> Borislav has tested it. But with more testing and analysis, I found the
->>>> provided patch still has some issues:
->>>> 1) It may cause regression to Xen
->>>
->>> Could you elaborate please?
->>>
->>> Is there a git tree with all of these patches to test it?
->> Hi Konrad,
->> 	The patch at https://lkml.org/lkml/2014/7/30/725 skips invoking
->> xen_pcifront_enable_irq() on resume from suspend or restore from
->> hibernation. I'm not sure whether that will affect suspend/hibernation
->> with Xen. This patch series won't affect Xen anymore.
+> Isn't the first one a welcome but optional cleanup, and the second one
+> a fix that we need in 3.16-stable?  Or does the fix actually depend in
+> some unstated way upon the cleanup, in powerpc-land perhaps?
 > 
-> Ah, it looks like:
-> 
-> 415         pcibios_enable_irq = xen_pcifront_enable_irq;                           
-> 416         pcibios_disable_irq = NULL;                                             
-> 
-> Is the culprit right? If there was an pcibios_disable_irq set, then said
-> patch would not been needed?
-> 
-> 
->> 	I have prepared a tree for you at
->> https://github.com/jiangliu/linux.git suspend
-> 
-> Thank you. Will give it a spin tomorrow.
-Hi Konrad,
-	Thanks for review.
-	I think no need to test it anymore. We are trying to fix an
-issue caused by IOAPIC related work. The previous version of patch
-is too coarse grain and may affect Xen. And now we have reworked it,
-so it shouldn't affect Xen anymore.
-Regards!
-Gerry
 
->>
->> Thanks for help!
->> Gerry
->>
->>>> 2) Flag dev->dev.power.is_prepared has already been cleared when
->>>>    pcibios_enable_device() gets called, so it will cause IOAPIC pin
->>>>    reference count leak.
->>>>
->>>> So I reworked the patch to fix above issues. The first patch fixes issue
->>>> 1 by moving check of dev->dev.power.is_prepared pcibios_enable_irq, so
->>>> it won't affect Xen. The second patch fixes the IOAPIC pin reference
->>>> count leakage issue. It also solves the issue we have discussed at
->>>> http://www.spinics.net/lists/linux-pci/msg32902.html
->>>>
->>>> Regards!
->>>> Gerry
->>>>
->>>> Jiang Liu (2):
->>>>   x86, irq, PCI: Keep IRQ assignment for PCI devices during
->>>>     suspend/hibernation
->>>>   x86, irq: Keep balance of IOAPIC pin reference count
->>>>
->>>>  arch/x86/pci/intel_mid_pci.c |    9 ++++++++-
->>>>  arch/x86/pci/irq.c           |    8 +++++++-
->>>>  drivers/acpi/pci_irq.c       |   15 +++++++++++++--
->>>>  include/linux/pci.h          |    1 +
->>>>  4 files changed, 29 insertions(+), 4 deletions(-)
->>>>
->>>> -- 
->>>> 1.7.10.4
->>>>
+It shouldn't as powerpc can use its old helpers. I've included Aneesh in
+the cc just in case.
+
+> Aside from that, for the first patch: yes, I heartily approve of the
+> disappearance of CONFIG_ARCH_WANTS_PROT_NUMA_PROT_NONE and
+> CONFIG_ARCH_USES_NUMA_PROT_NONE.  If you wish, add
+> Acked-by: Hugh Dickins <hughd@google.com>
+> but of course it's really Aneesh and powerpc who are the test of it.
+> 
+
+Thanks. I have a second version finished for that which I'll send once
+this bug is addressed.
+
+> One thing I did wonder, though: at first I was reassured by the
+> VM_BUG_ON(!pte_present(pte)) you add to pte_mknuma(); but then thought
+> it would be better as VM_BUG_ON(!(val & _PAGE_PRESENT)), being stronger
+> - asserting that indeed we do not put NUMA hints on PROT_NONE areas.
+> (But I have not tested, perhaps such a VM_BUG_ON would actually fire.)
+> 
+
+It shouldn't so I'll use the stronger test.
+
+Sasha, if it's not too late would you mind testing this patch in isolation
+as a -stable candidate for 3.16 please? It worked for me including within
+trinity but then again I was not seeing crashes with 3.16 either so I do
+not consider my trinity testing to be a reliable indicator.
+
+---8<---
+x86,mm: fix pte_special versus pte_numa
+
+Sasha Levin has shown oopses on ffffea0003480048 and ffffea0003480008
+at mm/memory.c:1132, running Trinity on different 3.16-rc-next kernels:
+where zap_pte_range() checks page->mapping to see if PageAnon(page).
+
+Those addresses fit struct pages for pfns d2001 and d2000, and in each
+dump a register or a stack slot showed d2001730 or d2000730: pte flags
+0x730 are PCD ACCESSED PROTNONE SPECIAL IOMAP; and Sasha's e820 map has
+a hole between cfffffff and 100000000, which would need special access.
+
+Commit c46a7c817e66 ("x86: define _PAGE_NUMA by reusing software bits on
+the PMD and PTE levels") has broken vm_normal_page(): a PROTNONE SPECIAL
+pte no longer passes the pte_special() test, so zap_pte_range() goes on
+to try to access a non-existent struct page.
+
+Fix this by refining pte_special() (SPECIAL with PRESENT or PROTNONE)
+to complement pte_numa() (SPECIAL with neither PRESENT nor PROTNONE).
+A hint that this was a problem was that c46a7c817e66 added pte_numa()
+test to vm_normal_page(), and moved its is_zero_pfn() test from slow to
+fast path: This was papering over a pte_special() snag when the zero page
+was encountered during zap. This patch reverts vm_normal_page() to how it
+was before, relying on pte_special().
+
+It still appears that this patch may be incomplete: aren't there other
+places which need to be handling PROTNONE along with PRESENT?  For example,
+pte_mknuma() clears _PAGE_PRESENT and sets _PAGE_NUMA, but on a PROT_NONE
+area, that would make it pte_special(). This is side-stepped by the fact
+that NUMA hinting faults skipped PROT_NONE VMAs and there are no grounds
+where a NUMA hinting fault on a PROT_NONE VMA would be interesting.
+
+Fixes: c46a7c817e66 ("x86: define _PAGE_NUMA by reusing software bits on the PMD and PTE levels")
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: stable@vger.kernel.org [3.16]
+---
+ arch/x86/include/asm/pgtable.h | 9 +++++++--
+ mm/memory.c                    | 7 +++----
+ 2 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index 0ec0560..aa97a07 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -131,8 +131,13 @@ static inline int pte_exec(pte_t pte)
+ 
+ static inline int pte_special(pte_t pte)
+ {
+-	return (pte_flags(pte) & (_PAGE_PRESENT|_PAGE_SPECIAL)) ==
+-				 (_PAGE_PRESENT|_PAGE_SPECIAL);
++	/*
++	 * See CONFIG_NUMA_BALANCING pte_numa in include/asm-generic/pgtable.h.
++	 * On x86 we have _PAGE_BIT_NUMA == _PAGE_BIT_GLOBAL+1 ==
++	 * __PAGE_BIT_SOFTW1 == _PAGE_BIT_SPECIAL.
++	 */
++	return (pte_flags(pte) & _PAGE_SPECIAL) &&
++		(pte_flags(pte) & (_PAGE_PRESENT|_PAGE_PROTNONE));
+ }
+ 
+ static inline unsigned long pte_pfn(pte_t pte)
+diff --git a/mm/memory.c b/mm/memory.c
+index 8b44f76..0a21f3d 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -751,7 +751,7 @@ struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
+ 	unsigned long pfn = pte_pfn(pte);
+ 
+ 	if (HAVE_PTE_SPECIAL) {
+-		if (likely(!pte_special(pte) || pte_numa(pte)))
++		if (likely(!pte_special(pte)))
+ 			goto check_pfn;
+ 		if (vma->vm_flags & (VM_PFNMAP | VM_MIXEDMAP))
+ 			return NULL;
+@@ -777,15 +777,14 @@ struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
+ 		}
+ 	}
+ 
++	if (is_zero_pfn(pfn))
++		return NULL;
+ check_pfn:
+ 	if (unlikely(pfn > highest_memmap_pfn)) {
+ 		print_bad_pte(vma, addr, pte, NULL);
+ 		return NULL;
+ 	}
+ 
+-	if (is_zero_pfn(pfn))
+-		return NULL;
+-
+ 	/*
+ 	 * NOTE! We still have PageReserved() pages in the page tables.
+ 	 * eg. VDSO mappings can cause them to exist.
