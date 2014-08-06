@@ -1,72 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335AbaHFWYm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 18:24:42 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:58539 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151AbaHFWYd (ORCPT
+	id S1754458AbaHFWZA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 18:25:00 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:33966 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754388AbaHFWY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 18:24:33 -0400
+	Wed, 6 Aug 2014 18:24:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+bK7J7LQq4S70ScSynbLTjNMmP=9n3KD2suYRg9JN+pEv-Y7g@mail.gmail.com>
-References: <1403220823-19444-1-git-send-email-f.fainelli@gmail.com>
- <CAGVrzcYfA8rCXGRW7g0JhT4GQKT8SQj+pMvCh25yoXLFGNM_Pw@mail.gmail.com>
- <20140806165452.GN3711@ld-irv-0074> <CAL_JsqK8BiffXgpQSig5EbV3FUW7EBOn9YjZGqOcUcEJiCJ0WA@mail.gmail.com>
- <20140806201256.GO3711@ld-irv-0074> <CA+bK7J7LQq4S70ScSynbLTjNMmP=9n3KD2suYRg9JN+pEv-Y7g@mail.gmail.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Wed, 6 Aug 2014 17:24:12 -0500
-Message-ID: <CAL_JsqL6Hzh=ZDM-CUEEvt7GWP4Q-h5OozWtGoYsAAXtzYnp2Q@mail.gmail.com>
-Subject: Re: [PATCH] of/irq: lookup 'interrupts-extended' property first
-To: Tim Bird <tbird20d@gmail.com>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1407286910-30906-3-git-send-email-kever.yang@rock-chips.com>
+References: <1407286910-30906-1-git-send-email-kever.yang@rock-chips.com>
+	<1407286910-30906-3-git-send-email-kever.yang@rock-chips.com>
+Date: Wed, 6 Aug 2014 15:24:55 -0700
+X-Google-Sender-Auth: nA-Oig8nZtxrBkCtdjHr0vXBlPM
+Message-ID: <CAD=FV=V7TuqcVouC3KfPyebLqbVOJNhu-4HAVx0=+9_ny1RrOA@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] usb: dwc2: add 'mode' which based on Kconfig
+ select or dts setting
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: Paul Zimmerman <paulz@synopsys.com>, Heiko Stuebner <heiko@sntech.de>,
+        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Olof Johansson <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>, wulf <wulf@rock-chips.com>,
+        lyz <lyz@rock-chips.com>, Jingoo Han <jg1.han@samsung.com>,
+        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 6, 2014 at 4:50 PM, Tim Bird <tbird20d@gmail.com> wrote:
-> On Wed, Aug 6, 2014 at 1:12 PM, Brian Norris
-> <computersforpeace@gmail.com> wrote:
->> On Wed, Aug 06, 2014 at 01:42:08PM -0500, Rob Herring wrote:
->>> On Wed, Aug 6, 2014 at 11:54 AM, Brian Norris <computersforpeace@gmail.com> wrote:
->>> > On Thu, Jul 31, 2014 at 11:00:01AM -0700, Florian Fainelli wrote:
->>> > I think it is important that a device tree provide some flexibility on
->>> > kernel versions. We only invented 'interrupts-extended' in Linux 3.13,
->>> > so it's easy to have device trees that could work only on 3.13+.
->>> >
->>> > Typically, we might say that new features require new kernels, but this
->>> > is a very basic piece of the DT infrastructure. In our case, we have
->>> > hardware whose basic features can be supported by a single interrupt
->>> > parent, and so we used the 'interrupts' property pre-3.13. But when we
->>> > want to add some power management features, there's an additional
->>> > interrupt parent. Under the current DT binding, we have to switch over
->>> > to using 'interrupts-extended' exclusively, and thus we must have a
->>> > completely new DTB for >=3.13, and this DTB no longer works with the old
->>> > kernels.
->>>
->>> "Must have" to enable the new features?
->>
->> Yes. The new feature requires an additional interrupt parent, and so it
->> requires interrupts-extended.
+Kever,
+
+On Tue, Aug 5, 2014 at 6:01 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> According to the "dr_mode", the otg controller can work as
+> device role and host role. Some boards always want to use host mode
+> and some other boards want to use gadget mode. We use the dts setting
+> to set dwc2's mode, rather than fixing it to whatever hardware says.
 >
-> Hold on there.  What about interrupt-map?  That was the traditional DT
-> feature for
-> supporting multi-parented interrupts.  Why couldn't the feature have been added
-> using that instead of interrupts-extended?
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> Acked-by: Paul Zimmerman <paulz@synopsys.com>
+> ---
+>
+> Changes in v4:
+> - From Doug's suggestion:
+>  -- remove dr_mode init from Kconfig code
+>  -- change the commit meesage
+>
+> Changes in v3:
+> - fix the odd spacing in dwc2_hsotg struct
+> - From Jingoo's suggestion:
+>     change the commit message
+> - add dr_mode init from Kconfig
+>
+> Changes in v2:
+> - put spaces around '+' operator
+> - expand the comment for dr_mode
+> - handle dr_mode is USB_DR_MODE_OTG
+>
+>  drivers/usb/dwc2/core.c     | 18 ++++++++++++++++++
+>  drivers/usb/dwc2/core.h     |  5 +++++
+>  drivers/usb/dwc2/platform.c |  4 ++++
+>  3 files changed, 27 insertions(+)
 
-It could have, but interrupts-extended is much more simple to express
-for the simple case of a device's interrupts routed to more than one
-parent.
+I think this patch still makes sense even though we don't have a
+combined driver yet.  Perhaps Paul or Dihn can confirm.
 
-> I know interrupts-extended is preferred, but has interrupt-map support been
-> removed from recent kernels?  I'm a bit confused.
+We could potentially do something based on KConfig (like you did in
+patch set #3), but it wouldn't really make sense to do that until
+after Dihn's work lands.
 
-They are all still supported. It's just a question of order of parsing
-if you have find both styles.
 
-Rob
+> diff --git a/drivers/usb/dwc2/core.c b/drivers/usb/dwc2/core.c
+> index 27d2c9b..738bec2 100644
+> --- a/drivers/usb/dwc2/core.c
+> +++ b/drivers/usb/dwc2/core.c
+> @@ -118,6 +118,7 @@ static int dwc2_core_reset(struct dwc2_hsotg *hsotg)
+>  {
+>         u32 greset;
+>         int count = 0;
+> +       u32 gusbcfg;
+>
+>         dev_vdbg(hsotg->dev, "%s()\n", __func__);
+>
+> @@ -148,6 +149,23 @@ static int dwc2_core_reset(struct dwc2_hsotg *hsotg)
+>                 }
+>         } while (greset & GRSTCTL_CSFTRST);
+>
+> +       if (hsotg->dr_mode == USB_DR_MODE_HOST) {
+> +               gusbcfg = readl(hsotg->regs + GUSBCFG);
+> +               gusbcfg &= ~GUSBCFG_FORCEDEVMODE;
+> +               gusbcfg |= GUSBCFG_FORCEHOSTMODE;
+> +               writel(gusbcfg, hsotg->regs + GUSBCFG);
+> +       } else if (hsotg->dr_mode == USB_DR_MODE_PERIPHERAL) {
+> +               gusbcfg = readl(hsotg->regs + GUSBCFG);
+> +               gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
+> +               gusbcfg |= GUSBCFG_FORCEDEVMODE;
+> +               writel(gusbcfg, hsotg->regs + GUSBCFG);
+> +       } else if (hsotg->dr_mode == USB_DR_MODE_OTG) {
+> +               gusbcfg = readl(hsotg->regs + GUSBCFG);
+> +               gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
+> +               gusbcfg &= ~GUSBCFG_FORCEDEVMODE;
+> +               writel(gusbcfg, hsotg->regs + GUSBCFG);
+
+I think the third case here won't be too useful until the combined
+driver, but it shouldn't hurt, right?
+
+
+-Doug
