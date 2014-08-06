@@ -1,41 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757749AbaHFRVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 13:21:55 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:46445 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757603AbaHFRVv (ORCPT
+	id S1756050AbaHFRWV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 13:22:21 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:14739 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799AbaHFRWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 13:21:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <F766E4F80769BD478052FB6533FA745D5944CE8C71@SC-VEXCH4.marvell.com>
-References: <1398346047-10276-1-git-send-email-yxlraid@gmail.com>
-	<CAP0P+NWxxxnQH1e3tXcqwud7EaV4kRRMW46Ad-PWoMWFzgy1eg@mail.gmail.com>
-	<F766E4F80769BD478052FB6533FA745D57320C6287@SC-VEXCH4.marvell.com>
-	<CAPcyv4g7zMf4UGZPYFk30kh5J_-ot6kuesEjOZJTRbL_UkpQ9g@mail.gmail.com>
-	<F766E4F80769BD478052FB6533FA745D5944CE8C71@SC-VEXCH4.marvell.com>
-Date: Wed, 6 Aug 2014 10:21:50 -0700
-Message-ID: <CAPcyv4jSr7O2Qxe-ac9anJUT4KksbdNuCGd=iBFy2CJF8G5Mkw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] libsas: modify SATA error handler
-From: Dan Williams <dan.j.williams@intel.com>
-To: Xiangliang Yu <yuxiangl@marvell.com>
-Cc: "JBottomley@parallels.com" <JBottomley@parallels.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "todd.e.brandt@intel.com" <todd.e.brandt@intel.com>,
-        "lukasz.dorau@intel.com" <lukasz.dorau@intel.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 6 Aug 2014 13:22:20 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Scott J Norton <scott.norton@hp.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v7 0/2] lockdep: add support for queued rwlock
+Date: Wed,  6 Aug 2014 13:22:00 -0400
+Message-Id: <1407345722-61615-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 6, 2014 at 3:50 AM, Xiangliang Yu <yuxiangl@marvell.com> wrote:
-> Hi, Dan & James
-> How about the patches about support for PM?
-> Two months had passed since I submitted the patches.
-> Thanks!
->
+v6->v7:
+ - Add recursive read-lock with interrupt test in locking-selftest.c.
 
-Did you address my review comments?
+v5->v6:
+ - Unconditionally disallow the use of recursive read-lock in process
+   context.
+ - Promote read state 3 to 2 when in interrupt context instead of
+   doing additional check in check_deadlock().
+ - Fix some comments in locking-selftest.c.
+
+v4->v5:
+ - Add patch 2 to update the locking selftest code to handle recursive
+   read_lock correctly. Patch 1 has no change.
+
+v3->v4:
+ - Document the new read state and move the conditional compilation code
+   to lockdep.h.
+
+v2->v3:
+ - Add a new read mode (3) for rwlock (used in
+   lock_acquire_shared_cond_recursive()) to avoid conflict with other
+   use cases of lock_acquire_shared_recursive().
+
+v1->v2:
+ - Use less conditional & make it easier to read
+
+With the merging of qrwlock into 3.16, it was found that the btrfs
+filesystem hanged readily. A fix was devised and merged into rc2 and
+the use of recursive read_lock call was part of the problem.
+
+This patch series addes code to the lockdep subsystem to catch this
+kind of recursive read_lock calls in kernel code. It also updates
+the locking selftest to handle recursive read_lock correctly so that
+it won't complain about test failures.
+
+Waiman Long (2):
+  locking/lockdep: Restrict the use of recursive read_lock() with
+    qrwlock
+  locking/selftest: Support queued rwlock
+
+ include/linux/lockdep.h  |   10 +++++++-
+ kernel/locking/lockdep.c |    6 +++++
+ lib/locking-selftest.c   |   56 ++++++++++++++++++++++++++++++++++++++++-----
+ 3 files changed, 64 insertions(+), 8 deletions(-)
+
