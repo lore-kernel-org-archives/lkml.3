@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042AbaHFOMa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 10:12:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12325 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752133AbaHFOM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 10:12:29 -0400
-Date: Wed, 6 Aug 2014 16:10:05 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <levinsasha928@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/7] fs/proc/task_mmu.c: don't use task->mm in
-	m_start() and show_*map()
-Message-ID: <20140806141005.GA1487@redhat.com>
-References: <20140805194627.GA30693@redhat.com> <20140805194644.GA30711@redhat.com> <20140806095214.GA30508@node.dhcp.inet.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140806095214.GA30508@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754480AbaHFOMq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 10:12:46 -0400
+Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:50647
+	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753931AbaHFOMp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 10:12:45 -0400
+Date: Wed, 6 Aug 2014 09:12:39 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: akpm@linux-foundation.org, Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org
+Subject: Re: vmstat: On demand vmstat workers V8
+In-Reply-To: <53E159F6.7080603@oracle.com>
+Message-ID: <alpine.DEB.2.11.1408060908580.4346@gentwo.org>
+References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <53D31101.8000107@oracle.com> <53DFFD28.2030502@oracle.com> <alpine.DEB.2.11.1408050950390.16902@gentwo.org> <53E159F6.7080603@oracle.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06, Kirill A. Shutemov wrote:
->
-> On Tue, Aug 05, 2014 at 09:46:44PM +0200, Oleg Nesterov wrote:
-> >
-> >  	if (m->count < m->size)  /* vma is copied successfully */
-> > -		m->version = (vma != get_gate_vma(task->mm))
-> > +		m->version = (vma != priv->tail_vma)
-> >  			? vma->vm_start : 0;
->
-> Drop excessive parenthesis while you're there? And in the next hunk.
+On Tue, 5 Aug 2014, Sasha Levin wrote:
 
-I agree. But lets do this in another patch? I forgot to mention this in
-the yesterday's TODO, but we should factor out this code. Perhaps move
-this into vma_stop(). Or at least add a trivial helper, this pattern
-repeats 3 times, plus another one in m_start(). This problem is that I
-do not really understand this logic right now, but I'll do something
-today in any case.
+> I can easily trigger it by cranking up the cpu hotplug code. Just try to
+> frequently offline and online cpus, it should reproduce quickly.
 
-> Otherwise:
->
-> Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Thats what I thought.
 
-Thanks!
+The test was done with this fix applied right?
 
-Oleg.
 
+Subject: vmstat ondemand: Fix online/offline races
+
+Do not allow onlining/offlining while the shepherd task is checking
+for vmstat threads.
+
+On offlining a processor do the right thing cancelling the vmstat
+worker thread if it exista and also exclude it from the shepherd
+process checks.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/mm/vmstat.c
+===================================================================
+--- linux.orig/mm/vmstat.c	2014-07-30 09:35:54.602662306 -0500
++++ linux/mm/vmstat.c	2014-07-30 09:43:07.109037043 -0500
+@@ -1317,6 +1317,7 @@ static void vmstat_shepherd(struct work_
+ {
+ 	int cpu;
+
++	get_online_cpus();
+ 	/* Check processors whose vmstat worker threads have been disabled */
+ 	for_each_cpu(cpu, cpu_stat_off)
+ 		if (need_update(cpu) &&
+@@ -1325,6 +1326,7 @@ static void vmstat_shepherd(struct work_
+ 			schedule_delayed_work_on(cpu, &per_cpu(vmstat_work, cpu),
+ 				__round_jiffies_relative(sysctl_stat_interval, cpu));
+
++	put_online_cpus();
+
+ 	schedule_delayed_work(&shepherd,
+ 		round_jiffies_relative(sysctl_stat_interval));
+@@ -1380,8 +1382,8 @@ static int vmstat_cpuup_callback(struct
+ 		break;
+ 	case CPU_DOWN_PREPARE:
+ 	case CPU_DOWN_PREPARE_FROZEN:
+-		if (!cpumask_test_and_set_cpu(cpu, cpu_stat_off))
+-			cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
++		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
++		cpumask_clear_cpu(cpu, cpu_stat_off);
+ 		break;
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_DOWN_FAILED_FROZEN:
