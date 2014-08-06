@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451AbaHFOgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 10:36:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24079 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754225AbaHFOgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 10:36:35 -0400
-Date: Wed, 6 Aug 2014 10:36:21 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: a.p.zijlstra@chello.nl
-Subject: perf related boot hang.
-Message-ID: <20140806143621.GA13832@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, a.p.zijlstra@chello.nl
+	id S1755468AbaHFOjK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 10:39:10 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:64334 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221AbaHFOjH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 10:39:07 -0400
+Message-ID: <53E23DFE.7070209@lwfinger.net>
+Date: Wed, 06 Aug 2014 09:38:54 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Hans Wennborg <hans@hanshq.net>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/15] rtlwifi: rtl8192de: fix decimal printf format specifiers
+ prefixed with 0x
+References: <1407300186-32673-1-git-send-email-hans@hanshq.net>
+In-Reply-To: <1407300186-32673-1-git-send-email-hans@hanshq.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Linus current tree, when I cold-boot one of my boxes, it locks up
-during boot up with this trace..
+On 08/05/2014 11:43 PM, Hans Wennborg wrote:
+> The prefix suggests the number should be printed in hex, so use
+> the %x specifier to do that.
+> 
+> Found by using regex suggested by Joe Perches.
+> 
+> Signed-off-by: Hans Wennborg <hans@hanshq.net>
+> ---
+>  drivers/net/wireless/rtlwifi/rtl8192de/fw.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/fw.c b/drivers/net/wireless/rtlwifi/rtl8192de/fw.c
+> index 2317707..66e1760 100644
+> --- a/drivers/net/wireless/rtlwifi/rtl8192de/fw.c
+> +++ b/drivers/net/wireless/rtlwifi/rtl8192de/fw.c
+> @@ -234,7 +234,7 @@ static int _rtl92d_fw_init(struct ieee80211_hw *hw)
+>  			 rtl_read_byte(rtlpriv, FW_MAC1_READY));
+>  	}
+>  	RT_TRACE(rtlpriv, COMP_FW, DBG_DMESG,
+> -		 "Polling FW ready fail!! REG_MCUFWDL:0x%08ul\n",
+> +		 "Polling FW ready fail!! REG_MCUFWDL:0x%08lx\n",
+>  		 rtl_read_dword(rtlpriv, REG_MCUFWDL));
+>  	return -1;
+>  }
 
-Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 2
-CPU: 2 PID: 577 Comm: in:imjournal Not tainted 3.16.0+ #33
- ffff880244c06c88 000000008b73013e ffff880244c06bf0 ffffffffb47ee207
- ffffffffb4c51118 ffff880244c06c78 ffffffffb47ebcf8 0000000000000010
- ffff880244c06c88 ffff880244c06c20 000000008b73013e 0000000000000000
-Call Trace:
- <NMI>  [<ffffffffb47ee207>] dump_stack+0x4e/0x7a
- [<ffffffffb47ebcf8>] panic+0xd4/0x207
- [<ffffffffb4145448>] watchdog_overflow_callback+0x118/0x120
- [<ffffffffb4186f0e>] __perf_event_overflow+0xae/0x350
- [<ffffffffb4185380>] ? perf_event_task_disable+0xa0/0xa0
- [<ffffffffb401a4ef>] ? x86_perf_event_set_period+0xbf/0x150
- [<ffffffffb4187d34>] perf_event_overflow+0x14/0x20
- [<ffffffffb40203a6>] intel_pmu_handle_irq+0x206/0x410
- [<ffffffffb401939b>] perf_event_nmi_handler+0x2b/0x50
- [<ffffffffb4007b72>] nmi_handle+0xd2/0x390
- [<ffffffffb4007aa5>] ? nmi_handle+0x5/0x390
- [<ffffffffb40d8301>] ? lock_acquired+0x131/0x450
- [<ffffffffb4008062>] default_do_nmi+0x72/0x1c0
+It would be best to actually build with your patches installed. This one yields
+the following warning:
 
+  CC [M]  drivers/net/wireless/rtlwifi/rtl8192de/fw.o
+drivers/net/wireless/rtlwifi/rtl8192de/fw.c: In function ‘_rtl92d_fw_init’:
+drivers/net/wireless/rtlwifi/rtl8192de/fw.c:236:2: warning: format ‘%lx’ expects
+argument of type ‘long unsigned int’, but argument 5 has type ‘u32’ [-Wformat=]
+  RT_TRACE(rtlpriv, COMP_FW, DBG_DMESG,
+  ^
 
-If I reset it, it then seems to always boot up fine.
+The format specifier should be %04x, not %08lx. I have no idea why gcc did not
+complain as %08ul is also wrong.
 
-	Dave
+Larry
+
