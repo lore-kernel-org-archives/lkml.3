@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804AbaHFO4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 10:56:14 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:58731 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754087AbaHFO4M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 10:56:12 -0400
-X-AuditID: cbfec373-b7f9d6d00000479f-9b-53e2420b0b27
-Date: Wed, 06 Aug 2014 11:56:07 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Hans Wennborg <hans@hanshq.net>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/15] [media] dvb: fix decimal printf format specifiers
- prefixed with 0x
-Message-id: <20140806115607.1946e967.m.chehab@samsung.com>
-In-reply-to: <1407300137-32480-1-git-send-email-hans@hanshq.net>
-References: <1407300137-32480-1-git-send-email-hans@hanshq.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t/hQF1up0fBBq/XiFss3fec3eLyrjls
-	Fj0btrI6MHv8OH6V3ePzJrkApigum5TUnMyy1CJ9uwSujCk7JrEULOOqOPDvB0sD4zKOLkZO
-	DgkBE4kND84xQ9hiEhfurWfrYuTiEBJYwijRtOwoM4TTzCQx/08jK0gVi4CqRPvpl2wgNpuA
-	kcSrxhawuIiAssSDFxPAJjEL2Ep0HOpkAbGFBeIlFjSuBbN5BawkGq+eAevlFHCQONSzFaxe
-	SMBe4t6P50wQVzhL/Jw5iRGiXlDix+R7LBAztSQ2b2tihbDlJTavecs8gVFgFpKyWUjKZiEp
-	W8DIvIpRtLQ4uaA4KT3XSK84Mbe4NC9dLzk/dxMjJECLdzC+2GB1iFGAg1GJhzfD9GGwEGti
-	WXFl7iFGCQ5mJRFecZtHwUK8KYmVValF+fFFpTmpxYcYmTg4pRoY9bmL3L42XrC8ve3F4V+9
-	bU+9vIr3a2TPn6+8ImiH1+rGtMzOXWrLJjMbZ7mzClhKTn8T6PFP5SmXwxebupRTu5SCNVju
-	Lr9d/4+zZ39E6ZJ/kj39WVmrNq4PFHw0Wf1KY9Tnn0f2//pV76zTmvZ97+VXm37FfJhQ0SnB
-	wSNwN0xbwK52QbOzEktxRqKhFnNRcSIAsmgTmS4CAAA=
+	id S1755564AbaHFPCD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 11:02:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43511 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753558AbaHFPCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 11:02:01 -0400
+Message-ID: <53E24365.6020405@suse.cz>
+Date: Wed, 06 Aug 2014 17:01:57 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] kbuild: escape single backslashes in macro make-cmd
+References: <20140726163551.19857.17737.stgit@zurg>	<53E2156E.9060700@suse.cz> <CALYGNiO=oiiLgJRrpycO=CWyMMf8-AiDyW=Ch3ajV5W=9dtZfA@mail.gmail.com>
+In-Reply-To: <CALYGNiO=oiiLgJRrpycO=CWyMMf8-AiDyW=Ch3ajV5W=9dtZfA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 05 Aug 2014 21:42:17 -0700
-Hans Wennborg <hans@hanshq.net> escreveu:
-
-> The prefix suggests the number should be printed in hex, so use
-> the %x specifier to do that.
+On 2014-08-06 14:19, Konstantin Khlebnikov wrote:
+> On Wed, Aug 6, 2014 at 3:45 PM, Michal Marek <mmarek@suse.cz> wrote:
+>> On 2014-07-26 18:35, Konstantin Khlebnikov wrote:
+>>> This already has been fixed in commit c353acba28fb3fa1fd05fd
+>>> ("kbuild: make: fix if_changed when command contains backslashes")
+>>> but escaping still isn't perfect and triggers false-positive rebuilds.
+>>>
+>>> For x86 problem happens every time, because rules in arch/x86/realmode/rm/
+>>> and arch/x86/boot/ contains commands like sed -n -e 's/foo\(.*\)/\1/p'.
+>>> Backslash in \1 isn't escaped and turns into ascii symbol with code 1.
+>>> Macro if_changed detects command change and rebuilds target again and again.
+>>>
+>>> Backslash escaping conflicts with other passes because it's used for escaping
+>>> other symbols. To avoid that current macro handles only double backslashes.
+>>> Obviously this doesn't work for \1 like above.
+>>>
+>>> This patch reorders passes. It doubles all backslashes before escaping # and '
+>>>
+>>> Visible effect in rebuilding x86/defconfig without changes, before patch:
+>>>
+>>> blind@zurg:~/src/linux$ make V=2
+>>>   CHK     include/config/kernel.release
+>>>   CHK     include/generated/uapi/linux/version.h
+>>>   CHK     include/generated/utsrelease.h
+>>>   CALL    scripts/checksyscalls.sh - due to target missing
+>>>   CHK     include/generated/compile.h
+>>>   PASYMS  arch/x86/realmode/rm/pasyms.h - due to command line change
+>>
+>> With which make and shell version are you seeing this? While the patch
+>> looks correct, I can't reproduce the error here:
 > 
-> Found by using regex suggested by Joe Perches.
+> /bin/sh points to dash (debian default setup).
 > 
-> Signed-off-by: Hans Wennborg <hans@hanshq.net>
-> ---
->  drivers/media/dvb-frontends/mb86a16.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/media/dvb-frontends/mb86a16.c b/drivers/media/dvb-frontends/mb86a16.c
-> index 9ae40ab..5939133 100644
-> --- a/drivers/media/dvb-frontends/mb86a16.c
-> +++ b/drivers/media/dvb-frontends/mb86a16.c
-> @@ -115,7 +115,7 @@ static int mb86a16_read(struct mb86a16_state *state, u8 reg, u8 *val)
->  	};
->  	ret = i2c_transfer(state->i2c_adap, msg, 2);
->  	if (ret != 2) {
-> -		dprintk(verbose, MB86A16_ERROR, 1, "read error(reg=0x%02x, ret=0x%i)",
-> +		dprintk(verbose, MB86A16_ERROR, 1, "read error(reg=0x%02x, ret=0x%x)",
->  			reg, ret);
+> I cannot reproduce this using bash. That explains why this bug is still here.
 
-Hmm... returning it in hex doesn't make much sense. the better would
-be to remove the "0x" prefix here...
+So the difference between the shells is that their 'echo' builtin treats
+\<number> differently:
+$ ./dash -c "echo '\2'"
+
+$ ./dash -c "echo '\2'" | xxd
+0000000: 020a                                     ..
+$ /bin/bash -c "echo '\2'"
+\2
 
->  
->  		return -EREMOTEIO;
+For some reason we fail to escape the \ and dash treats \2 as \02. POSIX
+says that this is implementation-defined, so none of the shells is wrong.
 
-Btw, what we're doing on modern drivers is to return the error
-as reported by i2c_transfer if it is negative. So, the best would be
-to do:
-	if (ret < 0)
-		return ret;
-	return -EREMOTEIO;
+I need to look into this a bit further. I'll most likely end up applying
+your patch, but I'd like to understand the fix in detail first.
 
 Thanks,
-Mauro
+Michal
