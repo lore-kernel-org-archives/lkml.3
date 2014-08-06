@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606AbaHFOYP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 10:24:15 -0400
-Received: from queue01b.mail.zen.net.uk ([212.23.3.242]:59152 "EHLO
-	queue01b.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221AbaHFOYN (ORCPT
+	id S1753568AbaHFO1y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 10:27:54 -0400
+Received: from smtp6-v.fe.bosch.de ([139.15.237.11]:49630 "EHLO
+	smtp6-v.fe.bosch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148AbaHFO1w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 10:24:13 -0400
-X-Greylist: delayed 2711 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Aug 2014 10:24:13 EDT
-Message-ID: <1407332208.3006.13.camel@linaro1.home>
-Subject: Re: [RFC PATCH] kprobes: arm: enable OPTPROBES for arm 32
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Wang Nan <wangnan0@huawei.com>, Russell King <linux@arm.linux.org.uk>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Li Zefan <lizefan@huawei.com>, davem@davemloft.net,
-        linux-arm-kernel@lists.infradead.org, peifeiyue@huawei.com
-Date: Wed, 06 Aug 2014 14:36:48 +0100
-In-Reply-To: <53E1B2A0.1040807@hitachi.com>
-References: <1407223697-74911-1-git-send-email-wangnan0@huawei.com>
-	 <53E1B2A0.1040807@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01d-IP: [82.69.122.217]
+	Wed, 6 Aug 2014 10:27:52 -0400
+From: "Koehrer Mathias (ETAS/ESW5)" <mathias.koehrer@etas.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Nick Krause <xerofoify@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: [PATCH] Fix e1000e with Intel 82572EI that has no hardware
+ timestamp support
+Thread-Topic: [PATCH] Fix e1000e with Intel 82572EI that has no hardware
+ timestamp support
+Thread-Index: Ac+xgnCw6PdHzoE/S12kdgrkOgAeXA==
+Date: Wed, 6 Aug 2014 14:27:44 +0000
+Message-ID: <be459158bb5c46fcaf73129858342da4@FE-MBX1012.de.bosch.com>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.5.148.126]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-TM-AS-MML: disable
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-06 at 13:44 +0900, Masami Hiramatsu wrote:
-> (2014/08/05 16:28), Wang Nan wrote
-[...]
-> > +asm (
-> > +			".global optprobe_template_entry\n"
-> > +			"optprobe_template_entry:\n"
-> > +#ifndef CONFIG_THUMB
-> > +			"	sub	sp, sp, #80\n"
-> > +			"	stmia	sp, {r0 - r14} \n"
-> > +			"	add	r3, sp, #80\n"
-> > +			"	str	r3, [sp, #52]\n"
-> > +			"	mrs	r4, cpsr\n"
-> > +			"	str	r4, [sp, #64]\n"
-> > +			"	mov	r1, sp\n"
-> > +			"	ldr	r0, 1f\n"
-> > +			"	ldr	r2, 2f\n"
-> > +			"	blx	r2\n"
-> > +			"	ldr	r1, [sp, #64]\n"
-> > +			"	msr	cpsr_fs, r1\n"
-> > +			"	ldmia	sp, {r0 - r15}\n"
-> > +			".global optprobe_template_val\n"
-> > +			"optprobe_template_val:\n"
-> > +			"1:	nop\n"
-> > +			".global optprobe_template_call\n"
-> > +			"optprobe_template_call:\n"
-> > +			"2:	nop\n"
-> > +#else /* CONFIG_THUMB */
-> > +# error optprobe for thumb is not supported.
-> 
-> Can we set CONFIG_THUMB=y without CONFIG_THUMB2_KERNEL ?
+With the Intel 82527EI (driver: e1000e) there is an issue when running 
+the ptpd2 program, that leads to a kernel oops.
+The reason is here that in e1000_xmit_frame() a work queue will be 
+scheduled that has not been initialized in this case.
+The work queue "tx_hwstamp_work" will only be initialized if 
+adapter->flags & FLAG_HAS_HW_TIMESTAMP set.
+This check is missing in e1000_xmit_frame().
 
-Yes, CONFIG_THUMB is for supporting userside Thumb code,
-CONFIG_THUMB2_KERNEL is for building the kernel for Thumb and the
-options are orthogonal. So I don't think kprobes code should be testing
-CONFIG_THUMB as it doesn't deal with userside.
+The following patch adds the missing check.
+
+---
+ drivers/net/ethernet/intel/e1000e/netdev.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+Index: linux-3.12.26/drivers/net/ethernet/intel/e1000e/netdev.c
+===================================================================
+--- linux-3.12.26.orig/drivers/net/ethernet/intel/e1000e/netdev.c	2014-08-04 10:56:56.000000000 +0200
++++ linux-3.12.26/drivers/net/ethernet/intel/e1000e/netdev.c	2014-08-06 16:22:10.000000000 +0200
+@@ -5549,8 +5549,9 @@
+ 	count = e1000_tx_map(tx_ring, skb, first, adapter->tx_fifo_limit,
+ 			     nr_frags);
+ 	if (count) {
+-		if (unlikely((skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP) &&
+-			     !adapter->tx_hwtstamp_skb)) {
++		if ((adapter->flags & FLAG_HAS_HW_TIMESTAMP) && 
++		    unlikely((skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP) &&
++		    !adapter->tx_hwtstamp_skb)) {
+ 			skb_shinfo(skb)->tx_flags |= SKBTX_IN_PROGRESS;
+ 			tx_flags |= E1000_TX_FLAGS_HWTSTAMP;
+ 			adapter->tx_hwtstamp_skb = skb_get(skb);
 
 -- 
-Tixy
 
