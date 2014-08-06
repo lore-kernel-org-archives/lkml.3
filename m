@@ -1,111 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990AbaHFMz4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 08:55:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40487 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755921AbaHFMzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 08:55:52 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: H Peter Anvin <hpa@zytor.com>, Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Mike Galbraith <mgalbraith@suse.de>, Linux-X86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/3] x86, fpu: Split FPU save state preparation into eagerfpu and !eagerfpu parts
-Date: Wed,  6 Aug 2014 13:55:47 +0100
-Message-Id: <1407329748-3928-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1407329748-3928-1-git-send-email-mgorman@suse.de>
-References: <1407329748-3928-1-git-send-email-mgorman@suse.de>
+	id S1756089AbaHFM4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 08:56:38 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:62663 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065AbaHFM4f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 08:56:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <b85e230a058340a58fd3091e2be9b25d@BN1PR0301MB0628.namprd03.prod.outlook.com>
+References: <1407302256-26726-1-git-send-email-b20788@freescale.com>
+	<53E1D29D.1010009@gmail.com>
+	<b85e230a058340a58fd3091e2be9b25d@BN1PR0301MB0628.namprd03.prod.outlook.com>
+Date: Wed, 6 Aug 2014 08:56:33 -0400
+Message-ID: <CAC-25o_z-pJ_3HX-wfnWB2uVSCRodXYzqOe2U-yac2kAY2ShYQ@mail.gmail.com>
+Subject: Re: [PATCH V2] Thermal: imx: add i.mx6sx thermal support
+From: "edubezval@gmail.com" <edubezval@gmail.com>
+To: "Anson.Huang@freescale.com" <Anson.Huang@freescale.com>
+Cc: Varka Bhadram <varkabhadram@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the CPU supports non-lazy FPU support using xsave then a different save
-path is used for the FPU during context switch. The xsave path is heavier
-than it needs to be so this patch splits the two cases in preparation.
+Hello Anson,
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- arch/x86/include/asm/fpu-internal.h | 40 ++++++++++++++++++++++++++++++++-----
- 1 file changed, 35 insertions(+), 5 deletions(-)
+On Wed, Aug 6, 2014 at 3:05 AM, Anson.Huang@freescale.com
+<Anson.Huang@freescale.com> wrote:
+> Sorry for leaving such warnings, I thought we did NOT care about the long
+> line issue now, will fix them in V3 patch.
+>
 
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index b8771c4a..8d92807 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -416,15 +416,36 @@ static inline int fpu_lazy_restore(struct task_struct *new, unsigned int cpu)
- 		cpu == new->thread.fpu.last_cpu;
- }
- 
--static inline void switch_fpu_prepare(struct task_struct *old, struct task_struct *new, int cpu,
-+static inline void switch_eagerfpu_prepare(struct task_struct *old, struct task_struct *new, int cpu,
-+						fpu_switch_t *fpu)
-+{
-+	fpu->preload = tsk_used_math(new);
-+
-+	if (__thread_has_fpu(old)) {
-+		if (!__save_init_fpu(old))
-+			cpu = ~0;
-+		old->thread.fpu.last_cpu = cpu;
-+		old->thread.fpu.has_fpu = 0;	/* But leave fpu_owner_task! */
-+	} else {
-+		old->thread.fpu_counter = 0;
-+		old->thread.fpu.last_cpu = ~0;
-+	}
-+
-+	if (fpu->preload) {
-+		new->thread.fpu_counter++;
-+		__thread_set_has_fpu(new);
-+		prefetch(new->thread.fpu.state);
-+	}
-+}
-+
-+static inline void switch_preloadfpu_prepare(struct task_struct *old, struct task_struct *new, int cpu,
- 						fpu_switch_t *fpu)
- {
- 	/*
- 	 * If the task has used the math, pre-load the FPU on xsave processors
- 	 * or if the past 5 consecutive context-switches used math.
- 	 */
--	fpu->preload = tsk_used_math(new) && (use_eager_fpu() ||
--					     new->thread.fpu_counter > 5);
-+	fpu->preload = tsk_used_math(new) && (new->thread.fpu_counter > 5);
- 	if (__thread_has_fpu(old)) {
- 		if (!__save_init_fpu(old))
- 			cpu = ~0;
-@@ -436,14 +457,14 @@ static inline void switch_fpu_prepare(struct task_struct *old, struct task_struc
- 			new->thread.fpu_counter++;
- 			__thread_set_has_fpu(new);
- 			prefetch(new->thread.fpu.state);
--		} else if (!use_eager_fpu())
-+		} else
- 			stts();
- 	} else {
- 		old->thread.fpu_counter = 0;
- 		old->thread.fpu.last_cpu = ~0;
- 		if (fpu->preload) {
- 			new->thread.fpu_counter++;
--			if (!use_eager_fpu() && fpu_lazy_restore(new, cpu))
-+			if (fpu_lazy_restore(new, cpu))
- 				fpu->preload = 0;
- 			else
- 				prefetch(new->thread.fpu.state);
-@@ -452,6 +473,15 @@ static inline void switch_fpu_prepare(struct task_struct *old, struct task_struc
- 	}
- }
- 
-+static inline void switch_fpu_prepare(struct task_struct *old, struct task_struct *new, int cpu,
-+						fpu_switch_t *fpu)
-+{
-+	if (use_eager_fpu())
-+		switch_eagerfpu_prepare(old, new, cpu, fpu);
-+	else
-+		switch_preloadfpu_prepare(old, new, cpu, fpu);
-+}
-+
- /*
-  * By the time this gets called, we've already cleared CR0.TS and
-  * given the process the FPU if we are going to preload the FPU
+Lines over 80 columns are not an error of style. We simply suggest to
+keep this. By now, I think it really depends on which subsystem you
+are working with. I would prefer you keep this rule, as most of the
+code inside the thermal framework follows it.
+
+>
+>
+> Thanks Varka.
+>
+>
+>
+> Best regards!
+>
+> Anson Huang
+>
+>
+>
+> From: Varka Bhadram [mailto:varkabhadram@gmail.com]
+> Sent: 2014-08-06 3:01 PM
+> To: Huang Yongcai-B20788; edubezval@gmail.com; shawn.guo@linaro.org;
+> rui.zhang@intel.com
+> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> devicetree@vger.kernel.org
+> Subject: Re: [PATCH V2] Thermal: imx: add i.mx6sx thermal support
+>
+>
+>
+> On 08/06/2014 10:47 AM, Anson Huang wrote:
+>
+> i.MX6SX has some new features of thermal interrupt function,
+>
+> there are LOW, HIGH and PANIC irq for thermal sensor, so add
+>
+> platform data to separate different thermal version;
+>
+>
+>
+> The reset value of LOW ALARM is 0 which means the highest
+>
+> temp, so the LOW ALARM will be triggered once irq is enabled,
+>
+> so we need to correct it before enabling thermal irq;
+>
+>
+>
+> Enable PANIC ALARM as critical trip point, it will trigger
+>
+> system reset via SRC module once PANIC IRQ is triggered, it
+>
+> is pure hardware function, so use it instead of software
+>
+> reset by cooling device.
+>
+>
+>
+> Signed-off-by: Anson Huang <b20788@freescale.com>
+>
+> ---
+>
+>  .../devicetree/bindings/thermal/imx-thermal.txt    |    5 +-
+>
+>  drivers/thermal/imx_thermal.c                      |   89
+> +++++++++++++++++---
+>
+>  2 files changed, 80 insertions(+), 14 deletions(-)
+>
+>
+>
+> ./scripts/checkpatch.pl --show-types
+> V2-Thermal-imx-add-i.mx6sx-thermal-support.patch
+>
+> WARNING:LONG_LINE: line over 80 characters
+>
+> #109: FILE: drivers/thermal/imx_thermal.c:185:
+>
+> +    /* Update alarm value to next higher trip point, only TEMPMON_IMX6Q
+> needs it */
+>
+>
+>
+> WARNING:LONG_LINE: line over 80 characters
+>
+> #111: FILE: drivers/thermal/imx_thermal.c:187:
+>
+> +        if (data->alarm_temp == data->temp_passive && *temp >=
+> data->temp_passive)
+>
+>
+>
+> WARNING:LONG_LINE: line over 80 characters
+>
+> #113: FILE: drivers/thermal/imx_thermal.c:189:
+>
+> +        if (data->alarm_temp == data->temp_critical && *temp <
+> data->temp_passive) {
+>
+>
+>
+> --
+>
+> Regards,
+>
+> Varka Bhadram.
+
+
+
 -- 
-1.8.4.5
-
+Eduardo Bezerra Valentin
