@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457AbaHFAsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 20:48:12 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:50599 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985AbaHFAsL (ORCPT
+	id S1755152AbaHFAvL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 20:51:11 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:59553 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961AbaHFAvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 20:48:11 -0400
-Date: Tue, 5 Aug 2014 17:48:05 -0700
+	Tue, 5 Aug 2014 20:51:09 -0400
+Date: Tue, 5 Aug 2014 17:51:02 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Lai Jiangshan <laijs@cn.fujitsu.com>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -17,7 +17,7 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
         oleg@redhat.com, bobby.prani@gmail.com
 Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140806004805.GV8101@linux.vnet.ibm.com>
+Message-ID: <20140806005101.GW8101@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
  <53DEE1CD.4000705@cn.fujitsu.com>
@@ -28,20 +28,20 @@ References: <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
  <20140804145648.GE3588@twins.programming.kicks-ass.net>
  <53E029BB.2010200@cn.fujitsu.com>
  <20140805215510.GT8101@linux.vnet.ibm.com>
- <53E17687.7070705@cn.fujitsu.com>
+ <53E177D9.2090105@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53E17687.7070705@cn.fujitsu.com>
+In-Reply-To: <53E177D9.2090105@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080600-6688-0000-0000-000003CB799F
+x-cbid: 14080600-1542-0000-0000-000003C93D8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 08:27:51AM +0800, Lai Jiangshan wrote:
+On Wed, Aug 06, 2014 at 08:33:29AM +0800, Lai Jiangshan wrote:
 > On 08/06/2014 05:55 AM, Paul E. McKenney wrote:
 > > On Tue, Aug 05, 2014 at 08:47:55AM +0800, Lai Jiangshan wrote:
 > >> On 08/04/2014 10:56 PM, Peter Zijlstra wrote:
@@ -108,19 +108,7 @@ On Wed, Aug 06, 2014 at 08:27:51AM +0800, Lai Jiangshan wrote:
 > > How about the following?  Non-nohz_full userspace tasks are already covered
 > > courtesy of scheduling-clock interrupts, and this handles nohz_full usermode
 > > tasks.
-> 
-> synchronize_rcu_tasks() is called extremely rare.  Is it right?  So I think it is
-> acceptable to interrupt the nohz_full usermode CPUs.
-
-Given that it is pretty easy to avoid interrupting them, why not avoid it?
-
-That said, there is one additional class of usermode tasks, namely
-those that remain preempted from usermode for long periods of time.
-
-I do not currently catch those.
-
-							Thanx, Paul
-
+> > 
 > > Thoughts?
 > > 
 > > 							Thanx, Paul
@@ -177,6 +165,17 @@ I do not currently catch those.
 > >  			       int user)
 > >  {
 > > +	rcu_dynticks_task_exit(rdtp);
+> 
+> What happen when the trampoline happens before rcu_eqs_exit_common()?
+> synchronize_sched() also skip this CPUs.  I think, for all CPUs,  only
+> real schedule is reliable.
+
+True, this prohibits tracing the point from the call to
+rcu_eqs_enter_common() to the transition to usermode.  I am betting that
+this is OK, though.
+
+							Thanx, Paul
+
 > >  	smp_mb__before_atomic();  /* Force ordering w/previous sojourn. */
 > >  	atomic_inc(&rdtp->dynticks);
 > >  	/* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
@@ -282,11 +281,5 @@ I do not currently catch those.
 > > 
 > > .
 > > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
