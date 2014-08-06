@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113AbaHFNO0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 09:14:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50175 "EHLO mga02.intel.com"
+	id S1753082AbaHFNT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 09:19:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41129 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751549AbaHFNOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 09:14:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,811,1400050800"; 
-   d="scan'208";a="554575002"
-From: "Lan, Tianyu" <tianyu.lan@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "toshi.kani@hp.com" <toshi.kani@hp.com>,
-        "imammedo@redhat.com" <imammedo@redhat.com>,
-        "jan.kiszka@siemens.com" <jan.kiszka@siemens.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "huawei.libin@huawei.com" <huawei.libin@huawei.com>,
-        "prarit@redhat.com" <prarit@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brandt, Todd E" <todd.e.brandt@intel.com>
-Subject: RE: [PATCH] X86/CPU: Avoid 100ms sleep for cpu offline  during S3
-Thread-Topic: [PATCH] X86/CPU: Avoid 100ms sleep for cpu offline  during S3
-Thread-Index: AQHPr8KvpaX7HAgFk0W7O5vf/xRx7pu/toGAgAGXe4D//9FOgIAAoKYAgAEnvgCAAKebMA==
-Date: Wed, 6 Aug 2014 13:13:21 +0000
-Message-ID: <4CFBC02C07DA244CA19D6815A05BE6EE0119E1CF@SHSMSX103.ccr.corp.intel.com>
-References: <1407142742-29202-1-git-send-email-tianyu.lan@intel.com>
- <20140804102301.GB4808@pd.tnic> <53E04457.2060507@intel.com>
- <20140805075419.GA18234@pd.tnic> <53E0A3EE.50708@intel.com>
- <20140806110748.GC27033@pd.tnic>
-In-Reply-To: <20140806110748.GC27033@pd.tnic>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1750813AbaHFNTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 09:19:24 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Rafael J Wysocki <rafael.j.wysocki@intel.com>,
+        Nicolas Pitre <nico@linaro.org>
+Cc: Mike Galbraith <mgalbraith@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 1/4] cpuidle: menu: Use shifts when calculating averages where possible
+Date: Wed,  6 Aug 2014 14:19:18 +0100
+Message-Id: <1407331161-4642-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1407331161-4642-1-git-send-email-mgorman@suse.de>
+References: <1407331161-4642-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s76DEYAF011245
 
-Have you tried my attached kernel config file? When someone reported
-the issue to me, I also was very hard to reproduce the issue by my own config
-file. Maybe once 100 tries. But I can reproduced the issue every time with
-the attached configure file on several my machines and even on server.
+We use do_div even though the divisor will usually be a power-of-two
+unless there are unusual outliers. Use shifts where possible
 
------Original Message-----
-From: Borislav Petkov [mailto:bp@alien8.de] 
-Sent: Wednesday, August 06, 2014 7:08 PM
-To: Lan, Tianyu
-Cc: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org; toshi.kani@hp.com; imammedo@redhat.com; jan.kiszka@siemens.com; mingo@kernel.org; huawei.libin@huawei.com; prarit@redhat.com; linux-kernel@vger.kernel.org; Brandt, Todd E
-Subject: Re: [PATCH] X86/CPU: Avoid 100ms sleep for cpu offline during S3
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ drivers/cpuidle/governors/menu.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
-On Tue, Aug 05, 2014 at 05:29:18PM +0800, Lan Tianyu wrote:
-> I think you can pull Tod's tool from git hub and do test from your 
-> laptop. I attached a configure file come from ubuntu which is easier 
-> to produce the issue. You can use it to reproduce the issue.
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index c4f80c1..801b2ee 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -31,7 +31,8 @@
+  * The default values do not overflow.
+  */
+ #define BUCKETS 12
+-#define INTERVALS 8
++#define INTERVAL_SHIFT 3
++#define INTERVALS (1UL << INTERVAL_SHIFT)
+ #define RESOLUTION 1024
+ #define DECAY 8
+ #define MAX_INTERESTING 50000
+@@ -228,7 +229,10 @@ again:
+ 				max = value;
+ 		}
+ 	}
+-	do_div(avg, divisor);
++	if (divisor == INTERVALS)
++		avg >>= INTERVAL_SHIFT;
++	else
++		do_div(avg, divisor);
+ 
+ 	/* Then try to determine standard deviation */
+ 	stddev = 0;
+@@ -239,7 +243,11 @@ again:
+ 			stddev += diff * diff;
+ 		}
+ 	}
+-	do_div(stddev, divisor);
++	if (divisor == INTERVALS)
++		stddev >>= INTERVAL_SHIFT;
++	else
++		do_div(stddev, divisor);
++
+ 	/*
+ 	 * The typical interval is obtained when standard deviation is small
+ 	 * or standard deviation is small compared to the average interval.
+-- 
+1.8.4.5
 
-Right, so I ran it on an old dualcore AMD laptop I have lying around here and it didn't show any difference with or without your patch.
-
-For all 4 runs I did with the tool running it without any arguments (so it did the default thing), I got suspend time for CPU1 of 4-6 msec and resume of ~20msec.
-
-I don't know whether it is the dual core or AMD but your patch doesn't change anything on that laptop which is ok, I'd guess.
-
-> Ok. BTW, I have tested it on the Ivbridge and Haswell machines.
-
-Yeah, add those numbers to the commit message too.
-
-Thanks.
-
---
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
