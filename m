@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768AbaHFSuT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 14:50:19 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:53462 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756263AbaHFSuR (ORCPT
+	id S1756792AbaHFSuq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 14:50:46 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49392 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756263AbaHFSup convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 14:50:17 -0400
+	Wed, 6 Aug 2014 14:50:45 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI/OSL: Remove RCU in the osl.c to avoid dead lock with cpu hot plug
+Date: Wed, 06 Aug 2014 21:09:25 +0200
+Message-ID: <5565710.HfsfjXfcL3@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53E19175.208@intel.com>
+References: <1407141608-28920-1-git-send-email-tianyu.lan@intel.com> <1655155.Bsn9BIJnyn@vostro.rjw.lan> <53E19175.208@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <17153.1407349640@turing-police.cc.vt.edu>
-References: <1407347597-2168-1-git-send-email-xerofoiffy@gmail.com>
-	<17153.1407349640@turing-police.cc.vt.edu>
-Date: Wed, 6 Aug 2014 20:50:15 +0200
-X-Google-Sender-Auth: e6-yShgRuloiAVkkeLpw2LMBGqo
-Message-ID: <CAMuHMdVJQd0Mb8aXbd9iqkabzKdw9WSR791LxqUoVEJ1g1kaHA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] spi: Remove unused definitions
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Cc: Nick Krause <xerofoiffy@gmail.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        "open list:SPI SUBSYSTEM" <linux-spi@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 6, 2014 at 8:27 PM,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Wed, 06 Aug 2014 13:53:17 -0400, Nick Krause said:
->> Remove unused definition which cause the following warnings
->>
->> drivers/spi/spi-omap-100k.c:73:0: warning: "WRITE" redefined [enabled by default]
->> include/linux/fs.h:193:0: note: this is the location of the previous definition
->> drivers/spi/spi-omap-100k.c:74:0: warning: "READ" redefined [enabled by default]
->> include/linux/fs.h:192:0: note: this is the location of the previous definition
->
->> -#define WRITE 0
->> -#define READ  1
->
-> NAK.  Full stop.  These are potentially used in an inner macro someplace, and by
-> removing these, the conflicting values from fs.h will be used instead.
->
-> #define READ                    0
-> #define WRITE                   RW_MASK
->
-> So if there *is* a use in an inner macro, you just screwed the pooch
-> and introduced a bug in this "clean up" - somebody will be expecting to see
-> a 0 for a READ, and will receive a 1 instead.  This can't end well.
->
-> Nick - how *exactly* did you identify that these are in fact not used?
-> Given your history of submitting poorly researched patches, you're going to
-> have to justify the "unused" better than the handwaving you've done here.
+On Wednesday, August 06, 2014 10:22:45 AM Lan Tianyu wrote:
+> On 2014年08月06日 09:24, Rafael J. Wysocki wrote:
+> > On Monday, August 04, 2014 04:40:08 PM Lan Tianyu wrote:
 
-Just looking into this...
+[cut]
 
-It seems READ and WRITE are not used at all in this file.
+> >> @@ -298,29 +298,29 @@ void __iomem *acpi_os_get_iomem(acpi_physical_address phys, unsigned int size)
+> >>  {
+> >>  	struct acpi_ioremap *map;
+> >>  	void __iomem *virt = NULL;
+> >> +	unsigned long flags;
+> >>  
+> >> -	mutex_lock(&acpi_ioremap_lock);
+> >> +	spin_lock_irqsave(&acpi_ioremap_lock, flags);
+> > 
+> > Why do you need to do _irqsave here?  It was a mutex before, after all,
+> > so it can't be called from interrupt context.
+> > 
+> > In other places below too.
+> 
+> Original code uses RCU lock to protect acpi_ioremaps list in the
+> acpi_os_read/write_memory() which will be called in apei_read/write().
+> apei_read/write() will be called in the interrupt from APEI comments.
 
-To be 100% sure, I tried to find with which kernel config this warning shows up.
-It doesn't happen for omap1_defconfig with CONFIG_SPI_OMAP_100K,
-which was the most likely culprit.
+But acpi_os_get_iomem() won't be called from interrupt context and should use
+spin_lock_irq() instead of _irqsave.  This also applies to the other places
+that use the mutex.
 
-It does happen with sparc/sparc64 allmodconfig. However, changing or
-removing the READ and WRITE definitions in drivers/spi/spi-omap-100k.c
-doesn't have any influence on the preprocessed source files
-("make drivers/spi/spi-omap-100k.i", modulo line number changes),
-for both omap1 and sparc builds.
+> Now replace RCU with acpi_ioremap_lock and the lock will be called in
+> the interrupt. So redefine it to spin lock. From history,
+> acpi_ioremap_lock was spin lock before adding RCU support.
 
-(Nick: I believe the above is what people really want to see)
+And it had scalability problems IIRC.
 
-So I conclude they are really not used, and they can be safely removed.
+Did you consider using SRCU instead of going back to the spinlock?
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Rafael
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
