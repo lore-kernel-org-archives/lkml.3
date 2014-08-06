@@ -1,76 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973AbaHFMbH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 08:31:07 -0400
-Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:53208 "EHLO
-	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752363AbaHFMbF (ORCPT
+	id S1755259AbaHFMgj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 08:36:39 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:52959 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752363AbaHFMgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 08:31:05 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Andy Gross <agross@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: [PATCH] i2c: qup: disable clks and return instead of just returning error
-Date: Wed,  6 Aug 2014 18:03:25 +0530
-Message-Id: <1407328405-25170-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 6 Aug 2014 08:36:37 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, agraf@suse.de, paulus@samba.org,
+        kvm-ppc@vger.kernel.org
+Subject: [PATCH] KVM: Move more code under CONFIG_HAVE_KVM_IRQFD
+Date: Wed,  6 Aug 2014 14:36:28 +0200
+Message-Id: <1407328588-14701-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a error handling scenario where clocks were not being disabled
-when QUP_OUTPUT_BLOCK_SIZE returns a size greater than the size of blk_sizes
-array. So this patch adds a statement to jump to the fail lable to release the
-clocks.
+Commits e4d57e1ee1ab (KVM: Move irq notifier implementation into
+eventfd.c, 2014-06-30) included the irq notifier code unconditionally
+in eventfd.c, while it was under CONFIG_HAVE_KVM_IRQCHIP before.
 
-CC: Wolfram Sang <wsa@the-dreams.de>
-CC: Grant Likely <grant.likely@linaro.org>
-CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-CC: Andy Gross <agross@codeaurora.org>
-CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Similarly, commit 297e21053a52 (KVM: Give IRQFD its own separate enabling
+Kconfig option, 2014-06-30) moved code from CONFIG_HAVE_IRQ_ROUTING
+to CONFIG_HAVE_KVM_IRQFD but forgot to move the pieces that used to be
+under CONFIG_HAVE_KVM_IRQCHIP.
 
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+Together, this broke compilation without CONFIG_KVM_XICS.  Fix by adding
+or changing the #ifdefs so that they point at CONFIG_HAVE_KVM_IRQFD.
+
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
+ include/linux/kvm_host.h   |   2 +
+ include/trace/events/kvm.h |   8 +--
+ virt/kvm/eventfd.c         | 122 ++++++++++++++++++++++-----------------------
+ virt/kvm/kvm_main.c        |   2 +
+ 4 files changed, 69 insertions(+), 65 deletions(-)
 
-Resending the patch by updating CCs list.
-Fixed Typos in commit message noticed by Christopher.
-
- drivers/i2c/busses/i2c-qup.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-qup.c b/drivers/i2c/busses/i2c-qup.c
-index 2a5efb5..3a4d64e 100644
---- a/drivers/i2c/busses/i2c-qup.c
-+++ b/drivers/i2c/busses/i2c-qup.c
-@@ -633,13 +633,17 @@ static int qup_i2c_probe(struct platform_device *pdev)
- 	 * associated with each byte written/received
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 8593d2e61cbf..a4c33b34fe3f 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -388,6 +388,8 @@ struct kvm {
  	 */
- 	size = QUP_OUTPUT_BLOCK_SIZE(io_mode);
--	if (size >= ARRAY_SIZE(blk_sizes))
--		return -EIO;
-+	if (size >= ARRAY_SIZE(blk_sizes)) {
-+		ret = -EIO;
-+		goto fail;
-+	}
- 	qup->out_blk_sz = blk_sizes[size] / 2;
+ 	struct kvm_irq_routing_table __rcu *irq_routing;
+ 	struct hlist_head mask_notifier_list;
++#endif
++#ifdef CONFIG_HAVE_KVM_IRQFD
+ 	struct hlist_head irq_ack_notifier_list;
+ #endif
  
- 	size = QUP_INPUT_BLOCK_SIZE(io_mode);
--	if (size >= ARRAY_SIZE(blk_sizes))
--		return -EIO;
-+	if (size >= ARRAY_SIZE(blk_sizes)) {
-+		ret = -EIO;
-+		goto fail;
-+	}
- 	qup->in_blk_sz = blk_sizes[size] / 2;
+diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
+index 131a0bda7aec..908925ace776 100644
+--- a/include/trace/events/kvm.h
++++ b/include/trace/events/kvm.h
+@@ -37,7 +37,7 @@ TRACE_EVENT(kvm_userspace_exit,
+ 		  __entry->errno < 0 ? -__entry->errno : __entry->reason)
+ );
  
- 	size = QUP_OUTPUT_FIFO_SIZE(io_mode);
+-#if defined(CONFIG_HAVE_KVM_IRQCHIP)
++#if defined(CONFIG_HAVE_KVM_IRQFD)
+ TRACE_EVENT(kvm_set_irq,
+ 	TP_PROTO(unsigned int gsi, int level, int irq_source_id),
+ 	TP_ARGS(gsi, level, irq_source_id),
+@@ -57,7 +57,7 @@ TRACE_EVENT(kvm_set_irq,
+ 	TP_printk("gsi %u level %d source %d",
+ 		  __entry->gsi, __entry->level, __entry->irq_source_id)
+ );
+-#endif
++#endif /* defined(CONFIG_HAVE_KVM_IRQFD) */
+ 
+ #if defined(__KVM_HAVE_IOAPIC)
+ #define kvm_deliver_mode		\
+@@ -124,7 +124,7 @@ TRACE_EVENT(kvm_msi_set_irq,
+ 
+ #endif /* defined(__KVM_HAVE_IOAPIC) */
+ 
+-#if defined(CONFIG_HAVE_KVM_IRQCHIP)
++#if defined(CONFIG_HAVE_KVM_IRQFD)
+ 
+ TRACE_EVENT(kvm_ack_irq,
+ 	TP_PROTO(unsigned int irqchip, unsigned int pin),
+@@ -149,7 +149,7 @@ TRACE_EVENT(kvm_ack_irq,
+ #endif
+ );
+ 
+-#endif /* defined(CONFIG_HAVE_KVM_IRQCHIP) */
++#endif /* defined(CONFIG_HAVE_KVM_IRQFD) */
+ 
+ 
+ 
+diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+index f5f61548f60d..3c5981c87c3f 100644
+--- a/virt/kvm/eventfd.c
++++ b/virt/kvm/eventfd.c
+@@ -445,6 +445,67 @@ out:
+ 	kfree(irqfd);
+ 	return ret;
+ }
++
++bool kvm_irq_has_notifier(struct kvm *kvm, unsigned irqchip, unsigned pin)
++{
++	struct kvm_irq_ack_notifier *kian;
++	int gsi, idx;
++
++	idx = srcu_read_lock(&kvm->irq_srcu);
++	gsi = kvm_irq_map_chip_pin(kvm, irqchip, pin);
++	if (gsi != -1)
++		hlist_for_each_entry_rcu(kian, &kvm->irq_ack_notifier_list,
++					 link)
++			if (kian->gsi == gsi) {
++				srcu_read_unlock(&kvm->irq_srcu, idx);
++				return true;
++			}
++
++	srcu_read_unlock(&kvm->irq_srcu, idx);
++
++	return false;
++}
++EXPORT_SYMBOL_GPL(kvm_irq_has_notifier);
++
++void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin)
++{
++	struct kvm_irq_ack_notifier *kian;
++	int gsi, idx;
++
++	trace_kvm_ack_irq(irqchip, pin);
++
++	idx = srcu_read_lock(&kvm->irq_srcu);
++	gsi = kvm_irq_map_chip_pin(kvm, irqchip, pin);
++	if (gsi != -1)
++		hlist_for_each_entry_rcu(kian, &kvm->irq_ack_notifier_list,
++					 link)
++			if (kian->gsi == gsi)
++				kian->irq_acked(kian);
++	srcu_read_unlock(&kvm->irq_srcu, idx);
++}
++
++void kvm_register_irq_ack_notifier(struct kvm *kvm,
++				   struct kvm_irq_ack_notifier *kian)
++{
++	mutex_lock(&kvm->irq_lock);
++	hlist_add_head_rcu(&kian->link, &kvm->irq_ack_notifier_list);
++	mutex_unlock(&kvm->irq_lock);
++#ifdef __KVM_HAVE_IOAPIC
++	kvm_vcpu_request_scan_ioapic(kvm);
++#endif
++}
++
++void kvm_unregister_irq_ack_notifier(struct kvm *kvm,
++				    struct kvm_irq_ack_notifier *kian)
++{
++	mutex_lock(&kvm->irq_lock);
++	hlist_del_init_rcu(&kian->link);
++	mutex_unlock(&kvm->irq_lock);
++	synchronize_srcu(&kvm->irq_srcu);
++#ifdef __KVM_HAVE_IOAPIC
++	kvm_vcpu_request_scan_ioapic(kvm);
++#endif
++}
+ #endif
+ 
+ void
+@@ -867,64 +928,3 @@ kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+ 
+ 	return kvm_assign_ioeventfd(kvm, args);
+ }
+-
+-bool kvm_irq_has_notifier(struct kvm *kvm, unsigned irqchip, unsigned pin)
+-{
+-	struct kvm_irq_ack_notifier *kian;
+-	int gsi, idx;
+-
+-	idx = srcu_read_lock(&kvm->irq_srcu);
+-	gsi = kvm_irq_map_chip_pin(kvm, irqchip, pin);
+-	if (gsi != -1)
+-		hlist_for_each_entry_rcu(kian, &kvm->irq_ack_notifier_list,
+-					 link)
+-			if (kian->gsi == gsi) {
+-				srcu_read_unlock(&kvm->irq_srcu, idx);
+-				return true;
+-			}
+-
+-	srcu_read_unlock(&kvm->irq_srcu, idx);
+-
+-	return false;
+-}
+-EXPORT_SYMBOL_GPL(kvm_irq_has_notifier);
+-
+-void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin)
+-{
+-	struct kvm_irq_ack_notifier *kian;
+-	int gsi, idx;
+-
+-	trace_kvm_ack_irq(irqchip, pin);
+-
+-	idx = srcu_read_lock(&kvm->irq_srcu);
+-	gsi = kvm_irq_map_chip_pin(kvm, irqchip, pin);
+-	if (gsi != -1)
+-		hlist_for_each_entry_rcu(kian, &kvm->irq_ack_notifier_list,
+-					 link)
+-			if (kian->gsi == gsi)
+-				kian->irq_acked(kian);
+-	srcu_read_unlock(&kvm->irq_srcu, idx);
+-}
+-
+-void kvm_register_irq_ack_notifier(struct kvm *kvm,
+-				   struct kvm_irq_ack_notifier *kian)
+-{
+-	mutex_lock(&kvm->irq_lock);
+-	hlist_add_head_rcu(&kian->link, &kvm->irq_ack_notifier_list);
+-	mutex_unlock(&kvm->irq_lock);
+-#ifdef __KVM_HAVE_IOAPIC
+-	kvm_vcpu_request_scan_ioapic(kvm);
+-#endif
+-}
+-
+-void kvm_unregister_irq_ack_notifier(struct kvm *kvm,
+-				    struct kvm_irq_ack_notifier *kian)
+-{
+-	mutex_lock(&kvm->irq_lock);
+-	hlist_del_init_rcu(&kian->link);
+-	mutex_unlock(&kvm->irq_lock);
+-	synchronize_srcu(&kvm->irq_srcu);
+-#ifdef __KVM_HAVE_IOAPIC
+-	kvm_vcpu_request_scan_ioapic(kvm);
+-#endif
+-}
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index a69a623938b8..33712fb26eb1 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -465,6 +465,8 @@ static struct kvm *kvm_create_vm(unsigned long type)
+ 
+ #ifdef CONFIG_HAVE_KVM_IRQCHIP
+ 	INIT_HLIST_HEAD(&kvm->mask_notifier_list);
++#endif
++#ifdef CONFIG_HAVE_KVM_IRQFD
+ 	INIT_HLIST_HEAD(&kvm->irq_ack_notifier_list);
+ #endif
+ 
 -- 
-1.7.9.5
+1.8.3.1
 
