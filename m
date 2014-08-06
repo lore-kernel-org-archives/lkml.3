@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780AbaHFHNu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 03:13:50 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36090 "EHLO
+	id S1755761AbaHFHNs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 03:13:48 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36116 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843AbaHFHLS (ORCPT
+	with ESMTP id S1754149AbaHFHLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Aug 2014 03:11:18 -0400
 X-Original-SENDERIP: 10.177.220.145
@@ -29,9 +29,9 @@ Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
         Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 2/8] mm/isolation: remove unstable check for isolated page
-Date: Wed,  6 Aug 2014 16:18:29 +0900
-Message-Id: <1407309517-3270-4-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 3/8] mm/isolation: remove unstable check for isolated page
+Date: Wed,  6 Aug 2014 16:18:31 +0900
+Message-Id: <1407309517-3270-6-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
