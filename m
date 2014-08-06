@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275AbaHFBvO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 21:51:14 -0400
-Received: from mail-vc0-f196.google.com ([209.85.220.196]:44940 "EHLO
-	mail-vc0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaHFBvM (ORCPT
+	id S1755229AbaHFB6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 21:58:12 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33909 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981AbaHFB6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 21:51:12 -0400
-MIME-Version: 1.0
-Reply-To: mrsaliceclay02@gmail.com
-Date: Tue, 5 Aug 2014 18:51:11 -0700
-X-Google-Sender-Auth: Y0m6WZ35JjSdLhsbJsM4yTWEmCs
-Message-ID: <CAEfLG=dU1pCsEj+o-OCfJ0eu6eM0eDPvTGjNAPSn69_L-tTpGA@mail.gmail.com>
-Subject: THIS IS MY WISH
-From: Mrs Alice Clay <mrsaliceclay02@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 5 Aug 2014 21:58:10 -0400
+Date: Tue, 05 Aug 2014 18:58:09 -0700 (PDT)
+Message-Id: <20140805.185809.743966176538113451.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bpicco@meloft.net
+Subject: Re: linux-next: manual merge of the sparc-next tree with the sparc
+ tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140806095845.25491f00@canb.auug.org.au>
+References: <20140806095845.25491f00@canb.auug.org.au>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 05 Aug 2014 18:58:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--- 
-Although, I am not comfortable discussing the content of my mail on
-the Internet owing to lots of unsolicited/Spam
-mails on the net nowadays. Ayway, I have made up my mind to, My name
-is Mrs. Alice Clay; I have been suffering from ovarian cancer Disease
-and the doctor say that i have just few days to leave. I am From
-Germany, but based in Burkina Faso Africa, since ten years ago as A
-business woman dealing with cocoa exportation, now that i am about To
-end the race like this, without any family members and no child.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 6 Aug 2014 09:58:45 +1000
 
+> Today's linux-next merge of the sparc-next tree got a conflict in
+> arch/sparc/mm/init_64.c between commit 4ca9a23765da ("sparc64: Guard
+> against flushing openfirmware mappings") from the sparc tree and commit
+> f6d4fb5cc047 ("sparc64 - add mem to iomem resource") from the
+> sparc-next tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-I Have $1.1 Million US DOLLARS in Bank of Africa (BOA) Burkina Faso
-which I Instructed the bank to give African union leaders to help sick
-people Around Africa. But my mind is not at rest because i am writing
-this Letter now through the help of my nurse beside me here in my
-hospital Room.
+Thanks Stephen, simple non-overlapping additions and I'm about to push
+that resolution to my tree.
 
-I also have $1.5 Million US Dollars in another bank in Burkina Faso
-Which i want you to claim from the bank and use help less privilege
-People in your country, but you must assure me that you will take only
-40% of the total money and give the rest 60% to the orphanage home in
-Your country for my heart to rest.
-
-Upon the receipt of your email that you are willing and capable to
-execute my plan, i will instruct the bank management to make the
-immediate transfer into your account.
-
-Sincerely,
-
-Mrs. Alice Clay.
+Thanks again!
