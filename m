@@ -1,160 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718AbaHGCYY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 22:24:24 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38935 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754120AbaHGCYW (ORCPT
+	id S1754837AbaHGC2A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 22:28:00 -0400
+Received: from mail.saude.to.gov.br ([177.0.118.84]:39636 "EHLO
+	webmail.saude.to.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754524AbaHGC16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 22:24:22 -0400
-Message-ID: <53E2E354.6020902@codeaurora.org>
-Date: Wed, 06 Aug 2014 19:24:20 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 6 Aug 2014 22:27:58 -0400
+X-Greylist: delayed 9037 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Aug 2014 22:27:58 EDT
+Date: Wed, 6 Aug 2014 18:52:04 -0300 (BRT)
+From: MR MARK CARNEY <almas@saude.to.gov.br>
+Reply-To: "markcarnetdept111@outlook.com" <markcarnetdept111@outlook.com>
+Message-ID: <1813036988.1780289.1407361924762.JavaMail.zimbra@saude.to.gov.br>
+Subject: 
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>, Rob Herring <robh@kernel.org>,
-        Liu hua <sdu.liu@huawei.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Tomasz Figa <t.figa@samsung.com>, Will Deacon <will.deacon@arm.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Doug Anderson <dianders@google.com>, Rabin Vincent <rabin@rab.in>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Mark Salter <msalter@redhat.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/7] arm: use generic fixmap.h
-References: <1407353564-21478-1-git-send-email-keescook@chromium.org> <1407353564-21478-2-git-send-email-keescook@chromium.org>
-In-Reply-To: <1407353564-21478-2-git-send-email-keescook@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [197.228.160.41]
+X-Mailer: Zimbra 8.0.4_GA_5737 (ZimbraWebClient - GC36 (Win)/8.0.4_GA_5737)
+Thread-Topic: 
+Thread-Index: mlIRAnsYfIOixrhrJI7iewRc9otDVg==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/6/2014 12:32 PM, Kees Cook wrote:
-> From: Mark Salter <msalter@redhat.com>
-> 
-> ARM is different from other architectures in that fixmap pages are indexed
-> with a positive offset from FIXADDR_START.  Other architectures index with
-> a negative offset from FIXADDR_TOP.  In order to use the generic fixmap.h
-> definitions, this patch redefines FIXADDR_TOP to be inclusive of the
-> useable range.  That is, FIXADDR_TOP is the virtual address of the topmost
-> fixed page.  The newly defined FIXADDR_END is the first virtual address
-> past the fixed mappings.
-> 
-> Signed-off-by: Mark Salter <msalter@redhat.com>
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
-> [update for "ARM: 8031/2: change fixmap mapping region to support 32 CPUs"]
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  arch/arm/include/asm/fixmap.h | 27 +++++++++------------------
->  arch/arm/mm/init.c            |  2 +-
->  2 files changed, 10 insertions(+), 19 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-> index 74124b0d0d79..190142d174ee 100644
-> --- a/arch/arm/include/asm/fixmap.h
-> +++ b/arch/arm/include/asm/fixmap.h
-> @@ -2,27 +2,18 @@
->  #define _ASM_FIXMAP_H
->  
->  #define FIXADDR_START		0xffc00000UL
-> -#define FIXADDR_TOP		0xffe00000UL
-> -#define FIXADDR_SIZE		(FIXADDR_TOP - FIXADDR_START)
-> +#define FIXADDR_END		0xffe00000UL
-> +#define FIXADDR_TOP		(FIXADDR_END - PAGE_SIZE)
-> +#define FIXADDR_SIZE		(FIXADDR_END - FIXADDR_START)
->  
->  #define FIX_KMAP_NR_PTES	(FIXADDR_SIZE >> PAGE_SHIFT)
->  
-> -#define __fix_to_virt(x)	(FIXADDR_START + ((x) << PAGE_SHIFT))
-> -#define __virt_to_fix(x)	(((x) - FIXADDR_START) >> PAGE_SHIFT)
-> +enum fixed_addresses {
-> +	FIX_KMAP_BEGIN,
-> +	FIX_KMAP_END = FIX_KMAP_NR_PTES - 1,
-> +	__end_of_fixed_addresses
-> +};
->  
-> -extern void __this_fixmap_does_not_exist(void);
-> -
-> -static inline unsigned long fix_to_virt(const unsigned int idx)
-> -{
-> -	if (idx >= FIX_KMAP_NR_PTES)
-> -		__this_fixmap_does_not_exist();
-> -	return __fix_to_virt(idx);
-> -}
-> -
-> -static inline unsigned int virt_to_fix(const unsigned long vaddr)
-> -{
-> -	BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
-> -	return __virt_to_fix(vaddr);
-> -}
-> +#include <asm-generic/fixmap.h>
->  
->  #endif
-> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> index 659c75d808dc..ad82c05bfc3a 100644
-> --- a/arch/arm/mm/init.c
-> +++ b/arch/arm/mm/init.c
-> @@ -570,7 +570,7 @@ void __init mem_init(void)
->  			MLK(DTCM_OFFSET, (unsigned long) dtcm_end),
->  			MLK(ITCM_OFFSET, (unsigned long) itcm_end),
->  #endif
-> -			MLK(FIXADDR_START, FIXADDR_TOP),
-> +			MLK(FIXADDR_START, FIXADDR_END),
->  			MLM(VMALLOC_START, VMALLOC_END),
->  			MLM(PAGE_OFFSET, (unsigned long)high_memory),
->  #ifdef CONFIG_HIGHMEM
-> 
 
-I'm working off of a 3.14 kernel and with this backported 
-kmap_atomic does not actually map properly for me. This was
 
-my quick fix (not sure if we should be using __set_fixmap?). Or did
-I fail at backportery?
+Hello,i have a business proposal worth a sum of Twenty Million Six Hundred Thousand Great British Pounds.if interested please response through this email:markcarnetdept111@outlook.com.
 
------8<-----
->From ea11b54704aa0a311ab3d05fd70072679bfe1a0b Mon Sep 17 00:00:00 2001
-From: Laura Abbott <lauraa@codeaurora.org>
-Date: Wed, 6 Aug 2014 19:20:46 -0700
-Subject: [PATCH] arm: Get proper pte for fixmaps
+Regard
+Mark Carney
 
-The generic fixmap.h gets indexes from high to low instead
-of low to high so the fixmap idx does not correspond to
-the array entry in fixmap_page_table. Get the proper pte
-to update.
-
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
----
- arch/arm/mm/highmem.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mm/highmem.c b/arch/arm/mm/highmem.c
-index bedca3a..7f08e64 100644
---- a/arch/arm/mm/highmem.c
-+++ b/arch/arm/mm/highmem.c
-@@ -22,14 +22,18 @@
- static inline void set_fixmap_pte(int idx, pte_t pte)
- {
- 	unsigned long vaddr = __fix_to_virt(idx);
--	set_pte_ext(fixmap_page_table + idx, pte, 0);
-+	pte_t *ppte = pte_offset_kernel(pmd_off_k(FIXADDR_START), vaddr);
-+
-+	set_pte_ext(ppte, pte, 0);
- 	local_flush_tlb_kernel_page(vaddr);
- }
- 
- static inline pte_t get_fixmap_pte(unsigned long vaddr)
- {
- 	unsigned long idx = __virt_to_fix(vaddr);
--	return *(fixmap_page_table + idx);
-+	pte_t *ppte = pte_offset_kernel(pmd_off_k(FIXADDR_START), vaddr);
-+
-+	return *ppte;
- }
- 
- void *kmap(struct page *page)
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
