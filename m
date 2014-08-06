@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314AbaHFWM5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 18:12:57 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:53527 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449AbaHFWMz (ORCPT
+	id S1754461AbaHFWNi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 18:13:38 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:34519 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754264AbaHFWNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 18:12:55 -0400
-Message-ID: <53E2A85A.8030406@gmail.com>
-Date: Wed, 06 Aug 2014 15:12:42 -0700
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 6 Aug 2014 18:13:36 -0400
 MIME-Version: 1.0
-To: Tim Bird <tbird20d@gmail.com>, Brian Norris <computersforpeace@gmail.com>
-CC: Rob Herring <robherring2@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844C44CF@US01WEMBX2.internal.synopsys.com>
+References: <1407159942-7063-1-git-send-email-kever.yang@rock-chips.com>
+	<1407159942-7063-3-git-send-email-kever.yang@rock-chips.com>
+	<CAD=FV=WO5TxzWEv3XwO7T6_F6ynyi0P0yF+Y=LD495dEOyWw_w@mail.gmail.com>
+	<53E0373C.5090309@rock-chips.com>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C44CF@US01WEMBX2.internal.synopsys.com>
+Date: Wed, 6 Aug 2014 15:13:35 -0700
+X-Google-Sender-Auth: lvP7GCpG10l3dHzZYDYPgG1Cbo4
+Message-ID: <CAD=FV=XBnVy+c-VFSC0MdExqGsDSMO9LXBAFgwPn+toWBcxe5w@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] usb: dwc2: add 'mode' which based on Kconfig
+ select or dts setting
+From: Doug Anderson <dianders@chromium.org>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Cc: Kever Yang <kever.yang@rock-chips.com>, Heiko Stuebner <heiko@sntech.de>,
+        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Olof Johansson <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>, wulf <wulf@rock-chips.com>,
+        lyz <lyz@rock-chips.com>, Jingoo Han <jg1.han@samsung.com>,
+        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] of/irq: lookup 'interrupts-extended' property first
-References: <1403220823-19444-1-git-send-email-f.fainelli@gmail.com>	<CAGVrzcYfA8rCXGRW7g0JhT4GQKT8SQj+pMvCh25yoXLFGNM_Pw@mail.gmail.com>	<20140806165452.GN3711@ld-irv-0074>	<CAL_JsqK8BiffXgpQSig5EbV3FUW7EBOn9YjZGqOcUcEJiCJ0WA@mail.gmail.com>	<20140806201256.GO3711@ld-irv-0074> <CA+bK7J7LQq4S70ScSynbLTjNMmP=9n3KD2suYRg9JN+pEv-Y7g@mail.gmail.com>
-In-Reply-To: <CA+bK7J7LQq4S70ScSynbLTjNMmP=9n3KD2suYRg9JN+pEv-Y7g@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2014 02:50 PM, Tim Bird wrote:
-> On Wed, Aug 6, 2014 at 1:12 PM, Brian Norris
-> <computersforpeace@gmail.com> wrote:
->> On Wed, Aug 06, 2014 at 01:42:08PM -0500, Rob Herring wrote:
->>> On Wed, Aug 6, 2014 at 11:54 AM, Brian Norris <computersforpeace@gmail.com> wrote:
->>>> On Thu, Jul 31, 2014 at 11:00:01AM -0700, Florian Fainelli wrote:
->>>> I think it is important that a device tree provide some flexibility on
->>>> kernel versions. We only invented 'interrupts-extended' in Linux 3.13,
->>>> so it's easy to have device trees that could work only on 3.13+.
->>>>
->>>> Typically, we might say that new features require new kernels, but this
->>>> is a very basic piece of the DT infrastructure. In our case, we have
->>>> hardware whose basic features can be supported by a single interrupt
->>>> parent, and so we used the 'interrupts' property pre-3.13. But when we
->>>> want to add some power management features, there's an additional
->>>> interrupt parent. Under the current DT binding, we have to switch over
->>>> to using 'interrupts-extended' exclusively, and thus we must have a
->>>> completely new DTB for >=3.13, and this DTB no longer works with the old
->>>> kernels.
->>>
->>> "Must have" to enable the new features?
+Paul,
+
+On Tue, Aug 5, 2014 at 1:08 PM, Paul Zimmerman
+<Paul.Zimmerman@synopsys.com> wrote:
+>> Maybe dwc2 is refer to the Kconfig in dwc3 for there is a choice from
+>> one of "Host only mode", "Gadget only mode" and "Dual Role mode",
+>> which means the role is decided by the Kconfig.
 >>
->> Yes. The new feature requires an additional interrupt parent, and so it
->> requires interrupts-extended.
-> 
-> Hold on there.  What about interrupt-map?  That was the traditional DT
-> feature for
-> supporting multi-parented interrupts.  Why couldn't the feature have been added
-> using that instead of interrupts-extended?
+>> In my opinion, there maybe more than one controller in a Soc, and for
+>> different
+>> usage, the mode select should not be done in Kconfig, it's better to do that
+>> in dts file.
+>> I agree with you that the CONFIG_USB_DWC2_HOST should defined for host
+>> functionality, not for role definition.
+>>
+>> Paul: what do you think?
+>
+> I'm confused about how your dual-role mode implementation is supposed
+> to work. Right now, the host and peripheral modes are compiled as
+> separate drivers, and there is no dual-role mode in the Kconfig. So I
+> don't see how your code can work. Have you tested it?
 
-As far as I read it from the ePAPR specification, you have a good point
-here, it looks like 'interrupt-map' could have been used as-is instead
-of 'interrupts-extended'. In fact it is a little more general than
-'interrupts-extended' since it allows any sort of "child unit address",
-whether that is an actual interrupt number, or something else, is
-dependent on the type of node being used.
+Ah, interesting.  I just assumed that since you could compile both in
+that dual mode was there, but I clearly was confused.
 
-> 
-> I know interrupts-extended is preferred, but has interrupt-map support been
-> removed from recent kernels?  I'm a bit confused.
+I don't think Kever had tested dual_role mode.
 
-'interrupt-map' support has not been removed since that is heavily used
-to cross interrupt domains, e.g: PCI relies heavily on it, other buses
-as well most likely.
 
-> 
->  -- Tim Bird
-> Senior Software Engineer, Sony Mobile
-> Architecture Group Chair, CE Workgroup, Linux Foundation
-> 
+> Dinh Nguyen is working on a patch series to add dual-role support, I
+> think you have seen that, right? That adds the Kconfig options for all
+> three modes. Maybe you should build on top of that?
 
+I hadn't personally seen it, but now I have!  I guess this is the
+newest <https://www.mail-archive.com/linux-usb@vger.kernel.org/msg46103.html>.
+
+I haven't done a thorough review, but I think Kever's patch v4
+<https://patchwork.kernel.org/patch/4682711/> is still relevant since
+I don't see anything parsing the dr_mode in Dinh's patches.
+
+-Doug
