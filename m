@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654AbaHFN61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 09:58:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41982 "EHLO mx2.suse.de"
+	id S1755594AbaHFN6Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 09:58:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42019 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753451AbaHFN4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753558AbaHFN4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Aug 2014 09:56:15 -0400
 From: Vlastimil Babka <vbabka@suse.cz>
 To: linux-mm@kvack.org
@@ -15,143 +15,297 @@ Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Hugh Dickins <hughd@google.com>, Minchan Kim <minchan@kernel.org>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>
-Subject: [RFC 0/4] Reducing parameters of alloc_pages* family of functions
-Date: Wed,  6 Aug 2014 15:55:52 +0200
-Message-Id: <1407333356-30928-1-git-send-email-vbabka@suse.cz>
+Subject: [RFC 4/4] mm, page_alloc: make gfp_mask a separate parameter again
+Date: Wed,  6 Aug 2014 15:55:56 +0200
+Message-Id: <1407333356-30928-5-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1407333356-30928-1-git-send-email-vbabka@suse.cz>
+References: <1407333356-30928-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey all,
+Similarly to alloc_flags, gfp_mask sometimes changes and is heavily used
+so it might benefit from being passed in a register.
+---
+ mm/page_alloc.c | 85 +++++++++++++++++++++++++++++----------------------------
+ 1 file changed, 43 insertions(+), 42 deletions(-)
 
-I wanted a short break from compaction so I thought I would try something
-that has been discussed when Minchan proposed to expand the x86 kernel
-stack [1], namely the reduction of huge number of parameters that the
-alloc_pages* family and get_page_from_freelist() functions have.
-
-The result so far is this series, note that it's only build-tested and
-considered RFC and not signed-off. Except Patch 1 which is trivial and I
-didn't feel like sending that separately. I want some feedback if this is
-worth finishing, and possibly testing with different configs/arches/gcc
-versions. I also welcome feedback and suggestions on the evaluation
-methodology as this probably doesn't tell the whole picture.
-The series is based on next-20140806 and I use gcc 4.8.1 20130909 on
-openSUSE 13.1. Config includes NUMA, COMPACTION, CMA, DEBUG_VM (but not
-DEBUG_PAGEALLOC), I can post whole if anyone wants.
-
-So, I created a struct alloc_info (maybe alloc_context would be better a name
-in case this works out) and initially put everything there:
-
-struct alloc_info {
-       struct zonelist *zonelist;
-       nodemask_t *nodemask;
-       struct zone *preferred_zone;
-
-       unsigned int order;
-       gfp_t gfp_mask;
-       int alloc_flags;
-       int classzone_idx;
-       int migratetype;
-       enum zone_type high_zoneidx;
-};
-
-Mostly the stuff is constant, except alloc_flags and gfp_mask which I have to
-save and restore in some cases. __alloc_pages_slowpath() will also change
-preferred_zone and classzone_idx but that's not a problem as in case control
-returns to retry_cpuset: in __alloc_pages_nodemask(), those will be reset to
-initial values again (although it's subtle). Hmm I just realized it may also
-change zonelist, so this is a known bug that would be easily fixed. But I
-expected it to be worse.
-
-The result is Patch 2, which does decrease __alloc_pages_nodemask stack
-(details below) from 248 to 200, and code from 2691 to 2507 bytes. This being
-a function that inlines all the family except __alloc_pages_direct_compact
-(which is called at two places) and get_page_from_freelist() which has many
-callsites. Unfortunately, get_page_from_freelist's stack is bloated by 24b,
-which is not so bad as it AFAIK doesn't call anything heavy during its work.
-But its code size went from 2842 to 3022 bytes, which probably sucks for the
-fast path case.
-
-The next thing I tried is to again separate the most volatile and used
-parameters from alloc_info, in hope that passing them in registers and not
-having to save/restore them will help. That's Patch 3 for alloc_flags and
-Patch 4 for gfp_mask. Both were clear wins wrt code size and although Patch 3
-increased stack by 8b, Patch 4 recovered that.
-
-Interestingly, after Patch 4, gcc decided to stop inlining
-__alloc_pages_slowpath() which didn't happen with previous tests that had
-CONFIG_CMA disabled. For comparison I repeated the compilation with
-__alloc_pages_slowpath() force inlined. This shows that the not-inlining by
-itself saved 8b stack and 130b code. So removing the inline might be a change
-to consider by itself, as it could make the fast path less heavy.
-
-Unfortunately, even with Patch 4, get_page_from_freelist() stack remained
-at +24b and code at +148b. Seems like it benefits from having as many arguments
-in registers as possible.
-
-[1] http://marc.info/?l=linux-mm&m=140142462528257&w=2
-
-Stack sizes as determined by ./scripts/checkstack.pl:
-('Patch 4i' is with forced inline of __alloc_pages_slowpath)
-
-                        next-20140806   Patch 1   Patch 2   Patch 3   Patch 4   Patch 4i
-get_page_from_freelist            160       160       184       184	  184        184
-__alloc_pages_nodemask            248       248	      200       208        80        200
-__alloc_pages_direct_compact       40        40	       16        16        16         16
-__alloc_pages_slowpath              -         -         -         -       112          -
-
-
-Results of ./scripts/bloat-o-meter with next-20140806 as 'old':
-
-Patch 1:
-
-add/remove: 0/0 grow/shrink: 0/1 up/down: 0/-12 (-12)
-function                                     old     new   delta
-__alloc_pages_nodemask                      2691    2679     -12
-
-Patch 2:
-
-add/remove: 0/0 grow/shrink: 1/2 up/down: 180/-192 (-12)
-function                                     old     new   delta
-get_page_from_freelist                      2842    3022    +180
-__alloc_pages_direct_compact                 409     401      -8
-__alloc_pages_nodemask                      2691    2507    -184
-
-Patch 3:
-
-add/remove: 0/0 grow/shrink: 1/2 up/down: 180/-307 (-127)
-function                                     old     new   delta
-get_page_from_freelist                      2842    3022    +180
-__alloc_pages_direct_compact                 409     379     -30
-__alloc_pages_nodemask                      2691    2414    -277
-
-Patch 4:
-
-add/remove: 1/0 grow/shrink: 1/2 up/down: 1838/-2199 (-361)
-function                                     old     new   delta
-__alloc_pages_slowpath                         -    1690   +1690
-get_page_from_freelist                      2842    2990    +148
-__alloc_pages_direct_compact                 409     374     -35
-__alloc_pages_nodemask                      2691     527   -2164
-
-Patch 4 (forced inline for _slowpath):
-
-add/remove: 0/0 grow/shrink: 1/2 up/down: 148/-387 (-239)
-function                                     old     new   delta
-get_page_from_freelist                      2842    2990    +148
-__alloc_pages_direct_compact                 409     374     -35
-__alloc_pages_nodemask                      2691    2339    -352
-
-Vlastimil Babka (4):
-  mm: page_alloc: determine migratetype only once
-  mm, page_alloc: reduce number of alloc_pages* functions' parameters
-  mm, page_alloc: make alloc_flags a separate parameter again
-  mm, page_alloc: make gfp_mask a separate parameter again
-
- mm/page_alloc.c | 215 +++++++++++++++++++++++++-------------------------------
- 1 file changed, 97 insertions(+), 118 deletions(-)
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index c06ad53..b5c5944 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -237,7 +237,6 @@ struct alloc_info {
+ 	struct zone *preferred_zone;
+ 
+ 	unsigned int order;
+-	gfp_t gfp_mask;
+ 	int classzone_idx;
+ 	int migratetype;
+ 	enum zone_type high_zoneidx;
+@@ -1955,7 +1954,7 @@ static void reset_alloc_batches(struct zone *preferred_zone)
+  * a page.
+  */
+ static struct page *
+-get_page_from_freelist(int alloc_flags, const struct alloc_info *ai)
++get_page_from_freelist(gfp_t gfp_mask, int alloc_flags, const struct alloc_info *ai)
+ {
+ 	const unsigned int order = ai->order;
+ 	struct zonelist *zonelist = ai->zonelist;
+@@ -1966,7 +1965,7 @@ get_page_from_freelist(int alloc_flags, const struct alloc_info *ai)
+ 	int zlc_active = 0;		/* set if using zonelist_cache */
+ 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
+ 	bool consider_zone_dirty = (alloc_flags & ALLOC_WMARK_LOW) &&
+-				(ai->gfp_mask & __GFP_WRITE);
++				(gfp_mask & __GFP_WRITE);
+ 	int nr_fair_skipped = 0;
+ 	bool zonelist_rescan;
+ 
+@@ -1986,7 +1985,7 @@ zonelist_scan:
+ 				continue;
+ 		if (cpusets_enabled() &&
+ 			(alloc_flags & ALLOC_CPUSET) &&
+-			!cpuset_zone_allowed_softwall(zone, ai->gfp_mask))
++			!cpuset_zone_allowed_softwall(zone, gfp_mask))
+ 				continue;
+ 		/*
+ 		 * Distribute pages in proportion to the individual
+@@ -2065,7 +2064,7 @@ zonelist_scan:
+ 				!zlc_zone_worth_trying(zonelist, z, allowednodes))
+ 				continue;
+ 
+-			ret = zone_reclaim(zone, ai->gfp_mask, order);
++			ret = zone_reclaim(zone, gfp_mask, order);
+ 			switch (ret) {
+ 			case ZONE_RECLAIM_NOSCAN:
+ 				/* did not scan */
+@@ -2098,7 +2097,7 @@ zonelist_scan:
+ 
+ try_this_zone:
+ 		page = buffered_rmqueue(ai->preferred_zone, zone, order,
+-						ai->gfp_mask, ai->migratetype);
++						gfp_mask, ai->migratetype);
+ 		if (page)
+ 			break;
+ this_zone_full:
+@@ -2251,13 +2250,12 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
+ }
+ 
+ static inline struct page *
+-__alloc_pages_may_oom(int alloc_flags, struct alloc_info *ai)
++__alloc_pages_may_oom(gfp_t gfp_mask, int alloc_flags, const struct alloc_info *ai)
+ {
+ 	struct page *page;
+-	const gfp_t gfp_mask = ai->gfp_mask;
+ 
+ 	/* Acquire the per-zone oom lock for each zone */
+-	if (!oom_zonelist_trylock(ai->zonelist, ai->gfp_mask)) {
++	if (!oom_zonelist_trylock(ai->zonelist, gfp_mask)) {
+ 		schedule_timeout_uninterruptible(1);
+ 		return NULL;
+ 	}
+@@ -2267,10 +2265,8 @@ __alloc_pages_may_oom(int alloc_flags, struct alloc_info *ai)
+ 	 * here, this is only to catch a parallel oom killing, we must fail if
+ 	 * we're still under heavy pressure.
+ 	 */
+-	ai->gfp_mask |= __GFP_HARDWALL;
+-	page = get_page_from_freelist(ALLOC_WMARK_HIGH|ALLOC_CPUSET, ai);
+-	ai->gfp_mask = gfp_mask;
+-
++	page = get_page_from_freelist(gfp_mask | __GFP_HARDWALL,
++					ALLOC_WMARK_HIGH|ALLOC_CPUSET, ai);
+ 	if (page)
+ 		goto out;
+ 
+@@ -2302,9 +2298,10 @@ out:
+ #ifdef CONFIG_COMPACTION
+ /* Try memory compaction for high-order allocations before reclaim */
+ static struct page *
+-__alloc_pages_direct_compact(int alloc_flags, const struct alloc_info *ai,
+-	enum migrate_mode mode, bool *contended_compaction,
+-	bool *deferred_compaction, unsigned long *did_some_progress)
++__alloc_pages_direct_compact(gfp_t gfp_mask, int alloc_flags,
++	const struct alloc_info *ai, enum migrate_mode mode,
++	bool *contended_compaction, bool *deferred_compaction,
++	unsigned long *did_some_progress)
+ {
+ 	const unsigned int order = ai->order;
+ 	struct zone *preferred_zone = ai->preferred_zone;
+@@ -2318,7 +2315,7 @@ __alloc_pages_direct_compact(int alloc_flags, const struct alloc_info *ai,
+ 	}
+ 
+ 	current->flags |= PF_MEMALLOC;
+-	*did_some_progress = try_to_compact_pages(ai->zonelist, order, ai->gfp_mask,
++	*did_some_progress = try_to_compact_pages(ai->zonelist, order, gfp_mask,
+ 						ai->nodemask, mode,
+ 						contended_compaction);
+ 	current->flags &= ~PF_MEMALLOC;
+@@ -2330,7 +2327,7 @@ __alloc_pages_direct_compact(int alloc_flags, const struct alloc_info *ai,
+ 		drain_pages(get_cpu());
+ 		put_cpu();
+ 
+-		page = get_page_from_freelist(alloc_flags &
++		page = get_page_from_freelist(gfp_mask, alloc_flags &
+ 				~ALLOC_NO_WATERMARKS, ai);
+ 
+ 		if (page) {
+@@ -2361,9 +2358,10 @@ __alloc_pages_direct_compact(int alloc_flags, const struct alloc_info *ai,
+ }
+ #else
+ static inline struct page *
+-__alloc_pages_direct_compact(int alloc_flags, const struct alloc_info *ai,
+-	enum migrate_mode mode, bool *contended_compaction,
+-	bool *deferred_compaction, unsigned long *did_some_progress)
++__alloc_pages_direct_compact(gfp_t gfp_mask, int alloc_flags,
++	const struct alloc_info *ai, enum migrate_mode mode,
++	bool *contended_compaction, bool *deferred_compaction,
++	unsigned long *did_some_progress)
+ {
+ 	return NULL;
+ }
+@@ -2399,13 +2397,13 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
+ 
+ /* The really slow allocator path where we enter direct reclaim */
+ static inline struct page *
+-__alloc_pages_direct_reclaim(int alloc_flags, const struct alloc_info *ai,
+-				unsigned long *did_some_progress)
++__alloc_pages_direct_reclaim(gfp_t gfp_mask, int alloc_flags,
++		const struct alloc_info *ai, unsigned long *did_some_progress)
+ {
+ 	struct page *page = NULL;
+ 	bool drained = false;
+ 
+-	*did_some_progress = __perform_reclaim(ai->gfp_mask, ai->order,
++	*did_some_progress = __perform_reclaim(gfp_mask, ai->order,
+ 						ai->zonelist, ai->nodemask);
+ 	if (unlikely(!(*did_some_progress)))
+ 		return NULL;
+@@ -2415,7 +2413,8 @@ __alloc_pages_direct_reclaim(int alloc_flags, const struct alloc_info *ai,
+ 		zlc_clear_zones_full(ai->zonelist);
+ 
+ retry:
+-	page = get_page_from_freelist(alloc_flags & ~ALLOC_NO_WATERMARKS, ai);
++	page = get_page_from_freelist(gfp_mask,
++					alloc_flags & ~ALLOC_NO_WATERMARKS, ai);
+ 
+ 	/*
+ 	 * If an allocation failed after direct reclaim, it could be because
+@@ -2435,17 +2434,17 @@ retry:
+  * sufficient urgency to ignore watermarks and take other desperate measures
+  */
+ static inline struct page *
+-__alloc_pages_high_priority(const struct alloc_info *ai)
++__alloc_pages_high_priority(gfp_t gfp_mask, const struct alloc_info *ai)
+ {
+ 	struct page *page;
+ 
+ 	do {
+-		page = get_page_from_freelist(ALLOC_NO_WATERMARKS, ai);
++		page = get_page_from_freelist(gfp_mask, ALLOC_NO_WATERMARKS, ai);
+ 
+-		if (!page && ai->gfp_mask & __GFP_NOFAIL)
++		if (!page && gfp_mask & __GFP_NOFAIL)
+ 			wait_iff_congested(ai->preferred_zone, BLK_RW_ASYNC,
+ 									HZ/50);
+-	} while (!page && (ai->gfp_mask & __GFP_NOFAIL));
++	} while (!page && (gfp_mask & __GFP_NOFAIL));
+ 
+ 	return page;
+ }
+@@ -2517,10 +2516,9 @@ bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
+ }
+ 
+ static inline struct page *
+-__alloc_pages_slowpath(struct alloc_info *ai)
++__alloc_pages_slowpath(gfp_t gfp_mask, struct alloc_info *ai)
+ {
+ 	const unsigned int order = ai->order;
+-	const gfp_t gfp_mask = ai->gfp_mask;
+ 	const gfp_t wait = gfp_mask & __GFP_WAIT;
+ 	struct page *page = NULL;
+ 	int alloc_flags;
+@@ -2578,7 +2576,8 @@ restart:
+ 
+ rebalance:
+ 	/* This is the last chance, in general, before the goto nopage. */
+-	page = get_page_from_freelist(alloc_flags & ~ALLOC_NO_WATERMARKS, ai);
++	page = get_page_from_freelist(gfp_mask,
++				alloc_flags & ~ALLOC_NO_WATERMARKS, ai);
+ 	if (page)
+ 		goto got_pg;
+ 
+@@ -2591,7 +2590,7 @@ rebalance:
+ 		 */
+ 		ai->zonelist = node_zonelist(numa_node_id(), gfp_mask);
+ 
+-		page = __alloc_pages_high_priority(ai);
++		page = __alloc_pages_high_priority(gfp_mask, ai);
+ 
+ 		if (page) {
+ 			goto got_pg;
+@@ -2621,7 +2620,8 @@ rebalance:
+ 	 * Try direct compaction. The first pass is asynchronous. Subsequent
+ 	 * attempts after direct reclaim are synchronous
+ 	 */
+-	page = __alloc_pages_direct_compact(alloc_flags, ai, migration_mode,
++	page = __alloc_pages_direct_compact(gfp_mask, alloc_flags, ai,
++					migration_mode,
+ 					&contended_compaction,
+ 					&deferred_compaction,
+ 					&did_some_progress);
+@@ -2648,7 +2648,8 @@ rebalance:
+ 		migration_mode = MIGRATE_SYNC_LIGHT;
+ 
+ 	/* Try direct reclaim and then allocating */
+-	page = __alloc_pages_direct_reclaim(alloc_flags, ai, &did_some_progress);
++	page = __alloc_pages_direct_reclaim(gfp_mask, alloc_flags, ai,
++							&did_some_progress);
+ 	if (page)
+ 		goto got_pg;
+ 
+@@ -2664,7 +2665,7 @@ rebalance:
+ 			if ((current->flags & PF_DUMPCORE) &&
+ 			    !(gfp_mask & __GFP_NOFAIL))
+ 				goto nopage;
+-			page = __alloc_pages_may_oom(alloc_flags, ai);
++			page = __alloc_pages_may_oom(gfp_mask, alloc_flags, ai);
+ 			if (page)
+ 				goto got_pg;
+ 
+@@ -2703,7 +2704,8 @@ rebalance:
+ 		 * direct reclaim and reclaim/compaction depends on compaction
+ 		 * being called after reclaim so call directly if necessary
+ 		 */
+-		page = __alloc_pages_direct_compact(alloc_flags, ai, migration_mode,
++		page = __alloc_pages_direct_compact(gfp_mask, alloc_flags, ai,
++					migration_mode,
+ 					&contended_compaction,
+ 					&deferred_compaction,
+ 					&did_some_progress);
+@@ -2772,19 +2774,18 @@ retry_cpuset:
+ 	ai.classzone_idx = zonelist_zone_idx(preferred_zoneref);
+ 
+ 	/* First allocation attempt */
+-	ai.gfp_mask = gfp_mask|__GFP_HARDWALL;
+-	page = get_page_from_freelist(alloc_flags, &ai);
++	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, alloc_flags, &ai);
+ 	if (unlikely(!page)) {
+ 		/*
+ 		 * Runtime PM, block IO and its error handling path
+ 		 * can deadlock because I/O on the device might not
+ 		 * complete.
+ 		 */
+-		ai.gfp_mask = memalloc_noio_flags(gfp_mask);
+-		page = __alloc_pages_slowpath(&ai);
++		gfp_mask = memalloc_noio_flags(gfp_mask);
++		page = __alloc_pages_slowpath(gfp_mask, &ai);
+ 	}
+ 
+-	trace_mm_page_alloc(page, order, ai.gfp_mask, ai.migratetype);
++	trace_mm_page_alloc(page, order, gfp_mask, ai.migratetype);
+ 
+ out:
+ 	/*
 -- 
 1.8.4.5
 
