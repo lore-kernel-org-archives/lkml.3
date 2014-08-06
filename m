@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566AbaHFKRv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 06:17:51 -0400
-Received: from mta-out1.inet.fi ([62.71.2.230]:33748 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754703AbaHFKRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 06:17:49 -0400
-Date: Wed, 6 Aug 2014 13:17:18 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <levinsasha928@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 6/7] fs/proc/task_mmu.c: cleanup the "tail_vma" horror
- in m_next()
-Message-ID: <20140806101718.GB30703@node.dhcp.inet.fi>
-References: <20140805194627.GA30693@redhat.com>
- <20140805194703.GA30739@redhat.com>
+	id S1755593AbaHFKSn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 06:18:43 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:10401 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753286AbaHFKSm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 06:18:42 -0400
+X-IronPort-AV: E=Sophos;i="5.01,811,1400018400"; 
+   d="scan'208";a="88459355"
+Date: Wed, 6 Aug 2014 12:18:14 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+cc: Joe Perches <joe@perches.com>
+Subject: staging/rtl8192[eu]
+Message-ID: <alpine.DEB.2.10.1408061213340.2349@hadrien>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140805194703.GA30739@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 09:47:03PM +0200, Oleg Nesterov wrote:
-> 1. Kill the first "vma != NULL" check. Firstly this is not possible,
->    m_next() won't be called if ->start() or the previous ->next()
->    returns NULL.
-> 
->    And if it was possible the 2nd "vma != tail_vma" check is buggy,
->    we should not wrongly return ->tail_vma.
-> 
-> 2. Make this function readable. The logic is very simple, we should
->    return check "vma != tail" once and return "vm_next || tail_vma".
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Hello,
 
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Is anyone actually interested in the files:
 
--- 
- Kirill A. Shutemov
+drivers/staging/rtl8192e/rtllib_softmac.c
+drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
+
+Both contain the following code:
+
+        if (param->u.wpa_ie.len > MAX_WPA_IE_LEN ||
+           (param->u.wpa_ie.len && param->u.wpa_ie.data == NULL))
+                return -EINVAL;
+
+and
+
+       if (param->u.crypt.alg != NULL) {
+                memcpy(sec.keys[param->u.crypt.idx],
+                       param->u.crypt.key,
+                       param->u.crypt.key_len);
+
+In each case, the NULL test has a trivial result, because the requested
+field is an array inlined within a structure.  In the first case, the
+array has size 0, so I guess the intent is to see whether some more space
+has been allocated, and in the second case the array contains a string, so
+I guess the intent is to see whether something has been stored in the
+string.  But I don't know how it is intended to do either operation.
+
+julia
