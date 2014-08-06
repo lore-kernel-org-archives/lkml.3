@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628AbaHFWi7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 18:38:59 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55487 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753608AbaHFWi6 (ORCPT
+	id S1754705AbaHFWjT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 18:39:19 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:56635 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753608AbaHFWjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 18:38:58 -0400
-Date: Wed, 6 Aug 2014 15:38:56 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Josh Triplett <josh@joshtriplett.org>
-cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+	Wed, 6 Aug 2014 18:39:17 -0400
+X-Originating-IP: 173.246.103.110
+Date: Wed, 6 Aug 2014 15:39:10 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: David Rientjes <rientjes@google.com>
+Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
         "Luis R. Rodriguez" <mcgrof@suse.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86: Add "make tinyconfig" to configure the tiniest
- possible kernel
-In-Reply-To: <20140806223152.GA14348@jtriplet-mobl1>
-Message-ID: <alpine.DEB.2.02.1408061537220.13545@chino.kir.corp.google.com>
-References: <20140806222419.GA2566@jtriplet-mobl1> <20140806223152.GA14348@jtriplet-mobl1>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Subject: Re: [PATCH 1/2] x86, platform, kconfig: move kvmconfig functionality
+ to a helper
+Message-ID: <20140806223909.GA14575@jtriplet-mobl1>
+References: <20140806222419.GA2566@jtriplet-mobl1>
+ <20140806223032.GA3517@jtriplet-mobl1>
+ <alpine.DEB.2.02.1408061532120.13545@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1408061532120.13545@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Aug 2014, Josh Triplett wrote:
+On Wed, Aug 06, 2014 at 03:33:45PM -0700, David Rientjes wrote:
+> On Wed, 6 Aug 2014, Josh Triplett wrote:
+> > The new mergeconfig helper makes it easier to add other partial
+> > configurations similar to kvmconfig.
+> > 
+> > Based on a patch by Luis R. Rodriguez <mcgrof@suse.com>.
+> > Originally-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> > 
+> > Modified to make the helper name more general than just virtualization,
+> > and factor out more of the common file path.
+> > 
+> > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> 
+> For the original patch from Luis:
+> Suggested-by: David Rientjes <rientjes@google.com>
+> 
+> For this patch:
+> Acked-by: David Rientjes <rientjes@google.com>
+> 
+> Thanks for generalizing this part of the Makefile, after it's merged it 
+> will make Luis's set reduce down to a single change.
 
-> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-> index 1568678..2b5ca16 100644
-> --- a/arch/x86/Makefile
-> +++ b/arch/x86/Makefile
-> @@ -257,6 +257,10 @@ PHONY += kvmconfig
->  kvmconfig:
->  	$(call mergeconfig,kvm_guest)
->  
-> +PHONY += tinyconfig
-> +tinyconfig: allnoconfig
+Thank you as well for suggesting this refactoring; I should have thought
+to do the same rather than copying and pasting the contents of
+kvmconfig.
 
-Calling allnoconfig here makes "make tinyconfig" default to CONFIG_X86_32 
-even on 64 bit platforms and the caller would need to explicitly do
-"make ARCH=x86_64 tinyconfig" to avoid it.  It's not clear that this is 
-intended from the documentation of tinyconfig, that tiniest == 32 bit by 
-default.
+Should this go in via Andrew's -mm tree, or via tip for x86?
 
-> +	$(call mergeconfig,tiny)
-> +
->  define archhelp
->    echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
->    echo  '  install      - Install kernel using'
-> @@ -271,4 +275,5 @@ define archhelp
->    echo  '                  FDARGS="..."  arguments for the booted kernel'
->    echo  '                  FDINITRD=file initrd for the booted kernel'
->    echo  '  kvmconfig	- Enable additional options for guest kernel support'
-> +  echo  '  tinyconfig   - Configure the tiniest possible kernel'
->  endef
-> diff --git a/arch/x86/configs/tiny.config b/arch/x86/configs/tiny.config
-> new file mode 100644
-> index 0000000..8f0e54c
-> --- /dev/null
-> +++ b/arch/x86/configs/tiny.config
-> @@ -0,0 +1,5 @@
-> +CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-> +CONFIG_KERNEL_XZ=y
-> +CONFIG_NOHIGHMEM=y
-> +CONFIG_OPTIMIZE_INLINING=y
-> +CONFIG_SLOB=y
+- Josh Triplett
