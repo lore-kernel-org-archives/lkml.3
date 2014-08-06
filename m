@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697AbaHFDCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 23:02:13 -0400
-Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:5276
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750922AbaHFDCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 23:02:11 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <wsa@the-dreams.de>, <linux-i2c@vger.kernel.org>
-CC: <s.hauer@pengutronix.de>, <jg1.han@samsung.com>,
-        <u.kleine-koenig@pengutronix.de>, <linux-kernel@vger.kernel.org>,
-        <b35083@freescale.com>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH] i2c: i2c-imx: Fix format warning for dev_dbg
-Date: Wed, 6 Aug 2014 10:54:45 +0800
-Message-ID: <1407293685-7003-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.5
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(79102001)(50986999)(50466002)(68736004)(83322001)(19580405001)(46102001)(44976005)(6806004)(80022001)(74502001)(74662001)(87936001)(62966002)(31966008)(69596002)(19580395003)(89996001)(20776003)(76482001)(81342001)(47776003)(81542001)(77982001)(36756003)(64706001)(77156001)(4396001)(99396002)(88136002)(97736001)(50226001)(83072002)(92726001)(92566001)(93916002)(86362001)(229853001)(26826002)(104016003)(106466001)(104166001)(107046002)(102836001)(21056001)(81156004)(85852003)(105606002)(95666004)(85306004)(84676001)(48376002)(87286001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB468;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+	id S1754368AbaHFDEc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 23:04:32 -0400
+Received: from mga01.intel.com ([192.55.52.88]:61183 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750922AbaHFDE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 23:04:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="368497876"
+Message-ID: <53E19AAD.4070308@intel.com>
+Date: Wed, 06 Aug 2014 11:02:05 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02951C14DC
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-OriginatorOrg: freescale.com
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Chen, Gong" <gong.chen@linux.intel.com>
+Subject: Re: [PATCH] ACPI/Processor: Add CPU_STARTING_FROZEN check in the
+ acpi_cpu_soft_notify()
+References: <1406798426-16483-1-git-send-email-tianyu.lan@intel.com> <1560513.OlLhy0HTTU@vostro.rjw.lan> <53DB00C2.2040500@intel.com> <2440957.I2MrVyXYIg@vostro.rjw.lan>
+In-Reply-To: <2440957.I2MrVyXYIg@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/i2c/busses/i2c-imx.c: In function i2c_imx_probe()
-drivers/i2c/busses/i2c-imx.c:689:2: warning: format 0x%x expects argument
-of type unsigned int, but argument 4 has type resource_size_t [-Wformat=]
-  dev_dbg(&i2c_imx->adapter.dev, "device resources from 0x%x to 0x%x\n",
-  ^
-drivers/i2c/busses/i2c-imx.c:689:2: warning: format 0x%x expects argument
-of type unsigned int, but argument 5 has type resource_size_t [-Wformat=]
+On 2014年08月06日 09:30, Rafael J. Wysocki wrote:
+> On Friday, August 01, 2014 10:51:46 AM Lan Tianyu wrote:
+>> On 2014年08月01日 05:20, Rafael J. Wysocki wrote:
+>>> On Thursday, July 31, 2014 05:20:26 PM Lan Tianyu wrote:
+>>>> The callback of CPU_STARTING event can't sleep and so acpi_cpu_soft_notify()
+>>>> return directly when CPU_STARTING event is triggered. But cpu hotplug also
+>>>> happens during S2RAM. The action will become CPU_STARTING_FROZEN. This
+>>>> patch is to fix missing check the frozen event.
+> 
+> OK
+> 
+> What's the impact of the bug you're fixing?  Do we sleep when we shouldn't?
+> 
+> In particular, are there any bugs reported that are related to it?
 
-drivers/i2c/busses/i2c-imx.c:691:2: warning: format %d expects argument
-of type int, but argument 4 has type resource_size_t [-Wformat=]
-  dev_dbg(&i2c_imx->adapter.dev, "allocated %d bytes at 0x%x\n",
-  ^
-drivers/i2c/busses/i2c-imx.c:691:2: warning: format 0x%x expects argument
-of type unsigned int, but argument 5 has type resource_size_t [-Wformat=]
+So far, there is such bug report. I found the issue when test my patch
+of parallel non-boot cpu up with resuming device for S2RAM. Because
+original code will wait all cpu up and then do other resume task, the
+semaphore of ACPICA can always be get in the cpu notify callback and it
+will not fall in the sleep. It's different situation for paralleling
+non-boot cpu. The lock will be held by other threads and fall into
+sleep. Further thinking, this may not cause bug in the old kernel and it
+isn't needed by stable tree but the code should consider cpu frozen event.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- drivers/i2c/busses/i2c-imx.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+>>>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+>>>
+>>> There is work to restructure the handling of CPU_TASKS_FROZEN under way
+>>> and Chen Gong is driving it.  That's likely to conflict with the last
+>>> two patches from you.  Can you please coordinate with Gong?
+>>
+>> Hi Rafael:
+>>
+>> Thanks for reminder. I just checked Chen Gong's patchset "Gloabl CPU
+>> Hot-plug flag _FROZEN Clean up". There is no conflict between our
+>> patches. Gong's patch is to remove the following macro.
+>>
+>> CPU_ONLINE_FROZEN
+>> CPU_UP_PREPARE_FROZEN
+>> CPU_UP_CANCELED_FROZEN
+>> CPU_DOWN_PREPARE_FROZEN
+>> CPU_DOWN_FAILED_FROZEN
+>> CPU_DEAD_FROZEN
+>> CPU_DYING_FROZEN
+>> CPU_STARTING_FROZEN
+>>
+>> CPU_TASKS_FROZEN is still available and the CPU events during S2RAM
+>> are still (CPU_xxx | CPU_TASKS_FROZEN).
+> 
+> OK
+> 
+>> BTW, this is a bug fix from my opinion and it should be backported to
+>> stable tree.
+> 
+> We'll see.
+> 
+> 
+>>>> ---
+>>>>  drivers/acpi/processor_driver.c | 2 +-
+>>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+>>>> index 4fcbd67..66e2249 100644
+>>>> --- a/drivers/acpi/processor_driver.c
+>>>> +++ b/drivers/acpi/processor_driver.c
+>>>> @@ -125,7 +125,7 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
+>>>>  	 * CPU_STARTING and CPU_DYING must not sleep. Return here since
+>>>>  	 * acpi_bus_get_device() may sleep.
+>>>>  	 */
+>>>> -	if (action == CPU_STARTING || action == CPU_DYING)
+>>>> +	if ((action & ~CPU_TASKS_FROZEN) == CPU_STARTING || action == CPU_DYING)
+>>>>  		return NOTIFY_DONE;
+>>>>  
+>>>>  	if (!pr || acpi_bus_get_device(pr->handle, &device))
+>>>>
+>>>
+>>
+>>
+>>
+> 
 
-diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
-index 1d7efa3..ba4ba32 100644
---- a/drivers/i2c/busses/i2c-imx.c
-+++ b/drivers/i2c/busses/i2c-imx.c
-@@ -687,9 +687,9 @@ static int i2c_imx_probe(struct platform_device *pdev)
- 
- 	dev_dbg(&i2c_imx->adapter.dev, "claimed irq %d\n", irq);
- 	dev_dbg(&i2c_imx->adapter.dev, "device resources from 0x%x to 0x%x\n",
--		res->start, res->end);
-+		(unsigned int)res->start, (unsigned int)res->end);
- 	dev_dbg(&i2c_imx->adapter.dev, "allocated %d bytes at 0x%x\n",
--		resource_size(res), res->start);
-+		(unsigned int)resource_size(res), (unsigned int)res->start);
- 	dev_dbg(&i2c_imx->adapter.dev, "adapter name: \"%s\"\n",
- 		i2c_imx->adapter.name);
- 	dev_info(&i2c_imx->adapter.dev, "IMX I2C adapter registered\n");
+
 -- 
-1.8.5
-
+Best regards
+Tianyu Lan
