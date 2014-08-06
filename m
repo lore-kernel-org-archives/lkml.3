@@ -1,98 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281AbaHFIb6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 04:31:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41537 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755204AbaHFIbt (ORCPT
+	id S1755296AbaHFIdZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 04:33:25 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:58301 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323AbaHFIdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 04:31:49 -0400
-Date: Wed, 6 Aug 2014 10:31:34 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ilya Dryomov <ilya.dryomov@inktank.com>
-Cc: Ingo Molnar <mingo@kernel.org>, oleg@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>, tglx@linutronix.de,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 0/7] nested sleeps, fixes and debug infra
-Message-ID: <20140806083134.GQ9918@twins.programming.kicks-ass.net>
-References: <20140804103025.478913141@infradead.org>
- <CALFYKtBo2p5uNtkJZOy_rN7JbdFs1RbB1OfcF7TR+qDaMU0Kvg@mail.gmail.com>
- <20140805130646.GZ19379@twins.programming.kicks-ass.net>
- <CALFYKtAVQ9Rgu_QWCqUkNHk4-wbiVK0FeiwLDttaxZC5bnnG5w@mail.gmail.com>
+	Wed, 6 Aug 2014 04:33:23 -0400
+Date: Wed, 6 Aug 2014 10:33:15 +0200
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Cc: "Koehrer Mathias (ETAS/ESW5)" <mathias.koehrer@etas.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: PROBLEM: [x86] Running ptpd2 using an Intel 82572EI (e1000e)
+ leads to a kernel oops (3.12.26)
+Message-ID: <20140806083315.GA3102@fancy-poultry.org>
+References: <50f83e65cecd4882b22887858bfdf484@FE-MBX1012.de.bosch.com>
+ <CAPDOMVieG6RoOyQM1JG5vCQ1qSgqz-cy37X9GPnkzPUTyRBFBA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="drkdbItNQN0oJM6x"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALFYKtAVQ9Rgu_QWCqUkNHk4-wbiVK0FeiwLDttaxZC5bnnG5w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAPDOMVieG6RoOyQM1JG5vCQ1qSgqz-cy37X9GPnkzPUTyRBFBA@mail.gmail.com>
+Organization: private site
+OpenPGP: id=60F4A92C; url=http://www.fritha.org/htd.asc;
+ preference=signencrypt
+X-Mailer: Mew version 6.6 on Emacs 24.3.1 / Mule 6.0 (HANACHIRUSATO)
+X-Provags-ID: V02:K0:fcqUKYK5g56m9DgiBhTmxF9laoBLQMOLRIMI4PVolEN
+ fDcT0GV1m0mFxwluMq06YSKmslyr0S38K7N9pA3LDlLmacAIPD
+ k5ZADQSgmJ9wlcMLZRbqz+ZZtFXZEfBPEFuwbLP436sL/dATY7
+ iYGvitEpDOaWpt+6BRtwu66vGKVP2rlk1P+lqcJJowUPW1EV7J
+ wc41DB7YVqtt9TdXJLctzTJR1Pzug9NoIB+9nl5DA0VWIFRfV5
+ jsY5K113RyOpxHGJNl1DqmtEeHkQQRv0Yw6SKMoHiNcOjl5yKV
+ 3yX5yf20Scp6/nWQqswT2oOR1mencYsGbopAvrPy/qQXbumjLP
+ XeYdRgNmE6pmFiv49mSAWFAwaA3+2tqQRwsl/nA9e
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06.08.2014, Nick Krause wrote: 
 
---drkdbItNQN0oJM6x
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> I am going to have to ask a few questions first, what distribution is
+> and is this a vanilla kernel?
 
-On Wed, Aug 06, 2014 at 11:51:29AM +0400, Ilya Dryomov wrote:
+Read his mail. He's on Debian, and it's a Debian kernel.
 
-> OK, this one is a bit different.
->=20
-> WARNING: CPU: 1 PID: 1744 at kernel/sched/core.c:7104 __might_sleep+0x58/=
-0x90()
-> do not call blocking ops when !TASK_RUNNING; state=3D1 set at [<ffffffff8=
-1070e10>] prepare_to_wait+0x50 /0xa0
+> If it's not just send the report to the distribution developers.
 
->  [<ffffffff8105bc38>] __might_sleep+0x58/0x90
->  [<ffffffff8148c671>] lock_sock_nested+0x31/0xb0
->  [<ffffffff81498aaa>] sk_stream_wait_memory+0x18a/0x2d0
+His mail is quite sure a copy from the data entered into the Debian
+bugtracker.
 
-Urgh, tedious. Its not an actual bug as is. Due to the condition check
-in sk_wait_event() we can call lock_sock() with ->state !=3D TASK_RUNNING.
-
-I'm not entirely sure what the cleanest way is to make this go away.
-Possibly something like so:
-
----
- include/net/sock.h | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 156350745700..37902176c5ab 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -886,6 +886,7 @@ static inline void sock_rps_reset_rxhash(struct sock *s=
-k)
- 		if (!__rc) {						\
- 			*(__timeo) =3D schedule_timeout(*(__timeo));	\
- 		}							\
-+		__set_current_state(TASK_RUNNING);			\
- 		lock_sock(__sk);					\
- 		__rc =3D __condition;					\
- 		__rc;							\
-
---drkdbItNQN0oJM6x
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT4efmAAoJEHZH4aRLwOS6I34P/1M9kv4XWsJQ1212C7VdvPNQ
-r1MiM7bAVrtPv7MWje2rwEna+VF1AqSKbr/zCFQsh/84aJuxr1VFyZP/GJVd68y2
-NDJeCv8E7fc8SsOOJTr765Y59R+ATVgLhqSldPJf1/vA+iCwtGa6qfIAsoebQpvL
-iFOIHAz05uy1zULn4QkOuSFVyC3o1QRls/xl/sPAd/7TaCrdp+rNKPzTYpwf5nZ2
-GBuxXo1QN8yw/OOjpI5kCd2f6cThxA+x4T7W4eB1Y0I8FzCLyRQSdIgvPYUw++q+
-oE1o847OigYu3ZXpf0Y1M0Di2K0KbZGAqqQD1KYJlgJ5F9Mvh9Smhlv9rhuMX+LW
-n5AyVbGqO3FOhv2qYbh8pu8HUGH2EkGJ5LXHs0HXsy0mugYPvECqExdDfc3CsCrc
-A3z0va5V3GnXxWwlyql0wyNafV2wt8V4uS5+IMOlM93iqIUKjkeXnfoI/bY81zNP
-/R/ZCo5Cxhw3lxuAD9Z7h3hdFerEamXzv9OwTHnRhIFaiUpgf80oJDYspjltzTQ0
-FhbQnwnrQrv5c6qAzgWbVquxsICVD1JGMgxHHKzo4RbAiUpeRuXhuyQulNsTW6iJ
-6CJXBzGddI+0GVOmoKL5LZ7x0ElXfpZK4VurUrMDhZzM/uo7T2G1jsvuRk0nCp/j
-0sAXGcA7RBRxqLig5KOc
-=FPkg
------END PGP SIGNATURE-----
-
---drkdbItNQN0oJM6x--
