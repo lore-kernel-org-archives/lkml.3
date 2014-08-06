@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702AbaHFMOs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 08:14:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64411 "EHLO mx1.redhat.com"
+	id S1755832AbaHFMOw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 08:14:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56115 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752588AbaHFMOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 08:14:44 -0400
+	id S1752588AbaHFMOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 08:14:48 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
         David Ahern <dsahern@gmail.com>,
         Dominique Toupin <dominique.toupin@ericsson.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,52 +17,30 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [RFC 0/5] perf tools: Add perf data CTF conversion
-Date: Wed,  6 Aug 2014 14:13:54 +0200
-Message-Id: <1407327239-3493-1-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 5/5] perf tools data: Add tracepoint events fields CTF convertion support
+Date: Wed,  6 Aug 2014 14:13:59 +0200
+Message-Id: <1407327239-3493-6-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1407327239-3493-1-git-send-email-jolsa@kernel.org>
+References: <1407327239-3493-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-this is initial post of the CTF converter for perf.
-Basically adding 'perf data convert' command to allow
-conversion of perf data file into CTF [1] data.
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-To convert perf data file run:
-  $ perf data convert --to-ctf=./ctf-data/
-  [ perf data convert: Converted 'perf.data' into CTF data './ctf-data/' ]
-  [ perf data convert: Converted and wrote 11.268 MB (100230 samples) ]
+Adding support to convert tracepoint event fields into CTF
+event fields.
 
-To display converted CTF data run [2]:
+We parse each tracepoint event for CTF conversion and add
+tracepoint fields as regular CTF event fields, so they
+appear in babeltrace output like:
+
   $ babeltrace ./ctf-data/
-  [03:19:13.962125533] (+?.?????????) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
-  [03:19:13.962130001] (+0.000004468) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
-  [03:19:13.962131936] (+0.000001935) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 8 }
-  [03:19:13.962133732] (+0.000001796) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 114 }
-  [03:19:13.962135557] (+0.000001825) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 2087 }
-  [03:19:13.962137627] (+0.000002070) cycles: { }, { ip = 0xFFFFFFFF81361938, tid = 20714, pid = 20714, period = 37582 }
-  [03:19:13.962161091] (+0.000023464) cycles: { }, { ip = 0xFFFFFFFF8124218F, tid = 20714, pid = 20714, period = 600246 }
-  [03:19:13.962517569] (+0.000356478) cycles: { }, { ip = 0xFFFFFFFF811A75DB, tid = 20714, pid = 20714, period = 1325731 }
-  [03:19:13.969518008] (+0.007000439) cycles: { }, { ip = 0x34080917B2, tid = 20714, pid = 20714, period = 1144298 }
-
-It has still some limitations (noted in patches), but it has
-reached the point of the useful perf feature. More features
-and supports are about to come and it'll be better to continue
-publicly.
-
-Also reachable in here:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-  perf/core_ctf_convert
-
-thanks for comments,
-jirka
-
-[1] Common Trace Format - http://www.efficios.com/ctf
-[2] babeltrace - http://www.efficios.com/babeltrace
-
+  ...
+  [09:02:00.950703057] (+?.?????????) sched:sched_stat_runtime: { }, { perf_ip = ... SNIP ... common_type = 298, common_flags = 1, \
+  common_preempt_count = 0, common_pid = 31813, comm = "perf", pid = 31813, runtime = 458800, vruntime = 52059858071 }
+  ...
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -75,34 +54,288 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Cc: Tom Zanussi <tzanussi@gmail.com>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
-Jiri Olsa (3):
-      perf tools: Add feature check for libbabeltrace
-      perf tools: Add new perf data command
-      perf tools data: Add perf data to CTF convertion support
+ tools/perf/util/data-bt.c | 246 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 246 insertions(+)
 
-Sebastian Andrzej Siewior (2):
-      perf tools data: Add a 'perf' prefix to the generic fields
-      perf tools data: Add tracepoint events fields CTF convertion support
+diff --git a/tools/perf/util/data-bt.c b/tools/perf/util/data-bt.c
+index 2f2ebfcdc9ef..13ceb99802b3 100644
+--- a/tools/perf/util/data-bt.c
++++ b/tools/perf/util/data-bt.c
+@@ -126,6 +126,179 @@ FUNC_VALUE_SET(s64)
+ FUNC_VALUE_SET(u64)
+ __FUNC_VALUE_SET(u64_hex, u64)
+ 
++static struct bt_ctf_field_type*
++get_tracepoint_field_type(struct ctf_writer *cw, struct format_field *field)
++{
++	unsigned long flags = field->flags;
++
++	if (flags & FIELD_IS_STRING)
++		return cw->data.string;
++
++	if (!(flags & FIELD_IS_SIGNED)) {
++		/* unsigned long are mostly pointers */
++		if (flags & FIELD_IS_LONG || flags & FIELD_IS_POINTER)
++			return cw->data.u64_hex;
++	}
++
++	if (flags & FIELD_IS_SIGNED) {
++		if (field->size == 8)
++			return cw->data.s64;
++		else
++			return cw->data.s32;
++	}
++
++	if (field->size == 8)
++		return cw->data.u64;
++	else
++		return cw->data.u32;
++}
++
++static int add_tracepoint_field_value(struct ctf_writer *cw,
++				      struct bt_ctf_event_class *event_class,
++				      struct bt_ctf_event *event,
++				      struct perf_sample *sample,
++				      struct format_field *fmtf)
++{
++	struct bt_ctf_field_type *type;
++	struct bt_ctf_field *array_field;
++	struct bt_ctf_field *field;
++	const char *name = fmtf->name;
++	void *data = sample->raw_data;
++	unsigned long long value_int;
++	unsigned long flags = fmtf->flags;
++	unsigned int n_items;
++	unsigned int i;
++	unsigned int offset;
++	unsigned int len;
++	int ret;
++
++	offset = fmtf->offset;
++	len = fmtf->size;
++	if (flags & FIELD_IS_STRING)
++		flags &= ~FIELD_IS_ARRAY;
++
++	if (flags & FIELD_IS_DYNAMIC) {
++		unsigned long long tmp_val;
++
++		tmp_val = pevent_read_number(fmtf->event->pevent,
++				data + offset, len);
++		offset = tmp_val;
++		len = offset >> 16;
++		offset &= 0xffff;
++	}
++
++	if (flags & FIELD_IS_ARRAY) {
++
++		type = bt_ctf_event_class_get_field_by_name(
++				event_class, name);
++		array_field = bt_ctf_field_create(type);
++		bt_ctf_field_type_put(type);
++		if (!array_field) {
++			pr_err("Failed to create array type %s\n", name);
++			return -1;
++		}
++
++		len = fmtf->size / fmtf->arraylen;
++		n_items = fmtf->arraylen;
++	} else {
++		n_items = 1;
++		array_field = NULL;
++	}
++
++	type = get_tracepoint_field_type(cw, fmtf);
++
++	for (i = 0; i < n_items; i++) {
++		if (!(flags & FIELD_IS_STRING))
++			value_int = pevent_read_number(
++					fmtf->event->pevent,
++					data + offset + i * len, len);
++
++		if (flags & FIELD_IS_ARRAY)
++			field = bt_ctf_field_array_get_field(array_field, i);
++		else
++			field = bt_ctf_field_create(type);
++
++		if (!field) {
++			pr_err("failed to create a field %s\n", name);
++			return -1;
++		}
++
++		if (flags & FIELD_IS_STRING)
++			ret = bt_ctf_field_string_set_value(field,
++					data + offset + i * len);
++		else if (!(flags & FIELD_IS_SIGNED))
++			ret = bt_ctf_field_unsigned_integer_set_value(
++					field, value_int);
++		else
++			ret = bt_ctf_field_signed_integer_set_value(
++					field, value_int);
++		if (ret) {
++			pr_err("failed to set file value %s\n", name);
++			goto err_put_field;
++		}
++		if (!(flags & FIELD_IS_ARRAY)) {
++			ret = bt_ctf_event_set_payload(event, name, field);
++			if (ret) {
++				pr_err("failed to set payload %s\n", name);
++				goto err_put_field;
++			}
++		}
++		bt_ctf_field_put(field);
++	}
++	if (flags & FIELD_IS_ARRAY) {
++		ret = bt_ctf_event_set_payload(event, name, array_field);
++		if (ret) {
++			pr_err("Failed add payload array %s\n", name);
++			return -1;
++		}
++		bt_ctf_field_put(array_field);
++	}
++	return 0;
++
++err_put_field:
++	bt_ctf_field_put(field);
++	return -1;
++}
++
++static int add_tracepoint_fields_values(struct ctf_writer *cw,
++					struct bt_ctf_event_class *event_class,
++					struct bt_ctf_event *event,
++					struct format_field *fields,
++					struct perf_sample *sample)
++{
++	struct format_field *field;
++	int ret;
++
++	for (field = fields; field; field = field->next) {
++		ret = add_tracepoint_field_value(cw, event_class, event, sample,
++				field);
++		if (ret)
++			return -1;
++	}
++	return 0;
++}
++
++static int add_tracepoint_values(struct ctf_writer *cw,
++				 struct bt_ctf_event_class *event_class,
++				 struct bt_ctf_event *event,
++				 struct perf_evsel *evsel,
++				 struct perf_sample *sample)
++{
++	struct format_field *common_fields, *fields;
++	int ret;
++
++	common_fields = evsel->tp_format->format.common_fields;
++	fields        = evsel->tp_format->format.fields;
++
++	ret = add_tracepoint_fields_values(cw, event_class, event,
++					   common_fields, sample);
++	if (!ret)
++		ret = add_tracepoint_fields_values(cw, event_class, event,
++						   fields, sample);
++
++	return ret;
++}
++
+ static int add_generic_values(struct ctf_writer *cw,
+ 			      struct bt_ctf_event *event,
+ 			      struct perf_evsel *evsel,
+@@ -246,11 +419,78 @@ static int process_sample_event(struct perf_tool *tool,
+ 	if (ret)
+ 		return -1;
+ 
++	if (evsel->attr.type == PERF_TYPE_TRACEPOINT) {
++		ret = add_tracepoint_values(cw, event_class, event,
++					    evsel, sample);
++		if (ret)
++			return -1;
++	}
++
+ 	bt_ctf_stream_append_event(cw->stream, event);
+ 	bt_ctf_event_put(event);
+ 	return 0;
+ }
+ 
++static int add_tracepoint_fields_types(struct ctf_writer *cw,
++				       struct format_field *fields,
++				       struct bt_ctf_event_class *event_class)
++{
++	struct format_field *field;
++	int ret;
++
++	for (field = fields; field; field = field->next) {
++		struct bt_ctf_field_type *type;
++		unsigned long flags = field->flags;
++
++		pr2("  field '%s'\n", field->name);
++
++		type = get_tracepoint_field_type(cw, field);
++		if (!type)
++			return -1;
++
++		/*
++		 * A string is an array of chars. For this we use the string
++		 * type and don't care that it is an array. What we don't
++		 * support is an array of strings.
++		 */
++		if (flags & FIELD_IS_STRING)
++			flags &= ~FIELD_IS_ARRAY;
++
++		if (flags & FIELD_IS_ARRAY)
++			type = bt_ctf_field_type_array_create(type, field->arraylen);
++
++		ret = bt_ctf_event_class_add_field(event_class, type,
++				field->name);
++
++		if (flags & FIELD_IS_ARRAY)
++			bt_ctf_field_type_put(type);
++
++		if (ret) {
++			pr_err("Failed to add field '%s\n", field->name);
++			return -1;
++		}
++	}
++
++	return 0;
++}
++
++static int add_tracepoint_types(struct ctf_writer *cw,
++				struct perf_evsel *evsel,
++				struct bt_ctf_event_class *class)
++{
++	struct format_field *common_fields, *fields;
++	int ret;
++
++	common_fields = evsel->tp_format->format.common_fields;
++	fields        = evsel->tp_format->format.fields;
++
++	ret = add_tracepoint_fields_types(cw, common_fields, class);
++	if (!ret)
++		ret = add_tracepoint_fields_types(cw, fields, class);
++
++	return ret;
++}
++
+ static int add_generic_types(struct ctf_writer *cw, struct perf_evsel *evsel,
+ 			     struct bt_ctf_event_class *event_class)
+ {
+@@ -328,6 +568,12 @@ static int add_event(struct ctf_writer *cw, struct perf_evsel *evsel)
+ 	if (ret)
+ 		goto err;
+ 
++	if (evsel->attr.type == PERF_TYPE_TRACEPOINT) {
++		ret = add_tracepoint_types(cw, evsel, event_class);
++		if (ret)
++			goto err;
++	}
++
+ 	ret = bt_ctf_stream_class_add_event_class(cw->stream_class, event_class);
+ 	if (ret) {
+ 		pr("Failed to add event class into stream.\n");
+-- 
+1.8.3.1
 
- tools/perf/Documentation/perf-data.txt                |  40 ++++
- tools/perf/Documentation/perf.txt                     |   7 +-
- tools/perf/Makefile.perf                              |   8 +
- tools/perf/builtin-data.c                             | 112 ++++++++++
- tools/perf/builtin.h                                  |   1 +
- tools/perf/command-list.txt                           |   1 +
- tools/perf/config/Makefile                            |  28 ++-
- tools/perf/config/feature-checks/Makefile             |  10 +-
- tools/perf/config/feature-checks/test-all.c           |   5 +
- tools/perf/config/feature-checks/test-libbabeltrace.c |   8 +
- tools/perf/perf.c                                     |   1 +
- tools/perf/util/data-bt.c                             | 859 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/data-bt.h                             |   8 +
- tools/perf/util/debug.c                               |   4 +-
- tools/perf/util/debug.h                               |   1 +
- 15 files changed, 1086 insertions(+), 7 deletions(-)
- create mode 100644 tools/perf/Documentation/perf-data.txt
- create mode 100644 tools/perf/builtin-data.c
- create mode 100644 tools/perf/config/feature-checks/test-libbabeltrace.c
- create mode 100644 tools/perf/util/data-bt.c
- create mode 100644 tools/perf/util/data-bt.h
