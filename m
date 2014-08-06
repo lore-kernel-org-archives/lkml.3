@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612AbaHFIHJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 04:07:09 -0400
-Received: from relay.parallels.com ([195.214.232.42]:51600 "EHLO
+	id S1755651AbaHFIHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 04:07:22 -0400
+Received: from relay.parallels.com ([195.214.232.42]:51844 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755589AbaHFIHD (ORCPT
+	with ESMTP id S1755589AbaHFIHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 04:07:03 -0400
-Message-ID: <1407312416.8424.47.camel@tkhai>
-Subject: [PATCH v4 5/6] sched/fair: Remove double_lock_balance() from
- active_load_balance_cpu_stop()
+	Wed, 6 Aug 2014 04:07:12 -0400
+Message-ID: <1407312424.8424.48.camel@tkhai>
+Subject: [PATCH v4 6/6] sched/fair: Remove double_lock_balance() from
+ load_balance()
 From: Kirill Tkhai <ktkhai@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <peterz@infradead.org>, <pjt@google.com>, <oleg@redhat.com>,
         <rostedt@goodmis.org>, <umgwanakikbuti@gmail.com>, <tkhai@yandex.ru>,
         <tim.c.chen@linux.intel.com>, <mingo@kernel.org>,
         <nicolas.pitre@linaro.org>
-Date: Wed, 6 Aug 2014 12:06:56 +0400
+Date: Wed, 6 Aug 2014 12:07:04 +0400
 In-Reply-To: <20140806075138.24858.23816.stgit@tkhai>
 References: <20140806075138.24858.23816.stgit@tkhai>
 Organization: Parallels
@@ -30,150 +30,204 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Bad situation:
-
-double_lock_balance() drops busiest_rq lock. The busiest_rq is *busiest*,
-and a lot of tasks and context switches there. We are dropping the lock
-and waiting for it again.
-
-Let's just detach the task and once finally unlock it!
-
-Warning: this admits unlocked using of can_migrate_task(), throttled_lb_pair(),
-and task_hot(). I've added lockdep asserts to point on this.
+Keep on_rq = ONRQ_MIGRATING, while task is migrating, instead.
 
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 ---
- kernel/sched/fair.c |   55 +++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 38 insertions(+), 17 deletions(-)
+ kernel/sched/fair.c |   99 ++++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 70 insertions(+), 29 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index d54b72c..cfeafb1 100644
+index cfeafb1..ed276e6 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -3297,6 +3297,8 @@ static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
-  * Ensure that neither of the group entities corresponding to src_cpu or
-  * dest_cpu are members of a throttled hierarchy when performing group
-  * load-balance operations.
-+ *
-+ * Note: RQs may be unlocked.
-  */
- static inline int throttled_lb_pair(struct task_group *tg,
- 				    int src_cpu, int dest_cpu)
-@@ -5133,6 +5135,8 @@ static int task_hot(struct task_struct *p, struct lb_env *env)
- {
- 	s64 delta;
+@@ -4706,7 +4706,7 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
+ 		return;
  
-+	lockdep_assert_held(&env->src_rq->lock);
-+
- 	if (p->sched_class != &fair_sched_class)
- 		return 0;
- 
-@@ -5252,6 +5256,9 @@ static
- int can_migrate_task(struct task_struct *p, struct lb_env *env)
- {
- 	int tsk_cache_hot = 0;
-+
-+	lockdep_assert_held(&env->src_rq->lock);
-+
  	/*
- 	 * We do not migrate tasks that are:
- 	 * 1) throttled_lb_pair, or
-@@ -5336,30 +5343,34 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+-	 * This is possible from callers such as move_task(), in which we
++	 * This is possible from callers such as attach_tasks(), in which we
+ 	 * unconditionally check_prempt_curr() after an enqueue (which may have
+ 	 * lead to a throttle).  This both saves work and prevents false
+ 	 * next-buddy nomination below.
+@@ -5114,18 +5114,20 @@ struct lb_env {
+ 	unsigned int		loop_max;
+ 
+ 	enum fbq_type		fbq_type;
++	struct list_head	tasks;
+ };
+ 
+ /*
+- * move_task - move a task from one runqueue to another runqueue.
+- * Both runqueues must be locked.
++ * detach_task - detach the task for the migration specified in env
+  */
+-static void move_task(struct task_struct *p, struct lb_env *env)
++static void detach_task(struct task_struct *p, struct lb_env *env)
+ {
++	lockdep_assert_held(&env->src_rq->lock);
++
+ 	deactivate_task(env->src_rq, p, 0);
++	list_add(&p->se.group_node, &env->tasks);
++	p->on_rq = ONRQ_MIGRATING;
+ 	set_task_cpu(p, env->dst_cpu);
+-	activate_task(env->dst_rq, p, 0);
+-	check_preempt_curr(env->dst_rq, p, 0);
  }
  
  /*
-- * move_one_task tries to move exactly one task from busiest to this_rq, as
-+ * detach_one_task tries to dequeue exactly one task from env->src_rq, as
-  * part of active balancing operations within "domain".
+@@ -5363,9 +5365,9 @@ static struct task_struct *detach_one_task(struct lb_env *env)
+ 
+ 		/*
+ 		 * Right now, this is only the second place where
+-		 * lb_gained[env->idle] is updated (other is move_tasks)
++		 * lb_gained[env->idle] is updated (other is detach_tasks)
+ 		 * so we can safely collect stats here rather than
+-		 * inside move_tasks().
++		 * inside detach_tasks().
+ 		 */
+ 		schedstat_inc(env->sd, lb_gained[env->idle]);
+ 		return p;
+@@ -5376,18 +5378,18 @@ static struct task_struct *detach_one_task(struct lb_env *env)
+ static const unsigned int sched_nr_migrate_break = 32;
+ 
+ /*
+- * move_tasks tries to move up to imbalance weighted load from busiest to
+- * this_rq, as part of a balancing operation within domain "sd".
 - * Returns 1 if successful and 0 otherwise.
 - *
 - * Called with both runqueues locked.
-+ * Returns a task if successful and NULL otherwise.
++ * detach_tasks tries to detach up to imbalance weighted load from busiest_rq,
++ * as part of a balancing operation within domain "sd".
++ * Returns number of detached tasks if successful and 0 otherwise.
   */
--static int move_one_task(struct lb_env *env)
-+static struct task_struct *detach_one_task(struct lb_env *env)
+-static int move_tasks(struct lb_env *env)
++static int detach_tasks(struct lb_env *env)
  {
- 	struct task_struct *p, *n;
- 
-+	lockdep_assert_held(&env->src_rq->lock);
+ 	struct list_head *tasks = &env->src_rq->cfs_tasks;
+ 	struct task_struct *p;
+ 	unsigned long load;
+-	int pulled = 0;
++	int detached = 0;
 +
- 	list_for_each_entry_safe(p, n, &env->src_rq->cfs_tasks, se.group_node) {
- 		if (!can_migrate_task(p, env))
- 			continue;
++	lockdep_assert_held(&env->src_rq->lock);
+ 
+ 	if (env->imbalance <= 0)
+ 		return 0;
+@@ -5418,14 +5420,15 @@ static int move_tasks(struct lb_env *env)
+ 		if ((load / 2) > env->imbalance)
+ 			goto next;
  
 -		move_task(p, env);
-+		deactivate_task(env->src_rq, p, 0);
-+		p->on_rq = ONRQ_MIGRATING;
-+		set_task_cpu(p, env->dst_cpu);
+-		pulled++;
++		detach_task(p, env);
 +
++		detached++;
+ 		env->imbalance -= load;
+ 
+ #ifdef CONFIG_PREEMPT
  		/*
--		 * Right now, this is only the second place move_task()
--		 * is called, so we can safely collect move_task()
--		 * stats here rather than inside move_task().
-+		 * Right now, this is only the second place where
-+		 * lb_gained[env->idle] is updated (other is move_tasks)
-+		 * so we can safely collect stats here rather than
-+		 * inside move_tasks().
+ 		 * NEWIDLE balancing is a source of latency, so preemptible
+-		 * kernels will stop after the first task is pulled to minimize
++		 * kernels will stop after the first task is detached to minimize
+ 		 * the critical section.
  		 */
- 		schedstat_inc(env->sd, lb_gained[env->idle]);
--		return 1;
-+		return p;
+ 		if (env->idle == CPU_NEWLY_IDLE)
+@@ -5445,13 +5448,31 @@ static int move_tasks(struct lb_env *env)
  	}
--	return 0;
-+	return NULL;
- }
  
- static const unsigned int sched_nr_migrate_break = 32;
-@@ -6914,6 +6925,7 @@ static int active_load_balance_cpu_stop(void *data)
- 	int target_cpu = busiest_rq->push_cpu;
- 	struct rq *target_rq = cpu_rq(target_cpu);
- 	struct sched_domain *sd;
-+	struct task_struct *p = NULL;
- 
- 	raw_spin_lock_irq(&busiest_rq->lock);
- 
-@@ -6933,9 +6945,6 @@ static int active_load_balance_cpu_stop(void *data)
+ 	/*
+-	 * Right now, this is one of only two places move_task() is called,
+-	 * so we can safely collect move_task() stats here rather than
+-	 * inside move_task().
++	 * Right now, this is one of only two places we collect this stat
++	 * so we can safely collect detach_one_task() stats here rather
++	 * than inside detach_one_task().
  	 */
- 	BUG_ON(busiest_rq == target_rq);
+-	schedstat_add(env->sd, lb_gained[env->idle], pulled);
++	schedstat_add(env->sd, lb_gained[env->idle], detached);
  
--	/* move a task from busiest_rq to target_rq */
--	double_lock_balance(busiest_rq, target_rq);
--
- 	/* Search for an sd spanning us and the target CPU. */
- 	rcu_read_lock();
- 	for_each_domain(target_cpu, sd) {
-@@ -6956,16 +6965,28 @@ static int active_load_balance_cpu_stop(void *data)
- 
- 		schedstat_inc(sd, alb_count);
- 
--		if (move_one_task(&env))
-+		p = detach_one_task(&env);
-+		if (p)
- 			schedstat_inc(sd, alb_pushed);
- 		else
- 			schedstat_inc(sd, alb_failed);
- 	}
- 	rcu_read_unlock();
--	double_unlock_balance(busiest_rq, target_rq);
- out_unlock:
- 	busiest_rq->active_balance = 0;
--	raw_spin_unlock_irq(&busiest_rq->lock);
-+	raw_spin_unlock(&busiest_rq->lock);
+-	return pulled;
++	return detached;
++}
 +
-+	if (p) {
-+		raw_spin_lock(&target_rq->lock);
-+		BUG_ON(task_rq(p) != target_rq);
++/* Attach tasks previously detached in detach_tasks() */
++static void attach_tasks(struct lb_env *env)
++{
++	struct list_head *tasks = &env->tasks;
++	struct task_struct *p;
++
++	lockdep_assert_held(&env->dst_rq->lock);
++
++	while (!list_empty(tasks)) {
++		p = list_first_entry(tasks, struct task_struct, se.group_node);
++		BUG_ON(task_rq(p) != env->dst_rq);
++		list_del_init(&p->se.group_node);
 +		p->on_rq = ONRQ_QUEUED;
-+		activate_task(target_rq, p, 0);
-+		check_preempt_curr(target_rq, p, 0);
-+		raw_spin_unlock(&target_rq->lock);
++		activate_task(env->dst_rq, p, 0);
++		check_preempt_curr(env->dst_rq, p, 0);
 +	}
-+
-+	local_irq_enable();
-+
- 	return 0;
  }
  
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+@@ -6561,6 +6582,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 		.loop_break	= sched_nr_migrate_break,
+ 		.cpus		= cpus,
+ 		.fbq_type	= all,
++		.tasks		= LIST_HEAD_INIT(env.tasks),
+ 	};
+ 
+ 	/*
+@@ -6610,16 +6632,35 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
+ 
+ more_balance:
+-		local_irq_save(flags);
+-		double_rq_lock(env.dst_rq, busiest);
++		raw_spin_lock_irqsave(&busiest->lock, flags);
+ 
+ 		/*
+ 		 * cur_ld_moved - load moved in current iteration
+ 		 * ld_moved     - cumulative load moved across iterations
+ 		 */
+-		cur_ld_moved = move_tasks(&env);
+-		ld_moved += cur_ld_moved;
+-		double_rq_unlock(env.dst_rq, busiest);
++		cur_ld_moved = detach_tasks(&env);
++
++		/*
++		 * We've detached some tasks from busiest_rq. Every
++		 * task is masked "ONRQ_MIGRATED", so we can safely
++		 * unlock busiest->lock, and we are able to be sure
++		 * that nobody can manipulate the tasks in parallel.
++		 * See task_rq_lock() family for the details.
++		 */
++
++		raw_spin_unlock(&busiest->lock);
++
++		if (cur_ld_moved) {
++			raw_spin_lock(&env.dst_rq->lock);
++			/*
++			 * Attach the tasks to env->dst_rq
++			 * and mask them "ONRQ_QUEUED".
++			 */
++			attach_tasks(&env);
++			raw_spin_unlock(&env.dst_rq->lock);
++			ld_moved += cur_ld_moved;
++		}
++
+ 		local_irq_restore(flags);
+ 
+ 		/*
+@@ -6755,7 +6796,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 		 * If we've begun active balancing, start to back off. This
+ 		 * case may not be covered by the all_pinned logic if there
+ 		 * is only 1 task on the busy runqueue (because we don't call
+-		 * move_tasks).
++		 * detach_tasks).
+ 		 */
+ 		if (sd->balance_interval < sd->max_interval)
+ 			sd->balance_interval *= 2;
 
 
 
