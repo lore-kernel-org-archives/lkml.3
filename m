@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384AbaHFWRV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 18:17:21 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39496 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752723AbaHFWRT (ORCPT
+	id S1754089AbaHFWYb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 18:24:31 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:47725 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151AbaHFWY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 18:17:19 -0400
-Date: Wed, 6 Aug 2014 23:16:48 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Liu hua <sdu.liu@huawei.com>,
-        Rob Herring <robherring2@gmail.com>, wangnan0 <wangnan0@huawei.com>,
-        Laura Abbott <lauraa@codeaurora.org>, peifeiyue <peifeiyue@huawei.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vitaly Andrianov <vitalya@ti.com>, Rabin Vincent <rabin@rab.in>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "liusdu@126.com" <liusdu@126.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH v3 2/2] ARM : change fixmap mapping region to support
-	32 CPUs
-Message-ID: <20140806221648.GT30282@n2100.arm.linux.org.uk>
-References: <1397559967-26050-1-git-send-email-sdu.liu@huawei.com> <1397559967-26050-3-git-send-email-sdu.liu@huawei.com> <CAL_JsqKE-L2PN3mXHNdTPMEyTMR9ZtbgGB=O_V6nOXN0YC0a4A@mail.gmail.com> <alpine.LFD.2.11.1405301441210.17310@knanqh.ubzr> <CAGXu5j+ga5Enrsd8LuYarGh1Ozakmi3MNw+b9fZ7ubGUJFZY=w@mail.gmail.com> <53E1A3A3.8080706@huawei.com> <CAGXu5jKxtm0YAojOLhd_O9AFUAX+xHgEwwB0W_fpN7Xy8wHphQ@mail.gmail.com> <alpine.LFD.2.11.1408061317590.6061@knanqh.ubzr> <CAGXu5jJN9w=Md3aMkYwFcBVanXfSGL1BdZGZ74ic945B_ocuqg@mail.gmail.com>
+	Wed, 6 Aug 2014 18:24:29 -0400
+X-Originating-IP: 173.246.103.110
+Date: Wed, 6 Aug 2014 15:24:19 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, torvalds@linux-foundation.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Add "make tinyconfig" to configure the tiniest
+ possible kernel
+Message-ID: <20140806222419.GA2566@jtriplet-mobl1>
+References: <20140806171344.GA15764@jtriplet-mobl1>
+ <alpine.DEB.2.02.1408061504000.13545@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jJN9w=Md3aMkYwFcBVanXfSGL1BdZGZ74ic945B_ocuqg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <alpine.DEB.2.02.1408061504000.13545@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 10:28:37AM -0700, Kees Cook wrote:
-> That's what I was thinking. I tried this, and things are still weird,
-> though I think I'm narrowing it down. I made the early_pte_alloc
-> happen, but after boot it doesn't show up in
-> /sys/kernel/debug/kernel_page_tables. When I attempt a fixmap text
-> poke, I get this out of dmesg (lkdtm is reporting the address returned
-> from the patch mapping):
+On Wed, Aug 06, 2014 at 03:06:11PM -0700, David Rientjes wrote:
+> On Wed, 6 Aug 2014, Josh Triplett wrote:
+> > Since commit 5d2acfc7b974bbd3858b4dd3f2cdc6362dd8843a ("kconfig: make
+> > allnoconfig disable options behind EMBEDDED and EXPERT") in 3.15-rc1,
+> > "make allnoconfig" disables every possible config option.
+> > 
+> > However, a few configuration options (CC_OPTIMIZE_FOR_SIZE,
+> > OPTIMIZE_INLINING) produce a smaller kernel when turned on, and a few
+> > choices exist (compression, highmem, allocator) for which a non-default
+> > option produces a smaller kernel.
+> > 
+> > Add a "tinyconfig" target, which starts from allnoconfig and then sets
+> > these options to configure the tiniest possible kernel.  This provides a
+> > better baseline for embedded systems or efforts to reduce kernel size.
+> > 
 > 
-> lkdtm: 80421ac0 mapped RW via ffdefac0
-> Unable to handle kernel paging request at virtual address ffdefac0
-> pgd = 9e888000
-> [ffdefac0] *pgd=9fffc811, *pte=00000000, *ppte=00000000
-> Internal error: Oops: 807 [#1] SMP ARM
+> I like it, the only comment that I have is that we already have a 
+> xenconfig patchset sitting around that adds a helper function for this 
+> functionality in the x86 Makefile that hasn't been merged yet.
 > 
-> The target address (0xffdefac0) is correct; it's in the range set aside:
+> The *config functionality is added in
+> http://marc.info/?l=linux-kernel&m=140233900403377
 > 
-> #define FIXADDR_START           0xffc00000UL
-> #define FIXADDR_END             0xffe00000UL
-> #define FIXADDR_TOP             (FIXADDR_END - PAGE_SIZE)
+> and then used in
+> http://marc.info/?l=linux-kernel&m=140233901403381
+> http://marc.info/?l=linux-kernel&m=140233904503428
 > 
-> enum fixed_addresses {
->         /* Support 16 CPUs for kmap as the first region of fixmap entries. */
->         FIX_KMAP_BEGIN,
->         FIX_KMAP_END = 15,
-> 
->         /* Support writing RO kernel text via kprobes, jump labels, etc. */
->         FIX_TEXT_POKE0,
->         FIX_TEXT_POKE1,
-> 
->         __end_of_fixed_addresses
-> };
-> 
-> But the resulting PTE is in totally the wrong location as reported by
-> /sys/kernel/debug/kernel_page_tables:
-> 
-> ---[ Fixmap Area ]---
-> 0xfffef000-0xffff0000           4K     RW NX SHD MEM/CACHED/WBWA
-> 
-> I continue to dig...
+> and have been pending since June.  I was going to ask Luis to rebase and 
+> resend, but perhaps you can send the first patch along as a predecessor to 
+> your patch and then let tinyconfig use build-virtconfig?
 
-This sounds like you have an erroneous merge conflict resolution.  You
-seem to be poking into TOP_PTE rather than fixmap_page_table.
+Sure, no problem.  I ended up modifying that patch a bit, but I included
+a mini-changelog in it noting that I based it on Luis's patch.  Will
+send a 2-patch v2 series momentarily, in response to this mail.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+- Josh Triplett
