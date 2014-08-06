@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932780AbaHFRDV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 13:03:21 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:43175 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756770AbaHFRDT (ORCPT
+	id S932791AbaHFRDZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 13:03:25 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:46663 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932782AbaHFRDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 13:03:19 -0400
+	Wed, 6 Aug 2014 13:03:22 -0400
 From: Peter Griffin <peter.griffin@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
@@ -14,63 +14,175 @@ To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         patrice.chotard@st.com, arnd@arndb.de
 Cc: peter.griffin@linaro.org, lee.jones@linaro.org, devicetree@vger.kernel.org,
         linux-usb@vger.kernel.org
-Subject: [PATCH v3 0/6] Add EHCI and OHCI drivers for STi SoC's
-Date: Wed,  6 Aug 2014 18:03:03 +0100
-Message-Id: <1407344589-24863-1-git-send-email-peter.griffin@linaro.org>
+Subject: [PATCH v3 1/6] usb: host: usb-st-common: Add common code required by ohci-st and ehci-st
+Date: Wed,  6 Aug 2014 18:03:04 +0100
+Message-Id: <1407344589-24863-2-git-send-email-peter.griffin@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407344589-24863-1-git-send-email-peter.griffin@linaro.org>
+References: <1407344589-24863-1-git-send-email-peter.griffin@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds support for the OHCI and EHCI on-chip controllers
-found in STi consumer electronics SoC's from STMicroelectronics.
+This patch abstracts out some common code required by both the ehci-st
+and ohci-st drivers.
 
-The series has been re-worked from v2 to split out the ehci and ohci parts
-into their own drivers / devices like most other ARM platforms based on
-feedback from Arnd Bergmann (see here http://www.spinics.net/lists/linux-usb/msg111124.html. 
-
-The ehci-platform & ohci-platform have been used as a basis for this in case we
-wish to merge the drivers again in the future.
-
-Changes since v2:
- - Based on Arnd Berghman feedback, split out into 2 devices / drivers
- - Base drivers oh ehci-platform.c & ohci-platform.c with required extensions
-   to allow possible re-merge in the furture.
-
-Changes since v1:
- - Correct s/OCHI/OHCI/ spelling
- - Improve kconfig help message
- - Various formating / spelling nits identified by Lee Jones
- - Make driver depend on OF & remove node checks in code
- - Use devm_ioremap_resource
- - Remove unnecessary header files
-
-Peter Griffin (6):
-  usb: host: usb-st-common: Add common code required by ohci-st and
-    ehci-st
-  usb: host: ehci-st: Add EHCI support for ST STB devices
-  usb: host: ohci-st: Add OHCI driver support for ST STB devices
-  usb: host: ehci-st: Add ehci-st devicetree bindings documentation
-  usb: host: ohci-st: Add ohci-st devicetree bindings documentation
-  MAINTAINERS: Add ehci-st.c and ohci-st.c to ARCH/STI architecture
-
- Documentation/devicetree/bindings/usb/ehci-st.txt |  41 +++
- Documentation/devicetree/bindings/usb/ohci-st.txt |  40 +++
- MAINTAINERS                                       |   3 +-
- drivers/usb/host/Kconfig                          |  13 +
- drivers/usb/host/Makefile                         |   2 +
- drivers/usb/host/ehci-st.c                        | 334 ++++++++++++++++++++++
- drivers/usb/host/ohci-st.c                        | 302 +++++++++++++++++++
- drivers/usb/host/usb-st-common.c                  |  99 +++++++
- drivers/usb/host/usb-st-common.h                  |  34 +++
- 9 files changed, 867 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/usb/ehci-st.txt
- create mode 100644 Documentation/devicetree/bindings/usb/ohci-st.txt
- create mode 100644 drivers/usb/host/ehci-st.c
- create mode 100644 drivers/usb/host/ohci-st.c
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+---
+ drivers/usb/host/usb-st-common.c | 99 ++++++++++++++++++++++++++++++++++++++++
+ drivers/usb/host/usb-st-common.h | 34 ++++++++++++++
+ 2 files changed, 133 insertions(+)
  create mode 100644 drivers/usb/host/usb-st-common.c
  create mode 100644 drivers/usb/host/usb-st-common.h
 
+diff --git a/drivers/usb/host/usb-st-common.c b/drivers/usb/host/usb-st-common.c
+new file mode 100644
+index 0000000..ddfdbf6
+--- /dev/null
++++ b/drivers/usb/host/usb-st-common.c
+@@ -0,0 +1,99 @@
++/*
++ * Common code shared between ehci-st.c and ohci-st.c
++ *
++ * Copyright (C) 2014 STMicroelectronics – All Rights Reserved
++ *
++ * Author: Peter Griffin <peter.griffin@linaro.org>
++ *
++ * Derived from ohci-platform.c and ehci-platform.c
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/clk.h>
++#include <linux/reset.h>
++#include <linux/phy/phy.h>
++
++#include "usb-st-common.h"
++
++int st_usb_platform_power_on(struct st_platform_priv *priv)
++{
++	int clk, ret;
++
++	if (priv->pwr) {
++		ret = reset_control_deassert(priv->pwr);
++		if (ret)
++			return ret;
++	}
++
++	if (priv->rst) {
++		ret = reset_control_deassert(priv->rst);
++		if (ret)
++			goto err_assert_power;
++	}
++
++	/* some SoCs don't have a dedicated 48Mhz clock, but those that do
++	   need the rate to be explicitly set */
++	if (priv->clk48) {
++		ret = clk_set_rate(priv->clk48, 48000000);
++		if (ret)
++			goto err_assert_reset;
++	}
++
++	for (clk = 0; clk < USB_MAX_CLKS && priv->clks[clk]; clk++) {
++		ret = clk_prepare_enable(priv->clks[clk]);
++		if (ret)
++			goto err_disable_clks;
++	}
++
++	if (priv->phy) {
++		ret = phy_init(priv->phy);
++		if (ret)
++			goto err_disable_clks;
++
++		ret = phy_power_on(priv->phy);
++		if (ret)
++			goto err_exit_phy;
++	}
++
++	return 0;
++
++err_exit_phy:
++	phy_exit(priv->phy);
++err_disable_clks:
++	while (--clk >= 0)
++		clk_disable_unprepare(priv->clks[clk]);
++err_assert_reset:
++	if (priv->rst)
++		ret = reset_control_assert(priv->rst);
++err_assert_power:
++	if (priv->pwr)
++		ret = reset_control_assert(priv->pwr);
++
++	return ret;
++}
++EXPORT_SYMBOL(st_usb_platform_power_on);
++
++void st_usb_platform_power_off(struct st_platform_priv *priv)
++{
++	int clk;
++
++	if (priv->pwr)
++		reset_control_assert(priv->pwr);
++
++	if (priv->rst)
++		reset_control_assert(priv->rst);
++
++	if (priv->phy) {
++		phy_power_off(priv->phy);
++		phy_exit(priv->phy);
++	}
++
++	for (clk = USB_MAX_CLKS - 1; clk >= 0; clk--)
++		if (priv->clks[clk])
++			clk_disable_unprepare(priv->clks[clk]);
++
++}
++EXPORT_SYMBOL(st_usb_platform_power_off);
+diff --git a/drivers/usb/host/usb-st-common.h b/drivers/usb/host/usb-st-common.h
+new file mode 100644
+index 0000000..5ee7fb0
+--- /dev/null
++++ b/drivers/usb/host/usb-st-common.h
+@@ -0,0 +1,34 @@
++/*
++ * ST ehci / ohci common header file
++ *
++ * Copyright (C) 2014 STMicroelectronics – All Rights Reserved
++ *
++ * Author: Peter Griffin <peter.griffin@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef __USB_ST_COMMON_H
++#define __USB_ST_COMMON_H
++
++#include <linux/clk.h>
++#include <linux/reset.h>
++#include <linux/phy/phy.h>
++
++#define USB_MAX_CLKS 3
++
++struct st_platform_priv {
++	struct clk *clks[USB_MAX_CLKS];
++	struct clk *clk48;
++	struct reset_control *rst;
++	struct reset_control *pwr;
++	struct phy *phy;
++};
++
++int st_usb_platform_power_on(struct st_platform_priv *priv);
++void st_usb_platform_power_off(struct st_platform_priv *priv);
++
++#endif /* __USB_ST_COMMON_H */
 -- 
 1.9.1
 
