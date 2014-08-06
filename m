@@ -1,229 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294AbaHFMOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 08:14:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60657 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752064AbaHFMOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 08:14:44 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dominique Toupin <dominique.toupin@ericsson.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 1/5] perf tools: Add feature check for libbabeltrace
-Date: Wed,  6 Aug 2014 14:13:55 +0200
-Message-Id: <1407327239-3493-2-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1407327239-3493-1-git-send-email-jolsa@kernel.org>
-References: <1407327239-3493-1-git-send-email-jolsa@kernel.org>
+	id S1756020AbaHFMRS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 08:17:18 -0400
+Received: from smtp6-v.fe.bosch.de ([139.15.237.11]:45505 "EHLO
+	smtp6-v.fe.bosch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755989AbaHFMRR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 08:17:17 -0400
+From: "Koehrer Mathias (ETAS/ESW5)" <mathias.koehrer@etas.com>
+To: Nick Krause <xerofoify@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: PROBLEM: [x86] Running ptpd2 using an Intel 82572EI (e1000e)
+ leads to a kernel oops (3.12.26)
+Thread-Topic: PROBLEM: [x86] Running ptpd2 using an Intel 82572EI (e1000e)
+ leads to a kernel oops (3.12.26)
+Thread-Index: Ac+v3yzc3cSLCNWNSz2wcfBA1YE8+gBHlF+AABhU8HD///8TAP//3aGQ
+Date: Wed, 6 Aug 2014 12:17:10 +0000
+Message-ID: <d7c17267f87c4e64a1559fa706cf1ead@FE-MBX1012.de.bosch.com>
+References: <50f83e65cecd4882b22887858bfdf484@FE-MBX1012.de.bosch.com>
+	<CAPDOMVieG6RoOyQM1JG5vCQ1qSgqz-cy37X9GPnkzPUTyRBFBA@mail.gmail.com>
+	<ff2e6995521f40268c42d09e92cfe627@FE-MBX1012.de.bosch.com>
+ <CAPDOMVgFA-jTL=iDD2vLzPHrsO_=qsupAebTSUm0k0VmmHvX6A@mail.gmail.com>
+In-Reply-To: <CAPDOMVgFA-jTL=iDD2vLzPHrsO_=qsupAebTSUm0k0VmmHvX6A@mail.gmail.com>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.5.148.126]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-TM-AS-MML: disable
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s76CHOgR010978
 
-Adding feature check for babeltrace library [1], which will be
-used for perf data file CTF [2] conversion in following patches.
+> Mathias ,
+> After tracing this it seems to be either one of two things based on
+> the warn on messages in
+> __queue_work. Normally it would be because of this line.
+> WARN_ON_ONCE(!irqs_disabled());.
+> However it would also be the second warn on, If you want I can send a
+> simple patch with
+> a printk statement to see which one it is.
+> Regards Nick
+That would be helpful. I can try to see what's happening.
 
-The babeltrace library is now automatically detected as standard
-feature. It's possible to specify LIBBABELTRACE_DIR make variable
-to specify location of installed libbabeltrace, like:
+Regards
 
-  $ make LIBBABELTRACE_DIR=/opt/libbabeltrace/
-    BUILD:   Doing 'make -j4' parallel build
-
-  Auto-detecting system features:
-  ...                         dwarf: [ on  ]
-  ...                         glibc: [ on  ]
-  ...                          gtk2: [ on  ]
-  ...                      libaudit: [ on  ]
-  ...                        libbfd: [ on  ]
-  ...                        libelf: [ on  ]
-  ...                       libnuma: [ on  ]
-  ...                       libperl: [ on  ]
-  ...                     libpython: [ on  ]
-  ...                      libslang: [ on  ]
-  ...                     libunwind: [ on  ]
-  ...            libdw-dwarf-unwind: [ on  ]
-  ...                 libbabeltrace: [ on  ]
-  ...     DWARF post unwind library: libunwind
-
-[1] babeltrace - http://www.efficios.com/babeltrace
-[2] Common Trace Format - http://www.efficios.com/ctf
-
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Dominique Toupin <dominique.toupin@ericsson.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jeremie Galarneau <jgalar@efficios.com>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/Makefile.perf                           |  3 +++
- tools/perf/config/Makefile                         | 27 ++++++++++++++++++++--
- tools/perf/config/feature-checks/Makefile          | 10 +++++---
- tools/perf/config/feature-checks/test-all.c        |  5 ++++
- .../config/feature-checks/test-libbabeltrace.c     |  8 +++++++
- 5 files changed, 48 insertions(+), 5 deletions(-)
- create mode 100644 tools/perf/config/feature-checks/test-libbabeltrace.c
-
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 1ea31e275b4d..4c5219b8e209 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -60,6 +60,9 @@ include config/utilities.mak
- #
- # Define NO_LIBDW_DWARF_UNWIND if you do not want libdw support
- # for dwarf backtrace post unwind.
-+#
-+# Define NO_LIBBABELTRACE if you do not want libbabeltrace support
-+# for CTF data format.
- 
- ifeq ($(srctree),)
- srctree := $(patsubst %/,%,$(dir $(shell pwd)))
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 75d4c237b03d..b99a0323328c 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -88,6 +88,17 @@ ifndef NO_LIBELF
-   FEATURE_CHECK_LDFLAGS-libdw-dwarf-unwind := $(LIBDW_LDFLAGS) -ldw
- endif
- 
-+ifndef NO_LIBBABELTRACE
-+  # for linking with debug library, run like:
-+  # make DEBUG=1 LIBBABELTRACE_DIR=/opt/libbabeltrace
-+  ifdef LIBBABELTRACE_DIR
-+    LIBBABELTRACE_CFLAGS  := -I$(LIBBABELTRACE_DIR)/include
-+    LIBBABELTRACE_LDFLAGS := -L$(LIBBABELTRACE_DIR)/lib
-+  endif
-+  FEATURE_CHECK_CFLAGS-libbabeltrace := $(LIBBABELTRACE_CFLAGS)
-+  FEATURE_CHECK_LDFLAGS-libbabeltrace := $(LIBBABELTRACE_LDFLAGS) -lbabeltrace-ctf
-+endif
-+
- # include ARCH specific config
- -include $(src-perf)/arch/$(ARCH)/Makefile
- 
-@@ -204,7 +215,8 @@ CORE_FEATURE_TESTS =			\
- 	libunwind			\
- 	stackprotector-all		\
- 	timerfd				\
--	libdw-dwarf-unwind
-+	libdw-dwarf-unwind		\
-+	libbabeltrace
- 
- LIB_FEATURE_TESTS =			\
- 	dwarf				\
-@@ -218,7 +230,8 @@ LIB_FEATURE_TESTS =			\
- 	libpython			\
- 	libslang			\
- 	libunwind			\
--	libdw-dwarf-unwind
-+	libdw-dwarf-unwind		\
-+	libbabeltrace
- 
- VF_FEATURE_TESTS =			\
- 	backtrace			\
-@@ -620,6 +633,16 @@ ifdef HAVE_KVM_STAT_SUPPORT
-     CFLAGS += -DHAVE_KVM_STAT_SUPPORT
- endif
- 
-+ifndef NO_LIBBABELTRACE
-+  ifeq ($(feature-libbabeltrace), 0)
-+    msg := $(warning No libbabeltrace found, disables 'perf data' CTF format support, please install libbabeltrace-devel/libbabeltrace-dev);
-+    NO_LIBBABELTRACE := 1
-+  else
-+    CFLAGS += -DHAVE_LIBBABELTRACE_SUPPORT
-+    EXTLIBS += -lbabeltrace
-+  endif
-+endif
-+
- # Among the variables below, these:
- #   perfexecdir
- #   template_dir
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 72ab2984718e..fb6454eecd2a 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -27,7 +27,8 @@ FILES=					\
- 	test-libunwind-debug-frame.bin	\
- 	test-stackprotector-all.bin	\
- 	test-timerfd.bin		\
--	test-libdw-dwarf-unwind.bin
-+	test-libdw-dwarf-unwind.bin	\
-+	test-libbabeltrace.bin
- 
- CC := $(CROSS_COMPILE)gcc -MD
- PKG_CONFIG := $(CROSS_COMPILE)pkg-config
-@@ -39,7 +40,7 @@ BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $(patsubst %.bin,%.c,$@) $(LDFLAGS)
- ###############################
- 
- test-all.bin:
--	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
-+	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl -lbabeltrace
- 
- test-hello.bin:
- 	$(BUILD)
-@@ -126,7 +127,10 @@ test-timerfd.bin:
- 	$(BUILD)
- 
- test-libdw-dwarf-unwind.bin:
--	$(BUILD)
-+	$(BUILD) # -ldw provided by $(FEATURE_CHECK_LDFLAGS-libdw-dwarf-unwind)
-+
-+test-libbabeltrace.bin:
-+	$(BUILD) # -lbabeltrace provided by $(FEATURE_CHECK_LDFLAGS-libbabeltrace)
- 
- test-sync-compare-and-swap.bin:
- 	$(BUILD) -Werror
-diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
-index a7d022e161c0..9fb4f1c07463 100644
---- a/tools/perf/config/feature-checks/test-all.c
-+++ b/tools/perf/config/feature-checks/test-all.c
-@@ -93,6 +93,10 @@
- # include "test-sync-compare-and-swap.c"
- #undef main
- 
-+#define main main_test_libbabeltrace
-+# include "test-libbabeltrace.c"
-+#undef main
-+
- int main(int argc, char *argv[])
- {
- 	main_test_libpython();
-@@ -116,6 +120,7 @@ int main(int argc, char *argv[])
- 	main_test_stackprotector_all();
- 	main_test_libdw_dwarf_unwind();
- 	main_test_sync_compare_and_swap(argc, argv);
-+	main_test_libbabeltrace();
- 
- 	return 0;
- }
-diff --git a/tools/perf/config/feature-checks/test-libbabeltrace.c b/tools/perf/config/feature-checks/test-libbabeltrace.c
-new file mode 100644
-index 000000000000..123b5b962ea5
---- /dev/null
-+++ b/tools/perf/config/feature-checks/test-libbabeltrace.c
-@@ -0,0 +1,8 @@
-+
-+#include <babeltrace/ctf-writer/writer.h>
-+
-+int main(void)
-+{
-+	bt_ctf_writer_create(NULL);
-+	return 0;
-+}
--- 
-1.8.3.1
-
+Mathias
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
