@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556AbaHFVQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 17:16:07 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43802 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455AbaHFVQE (ORCPT
+	id S1754238AbaHFVTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 17:19:15 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:59321 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549AbaHFVTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 17:16:04 -0400
-Date: Wed, 06 Aug 2014 14:16:03 -0700 (PDT)
-Message-Id: <20140806.141603.1422005306896590750.davem@davemloft.net>
-To: peterz@infradead.org
-Cc: ilya.dryomov@inktank.com, mingo@kernel.org, oleg@redhat.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        umgwanakikbuti@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 0/7] nested sleeps, fixes and debug infra
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140806083134.GQ9918@twins.programming.kicks-ass.net>
-References: <20140805130646.GZ19379@twins.programming.kicks-ass.net>
-	<CALFYKtAVQ9Rgu_QWCqUkNHk4-wbiVK0FeiwLDttaxZC5bnnG5w@mail.gmail.com>
-	<20140806083134.GQ9918@twins.programming.kicks-ass.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 6 Aug 2014 17:19:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Peter Griffin <peter.griffin@linaro.org>
+Subject: Re: [PATCH v3 0/6] Add EHCI and OHCI drivers for STi SoC's
+Date: Wed, 6 Aug 2014 23:18:28 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
+        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com, lee.jones@linaro.org,
+        devicetree@vger.kernel.org, linux-usb@vger.kernel.org
+References: <1407344589-24863-1-git-send-email-peter.griffin@linaro.org>
+In-Reply-To: <1407344589-24863-1-git-send-email-peter.griffin@linaro.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 06 Aug 2014 14:16:04 -0700 (PDT)
+Message-Id: <201408062318.28958.arnd@arndb.de>
+X-Provags-ID: V02:K0:KEIJ2S2HpYmFpYZUI5w8ylbx/PIUjzkrcVf3j4bXmuO
+ sD9q7cml9+VEIMYK1jEeOLkftPvz9eArOmQiId8Xsahkhrc36W
+ mLoksgBYkA3QIMeHMKNeTDeVQOmUMj5UuF0CFbA/m8Ra5vsFXV
+ mHCbQrZyRksHGHh5KrFg6IoHt88+lRmmZgHPa1iYZJVdyesig6
+ lGVQUXfozD3A3wFogxpwb54StjuL4wf24QPFrcBmMfKGUv7lq8
+ ROdPcqcSJMIqHXRBy3UqUQa50cyqW+wuYyznHhcBbqJR2ERmdF
+ RFjzzoX3TlfMkNZoZUObaILKQy7y1+COm+beozaeHQLqAolohz
+ QWhig8WtNtnxeHo5a36alIlJ2EnF3MUn8MSbr34pN
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Wed, 6 Aug 2014 10:31:34 +0200
+On Wednesday 06 August 2014, Peter Griffin wrote:
+> This series adds support for the OHCI and EHCI on-chip controllers
+> found in STi consumer electronics SoC's from STMicroelectronics.
+> 
+> The series has been re-worked from v2 to split out the ehci and ohci parts
+> into their own drivers / devices like most other ARM platforms based on
+> feedback from Arnd Bergmann (see here http://www.spinics.net/lists/linux-usb/msg111124.html. 
+> 
+> The ehci-platform & ohci-platform have been used as a basis for this in case we
+> wish to merge the drivers again in the future.
+> 
+> Changes since v2:
+>  - Based on Arnd Berghman feedback, split out into 2 devices / drivers
+>  - Base drivers oh ehci-platform.c & ohci-platform.c with required extensions
+>    to allow possible re-merge in the furture.
 
-> On Wed, Aug 06, 2014 at 11:51:29AM +0400, Ilya Dryomov wrote:
-> 
->> OK, this one is a bit different.
->> 
->> WARNING: CPU: 1 PID: 1744 at kernel/sched/core.c:7104 __might_sleep+0x58/0x90()
->> do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff81070e10>] prepare_to_wait+0x50 /0xa0
-> 
->>  [<ffffffff8105bc38>] __might_sleep+0x58/0x90
->>  [<ffffffff8148c671>] lock_sock_nested+0x31/0xb0
->>  [<ffffffff81498aaa>] sk_stream_wait_memory+0x18a/0x2d0
-> 
-> Urgh, tedious. Its not an actual bug as is. Due to the condition check
-> in sk_wait_event() we can call lock_sock() with ->state != TASK_RUNNING.
-> 
-> I'm not entirely sure what the cleanest way is to make this go away.
-> Possibly something like so:
+Hi Peter,
 
-If you submit this formally to netdev with a signoff I'm willing to apply
-this if it helps the debug infrastructure.
+This looks much better than the first version. I have some remaining comments for
+how it could be simplified a bit more.
+
+The way that you deal with the 48mhz clock seems like it should fit in well
+with the generic driver, just like all the rest (once the usb-st-common
+stuff is moved into the ohci/ehci drivers), so the alternative would be
+to make it all generic now.
+
+	Arnd
