@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757AbaHFOGH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 10:06:07 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:49790 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753966AbaHFOFx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 10:05:53 -0400
-Message-ID: <53E2363E.9040208@cogentembedded.com>
-Date: Wed, 06 Aug 2014 18:05:50 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1755086AbaHFOGj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 10:06:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42400 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751382AbaHFOGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 10:06:38 -0400
+Message-ID: <53E23669.5050309@suse.cz>
+Date: Wed, 06 Aug 2014 16:06:33 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: "Koehrer Mathias (ETAS/ESW5)" <mathias.koehrer@etas.com>,
-        Nick Krause <xerofoify@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] Fix e1000e with Intel 82572EI that has no hardware timestamp
- support
-References: <ef09199e48ab4d4a80c4ba554c9e3853@FE-MBX1012.de.bosch.com>
-In-Reply-To: <ef09199e48ab4d4a80c4ba554c9e3853@FE-MBX1012.de.bosch.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+To: shuah.kh@samsung.com, gregkh@linuxfoundation.org
+CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: devtest - new make target for build all and run
+ tests
+References: <1405716274-24420-1-git-send-email-shuah.kh@samsung.com> <53E232E6.8060506@suse.cz> <53E235DE.70604@samsung.com>
+In-Reply-To: <53E235DE.70604@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 2014-08-06 16:04, Shuah Khan wrote:
+> On 08/06/2014 07:51 AM, Michal Marek wrote:
+>> On 2014-07-18 22:44, Shuah Khan wrote:
+>>> Add a new devtest make target to enable developer testing. This
+>>> new target does full build (make all) and then runs selftests.
+>>
+>> I agree with Sam that the name is rather ambiguous, but I can't suggest
+>> a better alternative right now.
+> 
+> Does kselftest or kern_selftest sound better?
 
-On 8/6/2014 5:56 PM, Koehrer Mathias (ETAS/ESW5) wrote:
+It does sound better to me than dev(ice)test, but I'm not a native
+English speaker. Greg?
 
-> With the Intel 82527EI (driver: e1000e) there is an issue when running the ptpd2 program, that leads to a kernel oops.
-> The reason is here that in e1000_xmit_frame() a work queue will be scheduled that has not been initialized in this case.
-> The work queue "tx_hwstamp_work" will only be initialized if adapter->flags & FLAG_HAS_HW_TIMESTAMP set.
-> This check is missing in e1000_xmit_frame().
 
-   Please wrap your changelog at 80 columns or less.
+>>> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+>>> ---
+>>>   Makefile | 11 +++++++++++
+>>>   1 file changed, 11 insertions(+)
+>>>
+>>> diff --git a/Makefile b/Makefile
+>>> index f3c543d..1ef3128 100644
+>>> --- a/Makefile
+>>> +++ b/Makefile
+>>> @@ -1034,6 +1034,14 @@ headers_check: headers_install
+>>>   	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/uapi/asm $(hdr-dst) HDRCHECK=1
+>>>
+>>>   # ---------------------------------------------------------------------------
+>>> +# Kernel devtest
+>>> +
+>>> +PHONY += devtest
+>>> +devtest:
+>>> +	make all
+>>
+>> devtest: all
+>>
+>>
+>>> +	make -C tools/testing/selftests run_tests
+>>
+>> Please use $(Q)$(MAKE), to keep the build silent by default and to
+>> consistently use the same make program with the same options throughout
+>> the build.
+>>
+> 
+> Working on the change - send v2 patch.
 
-> The following patch adds the missing check.
+Great!
 
-> Signed-off-by: Mathias Koehrer <mathias.koehrer@etas.com>
-> ---
->   drivers/net/ethernet/intel/e1000e/netdev.c |    3 ++-
->   1 file changed, 2 insertions(+), 1 deletion(-)
-
-> Index: linux-3.12.26/drivers/net/ethernet/intel/e1000e/netdev.c
-> ===================================================================
-> --- linux-3.12.26.orig/drivers/net/ethernet/intel/e1000e/netdev.c       2014-08-04 10:56:56.000000000 +0200
-> +++ linux-3.12.26/drivers/net/ethernet/intel/e1000e/netdev.c    2014-08-06 15:15:42.000000000 +0200
-> @@ -5549,7 +5549,8 @@
->          count = e1000_tx_map(tx_ring, skb, first, adapter->tx_fifo_limit,
->                               nr_frags);
->          if (count) {
-> -               if (unlikely((skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP) &&
-
-    Your mailer has corrupted the patch -- all tabs were converted to spaces.
-
-> +               if ((adapter->flags & FLAG_HAS_HW_TIMESTAMP) &&
-> +                        unlikely((skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP) &&
-
-    When you break the line with the *if* statement, continuation lines should 
-start on a column right after ( above, according to the networking coding style.
-
-WBR, Sergei
+Michal
 
