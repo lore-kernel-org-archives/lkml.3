@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303AbaHFVA3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 17:00:29 -0400
-Received: from dub004-omc4s8.hotmail.com ([157.55.2.83]:50949 "EHLO
-	DUB004-OMC4S8.hotmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099AbaHFVAZ convert rfc822-to-8bit (ORCPT
+	id S1754377AbaHFVBs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 17:01:48 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43684 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752486AbaHFVBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 17:00:25 -0400
-X-Greylist: delayed 308 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Aug 2014 17:00:25 EDT
-X-TMN: [huzzlrG6rIxwy/dW2Bieyfsrk0qxjHDK]
-X-Originating-Email: [dcb314@hotmail.com]
-Message-ID: <DUB128-W44671ADCA62DEF226431E09CE00@phx.gbl>
-From: David Binderman <dcb314@hotmail.com>
-To: "trivial@kernel.org" <trivial@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] lib: Add 64 bit speedup to lib/sort.c
-Date: Wed, 6 Aug 2014 20:55:16 +0000
-Importance: Normal
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 06 Aug 2014 20:55:16.0620 (UTC) FILETIME=[B9CAACC0:01CFB1B8]
+	Wed, 6 Aug 2014 17:01:47 -0400
+Date: Wed, 06 Aug 2014 14:01:46 -0700 (PDT)
+Message-Id: <20140806.140146.1448631909293617629.davem@davemloft.net>
+To: zoltan.kiss@citrix.com
+Cc: wei.liu2@citrix.com, Ian.Campbell@citrix.com, david.vrabel@citrix.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xenproject.org
+Subject: Re: [PATCH net-next 0/2] xen-netback: Changes around carrier
+ handling
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <53E28017.9040908@citrix.com>
+References: <1407165658-20146-1-git-send-email-zoltan.kiss@citrix.com>
+	<20140805.160748.1185917042908283028.davem@davemloft.net>
+	<53E28017.9040908@citrix.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 06 Aug 2014 14:01:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello there,
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+Date: Wed, 6 Aug 2014 20:20:55 +0100
 
-The following patch adds an obvious speedup for 64 bit data to lib/sort.c
+> The fundamental problem with netback that start_xmit place the
+> packet into an internal queue, and then the thread does the actual
+> transmission from that queue, but it doesn't know whether it will
+> succeed in a finite time period.
 
-In tests on a 64 bit machine, the code at the end of the lib/sort.c
-file executed some 40% faster.
+A hardware device acts the same way when the link goes down or the
+transmitter hangs.  I do not see this situation, therefore, as
+fundamentally unique to xen-netback.
 
-The patch is against kernel version 3.16-rc6
+> I just noticed a possible problem with start_xmit: if this slot
+> estimation fails, and the packet is likely to be stalled at least for
+> a while, it still place the skb into the internal queue and return
+> NETDEV_TX_OK. Shouldn't we return NETDEV_TX_BUSY and not placing the
+> packet into the internal queue? It will be requeued later, or dropped
+> by QDisc. I think it will be more natural. But it can decrease
+> performance if these "not enough slot" situations are very frequent
+> and short living, and by the time the RX thread wakes up
+> My long term idea is to move part of the thread's work into
+> start_xmit, so it can set up the grant operations and if there isn't
+> enough slot it can return the skb to QDisc with NETDEV_TX_BUSY for
+> requeueing. Then the thread can only do the batching of the grant copy
+> operations and releasing the skbs. And we can ditch a good part of the
+> code ...
 
-Regards
+Yes, it would be a slight improvement if slot availability was
+detected at ->ndo_start_xmit() time.
 
-David Binderman
+But best would be to properly stop the queue at the _end_ of
+->ndo_start_xmit() like nearly all ethernet drivers do.
 
-Signed-off-by: David Binderman <dcb314@hotmail.com>
+And we can't do that in netback because..... your queues are too
+small.
 
---- linux-3.16-rc6/lib/sort.c.old    2014-07-23 16:47:59.120299115 +0100
-+++ linux-3.16-rc6/lib/sort.c    2014-07-23 17:33:21.405251903 +0100
-@@ -16,6 +16,13 @@ static void u32_swap(void *a, void *b, i
-     *(u32 *)b = t;
- }
- 
-+static void u64_swap(void *a, void *b, int size)
-+{
-+    u64 t = *(u64 *)a;
-+    *(u64 *)a = *(u64 *)b;
-+    *(u64 *)b = t;
-+}
-+
- static void generic_swap(void *a, void *b, int size)
- {
-     char t;
-@@ -51,8 +58,14 @@ void sort(void *base, size_t num, size_t
-     /* pre-scale counters for performance */
-     int i = (num/2 - 1) * size, n = num * size, c, r;
- 
--    if (!swap_func)
--        swap_func = (size == 4 ? u32_swap : generic_swap);
-+    if (!swap_func) {
-+        if (size == 4)
-+            swap_func = u32_swap;
-+        else if (size == 8)
-+            swap_func = u64_swap;
-+        else
-+            swap_func = generic_swap;
-+    }
- 
-     /* heapify */
-     for ( ; i>= 0; i -= size) {
+If your queues were large enough you could say "now that I've queued
+up SKB for transmit, do I still have enough slots available for a
+maxed out SKB?"  and stop the queue if the answer to that question is
+no.
 
- 		 	   		  
+The queue state was not meant to be a "maybe I can queue a new packet"
+indication.  It's supposed to mean that you can absolutely take at
+least one more SKB of any size or configuration.
+
+Returning TX_BUSY from ->ndo_start_xmit() is fundamentally, therefore,
+more like an error condition rather than something that should occur
+under normal circumstances.  If your queue is up, you should be able
+to accept any one single packet.  That's the rule.
+
+Requeueing back into the qdisc is expensive and takes a lot of locks
+awkwardly.  You do not want the kernel taking this code path.
