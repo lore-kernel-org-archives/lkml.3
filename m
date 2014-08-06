@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060AbaHFBJE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 21:09:04 -0400
-Received: from ozlabs.org ([103.22.144.67]:36773 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943AbaHFBJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 21:09:03 -0400
-Message-ID: <1407287340.32238.1.camel@concordia>
-Subject: Re: [PATCH 09/13] perf tools: Add perf download to download event
- files
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Wed, 06 Aug 2014 11:09:00 +1000
-In-Reply-To: <20140717104704.GB9571@gmail.com>
-References: <1405540969-18975-1-git-send-email-jolsa@kernel.org>
-	 <1405540969-18975-10-git-send-email-jolsa@kernel.org>
-	 <20140717104704.GB9571@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755222AbaHFBLP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 21:11:15 -0400
+Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:13947
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753729AbaHFBLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 21:11:13 -0400
+Date: Wed, 6 Aug 2014 09:10:46 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Eduardo Valentin <edubezval@gmail.com>
+CC: Anson Huang <b20788@freescale.com>, <rui.zhang@intel.com>,
+        <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] Thermal: imx: add i.mx6sx thermal support
+Message-ID: <20140806011045.GC27051@dragon>
+References: <1407229963-32662-1-git-send-email-b20788@freescale.com>
+ <20140805132553.GA20291@developer>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140805132553.GA20291@developer>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130517610521780466;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009003)(6009001)(448002)(189002)(199002)(24454002)(51704005)(92726001)(92566001)(50466002)(99396002)(76176999)(50986999)(54356999)(81156004)(106466001)(85306004)(21056001)(57986006)(95666004)(74502001)(74662001)(102836001)(77982001)(1411001)(31966008)(26826002)(76482001)(33716001)(68736004)(84676001)(83506001)(33656002)(79102001)(69596002)(85326001)(107046002)(85852003)(83072002)(110136001)(87936001)(104016003)(6806004)(44976005)(86362001)(83322001)(97736001)(97756001)(4396001)(46102001)(23726002)(46406003)(80022001)(64706001)(20776003)(81342001)(47776003)(81542001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB366;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02951C14DC
+Authentication-Results: spf=permerror (sender IP is 192.88.158.2)
+ smtp.mailfrom=shawn.guo@linaro.org; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-17 at 12:47 +0200, Ingo Molnar wrote:
-> this bit needs more discussion:
+On Tue, Aug 05, 2014 at 09:25:53AM -0400, Eduardo Valentin wrote:
+> > @@ -31,6 +32,10 @@
+> >  
+> >  #define MISC0				0x0150
+> >  #define MISC0_REFTOP_SELBIASOFF		(1 << 3)
+> > +#define MISC1				0x0160
+> > +#define MISC1_IRQ_TEMPHIGH		(1 << 29)
+> > +#define MISC1_IRQ_TEMPLOW		(1 << 28)
+> > +#define MISC1_IRQ_TEMPPANIC		(1 << 27)
 > 
-> * Jiri Olsa <jolsa@kernel.org> wrote:
+> how about using 
+> +#define MISC1_IRQ_TEMPHIGH		BIT(29)
+> +#define MISC1_IRQ_TEMPLOW		BIT(28)
+> +#define MISC1_IRQ_TEMPPANIC		BIT(27)
+
+While I agree this is good, I think it's more important to keep the
+style consistent for the file.  We already have a number of (1 << x)
+in the file.
+
+...
+
+> > @@ -66,6 +76,21 @@ enum imx_thermal_trip {
+> >  #define FACTOR1				15976
+> >  #define FACTOR2				4297157
+> >  
+> > +#define TEMPMON_V1			1
+> > +#define TEMPMON_V2			2
+> > +
 > 
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > Add a downloader to automatically download the right
-> > files from a download site.
+> where does the V1/V2 nomenclature come from? how about:
 > 
-> 'A download site' is way too vague and detached from the perf project.
-> 
-> > +	echo "Downloading models file"
-> > +	URLBASE=${URLBASE:-https://download.01.org/perfmon}
-> 
-> We want these description files to be in the perf source code, 
-> somewhere in tools/perf/live-config/arch/x86/ or so, and installed 
-> during 'make install' - i.e. part of perf project and installed in 
-> ~/.debug or ~/.perf or so.
+> +#define TEMPMON_IMX6Q			1
+> +#define TEMPMON_IMX6SX			2
 
-Surely the shipped versions should go in /usr/share/perf or something like
-that? Rather than a particular users home directory?
++1
 
-> Those files could be refreshed via 'perf download' and could be 
-> accessible via kernel.org as well, 'perf download' should pick up 
-> these files from Linus's latest git repository (via the HTTP 
-> namespace).
+If the V1/V2 nomenclature is not coming from hardware manual, we don't
+want to use it, neither code nor binding doc.
 
-This version would go in ~/.perf or similar.
-
-cheers
-
-
+Shawn
