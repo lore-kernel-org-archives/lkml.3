@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519AbaHFPYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 11:24:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35650 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945AbaHFPYt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 11:24:49 -0400
-Date: Wed, 6 Aug 2014 08:24:17 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Brian Gerst <brgerst@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@alien8.de>, Andrew Lutomriski <amluto@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dirk Hohndel <dirk@hohndel.org>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        comex <comexk@gmail.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH 3.10 12/27] x86-64, espfix: Dont leak bits 31:16 of %esp
- returning to 16-bit stack
-Message-ID: <20140806152417.GB15463@kroah.com>
-References: <20140805181344.268039690@linuxfoundation.org>
- <20140805181344.629775899@linuxfoundation.org>
- <20140806151620.GD12150@hercules>
+	id S1753963AbaHFP0K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 11:26:10 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37339 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557AbaHFP0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 11:26:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,812,1400050800"; 
+   d="scan'208";a="572583667"
+Message-ID: <53E2490E.70608@intel.com>
+Date: Wed, 06 Aug 2014 08:26:06 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140806151620.GD12150@hercules>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Koehrer Mathias <mathias.koehrer@etas.com>,
+        Nick Krause <xerofoify@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] Fix e1000e with Intel 82572EI that has no hardware timestamp
+ support
+References: <be459158bb5c46fcaf73129858342da4@FE-MBX1012.de.bosch.com> <53E23BEF.9030701@cogentembedded.com> <1407337757.772491.149802333.5E523CB0@webmail.messagingengine.com> <53E24800.4030102@intel.com>
+In-Reply-To: <53E24800.4030102@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 04:16:20PM +0100, Luis Henriques wrote:
-> On Tue, Aug 05, 2014 at 11:14:04AM -0700, Greg Kroah-Hartman wrote:
-> <...>
-> > @@ -188,17 +193,21 @@ static void note_page(struct seq_file *m
-> >  		/*
-> >  		 * Now print the actual finished series
-> >  		 */
-> > -		seq_printf(m, "0x%0*lx-0x%0*lx   ",
-> > -			   width, st->start_address,
-> > -			   width, st->current_address);
-> > -
-> > -		delta = (st->current_address - st->start_address) >> 10;
-> > -		while (!(delta & 1023) && unit[1]) {
-> > -			delta >>= 10;
-> > -			unit++;
-> > +		if (!st->marker->max_lines ||
-> > +		    st->lines < st->marker->max_lines) {
-> > +			seq_printf(m, "0x%0*lx-0x%0*lx   ",
-> > +				   width, st->start_address,
-> > +				   width, st->current_address);
-> > +
-> > +			delta = (st->current_address - st->start_address) >> 10;
-> > +			while (!(delta & 1023) && unit[1]) {
-> > +				delta >>= 10;
-> > +				unit++;
-> > +			}
-> > +			seq_printf(m, "%9lu%c ", delta, *unit);
-> > +			printk_prot(m, st->current_prot, st->level);
-> >  		}
-> > -		seq_printf(m, "%9lu%c ", delta, *unit);
-> > -		printk_prot(m, st->current_prot, st->level);
-> > +		st->lines++;
-> >  
-> >  		/*
-> >  		 * We print markers for special areas of address space,
+On 08/06/2014 08:21 AM, Alexander Duyck wrote:
+> On 08/06/2014 08:09 AM, Henrique de Moraes Holschuh wrote:
+>> On Wed, Aug 6, 2014, at 11:30, Sergei Shtylyov wrote:
+>>> On 8/6/2014 6:27 PM, Koehrer Mathias (ETAS/ESW5) wrote:
+>>>
+>>>> With the Intel 82527EI (driver: e1000e) there is an issue when running
+>>>> the ptpd2 program, that leads to a kernel oops.
+>>>> The reason is here that in e1000_xmit_frame() a work queue will be
+>>>> scheduled that has not been initialized in this case.
+>>>> The work queue "tx_hwstamp_work" will only be initialized if
+>>>> adapter->flags & FLAG_HAS_HW_TIMESTAMP set.
+>>>> This check is missing in e1000_xmit_frame().
+>>>
+>>>> The following patch adds the missing check.
+>>>
+>>>     OK, but this time you forgot your sign-off. :-)
+>>
+>> Also, shouldn't the added test be inside the unlikely() ?
+>>
 > 
-> Hmm... the original commit has a 2nd hunk here that does seem to be
-> applicable to 3.10.  Was this dropped accidentally or on purpose?
+> That shouldn't be necessary, but it might be better to place the new
+> check after the unlikely.  So you do the unlikely check first, then the
+> adapter check to see if we support Tx timestamping.  That way we can
+> avoid any unnecessary checks in the adapter structure.
+> 
+> Thanks,
+> 
+> Alex
+> 
 
-I don't remember at all, sorry.  What is the hunk that I missed?
 
-thanks,
+Actually you might want to even take it one step further and break out
+the test as follows (note this is only pseudo-code:
+  unlikely(skb->tx_flags & HW_TSTAMP) &&
+  (adapter->flags & HAS_HW_TSTAMP) &&
+  !adapter->tx_hwtstamp_skb
 
-greg k-h
+There isn't much point in wrapping the entire statement in unlikely, by
+wrapping just the first test the rest of the conditional checks can be
+pushed into the branch which will likely require a jump to some remote
+block of code and should streamline the hot-path.
+
+Thanks,
+
+Alex
