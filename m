@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191AbaHFHLV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 03:11:21 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36079 "EHLO
+	id S1755524AbaHFHMM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 03:12:12 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36312 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753262AbaHFHLS (ORCPT
+	with ESMTP id S1755099AbaHFHLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 03:11:18 -0400
+	Wed, 6 Aug 2014 03:11:20 -0400
 X-Original-SENDERIP: 10.177.220.145
 X-Original-MAILFROM: iamjoonsoo.kim@lge.com
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
@@ -29,98 +29,56 @@ Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
         Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 0/8] fix freepage count problems in memory isolation
-Date: Wed,  6 Aug 2014 16:18:26 +0900
-Message-Id: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 8/8] mm/isolation: remove useless race handling related to pageblock isolation
+Date: Wed,  6 Aug 2014 16:18:37 +0900
+Message-Id: <1407309517-3270-12-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+There is a mistake on moving freepage from normal buddy list to isolate
+buddy list. If we move page from normal buddy list to isolate buddy list,
+We should subtract freepage count in this case, but, it didn't.
 
-This patchset aims at fixing problems during memory isolation found by
-testing my patchset [1].
+And, previous patches ('mm/isolation: close the two race problems related
+to pageblock isolation' and 'mm/isolation: change pageblock isolation logic
+to fix freepage counting bugs') solves the race related to pageblock
+isolation. So, this misplacement cannot happen and this workaround
+aren't needed anymore.
 
-These are really subtle problems so I can be wrong. If you find what I am
-missing, please let me know.
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/page_isolation.c |   14 --------------
+ 1 file changed, 14 deletions(-)
 
-Before describing bugs itself, I first explain definition of freepage.
-
-1. pages on buddy list are counted as freepage.
-2. pages on isolate migratetype buddy list are *not* counted as freepage.
-3. pages on cma buddy list are counted as CMA freepage, too.
-4. pages for guard are *not* counted as freepage.
-
-Now, I describe problems and related patch.
-
-Patch 1: If guard page are cleared and merged into isolate buddy list,
-we should not add freepage count.
-
-Patch 4: There is race conditions that results in misplacement of free
-pages on buddy list. Then, it results in incorrect freepage count and
-un-availability of freepage.
-
-Patch 5: To count freepage correctly, we should prevent freepage from
-being added to buddy list in some period of isolation. Without it, we
-cannot be sure if the freepage is counted or not and miscount number
-of freepage.
-
-Patch 7: In spite of above fixes, there is one more condition for
-incorrect freepage count. pageblock isolation could be done in pageblock
-unit  so we can't prevent freepage from merging with page on next
-pageblock. To fix it, start_isolate_page_range() and
-undo_isolate_page_range() is modified to process whole range at one go.
-With this change, if input parameter of start_isolate_page_range() and
-undo_isolate_page_range() is properly aligned, there is no condition for
-incorrect merging.
-
-Without patchset [1], above problem doesn't happens on my CMA allocation
-test, because CMA reserved pages aren't used at all. So there is no
-chance for above race.
-
-With patchset [1], I did simple CMA allocation test and get below result.
-
-- Virtual machine, 4 cpus, 1024 MB memory, 256 MB CMA reservation
-- run kernel build (make -j16) on background
-- 30 times CMA allocation(8MB * 30 = 240MB) attempts in 5 sec interval
-- Result: more than 5000 freepage count are missed
-
-With patchset [1] and this patchset, I found that no freepage count are
-missed so that I conclude that problems are solved.
-
-These problems can be possible on memory hot remove users, although
-I didn't check it further.
-
-This patchset is based on linux-next-20140728.
-Please see individual patches for more information.
-
-Thanks.
-
-[1]: Aggressively allocate the pages on cma reserved memory
-     https://lkml.org/lkml/2014/5/30/291
-
-Joonsoo Kim (8):
-  mm/page_alloc: correct to clear guard attribute in DEBUG_PAGEALLOC
-  mm/isolation: remove unstable check for isolated page
-  mm/page_alloc: fix pcp high, batch management
-  mm/isolation: close the two race problems related to pageblock
-    isolation
-  mm/isolation: change pageblock isolation logic to fix freepage
-    counting bugs
-  mm/isolation: factor out pre/post logic on
-    set/unset_migratetype_isolate()
-  mm/isolation: fix freepage counting bug on
-    start/undo_isolat_page_range()
-  mm/isolation: remove useless race handling related to pageblock
-    isolation
-
- include/linux/page-isolation.h |    2 +
- mm/internal.h                  |    5 +
- mm/page_alloc.c                |  223 +++++++++++++++++-------------
- mm/page_isolation.c            |  292 +++++++++++++++++++++++++++++++---------
- 4 files changed, 368 insertions(+), 154 deletions(-)
-
+diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+index 063f1f9..48c8836 100644
+--- a/mm/page_isolation.c
++++ b/mm/page_isolation.c
+@@ -351,20 +351,6 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
+ 		}
+ 		page = pfn_to_page(pfn);
+ 		if (PageBuddy(page)) {
+-			/*
+-			 * If race between isolatation and allocation happens,
+-			 * some free pages could be in MIGRATE_MOVABLE list
+-			 * although pageblock's migratation type of the page
+-			 * is MIGRATE_ISOLATE. Catch it and move the page into
+-			 * MIGRATE_ISOLATE list.
+-			 */
+-			if (get_freepage_migratetype(page) != MIGRATE_ISOLATE) {
+-				struct page *end_page;
+-
+-				end_page = page + (1 << page_order(page)) - 1;
+-				move_freepages(page_zone(page), page, end_page,
+-						MIGRATE_ISOLATE);
+-			}
+ 			pfn += 1 << page_order(page);
+ 		} else if (skip_hwpoisoned_pages && PageHWPoison(page)) {
+ 			/*
 -- 
 1.7.9.5
 
