@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680AbaHFKmh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 06:42:37 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:12960 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754747AbaHFKmY (ORCPT
+	id S1755733AbaHFKor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 06:44:47 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:47364 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286AbaHFKop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 06:42:24 -0400
-X-IronPort-AV: E=Sophos;i="5.01,811,1400018400"; 
-   d="scan'208";a="88461265"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Adaptec OEM Raid Solutions <aacraid@adaptec.com>
-Cc: kernel-janitors@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        joe@perches.com
-Subject: [PATCH 1/1] dpt_i2o: delete unnecessary null test on array
-Date: Wed,  6 Aug 2014 12:39:11 +0200
-Message-Id: <1407321551-27479-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1407321551-27479-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1407321551-27479-1-git-send-email-Julia.Lawall@lip6.fr>
+	Wed, 6 Aug 2014 06:44:45 -0400
+Date: Wed, 6 Aug 2014 11:44:40 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, "Gupta, Pekon\"" <pekon@ti.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-mtd@lists.infradead.org, devicetree@vger.kernel.org,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>
+Subject: Re: [PATCH] mtd: nand: stm_nand_bch: add new driver
+Message-ID: <20140806104440.GC10136@lee--X1>
+References: <1401268805-26043-1-git-send-email-lee.jones@linaro.org>
+ <20140703002237.GM3599@ld-irv-0074>
+ <20140731164709.GK9030@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140731164709.GK9030@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thu, 31 Jul 2014, Lee Jones wrote:
+> On Wed, 02 Jul 2014, Brian Norris wrote:
+> > On Wed, May 28, 2014 at 10:20:05AM +0100, Lee Jones wrote:
 
-Delete NULL test on array (always false).
+[...]
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+> > > +	if (IS_ERR(pdata))
+> > > +		return PTR_ERR(pdata);
+> > > +
+> > > +	ppdata.of_node = stm_of_get_partitions_node(np, 0);
+> > 
+> > So you only support a single bank, at chip-select 0? Is this a
+> > hardware limitation, or simply software? You might consider whether this
+> > needs to be noted in the DT binding too -- it currently suggests that
+> > this can be plural.
+> 
+> Yes, only one bank.  Chip select is not possible.
 
-// <smpl>
-@r@
-type T;
-T [] e;
-position p;
-@@
-e ==@p NULL
+Sorry, not only one bank.
 
-@ disable fld_to_ptr@
-expression e;
-identifier f;
-position r.p;
-@@
-* e.f ==@p NULL
-// </smpl>
+We can have multiple banks, but only one chip.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
-I don't know if this is the correct change, or if some other test was
-intended.  But the code has been this way since at least 2.4.20, so it
-would seem that no one has been bothered by the lack of whatever this was
-supposed to test for.
-
- drivers/scsi/dpt_i2o.c |    5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
-index 67283ef..62e276b 100644
---- a/drivers/scsi/dpt_i2o.c
-+++ b/drivers/scsi/dpt_i2o.c
-@@ -1169,11 +1169,6 @@ static struct adpt_device* adpt_find_device(adpt_hba* pHba, u32 chan, u32 id, u6
- 	if(chan < 0 || chan >= MAX_CHANNEL)
- 		return NULL;
- 	
--	if( pHba->channel[chan].device == NULL){
--		printk(KERN_DEBUG"Adaptec I2O RAID: Trying to find device before they are allocated\n");
--		return NULL;
--	}
--
- 	d = pHba->channel[chan].device[id];
- 	if(!d || d->tid == 0) {
- 		return NULL;
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
