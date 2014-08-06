@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465AbaHFVwU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 17:52:20 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:44071 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753821AbaHFVwT (ORCPT
+	id S1754120AbaHFV4Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 17:56:24 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:58888 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753710AbaHFV4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 17:52:19 -0400
-Date: Wed, 06 Aug 2014 14:52:18 -0700 (PDT)
-Message-Id: <20140806.145218.1742159418901363810.davem@davemloft.net>
-To: ixaphire@qrator.net
-Cc: yoshfuji@linux-ipv6.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH net-next v2] tcp: md5: check md5 signature without
- socket lock
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140807014953.d8c4cde302bb9b30f8efe0e1@qrator.net>
-References: <20140807014953.d8c4cde302bb9b30f8efe0e1@qrator.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 06 Aug 2014 14:52:18 -0700 (PDT)
+	Wed, 6 Aug 2014 17:56:22 -0400
+Date: Wed, 6 Aug 2014 14:56:20 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Bart Van Assche <bvanassche@acm.org>
+cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] spin_lock_nested(): Always evaluate second argument
+In-Reply-To: <53E2618F.6040208@acm.org>
+Message-ID: <alpine.DEB.2.02.1408061455290.13545@chino.kir.corp.google.com>
+References: <53CE1019.10708@acm.org> <20140722133716.cff957eff4eff1cc9c1d9968@linux-foundation.org> <alpine.DEB.2.02.1407221612330.10592@chino.kir.corp.google.com> <53E260D9.6030803@acm.org> <53E2618F.6040208@acm.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Popov <ixaphire@qrator.net>
-Date: Thu, 7 Aug 2014 01:49:53 +0400
+On Wed, 6 Aug 2014, Bart Van Assche wrote:
 
-> Since a8afca032 (tcp: md5: protects md5sig_info with RCU) tcp_md5_do_lookup
-> doesn't require socket lock, rcu_read_lock is enough. Therefore socket lock is
-> no longer required for tcp_v{4,6}_inbound_md5_hash too, so we can move these
-> calls (wrapped with rcu_read_{,un}lock) before bh_lock_sock:
-> from tcp_v{4,6}_do_rcv to tcp_v{4,6}_rcv.
-> 
-> Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+> diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
+> index 3f2867f..485d5dc 100644
+> --- a/include/linux/spinlock.h
+> +++ b/include/linux/spinlock.h
+> @@ -197,7 +197,8 @@ static inline void do_raw_spin_unlock(raw_spinlock_t *lock) __releases(lock)
+>  		 _raw_spin_lock_nest_lock(lock, &(nest_lock)->dep_map);	\
+>  	 } while (0)
+>  #else
+> -# define raw_spin_lock_nested(lock, subclass)		_raw_spin_lock(lock)
+> +# define raw_spin_lock_nested(lock, subclass)		\
+> +	((void)(subclass), _raw_spin_lock(lock))
+>  # define raw_spin_lock_nest_lock(lock, nest_lock)	_raw_spin_lock(lock)
+>  #endif
+>  
 
-Please respin this against the current 'net' tree, it doesn't apply.
+I think it would be nice to comment why we're evaluating the subclass when 
+CONFIG_DEBUG_LOCK_ALLOC=n so that nobody comes along and unknowingly 
+changes it back.
+
+Thanks for posting the updated version and keeping at it!
