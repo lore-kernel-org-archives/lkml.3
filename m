@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528AbaHFEnT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 00:43:19 -0400
-Received: from s87.loopia.se ([194.9.94.112]:33557 "EHLO s87.loopia.se"
+	id S1754751AbaHFEns (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 00:43:48 -0400
+Received: from s87.loopia.se ([194.9.94.112]:34068 "EHLO s87.loopia.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751426AbaHFEnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 00:43:18 -0400
+	id S1754225AbaHFEnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 00:43:47 -0400
 X-Spam-Flag: NO
 X-Spam-Score: -1
 From: Hans Wennborg <hans@hanshq.net>
-To: will.deacon@arm.com, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
+To: sameo@linux.intel.com, lee.jones@linaro.org, linux-kernel@vger.kernel.org
 Cc: Hans Wennborg <hans@hanshq.net>
-Subject: [PATCH 03/15] iommu/arm-smmu: fix decimal printf format specifiers prefixed with 0x
-Date: Tue,  5 Aug 2014 21:42:01 -0700
-Message-Id: <1407300121-32432-1-git-send-email-hans@hanshq.net>
+Subject: [PATCH 05/15] mfd: rtsx_usb: fix decimal printf format specifiers prefixed with 0x
+Date: Tue,  5 Aug 2014 21:42:28 -0700
+Message-Id: <1407300148-32557-1-git-send-email-hans@hanshq.net>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,22 +26,22 @@ Found by using regex suggested by Joe Perches.
 
 Signed-off-by: Hans Wennborg <hans@hanshq.net>
 ---
- drivers/iommu/arm-smmu.c | 2 +-
+ drivers/mfd/rtsx_usb.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
-index ca18d6d..d84f983 100644
---- a/drivers/iommu/arm-smmu.c
-+++ b/drivers/iommu/arm-smmu.c
-@@ -623,7 +623,7 @@ static irqreturn_t arm_smmu_context_fault(int irq, void *dev)
+diff --git a/drivers/mfd/rtsx_usb.c b/drivers/mfd/rtsx_usb.c
+index 6352bec..2d488e9 100644
+--- a/drivers/mfd/rtsx_usb.c
++++ b/drivers/mfd/rtsx_usb.c
+@@ -684,7 +684,7 @@ static int rtsx_usb_suspend(struct usb_interface *intf, pm_message_t message)
+ 	struct rtsx_ucr *ucr =
+ 		(struct rtsx_ucr *)usb_get_intfdata(intf);
  
- 	if (fsr & FSR_IGN)
- 		dev_err_ratelimited(smmu->dev,
--				    "Unexpected context fault (fsr 0x%u)\n",
-+				    "Unexpected context fault (fsr 0x%x)\n",
- 				    fsr);
+-	dev_dbg(&intf->dev, "%s called with pm message 0x%04u\n",
++	dev_dbg(&intf->dev, "%s called with pm message 0x%04x\n",
+ 			__func__, message.event);
  
- 	fsynr = readl_relaxed(cb_base + ARM_SMMU_CB_FSYNR0);
+ 	/*
 -- 
 2.0.0.526.g5318336
 
