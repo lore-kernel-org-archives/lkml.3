@@ -1,112 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302AbaHFJuT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 05:50:19 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:59022 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754317AbaHFJuQ (ORCPT
+	id S1755511AbaHFJu2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 05:50:28 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38542 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754317AbaHFJu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 05:50:16 -0400
-Date: Wed, 6 Aug 2014 11:50:02 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [GIT PULL] s390 patches for the 3.17 merge window #1
-Message-ID: <20140806115002.1a57fe1a@mschwide>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080609-5024-0000-0000-000000E8ABF0
+	Wed, 6 Aug 2014 05:50:26 -0400
+Date: Wed, 6 Aug 2014 10:50:12 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>
+Cc: Fredrik Noring <fredrik.noring@autoliv.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
+Message-ID: <20140806095012.GN30282@n2100.arm.linux.org.uk>
+References: <C4A61A5CA4AD2246942F4BA6F20ACB804356534D@ALVA-EXMB04.alv.autoliv.int> <20140626140115.GQ32514@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB80435655E9@ALVA-EXMB04.alv.autoliv.int> <20140626151424.GT32514@n2100.arm.linux.org.uk> <20140627112151.GF32514@n2100.arm.linux.org.uk> <3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int> <20140627163108.GP32514@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Aug 05, 2014 at 01:31:29PM +0000, Mattis Lorentzon wrote:
+> We have applied your V2 patch set of 30 patches on top of v3.16-rc2 and are
+> currently running some stability tests.
+> 
+> During our first test round we triggered a timeout which caused the fec driver
+> to become unresponsive for several minutes. The attached backtrace was
+> shown when the hardware was rebooted.
 
-please pull from the 'for-linus' branch of
+What is on the other end of the link?
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+> ------------[ cut here ]------------
+> WARNING: CPU: 0 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x270/0x27c()
+> NETDEV WATCHDOG: eth0 (fec): transmit queue 0 timed out
+...
+> fec 2188000.ethernet eth0: TX ring dump
+> Nr     SC     addr       len  SKB
+>   0    0x1c00 0x00000000   66   (null)
+...
+>  83    0x1c00 0x00000000   66   (null)
+>  84  H 0x1c00 0x00000000   66   (null)
+>  85    0x9c00 0x2e205000   66 9e384f00
+>  86    0x1c00 0x2e204800   66 9e384d80
+>  87    0x1c00 0x2e204000   66 9e384180
+...
+> 376    0x1c00 0x2e252800   66 81cf6180
+> 377    0x1c00 0x2e253000   66 81cf6240
+> 378 S  0x1c00 0x00000000   66   (null)
 
-to receive the following updates:
-Mostly cleanups and bug-fixes, with two exceptions. The first is
-lazy flushing of I/O-TLBs for PCI to improve performance, the
-second is software dirty bits in the pmd for the madvise-free
-implementation.
+So, the software would insert the next packet into slot 378.  However,
+the slots from 85 to 377 have not been reaped, despite those in 86 to
+377 allegedly having been sent.  This is because the entry in slot 85
+shows that it has yet to be sent.
 
-Christian Borntraeger (2):
-      KVM: s390/mm: Fix page table locking vs. split pmd lock
-      s390/locking: Reenable optimistic spinning
+I've no idea what causes this; it looks like there's something screwed
+with the hardware which causes the transmitter to skip an entry in the
+ring under certain circumstances.  As I've never been able to reproduce
+it here, I've not been able to investigate it.
 
-Fabian Frederick (4):
-      s390/dasd: remove unnecessary null test before debugfs_remove
-      s390/dasd: Move EXPORT_SYMBOL after function/variable
-      s390/dasd: replace pr_warning by pr_warn
-      s390/dasd: replace seq_printf by seq_puts
+What I would like to do is to stamp each packet in some way with an
+identifier marking its ring position, and then monitor the network to
+find out whether the packet at slot 85 was actually transmitted - that's
+made slightly harder because packets may be dropped at the receiver
+when operating in promisc mode.  This would then allow us to work out
+some likely causes.
 
-Gerald Schaefer (2):
-      s390/pci: fix kmsg component
-      s390/pci: introduce lazy IOTLB flushing for DMA unmap
+Note that after the transmit watchdog, the interface should recover and
+start operating normally again - and that should not take "several
+minutes."
 
-Hendrik Brueckner (1):
-      s390/irq: improve displayed interrupt order in /proc/interrupts
-
-Jan Willeke (1):
-      s390/seccomp: fix error return for filtered system calls
-
-Martin Schwidefsky (2):
-      s390/3215: fix hanging console issue
-      s390/mm: implement dirty bits for large segment table entries
-
-Michael Holzheu (1):
-      s390/kdump: Return NOTIFY_OK for all actions other than MEM_GOING_OFFLINE
-
-Philipp Hachtmann (1):
-      s390/watchdog: Fix module name in Kconfig help text
-
-Sebastian Ott (5):
-      s390/qdio: add helpers to manage qdio buffers
-      s390/qeth: qdio queue helpers
-      s390/qeth: extract qdio buffers from input buffer struct
-      s390/qeth: extract qdio buffers from output buffer struct
-      s390/zfcp: use qdio buffer helpers
-
-Stefan Haberland (5):
-      dasd: use aliases for formatted devices during format
-      dasd: fix unresponsive device during format
-      dasd: fix list_del corruption during format
-      dasd: fix error recovery for alias devices during format
-      s390/dasd: fix camel case
-
- Documentation/kernel-parameters.txt |    7 ++
- arch/s390/Kconfig                   |    1 +
- arch/s390/include/asm/pgtable.h     |  197 +++++++++++++++++++----------------
- arch/s390/include/asm/qdio.h        |    4 +
- arch/s390/include/asm/syscall.h     |    2 +-
- arch/s390/kernel/irq.c              |   95 +++++++++--------
- arch/s390/kernel/setup.c            |    2 +
- arch/s390/mm/hugetlbpage.c          |  103 +++++++++---------
- arch/s390/mm/pgtable.c              |    8 +-
- arch/s390/pci/pci.c                 |    4 +-
- arch/s390/pci/pci_clp.c             |    4 +-
- arch/s390/pci/pci_debug.c           |    4 +-
- arch/s390/pci/pci_dma.c             |   50 ++++++---
- arch/s390/pci/pci_event.c           |    4 +-
- arch/s390/pci/pci_sysfs.c           |    4 +-
- drivers/pci/hotplug/s390_pci_hpc.c  |    4 +-
- drivers/s390/block/dasd.c           |  196 +++++++++++++++++-----------------
- drivers/s390/block/dasd_eckd.c      |   30 ++++--
- drivers/s390/block/dasd_int.h       |    5 +-
- drivers/s390/block/dasd_ioctl.c     |   33 ++++--
- drivers/s390/char/con3215.c         |   32 +++---
- drivers/s390/cio/qdio_setup.c       |   53 ++++++++++
- drivers/s390/net/qeth_core.h        |    8 +-
- drivers/s390/net/qeth_core_main.c   |  161 ++++++++++++++++------------
- drivers/s390/scsi/zfcp_qdio.c       |   49 ++++-----
- drivers/watchdog/Kconfig            |    2 +-
- 26 files changed, 619 insertions(+), 443 deletions(-)
-
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
