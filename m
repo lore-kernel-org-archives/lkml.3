@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507AbaHFIfE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 04:35:04 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:38384 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754182AbaHFIe7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 04:34:59 -0400
-Date: Wed, 6 Aug 2014 10:34:53 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, mingo@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org
-Subject: Re: [PATCH] s390/locking: Reenable optimistic spinning
-Message-ID: <20140806083453.GA4983@osiris>
-References: <1407225471-14875-1-git-send-email-borntraeger@de.ibm.com>
+	id S1755540AbaHFIfV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 04:35:21 -0400
+Received: from mail-by2lp0238.outbound.protection.outlook.com ([207.46.163.238]:53238
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754182AbaHFIfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 04:35:17 -0400
+From: Shengjiu Wang <shengjiu.wang@freescale.com>
+To: <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
+        <linux@arm.linux.org.uk>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>
+CC: <shengjiu.wang@freescale.com>, <Guangyu.Chen@freescale.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH V2 0/3] refine clock tree for esai in imx6q
+Date: Wed, 6 Aug 2014 16:35:12 +0800
+Message-ID: <cover.1407313676.git.shengjiu.wang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(50226001)(4396001)(79102001)(77982001)(36756003)(62966002)(77156001)(48376002)(20776003)(80022001)(46102001)(81342001)(64706001)(47776003)(33646002)(81542001)(84676001)(83322001)(86362001)(93916002)(21056001)(74502001)(85852003)(229853001)(99396002)(50986999)(97736001)(68736004)(74662001)(31966008)(69596002)(107046002)(105606002)(85306004)(81156004)(106466001)(92566001)(95666004)(2201001)(102836001)(83072002)(76482001)(6806004)(104016003)(50466002)(87286001)(87936001)(26826002)(88136002)(92726001)(44976005)(89996001)(104166001)(32563001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB433;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407225471-14875-1-git-send-email-borntraeger@de.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080608-0342-0000-0000-000000AA38F3
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02951C14DC
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=shengjiu.wang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 09:57:51AM +0200, Christian Borntraeger wrote:
-> commit 4badad352a6bb202ec68afa7a574c0bb961e5ebc (locking/mutex: Disable
-> optimistic spinning on some architectures) fenced spinning for
-> architectures without proper cmpxchg.
-> There is no need to disable mutex spinning on s390, though:
-> The instructions CS,CSG and friends provide the proper guarantees.
-> (We dont implement cmpxchg with locks).
-> 
-> Please note: This is a quick fix for s390, suitable for stable
-> as 3.16 unintenionally disabled optimistic spinning.
-> 
-> The proper fix is probably to use ARCH_HAVE_NMI_SAFE_CMPXCHG
-> instead of introducing ARCH_SUPPORTS_ATOMIC_RMW.
-> 
-> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-> CC: <mingo@kernel.org>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: stable@vger.kernel.org
-> ---
->  arch/s390/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-> index 9a0ea87..eab3c32 100644
-> --- a/arch/s390/Kconfig
-> +++ b/arch/s390/Kconfig
-> @@ -63,6 +63,7 @@ config S390
->  	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
->  	select ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS
->  	select ARCH_HAVE_NMI_SAFE_CMPXCHG
-> +	select ARCH_SUPPORTS_ATOMIC_RMW
->  	select ARCH_INLINE_READ_LOCK
->  	select ARCH_INLINE_READ_LOCK_BH
->  	select ARCH_INLINE_READ_LOCK_IRQ
+refine clock tree for esai in imx6q
 
-This can go in via the s390 tree. I applied your patch and changed
-it a bit to keep Kconfig sorted.
-Thanks!
+Changes for V2
+- Add pll5_sel And update the comments for patch 2.
+- As the bypass mode is not supported in clk tree, so update the 
+- comments for patch 3.
+
+Shengjiu Wang (3):
+  ARM: clk-imx6q: refine clock tree for ESAI
+  ARM: clk-imx6q: Add missing lvds and anaclk clock to the clock tree
+  ARM: imx6q: Add the clock route from external OSC to ESAI clock
+
+ arch/arm/mach-imx/clk-imx6q.c             |   24 +++++++++++++++++++-----
+ arch/arm/mach-imx/mach-imx6q.c            |   28 ++++++++++++++++++++++++++++
+ include/dt-bindings/clock/imx6qdl-clock.h |   13 ++++++++++---
+ 3 files changed, 57 insertions(+), 8 deletions(-)
+
+-- 
+1.7.9.5
 
