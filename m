@@ -1,79 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545AbaHFJvK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 05:51:10 -0400
-Received: from mail-oi0-f47.google.com ([209.85.218.47]:60796 "EHLO
-	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754317AbaHFJvI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 05:51:08 -0400
+	id S1754792AbaHFJ4H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 05:56:07 -0400
+Received: from mta-out1.inet.fi ([62.71.2.231]:33735 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753806AbaHFJ4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 05:56:04 -0400
+Date: Wed, 6 Aug 2014 12:52:14 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Howells <dhowells@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/7] fs/proc/task_mmu.c: don't use task->mm in
+ m_start() and show_*map()
+Message-ID: <20140806095214.GA30508@node.dhcp.inet.fi>
+References: <20140805194627.GA30693@redhat.com>
+ <20140805194644.GA30711@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <s5hd2ce55sl.wl%tiwai@suse.de>
-References: <14048583172593@kroah.com> <8B2F6FFD0BD1E448853114367400A37306FD6FBBE9@BLRX7MCDC203.AMER.DELL.COM>
- <s5h38e9mg5v.wl%tiwai@suse.de> <8B2F6FFD0BD1E448853114367400A37306FD6FBBF8@BLRX7MCDC203.AMER.DELL.COM>
- <s5hy4w1l0s3.wl%tiwai@suse.de> <8B2F6FFD0BD1E448853114367400A37306FD6FBC06@BLRX7MCDC203.AMER.DELL.COM>
- <s5hpphdkyi6.wl%tiwai@suse.de> <8B2F6FFD0BD1E448853114367400A37306FD6FBDAB@BLRX7MCDC203.AMER.DELL.COM>
- <s5hoawvkimg.wl%tiwai@suse.de> <8B2F6FFD0BD1E448853114367400A37306FE07C773@BLRX7MCDC203.AMER.DELL.COM>
- <s5h7g3frmg7.wl%tiwai@suse.de> <8B2F6FFD0BD1E448853114367400A37306FE07CC64@BLRX7MCDC203.AMER.DELL.COM>
- <s5hlhrrizbq.wl%tiwai@suse.de> <8B2F6FFD0BD1E448853114367400A37306FE311D74@BLRX7MCDC203.AMER.DELL.COM>
- <CAL8zT=jDUyxjimFxBFk56q+B9VwZdnijrU9VF7LBm4X4mNKp+g@mail.gmail.com>
- <s5hvbq753w2.wl%tiwai@suse.de> <CAL8zT=jzFmPZ2jizrPXMGBwNReOnDw7wLHZDashavNBh9vhe2g@mail.gmail.com>
- <s5htx5r53jl.wl%tiwai@suse.de> <CAKocOOO+vahGqVtM-hE6Vp5P2vX83L+z+OVnP=ZHvE4nc9P-JQ@mail.gmail.com>
- <CAL8zT=gbqcGPMLKS+bkc3cJPJJGmzuvdr7owy+zF-bCCaEv-Gg@mail.gmail.com> <s5hd2ce55sl.wl%tiwai@suse.de>
-From: Jean-Michel Hautbois <jhautbois@gmail.com>
-Date: Wed, 6 Aug 2014 11:44:14 +0200
-Message-ID: <CAL8zT=hbwRXRP7yNbrh9BEYzqAyipkTmrFCSqM5Z0U8hr0Yz+g@mail.gmail.com>
-Subject: Re: patch "firmware loader: allow disabling of udev as firmware
- loader" added to driver-core tree
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Shuah Khan <shuahkhan@gmail.com>, B_B_Singh@dell.com,
-        Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        Kay Sievers <kay@vrfy.org>, Ming Lei <ming.lei@canonical.com>,
-        Stefan Roese <sr@denx.de>, Tom Gundersen <teg@jklm.no>,
-        Stuart_Hayes@dell.com, Srinivas_G_Gowda@dell.com,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140805194644.GA30711@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-06 11:24 GMT+02:00 Takashi Iwai <tiwai@suse.de>:
-> At Wed, 6 Aug 2014 11:10:27 +0200,
-> Jean-Michel Hautbois wrote:
->>
->> 2014-08-05 21:22 GMT+02:00 Shuah Khan <shuahkhan@gmail.com>:
->> > On Tue, Aug 5, 2014 at 10:01 AM, Takashi Iwai <tiwai@suse.de> wrote:
->> >>> Yes, it worked, if the firmware was in the /lib/firmware directory.
->> >>
->> >
->> > ok it works when the firmware is in /lib/firmware. It sounds to me the
->> > reason load fails when the firmware is under /sys/class/firmware is
->> > fw_load_from_user_helper() returns -ENOENT when
->> > CONFIG_FW_LOADER_USER_HELPER is disabled.
->> >
->> > It would be nice to see the entire dmesg with debug enabled though.
->> >
->> > -- Shuah
->>
->> It does not work with the 3.16 kernel even when firmware is in
->> /lib/firmware, it worked before this patch is applied.
->
-> Hm?  3.16 doesn't contain my patch yet.  It's merged for 3.17-rc1.
+On Tue, Aug 05, 2014 at 09:46:44PM +0200, Oleg Nesterov wrote:
+> get_gate_vma(priv->task->mm) looks ugly and wrong, task->mm can be
+> NULL or it can changed by exec right after mm_access().
+> 
+> And in theory this race is not harmless, the task can exec and then
+> later exit and free the new mm_struct. In this case get_task_mm(oldmm)
+> can't help, get_gate_vma(task->mm) can read the freed/unmapped memory.
+> 
+> I think that priv->task should simply die and hold_task_mempolicy()
+> logic can be simplified. tail_vma logic asks for cleanups too.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  fs/proc/task_mmu.c |    8 +++-----
+>  1 files changed, 3 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index cfa63ee..8a5271e 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -170,7 +170,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+>  		return mm;
+>  	down_read(&mm->mmap_sem);
+>  
+> -	tail_vma = get_gate_vma(priv->task->mm);
+> +	tail_vma = get_gate_vma(mm);
+>  	priv->tail_vma = tail_vma;
+>  	hold_task_mempolicy(priv);
+>  	/* Start with last addr hint */
+> @@ -351,12 +351,11 @@ static int show_map(struct seq_file *m, void *v, int is_pid)
+>  {
+>  	struct vm_area_struct *vma = v;
+>  	struct proc_maps_private *priv = m->private;
+> -	struct task_struct *task = priv->task;
+>  
+>  	show_map_vma(m, vma, is_pid);
+>  
+>  	if (m->count < m->size)  /* vma is copied successfully */
+> -		m->version = (vma != get_gate_vma(task->mm))
+> +		m->version = (vma != priv->tail_vma)
+>  			? vma->vm_start : 0;
 
-Oh, you are right of course, I am on upstream kernel and I have your
-patch. I don't mean your match is causing the issue though ;-).
+Drop excessive parenthesis while you're there? And in the next hunk.
 
->> Here is what I got in my dmesg :
->> [    0.307856] __allocate_fw_buf: fw-lattice-ecp3.bit buf=bd81a480
->> [    0.308029] lattice-ecp3 spi2.3: Direct firmware load for
->> lattice-ecp3.bit failed with error -2
->
-> It's -ENOENT.  Are you sure that you really have
->  /lib/firmware/lattice-ecp3.bit file?
+Otherwise:
 
-Yes :
-ls -al /lib/firmware/lattice-ecp3.bit
--rwxr-xr-x 1 root root 897753 Aug  5 15:04 /lib/firmware/lattice-ecp3.bit
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-Thanks,
-JM
+>  	return 0;
+>  }
+> @@ -584,7 +583,6 @@ static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
+>  static int show_smap(struct seq_file *m, void *v, int is_pid)
+>  {
+>  	struct proc_maps_private *priv = m->private;
+> -	struct task_struct *task = priv->task;
+>  	struct vm_area_struct *vma = v;
+>  	struct mem_size_stats mss;
+>  	struct mm_walk smaps_walk = {
+> @@ -639,7 +637,7 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
+>  	show_smap_vma_flags(m, vma);
+>  
+>  	if (m->count < m->size)  /* vma is copied successfully */
+> -		m->version = (vma != get_gate_vma(task->mm))
+> +		m->version = (vma != priv->tail_vma)
+>  			? vma->vm_start : 0;
+>  	return 0;
+>  }
+> -- 
+> 1.5.5.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+ Kirill A. Shutemov
