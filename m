@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418AbaHFUP6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 16:15:58 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:32502 "EHLO
+	id S1754524AbaHFUQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 16:16:27 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:40882 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754260AbaHFUP3 (ORCPT
+	by vger.kernel.org with ESMTP id S1754258AbaHFUP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 16:15:29 -0400
+	Wed, 6 Aug 2014 16:15:28 -0400
 X-IronPort-AV: E=Sophos;i="5.01,813,1400018400"; 
-   d="scan'208";a="88519530"
+   d="scan'208";a="88519529"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: kernel-janitors@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>,
-        linux-iio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: kernel-janitors@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] iio: fix error return code
-Date: Wed,  6 Aug 2014 22:12:17 +0200
-Message-Id: <1407355938-10932-3-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 1/4] mfd: menelaus: fix error return code
+Date: Wed,  6 Aug 2014 22:12:16 +0200
+Message-Id: <1407355938-10932-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -51,30 +50,23 @@ ret@p1 = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/iio/adc/xilinx-xadc-core.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/mfd/menelaus.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/iio/adc/xilinx-xadc-core.c b/drivers/iio/adc/xilinx-xadc-core.c
-index fd2745c..196e269 100644
---- a/drivers/iio/adc/xilinx-xadc-core.c
-+++ b/drivers/iio/adc/xilinx-xadc-core.c
-@@ -1201,12 +1201,16 @@ static int xadc_probe(struct platform_device *pdev)
- 			goto err_device_free;
+diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
+index 5e2667a..16070d8 100644
+--- a/drivers/mfd/menelaus.c
++++ b/drivers/mfd/menelaus.c
+@@ -1240,8 +1240,10 @@ static int menelaus_probe(struct i2c_client *client,
+ 	pr_info("Menelaus rev %d.%d\n", rev >> 4, rev & 0x0f);
  
- 		xadc->convst_trigger = xadc_alloc_trigger(indio_dev, "convst");
--		if (IS_ERR(xadc->convst_trigger))
-+		if (IS_ERR(xadc->convst_trigger)) {
-+			ret = PTR_ERR(xadc->convst_trigger);
- 			goto err_triggered_buffer_cleanup;
-+		}
- 		xadc->samplerate_trigger = xadc_alloc_trigger(indio_dev,
- 			"samplerate");
--		if (IS_ERR(xadc->samplerate_trigger))
-+		if (IS_ERR(xadc->samplerate_trigger)) {
-+			ret = PTR_ERR(xadc->samplerate_trigger);
- 			goto err_free_convst_trigger;
-+		}
- 	}
- 
- 	xadc->clk = devm_clk_get(&pdev->dev, NULL);
+ 	val = menelaus_read_reg(MENELAUS_VCORE_CTRL1);
+-	if (val < 0)
++	if (val < 0) {
++		err = val;
+ 		goto fail;
++	}
+ 	if (val & (1 << 7))
+ 		menelaus->vcore_hw_mode = 1;
+ 	else
 
