@@ -1,107 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999AbaHFOEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 10:04:05 -0400
-Received: from mga09.intel.com ([134.134.136.24]:4735 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382AbaHFOED convert rfc822-to-8bit (ORCPT
+	id S1754795AbaHFOEW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 10:04:22 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:56267 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854AbaHFOES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 10:04:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,812,1400050800"; 
-   d="scan'208";a="584214415"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: RE: [PATCH] KVM: x86: always exit on EOIs for interrupts listed in
- the IOAPIC redir table
-Thread-Topic: [PATCH] KVM: x86: always exit on EOIs for interrupts listed in
- the IOAPIC redir table
-Thread-Index: AQHPrBEkMevXzPHWyEW1NdRMjvzN+JvDpASg
-Date: Wed, 6 Aug 2014 14:03:56 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AB51BA1@SHSMSX104.ccr.corp.intel.com>
-References: <1406736728-8516-1-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1406736728-8516-1-git-send-email-pbonzini@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 6 Aug 2014 10:04:18 -0400
+X-AuditID: cbfec37a-b7f216d000000635-2b-53e235e0c52b
+Message-id: <53E235DE.70604@samsung.com>
+Date: Wed, 06 Aug 2014 08:04:14 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Michal Marek <mmarek@suse.cz>, gregkh@linuxfoundation.org
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH] kbuild: devtest - new make target for build all and run
+ tests
+References: <1405716274-24420-1-git-send-email-shuah.kh@samsung.com>
+ <53E232E6.8060506@suse.cz>
+In-reply-to: <53E232E6.8060506@suse.cz>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.134.254]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t9hP92Hpo+CDS6fZbJoXryezeLPrh1M
+	Fpd3zWGzaNl3gcmBxWP/3DXsHmcWHGH3+LxJLoA5issmJTUnsyy1SN8ugStj1/WvbAWfuCrW
+	PfvJ1MD4iKOLkZNDQsBE4v6BcywQtpjEhXvr2boYuTiEBJYxSqx+94Adwullkvh+chsrhLON
+	UWLV9NnMIC28AhoSc6ceB2rh4GARUJVY8I4fJMwmoC7x+fUOdhBbSEBOomnJarByUYEIiQN9
+	z1ghWgUlfky+B7ZZRMBWYs3ey6wgY5gFkiU2PIgHCQsLhEic+nYSakyixJeFFxhBbE6g8VP/
+	rmYCsZkFrCVWTtrGCGHLS2xe85YZol5Z4s/lU0wQjylLLJi8jGkCo8gsJJtnIWmfhaR9ASPz
+	Kkax0uLkguKk9NQKQ73ixNzi0rx0veT83E2MkKio2sF456vNIUYBDkYlHt4M04fBQqyJZcWV
+	uYcYJTiYlUR47YUfBQvxpiRWVqUW5ccXleakFh9iZOLglGpgzH42g3FL1AKf8MCHldf1V03f
+	MlG/PD8vd+9J9mj2C69ZFm3gELdqZRerTJ7hIMeyu/mwyvsK0/Xmnu2Tf73NDOB4wsJv6hgt
+	Xyiq/WdXu0iHTJ7SRasE9rm867a/rUjMUNoZ39X/QN7r+Z6loR/mVpjM3PzDrovtXyivIPfn
+	lpzZzkf+7P+jxFKckWioxVxUnAgAGO/oaGgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini wrote on 2014-07-31:
-> Currently, the EOI exit bitmap (used for APICv) does not include
-> interrupts that are masked.  However, this can cause a bug that manifests
-> as an interrupt storm inside the guest.  Alex Williamson reported the
-> bug and is the one who really debugged this; I only wrote the patch. :)
-> 
-> The scenario involves a multi-function PCI device with OHCI and EHCI
-> USB functions and an audio function, all assigned to the guest, where
-> both USB functions use legacy INTx interrupts.
-> 
-> As soon as the guest boots, interrupts for these devices turn into an
-> interrupt storm in the guest; the host does not see the interrupt storm.
-> Basically the EOI path does not work, and the guest continues to see the
-> interrupt over and over, even after it attempts to mask it at the APIC.
-> The bug is only visible with older kernels (RHEL6.5, based on 2.6.32
-> with not many changes in the area of APIC/IOAPIC handling).
-> 
-> Alex then tried forcing bit 59 (corresponding to the USB functions' IRQ)
-> on in the eoi_exit_bitmap and TMR, and things then work.  What happens
-> is that VFIO asserts IRQ11, then KVM recomputes the EOI exit bitmap.
-> It does not have set bit 59 because the RTE was masked, so the IOAPIC
-> never sees the EOI and the interrupt continues to fire in the guest.
-> 
-> Probably, the guest is masking the interrupt in the redirection table in
-> the interrupt routine, i.e. while the interrupt is set in a LAPIC's ISR.
-> The simplest fix is to ignore the masking state, we would rather have
-> an unnecessary exit rather than a missed IRQ ACK and anyway IOAPIC
-> interrupts are not as performance-sensitive as for example MSIs.
+On 08/06/2014 07:51 AM, Michal Marek wrote:
+> On 2014-07-18 22:44, Shuah Khan wrote:
+>> Add a new devtest make target to enable developer testing. This
+>> new target does full build (make all) and then runs selftests.
+>
+> I agree with Sam that the name is rather ambiguous, but I can't suggest
+> a better alternative right now.
 
-I feel this fixing may hurt performance in some cases. If the mask bit is set, this means the vector in this entry may be used by other devices(like a assigned device). But here you set it in eoi exit bitmap and this will cause vmexit on each EOI which should not happen.
+Does kselftest or kern_selftest sound better?
 
-> 
-> [Thanks to Alex for his precise description of the problem
->  and initial debugging effort.  A lot of the text above is
->  based on emails exchanged with him.]
-> 
-> Reported-by: Alex Williamson <alex.williamson@redhat.com>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  virt/kvm/ioapic.c | 7 +++----
->  1 file changed, 3 insertions(+), 4 deletions(-)
-> 
-> diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-> index 2458a1dc2ba9..e8ce34c9db32 100644
-> --- a/virt/kvm/ioapic.c
-> +++ b/virt/kvm/ioapic.c
-> @@ -254,10 +254,9 @@ void kvm_ioapic_scan_entry(struct kvm_vcpu *vcpu,
-> u64 *eoi_exit_bitmap,
->  	spin_lock(&ioapic->lock);
->  	for (index = 0; index < IOAPIC_NUM_PINS; index++) {
->  		e = &ioapic->redirtbl[index];
-> -		if (!e->fields.mask &&
-> -			(e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
-> -			 kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC,
-> -				 index) || index == RTC_GSI)) {
-> +		if (e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
-> +		    kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC, index)
-> ||
-> +		    index == RTC_GSI) {
->  			if (kvm_apic_match_dest(vcpu, NULL, 0,
->  				e->fields.dest_id, e->fields.dest_mode)) {
->  				__set_bit(e->fields.vector,
+>
+>
+>> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+>> ---
+>>   Makefile | 11 +++++++++++
+>>   1 file changed, 11 insertions(+)
+>>
+>> diff --git a/Makefile b/Makefile
+>> index f3c543d..1ef3128 100644
+>> --- a/Makefile
+>> +++ b/Makefile
+>> @@ -1034,6 +1034,14 @@ headers_check: headers_install
+>>   	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/uapi/asm $(hdr-dst) HDRCHECK=1
+>>
+>>   # ---------------------------------------------------------------------------
+>> +# Kernel devtest
+>> +
+>> +PHONY += devtest
+>> +devtest:
+>> +	make all
+>
+> devtest: all
+>
+>
+>> +	make -C tools/testing/selftests run_tests
+>
+> Please use $(Q)$(MAKE), to keep the build silent by default and to
+> consistently use the same make program with the same options throughout
+> the build.
+>
 
-Best regards,
-Yang
+Working on the change - send v2 patch.
+
+-- Shuah
 
 
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
